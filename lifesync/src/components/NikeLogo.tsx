@@ -1,5 +1,3 @@
-import React from 'react';
-
 interface NikeLogoProps {
   collapsed?: boolean;
   className?: string;

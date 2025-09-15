@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { 
   CheckCircle, 
   Circle, 
@@ -25,8 +25,7 @@ import {
   X,
   GripVertical
 } from 'lucide-react';
-import {
-  DndContext,
+import { DndContext,
   closestCenter,
   KeyboardSensor,
   PointerSensor,
@@ -35,20 +34,13 @@ import {
   DragEndEvent,
   DragOverlay,
   DragStartEvent,
-  DragOverEvent,
-} from '@dnd-kit/core';
-import {
-  arrayMove,
+  DragOverEvent } from '@dnd-kit/core';
+import { arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import {
-  useSortable,
-} from '@dnd-kit/sortable';
-import {
-  useDroppable,
-} from '@dnd-kit/core';
+  verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { useSortable } from '@dnd-kit/sortable';
+import { useDroppable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 
 export default function ProjectTrackingImportTest() {
