@@ -1,0 +1,1010 @@
+import React, { useState } from 'react';
+import {
+  Plus,
+  CheckSquare,
+  Calendar,
+  Archive,
+  Search,
+  MoreHorizontal,
+  Edit,
+  CheckCircle2,
+  Timer,
+  List,
+  Grid3X3,
+  BarChart3,
+  Inbox,
+  Sun,
+  ArrowRight,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  Grid,
+  Layers,
+  Filter,
+  IndentIncrease,
+  Clock,
+  Link,
+  AlertCircle,
+  CheckCircle,
+  ArrowDown,
+  ArrowRight as ArrowRightIcon
+} from 'lucide-react';
+import { format, isToday, addDays } from 'date-fns';
+
+interface Task {
+  id: string;
+  title: string;
+  description?: string;
+  projectId?: string;
+  status: 'todo' | 'done' | 'waiting' | 'scheduled';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  estimatedTime: number;
+  actualTime: number;
+  dueDate?: Date;
+  tags: string[];
+  createdAt: Date;
+  completedAt?: Date;
+  category: 'work' | 'personal' | 'learning' | 'creative' | 'health' | 'other';
+  parentId?: string;
+  // Follow-up system
+  dependsOn?: string[]; // Task IDs this task depends on
+  followUpTasks?: FollowUpTask[]; // Tasks to create when this completes
+  isWaitingFor?: string; // What we're waiting for
+  triggerDate?: Date; // When to auto-activate
+  isBlocked?: boolean; // If dependencies aren't met
+}
+
+interface FollowUpTask {
+  id: string;
+  title: string;
+  description?: string;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  daysAfter?: number; // Days after parent completion
+  triggerCondition?: 'immediate' | 'delayed' | 'manual';
+  category: 'work' | 'personal' | 'learning' | 'creative' | 'health' | 'other';
+  estimatedTime: number;
+  tags: string[];
+}
+
+interface Project {
+  id: string;
+  name: string;
+  description?: string;
+  color: string;
+  status: 'active' | 'completed' | 'on_hold';
+  icon: string;
+}
+
+export default function TodosSimple() {
+  const [currentView, setCurrentView] = useState<'today' | 'inbox' | 'upcoming' | 'calendar' | 'kanban' | 'waiting' | 'scheduled'>('inbox');
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
+  const [quickAddText, setQuickAddText] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedProject, setSelectedProject] = useState<string>('all');
+  const [showFollowUpForm, setShowFollowUpForm] = useState<string | null>(null);
+  const [followUpText, setFollowUpText] = useState('');
+  const [followUpDays, setFollowUpDays] = useState(0);
+
+  // Mock projects data
+  const projects: Project[] = [
+    {
+      id: '1',
+      name: 'Personal',
+      description: 'Personal tasks and goals',
+      color: '#6366f1',
+      status: 'active',
+      icon: '👤'
+    },
+    {
+      id: '2',
+      name: 'Work',
+      description: 'Work-related tasks',
+      color: '#10b981',
+      status: 'active',
+      icon: '💼'
+    },
+    {
+      id: '3',
+      name: 'Learning',
+      description: 'Learning and development',
+      color: '#f59e0b',
+      status: 'active',
+      icon: '📚'
+    },
+    {
+      id: '4',
+      name: 'Health',
+      description: 'Health and wellness',
+      color: '#ef4444',
+      status: 'active',
+      icon: '❤️'
+    }
+  ];
+
+  // Mock tasks data with follow-ups
+  const [tasks, setTasks] = useState<Task[]>([
+    {
+      id: '1',
+      title: 'Submit passport for renewal',
+      description: 'Drop off passport application at post office',
+      priority: 'high',
+      status: 'waiting',
+      estimatedTime: 30,
+      actualTime: 0,
+      dueDate: new Date(),
+      projectId: '1',
+      tags: ['passport', 'immigration'],
+      category: 'personal',
+      createdAt: new Date(),
+      isWaitingFor: 'Passport renewal processing (10-14 days)',
+      followUpTasks: [
+        {
+          id: 'f1',
+          title: 'Book H1B renewal slot',
+          description: 'Schedule appointment for H1B visa renewal with new passport',
+          priority: 'urgent',
+          triggerCondition: 'immediate',
+          category: 'work',
+          estimatedTime: 45,
+          tags: ['visa', 'h1b', 'immigration']
+        },
+        {
+          id: 'f2',
+          title: 'Update passport info in HR system',
+          description: 'Provide new passport details to company HR',
+          priority: 'medium',
+          triggerCondition: 'immediate',
+          category: 'work',
+          estimatedTime: 15,
+          tags: ['hr', 'passport']
+        }
+      ]
+    },
+    {
+      id: '2',
+      title: 'Complete job interview',
+      description: 'Final round interview with hiring manager',
+      priority: 'high',
+      status: 'waiting',
+      estimatedTime: 60,
+      actualTime: 0,
+      dueDate: addDays(new Date(), 1),
+      projectId: '2',
+      tags: ['interview', 'job'],
+      category: 'work',
+      createdAt: new Date(),
+      isWaitingFor: 'Interview results (3-5 business days)',
+      followUpTasks: [
+        {
+          id: 'f3',
+          title: 'Negotiate salary package',
+          description: 'Discuss compensation and benefits if offer received',
+          priority: 'high',
+          triggerCondition: 'manual',
+          category: 'work',
+          estimatedTime: 30,
+          tags: ['negotiation', 'salary']
+        },
+        {
+          id: 'f4',
+          title: 'Plan resignation from current job',
+          description: 'Prepare resignation letter and transition plan',
+          priority: 'medium',
+          triggerCondition: 'manual',
+          category: 'work',
+          estimatedTime: 60,
+          tags: ['resignation', 'transition']
+        }
+      ]
+    },
+    {
+      id: '3',
+      title: 'Car inspection appointment',
+      description: 'Annual safety and emissions inspection',
+      priority: 'medium',
+      status: 'scheduled',
+      estimatedTime: 45,
+      actualTime: 0,
+      dueDate: addDays(new Date(), 3),
+      projectId: '1',
+      tags: ['car', 'inspection'],
+      category: 'personal',
+      createdAt: new Date(),
+      triggerDate: addDays(new Date(), 3),
+      followUpTasks: [
+        {
+          id: 'f5',
+          title: 'Fix any inspection issues',
+          description: 'Address any problems found during inspection',
+          priority: 'high',
+          triggerCondition: 'delayed',
+          daysAfter: 1,
+          category: 'personal',
+          estimatedTime: 120,
+          tags: ['car', 'repair']
+        }
+      ]
+    },
+    {
+      id: '4',
+      title: 'Review quarterly reports',
+      description: 'Go through Q3 financial reports and prepare summary',
+      priority: 'medium',
+      status: 'todo',
+      estimatedTime: 60,
+      actualTime: 0,
+      dueDate: new Date(),
+      projectId: '2',
+      tags: ['finance', 'reports'],
+      category: 'work',
+      createdAt: new Date()
+    }
+  ]);
+
+  const quickAddTask = () => {
+    if (!quickAddText.trim()) return;
+    
+    const task: Task = {
+      id: Date.now().toString(),
+      title: quickAddText,
+      description: '',
+      priority: 'medium',
+      status: 'todo',
+      estimatedTime: 25,
+      actualTime: 0,
+      tags: [],
+      category: 'work',
+      createdAt: new Date()
+    };
+
+    setTasks(prev => [task, ...prev]);
+    setQuickAddText('');
+    setShowQuickAdd(false);
+  };
+
+  const toggleTaskStatus = (taskId: string) => {
+    setTasks(prev => {
+      const updatedTasks = prev.map(task => {
+        if (task.id === taskId) {
+          const newStatus = task.status === 'done' ? 'todo' : 'done';
+          const updatedTask = {
+            ...task,
+            status: newStatus as any,
+            completedAt: newStatus === 'done' ? new Date() : undefined
+          };
+          
+          // If task is completed and has follow-ups, create them
+          if (newStatus === 'done' && task.followUpTasks) {
+            const newFollowUpTasks = task.followUpTasks.map(followUp => ({
+              id: Date.now().toString() + Math.random(),
+              title: followUp.title,
+              description: followUp.description,
+              priority: followUp.priority,
+              status: followUp.triggerCondition === 'immediate' ? 'todo' : 'scheduled' as any,
+              estimatedTime: followUp.estimatedTime,
+              actualTime: 0,
+              tags: followUp.tags,
+              category: followUp.category,
+              createdAt: new Date(),
+              dueDate: followUp.daysAfter ? addDays(new Date(), followUp.daysAfter) : undefined,
+              projectId: task.projectId,
+              dependsOn: [taskId]
+            }));
+            
+            // Add follow-up tasks to the list
+            setTimeout(() => {
+              setTasks(current => [...current, ...newFollowUpTasks]);
+            }, 500);
+          }
+          
+          return updatedTask;
+        }
+        return task;
+      });
+      
+      return updatedTasks;
+    });
+  };
+  
+  const addFollowUpTask = (parentId: string) => {
+    if (!followUpText.trim()) return;
+    
+    const followUpTask: Task = {
+      id: Date.now().toString(),
+      title: followUpText,
+      description: `Follow-up to: ${tasks.find(t => t.id === parentId)?.title}`,
+      priority: 'medium',
+      status: 'scheduled',
+      estimatedTime: 30,
+      actualTime: 0,
+      tags: ['followup'],
+      category: 'work',
+      createdAt: new Date(),
+      dependsOn: [parentId],
+      dueDate: followUpDays > 0 ? addDays(new Date(), followUpDays) : undefined
+    };
+
+    setTasks(prev => [...prev, followUpTask]);
+    setFollowUpText('');
+    setFollowUpDays(0);
+    setShowFollowUpForm(null);
+  };
+  
+  const markAsWaiting = (taskId: string, waitingFor: string) => {
+    setTasks(prev => prev.map(task => 
+      task.id === taskId 
+        ? { ...task, status: 'waiting' as any, isWaitingFor: waitingFor }
+        : task
+    ));
+  };
+
+  const getTodayTasks = () => {
+    return tasks.filter(task => 
+      task.dueDate && isToday(task.dueDate) && task.status !== 'done'
+    );
+  };
+
+  const getUpcomingTasks = () => {
+    return tasks.filter(task => 
+      task.dueDate && task.dueDate > new Date() && task.status !== 'done'
+    ).sort((a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime());
+  };
+
+  const getInboxTasks = () => {
+    return tasks.filter(task => task.status === 'todo');
+  };
+  
+  const getWaitingTasks = () => {
+    return tasks.filter(task => task.status === 'waiting');
+  };
+  
+  const getScheduledTasks = () => {
+    return tasks.filter(task => task.status === 'scheduled');
+  };
+  
+  const getTasksWithDependencies = () => {
+    return tasks.filter(task => task.dependsOn && task.dependsOn.length > 0);
+  };
+
+  const getTasksToShow = () => {
+    switch (currentView) {
+      case 'today': return getTodayTasks();
+      case 'upcoming': return getUpcomingTasks();
+      case 'waiting': return getWaitingTasks();
+      case 'scheduled': return getScheduledTasks();
+      case 'inbox': return getInboxTasks();
+      default: return getInboxTasks();
+    }
+  };
+  
+  const getTaskStatusColor = (status: string) => {
+    switch (status) {
+      case 'waiting': return 'text-orange-600 bg-orange-50';
+      case 'scheduled': return 'text-purple-600 bg-purple-50';
+      case 'done': return 'text-green-600 bg-green-50';
+      default: return 'text-blue-600 bg-blue-50';
+    }
+  };
+  
+  const getDependencyStatus = (task: Task) => {
+    if (!task.dependsOn) return null;
+    
+    const dependencies = tasks.filter(t => task.dependsOn?.includes(t.id));
+    const completed = dependencies.filter(t => t.status === 'done');
+    
+    return {
+      total: dependencies.length,
+      completed: completed.length,
+      isBlocked: completed.length < dependencies.length,
+      dependencies
+    };
+  };
+
+  return (
+    <div className="h-screen bg-gray-50 dark:bg-slate-900 flex">
+      {/* TickTick Sidebar */}
+      <div className="w-72 bg-white dark:bg-slate-800 border-r border-gray-200 dark:border-slate-700 flex flex-col shadow-sm">
+        {/* Sidebar Header */}
+        <div className="p-4 border-b border-gray-100 dark:border-slate-700">
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+              <CheckSquare className="w-5 h-5 text-white" />
+            </div>
+            <h2 className="font-semibold text-slate-900 dark:text-white text-lg">TickTick</h2>
+          </div>
+        </div>
+
+        {/* Quick Add */}
+        <div className="p-4">
+          {showQuickAdd ? (
+            <div className="space-y-3">
+              <input
+                type="text"
+                value={quickAddText}
+                onChange={(e) => setQuickAddText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') quickAddTask();
+                  if (e.key === 'Escape') { setShowQuickAdd(false); setQuickAddText(''); }
+                }}
+                placeholder="What needs to be done?"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-700 dark:text-white"
+                autoFocus
+              />
+              <div className="flex space-x-2">
+                <button
+                  onClick={quickAddTask}
+                  className="px-4 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-sm transition-colors font-medium"
+                >
+                  Add
+                </button>
+                <button
+                  onClick={() => { setShowQuickAdd(false); setQuickAddText(''); }}
+                  className="px-4 py-1.5 text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-md text-sm transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowQuickAdd(true)}
+              className="w-full flex items-center space-x-2 px-3 py-2.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-700 rounded-md transition-colors text-sm font-medium"
+            >
+              <Plus size={16} />
+              <span>Add task</span>
+            </button>
+          )}
+        </div>
+
+        {/* Smart Lists */}
+        <div className="flex-1 px-4 pb-4">
+          <div className="mb-4">
+            <h3 className="text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-2 px-3">Smart Lists</h3>
+            <nav className="space-y-1">
+              <button
+                onClick={() => setCurrentView('inbox')}
+                className={`w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm transition-colors ${
+                  currentView === 'inbox' 
+                    ? 'bg-blue-50 dark:bg-slate-700 text-blue-700 dark:text-blue-400' 
+                    : 'text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700'
+                }`}
+              >
+                <Inbox className="w-4 h-4" />
+                <span>All</span>
+                <span className="ml-auto text-xs bg-gray-200 dark:bg-slate-600 px-2 py-0.5 rounded-full">
+                  {getInboxTasks().length}
+                </span>
+              </button>
+
+              <button
+                onClick={() => setCurrentView('today')}
+                className={`w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm transition-colors ${
+                  currentView === 'today' 
+                    ? 'bg-blue-50 dark:bg-slate-700 text-blue-700 dark:text-blue-400' 
+                    : 'text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700'
+                }`}
+              >
+                <Sun className="w-4 h-4" />
+                <span>Today</span>
+                <span className="ml-auto text-xs bg-gray-200 dark:bg-slate-600 px-2 py-0.5 rounded-full">
+                  {getTodayTasks().length}
+                </span>
+              </button>
+
+              <button
+                onClick={() => setCurrentView('upcoming')}
+                className={`w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm transition-colors ${
+                  currentView === 'upcoming' 
+                    ? 'bg-blue-50 dark:bg-slate-700 text-blue-700 dark:text-blue-400' 
+                    : 'text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700'
+                }`}
+              >
+                <ArrowRight className="w-4 h-4" />
+                <span>Next 7 days</span>
+                <span className="ml-auto text-xs bg-gray-200 dark:bg-slate-600 px-2 py-0.5 rounded-full">
+                  {getUpcomingTasks().length}
+                </span>
+              </button>
+              
+              <button
+                onClick={() => setCurrentView('waiting')}
+                className={`w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm transition-colors ${
+                  currentView === 'waiting' 
+                    ? 'bg-blue-50 dark:bg-slate-700 text-blue-700 dark:text-blue-400' 
+                    : 'text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700'
+                }`}
+              >
+                <Clock className="w-4 h-4" />
+                <span>Waiting For</span>
+                <span className="ml-auto text-xs bg-orange-200 dark:bg-orange-800 text-orange-800 dark:text-orange-200 px-2 py-0.5 rounded-full">
+                  {getWaitingTasks().length}
+                </span>
+              </button>
+              
+              <button
+                onClick={() => setCurrentView('scheduled')}
+                className={`w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm transition-colors ${
+                  currentView === 'scheduled' 
+                    ? 'bg-blue-50 dark:bg-slate-700 text-blue-700 dark:text-blue-400' 
+                    : 'text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700'
+                }`}
+              >
+                <CalendarDays className="w-4 h-4" />
+                <span>Scheduled</span>
+                <span className="ml-auto text-xs bg-purple-200 dark:bg-purple-800 text-purple-800 dark:text-purple-200 px-2 py-0.5 rounded-full">
+                  {getScheduledTasks().length}
+                </span>
+              </button>
+              
+              <button
+                onClick={() => setCurrentView('calendar')}
+                className={`w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm transition-colors ${
+                  currentView === 'calendar' 
+                    ? 'bg-blue-50 dark:bg-slate-700 text-blue-700 dark:text-blue-400' 
+                    : 'text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700'
+                }`}
+              >
+                <CalendarDays className="w-4 h-4" />
+                <span>Calendar</span>
+              </button>
+              
+              <button
+                onClick={() => setCurrentView('kanban')}
+                className={`w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm transition-colors ${
+                  currentView === 'kanban' 
+                    ? 'bg-blue-50 dark:bg-slate-700 text-blue-700 dark:text-blue-400' 
+                    : 'text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700'
+                }`}
+              >
+                <Grid className="w-4 h-4" />
+                <span>Kanban</span>
+              </button>
+            </nav>
+          </div>
+
+          {/* Lists Section */}
+          <div className="mt-6">
+            <div className="flex items-center justify-between mb-3 px-3">
+              <h3 className="text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">Lists</h3>
+              <button className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-slate-300">
+                <Plus size={12} />
+              </button>
+            </div>
+            <div className="space-y-1">
+              {projects.map((project) => (
+                <button
+                  key={project.id}
+                  onClick={() => setSelectedProject(project.id)}
+                  className={`w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm transition-colors ${
+                    selectedProject === project.id 
+                      ? 'bg-blue-50 dark:bg-slate-700 text-blue-700 dark:text-blue-400' 
+                      : 'text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: project.color }}></div>
+                  <span className="truncate">{project.name}</span>
+                  <span className="ml-auto text-xs bg-gray-200 dark:bg-slate-600 px-2 py-0.5 rounded-full">
+                    {tasks.filter(t => t.projectId === project.id && t.status !== 'done').length}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col">
+        {/* Header */}
+        <div className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 px-6 py-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-semibold text-gray-900 dark:text-white flex items-center space-x-3">
+                {currentView === 'today' && (
+                  <>
+                    <Sun className="w-6 h-6 text-orange-500" />
+                    <span>Today</span>
+                  </>
+                )}
+                {currentView === 'inbox' && (
+                  <>
+                    <Inbox className="w-6 h-6 text-blue-500" />
+                    <span>All</span>
+                  </>
+                )}
+                {currentView === 'upcoming' && (
+                  <>
+                    <ArrowRight className="w-6 h-6 text-green-500" />
+                    <span>Next 7 days</span>
+                  </>
+                )}
+                {currentView === 'calendar' && (
+                  <>
+                    <CalendarDays className="w-6 h-6 text-purple-500" />
+                    <span>Calendar</span>
+                  </>
+                )}
+                {currentView === 'kanban' && (
+                  <>
+                    <Grid className="w-6 h-6 text-indigo-500" />
+                    <span>Kanban</span>
+                  </>
+                )}
+                {currentView === 'waiting' && (
+                  <>
+                    <Clock className="w-6 h-6 text-orange-500" />
+                    <span>Waiting For</span>
+                  </>
+                )}
+                {currentView === 'scheduled' && (
+                  <>
+                    <CalendarDays className="w-6 h-6 text-purple-500" />
+                    <span>Scheduled</span>
+                  </>
+                )}
+              </h1>
+              <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
+                {currentView === 'today' && format(new Date(), 'EEEE, MMMM do')}
+                {currentView === 'inbox' && 'Manage all your tasks in one place'}
+                {currentView === 'upcoming' && 'Tasks due in the next 7 days'}
+                {currentView === 'calendar' && 'View your tasks in calendar format'}
+                {currentView === 'kanban' && 'Organize tasks in columns by status'}
+                {currentView === 'waiting' && 'Tasks waiting for external events or responses'}
+                {currentView === 'scheduled' && 'Tasks scheduled for future activation'}
+              </p>
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search tasks..."
+                  className="pl-10 pr-4 py-2 w-64 text-sm border border-gray-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-700 dark:text-white"
+                />
+              </div>
+              
+              <button className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-slate-300 transition-colors rounded-md hover:bg-gray-100 dark:hover:bg-slate-700">
+                <List size={18} />
+              </button>
+              <button className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-slate-300 transition-colors rounded-md hover:bg-gray-100 dark:hover:bg-slate-700">
+                <MoreHorizontal size={18} />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Task List */}
+        <div className="flex-1 overflow-y-auto bg-white dark:bg-slate-900">
+          <div className="max-w-4xl mx-auto">
+            {currentView === 'calendar' && (
+              <div className="p-6">
+                <div className="bg-blue-50 dark:bg-slate-800 rounded-lg p-8 text-center">
+                  <CalendarDays className="w-16 h-16 mx-auto text-blue-400 mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-2">Calendar View</h3>
+                  <p className="text-gray-600 dark:text-slate-400 mb-4">See your tasks organized by date in a beautiful calendar interface</p>
+                  <div className="text-sm text-gray-500">Calendar implementation with monthly, weekly, and daily views</div>
+                </div>
+              </div>
+            )}
+
+            {currentView === 'kanban' && (
+              <div className="p-6">
+                <div className="grid grid-cols-3 gap-6">
+                  <div className="bg-gray-50 dark:bg-slate-800 rounded-lg p-4">
+                    <h3 className="font-semibold text-gray-900 dark:text-white mb-4">To Do</h3>
+                    <div className="space-y-3">
+                      {tasks.filter(t => t.status === 'todo').map((task) => (
+                        <div key={task.id} className="bg-white dark:bg-slate-700 p-3 rounded-lg shadow-sm">
+                          <div className="font-medium text-gray-900 dark:text-white text-sm mb-1">
+                            {task.title}
+                          </div>
+                          {task.description && (
+                            <div className="text-xs text-gray-600 dark:text-slate-400">
+                              {task.description}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="bg-gray-50 dark:bg-slate-800 rounded-lg p-4">
+                    <h3 className="font-semibold text-gray-900 dark:text-white mb-4">In Progress</h3>
+                    <div className="text-center py-8 text-gray-400 dark:text-slate-500">
+                      <div className="text-3xl mb-2">⚡</div>
+                      <p className="text-sm">No tasks in progress</p>
+                    </div>
+                  </div>
+                  <div className="bg-gray-50 dark:bg-slate-800 rounded-lg p-4">
+                    <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Done</h3>
+                    <div className="space-y-3">
+                      {tasks.filter(t => t.status === 'done').map((task) => (
+                        <div key={task.id} className="bg-white dark:bg-slate-700 p-3 rounded-lg shadow-sm opacity-75">
+                          <div className="font-medium text-gray-900 dark:text-white text-sm mb-1 line-through">
+                            {task.title}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {(currentView === 'today' || currentView === 'inbox' || currentView === 'upcoming' || currentView === 'waiting' || currentView === 'scheduled') && (
+              <div className="py-4">
+                {getTasksToShow().map((task) => {
+                  const project = projects.find(p => p.id === task.projectId);
+                  const dependencyStatus = getDependencyStatus(task);
+                  
+                  return (
+                    <div key={task.id} className="group px-6 py-3 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors border-b border-gray-100 dark:border-slate-700">
+                      <div className="flex items-start">
+                        {/* Checkbox */}
+                        <button
+                          onClick={() => toggleTaskStatus(task.id)}
+                          disabled={dependencyStatus?.isBlocked}
+                          className={`mt-1 mr-4 w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                            dependencyStatus?.isBlocked ? 'opacity-50 cursor-not-allowed border-gray-300' :
+                            task.status === 'done'
+                              ? 'bg-blue-500 border-blue-500 text-white'
+                              : task.status === 'waiting' 
+                              ? 'border-orange-400 bg-orange-50'
+                              : task.status === 'scheduled'
+                              ? 'border-purple-400 bg-purple-50'
+                              : (() => {
+                                  switch (task.priority) {
+                                    case 'urgent': return 'border-red-400 hover:border-red-500 hover:bg-red-50 dark:hover:bg-red-900/20';
+                                    case 'high': return 'border-orange-400 hover:border-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20';
+                                    case 'medium': return 'border-blue-400 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20';
+                                    default: return 'border-gray-300 hover:border-gray-400 hover:bg-gray-50 dark:border-slate-600 dark:hover:bg-slate-700';
+                                  }
+                                })()
+                          }`}
+                        >
+                          {task.status === 'done' && <CheckCircle size={12} />}
+                          {task.status === 'waiting' && <Clock size={12} className="text-orange-600" />}
+                          {task.status === 'scheduled' && <CalendarDays size={12} className="text-purple-600" />}
+                          {dependencyStatus?.isBlocked && <AlertCircle size={12} className="text-gray-400" />}
+                        </button>
+
+                        {/* Task Content */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center space-x-2 mb-2">
+                            <span className={`text-base cursor-pointer font-normal ${
+                              task.status === 'done' ? 'line-through text-gray-400' : 
+                              dependencyStatus?.isBlocked ? 'text-gray-500' :
+                              'text-gray-800 dark:text-white'
+                            }`}>
+                              {task.title}
+                            </span>
+                            
+                            {/* Status badges */}
+                            {task.status !== 'todo' && task.status !== 'done' && (
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTaskStatusColor(task.status)}`}>
+                                {task.status === 'waiting' ? 'Waiting' : 'Scheduled'}
+                              </span>
+                            )}
+                            
+                            {/* Follow-up indicator */}
+                            {task.followUpTasks && task.followUpTasks.length > 0 && (
+                              <span className="flex items-center space-x-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                                <Link size={10} />
+                                <span>{task.followUpTasks.length} follow-up{task.followUpTasks.length > 1 ? 's' : ''}</span>
+                              </span>
+                            )}
+                            
+                            {/* Dependency indicator */}
+                            {dependencyStatus && (
+                              <span className="flex items-center space-x-1 px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium">
+                                <ArrowDown size={10} />
+                                <span>Depends on {dependencyStatus.completed}/{dependencyStatus.total}</span>
+                              </span>
+                            )}
+                          </div>
+                          
+                          {/* Waiting for information */}
+                          {task.isWaitingFor && (
+                            <div className="mb-2 p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-md">
+                              <div className="flex items-center space-x-2 text-orange-700 dark:text-orange-300">
+                                <Clock size={14} />
+                                <span className="text-sm font-medium">Waiting for:</span>
+                              </div>
+                              <p className="text-sm text-orange-600 dark:text-orange-400 mt-1">{task.isWaitingFor}</p>
+                            </div>
+                          )}
+                          
+                          {/* Dependencies status */}
+                          {dependencyStatus?.isBlocked && (
+                            <div className="mb-2 p-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-md">
+                              <div className="flex items-center space-x-2 text-gray-700 dark:text-gray-300">
+                                <AlertCircle size={14} />
+                                <span className="text-sm font-medium">Blocked by:</span>
+                              </div>
+                              <div className="mt-1 space-y-1">
+                                {dependencyStatus.dependencies.filter(d => d.status !== 'done').map(dep => (
+                                  <div key={dep.id} className="text-sm text-gray-600 dark:text-gray-400">
+                                    • {dep.title}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Follow-up tasks preview */}
+                          {task.followUpTasks && task.followUpTasks.length > 0 && task.status !== 'done' && (
+                            <div className="mb-2 p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
+                              <div className="flex items-center space-x-2 text-blue-700 dark:text-blue-300">
+                                <Link size={14} />
+                                <span className="text-sm font-medium">Will create {task.followUpTasks.length} follow-up task{task.followUpTasks.length > 1 ? 's' : ''}:</span>
+                              </div>
+                              <div className="mt-1 space-y-1">
+                                {task.followUpTasks.slice(0, 2).map((followUp, idx) => (
+                                  <div key={idx} className="text-sm text-blue-600 dark:text-blue-400">
+                                    • {followUp.title}
+                                  </div>
+                                ))}
+                                {task.followUpTasks.length > 2 && (
+                                  <div className="text-sm text-blue-500 dark:text-blue-400">...and {task.followUpTasks.length - 2} more</div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        
+                          {/* Task metadata */}
+                          {(task.description || task.dueDate || project || task.tags.length > 0) && (
+                            <div className="flex items-center space-x-4 text-xs text-gray-500 dark:text-slate-400 ml-2">
+                              {task.description && (
+                                <span className="truncate max-w-xs text-gray-600 dark:text-slate-400">{task.description}</span>
+                              )}
+                              
+                              {task.dueDate && (
+                                <span className={`flex items-center space-x-1.5 px-2 py-1 rounded ${
+                                  isToday(task.dueDate) ? 'text-green-600 bg-green-50' : 'text-gray-600 bg-gray-50'
+                                }`}>
+                                  <CalendarDays size={12} />
+                                  <span className="font-medium">
+                                    {isToday(task.dueDate) ? 'Today' : format(task.dueDate, 'MMM d')}
+                                  </span>
+                                </span>
+                              )}
+                              
+                              {project && (
+                                <span className="flex items-center space-x-1.5 px-2 py-1 bg-gray-100 dark:bg-slate-700 rounded">
+                                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: project.color }}></div>
+                                  <span className="text-gray-700 dark:text-gray-300 font-medium">{project.name}</span>
+                                </span>
+                              )}
+                              
+                              {task.tags.map((tag, index) => (
+                                <span 
+                                  key={index} 
+                                  className="inline-flex items-center px-2 py-1 rounded bg-blue-50 dark:bg-slate-700 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-slate-600 transition-colors"
+                                >
+                                  <span className="text-blue-500 mr-1 text-xs">#</span>
+                                  <span className="font-medium">{tag}</span>
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity ml-3">
+                          <button 
+                            onClick={() => setShowFollowUpForm(task.id)}
+                            className="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-md text-gray-400 hover:text-gray-600 dark:text-slate-400 transition-colors"
+                            title="Add Follow-up"
+                          >
+                            <Link size={14} />
+                          </button>
+                          <button className="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-md text-gray-400 hover:text-gray-600 dark:text-slate-400 transition-colors">
+                            <Timer size={14} />
+                          </button>
+                          <button className="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-md text-gray-400 hover:text-gray-600 dark:text-slate-400 transition-colors">
+                            <Edit size={14} />
+                          </button>
+                          <button className="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-md text-gray-400 hover:text-gray-600 dark:text-slate-400 transition-colors">
+                            <MoreHorizontal size={14} />
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {/* Follow-up form */}
+                      {showFollowUpForm === task.id && (
+                        <div className="mt-3 p-3 bg-gray-50 dark:bg-slate-800 rounded-md border">
+                          <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Add Follow-up Task</h4>
+                          <div className="space-y-3">
+                            <input
+                              type="text"
+                              value={followUpText}
+                              onChange={(e) => setFollowUpText(e.target.value)}
+                              placeholder="Follow-up task title"
+                              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:text-white"
+                            />
+                            <div className="flex items-center space-x-3">
+                              <label className="text-sm text-gray-600 dark:text-gray-400">Activate after:</label>
+                              <input
+                                type="number"
+                                value={followUpDays}
+                                onChange={(e) => setFollowUpDays(parseInt(e.target.value) || 0)}
+                                min="0"
+                                className="w-20 px-2 py-1 text-sm border border-gray-300 dark:border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:text-white"
+                              />
+                              <span className="text-sm text-gray-600 dark:text-gray-400">days</span>
+                            </div>
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={() => addFollowUpTask(task.id)}
+                                className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-sm transition-colors"
+                              >
+                                Add Follow-up
+                              </button>
+                              <button
+                                onClick={() => { setShowFollowUpForm(null); setFollowUpText(''); setFollowUpDays(0); }}
+                                className="px-3 py-1 text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-md text-sm transition-colors"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {/* Empty state */}
+                {getTasksToShow().length === 0 && (
+                  <div className="text-center py-16 px-6">
+                    <div className="text-gray-400 dark:text-slate-500 mb-6">
+                      {currentView === 'today' && (
+                        <div className="space-y-3">
+                          <Sun className="w-12 h-12 mx-auto text-orange-300" />
+                          <p className="text-lg font-medium">What do you need to get done today?</p>
+                          <p className="text-sm">Add a task to get started</p>
+                        </div>
+                      )}
+                      {currentView === 'inbox' && (
+                        <div className="space-y-3">
+                          <Inbox className="w-12 h-12 mx-auto text-blue-300" />
+                          <p className="text-lg font-medium">All clear!</p>
+                          <p className="text-sm">All your tasks are organized</p>
+                        </div>
+                      )}
+                      {currentView === 'upcoming' && (
+                        <div className="space-y-3">
+                          <ArrowRight className="w-12 h-12 mx-auto text-green-300" />
+                          <p className="text-lg font-medium">No upcoming tasks</p>
+                          <p className="text-sm">Enjoy your free time!</p>
+                        </div>
+                      )}
+                      {currentView === 'waiting' && (
+                        <div className="space-y-3">
+                          <Clock className="w-12 h-12 mx-auto text-orange-300" />
+                          <p className="text-lg font-medium">Nothing waiting</p>
+                          <p className="text-sm">No tasks waiting for external events</p>
+                        </div>
+                      )}
+                      {currentView === 'scheduled' && (
+                        <div className="space-y-3">
+                          <CalendarDays className="w-12 h-12 mx-auto text-purple-300" />
+                          <p className="text-lg font-medium">No scheduled tasks</p>
+                          <p className="text-sm">No follow-up tasks scheduled for activation</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

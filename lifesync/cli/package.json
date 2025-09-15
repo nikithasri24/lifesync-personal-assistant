@@ -1,0 +1,38 @@
+{
+  "name": "lifesync-cli",
+  "version": "1.0.0",
+  "description": "Command-line interface for LifeSync personal productivity suite",
+  "main": "dist/index.js",
+  "bin": {
+    "lifesync": "dist/index.js",
+    "ls": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js",
+    "prepublish": "npm run build"
+  },
+  "keywords": ["productivity", "cli", "grocery", "meal-planning", "shopping"],
+  "author": "LifeSync",
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^11.1.0",
+    "inquirer": "^9.2.12",
+    "chalk": "^5.3.0",
+    "ora": "^7.0.1",
+    "node-fetch": "^3.3.2",
+    "date-fns": "^2.30.0",
+    "fs-extra": "^11.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.8.0",
+    "@types/inquirer": "^9.0.6",
+    "@types/fs-extra": "^11.0.3",
+    "typescript": "^5.2.2",
+    "tsx": "^3.14.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

@@ -1,0 +1,612 @@
+[
+  {
+    "id": "acadia",
+    "name": "Acadia National Park",
+    "state": "Maine",
+    "coordinates": [44.35, -68.21],
+    "established": "1916",
+    "description": "Acadia National Park protects the natural beauty of the highest rocky headlands along the Atlantic coastline of the United States.",
+    "visitors": "3.4 million annually",
+    "features": ["Rocky coastline", "Mountains", "Forests", "Lakes"]
+  },
+  {
+    "id": "arches",
+    "name": "Arches National Park",
+    "state": "Utah",
+    "coordinates": [38.68, -109.57],
+    "established": "1971",
+    "description": "Famous for preserving over 2,000 natural sandstone arches, including the world-famous Delicate Arch.",
+    "visitors": "1.7 million annually",
+    "features": ["Natural arches", "Red rock formations", "Desert landscapes"]
+  },
+  {
+    "id": "badlands",
+    "name": "Badlands National Park",
+    "state": "South Dakota",
+    "coordinates": [43.75, -102.50],
+    "established": "1978",
+    "description": "Badlands National Park protects 244,000 acres of sharply eroded buttes, pinnacles and spires.",
+    "visitors": "1.0 million annually",
+    "features": ["Layered rock formations", "Fossil beds", "Prairie"]
+  },
+  {
+    "id": "big-bend",
+    "name": "Big Bend National Park",
+    "state": "Texas",
+    "coordinates": [29.25, -103.25],
+    "established": "1944",
+    "description": "Big Bend National Park encompasses the Rio Grande's big bend and includes desert, mountains and river environments.",
+    "visitors": "500,000 annually",
+    "features": ["Desert", "Mountains", "Rio Grande", "Hot springs"]
+  },
+  {
+    "id": "biscayne",
+    "name": "Biscayne National Park",
+    "state": "Florida",
+    "coordinates": [25.39, -80.21],
+    "established": "1980",
+    "description": "Biscayne National Park encompasses coral reefs, islands and shoreline mangrove forest in the northern Florida Keys.",
+    "visitors": "700,000 annually",
+    "features": ["Coral reefs", "Mangroves", "Islands", "Marine life"]
+  },
+  {
+    "id": "black-canyon",
+    "name": "Black Canyon of the Gunnison National Park",
+    "state": "Colorado",
+    "coordinates": [38.57, -107.72],
+    "established": "1999",
+    "description": "Black Canyon of the Gunnison National Park preserves a spectacular gorge with dark, steep walls.",
+    "visitors": "300,000 annually",
+    "features": ["Deep canyon", "Dark rock walls", "Gunnison River"]
+  },
+  {
+    "id": "bryce-canyon",
+    "name": "Bryce Canyon National Park",
+    "state": "Utah",
+    "coordinates": [37.57, -112.18],
+    "established": "1928",
+    "description": "Famous for its crimson-colored hoodoos, which are spire-shaped rock formations.",
+    "visitors": "2.6 million annually",
+    "features": ["Hoodoos", "Red rock formations", "Amphitheaters"]
+  },
+  {
+    "id": "canyonlands",
+    "name": "Canyonlands National Park",
+    "state": "Utah",
+    "coordinates": [38.20, -109.93],
+    "established": "1964",
+    "description": "Canyonlands National Park preserves a colorful landscape eroded into countless canyons, mesas and buttes.",
+    "visitors": "800,000 annually",
+    "features": ["Canyons", "Mesas", "Colorado River", "Green River"]
+  },
+  {
+    "id": "capitol-reef",
+    "name": "Capitol Reef National Park",
+    "state": "Utah",
+    "coordinates": [38.20, -111.17],
+    "established": "1971",
+    "description": "Capitol Reef National Park is centered on the Waterpocket Fold, a 100-mile long wrinkle in the earth.",
+    "visitors": "1.4 million annually",
+    "features": ["Waterpocket Fold", "Red rock cliffs", "Historic orchards"]
+  },
+  {
+    "id": "carlsbad-caverns",
+    "name": "Carlsbad Caverns National Park",
+    "state": "New Mexico",
+    "coordinates": [32.17, -104.44],
+    "established": "1930",
+    "description": "Carlsbad Caverns National Park features more than 119 known caves formed in a fossil reef.",
+    "visitors": "500,000 annually",
+    "features": ["Limestone caves", "Stalactites", "Stalagmites", "Bat colony"]
+  },
+  {
+    "id": "channel-islands",
+    "name": "Channel Islands National Park",
+    "state": "California",
+    "coordinates": [34.01, -119.42],
+    "established": "1980",
+    "description": "Channel Islands National Park encompasses five remarkable islands and their ocean environment.",
+    "visitors": "400,000 annually",
+    "features": ["Islands", "Marine sanctuary", "Endemic species"]
+  },
+  {
+    "id": "congaree",
+    "name": "Congaree National Park",
+    "state": "South Carolina",
+    "coordinates": [33.78, -80.78],
+    "established": "2003",
+    "description": "Congaree National Park preserves the largest intact expanse of old growth bottomland hardwood forest.",
+    "visitors": "150,000 annually",
+    "features": ["Old growth forest", "Swampland", "Tallest trees in eastern US"]
+  },
+  {
+    "id": "crater-lake",
+    "name": "Crater Lake National Park",
+    "state": "Oregon",
+    "coordinates": [42.94, -122.11],
+    "established": "1902",
+    "description": "Crater Lake National Park is famous for its deep blue lake formed in a volcanic caldera.",
+    "visitors": "700,000 annually",
+    "features": ["Volcanic caldera", "Deep blue lake", "Wizard Island"]
+  },
+  {
+    "id": "cuyahoga-valley",
+    "name": "Cuyahoga Valley National Park",
+    "state": "Ohio",
+    "coordinates": [41.24, -81.55],
+    "established": "2000",
+    "description": "Cuyahoga Valley National Park preserves and reclaims the rural landscape along the Cuyahoga River.",
+    "visitors": "2.2 million annually",
+    "features": ["River valley", "Waterfalls", "Historic canal", "Forests"]
+  },
+  {
+    "id": "death-valley",
+    "name": "Death Valley National Park",
+    "state": "California",
+    "coordinates": [36.24, -116.82],
+    "established": "1994",
+    "description": "Death Valley National Park is the hottest, driest and lowest national park in the United States.",
+    "visitors": "1.7 million annually",
+    "features": ["Desert", "Salt flats", "Sand dunes", "Badwater Basin"]
+  },
+  {
+    "id": "denali",
+    "name": "Denali National Park",
+    "state": "Alaska",
+    "coordinates": [63.33, -150.50],
+    "established": "1917",
+    "description": "Denali National Park is home to North America's tallest mountain, Denali (formerly Mount McKinley).",
+    "visitors": "600,000 annually",
+    "features": ["Mount Denali", "Wilderness", "Wildlife", "Tundra"]
+  },
+  {
+    "id": "dry-tortugas",
+    "name": "Dry Tortugas National Park",
+    "state": "Florida",
+    "coordinates": [24.63, -82.87],
+    "established": "1992",
+    "description": "Dry Tortugas National Park is known for bird watching, snorkeling, and Fort Jefferson.",
+    "visitors": "80,000 annually",
+    "features": ["Historic fort", "Coral reefs", "Bird sanctuary", "Remote islands"]
+  },
+  {
+    "id": "everglades",
+    "name": "Everglades National Park",
+    "state": "Florida",
+    "coordinates": [25.32, -80.93],
+    "established": "1947",
+    "description": "Everglades National Park protects an unparalleled landscape that provides important habitat for numerous rare species.",
+    "visitors": "1.1 million annually",
+    "features": ["Wetlands", "Alligators", "Manatees", "Bird watching"]
+  },
+  {
+    "id": "gates-of-the-arctic",
+    "name": "Gates of the Arctic National Park",
+    "state": "Alaska",
+    "coordinates": [67.78, -153.30],
+    "established": "1980",
+    "description": "Gates of the Arctic National Park is the northernmost national park in the United States.",
+    "visitors": "10,000 annually",
+    "features": ["Arctic wilderness", "Brooks Range", "No roads", "Remote"]
+  },
+  {
+    "id": "glacier",
+    "name": "Glacier National Park",
+    "state": "Montana",
+    "coordinates": [48.80, -113.79],
+    "established": "1910",
+    "description": "Glacier National Park showcases over 1 million acres of pristine forest, alpine meadows, rugged mountains and pristine lakes.",
+    "visitors": "3.0 million annually",
+    "features": ["Glacial lakes", "Mountain peaks", "Going-to-the-Sun Road", "Wildlife"]
+  },
+  {
+    "id": "glacier-bay",
+    "name": "Glacier Bay National Park",
+    "state": "Alaska",
+    "coordinates": [58.5, -137.0],
+    "established": "1980",
+    "description": "Glacier Bay National Park preserves a spectacular coastline of tidewater glaciers, snow-capped mountain ranges, and temperate rainforest.",
+    "visitors": "600,000 annually",
+    "features": ["Tidewater glaciers", "Fjords", "Marine wildlife", "Humpback whales"]
+  },
+  {
+    "id": "grand-canyon",
+    "name": "Grand Canyon National Park",
+    "state": "Arizona",
+    "coordinates": [36.18, -112.36],
+    "established": "1919",
+    "description": "Grand Canyon National Park is a World Heritage Site known for its layered bands of colorful rock revealing millions of years of geological history.",
+    "visitors": "5.9 million annually",
+    "features": ["Deep canyon", "Colorado River", "Layered rock formations", "Desert view"]
+  },
+  {
+    "id": "grand-teton",
+    "name": "Grand Teton National Park",
+    "state": "Wyoming",
+    "coordinates": [43.79, -110.80],
+    "established": "1929",
+    "description": "Grand Teton National Park includes the major peaks of the 40-mile-long Teton Range as well as most of the northern sections of the valley known as Jackson Hole.",
+    "visitors": "3.3 million annually",
+    "features": ["Teton Range", "Jackson Lake", "Alpine lakes", "Wildlife"]
+  },
+  {
+    "id": "great-basin",
+    "name": "Great Basin National Park",
+    "state": "Nevada",
+    "coordinates": [39.01, -114.30],
+    "established": "1986",
+    "description": "Great Basin National Park is located in Nevada's Snake Range and includes Wheeler Peak, the second highest mountain in Nevada.",
+    "visitors": "130,000 annually",
+    "features": ["Desert mountain range", "Lehman Caves", "Ancient bristlecone pines"]
+  },
+  {
+    "id": "great-sand-dunes",
+    "name": "Great Sand Dunes National Park",
+    "state": "Colorado",
+    "coordinates": [37.73, -105.51],
+    "established": "2004",
+    "description": "Great Sand Dunes National Park preserves North America's tallest sand dunes.",
+    "visitors": "500,000 annually",
+    "features": ["Tall sand dunes", "Medano Creek", "Alpine lakes", "Sangre de Cristo Mountains"]
+  },
+  {
+    "id": "great-smoky-mountains",
+    "name": "Great Smoky Mountains National Park",
+    "state": "Tennessee",
+    "coordinates": [35.68, -83.53],
+    "established": "1934",
+    "description": "Great Smoky Mountains National Park straddles the ridgeline of the Great Smoky Mountains, part of the Blue Ridge Mountains.",
+    "visitors": "12.1 million annually",
+    "features": ["Misty mountains", "Old growth forest", "Waterfalls", "Historic cabins"]
+  },
+  {
+    "id": "guadalupe-mountains",
+    "name": "Guadalupe Mountains National Park",
+    "state": "Texas",
+    "coordinates": [31.92, -104.87],
+    "established": "1972",
+    "description": "Guadalupe Mountains National Park contains Guadalupe Peak, the highest point in Texas.",
+    "visitors": "200,000 annually",
+    "features": ["Desert mountains", "Fossil reef", "Fall colors", "Desert wilderness"]
+  },
+  {
+    "id": "haleakala",
+    "name": "Haleakalā National Park",
+    "state": "Hawaii",
+    "coordinates": [20.72, -156.17],
+    "established": "1961",
+    "description": "Haleakalā National Park protects unique and fragile ecosystems and preserves the culture and history of Native Hawaiians.",
+    "visitors": "1.3 million annually",
+    "features": ["Volcanic crater", "Sunrise viewing", "Rare silversword plants", "Pools of 'Ohe'o"]
+  },
+  {
+    "id": "hawaii-volcanoes",
+    "name": "Hawaiʻi Volcanoes National Park",
+    "state": "Hawaii",
+    "coordinates": [19.38, -155.20],
+    "established": "1916",
+    "description": "Hawaiʻi Volcanoes National Park encompasses two active volcanoes: Kīlauea, one of the world's most active volcanic masses, and Mauna Loa.",
+    "visitors": "1.7 million annually",
+    "features": ["Active volcanoes", "Lava flows", "Volcanic craters", "Unique ecosystems"]
+  },
+  {
+    "id": "hot-springs",
+    "name": "Hot Springs National Park",
+    "state": "Arkansas",
+    "coordinates": [34.51, -93.04],
+    "established": "1921",
+    "description": "Hot Springs National Park is centered on natural hot springs that flow out of the Ouachita Mountains.",
+    "visitors": "1.5 million annually",
+    "features": ["Natural hot springs", "Historic bathhouses", "Urban national park"]
+  },
+  {
+    "id": "indiana-dunes",
+    "name": "Indiana Dunes National Park",
+    "state": "Indiana",
+    "coordinates": [41.65, -87.09],
+    "established": "2019",
+    "description": "Indiana Dunes National Park consists of 15 miles of the southern shore of Lake Michigan.",
+    "visitors": "2.0 million annually",
+    "features": ["Lake Michigan shoreline", "Sand dunes", "Prairie", "Wetlands"]
+  },
+  {
+    "id": "isle-royale",
+    "name": "Isle Royale National Park",
+    "state": "Michigan",
+    "coordinates": [48.10, -88.55],
+    "established": "1940",
+    "description": "Isle Royale National Park consists of a roadless island archipelago in Lake Superior.",
+    "visitors": "25,000 annually",
+    "features": ["Remote island", "Lake Superior", "Wilderness", "Moose and wolves"]
+  },
+  {
+    "id": "joshua-tree",
+    "name": "Joshua Tree National Park",
+    "state": "California",
+    "coordinates": [33.87, -115.90],
+    "established": "1994",
+    "description": "Joshua Tree National Park is characterized by rugged rock formations and stark desert landscapes.",
+    "visitors": "3.0 million annually",
+    "features": ["Joshua trees", "Rock formations", "Desert landscapes", "Dark skies"]
+  },
+  {
+    "id": "katmai",
+    "name": "Katmai National Park",
+    "state": "Alaska",
+    "coordinates": [58.50, -155.00],
+    "established": "1980",
+    "description": "Katmai National Park is famous for brown bears fishing for salmon at Brooks Falls.",
+    "visitors": "84,000 annually",
+    "features": ["Brown bears", "Salmon runs", "Valley of Ten Thousand Smokes", "Volcanic landscape"]
+  },
+  {
+    "id": "kenai-fjords",
+    "name": "Kenai Fjords National Park",
+    "state": "Alaska",
+    "coordinates": [59.92, -149.65],
+    "established": "1980",
+    "description": "Kenai Fjords National Park lies at the edge of the Kenai Peninsula close to the town of Seward.",
+    "visitors": "350,000 annually",
+    "features": ["Glacial fjords", "Harding Icefield", "Marine wildlife", "Tidewater glaciers"]
+  },
+  {
+    "id": "kings-canyon",
+    "name": "Kings Canyon National Park",
+    "state": "California",
+    "coordinates": [36.80, -118.55],
+    "established": "1940",
+    "description": "Kings Canyon National Park features some of the largest trees on Earth in its groves of giant sequoias.",
+    "visitors": "700,000 annually",
+    "features": ["Giant sequoias", "Deep canyons", "High Sierra wilderness", "Cedar Grove"]
+  },
+  {
+    "id": "kobuk-valley",
+    "name": "Kobuk Valley National Park",
+    "state": "Alaska",
+    "coordinates": [67.35, -159.28],
+    "established": "1980",
+    "description": "Kobuk Valley National Park preserves the 25-square-mile Great Kobuk Sand Dunes and surrounding area.",
+    "visitors": "15,000 annually",
+    "features": ["Sand dunes", "Arctic wilderness", "Caribou migration", "Ancient hunting grounds"]
+  },
+  {
+    "id": "lake-clark",
+    "name": "Lake Clark National Park",
+    "state": "Alaska",
+    "coordinates": [60.97, -153.42],
+    "established": "1980",
+    "description": "Lake Clark National Park includes many lakes and rivers critical to fish spawning.",
+    "visitors": "17,000 annually",
+    "features": ["Pristine lakes", "Salmon spawning", "Brown bears", "Volcanic peaks"]
+  },
+  {
+    "id": "lassen-volcanic",
+    "name": "Lassen Volcanic National Park",
+    "state": "California",
+    "coordinates": [40.49, -121.51],
+    "established": "1916",
+    "description": "Lassen Volcanic National Park is home to steaming fumaroles, meadows freckled with wildflowers, and clear mountain lakes.",
+    "visitors": "500,000 annually",
+    "features": ["Volcanic features", "Hydrothermal areas", "Mountain lakes", "Wildflower meadows"]
+  },
+  {
+    "id": "mammoth-cave",
+    "name": "Mammoth Cave National Park",
+    "state": "Kentucky",
+    "coordinates": [37.18, -86.10],
+    "established": "1941",
+    "description": "Mammoth Cave National Park preserves the cave system and a part of the Green River valley.",
+    "visitors": "500,000 annually",
+    "features": ["World's longest cave system", "Underground rivers", "Historic cave tours"]
+  },
+  {
+    "id": "mesa-verde",
+    "name": "Mesa Verde National Park",
+    "state": "Colorado",
+    "coordinates": [37.18, -108.49],
+    "established": "1906",
+    "description": "Mesa Verde National Park preserves a spectacular collection of archaeological sites of the Ancestral Puebloan culture.",
+    "visitors": "550,000 annually",
+    "features": ["Cliff dwellings", "Archaeological sites", "Ancient pueblos", "Mesa landscapes"]
+  },
+  {
+    "id": "mount-rainier",
+    "name": "Mount Rainier National Park",
+    "state": "Washington",
+    "coordinates": [46.75, -121.75],
+    "established": "1899",
+    "description": "Mount Rainier National Park encompasses Mount Rainier, a 14,411-foot stratovolcano.",
+    "visitors": "1.7 million annually",
+    "features": ["Mount Rainier", "Glaciers", "Alpine meadows", "Old growth forests"]
+  },
+  {
+    "id": "new-river-gorge",
+    "name": "New River Gorge National Park",
+    "state": "West Virginia",
+    "coordinates": [37.78, -81.07],
+    "established": "2020",
+    "description": "New River Gorge National Park preserves 53 miles of the New River Gorge, one of the oldest rivers on the continent.",
+    "visitors": "1.4 million annually",
+    "features": ["River gorge", "Rock climbing", "Whitewater rafting", "Appalachian forest"]
+  },
+  {
+    "id": "north-cascades",
+    "name": "North Cascades National Park",
+    "state": "Washington",
+    "coordinates": [48.83, -121.21],
+    "established": "1968",
+    "description": "North Cascades National Park consists of a northern and southern section, bisected by the Skagit River.",
+    "visitors": "40,000 annually",
+    "features": ["Rugged mountains", "Glaciers", "Alpine lakes", "Old growth forests"]
+  },
+  {
+    "id": "olympic",
+    "name": "Olympic National Park",
+    "state": "Washington",
+    "coordinates": [47.97, -123.50],
+    "established": "1938",
+    "description": "Olympic National Park encompasses several distinct ecosystems, from glacier-capped mountains to old-growth temperate rain forests.",
+    "visitors": "3.4 million annually",
+    "features": ["Temperate rainforest", "Rugged coastline", "Mountain glaciers", "Hot springs"]
+  },
+  {
+    "id": "petrified-forest",
+    "name": "Petrified Forest National Park",
+    "state": "Arizona",
+    "coordinates": [34.91, -109.78],
+    "established": "1962",
+    "description": "Petrified Forest National Park is known for its fossils, especially fallen trees that lived in the Late Triassic Epoch.",
+    "visitors": "650,000 annually",
+    "features": ["Petrified wood", "Painted Desert", "Fossils", "Ancient petroglyphs"]
+  },
+  {
+    "id": "pinnacles",
+    "name": "Pinnacles National Park",
+    "state": "California",
+    "coordinates": [36.48, -121.16],
+    "established": "2013",
+    "description": "Pinnacles National Park protects a mountainous area located east of the Salinas Valley.",
+    "visitors": "350,000 annually",
+    "features": ["Rock formations", "Condor watching", "Cave exploration", "Spring wildflowers"]
+  },
+  {
+    "id": "redwood",
+    "name": "Redwood National and State Parks",
+    "state": "California",
+    "coordinates": [41.30, -124.00],
+    "established": "1968",
+    "description": "Redwood National and State Parks protect 45% of all remaining coast redwood old-growth forests.",
+    "visitors": "500,000 annually",
+    "features": ["Coast redwoods", "Tallest trees on Earth", "Pacific coastline", "Old growth forests"]
+  },
+  {
+    "id": "rocky-mountain",
+    "name": "Rocky Mountain National Park",
+    "state": "Colorado",
+    "coordinates": [40.40, -105.58],
+    "established": "1915",
+    "description": "Rocky Mountain National Park encompasses the heart of the northern Front Range of the Rocky Mountains.",
+    "visitors": "4.7 million annually",
+    "features": ["High alpine environment", "Trail Ridge Road", "Wildlife viewing", "Mountain peaks"]
+  },
+  {
+    "id": "saguaro",
+    "name": "Saguaro National Park",
+    "state": "Arizona",
+    "coordinates": [32.25, -110.50],
+    "established": "1994",
+    "description": "Saguaro National Park protects part of the Sonoran Desert, including the saguaro cactus.",
+    "visitors": "1.0 million annually",
+    "features": ["Saguaro cacti", "Sonoran Desert", "Desert wildlife", "Desert blooms"]
+  },
+  {
+    "id": "sequoia",
+    "name": "Sequoia National Park",
+    "state": "California",
+    "coordinates": [36.43, -118.68],
+    "established": "1890",
+    "description": "Sequoia National Park is home to giant sequoia trees, including the General Sherman Tree.",
+    "visitors": "1.2 million annually",
+    "features": ["Giant sequoias", "General Sherman Tree", "High Sierra wilderness", "Moro Rock"]
+  },
+  {
+    "id": "shenandoah",
+    "name": "Shenandoah National Park",
+    "state": "Virginia",
+    "coordinates": [38.53, -78.35],
+    "established": "1935",
+    "description": "Shenandoah National Park encompasses part of the Blue Ridge Mountains in Virginia.",
+    "visitors": "1.4 million annually",
+    "features": ["Blue Ridge Mountains", "Skyline Drive", "Waterfalls", "Fall foliage"]
+  },
+  {
+    "id": "theodore-roosevelt",
+    "name": "Theodore Roosevelt National Park",
+    "state": "North Dakota",
+    "coordinates": [47.17, -103.50],
+    "established": "1978",
+    "description": "Theodore Roosevelt National Park consists of three geographically separated areas of badlands.",
+    "visitors": "750,000 annually",
+    "features": ["Badlands", "Prairie dog towns", "Wild horses", "Painted Canyon"]
+  },
+  {
+    "id": "virgin-islands",
+    "name": "Virgin Islands National Park",
+    "state": "U.S. Virgin Islands",
+    "coordinates": [18.33, -64.73],
+    "established": "1956",
+    "description": "Virgin Islands National Park preserves about 60% of the land area of Saint John island.",
+    "visitors": "133,000 annually",
+    "features": ["Tropical beaches", "Coral reefs", "Hiking trails", "Historic ruins"]
+  },
+  {
+    "id": "voyageurs",
+    "name": "Voyageurs National Park",
+    "state": "Minnesota",
+    "coordinates": [48.50, -92.88],
+    "established": "1975",
+    "description": "Voyageurs National Park lies adjacent to the Canada–United States border and consists of four large lakes.",
+    "visitors": "240,000 annually",
+    "features": ["Boundary waters", "Canoeing", "Northern lights", "Historic fur trading routes"]
+  },
+  {
+    "id": "white-sands",
+    "name": "White Sands National Park",
+    "state": "New Mexico",
+    "coordinates": [32.78, -106.17],
+    "established": "2019",
+    "description": "White Sands National Park preserves a major portion of the world's largest gypsum dunefield.",
+    "visitors": "650,000 annually",
+    "features": ["White gypsum dunes", "Desert wildlife", "Unique ecosystem", "Sand sledding"]
+  },
+  {
+    "id": "wind-cave",
+    "name": "Wind Cave National Park",
+    "state": "South Dakota",
+    "coordinates": [43.57, -103.48],
+    "established": "1903",
+    "description": "Wind Cave National Park is notable for its cave, one of the longest and most complex caves in the world.",
+    "visitors": "650,000 annually",
+    "features": ["Extensive cave system", "Mixed-grass prairie", "Bison herds", "Prairie dog towns"]
+  },
+  {
+    "id": "wrangell-st-elias",
+    "name": "Wrangell-St. Elias National Park",
+    "state": "Alaska",
+    "coordinates": [61.00, -142.00],
+    "established": "1980",
+    "description": "Wrangell-St. Elias National Park is the largest national park in the United States.",
+    "visitors": "80,000 annually",
+    "features": ["Massive glaciers", "Mountain ranges", "Copper mining history", "Wilderness"]
+  },
+  {
+    "id": "yellowstone",
+    "name": "Yellowstone National Park",
+    "state": "Wyoming",
+    "coordinates": [44.60, -110.50],
+    "established": "1872",
+    "description": "Yellowstone National Park was the first national park in the world and is known for its geothermal features.",
+    "visitors": "4.9 million annually",
+    "features": ["Geysers", "Hot springs", "Wildlife", "Grand Prismatic Spring"]
+  },
+  {
+    "id": "yosemite",
+    "name": "Yosemite National Park",
+    "state": "California",
+    "coordinates": [37.83, -119.50],
+    "established": "1890",
+    "description": "Yosemite National Park is internationally recognized for its granite cliffs, waterfalls, clear streams, giant sequoia groves, and biological diversity.",
+    "visitors": "4.4 million annually",
+    "features": ["Granite cliffs", "Waterfalls", "Giant sequoias", "Yosemite Valley"]
+  },
+  {
+    "id": "zion",
+    "name": "Zion National Park",
+    "state": "Utah",
+    "coordinates": [37.30, -113.05],
+    "established": "1919",
+    "description": "Zion National Park is located in southwestern Utah near the town of Springdale.",
+    "visitors": "5.0 million annually",
+    "features": ["Red cliffs", "Narrow slot canyons", "Virgin River", "Angels Landing"]
+  }
+]

@@ -1,0 +1,49 @@
+{
+  "name": "ELEVATE - Personal Suite",
+  "short_name": "ELEVATE",
+  "description": "Personal productivity and health tracking suite with Apple Health integration",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#6366f1",
+  "orientation": "portrait",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icon-512.png", 
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "categories": ["health", "productivity", "lifestyle"],
+  "shortcuts": [
+    {
+      "name": "Log Period",
+      "short_name": "Period",
+      "description": "Quick access to cycle tracking",
+      "url": "/?view=period",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Sync Health",
+      "short_name": "Sync",
+      "description": "Sync with Apple Health",
+      "url": "/?action=sync-health",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "prefer_related_applications": false,
+  "related_applications": [
+    {
+      "platform": "ios",
+      "id": "com.apple.Health"
+    }
+  ]
+}

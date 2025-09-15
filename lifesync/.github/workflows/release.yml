@@ -1,0 +1,153 @@
+name: Release Management
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'Release type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+        - patch
+        - minor
+        - major
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, 'skip ci')"
+    
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Configure Git
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+    - name: Install semantic-release
+      run: npm install -g semantic-release @semantic-release/changelog @semantic-release/git @semantic-release/github
+
+    - name: Generate changelog and create release
+      run: npx semantic-release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Get current version
+      id: version
+      run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+
+    - name: Create version file
+      run: |
+        echo "export const VERSION = '${{ steps.version.outputs.version }}';" > src/version.ts
+        echo "export const BUILD_DATE = '$(date -u +"%Y-%m-%dT%H:%M:%SZ")';" >> src/version.ts
+        echo "export const COMMIT_SHA = '${{ github.sha }}';" >> src/version.ts
+
+    - name: Commit version file
+      run: |
+        git add src/version.ts
+        git commit -m "chore: update version file to ${{ steps.version.outputs.version }} [skip ci]" || exit 0
+        git push origin main
+
+  # Manual version bump workflow
+  manual-version:
+    name: Manual Version Bump
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    
+    permissions:
+      contents: write
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Configure Git
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+    - name: Bump version
+      run: npm version ${{ github.event.inputs.release_type }} --no-git-tag-version
+
+    - name: Get new version
+      id: version
+      run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+
+    - name: Create version file
+      run: |
+        echo "export const VERSION = '${{ steps.version.outputs.version }}';" > src/version.ts
+        echo "export const BUILD_DATE = '$(date -u +"%Y-%m-%dT%H:%M:%SZ")';" >> src/version.ts
+        echo "export const COMMIT_SHA = '${{ github.sha }}';" >> src/version.ts
+
+    - name: Generate changelog
+      run: |
+        echo "# Changelog" > CHANGELOG.md
+        echo "" >> CHANGELOG.md
+        echo "## [${{ steps.version.outputs.version }}] - $(date +%Y-%m-%d)" >> CHANGELOG.md
+        echo "" >> CHANGELOG.md
+        echo "### Changed" >> CHANGELOG.md
+        echo "- Manual version bump to ${{ steps.version.outputs.version }}" >> CHANGELOG.md
+        echo "" >> CHANGELOG.md
+
+    - name: Commit changes
+      run: |
+        git add package.json src/version.ts CHANGELOG.md
+        git commit -m "chore: bump version to ${{ steps.version.outputs.version }}"
+        git tag "v${{ steps.version.outputs.version }}"
+        git push origin main --tags
+
+    - name: Create GitHub Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ steps.version.outputs.version }}
+        release_name: Release v${{ steps.version.outputs.version }}
+        body: |
+          ## Changes in v${{ steps.version.outputs.version }}
+          
+          Manual version bump initiated by @${{ github.actor }}
+          
+          ### Build Information
+          - Build Date: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          - Commit SHA: ${{ github.sha }}
+        draft: false
+        prerelease: false

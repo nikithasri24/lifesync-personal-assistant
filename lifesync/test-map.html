@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>National Parks Map Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🗺️ National Parks Map Integration Test</h1>
+        
+        <div class="status info">
+            <strong>Testing Integration Status:</strong>
+        </div>
+
+        <h3>✅ Files Created:</h3>
+        <ul>
+            <li>📄 <code>src/components/NationalParksMap.tsx</code> - Main interactive map component</li>
+            <li>📊 <code>src/data/nationalParks.json</code> - Complete park dataset (63 parks)</li>
+            <li>🎨 <code>src/styles/leaflet-custom.css</code> - Custom map styling</li>
+            <li>📱 <code>src/hooks/useResponsiveMap.ts</code> - Responsive behavior</li>
+            <li>📄 <code>src/pages/NationalParks.tsx</code> - Standalone page</li>
+            <li>🔧 <code>src/types/nationalParks.ts</code> - TypeScript definitions</li>
+        </ul>
+
+        <h3>🔧 Integration Steps Completed:</h3>
+        <ul>
+            <li>✅ Added NationalParksMap import to Travel.tsx</li>
+            <li>✅ Updated view state to include 'parksMap' option</li>
+            <li>✅ Added renderInteractiveParksMap() function</li>
+            <li>✅ Added "Map" tab to navigation</li>
+            <li>✅ Updated sliding indicator calculations</li>
+            <li>✅ Added Leaflet CSS imports</li>
+        </ul>
+
+        <h3>📍 How to Access:</h3>
+        <ol>
+            <li>Open your application at <strong>http://localhost:5180</strong></li>
+            <li>Navigate to the <strong>Travel Hub</strong> section</li>
+            <li>Look for the navigation tabs: Trips | History | Cards | Parks | <strong>Map</strong> | World | Analytics | Calendar</li>
+            <li>Click the <strong>"Map"</strong> tab</li>
+        </ol>
+
+        <div class="status success">
+            <strong>Expected Result:</strong> You should see a full interactive map with tree icons marking all 63 National Parks, search functionality, and a sidebar with park listings.
+        </div>
+
+        <h3>🐛 If You Don't See the Map:</h3>
+        <ol>
+            <li><strong>Check Console:</strong> Open browser DevTools (F12) and look for errors in the Console tab</li>
+            <li><strong>Verify Navigation:</strong> Make sure you're clicking the "Map" tab, not the "Parks" tab</li>
+            <li><strong>Check Network:</strong> Look for failed requests to load Leaflet resources</li>
+            <li><strong>Refresh Page:</strong> Try a hard refresh (Ctrl+F5 or Cmd+Shift+R)</li>
+        </ol>
+
+        <div class="status info">
+            <strong>Direct Access:</strong> You can also access the standalone map at <code>/national-parks</code> route if configured.
+        </div>
+    </div>
+</body>
+</html>
