@@ -229,34 +229,176 @@ app.get('/api/projects', async (req, res) => {
   }
 });
 
-app.get('/api/financial/transactions', (req, res) => {
-  console.log(`💰 Returning 0 transactions (simplified)`);
-  res.json([]);
+app.get('/api/financial/transactions', async (req, res) => {
+  try {
+    const cmd = `docker exec lifesync-postgres psql -U postgres -d lifesync -c "SELECT json_agg(row_to_json(t)) FROM (SELECT ft.*, fa.name as account_name, fc.name as category_name, fc.color as category_color FROM financial_transactions ft LEFT JOIN financial_accounts fa ON ft.account_id = fa.id LEFT JOIN financial_categories fc ON ft.category_id = fc.id ORDER BY ft.date DESC, ft.created_at DESC LIMIT 50) t"`;
+    exec(cmd, (error, stdout, stderr) => {
+      if (error) {
+        handleError(res, error, 'fetch financial transactions');
+        return;
+      }
+      
+      try {
+        const lines = stdout.trim().split('\n');
+        const jsonLine = lines.find(line => line.trim().startsWith('[') || line.trim().startsWith('null'));
+        const transactions = jsonLine && jsonLine.trim() !== 'null' ? JSON.parse(jsonLine.trim()) : [];
+        
+        console.log(`💰 Returning ${transactions.length} financial transactions`);
+        res.json(transactions || []);
+      } catch (parseError) {
+        console.error('Parse error:', parseError);
+        res.json([]);
+      }
+    });
+  } catch (err) {
+    handleError(res, err, 'fetch financial transactions');
+  }
 });
 
-app.get('/api/shopping/lists', (req, res) => {
-  console.log(`🛒 Returning 0 shopping lists (simplified)`);
-  res.json([]);
+app.get('/api/shopping/lists', async (req, res) => {
+  try {
+    const cmd = `docker exec lifesync-postgres psql -U postgres -d lifesync -c "SELECT json_agg(row_to_json(t)) FROM (SELECT sl.*, COUNT(si.id) as item_count, COUNT(CASE WHEN si.is_purchased THEN 1 END) as purchased_count FROM shopping_lists sl LEFT JOIN shopping_items si ON sl.id = si.shopping_list_id WHERE sl.status != 'archived' GROUP BY sl.id ORDER BY sl.created_at DESC) t"`;
+    exec(cmd, (error, stdout, stderr) => {
+      if (error) {
+        handleError(res, error, 'fetch shopping lists');
+        return;
+      }
+      
+      try {
+        const lines = stdout.trim().split('\n');
+        const jsonLine = lines.find(line => line.trim().startsWith('[') || line.trim().startsWith('null'));
+        const shoppingLists = jsonLine && jsonLine.trim() !== 'null' ? JSON.parse(jsonLine.trim()) : [];
+        
+        console.log(`🛒 Returning ${shoppingLists.length} shopping lists`);
+        res.json(shoppingLists || []);
+      } catch (parseError) {
+        console.error('Parse error:', parseError);
+        res.json([]);
+      }
+    });
+  } catch (err) {
+    handleError(res, err, 'fetch shopping lists');
+  }
 });
 
-app.get('/api/focus/sessions', (req, res) => {
-  console.log(`🧘 Returning 0 focus sessions (simplified)`);
-  res.json([]);
+app.get('/api/focus/sessions', async (req, res) => {
+  try {
+    const cmd = `docker exec lifesync-postgres psql -U postgres -d lifesync -c "SELECT json_agg(row_to_json(t)) FROM (SELECT fs.*, t.title as task_title FROM focus_sessions fs LEFT JOIN tasks t ON fs.task_id = t.id ORDER BY fs.start_time DESC LIMIT 50) t"`;
+    exec(cmd, (error, stdout, stderr) => {
+      if (error) {
+        handleError(res, error, 'fetch focus sessions');
+        return;
+      }
+      
+      try {
+        const lines = stdout.trim().split('\n');
+        const jsonLine = lines.find(line => line.trim().startsWith('[') || line.trim().startsWith('null'));
+        const focusSessions = jsonLine && jsonLine.trim() !== 'null' ? JSON.parse(jsonLine.trim()) : [];
+        
+        console.log(`🧘 Returning ${focusSessions.length} focus sessions`);
+        res.json(focusSessions || []);
+      } catch (parseError) {
+        console.error('Parse error:', parseError);
+        res.json([]);
+      }
+    });
+  } catch (err) {
+    handleError(res, err, 'fetch focus sessions');
+  }
 });
 
-app.get('/api/recipes', (req, res) => {
-  console.log(`🍳 Returning 0 recipes (simplified)`);
-  res.json([]);
+app.get('/api/recipes', async (req, res) => {
+  try {
+    const cmd = `docker exec lifesync-postgres psql -U postgres -d lifesync -c "SELECT json_agg(row_to_json(t)) FROM (SELECT r.*, COUNT(ri.id) as ingredient_count FROM recipes r LEFT JOIN recipe_ingredients ri ON r.id = ri.recipe_id GROUP BY r.id ORDER BY r.created_at DESC) t"`;
+    exec(cmd, (error, stdout, stderr) => {
+      if (error) {
+        handleError(res, error, 'fetch recipes');
+        return;
+      }
+      
+      try {
+        const lines = stdout.trim().split('\n');
+        const jsonLine = lines.find(line => line.trim().startsWith('[') || line.trim().startsWith('null'));
+        const recipes = jsonLine && jsonLine.trim() !== 'null' ? JSON.parse(jsonLine.trim()) : [];
+        
+        console.log(`🍳 Returning ${recipes.length} recipes`);
+        res.json(recipes || []);
+      } catch (parseError) {
+        console.error('Parse error:', parseError);
+        res.json([]);
+      }
+    });
+  } catch (err) {
+    handleError(res, err, 'fetch recipes');
+  }
 });
 
 // Analytics endpoint
-app.get('/api/analytics/dashboard', (req, res) => {
-  res.json({
-    tasks: { total: '0', completed: '0' },
-    habits: { total: '0' },
-    finance: { total: '0', total_expenses: '0' },
-    focus: { total: '0', total_focus_time: '0' }
-  });
+app.get('/api/analytics/dashboard', async (req, res) => {
+  try {
+    // Get analytics data from multiple tables
+    const analyticsCmd = `docker exec lifesync-postgres psql -U postgres -d lifesync -c "
+    SELECT json_build_object(
+      'tasks', json_build_object(
+        'total', (SELECT COUNT(*) FROM tasks WHERE deleted = false),
+        'completed', (SELECT COUNT(*) FROM tasks WHERE status = 'done' AND deleted = false)
+      ),
+      'habits', json_build_object(
+        'total', (SELECT COUNT(*) FROM habits WHERE is_active = true)
+      ),
+      'finance', json_build_object(
+        'total', (SELECT COUNT(*) FROM financial_transactions),
+        'total_expenses', COALESCE((SELECT SUM(ABS(amount)) FROM financial_transactions WHERE type = 'expense'), 0)
+      ),
+      'focus', json_build_object(
+        'total', (SELECT COUNT(*) FROM focus_sessions),
+        'total_focus_time', COALESCE((SELECT SUM(actual_duration) FROM focus_sessions WHERE actual_duration IS NOT NULL), 0)
+      )
+    ) as analytics;
+    "`;
+    
+    exec(analyticsCmd, (error, stdout, stderr) => {
+      if (error) {
+        console.error('Analytics query error:', error);
+        // Fallback to zeros if query fails
+        res.json({
+          tasks: { total: '0', completed: '0' },
+          habits: { total: '0' },
+          finance: { total: '0', total_expenses: '0' },
+          focus: { total: '0', total_focus_time: '0' }
+        });
+        return;
+      }
+      
+      try {
+        const lines = stdout.trim().split('\n');
+        const jsonLine = lines.find(line => line.trim().startsWith('{'));
+        if (jsonLine) {
+          const analytics = JSON.parse(jsonLine.trim());
+          console.log('📊 Returning real analytics data');
+          res.json(analytics);
+        } else {
+          throw new Error('No analytics data found');
+        }
+      } catch (parseError) {
+        console.error('Analytics parse error:', parseError);
+        res.json({
+          tasks: { total: '0', completed: '0' },
+          habits: { total: '0' },
+          finance: { total: '0', total_expenses: '0' },
+          focus: { total: '0', total_focus_time: '0' }
+        });
+      }
+    });
+  } catch (err) {
+    console.error('Analytics endpoint error:', err);
+    res.json({
+      tasks: { total: '0', completed: '0' },
+      habits: { total: '0' },
+      finance: { total: '0', total_expenses: '0' },
+      focus: { total: '0', total_focus_time: '0' }
+    });
+  }
 });
 
 // Start server
