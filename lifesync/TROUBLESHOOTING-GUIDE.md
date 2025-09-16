@@ -176,6 +176,34 @@ chmod +x health-check.sh
 4. **File precedence** - `.env.local` always wins over `.env`
 5. **Network interfaces** - `localhost` vs `0.0.0.0` vs external IP
 
+## Focus Module 404 Errors
+
+### Problem: Console shows 404 errors for Focus endpoints
+
+**Symptoms:**
+```
+GET http://10.247.209.223:3001/api/focus/profile 404 (Not Found)
+GET http://10.247.209.223:3001/api/focus/achievements 404 (Not Found)
+GET http://10.247.209.223:3001/api/focus/analytics 404 (Not Found)
+```
+
+**Root Cause:** Missing Focus API endpoints in backend server
+
+**Quick Check:**
+```bash
+# Test if Focus endpoints exist
+curl -s http://10.247.209.223:3001/api/focus/profile | grep -q "id" && echo "✅ Profile OK" || echo "❌ Profile missing"
+curl -s http://10.247.209.223:3001/api/focus/achievements | grep -q "achievements\|^\[" && echo "✅ Achievements OK" || echo "❌ Achievements missing"
+curl -s http://10.247.209.223:3001/api/focus/analytics | grep -q "totalSessions" && echo "✅ Analytics OK" || echo "❌ Analytics missing"
+```
+
+**Solution:** The Focus endpoints must be implemented in `start-with-db.js`:
+- `/api/focus/profile` - User profile (level, XP, streak)
+- `/api/focus/achievements` - Achievement system
+- `/api/focus/analytics` - Session analytics
+
+**Prevention:** Run regression tests that include Focus endpoint checks
+
 ## Emergency Reset Commands
 
 ```bash

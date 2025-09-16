@@ -1,0 +1,293 @@
+name: API Connectivity Check
+
+on:
+  push:
+    paths:
+      - '.env*'
+      - 'vite.config.ts'
+      - 'start-with-db.js'
+      - 'src/services/*.ts'
+  pull_request:
+    paths:
+      - '.env*'
+      - 'vite.config.ts'  
+      - 'start-with-db.js'
+      - 'src/services/*.ts'
+  schedule:
+    # Run every 2 hours to catch connectivity issues early
+    - cron: '0 */2 * * *'
+  workflow_dispatch:
+
+jobs:
+  connectivity-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_DB: lifesync
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: lifesync123
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Setup minimal database
+      run: |
+        PGPASSWORD=lifesync123 psql -h localhost -U postgres -d lifesync -c "
+        CREATE TABLE IF NOT EXISTS tasks (id UUID PRIMARY KEY, title TEXT, deleted BOOLEAN DEFAULT false);
+        CREATE TABLE IF NOT EXISTS habits (id UUID PRIMARY KEY, name TEXT, is_active BOOLEAN DEFAULT true);
+        CREATE TABLE IF NOT EXISTS projects (id UUID PRIMARY KEY, name TEXT);
+        CREATE TABLE IF NOT EXISTS focus_sessions (id UUID PRIMARY KEY, duration INTEGER, status VARCHAR(20));"
+
+    - name: Test environment configuration precedence
+      run: |
+        echo "🔧 Testing environment file precedence (common cause of connectivity issues)..."
+        
+        # Create test .env files to simulate the hierarchy issue
+        echo "VITE_API_BASE_URL=http://localhost:3001/api" > .env.test
+        echo "VITE_API_BASE_URL=http://wrong-host:3001/api" > .env.local.test
+        
+        # Simulate Vite's environment loading behavior
+        echo "Testing precedence: .env.local overrides .env"
+        
+        # Check if project has environment file issues
+        if [ -f ".env.local" ]; then
+          echo "⚠️  .env.local exists - checking for localhost overrides"
+          if grep -q "localhost" .env.local; then
+            echo "🚨 CRITICAL: .env.local contains localhost - will override .env!"
+            echo "This is the exact issue that caused the original 404 errors."
+          else
+            echo "✅ .env.local does not contain localhost"
+          fi
+        else
+          echo "✅ No .env.local file present"
+        fi
+        
+        rm -f .env.test .env.local.test
+
+    - name: Start API server with connectivity testing
+      run: |
+        echo "🚀 Starting API server for connectivity testing..."
+        PORT=3001 node start-with-db.js &
+        API_PID=$!
+        echo "API_PID=$API_PID" >> $GITHUB_ENV
+        sleep 5
+        
+        # Test if API is accessible
+        if curl -s http://localhost:3001/api/health > /dev/null; then
+          echo "✅ API server started successfully"
+        else
+          echo "❌ API server failed to start"
+          exit 1
+        fi
+
+    - name: Test API endpoints connectivity
+      run: |
+        echo "🌐 Testing API endpoint connectivity..."
+        
+        # Test health endpoint first
+        echo "Testing health endpoint..."
+        if curl -f -s http://localhost:3001/api/health; then
+          echo "✅ Health endpoint accessible"
+        else
+          echo "❌ Health endpoint failed"
+          exit 1
+        fi
+        
+        echo ""
+        echo "Testing core endpoints..."
+        FAILED_ENDPOINTS=()
+        
+        for endpoint in tasks projects habits "focus/profile" "focus/achievements" "focus/analytics" "focus/sessions"; do
+          echo -n "  /api/$endpoint: "
+          if curl -f -s "http://localhost:3001/api/$endpoint" > /dev/null 2>&1; then
+            echo "✅"
+          else
+            echo "❌"
+            FAILED_ENDPOINTS+=("$endpoint")
+          fi
+        done
+        
+        if [ ${#FAILED_ENDPOINTS[@]} -gt 0 ]; then
+          echo ""
+          echo "❌ Failed endpoints: ${FAILED_ENDPOINTS[*]}"
+          echo "This indicates API connectivity or implementation issues."
+          exit 1
+        else
+          echo ""
+          echo "✅ All endpoints accessible"
+        fi
+
+    - name: Test CORS configuration
+      run: |
+        echo "🔄 Testing CORS configuration..."
+        
+        # Test CORS headers
+        CORS_RESPONSE=$(curl -s -I -H "Origin: http://localhost:5173" http://localhost:3001/api/health)
+        
+        if echo "$CORS_RESPONSE" | grep -i "access-control-allow-origin"; then
+          echo "✅ CORS headers present"
+          echo "$CORS_RESPONSE" | grep -i "access-control"
+        else
+          echo "❌ CORS headers missing - will cause frontend connectivity issues"
+          exit 1
+        fi
+
+    - name: Test API response formats
+      run: |
+        echo "📋 Testing API response formats..."
+        
+        # Test JSON response format
+        HEALTH_RESPONSE=$(curl -s http://localhost:3001/api/health)
+        if echo "$HEALTH_RESPONSE" | grep -q '"status"'; then
+          echo "✅ Health endpoint returns valid JSON"
+        else
+          echo "❌ Health endpoint response invalid: $HEALTH_RESPONSE"
+          exit 1
+        fi
+        
+        # Test Focus profile response (critical for frontend)
+        PROFILE_RESPONSE=$(curl -s http://localhost:3001/api/focus/profile)
+        if echo "$PROFILE_RESPONSE" | grep -q '"id".*"username"'; then
+          echo "✅ Focus profile returns expected structure"
+        else
+          echo "❌ Focus profile response invalid: $PROFILE_RESPONSE"
+          exit 1
+        fi
+
+    - name: Test database connectivity from API
+      run: |
+        echo "🗄️ Testing database connectivity through API..."
+        
+        # Test that API can read from database
+        TASKS_RESPONSE=$(curl -s http://localhost:3001/api/tasks)
+        HTTP_CODE=$(curl -s -w "%{http_code}" -o /dev/null http://localhost:3001/api/tasks)
+        
+        if [ "$HTTP_CODE" = "200" ]; then
+          echo "✅ API successfully connects to database"
+        else
+          echo "❌ API database connection failed (HTTP $HTTP_CODE)"
+          echo "Response: $TASKS_RESPONSE"
+          exit 1
+        fi
+
+    - name: Simulate frontend connectivity scenario
+      run: |
+        echo "🖥️ Simulating frontend connectivity scenario..."
+        
+        # Start frontend dev server briefly to test actual connectivity
+        timeout 30s npm run dev &
+        FRONTEND_PID=$!
+        sleep 15
+        
+        echo "Testing if frontend can reach API..."
+        if curl -s http://localhost:5173 > /dev/null; then
+          echo "✅ Frontend server accessible"
+          
+          # Test if frontend would be able to make API calls
+          # (This simulates what happens when user opens the app)
+          API_FROM_FRONTEND=$(curl -s -H "Origin: http://localhost:5173" http://localhost:3001/api/health)
+          if echo "$API_FROM_FRONTEND" | grep -q "OK"; then
+            echo "✅ Frontend can successfully call API"
+          else
+            echo "❌ Frontend cannot call API - connectivity issue detected"
+            exit 1
+          fi
+        else
+          echo "❌ Frontend server not accessible"
+          exit 1
+        fi
+        
+        kill $FRONTEND_PID 2>/dev/null || true
+
+    - name: Test common failure scenarios
+      run: |
+        echo "⚠️ Testing common failure scenarios..."
+        
+        # Test what happens with wrong API URL
+        echo "1. Testing wrong API URL scenario:"
+        WRONG_URL_RESPONSE=$(curl -s -w "%{http_code}" -o /dev/null http://localhost:3002/api/health || echo "000")
+        if [ "$WRONG_URL_RESPONSE" = "000" ] || [ "$WRONG_URL_RESPONSE" = "Connection refused" ]; then
+          echo "   ✅ Wrong URL correctly fails (as expected)"
+        else
+          echo "   ⚠️  Unexpected response to wrong URL: $WRONG_URL_RESPONSE"
+        fi
+        
+        # Test missing endpoint
+        echo "2. Testing missing endpoint scenario:"
+        MISSING_ENDPOINT=$(curl -s -w "%{http_code}" -o /dev/null http://localhost:3001/api/nonexistent)
+        if [ "$MISSING_ENDPOINT" = "404" ]; then
+          echo "   ✅ Missing endpoint returns 404 (as expected)"
+        else
+          echo "   ⚠️  Missing endpoint returns: $MISSING_ENDPOINT (expected 404)"
+        fi
+
+    - name: Generate connectivity report
+      if: always()
+      run: |
+        echo "# API Connectivity Report" > connectivity-report.md
+        echo "Generated: $(date)" >> connectivity-report.md
+        echo "" >> connectivity-report.md
+        
+        echo "## Endpoint Status" >> connectivity-report.md
+        for endpoint in health tasks projects habits "focus/profile" "focus/achievements" "focus/analytics" "focus/sessions"; do
+          HTTP_CODE=$(curl -s -w "%{http_code}" -o /dev/null http://localhost:3001/api/$endpoint)
+          echo "- /api/$endpoint: HTTP $HTTP_CODE" >> connectivity-report.md
+        done
+        
+        echo "" >> connectivity-report.md
+        echo "## Environment Check" >> connectivity-report.md
+        if [ -f ".env.local" ]; then
+          echo "- .env.local: EXISTS (check for localhost overrides)" >> connectivity-report.md
+        else
+          echo "- .env.local: Not present" >> connectivity-report.md
+        fi
+        
+        echo "- Database: $(PGPASSWORD=lifesync123 psql -h localhost -U postgres -d lifesync -c 'SELECT 1' > /dev/null 2>&1 && echo 'Connected' || echo 'Failed')" >> connectivity-report.md
+
+    - name: Cleanup
+      if: always()
+      run: |
+        if [ ! -z "$API_PID" ]; then
+          kill $API_PID || true
+        fi
+
+    - name: Upload connectivity report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: connectivity-report
+        path: connectivity-report.md
+        retention-days: 30
+
+    - name: Alert on connectivity failure
+      if: failure()
+      run: |
+        echo "🚨 CONNECTIVITY FAILURE DETECTED!"
+        echo "This may indicate:"
+        echo "- Environment file conflicts (.env.local overriding .env)"
+        echo "- API server implementation issues"
+        echo "- Database connection problems"
+        echo "- CORS configuration issues"
+        echo ""
+        echo "Check the connectivity report for detailed diagnostics."

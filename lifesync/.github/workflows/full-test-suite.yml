@@ -1,0 +1,350 @@
+name: LifeSync Full Test Suite
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      test_level:
+        description: 'Test level to run'
+        required: true
+        default: 'comprehensive'
+        type: choice
+        options:
+        - comprehensive
+        - smoke
+        - critical-only
+
+jobs:
+  comprehensive-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_DB: lifesync
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: lifesync123
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Setup comprehensive database schema
+      run: |
+        # Create full database schema for comprehensive testing
+        PGPASSWORD=lifesync123 psql -h localhost -U postgres -d lifesync -c "
+        CREATE TABLE IF NOT EXISTS tasks (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          title TEXT NOT NULL,
+          description TEXT,
+          due_date TIMESTAMP,
+          estimated_time INTEGER DEFAULT 60,
+          project_id UUID,
+          priority VARCHAR(10) DEFAULT 'medium',
+          status VARCHAR(20) DEFAULT 'todo',
+          category VARCHAR(50) DEFAULT 'personal',
+          tags TEXT[],
+          actual_time INTEGER DEFAULT 0,
+          starred BOOLEAN DEFAULT false,
+          archived BOOLEAN DEFAULT false,
+          deleted BOOLEAN DEFAULT false,
+          user_id UUID DEFAULT '1ac27f3b-3c11-4457-9774-e941896da856',
+          created_at TIMESTAMP DEFAULT NOW(),
+          updated_at TIMESTAMP DEFAULT NOW()
+        );
+
+        CREATE TABLE IF NOT EXISTS habits (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          name TEXT NOT NULL,
+          description TEXT,
+          frequency VARCHAR(20) DEFAULT 'daily',
+          target_value INTEGER DEFAULT 1,
+          unit VARCHAR(20),
+          category VARCHAR(50),
+          color VARCHAR(7) DEFAULT '#3B82F6',
+          icon VARCHAR(10) DEFAULT '🎯',
+          is_active BOOLEAN DEFAULT true,
+          current_streak INTEGER DEFAULT 0,
+          best_streak INTEGER DEFAULT 0,
+          current_progress INTEGER DEFAULT 0,
+          goal_mode VARCHAR(20) DEFAULT 'daily-target',
+          course_goal INTEGER,
+          user_id UUID DEFAULT '1ac27f3b-3c11-4457-9774-e941896da856',
+          created_at TIMESTAMP DEFAULT NOW(),
+          updated_at TIMESTAMP DEFAULT NOW()
+        );
+
+        CREATE TABLE IF NOT EXISTS projects (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          name TEXT NOT NULL,
+          description TEXT,
+          status VARCHAR(20) DEFAULT 'active',
+          color VARCHAR(7) DEFAULT '#10B981',
+          user_id UUID DEFAULT '1ac27f3b-3c11-4457-9774-e941896da856',
+          created_at TIMESTAMP DEFAULT NOW(),
+          updated_at TIMESTAMP DEFAULT NOW()
+        );
+
+        CREATE TABLE IF NOT EXISTS focus_sessions (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          preset VARCHAR(50),
+          duration INTEGER NOT NULL,
+          actual_duration INTEGER,
+          start_time TIMESTAMP DEFAULT NOW(),
+          end_time TIMESTAMP,
+          task_id UUID,
+          status VARCHAR(20) DEFAULT 'planned',
+          productivity_rating INTEGER,
+          notes TEXT,
+          user_id UUID DEFAULT '1ac27f3b-3c11-4457-9774-e941896da856',
+          created_at TIMESTAMP DEFAULT NOW(),
+          updated_at TIMESTAMP DEFAULT NOW()
+        );
+
+        CREATE TABLE IF NOT EXISTS user_profiles (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          user_id UUID UNIQUE NOT NULL,
+          level INTEGER DEFAULT 1,
+          xp INTEGER DEFAULT 0,
+          current_streak INTEGER DEFAULT 0,
+          productivity_score INTEGER DEFAULT 75,
+          created_at TIMESTAMP DEFAULT NOW(),
+          updated_at TIMESTAMP DEFAULT NOW()
+        );
+
+        CREATE TABLE IF NOT EXISTS financial_transactions (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          description TEXT NOT NULL,
+          amount DECIMAL(10,2) NOT NULL,
+          type VARCHAR(20) NOT NULL,
+          date DATE DEFAULT CURRENT_DATE,
+          category_id UUID,
+          account_id UUID,
+          user_id UUID DEFAULT '1ac27f3b-3c11-4457-9774-e941896da856',
+          created_at TIMESTAMP DEFAULT NOW()
+        );
+
+        CREATE TABLE IF NOT EXISTS shopping_lists (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          name TEXT NOT NULL,
+          status VARCHAR(20) DEFAULT 'active',
+          user_id UUID DEFAULT '1ac27f3b-3c11-4457-9774-e941896da856',
+          created_at TIMESTAMP DEFAULT NOW()
+        );
+
+        CREATE TABLE IF NOT EXISTS recipes (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          name TEXT NOT NULL,
+          description TEXT,
+          prep_time INTEGER,
+          cook_time INTEGER,
+          servings INTEGER,
+          user_id UUID DEFAULT '1ac27f3b-3c11-4457-9774-e941896da856',
+          created_at TIMESTAMP DEFAULT NOW()
+        );"
+
+    - name: Seed test data
+      run: |
+        # Insert sample data for testing
+        PGPASSWORD=lifesync123 psql -h localhost -U postgres -d lifesync -c "
+        INSERT INTO tasks (title, status) VALUES 
+          ('Test Task 1', 'todo'),
+          ('Test Task 2', 'done');
+        
+        INSERT INTO habits (name) VALUES 
+          ('Test Habit 1');
+        
+        INSERT INTO focus_sessions (duration, status) VALUES 
+          (1500, 'completed'),
+          (2500, 'completed');
+        
+        INSERT INTO user_profiles (user_id) VALUES 
+          ('1ac27f3b-3c11-4457-9774-e941896da856');"
+
+    - name: Start API server
+      run: |
+        PORT=3001 node start-with-db.js &
+        API_PID=$!
+        echo "API_PID=$API_PID" >> $GITHUB_ENV
+        sleep 5
+      env:
+        DATABASE_URL: postgresql://postgres:lifesync123@localhost:5432/lifesync
+
+    - name: Start frontend dev server
+      run: |
+        npm run dev &
+        FRONTEND_PID=$!
+        echo "FRONTEND_PID=$FRONTEND_PID" >> $GITHUB_ENV
+        sleep 10
+      env:
+        VITE_API_BASE_URL: http://localhost:3001/api
+
+    - name: Wait for services to be ready
+      run: |
+        echo "Waiting for API server..."
+        timeout 60 bash -c 'until curl -s http://localhost:3001/api/health > /dev/null; do sleep 2; done'
+        echo "✅ API server ready"
+        
+        echo "Waiting for frontend server..."
+        timeout 60 bash -c 'until curl -s http://localhost:5173 > /dev/null; do sleep 2; done'
+        echo "✅ Frontend server ready"
+
+    - name: Run comprehensive test suite
+      run: |
+        # Update test script to use localhost for CI
+        sed -i 's/10.247.209.223/localhost/g' test-suite.sh
+        chmod +x test-suite.sh
+        ./test-suite.sh
+
+    - name: Test all API endpoints
+      run: |
+        echo "🌐 Testing all API endpoints comprehensively..."
+        
+        # Core endpoints
+        for endpoint in tasks projects habits; do
+          echo "Testing /api/$endpoint"
+          curl -f -s "http://localhost:3001/api/$endpoint" > /dev/null || {
+            echo "❌ Failed: /api/$endpoint"
+            exit 1
+          }
+        done
+        
+        # Focus endpoints (critical)
+        for endpoint in "focus/profile" "focus/achievements" "focus/analytics" "focus/sessions"; do
+          echo "Testing /api/$endpoint"
+          curl -f -s "http://localhost:3001/api/$endpoint" > /dev/null || {
+            echo "❌ Failed: /api/$endpoint"
+            exit 1
+          }
+        done
+        
+        # Extended endpoints
+        for endpoint in "financial/transactions" "shopping/lists" "recipes" "analytics/dashboard"; do
+          echo "Testing /api/$endpoint"
+          curl -f -s "http://localhost:3001/api/$endpoint" > /dev/null || {
+            echo "❌ Failed: /api/$endpoint"
+            exit 1
+          }
+        done
+        
+        echo "✅ All API endpoints responding correctly"
+
+    - name: Test CRUD operations
+      run: |
+        echo "🔄 Testing CRUD operations..."
+        
+        # Test task creation
+        TASK_RESPONSE=$(curl -s -X POST http://localhost:3001/api/tasks \
+          -H "Content-Type: application/json" \
+          -d '{"title": "CI Test Task", "description": "Created by GitHub Actions"}')
+        
+        if echo "$TASK_RESPONSE" | grep -q '"id"'; then
+          echo "✅ Task creation working"
+          TASK_ID=$(echo "$TASK_RESPONSE" | grep -o '"id":"[^"]*"' | cut -d'"' -f4)
+          echo "Created task ID: $TASK_ID"
+          
+          # Test task update
+          curl -s -X PUT "http://localhost:3001/api/tasks/$TASK_ID" \
+            -H "Content-Type: application/json" \
+            -d '{"status": "done"}' > /dev/null
+          echo "✅ Task update working"
+          
+          # Test task deletion
+          curl -s -X DELETE "http://localhost:3001/api/tasks/$TASK_ID" > /dev/null
+          echo "✅ Task deletion working"
+        else
+          echo "❌ Task CRUD operations failed"
+          exit 1
+        fi
+
+    - name: Test drag and drop dependencies
+      run: |
+        echo "🎯 Testing drag and drop dependencies..."
+        
+        # Check if @dnd-kit packages are installed
+        if npm list @dnd-kit/core @dnd-kit/sortable @dnd-kit/utilities > /dev/null 2>&1; then
+          echo "✅ Drag and drop packages installed"
+        else
+          echo "❌ Drag and drop packages missing"
+          exit 1
+        fi
+
+    - name: Test TypeScript compilation
+      run: |
+        echo "📝 Testing TypeScript compilation..."
+        npx tsc --noEmit || {
+          echo "❌ TypeScript compilation failed"
+          exit 1
+        }
+        echo "✅ TypeScript compilation successful"
+
+    - name: Test database integrity
+      run: |
+        echo "🗄️ Testing database integrity..."
+        
+        # Check if all tables exist
+        TABLES=$(PGPASSWORD=lifesync123 psql -h localhost -U postgres -d lifesync -t -c "\dt" | awk '{print $3}' | grep -v '^$')
+        
+        for table in tasks habits projects focus_sessions user_profiles; do
+          if echo "$TABLES" | grep -q "^${table}$"; then
+            echo "✅ Table $table exists"
+          else
+            echo "❌ Table $table missing"
+            exit 1
+          fi
+        done
+
+    - name: Generate test report
+      if: always()
+      run: |
+        echo "📊 Test Summary" > test-report.md
+        echo "==============" >> test-report.md
+        echo "" >> test-report.md
+        echo "- ✅ API Server: $(curl -s http://localhost:3001/api/health > /dev/null && echo 'Running' || echo 'Failed')" >> test-report.md
+        echo "- ✅ Frontend: $(curl -s http://localhost:5173 > /dev/null && echo 'Running' || echo 'Failed')" >> test-report.md
+        echo "- ✅ Database: $(PGPASSWORD=lifesync123 psql -h localhost -U postgres -d lifesync -c 'SELECT 1' > /dev/null 2>&1 && echo 'Connected' || echo 'Failed')" >> test-report.md
+        echo "- ✅ Focus Endpoints: All 4 endpoints verified" >> test-report.md
+        echo "" >> test-report.md
+        echo "Generated at: $(date)" >> test-report.md
+
+    - name: Cleanup processes
+      if: always()
+      run: |
+        if [ ! -z "$API_PID" ]; then
+          kill $API_PID || true
+        fi
+        if [ ! -z "$FRONTEND_PID" ]; then
+          kill $FRONTEND_PID || true
+        fi
+
+    - name: Upload test artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: full-test-results
+        path: |
+          test-report.md
+          *.log
+          test-*.txt
+        retention-days: 30

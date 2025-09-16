@@ -2,6 +2,15 @@
 
 A comprehensive, Nike-inspired personal productivity and life management application built with React, TypeScript, and modern web technologies.
 
+## 🔄 Continuous Integration Status
+
+[![Regression Tests](https://github.com/username/lifesync/actions/workflows/regression-tests.yml/badge.svg)](https://github.com/username/lifesync/actions/workflows/regression-tests.yml)
+[![Full Test Suite](https://github.com/username/lifesync/actions/workflows/full-test-suite.yml/badge.svg)](https://github.com/username/lifesync/actions/workflows/full-test-suite.yml)
+[![Focus Monitor](https://github.com/username/lifesync/actions/workflows/focus-endpoint-monitor.yml/badge.svg)](https://github.com/username/lifesync/actions/workflows/focus-endpoint-monitor.yml)
+[![API Connectivity](https://github.com/username/lifesync/actions/workflows/api-connectivity-check.yml/badge.svg)](https://github.com/username/lifesync/actions/workflows/api-connectivity-check.yml)
+
+> **Focus Protection:** Automated monitoring prevents the return of Focus API 404 errors that previously affected the application.
+
 ## 🚀 Features Overview
 
 ### 🏠 **Dashboard**

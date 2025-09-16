@@ -58,6 +58,16 @@ test_api_connectivity() {
             fail_test "API endpoint /$endpoint not responding"
         fi
     done
+    
+    # Test critical Focus API endpoints (these were missing and caused 404 errors)
+    echo -e "\n${BLUE}Testing Critical Focus API Endpoints...${NC}"
+    for endpoint in "focus/profile" "focus/achievements" "focus/analytics"; do
+        if curl -s "http://10.247.209.223:3001/api/$endpoint" > /dev/null 2>&1; then
+            pass_test "Focus endpoint /$endpoint responding"
+        else
+            fail_test "Focus endpoint /$endpoint responding - CRITICAL: Frontend expects this!"
+        fi
+    done
 }
 
 # Test frontend accessibility

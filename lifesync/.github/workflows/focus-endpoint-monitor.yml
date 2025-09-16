@@ -1,0 +1,285 @@
+name: Focus Endpoint Monitor
+
+on:
+  push:
+    paths:
+      - 'start-with-db.js'
+      - 'src/hooks/useApiFocus.ts'
+      - 'src/pages/Focus*.tsx'
+  pull_request:
+    paths:
+      - 'start-with-db.js'
+      - 'src/hooks/useApiFocus.ts'
+      - 'src/pages/Focus*.tsx'
+  schedule:
+    # Run every 6 hours to monitor Focus endpoints
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  monitor-focus-endpoints:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_DB: lifesync
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: lifesync123
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Setup minimal database for Focus testing
+      run: |
+        PGPASSWORD=lifesync123 psql -h localhost -U postgres -d lifesync -c "
+        CREATE TABLE IF NOT EXISTS focus_sessions (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          duration INTEGER,
+          actual_duration INTEGER,
+          status VARCHAR(20),
+          start_time TIMESTAMP DEFAULT NOW(),
+          created_at TIMESTAMP DEFAULT NOW()
+        );
+        CREATE TABLE IF NOT EXISTS user_profiles (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          user_id UUID UNIQUE NOT NULL,
+          level INTEGER DEFAULT 1,
+          xp INTEGER DEFAULT 0,
+          current_streak INTEGER DEFAULT 0,
+          productivity_score INTEGER DEFAULT 75,
+          created_at TIMESTAMP DEFAULT NOW()
+        );
+        INSERT INTO focus_sessions (duration, actual_duration, status) VALUES 
+          (1500, 1500, 'completed'),
+          (2500, 2400, 'completed'),
+          (1800, 1800, 'completed');
+        INSERT INTO user_profiles (user_id, level, xp, current_streak) VALUES 
+          ('1ac27f3b-3c11-4457-9774-e941896da856', 3, 150, 5);"
+
+    - name: Start API server for Focus testing
+      run: |
+        PORT=3001 node start-with-db.js &
+        API_PID=$!
+        echo "API_PID=$API_PID" >> $GITHUB_ENV
+        sleep 5
+
+    - name: Wait for API to be ready
+      run: |
+        timeout 30 bash -c 'until curl -s http://localhost:3001/api/health > /dev/null; do sleep 2; done'
+        echo "✅ API server ready"
+
+    - name: Critical Focus Endpoint Tests
+      run: |
+        echo "🧘 CRITICAL: Testing Focus API endpoints that were previously missing..."
+        echo "============================================================================"
+        
+        # Test 1: Focus Profile Endpoint
+        echo "1️⃣ Testing /api/focus/profile"
+        PROFILE_RESPONSE=$(curl -s -w "%{http_code}" http://localhost:3001/api/focus/profile)
+        HTTP_CODE="${PROFILE_RESPONSE: -3}"
+        RESPONSE_BODY="${PROFILE_RESPONSE%???}"
+        
+        echo "   HTTP Code: $HTTP_CODE"
+        echo "   Response: $RESPONSE_BODY"
+        
+        if [ "$HTTP_CODE" = "200" ]; then
+          if echo "$RESPONSE_BODY" | grep -q '"id".*"username".*"level"'; then
+            echo "   ✅ Profile endpoint: Structure valid"
+          else
+            echo "   ❌ Profile endpoint: Invalid structure"
+            echo "   Expected: {id, username, level, xp, currentStreak, ...}"
+            exit 1
+          fi
+        else
+          echo "   ❌ Profile endpoint: HTTP $HTTP_CODE (Expected 200)"
+          exit 1
+        fi
+        
+        # Test 2: Focus Achievements Endpoint  
+        echo ""
+        echo "2️⃣ Testing /api/focus/achievements"
+        ACHIEVEMENTS_RESPONSE=$(curl -s -w "%{http_code}" http://localhost:3001/api/focus/achievements)
+        HTTP_CODE="${ACHIEVEMENTS_RESPONSE: -3}"
+        RESPONSE_BODY="${ACHIEVEMENTS_RESPONSE%???}"
+        
+        echo "   HTTP Code: $HTTP_CODE"
+        echo "   Response: $RESPONSE_BODY"
+        
+        if [ "$HTTP_CODE" = "200" ]; then
+          if echo "$RESPONSE_BODY" | grep -q '\[.*\]'; then
+            ACHIEVEMENT_COUNT=$(echo "$RESPONSE_BODY" | grep -o '"id"' | wc -l)
+            echo "   ✅ Achievements endpoint: $ACHIEVEMENT_COUNT achievements found"
+            if [ "$ACHIEVEMENT_COUNT" -lt 4 ]; then
+              echo "   ⚠️  Warning: Expected at least 4 achievements, found $ACHIEVEMENT_COUNT"
+            fi
+          else
+            echo "   ❌ Achievements endpoint: Not an array"
+            exit 1
+          fi
+        else
+          echo "   ❌ Achievements endpoint: HTTP $HTTP_CODE (Expected 200)"
+          exit 1
+        fi
+        
+        # Test 3: Focus Analytics Endpoint
+        echo ""
+        echo "3️⃣ Testing /api/focus/analytics"
+        ANALYTICS_RESPONSE=$(curl -s -w "%{http_code}" http://localhost:3001/api/focus/analytics)
+        HTTP_CODE="${ANALYTICS_RESPONSE: -3}"
+        RESPONSE_BODY="${ANALYTICS_RESPONSE%???}"
+        
+        echo "   HTTP Code: $HTTP_CODE"
+        echo "   Response: $RESPONSE_BODY"
+        
+        if [ "$HTTP_CODE" = "200" ]; then
+          if echo "$RESPONSE_BODY" | grep -q '"totalSessions".*"totalFocusTime".*"weeklyStats"'; then
+            echo "   ✅ Analytics endpoint: Structure valid"
+          else
+            echo "   ❌ Analytics endpoint: Invalid structure"
+            echo "   Expected: {totalSessions, totalFocusTime, completionRate, weeklyStats, ...}"
+            exit 1
+          fi
+        else
+          echo "   ❌ Analytics endpoint: HTTP $HTTP_CODE (Expected 200)"
+          exit 1
+        fi
+        
+        # Test 4: Focus Sessions Endpoint (original)
+        echo ""
+        echo "4️⃣ Testing /api/focus/sessions"
+        SESSIONS_RESPONSE=$(curl -s -w "%{http_code}" http://localhost:3001/api/focus/sessions)
+        HTTP_CODE="${SESSIONS_RESPONSE: -3}"
+        RESPONSE_BODY="${SESSIONS_RESPONSE%???}"
+        
+        echo "   HTTP Code: $HTTP_CODE"
+        
+        if [ "$HTTP_CODE" = "200" ]; then
+          echo "   ✅ Sessions endpoint: Working"
+        else
+          echo "   ❌ Sessions endpoint: HTTP $HTTP_CODE (Expected 200)"
+          exit 1
+        fi
+
+    - name: Test Focus frontend integration
+      run: |
+        echo ""
+        echo "🎯 Testing Focus frontend integration..."
+        
+        # Check if useApiFocus hook exists and has correct endpoints
+        if [ -f "src/hooks/useApiFocus.ts" ]; then
+          echo "✅ useApiFocus.ts exists"
+          
+          # Check for the three critical endpoints
+          if grep -q "/focus/profile" src/hooks/useApiFocus.ts; then
+            echo "✅ Profile endpoint referenced in frontend"
+          else
+            echo "❌ Profile endpoint missing from frontend"
+            exit 1
+          fi
+          
+          if grep -q "/focus/achievements" src/hooks/useApiFocus.ts; then
+            echo "✅ Achievements endpoint referenced in frontend"
+          else
+            echo "❌ Achievements endpoint missing from frontend"
+            exit 1
+          fi
+          
+          if grep -q "/focus/analytics" src/hooks/useApiFocus.ts; then
+            echo "✅ Analytics endpoint referenced in frontend"
+          else
+            echo "❌ Analytics endpoint missing from frontend"
+            exit 1
+          fi
+        else
+          echo "❌ useApiFocus.ts hook missing"
+          exit 1
+        fi
+
+    - name: Performance test Focus endpoints
+      run: |
+        echo ""
+        echo "⚡ Performance testing Focus endpoints..."
+        
+        for endpoint in "focus/profile" "focus/achievements" "focus/analytics" "focus/sessions"; do
+          echo "Testing response time for /api/$endpoint"
+          
+          RESPONSE_TIME=$(curl -s -w "%{time_total}" -o /dev/null http://localhost:3001/api/$endpoint)
+          
+          # Convert to milliseconds for easier reading
+          RESPONSE_TIME_MS=$(echo "$RESPONSE_TIME * 1000" | bc -l | cut -d'.' -f1)
+          
+          echo "   Response time: ${RESPONSE_TIME_MS}ms"
+          
+          # Fail if response time > 5 seconds (very generous)
+          if (( RESPONSE_TIME_MS > 5000 )); then
+            echo "   ❌ Endpoint too slow (>${RESPONSE_TIME_MS}ms)"
+            exit 1
+          else
+            echo "   ✅ Response time acceptable"
+          fi
+        done
+
+    - name: Generate Focus monitoring report
+      if: always()
+      run: |
+        echo "# Focus Endpoint Monitoring Report" > focus-monitor-report.md
+        echo "Generated: $(date)" >> focus-monitor-report.md
+        echo "" >> focus-monitor-report.md
+        echo "## Endpoint Status" >> focus-monitor-report.md
+        
+        for endpoint in "focus/profile" "focus/achievements" "focus/analytics" "focus/sessions"; do
+          HTTP_CODE=$(curl -s -w "%{http_code}" -o /dev/null http://localhost:3001/api/$endpoint)
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "- ✅ /api/$endpoint - HTTP $HTTP_CODE" >> focus-monitor-report.md
+          else
+            echo "- ❌ /api/$endpoint - HTTP $HTTP_CODE" >> focus-monitor-report.md
+          fi
+        done
+        
+        echo "" >> focus-monitor-report.md
+        echo "## Historical Context" >> focus-monitor-report.md
+        echo "These endpoints were previously missing and caused 404 errors." >> focus-monitor-report.md
+        echo "This monitor ensures they remain functional." >> focus-monitor-report.md
+
+    - name: Cleanup
+      if: always()
+      run: |
+        if [ ! -z "$API_PID" ]; then
+          kill $API_PID || true
+        fi
+
+    - name: Upload monitoring results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: focus-monitoring-report
+        path: |
+          focus-monitor-report.md
+        retention-days: 90
+
+    - name: Notify on failure
+      if: failure()
+      run: |
+        echo "🚨 CRITICAL: Focus endpoint monitoring failed!"
+        echo "This indicates the Focus 404 error issue may have returned."
+        echo "Check the Focus endpoints immediately."

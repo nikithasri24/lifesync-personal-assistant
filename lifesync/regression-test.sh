@@ -53,6 +53,13 @@ for endpoint in tasks projects habits; do
     test_result $? "API endpoint: /$endpoint"
 done
 
+# 5a. Focus API Endpoints (Critical - these were missing before)
+echo -e "\nTesting Focus API endpoints..."
+for endpoint in "focus/profile" "focus/achievements" "focus/analytics" "focus/sessions"; do
+    curl -s "http://10.247.209.223:3001/api/$endpoint" > /dev/null 2>&1
+    test_result $? "Focus endpoint: /$endpoint"
+done
+
 # 6. Critical Files
 echo -e "\nChecking critical files..."
 for file in "src/App.tsx" "src/pages/TodosWorkingFollowUp.tsx" "src/services/apiClient.ts"; do

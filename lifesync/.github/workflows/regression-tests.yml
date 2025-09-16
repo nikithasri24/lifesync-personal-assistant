@@ -1,0 +1,161 @@
+name: LifeSync Regression Tests
+
+on:
+  push:
+    branches: [ main, develop, feature/* ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run daily at 6 AM UTC to catch any environmental issues
+    - cron: '0 6 * * *'
+
+jobs:
+  regression-tests:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_DB: lifesync
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: lifesync123
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Setup database
+      run: |
+        # Create database tables (simplified for CI)
+        PGPASSWORD=lifesync123 psql -h localhost -U postgres -d lifesync -c "
+        CREATE TABLE IF NOT EXISTS tasks (
+          id UUID PRIMARY KEY,
+          title TEXT NOT NULL,
+          description TEXT,
+          status VARCHAR(20) DEFAULT 'todo',
+          deleted BOOLEAN DEFAULT false,
+          created_at TIMESTAMP DEFAULT NOW(),
+          updated_at TIMESTAMP DEFAULT NOW()
+        );
+        CREATE TABLE IF NOT EXISTS habits (
+          id UUID PRIMARY KEY,
+          name TEXT NOT NULL,
+          is_active BOOLEAN DEFAULT true,
+          created_at TIMESTAMP DEFAULT NOW()
+        );
+        CREATE TABLE IF NOT EXISTS projects (
+          id UUID PRIMARY KEY,
+          name TEXT NOT NULL,
+          created_at TIMESTAMP DEFAULT NOW()
+        );
+        CREATE TABLE IF NOT EXISTS focus_sessions (
+          id UUID PRIMARY KEY,
+          duration INTEGER,
+          actual_duration INTEGER,
+          status VARCHAR(20),
+          start_time TIMESTAMP,
+          created_at TIMESTAMP DEFAULT NOW()
+        );"
+
+    - name: Start API server
+      run: |
+        PORT=3001 node start-with-db.js &
+        API_PID=$!
+        echo "API_PID=$API_PID" >> $GITHUB_ENV
+        sleep 5
+      env:
+        DATABASE_URL: postgresql://postgres:lifesync123@localhost:5432/lifesync
+
+    - name: Start frontend dev server
+      run: |
+        npm run dev &
+        FRONTEND_PID=$!
+        echo "FRONTEND_PID=$FRONTEND_PID" >> $GITHUB_ENV
+        sleep 10
+      env:
+        VITE_API_BASE_URL: http://localhost:3001/api
+
+    - name: Wait for services
+      run: |
+        # Wait for API to be ready
+        timeout 60 bash -c 'until curl -s http://localhost:3001/api/health > /dev/null; do sleep 2; done'
+        # Wait for frontend to be ready  
+        timeout 60 bash -c 'until curl -s http://localhost:5173 > /dev/null; do sleep 2; done'
+
+    - name: Run regression tests
+      run: |
+        # Update test script to use localhost for CI
+        sed -i 's/10.247.209.223/localhost/g' regression-test.sh
+        chmod +x regression-test.sh
+        ./regression-test.sh
+
+    - name: Run Focus endpoint specific tests
+      run: |
+        echo "🧘 Testing Focus API endpoints specifically..."
+        
+        # Test Focus profile endpoint
+        PROFILE_RESPONSE=$(curl -s http://localhost:3001/api/focus/profile)
+        echo "Profile response: $PROFILE_RESPONSE"
+        if echo "$PROFILE_RESPONSE" | grep -q '"id"'; then
+          echo "✅ Focus profile endpoint working"
+        else
+          echo "❌ Focus profile endpoint failed"
+          exit 1
+        fi
+        
+        # Test Focus achievements endpoint
+        ACHIEVEMENTS_RESPONSE=$(curl -s http://localhost:3001/api/focus/achievements)
+        echo "Achievements response: $ACHIEVEMENTS_RESPONSE"
+        if echo "$ACHIEVEMENTS_RESPONSE" | grep -q '\[.*\]'; then
+          echo "✅ Focus achievements endpoint working"
+        else
+          echo "❌ Focus achievements endpoint failed"
+          exit 1
+        fi
+        
+        # Test Focus analytics endpoint
+        ANALYTICS_RESPONSE=$(curl -s http://localhost:3001/api/focus/analytics)
+        echo "Analytics response: $ANALYTICS_RESPONSE"
+        if echo "$ANALYTICS_RESPONSE" | grep -q '"totalSessions"'; then
+          echo "✅ Focus analytics endpoint working"
+        else
+          echo "❌ Focus analytics endpoint failed"
+          exit 1
+        fi
+
+    - name: Cleanup
+      if: always()
+      run: |
+        if [ ! -z "$API_PID" ]; then
+          kill $API_PID || true
+        fi
+        if [ ! -z "$FRONTEND_PID" ]; then
+          kill $FRONTEND_PID || true
+        fi
+
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: regression-test-results
+        path: |
+          *.log
+          test-*.txt
+        retention-days: 7
