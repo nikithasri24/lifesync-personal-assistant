@@ -30,6 +30,33 @@ const storage = {
       deleted: true,
       created_at: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
       updated_at: new Date().toISOString()
+    },
+    {
+      id: 'task-2',
+      title: 'Setup Project Repository',
+      description: 'Initialize git repository and setup CI/CD',
+      project_id: 'project-1',
+      status: 'done',
+      priority: 'high',
+      created_at: new Date(Date.now() - 172800000).toISOString() // 2 days ago
+    },
+    {
+      id: 'task-3',
+      title: 'Design Database Schema',
+      description: 'Create tables and relationships for the project',
+      project_id: 'project-1',
+      status: 'in_progress',
+      priority: 'high',
+      created_at: new Date(Date.now() - 86400000).toISOString() // 1 day ago
+    },
+    {
+      id: 'task-4',
+      title: 'Implement User Authentication',
+      description: 'Add login and registration functionality',
+      project_id: 'project-1',
+      status: 'todo',
+      priority: 'medium',
+      created_at: new Date().toISOString()
     }
   ],
   projects: [
@@ -237,6 +264,34 @@ app.get('/api/tasks/deleted', (req, res) => {
 app.get('/api/projects', (req, res) => {
   console.log(`📁 Returning ${storage.projects.length} projects`);
   res.json(storage.projects);
+});
+
+app.get('/api/projects/:id/tasks', (req, res) => {
+  const projectId = req.params.id;
+  const projectTasks = storage.tasks.filter(task => 
+    task.project_id === projectId && !task.deleted
+  );
+  console.log(`📋 Returning ${projectTasks.length} tasks for project ${projectId}`);
+  res.json(projectTasks);
+});
+
+app.get('/api/projects/:id/stats', (req, res) => {
+  const projectId = req.params.id;
+  const projectTasks = storage.tasks.filter(task => 
+    task.project_id === projectId && !task.deleted
+  );
+  
+  const stats = {
+    total_tasks: projectTasks.length,
+    completed_tasks: projectTasks.filter(t => t.status === 'done').length,
+    in_progress_tasks: projectTasks.filter(t => t.status === 'in_progress').length,
+    pending_tasks: projectTasks.filter(t => t.status === 'todo').length,
+    completion_rate: projectTasks.length > 0 ? 
+      Math.round((projectTasks.filter(t => t.status === 'done').length / projectTasks.length) * 100) : 0
+  };
+  
+  console.log(`📊 Returning stats for project ${projectId}`);
+  res.json(stats);
 });
 
 app.get('/api/habits', (req, res) => {
