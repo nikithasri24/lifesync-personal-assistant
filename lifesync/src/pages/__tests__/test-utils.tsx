@@ -1,4 +1,4 @@
-import React, { ReactElement } from 'react';
+import { ReactElement } from 'react';
 import { render, RenderOptions } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
@@ -13,16 +13,13 @@ import userEvent from '@testing-library/user-event';
 const customRender = (
   ui: ReactElement,
   options?: Omit<RenderOptions, 'wrapper'>
-) => {
-  return {
+) => { return {
     user: userEvent.setup(),
-    ...render(ui, options),
-  };
+    ...render(ui, options) };
 };
 
 // Test data helpers
-export const mockFeatureData = {
-  basic: {
+export const mockFeatureData = { basic: {
     id: 'test-feature-1',
     title: 'Test Feature',
     description: 'Test Description',
@@ -31,10 +28,8 @@ export const mockFeatureData = {
     category: 'Testing',
     icon: 'TestIcon',
     projectId: 'test-project',
-    assignees: ['user-current'],
-  },
-  withSubtasks: {
-    id: 'test-feature-2',
+    assignees: ['user-current'] },
+  withSubtasks: { id: 'test-feature-2',
     title: 'Feature with Subtasks',
     description: 'Feature that has subtasks',
     status: 'working',
@@ -49,19 +44,15 @@ export const mockFeatureData = {
         title: 'First Subtask',
         completed: false,
         status: 'todo' as const,
-        assignees: ['user-current'],
-      },
-      {
-        id: 'subtask-2',
+        assignees: ['user-current'] },
+      { id: 'subtask-2',
         title: 'Second Subtask',
         completed: true,
         status: 'done' as const,
-        assignees: ['user-alice'],
-      },
+        assignees: ['user-alice'] },
     ],
   },
-  withNotes: {
-    id: 'test-feature-3',
+  withNotes: { id: 'test-feature-3',
     title: 'Feature with Notes',
     description: 'Feature that has notes',
     status: 'pending',
@@ -74,11 +65,9 @@ export const mockFeatureData = {
       content: 'These are test notes for the feature',
       updatedBy: 'user-current',
       updatedAt: '2024-01-15T10:30:00Z',
-      isPrivate: false,
-    },
+      isPrivate: false },
   },
-  withAttachments: {
-    id: 'test-feature-4',
+  withAttachments: { id: 'test-feature-4',
     title: 'Feature with Attachments',
     description: 'Feature that has file attachments',
     status: 'done',
@@ -94,18 +83,15 @@ export const mockFeatureData = {
         type: 'application/pdf',
         url: 'mock-url-1',
         uploadedBy: 'user-current',
-        uploadedAt: '2024-01-15T10:30:00Z',
-      },
-      {
-        id: 'attachment-2',
+        uploadedAt: '2024-01-15T10:30:00Z' },
+      { id: 'attachment-2',
         name: 'screenshot.png',
         size: 512000,
         type: 'image/png',
         url: 'mock-url-2',
         uploadedBy: 'user-alice',
         uploadedAt: '2024-01-16T14:22:00Z',
-        thumbnail: 'mock-thumb-url',
-      },
+        thumbnail: 'mock-thumb-url' },
     ],
   },
 };
@@ -124,11 +110,9 @@ export const testHelpers = {
   /**
    * Simulates file selection for upload testing
    */
-  simulateFileUpload(fileInput: HTMLElement, files: File[]) {
-    Object.defineProperty(fileInput, 'files', {
+  simulateFileUpload(fileInput: HTMLElement, files: File[]) { Object.defineProperty(fileInput, 'files', {
       value: files,
-      writable: false,
-    });
+      writable: false });
     
     const event = new Event('change', { bubbles: true });
     fileInput.dispatchEvent(event);
@@ -193,10 +177,8 @@ export const customMatchers = {
       };
     }
 
-    return {
-      pass: Boolean(hasFeatureStructure),
-      message: () => 'Expected element to be a feature card',
-    };
+    return { pass: Boolean(hasFeatureStructure),
+      message: () => 'Expected element to be a feature card' };
   },
 
   /**
@@ -216,15 +198,13 @@ export const customMatchers = {
   /**
    * Checks if an element shows saving state
    */
-  toBeSaving(received: HTMLElement) {
-    const isSaving = received.textContent?.includes('Saving') ||
+  toBeSaving(received: HTMLElement) { const isSaving = received.textContent?.includes('Saving') ||
                     received.querySelector('.animate-pulse') ||
                     received.querySelector('[data-saving="true"]');
 
     return {
       pass: Boolean(isSaving),
-      message: () => 'Expected element to show saving state',
-    };
+      message: () => 'Expected element to show saving state' };
   },
 };
 
@@ -310,16 +290,14 @@ export const a11yHelpers = {
   /**
    * Checks if screen reader announcements are present
    */
-  checkScreenReaderContent(container: HTMLElement) {
-    const srOnly = container.querySelectorAll('.sr-only');
+  checkScreenReaderContent(container: HTMLElement) { const srOnly = container.querySelectorAll('.sr-only');
     const ariaLabels = container.querySelectorAll('[aria-label]');
     const ariaDescriptions = container.querySelectorAll('[aria-describedby]');
     
     return {
       hasScreenReaderContent: srOnly.length > 0,
       hasAriaLabels: ariaLabels.length > 0,
-      hasAriaDescriptions: ariaDescriptions.length > 0,
-    };
+      hasAriaDescriptions: ariaDescriptions.length > 0 };
   },
 };
 

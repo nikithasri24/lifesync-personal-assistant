@@ -5,7 +5,7 @@
  * Provides state management, session control, and real-time updates.
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { focusService } from '../services/focus/FocusService';
 import { 
   FocusSession, 
