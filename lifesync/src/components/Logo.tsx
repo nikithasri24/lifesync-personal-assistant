@@ -1,5 +1,3 @@
-import React from 'react';
-
 interface LogoProps {
   collapsed?: boolean;
   className?: string;

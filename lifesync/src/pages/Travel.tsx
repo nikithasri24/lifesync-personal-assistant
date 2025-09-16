@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useAppStore } from '../stores/useAppStore';
 import type { TravelTrip, TravelItineraryItem, NationalPark, CreditCardTrip, PTOEntry, WorldProgress, MoonPhase, CalendarEvent, TravelStats, Country, USState, IndiaState } from '../types';
 import {

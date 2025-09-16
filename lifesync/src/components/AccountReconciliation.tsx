@@ -1,30 +1,18 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   CheckCircle,
   AlertTriangle,
-  DollarSign,
-  Calendar,
   Upload,
   Download,
   RefreshCw,
   Search,
-  Filter,
   Eye,
   EyeOff,
-  Plus,
-  Minus,
   X,
   Check,
-  AlertCircle,
   FileText,
-  CreditCard,
   Building,
   Target,
-  TrendingUp,
-  TrendingDown,
-  ArrowUpRight,
-  ArrowDownRight,
-  Save,
   Edit
 } from 'lucide-react';
 
