@@ -113,6 +113,61 @@ const storage = {
       created_at: new Date().toISOString()
     }
   ],
+  financialAccounts: [
+    {
+      id: 'account-1',
+      name: 'Primary Checking',
+      type: 'checking',
+      bank: 'Chase Bank',
+      balance: 2500.75,
+      currency: 'USD',
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    },
+    {
+      id: 'account-2', 
+      name: 'High Yield Savings',
+      type: 'savings',
+      bank: 'Ally Bank',
+      balance: 15000.00,
+      currency: 'USD', 
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    },
+    {
+      id: 'account-3',
+      name: 'Investment Portfolio',
+      type: 'investment',
+      bank: 'Vanguard',
+      balance: 45000.25,
+      currency: 'USD',
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }
+  ],
+  transactions: [
+    {
+      id: 'txn-1',
+      account_id: 'account-1',
+      amount: -125.50,
+      description: 'Grocery Store Purchase',
+      category: 'Food & Dining',
+      date: new Date().toISOString(),
+      type: 'expense'
+    },
+    {
+      id: 'txn-2',
+      account_id: 'account-1', 
+      amount: 2500.00,
+      description: 'Salary Deposit',
+      category: 'Income',
+      date: new Date(Date.now() - 86400000).toISOString(),
+      type: 'income'
+    }
+  ],
   recipes: [
     {
       id: 'recipe-1',
@@ -246,6 +301,16 @@ app.get('/api/recipes', (req, res) => {
   res.json(storage.recipes);
 });
 
+app.get('/api/finances/accounts', (req, res) => {
+  console.log(`💰 Returning ${storage.financialAccounts.length} financial accounts`);
+  res.json(storage.financialAccounts);
+});
+
+app.get('/api/finances/transactions', (req, res) => {
+  console.log(`💳 Returning ${storage.transactions.length} transactions`);
+  res.json(storage.transactions);
+});
+
 // POST endpoints for creating new data
 app.post('/api/tasks', (req, res) => {
   const newTask = {
@@ -360,6 +425,32 @@ app.post('/api/focus/profiles', (req, res) => {
   res.status(201).json(newProfile);
 });
 
+app.post('/api/finances/accounts', (req, res) => {
+  const newAccount = {
+    id: `account-${Date.now()}`,
+    ...req.body,
+    balance: req.body.balance || 0,
+    is_active: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+  storage.financialAccounts.push(newAccount);
+  console.log('✅ Created new financial account:', newAccount.name, `(Total: ${storage.financialAccounts.length})`);
+  res.status(201).json(newAccount);
+});
+
+app.post('/api/finances/transactions', (req, res) => {
+  const newTransaction = {
+    id: `txn-${Date.now()}`,
+    ...req.body,
+    date: req.body.date || new Date().toISOString(),
+    created_at: new Date().toISOString()
+  };
+  storage.transactions.push(newTransaction);
+  console.log('✅ Created new transaction:', newTransaction.description);
+  res.status(201).json(newTransaction);
+});
+
 app.post('/api/focus/sessions', (req, res) => {
   const newSession = {
     id: `session-${Date.now()}`,
@@ -432,6 +523,21 @@ app.put('/api/focus/profiles/:id', (req, res) => {
     res.json(storage.focusProfiles[profileIndex]);
   } else {
     res.status(404).json({ error: 'Focus profile not found' });
+  }
+});
+
+app.put('/api/finances/accounts/:id', (req, res) => {
+  const accountIndex = storage.financialAccounts.findIndex(a => a.id === req.params.id);
+  if (accountIndex !== -1) {
+    storage.financialAccounts[accountIndex] = {
+      ...storage.financialAccounts[accountIndex],
+      ...req.body,
+      updated_at: new Date().toISOString()
+    };
+    console.log('✅ Updated financial account:', req.params.id);
+    res.json(storage.financialAccounts[accountIndex]);
+  } else {
+    res.status(404).json({ error: 'Financial account not found' });
   }
 });
 
