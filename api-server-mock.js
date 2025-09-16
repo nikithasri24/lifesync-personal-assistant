@@ -174,6 +174,73 @@ app.get('/api/focus/profiles', (req, res) => {
   res.json(storage.focusProfiles);
 });
 
+app.get('/api/focus/achievements', (req, res) => {
+  const achievements = [
+    {
+      id: 'achievement-1',
+      title: 'Focus Master',
+      description: 'Complete 10 focus sessions',
+      icon: '🎯',
+      progress: 7,
+      target: 10,
+      unlocked: false,
+      category: 'sessions'
+    },
+    {
+      id: 'achievement-2', 
+      title: 'Deep Work Hero',
+      description: 'Complete 5 sessions over 45 minutes',
+      icon: '🧠',
+      progress: 3,
+      target: 5,
+      unlocked: false,
+      category: 'duration'
+    },
+    {
+      id: 'achievement-3',
+      title: 'Consistency Champion',
+      description: 'Complete sessions 7 days in a row',
+      icon: '🔥',
+      progress: 5,
+      target: 7,
+      unlocked: false,
+      category: 'streak'
+    }
+  ];
+  console.log(`🏆 Returning ${achievements.length} focus achievements`);
+  res.json(achievements);
+});
+
+app.get('/api/focus/analytics', (req, res) => {
+  const analytics = {
+    totalSessions: 24,
+    totalFocusTime: 980, // minutes
+    averageSessionLength: 41,
+    streakDays: 5,
+    thisWeek: {
+      sessions: 8,
+      focusTime: 320,
+      bestDay: 'Wednesday'
+    },
+    thisMonth: {
+      sessions: 24,
+      focusTime: 980,
+      improvementRate: 15 // percentage
+    },
+    productivity: {
+      score: 85,
+      trend: 'up',
+      factors: ['consistency', 'session_length', 'completion_rate']
+    },
+    topProfiles: [
+      { name: 'Deep Work', usage: 60 },
+      { name: 'Quick Tasks', usage: 40 }
+    ]
+  };
+  console.log('📊 Returning focus analytics data');
+  res.json(analytics);
+});
+
 app.get('/api/recipes', (req, res) => {
   console.log(`🍳 Returning ${storage.recipes.length} recipes`);
   res.json(storage.recipes);
