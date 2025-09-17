@@ -76,6 +76,34 @@ const storage = {
       created_at: new Date().toISOString()
     }
   ],
+  focusProfiles: [
+    {
+      id: 'profile-1',
+      name: 'Deep Work',
+      description: 'Profile for deep focus work sessions',
+      work_duration: 50,
+      short_break: 10,
+      long_break: 20,
+      sessions_until_long_break: 3,
+      background_sounds: ['nature', 'white-noise'],
+      notifications_enabled: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    },
+    {
+      id: 'profile-2', 
+      name: 'Quick Tasks',
+      description: 'Profile for short bursts of focused work',
+      work_duration: 25,
+      short_break: 5,
+      long_break: 15,
+      sessions_until_long_break: 4,
+      background_sounds: ['lofi'],
+      notifications_enabled: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }
+  ],
   focusSessions: [
     {
       id: 'session-1',
@@ -139,6 +167,11 @@ app.get('/api/shopping/lists', (req, res) => {
 app.get('/api/focus/sessions', (req, res) => {
   console.log(`🧘 Returning ${storage.focusSessions.length} focus sessions`);
   res.json(storage.focusSessions);
+});
+
+app.get('/api/focus/profiles', (req, res) => {
+  console.log(`🎯 Returning ${storage.focusProfiles.length} focus profiles`);
+  res.json(storage.focusProfiles);
 });
 
 app.get('/api/recipes', (req, res) => {
@@ -248,6 +281,18 @@ app.post('/api/shopping/lists', (req, res) => {
   res.status(201).json(newList);
 });
 
+app.post('/api/focus/profiles', (req, res) => {
+  const newProfile = {
+    id: `profile-${Date.now()}`,
+    ...req.body,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+  storage.focusProfiles.push(newProfile);
+  console.log('✅ Created new focus profile:', newProfile.name, `(Total: ${storage.focusProfiles.length})`);
+  res.status(201).json(newProfile);
+});
+
 app.post('/api/focus/sessions', (req, res) => {
   const newSession = {
     id: `session-${Date.now()}`,
@@ -306,6 +351,21 @@ app.put('/api/focus/sessions/:id', (req, res) => {
   };
   console.log('✅ Updated focus session:', req.params.id);
   res.json(updatedSession);
+});
+
+app.put('/api/focus/profiles/:id', (req, res) => {
+  const profileIndex = storage.focusProfiles.findIndex(p => p.id === req.params.id);
+  if (profileIndex !== -1) {
+    storage.focusProfiles[profileIndex] = {
+      ...storage.focusProfiles[profileIndex],
+      ...req.body,
+      updated_at: new Date().toISOString()
+    };
+    console.log('✅ Updated focus profile:', req.params.id);
+    res.json(storage.focusProfiles[profileIndex]);
+  } else {
+    res.status(404).json({ error: 'Focus profile not found' });
+  }
 });
 
 app.put('/api/habits/:id', (req, res) => {
@@ -376,6 +436,17 @@ app.delete('/api/habits/:id', (req, res) => {
     res.json({ message: 'Habit deleted', habit: deletedHabit });
   } else {
     res.status(404).json({ error: 'Habit not found' });
+  }
+});
+
+app.delete('/api/focus/profiles/:id', (req, res) => {
+  const profileIndex = storage.focusProfiles.findIndex(p => p.id === req.params.id);
+  if (profileIndex !== -1) {
+    const deletedProfile = storage.focusProfiles.splice(profileIndex, 1)[0];
+    console.log('✅ Deleted focus profile:', deletedProfile.name, `(Remaining: ${storage.focusProfiles.length})`);
+    res.json({ message: 'Focus profile deleted', profile: deletedProfile });
+  } else {
+    res.status(404).json({ error: 'Focus profile not found' });
   }
 });
 
