@@ -59,6 +59,7 @@ interface RealAppState {
   
   // Data from database
   tasks: TodoItem[];
+  todos: TodoItem[]; // Alias for tasks for backward compatibility
   projects: Project[];
   habits: Habit[];
   financialRecords: FinancialRecord[];
@@ -153,6 +154,8 @@ interface RealAppState {
   loadFocusSessions: () => Promise<void>;
   startFocusSession: (session: Omit<FocusSession, 'id' | 'startTime'>) => Promise<void>;
   completeFocusSession: (notes?: string, interruptions?: number) => Promise<void>;
+  pauseFocusSession: () => void;
+  resumeFocusSession: () => void;
   
   // Shopping operations
   loadShoppingData: () => Promise<void>;
@@ -160,6 +163,27 @@ interface RealAppState {
   // Recipe operations
   loadRecipes: () => Promise<void>;
   addRecipe: (recipe: Omit<Recipe, 'id' | 'createdAt'>) => Promise<void>;
+  
+  // Goal operations
+  addGoal: (goal: Omit<Goal, 'id' | 'createdAt'>) => void;
+  updateGoal: (id: string, updates: Partial<Goal>) => void;
+  deleteGoal: (id: string) => void;
+  updateGoalProgress: (id: string, progress: number) => void;
+  completeGoal: (id: string) => void;
+  addGoalToStack: (goalId: string) => void;
+  removeGoalFromStack: (goalId: string) => void;
+  reorderStackedGoals: (goalIds: string[]) => void;
+  
+  // Dream operations
+  addDream: (dream: Omit<Dream, 'id' | 'createdAt'>) => void;
+  updateDream: (id: string, updates: Partial<Dream>) => void;
+  deleteDream: (id: string) => void;
+  achieveDream: (id: string) => void;
+  
+  // Apple Health / Period operations
+  syncWithAppleHealth: () => Promise<void>;
+  generatePeriodPredictions: () => Promise<void>;
+  updatePeriodSettings: (settings: Partial<PeriodSettings>) => Promise<void>;
   
   // Local operations (for data not yet in database)
   addNote: (note: Omit<Note, 'id' | 'createdAt' | 'updatedAt'>) => void;
@@ -246,6 +270,7 @@ export const useRealAppStore = create<RealAppState>()(
       
       // Initial data
       tasks: [],
+      get todos() { return get().tasks; }, // Getter for backward compatibility
       projects: [],
       habits: [],
       financialRecords: [],
@@ -1022,7 +1047,102 @@ export const useRealAppStore = create<RealAppState>()(
             entry.id === id ? { ...entry, ...updates } : entry
           )
         }))
-      }))
+      })),
+
+      // Focus session methods
+      pauseFocusSession: () => {
+        const state = get();
+        if (state.activeFocusSession) {
+          set({
+            activeFocusSession: {
+              ...state.activeFocusSession,
+              status: 'paused'
+            }
+          });
+        }
+      },
+
+      resumeFocusSession: () => {
+        const state = get();
+        if (state.activeFocusSession) {
+          set({
+            activeFocusSession: {
+              ...state.activeFocusSession,
+              status: 'active'
+            }
+          });
+        }
+      },
+
+      // Goal operations
+      addGoal: (goal) => set((state) => ({
+        goals: [...state.goals, { ...goal, id: generateId(), createdAt: new Date() }]
+      })),
+
+      updateGoal: (id, updates) => set((state) => ({
+        goals: state.goals.map(goal => goal.id === id ? { ...goal, ...updates } : goal)
+      })),
+
+      deleteGoal: (id) => set((state) => ({
+        goals: state.goals.filter(goal => goal.id !== id),
+        stackedGoals: state.stackedGoals.filter(goalId => goalId !== id)
+      })),
+
+      updateGoalProgress: (id, progress) => set((state) => ({
+        goals: state.goals.map(goal => goal.id === id ? { ...goal, progress } : goal)
+      })),
+
+      completeGoal: (id) => set((state) => ({
+        goals: state.goals.map(goal => 
+          goal.id === id ? { ...goal, status: 'completed', completedAt: new Date() } : goal
+        )
+      })),
+
+      addGoalToStack: (goalId) => set((state) => ({
+        stackedGoals: [...state.stackedGoals, goalId]
+      })),
+
+      removeGoalFromStack: (goalId) => set((state) => ({
+        stackedGoals: state.stackedGoals.filter(id => id !== goalId)
+      })),
+
+      reorderStackedGoals: (goalIds) => set({ stackedGoals: goalIds }),
+
+      // Dream operations
+      addDream: (dream) => set((state) => ({
+        dreams: [...state.dreams, { ...dream, id: generateId(), createdAt: new Date() }]
+      })),
+
+      updateDream: (id, updates) => set((state) => ({
+        dreams: state.dreams.map(dream => dream.id === id ? { ...dream, ...updates } : dream)
+      })),
+
+      deleteDream: (id) => set((state) => ({
+        dreams: state.dreams.filter(dream => dream.id !== id)
+      })),
+
+      achieveDream: (id) => set((state) => ({
+        dreams: state.dreams.map(dream => 
+          dream.id === id ? { ...dream, achieved: true, achievedAt: new Date() } : dream
+        )
+      })),
+
+      // Apple Health / Period operations
+      syncWithAppleHealth: async () => {
+        console.log('Apple Health sync not implemented yet');
+        // TODO: Implement Apple Health integration
+      },
+
+      generatePeriodPredictions: async () => {
+        console.log('Period predictions generation not implemented yet');
+        // TODO: Implement period prediction logic
+      },
+
+      updatePeriodSettings: async (settings) => {
+        set((state) => ({
+          periodSettings: { ...state.periodSettings, ...settings }
+        }));
+      }
     }),
     {
       name: 'lifesync-real-storage-v2',
