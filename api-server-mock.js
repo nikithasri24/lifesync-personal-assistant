@@ -76,6 +76,41 @@ const storage = {
       created_at: new Date().toISOString()
     }
   ],
+  shoppingItems: [
+    {
+      id: 'item-1',
+      list_id: 'list-1',
+      name: 'Bananas',
+      quantity: 6,
+      unit: 'pieces',
+      completed: false,
+      category: 'Fruits',
+      priority: 'medium',
+      created_at: new Date().toISOString()
+    },
+    {
+      id: 'item-2',
+      list_id: 'list-1', 
+      name: 'Milk',
+      quantity: 1,
+      unit: 'gallon',
+      completed: true,
+      category: 'Dairy',
+      priority: 'high',
+      created_at: new Date().toISOString()
+    },
+    {
+      id: 'item-3',
+      list_id: 'list-1',
+      name: 'Bread',
+      quantity: 2,
+      unit: 'loaves',
+      completed: false,
+      category: 'Bakery',
+      priority: 'low',
+      created_at: new Date().toISOString()
+    }
+  ],
   focusProfiles: [
     {
       id: 'profile-1',
@@ -217,6 +252,18 @@ app.get('/api/financial/transactions', (req, res) => {
 app.get('/api/shopping/lists', (req, res) => {
   console.log(`🛒 Returning ${storage.shoppingLists.length} shopping lists`);
   res.json(storage.shoppingLists);
+});
+
+app.get('/api/shopping/items', (req, res) => {
+  const { list_id } = req.query;
+  let items = storage.shoppingItems;
+  
+  if (list_id) {
+    items = items.filter(item => item.list_id === list_id);
+  }
+  
+  console.log(`🛍️ Returning ${items.length} shopping items`);
+  res.json(items);
 });
 
 app.get('/api/focus/sessions', (req, res) => {
@@ -413,6 +460,18 @@ app.post('/api/shopping/lists', (req, res) => {
   res.status(201).json(newList);
 });
 
+app.post('/api/shopping/items', (req, res) => {
+  const newItem = {
+    id: `item-${Date.now()}`,
+    ...req.body,
+    completed: false,
+    created_at: new Date().toISOString()
+  };
+  storage.shoppingItems.push(newItem);
+  console.log('✅ Created new shopping item:', newItem.name, `(Total: ${storage.shoppingItems.length})`);
+  res.status(201).json(newItem);
+});
+
 app.post('/api/focus/profiles', (req, res) => {
   const newProfile = {
     id: `profile-${Date.now()}`,
@@ -598,6 +657,17 @@ app.delete('/api/projects/:id', (req, res) => {
     res.json({ message: 'Project deleted', project: deletedProject });
   } else {
     res.status(404).json({ error: 'Project not found' });
+  }
+});
+
+app.delete('/api/shopping/items/:id', (req, res) => {
+  const itemIndex = storage.shoppingItems.findIndex(i => i.id === req.params.id);
+  if (itemIndex !== -1) {
+    const deletedItem = storage.shoppingItems.splice(itemIndex, 1)[0];
+    console.log('✅ Deleted shopping item:', deletedItem.name, `(Remaining: ${storage.shoppingItems.length})`);
+    res.json({ message: 'Shopping item deleted', item: deletedItem });
+  } else {
+    res.status(404).json({ error: 'Shopping item not found' });
   }
 });
 
