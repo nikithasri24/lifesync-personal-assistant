@@ -20,6 +20,16 @@ const storage = {
       status: 'todo',
       priority: 'medium',
       created_at: new Date().toISOString()
+    },
+    {
+      id: 'task-deleted-1',
+      title: 'Deleted Task Example',
+      description: 'This task was deleted and should appear in trash',
+      status: 'done',
+      priority: 'low',
+      deleted: true,
+      created_at: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
+      updated_at: new Date().toISOString()
     }
   ],
   projects: [
@@ -94,8 +104,16 @@ app.get('/api/health', (req, res) => {
 
 // GET endpoints - return data from storage
 app.get('/api/tasks', (req, res) => {
-  console.log(`📋 Returning ${storage.tasks.length} tasks`);
-  res.json(storage.tasks);
+  // Filter out deleted tasks by default
+  const activeTasks = storage.tasks.filter(task => !task.deleted);
+  console.log(`📋 Returning ${activeTasks.length} active tasks (${storage.tasks.length} total)`);
+  res.json(activeTasks);
+});
+
+app.get('/api/tasks/deleted', (req, res) => {
+  const deletedTasks = storage.tasks.filter(task => task.deleted === true);
+  console.log(`🗑️ Returning ${deletedTasks.length} deleted tasks`);
+  res.json(deletedTasks);
 });
 
 app.get('/api/projects', (req, res) => {
@@ -139,6 +157,21 @@ app.post('/api/tasks', (req, res) => {
   storage.tasks.push(newTask);
   console.log('✅ Created new task:', newTask.title, `(Total: ${storage.tasks.length})`);
   res.status(201).json(newTask);
+});
+
+app.post('/api/tasks/:id/restore', (req, res) => {
+  const taskIndex = storage.tasks.findIndex(t => t.id === req.params.id);
+  if (taskIndex !== -1) {
+    storage.tasks[taskIndex] = {
+      ...storage.tasks[taskIndex],
+      deleted: false,
+      updated_at: new Date().toISOString()
+    };
+    console.log('🔄 Restored task:', req.params.id);
+    res.json(storage.tasks[taskIndex]);
+  } else {
+    res.status(404).json({ error: 'Task not found' });
+  }
 });
 
 app.post('/api/projects', (req, res) => {
@@ -300,9 +333,25 @@ app.put('/api/habits/:id', (req, res) => {
 app.delete('/api/tasks/:id', (req, res) => {
   const taskIndex = storage.tasks.findIndex(t => t.id === req.params.id);
   if (taskIndex !== -1) {
+    // Soft delete - mark as deleted instead of removing
+    storage.tasks[taskIndex] = {
+      ...storage.tasks[taskIndex],
+      deleted: true,
+      updated_at: new Date().toISOString()
+    };
+    console.log('🗑️ Soft deleted task:', req.params.id);
+    res.json({ message: 'Task deleted', task: storage.tasks[taskIndex] });
+  } else {
+    res.status(404).json({ error: 'Task not found' });
+  }
+});
+
+app.delete('/api/tasks/:id/permanent', (req, res) => {
+  const taskIndex = storage.tasks.findIndex(t => t.id === req.params.id);
+  if (taskIndex !== -1) {
     const deletedTask = storage.tasks.splice(taskIndex, 1)[0];
-    console.log('✅ Deleted task:', req.params.id, `(Remaining: ${storage.tasks.length})`);
-    res.json({ message: 'Task deleted', task: deletedTask });
+    console.log('✅ Permanently deleted task:', req.params.id, `(Remaining: ${storage.tasks.length})`);
+    res.json({ message: 'Task permanently deleted', task: deletedTask });
   } else {
     res.status(404).json({ error: 'Task not found' });
   }
