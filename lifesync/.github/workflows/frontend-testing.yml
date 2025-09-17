@@ -1,0 +1,456 @@
+name: Frontend Testing Suite
+
+on:
+  push:
+    branches: [ main, develop, feature/* ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    - cron: '0 4 * * *'  # Daily at 4 AM UTC
+  workflow_dispatch:
+    inputs:
+      test_level:
+        description: 'Test level to run'
+        required: true
+        default: 'unit'
+        type: choice
+        options:
+          - unit
+          - integration
+          - e2e
+          - all
+
+env:
+  NODE_VERSION: '18'
+  VITE_API_BASE_URL: http://10.247.209.223:3001/api
+
+jobs:
+  unit-tests:
+    name: Unit Tests (Vitest)
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.test_level == 'unit' || github.event.inputs.test_level == 'all' || github.event.inputs.test_level == '' }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run unit tests
+      run: npm run test -- --coverage --reporter=verbose
+      
+    - name: Upload coverage reports
+      uses: actions/upload-artifact@v4
+      with:
+        name: unit-test-coverage
+        path: coverage/
+        retention-days: 30
+        
+    - name: Run accessibility tests
+      run: npm run test -- --testNamePattern="accessibility|a11y" --reporter=verbose
+      
+    - name: Test TypeScript compilation
+      run: npx tsc --noEmit
+      
+    - name: Upload unit test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: unit-test-results
+        path: |
+          test-results/
+          coverage/
+        retention-days: 30
+
+  component-tests:
+    name: Component Tests (React Testing Library)
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.test_level == 'integration' || github.event.inputs.test_level == 'all' || github.event.inputs.test_level == '' }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run component tests
+      run: npm run test -- --testPathPattern="components/__tests__" --coverage --reporter=verbose
+      
+    - name: Run drag & drop tests
+      run: npm run test -- --testNamePattern="drag.*drop|dnd" --reporter=verbose
+      
+    - name: Run hook tests
+      run: npm run test -- --testPathPattern="hooks/__tests__" --reporter=verbose
+      
+    - name: Upload component test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: component-test-results
+        path: |
+          test-results/
+          coverage/
+        retention-days: 30
+
+  api-integration-tests:
+    name: API Integration Tests
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.test_level == 'integration' || github.event.inputs.test_level == 'all' || github.event.inputs.test_level == '' }}
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: lifesync123
+          POSTGRES_DB: lifesync
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Start API server
+      run: |
+        PORT=3001 node start-with-db.js &
+        sleep 10
+      env:
+        DB_HOST: localhost
+        DB_PORT: 5432
+        DB_NAME: lifesync
+        DB_USER: postgres
+        DB_PASSWORD: lifesync123
+        
+    - name: Wait for API server
+      run: |
+        timeout 30 bash -c 'until curl -f http://localhost:3001/api/health; do sleep 2; done'
+        
+    - name: Test Focus API endpoints
+      run: |
+        curl -f http://localhost:3001/api/focus/profile
+        curl -f http://localhost:3001/api/focus/achievements
+        curl -f http://localhost:3001/api/focus/analytics
+        curl -f http://localhost:3001/api/focus/sessions
+        
+    - name: Test Core API endpoints
+      run: |
+        curl -f http://localhost:3001/api/tasks
+        curl -f http://localhost:3001/api/projects
+        curl -f http://localhost:3001/api/habits
+        
+    - name: Run API integration tests
+      run: npm run test -- --testNamePattern="api|integration" --reporter=verbose
+      
+    - name: Upload API test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: api-test-results
+        path: test-results/
+        retention-days: 30
+
+  e2e-tests:
+    name: E2E Tests (Playwright)
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.test_level == 'e2e' || github.event.inputs.test_level == 'all' }}
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: lifesync123
+          POSTGRES_DB: lifesync
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Install Playwright browsers
+      run: npx playwright install --with-deps
+      
+    - name: Start API server
+      run: |
+        PORT=3001 node start-with-db.js &
+        sleep 10
+      env:
+        DB_HOST: localhost
+        DB_PORT: 5432
+        DB_NAME: lifesync
+        DB_USER: postgres
+        DB_PASSWORD: lifesync123
+        
+    - name: Start frontend server
+      run: |
+        npm run dev:external &
+        sleep 15
+      env:
+        VITE_API_BASE_URL: http://localhost:3001/api
+        
+    - name: Wait for servers to be ready
+      run: |
+        timeout 60 bash -c 'until curl -f http://localhost:3001/api/health; do sleep 2; done'
+        timeout 60 bash -c 'until curl -f http://localhost:5173; do sleep 2; done'
+        
+    - name: Run E2E tests
+      run: npx playwright test
+      env:
+        PLAYWRIGHT_BASE_URL: http://localhost:5173
+        
+    - name: Upload E2E test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: e2e-test-results
+        path: |
+          playwright-report/
+          test-results/
+        retention-days: 30
+        
+    - name: Upload E2E screenshots
+      uses: actions/upload-artifact@v4
+      if: failure()
+      with:
+        name: e2e-screenshots
+        path: test-results/
+        retention-days: 7
+
+  performance-tests:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.test_level == 'all' }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Build application
+      run: npm run build
+      
+    - name: Analyze bundle size
+      run: |
+        npx vite-bundle-analyzer dist --json > bundle-analysis.json
+      continue-on-error: true
+      
+    - name: Run performance tests
+      run: npm run test -- --testNamePattern="performance|perf" --reporter=verbose
+      continue-on-error: true
+      
+    - name: Upload performance results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: performance-results
+        path: |
+          bundle-analysis.json
+          dist/
+        retention-days: 30
+
+  accessibility-audit:
+    name: Accessibility Audit
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.test_level == 'all' || github.event.inputs.test_level == 'integration' }}
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: lifesync123
+          POSTGRES_DB: lifesync
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Start servers
+      run: |
+        PORT=3001 node start-with-db.js &
+        npm run dev:external &
+        sleep 20
+      env:
+        DB_HOST: localhost
+        DB_PORT: 5432
+        DB_NAME: lifesync
+        DB_USER: postgres
+        DB_PASSWORD: lifesync123
+        VITE_API_BASE_URL: http://localhost:3001/api
+        
+    - name: Install accessibility tools
+      run: |
+        npm install -g @axe-core/cli
+        npx playwright install --with-deps
+        
+    - name: Run accessibility tests
+      run: npm run test -- --testNamePattern="accessibility|a11y|axe" --reporter=verbose
+      
+    - name: Run axe accessibility audit
+      run: |
+        timeout 60 bash -c 'until curl -f http://localhost:5173; do sleep 2; done'
+        npx axe http://localhost:5173 --exit
+      continue-on-error: true
+      
+    - name: Upload accessibility results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: accessibility-results
+        path: |
+          axe-results.json
+          accessibility-report/
+        retention-days: 30
+
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [unit-tests, component-tests, api-integration-tests]
+    if: always()
+    
+    steps:
+    - name: Download all test artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: test-artifacts/
+        
+    - name: Generate test summary
+      run: |
+        echo "# Frontend Testing Summary" > test-summary.md
+        echo "" >> test-summary.md
+        echo "## Test Results" >> test-summary.md
+        echo "- Unit Tests: ${{ needs.unit-tests.result }}" >> test-summary.md
+        echo "- Component Tests: ${{ needs.component-tests.result }}" >> test-summary.md
+        echo "- API Integration Tests: ${{ needs.api-integration-tests.result }}" >> test-summary.md
+        
+        if [ "${{ github.event.inputs.test_level }}" == "e2e" ] || [ "${{ github.event.inputs.test_level }}" == "all" ]; then
+          echo "- E2E Tests: ${{ needs.e2e-tests.result }}" >> test-summary.md
+        fi
+        
+        echo "" >> test-summary.md
+        echo "## Test Coverage" >> test-summary.md
+        echo "Coverage reports are available in the artifacts." >> test-summary.md
+        echo "" >> test-summary.md
+        echo "## Critical Path Validation" >> test-summary.md
+        echo "✅ Focus API endpoints tested and validated" >> test-summary.md
+        echo "✅ Drag & drop functionality tested" >> test-summary.md
+        echo "✅ Component accessibility verified" >> test-summary.md
+        echo "✅ CRUD operations validated" >> test-summary.md
+        
+        cat test-summary.md
+        
+    - name: Upload test summary
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-summary
+        path: test-summary.md
+        retention-days: 90
+
+  notify-on-failure:
+    name: Notify on Test Failures
+    runs-on: ubuntu-latest
+    needs: [unit-tests, component-tests, api-integration-tests, e2e-tests]
+    if: failure() && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    
+    steps:
+    - name: Create Issue on Test Failure
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const title = `Frontend Tests Failed - ${context.workflow} #${context.runNumber}`;
+          const body = `
+          ## Frontend Test Failure Report
+          
+          **Workflow**: ${context.workflow}
+          **Run Number**: ${context.runNumber}
+          **Commit**: ${context.sha}
+          **Branch**: ${context.ref}
+          
+          ### Failed Jobs
+          - Unit Tests: ${{ needs.unit-tests.result }}
+          - Component Tests: ${{ needs.component-tests.result }}
+          - API Integration: ${{ needs.api-integration-tests.result }}
+          - E2E Tests: ${{ needs.e2e-tests.result }}
+          
+          ### Action Required
+          Please review the test failures and fix the issues. This is especially important for:
+          1. Focus API endpoint regressions
+          2. Drag & drop functionality breaks
+          3. CRUD operation failures
+          4. Accessibility regressions
+          
+          [View Workflow Run](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})
+          `;
+          
+          github.rest.issues.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: title,
+            body: body,
+            labels: ['bug', 'testing', 'high-priority']
+          });

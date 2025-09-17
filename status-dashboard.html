@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LifeSync API Status Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8fafc;
+            padding: 20px;
+        }
+        .container { max-width: 800px; margin: 0 auto; }
+        .card { 
+            background: white; 
+            border-radius: 8px; 
+            padding: 24px; 
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .status-indicator { 
+            display: inline-block;
+            width: 12px; 
+            height: 12px; 
+            border-radius: 50%; 
+            margin-right: 8px;
+        }
+        .online { background: #22c55e; }
+        .offline { background: #ef4444; }
+        .loading { background: #f59e0b; animation: pulse 1s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .metric { 
+            display: flex; 
+            justify-content: space-between; 
+            padding: 8px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .metric:last-child { border-bottom: none; }
+        .value { font-weight: 600; }
+        .logs { 
+            background: #1f2937; 
+            color: #f9fafb; 
+            padding: 16px; 
+            border-radius: 6px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover { background: #2563eb; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 LifeSync API Status Dashboard</h1>
+        
+        <div class="card">
+            <h2>API Health Status</h2>
+            <div id="api-status" style="margin: 16px 0;">
+                <span class="status-indicator loading"></span>
+                <span>Checking...</span>
+            </div>
+            <button onclick="checkHealth()">Refresh Status</button>
+        </div>
+
+        <div class="card">
+            <h2>System Metrics</h2>
+            <div id="metrics">
+                <div class="metric">
+                    <span>Response Time:</span>
+                    <span class="value" id="response-time">--</span>
+                </div>
+                <div class="metric">
+                    <span>Last Health Check:</span>
+                    <span class="value" id="last-check">--</span>
+                </div>
+                <div class="metric">
+                    <span>Uptime:</span>
+                    <span class="value" id="uptime">--</span>
+                </div>
+                <div class="metric">
+                    <span>Total Tasks:</span>
+                    <span class="value" id="task-count">--</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Live Monitor Logs</h2>
+            <div class="logs" id="logs">
+                Loading logs...
+            </div>
+            <button onclick="refreshLogs()" style="margin-top: 12px;">Refresh Logs</button>
+        </div>
+    </div>
+
+    <script>
+        let startTime = Date.now();
+        
+        async function checkHealth() {
+            const indicator = document.querySelector('#api-status .status-indicator');
+            const text = document.querySelector('#api-status span:last-child');
+            
+            indicator.className = 'status-indicator loading';
+            text.textContent = 'Checking...';
+            
+            try {
+                const start = Date.now();
+                const response = await fetch('http://10.247.209.223:3001/api/health');
+                const responseTime = Date.now() - start;
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    indicator.className = 'status-indicator online';
+                    text.textContent = `API Online (${responseTime}ms)`;
+                    
+                    document.getElementById('response-time').textContent = `${responseTime}ms`;
+                    document.getElementById('last-check').textContent = new Date().toLocaleTimeString();
+                    
+                    // Get task count
+                    try {
+                        const tasksResponse = await fetch('http://10.247.209.223:3001/api/tasks');
+                        if (tasksResponse.ok) {
+                            const tasks = await tasksResponse.json();
+                            document.getElementById('task-count').textContent = tasks.length;
+                        }
+                    } catch (e) {
+                        console.warn('Failed to fetch task count:', e);
+                    }
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                indicator.className = 'status-indicator offline';
+                text.textContent = `API Offline: ${error.message}`;
+                document.getElementById('response-time').textContent = 'Error';
+            }
+        }
+        
+        function updateUptime() {
+            const uptimeMs = Date.now() - startTime;
+            const uptimeSeconds = Math.floor(uptimeMs / 1000);
+            const hours = Math.floor(uptimeSeconds / 3600);
+            const minutes = Math.floor((uptimeSeconds % 3600) / 60);
+            const seconds = uptimeSeconds % 60;
+            
+            document.getElementById('uptime').textContent = 
+                `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+        
+        async function refreshLogs() {
+            try {
+                const response = await fetch('/tmp/personalAssistant/lifesync/api-monitor.log');
+                if (response.ok) {
+                    const logs = await response.text();
+                    const logLines = logs.split('\n').slice(-20).filter(line => line.trim());
+                    document.getElementById('logs').innerHTML = logLines.join('\n');
+                }
+            } catch (error) {
+                document.getElementById('logs').textContent = 'Unable to load logs from file system';
+            }
+        }
+        
+        // Initial checks
+        checkHealth();
+        refreshLogs();
+        
+        // Auto-refresh every 10 seconds
+        setInterval(checkHealth, 10000);
+        setInterval(updateUptime, 1000);
+        setInterval(refreshLogs, 30000);
+    </script>
+</body>
+</html>

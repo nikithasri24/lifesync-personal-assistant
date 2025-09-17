@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(/tmp/personalAssistant/.github/workflows/**)",
+      "Read(/tmp/personalAssistant/**)",
+      "Bash(npm install)",
+      "Bash(npm run build:*)",
+      "Bash(npm run lint)",
+      "Bash(npm run dev:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
