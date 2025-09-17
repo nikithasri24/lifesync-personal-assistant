@@ -1,94 +1,133 @@
-# LifeSync Personal Assistant Platform
+# ELEVATE - Personal Assistant & Productivity Suite
 
-<div align="center">
+A comprehensive, Nike-inspired personal productivity and life management application built with React, TypeScript, and modern web technologies.
 
-![LifeSync Logo](https://img.shields.io/badge/LifeSync-Personal%20Assistant-blue?style=for-the-badge&logo=react)
+## 🔄 Continuous Integration Status
 
-A comprehensive personal productivity platform that helps you manage tasks, track habits, plan finances, and optimize your daily life.
+[![Regression Tests](https://github.com/username/lifesync-personal-assistant/actions/workflows/regression-tests.yml/badge.svg)](https://github.com/username/lifesync-personal-assistant/actions/workflows/regression-tests.yml)
+[![Full Test Suite](https://github.com/username/lifesync-personal-assistant/actions/workflows/full-test-suite.yml/badge.svg)](https://github.com/username/lifesync-personal-assistant/actions/workflows/full-test-suite.yml)
+[![Focus Monitor](https://github.com/username/lifesync-personal-assistant/actions/workflows/focus-endpoint-monitor.yml/badge.svg)](https://github.com/username/lifesync-personal-assistant/actions/workflows/focus-endpoint-monitor.yml)
+[![API Connectivity](https://github.com/username/lifesync-personal-assistant/actions/workflows/api-connectivity-check.yml/badge.svg)](https://github.com/username/lifesync-personal-assistant/actions/workflows/api-connectivity-check.yml)
 
-[![React](https://img.shields.io/badge/React-18.x-blue?logo=react)](https://reactjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript)](https://www.typescriptlang.org/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16.x-blue?logo=postgresql)](https://www.postgresql.org/)
-[![Docker](https://img.shields.io/badge/Docker-Ready-blue?logo=docker)](https://www.docker.com/)
-[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE.md)
+> **Focus Protection:** Automated monitoring prevents the return of Focus API 404 errors that previously affected the application.
 
-[Features](#features) • [Quick Start](#quick-start) • [Documentation](#documentation) • [Contributing](#contributing) • [Support](#support)
+## 🚀 Features Overview
 
-</div>
+### 🏠 **Dashboard**
+- **Welcome Overview**: Personalized greeting with today's summary
+- **Quick Stats**: Today's tasks, pending habits, total notes, and weekly progress
+- **Today's Tasks**: Prioritized task list with due dates and priority indicators
+- **Today's Habits**: Habit completion tracking with progress indicators
+- **Recent Notes**: Latest notes with tags and timestamps
+- **Weekly Progress**: Visual overview of completed tasks and journal entries
+- **Upcoming Deadlines**: Time-sensitive tasks with warning indicators
 
-## 🌟 Features
+### 📅 **Calendar & Event Management**
+- **Full Calendar View**: Month/week/day views with intuitive navigation
+- **Event Creation**: Rich event creation with date/time, location, and descriptions
+- **Multiple Calendars**: Support for personal and external calendar sources
+- **Event Management**: Edit, delete, and manage calendar events
+- **Integration Ready**: Designed for Google Calendar, Outlook, and Apple Calendar sync
+- **Visual Organization**: Color-coded events and calendar categorization
 
-### 📋 **Task Management**
-- **Project-based Organization**: Group tasks by projects with custom colors and icons
-- **Smart Categories**: Work, personal, health, learning, and custom categories
-- **Priority System**: High, medium, low priority with visual indicators
-- **Time Tracking**: Estimated vs actual time with Pomodoro integration
-- **Advanced Filters**: Filter by status, priority, project, and date ranges
+### ✅ **Advanced Task Management**
+- **Kanban Workflow**: 4-column system (Need to Start, Currently Working, Pending Others, Done)
+- **Task Categories**: Personal, Household, and Work organization
+- **Priority System**: Low, Medium, High, and Urgent priority levels
+- **Sub-tasks**: Micro-checklists and task breakdown capability
+- **Drag & Drop**: Intuitive task movement between status columns
+- **Due Dates**: Date tracking with overdue indicators
+- **Assignment Tracking**: Track who tasks are waiting on
+- **Time Estimation**: Task duration planning
+- **Focus Time Tracking**: Integration with Pomodoro timer
 
-### 🎯 **Habit Tracking**
-- **Multiple Goal Types**: Daily targets, course completion, total goals
-- **Visual Progress**: Streak counters, progress bars, and calendar views
-- **Smart Increments**: Course goals progress one step at a time
-- **Mood Tracking**: Track mood and notes with each habit completion
-- **Analytics**: Detailed insights into habit patterns and success rates
+### 🎯 **Habit Tracking System**
+- **Hierarchical Categories**: Organized habit grouping (Supplements, Workouts, Reading)
+- **Flexible Frequency**: Daily, weekly, and monthly habit patterns
+- **Smart Reminders**: Browser notifications with customizable timing
+- **Streak Tracking**: Visual progress and consistency monitoring
+- **Color Coding**: Visual organization and quick identification
+- **Progress Analytics**: Weekly and monthly completion statistics
+- **Drag & Drop Reordering**: Customize habit organization
 
-### 💰 **Financial Management**
-- **Transaction Tracking**: Income, expenses, and transfers with categories
-- **Budget Planning**: Set and monitor budgets with alerts
-- **Account Management**: Multiple accounts with real-time balances
-- **Investment Tracking**: Portfolio performance and asset allocation
-- **Bill Reminders**: Never miss a payment with smart notifications
-- **Financial Goals**: Savings targets with progress tracking
-
-### 🧘 **Focus Sessions**
-- **Pomodoro Technique**: Customizable work/break intervals
-- **Productivity Scoring**: Rate your focus and track improvements
-- **Environment Tracking**: Monitor noise, lighting, and other factors
+### ⏱️ **Focus Timer (Pomodoro)**
+- **Multiple Timer Modes**: 25min Pomodoro, 45min Deep Work, 90min Flow State
 - **Task Integration**: Link focus sessions to specific tasks
-- **Analytics Dashboard**: Detailed productivity insights and trends
+- **Smart Breaks**: Automatic short (5min) and long (15min) break scheduling
+- **Session Tracking**: Detailed focus session history and analytics
+- **Interruption Monitoring**: Track and improve focus quality
+- **Daily Statistics**: Focus time, session count, and productivity metrics
+- **Customizable Settings**: Adjustable work/break durations
+- **Notifications**: Audio and visual alerts for session transitions
 
-### 🛒 **Smart Shopping**
-- **Intelligent Lists**: AI-powered shopping list organization
-- **Price Tracking**: Monitor price changes and find deals
-- **Budget Integration**: Sync with your financial goals
-- **Store Mapping**: Optimize your shopping route
-- **Shared Lists**: Collaborate with family members
+### 💭 **Mood Tracking & Wellness**
+- **Daily Check-ins**: Comprehensive mood, energy, and stress tracking
+- **Multi-dimensional Rating**: 5-point scales for mood, energy, and stress levels
+- **Sleep Integration**: Sleep duration tracking and correlation
+- **Activity Monitoring**: Exercise and social time tracking
+- **Mood Factors**: Identify triggers and influences (15+ predefined factors)
+- **Weekly Overview**: Visual week-at-a-glance mood calendar
+- **Analytics**: Average mood, check-in streaks, and pattern recognition
+- **Rich Notes**: Detailed daily reflections and observations
 
-### 🍳 **Meal Planning**
-- **Recipe Management**: Store and organize your favorite recipes
-- **Nutrition Tracking**: Monitor calories, macros, and nutrients
-- **Meal Prep Planning**: Weekly meal planning with shopping lists
-- **Dietary Preferences**: Support for various diets and restrictions
-- **Cost Analysis**: Track meal costs and optimize your food budget
+### 📝 **Notes & Knowledge Management**
+- **Rich Text Editor**: Full-featured note creation and editing
+- **Smart Categorization**: Work, Personal, Ideas, Meeting, and Project categories
+- **Tag System**: Flexible tagging for easy organization and retrieval
+- **Pin Important Notes**: Keep crucial information easily accessible
+- **Search Functionality**: Quick note discovery across all content
+- **Timestamps**: Automatic creation and modification tracking
 
-### 📅 **Calendar Integration**
-- **Unified View**: See all your commitments in one place
-- **Smart Scheduling**: AI-powered time slot suggestions
-- **Reminder System**: Never miss important events
-- **Time Blocking**: Allocate time for focused work
-- **Cross-platform Sync**: Works with Google Calendar, Outlook, and more
+### 📖 **Journal & Reflection**
+- **Daily Journaling**: Structured daily reflection and documentation
+- **Mood Integration**: Connect journal entries with daily mood tracking
+- **Gratitude Practice**: Built-in gratitude tracking features
+- **Attachment Support**: Images, files, and links in journal entries
+- **Weather Integration**: Optional weather logging for context
+- **Tag Organization**: Categorize and organize journal entries
 
-### 📊 **Analytics & Insights**
-- **Personal Dashboard**: Overview of all your metrics
-- **Trend Analysis**: Identify patterns in your productivity
-- **Goal Progress**: Visual tracking of all your objectives
-- **Performance Reports**: Weekly and monthly summaries
-- **Data Export**: Export your data in multiple formats
+### 🎨 **Nike-Inspired Design System**
+- **Athletic Aesthetics**: Bold, dynamic design inspired by Nike's visual language
+- **Premium Typography**: Space Grotesk and Inter fonts for modern appeal
+- **Color Palette**: Black, white, and orange accent scheme
+- **Micro-interactions**: Smooth animations and hover effects
+- **Responsive Design**: Mobile-first approach with desktop optimization
+- **Dark Mode**: Complete dark theme implementation
+- **Glass Effects**: Modern backdrop blur and transparency effects
 
-## 🚀 Quick Start
+### 🔧 **Technical Features**
+- **TypeScript**: Full type safety and developer experience
+- **React 18**: Latest React features with hooks and modern patterns
+- **Zustand State Management**: Lightweight, intuitive state handling
+- **Local Storage Persistence**: Automatic data persistence across sessions
+- **Date-fns Integration**: Comprehensive date manipulation and formatting
+- **Lucide Icons**: Modern, consistent iconography
+- **Custom CSS**: Comprehensive design system with CSS variables
+- **Responsive Grid**: Flexible layout system for all screen sizes
+
+## 🛠️ Technology Stack
+
+- **Frontend**: React 18 + TypeScript
+- **Build Tool**: Vite
+- **State Management**: Zustand with persistence middleware
+- **Styling**: Custom CSS with design system variables
+- **Icons**: Lucide React
+- **Date Handling**: date-fns
+- **Drag & Drop**: @dnd-kit
+- **Notifications**: Browser Notification API
+
+## 🚀 Getting Started
 
 ### Prerequisites
-
-- **Node.js** 18.x or higher
-- **Docker** and Docker Compose
-- **Git** for version control
+- Node.js 16+ 
+- npm or yarn
 
 ### Installation
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/nikithasri24/lifesync-personal-assistant.git
-   cd lifesync-personal-assistant/lifesync
+   git clone <repository-url>
+   cd lifesync
    ```
 
 2. **Install dependencies**
@@ -96,318 +135,112 @@ A comprehensive personal productivity platform that helps you manage tasks, trac
    npm install
    ```
 
-3. **Set up environment variables**
+3. **Start development server**
    ```bash
-   cp .env.example .env
-   # Edit .env with your configuration
+   npm run dev -- --port 3000 --host 0.0.0.0
    ```
 
-4. **Start PostgreSQL database**
-   ```bash
-   # Start PostgreSQL container
-   docker run --name lifesync-postgres \
-     -e POSTGRES_PASSWORD=lifesync123 \
-     -e POSTGRES_DB=lifesync \
-     -p 5433:5432 \
-     -d postgres:16
-   
-   # Set up database schema
-   docker exec lifesync-postgres psql -U postgres -d lifesync -c "
-   CREATE TABLE IF NOT EXISTS users (
-     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-     username VARCHAR(50) UNIQUE NOT NULL,
-     email VARCHAR(100) UNIQUE NOT NULL,
-     created_at TIMESTAMP DEFAULT NOW()
-   );"
-   ```
-
-5. **Start the API server**
-   ```bash
-   # Using the Docker-based API server
-   PORT=3001 node start-with-db.js
-   ```
-
-6. **Start the development server**
-   ```bash
-   # In a new terminal
-   npm run dev
-   ```
-
-7. **Open your browser**
-   ```
-   http://localhost:5173
-   ```
-
-### 🐳 Docker Deployment
-
-For production deployment with Docker:
-
-```bash
-# Build and start all services
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
-
-# Stop services
-docker-compose down
-```
-
-## 🏗️ Architecture
-
-### Frontend Stack
-- **React 18** with hooks and concurrent features
-- **TypeScript** for type safety and better DX
-- **Vite** for fast development and building
-- **Tailwind CSS** for utility-first styling
-- **Zustand** for lightweight state management
-
-### Backend Stack
-- **Express.js** REST API server
-- **PostgreSQL** for reliable data persistence
-- **Docker** for containerization
-- **Node.js** runtime environment
-
-### Project Structure
-```
-lifesync/
-├── src/
-│   ├── components/          # Reusable UI components
-│   ├── pages/              # Page components
-│   ├── stores/             # State management
-│   ├── services/           # API and business logic
-│   ├── hooks/              # Custom React hooks
-│   ├── types/              # TypeScript definitions
-│   └── utils/              # Utility functions
-├── public/                 # Static assets
-├── api-servers/            # Different API implementations
-├── database/               # Schema and migrations
-└── tests/                  # Test suites
-```
-
-## 🛠️ Development
+4. **Access the application**
+   - Local: `http://localhost:3000`
+   - Network: `http://[your-ip]:3000`
 
 ### Available Scripts
 
-```bash
-# Development
-npm run dev          # Start development server
-npm run build        # Build for production
-npm run preview      # Preview production build
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+- `npm run lint` - Run ESLint
 
-# Testing
-npm run test         # Run unit tests
-npm run test:e2e     # Run end-to-end tests
-npm run test:watch   # Run tests in watch mode
-
-# Quality
-npm run lint         # Run ESLint
-npm run type-check   # Run TypeScript checks
-npm run format       # Format code with Prettier
-
-# Database
-npm run db:migrate   # Run database migrations
-npm run db:seed      # Seed database with sample data
-npm run db:reset     # Reset database
-```
-
-### API Endpoints
-
-The platform provides comprehensive REST APIs:
+## 📱 Application Structure
 
 ```
-# Tasks
-GET    /api/tasks              # Get all tasks
-POST   /api/tasks              # Create new task
-PUT    /api/tasks/:id          # Update task
-DELETE /api/tasks/:id          # Delete task
-
-# Habits
-GET    /api/habits             # Get all habits
-POST   /api/habits             # Create new habit
-POST   /api/habits/:id/entries # Add habit entry
-PUT    /api/habits/:id         # Update habit
-
-# Financial
-GET    /api/financial/transactions    # Get transactions
-POST   /api/financial/transactions    # Create transaction
-GET    /api/financial/accounts        # Get accounts
-
-# Focus
-GET    /api/focus/sessions     # Get focus sessions
-POST   /api/focus/sessions     # Create session
-PUT    /api/focus/sessions/:id # Update session
-
-# Analytics
-GET    /api/analytics/dashboard # Get dashboard data
+src/
+├── components/          # Reusable UI components
+│   ├── Layout.tsx      # Main application layout
+│   ├── NikeLogo.tsx    # Brand logo component
+│   └── ThemeToggle.tsx # Dark mode toggle
+├── pages/              # Main application pages
+│   ├── Dashboard.tsx   # Overview and quick actions
+│   ├── Calendar.tsx    # Event and calendar management
+│   ├── Focus.tsx       # Pomodoro timer and focus tracking
+│   ├── Habits.tsx      # Habit tracking and management
+│   ├── Mood.tsx        # Daily check-ins and mood tracking
+│   ├── Notes.tsx       # Note creation and management
+│   ├── Todos.tsx       # Task management with Kanban
+│   ├── Journal.tsx     # Daily journaling
+│   └── Personal.tsx    # Personal life management
+├── stores/             # State management
+│   └── useAppStore.ts  # Main Zustand store
+├── types/              # TypeScript type definitions
+│   └── index.ts        # All application types
+├── index.css           # Nike-inspired design system
+└── App.tsx             # Main application component
 ```
 
-## 🔧 Configuration
+## 🎯 Core Features Deep Dive
 
-### Environment Variables
+### Habit Tracking System
+The hierarchical habit system supports three pre-configured categories:
+- **Supplements**: Daily vitamins (B12, Vitamin D, Iron)
+- **Workouts**: Physical exercise tracking
+- **Reading**: Learning and educational content
 
-```bash
-# Database
-DATABASE_URL=postgresql://postgres:lifesync123@localhost:5433/lifesync
-POSTGRES_HOST=localhost
-POSTGRES_PORT=5433
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=lifesync123
-POSTGRES_DB=lifesync
+Each habit includes:
+- Flexible frequency (daily, weekly, monthly)
+- Target count per period
+- Color coding for visual organization
+- Reminder system with browser notifications
+- Streak calculation and progress tracking
 
-# API
-API_PORT=3001
-API_HOST=0.0.0.0
-CORS_ORIGIN=http://localhost:5173
+### Task Management (Kanban)
+Four-column workflow system:
+1. **Need to Start**: New tasks awaiting action
+2. **Currently Working**: Active tasks in progress
+3. **Pending Others**: Tasks waiting on external dependencies
+4. **Done**: Completed tasks
 
-# Features
-ENABLE_ANALYTICS=true
-ENABLE_NOTIFICATIONS=true
-ENABLE_REAL_TIME=true
-```
+Features include:
+- Drag and drop between columns
+- Priority levels with visual indicators
+- Due date tracking with overdue alerts
+- Sub-task creation and management
+- Time estimation and tracking
 
-### Database Configuration
+### Focus Timer Features
+Comprehensive Pomodoro implementation:
+- **Standard Pomodoro**: 25-minute work sessions
+- **Deep Work**: 45-minute focused sessions
+- **Flow State**: 90-minute intensive sessions
+- Automatic break scheduling
+- Task integration for productivity tracking
+- Session analytics and improvement insights
 
-The platform uses PostgreSQL with the following key tables:
-- `users` - User accounts and profiles
-- `tasks` - Task management with projects
-- `habits` - Habit tracking and entries
-- `financial_transactions` - Financial data
-- `focus_sessions` - Productivity tracking
+## 🔮 Upcoming Features
 
-## 🧪 Testing
+### In Development
+- **Recurring Tasks**: Custom frequency patterns for repeating tasks
+- **Goals Page**: Bucket list and relationship goal management
+- **Shared Features**: Reading lists, gift ideas, and collaboration tools
+- **Data Import/Export**: Integration with Notion, Google Keep, and calendar services
+- **PWA Capabilities**: Offline functionality and mobile app experience
 
-### Unit Tests
-```bash
-npm run test
-```
-
-### Integration Tests
-```bash
-npm run test:integration
-```
-
-### End-to-End Tests
-```bash
-npm run test:e2e
-```
-
-### Test Coverage
-```bash
-npm run test:coverage
-```
-
-## 📚 Documentation
-
-- [API Documentation](docs/api.md)
-- [Deployment Guide](docs/deployment.md)
-- [Contributing Guidelines](CONTRIBUTING.md)
-- [Troubleshooting](docs/troubleshooting.md)
-- [Changelog](CHANGELOG.md)
+### Future Enhancements
+- **External Calendar Sync**: Google Calendar, Outlook, Apple Calendar integration
+- **Advanced Analytics**: Detailed productivity and wellness insights
+- **Team Collaboration**: Shared dashboards and collaborative features
+- **Mobile Optimization**: Enhanced mobile experience and gestures
+- **AI Insights**: Intelligent recommendations and pattern recognition
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
-
-### Development Workflow
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Add tests for new functionality
-5. Ensure all tests pass (`npm run test`)
-6. Commit your changes (`git commit -m 'Add amazing feature'`)
-7. Push to the branch (`git push origin feature/amazing-feature`)
-8. Open a Pull Request
-
-### Code Standards
-
-- **TypeScript** for all new code
-- **ESLint** and **Prettier** for code formatting
-- **Conventional Commits** for commit messages
-- **Jest** for unit tests
-- **Playwright** for E2E tests
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-**Database Connection Issues**
-```bash
-# Check if PostgreSQL container is running
-docker ps | grep postgres
-
-# Check container logs
-docker logs lifesync-postgres
-
-# Restart container
-docker restart lifesync-postgres
-```
-
-**API Server Not Starting**
-```bash
-# Check if port 3001 is available
-lsof -i :3001
-
-# Kill process if needed
-kill -9 $(lsof -t -i:3001)
-
-# Start with debug logging
-DEBUG=* PORT=3001 node start-with-db.js
-```
-
-**Frontend Build Issues**
-```bash
-# Clear cache and reinstall
-rm -rf node_modules package-lock.json
-npm install
-
-# Clear Vite cache
-rm -rf .vite
-npm run dev
-```
-
-## 📋 Roadmap
-
-### Version 2.0 (Coming Soon)
-- [ ] Mobile app (React Native)
-- [ ] Real-time collaboration
-- [ ] AI-powered insights
-- [ ] Advanced integrations
-- [ ] Offline support
-- [ ] Data synchronization
-
-### Version 1.1 (In Progress)
-- [x] Course goal increment fix
-- [x] PostgreSQL integration
-- [x] Docker deployment
-- [ ] Performance optimizations
-- [ ] Enhanced analytics
-- [ ] Mobile responsiveness
+This is a personal productivity application designed for individual use. The codebase serves as a comprehensive example of modern React development with TypeScript.
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
-
-## 🙏 Acknowledgments
-
-- Built with ❤️ using React and TypeScript
-- Icons by [Heroicons](https://heroicons.com/)
-- UI components inspired by [Tailwind UI](https://tailwindui.com/)
-- Database powered by [PostgreSQL](https://www.postgresql.org/)
-
-## 📞 Support
-
-- **Documentation**: [GitHub Wiki](https://github.com/nikithasri24/lifesync-personal-assistant/wiki)
-- **Issues**: [GitHub Issues](https://github.com/nikithasri24/lifesync-personal-assistant/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/nikithasri24/lifesync-personal-assistant/discussions)
+This project is for personal and educational use.
 
 ---
 
-<div align="center">
+**ELEVATE** - Just Do It. 🚀
 
-**Made with ❤️ by the LifeSync Team**
-
-[⭐ Star this repo](https://github.com/nikithasri24/lifesync-personal-assistant) • [🐛 Report Bug](https://github.com/nikithasri24/lifesync-personal-assistant/issues) • [✨ Request Feature](https://github.com/nikithasri24/lifesync-personal-assistant/issues)
-
-</div>
+*A comprehensive personal productivity suite designed with Nike's athletic aesthetic and premium functionality for peak performance.*
