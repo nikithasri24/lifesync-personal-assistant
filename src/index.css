@@ -172,6 +172,30 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+input,
+textarea,
+select {
+  color: var(--text-primary);
+  background-color: inherit;
+}
+
+.dark input,
+.dark textarea,
+.dark select {
+  color: var(--text-primary);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-tertiary);
+  opacity: 0.8;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: var(--text-tertiary);
+}
+
 /* Beautiful Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;

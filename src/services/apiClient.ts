@@ -1,178 +1,61 @@
 // LifeSync API Client - Real Database Integration
 // Complete TypeScript client for all LifeSync API endpoints
 
+import { isSupabaseConfigured } from '../lib/supabase';
+import SupabaseAdapter from './supabaseAdapter';
+import type {
+  TaskData,
+  ProjectData,
+  HabitData,
+  HabitEntryData,
+  FinancialAccountData,
+  FinancialTransactionData,
+  ShoppingListData,
+  ShoppingItemData,
+  PantryItemData,
+  MealPlanData,
+  PlannedMealData,
+  FocusSessionData,
+  RecipeData,
+  RecipeIngredientData,
+  AnalyticsData,
+} from './types';
+
+export type {
+  TaskData,
+  ProjectData,
+  HabitData,
+  HabitEntryData,
+  FinancialAccountData,
+  FinancialTransactionData,
+  ShoppingListData,
+  ShoppingItemData,
+  PantryItemData,
+  MealPlanData,
+  PlannedMealData,
+  FocusSessionData,
+  RecipeData,
+  RecipeIngredientData,
+  AnalyticsData,
+} from './types';
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
-
-// ==================== TYPE DEFINITIONS ====================
-
-export interface TaskData {
-  id?: string;
-  title: string;
-  description?: string;
-  project_id?: string;
-  status?: 'todo' | 'done' | 'waiting' | 'scheduled' | 'in_progress';
-  priority?: 'low' | 'medium' | 'high' | 'urgent';
-  estimated_time?: number;
-  actual_time?: number;
-  due_date?: string;
-  tags?: string[];
-  category?: 'work' | 'personal' | 'learning' | 'creative' | 'health' | 'other';
-  notes?: string;
-  starred?: boolean;
-  archived?: boolean;
-  deleted?: boolean;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface ProjectData {
-  id?: string;
-  name: string;
-  description?: string;
-  color?: string;
-  status?: 'active' | 'completed' | 'on_hold';
-  icon?: string;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface HabitData {
-  id?: string;
-  name: string;
-  description?: string;
-  category?: string;
-  frequency?: 'daily' | 'weekly' | 'monthly';
-  target_value?: number;
-  unit?: string;
-  goal_mode?: 'daily-target' | 'total-goal' | 'course-completion';
-  goal_target?: number;
-  goal_unit?: string;
-  current_progress?: number;
-  color?: string;
-  icon?: string;
-  streak_count?: number;
-  best_streak?: number;
-  is_active?: boolean;
-  reminder_time?: string;
-  reminder_enabled?: boolean;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface HabitEntryData {
-  id?: string;
-  habit_id: string;
-  date: string;
-  value?: number;
-  notes?: string;
-  mood?: string;
-  created_at?: string;
-}
-
-export interface FinancialTransactionData {
-  id?: string;
-  account_id?: string;
-  category_id?: string;
-  type: 'income' | 'expense' | 'transfer';
-  amount: number;
-  description?: string;
-  payee?: string;
-  date: string;
-  tags?: string[];
-  notes?: string;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface ShoppingListData {
-  id?: string;
-  name: string;
-  description?: string;
-  status?: 'active' | 'completed' | 'archived';
-  total_estimated_cost?: number;
-  total_actual_cost?: number;
-  store?: string;
-  shopping_date?: string;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface ShoppingItemData {
-  id?: string;
-  shopping_list_id: string;
-  name: string;
-  quantity?: number;
-  unit?: string;
-  estimated_price?: number;
-  actual_price?: number;
-  category?: string;
-  brand?: string;
-  notes?: string;
-  is_purchased?: boolean;
-  purchased_at?: string;
-  position?: number;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface FocusSessionData {
-  id?: string;
-  task_id?: string;
-  preset: string;
-  duration: number;
-  actual_duration?: number;
-  start_time: string;
-  end_time?: string;
-  status?: 'active' | 'completed' | 'cancelled' | 'paused';
-  breaks_taken?: number;
-  distractions?: number;
-  mood_before?: string;
-  mood_after?: string;
-  productivity_score?: number;
-  notes?: string;
-  environment_data?: any;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface RecipeData {
-  id?: string;
-  name: string;
-  description?: string;
-  cuisine?: string;
-  difficulty?: 'easy' | 'medium' | 'hard';
-  prep_time?: number;
-  cook_time?: number;
-  servings?: number;
-  calories_per_serving?: number;
-  instructions?: string;
-  tags?: string[];
-  is_favorite?: boolean;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface AnalyticsData {
-  tasks: {
-    total: string;
-    completed: string;
-  };
-  habits: {
-    total: string;
-  };
-  finance: {
-    total: string;
-    total_expenses: string;
-  };
-  focus: {
-    total: string;
-    total_focus_time: string;
-  };
-}
 
 // ==================== API CLIENT CLASS ====================
 
 class ApiClient {
+  private userId: string | null = null;
+  private readonly supabaseAdapter = isSupabaseConfigured ? new SupabaseAdapter(() => this.userId) : null;
+
+  constructor() {
+    console.log('[ApiClient] Supabase configured:', isSupabaseConfigured);
+    console.log('[ApiClient] Using Supabase adapter:', Boolean(this.supabaseAdapter));
+  }
+
+  setAuthContext(userId: string | null) {
+    this.userId = userId;
+  }
+
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${API_BASE}${endpoint}`;
     const config: RequestInit = {
@@ -200,10 +83,16 @@ class ApiClient {
   // ==================== TASK OPERATIONS ====================
 
   async getTasks(): Promise<TaskData[]> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.getTasks();
+    }
     return this.request<TaskData[]>('/tasks');
   }
 
   async createTask(task: Omit<TaskData, 'id' | 'created_at' | 'updated_at'>): Promise<TaskData> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.createTask(task);
+    }
     return this.request<TaskData>('/tasks', {
       method: 'POST',
       body: JSON.stringify(task),
@@ -211,6 +100,9 @@ class ApiClient {
   }
 
   async updateTask(id: string, updates: Partial<TaskData>): Promise<TaskData> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.updateTask(id, updates);
+    }
     return this.request<TaskData>(`/tasks/${id}`, {
       method: 'PUT',
       body: JSON.stringify(updates),
@@ -218,7 +110,30 @@ class ApiClient {
   }
 
   async deleteTask(id: string): Promise<TaskData> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.deleteTask(id);
+    }
     return this.request<TaskData>(`/tasks/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async restoreTask(id: string): Promise<TaskData> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.restoreTask(id);
+    }
+    return this.request<TaskData>(`/tasks/${id}/restore`, {
+      method: 'POST',
+    });
+  }
+
+  async permanentlyDeleteTask(
+    id: string,
+  ): Promise<{ message: string; task: TaskData }> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.permanentlyDeleteTask(id);
+    }
+    return this.request<{ message: string; task: TaskData }>(`/tasks/${id}/permanent`, {
       method: 'DELETE',
     });
   }
@@ -226,10 +141,16 @@ class ApiClient {
   // ==================== PROJECT OPERATIONS ====================
 
   async getProjects(): Promise<ProjectData[]> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.getProjects();
+    }
     return this.request<ProjectData[]>('/projects');
   }
 
   async createProject(project: Omit<ProjectData, 'id' | 'created_at' | 'updated_at'>): Promise<ProjectData> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.createProject(project);
+    }
     return this.request<ProjectData>('/projects', {
       method: 'POST',
       body: JSON.stringify(project),
@@ -237,6 +158,9 @@ class ApiClient {
   }
 
   async updateProject(id: string, updates: Partial<ProjectData>): Promise<ProjectData> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.updateProject(id, updates);
+    }
     return this.request<ProjectData>(`/projects/${id}`, {
       method: 'PUT',
       body: JSON.stringify(updates),
@@ -244,6 +168,10 @@ class ApiClient {
   }
 
   async deleteProject(id: string): Promise<{ message: string; project: ProjectData }> {
+    if (this.supabaseAdapter) {
+      await this.supabaseAdapter.deleteProject(id);
+      return { message: 'deleted', project: { id } as ProjectData };
+    }
     return this.request<{ message: string; project: ProjectData }>(`/projects/${id}`, {
       method: 'DELETE',
     });
@@ -252,10 +180,16 @@ class ApiClient {
   // ==================== HABIT OPERATIONS ====================
 
   async getHabits(): Promise<HabitData[]> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.getHabits();
+    }
     return this.request<HabitData[]>('/habits');
   }
 
   async createHabit(habit: Omit<HabitData, 'id' | 'created_at' | 'updated_at'>): Promise<HabitData> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.createHabit(habit);
+    }
     return this.request<HabitData>('/habits', {
       method: 'POST',
       body: JSON.stringify(habit),
@@ -263,6 +197,9 @@ class ApiClient {
   }
 
   async addHabitEntry(habitId: string, entry: Omit<HabitEntryData, 'id' | 'habit_id' | 'created_at'>): Promise<HabitEntryData> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.addHabitEntry(habitId, entry);
+    }
     return this.request<HabitEntryData>(`/habits/${habitId}/entries`, {
       method: 'POST',
       body: JSON.stringify(entry),
@@ -270,6 +207,9 @@ class ApiClient {
   }
 
   async updateHabit(habitId: string, updates: Partial<HabitData>): Promise<HabitData> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.updateHabit(habitId, updates);
+    }
     return this.request<HabitData>(`/habits/${habitId}`, {
       method: 'PUT',
       body: JSON.stringify(updates),
@@ -277,6 +217,10 @@ class ApiClient {
   }
 
   async deleteHabit(habitId: string): Promise<{ message: string; habit: HabitData }> {
+    if (this.supabaseAdapter) {
+      await this.supabaseAdapter.deleteHabit(habitId);
+      return { message: 'deleted', habit: { id: habitId } as HabitData };
+    }
     return this.request<{ message: string; habit: HabitData }>(`/habits/${habitId}`, {
       method: 'DELETE',
     });
@@ -284,15 +228,24 @@ class ApiClient {
 
   // ==================== FINANCIAL OPERATIONS ====================
 
-  async getFinancialAccounts(): Promise<any[]> {
-    return this.request<any[]>('/financial/accounts');
+  async getFinancialAccounts(): Promise<FinancialAccountData[]> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.getFinancialAccounts();
+    }
+    return this.request<FinancialAccountData[]>('/financial/accounts');
   }
 
   async getFinancialTransactions(): Promise<FinancialTransactionData[]> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.getFinancialTransactions();
+    }
     return this.request<FinancialTransactionData[]>('/financial/transactions');
   }
 
   async createFinancialTransaction(transaction: Omit<FinancialTransactionData, 'id' | 'created_at' | 'updated_at'>): Promise<FinancialTransactionData> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.createFinancialTransaction(transaction);
+    }
     return this.request<FinancialTransactionData>('/financial/transactions', {
       method: 'POST',
       body: JSON.stringify(transaction),
@@ -302,10 +255,16 @@ class ApiClient {
   // ==================== SHOPPING OPERATIONS ====================
 
   async getShoppingLists(): Promise<ShoppingListData[]> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.getShoppingLists();
+    }
     return this.request<ShoppingListData[]>('/shopping/lists');
   }
 
   async createShoppingList(list: Omit<ShoppingListData, 'id' | 'created_at' | 'updated_at'>): Promise<ShoppingListData> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.createShoppingList(list);
+    }
     return this.request<ShoppingListData>('/shopping/lists', {
       method: 'POST',
       body: JSON.stringify(list),
@@ -313,23 +272,167 @@ class ApiClient {
   }
 
   async getShoppingListItems(listId: string): Promise<ShoppingItemData[]> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.getShoppingListItems(listId);
+    }
     return this.request<ShoppingItemData[]>(`/shopping/lists/${listId}/items`);
   }
 
   async addShoppingItem(listId: string, item: Omit<ShoppingItemData, 'id' | 'shopping_list_id' | 'created_at' | 'updated_at'>): Promise<ShoppingItemData> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.addShoppingItem(listId, item);
+    }
     return this.request<ShoppingItemData>(`/shopping/lists/${listId}/items`, {
       method: 'POST',
       body: JSON.stringify(item),
     });
   }
 
+  async updateShoppingItem(itemId: string, updates: Partial<ShoppingItemData>): Promise<ShoppingItemData> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.updateShoppingItem(itemId, updates);
+    }
+    return this.request<ShoppingItemData>(`/shopping/items/${itemId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  async deleteShoppingItem(itemId: string): Promise<ShoppingItemData> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.deleteShoppingItem(itemId);
+    }
+    return this.request<ShoppingItemData>(`/shopping/items/${itemId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // ==================== PANTRY OPERATIONS ====================
+
+  async getPantryItems(): Promise<PantryItemData[]> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.getPantryItems();
+    }
+    return this.request<PantryItemData[]>('/pantry/items');
+  }
+
+  async createPantryItem(
+    item: Omit<PantryItemData, 'id' | 'created_at' | 'updated_at' | 'user_id'>,
+  ): Promise<PantryItemData> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.createPantryItem(item);
+    }
+    return this.request<PantryItemData>('/pantry/items', {
+      method: 'POST',
+      body: JSON.stringify(item),
+    });
+  }
+
+  async updatePantryItem(id: string, updates: Partial<PantryItemData>): Promise<PantryItemData> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.updatePantryItem(id, updates);
+    }
+    return this.request<PantryItemData>(`/pantry/items/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  async deletePantryItem(id: string): Promise<PantryItemData> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.deletePantryItem(id);
+    }
+    return this.request<PantryItemData>(`/pantry/items/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // ==================== MEAL PLANNING OPERATIONS ====================
+
+  async getMealPlans(): Promise<MealPlanData[]> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.getMealPlans();
+    }
+    return this.request<MealPlanData[]>('/meal-plans');
+  }
+
+  async createMealPlan(
+    plan: Omit<MealPlanData, 'id' | 'created_at' | 'updated_at' | 'planned_meals' | 'user_id'>,
+  ): Promise<MealPlanData> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.createMealPlan(plan);
+    }
+    return this.request<MealPlanData>('/meal-plans', {
+      method: 'POST',
+      body: JSON.stringify(plan),
+    });
+  }
+
+  async updateMealPlan(id: string, updates: Partial<MealPlanData>): Promise<MealPlanData> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.updateMealPlan(id, updates);
+    }
+    return this.request<MealPlanData>(`/meal-plans/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  async deleteMealPlan(id: string): Promise<{ message: string; meal_plan: MealPlanData }> {
+    if (this.supabaseAdapter) {
+      await this.supabaseAdapter.deleteMealPlan(id);
+      return { message: 'deleted', meal_plan: { id } as MealPlanData };
+    }
+    return this.request<{ message: string; meal_plan: MealPlanData }>(`/meal-plans/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async createPlannedMeal(
+    meal: Omit<PlannedMealData, 'id' | 'created_at' | 'updated_at'>,
+  ): Promise<PlannedMealData> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.createPlannedMeal(meal);
+    }
+    return this.request<PlannedMealData>('/planned-meals', {
+      method: 'POST',
+      body: JSON.stringify(meal),
+    });
+  }
+
+  async updatePlannedMeal(id: string, updates: Partial<PlannedMealData>): Promise<PlannedMealData> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.updatePlannedMeal(id, updates);
+    }
+    return this.request<PlannedMealData>(`/planned-meals/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  async deletePlannedMeal(id: string): Promise<{ message: string; planned_meal: PlannedMealData }> {
+    if (this.supabaseAdapter) {
+      await this.supabaseAdapter.deletePlannedMeal(id);
+      return { message: 'deleted', planned_meal: { id } as PlannedMealData };
+    }
+    return this.request<{ message: string; planned_meal: PlannedMealData }>(`/planned-meals/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
   // ==================== FOCUS SESSION OPERATIONS ====================
 
   async getFocusSessions(): Promise<FocusSessionData[]> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.getFocusSessions();
+    }
     return this.request<FocusSessionData[]>('/focus/sessions');
   }
 
   async createFocusSession(session: Omit<FocusSessionData, 'id' | 'created_at' | 'updated_at'>): Promise<FocusSessionData> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.createFocusSession(session);
+    }
     return this.request<FocusSessionData>('/focus/sessions', {
       method: 'POST',
       body: JSON.stringify(session),
@@ -337,6 +440,9 @@ class ApiClient {
   }
 
   async updateFocusSession(id: string, updates: Partial<FocusSessionData>): Promise<FocusSessionData> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.updateFocusSession(id, updates);
+    }
     return this.request<FocusSessionData>(`/focus/sessions/${id}`, {
       method: 'PUT',
       body: JSON.stringify(updates),
@@ -346,10 +452,16 @@ class ApiClient {
   // ==================== RECIPE OPERATIONS ====================
 
   async getRecipes(): Promise<RecipeData[]> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.getRecipes();
+    }
     return this.request<RecipeData[]>('/recipes');
   }
 
   async createRecipe(recipe: Omit<RecipeData, 'id' | 'created_at' | 'updated_at'>): Promise<RecipeData> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.createRecipe(recipe);
+    }
     return this.request<RecipeData>('/recipes', {
       method: 'POST',
       body: JSON.stringify(recipe),
@@ -359,12 +471,18 @@ class ApiClient {
   // ==================== ANALYTICS ====================
 
   async getAnalytics(): Promise<AnalyticsData> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.getAnalytics();
+    }
     return this.request<AnalyticsData>('/analytics/dashboard');
   }
 
   // ==================== HEALTH CHECK ====================
 
   async healthCheck(): Promise<{ status: string; timestamp: string }> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.healthCheck();
+    }
     return this.request<{ status: string; timestamp: string }>('/health');
   }
 }

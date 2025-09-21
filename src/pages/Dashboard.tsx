@@ -1,16 +1,13 @@
 import { useAppStore } from '../stores/useAppStore';
-import { useApiTasks } from '../hooks/useApiTasks';
 import { 
   CheckSquare, 
   Target, 
   FileText, 
   BookOpen,
-  TrendingUp,
-  Calendar
+  TrendingUp
 } from 'lucide-react';
 import { format, isToday, addDays } from 'date-fns';
-import LoadingSpinner, { SkeletonCard } from '../components/LoadingSpinner';
-import { EmptyState } from '../components/ErrorState';
+import { SkeletonCard } from '../components/LoadingSpinner';
 import { useState, useEffect } from 'react';
 
 export default function Dashboard() {
@@ -19,10 +16,13 @@ export default function Dashboard() {
     notes, 
     journalEntries,
     completeHabit,
-    setActiveView 
+    setActiveView,
+    tasks: storeTasks,
+    tasksLoading,
+    toggleTodo
   } = useAppStore();
-  
-  const { tasks, loading: tasksLoading, error: tasksError, updateTask } = useApiTasks();
+
+  const tasks = storeTasks;
 
   const [isLoading, setIsLoading] = useState(true);
   const [completingTask, setCompletingTask] = useState<string | null>(null);
@@ -30,7 +30,7 @@ export default function Dashboard() {
   const completeTask = async (taskId: string) => {
     try {
       setCompletingTask(taskId);
-      await updateTask(taskId, { status: 'done' });
+      await toggleTodo(taskId);
     } catch (error) {
       console.error('Failed to complete task:', error);
     } finally {
@@ -46,15 +46,15 @@ export default function Dashboard() {
 
   const todayTodos = tasks.filter(task => 
     task.status !== 'done' && !task.deleted && 
-    task.due_date && 
-    isToday(new Date(task.due_date))
+    task.dueDate && 
+    isToday(task.dueDate)
   );
 
   const upcomingTodos = tasks.filter(task => 
     task.status !== 'done' && !task.deleted && 
-    task.due_date && 
-    new Date(task.due_date) > new Date() &&
-    new Date(task.due_date) <= addDays(new Date(), 7)
+    task.dueDate && 
+    task.dueDate > new Date() &&
+    task.dueDate <= addDays(new Date(), 7)
   );
 
   const todayHabits = habits.filter(habit => {
@@ -77,9 +77,9 @@ export default function Dashboard() {
   });
 
   const completedTodosThisWeek = tasks.filter(task => {
-    if (task.status !== 'done') return false;
-    if (!task.updated_at && !task.created_at) return false;
-    const completedDate = new Date(task.updated_at || task.created_at);
+    if (task.status !== 'done' || task.deleted) return false;
+    const completedDate = task.completedAt || task.updatedAt || task.createdAt;
+    if (!completedDate) return false;
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
     return completedDate >= weekAgo;
@@ -128,20 +128,6 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <SkeletonCard className="h-80" />
           <SkeletonCard className="h-80" />
-        </div>
-      </div>
-    );
-  }
-
-  if (tasksError) {
-    return (
-      <div className="space-y-8">
-        <div className="bg-error-light border border-error rounded-xl p-6">
-          <h3 className="text-lg font-semibold text-error mb-2">Error Loading Tasks</h3>
-          <p className="text-error">{tasksError}</p>
-          <p className="text-sm text-secondary mt-2">
-            Make sure the API server is running and accessible.
-          </p>
         </div>
       </div>
     );
@@ -226,9 +212,9 @@ export default function Dashboard() {
                   </button>
                   <div className="flex-1">
                     <p className="text-sm font-medium text-primary">{task.title}</p>
-                    {task.due_date && (
+                    {task.dueDate && (
                       <p className="text-xs text-secondary mt-1">
-                        Due: {format(new Date(task.due_date), 'MMM dd')}
+                        Due: {format(task.dueDate, 'MMM dd')}
                       </p>
                     )}
                   </div>
@@ -414,7 +400,7 @@ export default function Dashboard() {
                       {task.title}
                     </p>
                     <p className="text-xs text-secondary mt-1">
-                      Due: {task.due_date && format(new Date(task.due_date), 'MMM dd, yyyy')}
+                      Due: {task.dueDate && format(task.dueDate, 'MMM dd, yyyy')}
                     </p>
                   </div>
                 </div>

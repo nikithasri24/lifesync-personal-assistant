@@ -1,11 +1,46 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
-// These would normally be environment variables
-// For demo purposes, using placeholder values
-const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://your-project.supabase.co'
-const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY || 'your-anon-key'
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+console.log('[SupabaseEnv] URL:', supabaseUrl)
+
+const isPlaceholder = (value?: string) => {
+  if (!value) return true
+  const trimmed = value.trim()
+  if (!trimmed) return true
+  return trimmed.includes('your-project') || trimmed === 'your-anon-key'
+}
+
+export const isSupabaseConfigured = !isPlaceholder(supabaseUrl) && !isPlaceholder(supabaseAnonKey)
+
+let supabaseClient: SupabaseClient | null = null
+
+if (isSupabaseConfigured && supabaseUrl && supabaseAnonKey) {
+  supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+    },
+  })
+} else {
+  console.warn(
+    '[LifeSync] Supabase environment variables are not configured. '
+    + 'Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to enable persistence and collaboration.',
+  )
+}
+
+export const supabase = supabaseClient
+
+export const ensureSupabase = (): SupabaseClient => {
+  if (!supabaseClient) {
+    throw new Error(
+      'Supabase client is not configured. Provide VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your environment.',
+    )
+  }
+
+  return supabaseClient
+}
 
 // Database Types
 export interface Task {

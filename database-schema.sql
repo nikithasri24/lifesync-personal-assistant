@@ -296,11 +296,26 @@ CREATE TABLE shopping_items (
     estimated_price DECIMAL(8,2),
     actual_price DECIMAL(8,2),
     category VARCHAR(100), -- groceries, electronics, clothing, etc.
+    subcategory VARCHAR(100),
     brand VARCHAR(100),
     notes TEXT,
     is_purchased BOOLEAN DEFAULT false,
     purchased_at TIMESTAMP WITH TIME ZONE,
     position INTEGER, -- For ordering
+    priority VARCHAR(10) DEFAULT 'medium', -- low, medium, high
+    tags TEXT[] DEFAULT '{}',
+    assigned_store VARCHAR(255),
+    best_stores TEXT[] DEFAULT '{}',
+    barcode VARCHAR(100),
+    image_url TEXT,
+    nutrition_info JSONB,
+    added_by UUID REFERENCES users(id),
+    purchased_by UUID REFERENCES users(id),
+    auto_added BOOLEAN DEFAULT false,
+    recipe_id UUID REFERENCES recipes(id) ON DELETE SET NULL,
+    store VARCHAR(255),
+    aisle VARCHAR(100),
+    recurring JSONB,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );

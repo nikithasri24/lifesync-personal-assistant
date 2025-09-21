@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useRealAppStore } from './stores/useRealAppStore';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
@@ -20,18 +20,50 @@ import Finances from './pages/Finances';
 import SeventyFiveHard from './pages/SeventyFiveHard';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import LoadingSpinner from './components/LoadingSpinner';
+import { AuthGate } from './components/AuthGate';
+import { useAuth } from './hooks/useAuth';
+import { isSupabaseConfigured } from './lib/supabase';
 
 function App() {
   const { activeView, loading, initializeData } = useRealAppStore();
+  const { user, loading: authLoading } = useAuth();
+  const initializedFor = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured) {
+      return;
+    }
+
+    if (!authLoading && !user) {
+      initializedFor.current = null;
+    }
+  }, [user, authLoading]);
 
   // Initialize data from database on app start
   useEffect(() => {
-    // Try database initialization with graceful fallback
+    if (isSupabaseConfigured) {
+      if (authLoading || !user) {
+        return;
+      }
+
+      if (initializedFor.current === user.id) {
+        return;
+      }
+
+      initializedFor.current = user.id;
+      initializeData();
+      console.log('🔄 Initialized LifeSync data for Supabase user');
+      return;
+    }
+
+    if (initializedFor.current === 'local') {
+      return;
+    }
+
+    initializedFor.current = 'local';
     initializeData();
-    console.log('🔄 Database initialization enabled - attempting connection');
-    console.log('📊 Database integration with graceful fallback active');
-    console.log('💡 App works with or without database connection');
-  }, [initializeData]);
+    console.log('🔄 Initialized LifeSync using local/mock data');
+  }, [initializeData, user, authLoading]);
 
   // Show loading spinner while initializing
   if (loading) {
@@ -93,9 +125,11 @@ function App() {
   };
 
   return (
-    <Layout>
-      {renderPage()}
-    </Layout>
+    <AuthGate>
+      <Layout>
+        {renderPage()}
+      </Layout>
+    </AuthGate>
   );
 }
 

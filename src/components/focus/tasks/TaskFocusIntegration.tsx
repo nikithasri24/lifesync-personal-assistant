@@ -6,7 +6,7 @@
  * project organization, and productivity analytics.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   CheckSquare,
   Clock,
@@ -36,28 +36,11 @@ import {
   Heart,
   Lightbulb
 } from 'lucide-react';
-import { format, isToday, isPast, addDays } from 'date-fns';
+import { format, isToday, isPast } from 'date-fns';
+import { useAppStore } from '../../../stores/useAppStore';
+import type { TodoItem, Project as StoreProject, FocusSession as StoreFocusSession } from '../../../types';
 
-interface Task {
-  id: string;
-  title: string;
-  description?: string;
-  projectId?: string;
-  status: 'todo' | 'in_progress' | 'completed' | 'cancelled';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  estimatedTime: number; // minutes
-  actualTime: number; // minutes from focus sessions
-  dueDate?: Date;
-  tags: string[];
-  focusSessions: string[]; // session IDs
-  createdAt: Date;
-  completedAt?: Date;
-  difficulty: 1 | 2 | 3 | 4 | 5;
-  category: 'work' | 'personal' | 'learning' | 'creative' | 'health' | 'other';
-  subtasks: SubTask[];
-  attachments: string[];
-  notes: string;
-}
+type TaskStatusView = 'todo' | 'in_progress' | 'completed' | 'cancelled';
 
 interface SubTask {
   id: string;
@@ -67,39 +50,58 @@ interface SubTask {
   actualTime?: number;
 }
 
-interface Project {
+interface TaskView {
+  id: string;
+  title: string;
+  description?: string;
+  projectId?: string;
+  status: TaskStatusView;
+  underlyingStatus: TodoItem['status'];
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  estimatedTime?: number;
+  actualTime?: number;
+  dueDate?: Date;
+  tags: string[];
+  createdAt: Date;
+  completedAt?: Date;
+  difficulty?: 1 | 2 | 3 | 4 | 5;
+  category: 'work' | 'personal' | 'learning' | 'creative' | 'health' | 'other';
+  subtasks: SubTask[];
+  notes?: string;
+}
+
+interface ProjectView {
   id: string;
   name: string;
   description?: string;
   color: string;
-  status: 'active' | 'completed' | 'on_hold' | 'cancelled';
-  startDate: Date;
+  status: 'active' | 'completed' | 'on-hold' | 'cancelled';
+  startDate?: Date;
   endDate?: Date;
   estimatedHours: number;
   actualHours: number;
-  tasks: string[]; // task IDs
-  team?: string[]; // user IDs
-  progress: number; // 0-100
-  category: string;
-  icon: string;
+  tasks: string[];
+  progress: number;
+  icon?: string;
+  category?: string;
 }
 
-interface FocusSession {
+type FocusSessionView = {
   id: string;
   taskId?: string;
   projectId?: string;
   duration: number;
   actualDuration: number;
   startTime: Date;
-  endTime: Date;
-  productivity: number; // 1-5 rating
+  endTime?: Date;
+  productivity?: number;
   notes?: string;
-}
+};
 
 interface Props {
   onStartFocusSession: (taskId: string, estimatedDuration: number) => void;
   onTaskComplete: (taskId: string) => void;
-  activeFocusSession?: FocusSession;
+  activeFocusSession?: FocusSessionView;
 }
 
 export const TaskFocusIntegration: React.FC<Props> = ({
@@ -107,18 +109,23 @@ export const TaskFocusIntegration: React.FC<Props> = ({
   onTaskComplete,
   activeFocusSession
 }) => {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
+  const storeTasks = useAppStore((state) => state.tasks);
+  const storeProjects = useAppStore((state) => state.projects);
+  const storeFocusSessions = useAppStore((state) => state.focusSessions);
+  const addTodo = useAppStore((state) => state.addTodo);
+  const updateTodo = useAppStore((state) => state.updateTodo);
+  const toggleTodo = useAppStore((state) => state.toggleTodo);
+  const addProject = useAppStore((state) => state.addProject);
   const [activeTab, setActiveTab] = useState<'tasks' | 'projects' | 'analytics'>('tasks');
   const [filter, setFilter] = useState<'all' | 'today' | 'overdue' | 'completed'>('all');
   const [selectedProject, setSelectedProject] = useState<string>('all');
   const [showCreateTask, setShowCreateTask] = useState(false);
   const [showCreateProject, setShowCreateProject] = useState(false);
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [selectedTask, setSelectedTask] = useState<TaskView | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'priority' | 'dueDate' | 'estimatedTime' | 'createdAt'>('priority');
 
-  const [newTask, setNewTask] = useState<Partial<Task>>({
+  const [newTask, setNewTask] = useState<Partial<TaskView>>({
     title: '',
     priority: 'medium',
     estimatedTime: 25,
@@ -129,191 +136,157 @@ export const TaskFocusIntegration: React.FC<Props> = ({
     notes: ''
   });
 
-  const [newProject, setNewProject] = useState<Partial<Project>>({
+  const [newProject, setNewProject] = useState<Partial<ProjectView>>({
     name: '',
     color: '#6366f1',
     category: 'work',
     icon: '📁',
-    estimatedHours: 10
+    estimatedHours: 10,
+    status: 'active'
   });
 
-  // Mock data
-  useEffect(() => {
-    const mockProjects: Project[] = [
-      {
-        id: '1',
-        name: 'Website Redesign',
-        description: 'Complete overhaul of company website',
-        color: '#6366f1',
-        status: 'active',
-        startDate: new Date(),
-        estimatedHours: 120,
-        actualHours: 45,
-        tasks: ['1', '2', '3'],
-        progress: 35,
-        category: 'work',
-        icon: '💻'
-      },
-      {
-        id: '2',
-        name: 'Learning React',
-        description: 'Master React framework',
-        color: '#10b981',
-        status: 'active',
-        startDate: new Date(),
-        estimatedHours: 80,
-        actualHours: 25,
-        tasks: ['4', '5'],
-        progress: 60,
-        category: 'learning',
-        icon: '📚'
-      },
-      {
-        id: '3',
-        name: 'Fitness Goals',
-        description: 'Health and wellness objectives',
-        color: '#f59e0b',
-        status: 'active',
-        startDate: new Date(),
-        estimatedHours: 40,
-        actualHours: 12,
-        tasks: ['6'],
-        progress: 20,
-        category: 'health',
-        icon: '💪'
-      }
-    ];
+  const mapStatusToView = (status: TodoItem['status']): TaskStatusView => {
+    switch (status) {
+      case 'done':
+        return 'completed';
+      case 'in_progress':
+      case 'currently-working':
+        return 'in_progress';
+      case 'waiting':
+      case 'pending-others':
+      case 'scheduled':
+        return 'in_progress';
+      case 'todo':
+      case 'need-to-start':
+      default:
+        return 'todo';
+    }
+  };
 
-    const mockTasks: Task[] = [
-      {
-        id: '1',
-        title: 'Design homepage mockups',
-        description: 'Create wireframes and visual designs for the new homepage',
-        projectId: '1',
-        status: 'in_progress',
-        priority: 'high',
-        estimatedTime: 180,
-        actualTime: 75,
-        dueDate: addDays(new Date(), 2),
-        tags: ['design', 'ui', 'homepage'],
-        focusSessions: ['session1', 'session2'],
-        createdAt: new Date(),
-        difficulty: 4,
-        category: 'work',
-        subtasks: [
-          { id: 'st1', title: 'Research competitor designs', completed: true, estimatedTime: 60, actualTime: 45 },
-          { id: 'st2', title: 'Create wireframes', completed: true, estimatedTime: 90, actualTime: 120 },
-          { id: 'st3', title: 'Design visual mockups', completed: false, estimatedTime: 120 }
-        ],
-        attachments: [],
-        notes: 'Focus on mobile-first approach'
-      },
-      {
-        id: '2',
-        title: 'Implement responsive navigation',
-        description: 'Code the new navigation component with mobile responsiveness',
-        projectId: '1',
-        status: 'todo',
-        priority: 'medium',
-        estimatedTime: 120,
-        actualTime: 0,
-        dueDate: addDays(new Date(), 5),
-        tags: ['frontend', 'react', 'responsive'],
-        focusSessions: [],
-        createdAt: new Date(),
-        difficulty: 3,
-        category: 'work',
-        subtasks: [],
-        attachments: [],
-        notes: ''
-      },
-      {
-        id: '3',
-        title: 'Set up analytics tracking',
-        description: 'Implement Google Analytics and custom event tracking',
-        projectId: '1',
-        status: 'todo',
-        priority: 'low',
-        estimatedTime: 90,
-        actualTime: 0,
-        dueDate: addDays(new Date(), 10),
-        tags: ['analytics', 'tracking'],
-        focusSessions: [],
-        createdAt: new Date(),
-        difficulty: 2,
-        category: 'work',
-        subtasks: [],
-        attachments: [],
-        notes: ''
-      },
-      {
-        id: '4',
-        title: 'Complete React Hooks tutorial',
-        description: 'Go through the official React Hooks documentation and examples',
-        projectId: '2',
-        status: 'completed',
-        priority: 'medium',
-        estimatedTime: 180,
-        actualTime: 165,
-        dueDate: new Date(),
-        tags: ['react', 'hooks', 'tutorial'],
-        focusSessions: ['session3', 'session4'],
-        createdAt: new Date(),
-        completedAt: new Date(),
-        difficulty: 3,
-        category: 'learning',
-        subtasks: [],
-        attachments: [],
-        notes: 'Great resource for understanding useEffect'
-      },
-      {
-        id: '5',
-        title: 'Build a todo app with React',
-        description: 'Practice React skills by building a functional todo application',
-        projectId: '2',
-        status: 'in_progress',
-        priority: 'high',
-        estimatedTime: 240,
-        actualTime: 120,
-        dueDate: addDays(new Date(), 3),
-        tags: ['react', 'project', 'practice'],
-        focusSessions: ['session5'],
-        createdAt: new Date(),
-        difficulty: 4,
-        category: 'learning',
-        subtasks: [
-          { id: 'st4', title: 'Set up project structure', completed: true, estimatedTime: 30, actualTime: 25 },
-          { id: 'st5', title: 'Implement basic CRUD operations', completed: false, estimatedTime: 120 },
-          { id: 'st6', title: 'Add local storage persistence', completed: false, estimatedTime: 60 },
-          { id: 'st7', title: 'Style with CSS', completed: false, estimatedTime: 90 }
-        ],
-        attachments: [],
-        notes: 'Focus on clean, reusable components'
-      },
-      {
-        id: '6',
-        title: 'Morning workout routine',
-        description: '30-minute morning exercise routine',
-        projectId: '3',
-        status: 'todo',
-        priority: 'medium',
-        estimatedTime: 30,
-        actualTime: 0,
-        dueDate: new Date(),
-        tags: ['exercise', 'morning', 'routine'],
-        focusSessions: [],
-        createdAt: new Date(),
-        difficulty: 2,
-        category: 'health',
-        subtasks: [],
-        attachments: [],
-        notes: 'Start with light stretching'
-      }
-    ];
+  const mapCategoryIdToView = (categoryId?: string): TaskView['category'] => {
+    switch (categoryId) {
+      case 'work':
+        return 'work';
+      case 'health':
+        return 'health';
+      case 'learning':
+        return 'learning';
+      case 'creative':
+        return 'creative';
+      case 'personal':
+      case 'household':
+        return 'personal';
+      default:
+        return 'other';
+    }
+  };
 
-    setProjects(mockProjects);
-    setTasks(mockTasks);
-  }, []);
+  const mapCategoryViewToId = (category?: TaskView['category']): string => {
+    switch (category) {
+      case 'work':
+        return 'work';
+      case 'health':
+        return 'health';
+      case 'learning':
+        return 'learning';
+      case 'creative':
+        return 'creative';
+      case 'personal':
+        return 'personal';
+      case 'other':
+      default:
+        return 'other';
+    }
+  };
+
+  const focusAggregate = useMemo(() => {
+    const map = new Map<string, { duration: number; sessions: string[] }>();
+
+    storeFocusSessions.forEach((session: StoreFocusSession) => {
+      if (!session.todoId && !session.taskId) {
+        return;
+      }
+      const taskId = session.todoId || (session as any).taskId;
+      if (!taskId) {
+        return;
+      }
+
+      const entry = map.get(taskId) || { duration: 0, sessions: [] };
+      const sessionDuration = session.actualDuration ?? session.duration ?? 0;
+      entry.duration += sessionDuration;
+      entry.sessions.push(session.id);
+      map.set(taskId, entry);
+    });
+
+    return map;
+  }, [storeFocusSessions]);
+
+  const tasks: TaskView[] = useMemo(() => {
+    return storeTasks.map((todo: TodoItem) => {
+      const aggregate = focusAggregate.get(todo.id);
+      const subtasks: SubTask[] = (todo.subtasks || []).map((sub) => ({
+        id: sub.id,
+        title: sub.title,
+        completed: sub.completed ?? sub.status === 'done',
+        estimatedTime: sub.estimatedTime,
+        actualTime: sub.actualTime
+      }));
+
+      return {
+        id: todo.id,
+        title: todo.title,
+        description: todo.description,
+        projectId: todo.projectId,
+        status: mapStatusToView(todo.status),
+        underlyingStatus: todo.status,
+        priority: todo.priority,
+        estimatedTime: todo.estimatedTime,
+        actualTime: aggregate?.duration ?? todo.actualTime ?? 0,
+        dueDate: todo.dueDate,
+        tags: todo.tags ?? [],
+        createdAt: todo.createdAt,
+        completedAt: todo.completedAt,
+        difficulty: 3,
+        category: mapCategoryIdToView(todo.categoryId),
+        subtasks,
+        notes: todo.notes
+      };
+    });
+  }, [storeTasks, focusAggregate]);
+
+  const projects: ProjectView[] = useMemo(() => {
+    const tasksByProject = new Map<string, TaskView[]>();
+    tasks.forEach((task) => {
+      if (!task.projectId) return;
+      const collection = tasksByProject.get(task.projectId) || [];
+      collection.push(task);
+      tasksByProject.set(task.projectId, collection);
+    });
+
+    return storeProjects.map((project: StoreProject) => {
+      const associatedTasks = tasksByProject.get(project.id) || [];
+      const totalEstimatedMinutes = associatedTasks.reduce((sum, task) => sum + (task.estimatedTime || 0), 0);
+      const totalActualMinutes = associatedTasks.reduce((sum, task) => sum + (task.actualTime || 0), 0);
+      const completedTasks = associatedTasks.filter(task => task.status === 'completed').length;
+      const progress = associatedTasks.length > 0 ? (completedTasks / associatedTasks.length) * 100 : 0;
+
+      return {
+        id: project.id,
+        name: project.name,
+        description: project.description,
+        color: project.color || '#6366f1',
+        status: (project.status as ProjectView['status']) || 'active',
+        startDate: project.startDate,
+        endDate: project.endDate,
+        estimatedHours: Math.round((totalEstimatedMinutes / 60) * 10) / 10,
+        actualHours: Math.round((totalActualMinutes / 60) * 10) / 10,
+        tasks: associatedTasks.map(task => task.id),
+        progress,
+        icon: (project as any).icon,
+        category: undefined
+      };
+    });
+  }, [storeProjects, tasks]);
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -368,7 +341,7 @@ export const TaskFocusIntegration: React.FC<Props> = ({
         if (!b.dueDate) return -1;
         return a.dueDate.getTime() - b.dueDate.getTime();
       case 'estimatedTime':
-        return b.estimatedTime - a.estimatedTime;
+        return (b.estimatedTime ?? 0) - (a.estimatedTime ?? 0);
       case 'createdAt':
         return b.createdAt.getTime() - a.createdAt.getTime();
       default:
@@ -376,7 +349,7 @@ export const TaskFocusIntegration: React.FC<Props> = ({
     }
   });
 
-  const getTaskProgress = (task: Task) => {
+  const getTaskProgress = (task: TaskView) => {
     if (task.subtasks.length === 0) {
       return task.status === 'completed' ? 100 : task.actualTime > 0 ? 50 : 0;
     }
@@ -384,29 +357,38 @@ export const TaskFocusIntegration: React.FC<Props> = ({
     return (completed / task.subtasks.length) * 100;
   };
 
-  const createTask = () => {
-    if (newTask.title) {
-      const task: Task = {
-        id: `task_${Date.now()}`,
+  const createTask = async () => {
+    if (!newTask.title) {
+      return;
+    }
+
+    try {
+      await addTodo({
         title: newTask.title,
         description: newTask.description,
-        projectId: newTask.projectId,
         status: 'todo',
-        priority: newTask.priority as any,
-        estimatedTime: newTask.estimatedTime || 25,
-        actualTime: 0,
+        priority: newTask.priority ?? 'medium',
+        categoryId: mapCategoryViewToId(newTask.category),
         dueDate: newTask.dueDate,
-        tags: newTask.tags || [],
-        focusSessions: [],
-        createdAt: new Date(),
-        difficulty: newTask.difficulty || 3,
-        category: newTask.category as any,
-        subtasks: newTask.subtasks || [],
-        attachments: [],
-        notes: newTask.notes || ''
-      };
+        tags: newTask.tags ?? [],
+        notes: newTask.notes,
+        projectId: newTask.projectId || undefined,
+        estimatedTime: newTask.estimatedTime,
+        actualTime: 0,
+        completed: false,
+        archived: false,
+        starred: false,
+        blockedBy: undefined,
+        waitingFor: undefined,
+        waitingForNotes: undefined,
+        waitingForType: undefined,
+        waitingForContact: undefined,
+        waitingForDeadline: undefined,
+        assignedTo: undefined,
+        subtasks: [],
+        focusTime: 0
+      } as Omit<TodoItem, 'id' | 'createdAt' | 'updatedAt'>);
 
-      setTasks(prev => [...prev, task]);
       setNewTask({
         title: '',
         priority: 'medium',
@@ -418,28 +400,27 @@ export const TaskFocusIntegration: React.FC<Props> = ({
         notes: ''
       });
       setShowCreateTask(false);
+    } catch (error) {
+      console.error('Error creating task:', error);
     }
   };
 
-  const createProject = () => {
-    if (newProject.name) {
-      const project: Project = {
-        id: `project_${Date.now()}`,
+  const createProject = async () => {
+    if (!newProject.name) {
+      return;
+    }
+
+    try {
+      await addProject({
         name: newProject.name,
         description: newProject.description,
         color: newProject.color || '#6366f1',
-        status: 'active',
+        status: (newProject.status as ProjectView['status']) || 'active',
         startDate: new Date(),
         endDate: newProject.endDate,
-        estimatedHours: newProject.estimatedHours || 10,
-        actualHours: 0,
-        tasks: [],
-        progress: 0,
-        category: newProject.category || 'work',
-        icon: newProject.icon || '📁'
-      };
+        todos: []
+      } as unknown as Omit<StoreProject, 'id' | 'createdAt' | 'progress'>);
 
-      setProjects(prev => [...prev, project]);
       setNewProject({
         name: '',
         color: '#6366f1',
@@ -448,54 +429,35 @@ export const TaskFocusIntegration: React.FC<Props> = ({
         estimatedHours: 10
       });
       setShowCreateProject(false);
+    } catch (error) {
+      console.error('Error creating project:', error);
     }
   };
 
-  const toggleTaskStatus = (taskId: string) => {
-    setTasks(prev => prev.map(task => {
-      if (task.id === taskId) {
-        const newStatus = task.status === 'completed' ? 'todo' : 'completed';
-        if (newStatus === 'completed') {
-          onTaskComplete(taskId);
-        }
-        return {
-          ...task,
-          status: newStatus as any,
-          completedAt: newStatus === 'completed' ? new Date() : undefined
-        };
+  const toggleTaskStatus = async (taskId: string) => {
+    const storeTask = storeTasks.find(task => task.id === taskId);
+    if (!storeTask) {
+      return;
+    }
+
+    const isCompleting = storeTask.status !== 'done';
+
+    try {
+      await toggleTodo(taskId);
+      if (isCompleting) {
+        onTaskComplete(taskId);
       }
-      return task;
-    }));
+    } catch (error) {
+      console.error('Error updating task status:', error);
+    }
   };
 
   const addSubtask = (taskId: string, subtaskTitle: string) => {
-    setTasks(prev => prev.map(task => {
-      if (task.id === taskId) {
-        return {
-          ...task,
-          subtasks: [...task.subtasks, {
-            id: `st_${Date.now()}`,
-            title: subtaskTitle,
-            completed: false
-          }]
-        };
-      }
-      return task;
-    }));
+    console.warn('Subtask creation is not yet integrated with the backend', { taskId, subtaskTitle });
   };
 
   const toggleSubtask = (taskId: string, subtaskId: string) => {
-    setTasks(prev => prev.map(task => {
-      if (task.id === taskId) {
-        return {
-          ...task,
-          subtasks: task.subtasks.map(st => 
-            st.id === subtaskId ? { ...st, completed: !st.completed } : st
-          )
-        };
-      }
-      return task;
-    }));
+    console.warn('Subtask updates are not yet integrated with the backend', { taskId, subtaskId });
   };
 
   return (
@@ -749,7 +711,7 @@ export const TaskFocusIntegration: React.FC<Props> = ({
                     
                     <div className="flex items-center space-x-2 ml-4">
                       <button
-                        onClick={() => onStartFocusSession(task.id, task.estimatedTime)}
+                        onClick={() => onStartFocusSession(task.id, task.estimatedTime || 25)}
                         disabled={!!activeFocusSession}
                         className="flex items-center space-x-1 px-3 py-1 bg-indigo-500 hover:bg-indigo-600 disabled:bg-gray-400 text-white rounded-lg text-sm transition-colors"
                       >

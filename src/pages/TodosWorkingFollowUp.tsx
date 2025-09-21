@@ -47,7 +47,9 @@ import {
   Zap,
   Target,
   GripVertical,
-  Edit3
+  Edit3,
+  ChevronDown as ChevronDownIcon,
+  ChevronRight as ChevronRightIcon
 } from 'lucide-react';
 import {
   DndContext,
@@ -73,7 +75,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { format, isToday, addDays, isPast, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth } from 'date-fns';
 import { useApiTasks } from '../hooks/useApiTasks';
-import type { TaskData, ProjectData } from '../services/api';
+import type { TaskData, ProjectData } from '../services/apiClient';
 
 interface Task {
   id: string;
@@ -93,6 +95,9 @@ interface Task {
   starred?: boolean;
   archived?: boolean;
   deleted?: boolean;
+  deletedAt?: Date;
+  parentId?: string;
+  subtasks?: Task[];
   followUpTasks?: FollowUpTask[];
 }
 
@@ -249,6 +254,32 @@ function DraggableTaskItem({ task, id, onEdit, onToggle }: DraggableTaskItemProp
   );
 }
 
+type TaskStatus = Task['status'];
+
+const SUBTASK_STATUSES: Array<{ value: TaskStatus; label: string }> = [
+  { value: 'todo', label: 'To Do' },
+  { value: 'in_progress', label: 'In Progress' },
+  { value: 'waiting', label: 'Waiting' },
+  { value: 'scheduled', label: 'Scheduled' },
+  { value: 'done', label: 'Done' },
+];
+
+const getSubtaskStatusStyles = (status: TaskStatus) => {
+  switch (status) {
+    case 'done':
+      return 'bg-emerald-50 text-emerald-700 border border-emerald-200';
+    case 'in_progress':
+      return 'bg-blue-50 text-blue-700 border border-blue-200';
+    case 'waiting':
+      return 'bg-amber-50 text-amber-700 border border-amber-200';
+    case 'scheduled':
+      return 'bg-purple-50 text-purple-700 border border-purple-200';
+    case 'todo':
+    default:
+      return 'bg-slate-50 text-slate-700 border border-slate-200';
+  }
+};
+
 export default function TodosWorkingFollowUp() {
   // API hook for tasks and projects
   const {
@@ -275,6 +306,9 @@ export default function TodosWorkingFollowUp() {
   const [showFollowUpForm, setShowFollowUpForm] = useState<string | null>(null);
   const [followUpText, setFollowUpText] = useState('');
   const [followUpDays, setFollowUpDays] = useState(0);
+  const [subtaskDrafts, setSubtaskDrafts] = useState<Record<string, string>>({});
+  const [editingSubtask, setEditingSubtask] = useState<{ id: string; title: string } | null>(null);
+  const [collapsedSubtasks, setCollapsedSubtasks] = useState<Set<string>>(new Set());
   
   // Task editing states
   const [editingTask, setEditingTask] = useState<string | null>(null);
@@ -376,6 +410,10 @@ export default function TodosWorkingFollowUp() {
       estimatedTime: apiTask.estimated_time || 25,
       actualTime: apiTask.actual_time || 0,
       tags: apiTask.tags || [],
+      deleted: Boolean(apiTask.deleted),
+      deletedAt: apiTask.deleted_at ? new Date(apiTask.deleted_at) : undefined,
+      parentId: apiTask.parent_id || undefined,
+      subtasks: [],
       followUpTasks: []
     };
   };
@@ -391,8 +429,33 @@ export default function TodosWorkingFollowUp() {
   };
 
   // Convert API data to component format
-  const tasks = apiTasks.map(convertApiTaskToTask);
+  const rawTasks = apiTasks.map(convertApiTaskToTask);
+  const taskMap = new Map<string, Task>();
+
+  rawTasks.forEach(task => {
+    task.subtasks = [];
+    taskMap.set(task.id, task);
+  });
+
+  rawTasks.forEach(task => {
+    if (task.parentId) {
+      const parent = taskMap.get(task.parentId);
+      if (parent) {
+        parent.subtasks = parent.subtasks || [];
+        parent.subtasks.push(task);
+      }
+    }
+  });
+
+  rawTasks.forEach(task => {
+    if (task.subtasks && task.subtasks.length > 1) {
+      task.subtasks.sort((a, b) => (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0));
+    }
+  });
+
+  const tasks = rawTasks.filter(task => !task.parentId);
   const projects = apiProjects.map(convertApiProjectToProject);
+  const getTaskById = (id: string | null | undefined) => (id ? taskMap.get(id) : undefined);
 
   // Pomodoro timer effect
   useEffect(() => {
@@ -412,7 +475,7 @@ export default function TodosWorkingFollowUp() {
         }));
         // Update actual time for task
         if (pomodoroTimer.taskId) {
-          const task = tasks.find(t => t.id === pomodoroTimer.taskId);
+          const task = getTaskById(pomodoroTimer.taskId);
           if (task) {
             const focusTime = task.estimatedTime || 25;
             apiUpdateTask(pomodoroTimer.taskId, {
@@ -423,7 +486,7 @@ export default function TodosWorkingFollowUp() {
       } else {
         // Break finished - return to the task's custom focus time
         if (pomodoroTimer.taskId) {
-          const task = tasks.find(t => t.id === pomodoroTimer.taskId);
+          const task = getTaskById(pomodoroTimer.taskId);
           const focusTime = task?.estimatedTime || 25;
           setPomodoroTimer(prev => ({ 
             ...prev, 
@@ -516,7 +579,7 @@ export default function TodosWorkingFollowUp() {
         try {
           const newDueDate = new Date(dateStr);
           // Preserve the original time if the task had one
-          const task = tasks.find(t => t.id === taskId);
+          const task = getTaskById(taskId);
           if (task?.dueDate) {
             const originalTime = new Date(task.dueDate);
             newDueDate.setHours(originalTime.getHours(), originalTime.getMinutes());
@@ -657,9 +720,299 @@ export default function TodosWorkingFollowUp() {
     return { title, priority, dueDate, projectId, tags };
   };
 
+  const handleSubtaskDraftChange = (taskId: string, value: string) => {
+    setSubtaskDrafts(prev => ({ ...prev, [taskId]: value }));
+  };
+
+  const createSubtask = async (parentId: string) => {
+    const title = (subtaskDrafts[parentId] ?? '').trim();
+    if (!title) return;
+
+    const parentTask = getTaskById(parentId);
+
+    try {
+      await apiCreateTask({
+        title,
+        description: '',
+        status: 'todo',
+        priority: parentTask?.priority || 'medium',
+        estimated_time: 15,
+        actual_time: 0,
+        due_date: parentTask?.dueDate ? parentTask.dueDate.toISOString() : undefined,
+        project_id: parentTask?.projectId,
+        tags: [],
+        category: parentTask?.category || 'work',
+        parent_id: parentId,
+      });
+      setSubtaskDrafts(prev => ({ ...prev, [parentId]: '' }));
+    } catch (err) {
+      console.error('Failed to create subtask:', err);
+    }
+  };
+
+  const updateSubtaskStatus = async (subtaskId: string, status: TaskStatus) => {
+    try {
+      await apiUpdateTask(subtaskId, {
+        status,
+        completed_at: status === 'done' ? new Date().toISOString() : null,
+      });
+    } catch (err) {
+      console.error('Failed to update subtask status:', err);
+    }
+  };
+
+  const deleteSubtask = async (subtaskId: string) => {
+    try {
+      if (editingSubtask?.id === subtaskId) {
+        setEditingSubtask(null);
+      }
+      await apiDeleteTask(subtaskId);
+    } catch (err) {
+      console.error('Failed to delete subtask:', err);
+    }
+  };
+
+  const startEditingSubtask = (subtaskId: string, currentTitle: string) => {
+    setEditingSubtask({ id: subtaskId, title: currentTitle });
+  };
+
+  const cancelSubtaskEdit = () => {
+    setEditingSubtask(null);
+  };
+
+  const toggleSubtaskCollapse = (taskId: string) => {
+    setCollapsedSubtasks(prev => {
+      const next = new Set(prev);
+      if (next.has(taskId)) {
+        next.delete(taskId);
+      } else {
+        next.add(taskId);
+      }
+      return next;
+    });
+  };
+
+  const saveSubtaskEdit = async () => {
+    if (!editingSubtask) return;
+    const trimmedTitle = editingSubtask.title.trim();
+    if (!trimmedTitle) {
+      cancelSubtaskEdit();
+      return;
+    }
+
+    try {
+      await apiUpdateTask(editingSubtask.id, { title: trimmedTitle });
+    } catch (err) {
+      console.error('Failed to update subtask title:', err);
+    } finally {
+      setEditingSubtask(null);
+    }
+  };
+
+  const renderSubtasks = (task: Task) => {
+    const subtasks = (task.subtasks || []).filter(sub => !sub.deleted).sort((a, b) => a.createdAt?.getTime?.() ?? 0 - (b.createdAt?.getTime?.() ?? 0));
+    const isCollapsed = collapsedSubtasks.has(task.id);
+    const completedCount = subtasks.filter(sub => sub.status === 'done').length;
+
+    if (!subtasks.length && task.deleted) {
+      return null;
+    }
+
+    return (
+      <div className="mt-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/40">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleSubtaskCollapse(task.id);
+          }}
+          className="w-full flex items-center justify-between px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors rounded-lg"
+        >
+          <span>{subtasks.length ? `${completedCount}/${subtasks.length} subtasks` : 'Subtasks'}</span>
+          {isCollapsed ? <ChevronRightIcon size={14} className="text-slate-400" /> : <ChevronDownIcon size={14} className="text-slate-400" />}
+        </button>
+
+        {!isCollapsed && (
+          <div className="divide-y divide-slate-200 dark:divide-slate-800">
+            {subtasks.length === 0 ? (
+              <div className="px-4 py-3 text-xs text-slate-400 dark:text-slate-500">No subtasks yet.</div>
+            ) : (
+              subtasks.map((subtask) => {
+                const assignee = subtask.assigned_to || 'Unassigned';
+                const hasNotes = Boolean(subtask.notes && subtask.notes.trim());
+
+                return (
+                  <div key={subtask.id} className="flex flex-col gap-2 px-4 py-3 text-sm text-slate-700 dark:text-slate-200">
+                    <div className="flex items-start gap-3">
+                      <GripVertical size={12} className="text-slate-300 dark:text-slate-600" aria-hidden />
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          updateSubtaskStatus(subtask.id, subtask.status === 'done' ? 'todo' : 'done');
+                        }}
+                        className={`mt-0.5 flex items-center justify-center w-5 h-5 rounded border transition-colors ${
+                          subtask.status === 'done'
+                            ? 'border-emerald-500 bg-emerald-500 text-white'
+                            : 'border-slate-300 text-slate-400 hover:border-emerald-400 hover:text-emerald-400'
+                        }`}
+                        title={subtask.status === 'done' ? 'Mark as not done' : 'Mark subtask complete'}
+                      >
+                        {subtask.status === 'done' && <CheckCircle2 size={12} />}
+                      </button>
+                      <div className="flex-1 min-w-0">
+                        {editingSubtask?.id === subtask.id ? (
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={editingSubtask.title}
+                              onChange={(e) => setEditingSubtask({ id: subtask.id, title: e.target.value })}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  saveSubtaskEdit();
+                                }
+                                if (e.key === 'Escape') {
+                                  e.preventDefault();
+                                  cancelSubtaskEdit();
+                                }
+                              }}
+                              className="flex-1 text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded px-2 py-1 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              autoFocus
+                            />
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                saveSubtaskEdit();
+                              }}
+                              className="p-1 text-emerald-600 hover:text-emerald-700"
+                              title="Save"
+                            >
+                              <CheckCircle size={12} />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                cancelSubtaskEdit();
+                              }}
+                              className="p-1 text-slate-400 hover:text-slate-500"
+                              title="Cancel"
+                            >
+                              <X size={12} />
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              startEditingSubtask(subtask.id, subtask.title || '');
+                            }}
+                            className={`text-left leading-snug ${subtask.status === 'done' ? 'line-through text-slate-400' : 'hover:text-blue-600'}`}
+                            title="Rename subtask"
+                          >
+                            {subtask.title || 'Untitled subtask'}
+                          </button>
+                        )}
+                        <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-slate-400 dark:text-slate-500">
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ${getSubtaskStatusStyles(subtask.status)}`}>
+                            {SUBTASK_STATUSES.find(opt => opt.value === subtask.status)?.label ?? 'Unknown'}
+                          </span>
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-600">
+                            <User size={10} />
+                            {assignee}
+                          </span>
+                          {subtask.dueDate && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-600">
+                              <CalendarDays size={10} />
+                              {format(subtask.dueDate, 'MMM d')}
+                            </span>
+                          )}
+                          {hasNotes && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-600">
+                              <MessageSquare size={10} />
+                              Notes
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 self-start">
+                        <select
+                          value={subtask.status}
+                          onChange={(e) => updateSubtaskStatus(subtask.id, e.target.value as TaskStatus)}
+                          className="text-xs font-medium rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 px-2 py-1 text-slate-600 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        >
+                          {SUBTASK_STATUSES.map(option => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                        {editingSubtask?.id !== subtask.id && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              startEditingSubtask(subtask.id, subtask.title || '');
+                            }}
+                            className="p-1 text-slate-400 hover:text-blue-500 transition-colors"
+                            title="Rename subtask"
+                          >
+                            <Edit3 size={12} />
+                          </button>
+                        )}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteSubtask(subtask.id);
+                          }}
+                          className="p-1 text-slate-400 hover:text-red-500 transition-colors"
+                          title="Delete subtask"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+
+            {!task.deleted && (
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 px-4 py-3">
+                <input
+                  type="text"
+                  value={subtaskDrafts[task.id] || ''}
+                  onChange={(e) => handleSubtaskDraftChange(task.id, e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      createSubtask(task.id);
+                    }
+                  }}
+                  className="flex-1 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Add a subtask..."
+                />
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    createSubtask(task.id);
+                  }}
+                  className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                >
+                  <Plus size={14} />
+                  Add
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+
   const toggleTaskStatus = async (taskId: string) => {
     try {
-      const task = tasks.find(t => t.id === taskId);
+      const task = getTaskById(taskId);
       if (!task) return;
       
       const newStatus = task.status === 'done' ? 'todo' : 'done';
@@ -726,7 +1079,7 @@ export default function TodosWorkingFollowUp() {
 
   const duplicateTask = async (taskId: string) => {
     try {
-      const task = tasks.find(t => t.id === taskId);
+      const task = getTaskById(taskId);
       if (task) {
         await apiCreateTask({
           title: `${task.title} (Copy)`,
@@ -765,7 +1118,7 @@ export default function TodosWorkingFollowUp() {
 
   const toggleStarTask = async (taskId: string) => {
     try {
-      const task = tasks.find(t => t.id === taskId);
+      const task = getTaskById(taskId);
       if (task) {
         await apiUpdateTask(taskId, { starred: !task.starred });
       }
@@ -974,7 +1327,9 @@ export default function TodosWorkingFollowUp() {
   };
 
   const getDeletedTasks = () => {
-    return tasks.filter(task => task.deleted).sort((a, b) => new Date(b.deletedAt!).getTime() - new Date(a.deletedAt!).getTime());
+    return tasks
+      .filter(task => task.deleted)
+      .sort((a, b) => (b.deletedAt?.getTime() ?? 0) - (a.deletedAt?.getTime() ?? 0));
   };
 
   const getTasksToShow = () => {
@@ -1071,7 +1426,7 @@ export default function TodosWorkingFollowUp() {
 
   // Pomodoro functions
   const startPomodoro = (taskId: string) => {
-    const task = tasks.find(t => t.id === taskId);
+    const task = getTaskById(taskId);
     const focusTime = task?.estimatedTime || 25;
     setPomodoroTimer(prev => ({ 
       ...prev, 
@@ -1389,7 +1744,7 @@ export default function TodosWorkingFollowUp() {
                       if (e.key === 'Enter') saveFocusTime(task.id);
                       if (e.key === 'Escape') cancelFocusTimeEdit();
                     }}
-                    className="w-16 text-xs bg-white dark:bg-slate-800 border border-blue-300 dark:border-blue-600 rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-16 text-xs bg-white dark:bg-slate-800 border border-blue-300 dark:border-blue-600 rounded px-1 py-0.5 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
                     min="5"
                     max="120"
                     autoFocus
@@ -1434,6 +1789,8 @@ export default function TodosWorkingFollowUp() {
                   <span className="font-medium">{tag}</span>
                 </span>
               ))}
+
+              {renderSubtasks(task)}
             </div>
           </div>
 
@@ -1903,7 +2260,7 @@ export default function TodosWorkingFollowUp() {
                       {formatTime(pomodoroTimer.timeLeft)}
                     </div>
                     <div className="text-xs text-gray-600 dark:text-gray-400">
-                      {pomodoroTimer.isBreak ? 'Break time' : tasks.find(t => t.id === pomodoroTimer.taskId)?.title || 'Focus session'}
+                      {pomodoroTimer.isBreak ? 'Break time' : getTaskById(pomodoroTimer.taskId)?.title || 'Focus session'}
                     </div>
                   </div>
                   <div className="flex space-x-1">
@@ -2592,7 +2949,7 @@ export default function TodosWorkingFollowUp() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-slate-800 rounded-lg p-6 w-2xl max-w-90vw max-h-90vh overflow-y-auto">
             {(() => {
-              const task = tasks.find(t => t.id === showTaskDetails);
+              const task = getTaskById(showTaskDetails);
               if (!task) return null;
               
               const project = projects.find(p => p.id === task.projectId);

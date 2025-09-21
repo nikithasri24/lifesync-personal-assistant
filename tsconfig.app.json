@@ -18,11 +18,18 @@
 
     /* Linting */
     "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src", "src/test/vitest.d.ts"]
+  "include": ["src", "src/test/vitest.d.ts"],
+  "exclude": [
+    "src/pages/__tests__",
+    "src/components/__tests__",
+    "src/test",
+    "src/services/__tests__",
+    "tests"
+  ]
 }

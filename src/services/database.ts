@@ -1,13 +1,21 @@
-import { supabase, Task, Project } from '../lib/supabase'
-import { RealtimeChannel } from '@supabase/supabase-js'
+import { ensureSupabase, isSupabaseConfigured, Task, Project } from '../lib/supabase'
+import { RealtimeChannel, type SupabaseClient } from '@supabase/supabase-js'
 
 export class DatabaseService {
   private taskSubscription: RealtimeChannel | null = null
   private projectSubscription: RealtimeChannel | null = null
 
+  private get client(): SupabaseClient {
+    return ensureSupabase()
+  }
+
   // Tasks CRUD Operations
   async getTasks(userId: string): Promise<Task[]> {
-    const { data, error } = await supabase
+    if (!isSupabaseConfigured) {
+      throw new Error('Supabase is not configured. Tasks cannot be loaded.')
+    }
+
+    const { data, error } = await this.client
       .from('tasks')
       .select('*')
       .eq('user_id', userId)
@@ -22,7 +30,7 @@ export class DatabaseService {
   }
 
   async createTask(task: Omit<Task, 'id' | 'created_at'>): Promise<Task> {
-    const { data, error } = await supabase
+    const { data, error } = await this.client
       .from('tasks')
       .insert([task])
       .select()
@@ -37,7 +45,7 @@ export class DatabaseService {
   }
 
   async updateTask(id: string, updates: Partial<Task>): Promise<Task> {
-    const { data, error } = await supabase
+    const { data, error } = await this.client
       .from('tasks')
       .update(updates)
       .eq('id', id)
@@ -53,7 +61,7 @@ export class DatabaseService {
   }
 
   async deleteTask(id: string): Promise<void> {
-    const { error } = await supabase
+    const { error } = await this.client
       .from('tasks')
       .update({ deleted: true, deleted_at: new Date().toISOString() })
       .eq('id', id)
@@ -65,7 +73,7 @@ export class DatabaseService {
   }
 
   async restoreTask(id: string): Promise<Task> {
-    const { data, error } = await supabase
+    const { data, error } = await this.client
       .from('tasks')
       .update({ deleted: false, deleted_at: null })
       .eq('id', id)
@@ -81,7 +89,7 @@ export class DatabaseService {
   }
 
   async permanentlyDeleteTask(id: string): Promise<void> {
-    const { error } = await supabase
+    const { error } = await this.client
       .from('tasks')
       .delete()
       .eq('id', id)
@@ -94,7 +102,7 @@ export class DatabaseService {
 
   // Projects CRUD Operations
   async getProjects(userId: string): Promise<Project[]> {
-    const { data, error } = await supabase
+    const { data, error } = await this.client
       .from('projects')
       .select('*')
       .eq('user_id', userId)
@@ -109,7 +117,7 @@ export class DatabaseService {
   }
 
   async createProject(project: Omit<Project, 'id' | 'created_at'>): Promise<Project> {
-    const { data, error } = await supabase
+    const { data, error } = await this.client
       .from('projects')
       .insert([project])
       .select()
@@ -124,7 +132,7 @@ export class DatabaseService {
   }
 
   async updateProject(id: string, updates: Partial<Project>): Promise<Project> {
-    const { data, error } = await supabase
+    const { data, error } = await this.client
       .from('projects')
       .update(updates)
       .eq('id', id)
@@ -140,7 +148,7 @@ export class DatabaseService {
   }
 
   async deleteProject(id: string): Promise<void> {
-    const { error } = await supabase
+    const { error } = await this.client
       .from('projects')
       .delete()
       .eq('id', id)
@@ -156,7 +164,7 @@ export class DatabaseService {
     userId: string,
     onTaskChange: (payload: any) => void
   ): void {
-    this.taskSubscription = supabase
+    this.taskSubscription = this.client
       .channel('tasks')
       .on(
         'postgres_changes',
@@ -175,7 +183,7 @@ export class DatabaseService {
     userId: string,
     onProjectChange: (payload: any) => void
   ): void {
-    this.projectSubscription = supabase
+    this.projectSubscription = this.client
       .channel('projects')
       .on(
         'postgres_changes',
@@ -193,14 +201,14 @@ export class DatabaseService {
   // Cleanup subscriptions
   unsubscribeFromTasks(): void {
     if (this.taskSubscription) {
-      supabase.removeChannel(this.taskSubscription)
+      this.client.removeChannel(this.taskSubscription)
       this.taskSubscription = null
     }
   }
 
   unsubscribeFromProjects(): void {
     if (this.projectSubscription) {
-      supabase.removeChannel(this.projectSubscription)
+      this.client.removeChannel(this.projectSubscription)
       this.projectSubscription = null
     }
   }
@@ -221,7 +229,7 @@ export class DatabaseService {
 
   // Advanced queries
   async getTasksByProject(userId: string, projectId: string): Promise<Task[]> {
-    const { data, error } = await supabase
+    const { data, error } = await this.client
       .from('tasks')
       .select('*')
       .eq('user_id', userId)
@@ -238,7 +246,7 @@ export class DatabaseService {
   }
 
   async getTasksByStatus(userId: string, status: string): Promise<Task[]> {
-    const { data, error } = await supabase
+    const { data, error } = await this.client
       .from('tasks')
       .select('*')
       .eq('user_id', userId)
@@ -259,7 +267,7 @@ export class DatabaseService {
     const startOfDay = new Date(today.setHours(0, 0, 0, 0)).toISOString()
     const endOfDay = new Date(today.setHours(23, 59, 59, 999)).toISOString()
 
-    const { data, error } = await supabase
+    const { data, error } = await this.client
       .from('tasks')
       .select('*')
       .eq('user_id', userId)
@@ -278,7 +286,7 @@ export class DatabaseService {
   }
 
   async searchTasks(userId: string, query: string): Promise<Task[]> {
-    const { data, error } = await supabase
+    const { data, error } = await this.client
       .from('tasks')
       .select('*')
       .eq('user_id', userId)
