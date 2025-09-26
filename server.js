@@ -4,51 +4,103 @@
 import express from 'express';
 import cors from 'cors';
 import pkg from 'pg';
+import fetch from 'node-fetch';
 const { Pool } = pkg;
 
 const app = express();
 const port = process.env.PORT || 3001;
+const SKIP_DB = process.env.SKIP_DB === '1';
 
-// Database connection - try multiple connection methods
+// Database connection (optional)
 let pool;
-try {
-  // Try connecting via Docker container IP first
-  const dockerIp = '172.17.0.3'; // Docker internal IP
-  pool = new Pool({
-    user: 'postgres',
-    host: dockerIp,
-    database: 'lifesync',
-    password: 'lifesync123',
-    port: 5432,
+if (!SKIP_DB) {
+  const dbConfig = {
+    user: process.env.PGUSER || 'postgres',
+    host: process.env.PGHOST || 'localhost',
+    database: process.env.PGDATABASE || 'lifesync',
+    password: process.env.PGPASSWORD || 'lifesync123',
+    port: Number(process.env.PGPORT || 5432),
     connectionTimeoutMillis: 5000,
-  });
-} catch (err) {
-  console.error('Failed to connect via Docker IP, trying localhost:', err);
-  // Fallback to localhost
-  pool = new Pool({
-    user: 'postgres',
-    host: 'localhost',
-    database: 'lifesync',
-    password: 'lifesync123',
-    port: 5432,
-    connectionTimeoutMillis: 5000,
-  });
+  };
+  pool = new Pool(dbConfig);
 }
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
-// Test database connection
-pool.query('SELECT NOW()', (err, res) => {
-  if (err) {
-    console.error('Database connection failed:', err);
-  } else {
-    console.log('Connected to PostgreSQL database at:', res.rows[0].now);
-  }
-});
+// Test database connection (if enabled)
+if (!SKIP_DB && pool) {
+  pool.query('SELECT NOW()', (err, res) => {
+    if (err) {
+      console.error('Database connection failed:', err);
+    } else {
+      console.log('Connected to PostgreSQL database at:', res.rows[0].now);
+    }
+  });
+} else {
+  console.log('DB disabled (SKIP_DB=1). Running proxy-only/server utility routes.');
+}
 
 // Routes
+// Simple proxy for YouTube snippet to avoid CORS in browser
+app.get('/api/youtube/snippet', async (req, res) => {
+  try {
+    const rawVideoId = String(req.query.videoId || '').trim()
+    const rawUrl = String(req.query.url || '').trim()
+    const extractId = (u) => {
+      try {
+        const parsed = new URL(u)
+        if (parsed.hostname === 'youtu.be') return parsed.pathname.slice(1)
+        if (parsed.pathname.startsWith('/shorts/')) return parsed.pathname.split('/')[2]
+        const v = parsed.searchParams.get('v')
+        if (v) return v
+        const m = u.match(/[?&]v=([0-9A-Za-z_-]{11})|(?:youtu\.be\/|shorts\/)([0-9A-Za-z_-]{11})/)
+        return m ? (m[1] || m[2]) : null
+      } catch { return null }
+    }
+    const videoId = rawVideoId || (rawUrl ? extractId(rawUrl) : '')
+    if (!videoId) return res.status(400).json({ error: 'videoId required (or provide ?url=...)' })
+
+    // Primary: yt.lemnoslife snippet
+    const primary = `https://yt.lemnoslife.com/videos?part=snippet&id=${encodeURIComponent(videoId)}`
+    const pResp = await fetch(primary, { headers: { 'Accept': 'application/json' } })
+    if (pResp.ok) {
+      const data = await pResp.json()
+      res.setHeader('Cache-Control', 'public, max-age=300')
+      return res.json(data)
+    }
+
+    // Fallback: YouTube oEmbed (limited fields)
+    const watchUrl = `https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}`
+    const oembed = `https://www.youtube.com/oembed?url=${encodeURIComponent(watchUrl)}&format=json`
+    const oResp = await fetch(oembed, { headers: { 'Accept': 'application/json' } })
+    if (oResp.ok) {
+      const oe = await oResp.json()
+      const normalized = {
+        items: [
+          {
+            snippet: {
+              title: oe.title,
+              description: '',
+              thumbnails: { medium: { url: oe.thumbnail_url }, default: { url: oe.thumbnail_url } },
+              channelTitle: oe.author_name,
+            },
+          },
+        ],
+      }
+      res.setHeader('Cache-Control', 'public, max-age=300')
+      return res.json(normalized)
+    }
+
+    const text = await pResp.text().catch(() => '')
+    console.error('Upstream error (both snippet and oembed failed)', pResp.status, text)
+    return res.status(502).json({ error: 'Upstream error', status: pResp.status })
+  } catch (e) {
+    console.error('YouTube snippet proxy failed', e)
+    res.status(500).json({ error: 'Failed to fetch YouTube snippet' })
+  }
+});
 
 // Get all tasks
 app.get('/api/tasks', async (req, res) => {

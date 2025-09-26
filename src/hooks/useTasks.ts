@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { db } from '../services/database'
-import { Task, Project } from '../lib/supabase'
+import type { Task, Project } from '../lib/supabase'
 
 // Temporary user ID - in a real app, this would come from authentication
 const TEMP_USER_ID = 'temp-user-123'

@@ -3,7 +3,6 @@
 // wrapper while the app transitions fully to the store-centric APIs.
 
 import { useCallback, useMemo, useState } from 'react';
-import { apiClient } from '../services/apiClient';
 import type { TaskData, ProjectData } from '../services/apiClient';
 import { useAppStore } from '../stores/useAppStore';
 import type { TodoItem, Project as StoreProject } from '../types';
@@ -30,7 +29,7 @@ export interface UseApiTasksReturn {
   refreshData: () => Promise<void>;
 }
 
-const toTaskStatus = (status?: TodoItem['status']): TaskData['status'] => {
+const toTaskStatus = (status?: TodoItem['status'] | string): TaskData['status'] => {
   switch (status) {
     case 'todo':
     case 'need-to-start':
@@ -50,6 +49,22 @@ const toTaskStatus = (status?: TodoItem['status']): TaskData['status'] => {
   }
 };
 
+const fromTaskStatus = (status?: TaskData['status']): TodoItem['status'] => {
+  switch (status) {
+    case 'in_progress':
+      return 'in-progress';
+    case 'waiting':
+      return 'waiting';
+    case 'scheduled':
+      return 'scheduled';
+    case 'done':
+      return 'done';
+    case 'todo':
+    default:
+      return 'todo';
+  }
+};
+
 const mapTodoToTaskData = (todo: TodoItem): TaskData => ({
   id: todo.id,
   title: todo.title,
@@ -60,7 +75,7 @@ const mapTodoToTaskData = (todo: TodoItem): TaskData => ({
   actual_time: todo.actualTime,
   due_date: todo.dueDate?.toISOString(),
   tags: todo.tags,
-  category: 'other',
+  category: (todo.categoryId ?? todo.category ?? 'other') as TaskData['category'],
   notes: todo.notes,
   starred: todo.starred,
   archived: todo.archived,
@@ -73,6 +88,55 @@ const mapTodoToTaskData = (todo: TodoItem): TaskData => ({
   parent_id: todo.parentId,
 });
 
+const mapTaskInsertToTodo = (
+  task: Omit<TaskData, 'id' | 'created_at' | 'updated_at'>,
+): Omit<TodoItem, 'id' | 'createdAt' | 'updatedAt'> => ({
+  title: task.title,
+  description: task.description ?? undefined,
+  status: fromTaskStatus(task.status),
+  priority: (task.priority as TodoItem['priority']) ?? 'medium',
+  estimatedTime: task.estimated_time ?? undefined,
+  actualTime: task.actual_time ?? undefined,
+  dueDate: task.due_date ? new Date(task.due_date) : undefined,
+  tags: task.tags ?? [],
+  categoryId: task.category ?? undefined,
+  category: task.category ?? undefined,
+  projectId: task.project_id ?? undefined,
+  parentId: task.parent_id ?? undefined,
+  completed: task.completed_at ? true : task.status === 'done',
+  completedAt: task.completed_at ? new Date(task.completed_at) : undefined,
+  deleted: task.deleted ?? false,
+  deletedAt: task.deleted_at ? new Date(task.deleted_at) : undefined,
+  notes: task.notes ?? undefined,
+  archived: task.archived === null || task.archived === undefined ? undefined : task.archived,
+  starred: task.starred === null || task.starred === undefined ? undefined : task.starred,
+});
+
+const mapTaskUpdateToTodoUpdate = (updates: Partial<TaskData>): Partial<TodoItem> => {
+  const partial: Partial<TodoItem> = {};
+
+  if (updates.title !== undefined) partial.title = updates.title;
+  if (updates.description !== undefined) partial.description = updates.description ?? undefined;
+  if (updates.status !== undefined) partial.status = fromTaskStatus(updates.status);
+  if (updates.priority !== undefined) partial.priority = updates.priority as TodoItem['priority'];
+  if (updates.estimated_time !== undefined) partial.estimatedTime = updates.estimated_time ?? undefined;
+  if (updates.actual_time !== undefined) partial.actualTime = updates.actual_time ?? undefined;
+  if (updates.due_date !== undefined) partial.dueDate = updates.due_date ? new Date(updates.due_date) : undefined;
+  if (updates.tags !== undefined) partial.tags = updates.tags ?? [];
+  if (updates.category !== undefined) partial.categoryId = updates.category ?? undefined;
+  if (updates.category !== undefined) partial.category = updates.category ?? undefined;
+  if (updates.project_id !== undefined) partial.projectId = updates.project_id ?? undefined;
+  if (updates.parent_id !== undefined) partial.parentId = updates.parent_id ?? undefined;
+  if (updates.deleted !== undefined) partial.deleted = updates.deleted;
+  if (updates.deleted_at !== undefined) partial.deletedAt = updates.deleted_at ? new Date(updates.deleted_at) : undefined;
+  if (updates.completed_at !== undefined) {
+    partial.completed = Boolean(updates.completed_at);
+    partial.completedAt = updates.completed_at ? new Date(updates.completed_at) : undefined;
+  }
+
+  return partial;
+};
+
 const mapProjectToProjectData = (project: StoreProject): ProjectData => ({
   id: project.id,
   name: project.name,
@@ -81,7 +145,7 @@ const mapProjectToProjectData = (project: StoreProject): ProjectData => ({
   status: project.status as ProjectData['status'],
   icon: project.icon,
   created_at: project.createdAt?.toISOString(),
-  updated_at: project.createdAt?.toISOString(),
+  updated_at: project.updatedAt?.toISOString(),
 });
 
 export const useApiTasks = (): UseApiTasksReturn => {
@@ -90,94 +154,127 @@ export const useApiTasks = (): UseApiTasksReturn => {
     projects: storeProjects,
     tasksLoading,
     projectsLoading,
-    loadTasks,
-    loadProjects,
+    addTodo,
+    updateTodo,
+    deleteTodo,
+    restoreTodo,
+    permanentlyDeleteTodo,
+    addProject: addProjectToStore,
+    updateProject: updateProjectInStore,
+    deleteProject: deleteProjectFromStore,
   } = useAppStore();
 
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  const tasks = useMemo(() => storeTasks.map(mapTodoToTaskData), [storeTasks]);
-  const projects = useMemo(() => storeProjects.map(mapProjectToProjectData), [storeProjects]);
-
-  const withRefresh = useCallback(
-    async (action: () => Promise<unknown>) => {
-      setError(null);
-      try {
-        await action();
-        await loadTasks();
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'Operation failed';
-        setError(message);
-        throw err;
-      }
-    },
-    [loadTasks],
-  );
+  const tasks = useMemo(() => storeTasks?.map(mapTodoToTaskData) ?? [], [storeTasks]);
+  const projects = useMemo(() => storeProjects?.map(mapProjectToProjectData) ?? [], [storeProjects]);
 
   const createTask = useCallback(async (taskData: Omit<TaskData, 'id' | 'created_at' | 'updated_at'>) => {
-    await withRefresh(() => apiClient.createTask(taskData));
-  }, [withRefresh]);
+    setError(null);
+    try {
+      await addTodo(mapTaskInsertToTodo(taskData));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to create task';
+      setError(message);
+      throw err;
+    }
+  }, [addTodo]);
 
   const updateTask = useCallback(async (id: string, updates: Partial<TaskData>) => {
-    await withRefresh(() => apiClient.updateTask(id, updates));
-  }, [withRefresh]);
+    setError(null);
+    try {
+      await updateTodo(id, mapTaskUpdateToTodoUpdate(updates));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to update task';
+      setError(message);
+      throw err;
+    }
+  }, [updateTodo]);
 
   const deleteTask = useCallback(async (id: string) => {
-    await withRefresh(() => apiClient.deleteTask(id));
-  }, [withRefresh]);
+    setError(null);
+    try {
+      await deleteTodo(id);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to delete task';
+      setError(message);
+      throw err;
+    }
+  }, [deleteTodo]);
 
   const restoreTask = useCallback(async (id: string) => {
-    await withRefresh(() => apiClient.restoreTask(id));
-  }, [withRefresh]);
+    setError(null);
+    try {
+      await restoreTodo(id);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to restore task';
+      setError(message);
+      throw err;
+    }
+  }, [restoreTodo]);
 
   const permanentlyDeleteTask = useCallback(async (id: string) => {
-    await withRefresh(() => apiClient.permanentlyDeleteTask(id));
-  }, [withRefresh]);
+    setError(null);
+    try {
+      await permanentlyDeleteTodo(id);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to remove task permanently';
+      setError(message);
+      throw err;
+    }
+  }, [permanentlyDeleteTodo]);
 
   const createProject = useCallback(async (projectData: Omit<ProjectData, 'id' | 'created_at' | 'updated_at'>) => {
     setError(null);
     try {
-      await apiClient.createProject(projectData);
-      await loadProjects();
-      await loadTasks(); // keep task associations fresh
+      await addProjectToStore({
+        name: projectData.name,
+        description: projectData.description ?? undefined,
+        color: projectData.color ?? '#6366f1',
+        status: (projectData.status as StoreProject['status']) ?? 'active',
+        icon: projectData.icon ?? '📁',
+      });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to create project';
       setError(message);
       throw err;
     }
-  }, [loadProjects, loadTasks]);
+  }, [addProjectToStore]);
 
   const updateProject = useCallback(async (id: string, updates: Partial<ProjectData>) => {
     setError(null);
     try {
-      await apiClient.updateProject(id, updates);
-      await loadProjects();
-      await loadTasks();
+      await updateProjectInStore(id, {
+        name: updates.name,
+        description: updates.description ?? undefined,
+        color: updates.color ?? undefined,
+        status: updates.status as StoreProject['status'] | undefined,
+        icon: updates.icon ?? undefined,
+      });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to update project';
       setError(message);
       throw err;
     }
-  }, [loadProjects, loadTasks]);
+  }, [updateProjectInStore]);
 
   const deleteProject = useCallback(async (id: string) => {
     setError(null);
     try {
-      await apiClient.deleteProject(id);
-      await Promise.all([loadProjects(), loadTasks()]);
+      await deleteProjectFromStore(id);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to delete project';
       setError(message);
       throw err;
     }
-  }, [loadProjects, loadTasks]);
+  }, [deleteProjectFromStore]);
 
   const refreshData = useCallback(async () => {
     setRefreshing(true);
     setError(null);
     try {
-      await Promise.all([loadTasks(), loadProjects()]);
+      await useAppStore.getState().initializeData();
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to refresh data';
       setError(message);
@@ -185,7 +282,7 @@ export const useApiTasks = (): UseApiTasksReturn => {
     } finally {
       setRefreshing(false);
     }
-  }, [loadProjects, loadTasks]);
+  }, []);
 
   return {
     tasks,

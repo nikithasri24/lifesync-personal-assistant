@@ -39,6 +39,8 @@
     "fix:ports": "node autofix.js ports",
     "fix:config": "node autofix.js config",
     "fix:services": "node autofix.js services",
+    "verify:supabase-schema": "node scripts/verifySupabaseSchema.mjs",
+    "backup:supabase-schema": "node scripts/backupSupabaseSchema.mjs",
     "cleanup:ports": "lsof -ti:3001,5173 | xargs kill -9 2>/dev/null || true",
     "api:restart": "npm run cleanup:ports && ./start-api-with-monitor.sh",
     "status": "node diagnose.js full"

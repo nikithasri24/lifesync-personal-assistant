@@ -21,6 +21,7 @@ import {
   DollarSign
 } from 'lucide-react';
 import { useAppStore } from '../stores/useAppStore';
+import Toast from './Toast';
 import ThemeToggle from './ThemeToggle';
 import PremiumLogo from './PremiumLogo';
 import clsx from 'clsx';
@@ -58,7 +59,7 @@ interface LayoutProps {
 }
 
 export default function Layout({ children }: LayoutProps) {
-  const { activeView, setActiveView, sidebarCollapsed, setSidebarCollapsed } = useAppStore();
+  const { activeView, setActiveView, sidebarCollapsed, setSidebarCollapsed, globalToast, clearGlobalToast } = useAppStore();
 
   return (
     <div className="h-screen flex bg-secondary overflow-hidden">
@@ -230,6 +231,7 @@ export default function Layout({ children }: LayoutProps) {
           </div>
         </main>
       </div>
+      <Toast toast={globalToast} onDismiss={clearGlobalToast} />
     </div>
   );
 }

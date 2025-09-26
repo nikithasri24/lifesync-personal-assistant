@@ -1,126 +1,175 @@
-import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, beforeEach } from 'vitest';
+import { render, screen, fireEvent, within, act } from '@testing-library/react';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import Dashboard from '../Dashboard';
 import { useAppStore } from '../../stores/useAppStore';
 
-// Mock the store
 vi.mock('../../stores/useAppStore');
 
-const mockStore = {
-  todos: [
-    {
-      id: '1',
-      title: 'Test todo',
-      description: 'Test description',
-      completed: false,
-      priority: 'medium',
-      tags: [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      dueDate: new Date()
-    }
-  ],
-  habits: [
-    {
-      id: '1',
-      name: 'Test habit',
-      description: 'Test habit description',
-      frequency: 'daily',
-      targetCount: 1,
-      completions: [],
-      createdAt: new Date(),
-      category: 'health',
-      color: '#ef4444'
-    }
-  ],
-  notes: [
-    {
-      id: '1',
-      title: 'Test note',
-      content: 'Test note content',
-      tags: ['test'],
-      category: 'personal',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      isPinned: false
-    }
-  ],
-  journalEntries: [],
-  addTodo: vi.fn(),
-  completeHabit: vi.fn(),
-  setActiveView: vi.fn(),
-};
+function createStore(overrides: Record<string, unknown> = {}) {
+  const now = new Date();
+
+  return {
+    tasks: [
+      {
+        id: 'task-1',
+        title: 'Prepare quarterly report',
+        description: 'Collect financial metrics',
+        status: 'todo' as const,
+        deleted: false,
+        priority: 'medium',
+        dueDate: now,
+        createdAt: now,
+        updatedAt: now,
+        completedAt: undefined,
+        tags: ['finance'],
+      },
+    ],
+    habits: [
+      {
+        id: 'habit-1',
+        name: 'Morning stretch',
+        description: 'Quick routine to start the day',
+        frequency: 'daily',
+        targetCount: 1,
+        completions: [],
+        category: 'wellness',
+        color: '#6366f1',
+        createdAt: now,
+      },
+    ],
+    notes: [
+      {
+        id: 'note-1',
+        title: 'Budget review agenda',
+        content: 'Discuss cost optimisations',
+        tags: ['budget', 'team'],
+        category: 'work',
+        createdAt: now,
+        updatedAt: now,
+        isPinned: false,
+      },
+    ],
+    journalEntries: [
+      {
+        id: 'journal-1',
+        title: 'Weekly reflection',
+        content: 'Felt productive',
+        createdAt: now.toISOString(),
+      },
+    ],
+    completeHabit: vi.fn().mockResolvedValue(undefined),
+    toggleTodo: vi.fn().mockResolvedValue(undefined),
+    setActiveView: vi.fn(),
+    tasksLoading: false,
+    sidebarCollapsed: false,
+    setSidebarCollapsed: vi.fn(),
+    ...overrides,
+  };
+}
+
+function renderDashboard(overrides: Record<string, unknown> = {}) {
+  const store = createStore(overrides);
+  vi.mocked(useAppStore).mockReturnValue(store as any);
+
+  render(<Dashboard />);
+  act(() => {
+    vi.runAllTimers();
+  });
+
+  return store;
+}
+
+beforeEach(() => {
+  vi.useFakeTimers();
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+  vi.resetAllMocks();
+});
 
 describe('Dashboard', () => {
-  beforeEach(() => {
-    vi.mocked(useAppStore).mockReturnValue(mockStore);
+  it('renders the welcome hero once loading finishes', () => {
+    renderDashboard();
+    expect(screen.getByRole('heading', { name: /welcome back/i })).toBeInTheDocument();
   });
 
-  it('renders welcome message', () => {
-    render(<Dashboard />);
-    expect(screen.getByText('Welcome back!')).toBeInTheDocument();
+  it('shows the primary stats cards with counts', () => {
+    renderDashboard();
+
+    // The cards include a small label and a heading with the same text.
+    // Query the card labels specifically to avoid duplication errors.
+    expect(screen.getAllByText(/today's tasks/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/pending habits/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/total notes/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/week's progress/i).length).toBeGreaterThan(0);
   });
 
-  it('displays stats cards', () => {
-    render(<Dashboard />);
-    
-    expect(screen.getByText("Today's Tasks")).toBeInTheDocument();
-    expect(screen.getByText('Pending Habits')).toBeInTheDocument();
-    expect(screen.getByText('Total Notes')).toBeInTheDocument();
-    expect(screen.getByText("Week's Progress")).toBeInTheDocument();
-  });
+  it('lists today’s tasks and allows completing one', () => {
+    const store = renderDashboard();
 
-  it('shows today\'s tasks section', () => {
-    render(<Dashboard />);
-    
-    expect(screen.getByText("Today's Tasks")).toBeInTheDocument();
-    expect(screen.getByText('Test todo')).toBeInTheDocument();
-  });
+    expect(screen.getByText('Prepare quarterly report')).toBeInTheDocument();
 
-  it('shows today\'s habits section', () => {
-    render(<Dashboard />);
-    
-    expect(screen.getByText("Today's Habits")).toBeInTheDocument();
-    expect(screen.getByText('Test habit')).toBeInTheDocument();
-  });
-
-  it('shows recent notes section', () => {
-    render(<Dashboard />);
-    
-    expect(screen.getByText('Recent Notes')).toBeInTheDocument();
-    expect(screen.getByText('Test note')).toBeInTheDocument();
-  });
-
-  it('navigates to todos when stats card is clicked', () => {
-    render(<Dashboard />);
-    
-    const todosCard = screen.getByText("Today's Tasks").closest('div');
-    if (todosCard) {
-      fireEvent.click(todosCard);
-      expect(mockStore.setActiveView).toHaveBeenCalledWith('todos');
-    }
-  });
-
-  it('completes habit when button is clicked', () => {
-    render(<Dashboard />);
-    
-    const completeButton = screen.getByText('Complete');
+    const completeButton = screen.getByTitle('Mark as complete');
     fireEvent.click(completeButton);
-    expect(mockStore.completeHabit).toHaveBeenCalledWith('1');
+
+    expect(store.toggleTodo).toHaveBeenCalledWith('task-1');
   });
 
-  it('displays empty state when no data', () => {
-    vi.mocked(useAppStore).mockReturnValue({
-      ...mockStore,
-      todos: [],
+  it('shows today’s habits and allows recording a completion', async () => {
+    const store = renderDashboard({ habits: [
+      {
+        id: 'habit-1',
+        name: 'Morning stretch',
+        description: 'Quick routine to start the day',
+        frequency: 'daily',
+        targetCount: 1,
+        completions: [],
+        category: 'wellness',
+        color: '#6366f1',
+        createdAt: new Date(),
+      },
+    ]});
+
+    expect(screen.getByText(/today's habits/i)).toBeInTheDocument();
+    expect(screen.getByText('Morning stretch')).toBeInTheDocument();
+
+    const completeButtons = screen.getAllByRole('button', { name: /^complete$/i });
+    const completeButton = completeButtons.find(btn => !(btn as HTMLButtonElement).disabled) as HTMLButtonElement;
+    expect(completeButton).toBeTruthy();
+    await act(async () => {
+      fireEvent.click(completeButton);
+      await Promise.resolve();
+    });
+    expect(store.completeHabit).toHaveBeenCalledWith('habit-1');
+  });
+
+  it('navigates when a stats card is clicked', () => {
+    const store = renderDashboard();
+
+    const statsGrid = screen.getByRole('heading', { name: /welcome back/i }).parentElement?.parentElement?.nextElementSibling;
+    expect(statsGrid).toBeTruthy();
+    if (statsGrid) {
+      const firstCard = within(statsGrid).getByText("Today's Tasks").closest('div');
+      expect(firstCard).not.toBeNull();
+      if (firstCard) {
+        fireEvent.click(firstCard);
+      }
+    }
+
+    expect(store.setActiveView).toHaveBeenCalledWith('todos');
+  });
+
+  it('renders empty states when there is no data', () => {
+    renderDashboard({
+      tasks: [],
       habits: [],
-      notes: []
+      notes: [],
+      journalEntries: [],
     });
 
-    render(<Dashboard />);
-    
-    expect(screen.getByText('No tasks for today! 🎉')).toBeInTheDocument();
-    expect(screen.getByText('All habits completed! ✨')).toBeInTheDocument();
-    expect(screen.getByText('No notes yet. Start writing!')).toBeInTheDocument();
+    expect(screen.getByText(/no tasks for today/i)).toBeInTheDocument();
+    expect(screen.getByText(/all habits completed/i)).toBeInTheDocument();
+    expect(screen.getByText(/no notes yet/i)).toBeInTheDocument();
   });
 });

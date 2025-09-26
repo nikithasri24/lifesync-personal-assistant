@@ -1,3 +1,4 @@
+import '@testing-library/jest-dom'
 import { render, screen, waitFor, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { TaskFocusIntegration } from '../TaskFocusIntegration'
@@ -14,7 +15,7 @@ const sampleTasks: TodoItem[] = [
     id: '1',
     title: 'Design homepage mockups',
     description: 'Create wireframes and visual designs for the new homepage',
-    status: 'in_progress',
+    status: 'in-progress',
     priority: 'high',
     categoryId: 'work',
     dueDate: daysFromBase(2),
@@ -25,7 +26,8 @@ const sampleTasks: TodoItem[] = [
     actualTime: 75,
     notes: 'Focus on mobile-first approach',
     projectId: '1',
-    subtasks: []
+    subtasks: [],
+    completed: false
   },
   {
     id: '2',
@@ -41,7 +43,8 @@ const sampleTasks: TodoItem[] = [
     estimatedTime: 120,
     actualTime: 0,
     projectId: '1',
-    subtasks: []
+    subtasks: [],
+    completed: false
   },
   {
     id: '3',
@@ -57,7 +60,8 @@ const sampleTasks: TodoItem[] = [
     estimatedTime: 90,
     actualTime: 0,
     projectId: '1',
-    subtasks: []
+    subtasks: [],
+    completed: false
   },
   {
     id: '4',
@@ -74,13 +78,14 @@ const sampleTasks: TodoItem[] = [
     actualTime: 165,
     completedAt: baseDate,
     projectId: '2',
-    subtasks: []
+    subtasks: [],
+    completed: true
   },
   {
     id: '5',
     title: 'Build a todo app with React',
     description: 'Practice React skills by building a functional todo application',
-    status: 'in_progress',
+    status: 'in-progress',
     priority: 'high',
     categoryId: 'learning',
     dueDate: daysFromBase(3),
@@ -90,7 +95,8 @@ const sampleTasks: TodoItem[] = [
     estimatedTime: 240,
     actualTime: 120,
     projectId: '2',
-    subtasks: []
+    subtasks: [],
+    completed: false
   },
   {
     id: '6',
@@ -106,7 +112,8 @@ const sampleTasks: TodoItem[] = [
     estimatedTime: 30,
     actualTime: 0,
     projectId: '3',
-    subtasks: []
+    subtasks: [],
+    completed: false
   }
 ]
 
@@ -117,11 +124,9 @@ const sampleProjects: StoreProject[] = [
     description: 'Complete overhaul of company website',
     color: '#6366f1',
     status: 'active',
-    startDate: baseDate,
-    endDate: undefined,
-    progress: 0,
-    todos: [],
-    createdAt: baseDate
+    icon: '📁',
+    createdAt: baseDate,
+    updatedAt: baseDate,
   },
   {
     id: '2',
@@ -129,11 +134,9 @@ const sampleProjects: StoreProject[] = [
     description: 'Master React framework',
     color: '#10b981',
     status: 'active',
-    startDate: baseDate,
-    endDate: undefined,
-    progress: 0,
-    todos: [],
-    createdAt: baseDate
+    icon: '📘',
+    createdAt: baseDate,
+    updatedAt: baseDate,
   },
   {
     id: '3',
@@ -141,11 +144,9 @@ const sampleProjects: StoreProject[] = [
     description: 'Health and wellness objectives',
     color: '#f59e0b',
     status: 'active',
-    startDate: baseDate,
-    endDate: undefined,
-    progress: 0,
-    todos: [],
-    createdAt: baseDate
+    icon: '💪',
+    createdAt: baseDate,
+    updatedAt: baseDate,
   }
 ]
 

@@ -2,37 +2,72 @@ import { useState, useEffect } from 'react';
 
 export type Theme = 'light' | 'dark' | 'system';
 
-export function useTheme() {
-  const [theme, setTheme] = useState<Theme>(() => {
-    const saved = localStorage.getItem('lifesync-theme');
-    return (saved as Theme) || 'system';
-  });
+const validThemes: Theme[] = ['light', 'dark', 'system'];
 
-  const [systemTheme, setSystemTheme] = useState<'light' | 'dark'>(() => {
+function readStoredTheme(): Theme {
+  try {
+    const saved = localStorage.getItem('lifesync-theme');
+    if (validThemes.includes(saved as Theme)) {
+      return saved as Theme;
+    }
+  } catch {
+    // ignore – fall back to system
+  }
+  return 'system';
+}
+
+function detectSystemTheme(): 'light' | 'dark' {
+  try {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return 'light';
+    }
     return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  });
+  } catch {
+    return 'light';
+  }
+}
+
+export function useTheme() {
+  const [theme, setTheme] = useState<Theme>(() => readStoredTheme());
+
+  const [systemTheme, setSystemTheme] = useState<'light' | 'dark'>(() => detectSystemTheme());
 
   const currentTheme = theme === 'system' ? systemTheme : theme;
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = (e: MediaQueryListEvent) => {
-      setSystemTheme(e.matches ? 'dark' : 'light');
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)') as any;
+    const handleChange = (event: any) => {
+      setSystemTheme(event.matches ? 'dark' : 'light');
     };
 
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
+    if (mediaQuery && typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', handleChange as MediaQueryListEvent);
+      return () => mediaQuery.removeEventListener('change', handleChange as MediaQueryListEvent);
+    }
+
+    // Fallback for older browsers
+    mediaQuery?.addListener?.(handleChange as any);
+    return () => mediaQuery?.removeListener?.(handleChange as any);
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('lifesync-theme', theme);
-    
-    // Apply theme to document
-    const root = document.documentElement;
-    if (currentTheme === 'dark') {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
+    try {
+      localStorage.setItem('lifesync-theme', theme);
+    } catch {
+      // ignore persistence issues in non-browser environments
+    }
+
+    if (typeof document !== 'undefined') {
+      const root = document.documentElement;
+      if (currentTheme === 'dark') {
+        root.classList.add('dark');
+      } else {
+        root.classList.remove('dark');
+      }
     }
   }, [theme, currentTheme]);
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, startTransition } from 'react';
 import {
   Plus,
   CheckSquare,
@@ -76,6 +76,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { format, isToday, addDays, isPast, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth } from 'date-fns';
 import { useApiTasks } from '../hooks/useApiTasks';
 import type { TaskData, ProjectData } from '../services/apiClient';
+import { useAppStore } from '../stores/useAppStore';
 
 interface Task {
   id: string;
@@ -297,8 +298,18 @@ export default function TodosWorkingFollowUp() {
     deleteProject: apiDeleteProject,
     refreshData
   } = useApiTasks();
+  
+  // Global setting to show/hide 75 Hard tasks
+  const { showSFHTasksInTasks, setShowSFHTasksInTasks } = useAppStore();
 
-  const [currentView, setCurrentView] = useState<'today' | 'inbox' | 'upcoming' | 'waiting' | 'scheduled' | 'completed' | 'starred' | 'calendar' | 'trash' | 'archived'>('inbox');
+  const [currentView, setCurrentView] = useState<'today' | 'inbox' | 'upcoming' | 'waiting' | 'scheduled' | 'completed' | 'starred' | 'calendar' | 'trash' | 'archived'>(() => {
+    try {
+      const raw = localStorage.getItem('lifesync:tasks:currentView');
+      if (!raw) return 'inbox';
+      const allowed = new Set(['today','inbox','upcoming','waiting','scheduled','completed','starred','calendar','trash','archived']);
+      return allowed.has(raw) ? (raw as any) : 'inbox';
+    } catch { return 'inbox'; }
+  });
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [quickAddText, setQuickAddText] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -334,6 +345,11 @@ export default function TodosWorkingFollowUp() {
   useEffect(() => {
     setCalendarView('month');
   }, []);
+
+  // Persist currentView changes
+  useEffect(() => {
+    try { localStorage.setItem('lifesync:tasks:currentView', currentView); } catch {}
+  }, [currentView]);
   const [filters, setFilters] = useState({
     priority: 'all',
     status: 'all',
@@ -354,6 +370,13 @@ export default function TodosWorkingFollowUp() {
   // Bulk operations
   const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
   const [bulkMode, setBulkMode] = useState(false);
+
+  // Ensure 75 Hard tasks for today are present
+  const { ensureSFHTasksForToday } = useAppStore();
+  useEffect(() => {
+    ensureSFHTasksForToday?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Drag and drop sensors
   const sensors = useSensors(
@@ -428,33 +451,30 @@ export default function TodosWorkingFollowUp() {
     };
   };
 
-  // Convert API data to component format
-  const rawTasks = apiTasks.map(convertApiTaskToTask);
-  const taskMap = new Map<string, Task>();
-
-  rawTasks.forEach(task => {
-    task.subtasks = [];
-    taskMap.set(task.id, task);
-  });
-
-  rawTasks.forEach(task => {
-    if (task.parentId) {
-      const parent = taskMap.get(task.parentId);
-      if (parent) {
-        parent.subtasks = parent.subtasks || [];
-        parent.subtasks.push(task);
+  // Convert API data to component format (memoized to avoid heavy work on each click)
+  const rawTasks = useMemo(() => apiTasks.map(convertApiTaskToTask), [apiTasks]);
+  const { tasks, taskMap } = useMemo(() => {
+    const map = new Map<string, Task>();
+    // clone and ensure subtasks arrays are fresh
+    const cloned = rawTasks.map(t => ({ ...t, subtasks: [] as Task[] }));
+    cloned.forEach(task => { map.set(task.id, task); });
+    cloned.forEach(task => {
+      if (task.parentId) {
+        const parent = map.get(task.parentId);
+        if (parent) {
+          parent.subtasks = parent.subtasks || [];
+          parent.subtasks.push(task);
+        }
       }
-    }
-  });
-
-  rawTasks.forEach(task => {
-    if (task.subtasks && task.subtasks.length > 1) {
-      task.subtasks.sort((a, b) => (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0));
-    }
-  });
-
-  const tasks = rawTasks.filter(task => !task.parentId);
-  const projects = apiProjects.map(convertApiProjectToProject);
+    });
+    cloned.forEach(task => {
+      if (task.subtasks && task.subtasks.length > 1) {
+        task.subtasks.sort((a, b) => (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0));
+      }
+    });
+    return { tasks: cloned.filter(t => !t.parentId), taskMap: map };
+  }, [rawTasks]);
+  const projects = useMemo(() => apiProjects.map(convertApiProjectToProject), [apiProjects]);
   const getTaskById = (id: string | null | undefined) => (id ? taskMap.get(id) : undefined);
 
   // Pomodoro timer effect
@@ -1221,52 +1241,97 @@ export default function TodosWorkingFollowUp() {
     }
   };
 
-  // Filtering and sorting functions
-  const getFilteredAndSortedTasks = (taskList: Task[]) => {
-    let filtered = taskList;
-
-    // Apply search filter
-    if (searchQuery.trim()) {
-      filtered = filtered.filter(task => 
-        task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        task.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        task.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
-      );
+  // Memoized list for the main task view (reduces expensive recomputation on each click)
+  const tasksToShow = useMemo(() => {
+    let base: Task[];
+    switch (currentView) {
+      case 'today':
+        base = tasks.filter(task => task.dueDate && isToday(task.dueDate) && task.status !== 'done' && !task.archived && !task.deleted);
+        break;
+      case 'upcoming':
+        base = tasks
+          .filter(task => task.dueDate && task.dueDate > new Date() && task.status !== 'done' && !task.archived && !task.deleted)
+          .sort((a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime());
+        break;
+      case 'waiting':
+        base = tasks.filter(task => task.status === 'waiting' && !task.archived && !task.deleted);
+        break;
+      case 'scheduled':
+        base = tasks.filter(task => task.status === 'scheduled' && !task.archived && !task.deleted);
+        break;
+      case 'completed':
+        base = tasks.filter(task => task.status === 'done' && !task.archived && !task.deleted);
+        break;
+      case 'starred':
+        base = tasks.filter(task => task.starred && !task.archived && !task.deleted);
+        break;
+      case 'trash':
+        base = tasks
+          .filter(task => task.deleted)
+          .sort((a, b) => (b.deletedAt?.getTime() ?? 0) - (a.deletedAt?.getTime() ?? 0));
+        break;
+      case 'archived':
+        base = tasks.filter(task => task.archived && !task.deleted);
+        break;
+      case 'inbox':
+      default:
+        base = tasks.filter(task => task.status !== 'done' && !task.archived && !task.deleted);
+        break;
     }
 
-    // Apply other filters
+    if (selectedProject !== 'all') {
+      base = base.filter(task => task.projectId === selectedProject);
+    }
+
+    // Hide 75 Hard tasks when disabled in settings
+    if (!showSFHTasksInTasks) {
+      base = base.filter(t => !(t.tags || []).includes('sfh'));
+    }
+
+    const query = searchQuery.trim().toLowerCase();
+    if (query) {
+      base = base.filter(task =>
+        task.title.toLowerCase().includes(query) ||
+        task.description?.toLowerCase().includes(query) ||
+        task.tags.some(tag => tag.toLowerCase().includes(query))
+      );
+    }
     if (filters.priority !== 'all') {
-      filtered = filtered.filter(task => task.priority === filters.priority);
+      base = base.filter(task => task.priority === filters.priority);
     }
-    
     if (filters.status !== 'all') {
-      filtered = filtered.filter(task => task.status === filters.status);
+      base = base.filter(task => task.status === filters.status);
     }
-    
     if (filters.project !== 'all') {
-      filtered = filtered.filter(task => task.projectId === filters.project);
+      base = base.filter(task => task.projectId === filters.project);
     }
-    
     if (filters.tags.length > 0) {
-      filtered = filtered.filter(task => 
-        filters.tags.some(tag => task.tags.includes(tag))
-      );
+      base = base.filter(task => filters.tags.some(tag => task.tags.includes(tag)));
     }
 
-    // Sort tasks
-    filtered.sort((a, b) => {
-      let aValue, bValue;
-      
+    // 75 Hard visibility in Tasks views: only today's SFH tasks and cap to 5
+    // (applies regardless of sub-view in Tasks UX)
+    let forSort = base;
+    {
+      const isSFH = (t: Task) => (t.tags || []).includes('sfh');
+      const todaySFH = base.filter(t => isSFH(t) && t.dueDate && isToday(t.dueDate)).slice(0, 5);
+      const nonSFH = base.filter(t => !isSFH(t));
+      forSort = [...nonSFH, ...todaySFH];
+    }
+
+    const sorted = [...forSort].sort((a, b) => {
+      let aValue: any, bValue: any;
       switch (sortBy) {
         case 'dueDate':
-          aValue = a.dueDate?.getTime() || Infinity;
-          bValue = b.dueDate?.getTime() || Infinity;
+          aValue = a.dueDate?.getTime() ?? Infinity;
+          bValue = b.dueDate?.getTime() ?? Infinity;
           break;
-        case 'priority':
-          const priorityOrder = { urgent: 4, high: 3, medium: 2, low: 1 };
+        case 'priority': {
+          const priorityOrder: Record<Task['priority'], number> = { urgent: 4, high: 3, medium: 2, low: 1 };
           aValue = priorityOrder[a.priority];
           bValue = priorityOrder[b.priority];
           break;
+        }
         case 'created':
           aValue = a.createdAt.getTime();
           bValue = b.createdAt.getTime();
@@ -1278,16 +1343,44 @@ export default function TodosWorkingFollowUp() {
         default:
           return 0;
       }
-      
-      if (sortOrder === 'asc') {
-        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
-      } else {
-        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
-      }
+      if (sortOrder === 'asc') return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+      return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
     });
 
-    return filtered;
-  };
+    return sorted;
+  }, [tasks, currentView, selectedProject, searchQuery, filters, sortBy, sortOrder, showSFHTasksInTasks]);
+
+  // Precompute counts per project for sidebar
+  const projectActiveCounts = useMemo(() => {
+    const map = new Map<string, number>();
+    tasks.forEach(t => {
+      if (t.status !== 'done' && !t.archived) {
+        const key = t.projectId || '';
+        map.set(key, (map.get(key) ?? 0) + 1);
+      }
+    });
+    return map;
+  }, [tasks]);
+
+  // Counts that mirror visibility rules (especially for 75 Hard)
+  const inboxCount = useMemo(() => {
+    let base = tasks.filter(task => task.status !== 'done' && !task.archived && !task.deleted);
+    // Apply 75 Hard visibility: only today's SFH and cap to 5
+    const isSFH = (t: Task) => (t.tags || []).includes('sfh');
+    const todaySFH = base.filter(t => isSFH(t) && t.dueDate && isToday(t.dueDate));
+    const cappedSFH = showSFHTasksInTasks ? todaySFH.slice(0, 5) : [];
+    const nonSFH = base.filter(t => !isSFH(t));
+    return nonSFH.length + cappedSFH.length;
+  }, [tasks, showSFHTasksInTasks]);
+
+  const todayCount = useMemo(() => {
+    let base = tasks.filter(task => task.dueDate && isToday(task.dueDate) && task.status !== 'done' && !task.archived && !task.deleted);
+    const isSFH = (t: Task) => (t.tags || []).includes('sfh');
+    const todaySFH = base.filter(isSFH);
+    const cappedSFH = showSFHTasksInTasks ? todaySFH.slice(0, 5) : [];
+    const nonSFH = base.filter(t => !isSFH(t));
+    return nonSFH.length + cappedSFH.length;
+  }, [tasks, showSFHTasksInTasks]);
 
   // View-specific task getters
   const getTodayTasks = () => {
@@ -1332,45 +1425,7 @@ export default function TodosWorkingFollowUp() {
       .sort((a, b) => (b.deletedAt?.getTime() ?? 0) - (a.deletedAt?.getTime() ?? 0));
   };
 
-  const getTasksToShow = () => {
-    let tasksToShow = [];
-    switch (currentView) {
-      case 'today': 
-        tasksToShow = getTodayTasks();
-        break;
-      case 'upcoming': 
-        tasksToShow = getUpcomingTasks();
-        break;
-      case 'waiting': 
-        tasksToShow = getWaitingTasks();
-        break;
-      case 'scheduled': 
-        tasksToShow = getScheduledTasks();
-        break;
-      case 'completed':
-        tasksToShow = getCompletedTasks();
-        break;
-      case 'starred':
-        tasksToShow = getStarredTasks();
-        break;
-      case 'trash':
-        tasksToShow = getDeletedTasks();
-        break;
-      case 'archived':
-        tasksToShow = getArchivedTasks();
-        break;
-      case 'inbox':
-      default:
-        tasksToShow = getInboxTasks();
-        break;
-    }
-    
-    if (selectedProject !== 'all') {
-      tasksToShow = tasksToShow.filter(task => task.projectId === selectedProject);
-    }
-    
-    return getFilteredAndSortedTasks(tasksToShow);
-  };
+  const getTasksToShow = () => tasksToShow;
 
   // Bulk operations
   const toggleTaskSelection = (taskId: string) => {
@@ -1386,7 +1441,7 @@ export default function TodosWorkingFollowUp() {
   };
 
   const selectAllTasks = () => {
-    const taskIds = getTasksToShow().map(task => task.id);
+    const taskIds = tasksToShow.map(task => task.id);
     setSelectedTasks(new Set(taskIds));
   };
 
@@ -1396,7 +1451,8 @@ export default function TodosWorkingFollowUp() {
 
   const bulkDeleteTasks = async () => {
     try {
-      const promises = Array.from(selectedTasks).map(taskId => dbDeleteTask(taskId));
+      // Soft-delete via API so items move to trash/are removed as per store rules
+      const promises = Array.from(selectedTasks).map(taskId => apiDeleteTask(taskId));
       await Promise.all(promises);
       setSelectedTasks(new Set());
     } catch (err) {
@@ -1951,7 +2007,7 @@ export default function TodosWorkingFollowUp() {
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-    <div className="h-screen bg-gray-50 dark:bg-slate-900 flex" style={{ position: 'relative' }}>
+    <div className="min-h-full bg-gray-50 dark:bg-slate-900 flex" style={{ position: 'relative' }}>
       {/* Sidebar */}
       <div 
         className="w-72 bg-white dark:bg-slate-800 border-r border-gray-200 dark:border-slate-700 flex flex-col shadow-sm" 
@@ -2021,8 +2077,8 @@ export default function TodosWorkingFollowUp() {
             <h3 className="text-xs font-bold text-black dark:text-white uppercase tracking-wider mb-2 px-3">Smart Lists</h3>
             <nav className="space-y-1">
               {[
-                { id: 'inbox', label: 'All', icon: Inbox, count: getInboxTasks().length },
-                { id: 'today', label: 'Today', icon: Sun, count: getTodayTasks().length },
+                { id: 'inbox', label: 'All', icon: Inbox, count: inboxCount },
+                { id: 'today', label: 'Today', icon: Sun, count: todayCount },
                 { id: 'upcoming', label: 'Next 7 days', icon: ArrowRight, count: getUpcomingTasks().length },
                 { id: 'calendar', label: 'Calendar', icon: Calendar, count: null },
                 { id: 'waiting', label: 'Waiting For', icon: Clock, count: getWaitingTasks().length },
@@ -2040,7 +2096,7 @@ export default function TodosWorkingFollowUp() {
                       ? 'bg-blue-600 text-white dark:bg-blue-500 dark:text-white' 
                       : 'text-black dark:text-white hover:bg-gray-200 dark:hover:bg-slate-700'
                   }`}
-                  onClick={() => setCurrentView(id as any)}
+                  onClick={() => startTransition(() => setCurrentView(id as any))}
                 >
                   <Icon className="w-4 h-4" />
                   <span>{label}</span>
@@ -2079,7 +2135,7 @@ export default function TodosWorkingFollowUp() {
                         ? 'bg-blue-600 text-white dark:bg-blue-500 dark:text-white' 
                         : 'text-black dark:text-white hover:bg-gray-200 dark:hover:bg-slate-700'
                     }`}
-                    onClick={() => setSelectedProject(selectedProject === project.id ? 'all' : project.id)}
+                    onClick={() => startTransition(() => setSelectedProject(selectedProject === project.id ? 'all' : project.id))}
                   >
                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: project.color }}></div>
                     <span className="truncate">{project.name}</span>
@@ -2088,7 +2144,7 @@ export default function TodosWorkingFollowUp() {
                         ? 'bg-white text-blue-600 dark:bg-white dark:text-blue-500' 
                         : 'bg-gray-200 text-black dark:bg-slate-600 dark:text-gray-300'
                     }`}>
-                      {tasks.filter(t => t.projectId === project.id && t.status !== 'done' && !t.archived).length}
+                      {projectActiveCounts.get(project.id) ?? 0}
                     </span>
                   </DroppableSidebarItem>
                   <button
@@ -2186,6 +2242,17 @@ export default function TodosWorkingFollowUp() {
                   className="pl-10 pr-4 py-2 w-64 text-sm border border-gray-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-700 dark:text-white"
                 />
               </div>
+
+              {/* 75 Hard toggle */}
+              <label className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-slate-300 select-none cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={!!showSFHTasksInTasks}
+                  onChange={(e) => setShowSFHTasksInTasks(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                Show 75 Hard tasks
+              </label>
               
               {/* Sort */}
               <div className="relative">
@@ -2370,15 +2437,15 @@ export default function TodosWorkingFollowUp() {
                           if (calendarView === 'month') {
                             const newDate = new Date(calendarDate);
                             newDate.setMonth(newDate.getMonth() - 1);
-                            setCalendarDate(newDate);
+                            startTransition(() => setCalendarDate(newDate));
                           } else if (calendarView === 'week') {
                             const newDate = new Date(calendarDate);
                             newDate.setDate(newDate.getDate() - 7);
-                            setCalendarDate(newDate);
+                            startTransition(() => setCalendarDate(newDate));
                           } else {
                             const newDate = new Date(calendarDate);
                             newDate.setDate(newDate.getDate() - 1);
-                            setCalendarDate(newDate);
+                            startTransition(() => setCalendarDate(newDate));
                           }
                         }}
                         className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full transition-colors"
@@ -2390,15 +2457,15 @@ export default function TodosWorkingFollowUp() {
                           if (calendarView === 'month') {
                             const newDate = new Date(calendarDate);
                             newDate.setMonth(newDate.getMonth() + 1);
-                            setCalendarDate(newDate);
+                            startTransition(() => setCalendarDate(newDate));
                           } else if (calendarView === 'week') {
                             const newDate = new Date(calendarDate);
                             newDate.setDate(newDate.getDate() + 7);
-                            setCalendarDate(newDate);
+                            startTransition(() => setCalendarDate(newDate));
                           } else {
                             const newDate = new Date(calendarDate);
                             newDate.setDate(newDate.getDate() + 1);
-                            setCalendarDate(newDate);
+                            startTransition(() => setCalendarDate(newDate));
                           }
                         }}
                         className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full transition-colors"
@@ -2407,7 +2474,7 @@ export default function TodosWorkingFollowUp() {
                       </button>
                     </div>
                     <button
-                      onClick={() => setCalendarDate(new Date())}
+                      onClick={() => startTransition(() => setCalendarDate(new Date()))}
                       className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-slate-700 rounded-md border border-gray-300 dark:border-slate-600 transition-colors"
                     >
                       Today
@@ -2422,7 +2489,7 @@ export default function TodosWorkingFollowUp() {
                   <div className="flex items-center space-x-2">
                     <div className="flex bg-gray-100 dark:bg-slate-700 rounded-md p-1">
                       <button
-                        onClick={() => setCalendarView('day')}
+                        onClick={() => startTransition(() => setCalendarView('day'))}
                         className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
                           calendarView === 'day' 
                             ? 'bg-white dark:bg-slate-600 text-gray-900 dark:text-white shadow-sm' 
@@ -2432,7 +2499,7 @@ export default function TodosWorkingFollowUp() {
                         Day
                       </button>
                       <button
-                        onClick={() => setCalendarView('week')}
+                        onClick={() => startTransition(() => setCalendarView('week'))}
                         className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
                           calendarView === 'week' 
                             ? 'bg-white dark:bg-slate-600 text-gray-900 dark:text-white shadow-sm' 
@@ -2442,7 +2509,7 @@ export default function TodosWorkingFollowUp() {
                         Week
                       </button>
                       <button
-                        onClick={() => setCalendarView('month')}
+                        onClick={() => startTransition(() => setCalendarView('month'))}
                         className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
                           calendarView === 'month' 
                             ? 'bg-white dark:bg-slate-600 text-gray-900 dark:text-white shadow-sm' 
@@ -2537,7 +2604,7 @@ export default function TodosWorkingFollowUp() {
                                     className={`border-r border-b border-gray-200 last:border-r-0 cursor-pointer hover:bg-blue-50 transition-colors flex flex-col ${
                                       !isCurrentMonth ? 'bg-gray-50' : 'bg-white'
                                     }`}
-                                    onClick={() => setCalendarDate(day)}
+                                    onClick={() => startTransition(() => setCalendarDate(day))}
                                     style={{ 
                                       height: '128px', 
                                       width: 'calc(100% / 7)', 
@@ -2560,9 +2627,9 @@ export default function TodosWorkingFollowUp() {
                                       </div>
                                     
                                     {/* Events area */}
-                                    <div className="flex-1 overflow-hidden" style={{ height: 'calc(128px - 48px)' }}>
-                                      <div className="space-y-1 h-full overflow-hidden">
-                                        {dayTasks.slice(0, 3).map((task) => (
+                                    <div className="flex-1 overflow-y-auto" style={{ height: 'calc(128px - 48px)' }}>
+                                      <div className="space-y-1 h-full pr-1">
+                                        {dayTasks.map((task) => (
                                           <div 
                                             key={task.id}
                                             className="text-xs px-2 py-1 text-white rounded font-medium cursor-pointer hover:opacity-90 transition-opacity flex items-center overflow-hidden"
@@ -2585,11 +2652,6 @@ export default function TodosWorkingFollowUp() {
                                             </span>
                                           </div>
                                         ))}
-                                        {dayTasks.length > 3 && (
-                                          <div className="text-xs text-gray-500 px-2 font-medium overflow-hidden" style={{ height: '20px', lineHeight: '20px', width: '100%' }}>
-                                            +{dayTasks.length - 3} more
-                                          </div>
-                                        )}
                                       </div>
                                     </div>
                                     </div>
@@ -2837,10 +2899,10 @@ export default function TodosWorkingFollowUp() {
             ) : (
               <div className="py-4">
                   <SortableContext
-                    items={getTasksToShow().map(task => task.id)}
+                    items={tasksToShow.map(task => task.id)}
                     strategy={verticalListSortingStrategy}
                   >
-                    {getTasksToShow().map((task) => {
+                    {tasksToShow.map((task) => {
                       const project = projects.find(p => p.id === task.projectId);
                       const dependencyStatus = getDependencyStatus(task);
                       const isSelected = selectedTasks.has(task.id);
@@ -2858,7 +2920,7 @@ export default function TodosWorkingFollowUp() {
                   </SortableContext>
 
                 {/* Empty state */}
-                {getTasksToShow().length === 0 && (
+                {tasksToShow.length === 0 && (
                   <div className="text-center py-16 px-6">
                     <p>No tasks to show</p>
                   </div>

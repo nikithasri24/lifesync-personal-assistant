@@ -10,7 +10,7 @@ import {
   Trophy,
   Target,
   Star,
-  Fire,
+  Flame,
   Zap,
   Crown,
   Award,
@@ -364,7 +364,7 @@ export const GamificationHub: React.FC<Props> = ({
               <p className="text-white/80 mb-2">{userProfile.rank}</p>
               <div className="flex items-center space-x-4 text-sm">
                 <span className="flex items-center space-x-1">
-                  <Fire className="w-4 h-4" />
+                  <Flame className="w-4 h-4" />
                   <span>{userProfile.currentStreak} day streak</span>
                 </span>
                 <span className="flex items-center space-x-1">
@@ -468,7 +468,7 @@ export const GamificationHub: React.FC<Props> = ({
                       <div className="text-right">
                         {goal.streak > 0 && (
                           <div className="flex items-center space-x-1 text-orange-500">
-                            <Fire size={14} />
+                            <Flame size={14} />
                             <span className="text-sm">{goal.streak}</span>
                           </div>
                         )}
@@ -612,7 +612,7 @@ export const GamificationHub: React.FC<Props> = ({
                     <div className="text-right">
                       {goal.streak > 0 && (
                         <div className="flex items-center space-x-1 text-orange-500 mb-1">
-                          <Fire size={14} />
+                          <Flame size={14} />
                           <span className="text-sm">{goal.streak}</span>
                         </div>
                       )}

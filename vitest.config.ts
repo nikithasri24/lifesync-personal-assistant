@@ -1,5 +1,9 @@
 /// <reference types="vitest" />
 import { defineConfig } from 'vite'
+import dotenv from 'dotenv'
+
+// Ensure env vars are available during tests. Prefer .env.test when NODE_ENV=test.
+dotenv.config({ path: process.env.NODE_ENV === 'test' ? '.env.test' : undefined })
 import react from '@vitejs/plugin-react'
 
 export default defineConfig({

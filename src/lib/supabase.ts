@@ -1,7 +1,11 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined
+// Prefer process.env when available (tests/scripts), fallback to Vite's import.meta.env
+const env = (typeof process !== 'undefined' ? process.env : {}) as Record<string, string | undefined>
+const supabaseUrl = (env.VITE_SUPABASE_URL || (import.meta as any).env?.VITE_SUPABASE_URL) as string | undefined
+const supabaseAnonKey = (env.VITE_SUPABASE_ANON_KEY || (import.meta as any).env?.VITE_SUPABASE_ANON_KEY) as string | undefined
+
+const isVitest = typeof process !== 'undefined' && process.env?.VITEST === 'true'
 
 console.log('[SupabaseEnv] URL:', supabaseUrl)
 
@@ -12,7 +16,8 @@ const isPlaceholder = (value?: string) => {
   return trimmed.includes('your-project') || trimmed === 'your-anon-key'
 }
 
-export const isSupabaseConfigured = !isPlaceholder(supabaseUrl) && !isPlaceholder(supabaseAnonKey)
+export const isSupabaseConfigured =
+  !isPlaceholder(supabaseUrl) && !isPlaceholder(supabaseAnonKey)
 
 let supabaseClient: SupabaseClient | null = null
 

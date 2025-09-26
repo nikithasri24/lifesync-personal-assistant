@@ -152,14 +152,8 @@ export default function Todos() {
     parentId: todo.parentId
   }));
 
-  // Hybrid projects: use API if available, fallback to mock data
-  const mockProjects = [
-    { id: '1', name: 'Personal', description: 'Personal tasks and goals', color: '#6366f1', status: 'active' as const, icon: '👤' },
-    { id: '2', name: 'Work', description: 'Work-related tasks', color: '#10b981', status: 'active' as const, icon: '💼' },
-    { id: '3', name: 'Learning', description: 'Learning and development', color: '#f59e0b', status: 'active' as const, icon: '📚' },
-    { id: '4', name: 'Health', description: 'Health and wellness', color: '#ef4444', status: 'active' as const, icon: '❤️' }
-  ];
-  const projects = apiError ? mockProjects : (apiProjects.length > 0 ? apiProjects : mockProjects);
+  // Use Supabase projects only - no mock fallback
+  const projects = apiProjects;
 
   // Helper functions
   const getTodoistPriorityFlag = (priority: string) => {
@@ -186,8 +180,8 @@ export default function Todos() {
   const parseQuickAdd = (text: string) => {
     let title = text;
     let priority = 'medium';
-    let dueDate = null;
-    let projectId = '';
+    let dueDate: Date | null = null;
+    let projectId: string | undefined;
     let tags: string[] = [];
 
     // Extract priority flags (p1, p2, p3, p4)
@@ -236,16 +230,17 @@ export default function Todos() {
       description: '',
       priority: parsed.priority as any,
       completed: false,
+      status: 'todo' as const,
       estimatedTime: 25,
       actualTime: 0,
-      dueDate: parsed.dueDate,
-      projectId: parsed.projectId,
+      dueDate: parsed.dueDate ?? undefined,
+      projectId: parsed.projectId ?? undefined,
       tags: parsed.tags,
-      categoryId: 'work'
+      categoryId: 'work' as const
     };
 
     // Add to local store immediately
-    addTodo(todoData);
+    await addTodo(todoData);
     
     // Try to sync to API in background (but don't fail if it's down)
     if (!apiError && createApiTask) {
@@ -277,7 +272,8 @@ export default function Todos() {
       // Update local store immediately
       updateTodo(taskId, { 
         completed: !task.completed,
-        completedAt: !task.completed ? new Date() : undefined
+        completedAt: !task.completed ? new Date() : undefined,
+        status: !task.completed ? 'done' : 'todo'
       });
       
       // Try to sync to API in background
@@ -307,8 +303,8 @@ export default function Todos() {
         updateTodo(taskId, {
           title: parsed.title,
           priority: parsed.priority as any,
-          dueDate: parsed.dueDate || currentTodo.dueDate,
-          projectId: parsed.projectId || currentTodo.projectId,
+          dueDate: parsed.dueDate ?? currentTodo.dueDate,
+          projectId: parsed.projectId ?? currentTodo.projectId,
           tags: parsed.tags.length > 0 ? parsed.tags : currentTodo.tags
         });
         
@@ -414,10 +410,11 @@ export default function Todos() {
       description: '',
       priority: 'medium' as const,
       completed: false,
+      status: 'todo' as const,
       estimatedTime: 25,
       actualTime: 0,
       tags: [],
-      categoryId: 'work',
+      categoryId: 'work' as const,
       parentId: parentId
     };
 

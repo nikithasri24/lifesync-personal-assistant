@@ -9,6 +9,26 @@ import { toHaveNoViolations } from 'jest-axe'
 // Extend Jest matchers to include accessibility testing
 expect.extend(toHaveNoViolations)
 
+// Provide a basic jest compatibility layer for suites that still reference jest.*
+if (!(globalThis as any).jest) {
+  (globalThis as any).jest = {
+    ...vi,
+    fn: vi.fn,
+    spyOn: vi.spyOn,
+    mock: vi.mock,
+    clearAllMocks: vi.clearAllMocks,
+    resetAllMocks: vi.resetAllMocks,
+    restoreAllMocks: vi.restoreAllMocks,
+    useFakeTimers: vi.useFakeTimers,
+    clearAllTimers: vi.clearAllTimers,
+    runAllTimers: vi.runAllTimers,
+    runOnlyPendingTimers: vi.runOnlyPendingTimers,
+    advanceTimersByTime: vi.advanceTimersByTime,
+    advanceTimersToNextTimer: vi.advanceTimersToNextTimer,
+    setSystemTime: vi.setSystemTime,
+  }
+}
+
 // Mock URL.createObjectURL since it's not available in jsdom
 Object.defineProperty(URL, 'createObjectURL', {
   writable: true,
@@ -43,15 +63,53 @@ Object.defineProperty(global, 'performance', {
 });
 
 // Mock local storage
+const storage = new Map<string, string>()
 const localStorageMock = {
-  getItem: vi.fn(),
-  setItem: vi.fn(),
-  removeItem: vi.fn(),
-  clear: vi.fn(),
-};
+  getItem: vi.fn((key: string) => (storage.has(key) ? storage.get(key)! : null)),
+  setItem: vi.fn((key: string, value: string) => {
+    storage.set(key, value)
+  }),
+  removeItem: vi.fn((key: string) => {
+    storage.delete(key)
+  }),
+  clear: vi.fn(() => {
+    storage.clear()
+  }),
+}
+
 Object.defineProperty(window, 'localStorage', {
   value: localStorageMock,
-});
+})
+
+// Mock matchMedia for environments without it
+// Robust matchMedia mock compatible with both addEventListener and addListener
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: vi.fn().mockImplementation((query: string) => {
+    const listeners: Array<(e: { matches: boolean; media: string }) => void> = []
+    const mql = {
+      matches: query.includes('prefers-color-scheme') ? false : false,
+      media: query,
+      onchange: null as ((this: MediaQueryList, ev: MediaQueryListEvent) => any) | null,
+      addListener: vi.fn((cb: any) => {
+        listeners.push(cb)
+      }),
+      removeListener: vi.fn((cb: any) => {
+        const i = listeners.indexOf(cb)
+        if (i >= 0) listeners.splice(i, 1)
+      }),
+      addEventListener: vi.fn((_type: string, cb: any) => {
+        listeners.push(cb)
+      }),
+      removeEventListener: vi.fn((_type: string, cb: any) => {
+        const i = listeners.indexOf(cb)
+        if (i >= 0) listeners.splice(i, 1)
+      }),
+      dispatchEvent: vi.fn((_ev: Event) => true),
+    } as any
+    return mql
+  }),
+})
 
 // Mock fetch for API testing
 global.fetch = vi.fn();

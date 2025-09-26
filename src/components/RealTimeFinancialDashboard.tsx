@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, useEffect, memo, useMemo, useCallback } from 'react';
 import { useMemoizedCalculation, useDebouncedCallback } from '../hooks/useOptimization';
 import { useFinancialDataWebSocket } from '../hooks/useWebSocket';

@@ -6,21 +6,21 @@ export interface TaskData {
   user_id?: string;
   title: string;
   description?: string;
-  project_id?: string;
+  project_id?: string | null;
   status?: 'todo' | 'done' | 'waiting' | 'scheduled' | 'in_progress';
   priority?: 'low' | 'medium' | 'high' | 'urgent';
-  estimated_time?: number;
-  actual_time?: number;
-  due_date?: string;
-  tags?: string[];
-  category?: 'work' | 'personal' | 'learning' | 'creative' | 'health' | 'other';
-  notes?: string;
-  starred?: boolean;
-  archived?: boolean;
-  deleted?: boolean;
-  parent_id?: string;
-  deleted_at?: string;
-  completed_at?: string;
+  estimated_time?: number | null;
+  actual_time?: number | null;
+  due_date?: string | null;
+  tags?: string[] | null;
+  category?: 'work' | 'personal' | 'learning' | 'creative' | 'health' | 'other' | null;
+  notes?: string | null;
+  starred?: boolean | null;
+  archived?: boolean | null;
+  deleted?: boolean | null;
+  parent_id?: string | null;
+  deleted_at?: string | null;
+  completed_at?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -29,10 +29,10 @@ export interface ProjectData {
   id?: string;
   user_id?: string;
   name: string;
-  description?: string;
-  color?: string;
+  description?: string | null;
+  color?: string | null;
   status?: 'active' | 'completed' | 'on_hold';
-  icon?: string;
+  icon?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -234,6 +234,34 @@ export interface FocusSessionData {
   environment_data?: any;
   created_at?: string;
   updated_at?: string;
+}
+
+// 75 Hard (stored as JSON-friendly rows for simpler sync)
+export interface SFHChallengeData {
+  id?: string;
+  user_id?: string;
+  name: string;
+  start_date: string; // yyyy-MM-dd
+  end_date: string;   // yyyy-MM-dd
+  is_active: boolean;
+  current_day: number;
+  rules: Array<{ id: string; title: string; description: string; is_required: boolean; is_custom: boolean; daily_target?: number; segment_labels?: string[] }>;
+  notes?: string | null;
+  created_at?: string;
+}
+
+export interface SFHEntryData {
+  id?: string;
+  user_id?: string;
+  challenge_id: string;
+  date: string; // yyyy-MM-dd
+  day: number;
+  rule_completions: Array<{ rule_id: string; completed: boolean; completed_at?: string | null; segments?: boolean[] }>;
+  notes?: string | null;
+  progress_photo_url?: string | null;
+  weight?: number | null;
+  measurements?: Record<string, number> | null;
+  created_at?: string;
 }
 
 export interface RecipeData {

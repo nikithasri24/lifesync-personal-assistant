@@ -150,6 +150,22 @@ A comprehensive, Nike-inspired personal productivity and life management applica
 - `npm run build` - Build for production
 - `npm run preview` - Preview production build
 - `npm run lint` - Run ESLint
+- `npm run verify:supabase-schema` - Ensure required Supabase tables/columns exist
+- `npm run backup:supabase-schema` - Snapshot the Supabase schema metadata to `backups/`
+
+### Supabase Schema Utilities
+
+The Supabase helpers expect a Postgres connection string with permissions to read `information_schema`.
+
+```bash
+export SUPABASE_DB_URL="postgres://user:password@db.host:5432/postgres"
+npm run verify:supabase-schema
+npm run backup:supabase-schema
+```
+
+Use the verifier in CI or before deploying migrations to catch missing columns (like `goal_mode` or
+`current_progress`). The backup command writes a timestamped JSON snapshot to the `backups/` folder, which
+you can commit or archive as needed for manual restores.
 
 ## 📱 Application Structure
 

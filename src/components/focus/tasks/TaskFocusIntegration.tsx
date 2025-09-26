@@ -149,15 +149,12 @@ export const TaskFocusIntegration: React.FC<Props> = ({
     switch (status) {
       case 'done':
         return 'completed';
-      case 'in_progress':
-      case 'currently-working':
+      case 'in-progress':
         return 'in_progress';
       case 'waiting':
-      case 'pending-others':
       case 'scheduled':
         return 'in_progress';
       case 'todo':
-      case 'need-to-start':
       default:
         return 'todo';
     }
@@ -275,14 +272,14 @@ export const TaskFocusIntegration: React.FC<Props> = ({
         name: project.name,
         description: project.description,
         color: project.color || '#6366f1',
-        status: (project.status as ProjectView['status']) || 'active',
-        startDate: project.startDate,
-        endDate: project.endDate,
+        status: project.status === 'on_hold' ? 'on-hold' : (project.status as ProjectView['status']) || 'active',
+        startDate: undefined,
+        endDate: undefined,
         estimatedHours: Math.round((totalEstimatedMinutes / 60) * 10) / 10,
         actualHours: Math.round((totalActualMinutes / 60) * 10) / 10,
         tasks: associatedTasks.map(task => task.id),
         progress,
-        icon: (project as any).icon,
+        icon: (project as any).icon ?? '📁',
         category: undefined
       };
     });
@@ -351,7 +348,8 @@ export const TaskFocusIntegration: React.FC<Props> = ({
 
   const getTaskProgress = (task: TaskView) => {
     if (task.subtasks.length === 0) {
-      return task.status === 'completed' ? 100 : task.actualTime > 0 ? 50 : 0;
+      const actual = task.actualTime ?? 0;
+      return task.status === 'completed' ? 100 : actual > 0 ? 50 : 0;
     }
     const completed = task.subtasks.filter(st => st.completed).length;
     return (completed / task.subtasks.length) * 100;
@@ -373,20 +371,12 @@ export const TaskFocusIntegration: React.FC<Props> = ({
         tags: newTask.tags ?? [],
         notes: newTask.notes,
         projectId: newTask.projectId || undefined,
-        estimatedTime: newTask.estimatedTime,
+        estimatedTime: newTask.estimatedTime ?? 0,
         actualTime: 0,
         completed: false,
         archived: false,
         starred: false,
-        blockedBy: undefined,
-        waitingFor: undefined,
-        waitingForNotes: undefined,
-        waitingForType: undefined,
-        waitingForContact: undefined,
-        waitingForDeadline: undefined,
-        assignedTo: undefined,
         subtasks: [],
-        focusTime: 0
       } as Omit<TodoItem, 'id' | 'createdAt' | 'updatedAt'>);
 
       setNewTask({
@@ -416,10 +406,8 @@ export const TaskFocusIntegration: React.FC<Props> = ({
         description: newProject.description,
         color: newProject.color || '#6366f1',
         status: (newProject.status as ProjectView['status']) || 'active',
-        startDate: new Date(),
-        endDate: newProject.endDate,
-        todos: []
-      } as unknown as Omit<StoreProject, 'id' | 'createdAt' | 'progress'>);
+        icon: newProject.icon || '📁',
+      } as Omit<StoreProject, 'id' | 'createdAt' | 'updatedAt'>)
 
       setNewProject({
         name: '',

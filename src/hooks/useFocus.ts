@@ -7,17 +7,17 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { focusService } from '../services/focus/FocusService';
-import { 
-  FocusSession, 
-  FocusPreset, 
-  FocusAnalytics, 
+import type {
+  FocusSession,
+  FocusPreset,
+  FocusAnalytics,
   FocusSettings,
   ProductivityMetrics,
   UseFocusSessionReturn,
   UseFocusAnalyticsReturn,
   FocusEvent,
-  FocusEventType
-} from '../types/focus';
+  FocusEventType,
+} from '../types/focus'
 
 // ==================== Main Focus Session Hook ====================
 

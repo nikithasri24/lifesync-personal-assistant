@@ -5,7 +5,8 @@
  * trends, achievements, goals progress, and personalized recommendations.
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import { useEffect, useState } from 'react'
+import { apiClient } from '../../../services/apiClient'
 import {
   BarChart3,
   Calendar,
@@ -23,7 +24,7 @@ import {
   Filter,
   ChevronRight,
   Star,
-  Fire,
+  Flame,
   Trophy,
   Users,
   Activity,
@@ -31,7 +32,13 @@ import {
   AlertCircle,
   Lightbulb
 } from 'lucide-react';
-import { format, subDays, isToday, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
+import { eachDayOfInterval, endOfWeek, format, startOfWeek } from 'date-fns'
+import { useAppStore } from '../../../stores/useAppStore'
+
+type InsightType = 'positive' | 'suggestion' | 'warning'
+type InsightPriority = 'low' | 'medium' | 'high'
+type GoalStatus = 'active' | 'paused' | 'completed'
+type AchievementRarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'
 
 interface AnalyticsData {
   totalSessions: number;
@@ -46,9 +53,9 @@ interface AnalyticsData {
   monthlyTrends: Array<{ week: string; sessions: number; focusTime: number }>;
   hourlyHeatmap: Array<{ hour: number; value: number }>;
   categoryBreakdown: Array<{ category: string; time: number; sessions: number }>;
-  achievements: Array<{ id: string; name: string; icon: string; unlockedAt: Date; rarity: string }>;
-  insights: Array<{ type: string; title: string; description: string; priority: string }>;
-  goals: Array<{ id: string; title: string; progress: number; target: number; status: string }>;
+  achievements: Array<{ id: string; name: string; icon: string; unlockedAt: Date; rarity: AchievementRarity }>;
+  insights: Array<{ type: InsightType; title: string; description: string; priority: InsightPriority }>;
+  goals: Array<{ id: string; title: string; progress: number; target: number; status: GoalStatus }>;
   distractions: {
     total: number;
     sources: Array<{ source: string; count: number }>;
@@ -75,7 +82,6 @@ export const FocusAnalyticsDashboard: React.FC<Props> = ({
 }) => {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showInsights, setShowInsights] = useState(true);
 
   // Mock data for demonstration
@@ -83,100 +89,213 @@ export const FocusAnalyticsDashboard: React.FC<Props> = ({
     const loadAnalytics = async () => {
       setIsLoading(true);
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const mockData: AnalyticsData = {
-        totalSessions: 47,
-        totalFocusTime: 1240, // minutes
-        averageSessionLength: 26.4,
-        completionRate: 87,
-        currentStreak: 5,
-        longestStreak: 12,
-        productivityScore: 85,
-        focusQuality: 78,
-        weeklyStats: [
-          { day: 'Mon', sessions: 8, focusTime: 180, productivity: 85 },
-          { day: 'Tue', sessions: 6, focusTime: 145, productivity: 90 },
-          { day: 'Wed', sessions: 9, focusTime: 220, productivity: 88 },
-          { day: 'Thu', sessions: 7, focusTime: 165, productivity: 82 },
-          { day: 'Fri', sessions: 5, focusTime: 120, productivity: 75 },
-          { day: 'Sat', sessions: 6, focusTime: 180, productivity: 92 },
-          { day: 'Sun', sessions: 6, focusTime: 230, productivity: 95 }
-        ],
-        monthlyTrends: [
-          { week: 'Week 1', sessions: 35, focusTime: 850 },
-          { week: 'Week 2', sessions: 42, focusTime: 1020 },
-          { week: 'Week 3', sessions: 38, focusTime: 920 },
-          { week: 'Week 4', sessions: 47, focusTime: 1240 }
-        ],
-        hourlyHeatmap: Array.from({ length: 24 }, (_, i) => ({
-          hour: i,
-          value: Math.random() * 10
-        })),
-        categoryBreakdown: [
-          { category: 'Deep Work', time: 420, sessions: 15 },
-          { category: 'Creative', time: 280, sessions: 12 },
-          { category: 'Learning', time: 310, sessions: 14 },
-          { category: 'Planning', time: 150, sessions: 6 },
-          { category: 'Breaks', time: 80, sessions: 8 }
-        ],
-        achievements: [
-          { id: '1', name: 'First Week', icon: '🏆', unlockedAt: new Date(), rarity: 'common' },
-          { id: '2', name: 'Focus Master', icon: '🧠', unlockedAt: new Date(), rarity: 'rare' },
-          { id: '3', name: 'Streak Champion', icon: '🔥', unlockedAt: new Date(), rarity: 'epic' }
-        ],
-        insights: [
-          {
-            type: 'positive',
-            title: 'Great Morning Focus!',
-            description: 'You\'re 23% more productive in the morning hours (9-11 AM)',
-            priority: 'high'
-          },
-          {
-            type: 'suggestion',
-            title: 'Break Optimization',
-            description: 'Consider shorter 5-minute breaks for better flow maintenance',
-            priority: 'medium'
-          },
-          {
-            type: 'warning',
-            title: 'Afternoon Dip',
-            description: 'Your focus quality drops 15% after 2 PM. Try a power nap!',
-            priority: 'medium'
-          }
-        ],
-        goals: [
-          { id: '1', title: 'Daily Focus Goal', progress: 85, target: 120, status: 'active' },
-          { id: '2', title: 'Weekly Sessions', progress: 23, target: 30, status: 'active' },
-          { id: '3', title: 'Productivity Score', progress: 85, target: 90, status: 'active' }
-        ],
-        distractions: {
-          total: 23,
-          sources: [
-            { source: 'Social Media', count: 8 },
-            { source: 'Email', count: 5 },
-            { source: 'Phone', count: 4 },
-            { source: 'Other', count: 6 }
-          ],
-          timeOfDay: {
-            9: 2, 10: 1, 11: 3, 14: 4, 15: 5, 16: 3, 17: 2, 19: 3
-          }
-        },
-        wellness: {
-          moodAvg: 4.2,
-          energyAvg: 3.8,
-          eyeStrainEvents: 12,
-          hydrationReminders: 8
-        }
-      };
-      
-      setAnalyticsData(mockData);
+      try {
+        // Load real focus session data from Supabase
+        const sessions = await apiClient.getFocusSessions();
+
+        // Generate analytics from real session data
+        const generated = generateAnalyticsFromSessions(sessions);
+        setAnalyticsData(generated);
+      } catch (error) {
+        console.error('Failed to load focus analytics:', error);
+        setAnalyticsData(defaultAnalytics());
+      }
       setIsLoading(false);
     };
 
     loadAnalytics();
   }, [period]);
+
+  const defaultAnalytics = (): AnalyticsData => ({
+    totalSessions: 0,
+    totalFocusTime: 0,
+    averageSessionLength: 0,
+    completionRate: 0,
+    currentStreak: 0,
+    longestStreak: 0,
+    productivityScore: 0,
+    focusQuality: 0,
+    weeklyStats: [],
+    monthlyTrends: [],
+    hourlyHeatmap: Array.from({ length: 24 }, (_, hour) => ({ hour, value: 0 })),
+    categoryBreakdown: [],
+    achievements: [],
+    insights: [],
+    goals: [],
+    distractions: {
+      total: 0,
+      sources: [],
+      timeOfDay: {},
+    },
+    wellness: {
+      moodAvg: 0,
+      energyAvg: 0,
+      eyeStrainEvents: 0,
+      hydrationReminders: 0,
+    },
+  })
+
+  const generateAnalyticsFromSessions = (sessions: any[]): AnalyticsData => {
+    if (sessions.length === 0) {
+      return defaultAnalytics()
+    }
+
+    const sorted = [...sessions].sort((a, b) => new Date(a.start_time ?? a.startTime ?? 0).getTime() - new Date(b.start_time ?? b.startTime ?? 0).getTime())
+    const totalSessions = sorted.length
+    const totalFocusTime = sorted.reduce((sum, session) => sum + (session.actual_duration ?? session.duration ?? 0), 0)
+    const averageSessionLength = totalSessions ? Math.round(totalFocusTime / totalSessions) : 0
+
+    const completedSessions = sorted.filter((session) => session.status === 'completed').length
+    const completionRate = totalSessions ? Math.round((completedSessions / totalSessions) * 100) : 0
+
+    const dayMap = new Map<string, { sessions: number; focusTime: number }>()
+    sorted.forEach((session) => {
+      const date = new Date(session.start_time ?? session.startTime ?? Date.now())
+      const dayKey = format(date, 'EEE')
+      const entry = dayMap.get(dayKey) ?? { sessions: 0, focusTime: 0 }
+      entry.sessions += 1
+      entry.focusTime += session.actual_duration ?? session.duration ?? 0
+      dayMap.set(dayKey, entry)
+    })
+
+    const { weekStartsOn } = useAppStore.getState()
+    const weekStart = startOfWeek(new Date(), { weekStartsOn })
+    const orderedDays = eachDayOfInterval({ start: weekStart, end: endOfWeek(weekStart, { weekStartsOn }) })
+    const weeklyStats = orderedDays.map((date) => {
+      const key = format(date, 'EEE')
+      const entry = dayMap.get(key) ?? { sessions: 0, focusTime: 0 }
+      const productivity = entry.sessions ? Math.min(100, Math.round((entry.focusTime / (entry.sessions * 60)) * 100)) : 0
+      return {
+        day: key,
+        sessions: entry.sessions,
+        focusTime: entry.focusTime,
+        productivity,
+      }
+    })
+
+    const hourlyHeatmap = Array.from({ length: 24 }, (_, hour) => ({ hour, value: 0 }))
+    sorted.forEach((session) => {
+      const date = new Date(session.start_time ?? session.startTime ?? Date.now())
+      const hour = date.getHours()
+      hourlyHeatmap[hour].value += session.actual_duration ?? session.duration ?? 0
+    })
+
+    const categoryMap = new Map<string, { time: number; sessions: number }>()
+    sorted.forEach((session) => {
+      const category = (session.preset as string | undefined) ?? 'General'
+      const entry = categoryMap.get(category) ?? { time: 0, sessions: 0 }
+      entry.time += session.actual_duration ?? session.duration ?? 0
+      entry.sessions += 1
+      categoryMap.set(category, entry)
+    })
+
+    const categoryBreakdown = Array.from(categoryMap.entries()).map(([category, value]) => ({
+      category,
+      time: value.time,
+      sessions: value.sessions,
+    }))
+
+    const insights: AnalyticsData['insights'] = categoryBreakdown.length
+      ? [
+          {
+            type: 'positive',
+            title: 'Consistent Focus Detected',
+            description: `You completed ${completionRate}% of your sessions this week.`,
+            priority: 'medium',
+          },
+        ]
+      : []
+
+    const goals: AnalyticsData['goals'] = [
+      {
+        id: 'weekly-sessions',
+        title: 'Weekly Sessions',
+        progress: totalSessions,
+        target: 25,
+        status: totalSessions >= 25 ? 'completed' : 'active',
+      },
+    ]
+
+    const distractions: AnalyticsData['distractions'] = {
+      total: 0,
+      sources: [],
+      timeOfDay: {},
+    }
+
+    const wellness: AnalyticsData['wellness'] = {
+      moodAvg: 0,
+      energyAvg: 0,
+      eyeStrainEvents: 0,
+      hydrationReminders: 0,
+    }
+
+    const streaks = calculateStreaks(sorted)
+
+    return {
+      totalSessions,
+      totalFocusTime,
+      averageSessionLength,
+      completionRate,
+      currentStreak: streaks.current,
+      longestStreak: streaks.longest,
+      productivityScore: Math.min(100, Math.round(averageSessionLength / 40 * 100)),
+      focusQuality: Math.min(100, completionRate),
+      weeklyStats,
+      monthlyTrends: [
+        {
+          week: format(startOfWeek(new Date(), { weekStartsOn }), 'MMM d'),
+          sessions: totalSessions,
+          focusTime: totalFocusTime,
+        },
+      ],
+      hourlyHeatmap,
+      categoryBreakdown,
+      achievements: [],
+      insights,
+      goals,
+      distractions,
+      wellness,
+    }
+  };
+
+  const calculateStreaks = (sessions: any[]) => {
+    if (sessions.length === 0) {
+      return { current: 0, longest: 0 }
+    }
+
+    const uniqueDays = Array.from(
+      new Set(
+        sessions.map((session) =>
+          format(new Date(session.start_time ?? session.startTime ?? Date.now()), 'yyyy-MM-dd'),
+        ),
+      ),
+    )
+      .map((day) => new Date(day))
+      .sort((a, b) => a.getTime() - b.getTime())
+
+    let current = 1
+    let longest = 1
+
+    for (let i = 1; i < uniqueDays.length; i += 1) {
+      const prev = uniqueDays[i - 1]
+      const currentDay = uniqueDays[i]
+      const diff = (currentDay.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24)
+      if (diff === 1) {
+        current += 1
+        longest = Math.max(longest, current)
+      } else {
+        current = 1
+      }
+    }
+
+    const todayKey = format(new Date(), 'yyyy-MM-dd')
+    const lastKey = format(uniqueDays[uniqueDays.length - 1], 'yyyy-MM-dd')
+    if (todayKey !== lastKey) {
+      current = 0
+    }
+
+    return { current, longest }
+  }
 
   const formatTime = (minutes: number) => {
     const hours = Math.floor(minutes / 60);
@@ -313,7 +432,7 @@ export const FocusAnalyticsDashboard: React.FC<Props> = ({
         <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700">
           <div className="flex items-center justify-between mb-4">
             <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-              <Fire className="w-6 h-6 text-orange-600 dark:text-orange-400" />
+              <Flame className="w-6 h-6 text-orange-600 dark:text-orange-400" />
             </div>
             <span className="text-xs text-slate-500 dark:text-slate-400">Days</span>
           </div>

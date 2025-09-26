@@ -1,4 +1,5 @@
-import { ensureSupabase, isSupabaseConfigured, Task, Project } from '../lib/supabase'
+import { ensureSupabase, isSupabaseConfigured } from '../lib/supabase'
+import type { Task, Project } from '../lib/supabase'
 import { RealtimeChannel, type SupabaseClient } from '@supabase/supabase-js'
 
 export class DatabaseService {

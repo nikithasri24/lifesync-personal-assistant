@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, startTransition } from 'react';
 
 interface WebSocketMessage {
   type: string;
@@ -149,8 +149,10 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
         const generateMessage = simulateMarketData();
         simulationIntervalRef.current = setInterval(() => {
           const message = generateMessage();
-          setState(prev => ({ ...prev, lastMessage: message }));
-          onMessage?.(message);
+          startTransition(() => {
+            setState(prev => ({ ...prev, lastMessage: message }));
+            onMessage?.(message);
+          });
         }, 1000 + Math.random() * 4000); // Random interval between 1-5 seconds
 
       }, 500 + Math.random() * 1500); // Random connection delay
@@ -171,13 +173,19 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
         };
 
         wsRef.current.onmessage = (event) => {
-          try {
-            const message: WebSocketMessage = JSON.parse(event.data);
-            setState(prev => ({ ...prev, lastMessage: message }));
-            onMessage?.(message);
-          } catch (error) {
-            console.error('Failed to parse WebSocket message:', error);
-          }
+          // Defer heavy work off the message event loop tick
+          const raw = event.data;
+          setTimeout(() => {
+            try {
+              const message: WebSocketMessage = typeof raw === 'string' ? JSON.parse(raw) : raw;
+              startTransition(() => {
+                setState(prev => ({ ...prev, lastMessage: message }));
+                onMessage?.(message);
+              });
+            } catch (error) {
+              console.error('Failed to handle WebSocket message:', error);
+            }
+          }, 0);
         };
 
         wsRef.current.onclose = () => {
@@ -305,6 +313,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 
 // Hook for financial data specifically
 export function useFinancialDataWebSocket() {
+  const SIMULATE_WS = (import.meta as any).env?.VITE_SIMULATE_WS === 'true';
   const [marketData, setMarketData] = useState<any[]>([]);
   const [portfolioData, setPortfolioData] = useState<any>(null);
   const [alerts, setAlerts] = useState<any[]>([]);
@@ -341,7 +350,7 @@ export function useFinancialDataWebSocket() {
 
   const webSocket = useWebSocket({
     onMessage: handleMessage,
-    simulateConnection: true // Set to false for real WebSocket connection
+    simulateConnection: SIMULATE_WS // Control via VITE_SIMULATE_WS env var
   });
 
   return {
