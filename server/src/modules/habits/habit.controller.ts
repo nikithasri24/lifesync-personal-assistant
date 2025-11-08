@@ -1,8 +1,8 @@
 import type { RequestHandler } from 'express';
 import { HttpError } from '../../shared/httpError.js';
 import { asyncHandler } from '../../shared/asyncHandler.js';
-import { createHabit, listHabits, upsertHabitEntry } from './habit.repository.js';
-import type { CreateHabitBody, CreateHabitEntryBody } from './habit.schema.js';
+import { createHabit, listHabits, upsertHabitEntry, updateHabit as repoUpdateHabit, deleteHabit as repoDeleteHabit } from './habit.repository.js';
+import type { CreateHabitBody, CreateHabitEntryBody, UpdateHabitBody } from './habit.schema.js';
 
 export const getHabits: RequestHandler = asyncHandler(async (_req, res) => {
   const habits = await listHabits();
@@ -27,3 +27,22 @@ export const postHabitEntry: RequestHandler = asyncHandler(async (req, res) => {
 
   res.status(201).json(entry);
 });
+
+export const putHabit: RequestHandler = asyncHandler(async (req, res) => {
+  const body = req.body as UpdateHabitBody
+  const { id } = req.params
+  const habit = await repoUpdateHabit(id, body)
+  if (!habit) {
+    throw new HttpError(404, 'Habit not found')
+  }
+  res.json(habit)
+})
+
+export const deleteHabit: RequestHandler = asyncHandler(async (req, res) => {
+  const { id } = req.params
+  const habit = await repoDeleteHabit(id)
+  if (!habit) {
+    throw new HttpError(404, 'Habit not found')
+  }
+  res.json({ message: 'Habit deleted', habit })
+})

@@ -4,7 +4,7 @@
 - App code lives in `src/` (React + TypeScript). Key folders: `src/components/` (PascalCase UI), `src/pages/`, `src/hooks/` (files start with `use*`), `src/stores/`, `src/services/`, `src/utils/` (camelCase helpers), `src/test/` (setup).
 - Unit/integration tests colocated under `src/**/__tests__/`. E2E tests in `tests/e2e/` (Playwright).
 - Public assets in `public/`. Build and tooling configs in project root (`vite.config.ts`, `vitest.config.ts`, `eslint.config.js`).
-- Local API and utilities: `server.js`, `start-with-db.js`, `api-server-*`, scripts in `scripts/`.
+- Local API: TypeScript Express server under `server/src/**`. Utilities (YouTube/Barcode/OCR) are exposed via `/api/util/*` on the same server.
 
 ## Build, Test, and Development Commands
 - `npm run dev` — start Vite dev server on `http://localhost:5173`.
@@ -35,4 +35,3 @@
 - Copy `.env.example` to `.env.local` for local runs; use `.env.test` for tests. Never commit secrets.
 - Common ports: app `5173`, API `3001`. If busy: `npm run cleanup:ports`.
 - Supabase utilities: `npm run verify:supabase-schema` and `npm run backup:supabase-schema`.
-

@@ -14,6 +14,9 @@ import { projectRouter } from './modules/projects/project.router.js';
 import { taskRouter } from './modules/tasks/task.router.js';
 import { habitRouter } from './modules/habits/habit.router.js';
 import { financeRouter } from './modules/finance/finance.router.js';
+import { utilRouter } from './modules/util/util.router.js';
+import { systemRouter } from './modules/system/system.router.js';
+import { supabaseAuth } from './middleware/auth.js';
 
 export function createApp() {
   const app = express();
@@ -25,6 +28,7 @@ export function createApp() {
   app.use(express.json({ limit: '1mb' }));
   app.use(express.urlencoded({ extended: true }));
   app.use(compression());
+  app.use(supabaseAuth);
 
   app.get('/api/health', (_req, res) => {
     console.log('health route hit');
@@ -35,6 +39,8 @@ export function createApp() {
   app.use('/api/projects', projectRouter);
   app.use('/api/habits', habitRouter);
   app.use('/api/financial', financeRouter);
+  app.use('/api/util', utilRouter);
+  app.use('/api', systemRouter);
 
   app.use(notFound);
   app.use(errorHandler);

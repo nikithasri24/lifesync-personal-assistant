@@ -88,3 +88,32 @@ export async function upsertHabitEntry(input: HabitEntryInput) {
 
   return result.rows[0];
 }
+
+export async function updateHabit(id: string, updates: Partial<CreateHabitInput>) {
+  const entries = Object.entries(updates).filter(([, v]) => v !== undefined)
+  if (entries.length === 0) {
+    const existing = await pool.query('SELECT * FROM habits WHERE id = $1', [id])
+    return existing.rows[0] ?? null
+  }
+
+  const setFragments: string[] = []
+  const values: unknown[] = [id]
+  entries.forEach(([key, value], index) => {
+    setFragments.push(`${key} = $${index + 2}`)
+    values.push(value)
+  })
+
+  const result = await pool.query(
+    `UPDATE habits
+     SET ${setFragments.join(', ')}, updated_at = NOW()
+     WHERE id = $1
+     RETURNING *`,
+    values
+  )
+  return result.rows[0] ?? null
+}
+
+export async function deleteHabit(id: string) {
+  const result = await pool.query('DELETE FROM habits WHERE id = $1 RETURNING *', [id])
+  return result.rows[0] ?? null
+}
