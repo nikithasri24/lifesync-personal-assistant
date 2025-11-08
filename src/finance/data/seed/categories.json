@@ -1,0 +1,10 @@
+[
+  { "id": "cat_income", "name": "Income" },
+  { "id": "cat_rent", "name": "Rent" },
+  { "id": "cat_groceries", "name": "Groceries" },
+  { "id": "cat_dining", "name": "Dining" },
+  { "id": "cat_transport", "name": "Transport" },
+  { "id": "cat_utils", "name": "Utilities" },
+  { "id": "cat_entertain", "name": "Entertainment" },
+  { "id": "cat_investing", "name": "Investing" }
+]

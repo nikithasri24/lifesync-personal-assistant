@@ -9,6 +9,12 @@ import { toHaveNoViolations } from 'jest-axe'
 // Extend Jest matchers to include accessibility testing
 expect.extend(toHaveNoViolations)
 
+// Force-disable Supabase integration for unit tests to avoid auth requirements
+if (typeof process !== 'undefined') {
+  process.env.VITE_SUPABASE_URL = 'your-project-url'
+  process.env.VITE_SUPABASE_ANON_KEY = 'your-anon-key'
+}
+
 // Provide a basic jest compatibility layer for suites that still reference jest.*
 if (!(globalThis as any).jest) {
   (globalThis as any).jest = {

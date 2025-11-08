@@ -1,0 +1,39 @@
+[
+  { "id": "t2024-01-pay", "accountId": "acct_checking", "dateISO": "2024-01-31T12:00:00.000Z", "description": "Employer Payroll", "categoryId": "cat_income", "amount": 4200, "type": "credit" },
+  { "id": "t2024-01-rent", "accountId": "acct_checking", "dateISO": "2024-01-03T12:00:00.000Z", "description": "January Rent", "categoryId": "cat_rent", "amount": 1600, "type": "debit" },
+  { "id": "t2024-01-g1", "accountId": "acct_checking", "dateISO": "2024-01-10T12:00:00.000Z", "description": "Whole Foods", "categoryId": "cat_groceries", "amount": 120.5, "type": "debit" },
+  { "id": "t2024-01-g2", "accountId": "acct_checking", "dateISO": "2024-01-20T12:00:00.000Z", "description": "Trader Joe's", "categoryId": "cat_groceries", "amount": 95.3, "type": "debit" },
+  { "id": "t2024-01-d1", "accountId": "acct_credit", "dateISO": "2024-01-15T12:00:00.000Z", "description": "Chipotle", "categoryId": "cat_dining", "amount": 18.5, "type": "debit" },
+  { "id": "t2024-01-u1", "accountId": "acct_checking", "dateISO": "2024-01-18T12:00:00.000Z", "description": "Electric Utility", "categoryId": "cat_utils", "amount": 70.2, "type": "debit" },
+
+  { "id": "t2024-02-pay", "accountId": "acct_checking", "dateISO": "2024-02-29T12:00:00.000Z", "description": "Employer Payroll", "categoryId": "cat_income", "amount": 4200, "type": "credit" },
+  { "id": "t2024-02-rent", "accountId": "acct_checking", "dateISO": "2024-02-03T12:00:00.000Z", "description": "February Rent", "categoryId": "cat_rent", "amount": 1600, "type": "debit" },
+  { "id": "t2024-02-g1", "accountId": "acct_checking", "dateISO": "2024-02-09T12:00:00.000Z", "description": "Costco", "categoryId": "cat_groceries", "amount": 210.05, "type": "debit" },
+  { "id": "t2024-02-d1", "accountId": "acct_credit", "dateISO": "2024-02-12T12:00:00.000Z", "description": "Pizza Place", "categoryId": "cat_dining", "amount": 24.75, "type": "debit" },
+  { "id": "t2024-02-t1", "accountId": "acct_checking", "dateISO": "2024-02-22T12:00:00.000Z", "description": "Gas Station", "categoryId": "cat_transport", "amount": 52.9, "type": "debit" },
+
+  { "id": "t2024-03-pay", "accountId": "acct_checking", "dateISO": "2024-03-31T12:00:00.000Z", "description": "Employer Payroll", "categoryId": "cat_income", "amount": 4200, "type": "credit" },
+  { "id": "t2024-03-rent", "accountId": "acct_checking", "dateISO": "2024-03-03T12:00:00.000Z", "description": "March Rent", "categoryId": "cat_rent", "amount": 1600, "type": "debit" },
+  { "id": "t2024-03-g1", "accountId": "acct_checking", "dateISO": "2024-03-12T12:00:00.000Z", "description": "Safeway", "categoryId": "cat_groceries", "amount": 132.8, "type": "debit" },
+  { "id": "t2024-03-d1", "accountId": "acct_credit", "dateISO": "2024-03-16T12:00:00.000Z", "description": "Sushi Bar", "categoryId": "cat_dining", "amount": 42.3, "type": "debit" },
+  { "id": "t2024-03-u1", "accountId": "acct_checking", "dateISO": "2024-03-19T12:00:00.000Z", "description": "Water Utility", "categoryId": "cat_utils", "amount": 40.1, "type": "debit" },
+
+  { "id": "t2024-04-pay", "accountId": "acct_checking", "dateISO": "2024-04-30T12:00:00.000Z", "description": "Employer Payroll", "categoryId": "cat_income", "amount": 4200, "type": "credit" },
+  { "id": "t2024-04-rent", "accountId": "acct_checking", "dateISO": "2024-04-03T12:00:00.000Z", "description": "April Rent", "categoryId": "cat_rent", "amount": 1600, "type": "debit" },
+  { "id": "t2024-04-g1", "accountId": "acct_checking", "dateISO": "2024-04-07T12:00:00.000Z", "description": "Trader Joe's", "categoryId": "cat_groceries", "amount": 98.7, "type": "debit" },
+  { "id": "t2024-04-d1", "accountId": "acct_credit", "dateISO": "2024-04-21T12:00:00.000Z", "description": "Cafe", "categoryId": "cat_dining", "amount": 14.2, "type": "debit" },
+  { "id": "t2024-04-t1", "accountId": "acct_checking", "dateISO": "2024-04-25T12:00:00.000Z", "description": "Uber", "categoryId": "cat_transport", "amount": 23.5, "type": "debit" },
+
+  { "id": "t2024-05-pay", "accountId": "acct_checking", "dateISO": "2024-05-31T12:00:00.000Z", "description": "Employer Payroll", "categoryId": "cat_income", "amount": 4200, "type": "credit" },
+  { "id": "t2024-05-rent", "accountId": "acct_checking", "dateISO": "2024-05-03T12:00:00.000Z", "description": "May Rent", "categoryId": "cat_rent", "amount": 1600, "type": "debit" },
+  { "id": "t2024-05-g1", "accountId": "acct_checking", "dateISO": "2024-05-12T12:00:00.000Z", "description": "Whole Foods", "categoryId": "cat_groceries", "amount": 140.0, "type": "debit" },
+  { "id": "t2024-05-d1", "accountId": "acct_credit", "dateISO": "2024-05-14T12:00:00.000Z", "description": "Burger Place", "categoryId": "cat_dining", "amount": 19.85, "type": "debit" },
+  { "id": "t2024-05-u1", "accountId": "acct_checking", "dateISO": "2024-05-18T12:00:00.000Z", "description": "Electric Utility", "categoryId": "cat_utils", "amount": 72.4, "type": "debit" },
+
+  { "id": "t2024-06-pay", "accountId": "acct_checking", "dateISO": "2024-06-30T12:00:00.000Z", "description": "Employer Payroll", "categoryId": "cat_income", "amount": 4200, "type": "credit" },
+  { "id": "t2024-06-rent", "accountId": "acct_checking", "dateISO": "2024-06-03T12:00:00.000Z", "description": "June Rent", "categoryId": "cat_rent", "amount": 1600, "type": "debit" },
+  { "id": "t2024-06-g1", "accountId": "acct_checking", "dateISO": "2024-06-09T12:00:00.000Z", "description": "Costco", "categoryId": "cat_groceries", "amount": 220.0, "type": "debit" },
+  { "id": "t2024-06-d1", "accountId": "acct_credit", "dateISO": "2024-06-19T12:00:00.000Z", "description": "Thai Restaurant", "categoryId": "cat_dining", "amount": 38.2, "type": "debit" },
+  { "id": "t2024-06-t1", "accountId": "acct_checking", "dateISO": "2024-06-22T12:00:00.000Z", "description": "Gas Station", "categoryId": "cat_transport", "amount": 60.1, "type": "debit" },
+  { "id": "t2024-06-i1", "accountId": "acct_brokerage", "dateISO": "2024-06-05T12:00:00.000Z", "description": "Brokerage Buy", "categoryId": "cat_investing", "amount": 300, "type": "debit" }
+]

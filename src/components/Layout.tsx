@@ -23,6 +23,7 @@ import {
 import { useAppStore } from '../stores/useAppStore';
 import Toast from './Toast';
 import ThemeToggle from './ThemeToggle';
+import VoiceLauncher from './VoiceLauncher';
 import PremiumLogo from './PremiumLogo';
 import clsx from 'clsx';
 
@@ -213,6 +214,7 @@ export default function Layout({ children }: LayoutProps) {
                   })}
                 </div>
               </div>
+              <VoiceLauncher />
             </div>
           </div>
         </header>

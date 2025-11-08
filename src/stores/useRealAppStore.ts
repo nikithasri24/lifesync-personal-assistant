@@ -215,6 +215,7 @@ interface RealAppState {
   loadRecipes: () => Promise<void>
   addRecipe: (recipe: Omit<Recipe, 'id' | 'createdAt'>) => Promise<Recipe>
   updateRecipe: (id: string, updates: Partial<Recipe>) => Promise<void>
+  deleteRecipe: (id: string) => Promise<void>
   deleteAllRecipes: () => Promise<void>
 
   loadMealPlans: () => Promise<void>
@@ -233,6 +234,11 @@ interface RealAppState {
   updateShoppingItem: (id: string, updates: Partial<ShoppingItem>) => Promise<void>
   deleteShoppingItem: (id: string) => Promise<void>
   toggleShoppingItem: (id: string) => Promise<void>
+
+  // Pantry
+  addPantryItem: (item: Omit<PantryItem, 'id' | 'updatedAt'>) => Promise<PantryItem>
+  updatePantryItem: (id: string, updates: Partial<PantryItem>) => Promise<void>
+  deletePantryItem: (id: string) => Promise<void>
 
   loadFinancialData: () => Promise<void>
   addFinancialTransaction: (transaction: FinancialTransactionInput) => Promise<FinancialTransactionData | null>
@@ -255,6 +261,7 @@ interface RealAppState {
   // One-time cleanup for duplicate SFH tasks
   purgeSFHDuplicateTasks: () => Promise<void>
   purgeNonSFHDuplicateTasks: () => Promise<void>
+
 }
 
 const DEFAULT_MEAL_COLUMNS: MealColumn[] = [
@@ -669,6 +676,11 @@ const mapPantryItemDataToPantryItem = (item: PantryItemData): PantryItem => ({
   quantity: Number(item.quantity ?? 0),
   unit: item.unit ?? undefined,
   category: normalisePantryCategory(item.category),
+  location: item.location ?? undefined,
+  expirationDate: toDate(item.expiration_date) ?? undefined,
+  notes: item.notes ?? undefined,
+  isLowStock: item.is_low_stock ?? undefined,
+  lowStockThreshold: item.low_stock_threshold ?? undefined,
   updatedAt: toDate(item.updated_at) ?? new Date(),
 })
 
@@ -1142,6 +1154,8 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
         apiClient.getSFHChallenges().catch(() => []),
       ])
 
+      // (Travel features removed)
+
       let habitEntries: HabitEntryData[] = []
       const habitIds = habitsRaw.map((habit) => habit.id).filter(Boolean) as string[]
       if (habitIds.length > 0) {
@@ -1430,8 +1444,13 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
 
     const payload = buildTaskUpdatePayload(updates)
     const updated = await apiClient.updateTask(id, payload)
-    const todo = mapTaskDataToTodo(updated)
-    const tasks = get().tasks.map((task) => (task.id === id ? todo : task))
+    const current = get().tasks.find(t => t.id === id)
+    const partial = mapTaskDataToTodo(updated)
+    // Merge only defined fields from partial onto current to avoid losing data if API did not return full row
+    const merged: typeof partial = current
+      ? (Object.fromEntries(Object.entries({ ...current, ...partial }).map(([k, v]) => [k, (partial as any)[k] !== undefined ? (partial as any)[k] : (current as any)[k]])) as any)
+      : partial
+    const tasks = get().tasks.map((task) => (task.id === id ? (merged as any) : task))
     const habits = get().habits
     set({ tasks, todos: tasks, userStats: computeUserStats(tasks, habits) })
   },
@@ -2018,6 +2037,19 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
       recipes: state.recipes.map((r) => (r.id === id ? recipe : r)),
     }))
   },
+  deleteRecipe: async (id) => {
+    if (!isSupabaseConfigured) {
+      set((state) => ({ recipes: state.recipes.filter((r) => r.id !== id) }))
+      return
+    }
+    try {
+      await apiClient.deleteRecipe(id)
+      set((state) => ({ recipes: state.recipes.filter((r) => r.id !== id) }))
+    } catch (e) {
+      console.error('Failed to delete recipe', id, e)
+      throw e
+    }
+  },
   deleteAllRecipes: async () => {
     const state = get()
     if (!isSupabaseConfigured) {
@@ -2414,6 +2446,60 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
     await get().updateShoppingItem(id, updates)
   },
 
+  // ===== Pantry management =====
+  addPantryItem: async (item) => {
+    if (!isSupabaseConfigured) {
+      const pantryItem: PantryItem = {
+        ...item,
+        id: createId(),
+        updatedAt: new Date(),
+      }
+      set((state) => ({ pantryItems: [pantryItem, ...state.pantryItems] }))
+      return pantryItem
+    }
+    const payload: Omit<PantryItemData, 'id' | 'created_at' | 'updated_at' | 'user_id'> = sanitize({
+      name: item.name,
+      quantity: item.quantity,
+      unit: item.unit ?? null,
+      category: item.category,
+      location: item.location ?? null,
+      expiration_date: item.expirationDate ? item.expirationDate.toISOString() : null,
+      notes: item.notes ?? null,
+      is_low_stock: item.isLowStock ?? null,
+      low_stock_threshold: item.lowStockThreshold ?? null,
+    })
+    const created = await apiClient.createPantryItem(payload)
+    const pantryItem = mapPantryItemDataToPantryItem(created)
+    set((state) => ({ pantryItems: [pantryItem, ...state.pantryItems] }))
+    return pantryItem
+  },
+  updatePantryItem: async (id, updates) => {
+    if (!isSupabaseConfigured) {
+      set((state) => ({ pantryItems: state.pantryItems.map((p) => (p.id === id ? { ...p, ...updates, updatedAt: new Date() } : p)) }))
+      return
+    }
+    const payload: Partial<PantryItemData> = sanitize({
+      name: updates.name,
+      quantity: updates.quantity,
+      unit: updates.unit,
+      category: updates.category,
+      location: updates.location,
+      expiration_date: updates.expirationDate ? updates.expirationDate.toISOString() : undefined,
+      notes: updates.notes,
+      is_low_stock: updates.isLowStock,
+      low_stock_threshold: updates.lowStockThreshold,
+    })
+    const updated = await apiClient.updatePantryItem(id, payload)
+    const mapped = mapPantryItemDataToPantryItem(updated)
+    set((state) => ({ pantryItems: state.pantryItems.map((p) => (p.id === id ? mapped : p)) }))
+  },
+  deletePantryItem: async (id) => {
+    if (isSupabaseConfigured) {
+      await apiClient.deletePantryItem(id)
+    }
+    set((state) => ({ pantryItems: state.pantryItems.filter((p) => p.id !== id) }))
+  },
+
   loadFinancialData: async () => {
     if (!isSupabaseConfigured) {
       set({
@@ -2594,6 +2680,8 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
     set({ sfhLastSynced: d })
     try { localStorage.setItem('lifesync:75hard:lastSynced', d.toISOString()) } catch {}
   },
+
+  // ===== Travel slice (local-only persistence) =====
 
   purgeSFHDuplicateTasks: async () => {
     try {

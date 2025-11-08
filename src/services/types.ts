@@ -19,6 +19,7 @@ export interface TaskData {
   archived?: boolean | null;
   deleted?: boolean | null;
   parent_id?: string | null;
+  position?: number | null;
   deleted_at?: string | null;
   completed_at?: string | null;
   created_at?: string;

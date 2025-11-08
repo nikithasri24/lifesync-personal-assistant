@@ -694,6 +694,7 @@ textarea::placeholder {
   background: var(--accent-gradient-soft);
   opacity: 0;
   transition: opacity 0.3s var(--ease-2);
+  pointer-events: none; /* ensure decorative line never blocks clicks */
 }
 
 .card:hover {

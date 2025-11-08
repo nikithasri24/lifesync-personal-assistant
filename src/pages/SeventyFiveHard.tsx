@@ -119,6 +119,11 @@ export default function SeventyFiveHard() {
   };
 
   const activeChallenge = seventyFiveHardChallenges.find(c => c.isActive);
+  const latestPausedChallenge = React.useMemo(() => {
+    const paused = seventyFiveHardChallenges.filter(c => !c.isActive)
+    if (!paused.length) return null
+    return [...paused].sort((a, b) => b.startDate.getTime() - a.startDate.getTime())[0]
+  }, [seventyFiveHardChallenges])
   const activeChallengeRules = useMemo(() => activeChallenge?.rules ?? [], [activeChallenge?.id, seventyFiveHardChallenges.length]);
 
   // Edit modal state
@@ -441,13 +446,29 @@ export default function SeventyFiveHard() {
         </div>
         
         {!activeChallenge && (
-          <button
-            onClick={() => setShowChallengeForm(true)}
-            className="btn-primary flex items-center space-x-2"
-          >
-            <Play size={20} />
-            <span>Start Challenge</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowChallengeForm(true)}
+              className="btn-primary flex items-center space-x-2"
+            >
+              <Play size={20} />
+              <span>Start Challenge</span>
+            </button>
+            {latestPausedChallenge && (
+              <button
+                type="button"
+                onClick={() => {
+                  updateSeventyFiveHardChallenge?.(latestPausedChallenge.id, { isActive: true })
+                }}
+                className="btn-secondary flex items-center space-x-2"
+                title={`Resume ${latestPausedChallenge.name}`}
+              >
+                <Play size={20} />
+                <span>Resume</span>
+              </button>
+            )}
+          </div>
         )}
         <div className="flex items-center gap-3">
           {sfhLastSynced && (
@@ -563,15 +584,17 @@ export default function SeventyFiveHard() {
               </div>
               <div className="flex items-center space-x-2">
                 <button 
+                  type="button"
                   onClick={() => {
                     updateSeventyFiveHardChallenge?.(activeChallenge.id, { isActive: false });
                   }}
-                  className="btn-secondary text-sm flex items-center space-x-1"
+                  className="btn-secondary text-sm flex items-center space-x-1 relative z-10 pointer-events-auto"
                 >
                   <Pause size={16} />
                   <span>Pause</span>
                 </button>
                 <button
+                  type="button"
                   onClick={openEditChallenge}
                   className="btn-secondary text-sm flex items-center space-x-1"
                 >
@@ -579,6 +602,7 @@ export default function SeventyFiveHard() {
                   <span>Edit</span>
                 </button>
                 <button
+                  type="button"
                   onClick={() => { setResetDate(format(new Date(), 'yyyy-MM-dd')); setShowResetModal(true); }}
                   className="btn-secondary text-sm"
                 >
@@ -725,53 +749,7 @@ export default function SeventyFiveHard() {
             </div>
           </div>
 
-          {/* Week View */}
-          <div className="card">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">This Week</h3>
-            <div className="grid grid-cols-7 gap-2">
-              {Array.from({ length: 7 }, (_, i) => {
-                const date = addDays(new Date(), i - 3); // 3 days before to 3 days after today
-                const dayNumber = differenceInDays(date, activeChallenge.startDate) + 1;
-                const progress = getDayProgress(activeChallenge, dayNumber);
-                const isToday_ = isToday(date);
-                const isValidDay = dayNumber >= 1 && dayNumber <= 75;
-                
-                return (
-                  <div
-                    key={i}
-                    className={`p-3 rounded-lg text-center border-2 transition-all duration-200 ${
-                      isToday_ 
-                        ? 'border-blue-300 bg-blue-50' 
-                        : isValidDay
-                        ? progress.completed === progress.total
-                          ? 'border-green-200 bg-green-50'
-                          : 'border-gray-200 bg-white'
-                        : 'border-gray-100 bg-gray-50'
-                    }`}
-                  >
-                    <div className={`text-xs font-medium ${isToday_ ? 'text-blue-600' : 'text-gray-600'}`}>
-                      {format(date, 'EEE')}
-                    </div>
-                    <div className={`text-lg font-bold ${isToday_ ? 'text-blue-800' : 'text-gray-900'}`}>
-                      {format(date, 'd')}
-                    </div>
-                    {isValidDay && (
-                      <div className="text-xs text-gray-500 mt-1">
-                        Day {dayNumber}
-                      </div>
-                    )}
-                    {isValidDay && (
-                      <div className="flex justify-center mt-2">
-                        <div className={`w-2 h-2 rounded-full ${
-                          progress.completed === progress.total ? 'bg-green-500' : 'bg-gray-300'
-                        }`} />
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+
         </div>
       )}
 
@@ -794,58 +772,7 @@ export default function SeventyFiveHard() {
         </div>
       )}
 
-      {/* Previous Challenges */}
-      {seventyFiveHardChallenges.length > 0 && (
-        <div className="card">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Challenge History</h3>
-          <div className="space-y-3">
-            {(() => {
-              const seen = new Set<string>();
-              const unique = seventyFiveHardChallenges.filter((c) => {
-                const k = `${c.id || ''}|${c.name}|${format(c.startDate, 'yyyy-MM-dd')}`;
-                if (seen.has(k)) return false;
-                seen.add(k);
-                return true;
-              });
-              return unique.map((challenge) => {
-              const progress = getChallengeProgress(challenge);
-              const key = `${challenge.name}|${format(challenge.startDate, 'yyyy-MM-dd')}`;
-              let synced = false;
-              try {
-                const raw = localStorage.getItem('lifesync:75hard:synced');
-                if (raw) {
-                  const set = new Set<string>(JSON.parse(raw));
-                  synced = set.has(key);
-                }
-              } catch {}
-              return (
-                <div key={`${challenge.id || 'noid'}|${key}`} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div>
-                    <h4 className="font-medium text-gray-900">{challenge.name}</h4>
-                    <p className="text-sm text-gray-600">
-                      {format(challenge.startDate, 'MMM dd, yyyy')} - {format(challenge.endDate, 'MMM dd, yyyy')}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-medium text-gray-900">
-                      {progress.completedDays} / 75 days
-                    </div>
-                    <div className="text-xs text-gray-600 flex items-center gap-2 justify-end">
-                      <span>{challenge.isActive ? 'Active' : 'Completed'}</span>
-                      {isSupabaseConfigured && (
-                        <span className={`px-2 py-0.5 rounded-full border text-[10px] ${synced ? 'bg-green-50 text-green-600 border-green-200' : 'bg-yellow-50 text-yellow-700 border-yellow-200'}`}>
-                          {synced ? 'Cloud synced' : 'Local only'}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-              });
-            })()}
-          </div>
-        </div>
-      )}
+
 
       {/* Challenge Form Modal */}
       {showChallengeForm && (

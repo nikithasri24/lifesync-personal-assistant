@@ -153,6 +153,38 @@ A comprehensive, Nike-inspired personal productivity and life management applica
 - `npm run verify:supabase-schema` - Ensure required Supabase tables/columns exist
 - `npm run backup:supabase-schema` - Snapshot the Supabase schema metadata to `backups/`
 
+### Development Guardrails (Recommended)
+
+- `npm run guard` — runs typecheck and unit tests in watch mode to catch regressions as you code
+- Git hooks (Husky):
+  - pre-commit: lint-staged (ESLint on staged files)
+  - pre-push: typecheck + unit tests
+- CI (GitHub Actions):
+  - Lint + typecheck + unit tests on every PR/push
+  - E2E smoke: drag-to-reorder persistence, subtask quick-add tokens, and quick-add parsing
+
+Run locally:
+
+```
+# background safety net while coding
+npm run guard
+
+# unit tests / typecheck
+npm test
+npm run typecheck
+
+# e2e smoke locally
+npm run test:e2e -- tests/e2e/reorder.spec.ts tests/e2e/subtask-quickadd.spec.ts tests/e2e/quickadd-parse.spec.ts
+```
+
+Quick-Add Parsers:
+- Shared, unit-tested utilities live in `src/utils/quickAdd.ts` and are used by Tasks UI.
+- Supported tokens:
+  - `#project:Name` or `#project:"Name With Spaces"` — project assignment (substring match)
+  - `#tags` and `@tags` — multiple tags
+  - `@today`, `@tomorrow`, `@YYYY-MM-DD` — due date
+  - `!urgent|!high|!medium|!low` or `!1..4` — priority (1=urgent … 4=low)
+
 ### Supabase Schema Utilities
 
 The Supabase helpers expect a Postgres connection string with permissions to read `information_schema`.

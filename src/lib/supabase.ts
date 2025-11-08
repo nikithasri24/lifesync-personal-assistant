@@ -7,8 +7,6 @@ const supabaseAnonKey = (env.VITE_SUPABASE_ANON_KEY || (import.meta as any).env?
 
 const isVitest = typeof process !== 'undefined' && process.env?.VITEST === 'true'
 
-console.log('[SupabaseEnv] URL:', supabaseUrl)
-
 const isPlaceholder = (value?: string) => {
   if (!value) return true
   const trimmed = value.trim()

@@ -145,17 +145,27 @@ class SupabaseAdapter {
   async updateTask(id: string, updates: Partial<TaskData>): Promise<TaskData> {
     const userId = this.requireUserId()
     const payload = this.sanitize(updates)
-
-    const { data, error } = await this.client
+    
+    // Important: do NOT request representation on UPDATE to avoid 406 from PostgREST
+    const { error: updateError } = await this.client
       .from('tasks')
       .update(payload)
       .eq('id', id)
       .eq('user_id', userId)
-      .select()
-      .single()
 
-    if (error) throw new Error(error.message)
-    return data as TaskData
+    if (updateError) throw new Error(updateError.message)
+
+    // Fetch the updated row afterwards
+    const { data: fetched, error: fetchError } = await this.client
+      .from('tasks')
+      .select('*')
+      .eq('id', id)
+      .eq('user_id', userId)
+      .maybeSingle()
+
+    if (fetchError) throw new Error(fetchError.message)
+    // If still null, return a minimal object (id + provided updates) to keep UI consistent
+    return ({ id, user_id: userId, ...payload } as unknown) as TaskData
   }
 
   async deleteTask(id: string): Promise<TaskData> {
@@ -202,6 +212,23 @@ class SupabaseAdapter {
       message: 'deleted',
       task: (data ?? { id }) as TaskData,
     }
+  }
+
+  // Batch reorder tasks by updating their position field
+  async reorderTasks(order: Array<{ id: string; position: number }>): Promise<{ success: boolean; updated: number }> {
+    const userId = this.requireUserId()
+    // Perform updates individually to satisfy RLS per-row checks
+    const results = await Promise.allSettled(
+      order.map(({ id, position }) =>
+        this.client
+          .from('tasks')
+          .update({ position })
+          .eq('id', id)
+          .eq('user_id', userId)
+      )
+    )
+    const updated = results.filter(r => r.status === 'fulfilled').length
+    return { success: updated === order.length, updated }
   }
 
   // ===== Projects =====
@@ -770,7 +797,8 @@ class SupabaseAdapter {
   async createRecipe(recipe: Omit<RecipeData, 'id' | 'created_at' | 'updated_at'>): Promise<RecipeData> {
     const userId = this.requireUserId()
     // To avoid noisy console 400s from supabase-js, insert a minimal row first
-    const ultra = this.sanitize({ user_id: userId, name: (recipe as any).name || 'Untitled' })
+    const safeName = String((recipe as any).name || 'Untitled').slice(0, 255)
+    const ultra = this.sanitize({ user_id: userId, name: safeName })
     const insertRes = await this.client
       .from('recipes')
       .insert(ultra)
@@ -788,19 +816,28 @@ class SupabaseAdapter {
       servings: recipe.servings || undefined,
       prep_time: (recipe as any).prep_time ?? undefined,
       cook_time: (recipe as any).cook_time ?? undefined,
+      instructions: (recipe as any).instructions ?? undefined,
       tags: Array.isArray((recipe as any).tags) ? (recipe as any).tags : undefined,
-      source_url: (recipe as any).source_url ?? undefined,
-      video_thumbnail: (recipe as any).video_thumbnail ?? undefined,
+      source_url: (recipe as any).source_url ? String((recipe as any).source_url).slice(0, 255) : undefined,
+      video_thumbnail: (recipe as any).video_thumbnail ? String((recipe as any).video_thumbnail).slice(0, 255) : undefined,
     })
 
     if (Object.keys(patch).length > 0) {
-      await this.client
+      const updRes = await this.client
         .from('recipes')
         .update(patch)
         .eq('id', created.id!)
+        .eq('user_id', userId)
         .select()
         .single()
-        .catch(() => undefined)
+
+      if (updRes.error) {
+        // Log and continue; we already created the base row
+        console.warn('[SupabaseAdapter] recipes patch failed:', updRes.error.message)
+      } else if (updRes.data) {
+        // If patch returned the full row, prefer it
+        return updRes.data as RecipeData
+      }
     }
 
     return created
@@ -808,7 +845,11 @@ class SupabaseAdapter {
 
   async updateRecipe(id: string, updates: Partial<RecipeData>): Promise<RecipeData> {
     const userId = this.requireUserId()
-    const payload = this.sanitize(updates)
+    const safe: Partial<RecipeData> = { ...updates }
+    if (typeof safe.name === 'string') safe.name = safe.name.slice(0, 255)
+    if (typeof safe.source_url === 'string') safe.source_url = safe.source_url.slice(0, 255)
+    if (typeof safe.video_thumbnail === 'string') safe.video_thumbnail = safe.video_thumbnail.slice(0, 255)
+    const payload = this.sanitize(safe)
 
     const { data, error } = await this.client
       .from('recipes')

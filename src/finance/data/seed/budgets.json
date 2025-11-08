@@ -1,0 +1,7 @@
+[
+  { "id": "b2024-06-groceries", "categoryId": "cat_groceries", "month": "2024-06", "limit": 500 },
+  { "id": "b2024-06-dining", "categoryId": "cat_dining", "month": "2024-06", "limit": 200 },
+  { "id": "b2024-06-transport", "categoryId": "cat_transport", "month": "2024-06", "limit": 50 },
+  { "id": "b2024-06-entertain", "categoryId": "cat_entertain", "month": "2024-06", "limit": 120 },
+  { "id": "b2024-06-utils", "categoryId": "cat_utils", "month": "2024-06", "limit": 180 }
+]

@@ -188,6 +188,7 @@ const Habits: React.FC = () => {
           <label className="flex flex-col gap-1 text-sm sm:col-span-2">
             <span className="font-medium text-slate-700">Name</span>
             <input
+              data-testid="habit-add-name"
               required
               value={draft.name}
               onChange={(event) => setDraft((prev) => ({ ...prev, name: event.target.value }))}
@@ -259,6 +260,7 @@ const Habits: React.FC = () => {
         <div className="mt-6 flex gap-2">
           <button
             type="submit"
+            data-testid="habit-add-submit"
             className="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500"
           >
             <Plus className="h-4 w-4" />
@@ -346,6 +348,7 @@ const Habits: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => handleResetToday(habit)}
+                        data-testid={`habit-reset-today-${habit.id}`}
                         className="inline-flex items-center gap-1 rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-600 transition hover:bg-slate-100"
                         title="Clear today\'s completion"
                       >
@@ -355,6 +358,7 @@ const Habits: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => handleResetHistory(habit)}
+                        data-testid={`habit-reset-streak-${habit.id}`}
                         className="inline-flex items-center gap-1 rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-600 transition hover:bg-slate-100"
                         title="Reset streak and history"
                       >
@@ -365,6 +369,7 @@ const Habits: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleDeleteHabit(habit.id)}
+                      data-testid={`habit-delete-${habit.id}`}
                       className="rounded-full border border-slate-200 p-1 text-slate-500 transition hover:bg-slate-100"
                       aria-label="Delete habit"
                     >
@@ -383,6 +388,7 @@ const Habits: React.FC = () => {
                     <label className="flex flex-col gap-1 text-sm sm:col-span-2">
                       <span className="font-medium text-slate-700">Name</span>
                       <input
+                        data-testid="habit-edit-name"
                         required
                         value={editDraft.name}
                         onChange={(event) =>
@@ -463,6 +469,7 @@ const Habits: React.FC = () => {
                     <div className="flex gap-2 sm:col-span-2">
                       <button
                         type="submit"
+                        data-testid="habit-save-changes"
                         className="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500"
                       >
                         <Save className="h-4 w-4" />

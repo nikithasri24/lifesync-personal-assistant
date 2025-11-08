@@ -179,6 +179,17 @@ class ApiClient {
     });
   }
 
+  // ==================== TASK ORDERING ====================
+  async reorderTasks(order: Array<{ id: string; position: number }>): Promise<{ success: boolean; updated: number }> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.reorderTasks(order);
+    }
+    return this.request<{ success: boolean; updated: number }>(`/tasks/reorder`, {
+      method: 'POST',
+      body: JSON.stringify({ order }),
+    });
+  }
+
   // ==================== HABIT OPERATIONS ====================
 
   async getHabits(): Promise<HabitData[]> {

@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/279</span>
+                <span class='fraction'>0/287</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/279</span>
+                <span class='fraction'>0/287</span>
             </div>
         
             
@@ -418,7 +418,17 @@
 <a name='L353'></a><a href='#L353'>353</a>
 <a name='L354'></a><a href='#L354'>354</a>
 <a name='L355'></a><a href='#L355'>355</a>
-<a name='L356'></a><a href='#L356'>356</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L356'></a><a href='#L356'>356</a>
+<a name='L357'></a><a href='#L357'>357</a>
+<a name='L358'></a><a href='#L358'>358</a>
+<a name='L359'></a><a href='#L359'>359</a>
+<a name='L360'></a><a href='#L360'>360</a>
+<a name='L361'></a><a href='#L361'>361</a>
+<a name='L362'></a><a href='#L362'>362</a>
+<a name='L363'></a><a href='#L363'>363</a>
+<a name='L364'></a><a href='#L364'>364</a>
+<a name='L365'></a><a href='#L365'>365</a>
+<a name='L366'></a><a href='#L366'>366</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -572,6 +582,8 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -590,6 +602,9 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -599,6 +614,9 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -729,6 +747,7 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -764,6 +783,7 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -773,7 +793,7 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import { useState, useEffect, useRef, useCallback } from 'react';<span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" ></span></span></span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import { useState, useEffect, useRef, useCallback, startTransition } from 'react';<span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" ></span></span></span>
 &nbsp;
 interface WebSocketMessage {
   type: string;
@@ -924,8 +944,10 @@ interface WebSocketState {
 <span class="cstat-no" title="statement not covered" >        const generateMessage = simulateMarketData();</span>
 <span class="cstat-no" title="statement not covered" >        simulationIntervalRef.current = setInterval(() =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >          const message = generateMessage();</span>
-<span class="cstat-no" title="statement not covered" >          setState(prev =&gt; ({ ...prev, lastMessage: message }));</span>
-<span class="cstat-no" title="statement not covered" >          onMessage?.(message);</span>
+<span class="cstat-no" title="statement not covered" >          startTransition(() =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >            setState(prev =&gt; ({ ...prev, lastMessage: message }));</span>
+<span class="cstat-no" title="statement not covered" >            onMessage?.(message);</span>
+<span class="cstat-no" title="statement not covered" >          });</span>
 <span class="cstat-no" title="statement not covered" >        }, 1000 + Math.random() * 4000); // Random interval between 1-5 seconds</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >      }, 500 + Math.random() * 1500); // Random connection delay</span>
@@ -946,13 +968,19 @@ interface WebSocketState {
 <span class="cstat-no" title="statement not covered" >        };</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >        wsRef.current.onmessage = (event) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >          try {</span>
-<span class="cstat-no" title="statement not covered" >            const message: WebSocketMessage = JSON.parse(event.data);</span>
-<span class="cstat-no" title="statement not covered" >            setState(prev =&gt; ({ ...prev, lastMessage: message }));</span>
-<span class="cstat-no" title="statement not covered" >            onMessage?.(message);</span>
-<span class="cstat-no" title="statement not covered" >          } catch (error) {</span>
-<span class="cstat-no" title="statement not covered" >            console.error('Failed to parse WebSocket message:', error);</span>
-<span class="cstat-no" title="statement not covered" >          }</span>
+          // Defer heavy work off the message event loop tick
+<span class="cstat-no" title="statement not covered" >          const raw = event.data;</span>
+<span class="cstat-no" title="statement not covered" >          setTimeout(() =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >            try {</span>
+<span class="cstat-no" title="statement not covered" >              const message: WebSocketMessage = typeof raw === 'string' ? JSON.parse(raw) : raw;</span>
+<span class="cstat-no" title="statement not covered" >              startTransition(() =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >                setState(prev =&gt; ({ ...prev, lastMessage: message }));</span>
+<span class="cstat-no" title="statement not covered" >                onMessage?.(message);</span>
+<span class="cstat-no" title="statement not covered" >              });</span>
+<span class="cstat-no" title="statement not covered" >            } catch (error) {</span>
+<span class="cstat-no" title="statement not covered" >              console.error('Failed to handle WebSocket message:', error);</span>
+<span class="cstat-no" title="statement not covered" >            }</span>
+<span class="cstat-no" title="statement not covered" >          }, 0);</span>
 <span class="cstat-no" title="statement not covered" >        };</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >        wsRef.current.onclose = () =&gt; {</span>
@@ -1080,6 +1108,7 @@ interface WebSocketState {
 &nbsp;
 // Hook for financial data specifically
 <span class="cstat-no" title="statement not covered" >export function useFinancialDataWebSocket() {</span>
+<span class="cstat-no" title="statement not covered" >  const SIMULATE_WS = (import.meta as any).env?.VITE_SIMULATE_WS === 'true';</span>
 <span class="cstat-no" title="statement not covered" >  const [marketData, setMarketData] = useState&lt;any[]&gt;([]);</span>
 <span class="cstat-no" title="statement not covered" >  const [portfolioData, setPortfolioData] = useState&lt;any&gt;(null);</span>
 <span class="cstat-no" title="statement not covered" >  const [alerts, setAlerts] = useState&lt;any[]&gt;([]);</span>
@@ -1116,7 +1145,7 @@ interface WebSocketState {
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  const webSocket = useWebSocket({</span>
 <span class="cstat-no" title="statement not covered" >    onMessage: handleMessage,</span>
-<span class="cstat-no" title="statement not covered" >    simulateConnection: true // Set to false for real WebSocket connection</span>
+<span class="cstat-no" title="statement not covered" >    simulateConnection: SIMULATE_WS // Control via VITE_SIMULATE_WS env var</span>
 <span class="cstat-no" title="statement not covered" >  });</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  return {</span>
@@ -1128,14 +1157,15 @@ interface WebSocketState {
 <span class="cstat-no" title="statement not covered" >    clearAlerts: () =&gt; setAlerts([]),</span>
 <span class="cstat-no" title="statement not covered" >    clearNews: () =&gt; setNews([])</span>
 <span class="cstat-no" title="statement not covered" >  };</span>
-<span class="cstat-no" title="statement not covered" >}</span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-09-20T14:23:26.909Z
+                at 2025-09-27T18:38:25.638Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

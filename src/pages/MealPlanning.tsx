@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
-import { addDays, format, isSameWeek, startOfWeek } from 'date-fns';
-import { CalendarDays, ChefHat, Loader2, Plus, Trash2, Youtube, Save, FileText, Pencil } from 'lucide-react';
+import { addDays, format, isSameWeek, startOfWeek, isSameDay } from 'date-fns';
+import { CalendarDays, ChefHat, Loader2, Plus, Trash2, Save, Pencil, ExternalLink, Heart, Clock, Users, Youtube } from 'lucide-react';
 import { useAppStore } from '../stores/useAppStore';
 import type { MealPlanWeek, PlannedMeal, Recipe } from '../types';
 
@@ -9,6 +9,354 @@ const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack'];
 
 const toKey = (date: Date) => format(date, 'yyyy-MM-dd');
 const ensureDate = (value: Date | string): Date => (value instanceof Date ? value : new Date(value));
+
+// ==== Video → Recipe helpers (YouTube) ====
+function extractYoutubeId(url: string): string | null {
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname === 'youtu.be') return parsed.pathname.slice(1);
+    if (parsed.pathname.startsWith('/shorts/')) return parsed.pathname.split('/')[2] || null;
+    const v = parsed.searchParams.get('v');
+    if (v) return v;
+    const match = url.match(/[?&]v=([0-9A-Za-z_-]{11})|(?:youtu\.be\/|shorts\/)([0-9A-Za-z_-]{11})/);
+    return match ? (match[1] || match[2]) ?? null : null;
+  } catch {
+    const match = url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/);
+    return match ? match[1] : null;
+  }
+}
+
+function parseTimecodeToSeconds(text: string): number | null {
+  const bracket = text.match(/\[(\d{1,2}):(\d{2})(?::(\d{2}))?\]/);
+  const plain = text.match(/(?<!\d)(\d{1,2}):(\d{2})(?::(\d{2}))?(?!\d)/);
+  const match = bracket || plain;
+  if (!match) return null;
+  const h = match[3] ? Number(match[1]) : 0;
+  const m = match[3] ? Number(match[2]) : Number(match[1]);
+  const s = match[3] ? Number(match[3]) : Number(match[2]);
+  if ([h, m, s].some((n) => Number.isNaN(n))) return null;
+  return h * 3600 + m * 60 + s;
+}
+
+function extractFlowFromDescription(description: string): { titles: string[] } | null {
+  const lines = description
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+  const timecoded: Array<{ t: number; text: string }> = [];
+  for (const line of lines) {
+    const t = parseTimecodeToSeconds(line);
+    if (t != null) {
+      const text = line.replace(/^\[?\d{1,2}:\d{2}(?::\d{2})?\]?\s*[-–—:]?\s*/i, '').trim();
+      if (text) timecoded.push({ t, text });
+    }
+  }
+  if (timecoded.length >= 2) {
+    timecoded.sort((a, b) => a.t - b.t);
+    return { titles: timecoded.map((e) => e.text) };
+  }
+  return null;
+}
+
+function parseDescriptionToLists(description: string) {
+  const lines = description
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const ingredients: string[] = [];
+  const instructions: string[] = [];
+  let inIngredients = false;
+  let inInstructions = false;
+  for (const line of lines) {
+    const lower = line.toLowerCase();
+    if (/ingredient/.test(lower)) { inIngredients = true; inInstructions = false; continue; }
+    if (/instruction|direction|method/.test(lower)) { inInstructions = true; inIngredients = false; continue; }
+    if (inIngredients) ingredients.push(line.replace(/^[-*•]\s*/, ''));
+    else if (inInstructions) instructions.push(line.replace(/^\d+\.|^[-*•]\s*/, ''));
+  }
+  // Fallback: if no explicit sections, try heuristics
+  if (ingredients.length === 0) {
+    const ingCandidates = lines.filter((l) => /\d|tsp|tbsp|cup|g|ml|kg|lb|oz|teaspoon|tablespoon|clove|slice|pinch/i.test(l));
+    ingredients.push(...ingCandidates.slice(0, 12));
+  }
+  if (instructions.length === 0) {
+    const flow = extractFlowFromDescription(description);
+    if (flow?.titles?.length) instructions.push(...flow.titles);
+  }
+  return { ingredients, instructions };
+}
+
+function parseTextToRecipe(text: string, title?: string): Omit<Recipe, 'id' | 'createdAt'> {
+  const rawLines = text.split(/\r?\n/);
+  const lines = rawLines.map(l => l.trim()).filter(Boolean);
+  // Detect sections
+  const idxIng = lines.findIndex(l => /^ingredients?\b/i.test(l));
+  const idxEqp = lines.findIndex(l => /^(equipment|tools?)\b/i.test(l));
+  const idxTip = lines.findIndex(l => /^tips?\b|^notes?\b/i.test(l));
+  const idxDir = lines.findIndex(l => /^(directions?|instructions?|method)\b/i.test(l));
+  let ingredients: string[] = [];
+  let equipment: string[] = [];
+  let tips: string[] = [];
+  let instructions: string[] = [];
+  const endOf = (...idx: number[]) => {
+    const positive = idx.filter(i => i !== -1).sort((a,b)=>a-b);
+    return (start: number) => positive.find(i => i > start) ?? lines.length;
+  };
+  if (idxIng !== -1 || idxDir !== -1 || idxEqp !== -1 || idxTip !== -1) {
+    const nextAfter = endOf(idxIng, idxDir, idxEqp, idxTip);
+    if (idxIng !== -1) ingredients = lines.slice(idxIng + 1, nextAfter(idxIng));
+    if (idxDir !== -1) instructions = lines.slice(idxDir + 1, nextAfter(idxDir));
+    if (idxEqp !== -1) equipment = lines.slice(idxEqp + 1, nextAfter(idxEqp));
+    if (idxTip !== -1) tips = lines.slice(idxTip + 1, nextAfter(idxTip));
+  }
+  // Try to pull servings from headings like "Ingredients (for ~2–3 servings)"
+  let inferredServings: number | undefined;
+  const servingsRe = /for\s*~?\s*(\d+)(?:\s*[–-]\s*|\s*to\s*)(\d+)\s*servings?|for\s*(\d+)\s*servings?/i;
+  for (const l of lines.slice(Math.max(0, idxIng - 2), Math.min(lines.length, idxIng + 3))) {
+    const m = l.match(servingsRe);
+    if (m) {
+      if (m[1] && m[2]) {
+        const a = parseInt(m[1], 10); const b = parseInt(m[2], 10);
+        inferredServings = Math.max(a, b);
+      } else if (m[3]) {
+        inferredServings = parseInt(m[3], 10);
+      }
+      break;
+    }
+  }
+
+  // Helper: parse markdown ingredient tables within the ingredient section
+  const parseMarkdownTable = (rows: string[]): Array<{ name: string; amount?: string }> => {
+    const out: Array<{ name: string; amount?: string }> = [];
+    let i = 0;
+    while (i < rows.length) {
+      if (!/^\|/.test(rows[i])) { i++; continue; }
+      // collect contiguous table block
+      const block: string[] = [];
+      while (i < rows.length && /^\|.*\|$/.test(rows[i])) { block.push(rows[i]); i++; }
+      if (block.length < 2) continue;
+      const cells = (r: string) => r.split('|').slice(1, -1).map(c => c.trim());
+      const header = cells(block[0]);
+      const sep = block[1];
+      if (!/^-/.test(sep.replace(/\|/g, '').trim())) {
+        // no separator, treat as simple rows with 2 columns fallback
+      }
+      const idxName = header.findIndex(h => /ingredient/i.test(h));
+      const idxAmt = header.findIndex(h => /amount|notes/i.test(h));
+      for (let j = 1; j < block.length; j++) {
+        const row = cells(block[j]);
+        if (!row.length) continue;
+        if (row.every(col => /^-+$/.test(col))) continue; // separator
+        const name = (idxName !== -1 ? row[idxName] : row[0] || '').trim();
+        const amount = (idxAmt !== -1 ? row[idxAmt] : row[1] || '').trim();
+        if (name) out.push({ name, amount: amount || undefined });
+      }
+    }
+    return out;
+  };
+
+  // Extract table-based ingredients, if any
+  let tableIngs: Array<{ name: string; amount?: string }> = [];
+  if (ingredients.length) {
+    tableIngs = parseMarkdownTable(ingredients.filter(l => l));
+  }
+  // Heuristics if headings are missing
+  if (ingredients.length === 0 || instructions.length === 0) {
+    const joined = lines.join('\n');
+    const parsed = parseDescriptionToLists(joined);
+    if (ingredients.length === 0) ingredients = parsed.ingredients;
+    if (instructions.length === 0) instructions = parsed.instructions;
+  }
+  // Final normalization + ingredient structuring
+  const unitList = ['cup','cups','tsp','tbsp','teaspoon','tablespoon','g','gram','grams','kg','ml','l','liter','liters','ounce','ounces','oz','lb','pound','pounds','clove','cloves','slice','slices','pinch','dash','stick','sticks','can','cans','package','packages','bunch','bunches','head','heads','piece','pieces','quart','pint','sprig','sprigs'];
+  const unitRe = new RegExp(`^((?:\\d+(?:[\\s-]\\d/\\d)?|\\d+/\\d+|\\d+(?:\\.\\d+)?)(?:\\s*x)?)?\\s*(?:(${unitList.join('|')}))?\\s*(.*)$`, 'i');
+  const cleanBullet = (s: string) => s.replace(/^[-*•]\s*/, '').trim();
+  const lineIngs = ingredients
+    .filter(l => !/^\|/.test(l)) // skip table rows, already parsed
+    .map(cleanBullet)
+    .filter(Boolean)
+    .slice(0, 100)
+    .map(raw => {
+      const m = raw.match(unitRe);
+      if (!m) return { name: raw };
+      const amount = (m[1] || '').trim();
+      const unit = (m[2] || '').trim();
+      const name = (m[3] || raw).trim();
+      return { name, amount: amount || undefined, unit: unit || undefined };
+    });
+  const ingOut = [
+    ...tableIngs.map(t => ({ name: t.name, amount: t.amount })),
+    ...lineIngs,
+  ].slice(0, 100);
+  const stepsOut = instructions
+    .map(s => s.replace(/^\d+\.|^[-*•]\s*/, '').trim())
+    .filter(Boolean)
+    .slice(0, 50);
+
+  // Basic time estimates
+  const prepTime = Math.max(5, Math.min(30, ingOut.length * 2));
+  const cookTime = Math.max(10, Math.min(60, stepsOut.length * 3));
+
+  // Equipment tags + tips
+  const equipTags = equipment
+    .map(cleanBullet)
+    .filter(Boolean)
+    .slice(0, 30)
+    .map(t => `equip:${t.toLowerCase()}`);
+  const notes = tips.map(cleanBullet).join('\n');
+
+  // Build description from the first paragraph before any heading or rule
+  let description = '';
+  {
+    const firstParaLines: string[] = [];
+    for (const r of rawLines) {
+      if (/^\s*#/.test(r) || /^\s*---/.test(r)) break;
+      if (r.trim().length === 0 && firstParaLines.length > 0) break;
+      if (r.trim().length > 0) firstParaLines.push(r.trim());
+    }
+    description = firstParaLines.join(' ').trim();
+  }
+
+  return {
+    name: title || (lines[0] || 'Pasted Recipe'),
+    description,
+    ingredients: ingOut,
+    instructions: stepsOut,
+    prepTime,
+    cookTime,
+    servings: inferredServings ?? 2,
+    difficulty: 'medium',
+    tags: ['pasted', ...equipTags],
+    rating: undefined,
+    notes: notes || undefined,
+    image: undefined,
+    isFavorite: false,
+    calories: undefined,
+    cuisine: 'other',
+    dietaryRestrictions: [],
+    nutritionInfo: undefined,
+    flowChart: undefined,
+    sourceType: 'manual',
+    sourceUrl: undefined,
+    authorName: undefined,
+    videoThumbnail: undefined,
+  };
+}
+
+function normalizeFractions(text: string): string {
+  return text
+    .replace(/½/g, ' 1/2')
+    .replace(/¼/g, ' 1/4')
+    .replace(/¾/g, ' 3/4')
+    .replace(/⅓/g, ' 1/3')
+    .replace(/⅔/g, ' 2/3')
+    .replace(/⅛/g, ' 1/8')
+    .replace(/⅜/g, ' 3/8')
+    .replace(/⅝/g, ' 5/8')
+    .replace(/⅞/g, ' 7/8');
+}
+
+function parseTranscriptToLists(transcript: Array<{ start: number; dur: number; text: string }>) {
+  const fillers = /\b(uh|um|erm|like|okay|ok|so|you know|i mean)\b/gi;
+  const cleaned = transcript
+    .map(t => normalizeFractions(t.text.replace(/\n/g, ' ')))
+    .map(t => t.replace(fillers, '').replace(/\s+/g, ' ').trim())
+    .filter(Boolean);
+
+  const full = cleaned.join(' ');
+  const sentences = full.split(/(?<=[.!?])\s+/).map(s => s.trim()).filter(Boolean);
+
+  const unitRe = new RegExp(
+    String.raw`(\b\d+(?:[\s-]?\d\/\d)?\b|\b(one|two|three|four|five|six|seven|eight|nine|ten)\b)\s*(?:x\s*)?(cup|cups|tsp|tbsp|teaspoon|tablespoon|g|gram|grams|kg|ml|l|liter|liters|ounce|ounces|oz|lb|pound|pounds|clove|cloves|slice|slices|pinch|dash|stick|sticks|can|cans|package|packages|bunch|bunches|head|heads|piece|pieces|quart|pint|sprig|sprigs)\b`,
+    'i'
+  );
+  const ingredientsLex = /(salt|pepper|oil|olive oil|flour|sugar|egg|eggs|onion|garlic|butter|milk|water|tomato|tomatoes|cheese|chicken|beef|pork|rice|pasta|noodles|cilantro|coriander|cumin|turmeric|ginger|chili|chilli|carrot|potato|yogurt|cream|basil|oregano|thyme|paprika|vinegar|soy sauce|sauce)/i;
+  const likelyIngredient = (s: string) => unitRe.test(s) || ingredientsLex.test(s);
+  const cookingVerb = /(add|mix|stir|whisk|heat|cook|bake|boil|simmer|fry|saute|sauté|blend|combine|pour|serve|marinate|season|preheat|chop|dice|slice|grate|peel|toast|roast|grill|stir-fry|reduce|simmer|fold)/i;
+
+  const ingredientCandidates = sentences.filter(s => likelyIngredient(s));
+  const ingredients = ingredientCandidates
+    .slice(0, 24)
+    .map(s => s.replace(/^[-*•]\s*/, ''))
+    .map(s => ({ name: s }));
+
+  const stepsRaw = sentences.filter(s => cookingVerb.test(s) && s.split(/\s+/).length >= 3);
+  const merged: string[] = [];
+  for (const s of stepsRaw) {
+    if (merged.length === 0) { merged.push(s); continue; }
+    const last = merged[merged.length - 1];
+    if (s.split(/\s+/).length < 5) merged[merged.length - 1] = `${last} ${s}`;
+    else merged.push(s);
+  }
+  const dedup = new Set<string>();
+  const instructions: string[] = [];
+  for (const s of merged) {
+    const k = s.replace(/\s+/g, ' ').trim().toLowerCase();
+    if (!dedup.has(k)) { instructions.push(s); dedup.add(k); }
+    if (instructions.length >= 18) break;
+  }
+  if (instructions.length === 0 && sentences.length) instructions.push(...sentences.slice(0, 6));
+  return { ingredients, instructions };
+}
+
+async function fetchYoutubeRecipe(url: string, lang: string = 'en'): Promise<Omit<Recipe, 'id' | 'createdAt'>> {
+  const videoId = extractYoutubeId(url);
+  if (!videoId) throw new Error('Unable to extract YouTube video ID.');
+  const proxyBaseUrl = import.meta.env.VITE_YOUTUBE_SNIPPET_PROXY_URL?.trim() || '/api/youtube/snippet';
+  const apiUrl = `${proxyBaseUrl}${proxyBaseUrl.includes('?') ? '&' : '?'}videoId=${encodeURIComponent(videoId)}`;
+
+  const [snippetResp, transcriptResp] = await Promise.all([
+    fetch(apiUrl, { headers: { Accept: 'application/json' } }),
+    fetch(`/api/youtube/transcript?videoId=${encodeURIComponent(videoId)}&lang=${encodeURIComponent(lang)}`, { headers: { Accept: 'application/json' } })
+  ]);
+  if (!snippetResp.ok) throw new Error('Failed to fetch video metadata.');
+  const data = await snippetResp.json();
+  const snippet = data?.items?.[0]?.snippet;
+  if (!snippet) throw new Error('Video metadata not available.');
+  let ingredients: { name: string }[] = [];
+  let instructions: string[] = [];
+  if (transcriptResp.ok) {
+    const tr = await transcriptResp.json();
+    const parsed = parseTranscriptToLists(Array.isArray(tr.transcript) ? tr.transcript : []);
+    ingredients = parsed.ingredients;
+    instructions = parsed.instructions;
+  }
+  // Fallbacks if transcript missing
+  if (ingredients.length === 0 || instructions.length === 0) {
+    const back = parseDescriptionToLists(snippet.description ?? '');
+    if (ingredients.length === 0) ingredients = back.ingredients.map(s => ({ name: s }));
+    if (instructions.length === 0) instructions = back.instructions;
+  }
+  if (ingredients.length === 0) ingredients = [{ name: 'Ingredient 1' }, { name: 'Ingredient 2' }];
+  if (instructions.length === 0) instructions = [];
+
+  const prepTime = Math.max(10, Math.min(30, ingredients.length * 2));
+  const cookTime = Math.max(15, Math.min(45, instructions.length * 3));
+  return {
+    name: snippet.title ?? 'YouTube Recipe',
+    description: snippet.description?.split('\n')[0] ?? '',
+    ingredients,
+    instructions,
+    prepTime,
+    cookTime,
+    servings: 4,
+    difficulty: 'medium',
+    tags: ['video', 'youtube'],
+    rating: undefined,
+    notes: undefined,
+    image: snippet.thumbnails?.medium?.url ?? snippet.thumbnails?.default?.url ?? undefined,
+    isFavorite: false,
+    calories: undefined,
+    cuisine: 'other',
+    dietaryRestrictions: [],
+    nutritionInfo: undefined,
+    flowChart: undefined,
+    sourceType: 'youtube',
+    sourceUrl: url,
+    authorName: snippet.channelTitle ?? undefined,
+    videoThumbnail: snippet.thumbnails?.medium?.url ?? snippet.thumbnails?.default?.url ?? undefined,
+  };
+}
 
 // Parse a yyyy-MM-dd key into a local Date at midnight (avoid UTC shift)
 function parseLocalDateKey(key: string): Date {
@@ -114,207 +462,53 @@ function AddMealControl({ dateKey, mealType, onAdded }: { dateKey: string; mealT
   );
 }
 
-function extractYoutubeId(url: string): string | null {
-  try {
-    const parsed = new URL(url);
-    // youtu.be/<id>
-    if (parsed.hostname === 'youtu.be') {
-      return parsed.pathname.slice(1);
-    }
-    // youtube.com/shorts/<id>
-    if (parsed.pathname.startsWith('/shorts/')) {
-      const parts = parsed.pathname.split('/');
-      return parts[2] || null;
-    }
-    // youtube.com/watch?v=<id>
-    const v = parsed.searchParams.get('v');
-    if (v) return v;
-    // last attempt: regex for 11-char id
-    const match = url.match(/[?&]v=([0-9A-Za-z_-]{11})|(?:youtu\.be\/|shorts\/)([0-9A-Za-z_-]{11})/);
-    if (match) return (match[1] || match[2]) ?? null;
-    return null;
-  } catch (error) {
-    const match = url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/);
-    return match ? match[1] : null;
-  }
-}
+// (YouTube helpers removed for v1 Clip flow)
 
-function parseDescription(description: string) {
-  const lines = description
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-
-  const ingredients: string[] = [];
-  const instructions: string[] = [];
-  let inIngredients = false;
-  let inInstructions = false;
-
-  lines.forEach((line) => {
-    const lower = line.toLowerCase();
-    if (lower.includes('ingredient')) {
-      inIngredients = true;
-      inInstructions = false;
-      return;
-    }
-    if (lower.includes('instruction') || lower.includes('direction')) {
-      inInstructions = true;
-      inIngredients = false;
-      return;
-    }
-
-    if (inIngredients) {
-      ingredients.push(line);
-    } else if (inInstructions) {
-      instructions.push(line);
-    }
-  });
-
-  return {
-    ingredients,
-    instructions,
-    summary: lines[0],
-  };
-}
-
-// Parse timecodes like 1:23, 12:34, 1:02:03, or [00:45] and map to seconds
-function parseTimecodeToSeconds(text: string): number | null {
-  const bracket = text.match(/\[(\d{1,2}):(\d{2})(?::(\d{2}))?\]/);
-  const plain = text.match(/(?<!\d)(\d{1,2}):(\d{2})(?::(\d{2}))?(?!\d)/);
-  const match = bracket || plain;
-  if (!match) return null;
-  const h = match[3] ? Number(match[1]) : 0;
-  const m = match[3] ? Number(match[2]) : Number(match[1]);
-  const s = match[3] ? Number(match[3]) : Number(match[2]);
-  if ([h, m, s].some((n) => Number.isNaN(n))) return null;
-  return h * 3600 + m * 60 + s;
-}
-
-function formatSeconds(sec: number): string {
-  const h = Math.floor(sec / 3600);
-  const m = Math.floor((sec % 3600) / 60);
-  const s = sec % 60;
-  if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-  return `${m}:${String(s).padStart(2, '0')}`;
-}
-
-function extractFlowFromDescription(description: string): { titles: string[]; steps: { title: string; description: string }[] } | null {
-  const lines = description
-    .split(/\r?\n/)
-    .map((l) => l.trim())
-    .filter(Boolean);
-
-  // Try timecoded lines first
-  const timecoded: Array<{ t: number; text: string }> = [];
-  for (const line of lines) {
-    const t = parseTimecodeToSeconds(line);
-    if (t != null) {
-      // Remove leading timecode and separators like ' - ' or ':' after the time
-      const text = line
-        .replace(/^\[?\d{1,2}:\d{2}(?::\d{2})?\]?\s*[-–—:]?\s*/i, '')
-        .trim();
-      if (text) timecoded.push({ t, text });
-    }
-  }
-  if (timecoded.length >= 2) {
-    timecoded.sort((a, b) => a.t - b.t);
-    const steps = timecoded.map((entry, idx) => {
-      const nextT = timecoded[idx + 1]?.t;
-      const approx = nextT ? Math.max(1, Math.round((nextT - entry.t) / 60)) : undefined;
-      const desc = `Starts at ${formatSeconds(entry.t)}${approx ? ` • ~${approx} min` : ''}`;
-      return { title: entry.text, description: desc };
-    });
-    return { titles: timecoded.map((e) => e.text), steps };
-  }
-
-  // Fallback: enumerated or bulleted steps from general instructions-like lines
-  const numbered = lines
-    .map((l) => l.replace(/^\d+\.|^[-*•]\s*/, '').trim())
-    .filter((l) => l.length > 0);
-  if (numbered.length >= 2) {
-    const steps = numbered.map((text, i) => ({ title: text, description: `Step ${i + 1}` }));
-    return { titles: numbered, steps };
-  }
-  return null;
-}
-
-async function fetchYoutubeRecipe(url: string): Promise<Omit<Recipe, 'id' | 'createdAt'>> {
-  const videoId = extractYoutubeId(url);
-  if (!videoId) {
-    throw new Error('Unable to extract YouTube video ID.');
-  }
-
-  const proxyBaseUrl = import.meta.env.VITE_YOUTUBE_SNIPPET_PROXY_URL?.trim() || '/api/youtube/snippet';
-  const apiUrl = proxyBaseUrl
-    ? `${proxyBaseUrl}${proxyBaseUrl.includes('?') ? '&' : '?'}videoId=${encodeURIComponent(videoId)}`
-    : `https://yt.lemnoslife.com/videos?part=snippet&id=${encodeURIComponent(videoId)}`;
-
+// Generic clipper: fetch via server-side endpoint that parses JSON-LD/OG tags
+async function fetchClippedRecipe(url: string): Promise<Omit<Recipe, 'id' | 'createdAt'>> {
+  const clipperBase = import.meta.env.VITE_RECIPE_CLIPPER_URL?.trim() || '/api/clip/recipe';
+  const apiUrl = `${clipperBase}${clipperBase.includes('?') ? '&' : '?'}url=${encodeURIComponent(url)}`;
   let response: Response;
   try {
-    response = await fetch(apiUrl, {
-      headers: { Accept: 'application/json' },
-    });
-  } catch (error) {
-    throw new Error('Unable to reach the recipe metadata service.');
+    response = await fetch(apiUrl, { headers: { Accept: 'application/json' } });
+  } catch (e) {
+    throw new Error('Unable to reach the recipe clipper service.');
   }
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch video metadata.');
-  }
-
+  if (!response.ok) throw new Error('Failed to clip recipe.');
   const data = await response.json();
-  const snippet = data?.items?.[0]?.snippet;
-  if (!snippet) {
-    throw new Error('Video metadata not available.');
-  }
-
-  const parsed = parseDescription(snippet.description ?? '');
-  const flowExtract = extractFlowFromDescription(snippet.description ?? '');
-  const ingredients = parsed.ingredients.length
-    ? parsed.ingredients.map((line) => ({ name: line }))
+  const ingredients = Array.isArray(data.ingredients) && data.ingredients.length
+    ? data.ingredients
     : [{ name: 'Ingredient 1' }, { name: 'Ingredient 2' }];
-
-  const instructions = flowExtract?.titles?.length
-    ? flowExtract.titles
-    : parsed.instructions.length
-      ? parsed.instructions
-      : ['Review the video steps and follow along.', 'Season to taste and serve.'];
-
-  const flowChart = (flowExtract?.steps || instructions.map((step) => ({ title: step, description: '' }))).map((item, index) => ({
-    id: `step-${index + 1}`,
-    step: index + 1,
-    title: item.title || `Step ${index + 1}`,
-    description: item.description || '',
-  }));
-
-  const prepTime = Math.max(15, ingredients.length * 3);
-  const cookTime = Math.max(20, instructions.length * 4);
-
+  const instructions: string[] = Array.isArray(data.instructions) && data.instructions.length
+    ? data.instructions
+    : ['Follow the steps on the source page.'];
   return {
-    name: snippet.title ?? 'YouTube Recipe',
-    description: parsed.summary ?? snippet.description?.split('\n')[0] ?? '',
+    name: data.name || 'Clipped Recipe',
+    description: data.description || '',
     ingredients,
     instructions,
-    prepTime,
-    cookTime,
-    servings: 4,
+    prepTime: Number.isFinite(Number(data.prepTime)) ? Number(data.prepTime) : 10,
+    cookTime: Number.isFinite(Number(data.cookTime)) ? Number(data.cookTime) : 20,
+    servings: Number.isFinite(Number(data.servings)) ? Number(data.servings) : 2,
     difficulty: 'medium',
-    tags: ['imported', 'youtube'],
+    tags: Array.isArray(data.tags) ? data.tags : ['clipped'],
     rating: undefined,
     notes: undefined,
-    image: snippet.thumbnails?.medium?.url ?? snippet.thumbnails?.default?.url ?? undefined,
+    image: data.image || undefined,
     isFavorite: false,
     calories: undefined,
     cuisine: 'other',
     dietaryRestrictions: [],
     nutritionInfo: undefined,
-    flowChart,
-    sourceType: 'youtube',
+    flowChart: undefined,
+    sourceType: 'manual',
     sourceUrl: url,
-    authorName: snippet.channelTitle ?? undefined,
-    videoThumbnail: snippet.thumbnails?.medium?.url ?? snippet.thumbnails?.default?.url ?? undefined,
+    authorName: data.authorName || undefined,
+    videoThumbnail: undefined,
   };
 }
+
+// (Legacy YouTube import removed in v1)
 
 function MealOptionsManager() {
   const { mealOptions, addMealOption, removeMealOption } = useAppStore();
@@ -622,6 +816,21 @@ const MealPlanning: React.FC = () => {
   const [importScheduleType, setImportScheduleType] = useState<string>(MEAL_TYPES[2]);
   const [importScheduleDateKey, setImportScheduleDateKey] = useState<string>(() => toKey(startOfWeek(new Date(), { weekStartsOn })));
 
+  // Video import state (YouTube)
+  const [videoUrl, setVideoUrl] = useState('');
+  const [videoLang, setVideoLang] = useState('en');
+  const [isVideoImporting, setIsVideoImporting] = useState(false);
+  const [videoImportError, setVideoImportError] = useState<string | null>(null);
+  const [videoDraft, setVideoDraft] = useState<Omit<Recipe, 'id' | 'createdAt'> | null>(null);
+
+  // Paste Text extractor state
+  const [textInput, setTextInput] = useState('');
+  const [textTitle, setTextTitle] = useState('');
+  const [isTextParsing, setIsTextParsing] = useState(false);
+  const [textError, setTextError] = useState<string | null>(null);
+  const [textDraft, setTextDraft] = useState<Omit<Recipe, 'id' | 'createdAt'> | null>(null);
+  const [textImageUrl, setTextImageUrl] = useState('');
+
   useEffect(() => {
     void loadRecipes();
     void loadMealPlans();
@@ -702,7 +911,7 @@ const MealPlanning: React.FC = () => {
     setIsImporting(true);
     setImportError(null);
     try {
-      const recipe = await fetchYoutubeRecipe(importUrl.trim());
+      const recipe = await fetchClippedRecipe(importUrl.trim());
       setImportDraft(recipe);
       setImportUrl('');
     } catch (error) {
@@ -723,27 +932,7 @@ const MealPlanning: React.FC = () => {
     }
   };
 
-  const saveAndScheduleImported = async () => {
-    if (!importDraft || !activePlan) return;
-    try {
-      const saved = await addRecipe(importDraft);
-      await addPlannedMeal(activePlan.id, {
-        date: parseLocalDateKey(importScheduleDateKey),
-        mealType: importScheduleType,
-        recipeId: saved.id,
-        customMeal: undefined,
-        servings: importDraft.servings ?? 4,
-        peopleCount: importDraft.servings ?? 4,
-        status: 'planned',
-        notes: undefined,
-        preparedAt: undefined,
-        consumedAt: undefined,
-      });
-      setImportDraft(null);
-    } catch (e) {
-      setImportError('Failed to save & schedule');
-    }
-  };
+  // v1: omit plan scheduling integration; we only save clipped recipe
 
   const saveImportedAsNote = async () => {
     if (!importDraft) return;
@@ -887,12 +1076,35 @@ const MealPlanning: React.FC = () => {
               {/* Header row */}
               <div className="grid" style={{ gridTemplateColumns: `150px repeat(7, minmax(0, 1fr))` }}>
                 <div className="p-3 border-b border-r border-slate-200 sticky left-0 bg-white z-20" />
-                {weekDays.map((d) => (
-                  <div key={toKey(d)} className="p-3 border-b border-r border-slate-200 text-sm font-semibold text-slate-900 sticky top-0 bg-white z-10 text-center overflow-hidden">
-                    <div title={format(d, 'EEEE')}>{format(d, 'EEE')}</div>
-                    <div className="text-xs text-slate-500">{format(d, 'MMM d')}</div>
-                  </div>
-                ))}
+                {weekDays.map((d) => {
+                  const today = new Date();
+                  const highlight = isSameDay(d, today);
+                  return (
+                    <div
+                      key={toKey(d)}
+                      className={`relative p-3 border-b border-r border-slate-200 text-sm font-semibold text-slate-900 sticky top-0 bg-white z-10 text-center overflow-hidden`}
+                    >
+                      {highlight && (
+                        <div className="absolute inset-y-0 left-0 w-1 bg-indigo-500 rounded-r-sm" aria-hidden />
+                      )}
+                      <div
+                        title={format(d, 'EEEE')}
+                        className={highlight ? 'text-indigo-700' : ''}
+                      >
+                        {format(d, 'EEE')}
+                      </div>
+                      {highlight ? (
+                        <div className="mt-1.5 flex justify-center">
+                          <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white text-black text-sm font-semibold shadow ring-2 ring-white outline outline-1 outline-slate-300">
+                            {format(d, 'd')}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="text-xs text-slate-500">{format(d, 'MMM d')}</div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
               {/* Meal rows */}
               {MEAL_TYPES.map((mealType) => (
@@ -907,7 +1119,7 @@ const MealPlanning: React.FC = () => {
                     return (
                       <div
                         key={`${key}-${mealType}`}
-                        className="p-3 border-b border-l border-r border-slate-200 h-[160px] overflow-hidden"
+                        className={`relative p-3 border-b border-l border-r border-slate-200 h-[160px] overflow-hidden`}
                         onDragOver={(e) => e.preventDefault()}
                         onDrop={async (e) => {
                           if (!activePlan) return;
@@ -969,6 +1181,9 @@ const MealPlanning: React.FC = () => {
                           }
                         }}
                       >
+                        {isSameDay(d, new Date()) && (
+                          <div className="absolute inset-y-0 left-0 w-1 bg-indigo-300" aria-hidden />
+                        )}
                         <div className="h-full overflow-auto space-y-2">
                           {dayMeals.length === 0 ? (
                             <AddMealControl dateKey={key} mealType={mealType} />
@@ -1018,24 +1233,156 @@ const MealPlanning: React.FC = () => {
       {null}
 
       <section className="grid gap-6 lg:grid-cols-2">
-        {/* Meal Options manager */}
-        <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        {/* v2: Meal Options manager */}
+        {/* <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-900">Meal options</h2>
           <p className="text-sm text-slate-600">Curate quick-pick options for each meal. These appear first when typing in the weekly planner.</p>
           <MealOptionsManager />
-        </div>
-        
+        </div> */}
+
+        {/* Video → Recipe (YouTube) */}
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            if (!videoUrl.trim()) return;
+            setIsVideoImporting(true);
+            setVideoImportError(null);
+            try {
+              const recipe = await fetchYoutubeRecipe(videoUrl.trim(), videoLang);
+              setVideoDraft(recipe);
+              setVideoUrl('');
+            } catch (err) {
+              const msg = err instanceof Error ? err.message : 'Unable to import from video.';
+              setVideoImportError(msg);
+            } finally {
+              setIsVideoImporting(false);
+            }
+          }}
+          className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
+        >
+          <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
+            <Youtube className="h-5 w-5 text-rose-600" />
+            Video to Recipe
+          </h2>
+          <p className="mt-1 text-sm text-slate-600">Paste a YouTube link. We’ll extract the title, thumbnail, ingredients and steps from the description.</p>
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+            <input
+              value={videoUrl}
+              onChange={(e) => setVideoUrl(e.target.value)}
+              placeholder="https://www.youtube.com/watch?v=..."
+              className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
+            />
+            <select
+              value={videoLang}
+              onChange={(e) => setVideoLang(e.target.value)}
+              className="rounded-lg border border-slate-300 px-2 py-2 text-sm focus:border-indigo-500 focus:outline-none"
+              title="Caption language"
+            >
+              <option value="en">English</option>
+              <option value="es">Spanish</option>
+              <option value="fr">French</option>
+              <option value="de">German</option>
+              <option value="it">Italian</option>
+              <option value="pt">Portuguese</option>
+              <option value="hi">Hindi</option>
+              <option value="ja">Japanese</option>
+            </select>
+            <button
+              type="submit"
+              disabled={isVideoImporting}
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-rose-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-rose-500 disabled:opacity-60"
+            >
+              {isVideoImporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+              Convert
+            </button>
+          </div>
+          {videoImportError && <p className="mt-3 text-sm text-rose-600">{videoImportError}</p>}
+
+          {isVideoImporting && !videoDraft && (
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 animate-pulse">
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <div className="h-4 w-24 rounded bg-slate-200" />
+                <div className="mt-3 h-6 w-3/4 rounded bg-slate-200" />
+                <div className="mt-3 h-40 w-full rounded bg-slate-200" />
+                <div className="mt-3 h-3 w-5/6 rounded bg-slate-200" />
+                <div className="mt-2 h-3 w-2/3 rounded bg-slate-200" />
+              </div>
+              <div className="rounded-lg border border-slate-200 bg-white p-4">
+                <div className="h-4 w-20 rounded bg-slate-200" />
+                <div className="mt-3 h-9 w-full rounded bg-slate-200" />
+                <div className="mt-2 h-9 w-1/2 rounded bg-slate-200" />
+                <div className="mt-4 h-9 w-32 rounded-full bg-slate-200" />
+              </div>
+            </div>
+          )}
+
+          {videoDraft && (
+            <div className={`mt-6 grid gap-4 ${videoDraft.instructions.length > 0 ? 'sm:grid-cols-2' : ''}`}>
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2"><ChefHat className="h-4 w-4 text-amber-500" /> Preview</h3>
+                <p className="mt-2 text-base font-medium text-slate-900">{videoDraft.name}</p>
+                {videoDraft.image && (
+                  <img src={videoDraft.image} alt="Recipe thumbnail" className="mt-2 w-full rounded" />
+                )}
+                {videoDraft.description && (
+                  <p className="mt-2 text-xs text-slate-600 line-clamp-4">{videoDraft.description}</p>
+                )}
+                <p className="mt-2 text-xs text-slate-500">Prep {videoDraft.prepTime} min • Cook {videoDraft.cookTime} min • Serves {videoDraft.servings}</p>
+                <div className={`mt-3 grid gap-4 ${videoDraft.instructions.length > 0 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                  <div>
+                    <p className="text-xs font-semibold text-slate-700">Ingredients</p>
+                    <ul className="mt-1 list-disc pl-4 text-xs text-slate-600 max-h-28 overflow-auto">
+                      {videoDraft.ingredients.map((i, idx) => <li key={idx}>{i.name}</li>)}
+                    </ul>
+                  </div>
+                  {videoDraft.instructions.length > 0 && (
+                    <div>
+                      <p className="text-xs font-semibold text-slate-700">Steps</p>
+                      <ol className="mt-1 list-decimal pl-4 text-xs text-slate-600 max-h-28 overflow-auto">
+                        {videoDraft.instructions.map((s, idx) => <li key={idx}>{s}</li>)}
+                      </ol>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="rounded-lg border border-slate-200 bg-white p-4">
+                <h3 className="text-sm font-semibold text-slate-900">Add to recipes</h3>
+                <div className="mt-4 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!videoDraft) return;
+                      try { await addRecipe(videoDraft); setVideoDraft(null); }
+                      catch { setVideoImportError('Failed to save recipe'); }
+                    }}
+                    className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
+                  >
+                    <Save className="h-4 w-4" /> Save recipe
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setVideoDraft(null)}
+                    className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </form>
+
         <form onSubmit={handleImportRecipe} className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
-            <Youtube className="h-5 w-5 text-rose-500" />
-            Import from YouTube
+            <CalendarDays className="h-5 w-5 text-indigo-600" />
+            Clip from URL
           </h2>
-          <p className="mt-1 text-sm text-slate-600">Paste a video link and we will parse the description into ingredients and steps.</p>
+          <p className="mt-1 text-sm text-slate-600">Paste a recipe link. We’ll fetch title, image, ingredients and steps.</p>
           <div className="mt-4 flex flex-col gap-3 sm:flex-row">
             <input
               value={importUrl}
               onChange={(event) => setImportUrl(event.target.value)}
-              placeholder="https://www.youtube.com/watch?v=..."
+              placeholder="https://example.com/recipe/..."
               className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
             />
             <button
@@ -1044,10 +1391,28 @@ const MealPlanning: React.FC = () => {
               className="inline-flex items-center justify-center gap-2 rounded-full bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:opacity-60"
             >
               {isImporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-              Import recipe
+              Clip recipe
             </button>
           </div>
           {importError && <p className="mt-3 text-sm text-rose-600">{importError}</p>}
+
+          {isImporting && !importDraft && (
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 animate-pulse">
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <div className="h-4 w-24 rounded bg-slate-200" />
+                <div className="mt-3 h-6 w-3/4 rounded bg-slate-200" />
+                <div className="mt-3 h-40 w-full rounded bg-slate-200" />
+                <div className="mt-3 h-3 w-5/6 rounded bg-slate-200" />
+                <div className="mt-2 h-3 w-2/3 rounded bg-slate-200" />
+              </div>
+              <div className="rounded-lg border border-slate-200 bg-white p-4">
+                <div className="h-4 w-20 rounded bg-slate-200" />
+                <div className="mt-3 h-9 w-full rounded bg-slate-200" />
+                <div className="mt-2 h-9 w-1/2 rounded bg-slate-200" />
+                <div className="mt-4 h-9 w-32 rounded-full bg-slate-200" />
+              </div>
+            </div>
+          )}
 
           {importDraft && (
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
@@ -1063,28 +1428,7 @@ const MealPlanning: React.FC = () => {
                 <p className="mt-2 text-xs text-slate-500">Prep {importDraft.prepTime} min • Cook {importDraft.cookTime} min • Serves {importDraft.servings}</p>
               </div>
               <div className="rounded-lg border border-slate-200 bg-white p-4">
-                <h3 className="text-sm font-semibold text-slate-900">Save & schedule (optional)</h3>
-                <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                  <label className="flex flex-col gap-1 text-sm">
-                    <span className="font-medium text-slate-700">Meal type</span>
-                    <select
-                      value={importScheduleType}
-                      onChange={(e) => setImportScheduleType(e.target.value)}
-                      className="rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-indigo-500 focus:outline-none"
-                    >
-                      {MEAL_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-                    </select>
-                  </label>
-                  <label className="flex flex-col gap-1 text-sm">
-                    <span className="font-medium text-slate-700">Date</span>
-                    <input
-                      type="date"
-                      value={importScheduleDateKey}
-                      onChange={(e) => setImportScheduleDateKey(e.target.value)}
-                      className="rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-indigo-500 focus:outline-none"
-                    />
-                  </label>
-                </div>
+                <h3 className="text-sm font-semibold text-slate-900">Save</h3>
                 <div className="mt-4 flex gap-2">
                   <button
                     type="button"
@@ -1095,22 +1439,150 @@ const MealPlanning: React.FC = () => {
                   </button>
                   <button
                     type="button"
-                    onClick={saveAndScheduleImported}
-                    className="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
-                  >
-                    <Plus className="h-4 w-4" /> Save + add to plan
-                  </button>
-                  <button
-                    type="button"
-                    onClick={saveImportedAsNote}
-                    className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                    title="Save ingredients and steps as a note"
-                  >
-                    <FileText className="h-4 w-4" /> Save as note
-                  </button>
-                  <button
-                    type="button"
                     onClick={() => setImportDraft(null)}
+                    className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </form>
+
+        {/* Paste Text → Recipe */}
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            if (!textInput.trim()) return;
+            setIsTextParsing(true);
+            setTextError(null);
+            try {
+              const draft = parseTextToRecipe(textInput.trim(), textTitle.trim());
+              setTextDraft(draft);
+            } catch (err) {
+              const msg = err instanceof Error ? err.message : 'Unable to parse text.';
+              setTextError(msg);
+            } finally {
+              setIsTextParsing(false);
+            }
+          }}
+          className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
+        >
+          <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
+            <ChefHat className="h-5 w-5 text-amber-600" />
+            Paste Text
+          </h2>
+          <p className="mt-1 text-sm text-slate-600">Paste any recipe text. We’ll extract ingredients and directions heuristically.</p>
+          <div className="mt-3 grid gap-3">
+            <input
+              value={textTitle}
+              onChange={(e) => setTextTitle(e.target.value)}
+              placeholder="Optional title"
+              className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
+            />
+            <input
+              value={textImageUrl}
+              onChange={(e) => setTextImageUrl(e.target.value)}
+              placeholder="Optional image URL"
+              className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
+            />
+            <textarea
+              rows={8}
+              value={textInput}
+              onChange={(e) => setTextInput(e.target.value)}
+              placeholder="Ingredients and directions..."
+              className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
+            />
+          </div>
+          <div className="mt-3 flex gap-2">
+            <button
+              type="submit"
+              disabled={isTextParsing}
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:opacity-60"
+            >
+              {isTextParsing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+              Parse text
+            </button>
+            <button
+              type="button"
+              onClick={() => { setTextInput(''); setTextTitle(''); setTextImageUrl(''); setTextError(null); setTextDraft(null); }}
+              className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+            >
+              Clear
+            </button>
+          </div>
+          {textError && <p className="mt-3 text-sm text-rose-600">{textError}</p>}
+
+          {textDraft && (
+            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2"><ChefHat className="h-4 w-4 text-amber-500" /> Preview</h3>
+                <p className="mt-2 text-base font-medium text-slate-900">{textDraft.name}</p>
+                { (textDraft.image || textImageUrl) && (
+                  <img src={textDraft.image || textImageUrl} alt="Recipe" className="mt-2 w-full rounded object-cover" />
+                )}
+                {textDraft.description && (
+                  <p className="mt-2 text-xs text-slate-600 line-clamp-4">{textDraft.description}</p>
+                )}
+                <p className="mt-2 text-xs text-slate-500">Prep {textDraft.prepTime} min • Cook {textDraft.cookTime} min • Serves {textDraft.servings}</p>
+                <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <p className="text-xs font-semibold text-slate-700">Ingredients</p>
+                    <ul className="mt-1 list-disc pl-4 text-xs text-slate-600 max-h-36 overflow-auto">
+                      {textDraft.ingredients.map((i, idx) => <li key={idx}>{i.name}</li>)}
+                    </ul>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-slate-700">Steps</p>
+                    <ol className="mt-1 list-decimal pl-4 text-xs text-slate-600 max-h-36 overflow-auto">
+                      {textDraft.instructions.map((s, idx) => <li key={idx}>{s}</li>)}
+                    </ol>
+                  </div>
+                </div>
+                {(textDraft.tags?.some(t => t.startsWith('equip:')) || textDraft.notes) && (
+                  <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                    {textDraft.tags?.some(t => t.startsWith('equip:')) && (
+                      <div>
+                        <p className="text-xs font-semibold text-slate-700">Equipment</p>
+                        <ul className="mt-1 list-disc pl-4 text-xs text-slate-600 max-h-28 overflow-auto">
+                          {textDraft.tags.filter(t => t.startsWith('equip:')).map((t, i) => <li key={i}>{t.replace('equip:','')}</li>)}
+                        </ul>
+                      </div>
+                    )}
+                    {textDraft.notes && (
+                      <div>
+                        <p className="text-xs font-semibold text-slate-700">Tips</p>
+                        <div className="mt-1 text-xs text-slate-600 whitespace-pre-wrap max-h-28 overflow-auto">{textDraft.notes}</div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              <div className="rounded-lg border border-slate-200 bg-white p-4">
+                <h3 className="text-sm font-semibold text-slate-900">Add to recipes</h3>
+                <div className="mt-4 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!textDraft) return;
+                      try {
+                        await addRecipe({ ...textDraft, image: (textDraft.image || textImageUrl) || undefined });
+                        setTextDraft(null);
+                        setTextImageUrl('');
+                      } catch (e) {
+                        console.error('Save recipe failed', e);
+                        const msg = e instanceof Error ? e.message : 'Failed to save recipe';
+                        setTextError(msg);
+                      }
+                    }}
+                    className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
+                  >
+                    <Save className="h-4 w-4" /> Save recipe
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTextDraft(null)}
                     className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
                   >
                     Cancel
@@ -1130,77 +1602,6 @@ const MealPlanning: React.FC = () => {
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-slate-900">Saved recipes</h2>
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={async () => {
-                  // Enhance existing YouTube recipes by extracting steps from description
-                  const updateRecipe = useAppStore.getState().updateRecipe;
-                  const showGlobalToast = useAppStore.getState().showGlobalToast;
-                  const vids = recipes.filter((r) => r.sourceType === 'youtube' && !!r.sourceUrl);
-                  if (vids.length === 0) {
-                    showGlobalToast?.('No YouTube recipes found to enhance', 'info');
-                    return;
-                  }
-                  let success = 0;
-                  let fail = 0;
-                  for (const r of vids) {
-                    try {
-                      const id = extractYoutubeId(r.sourceUrl!);
-                      if (!id) { fail++; continue; }
-                      const proxyBaseUrl = import.meta.env.VITE_YOUTUBE_SNIPPET_PROXY_URL?.trim() || '/api/youtube/snippet';
-                      const apiUrl = `${proxyBaseUrl}${proxyBaseUrl.includes('?') ? '&' : '?'}videoId=${encodeURIComponent(id)}`;
-                      const res = await fetch(apiUrl, { headers: { Accept: 'application/json' } });
-                      if (!res.ok) { fail++; continue; }
-                      const data = await res.json();
-                      const snippet = data?.items?.[0]?.snippet;
-                      if (!snippet) { fail++; continue; }
-                      const flowExtract = extractFlowFromDescription(snippet.description ?? '');
-                      const parsed = parseDescription(snippet.description ?? '');
-                      const instructions = (flowExtract?.titles?.length ? flowExtract.titles : (parsed.instructions.length ? parsed.instructions : r.instructions)) as string[];
-                      if (instructions && instructions.length) {
-                        await updateRecipe(r.id!, { instructions });
-                        success++;
-                      } else {
-                        fail++;
-                      }
-                    } catch (err) {
-                      console.error('Enhance recipe failed', r.id, err);
-                      fail++;
-                    }
-                  }
-                  showGlobalToast?.(`Updated steps for ${success}/${vids.length} recipes`, fail ? 'info' : 'success');
-                }}
-              className="text-xs rounded-md px-3 py-1 bg-indigo-600 text-white hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
-              title="Generate steps from video descriptions for YouTube recipes"
-            >
-              Generate steps for YouTube recipes
-            </button>
-            <button
-              type="button"
-              onClick={async () => {
-                // Fallback: derive steps from existing descriptions for all recipes
-                const updateRecipe = useAppStore.getState().updateRecipe;
-                const showGlobalToast = useAppStore.getState().showGlobalToast;
-                if (!recipes.length) {
-                  showGlobalToast?.('No recipes found', 'info');
-                  return;
-                }
-                let success = 0;
-                for (const r of recipes) {
-                  const flow = extractFlowFromDescription(r.description || '');
-                  const parsed = parseDescription(r.description || '');
-                  const instructions = (flow?.titles?.length ? flow.titles : parsed.instructions) as string[];
-                  if (instructions && instructions.length) {
-                    try { await updateRecipe(r.id!, { instructions }); success++; } catch {}
-                  }
-                }
-                showGlobalToast?.(`Updated steps for ${success}/${recipes.length} recipes`, 'info');
-              }}
-              className="text-xs rounded-md px-3 py-1 bg-emerald-600 text-white hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-              title="Generate steps using current recipe descriptions"
-            >
-              Generate steps from descriptions
-            </button>
             {recipes.length > 0 && (
               <button
                 type="button"
@@ -1221,14 +1622,13 @@ const MealPlanning: React.FC = () => {
             )}
           </div>
         </div>
-        <p className="text-sm text-slate-600">A quick reference list for meals you can schedule.</p>
+        <p className="text-sm text-slate-600">Your clipped recipes.</p>
         {recipes.length === 0 ? (
           <div className="mt-4 rounded-lg border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-slate-500">
-            Import a recipe above to get started.
+            Clip a recipe above to get started.
           </div>
         ) : (
           <>
-            <p className="text-xs text-slate-500 mt-2">Tip: Drag a recipe into the weekly planner to add it.</p>
             <SavedRecipesList recipes={recipes} />
           </>
         )}
@@ -1238,43 +1638,296 @@ const MealPlanning: React.FC = () => {
 };
 
 function SavedRecipesList({ recipes }: { recipes: Recipe[] }) {
+  const { deleteRecipe } = useAppStore();
   const [editingId, setEditingId] = useState<string | null>(null);
-  const recipe = useMemo(() => recipes.find((r) => r.id === editingId) || null, [editingId, recipes]);
+  const [viewingId, setViewingId] = useState<string | null>(null);
+  const editRecipe = useMemo(() => recipes.find((r) => r.id === editingId) || null, [editingId, recipes]);
+  const viewRecipe = useMemo(() => recipes.find((r) => r.id === viewingId) || null, [viewingId, recipes]);
   return (
     <>
       <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {recipes.map((r) => (
-          <li
+          <RecipeCard
             key={r.id}
-            className="group relative rounded-lg border border-slate-200 bg-white p-4 text-sm shadow-sm cursor-grab active:cursor-grabbing"
-            draggable
-            onDragStart={(e) => {
-              e.dataTransfer.setData('text/recipe-id', r.id!);
-              e.dataTransfer.effectAllowed = 'copy';
-            }}
-            title="Drag into a day/meal cell to add"
-          >
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); setEditingId(r.id!); }}
-              className="absolute right-2 top-2 rounded-md bg-indigo-600 p-1 text-white shadow-sm hover:bg-indigo-500"
-              title="Edit recipe"
-              aria-label="Edit recipe"
-            >
-              <Pencil className="h-4 w-4" />
-            </button>
-            <p className="font-semibold text-slate-900 pr-8">{r.name}</p>
-            {r.description && <p className="mt-1 text-xs text-slate-600">{r.description}</p>}
-            <p className="mt-2 text-xs text-slate-500">
-              Prep {r.prepTime} min • Cook {r.cookTime} min • Serves {r.servings}
-            </p>
-            <RecipeMealTypeChips recipe={r} />
-          </li>
+            recipe={r}
+            onView={() => setViewingId(r.id!)}
+            onEdit={() => setEditingId(r.id!)}
+            onDelete={() => void deleteRecipe(r.id!)}
+          />
         ))}
       </ul>
-      {recipe && <RecipeEditModal recipe={recipe} onClose={() => setEditingId(null)} />}
+      {viewRecipe && <RecipeViewModal recipe={viewRecipe} onClose={() => setViewingId(null)} onEdit={() => { setEditingId(viewRecipe.id!); setViewingId(null); }} />}
+      {editRecipe && <RecipeEditModal recipe={editRecipe} onClose={() => setEditingId(null)} />}
     </>
   );
 }
 
 export default MealPlanning;
+
+// Compact recipe card with image header, overlay title, domain + quick actions
+function RecipeCard({ recipe, onView, onEdit, onDelete }: { recipe: Recipe; onView: () => void; onEdit: () => void; onDelete: () => void }) {
+  const [isFav, setIsFav] = useState(false);
+  const totalTime = (recipe.prepTime || 0) + (recipe.cookTime || 0);
+  const domain = useMemo(() => {
+    try { return recipe.sourceUrl ? new URL(recipe.sourceUrl).hostname.replace(/^www\./, '') : ''; } catch { return ''; }
+  }, [recipe.sourceUrl]);
+  const favicon = domain ? `https://www.google.com/s2/favicons?sz=64&domain=${encodeURIComponent(domain)}` : '';
+
+  return (
+    <li
+      onClick={onView}
+      className="group relative overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm ring-1 ring-black/5 transition hover:-translate-y-0.5 hover:shadow-md hover:ring-indigo-200 cursor-pointer"
+    >
+      <div className="relative w-full aspect-video overflow-hidden">
+        {recipe.image ? (
+          <img
+            src={recipe.image}
+            alt={recipe.name}
+            className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+          />
+        ) : (
+          <div className="absolute inset-0 flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200">
+            <ChefHat className="h-12 w-12 text-slate-400" />
+          </div>
+        )}
+        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/80 via-black/35 to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 p-3">
+          <div className="flex items-center gap-2">
+            {favicon && <img src={favicon} alt="" className="h-4 w-4 rounded-sm" />}
+            <p className="line-clamp-2 text-base md:text-lg font-semibold tracking-tight text-white drop-shadow">
+              {recipe.name}
+            </p>
+          </div>
+          <div className="mt-2 flex items-center justify-between text-[11px]">
+            <div className="flex items-center gap-2 text-slate-200">
+              {domain && (
+                <a
+                  href={recipe.sourceUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 rounded-full bg-black/40 px-2 py-0.5 backdrop-blur-sm hover:bg-black/50"
+                  title={domain}
+                >
+                  <span>{domain}</span>
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              )}
+            </div>
+            <div className="flex items-center gap-2 text-slate-200">
+              {totalTime > 0 && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-black/40 px-2 py-0.5 backdrop-blur-sm"><Clock className="h-3 w-3" /> {totalTime} min</span>
+              )}
+              <span className="inline-flex items-center gap-1 rounded-full bg-black/40 px-2 py-0.5 backdrop-blur-sm"><Users className="h-3 w-3" /> {recipe.servings || 1}</span>
+            </div>
+          </div>
+        </div>
+        <div className="absolute right-2 top-2 flex gap-2" onClick={(e) => e.stopPropagation()}>
+          <button
+            type="button"
+            onClick={() => setIsFav((s) => !s)}
+            className={`rounded-md p-1 text-white backdrop-blur shadow ${isFav ? 'bg-rose-500/80 hover:bg-rose-500' : 'bg-black/50 hover:bg-black/60'}`}
+            title={isFav ? 'Unfavorite' : 'Favorite'}
+            aria-label={isFav ? 'Unfavorite' : 'Favorite'}
+          >
+            <Heart className="h-4 w-4" fill={isFav ? 'currentColor' : 'none'} color={isFav ? 'white' : 'white'} />
+          </button>
+          <button
+            type="button"
+            onClick={() => onEdit()}
+            className="rounded-md bg-black/50 p-1 text-white backdrop-blur hover:bg-black/60 shadow"
+            title="Edit recipe"
+            aria-label="Edit recipe"
+          >
+            <Pencil className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => onDelete()}
+            className="rounded-md bg-black/50 p-1 text-white backdrop-blur hover:bg-black/60 shadow"
+            title="Delete recipe"
+            aria-label="Delete recipe"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+      <div className="p-3">
+        {recipe.description && (
+          <p className="line-clamp-2 text-xs text-slate-600">{recipe.description}</p>
+        )}
+      </div>
+    </li>
+  );
+}
+
+// ========= Recipe View (organized sections) =========
+function RecipeViewModal({ recipe, onClose, onEdit }: { recipe: Recipe; onClose: () => void; onEdit: () => void }) {
+  const [servingsView, setServingsView] = useState<number>(recipe.servings || 1);
+  const factor = Math.max(0.25, (servingsView || 1) / Math.max(1, recipe.servings || 1));
+
+  const scaleNumber = (n: number) => {
+    const val = n * factor;
+    // Format: prefer 1 decimal if needed
+    return Math.abs(val - Math.round(val)) < 0.05 ? String(Math.round(val)) : String(Math.round(val * 10) / 10);
+  };
+
+  const scaleLine = (line: string): string => {
+    const src = normalizeFractions(line);
+    // Match patterns like: 1 1/2, 1/2, 2-3, 2 to 3, 2.5
+    const patterns: RegExp[] = [
+      /^(\d+)[\s-](\d)\/(\d)/, // mixed number at start e.g., 1 1/2
+      /^(\d+)\/(\d+)/, // simple fraction
+      /^(\d+(?:\.\d+)?)/, // decimal or integer
+    ];
+    for (const re of patterns) {
+      const m = src.match(re);
+      if (m) {
+        if (re === patterns[0]) {
+          const whole = parseInt(m[1], 10);
+          const num = parseInt(m[2], 10);
+          const den = parseInt(m[3], 10);
+          const base = whole + num / den;
+          const scaled = scaleNumber(base);
+          return src.replace(re, scaled);
+        }
+        if (re === patterns[1]) {
+          const num = parseInt(m[1], 10);
+          const den = parseInt(m[2], 10);
+          const base = num / den;
+          const scaled = scaleNumber(base);
+          return src.replace(re, scaled);
+        }
+        if (re === patterns[2]) {
+          const base = parseFloat(m[1]);
+          const scaled = scaleNumber(base);
+          return src.replace(re, scaled);
+        }
+      }
+    }
+    return src; // fallback unchanged
+  };
+
+  const equipmentFromText = useMemo(() => {
+    const tools = ['pan', 'pot', 'oven', 'skillet', 'bowl', 'whisk', 'knife', 'cutting board', 'blender', 'mixer', 'baking sheet', 'saucepan', 'spatula', 'tray', 'foil', 'tongs'];
+    const text = `${(recipe.instructions || []).join(' ')} ${(recipe.description || '')}`.toLowerCase();
+    const found: string[] = [];
+    for (const t of tools) { if (text.includes(t) && !found.includes(t)) found.push(t); }
+    // Also include equipment from tags: equip:*
+    const equipTags = (recipe.tags || []).filter(t => t.startsWith('equip:')).map(t => t.replace('equip:',''));
+    for (const e of equipTags) { if (!found.includes(e)) found.push(e); }
+    return found;
+  }, [recipe.instructions, recipe.description, recipe.tags]);
+
+  return (
+    <div className="fixed inset-0 z-40 flex items-start justify-center bg-black/40 p-4 overflow-auto">
+      <div className="w-full max-w-5xl rounded-xl border border-slate-200 bg-white shadow-xl">
+        {/* Header */}
+        {recipe.image && (
+          <div className="relative aspect-video w-full overflow-hidden rounded-t-xl">
+            <img src={recipe.image} alt={recipe.name} className="absolute inset-0 h-full w-full object-cover" />
+            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-4">
+              <div className="flex items-end justify-between">
+                <h3 className="text-xl font-semibold text-white drop-shadow">{recipe.name}</h3>
+                <div className="flex gap-2">
+                  <button onClick={onEdit} className="rounded-md bg-white/90 px-3 py-1 text-sm font-medium text-slate-800 hover:bg-white">Edit</button>
+                  <button onClick={onClose} className="rounded-md bg-white/90 px-3 py-1 text-sm font-medium text-slate-800 hover:bg-white">Close</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        {!recipe.image && (
+          <div className="flex items-center justify-between p-4">
+            <h3 className="text-xl font-semibold text-slate-900">{recipe.name}</h3>
+            <div className="flex gap-2">
+              <button onClick={onEdit} className="rounded-md border border-slate-200 px-3 py-1 text-sm font-medium text-slate-800 hover:bg-slate-50">Edit</button>
+              <button onClick={onClose} className="rounded-md border border-slate-200 px-3 py-1 text-sm font-medium text-slate-800 hover:bg-slate-50">Close</button>
+            </div>
+          </div>
+        )}
+
+        <div className="grid gap-4 p-4 md:grid-cols-2">
+          {/* Directions */}
+          <section className="rounded-lg border border-slate-200 bg-white p-4">
+            <h4 className="text-sm font-semibold text-slate-900">Directions</h4>
+            {recipe.instructions && recipe.instructions.length > 0 ? (
+              <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-slate-700">
+                {recipe.instructions.map((s, i) => <li key={i}>{s}</li>)}
+              </ol>
+            ) : (
+              <p className="mt-2 text-sm text-slate-500">No directions provided.</p>
+            )}
+          </section>
+
+          {/* Ingredients + Portion size */}
+          <section className="rounded-lg border border-slate-200 bg-white p-4">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-semibold text-slate-900">Ingredients</h4>
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-slate-600">Portion size</span>
+                <input
+                  type="number"
+                  min={0.25}
+                  step={0.25}
+                  value={servingsView}
+                  onChange={(e) => setServingsView(Math.max(0.25, Number(e.target.value) || recipe.servings || 1))}
+                  className="w-20 rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-indigo-500 focus:outline-none"
+                />
+              </div>
+            </div>
+            {recipe.ingredients && recipe.ingredients.length > 0 ? (
+              <ul className="mt-2 list-disc pl-5 text-sm text-slate-700">
+                {recipe.ingredients.map((ing, i) => (
+                  <li key={i}>{ing.amount ? `${scaleNumber(Number(ing.amount))} ${ing.unit ?? ''} ${ing.name}`.trim() : scaleLine(ing.name)}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-2 text-sm text-slate-500">No ingredients listed.</p>
+            )}
+          </section>
+
+          {/* Duration */}
+          <section className="rounded-lg border border-slate-200 bg-white p-4">
+            <h4 className="text-sm font-semibold text-slate-900">Duration</h4>
+            <div className="mt-2 grid grid-cols-3 gap-2 text-sm text-slate-700">
+              <div className="rounded border border-slate-200 bg-slate-50 p-2 text-center">
+                <div className="text-xs text-slate-500">Prep</div>
+                <div className="font-medium">{recipe.prepTime ?? 0} min</div>
+              </div>
+              <div className="rounded border border-slate-200 bg-slate-50 p-2 text-center">
+                <div className="text-xs text-slate-500">Cook</div>
+                <div className="font-medium">{recipe.cookTime ?? 0} min</div>
+              </div>
+              <div className="rounded border border-slate-200 bg-slate-50 p-2 text-center">
+                <div className="text-xs text-slate-500">Total</div>
+                <div className="font-medium">{(recipe.prepTime ?? 0) + (recipe.cookTime ?? 0)} min</div>
+              </div>
+            </div>
+          </section>
+
+          {/* Equipment */}
+          <section className="rounded-lg border border-slate-200 bg-white p-4">
+            <h4 className="text-sm font-semibold text-slate-900">Equipment</h4>
+            {equipmentFromText.length > 0 ? (
+              <ul className="mt-2 list-disc pl-5 text-sm text-slate-700">
+                {equipmentFromText.map((t) => <li key={t}>{t}</li>)}
+              </ul>
+            ) : (
+              <p className="mt-2 text-sm text-slate-500">No equipment detected.</p>
+            )}
+          </section>
+
+          {/* Tips */}
+          <section className="rounded-lg border border-slate-200 bg-white p-4 md:col-span-2">
+            <h4 className="text-sm font-semibold text-slate-900">Tips</h4>
+            {recipe.notes ? (
+              <p className="mt-2 whitespace-pre-wrap text-sm text-slate-700">{recipe.notes}</p>
+            ) : (
+              <p className="mt-2 text-sm text-slate-500">No tips yet.</p>
+            )}
+          </section>
+        </div>
+      </div>
+    </div>
+  );
+}
