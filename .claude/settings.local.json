@@ -14,7 +14,8 @@
       "Bash(npx tsc:*)",
       "Bash(./dist/index.js --help)",
       "Bash(chmod:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []

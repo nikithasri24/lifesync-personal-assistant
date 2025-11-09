@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { FormEvent } from 'react';
 import { addDays, format, isSameWeek, startOfWeek, isSameDay } from 'date-fns';
 import { CalendarDays, ChefHat, Loader2, Plus, Trash2, Save, Pencil, ExternalLink, Heart, Clock, Users, Youtube } from 'lucide-react';
+import DatePickerPopover from '../components/DatePickerPopover';
 import { useAppStore } from '../stores/useAppStore';
 import type { MealPlanWeek, PlannedMeal, Recipe } from '../types';
 
@@ -364,20 +366,577 @@ function parseLocalDateKey(key: string): Date {
   return new Date(y, (m || 1) - 1, d || 1, 0, 0, 0, 0);
 }
 
+function MealItem({ meal, recipes }: { meal: PlannedMeal; recipes: Recipe[] }) {
+  const { updatePlannedMeal, deletePlannedMeal, mealPlans, mealOptions, addRecipe } = useAppStore();
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState('');
+  const [showList, setShowList] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [showRecipeForm, setShowRecipeForm] = useState(false);
+  const inputRef = React.useRef<HTMLInputElement | null>(null);
+
+  const recipe = recipes.find((item) => item.id === meal.recipeId);
+  const displayName = recipe?.name ?? meal.customMeal ?? 'Meal';
+
+  // Extract all historical custom meals from all meal plans (same logic as AddMealControl)
+  const historicalMeals = React.useMemo(() => {
+    const customMeals = new Map<string, { name: string; count: number; lastUsed: Date }>();
+
+    mealPlans.forEach(plan => {
+      plan.meals?.forEach(m => {
+        if (m.customMeal && !m.recipeId) {
+          const key = m.customMeal.toLowerCase();
+          const existing = customMeals.get(key);
+          const mealDate = ensureDate(m.date);
+
+          if (existing) {
+            existing.count++;
+            if (mealDate > existing.lastUsed) {
+              existing.lastUsed = mealDate;
+            }
+          } else {
+            customMeals.set(key, {
+              name: m.customMeal,
+              count: 1,
+              lastUsed: mealDate
+            });
+          }
+        }
+      });
+    });
+
+    return Array.from(customMeals.values())
+      .sort((a, b) => {
+        if (b.count !== a.count) return b.count - a.count;
+        return b.lastUsed.getTime() - a.lastUsed.getTime();
+      })
+      .map(item => ({ id: `__custom__:${item.name}`, name: item.name, count: item.count }));
+  }, [mealPlans]);
+
+  const matches = React.useMemo(() => {
+    const q = editValue.trim().toLowerCase();
+
+    if (!q) {
+      return [];
+    }
+
+    const scoreMatch = (text: string, query: string): number => {
+      const lower = text.toLowerCase();
+      if (lower === query) return 1000;
+      if (lower.startsWith(query)) return 900;
+      const words = lower.split(/\s+/);
+      if (words.some(w => w.startsWith(query))) return 800;
+      if (lower.includes(query)) return 700;
+      let fuzzyScore = 0;
+      let queryIdx = 0;
+      for (let i = 0; i < lower.length && queryIdx < query.length; i++) {
+        if (lower[i] === query[queryIdx]) {
+          fuzzyScore += (100 - i);
+          queryIdx++;
+        }
+      }
+      if (queryIdx === query.length) return fuzzyScore;
+      return 0;
+    };
+
+    const candidates: Array<{ id: string; name: string; score: number; type: 'custom' | 'option' | 'recipe' }> = [];
+
+    historicalMeals.forEach(item => {
+      const score = scoreMatch(item.name, q);
+      if (score > 0) {
+        candidates.push({ id: `__custom__:${item.name}`, name: item.name, score, type: 'custom' });
+      }
+    });
+
+    const opts = mealOptions[meal.mealType as 'breakfast'|'lunch'|'dinner'|'snack'] || [];
+    opts.forEach(name => {
+      const score = scoreMatch(name, q);
+      if (score > 0) {
+        candidates.push({ id: `__opt__:${name}`, name, score, type: 'option' });
+      }
+    });
+
+    recipes.forEach(recipe => {
+      const score = scoreMatch(recipe.name, q);
+      if (score > 0) {
+        candidates.push({ id: recipe.id!, name: recipe.name, score, type: 'recipe' });
+      }
+    });
+
+    return candidates
+      .sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return a.name.localeCompare(b.name);
+      })
+      .slice(0, 12);
+  }, [editValue, recipes, mealOptions, meal.mealType, historicalMeals]);
+
+  React.useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditing]);
+
+  React.useEffect(() => {
+    setSelectedIndex(0);
+  }, [editValue]);
+
+  const startEdit = () => {
+    if (!meal.recipeId) {
+      setEditValue(meal.customMeal ?? '');
+      setIsEditing(true);
+      setShowList(true);
+    }
+  };
+
+  const saveEdit = async (newValue?: string) => {
+    const trimmed = (newValue ?? editValue).trim();
+    if (trimmed && trimmed !== meal.customMeal) {
+      await updatePlannedMeal(meal.id, { customMeal: trimmed });
+    }
+    setIsEditing(false);
+    setShowList(false);
+  };
+
+  const cancelEdit = () => {
+    setIsEditing(false);
+    setShowList(false);
+    setEditValue('');
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedIndex((prev) => Math.min(prev + 1, matches.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedIndex((prev) => Math.max(prev - 1, 0));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (matches.length > 0) {
+        const selected = matches[selectedIndex];
+        saveEdit(selected.name);
+      } else {
+        saveEdit();
+      }
+      setSelectedIndex(0);
+    } else if (e.key === 'Escape') {
+      cancelEdit();
+    }
+  };
+
+  return (
+    <>
+      <li
+        className="group text-xs rounded border border-slate-200 bg-white px-2 py-1 flex items-center justify-between gap-2"
+        draggable={!isEditing}
+        onDragStart={(e) => {
+          if (!isEditing) {
+            e.dataTransfer.setData('text/meal-id', meal.id);
+            e.dataTransfer.effectAllowed = 'move';
+          }
+        }}
+        title={!meal.recipeId ? "Click to edit, drag to move (hold Alt to copy)" : "Drag to move (hold Alt to copy)"}
+      >
+        {isEditing ? (
+          <div className="relative flex-1">
+            <input
+              ref={inputRef}
+              type="text"
+              value={editValue}
+              onChange={(e) => { setEditValue(e.target.value); setShowList(true); }}
+              onKeyDown={handleKeyDown}
+              onBlur={() => setTimeout(() => saveEdit(), 200)}
+              className="w-full bg-transparent border-none outline-none text-xs"
+            />
+            {showList && editValue.trim().length > 0 && inputRef.current && createPortal(
+              <div className="fixed z-[100] w-[200px] rounded-lg border border-slate-300 bg-white shadow-xl" style={{
+                left: inputRef.current.getBoundingClientRect().left,
+                top: inputRef.current.getBoundingClientRect().bottom + 4,
+              }}>
+                {matches.length === 0 ? (
+                  <button
+                    type="button"
+                    className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50 rounded-lg"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => saveEdit(editValue.trim())}
+                  >
+                    <span className="flex h-5 w-5 items-center justify-center rounded bg-indigo-100 text-xs font-medium text-indigo-700">+</span>
+                    <span className="truncate">Add "<span className="font-medium">{editValue.trim()}</span>"</span>
+                  </button>
+                ) : (
+                  <div className="max-h-[300px] overflow-auto py-1">
+                    {matches.map((r: any, idx: number) => {
+                      const isSelected = idx === selectedIndex;
+                      return (
+                        <button
+                          key={`${r.id}-${idx}`}
+                          type="button"
+                          className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition ${
+                            isSelected ? 'bg-indigo-50 text-indigo-900' : 'text-slate-700 hover:bg-slate-50'
+                          }`}
+                          onMouseDown={(e) => e.preventDefault()}
+                          onMouseEnter={() => setSelectedIndex(idx)}
+                          onClick={() => saveEdit(r.name)}
+                        >
+                          <span className="truncate font-medium">{r.name}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>,
+              document.body
+            )}
+          </div>
+        ) : (
+          <span
+            className={`truncate ${!meal.recipeId ? 'cursor-text' : ''}`}
+            onClick={startEdit}
+            title={displayName}
+          >
+            {displayName}
+          </span>
+        )}
+        {!isEditing && (
+          <div className="flex items-center gap-1">
+            {!meal.recipeId && (
+              <button
+                type="button"
+                onClick={() => setShowRecipeForm(true)}
+                className="p-1 text-slate-400 hover:text-indigo-600 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+                aria-label="Save as recipe"
+                title="Save as recipe"
+              >
+                <ChefHat className="w-3 h-3" />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => deletePlannedMeal(meal.id)}
+              className="p-1 text-slate-400 hover:text-rose-600 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+              aria-label="Remove meal"
+              title="Remove"
+            >
+              <Trash2 className="w-3 h-3" />
+            </button>
+          </div>
+        )}
+      </li>
+
+      {showRecipeForm && (
+        <QuickRecipeModal
+          initialName={meal.customMeal ?? ''}
+          onSave={async (recipeData) => {
+            const newRecipe = await addRecipe(recipeData);
+            if (newRecipe?.id) {
+              await updatePlannedMeal(meal.id, { recipeId: newRecipe.id, customMeal: undefined });
+            }
+            setShowRecipeForm(false);
+          }}
+          onClose={() => setShowRecipeForm(false)}
+        />
+      )}
+    </>
+  );
+}
+
+function QuickRecipeModal({ initialName, onSave, onClose }: {
+  initialName: string;
+  onSave: (recipe: Omit<Recipe, 'id' | 'createdAt'>) => void;
+  onClose: () => void;
+}) {
+  const [name, setName] = useState(initialName);
+  const [ingredientsText, setIngredientsText] = useState('');
+  const [instructionsText, setInstructionsText] = useState('');
+  const [saving, setSaving] = useState(false);
+  const titleId = 'quick-recipe-modal-title';
+
+  // Lock background scroll while modal is open
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [onClose]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+
+    // Parse ingredients from comma-separated or line-separated text
+    const ingredientLines = ingredientsText
+      .split(/[,\n]/)
+      .map(line => line.trim())
+      .filter(line => line.length > 0);
+
+    const ingredients = ingredientLines.map(line => {
+      // Try to parse "amount unit name" format (e.g., "2 cups flour")
+      const match = line.match(/^(\d+(?:\.\d+)?)\s+(\w+)\s+(.+)$/);
+      if (match) {
+        return { amount: match[1], unit: match[2], name: match[3] };
+      }
+      // Try "amount name" format (e.g., "2 onions")
+      const match2 = line.match(/^(\d+(?:\.\d+)?)\s+(.+)$/);
+      if (match2) {
+        return { amount: match2[1], unit: undefined, name: match2[2] };
+      }
+      // Just the name
+      return { amount: undefined, unit: undefined, name: line };
+    });
+
+    // Parse instructions from line-separated text
+    const instructions = instructionsText
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0);
+
+    const recipeData: Omit<Recipe, 'id' | 'createdAt'> = {
+      name: name.trim(),
+      description: undefined,
+      ingredients,
+      instructions,
+      prepTime: undefined,
+      cookTime: undefined,
+      servings: 4,
+      tags: [],
+      imageUrl: undefined,
+      sourceUrl: undefined,
+      videoUrl: undefined,
+      videoThumbnail: undefined,
+      notes: undefined,
+    };
+
+    await onSave(recipeData);
+    setSaving(false);
+  };
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 p-4 pt-20 overflow-y-auto backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={titleId}
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-lg rounded-xl border-4 border-indigo-500/30 bg-white shadow-[0_20px_60px_rgba(0,0,0,0.5)] mb-20 ring-4 ring-white"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+          <div>
+            <h3 id={titleId} className="text-base font-semibold text-slate-900">Create Recipe Card</h3>
+            <p className="text-xs text-slate-500">Quick recipe for "{initialName}"</p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+            aria-label="Close"
+          >
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-4 space-y-3">
+          <div>
+            <label className="block text-xs font-medium text-slate-700 mb-1">Recipe Name</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              placeholder="e.g., Bagel with Cream Cheese"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-slate-700 mb-1">
+              Ingredients <span className="text-slate-400 font-normal">(one per line)</span>
+            </label>
+            <textarea
+              value={ingredientsText}
+              onChange={(e) => setIngredientsText(e.target.value)}
+              rows={4}
+              className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              placeholder="2 bagels&#10;4 oz cream cheese&#10;1 tomato&#10;salt, pepper"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-slate-700 mb-1">
+              Instructions <span className="text-slate-400 font-normal">(optional)</span>
+            </label>
+            <textarea
+              value={instructionsText}
+              onChange={(e) => setInstructionsText(e.target.value)}
+              rows={3}
+              className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              placeholder="Toast bagels, spread cream cheese..."
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={saving}
+              className="rounded-md px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={saving || !name.trim()}
+              className="inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="h-3.5 w-3.5" />
+                  Save
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
 function AddMealControl({ dateKey, mealType, onAdded }: { dateKey: string; mealType: string; onAdded?: () => void }) {
   const { recipes, addPlannedMeal, mealPlans, ensureMealPlanForWeek, mealOptions } = useAppStore();
   const [query, setQuery] = React.useState('');
   const [showList, setShowList] = React.useState(false);
+  const [selectedIndex, setSelectedIndex] = React.useState(0);
   const inputRef = React.useRef<HTMLInputElement | null>(null);
+
+  // Extract all historical custom meals from all meal plans
+  const historicalMeals = React.useMemo(() => {
+    const customMeals = new Map<string, { name: string; count: number; lastUsed: Date }>();
+
+    mealPlans.forEach(plan => {
+      plan.meals?.forEach(meal => {
+        if (meal.customMeal && !meal.recipeId) {
+          const key = meal.customMeal.toLowerCase();
+          const existing = customMeals.get(key);
+          const mealDate = ensureDate(meal.date);
+
+          if (existing) {
+            existing.count++;
+            if (mealDate > existing.lastUsed) {
+              existing.lastUsed = mealDate;
+            }
+          } else {
+            customMeals.set(key, {
+              name: meal.customMeal,
+              count: 1,
+              lastUsed: mealDate
+            });
+          }
+        }
+      });
+    });
+
+    // Sort by frequency (count) and recency
+    return Array.from(customMeals.values())
+      .sort((a, b) => {
+        if (b.count !== a.count) return b.count - a.count;
+        return b.lastUsed.getTime() - a.lastUsed.getTime();
+      })
+      .map(item => ({ id: `__custom__:${item.name}`, name: item.name, count: item.count }));
+  }, [mealPlans]);
 
   const matches = React.useMemo(() => {
     const q = query.trim().toLowerCase();
-    const opts = mealOptions[mealType as 'breakfast'|'lunch'|'dinner'|'snack'] || []
-    const optionMatches = (q ? opts.filter(o => o.toLowerCase().includes(q)) : opts).slice(0, 5).map((name) => ({ id: `__opt__:${name}`, name }))
-    const recipeMatches = (q ? recipes.filter(r => r.name.toLowerCase().includes(q)) : recipes).slice(0, 6)
-    // Merge: options first, then recipes
-    return [...optionMatches, ...recipeMatches]
-  }, [query, recipes, mealOptions, mealType]);
+
+    if (!q) {
+      return [];
+    }
+
+    // Scoring function for elastic search
+    const scoreMatch = (text: string, query: string): number => {
+      const lower = text.toLowerCase();
+
+      // Exact match (highest priority)
+      if (lower === query) return 1000;
+
+      // Starts with query
+      if (lower.startsWith(query)) return 900;
+
+      // Word starts with query
+      const words = lower.split(/\s+/);
+      if (words.some(w => w.startsWith(query))) return 800;
+
+      // Contains query
+      if (lower.includes(query)) return 700;
+
+      // Fuzzy match - calculate similarity
+      let fuzzyScore = 0;
+      let queryIdx = 0;
+      for (let i = 0; i < lower.length && queryIdx < query.length; i++) {
+        if (lower[i] === query[queryIdx]) {
+          fuzzyScore += (100 - i); // Earlier matches score higher
+          queryIdx++;
+        }
+      }
+      if (queryIdx === query.length) return fuzzyScore;
+
+      return 0; // No match
+    };
+
+    // Collect all candidates
+    const candidates: Array<{ id: string; name: string; score: number; type: 'custom' | 'option' | 'recipe' }> = [];
+
+    // Add historical custom meals
+    historicalMeals.forEach(item => {
+      const score = scoreMatch(item.name, q);
+      if (score > 0) {
+        candidates.push({ id: `__custom__:${item.name}`, name: item.name, score, type: 'custom' });
+      }
+    });
+
+    // Add meal options
+    const opts = mealOptions[mealType as 'breakfast'|'lunch'|'dinner'|'snack'] || [];
+    opts.forEach(name => {
+      const score = scoreMatch(name, q);
+      if (score > 0) {
+        candidates.push({ id: `__opt__:${name}`, name, score, type: 'option' });
+      }
+    });
+
+    // Add recipes
+    recipes.forEach(recipe => {
+      const score = scoreMatch(recipe.name, q);
+      if (score > 0) {
+        candidates.push({ id: recipe.id!, name: recipe.name, score, type: 'recipe' });
+      }
+    });
+
+    // Sort by score descending, then alphabetically
+    return candidates
+      .sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return a.name.localeCompare(b.name);
+      })
+      .slice(0, 12);
+  }, [query, recipes, mealOptions, mealType, historicalMeals]);
 
   const add = async (recipeId?: string, customMeal?: string) => {
     const plan = mealPlans.find(p => isSameWeek(ensureDate(p.weekStartDate), startOfWeek(parseLocalDateKey(dateKey), { weekStartsOn: 0 })))
@@ -401,24 +960,36 @@ function AddMealControl({ dateKey, mealType, onAdded }: { dateKey: string; mealT
   };
 
   const onKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'ArrowDown') {
       e.preventDefault();
-      if (matches.length > 0 && query.trim().toLowerCase() === (matches[0] as any).name.toLowerCase()) {
-        const first = matches[0] as any
-        if (String(first.id).startsWith('__opt__:')) await add(undefined, first.name)
-        else await add(first.id)
-      } else if (matches.length > 0 && query.trim().length > 0) {
-        const first = matches[0] as any
-        if (String(first.id).startsWith('__opt__:')) await add(undefined, first.name)
-        else await add(first.id)
+      setSelectedIndex((prev) => Math.min(prev + 1, matches.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedIndex((prev) => Math.max(prev - 1, 0));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (matches.length > 0) {
+        const selected = matches[selectedIndex] as any;
+        const idStr = String(selected.id);
+        if (idStr.startsWith('__opt__:') || idStr.startsWith('__custom__:')) {
+          await add(undefined, selected.name);
+        } else {
+          await add(selected.id);
+        }
       } else if (query.trim()) {
         await add(undefined, query.trim());
       }
+      setSelectedIndex(0);
     } else if (e.key === 'Escape') {
       setShowList(false);
+      setSelectedIndex(0);
       inputRef.current?.blur();
     }
   };
+
+  React.useEffect(() => {
+    setSelectedIndex(0);
+  }, [query]);
 
   return (
     <div className="relative">
@@ -427,36 +998,60 @@ function AddMealControl({ dateKey, mealType, onAdded }: { dateKey: string; mealT
         value={query}
         onChange={(e) => { setQuery(e.target.value); setShowList(true); }}
         onFocus={() => setShowList(true)}
+        onBlur={() => setTimeout(() => setShowList(false), 200)}
         onKeyDown={onKeyDown}
         placeholder="Type to add…"
-        className="w-full rounded-md border border-dashed border-slate-300 bg-white px-3 py-2 text-sm md:text-base shadow-sm hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        className="w-full rounded-md border border-dashed border-slate-300 bg-white px-3 py-2 text-sm shadow-sm hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
       />
-      {showList && (
-        <div className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-md border border-slate-200 bg-white shadow-lg">
-          {matches.length === 0 && query.trim().length > 0 ? (
+      {showList && query.trim().length > 0 && inputRef.current && createPortal(
+        <div className="fixed z-[100] w-[200px] rounded-lg border border-slate-300 bg-white shadow-xl" style={{
+          left: inputRef.current.getBoundingClientRect().left,
+          top: inputRef.current.getBoundingClientRect().bottom + 4,
+        }}>
+          {matches.length === 0 ? (
             <button
               type="button"
-              className="block w-full px-3 py-2 text-left text-sm hover:bg-slate-50"
+              className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50 rounded-lg"
               onMouseDown={(e) => e.preventDefault()}
-              onClick={() => add(undefined, query)}
+              onClick={() => add(undefined, query.trim())}
             >
-              + Add “{query.trim()}”
+              <span className="flex h-5 w-5 items-center justify-center rounded bg-indigo-100 text-xs font-medium text-indigo-700">+</span>
+              <span className="truncate">Add "<span className="font-medium">{query.trim()}</span>"</span>
             </button>
           ) : (
-            matches.map((r: any) => (
-              <button
-                key={r.id}
-                type="button"
-                className="block w-full px-3 py-2 text-left text-sm hover:bg-slate-50"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => (String(r.id).startsWith('__opt__:') ? add(undefined, r.name) : add(r.id))}
-                title={r.name}
-              >
-                {String(r.id).startsWith('__opt__:') ? `• ${r.name}` : r.name}
-              </button>
-            ))
+            <div className="max-h-[300px] overflow-auto py-1">
+              {matches.map((r: any, idx: number) => {
+                const idStr = String(r.id);
+                const isCustom = idStr.startsWith('__custom__:');
+                const isOption = idStr.startsWith('__opt__:');
+                const isRecipe = !isCustom && !isOption;
+                const isSelected = idx === selectedIndex;
+
+                return (
+                  <button
+                    key={`${r.id}-${idx}`}
+                    type="button"
+                    className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition ${
+                      isSelected ? 'bg-indigo-50 text-indigo-900' : 'text-slate-700 hover:bg-slate-50'
+                    }`}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onMouseEnter={() => setSelectedIndex(idx)}
+                    onClick={() => {
+                      if (isCustom || isOption) {
+                        add(undefined, r.name);
+                      } else {
+                        add(r.id);
+                      }
+                    }}
+                  >
+                    <span className="truncate font-medium">{r.name}</span>
+                  </button>
+                );
+              })}
+            </div>
           )}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
@@ -831,6 +1426,9 @@ const MealPlanning: React.FC = () => {
   const [textDraft, setTextDraft] = useState<Omit<Recipe, 'id' | 'createdAt'> | null>(null);
   const [textImageUrl, setTextImageUrl] = useState('');
 
+  // Grocery list state
+  const [showGroceryList, setShowGroceryList] = useState(false);
+
   useEffect(() => {
     void loadRecipes();
     void loadMealPlans();
@@ -1016,6 +1614,38 @@ const MealPlanning: React.FC = () => {
 
   const isLoading = mealPlansLoading || isEnsuringPlan;
 
+  // Generate grocery list from current week's recipes
+  const groceryList = useMemo(() => {
+    const ingredientMap = new Map<string, { name: string; amount?: string; unit?: string; recipes: string[] }>();
+
+    plannedMeals.forEach(meal => {
+      if (meal.recipeId) {
+        const recipe = recipes.find(r => r.id === meal.recipeId);
+        if (recipe && recipe.ingredients) {
+          recipe.ingredients.forEach(ing => {
+            const key = ing.name.toLowerCase().trim();
+            const existing = ingredientMap.get(key);
+
+            if (existing) {
+              if (!existing.recipes.includes(recipe.name)) {
+                existing.recipes.push(recipe.name);
+              }
+            } else {
+              ingredientMap.set(key, {
+                name: ing.name,
+                amount: ing.amount,
+                unit: ing.unit,
+                recipes: [recipe.name]
+              });
+            }
+          });
+        }
+      }
+    });
+
+    return Array.from(ingredientMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [plannedMeals, recipes]);
+
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6 p-6">
       <header className="flex flex-wrap items-center justify-between gap-4">
@@ -1024,20 +1654,18 @@ const MealPlanning: React.FC = () => {
           <p className="text-sm text-slate-600">Plan your week, import recipes, and keep dinner decisions simple.</p>
         </div>
         <div className="flex items-center gap-2">
+          {/* Date picker popover to anchor the week */}
+          <DatePickerPopover
+            value={currentWeekStart}
+            onChange={(d) => setCurrentWeekStart(startOfWeek(d, { weekStartsOn }))}
+            weekStartsOn={weekStartsOn}
+          />
           <button
             type="button"
             onClick={() => setCurrentWeekStart((date) => addDays(date, -7))}
             className="rounded-full border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
           >
             Previous
-          </button>
-          <button
-            type="button"
-            onClick={() => window.print()}
-            className="rounded-full border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
-            title="Print weekly plan"
-          >
-            Print
           </button>
           <button
             type="button"
@@ -1052,6 +1680,22 @@ const MealPlanning: React.FC = () => {
             className="rounded-full border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
           >
             Next
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowGroceryList(true)}
+            className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-100"
+            title="Generate grocery list from recipes"
+          >
+            Grocery List
+          </button>
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="rounded-full border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+            title="Print weekly plan"
+          >
+            Print
           </button>
         </div>
       </header>
@@ -1071,160 +1715,124 @@ const MealPlanning: React.FC = () => {
         )}
 
         {!isLoading && weekDays.length > 0 && (
-          <div className="mt-6 overflow-x-hidden print:overflow-visible">
-            <div className="w-full">
+          <div className="mt-6">
+            <div className="overflow-x-auto">
               {/* Header row */}
-              <div className="grid" style={{ gridTemplateColumns: `150px repeat(7, minmax(0, 1fr))` }}>
+              <div className="grid" style={{ gridTemplateColumns: `140px repeat(4, minmax(160px, 1fr))` }}>
                 <div className="p-3 border-b border-r border-slate-200 sticky left-0 bg-white z-20" />
-                {weekDays.map((d) => {
-                  const today = new Date();
-                  const highlight = isSameDay(d, today);
-                  return (
-                    <div
-                      key={toKey(d)}
-                      className={`relative p-3 border-b border-r border-slate-200 text-sm font-semibold text-slate-900 sticky top-0 bg-white z-10 text-center overflow-hidden`}
-                    >
+                {MEAL_TYPES.map((mealType) => (
+                  <div
+                    key={mealType}
+                    className="p-3 border-b border-r border-slate-200 text-sm font-semibold text-slate-900 bg-white text-center capitalize"
+                  >
+                    {mealType}
+                  </div>
+                ))}
+              </div>
+              {/* Day rows */}
+              {weekDays.map((d) => {
+                const key = toKey(d);
+                const today = new Date();
+                const highlight = isSameDay(d, today);
+                return (
+                  <div key={key} className="grid" style={{ gridTemplateColumns: `140px repeat(4, minmax(160px, 1fr))` }}>
+                    {/* Day label */}
+                    <div className={`relative p-3 border-b border-r border-slate-200 bg-slate-50 text-sm font-medium text-slate-800 flex flex-col justify-center sticky left-0 z-10`}>
                       {highlight && (
                         <div className="absolute inset-y-0 left-0 w-1 bg-indigo-500 rounded-r-sm" aria-hidden />
                       )}
-                      <div
-                        title={format(d, 'EEEE')}
-                        className={highlight ? 'text-indigo-700' : ''}
-                      >
+                      <div className={highlight ? 'text-indigo-700 font-semibold' : ''}>
                         {format(d, 'EEE')}
                       </div>
-                      {highlight ? (
-                        <div className="mt-1.5 flex justify-center">
-                          <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white text-black text-sm font-semibold shadow ring-2 ring-white outline outline-1 outline-slate-300">
-                            {format(d, 'd')}
-                          </span>
-                        </div>
-                      ) : (
-                        <div className="text-xs text-slate-500">{format(d, 'MMM d')}</div>
-                      )}
+                      <div className="text-xs text-slate-500">{format(d, 'MMM d')}</div>
                     </div>
-                  );
-                })}
-              </div>
-              {/* Meal rows */}
-              {MEAL_TYPES.map((mealType) => (
-                <div key={mealType} className="grid" style={{ gridTemplateColumns: `150px repeat(7, minmax(0, 1fr))` }}>
-                  {/* Row label */}
-                  <div className="p-3 border-b border-r border-slate-200 bg-slate-50 text-sm font-medium capitalize text-slate-800 flex items-center sticky left-0 z-10">
-                    {mealType}
-                  </div>
-                  {weekDays.map((d) => {
-                    const key = toKey(d);
-                    const dayMeals = (mealsByDate[key] ?? []).filter((m) => m.mealType === mealType);
-                    return (
-                      <div
-                        key={`${key}-${mealType}`}
-                        className={`relative p-3 border-b border-l border-r border-slate-200 h-[160px] overflow-hidden`}
-                        onDragOver={(e) => e.preventDefault()}
-                        onDrop={async (e) => {
-                          if (!activePlan) return;
-                          const optionName = e.dataTransfer.getData('text/meal-option');
-                          if (optionName) {
-                            await addPlannedMeal(activePlan.id, {
-                              date: parseLocalDateKey(key),
-                              mealType,
-                              recipeId: undefined,
-                              customMeal: optionName,
-                              servings: 4,
-                              peopleCount: 4,
-                              status: 'planned',
-                              notes: undefined,
-                              preparedAt: undefined,
-                              consumedAt: undefined,
-                            });
-                            return;
-                          }
+                    {MEAL_TYPES.map((mealType) => {
+                      const dayMeals = (mealsByDate[key] ?? []).filter((m) => m.mealType === mealType);
+                      return (
+                        <div
+                          key={`${key}-${mealType}`}
+                          className={`relative p-3 border-b border-l border-r border-slate-200 min-h-[120px] overflow-hidden`}
+                          onDragOver={(e) => e.preventDefault()}
+                          onDrop={async (e) => {
+                            if (!activePlan) return;
+                            const optionName = e.dataTransfer.getData('text/meal-option');
+                            if (optionName) {
+                              await addPlannedMeal(activePlan.id, {
+                                date: parseLocalDateKey(key),
+                                mealType,
+                                recipeId: undefined,
+                                customMeal: optionName,
+                                servings: 4,
+                                peopleCount: 4,
+                                status: 'planned',
+                                notes: undefined,
+                                preparedAt: undefined,
+                                consumedAt: undefined,
+                              });
+                              return;
+                            }
 
-                          const recipeDragged = e.dataTransfer.getData('text/recipe-id');
-                          if (recipeDragged) {
-                            await addPlannedMeal(activePlan.id, {
-                              date: parseLocalDateKey(key),
-                              mealType,
-                              recipeId: recipeDragged,
-                              customMeal: undefined,
-                              servings: 4,
-                              peopleCount: 4,
-                              status: 'planned',
-                              notes: undefined,
-                              preparedAt: undefined,
-                              consumedAt: undefined,
-                            });
-                            return;
-                          }
+                            const recipeDragged = e.dataTransfer.getData('text/recipe-id');
+                            if (recipeDragged) {
+                              await addPlannedMeal(activePlan.id, {
+                                date: parseLocalDateKey(key),
+                                mealType,
+                                recipeId: recipeDragged,
+                                customMeal: undefined,
+                                servings: 4,
+                                peopleCount: 4,
+                                status: 'planned',
+                                notes: undefined,
+                                preparedAt: undefined,
+                                consumedAt: undefined,
+                              });
+                              return;
+                            }
 
-                          const mealId = e.dataTransfer.getData('text/meal-id');
-                          if (!mealId) return;
-                          if (e.altKey) {
-                            // Copy
-                            const source = plannedMeals.find((m) => m.id === mealId);
-                            if (!source) return;
-                            await addPlannedMeal(activePlan.id, {
-                              date: parseLocalDateKey(key),
-                              mealType,
-                              recipeId: source.recipeId,
-                              customMeal: source.customMeal,
-                              servings: source.servings ?? 4,
-                              peopleCount: source.peopleCount ?? source.servings ?? 4,
-                              status: 'planned',
-                              notes: undefined,
-                              preparedAt: undefined,
-                              consumedAt: undefined,
-                            });
-                          } else {
-                            // Move
-                            await updatePlannedMeal(mealId, { date: parseLocalDateKey(key), mealType });
-                          }
-                        }}
-                      >
-                        {isSameDay(d, new Date()) && (
-                          <div className="absolute inset-y-0 left-0 w-1 bg-indigo-300" aria-hidden />
-                        )}
-                        <div className="h-full overflow-auto space-y-2">
-                          {dayMeals.length === 0 ? (
-                            <AddMealControl dateKey={key} mealType={mealType} />
-                          ) : (
-                            <ul className="space-y-1">
-                              {dayMeals.map((meal) => {
-                                const recipe = recipes.find((item) => item.id === meal.recipeId);
-                                return (
-                                  <li
-                                    key={meal.id}
-                                    className="group text-xs rounded border border-slate-200 bg-white px-2 py-1 flex items-center justify-between gap-2"
-                                    draggable
-                                    onDragStart={(e) => {
-                                      e.dataTransfer.setData('text/meal-id', meal.id);
-                                      e.dataTransfer.effectAllowed = 'move';
-                                    }}
-                                    title="Drag to another cell (hold Alt to copy)"
-                                  >
-                                    <span className="truncate" title={recipe?.name ?? meal.customMeal ?? 'Meal'}>
-                                      {recipe?.name ?? meal.customMeal ?? 'Meal'}
-                                    </span>
-                                    <button
-                                      type="button"
-                                      onClick={() => deletePlannedMeal(meal.id)}
-                                      className="p-1 text-slate-400 hover:text-rose-600 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
-                                      aria-label="Remove meal"
-                                      title="Remove"
-                                    >
-                                      <Trash2 className="w-3 h-3" />
-                                    </button>
-                                  </li>
-                                );
-                              })}
-                            </ul>
+                            const mealId = e.dataTransfer.getData('text/meal-id');
+                            if (!mealId) return;
+                            if (e.altKey) {
+                              // Copy
+                              const source = plannedMeals.find((m) => m.id === mealId);
+                              if (!source) return;
+                              await addPlannedMeal(activePlan.id, {
+                                date: parseLocalDateKey(key),
+                                mealType,
+                                recipeId: source.recipeId,
+                                customMeal: source.customMeal,
+                                servings: source.servings ?? 4,
+                                peopleCount: source.peopleCount ?? source.servings ?? 4,
+                                status: 'planned',
+                                notes: undefined,
+                                preparedAt: undefined,
+                                consumedAt: undefined,
+                              });
+                            } else {
+                              // Move
+                              await updatePlannedMeal(mealId, { date: parseLocalDateKey(key), mealType });
+                            }
+                          }}
+                        >
+                          {highlight && (
+                            <div className="absolute inset-y-0 left-0 w-1 bg-indigo-300" aria-hidden />
                           )}
+                          <div className="h-full overflow-auto space-y-2">
+                            {dayMeals.length === 0 ? (
+                              <AddMealControl dateKey={key} mealType={mealType} />
+                            ) : (
+                              <ul className="space-y-1">
+                                {dayMeals.map((meal) => (
+                                  <MealItem key={meal.id} meal={meal} recipes={recipes} />
+                                ))}
+                              </ul>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ))}
+                      );
+                    })}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
@@ -1633,6 +2241,88 @@ const MealPlanning: React.FC = () => {
           </>
         )}
       </section>
+
+      {/* Grocery List Modal */}
+      {showGroceryList && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-2xl rounded-lg border border-slate-200 bg-white shadow-xl">
+            <div className="border-b border-slate-200 p-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-slate-900">Grocery List</h3>
+                <button
+                  type="button"
+                  onClick={() => setShowGroceryList(false)}
+                  className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                >
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <p className="mt-1 text-sm text-slate-600">
+                Week of {format(currentWeekStart, 'MMM d, yyyy')}
+              </p>
+            </div>
+
+            <div className="max-h-[500px] overflow-auto p-4">
+              {groceryList.length === 0 ? (
+                <div className="py-12 text-center text-slate-500">
+                  <p>No recipes with ingredients in this week's plan.</p>
+                  <p className="mt-1 text-sm">Add some recipes to your meal plan to generate a grocery list.</p>
+                </div>
+              ) : (
+                <ul className="space-y-2">
+                  {groceryList.map((item, idx) => (
+                    <li key={idx} className="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                      <input
+                        type="checkbox"
+                        className="mt-0.5 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                      />
+                      <div className="flex-1">
+                        <div className="font-medium text-slate-900">
+                          {item.amount && item.unit ? `${item.amount} ${item.unit} ` : item.amount ? `${item.amount} ` : ''}
+                          {item.name}
+                        </div>
+                        <div className="mt-0.5 text-xs text-slate-500">
+                          For: {item.recipes.join(', ')}
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div className="border-t border-slate-200 p-4 flex items-center justify-between">
+              <div className="text-sm text-slate-600">
+                {groceryList.length} {groceryList.length === 1 ? 'ingredient' : 'ingredients'}
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const text = groceryList.map(item => {
+                      const amount = item.amount && item.unit ? `${item.amount} ${item.unit}` : item.amount || '';
+                      return `☐ ${amount} ${item.name}`.trim();
+                    }).join('\n');
+                    navigator.clipboard.writeText(text);
+                  }}
+                  className="rounded-md border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                >
+                  Copy to Clipboard
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowGroceryList(false)}
+                  className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

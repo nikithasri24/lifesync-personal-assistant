@@ -11,6 +11,26 @@ export async function listMealPlans(userId?: string | null) {
   return result.rows
 }
 
+export async function findMealPlanByWeek(userId: string | null | undefined, weekStart: string) {
+  const result = await pool.query(
+    `SELECT * FROM meal_plans WHERE user_id = COALESCE($1, user_id) AND week_start_date = $2 LIMIT 1`,
+    [userId ?? DEV_DEFAULT_USER_ID, weekStart]
+  )
+  return result.rows[0] ?? null
+}
+
+export async function listPlannedMealsInRange(userId: string | null | undefined, start: string, end: string) {
+  const result = await pool.query(
+    `SELECT pm.* FROM planned_meals pm
+     JOIN meal_plans mp ON mp.id = pm.meal_plan_id
+     WHERE mp.user_id = COALESCE($1, mp.user_id)
+       AND pm.date >= $2 AND pm.date <= $3
+     ORDER BY pm.date ASC, pm.meal_type ASC`,
+    [userId ?? DEV_DEFAULT_USER_ID, start, end]
+  )
+  return result.rows
+}
+
 export async function createMealPlan(userId: string | null | undefined, input: any) {
   const result = await pool.query(
     `INSERT INTO meal_plans (user_id, name, week_start_date, notes)
