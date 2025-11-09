@@ -23,6 +23,8 @@ const envSchema = z.object({
   CORS_ORIGINS: z.string().default(''),
   LOG_LEVEL: z.string().default('info'),
   DEFAULT_USER_ID: z.string().uuid().optional(),
+  SUPABASE_URL: z.string().url().optional(),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
   DB_SSL: z
     .union([
       z.boolean(),
@@ -40,6 +42,8 @@ const parsed = envSchema.safeParse({
   CORS_ORIGINS: process.env.CORS_ORIGINS,
   LOG_LEVEL: process.env.LOG_LEVEL,
   DEFAULT_USER_ID: process.env.DEFAULT_USER_ID,
+  SUPABASE_URL: process.env.SUPABASE_URL,
+  SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
   DB_SSL: process.env.DB_SSL
 });
 

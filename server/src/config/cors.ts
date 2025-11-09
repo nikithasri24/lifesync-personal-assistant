@@ -1,12 +1,11 @@
-import type { CorsOptions } from 'cors';
 import { env } from './env.js';
 
 const allowAll = env.NODE_ENV !== 'production' && env.corsOrigins.length === 0;
 
-export const corsOptions: CorsOptions = allowAll
+export const corsOptions = allowAll
   ? { origin: true, credentials: true }
   : {
-      origin: (origin, callback) => {
+      origin: (origin: any, callback: any) => {
         if (!origin) {
           return callback(null, true);
         }

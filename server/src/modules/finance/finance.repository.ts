@@ -1,7 +1,7 @@
 import { pool } from '../../db/pool.js';
 import { env } from '../../config/env.js';
 
-const DEFAULT_USER_ID = env.DEFAULT_USER_ID ?? '00000000-0000-0000-0000-000000000000';
+const DEV_DEFAULT_USER_ID = env.DEFAULT_USER_ID ?? '00000000-0000-0000-0000-000000000000';
 
 export interface CreateTransactionInput {
   account_id: string;
@@ -15,18 +15,18 @@ export interface CreateTransactionInput {
   notes?: string;
 }
 
-export async function listAccounts() {
+export async function listAccounts(userId?: string | null) {
   const result = await pool.query(
     `SELECT *
      FROM financial_accounts
      WHERE is_active = true AND user_id = $1
      ORDER BY created_at DESC`,
-    [DEFAULT_USER_ID]
+    [userId ?? DEV_DEFAULT_USER_ID]
   );
   return result.rows;
 }
 
-export async function listTransactions(limit = 100) {
+export async function listTransactions(userId: string | null | undefined, limit = 100) {
   const result = await pool.query(
     `SELECT t.*, a.name AS account_name, c.name AS category_name, c.color AS category_color
      FROM financial_transactions t
@@ -35,12 +35,12 @@ export async function listTransactions(limit = 100) {
      WHERE t.user_id = $1
      ORDER BY t.date DESC, t.created_at DESC
      LIMIT $2`,
-    [DEFAULT_USER_ID, limit]
+    [userId ?? DEV_DEFAULT_USER_ID, limit]
   );
   return result.rows;
 }
 
-export async function createTransaction(input: CreateTransactionInput) {
+export async function createTransaction(userId: string | null | undefined, input: CreateTransactionInput) {
   const result = await pool.query(
     `INSERT INTO financial_transactions (
        user_id,
@@ -67,7 +67,7 @@ export async function createTransaction(input: CreateTransactionInput) {
      )
      RETURNING *`,
     [
-      DEFAULT_USER_ID,
+      userId ?? DEV_DEFAULT_USER_ID,
       input.account_id,
       input.category_id ?? null,
       input.type,

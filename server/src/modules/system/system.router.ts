@@ -2,7 +2,7 @@ import { Router } from 'express'
 
 export const systemRouter = Router()
 
-systemRouter.get('/capabilities', (_req, res) => {
+systemRouter.get('/capabilities', (_req: any, res: any) => {
   // Keep this in sync with implemented routers
   const capabilities = {
     auth: {
@@ -39,3 +39,7 @@ systemRouter.get('/capabilities', (_req, res) => {
   res.json(capabilities)
 })
 
+systemRouter.get('/whoami', (req: any, res: any) => {
+  const userId = req.userId ?? null
+  res.json({ authenticated: Boolean(userId), userId })
+})

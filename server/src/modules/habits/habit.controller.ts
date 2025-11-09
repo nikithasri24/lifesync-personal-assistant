@@ -4,14 +4,14 @@ import { asyncHandler } from '../../shared/asyncHandler.js';
 import { createHabit, listHabits, upsertHabitEntry, updateHabit as repoUpdateHabit, deleteHabit as repoDeleteHabit } from './habit.repository.js';
 import type { CreateHabitBody, CreateHabitEntryBody, UpdateHabitBody } from './habit.schema.js';
 
-export const getHabits: RequestHandler = asyncHandler(async (_req, res) => {
-  const habits = await listHabits();
+export const getHabits: RequestHandler = asyncHandler(async (req, res) => {
+  const habits = await listHabits((req as any).userId);
   res.json(habits);
 });
 
 export const postHabit: RequestHandler = asyncHandler(async (req, res) => {
   const body = req.body as CreateHabitBody;
-  const habit = await createHabit(body);
+  const habit = await createHabit((req as any).userId, body);
   res.status(201).json(habit);
 });
 

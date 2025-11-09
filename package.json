@@ -11,6 +11,7 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:ui": "vitest --ui",
+    "test:server": "vitest --config vitest.config.server.ts",
     "test:e2e": "playwright test",
     "test:coverage": "vitest --coverage",
     "test:project-tracking": "vitest --config ./vitest.config.projecttracking.ts src/pages/__tests__/ProjectTracking*.test.tsx",

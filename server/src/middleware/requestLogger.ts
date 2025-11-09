@@ -1,10 +1,8 @@
-import pinoHttp from 'pino-http';
-import { logger } from '../config/logger.js';
+import { logger } from '../config/logger.js'
 
-export const requestLogger = pinoHttp({
-  logger,
-  autoLogging: true,
-  redact: {
-    paths: ['req.headers.authorization']
-  }
-});
+export const requestLogger = (req: any, _res: any, next: any) => {
+  try {
+    logger.info({ method: req.method, url: req.url })
+  } catch {}
+  next()
+}

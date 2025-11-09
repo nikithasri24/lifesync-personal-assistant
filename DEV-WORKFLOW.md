@@ -232,7 +232,7 @@ cat TESTING-GUIDE.md
 ```bash
 # Start development environment
 npm run dev &
-node start-with-db.js &
+npm run api:start &
 
 # Stop everything
 pkill -f "vite"

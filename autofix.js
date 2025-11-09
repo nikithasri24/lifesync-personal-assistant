@@ -109,8 +109,8 @@ REACT_APP_DB_PASSWORD=lifesync123`;
   async restartServices() {
     this.log('🔄 Restarting services...');
 
-    // Start API monitor in background
-    const apiProcess = spawn('./start-api-with-monitor.sh', [], {
+    // Start TS API server in background
+    const apiProcess = spawn('npm', ['run', 'api:start'], {
       detached: true,
       stdio: 'ignore'
     });

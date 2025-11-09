@@ -1,7 +1,5 @@
-import compression from 'compression';
 import cors from 'cors';
 import express from 'express';
-import helmet from 'helmet';
 import { fileURLToPath } from 'node:url';
 import { env } from './config/env.js';
 import { corsOptions } from './config/cors.js';
@@ -16,30 +14,53 @@ import { habitRouter } from './modules/habits/habit.router.js';
 import { financeRouter } from './modules/finance/finance.router.js';
 import { utilRouter } from './modules/util/util.router.js';
 import { systemRouter } from './modules/system/system.router.js';
-import { supabaseAuth } from './middleware/auth.js';
+import { supabaseAuth, requireAuth } from './middleware/auth.js';
+import { shoppingRouter } from './modules/shopping/shopping.router.js';
+import { pantryRouter } from './modules/pantry/pantry.router.js';
+import { mealRouter } from './modules/meal/meal.router.js';
+import { focusRouter } from './modules/focus/focus.router.js';
+import { recipeRouter } from './modules/recipes/recipe.router.js';
+import { analyticsRouter } from './modules/analytics/analytics.router.js';
 
 export function createApp() {
   const app = express();
 
   app.disable('x-powered-by');
   app.use(requestLogger);
-  app.use(helmet());
+  // Basic security headers (minimal replacement for helmet)
+  app.use((_req: any, res: any, next: any) => {
+    try {
+      res.setHeader('X-Content-Type-Options', 'nosniff')
+      res.setHeader('X-Frame-Options', 'SAMEORIGIN')
+      res.setHeader('Referrer-Policy', 'no-referrer-when-downgrade')
+    } catch {}
+    next()
+  })
   app.use(cors(corsOptions));
   app.use(express.json({ limit: '1mb' }));
   app.use(express.urlencoded({ extended: true }));
-  app.use(compression());
+  // No compression dependency; keep middleware lean for now
   app.use(supabaseAuth);
 
-  app.get('/api/health', (_req, res) => {
+  app.get('/api/health', (_req: any, res: any) => {
     console.log('health route hit');
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
 
-  app.use('/api/tasks', taskRouter);
-  app.use('/api/projects', projectRouter);
-  app.use('/api/habits', habitRouter);
-  app.use('/api/financial', financeRouter);
+  // Require auth for data routes in production
+  app.use('/api/tasks', requireAuth, taskRouter);
+  app.use('/api/projects', requireAuth, projectRouter);
+  app.use('/api/habits', requireAuth, habitRouter);
+  app.use('/api/financial', requireAuth, financeRouter);
+  app.use('/api/shopping', requireAuth, shoppingRouter);
+  app.use('/api/pantry', requireAuth, pantryRouter);
+  app.use('/api', requireAuth, mealRouter);
+  app.use('/api/focus', requireAuth, focusRouter);
+  app.use('/api/recipes', requireAuth, recipeRouter);
+  app.use('/api/analytics', requireAuth, analyticsRouter);
   app.use('/api/util', utilRouter);
+  // Back-compat paths used in UI: /api/youtube/*, /api/barcode/lookup, /api/ocr/receipt
+  app.use('/api', utilRouter);
   app.use('/api', systemRouter);
 
   app.use(notFound);

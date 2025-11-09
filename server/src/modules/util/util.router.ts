@@ -22,7 +22,7 @@ function takeToken(ip: string): boolean {
   return true
 }
 
-utilRouter.use((req, res, next) => {
+utilRouter.use((req: any, res: any, next: any) => {
   const ip = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || ''
   if (!takeToken(ip)) {
     return res.status(429).json({ error: 'Rate limit exceeded' })
@@ -39,8 +39,8 @@ const youtubeQuery = z.object({
 utilRouter.get(
   '/youtube/snippet',
   validate({ query: youtubeQuery }),
-  async (req, res) => {
-    const { videoId: rawVideoId, url: rawUrl } = req.query as z.infer<typeof youtubeQuery>
+  async (req: any, res: any) => {
+    const { videoId: rawVideoId, url: rawUrl } = req.query as any
 
     const extractId = (u: string) => {
       try {
@@ -71,7 +71,7 @@ utilRouter.get(
       const oembed = `https://www.youtube.com/oembed?url=${encodeURIComponent(watchUrl)}&format=json`
       const oResp = await fetch(oembed, { headers: { Accept: 'application/json' } })
       if (oResp.ok) {
-        const oe = await oResp.json()
+        const oe: any = await oResp.json()
         const normalized = {
           items: [
             {
@@ -98,8 +98,8 @@ utilRouter.get(
 utilRouter.get(
   '/youtube/transcript',
   validate({ query: youtubeQuery }),
-  async (req, res) => {
-    const { videoId: rawVideoId, url: rawUrl } = req.query as z.infer<typeof youtubeQuery>
+  async (req: any, res: any) => {
+    const { videoId: rawVideoId, url: rawUrl } = req.query as any
     const extractId = (u: string) => {
       try {
         const parsed = new URL(u)
@@ -146,7 +146,7 @@ utilRouter.get(
 
       const capResp = await fetch(baseUrl, { headers: { Accept: 'application/json' } })
       if (!capResp.ok) return res.status(502).json({ error: 'Failed to fetch captions', status: capResp.status })
-      const caps = await capResp.json() as any
+      const caps: any = await capResp.json()
       const events = Array.isArray(caps?.events) ? caps.events : []
       const transcript: Array<{ start: number; dur: number; text: string }> = []
       for (const ev of events) {
@@ -168,8 +168,8 @@ const barcodeQuery = z.object({ code: z.string().min(6) })
 utilRouter.get(
   '/barcode/lookup',
   validate({ query: barcodeQuery }),
-  async (req, res) => {
-    const { code } = req.query as z.infer<typeof barcodeQuery>
+  async (req: any, res: any) => {
+    const { code } = req.query as any
     const subs = ['us', 'world']
     let product: any = null
     for (const sub of subs) {
@@ -177,7 +177,7 @@ utilRouter.get(
         const offUrl = `https://${sub}.openfoodfacts.org/api/v0/product/${encodeURIComponent(code)}.json`
         const offResp = await fetch(offUrl, { headers: { Accept: 'application/json' } })
         if (!offResp.ok) continue
-        const data = await offResp.json()
+        const data: any = await offResp.json()
         if (data.status === 1 && data.product) { product = data.product; break }
       } catch {}
     }
@@ -219,8 +219,8 @@ const ocrBody = z.object({
 utilRouter.post(
   '/ocr/receipt',
   validate({ body: ocrBody }),
-  async (req, res) => {
-    const { dataUrl, imageUrl } = req.body as z.infer<typeof ocrBody>
+  async (req: any, res: any) => {
+    const { dataUrl, imageUrl } = req.body as any
     const apiKey = process.env.OCR_SPACE_API_KEY
     if (!apiKey) return res.status(400).json({ error: 'Missing OCR API key. Set OCR_SPACE_API_KEY in env.' })
     if (!dataUrl && !imageUrl) return res.status(400).json({ error: 'Provide dataUrl (base64) or imageUrl' })
@@ -242,7 +242,7 @@ utilRouter.post(
         const text = await resp.text().catch(() => '')
         return res.status(502).json({ error: 'OCR upstream error', status: resp.status, text })
       }
-      const data = await resp.json() as any
+      const data: any = await resp.json()
       const parsed = Array.isArray(data?.ParsedResults) ? data.ParsedResults.map((p: any) => p?.ParsedText || '').join('\n') : ''
       return res.json({ text: parsed || '' })
     } catch {
@@ -250,4 +250,3 @@ utilRouter.post(
     }
   }
 )
-

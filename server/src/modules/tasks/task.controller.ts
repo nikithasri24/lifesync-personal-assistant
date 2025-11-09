@@ -1,24 +1,17 @@
 import type { RequestHandler } from 'express';
 import { HttpError } from '../../shared/httpError.js';
 import { asyncHandler } from '../../shared/asyncHandler.js';
-import {
-  createTask,
-  listTasks,
-  permanentlyDeleteTask,
-  restoreTask,
-  softDeleteTask,
-  updateTask
-} from './task.repository.js';
+import { createTask, listTasks, permanentlyDeleteTask, restoreTask, softDeleteTask, updateTask } from './task.repository.js';
 import type { CreateTaskBody, UpdateTaskBody } from './task.schema.js';
 
-export const getTasks: RequestHandler = asyncHandler(async (_req, res) => {
-  const tasks = await listTasks();
+export const getTasks: RequestHandler = asyncHandler(async (req, res) => {
+  const tasks = await listTasks((req as any).userId);
   res.json(tasks);
 });
 
 export const postTask: RequestHandler = asyncHandler(async (req, res) => {
   const body = req.body as CreateTaskBody;
-  const task = await createTask(body);
+  const task = await createTask((req as any).userId, body);
   res.status(201).json(task);
 });
 

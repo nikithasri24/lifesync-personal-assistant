@@ -191,7 +191,7 @@ The Focus module previously suffered from missing API endpoints:
 ### If Focus 404 Errors Return:
 1. **Immediate:** Check Focus Monitor workflow results
 2. **Diagnose:** Run `./regression-test.sh` locally
-3. **Fix:** Verify all 4 Focus endpoints in `start-with-db.js`
+3. **Fix:** Verify Focus endpoints in the TS server (`server/src/**`) if enabled, or ensure the client uses Supabase paths when no REST focus module exists.
 4. **Validate:** Run `./test-suite.sh` after fixes
 5. **Monitor:** Check Focus Monitor workflow passes
 
