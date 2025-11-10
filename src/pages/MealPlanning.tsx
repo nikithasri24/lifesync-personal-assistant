@@ -2196,7 +2196,7 @@ const MealPlanning: React.FC = () => {
                       return (
                         <div
                           key={`${key}-${mealType}`}
-                          className={`relative p-3 border-b border-l border-r border-slate-200 h-[140px] overflow-hidden`}
+                          className={`relative p-3 border-b border-l border-r border-slate-200 overflow-hidden`}
                           onDragOver={(e) => e.preventDefault()}
                           onDrop={async (e) => {
                             if (!activePlan) return;
@@ -2817,9 +2817,9 @@ function RecipeCard({ recipe, onView, onEdit, onDelete }: { recipe: Recipe; onVi
   return (
     <li
       onClick={onView}
-      className="group relative overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm ring-1 ring-black/5 transition hover:-translate-y-0.5 hover:shadow-md hover:ring-indigo-200 cursor-pointer"
+      className="group relative overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm ring-1 ring-black/5 transition hover:-translate-y-0.5 hover:shadow-md hover:ring-indigo-200 cursor-pointer h-[280px] flex flex-col"
     >
-      <div className="relative w-full aspect-video overflow-hidden">
+      <div className="relative w-full h-[180px] overflow-hidden flex-shrink-0">
         {recipe.image ? (
           <img
             src={recipe.image}
@@ -2892,10 +2892,10 @@ function RecipeCard({ recipe, onView, onEdit, onDelete }: { recipe: Recipe; onVi
           </button>
         </div>
       </div>
-      <div className="p-3">
-        {recipe.description && (
-          <p className="line-clamp-2 text-xs text-slate-600">{recipe.description}</p>
-        )}
+      <div className="p-3 h-[100px] flex-shrink-0 overflow-hidden">
+        <p className="line-clamp-3 text-xs text-slate-600">
+          {recipe.description || '\u00A0'}
+        </p>
       </div>
     </li>
   );
