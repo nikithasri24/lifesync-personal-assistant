@@ -398,13 +398,13 @@ function parseLocalDateKey(key: string): Date {
 }
 
 function MealItem({ meal, recipes }: { meal: PlannedMeal; recipes: Recipe[] }) {
-  const { updatePlannedMeal, deletePlannedMeal, mealPlans, mealOptions, addRecipe } = useAppStore();
+  const { updatePlannedMeal, deletePlannedMeal, mealPlans, mealOptions, addRecipe, updateRecipe } = useAppStore();
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState('');
   const [showList, setShowList] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [showRecipeForm, setShowRecipeForm] = useState(false);
-  const [showRecipeView, setShowRecipeView] = useState(false);
+  const [showSimpleEdit, setShowSimpleEdit] = useState(false);
   const inputRef = React.useRef<HTMLInputElement | null>(null);
 
   const recipe = recipes.find((item) => item.id === meal.recipeId);
@@ -681,7 +681,7 @@ function MealItem({ meal, recipes }: { meal: PlannedMeal; recipes: Recipe[] }) {
               onClick={(e) => {
                 e.stopPropagation();
                 if (meal.recipeId && recipe) {
-                  setShowRecipeView(true);
+                  setShowSimpleEdit(true);
                 } else {
                   setShowRecipeForm(true);
                 }
@@ -722,17 +722,74 @@ function MealItem({ meal, recipes }: { meal: PlannedMeal; recipes: Recipe[] }) {
         />
       )}
 
-      {showRecipeView && recipe && (
-        <RecipeViewModal
+      {showSimpleEdit && recipe && (
+        <SimpleRecipeEditModal
           recipe={recipe}
-          onClose={() => setShowRecipeView(false)}
-          onEdit={() => {
-            setShowRecipeView(false);
-            // Could add edit functionality here if needed
+          onSave={async (updates) => {
+            await updateRecipe(recipe.id!, updates);
+            setShowSimpleEdit(false);
           }}
+          onClose={() => setShowSimpleEdit(false)}
         />
       )}
     </>
+  );
+}
+
+function ModalShell({
+  title,
+  subtitle,
+  onClose,
+  maxWidthClass = 'max-w-2xl',
+  headerRight,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  onClose: () => void;
+  maxWidthClass?: string;
+  headerRight?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return createPortal(
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
+      onClick={onClose}
+    >
+      <div
+        className={`w-full ${maxWidthClass} max-h-[90vh] rounded-xl border-4 border-indigo-500/30 bg-white shadow-[0_20px_60px_rgba(0,0,0,0.5)] ring-4 ring-white flex flex-col overflow-hidden`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 flex-shrink-0">
+          <div>
+            <h3 id="modal-title" className="text-base font-semibold text-slate-900">{title}</h3>
+            {subtitle && <p className="text-xs text-slate-500">{subtitle}</p>}
+          </div>
+          <div className="flex items-center gap-3">
+            {headerRight}
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+              aria-label="Close"
+              title="Close"
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-auto p-4">
+          {children}
+        </div>
+      </div>
+    </div>,
+    document.body
   );
 }
 
@@ -812,36 +869,9 @@ function QuickRecipeModal({ initialName, onSave, onClose }: {
     setSaving(false);
   };
 
-  return createPortal(
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby={titleId}
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-lg max-h-[90vh] rounded-xl border-4 border-indigo-500/30 bg-white shadow-[0_20px_60px_rgba(0,0,0,0.5)] ring-4 ring-white flex flex-col overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 flex-shrink-0">
-          <div>
-            <h3 id={titleId} className="text-base font-semibold text-slate-900">Create Recipe Card</h3>
-            <p className="text-xs text-slate-500">Quick recipe for "{initialName}"</p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-            aria-label="Close"
-          >
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="flex-1 overflow-auto p-4">
+  return (
+    <ModalShell title="Recipe" subtitle={`Quick recipe for "${initialName}"`} onClose={onClose} maxWidthClass="max-w-lg">
+      <form onSubmit={handleSubmit}>
           <div className="space-y-3">
           <div>
             <label className="block text-xs font-medium text-slate-700 mb-1">Recipe Name</label>
@@ -910,9 +940,112 @@ function QuickRecipeModal({ initialName, onSave, onClose }: {
           </div>
           </div>
         </form>
-      </div>
-    </div>,
-    document.body
+    </ModalShell>
+  );
+}
+
+function SimpleRecipeEditModal({ recipe, onSave, onClose }: {
+  recipe: Recipe;
+  onSave: (updates: Partial<Recipe>) => void | Promise<void>;
+  onClose: () => void;
+}) {
+  const [name, setName] = useState(recipe.name || '');
+  const [ingredientsText, setIngredientsText] = useState(
+    (recipe.ingredients || [])
+      .map(ing => [ing.amount, ing.unit, ing.name].filter(Boolean).join(' '))
+      .join('\n')
+  );
+  const [instructionsText, setInstructionsText] = useState((recipe.instructions || []).join('\n'));
+  const [saving, setSaving] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    const ingredientLines = ingredientsText
+      .split(/[\n,]/)
+      .map(l => l.trim())
+      .filter(Boolean);
+    const ingredients = ingredientLines.map(line => {
+      const m1 = line.match(/^(\d+(?:\.\d+)?)\s+(\w+)\s+(.+)$/);
+      if (m1) return { amount: m1[1], unit: m1[2], name: m1[3] };
+      const m2 = line.match(/^(\d+(?:\.\d+)?)\s+(.+)$/);
+      if (m2) return { amount: m2[1], unit: undefined, name: m2[2] };
+      return { name: line } as any;
+    });
+    const instructions = instructionsText.split('\n').map(l => l.trim()).filter(Boolean);
+    await onSave({
+      name: name.trim() || 'Untitled',
+      ingredients,
+      instructions,
+    });
+    setSaving(false);
+  };
+
+  return (
+    <ModalShell title="Recipe" subtitle={recipe.name} onClose={onClose} maxWidthClass="max-w-lg">
+      <form onSubmit={handleSubmit}>
+        <div className="space-y-3">
+          <div>
+            <label className="block text-xs font-medium text-slate-700 mb-1">Recipe Name</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              placeholder="e.g., Veg Pulao"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-700 mb-1">Ingredients <span className="text-slate-400 font-normal">(one per line)</span></label>
+            <textarea
+              value={ingredientsText}
+              onChange={(e) => setIngredientsText(e.target.value)}
+              rows={6}
+              className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              placeholder="2 cups rice\n1 onion\nspices"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-700 mb-1">Instructions <span className="text-slate-400 font-normal">(optional)</span></label>
+            <textarea
+              value={instructionsText}
+              onChange={(e) => setInstructionsText(e.target.value)}
+              rows={6}
+              className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              placeholder="Rinse rice..."
+            />
+          </div>
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={saving}
+              className="rounded-md px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={saving || !name.trim()}
+              className="inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="h-3.5 w-3.5" />
+                  Save
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </form>
+    </ModalShell>
   );
 }
 
@@ -1698,8 +1831,8 @@ function RecipeEditModal({ recipe, onClose }: { recipe: Recipe; onClose: () => v
   };
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-2xl max-h-[90vh] rounded-lg border border-slate-200 bg-white shadow-xl flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" onClick={onClose}>
+      <div className="w-full max-w-2xl max-h-[90vh] rounded-xl border-4 border-indigo-500/30 bg-white shadow-[0_20px_60px_rgba(0,0,0,0.5)] ring-4 ring-white flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between p-6 border-b border-slate-200 flex-shrink-0">
           <h3 className="text-lg font-semibold text-slate-900">Edit recipe</h3>
           <div className="flex items-center gap-2 text-xs text-slate-500">
@@ -1809,11 +1942,11 @@ function RecipeEditModal({ recipe, onClose }: { recipe: Recipe; onClose: () => v
               className="rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-indigo-500 focus:outline-none"
             />
           </label>
-          <div className="mt-2 flex items-center justify-end gap-2">
+          <div className="mt-2 flex items-center justify-end gap-2 border-t border-slate-200 pt-3">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
+              className="rounded-md px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100"
               disabled={saving}
             >
               Close
@@ -2695,27 +2828,13 @@ const MealPlanning: React.FC = () => {
 
       {/* Grocery List Modal */}
       {showGroceryList && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-2xl rounded-lg border border-slate-200 bg-white shadow-xl">
-            <div className="border-b border-slate-200 p-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-slate-900">Grocery List</h3>
-                <button
-                  type="button"
-                  onClick={() => setShowGroceryList(false)}
-                  className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-                >
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-              <p className="mt-1 text-sm text-slate-600">
-                Week of {format(currentWeekStart, 'MMM d, yyyy')}
-              </p>
-            </div>
-
-            <div className="max-h-[500px] overflow-auto p-4">
+        <ModalShell
+          title="Grocery List"
+          subtitle={`Week of ${format(currentWeekStart, 'MMM d, yyyy')}`}
+          onClose={() => setShowGroceryList(false)}
+          maxWidthClass="max-w-2xl"
+        >
+            <div className="max-h-[500px] overflow-auto">
               {groceryList.length === 0 ? (
                 <div className="py-12 text-center text-slate-500">
                   <p>No recipes with ingredients in this week's plan.</p>
@@ -2744,7 +2863,7 @@ const MealPlanning: React.FC = () => {
               )}
             </div>
 
-            <div className="border-t border-slate-200 p-4 flex items-center justify-between">
+            <div className="border-t border-slate-200 pt-4 flex items-center justify-between">
               <div className="text-sm text-slate-600">
                 {groceryList.length} {groceryList.length === 1 ? 'ingredient' : 'ingredients'}
               </div>
@@ -2771,8 +2890,7 @@ const MealPlanning: React.FC = () => {
                 </button>
               </div>
             </div>
-          </div>
-        </div>
+        </ModalShell>
       )}
     </div>
   );
@@ -2960,34 +3078,21 @@ function RecipeViewModal({ recipe, onClose, onEdit }: { recipe: Recipe; onClose:
   }, [recipe.instructions, recipe.description, recipe.tags]);
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-[1200px] h-[800px] rounded-xl border border-slate-200 bg-white shadow-xl flex flex-col overflow-hidden">
-        {/* Header */}
-        {recipe.image && (
-          <div className="relative h-[250px] w-full overflow-hidden rounded-t-xl flex-shrink-0">
-            <img src={recipe.image} alt={recipe.name} className="absolute inset-0 h-full w-full object-cover" />
-            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-4">
-              <div className="flex items-end justify-between">
-                <h3 className="text-xl font-semibold text-white drop-shadow">{recipe.name}</h3>
-                <div className="flex gap-2">
-                  <button onClick={onEdit} className="rounded-md bg-white/90 px-3 py-1 text-sm font-medium text-slate-800 hover:bg-white">Edit</button>
-                  <button onClick={onClose} className="rounded-md bg-white/90 px-3 py-1 text-sm font-medium text-slate-800 hover:bg-white">Close</button>
-                </div>
-              </div>
+    <ModalShell
+      title={recipe.name}
+      subtitle="Recipe"
+      onClose={onClose}
+      maxWidthClass="max-w-4xl"
+      headerRight={
+        <button onClick={onEdit} className="rounded-md border border-slate-300 px-3 py-1 text-sm font-medium text-slate-800 hover:bg-slate-50">Edit</button>
+      }
+    >
+        <div className="grid gap-4 md:grid-cols-2">
+          {recipe.image && (
+            <div className="md:col-span-2">
+              <img src={recipe.image} alt={recipe.name} className="w-full h-56 object-cover rounded-lg border border-slate-200" />
             </div>
-          </div>
-        )}
-        {!recipe.image && (
-          <div className="flex items-center justify-between p-4 flex-shrink-0 border-b border-slate-200">
-            <h3 className="text-xl font-semibold text-slate-900">{recipe.name}</h3>
-            <div className="flex gap-2">
-              <button onClick={onEdit} className="rounded-md border border-slate-200 px-3 py-1 text-sm font-medium text-slate-800 hover:bg-slate-50">Edit</button>
-              <button onClick={onClose} className="rounded-md border border-slate-200 px-3 py-1 text-sm font-medium text-slate-800 hover:bg-slate-50">Close</button>
-            </div>
-          </div>
-        )}
-
-        <div className="grid gap-4 p-4 md:grid-cols-2 overflow-auto flex-1">
+          )}
           {/* Directions */}
           <section className="rounded-lg border border-slate-200 bg-white p-4">
             <h4 className="text-sm font-semibold text-slate-900">Directions</h4>
@@ -3068,7 +3173,6 @@ function RecipeViewModal({ recipe, onClose, onEdit }: { recipe: Recipe; onClose:
             )}
           </section>
         </div>
-      </div>
-    </div>
+    </ModalShell>
   );
 }
