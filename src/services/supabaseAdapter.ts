@@ -643,10 +643,26 @@ class SupabaseAdapter {
       user_id: userId,
     })
 
+    // First, check if a plan already exists for this user and week
+    const { data: existingRows, error: findErr } = await this.client
+      .from('meal_plans')
+      .select('*, planned_meals(*)')
+      .eq('user_id', userId)
+      .eq('week_start_date', plan.week_start_date)
+      .limit(1)
+
+    if (findErr) {
+      // Non-fatal: proceed to insert if lookup fails
+      console.warn('[SupabaseAdapter] find meal_plan failed; attempting insert', findErr)
+    } else if (existingRows && existingRows.length > 0) {
+      return existingRows[0] as MealPlanData
+    }
+
+    // Insert new plan
     const { data, error } = await this.client
       .from('meal_plans')
       .insert(payload)
-      .select()
+      .select('*, planned_meals(*)')
       .single()
 
     if (error) throw new Error(error.message)
@@ -817,6 +833,7 @@ class SupabaseAdapter {
       prep_time: (recipe as any).prep_time ?? undefined,
       cook_time: (recipe as any).cook_time ?? undefined,
       instructions: (recipe as any).instructions ?? undefined,
+      ingredients: (recipe as any).ingredients ?? undefined,
       tags: Array.isArray((recipe as any).tags) ? (recipe as any).tags : undefined,
       source_url: (recipe as any).source_url ? String((recipe as any).source_url).slice(0, 255) : undefined,
       video_thumbnail: (recipe as any).video_thumbnail ? String((recipe as any).video_thumbnail).slice(0, 255) : undefined,
@@ -964,14 +981,16 @@ class SupabaseAdapter {
   async getSFHEntries(challengeIds: string[]): Promise<import('./types').SFHEntryData[]> {
     const userId = this.requireUserId()
     if (challengeIds.length === 0) return []
+    // Fetch all entries for user instead of filtering by challenge IDs to avoid URL length issues
     const { data, error } = await this.client
       .from('sfh_entries')
       .select('*')
-      .in('challenge_id', challengeIds)
       .eq('user_id', userId)
       .order('date', { ascending: true })
     if (error) throw new Error(error.message)
-    return (data ?? []) as any
+    // Filter in memory to only include entries for the requested challenges
+    const challengeIdSet = new Set(challengeIds)
+    return ((data ?? []) as any[]).filter(entry => challengeIdSet.has(entry.challenge_id))
   }
 
   async createSFHChallenge(challenge: Omit<import('./types').SFHChallengeData, 'id' | 'created_at' | 'user_id'>) {

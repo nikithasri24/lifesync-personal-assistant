@@ -814,17 +814,17 @@ function QuickRecipeModal({ initialName, onSave, onClose }: {
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 p-4 pt-20 overflow-y-auto backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg rounded-xl border-4 border-indigo-500/30 bg-white shadow-[0_20px_60px_rgba(0,0,0,0.5)] mb-20 ring-4 ring-white"
+        className="w-full max-w-lg max-h-[90vh] rounded-xl border-4 border-indigo-500/30 bg-white shadow-[0_20px_60px_rgba(0,0,0,0.5)] ring-4 ring-white flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+        <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 flex-shrink-0">
           <div>
             <h3 id={titleId} className="text-base font-semibold text-slate-900">Create Recipe Card</h3>
             <p className="text-xs text-slate-500">Quick recipe for "{initialName}"</p>
@@ -841,7 +841,8 @@ function QuickRecipeModal({ initialName, onSave, onClose }: {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-4 space-y-3">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-auto p-4">
+          <div className="space-y-3">
           <div>
             <label className="block text-xs font-medium text-slate-700 mb-1">Recipe Name</label>
             <input
@@ -906,6 +907,7 @@ function QuickRecipeModal({ initialName, onSave, onClose }: {
                 </>
               )}
             </button>
+          </div>
           </div>
         </form>
       </div>
@@ -1155,11 +1157,46 @@ function AddMealControl({ dateKey, mealType, onAdded, showByDefault = true, comp
         console.error('Failed to create or find meal plan');
         return;
       }
+
+      // Auto-link to existing recipe if one exists with the same name
+      let finalRecipeId = recipeId;
+      let finalCustomMeal = customMeal;
+
+      if (!recipeId && customMeal) {
+        // Check if a recipe exists with this name (case-insensitive)
+        const existingRecipe = recipes.find(
+          r => r.name.toLowerCase() === customMeal.toLowerCase()
+        );
+
+        if (existingRecipe) {
+          // Auto-link to existing recipe
+          finalRecipeId = existingRecipe.id;
+          finalCustomMeal = undefined;
+          console.log(`Auto-linked meal "${customMeal}" to existing recipe`);
+        } else {
+          // Try to auto-fetch recipe from Google
+          try {
+            const fetchedRecipe = await fetchRecipeFromGoogle(customMeal);
+            if (fetchedRecipe) {
+              const newRecipe = await addRecipe(fetchedRecipe);
+              if (newRecipe?.id) {
+                finalRecipeId = newRecipe.id;
+                finalCustomMeal = undefined;
+                console.log(`Auto-created recipe for "${customMeal}" from Google`);
+              }
+            }
+          } catch (error) {
+            console.warn('Failed to auto-fetch recipe, using custom meal:', error);
+            // Will fall back to custom meal
+          }
+        }
+      }
+
       await addPlannedMeal(plan.id, {
         date: parseLocalDateKey(dateKey),
         mealType,
-        recipeId,
-        customMeal,
+        recipeId: finalRecipeId,
+        customMeal: finalCustomMeal,
         servings: 4,
         peopleCount: 4,
         status: 'planned',
@@ -1313,6 +1350,57 @@ function AddMealControl({ dateKey, mealType, onAdded, showByDefault = true, comp
 }
 
 // (YouTube helpers removed for v1 Clip flow)
+
+// Auto-fetch recipe from Google search
+async function fetchRecipeFromGoogle(mealName: string): Promise<Omit<Recipe, 'id' | 'createdAt'> | null> {
+  try {
+    // Try to search for recipe and scrape the first result
+    const searchEndpoint = import.meta.env.VITE_RECIPE_SEARCH_URL?.trim() || '/api/recipe/search';
+    const apiUrl = `${searchEndpoint}${searchEndpoint.includes('?') ? '&' : '?'}q=${encodeURIComponent(mealName + ' recipe')}`;
+
+    const response = await fetch(apiUrl, { headers: { Accept: 'application/json' } });
+    if (!response.ok) {
+      console.warn('Recipe search failed, will use custom meal');
+      return null;
+    }
+
+    const data = await response.json();
+    const ingredients = Array.isArray(data.ingredients) && data.ingredients.length
+      ? data.ingredients
+      : [{ name: 'Add ingredients...' }];
+    const instructions: string[] = Array.isArray(data.instructions) && data.instructions.length
+      ? data.instructions
+      : ['Add instructions...'];
+
+    return {
+      name: data.name || mealName,
+      description: data.description || '',
+      ingredients,
+      instructions,
+      prepTime: Number.isFinite(Number(data.prepTime)) ? Number(data.prepTime) : undefined,
+      cookTime: Number.isFinite(Number(data.cookTime)) ? Number(data.cookTime) : undefined,
+      servings: Number.isFinite(Number(data.servings)) ? Number(data.servings) : 4,
+      difficulty: 'medium',
+      tags: Array.isArray(data.tags) ? data.tags : ['auto-fetched'],
+      rating: undefined,
+      notes: undefined,
+      image: data.image || undefined,
+      isFavorite: false,
+      calories: undefined,
+      cuisine: 'other',
+      dietaryRestrictions: [],
+      nutritionInfo: undefined,
+      flowChart: undefined,
+      sourceType: 'manual',
+      sourceUrl: data.sourceUrl || undefined,
+      authorName: data.authorName || undefined,
+      videoThumbnail: undefined,
+    };
+  } catch (error) {
+    console.warn('Failed to fetch recipe from Google:', error);
+    return null;
+  }
+}
 
 // Generic clipper: fetch via server-side endpoint that parses JSON-LD/OG tags
 async function fetchClippedRecipe(url: string): Promise<Omit<Recipe, 'id' | 'createdAt'>> {
@@ -1477,6 +1565,8 @@ function RecipeEditModal({ recipe, onClose }: { recipe: Recipe; onClose: () => v
   const { updateRecipe } = useAppStore();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastSaved, setLastSaved] = useState<Date>(new Date());
+  const autoSaveTimerRef = React.useRef<NodeJS.Timeout | null>(null);
 
   const [form, setForm] = useState({
     name: recipe.name || '',
@@ -1492,6 +1582,67 @@ function RecipeEditModal({ recipe, onClose }: { recipe: Recipe; onClose: () => v
       return parts.join(' ');
     }).join('\n'),
   });
+
+  // Auto-save functionality - debounced by 2 seconds
+  React.useEffect(() => {
+    // Clear existing timer
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+    }
+
+    // Set new timer for auto-save
+    autoSaveTimerRef.current = setTimeout(async () => {
+      try {
+        setSaving(true);
+        setError(null);
+
+        // Parse ingredients from text
+        const ingredientLines = form.ingredients
+          .split(/\r?\n/)
+          .map((line) => line.trim())
+          .filter(Boolean);
+
+        const parsedIngredients = ingredientLines.map((line) => {
+          const match1 = line.match(/^(\d+(?:\.\d+)?)\s+(\w+)\s+(.+)$/);
+          if (match1) {
+            return { amount: match1[1], unit: match1[2], name: match1[3] };
+          }
+          const match2 = line.match(/^(\d+(?:\.\d+)?)\s+(.+)$/);
+          if (match2) {
+            return { amount: match2[1], unit: undefined, name: match2[2] };
+          }
+          return { amount: undefined, unit: undefined, name: line };
+        });
+
+        const updates: Partial<Recipe> = {
+          name: form.name.trim() || 'Untitled',
+          description: form.description.trim(),
+          servings: Number.isFinite(Number(form.servings)) ? Number(form.servings) : recipe.servings,
+          prepTime: Number.isFinite(Number(form.prepTime)) ? Number(form.prepTime) : recipe.prepTime,
+          cookTime: Number.isFinite(Number(form.cookTime)) ? Number(form.cookTime) : recipe.cookTime,
+          difficulty: (form.difficulty as Recipe['difficulty']) || recipe.difficulty,
+          tags: form.tags.split(',').map((t) => t.trim()).filter(Boolean),
+          instructions: form.instructions.split(/\r?\n/).map((l) => l.trim()).filter(Boolean),
+          ingredients: parsedIngredients,
+        };
+
+        await updateRecipe(recipe.id!, updates);
+        setLastSaved(new Date());
+      } catch (err) {
+        console.error('Auto-save failed:', err);
+        setError('Auto-save failed');
+      } finally {
+        setSaving(false);
+      }
+    }, 2000); // 2 second debounce
+
+    // Cleanup on unmount
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+    };
+  }, [form, recipe.id, updateRecipe]);
 
   const onSubmit: React.FormEventHandler<HTMLFormElement> = async (e) => {
     e.preventDefault();
@@ -1548,9 +1699,22 @@ function RecipeEditModal({ recipe, onClose }: { recipe: Recipe; onClose: () => v
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-2xl rounded-lg border border-slate-200 bg-white p-6 shadow-xl">
-        <h3 className="text-lg font-semibold text-slate-900">Edit recipe</h3>
-        <form onSubmit={onSubmit} className="mt-4 grid gap-4">
+      <div className="w-full max-w-2xl max-h-[90vh] rounded-lg border border-slate-200 bg-white shadow-xl flex flex-col overflow-hidden">
+        <div className="flex items-center justify-between p-6 border-b border-slate-200 flex-shrink-0">
+          <h3 className="text-lg font-semibold text-slate-900">Edit recipe</h3>
+          <div className="flex items-center gap-2 text-xs text-slate-500">
+            {saving ? (
+              <span className="flex items-center gap-1">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Saving...
+              </span>
+            ) : (
+              <span className="text-emerald-600">Auto-saved</span>
+            )}
+          </div>
+        </div>
+        <form onSubmit={onSubmit} className="flex-1 overflow-auto p-6">
+          <div className="grid gap-4">
           {error && (
             <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</div>
           )}
@@ -1649,18 +1813,12 @@ function RecipeEditModal({ recipe, onClose }: { recipe: Recipe; onClose: () => v
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
               disabled={saving}
             >
-              Cancel
+              Close
             </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-60"
-            >
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Save changes
-            </button>
+          </div>
           </div>
         </form>
       </div>
@@ -2038,7 +2196,7 @@ const MealPlanning: React.FC = () => {
                       return (
                         <div
                           key={`${key}-${mealType}`}
-                          className={`relative p-3 border-b border-l border-r border-slate-200 min-h-[120px] overflow-hidden`}
+                          className={`relative p-3 border-b border-l border-r border-slate-200 h-[140px] overflow-hidden`}
                           onDragOver={(e) => e.preventDefault()}
                           onDrop={async (e) => {
                             if (!activePlan) return;
@@ -2802,11 +2960,11 @@ function RecipeViewModal({ recipe, onClose, onEdit }: { recipe: Recipe; onClose:
   }, [recipe.instructions, recipe.description, recipe.tags]);
 
   return (
-    <div className="fixed inset-0 z-40 flex items-start justify-center bg-black/40 p-4 overflow-auto">
-      <div className="w-full max-w-5xl rounded-xl border border-slate-200 bg-white shadow-xl">
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4">
+      <div className="w-full max-w-5xl max-h-[90vh] rounded-xl border border-slate-200 bg-white shadow-xl flex flex-col overflow-hidden">
         {/* Header */}
         {recipe.image && (
-          <div className="relative aspect-video w-full overflow-hidden rounded-t-xl">
+          <div className="relative aspect-video w-full overflow-hidden rounded-t-xl flex-shrink-0">
             <img src={recipe.image} alt={recipe.name} className="absolute inset-0 h-full w-full object-cover" />
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-4">
               <div className="flex items-end justify-between">
@@ -2820,7 +2978,7 @@ function RecipeViewModal({ recipe, onClose, onEdit }: { recipe: Recipe; onClose:
           </div>
         )}
         {!recipe.image && (
-          <div className="flex items-center justify-between p-4">
+          <div className="flex items-center justify-between p-4 flex-shrink-0 border-b border-slate-200">
             <h3 className="text-xl font-semibold text-slate-900">{recipe.name}</h3>
             <div className="flex gap-2">
               <button onClick={onEdit} className="rounded-md border border-slate-200 px-3 py-1 text-sm font-medium text-slate-800 hover:bg-slate-50">Edit</button>
@@ -2829,7 +2987,7 @@ function RecipeViewModal({ recipe, onClose, onEdit }: { recipe: Recipe; onClose:
           </div>
         )}
 
-        <div className="grid gap-4 p-4 md:grid-cols-2">
+        <div className="grid gap-4 p-4 md:grid-cols-2 overflow-auto flex-1">
           {/* Directions */}
           <section className="rounded-lg border border-slate-200 bg-white p-4">
             <h4 className="text-sm font-semibold text-slate-900">Directions</h4>
