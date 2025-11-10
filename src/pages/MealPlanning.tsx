@@ -2162,27 +2162,32 @@ const MealPlanning: React.FC = () => {
         {!isLoading && weekDays.length > 0 && (
           <div className="mt-6">
             <div className="overflow-x-auto">
-              {/* Header row */}
-              <div className="grid" style={{ gridTemplateColumns: `140px repeat(4, minmax(160px, 1fr))` }}>
-                <div className="p-3 border-b border-r border-slate-200 sticky left-0 bg-white z-20" />
-                {MEAL_TYPES.map((mealType) => (
+              <div className="grid" style={{
+                gridTemplateColumns: `140px repeat(4, 1fr)`,
+                gridAutoRows: '140px'
+              }}>
+                {/* Header row */}
+                <div className="p-3 border-b border-r border-slate-200 sticky left-0 bg-white z-20 row-start-1" style={{ gridRow: '1', height: '50px' }} />
+                {MEAL_TYPES.map((mealType, idx) => (
                   <div
                     key={mealType}
-                    className="p-3 border-b border-r border-slate-200 text-sm font-semibold text-slate-900 bg-white text-center capitalize"
+                    className="p-3 border-b border-r border-slate-200 text-sm font-semibold text-slate-900 bg-white text-center capitalize flex items-center justify-center row-start-1"
+                    style={{ gridRow: '1', height: '50px' }}
                   >
                     {mealType}
                   </div>
                 ))}
-              </div>
+
               {/* Day rows */}
-              {weekDays.map((d) => {
+              {weekDays.map((d, dayIdx) => {
                 const key = toKey(d);
                 const today = new Date();
                 const highlight = isSameDay(d, today);
+                const rowNum = dayIdx + 2;
                 return (
-                  <div key={key} className="grid" style={{ gridTemplateColumns: `140px repeat(4, minmax(160px, 1fr))` }}>
+                  <React.Fragment key={key}>
                     {/* Day label */}
-                    <div className={`relative p-3 border-b border-r border-slate-200 bg-slate-50 text-sm font-medium text-slate-800 flex flex-col justify-center sticky left-0 z-10`}>
+                    <div className={`relative h-[140px] p-3 border-b border-r border-slate-200 bg-slate-50 text-sm font-medium text-slate-800 flex flex-col justify-center sticky left-0 z-10`}>
                       {highlight && (
                         <div className="absolute inset-y-0 left-0 w-1 bg-indigo-500 rounded-r-sm" aria-hidden />
                       )}
@@ -2281,9 +2286,10 @@ const MealPlanning: React.FC = () => {
                         </div>
                       );
                     })}
-                  </div>
+                  </React.Fragment>
                 );
               })}
+              </div>
             </div>
           </div>
         )}
