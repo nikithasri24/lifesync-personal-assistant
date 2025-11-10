@@ -404,6 +404,7 @@ function MealItem({ meal, recipes }: { meal: PlannedMeal; recipes: Recipe[] }) {
   const [showList, setShowList] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [showRecipeForm, setShowRecipeForm] = useState(false);
+  const [showRecipeView, setShowRecipeView] = useState(false);
   const inputRef = React.useRef<HTMLInputElement | null>(null);
 
   const recipe = recipes.find((item) => item.id === meal.recipeId);
@@ -675,33 +676,22 @@ function MealItem({ meal, recipes }: { meal: PlannedMeal; recipes: Recipe[] }) {
         )}
         {!isEditing && (
           <div className="flex items-center gap-1">
-            {!meal.recipeId ? (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (meal.recipeId && recipe) {
+                  setShowRecipeView(true);
+                } else {
                   setShowRecipeForm(true);
-                }}
-                className="p-1 text-slate-400 hover:text-indigo-600 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
-                aria-label="Save as recipe"
-                title="Save as recipe"
-              >
-                <ChefHat className="w-3 h-3" />
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  startEdit();
-                }}
-                className="p-1 text-slate-400 hover:text-indigo-600 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
-                aria-label="Edit meal"
-                title="Edit meal name"
-              >
-                <Pencil className="w-3 h-3" />
-              </button>
-            )}
+                }
+              }}
+              className="p-1 text-slate-400 hover:text-indigo-600 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+              aria-label={meal.recipeId ? "View recipe" : "Save as recipe"}
+              title={meal.recipeId ? "View recipe" : "Save as recipe"}
+            >
+              <ChefHat className="w-3 h-3" />
+            </button>
             <button
               type="button"
               onClick={(e) => {
@@ -729,6 +719,17 @@ function MealItem({ meal, recipes }: { meal: PlannedMeal; recipes: Recipe[] }) {
             setShowRecipeForm(false);
           }}
           onClose={() => setShowRecipeForm(false)}
+        />
+      )}
+
+      {showRecipeView && recipe && (
+        <RecipeViewModal
+          recipe={recipe}
+          onClose={() => setShowRecipeView(false)}
+          onEdit={() => {
+            setShowRecipeView(false);
+            // Could add edit functionality here if needed
+          }}
         />
       )}
     </>
