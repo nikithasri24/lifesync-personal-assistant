@@ -12,6 +12,37 @@ const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack'];
 const toKey = (date: Date) => format(date, 'yyyy-MM-dd');
 const ensureDate = (value: Date | string): Date => (value instanceof Date ? value : new Date(value));
 
+// Cleanup old meal drafts from localStorage (older than 7 days)
+const cleanupOldDrafts = () => {
+  try {
+    const today = new Date();
+    const sevenDaysAgo = new Date(today);
+    sevenDaysAgo.setDate(today.getDate() - 7);
+
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('meal-draft-')) {
+        // Extract date from key: "meal-draft-2025-01-14-breakfast"
+        const match = key.match(/meal-draft-(\d{4}-\d{2}-\d{2})/);
+        if (match) {
+          const draftDate = new Date(match[1]);
+          if (draftDate < sevenDaysAgo) {
+            keysToRemove.push(key);
+          }
+        }
+      }
+    }
+
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+    if (keysToRemove.length > 0) {
+      console.log(`Cleaned up ${keysToRemove.length} old meal drafts`);
+    }
+  } catch (error) {
+    console.error('Failed to cleanup old drafts:', error);
+  }
+};
+
 // ==== Video → Recipe helpers (YouTube) ====
 function extractYoutubeId(url: string): string | null {
   try {
@@ -463,7 +494,17 @@ function MealItem({ meal, recipes }: { meal: PlannedMeal; recipes: Recipe[] }) {
       }
     });
 
-    return candidates
+    // Deduplicate by name (case-insensitive), keeping highest score
+    const deduped = new Map<string, typeof candidates[0]>();
+    candidates.forEach(candidate => {
+      const key = candidate.name.toLowerCase();
+      const existing = deduped.get(key);
+      if (!existing || candidate.score > existing.score) {
+        deduped.set(key, candidate);
+      }
+    });
+
+    return Array.from(deduped.values())
       .sort((a, b) => {
         if (b.score !== a.score) return b.score - a.score;
         return a.name.localeCompare(b.name);
@@ -493,7 +534,13 @@ function MealItem({ meal, recipes }: { meal: PlannedMeal; recipes: Recipe[] }) {
   const saveEdit = async (newValue?: string) => {
     const trimmed = (newValue ?? editValue).trim();
     if (trimmed && trimmed !== meal.customMeal) {
-      await updatePlannedMeal(meal.id, { customMeal: trimmed });
+      try {
+        await updatePlannedMeal(meal.id, { customMeal: trimmed });
+      } catch (error) {
+        console.error('Failed to update meal:', error);
+        // Revert on error
+        setEditValue(meal.customMeal ?? '');
+      }
     }
     setIsEditing(false);
     setShowList(false);
@@ -820,12 +867,110 @@ function QuickRecipeModal({ initialName, onSave, onClose }: {
   );
 }
 
-function AddMealControl({ dateKey, mealType, onAdded }: { dateKey: string; mealType: string; onAdded?: () => void }) {
-  const { recipes, addPlannedMeal, mealPlans, ensureMealPlanForWeek, mealOptions } = useAppStore();
-  const [query, setQuery] = React.useState('');
+// Component for cells that already have meals - shows compact view with hover overlay
+function CellWithMeals({ dateKey, mealType, dayMeals, recipes }: {
+  dateKey: string;
+  mealType: string;
+  dayMeals: PlannedMeal[];
+  recipes: Recipe[];
+}) {
+  const triggerRef = React.useRef<(() => void) | null>(null);
+
+  return (
+    <>
+      <div className="space-y-1">
+        <ul className="space-y-1">
+          {dayMeals.map((meal) => (
+            <MealItem key={meal.id} meal={meal} recipes={recipes} />
+          ))}
+        </ul>
+        <AddMealControl
+          dateKey={dateKey}
+          mealType={mealType}
+          showByDefault={false}
+          compact={true}
+          triggerRef={triggerRef}
+        />
+      </div>
+      {/* Hover overlay to add more meals */}
+      <div className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity pointer-events-none group-hover/cell:pointer-events-auto">
+        <div className="absolute bottom-2 left-2 right-2 flex justify-center">
+          <button
+            type="button"
+            onClick={() => triggerRef.current?.()}
+            className="text-xs text-slate-400 hover:text-indigo-600 flex items-center gap-1 bg-white/90 backdrop-blur-sm px-2 py-1 rounded shadow-sm border border-slate-200"
+          >
+            <Plus className="w-3 h-3" />
+            <span className="text-[10px] font-medium">Add</span>
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function AddMealControl({ dateKey, mealType, onAdded, showByDefault = true, compact = false, triggerRef }: {
+  dateKey: string;
+  mealType: string;
+  onAdded?: () => void;
+  showByDefault?: boolean;
+  compact?: boolean;
+  triggerRef?: React.MutableRefObject<(() => void) | null>;
+}) {
+  const { recipes, addPlannedMeal, mealPlans, ensureMealPlanForWeek, mealOptions, weekStartsOn } = useAppStore();
+
+  // Unique key for this input slot
+  const slotKey = `${dateKey}-${mealType}`;
+  const storageKey = `meal-draft-${slotKey}`;
+
+  // Load persisted draft from localStorage
+  const [query, setQuery] = React.useState(() => {
+    try {
+      const saved = localStorage.getItem(storageKey);
+      return saved || '';
+    } catch {
+      return '';
+    }
+  });
+
+  const [showInput, setShowInput] = React.useState(showByDefault);
   const [showList, setShowList] = React.useState(false);
   const [selectedIndex, setSelectedIndex] = React.useState(0);
+  const [showDraftIndicator, setShowDraftIndicator] = React.useState(false);
   const inputRef = React.useRef<HTMLInputElement | null>(null);
+  const draftTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  // Expose trigger function via ref
+  React.useEffect(() => {
+    if (triggerRef) {
+      triggerRef.current = () => setShowInput(true);
+    }
+  }, [triggerRef]);
+
+  // Persist query to localStorage whenever it changes
+  React.useEffect(() => {
+    try {
+      if (query.trim()) {
+        localStorage.setItem(storageKey, query);
+        // Show "Draft saved" indicator briefly
+        setShowDraftIndicator(true);
+        if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
+        draftTimerRef.current = setTimeout(() => setShowDraftIndicator(false), 1500);
+      } else {
+        localStorage.removeItem(storageKey);
+        setShowDraftIndicator(false);
+      }
+    } catch (error) {
+      console.error('Failed to save draft:', error);
+    }
+  }, [query, storageKey]);
+
+  // Cleanup timer on unmount
+  React.useEffect(() => {
+    return () => {
+      if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
+    };
+  }, []);
 
   // Extract all historical custom meals from all meal plans
   const historicalMeals = React.useMemo(() => {
@@ -929,8 +1074,18 @@ function AddMealControl({ dateKey, mealType, onAdded }: { dateKey: string; mealT
       }
     });
 
+    // Deduplicate by name (case-insensitive), keeping highest score
+    const deduped = new Map<string, typeof candidates[0]>();
+    candidates.forEach(candidate => {
+      const key = candidate.name.toLowerCase();
+      const existing = deduped.get(key);
+      if (!existing || candidate.score > existing.score) {
+        deduped.set(key, candidate);
+      }
+    });
+
     // Sort by score descending, then alphabetically
-    return candidates
+    return Array.from(deduped.values())
       .sort((a, b) => {
         if (b.score !== a.score) return b.score - a.score;
         return a.name.localeCompare(b.name);
@@ -939,24 +1094,44 @@ function AddMealControl({ dateKey, mealType, onAdded }: { dateKey: string; mealT
   }, [query, recipes, mealOptions, mealType, historicalMeals]);
 
   const add = async (recipeId?: string, customMeal?: string) => {
-    const plan = mealPlans.find(p => isSameWeek(ensureDate(p.weekStartDate), startOfWeek(parseLocalDateKey(dateKey), { weekStartsOn: 0 })))
-      || await ensureMealPlanForWeek(startOfWeek(parseLocalDateKey(dateKey), { weekStartsOn: 0 }));
-    if (!plan) return;
-    await addPlannedMeal(plan.id, {
-      date: parseLocalDateKey(dateKey),
-      mealType,
-      recipeId,
-      customMeal,
-      servings: 4,
-      peopleCount: 4,
-      status: 'planned',
-      notes: undefined,
-      preparedAt: undefined,
-      consumedAt: undefined,
-    });
-    setQuery('');
-    setShowList(false);
-    onAdded?.();
+    try {
+      const plan = mealPlans.find(p => isSameWeek(ensureDate(p.weekStartDate), startOfWeek(parseLocalDateKey(dateKey), { weekStartsOn })))
+        || await ensureMealPlanForWeek(startOfWeek(parseLocalDateKey(dateKey), { weekStartsOn }));
+      if (!plan) {
+        console.error('Failed to create or find meal plan');
+        return;
+      }
+      await addPlannedMeal(plan.id, {
+        date: parseLocalDateKey(dateKey),
+        mealType,
+        recipeId,
+        customMeal,
+        servings: 4,
+        peopleCount: 4,
+        status: 'planned',
+        notes: undefined,
+        preparedAt: undefined,
+        consumedAt: undefined,
+      });
+
+      // Clear the input and persisted draft
+      setQuery('');
+      setShowList(false);
+      try {
+        localStorage.removeItem(storageKey);
+      } catch (error) {
+        console.error('Failed to clear draft:', error);
+      }
+      // Hide input if it wasn't shown by default
+      if (!showByDefault) {
+        setShowInput(false);
+      }
+      onAdded?.();
+    } catch (error) {
+      console.error('Failed to add meal:', error);
+      // Keep the input open so user can try again
+      setShowList(true);
+    }
   };
 
   const onKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -991,6 +1166,26 @@ function AddMealControl({ dateKey, mealType, onAdded }: { dateKey: string; mealT
     setSelectedIndex(0);
   }, [query]);
 
+  // If input is hidden, show a "+" button
+  if (!showInput) {
+    if (compact) {
+      // Compact version: don't render anything, use CSS overlay on cell hover
+      return null;
+    }
+
+    // Full version: regular button for empty slots
+    return (
+      <button
+        type="button"
+        onClick={() => setShowInput(true)}
+        className="w-full rounded-md border border-dashed border-slate-300 bg-white px-3 py-2 text-sm text-slate-400 hover:text-slate-600 hover:border-slate-400 transition flex items-center justify-center gap-2"
+      >
+        <Plus className="w-4 h-4" />
+        <span>Add meal</span>
+      </button>
+    );
+  }
+
   return (
     <div className="relative">
       <input
@@ -1002,7 +1197,13 @@ function AddMealControl({ dateKey, mealType, onAdded }: { dateKey: string; mealT
         onKeyDown={onKeyDown}
         placeholder="Type to add…"
         className="w-full rounded-md border border-dashed border-slate-300 bg-white px-3 py-2 text-sm shadow-sm hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        autoFocus
       />
+      {showDraftIndicator && query.trim() && (
+        <div className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-emerald-600 font-medium pointer-events-none">
+          Draft saved
+        </div>
+      )}
       {showList && query.trim().length > 0 && inputRef.current && createPortal(
         <div className="fixed z-[100] w-[200px] rounded-lg border border-slate-300 bg-white shadow-xl" style={{
           left: inputRef.current.getBoundingClientRect().left,
@@ -1232,6 +1433,10 @@ function RecipeEditModal({ recipe, onClose }: { recipe: Recipe; onClose: () => v
     difficulty: recipe.difficulty || 'medium',
     tags: (recipe.tags || []).join(', '),
     instructions: (recipe.instructions || []).join('\n'),
+    ingredients: (recipe.ingredients || []).map(ing => {
+      const parts = [ing.amount, ing.unit, ing.name].filter(Boolean);
+      return parts.join(' ');
+    }).join('\n'),
   });
 
   const onSubmit: React.FormEventHandler<HTMLFormElement> = async (e) => {
@@ -1239,6 +1444,27 @@ function RecipeEditModal({ recipe, onClose }: { recipe: Recipe; onClose: () => v
     setSaving(true);
     setError(null);
     try {
+      // Parse ingredients from text
+      const ingredientLines = form.ingredients
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean);
+
+      const parsedIngredients = ingredientLines.map((line) => {
+        // Try to parse "amount unit name" format (e.g., "2 cups flour")
+        const match1 = line.match(/^(\d+(?:\.\d+)?)\s+(\w+)\s+(.+)$/);
+        if (match1) {
+          return { amount: match1[1], unit: match1[2], name: match1[3] };
+        }
+        // Try "amount name" format (e.g., "2 onions")
+        const match2 = line.match(/^(\d+(?:\.\d+)?)\s+(.+)$/);
+        if (match2) {
+          return { amount: match2[1], unit: undefined, name: match2[2] };
+        }
+        // Just the name
+        return { amount: undefined, unit: undefined, name: line };
+      });
+
       const updates: Partial<Recipe> = {
         name: form.name.trim() || 'Untitled',
         description: form.description.trim(),
@@ -1254,6 +1480,7 @@ function RecipeEditModal({ recipe, onClose }: { recipe: Recipe; onClose: () => v
           .split(/\r?\n/)
           .map((l) => l.trim())
           .filter(Boolean),
+        ingredients: parsedIngredients,
       };
       await updateRecipe(recipe.id!, updates);
       onClose();
@@ -1346,6 +1573,16 @@ function RecipeEditModal({ recipe, onClose }: { recipe: Recipe; onClose: () => v
             />
           </label>
           <label className="flex flex-col gap-1 text-sm">
+            <span className="font-medium text-slate-700">Ingredients (one per line)</span>
+            <textarea
+              rows={6}
+              value={form.ingredients}
+              onChange={(e) => setForm((s) => ({ ...s, ingredients: e.target.value }))}
+              className="rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-indigo-500 focus:outline-none"
+              placeholder="2 cups flour&#10;1 tsp salt&#10;3 eggs"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
             <span className="font-medium text-slate-700">Instructions (one per line)</span>
             <textarea
               rows={6}
@@ -1390,6 +1627,7 @@ const MealPlanning: React.FC = () => {
     updatePlannedMeal,
     deletePlannedMeal,
     addNote,
+    showGlobalToast,
   } = useAppStore();
 
   const { weekStartsOn, setWeekStartsOn } = useAppStore();
@@ -1432,6 +1670,8 @@ const MealPlanning: React.FC = () => {
   useEffect(() => {
     void loadRecipes();
     void loadMealPlans();
+    // Cleanup old drafts on component mount
+    cleanupOldDrafts();
   }, [loadRecipes, loadMealPlans]);
 
   useEffect(() => {
@@ -1447,28 +1687,21 @@ const MealPlanning: React.FC = () => {
     });
   }, [weekStartsOn]);
 
+  // Don't eagerly create plans - just find existing ones
+  // Plans are created lazily when user adds a meal
   useEffect(() => {
-    let isActive = true;
-    setIsEnsuringPlan(true);
-    ensureMealPlanForWeek(currentWeekStart)
-      .then((plan) => {
-        if (isActive) {
-          setActivePlanId(plan.id);
-        }
-      })
-      .catch((error) => {
-        console.error('Failed to ensure meal plan', error);
-      })
-      .finally(() => {
-        if (isActive) {
-          setIsEnsuringPlan(false);
-        }
-      });
+    const existingPlan = mealPlans.find((plan) =>
+      isSameWeek(ensureDate(plan.weekStartDate), currentWeekStart, { weekStartsOn })
+    );
 
-    return () => {
-      isActive = false;
-    };
-  }, [currentWeekStart, ensureMealPlanForWeek]);
+    if (existingPlan) {
+      setActivePlanId(existingPlan.id);
+    } else {
+      // No plan for this week yet - that's OK, will be created when user adds a meal
+      setActivePlanId(null);
+    }
+    setIsEnsuringPlan(false);
+  }, [currentWeekStart, mealPlans, weekStartsOn]);
 
   const activePlan: MealPlanWeek | null = useMemo(() => {
     if (activePlanId) {
@@ -1483,7 +1716,7 @@ const MealPlanning: React.FC = () => {
         isSameWeek(ensureDate(plan.weekStartDate), currentWeekStart, { weekStartsOn }),
       ) ?? null
     );
-  }, [activePlanId, mealPlans, currentWeekStart]);
+  }, [activePlanId, mealPlans, currentWeekStart, weekStartsOn]);
 
   const weekDays = useMemo(
     () => Array.from({ length: 7 }, (_, index) => addDays(currentWeekStart, index)),
@@ -1816,15 +2049,21 @@ const MealPlanning: React.FC = () => {
                           {highlight && (
                             <div className="absolute inset-y-0 left-0 w-1 bg-indigo-300" aria-hidden />
                           )}
-                          <div className="h-full overflow-auto space-y-2">
-                            {dayMeals.length === 0 ? (
-                              <AddMealControl dateKey={key} mealType={mealType} />
+                          <div className="h-full overflow-auto space-y-2 group/cell relative">
+                            {dayMeals.length > 0 ? (
+                              <CellWithMeals
+                                dateKey={key}
+                                mealType={mealType}
+                                dayMeals={dayMeals}
+                                recipes={recipes}
+                              />
                             ) : (
-                              <ul className="space-y-1">
-                                {dayMeals.map((meal) => (
-                                  <MealItem key={meal.id} meal={meal} recipes={recipes} />
-                                ))}
-                              </ul>
+                              <AddMealControl
+                                dateKey={key}
+                                mealType={mealType}
+                                showByDefault={true}
+                                compact={false}
+                              />
                             )}
                           </div>
                         </div>
