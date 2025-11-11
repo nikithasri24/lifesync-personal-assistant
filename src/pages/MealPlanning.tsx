@@ -3335,20 +3335,11 @@ function RecipeCard({ recipe, onView, onEdit, onDelete }: { recipe: Recipe; onVi
             </div>
           </div>
         </div>
-        <div className="absolute right-2 top-2 flex gap-2" onClick={(e) => e.stopPropagation()}>
-          <button
-            type="button"
-            onClick={() => setIsFav((s) => !s)}
-            className={`rounded-md p-1 text-white backdrop-blur shadow ${isFav ? 'bg-rose-500/80 hover:bg-rose-500' : 'bg-black/50 hover:bg-black/60'}`}
-            title={isFav ? 'Unfavorite' : 'Favorite'}
-            aria-label={isFav ? 'Unfavorite' : 'Favorite'}
-          >
-            <Heart className="h-4 w-4" fill={isFav ? 'currentColor' : 'none'} color={isFav ? 'white' : 'white'} />
-          </button>
+        <div className="absolute right-2 top-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
           <button
             type="button"
             onClick={() => onEdit()}
-            className="rounded-md bg-black/50 p-1 text-white backdrop-blur hover:bg-black/60 shadow"
+            className="rounded-md bg-white/90 p-1.5 text-slate-700 backdrop-blur hover:bg-white shadow-lg"
             title="Edit recipe"
             aria-label="Edit recipe"
           >
@@ -3357,7 +3348,7 @@ function RecipeCard({ recipe, onView, onEdit, onDelete }: { recipe: Recipe; onVi
           <button
             type="button"
             onClick={() => onDelete()}
-            className="rounded-md bg-black/50 p-1 text-white backdrop-blur hover:bg-black/60 shadow"
+            className="rounded-md bg-red-500 p-1.5 text-white backdrop-blur hover:bg-red-600 shadow-lg"
             title="Delete recipe"
             aria-label="Delete recipe"
           >
