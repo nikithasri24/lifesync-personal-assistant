@@ -1538,14 +1538,8 @@ async function fetchRecipeFromGoogle(mealName: string): Promise<Omit<Recipe, 'id
     notes: undefined,
   });
   try {
-    // If no search endpoint configured, skip network and return scaffold immediately
-    const searchEndpointRaw = import.meta.env.VITE_RECIPE_SEARCH_URL?.trim();
-    if (!searchEndpointRaw) {
-      return scaffold(mealName);
-    }
-    // Try to search for recipe and scrape the first result
-    const searchEndpoint = searchEndpointRaw;
-    const apiUrl = `${searchEndpoint}${searchEndpoint.includes('?') ? '&' : '?'}q=${encodeURIComponent(mealName + ' recipe')}`;
+    // Use our backend recipe search endpoint
+    const apiUrl = `/api/recipe/search?q=${encodeURIComponent(mealName)}`;
 
     const response = await fetch(apiUrl, { headers: { Accept: 'application/json' } });
     if (!response.ok) {
@@ -3362,6 +3356,32 @@ function RecipeCard({ recipe, onView, onEdit, onDelete }: { recipe: Recipe; onVi
             {recipe.name || 'Untitled Recipe'}
           </h3>
           <div className="flex gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  const { updateRecipe } = useAppStore.getState();
+                  const draft = await fetchRecipeFromGoogle(recipe.name);
+                  if (draft && recipe.id) {
+                    await updateRecipe(recipe.id, {
+                      ...draft,
+                      name: recipe.name, // Keep original name
+                    });
+                    useAppStore.getState().showGlobalToast('Recipe updated from Google!', 'success');
+                  }
+                } catch (error) {
+                  console.error('Failed to fetch recipe:', error);
+                  useAppStore.getState().showGlobalToast('Failed to fetch recipe', 'error');
+                }
+              }}
+              className="rounded p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+              title="Fetch recipe from Google"
+              aria-label="Fetch recipe from Google"
+            >
+              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+              </svg>
+            </button>
             <button
               type="button"
               onClick={() => onEdit()}
