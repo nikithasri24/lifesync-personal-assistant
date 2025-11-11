@@ -2030,9 +2030,14 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
   loadRecipes: async () => {
     if (!isSupabaseConfigured) return
     set({ recipesLoading: true })
-    const recipesRaw = await apiClient.getRecipes()
-    const recipes = recipesRaw.map(mapRecipeDataToRecipe)
-    set({ recipes, recipesLoading: false })
+    try {
+      const recipesRaw = await apiClient.getRecipes()
+      const recipes = recipesRaw.map(mapRecipeDataToRecipe)
+      set({ recipes, recipesLoading: false })
+    } catch (e) {
+      console.warn('[Store] loadRecipes failed; showing empty list', e)
+      set({ recipes: [], recipesLoading: false })
+    }
   },
 
   addRecipe: async (recipeInput) => {
@@ -2095,9 +2100,14 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
   loadMealPlans: async () => {
     if (!isSupabaseConfigured) return
     set({ mealPlansLoading: true })
-    const mealPlansRaw = await apiClient.getMealPlans()
-    const mealPlans = mealPlansRaw.map(mapMealPlanDataToMealPlanWeek)
-    set({ mealPlans, mealPlansLoading: false })
+    try {
+      const mealPlansRaw = await apiClient.getMealPlans()
+      const mealPlans = mealPlansRaw.map(mapMealPlanDataToMealPlanWeek)
+      set({ mealPlans, mealPlansLoading: false })
+    } catch (e) {
+      console.warn('[Store] loadMealPlans failed; starting with none', e)
+      set({ mealPlans: [], mealPlansLoading: false })
+    }
   },
 
   ensureMealPlanForWeek: async (weekStartDate) => {

@@ -20,6 +20,7 @@ import { pantryRouter } from './modules/pantry/pantry.router.js';
 import { mealRouter } from './modules/meal/meal.router.js';
 import { focusRouter } from './modules/focus/focus.router.js';
 import { recipeRouter } from './modules/recipes/recipe.router.js';
+import { recipeSearchRouter } from './modules/recipes/recipe.search.router.js';
 import { analyticsRouter } from './modules/analytics/analytics.router.js';
 
 export function createApp() {
@@ -57,6 +58,8 @@ export function createApp() {
   app.use('/api', requireAuth, mealRouter);
   app.use('/api/focus', requireAuth, focusRouter);
   app.use('/api/recipes', requireAuth, recipeRouter);
+  // Public lightweight search endpoint used for client-side enrichment
+  app.use('/api/recipe', recipeSearchRouter);
   app.use('/api/analytics', requireAuth, analyticsRouter);
   app.use('/api/util', utilRouter);
   // Back-compat paths used in UI: /api/youtube/*, /api/barcode/lookup, /api/ocr/receipt
