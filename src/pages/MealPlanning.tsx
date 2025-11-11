@@ -3335,11 +3335,11 @@ function RecipeCard({ recipe, onView, onEdit, onDelete }: { recipe: Recipe; onVi
             </div>
           </div>
         </div>
-        <div className="absolute right-2 top-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+        <div className="absolute right-2 top-2 flex gap-2 z-10" onClick={(e) => e.stopPropagation()}>
           <button
             type="button"
             onClick={() => onEdit()}
-            className="rounded-md bg-white/90 p-1.5 text-slate-700 backdrop-blur hover:bg-white shadow-lg"
+            className="rounded-md bg-white p-1.5 text-slate-700 hover:bg-slate-100 shadow-lg border border-slate-200"
             title="Edit recipe"
             aria-label="Edit recipe"
           >
@@ -3348,7 +3348,7 @@ function RecipeCard({ recipe, onView, onEdit, onDelete }: { recipe: Recipe; onVi
           <button
             type="button"
             onClick={() => onDelete()}
-            className="rounded-md bg-red-500 p-1.5 text-white backdrop-blur hover:bg-red-600 shadow-lg"
+            className="rounded-md bg-red-500 p-1.5 text-white hover:bg-red-600 shadow-lg"
             title="Delete recipe"
             aria-label="Delete recipe"
           >
@@ -3356,10 +3356,32 @@ function RecipeCard({ recipe, onView, onEdit, onDelete }: { recipe: Recipe; onVi
           </button>
         </div>
       </div>
-      <div className="p-3 h-[100px] flex-shrink-0 overflow-hidden">
-        <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-1 line-clamp-1">
-          {recipe.name || 'Untitled Recipe'}
-        </h3>
+      <div className="p-3 h-[100px] flex-shrink-0 flex flex-col">
+        <div className="flex items-start justify-between gap-2 mb-1">
+          <h3 className="text-sm font-semibold text-slate-900 dark:text-white line-clamp-1 flex-1">
+            {recipe.name || 'Untitled Recipe'}
+          </h3>
+          <div className="flex gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              onClick={() => onEdit()}
+              className="rounded p-1.5 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+              title="Edit recipe"
+              aria-label="Edit recipe"
+            >
+              <Pencil className="h-5 w-5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => onDelete()}
+              className="rounded p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+              title="Delete recipe"
+              aria-label="Delete recipe"
+            >
+              <Trash2 className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
         <p className="line-clamp-2 text-xs text-slate-600 dark:text-slate-400">
           {recipe.description || 'No description available'}
         </p>
