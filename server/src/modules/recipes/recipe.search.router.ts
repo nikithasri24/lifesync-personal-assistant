@@ -103,31 +103,10 @@ recipeSearchRouter.get('/search', async (req: any, res: any) => {
     // Get type-specific instructions
     const instructions = generateInstructions(name)
 
-    // Generate intelligent description
-    let description = `A delicious ${name.toLowerCase()} recipe.`
-
-    if (lowerName.includes('pasta')) {
-      description = `A delicious pasta dish perfect for a quick weeknight dinner. Customize with your favorite ingredients.`
-    } else if (lowerName.includes('salad')) {
-      description = `A fresh and healthy salad packed with nutrients. Perfect as a side dish or light meal.`
-    } else if (lowerName.includes('soup')) {
-      description = `A warm and comforting soup that's perfect for any season. Easy to make and full of flavor.`
-    } else if (lowerName.includes('curry')) {
-      description = `A flavorful curry with aromatic spices. Serve with rice or naan for a complete meal.`
-    } else if (lowerName.includes('chicken')) {
-      description = `A tasty chicken dish that's sure to please. Simple to prepare and always delicious.`
-    } else if (lowerName.includes('veg') || lowerName.includes('vegetable')) {
-      description = `A wholesome vegetarian recipe packed with fresh vegetables and bold flavors.`
-    } else if (lowerName.includes('rice') || lowerName.includes('pulao') || lowerName.includes('biryani')) {
-      description = `A fragrant rice dish with aromatic spices. Perfect for lunch or dinner.`
-    } else if (lowerName.includes('dessert') || lowerName.includes('cake') || lowerName.includes('cookie')) {
-      description = `A sweet treat that's perfect for any occasion. Indulge in this delightful dessert.`
-    }
-
     // Provide an intelligent, editable scaffold
     const payload = {
       name,
-      description,
+      description: '',
       ingredients,
       instructions,
       prepTime: 15,
