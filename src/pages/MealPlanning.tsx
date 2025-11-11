@@ -686,7 +686,7 @@ function MealItem({ meal, recipes }: { meal: PlannedMeal; recipes: Recipe[] }) {
                   setShowRecipeForm(true);
                 }
               }}
-              className="p-1 text-slate-400 hover:text-indigo-600 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+              className="p-1 text-slate-400 hover:text-indigo-600 transition-colors"
               aria-label={meal.recipeId ? "View recipe" : "Save as recipe"}
               title={meal.recipeId ? "View recipe" : "Save as recipe"}
             >
@@ -1106,7 +1106,7 @@ function AddMealControl({ dateKey, mealType, onAdded, showByDefault = true, comp
   compact?: boolean;
   triggerRef?: React.MutableRefObject<(() => void) | null>;
 }) {
-  const { recipes, addPlannedMeal, mealPlans, ensureMealPlanForWeek, mealOptions, weekStartsOn } = useAppStore();
+  const { recipes, addPlannedMeal, mealPlans, ensureMealPlanForWeek, mealOptions, weekStartsOn, addRecipe } = useAppStore();
 
   // Unique key for this input slot
   const slotKey = `${dateKey}-${mealType}`;
@@ -1358,6 +1358,34 @@ function AddMealControl({ dateKey, mealType, onAdded, showByDefault = true, comp
     }
   };
 
+  // Enrich a custom meal by linking an existing recipe or auto-fetching one
+  const enrichAndAdd = async (name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    try {
+      // 1) If an existing recipe matches exactly (case-insensitive), link it
+      const existing = recipes.find(r => r.name.trim().toLowerCase() === trimmed.toLowerCase());
+      if (existing?.id) {
+        await add(existing.id, undefined);
+        return;
+      }
+      // 2) Else, try to fetch a draft from Google and save it, then link
+      const draft = await fetchRecipeFromGoogle(trimmed).catch(() => null);
+      if (draft) {
+        const created = await addRecipe({ ...draft, name: trimmed });
+        if (created?.id) {
+          await add(created.id, undefined);
+          return;
+        }
+      }
+      // 3) Fallback: add as plain custom meal
+      await add(undefined, trimmed);
+    } catch (e) {
+      console.warn('Enrich add failed; falling back to custom meal', e);
+      await add(undefined, trimmed);
+    }
+  };
+
   const onKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
@@ -1371,12 +1399,12 @@ function AddMealControl({ dateKey, mealType, onAdded, showByDefault = true, comp
         const selected = matches[selectedIndex] as any;
         const idStr = String(selected.id);
         if (idStr.startsWith('__opt__:') || idStr.startsWith('__custom__:')) {
-          await add(undefined, selected.name);
+          await enrichAndAdd(selected.name);
         } else {
           await add(selected.id);
         }
       } else if (query.trim()) {
-        await add(undefined, query.trim());
+        await enrichAndAdd(query.trim());
       }
       setSelectedIndex(0);
     } else if (e.key === 'Escape') {
@@ -1438,7 +1466,7 @@ function AddMealControl({ dateKey, mealType, onAdded, showByDefault = true, comp
               type="button"
               className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50 rounded-lg"
               onMouseDown={(e) => e.preventDefault()}
-              onClick={() => add(undefined, query.trim())}
+              onClick={() => enrichAndAdd(query.trim())}
             >
               <span className="flex h-5 w-5 items-center justify-center rounded bg-indigo-100 text-xs font-medium text-indigo-700">+</span>
               <span className="truncate">Add "<span className="font-medium">{query.trim()}</span>"</span>
@@ -1486,15 +1514,43 @@ function AddMealControl({ dateKey, mealType, onAdded, showByDefault = true, comp
 
 // Auto-fetch recipe from Google search
 async function fetchRecipeFromGoogle(mealName: string): Promise<Omit<Recipe, 'id' | 'createdAt'> | null> {
+  const scaffold = (name: string): Omit<Recipe, 'id' | 'createdAt'> => ({
+    name,
+    description: '',
+    ingredients: [
+      { name: name },
+      { name: '1 tbsp oil' },
+      { name: 'salt to taste' },
+    ],
+    instructions: [
+      `Prepare ${name.toLowerCase()}.`,
+      `Cook ${name.toLowerCase()} to desired doneness.`,
+      'Adjust seasoning and serve.',
+    ],
+    prepTime: undefined,
+    cookTime: undefined,
+    servings: 4,
+    tags: ['auto-scaffold'],
+    imageUrl: undefined,
+    sourceUrl: undefined,
+    videoUrl: undefined,
+    videoThumbnail: undefined,
+    notes: undefined,
+  });
   try {
+    // If no search endpoint configured, skip network and return scaffold immediately
+    const searchEndpointRaw = import.meta.env.VITE_RECIPE_SEARCH_URL?.trim();
+    if (!searchEndpointRaw) {
+      return scaffold(mealName);
+    }
     // Try to search for recipe and scrape the first result
-    const searchEndpoint = import.meta.env.VITE_RECIPE_SEARCH_URL?.trim() || '/api/recipe/search';
+    const searchEndpoint = searchEndpointRaw;
     const apiUrl = `${searchEndpoint}${searchEndpoint.includes('?') ? '&' : '?'}q=${encodeURIComponent(mealName + ' recipe')}`;
 
     const response = await fetch(apiUrl, { headers: { Accept: 'application/json' } });
     if (!response.ok) {
-      console.warn('Recipe search failed, will use custom meal');
-      return null;
+      console.warn('Recipe search failed (non-OK). Using scaffold.');
+      return scaffold(mealName);
     }
 
     const data = await response.json();
@@ -1530,8 +1586,8 @@ async function fetchRecipeFromGoogle(mealName: string): Promise<Omit<Recipe, 'id
       videoThumbnail: undefined,
     };
   } catch (error) {
-    console.warn('Failed to fetch recipe from Google:', error);
-    return null;
+    console.warn('Failed to fetch recipe from Google. Using scaffold:', error);
+    return scaffold(mealName);
   }
 }
 
@@ -1959,6 +2015,9 @@ function RecipeEditModal({ recipe, onClose }: { recipe: Recipe; onClose: () => v
   );
 }
 
+// Multi-cell selection types
+type CellKey = string; // format: "yyyy-MM-dd:mealType"
+
 const MealPlanning: React.FC = () => {
   const {
     recipes,
@@ -1979,6 +2038,10 @@ const MealPlanning: React.FC = () => {
   const [currentWeekStart, setCurrentWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn }));
   const [activePlanId, setActivePlanId] = useState<string | null>(null);
   const [isEnsuringPlan, setIsEnsuringPlan] = useState(false);
+
+  // Multi-cell selection state
+  const [selectedCells, setSelectedCells] = useState<Set<CellKey>>(new Set());
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
 
   const [selectedRecipeId, setSelectedRecipeId] = useState('');
   const [selectedMealType, setSelectedMealType] = useState<string>(MEAL_TYPES[2]);
@@ -2192,6 +2255,79 @@ const MealPlanning: React.FC = () => {
 
   const isLoading = mealPlansLoading || isEnsuringPlan;
 
+  // Multi-cell selection handlers
+  const makeCellKey = (dateKey: string, mealType: string): CellKey => `${dateKey}:${mealType}`;
+
+  const handleCellClick = (dateKey: string, mealType: string, event: React.MouseEvent) => {
+    const cellKey = makeCellKey(dateKey, mealType);
+
+    if (event.metaKey || event.ctrlKey) {
+      // Toggle selection with Cmd/Ctrl
+      setIsSelectionMode(true);
+      setSelectedCells(prev => {
+        const next = new Set(prev);
+        if (next.has(cellKey)) {
+          next.delete(cellKey);
+        } else {
+          next.add(cellKey);
+        }
+        // Exit selection mode if no cells selected
+        if (next.size === 0) {
+          setIsSelectionMode(false);
+        }
+        return next;
+      });
+    }
+  };
+
+  const clearSelection = () => {
+    setSelectedCells(new Set());
+    setIsSelectionMode(false);
+  };
+
+  const addMealToSelectedCells = async (recipeId: string, customMeal?: string) => {
+    if (!activePlan || selectedCells.size === 0) return;
+
+    try {
+      const promises = Array.from(selectedCells).map(cellKey => {
+        const [dateKey, mealType] = cellKey.split(':');
+        return addPlannedMeal(activePlan.id, {
+          date: parseLocalDateKey(dateKey),
+          mealType,
+          recipeId: recipeId || undefined,
+          customMeal: customMeal || undefined,
+          servings: 4,
+          peopleCount: 4,
+          status: 'planned',
+          notes: undefined,
+          preparedAt: undefined,
+          consumedAt: undefined,
+        });
+      });
+
+      await Promise.all(promises);
+      showGlobalToast(`Added meal to ${selectedCells.size} cells`, 'success');
+      clearSelection();
+    } catch (error) {
+      console.error('Failed to add meals to selected cells:', error);
+      showGlobalToast('Failed to add meals', 'error');
+    }
+  };
+
+  // Enhanced grocery list with status tracking
+  type GroceryItemStatus = 'needed' | 'at_home' | 'in_cart' | 'purchased';
+
+  interface GroceryItem {
+    id: string;
+    name: string;
+    amount?: string;
+    unit?: string;
+    recipes: string[];
+    status: GroceryItemStatus;
+  }
+
+  const [groceryItemStatuses, setGroceryItemStatuses] = useState<Map<string, GroceryItemStatus>>(new Map());
+
   // Generate grocery list from current week's recipes
   const groceryList = useMemo(() => {
     const ingredientMap = new Map<string, { name: string; amount?: string; unit?: string; recipes: string[] }>();
@@ -2221,8 +2357,39 @@ const MealPlanning: React.FC = () => {
       }
     });
 
-    return Array.from(ingredientMap.values()).sort((a, b) => a.name.localeCompare(b.name));
-  }, [plannedMeals, recipes]);
+    const items: GroceryItem[] = Array.from(ingredientMap.values()).map(item => {
+      const itemKey = item.name.toLowerCase().trim();
+      return {
+        id: itemKey,
+        ...item,
+        status: groceryItemStatuses.get(itemKey) || 'needed'
+      };
+    });
+
+    return items.sort((a, b) => a.name.localeCompare(b.name));
+  }, [plannedMeals, recipes, groceryItemStatuses]);
+
+  const updateGroceryItemStatus = (itemId: string, status: GroceryItemStatus) => {
+    setGroceryItemStatuses(prev => {
+      const next = new Map(prev);
+      next.set(itemId, status);
+      return next;
+    });
+  };
+
+  const getStatusColor = (status: GroceryItemStatus) => {
+    switch (status) {
+      case 'at_home': return 'bg-green-100 text-green-800 border-green-300';
+      case 'in_cart': return 'bg-indigo-100 text-indigo-800 border-indigo-300';
+      case 'purchased': return 'bg-gray-100 text-gray-600 border-gray-300 line-through';
+      default: return 'bg-white text-slate-900 border-slate-200';
+    }
+  };
+
+  const neededItems = groceryList.filter(item => item.status === 'needed');
+  const atHomeItems = groceryList.filter(item => item.status === 'at_home');
+  const inCartItems = groceryList.filter(item => item.status === 'in_cart');
+  const purchasedItems = groceryList.filter(item => item.status === 'purchased');
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6 p-6">
@@ -2278,6 +2445,50 @@ const MealPlanning: React.FC = () => {
         </div>
       </header>
 
+      {/* Selection toolbar */}
+      {isSelectionMode && selectedCells.size > 0 && (
+        <section className="rounded-lg border-2 border-indigo-500 bg-indigo-50 p-4 shadow-lg animate-in slide-in-from-top">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-600 text-white font-semibold text-sm">
+                  {selectedCells.size}
+                </div>
+                <span className="text-sm font-medium text-indigo-900">
+                  {selectedCells.size} cell{selectedCells.size > 1 ? 's' : ''} selected
+                </span>
+              </div>
+              <span className="text-xs text-indigo-600">
+                Cmd/Ctrl + click to select more cells
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                placeholder="Type meal name..."
+                className="w-64 rounded-md border border-indigo-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                onKeyDown={async (e) => {
+                  if (e.key === 'Enter') {
+                    const value = (e.target as HTMLInputElement).value.trim();
+                    if (value) {
+                      await addMealToSelectedCells('', value);
+                      (e.target as HTMLInputElement).value = '';
+                    }
+                  }
+                }}
+              />
+              <button
+                type="button"
+                onClick={clearSelection}
+                className="rounded-md border border-indigo-300 px-4 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-100 transition"
+              >
+                Clear Selection
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Weekly overview moved to top */}
       <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm order-1">
         <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
@@ -2326,10 +2537,17 @@ const MealPlanning: React.FC = () => {
                     </div>
                     {MEAL_TYPES.map((mealType) => {
                       const dayMeals = (mealsByDate[key] ?? []).filter((m) => m.mealType === mealType);
+                      const cellKey = makeCellKey(key, mealType);
+                      const isSelected = selectedCells.has(cellKey);
+                      const hasContent = dayMeals.length > 0;
+
                       return (
                         <div
                           key={`${key}-${mealType}`}
-                          className={`relative p-3 border-b border-l border-r border-slate-200 overflow-hidden`}
+                          className={`relative p-3 border-b border-l border-r border-slate-200 overflow-hidden cursor-pointer transition-colors ${
+                            isSelected ? 'bg-indigo-100 border-indigo-400 ring-2 ring-indigo-400' : ''
+                          } ${hasContent ? 'bg-amber-50/30' : ''}`}
+                          onClick={(e) => handleCellClick(key, mealType, e)}
                           onDragOver={(e) => e.preventDefault()}
                           onDrop={async (e) => {
                             if (!activePlan) return;
@@ -2393,6 +2611,12 @@ const MealPlanning: React.FC = () => {
                         >
                           {highlight && (
                             <div className="absolute inset-y-0 left-0 w-1 bg-indigo-300" aria-hidden />
+                          )}
+                          {/* Chef hat indicator for populated cells */}
+                          {hasContent && (
+                            <div className="absolute top-1 right-1 z-10">
+                              <ChefHat className="w-4 h-4 text-amber-600" />
+                            </div>
                           )}
                           <div className="h-full overflow-auto space-y-2 group/cell relative">
                             {dayMeals.length > 0 ? (
@@ -2826,65 +3050,186 @@ const MealPlanning: React.FC = () => {
         )}
       </section>
 
-      {/* Grocery List Modal */}
+      {/* Enhanced Interactive Grocery List Modal */}
       {showGroceryList && (
         <ModalShell
-          title="Grocery List"
+          title="Smart Grocery List"
           subtitle={`Week of ${format(currentWeekStart, 'MMM d, yyyy')}`}
           onClose={() => setShowGroceryList(false)}
-          maxWidthClass="max-w-2xl"
+          maxWidthClass="max-w-4xl"
         >
-            <div className="max-h-[500px] overflow-auto">
+            <div className="space-y-4">
+              {/* Status Summary */}
+              <div className="grid grid-cols-4 gap-3">
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-center">
+                  <div className="text-2xl font-bold text-slate-900">{neededItems.length}</div>
+                  <div className="text-xs text-slate-600">Needed</div>
+                </div>
+                <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-center">
+                  <div className="text-2xl font-bold text-green-700">{atHomeItems.length}</div>
+                  <div className="text-xs text-green-600">At Home</div>
+                </div>
+                <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-3 text-center">
+                  <div className="text-2xl font-bold text-indigo-700">{inCartItems.length}</div>
+                  <div className="text-xs text-indigo-600">In Cart</div>
+                </div>
+                <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-center">
+                  <div className="text-2xl font-bold text-gray-600">{purchasedItems.length}</div>
+                  <div className="text-xs text-gray-500">Purchased</div>
+                </div>
+              </div>
+
               {groceryList.length === 0 ? (
                 <div className="py-12 text-center text-slate-500">
-                  <p>No recipes with ingredients in this week's plan.</p>
+                  <ChefHat className="w-16 h-16 mx-auto text-slate-300 mb-4" />
+                  <p className="text-lg font-medium">No recipes with ingredients in this week's plan.</p>
                   <p className="mt-1 text-sm">Add some recipes to your meal plan to generate a grocery list.</p>
                 </div>
               ) : (
-                <ul className="space-y-2">
-                  {groceryList.map((item, idx) => (
-                    <li key={idx} className="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
-                      <input
-                        type="checkbox"
-                        className="mt-0.5 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                      />
-                      <div className="flex-1">
-                        <div className="font-medium text-slate-900">
-                          {item.amount && item.unit ? `${item.amount} ${item.unit} ` : item.amount ? `${item.amount} ` : ''}
-                          {item.name}
-                        </div>
-                        <div className="mt-0.5 text-xs text-slate-500">
-                          For: {item.recipes.join(', ')}
-                        </div>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
+                <div className="max-h-[400px] overflow-auto">
+                  {/* Needed Items */}
+                  {neededItems.length > 0 && (
+                    <div className="mb-4">
+                      <h3 className="text-sm font-semibold text-slate-700 mb-2 sticky top-0 bg-white py-2">
+                        Items to Buy ({neededItems.length})
+                      </h3>
+                      <ul className="space-y-2">
+                        {neededItems.map((item) => (
+                          <li key={item.id} className={`flex items-start gap-3 rounded-lg border p-3 transition ${getStatusColor(item.status)}`}>
+                            <div className="flex-1">
+                              <div className="font-medium">
+                                {item.amount && item.unit ? `${item.amount} ${item.unit} ` : item.amount ? `${item.amount} ` : ''}
+                                {item.name}
+                              </div>
+                              <div className="mt-0.5 text-xs opacity-70">
+                                For: {item.recipes.join(', ')}
+                              </div>
+                            </div>
+                            <div className="flex gap-1">
+                              <button
+                                type="button"
+                                onClick={() => updateGroceryItemStatus(item.id, 'at_home')}
+                                className="rounded px-2 py-1 text-xs font-medium bg-green-100 text-green-700 hover:bg-green-200"
+                                title="Mark as at home"
+                              >
+                                At Home
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => updateGroceryItemStatus(item.id, 'in_cart')}
+                                className="rounded px-2 py-1 text-xs font-medium bg-indigo-100 text-indigo-700 hover:bg-indigo-200"
+                                title="Add to cart"
+                              >
+                                Add to Cart
+                              </button>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* In Cart Items */}
+                  {inCartItems.length > 0 && (
+                    <div className="mb-4">
+                      <h3 className="text-sm font-semibold text-indigo-700 mb-2 sticky top-0 bg-white py-2">
+                        In Your Cart ({inCartItems.length})
+                      </h3>
+                      <ul className="space-y-2">
+                        {inCartItems.map((item) => (
+                          <li key={item.id} className={`flex items-start gap-3 rounded-lg border p-3 transition ${getStatusColor(item.status)}`}>
+                            <div className="flex-1">
+                              <div className="font-medium">
+                                {item.amount && item.unit ? `${item.amount} ${item.unit} ` : item.amount ? `${item.amount} ` : ''}
+                                {item.name}
+                              </div>
+                              <div className="mt-0.5 text-xs opacity-70">
+                                For: {item.recipes.join(', ')}
+                              </div>
+                            </div>
+                            <div className="flex gap-1">
+                              <button
+                                type="button"
+                                onClick={() => updateGroceryItemStatus(item.id, 'needed')}
+                                className="rounded px-2 py-1 text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200"
+                                title="Move back to needed"
+                              >
+                                Remove
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => updateGroceryItemStatus(item.id, 'purchased')}
+                                className="rounded px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                title="Mark as purchased"
+                              >
+                                Purchased
+                              </button>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* At Home Items */}
+                  {atHomeItems.length > 0 && (
+                    <div className="mb-4">
+                      <h3 className="text-sm font-semibold text-green-700 mb-2 sticky top-0 bg-white py-2">
+                        Already at Home ({atHomeItems.length})
+                      </h3>
+                      <ul className="space-y-2">
+                        {atHomeItems.map((item) => (
+                          <li key={item.id} className={`flex items-start gap-3 rounded-lg border p-3 transition ${getStatusColor(item.status)}`}>
+                            <div className="flex-1">
+                              <div className="font-medium">
+                                {item.amount && item.unit ? `${item.amount} ${item.unit} ` : item.amount ? `${item.amount} ` : ''}
+                                {item.name}
+                              </div>
+                              <div className="mt-0.5 text-xs opacity-70">
+                                For: {item.recipes.join(', ')}
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => updateGroceryItemStatus(item.id, 'needed')}
+                              className="rounded px-2 py-1 text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200"
+                              title="Move back to needed"
+                            >
+                              Need to Buy
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
 
             <div className="border-t border-slate-200 pt-4 flex items-center justify-between">
               <div className="text-sm text-slate-600">
-                {groceryList.length} {groceryList.length === 1 ? 'ingredient' : 'ingredients'}
+                <span className="font-medium">{groceryList.length}</span> total items •
+                <span className="font-medium text-indigo-600"> {inCartItems.length}</span> in cart
               </div>
               <div className="flex gap-2">
                 <button
                   type="button"
                   onClick={() => {
-                    const text = groceryList.map(item => {
+                    const text = inCartItems.map(item => {
                       const amount = item.amount && item.unit ? `${item.amount} ${item.unit}` : item.amount || '';
                       return `☐ ${amount} ${item.name}`.trim();
                     }).join('\n');
                     navigator.clipboard.writeText(text);
+                    showGlobalToast('Shopping list copied to clipboard!', 'success');
                   }}
                   className="rounded-md border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
                 >
-                  Copy to Clipboard
+                  Copy Cart List
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowGroceryList(false)}
-                  className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
+                  className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
                 >
                   Done
                 </button>
