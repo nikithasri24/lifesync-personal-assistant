@@ -3277,6 +3277,16 @@ function RecipeCard({ recipe, onView, onEdit, onDelete }: { recipe: Recipe; onVi
   }, [recipe.sourceUrl]);
   const favicon = domain ? `https://www.google.com/s2/favicons?sz=64&domain=${encodeURIComponent(domain)}` : '';
 
+  // Debug: Log recipe data
+  console.log('RecipeCard rendering:', {
+    id: recipe.id,
+    name: recipe.name,
+    hasName: !!recipe.name,
+    nameLength: recipe.name?.length,
+    description: recipe.description?.substring(0, 50),
+    hasImage: !!recipe.image
+  });
+
   return (
     <li
       onClick={onView}
@@ -3290,8 +3300,8 @@ function RecipeCard({ recipe, onView, onEdit, onDelete }: { recipe: Recipe; onVi
             className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
         ) : (
-          <div className="absolute inset-0 flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200">
-            <ChefHat className="h-12 w-12 text-slate-400" />
+          <div className="absolute inset-0 flex h-full w-full items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600">
+            <ChefHat className="h-12 w-12 text-white/80" />
           </div>
         )}
         <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/80 via-black/35 to-transparent" />
@@ -3356,8 +3366,11 @@ function RecipeCard({ recipe, onView, onEdit, onDelete }: { recipe: Recipe; onVi
         </div>
       </div>
       <div className="p-3 h-[100px] flex-shrink-0 overflow-hidden">
-        <p className="line-clamp-3 text-xs text-slate-600">
-          {recipe.description || '\u00A0'}
+        <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-1 line-clamp-1">
+          {recipe.name || 'Untitled Recipe'}
+        </h3>
+        <p className="line-clamp-2 text-xs text-slate-600 dark:text-slate-400">
+          {recipe.description || 'No description available'}
         </p>
       </div>
     </li>
