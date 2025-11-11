@@ -15,7 +15,18 @@
       "Bash(./dist/index.js --help)",
       "Bash(chmod:*)",
       "Bash(node:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(gh pr create:*)",
+      "Bash(git checkout:*)",
+      "Bash(cat:*)",
+      "Bash(npx supabase:*)",
+      "Bash(lsof:*)",
+      "Bash(ps:*)",
+      "Bash(kill:*)",
+      "Bash(npm run:*)",
+      "Bash(xargs kill:*)"
     ],
     "deny": [],
     "ask": []

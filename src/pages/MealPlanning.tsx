@@ -3019,22 +3019,67 @@ const MealPlanning: React.FC = () => {
           <h2 className="text-lg font-semibold text-slate-900">Saved recipes</h2>
           <div className="flex items-center gap-2">
             {recipes.length > 0 && (
-              <button
-                type="button"
-                onClick={async () => {
-                  if (confirm('Delete ALL saved recipes? This cannot be undone.')) {
-                    try {
-                      await useAppStore.getState().deleteAllRecipes?.()
-                    } catch (e) {
-                      console.error('Failed to delete all recipes', e)
+              <>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const { deleteRecipe } = useAppStore.getState();
+                    const recipesByName = new Map<string, Recipe>();
+
+                    // Keep only first occurrence of each name
+                    recipes.forEach(recipe => {
+                      const name = recipe.name.toLowerCase().trim();
+                      if (!recipesByName.has(name)) {
+                        recipesByName.set(name, recipe);
+                      }
+                    });
+
+                    // Delete duplicates
+                    const toDelete = recipes.filter(recipe => {
+                      const name = recipe.name.toLowerCase().trim();
+                      const kept = recipesByName.get(name);
+                      return kept?.id !== recipe.id;
+                    });
+
+                    if (toDelete.length === 0) {
+                      showGlobalToast('No duplicates found!', 'success');
+                      return;
                     }
-                  }
-                }}
-                className="text-xs rounded-md px-3 py-1 bg-rose-600 text-white hover:bg-rose-500"
-                title="Delete all saved recipes"
-              >
-                Delete all
-              </button>
+
+                    if (confirm(`Remove ${toDelete.length} duplicate recipe(s)?`)) {
+                      try {
+                        for (const recipe of toDelete) {
+                          await deleteRecipe(recipe.id!);
+                        }
+                        showGlobalToast(`Removed ${toDelete.length} duplicates!`, 'success');
+                      } catch (e) {
+                        console.error('Failed to remove duplicates', e);
+                        showGlobalToast('Failed to remove duplicates', 'error');
+                      }
+                    }
+                  }}
+                  className="text-xs rounded-md px-3 py-1 bg-indigo-600 text-white hover:bg-indigo-500"
+                  title="Remove duplicate recipes"
+                >
+                  Remove Duplicates
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (confirm('Delete ALL saved recipes? This cannot be undone.')) {
+                      try {
+                        await useAppStore.getState().deleteAllRecipes?.()
+                      } catch (e) {
+                        console.error('Failed to delete all recipes', e)
+                      }
+                    }
+                  }}
+                  className="text-xs rounded-md px-3 py-1 bg-rose-600 text-white hover:bg-rose-500"
+                  title="Delete all saved recipes"
+                >
+                  Delete all
+                </button>
+              </>
             )}
           </div>
         </div>
