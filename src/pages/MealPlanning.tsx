@@ -760,7 +760,8 @@ function ModalShell({
       onClick={onClose}
     >
       <div
-        className={`w-full ${maxWidthClass} max-h-[90vh] rounded-xl border-4 border-indigo-500/30 bg-white shadow-[0_20px_60px_rgba(0,0,0,0.5)] ring-4 ring-white flex flex-col overflow-hidden`}
+        style={{height: '350px'}}
+        className={`w-full ${maxWidthClass} rounded-xl border-4 border-indigo-500/30 bg-white shadow-[0_20px_60px_rgba(0,0,0,0.5)] ring-4 ring-white flex flex-col overflow-hidden`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 flex-shrink-0">
@@ -1530,12 +1531,16 @@ async function fetchRecipeFromGoogle(mealName: string): Promise<Omit<Recipe, 'id
     prepTime: undefined,
     cookTime: undefined,
     servings: 4,
+    difficulty: 'medium',
     tags: ['auto-scaffold'],
-    imageUrl: undefined,
-    sourceUrl: undefined,
-    videoUrl: undefined,
-    videoThumbnail: undefined,
+    rating: undefined,
     notes: undefined,
+    image: undefined,
+    isFavorite: false,
+    calories: undefined,
+    cuisine: 'other',
+    dietaryRestrictions: [],
+    nutritionInfo: undefined,
   });
   try {
     // Use our backend recipe search endpoint
@@ -1573,11 +1578,6 @@ async function fetchRecipeFromGoogle(mealName: string): Promise<Omit<Recipe, 'id
       cuisine: 'other',
       dietaryRestrictions: [],
       nutritionInfo: undefined,
-      flowChart: undefined,
-      sourceType: 'manual',
-      sourceUrl: data.sourceUrl || undefined,
-      authorName: data.authorName || undefined,
-      videoThumbnail: undefined,
     };
   } catch (error) {
     console.warn('Failed to fetch recipe from Google. Using scaffold:', error);
@@ -1766,6 +1766,17 @@ function RecipeEditModal({ recipe, onClose }: { recipe: Recipe; onClose: () => v
     }).join('\n'),
   });
 
+  // Handle Escape key to close modal
+  React.useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [onClose]);
+
   // Auto-save functionality - debounced by 2 seconds
   React.useEffect(() => {
     // Clear existing timer
@@ -1882,21 +1893,34 @@ function RecipeEditModal({ recipe, onClose }: { recipe: Recipe; onClose: () => v
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" onClick={onClose}>
-      <div className="w-full max-w-2xl max-h-[90vh] rounded-xl border-4 border-indigo-500/30 bg-white shadow-[0_20px_60px_rgba(0,0,0,0.5)] ring-4 ring-white flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between p-6 border-b border-slate-200 flex-shrink-0">
+      <div style={{height: '350px'}} className="w-full max-w-2xl rounded-xl border-4 border-indigo-500/30 bg-white shadow-[0_20px_60px_rgba(0,0,0,0.5)] ring-4 ring-white flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-3 border-b border-slate-200 flex-shrink-0">
           <h3 className="text-lg font-semibold text-slate-900">Edit recipe</h3>
-          <div className="flex items-center gap-2 text-xs text-slate-500">
-            {saving ? (
-              <span className="flex items-center gap-1">
-                <Loader2 className="h-3 w-3 animate-spin" />
-                Saving...
-              </span>
-            ) : (
-              <span className="text-emerald-600">Auto-saved</span>
-            )}
+          <div className="flex items-center gap-3">
+            <div className="text-xs text-slate-500">
+              {saving ? (
+                <span className="flex items-center gap-1">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Saving...
+                </span>
+              ) : (
+                <span className="text-emerald-600">Auto-saved</span>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+              aria-label="Close"
+              title="Close"
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
         </div>
-        <form onSubmit={onSubmit} className="flex-1 overflow-auto p-6">
+        <form onSubmit={onSubmit} className="flex-1 overflow-auto p-3">
           <div className="grid gap-4">
           {error && (
             <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</div>
@@ -3360,18 +3384,32 @@ function RecipeCard({ recipe, onView, onEdit, onDelete }: { recipe: Recipe; onVi
               type="button"
               onClick={async () => {
                 try {
+                  console.log('[Globe] Fetching recipe for:', recipe.name);
                   const { updateRecipe } = useAppStore.getState();
                   const draft = await fetchRecipeFromGoogle(recipe.name);
-                  if (draft && recipe.id) {
-                    await updateRecipe(recipe.id, {
-                      ...draft,
-                      name: recipe.name, // Keep original name
-                    });
-                    useAppStore.getState().showGlobalToast('Recipe updated from Google!', 'success');
+                  console.log('[Globe] Fetched draft:', draft);
+
+                  if (!draft) {
+                    useAppStore.getState().showGlobalToast('❌ No recipe data received', 'error');
+                    return;
                   }
+
+                  if (!recipe.id) {
+                    useAppStore.getState().showGlobalToast('❌ Recipe ID missing', 'error');
+                    return;
+                  }
+
+                  console.log('[Globe] Updating recipe with ID:', recipe.id);
+                  await updateRecipe(recipe.id, {
+                    ...draft,
+                    name: recipe.name, // Keep original name
+                  });
+                  console.log('[Globe] Recipe updated successfully');
+                  useAppStore.getState().showGlobalToast('✅ Recipe updated!', 'success');
                 } catch (error) {
-                  console.error('Failed to fetch recipe:', error);
-                  useAppStore.getState().showGlobalToast('❌ Failed to fetch recipe. Please try again.', 'error');
+                  console.error('[Globe] Failed to fetch recipe:', error);
+                  const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+                  useAppStore.getState().showGlobalToast(`❌ Failed: ${errorMsg}`, 'error');
                 }
               }}
               className="rounded p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20"

@@ -9,7 +9,7 @@ interface ToastProps {
 
 const typeStyles: Record<string, string> = {
   info: 'bg-slate-800 text-white',
-  success: 'bg-emerald-600 text-white',
+  success: '!bg-emerald-600 !text-white',
   error: '!bg-rose-600 !text-white',
 };
 
