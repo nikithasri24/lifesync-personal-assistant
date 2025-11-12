@@ -617,13 +617,23 @@ export default function SeventyFiveHard() {
               <button
                 type="button"
                 onClick={() => {
-                  updateSeventyFiveHardChallenge?.(latestPausedChallenge.id, { isActive: true })
+                  // Resume: adjust start date to maintain current day
+                  const today = new Date();
+                  const newStartDate = addDays(today, -(latestPausedChallenge.currentDay - 1));
+                  const newEndDate = addDays(newStartDate, 74);
+
+                  updateSeventyFiveHardChallenge?.(latestPausedChallenge.id, {
+                    isActive: true,
+                    startDate: newStartDate,
+                    endDate: newEndDate
+                  });
+                  showGlobalToast?.(`Resumed at Day ${latestPausedChallenge.currentDay}`, 'success');
                 }}
-                className="btn-secondary flex items-center space-x-2"
-                title={`Resume ${latestPausedChallenge.name}`}
+                className="btn-primary flex items-center space-x-2"
+                title={`Resume ${latestPausedChallenge.name} from Day ${latestPausedChallenge.currentDay}`}
               >
                 <Play size={20} />
-                <span>Resume</span>
+                <span>Resume (Day {latestPausedChallenge.currentDay})</span>
               </button>
             )}
           </div>
@@ -777,11 +787,12 @@ export default function SeventyFiveHard() {
                     setConfirmDialog({
                       show: true,
                       title: 'Pause Challenge?',
-                      message: 'Pausing will stop daily progress tracking. You can resume later, but your current day count will be preserved. Are you sure?',
-                      confirmText: 'Pause Challenge',
+                      message: `The challenge will be paused at Day ${activeChallenge.currentDay}. You can resume later and continue from exactly where you left off. Your progress and data will be preserved.`,
+                      confirmText: 'Pause at Day ' + activeChallenge.currentDay,
                       variant: 'warning',
                       onConfirm: () => {
                         updateSeventyFiveHardChallenge?.(activeChallenge.id, { isActive: false });
+                        showGlobalToast?.(`Challenge paused at Day ${activeChallenge.currentDay}`, 'info');
                         setConfirmDialog(prev => ({ ...prev, show: false }));
                       }
                     });
