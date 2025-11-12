@@ -23,7 +23,7 @@ export const Toast: React.FC<ToastProps> = ({ toast, onDismiss }) => {
       <div
         className={`pointer-events-auto flex max-w-md items-start gap-3 rounded-lg px-4 py-3 shadow-lg sm:min-w-[320px] ${style}`}
       >
-        <span className="text-sm font-medium leading-5">{toast.message}</span>
+        <span className="text-sm font-medium leading-5 text-white">{toast.message}</span>
         {onDismiss && (
           <button
             type="button"
