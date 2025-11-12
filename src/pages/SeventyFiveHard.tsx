@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useAppStore } from '../stores/useAppStore';
-import { 
-  Trophy, 
+import {
+  Trophy,
   Calendar,
   Target,
   Camera,
@@ -20,6 +20,8 @@ import { format, differenceInDays, addDays, isToday } from 'date-fns';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { apiClient } from '../services/apiClient';
 import type { SeventyFiveHardChallenge, SeventyFiveHardRule, SeventyFiveHardEntry, RuleCompletion } from '../types';
+import { useChallengeService } from '../hooks/useChallengeService';
+import { createChallengeId } from '../types/seventyFiveHard';
 
 const DEFAULT_RULES: Omit<SeventyFiveHardRule, 'id'>[] = [
   {
@@ -80,6 +82,9 @@ export default function SeventyFiveHard() {
     cleanupChallengeTasks,
     resetSFHEnsuredDate,
   } = useAppStore();
+
+  // NEW: Clean architecture service layer
+  const challengeService = useChallengeService();
 
   const [showChallengeForm, setShowChallengeForm] = useState(false);
   const [editingChallenge, setEditingChallenge] = useState<string | null>(null);
@@ -202,11 +207,8 @@ export default function SeventyFiveHard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Ensure tasks exist for today's uncompleted 75 Hard items
-  React.useEffect(() => {
-    ensureSFHTasksForToday?.();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeChallenge?.id, activeChallenge?.currentDay, seventyFiveHardChallenges.length]);
+  // Note: Task creation for 75 Hard is now handled globally in App.tsx
+  // It runs once per day when the app first loads (cron-like behavior)
 
   const exportChallenges = () => {
     try {
@@ -333,16 +335,15 @@ export default function SeventyFiveHard() {
       createdAt: new Date()
     };
 
-    // Deactivate any existing active challenges and clean up their tasks
+    // Deactivate any existing active challenges (optimistic updates)
+    const challengesToCleanup: string[] = [];
     for (const challenge of seventyFiveHardChallenges) {
       if (challenge.isActive) {
         updateSeventyFiveHardChallenge?.(challenge.id, {
           isActive: false,
           pausedAt: new Date()
         });
-
-        // Clean up tasks using centralized function
-        await cleanupChallengeTasks?.(challenge.id);
+        challengesToCleanup.push(challenge.id);
       }
     }
 
@@ -351,11 +352,21 @@ export default function SeventyFiveHard() {
     // Reset sfhEnsuredForDate to ensure tasks are created
     resetSFHEnsuredDate?.();
 
-    // Create tasks for the new challenge
-    await ensureSFHTasksForToday?.();
-
+    // Close form immediately for instant feedback
     setShowChallengeForm(false);
     resetChallengeForm();
+
+    // Clean up old tasks and create new tasks in background
+    (async () => {
+      try {
+        for (const id of challengesToCleanup) {
+          await cleanupChallengeTasks?.(id);
+        }
+        await ensureSFHTasksForToday?.();
+      } catch (err) {
+        console.error('[75Hard] Failed to cleanup/create tasks:', err);
+      }
+    })();
   };
 
   const resetChallengeForm = () => {
@@ -809,25 +820,27 @@ export default function SeventyFiveHard() {
                         variant: 'warning',
                         onConfirm: async () => {
                           const pausedAt = new Date();
-                          const previousPauseDuration = displayedChallenge.totalPauseDuration || 0;
-                          const pauseCount = (displayedChallenge.pauseCount || 0) + 1;
+                          const challengeId = displayedChallenge.id;
+                          const currentDay = displayedChallenge.currentDay;
 
-                          // Update challenge state with pause metadata
-                          updateSeventyFiveHardChallenge?.(displayedChallenge.id, {
-                            isActive: false,
+                          // Close dialog immediately for instant feedback
+                          setConfirmDialog(prev => ({ ...prev, show: false }));
+
+                          // NEW ARCHITECTURE: Use service layer for business logic
+                          console.log('[75Hard] Using new service layer for pause');
+                          const result = await challengeService.pauseChallenge({
+                            challengeId: createChallengeId(challengeId),
                             pausedAt,
-                            totalPauseDuration: previousPauseDuration,
-                            pauseCount
                           });
 
-                          // Clean up tasks using centralized function
-                          await cleanupChallengeTasks?.(displayedChallenge.id);
-
-                          // Mark as needing sync
-                          setNeedsSync(true);
-
-                          showGlobalToast?.(`Challenge paused at Day ${displayedChallenge.currentDay}`, 'info');
-                          setConfirmDialog(prev => ({ ...prev, show: false }));
+                          if (result.ok) {
+                            showGlobalToast?.(`Challenge paused at Day ${currentDay}`, 'success');
+                            console.log('[75Hard] Pause successful via new architecture');
+                          } else {
+                            const errorMsg = challengeService.getErrorMessage(result);
+                            showGlobalToast?.(`Failed to pause: ${errorMsg}`, 'error');
+                            console.error('[75Hard] Pause failed:', result.error);
+                          }
                         }
                       });
                     }}
@@ -840,43 +853,31 @@ export default function SeventyFiveHard() {
                   <button
                     type="button"
                     onClick={async () => {
-                      // Resume: adjust start date to maintain current day
-                      const today = new Date();
-                      const newStartDate = addDays(today, -(displayedChallenge.currentDay - 1));
-                      const newEndDate = addDays(newStartDate, 74);
                       const resumedAt = new Date();
+                      const currentDay = displayedChallenge.currentDay;
+                      const challengeId = displayedChallenge.id;
 
-                      // Calculate pause duration if pausedAt exists
-                      let totalPauseDuration = displayedChallenge.totalPauseDuration || 0;
-                      if (displayedChallenge.pausedAt) {
-                        const pauseDurationDays = differenceInDays(resumedAt, displayedChallenge.pausedAt);
-                        totalPauseDuration += pauseDurationDays;
-                      }
-
-                      // Update challenge state - explicitly preserve currentDay
-                      updateSeventyFiveHardChallenge?.(displayedChallenge.id, {
-                        isActive: true,
-                        startDate: newStartDate,
-                        endDate: newEndDate,
-                        currentDay: displayedChallenge.currentDay, // Explicitly preserve day
+                      // NEW ARCHITECTURE: Use service layer for business logic
+                      console.log('[75Hard] Using new service layer for resume');
+                      const result = await challengeService.resumeChallenge({
+                        challengeId: createChallengeId(challengeId),
                         resumedAt,
-                        totalPauseDuration,
-                        pausedAt: undefined // Clear pausedAt on resume
                       });
 
-                      // Reset the sfhEnsuredForDate to allow task recreation
-                      resetSFHEnsuredDate?.();
-
-                      // Immediately sync tasks for today
-                      await ensureSFHTasksForToday?.();
-
-                      // Mark as needing sync
-                      setNeedsSync(true);
-
-                      const pauseMsg = totalPauseDuration > 0
-                        ? ` (paused for ${totalPauseDuration} day${totalPauseDuration !== 1 ? 's' : ''})`
-                        : '';
-                      showGlobalToast?.(`Resumed at Day ${displayedChallenge.currentDay}${pauseMsg}`, 'success');
+                      if (result.ok) {
+                        const pauseDuration = displayedChallenge.pausedAt
+                          ? differenceInDays(resumedAt, displayedChallenge.pausedAt)
+                          : 0;
+                        const pauseMsg = pauseDuration > 0
+                          ? ` (paused for ${pauseDuration} day${pauseDuration !== 1 ? 's' : ''})`
+                          : '';
+                        showGlobalToast?.(`Resumed at Day ${currentDay}${pauseMsg}`, 'success');
+                        console.log('[75Hard] Resume successful via new architecture');
+                      } else {
+                        const errorMsg = challengeService.getErrorMessage(result);
+                        showGlobalToast?.(`Failed to resume: ${errorMsg}`, 'error');
+                        console.error('[75Hard] Resume failed:', result.error);
+                      }
                     }}
                     className="btn-primary text-sm flex items-center space-x-1"
                   >
@@ -909,19 +910,23 @@ export default function SeventyFiveHard() {
                       confirmText: 'Restart Challenge',
                       variant: 'warning',
                       onConfirm: async () => {
-                        // Pause the current challenge
-                        updateSeventyFiveHardChallenge?.(displayedChallenge.id, {
+                        const oldChallengeId = displayedChallenge.id;
+                        const oldChallengeName = displayedChallenge.name;
+
+                        // Close dialog immediately
+                        setConfirmDialog(prev => ({ ...prev, show: false }));
+
+                        // Pause the current challenge - preserve currentDay
+                        updateSeventyFiveHardChallenge?.(oldChallengeId, {
                           isActive: false,
+                          currentDay: displayedChallenge.currentDay, // Preserve current day
                           pausedAt: new Date()
                         });
-
-                        // Clean up tasks using centralized function
-                        await cleanupChallengeTasks?.(displayedChallenge.id);
 
                         // Create a new challenge with the same rules
                         const newChallenge: SeventyFiveHardChallenge = {
                           id: generateId(),
-                          name: `${displayedChallenge.name} (Restart)`,
+                          name: `${oldChallengeName} (Restart)`,
                           startDate: new Date(),
                           endDate: addDays(new Date(), 74),
                           isActive: true,
@@ -937,11 +942,17 @@ export default function SeventyFiveHard() {
                         // Reset sfhEnsuredForDate to ensure tasks are created
                         resetSFHEnsuredDate?.();
 
-                        // Create tasks for the new challenge
-                        await ensureSFHTasksForToday?.();
-
                         showGlobalToast?.('Challenge restarted! Your previous attempt has been saved.', 'success');
-                        setConfirmDialog(prev => ({ ...prev, show: false }));
+
+                        // Clean up old tasks and create new tasks in background
+                        (async () => {
+                          try {
+                            await cleanupChallengeTasks?.(oldChallengeId);
+                            await ensureSFHTasksForToday?.();
+                          } catch (err) {
+                            console.error('[75Hard] Failed to cleanup/create tasks:', err);
+                          }
+                        })();
                       }
                     });
                   }}
