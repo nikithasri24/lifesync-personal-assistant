@@ -3371,7 +3371,7 @@ function RecipeCard({ recipe, onView, onEdit, onDelete }: { recipe: Recipe; onVi
                   }
                 } catch (error) {
                   console.error('Failed to fetch recipe:', error);
-                  useAppStore.getState().showGlobalToast('Failed to fetch recipe', 'error');
+                  useAppStore.getState().showGlobalToast('❌ Failed to fetch recipe. Please try again.', 'error');
                 }
               }}
               className="rounded p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20"
