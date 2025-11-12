@@ -930,6 +930,10 @@ const mapSFHChallengeDataToChallenge = (c: SFHChallengeData): import('../types')
   })),
   dailyEntries: [],
   notes: c.notes ?? undefined,
+  pausedAt: c.paused_at ? new Date(c.paused_at) : undefined,
+  resumedAt: c.resumed_at ? new Date(c.resumed_at) : undefined,
+  totalPauseDuration: c.total_pause_duration ?? undefined,
+  pauseCount: c.pause_count ?? undefined,
   createdAt: c.created_at ? new Date(c.created_at) : new Date(),
 })
 
@@ -968,6 +972,10 @@ const buildSFHChallengeInsert = (
     segment_labels: r.segmentLabels,
   })),
   notes: c.notes ?? null,
+  paused_at: c.pausedAt ? c.pausedAt.toISOString() : null,
+  resumed_at: c.resumedAt ? c.resumedAt.toISOString() : null,
+  total_pause_duration: c.totalPauseDuration ?? 0,
+  pause_count: c.pauseCount ?? 0,
 })
 
 const buildSFHChallengeUpdate = (
@@ -985,9 +993,15 @@ const buildSFHChallengeUpdate = (
         description: r.description,
         is_required: r.isRequired,
         is_custom: r.isCustom,
+        daily_target: r.dailyTarget,
+        segment_labels: r.segmentLabels,
       }))
     : undefined,
   notes: updates.notes,
+  paused_at: updates.pausedAt !== undefined ? (updates.pausedAt ? updates.pausedAt.toISOString() : null) : undefined,
+  resumed_at: updates.resumedAt !== undefined ? (updates.resumedAt ? updates.resumedAt.toISOString() : null) : undefined,
+  total_pause_duration: updates.totalPauseDuration,
+  pause_count: updates.pauseCount,
 })
 
 const toIsoSafe = (v: any): string | null => {
@@ -1109,7 +1123,11 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
     } catch { return true }
   })(),
   sfhEnsureInProgress: false,
-  sfhEnsuredForDate: null,
+  sfhEnsuredForDate: (() => {
+    try {
+      return localStorage.getItem('lifesync:sfh:ensuredForDate')
+    } catch { return null }
+  })(),
   seventyFiveHardChallenges: (() => {
     try {
       const raw = localStorage.getItem('lifesync:75hard')
@@ -2742,25 +2760,129 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
   // Create tasks for today's 75 Hard rules/segments not yet completed
   ensureSFHTasksForToday: async () => {
     const state = get()
-    if (!state.showSFHTasksInTasks) return
-    if (state.sfhEnsureInProgress) return
+    if (!state.showSFHTasksInTasks) {
+      console.log('[75Hard] Task creation disabled (showSFHTasksInTasks is false)')
+      return
+    }
+
+    // Double-check lock pattern with timestamp
+    if (state.sfhEnsureInProgress) {
+      console.log('[75Hard] Task creation already in progress, skipping')
+      return
+    }
+
     const today = new Date()
     const todayKey = formatDate(today, 'yyyy-MM-dd')
-    if (state.sfhEnsuredForDate === todayKey) return
+    if (state.sfhEnsuredForDate === todayKey) {
+      console.log('[75Hard] Tasks already ensured for today:', todayKey)
+      return
+    }
+
+    console.log('[75Hard] Starting task creation for:', todayKey)
+
+    // Acquire lock IMMEDIATELY
     set({ sfhEnsureInProgress: true })
-    for (const ch of state.seventyFiveHardChallenges) {
-      if (!ch.isActive) continue
+
+    // Double-check after acquiring lock (in case of race condition)
+    const stateAfterLock = get()
+    if (stateAfterLock.sfhEnsuredForDate === todayKey) {
+      console.log('[75Hard] Another instance already completed task creation for today, aborting')
+      set({ sfhEnsureInProgress: false })
+      return
+    }
+
+    // Mark as ensured BEFORE we start (prevents retries on error)
+    set({ sfhEnsuredForDate: todayKey })
+    try {
+      localStorage.setItem('lifesync:sfh:ensuredForDate', todayKey)
+    } catch (err) {
+      console.warn('[75Hard] Failed to save ensuredForDate to localStorage:', err)
+    }
+    console.log('[75Hard] Marked as ensured for:', todayKey)
+
+    try {
+
+    // Delete all SFH tasks from previous days (yesterday and before)
+    try {
+      const yesterday = new Date(today)
+      yesterday.setDate(yesterday.getDate() - 1)
+
+      for (const task of state.tasks) {
+        const tags = task.tags || []
+        if (!tags.includes('sfh')) continue
+        if (task.deleted) continue
+
+        // Delete if due date is before today
+        if (task.dueDate && task.dueDate < today) {
+          const taskDate = new Date(task.dueDate)
+          taskDate.setHours(0, 0, 0, 0)
+          const todayDate = new Date(today)
+          todayDate.setHours(0, 0, 0, 0)
+
+          if (taskDate < todayDate) {
+            await state.deleteTodo(task.id)
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('[75Hard] Failed to cleanup old tasks:', err)
+    }
+
+    // Track tasks we're creating in this run to avoid duplicates
+    const creatingTasksSet = new Set<string>()
+    let tasksCreated = 0
+    const MAX_TASKS_PER_RUN = 20 // Safety limit
+
+    // Deduplicate challenges by name+startDate (not just ID, as duplicates may have different IDs)
+    const processedChallengeKeys = new Set<string>()
+    const uniqueChallenges = state.seventyFiveHardChallenges.filter(ch => {
+      const key = `${ch.name}|${formatDate(ch.startDate, 'yyyy-MM-dd')}`
+      if (processedChallengeKeys.has(key)) {
+        console.warn('[75Hard] Duplicate challenge detected, skipping:', ch.name, ch.id)
+        return false
+      }
+      processedChallengeKeys.add(key)
+      return true
+    })
+
+    console.log('[75Hard] Total challenges:', state.seventyFiveHardChallenges.length, 'Unique:', uniqueChallenges.length)
+
+    if (state.seventyFiveHardChallenges.length > uniqueChallenges.length) {
+      console.error('[75Hard] WARNING: Found', state.seventyFiveHardChallenges.length - uniqueChallenges.length, 'duplicate challenges! You should clean these up.')
+    }
+
+    for (const ch of uniqueChallenges) {
+      if (!ch.isActive) {
+        console.log('[75Hard] Skipping inactive challenge:', ch.name)
+        continue
+      }
+
       const dayNumber = differenceInDays(today, ch.startDate) + 1
-      if (dayNumber < 1 || dayNumber > 75) continue
+      if (dayNumber < 1 || dayNumber > 75) {
+        console.log('[75Hard] Challenge day out of range:', dayNumber, 'for', ch.name)
+        continue
+      }
+
+      console.log('[75Hard] Processing challenge:', ch.name, 'Day:', dayNumber)
       const entry = ch.dailyEntries.find(e => e.day === dayNumber)
+
       for (const rule of ch.rules) {
         const title = rule.title || 'Rule'
         const target = (rule.dailyTarget && rule.dailyTarget > 1)
           ? rule.dailyTarget
           : (title.toLowerCase().includes('twice') ? 2 : 1)
         const segs = (entry?.ruleCompletions.find(rc => rc.ruleId === rule.id)?.segments) || Array.from({ length: target }, () => false)
+
         for (let i = 0; i < target; i++) {
-          if (segs[i]) continue
+          if (segs[i]) {
+            console.log('[75Hard] Segment already completed:', title, `(${i + 1}/${target})`)
+            continue
+          }
+
+          // Create unique key for this task
+          const taskKey = `sfh:${ch.id}|sfhRule:${rule.id}|sfhDay:${dayNumber}|sfhSeg:${i}`
+
+          // Skip if already exists in DB or we're creating it in this run
           const exists = state.tasks.some(t => (t.tags || []).includes('sfh')
             && (t.tags || []).includes(`sfh:${ch.id}`)
             && (t.tags || []).includes(`sfhRule:${rule.id}`)
@@ -2768,7 +2890,26 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
             && (t.tags || []).includes(`sfhSeg:${i}`)
             && !t.deleted
             && !t.completed)
-          if (exists) continue
+
+          if (exists) {
+            console.log('[75Hard] Task already exists:', title, `(${i + 1}/${target})`)
+            continue
+          }
+
+          if (creatingTasksSet.has(taskKey)) {
+            console.log('[75Hard] Task already queued:', title, `(${i + 1}/${target})`)
+            continue
+          }
+
+          // Safety check: prevent runaway task creation
+          if (tasksCreated >= MAX_TASKS_PER_RUN) {
+            console.error('[75Hard] SAFETY LIMIT REACHED: Stopped at', MAX_TASKS_PER_RUN, 'tasks')
+            throw new Error('Safety limit reached - too many tasks being created')
+          }
+
+          // Mark that we're creating this task
+          creatingTasksSet.add(taskKey)
+
           let segLabel = ''
           if (target > 1) {
             // Friendly labels for twice-daily workout
@@ -2782,8 +2923,10 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
             }
           }
           const todoTitle = `[75 Hard] ${title}${segLabel}`
-           await state.addTodo({
-             title: todoTitle,
+
+          console.log('[75Hard] Creating task:', todoTitle)
+          await state.addTodo({
+            title: todoTitle,
             description: rule.description || undefined,
             status: 'todo',
             priority: 'medium',
@@ -2793,9 +2936,12 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
             completed: false,
             createdAt: new Date(),
           } as any)
+          tasksCreated++
         }
       }
     }
+
+    console.log('[75Hard] Total tasks created this run:', tasksCreated)
     // Dedupe any duplicates by tag signature
     try {
       const current = get().tasks
@@ -2819,8 +2965,20 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
           await get().deleteTodo(ids[i])
         }
       }
-    } catch {}
-    set({ sfhEnsuredForDate: todayKey, sfhEnsureInProgress: false })
+    } catch (dedupError) {
+      console.warn('[75Hard] Dedupe failed:', dedupError)
+    }
+
+    console.log('[75Hard] Task creation completed successfully for:', todayKey)
+  } catch (error) {
+    console.error('[75Hard] Task creation failed:', error)
+    // Note: sfhEnsuredForDate is already set earlier to prevent infinite retries on error
+    // This means we won't retry until tomorrow, which prevents error loops
+  } finally {
+    // Always reset the in-progress flag
+    set({ sfhEnsureInProgress: false })
+    console.log('[75Hard] Task creation lock released')
+  }
   },
 
   setShowSFHTasksInTasks: (show: boolean) => {
@@ -2967,6 +3125,11 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
   // Reset the sfhEnsuredForDate to force task recreation
   resetSFHEnsuredDate: () => {
     set({ sfhEnsuredForDate: null })
+    try {
+      localStorage.removeItem('lifesync:sfh:ensuredForDate')
+    } catch (err) {
+      console.warn('[75Hard] Failed to remove ensuredForDate from localStorage:', err)
+    }
     console.log('[75Hard] Reset sfhEnsuredForDate - tasks will be recreated on next ensureSFHTasksForToday call')
   },
 }))

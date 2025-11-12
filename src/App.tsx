@@ -58,6 +58,22 @@ function App() {
     initializedFor.current = user.id;
     initializeData();
     console.log('🔄 Initialized LifeSync data for Supabase user');
+
+    // Run daily 75 Hard task creation (cron-like behavior)
+    // This runs once per day when the app first loads
+    const runDailyTaskCreation = async () => {
+      try {
+        const { ensureSFHTasksForToday } = useRealAppStore.getState();
+        await ensureSFHTasksForToday?.();
+      } catch (error) {
+        console.error('Failed to create daily 75 Hard tasks:', error);
+      }
+    };
+
+    // Run after a short delay to ensure data is loaded
+    setTimeout(() => {
+      runDailyTaskCreation();
+    }, 1000);
   }, [initializeData, user, authLoading]);
 
   // Show loading spinner while initializing

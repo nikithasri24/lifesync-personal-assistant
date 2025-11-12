@@ -138,7 +138,7 @@ class SupabaseAdapter {
       .single()
 
     if (error) throw new Error(error.message)
-    console.log('[SupabaseAdapter] getTasks created task', data?.id)
+    console.log('[SupabaseAdapter] createTask created task', data?.id)
     return data as TaskData
   }
 

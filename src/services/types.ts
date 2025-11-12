@@ -248,6 +248,10 @@ export interface SFHChallengeData {
   current_day: number;
   rules: Array<{ id: string; title: string; description: string; is_required: boolean; is_custom: boolean; daily_target?: number; segment_labels?: string[] }>;
   notes?: string | null;
+  paused_at?: string | null; // ISO timestamp
+  resumed_at?: string | null; // ISO timestamp
+  total_pause_duration?: number; // in days
+  pause_count?: number;
   created_at?: string;
 }
 
