@@ -2391,7 +2391,30 @@ const MealPlanning: React.FC = () => {
     status: GroceryItemStatus;
   }
 
-  const [groceryItemStatuses, setGroceryItemStatuses] = useState<Map<string, GroceryItemStatus>>(new Map());
+  // Load grocery item statuses from localStorage for current week
+  const groceryStorageKey = `grocery-statuses-${toKey(currentWeekStart)}`;
+  const [groceryItemStatuses, setGroceryItemStatuses] = useState<Map<string, GroceryItemStatus>>(() => {
+    try {
+      const stored = localStorage.getItem(groceryStorageKey);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return new Map(Object.entries(parsed));
+      }
+    } catch (error) {
+      console.error('Failed to load grocery statuses:', error);
+    }
+    return new Map();
+  });
+
+  // Persist grocery statuses to localStorage whenever they change
+  useEffect(() => {
+    try {
+      const obj = Object.fromEntries(groceryItemStatuses);
+      localStorage.setItem(groceryStorageKey, JSON.stringify(obj));
+    } catch (error) {
+      console.error('Failed to save grocery statuses:', error);
+    }
+  }, [groceryItemStatuses, groceryStorageKey]);
 
   // Generate grocery list from current week's recipes
   const groceryList = useMemo(() => {
