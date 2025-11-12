@@ -169,6 +169,7 @@ interface RealAppState {
   deleteSeventyFiveHardChallenge?: (id: string) => void
   addSeventyFiveHardEntry?: (e: import('../types').SeventyFiveHardEntry) => void
   updateSeventyFiveHardEntry?: (id: string, updates: Partial<import('../types').SeventyFiveHardEntry>) => void
+  updateActiveChallengesDays: () => void
 
   initializeData: () => Promise<void>
   setActiveView: (view: ViewKey) => void
@@ -1395,6 +1396,9 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
         userStats,
         seventyFiveHardChallenges: sfhChallenges,
       })
+
+      // Update current day for all active challenges after initialization
+      get().updateActiveChallengesDays()
     } catch (error) {
       console.error('[LifeSync] Failed to initialise store from Supabase', error)
       set({
@@ -2797,6 +2801,38 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
   },
 
   // ===== Travel slice (local-only persistence) =====
+
+  updateActiveChallengesDays: () => {
+    const state = get()
+    const today = new Date()
+    let updated = false
+
+    const updatedChallenges = state.seventyFiveHardChallenges.map(challenge => {
+      if (!challenge.isActive) return challenge
+
+      // Calculate the actual current day based on elapsed time
+      const daysElapsed = differenceInDays(today, challenge.startDate)
+      const actualCurrentDay = Math.max(1, Math.min(daysElapsed + 1, 75))
+
+      // Only update if the value has changed
+      if (actualCurrentDay !== challenge.currentDay) {
+        updated = true
+        return { ...challenge, currentDay: actualCurrentDay }
+      }
+
+      return challenge
+    })
+
+    if (updated) {
+      set({ seventyFiveHardChallenges: updatedChallenges })
+      // Persist to localStorage
+      try {
+        localStorage.setItem('lifesync:75hard', JSON.stringify(updatedChallenges))
+      } catch (e) {
+        console.warn('[75Hard] Failed to save updated challenges to localStorage', e)
+      }
+    }
+  },
 
   purgeSFHDuplicateTasks: async () => {
     try {

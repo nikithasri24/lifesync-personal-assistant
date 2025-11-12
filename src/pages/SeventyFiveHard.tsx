@@ -58,7 +58,7 @@ const DEFAULT_RULES: Omit<SeventyFiveHardRule, 'id'>[] = [
 export default function SeventyFiveHard() {
   const generateId = () => Math.random().toString(36).substr(2, 9);
 
-  const { 
+  const {
     seventyFiveHardChallenges = [],
     addSeventyFiveHardChallenge,
     updateSeventyFiveHardChallenge,
@@ -74,6 +74,7 @@ export default function SeventyFiveHard() {
     sfhLastSynced,
     purgeSFHDuplicateTasks,
     purgeNonSFHDuplicateTasks,
+    updateActiveChallengesDays,
   } = useAppStore();
 
   const [showChallengeForm, setShowChallengeForm] = useState(false);
@@ -153,6 +154,12 @@ export default function SeventyFiveHard() {
   });
     setShowEditChallengeForm(false);
   };
+
+  // Update current day for active challenges when component mounts or challenges change
+  React.useEffect(() => {
+    updateActiveChallengesDays?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Ensure tasks exist for today's uncompleted 75 Hard items
   React.useEffect(() => {
