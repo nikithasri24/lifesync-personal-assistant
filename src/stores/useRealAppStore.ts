@@ -248,6 +248,8 @@ interface RealAppState {
   showSFHTasksInTasks: boolean
   setShowSFHTasksInTasks: (show: boolean) => void
   resetSFHChallengeStart: (challengeId: string, startDate: Date) => Promise<void>
+  sfhEnsureInProgress: boolean
+  sfhEnsuredForDate: string | null
 
   // Global toast
   globalToast: { message: string; type?: 'info' | 'success' | 'error' } | null
@@ -1103,6 +1105,8 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
       return raw === 'true'
     } catch { return true }
   })(),
+  sfhEnsureInProgress: false,
+  sfhEnsuredForDate: null,
   seventyFiveHardChallenges: (() => {
     try {
       const raw = localStorage.getItem('lifesync:75hard')
