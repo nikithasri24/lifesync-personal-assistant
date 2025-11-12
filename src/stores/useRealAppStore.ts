@@ -170,6 +170,8 @@ interface RealAppState {
   addSeventyFiveHardEntry?: (e: import('../types').SeventyFiveHardEntry) => void
   updateSeventyFiveHardEntry?: (id: string, updates: Partial<import('../types').SeventyFiveHardEntry>) => void
   updateActiveChallengesDays: () => void
+  cleanupChallengeTasks: (challengeId: string) => Promise<void>
+  resetSFHEnsuredDate: () => void
 
   initializeData: () => Promise<void>
   setActiveView: (view: ViewKey) => void
@@ -2906,5 +2908,32 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
       console.warn('[Tasks] Purge non-SFH duplicates failed', e)
       get().showGlobalToast?.('Failed to purge duplicates', 'error')
     }
+  },
+
+  // Centralized task cleanup for 75 Hard challenges
+  cleanupChallengeTasks: async (challengeId: string) => {
+    try {
+      const tasks = get().tasks
+      const tasksToDelete = tasks.filter(t =>
+        (t.tags || []).includes(`sfh:${challengeId}`) && !t.deleted
+      )
+
+      console.log(`[75Hard] Cleaning up ${tasksToDelete.length} tasks for challenge ${challengeId}`)
+
+      for (const task of tasksToDelete) {
+        await get().deleteTodo(task.id)
+      }
+
+      return Promise.resolve()
+    } catch (e) {
+      console.warn('[75Hard] Failed to cleanup challenge tasks', e)
+      return Promise.reject(e)
+    }
+  },
+
+  // Reset the sfhEnsuredForDate to force task recreation
+  resetSFHEnsuredDate: () => {
+    set({ sfhEnsuredForDate: null })
+    console.log('[75Hard] Reset sfhEnsuredForDate - tasks will be recreated on next ensureSFHTasksForToday call')
   },
 }))

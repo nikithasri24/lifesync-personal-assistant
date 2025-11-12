@@ -75,6 +75,10 @@ export default function SeventyFiveHard() {
     purgeSFHDuplicateTasks,
     purgeNonSFHDuplicateTasks,
     updateActiveChallengesDays,
+    tasks,
+    deleteTodo,
+    cleanupChallengeTasks,
+    resetSFHEnsuredDate,
   } = useAppStore();
 
   const [showChallengeForm, setShowChallengeForm] = useState(false);
@@ -129,6 +133,7 @@ export default function SeventyFiveHard() {
   });
 
   const [photoPreview, setPhotoPreview] = useState<string>('');
+  const [needsSync, setNeedsSync] = useState(false);
 
   const handlePhotoUpload = (file: File) => {
     if (file && file.type.startsWith('image/')) {
@@ -267,7 +272,7 @@ export default function SeventyFiveHard() {
     reader.readAsText(file);
   };
 
-  const handleCreateChallenge = (e: React.FormEvent) => {
+  const handleCreateChallenge = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Validation
@@ -328,14 +333,27 @@ export default function SeventyFiveHard() {
       createdAt: new Date()
     };
 
-    // Deactivate any existing active challenges
-    seventyFiveHardChallenges.forEach(challenge => {
+    // Deactivate any existing active challenges and clean up their tasks
+    for (const challenge of seventyFiveHardChallenges) {
       if (challenge.isActive) {
-        updateSeventyFiveHardChallenge?.(challenge.id, { isActive: false });
+        updateSeventyFiveHardChallenge?.(challenge.id, {
+          isActive: false,
+          pausedAt: new Date()
+        });
+
+        // Clean up tasks using centralized function
+        await cleanupChallengeTasks?.(challenge.id);
       }
-    });
+    }
 
     addSeventyFiveHardChallenge?.(newChallenge);
+
+    // Reset sfhEnsuredForDate to ensure tasks are created
+    resetSFHEnsuredDate?.();
+
+    // Create tasks for the new challenge
+    await ensureSFHTasksForToday?.();
+
     setShowChallengeForm(false);
     resetChallengeForm();
   };
@@ -651,13 +669,14 @@ export default function SeventyFiveHard() {
           {isSupabaseConfigured && (
             <button
               data-sync-button
-              className={`btn-secondary text-sm flex items-center gap-2 ${syncing ? 'opacity-60 cursor-not-allowed' : ''}`}
+              className={`btn-secondary text-sm flex items-center gap-2 ${syncing ? 'opacity-60 cursor-not-allowed' : ''} ${needsSync ? 'ring-2 ring-blue-500 animate-pulse' : ''}`}
               disabled={syncing}
               onClick={async () => {
                 const performSync = async () => {
                   try {
                     setSyncing(true);
                     setSyncError(null);
+                    setNeedsSync(false); // Clear sync reminder
                     showGlobalToast?.('Syncing 75 Hard to cloud...', 'info');
                     const remote = await apiClient.getSFHChallenges();
                     const remoteKey = new Map(remote.map(c => [`${c.name}|${c.start_date}` as const, c] as const));
@@ -751,7 +770,26 @@ export default function SeventyFiveHard() {
           <div className="card">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900">{displayedChallenge.name}</h2>
+                <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+                  {displayedChallenge.name}
+                  {!displayedChallenge.isActive && (
+                    <>
+                      <span className="text-xs px-2 py-1 rounded-full bg-yellow-100 text-yellow-800 font-medium">
+                        Paused
+                      </span>
+                      {displayedChallenge.pausedAt && (
+                        <span className="text-xs text-gray-500">
+                          (since {format(displayedChallenge.pausedAt, 'MMM dd')})
+                        </span>
+                      )}
+                      {displayedChallenge.totalPauseDuration && displayedChallenge.totalPauseDuration > 0 && (
+                        <span className="text-xs text-gray-500">
+                          • Total paused: {displayedChallenge.totalPauseDuration} day{displayedChallenge.totalPauseDuration !== 1 ? 's' : ''}
+                        </span>
+                      )}
+                    </>
+                  )}
+                </h2>
                 <p className="text-sm text-gray-600">
                   Day {displayedChallenge.currentDay} of 75 • Started {format(displayedChallenge.startDate, 'MMM dd, yyyy')} • Ends {format(displayedChallenge.endDate, 'MMM dd, yyyy')} • {
                     Math.max(0, differenceInDays(displayedChallenge.endDate, new Date()) + 1)
@@ -769,8 +807,25 @@ export default function SeventyFiveHard() {
                         message: `The challenge will be paused at Day ${displayedChallenge.currentDay}. You can resume later and continue from exactly where you left off. Your progress and data will be preserved.`,
                         confirmText: 'Pause at Day ' + displayedChallenge.currentDay,
                         variant: 'warning',
-                        onConfirm: () => {
-                          updateSeventyFiveHardChallenge?.(displayedChallenge.id, { isActive: false });
+                        onConfirm: async () => {
+                          const pausedAt = new Date();
+                          const previousPauseDuration = displayedChallenge.totalPauseDuration || 0;
+                          const pauseCount = (displayedChallenge.pauseCount || 0) + 1;
+
+                          // Update challenge state with pause metadata
+                          updateSeventyFiveHardChallenge?.(displayedChallenge.id, {
+                            isActive: false,
+                            pausedAt,
+                            totalPauseDuration: previousPauseDuration,
+                            pauseCount
+                          });
+
+                          // Clean up tasks using centralized function
+                          await cleanupChallengeTasks?.(displayedChallenge.id);
+
+                          // Mark as needing sync
+                          setNeedsSync(true);
+
                           showGlobalToast?.(`Challenge paused at Day ${displayedChallenge.currentDay}`, 'info');
                           setConfirmDialog(prev => ({ ...prev, show: false }));
                         }
@@ -784,18 +839,44 @@ export default function SeventyFiveHard() {
                 ) : (
                   <button
                     type="button"
-                    onClick={() => {
+                    onClick={async () => {
                       // Resume: adjust start date to maintain current day
                       const today = new Date();
                       const newStartDate = addDays(today, -(displayedChallenge.currentDay - 1));
                       const newEndDate = addDays(newStartDate, 74);
+                      const resumedAt = new Date();
 
+                      // Calculate pause duration if pausedAt exists
+                      let totalPauseDuration = displayedChallenge.totalPauseDuration || 0;
+                      if (displayedChallenge.pausedAt) {
+                        const pauseDurationDays = differenceInDays(resumedAt, displayedChallenge.pausedAt);
+                        totalPauseDuration += pauseDurationDays;
+                      }
+
+                      // Update challenge state - explicitly preserve currentDay
                       updateSeventyFiveHardChallenge?.(displayedChallenge.id, {
                         isActive: true,
                         startDate: newStartDate,
-                        endDate: newEndDate
+                        endDate: newEndDate,
+                        currentDay: displayedChallenge.currentDay, // Explicitly preserve day
+                        resumedAt,
+                        totalPauseDuration,
+                        pausedAt: undefined // Clear pausedAt on resume
                       });
-                      showGlobalToast?.(`Resumed at Day ${displayedChallenge.currentDay}`, 'success');
+
+                      // Reset the sfhEnsuredForDate to allow task recreation
+                      resetSFHEnsuredDate?.();
+
+                      // Immediately sync tasks for today
+                      await ensureSFHTasksForToday?.();
+
+                      // Mark as needing sync
+                      setNeedsSync(true);
+
+                      const pauseMsg = totalPauseDuration > 0
+                        ? ` (paused for ${totalPauseDuration} day${totalPauseDuration !== 1 ? 's' : ''})`
+                        : '';
+                      showGlobalToast?.(`Resumed at Day ${displayedChallenge.currentDay}${pauseMsg}`, 'success');
                     }}
                     className="btn-primary text-sm flex items-center space-x-1"
                   >
@@ -827,9 +908,15 @@ export default function SeventyFiveHard() {
                       message: 'This will create a fresh 75 Hard challenge with the same rules. Your current progress will be saved as a paused challenge for reference. Ready to start over?',
                       confirmText: 'Restart Challenge',
                       variant: 'warning',
-                      onConfirm: () => {
+                      onConfirm: async () => {
                         // Pause the current challenge
-                        updateSeventyFiveHardChallenge?.(displayedChallenge.id, { isActive: false });
+                        updateSeventyFiveHardChallenge?.(displayedChallenge.id, {
+                          isActive: false,
+                          pausedAt: new Date()
+                        });
+
+                        // Clean up tasks using centralized function
+                        await cleanupChallengeTasks?.(displayedChallenge.id);
 
                         // Create a new challenge with the same rules
                         const newChallenge: SeventyFiveHardChallenge = {
@@ -846,6 +933,13 @@ export default function SeventyFiveHard() {
                         };
 
                         addSeventyFiveHardChallenge?.(newChallenge);
+
+                        // Reset sfhEnsuredForDate to ensure tasks are created
+                        resetSFHEnsuredDate?.();
+
+                        // Create tasks for the new challenge
+                        await ensureSFHTasksForToday?.();
+
                         showGlobalToast?.('Challenge restarted! Your previous attempt has been saved.', 'success');
                         setConfirmDialog(prev => ({ ...prev, show: false }));
                       }

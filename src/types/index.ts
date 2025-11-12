@@ -334,6 +334,10 @@ export interface SeventyFiveHardChallenge {
   dailyEntries: SeventyFiveHardEntry[];
   notes?: string;
   createdAt: Date;
+  pausedAt?: Date;
+  resumedAt?: Date;
+  totalPauseDuration?: number; // in days
+  pauseCount?: number; // number of times paused
 }
 
 // ==================== Travel Types ====================
