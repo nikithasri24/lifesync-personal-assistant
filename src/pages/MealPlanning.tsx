@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { FormEvent } from 'react';
 import { addDays, format, isSameWeek, startOfWeek, isSameDay } from 'date-fns';
-import { CalendarDays, ChefHat, Loader2, Plus, Trash2, Save, Pencil, ExternalLink, Heart, Clock, Users, Youtube } from 'lucide-react';
+import { CalendarDays, ChefHat, Loader2, Plus, Trash2, Save, Pencil, ExternalLink, Heart, Clock, Users, Youtube, Search, X } from 'lucide-react';
 import DatePickerPopover from '../components/DatePickerPopover';
 import { useAppStore } from '../stores/useAppStore';
 import type { MealPlanWeek, PlannedMeal, Recipe } from '../types';
@@ -2137,6 +2137,9 @@ const MealPlanning: React.FC = () => {
   // Grocery list state
   const [showGroceryList, setShowGroceryList] = useState(false);
 
+  // Recipe search/filter state
+  const [recipeSearchQuery, setRecipeSearchQuery] = useState('');
+
   useEffect(() => {
     void loadRecipes();
     void loadMealPlans();
@@ -2452,6 +2455,28 @@ const MealPlanning: React.FC = () => {
   const atHomeItems = groceryList.filter(item => item.status === 'at_home');
   const inCartItems = groceryList.filter(item => item.status === 'in_cart');
   const purchasedItems = groceryList.filter(item => item.status === 'purchased');
+
+  // Filter recipes based on search query
+  const filteredRecipes = useMemo(() => {
+    if (!recipeSearchQuery.trim()) return recipes;
+
+    const query = recipeSearchQuery.toLowerCase().trim();
+    return recipes.filter(recipe => {
+      // Search in name
+      if (recipe.name.toLowerCase().includes(query)) return true;
+
+      // Search in tags
+      if (recipe.tags?.some(tag => tag.toLowerCase().includes(query))) return true;
+
+      // Search in cuisine
+      if (recipe.cuisine?.toLowerCase().includes(query)) return true;
+
+      // Search in difficulty
+      if (recipe.difficulty?.toLowerCase().includes(query)) return true;
+
+      return false;
+    });
+  }, [recipes, recipeSearchQuery]);
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6 p-6">
@@ -3100,14 +3125,44 @@ const MealPlanning: React.FC = () => {
             )}
           </div>
         </div>
-        <p className="text-sm text-slate-600">Your clipped recipes.</p>
+        <p className="text-sm text-slate-600">
+          {recipes.length === 0 ? 'Your clipped recipes.' : `${filteredRecipes.length} of ${recipes.length} recipes`}
+        </p>
+
+        {recipes.length > 0 && (
+          <div className="mt-4 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <input
+              type="text"
+              value={recipeSearchQuery}
+              onChange={(e) => setRecipeSearchQuery(e.target.value)}
+              placeholder="Search recipes by name, tags, cuisine, or difficulty..."
+              className="w-full pl-10 pr-10 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            />
+            {recipeSearchQuery && (
+              <button
+                type="button"
+                onClick={() => setRecipeSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                aria-label="Clear search"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        )}
+
         {recipes.length === 0 ? (
           <div className="mt-4 rounded-lg border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-slate-500">
             Clip a recipe above to get started.
           </div>
+        ) : filteredRecipes.length === 0 ? (
+          <div className="mt-4 rounded-lg border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-slate-500">
+            No recipes match your search. Try different keywords.
+          </div>
         ) : (
           <>
-            <SavedRecipesList recipes={recipes} />
+            <SavedRecipesList recipes={filteredRecipes} />
           </>
         )}
       </section>
