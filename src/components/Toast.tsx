@@ -8,7 +8,7 @@ interface ToastProps {
 }
 
 const typeStyles: Record<string, string> = {
-  info: 'bg-slate-800 text-white',
+  info: '!bg-slate-800 !text-white',
   success: '!bg-emerald-600 !text-white',
   error: '!bg-rose-600 !text-white',
 };
@@ -21,9 +21,9 @@ export const Toast: React.FC<ToastProps> = ({ toast, onDismiss }) => {
   return (
     <div className="pointer-events-none fixed inset-x-0 top-4 z-50 flex justify-center px-4 sm:px-0">
       <div
-        className={`pointer-events-auto flex max-w-md items-start gap-3 rounded-lg px-4 py-3 shadow-lg sm:min-w-[320px] ${style}`}
+        className={`pointer-events-auto flex max-w-md items-start gap-3 rounded-lg px-4 py-3 shadow-lg sm:min-w-[320px] text-white ${style}`}
       >
-        <span className="text-sm font-medium leading-5 !text-white">{toast.message}</span>
+        <span className="text-sm font-medium leading-5 text-white">{toast.message}</span>
         {onDismiss && (
           <button
             type="button"
