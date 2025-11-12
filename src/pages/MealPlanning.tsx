@@ -2137,6 +2137,10 @@ const MealPlanning: React.FC = () => {
   // Grocery list state
   const [showGroceryList, setShowGroceryList] = useState(false);
 
+  // Copy week state
+  const [showCopyWeek, setShowCopyWeek] = useState(false);
+  const [copyTargetWeek, setCopyTargetWeek] = useState<Date>(addDays(currentWeekStart, 7));
+
   // Recipe search/filter state
   const [recipeSearchQuery, setRecipeSearchQuery] = useState('');
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
@@ -2546,6 +2550,14 @@ const MealPlanning: React.FC = () => {
             className="rounded-full border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
           >
             Next
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowCopyWeek(true)}
+            className="rounded-full border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-700 transition hover:bg-indigo-100"
+            title="Copy this week's meals to another week"
+          >
+            Copy Week
           </button>
           <button
             type="button"
@@ -3401,6 +3413,104 @@ const MealPlanning: React.FC = () => {
                 </button>
               </div>
             </div>
+        </ModalShell>
+      )}
+
+      {/* Copy Week Modal */}
+      {showCopyWeek && (
+        <ModalShell
+          title="Copy Week"
+          subtitle={`Copy meals from week of ${format(currentWeekStart, 'MMM d, yyyy')}`}
+          onClose={() => setShowCopyWeek(false)}
+          maxWidthClass="max-w-md"
+        >
+          <div className="space-y-4">
+            <p className="text-sm text-slate-600">
+              Select the target week to copy all {plannedMeals.length} meal{plannedMeals.length !== 1 ? 's' : ''} to:
+            </p>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Target Week Start Date
+              </label>
+              <DatePickerPopover
+                value={copyTargetWeek}
+                onChange={(d) => setCopyTargetWeek(startOfWeek(d, { weekStartsOn }))}
+                weekStartsOn={weekStartsOn}
+              />
+              <p className="mt-2 text-xs text-slate-500">
+                Week of {format(copyTargetWeek, 'MMM d')} - {format(addDays(copyTargetWeek, 6), 'MMM d, yyyy')}
+              </p>
+            </div>
+
+            {plannedMeals.length === 0 && (
+              <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 text-sm text-amber-800">
+                Current week has no meals to copy.
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200">
+              <button
+                type="button"
+                onClick={() => setShowCopyWeek(false)}
+                className="rounded-md px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={plannedMeals.length === 0}
+                onClick={async () => {
+                  try {
+                    // Ensure target week has a meal plan
+                    const targetPlan = mealPlans.find(p =>
+                      isSameWeek(ensureDate(p.weekStartDate), copyTargetWeek, { weekStartsOn })
+                    ) || await ensureMealPlanForWeek(copyTargetWeek);
+
+                    if (!targetPlan) {
+                      showGlobalToast('Failed to create target week plan', 'error');
+                      return;
+                    }
+
+                    // Calculate day offset between weeks
+                    const daysDiff = Math.floor((copyTargetWeek.getTime() - currentWeekStart.getTime()) / (1000 * 60 * 60 * 24));
+
+                    // Copy all meals with adjusted dates
+                    const copyPromises = plannedMeals.map(meal => {
+                      const originalDate = ensureDate(meal.date);
+                      const newDate = addDays(originalDate, daysDiff);
+
+                      return addPlannedMeal(targetPlan.id, {
+                        date: newDate,
+                        mealType: meal.mealType,
+                        recipeId: meal.recipeId,
+                        customMeal: meal.customMeal,
+                        servings: meal.servings || 4,
+                        peopleCount: meal.peopleCount || meal.servings || 4,
+                        status: 'planned',
+                        notes: meal.notes,
+                        preparedAt: undefined,
+                        consumedAt: undefined,
+                      });
+                    });
+
+                    await Promise.all(copyPromises);
+                    showGlobalToast(`Copied ${plannedMeals.length} meals to target week`, 'success');
+                    setShowCopyWeek(false);
+
+                    // Optionally navigate to the target week
+                    setCurrentWeekStart(copyTargetWeek);
+                  } catch (error) {
+                    console.error('Failed to copy week:', error);
+                    showGlobalToast('Failed to copy meals', 'error');
+                  }
+                }}
+                className="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+              >
+                Copy {plannedMeals.length} Meal{plannedMeals.length !== 1 ? 's' : ''}
+              </button>
+            </div>
+          </div>
         </ModalShell>
       )}
     </div>
