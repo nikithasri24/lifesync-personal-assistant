@@ -1066,44 +1066,7 @@ export default function SeventyFiveHard() {
                             >
                               <X size={16} />
                             </button>
-  )}
-
-  {/* Reset Start Modal */}
-  {showResetModal && activeChallenge && (
-    <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50 p-4 overflow-y-auto"
-      onClick={(e) => { if (e.target === e.currentTarget) setShowResetModal(false) }}
-    >
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md flex flex-col">
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">Reset Challenge Start</h3>
-          <button onClick={() => setShowResetModal(false)} className="p-2 hover:bg-gray-100 rounded-lg" aria-label="Close">
-            <X size={20} />
-          </button>
-        </div>
-        <div className="p-6 space-y-3">
-          <p className="text-sm text-gray-700">Pick a new start date. This will reset your day count and clear previous daily entries.</p>
-          <label className="block text-sm font-medium text-gray-700">New Start Date</label>
-          <input type="date" value={resetDate} onChange={(e) => setResetDate(e.target.value)} className="input-field" />
-          <p className="text-xs text-gray-500">New end date will be {(() => { try { const sd = new Date(resetDate); return format(addDays(sd, 74), 'MMM dd, yyyy'); } catch { return '—' } })()}</p>
-        </div>
-        <div className="flex justify-end space-x-3 p-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
-          <button onClick={() => setShowResetModal(false)} className="btn-secondary">Cancel</button>
-          <button
-            onClick={async () => {
-              try {
-                if (resetDate) await resetSFHChallengeStart?.(activeChallenge.id, new Date(resetDate));
-                setShowResetModal(false);
-              } catch (e) { console.error(e); }
-            }}
-            className="btn-primary"
-          >
-            Reset
-          </button>
-        </div>
-      </div>
-    </div>
-  )}
+                          )}
                         </div>
                         <div className="ml-7">
                           <textarea
@@ -1179,6 +1142,43 @@ export default function SeventyFiveHard() {
             <div className="flex justify-end space-x-3 p-6 border-t border-gray-200 bg-gray-50 rounded-b-xl">
               <button onClick={() => setShowEditChallengeForm(false)} className="btn-secondary">Cancel</button>
               <button type="submit" form="edit-challenge-form" className="btn-primary">Save Changes</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reset Start Modal */}
+      {showResetModal && activeChallenge && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50 p-4 overflow-y-auto"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowResetModal(false) }}
+        >
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">Reset Challenge Start</h3>
+              <button onClick={() => setShowResetModal(false)} className="p-2 hover:bg-gray-100 rounded-lg" aria-label="Close">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 space-y-3">
+              <p className="text-sm text-gray-700">Pick a new start date. This will reset your day count and clear previous daily entries.</p>
+              <label className="block text-sm font-medium text-gray-700">New Start Date</label>
+              <input type="date" value={resetDate} onChange={(e) => setResetDate(e.target.value)} className="input-field" />
+              <p className="text-xs text-gray-500">New end date will be {(() => { try { const sd = new Date(resetDate); return format(addDays(sd, 74), 'MMM dd, yyyy'); } catch { return '—' } })()}</p>
+            </div>
+            <div className="flex justify-end space-x-3 p-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
+              <button onClick={() => setShowResetModal(false)} className="btn-secondary">Cancel</button>
+              <button
+                onClick={async () => {
+                  try {
+                    if (resetDate) await resetSFHChallengeStart?.(activeChallenge.id, new Date(resetDate));
+                    setShowResetModal(false);
+                  } catch (e) { console.error(e); }
+                }}
+                className="btn-primary"
+              >
+                Reset
+              </button>
             </div>
           </div>
         </div>
