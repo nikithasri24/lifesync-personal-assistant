@@ -158,7 +158,10 @@ export default function SeventyFiveHard() {
     if (!paused.length) return null
     return [...paused].sort((a, b) => b.startDate.getTime() - a.startDate.getTime())[0]
   }, [seventyFiveHardChallenges])
-  const activeChallengeRules = useMemo(() => activeChallenge?.rules ?? [], [activeChallenge?.id, seventyFiveHardChallenges.length]);
+
+  // Show either active challenge or most recent paused challenge
+  const displayedChallenge = activeChallenge || latestPausedChallenge;
+  const activeChallengeRules = useMemo(() => displayedChallenge?.rules ?? [], [displayedChallenge?.id, seventyFiveHardChallenges.length]);
 
   // Edit modal state
   const [editForm, setEditForm] = useState({
@@ -168,19 +171,19 @@ export default function SeventyFiveHard() {
   });
 
   const openEditChallenge = () => {
-    if (!activeChallenge) return;
+    if (!displayedChallenge) return;
     setEditForm({
-      name: activeChallenge.name,
-      notes: activeChallenge.notes || '',
-      rules: activeChallenge.rules.map(r => ({ id: r.id, title: r.title, description: r.description, isRequired: r.isRequired, isCustom: r.isCustom, dailyTarget: r.dailyTarget, segmentLabels: r.segmentLabels })),
+      name: displayedChallenge.name,
+      notes: displayedChallenge.notes || '',
+      rules: displayedChallenge.rules.map(r => ({ id: r.id, title: r.title, description: r.description, isRequired: r.isRequired, isCustom: r.isCustom, dailyTarget: r.dailyTarget, segmentLabels: r.segmentLabels })),
   });
     setShowEditChallengeForm(true);
   };
 
   const applyEditChallenge = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!activeChallenge) return;
-    updateSeventyFiveHardChallenge?.(activeChallenge.id, {
+    if (!displayedChallenge) return;
+    updateSeventyFiveHardChallenge?.(displayedChallenge.id, {
       name: editForm.name,
       notes: editForm.notes,
       rules: editForm.rules.map(r => ({ id: r.id, title: r.title, description: r.description, isRequired: r.isRequired, isCustom: r.isCustom, dailyTarget: r.dailyTarget, segmentLabels: r.segmentLabels } as any)),
@@ -603,40 +606,15 @@ export default function SeventyFiveHard() {
           <p className="text-gray-600">Transform your life in 75 days with mental toughness</p>
         </div>
         
-        {!activeChallenge && (
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setShowChallengeForm(true)}
-              className="btn-primary flex items-center space-x-2"
-            >
-              <Play size={20} />
-              <span>Start Challenge</span>
-            </button>
-            {latestPausedChallenge && (
-              <button
-                type="button"
-                onClick={() => {
-                  // Resume: adjust start date to maintain current day
-                  const today = new Date();
-                  const newStartDate = addDays(today, -(latestPausedChallenge.currentDay - 1));
-                  const newEndDate = addDays(newStartDate, 74);
-
-                  updateSeventyFiveHardChallenge?.(latestPausedChallenge.id, {
-                    isActive: true,
-                    startDate: newStartDate,
-                    endDate: newEndDate
-                  });
-                  showGlobalToast?.(`Resumed at Day ${latestPausedChallenge.currentDay}`, 'success');
-                }}
-                className="btn-primary flex items-center space-x-2"
-                title={`Resume ${latestPausedChallenge.name} from Day ${latestPausedChallenge.currentDay}`}
-              >
-                <Play size={20} />
-                <span>Resume (Day {latestPausedChallenge.currentDay})</span>
-              </button>
-            )}
-          </div>
+        {!displayedChallenge && (
+          <button
+            type="button"
+            onClick={() => setShowChallengeForm(true)}
+            className="btn-primary flex items-center space-x-2"
+          >
+            <Play size={20} />
+            <span>Start Challenge</span>
+          </button>
         )}
         <div className="flex items-center gap-3">
           {syncError && (
@@ -766,42 +744,65 @@ export default function SeventyFiveHard() {
         </div>
       </div>
 
-      {/* Active Challenge */}
-      {activeChallenge && (
+      {/* Active or Paused Challenge */}
+      {displayedChallenge && (
         <div className="space-y-6">
           {/* Challenge Header */}
           <div className="card">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900">{activeChallenge.name}</h2>
+                <h2 className="text-xl font-semibold text-gray-900">{displayedChallenge.name}</h2>
                 <p className="text-sm text-gray-600">
-                  Day {activeChallenge.currentDay} of 75 • Started {format(activeChallenge.startDate, 'MMM dd, yyyy')} • Ends {format(activeChallenge.endDate, 'MMM dd, yyyy')} • {
-                    Math.max(0, differenceInDays(activeChallenge.endDate, new Date()) + 1)
+                  Day {displayedChallenge.currentDay} of 75 • Started {format(displayedChallenge.startDate, 'MMM dd, yyyy')} • Ends {format(displayedChallenge.endDate, 'MMM dd, yyyy')} • {
+                    Math.max(0, differenceInDays(displayedChallenge.endDate, new Date()) + 1)
                   } days remaining
                 </p>
               </div>
               <div className="flex items-center space-x-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setConfirmDialog({
-                      show: true,
-                      title: 'Pause Challenge?',
-                      message: `The challenge will be paused at Day ${activeChallenge.currentDay}. You can resume later and continue from exactly where you left off. Your progress and data will be preserved.`,
-                      confirmText: 'Pause at Day ' + activeChallenge.currentDay,
-                      variant: 'warning',
-                      onConfirm: () => {
-                        updateSeventyFiveHardChallenge?.(activeChallenge.id, { isActive: false });
-                        showGlobalToast?.(`Challenge paused at Day ${activeChallenge.currentDay}`, 'info');
-                        setConfirmDialog(prev => ({ ...prev, show: false }));
-                      }
-                    });
-                  }}
-                  className="btn-secondary text-sm flex items-center space-x-1 relative z-10 pointer-events-auto"
-                >
-                  <Pause size={16} />
-                  <span>Pause</span>
-                </button>
+                {displayedChallenge.isActive ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setConfirmDialog({
+                        show: true,
+                        title: 'Pause Challenge?',
+                        message: `The challenge will be paused at Day ${displayedChallenge.currentDay}. You can resume later and continue from exactly where you left off. Your progress and data will be preserved.`,
+                        confirmText: 'Pause at Day ' + displayedChallenge.currentDay,
+                        variant: 'warning',
+                        onConfirm: () => {
+                          updateSeventyFiveHardChallenge?.(displayedChallenge.id, { isActive: false });
+                          showGlobalToast?.(`Challenge paused at Day ${displayedChallenge.currentDay}`, 'info');
+                          setConfirmDialog(prev => ({ ...prev, show: false }));
+                        }
+                      });
+                    }}
+                    className="btn-secondary text-sm flex items-center space-x-1 relative z-10 pointer-events-auto"
+                  >
+                    <Pause size={16} />
+                    <span>Pause</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Resume: adjust start date to maintain current day
+                      const today = new Date();
+                      const newStartDate = addDays(today, -(displayedChallenge.currentDay - 1));
+                      const newEndDate = addDays(newStartDate, 74);
+
+                      updateSeventyFiveHardChallenge?.(displayedChallenge.id, {
+                        isActive: true,
+                        startDate: newStartDate,
+                        endDate: newEndDate
+                      });
+                      showGlobalToast?.(`Resumed at Day ${displayedChallenge.currentDay}`, 'success');
+                    }}
+                    className="btn-primary text-sm flex items-center space-x-1"
+                  >
+                    <Play size={16} />
+                    <span>Resume</span>
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={openEditChallenge}
@@ -828,19 +829,19 @@ export default function SeventyFiveHard() {
                       variant: 'warning',
                       onConfirm: () => {
                         // Pause the current challenge
-                        updateSeventyFiveHardChallenge?.(activeChallenge.id, { isActive: false });
+                        updateSeventyFiveHardChallenge?.(displayedChallenge.id, { isActive: false });
 
                         // Create a new challenge with the same rules
                         const newChallenge: SeventyFiveHardChallenge = {
                           id: generateId(),
-                          name: `${activeChallenge.name} (Restart)`,
+                          name: `${displayedChallenge.name} (Restart)`,
                           startDate: new Date(),
                           endDate: addDays(new Date(), 74),
                           isActive: true,
                           currentDay: 1,
-                          rules: activeChallenge.rules.map(r => ({ ...r, id: generateId() })),
+                          rules: displayedChallenge.rules.map(r => ({ ...r, id: generateId() })),
                           dailyEntries: [],
-                          notes: activeChallenge.notes,
+                          notes: displayedChallenge.notes,
                           createdAt: new Date()
                         };
 
@@ -864,14 +865,14 @@ export default function SeventyFiveHard() {
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-gray-700">Overall Progress</span>
                 <span className="text-sm text-gray-600">
-                  {getChallengeProgress(activeChallenge).completedDays} / 75 days
+                  {getChallengeProgress(displayedChallenge).completedDays} / 75 days
                 </span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-3">
                 <div 
                   className="bg-gradient-to-r from-green-500 to-emerald-600 h-3 rounded-full transition-all duration-300"
                   style={{ 
-                    width: `${(getChallengeProgress(activeChallenge).completedDays / 75) * 100}%` 
+                    width: `${(getChallengeProgress(displayedChallenge).completedDays / 75) * 100}%` 
                   }}
                 />
               </div>
@@ -879,8 +880,8 @@ export default function SeventyFiveHard() {
 
             {/* Analytics Section */}
             {(() => {
-              const streakStats = getStreakStats(activeChallenge);
-              const ruleStats = getRuleCompletionStats(activeChallenge);
+              const streakStats = getStreakStats(displayedChallenge);
+              const ruleStats = getRuleCompletionStats(displayedChallenge);
 
               return (
                 <div className="mb-6">
@@ -914,7 +915,7 @@ export default function SeventyFiveHard() {
                   <div className="p-4 rounded-lg border border-gray-200 bg-white">
                     <h4 className="text-sm font-semibold text-gray-900 mb-3">Rule Completion Rates</h4>
                     <div className="space-y-3">
-                      {activeChallenge.rules.map((rule) => {
+                      {displayedChallenge.rules.map((rule) => {
                         const stats = ruleStats[rule.id];
                         if (!stats) return null;
 
@@ -956,7 +957,7 @@ export default function SeventyFiveHard() {
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium text-gray-700 flex items-center gap-2"><Scale size={16} /> Weight</span>
                     {(() => {
-                      const weights = activeChallenge.dailyEntries
+                      const weights = displayedChallenge.dailyEntries
                         .filter(e => typeof e.weight === 'number')
                         .sort((a, b) => a.day - b.day)
                         .map(e => e.weight!)
@@ -965,7 +966,7 @@ export default function SeventyFiveHard() {
                     })()}
                   </div>
                   {(() => {
-                    const weights = activeChallenge.dailyEntries
+                    const weights = displayedChallenge.dailyEntries
                       .filter(e => typeof e.weight === 'number')
                       .sort((a, b) => a.day - b.day)
                       .map(e => e.weight!)
@@ -978,7 +979,7 @@ export default function SeventyFiveHard() {
                     <span className="text-xs text-gray-500">Chest/Waist (sum)</span>
                   </div>
                   {(() => {
-                    const series = activeChallenge.dailyEntries
+                    const series = displayedChallenge.dailyEntries
                       .filter(e => e.measurements && (e.measurements.chest || e.measurements.waist))
                       .sort((a, b) => a.day - b.day)
                       .map(e => (Number(e.measurements.chest || 0) + Number(e.measurements.waist || 0)))
@@ -990,7 +991,7 @@ export default function SeventyFiveHard() {
 
             {/* Progress Photos Gallery */}
             {(() => {
-              const photosWithDays = activeChallenge.dailyEntries
+              const photosWithDays = displayedChallenge.dailyEntries
                 .filter(e => e.progressPhotoUrl)
                 .sort((a, b) => a.day - b.day);
 
@@ -1062,26 +1063,26 @@ export default function SeventyFiveHard() {
 
                   <div className="grid grid-cols-7 sm:grid-cols-10 md:grid-cols-15 gap-2">
                     {Array.from({ length: 75 }, (_, i) => i + 1).map((dayNum) => {
-                      const dayDate = addDays(activeChallenge.startDate, dayNum - 1);
-                      const entry = activeChallenge.dailyEntries.find(e => e.day === dayNum);
+                      const dayDate = addDays(displayedChallenge.startDate, dayNum - 1);
+                      const entry = displayedChallenge.dailyEntries.find(e => e.day === dayNum);
                       const progress = entry
                         ? {
                             completed: entry.ruleCompletions.filter(c => c.completed).length,
                             total: entry.ruleCompletions.length
                           }
-                        : { completed: 0, total: activeChallenge.rules.length };
+                        : { completed: 0, total: displayedChallenge.rules.length };
 
                       const isComplete = progress.completed === progress.total && progress.total > 0;
                       const isPartial = progress.completed > 0 && progress.completed < progress.total;
-                      const isToday = dayNum === activeChallenge.currentDay;
-                      const isFuture = dayNum > activeChallenge.currentDay;
+                      const isToday = dayNum === displayedChallenge.currentDay;
+                      const isFuture = dayNum > displayedChallenge.currentDay;
 
                       return (
                         <button
                           key={dayNum}
                           onClick={() => {
                             if (!isFuture) {
-                              const entry = activeChallenge.dailyEntries.find(e => e.day === dayNum);
+                              const entry = displayedChallenge.dailyEntries.find(e => e.day === dayNum);
                               setDayFormData({
                                 weight: entry?.weight?.toString() || '',
                                 measurements: {
@@ -1095,7 +1096,7 @@ export default function SeventyFiveHard() {
                                 progressPhotoUrl: entry?.progressPhotoUrl || ''
                               });
                               setPhotoPreview(entry?.progressPhotoUrl || '');
-                              setSelectedChallenge(activeChallenge.id);
+                              setSelectedChallenge(displayedChallenge.id);
                               setSelectedDate(dayDate);
                               setShowDayForm(true);
                             }
@@ -1129,11 +1130,11 @@ export default function SeventyFiveHard() {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center space-x-2">
                   <Calendar size={20} />
-                  <span>Today - Day {activeChallenge.currentDay}</span>
+                  <span>Today - Day {displayedChallenge.currentDay}</span>
                 </h3>
                 <button
                   onClick={() => {
-                    const entry = getCurrentDayEntry(activeChallenge);
+                    const entry = getCurrentDayEntry(displayedChallenge);
                     setDayFormData({
                       weight: entry?.weight?.toString() || '',
                       measurements: {
@@ -1147,7 +1148,7 @@ export default function SeventyFiveHard() {
                       progressPhotoUrl: entry?.progressPhotoUrl || ''
                     });
                     setPhotoPreview(entry?.progressPhotoUrl || '');
-                    setSelectedChallenge(activeChallenge.id);
+                    setSelectedChallenge(displayedChallenge.id);
                     setSelectedDate(new Date());
                     setShowDayForm(true);
                   }}
@@ -1159,8 +1160,8 @@ export default function SeventyFiveHard() {
               </div>
 
               <div className="grid gap-3">
-                {activeChallenge.rules.map((rule) => {
-                  const entry = getCurrentDayEntry(activeChallenge);
+                {displayedChallenge.rules.map((rule) => {
+                  const entry = getCurrentDayEntry(displayedChallenge);
                   const completion = entry?.ruleCompletions.find(c => c.ruleId === rule.id);
                   const isCompleted = completion?.completed || false;
 
@@ -1183,7 +1184,7 @@ export default function SeventyFiveHard() {
                                 {segs.map((v, i) => (
                                   <button
                                     key={i}
-                                    onClick={() => toggleRuleCompletion(activeChallenge.id, rule.id, new Date(), i)}
+                                    onClick={() => toggleRuleCompletion(displayedChallenge.id, rule.id, new Date(), i)}
                                     className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-all duration-200 ${
                                       v ? 'border-green-500 bg-green-500 text-white' : 'border-gray-300 hover:border-green-400'
                                     }`}
@@ -1197,7 +1198,7 @@ export default function SeventyFiveHard() {
                           }
                           return (
                             <button
-                              onClick={() => toggleRuleCompletion(activeChallenge.id, rule.id)}
+                              onClick={() => toggleRuleCompletion(displayedChallenge.id, rule.id)}
                               className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-all duration-200 ${
                                 isCompleted ? 'border-green-500 bg-green-500 text-white' : 'border-gray-300 hover:border-green-400'
                               }`}
@@ -1468,7 +1469,7 @@ export default function SeventyFiveHard() {
       )}
 
   {/* Edit Challenge Modal */}
-  {showEditChallengeForm && activeChallenge && (
+  {showEditChallengeForm && displayedChallenge && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50 p-4 overflow-y-auto"
           onClick={(e) => {
@@ -1620,7 +1621,7 @@ export default function SeventyFiveHard() {
       )}
 
       {/* Reset Start Modal */}
-      {showResetModal && activeChallenge && (
+      {showResetModal && displayedChallenge && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50 p-4 overflow-y-auto"
           onClick={(e) => { if (e.target === e.currentTarget) setShowResetModal(false) }}
@@ -1647,7 +1648,7 @@ export default function SeventyFiveHard() {
               <button
                 onClick={async () => {
                   try {
-                    if (resetDate) await resetSFHChallengeStart?.(activeChallenge.id, new Date(resetDate));
+                    if (resetDate) await resetSFHChallengeStart?.(displayedChallenge.id, new Date(resetDate));
                     setShowResetModal(false);
                   } catch (e) { console.error(e); }
                 }}
