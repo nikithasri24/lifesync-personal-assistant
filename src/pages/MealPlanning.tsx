@@ -674,36 +674,51 @@ function MealItem({ meal, recipes }: { meal: PlannedMeal; recipes: Recipe[] }) {
               className="w-full bg-transparent border-none outline-none text-xs"
             />
             {showList && editValue.trim().length > 0 && inputRef.current && createPortal(
-              <div className="fixed z-[100] w-[200px] rounded-lg border border-slate-300 bg-white shadow-xl" style={{
+              <div className="fixed z-[100] min-w-[240px] max-w-[320px] rounded-lg border border-slate-200 bg-white shadow-2xl ring-1 ring-black/5" style={{
                 left: inputRef.current.getBoundingClientRect().left,
                 top: inputRef.current.getBoundingClientRect().bottom + 4,
               }}>
                 {matches.length === 0 ? (
                   <button
                     type="button"
-                    className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50 rounded-lg"
+                    className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-slate-700 hover:bg-indigo-50 transition-colors first:rounded-t-lg last:rounded-b-lg"
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => saveEdit(editValue.trim())}
                   >
-                    <span className="flex h-5 w-5 items-center justify-center rounded bg-indigo-100 text-xs font-medium text-indigo-700">+</span>
-                    <span className="truncate">Add "<span className="font-medium">{editValue.trim()}</span>"</span>
+                    <span className="flex h-6 w-6 items-center justify-center rounded-md bg-indigo-100 text-xs font-semibold text-indigo-700">+</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="truncate font-medium">Add "{editValue.trim()}"</div>
+                      <div className="text-xs text-slate-500">Create new meal</div>
+                    </div>
                   </button>
                 ) : (
-                  <div className="max-h-[300px] overflow-auto py-1">
+                  <div className="max-h-[280px] overflow-auto py-1">
                     {matches.map((r: any, idx: number) => {
                       const isSelected = idx === selectedIndex;
+                      const isRecipe = r.type === 'recipe';
+                      const isCustom = r.type === 'custom';
                       return (
                         <button
                           key={`${r.id}-${idx}`}
                           type="button"
-                          className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition ${
+                          className={`flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors ${
                             isSelected ? 'bg-indigo-50 text-indigo-900' : 'text-slate-700 hover:bg-slate-50'
                           }`}
                           onMouseDown={(e) => e.preventDefault()}
                           onMouseEnter={() => setSelectedIndex(idx)}
                           onClick={() => saveEdit(r.name)}
                         >
-                          <span className="truncate font-medium">{r.name}</span>
+                          <span className={`flex h-6 w-6 items-center justify-center rounded-md text-xs font-semibold ${
+                            isRecipe ? 'bg-emerald-100 text-emerald-700' : isCustom ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700'
+                          }`}>
+                            {isRecipe ? '📖' : isCustom ? '⭐' : '🍽️'}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <div className="truncate font-medium">{r.name}</div>
+                            <div className="text-xs text-slate-500">
+                              {isRecipe ? 'Recipe' : isCustom ? `Used ${r.count || 1}x` : 'Meal option'}
+                            </div>
+                          </div>
                         </button>
                       );
                     })}
@@ -1502,22 +1517,25 @@ function AddMealControl({ dateKey, mealType, onAdded, showByDefault = true, comp
         </div>
       )}
       {showList && query.trim().length > 0 && inputRef.current && createPortal(
-        <div className="fixed z-[100] w-[200px] rounded-lg border border-slate-300 bg-white shadow-xl" style={{
+        <div className="fixed z-[100] min-w-[240px] max-w-[320px] rounded-lg border border-slate-200 bg-white shadow-2xl ring-1 ring-black/5" style={{
           left: inputRef.current.getBoundingClientRect().left,
           top: inputRef.current.getBoundingClientRect().bottom + 4,
         }}>
           {matches.length === 0 ? (
             <button
               type="button"
-              className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50 rounded-lg"
+              className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-slate-700 hover:bg-indigo-50 transition-colors first:rounded-t-lg last:rounded-b-lg"
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => enrichAndAdd(query.trim())}
             >
-              <span className="flex h-5 w-5 items-center justify-center rounded bg-indigo-100 text-xs font-medium text-indigo-700">+</span>
-              <span className="truncate">Add "<span className="font-medium">{query.trim()}</span>"</span>
+              <span className="flex h-6 w-6 items-center justify-center rounded-md bg-indigo-100 text-xs font-semibold text-indigo-700">+</span>
+              <div className="flex-1 min-w-0">
+                <div className="truncate font-medium">Add "{query.trim()}"</div>
+                <div className="text-xs text-slate-500">Create new meal</div>
+              </div>
             </button>
           ) : (
-            <div className="max-h-[300px] overflow-auto py-1">
+            <div className="max-h-[280px] overflow-auto py-1">
               {matches.map((r: any, idx: number) => {
                 const idStr = String(r.id);
                 const isCustom = idStr.startsWith('__custom__:');
@@ -1529,7 +1547,7 @@ function AddMealControl({ dateKey, mealType, onAdded, showByDefault = true, comp
                   <button
                     key={`${r.id}-${idx}`}
                     type="button"
-                    className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition ${
+                    className={`flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors ${
                       isSelected ? 'bg-indigo-50 text-indigo-900' : 'text-slate-700 hover:bg-slate-50'
                     }`}
                     onMouseDown={(e) => e.preventDefault()}
@@ -1542,7 +1560,17 @@ function AddMealControl({ dateKey, mealType, onAdded, showByDefault = true, comp
                       }
                     }}
                   >
-                    <span className="truncate font-medium">{r.name}</span>
+                    <span className={`flex h-6 w-6 items-center justify-center rounded-md text-xs font-semibold ${
+                      isRecipe ? 'bg-emerald-100 text-emerald-700' : isCustom ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700'
+                    }`}>
+                      {isRecipe ? '📖' : isCustom ? '⭐' : '🍽️'}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="truncate font-medium">{r.name}</div>
+                      <div className="text-xs text-slate-500">
+                        {isRecipe ? 'Recipe' : isCustom ? `Used ${r.count || 1}x` : 'Meal option'}
+                      </div>
+                    </div>
                   </button>
                 );
               })}
@@ -2104,6 +2132,10 @@ const MealPlanning: React.FC = () => {
   // Multi-cell selection state
   const [selectedCells, setSelectedCells] = useState<Set<CellKey>>(new Set());
   const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [multiCellQuery, setMultiCellQuery] = useState('');
+  const [showMultiCellList, setShowMultiCellList] = useState(false);
+  const [multiCellSelectedIndex, setMultiCellSelectedIndex] = useState(0);
+  const multiCellInputRef = React.useRef<HTMLInputElement | null>(null);
 
   const [selectedRecipeId, setSelectedRecipeId] = useState('');
   const [selectedMealType, setSelectedMealType] = useState<string>(MEAL_TYPES[2]);
@@ -2378,11 +2410,130 @@ const MealPlanning: React.FC = () => {
       await Promise.all(promises);
       showGlobalToast(`Added meal to ${selectedCells.size} cells`, 'success');
       clearSelection();
+      setMultiCellQuery('');
     } catch (error) {
       console.error('Failed to add meals to selected cells:', error);
       showGlobalToast('Failed to add meals', 'error');
     }
   };
+
+  // Multi-cell selection autocomplete matches
+  const multiCellMatches = React.useMemo(() => {
+    const q = multiCellQuery.trim().toLowerCase();
+
+    if (!q) {
+      return [];
+    }
+
+    const scoreMatch = (text: string, query: string): number => {
+      const lower = text.toLowerCase();
+      if (lower === query) return 1000;
+      if (lower.startsWith(query)) return 900;
+      const words = lower.split(/\s+/);
+      if (words.some(w => w.startsWith(query))) return 800;
+      if (lower.includes(query)) return 700;
+      let fuzzyScore = 0;
+      let queryIdx = 0;
+      for (let i = 0; i < lower.length && queryIdx < query.length; i++) {
+        if (lower[i] === query[queryIdx]) {
+          fuzzyScore += (100 - i);
+          queryIdx++;
+        }
+      }
+      if (queryIdx === query.length) return fuzzyScore;
+      return 0;
+    };
+
+    const candidates: Array<{ id: string; name: string; score: number; type: 'custom' | 'option' | 'recipe'; count?: number }> = [];
+
+    // Add historical custom meals
+    const customMeals = new Map<string, { name: string; count: number; lastUsed: Date }>();
+    mealPlans.forEach(plan => {
+      plan.meals?.forEach(meal => {
+        if (meal.customMeal && !meal.recipeId) {
+          const key = meal.customMeal.toLowerCase();
+          const existing = customMeals.get(key);
+          const mealDate = ensureDate(meal.date);
+          if (existing) {
+            existing.count++;
+            if (mealDate > existing.lastUsed) {
+              existing.lastUsed = mealDate;
+            }
+          } else {
+            customMeals.set(key, {
+              name: meal.customMeal,
+              count: 1,
+              lastUsed: mealDate
+            });
+          }
+        }
+      });
+    });
+
+    customMeals.forEach(item => {
+      const score = scoreMatch(item.name, q);
+      if (score > 0) {
+        candidates.push({ id: `__custom__:${item.name}`, name: item.name, score, type: 'custom', count: item.count });
+      }
+    });
+
+    // Add recipes
+    recipes.forEach(recipe => {
+      const score = scoreMatch(recipe.name, q);
+      if (score > 0) {
+        candidates.push({ id: recipe.id!, name: recipe.name, score, type: 'recipe' });
+      }
+    });
+
+    // Deduplicate and sort
+    const deduped = new Map<string, typeof candidates[0]>();
+    candidates.forEach(candidate => {
+      const key = candidate.name.toLowerCase();
+      const existing = deduped.get(key);
+      if (!existing || candidate.score > existing.score) {
+        deduped.set(key, candidate);
+      }
+    });
+
+    return Array.from(deduped.values())
+      .sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return a.name.localeCompare(b.name);
+      })
+      .slice(0, 12);
+  }, [multiCellQuery, recipes, mealPlans]);
+
+  const handleMultiCellKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setMultiCellSelectedIndex((prev) => Math.min(prev + 1, multiCellMatches.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setMultiCellSelectedIndex((prev) => Math.max(prev - 1, 0));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (multiCellMatches.length > 0) {
+        const selected = multiCellMatches[multiCellSelectedIndex];
+        const idStr = String(selected.id);
+        if (idStr.startsWith('__custom__:')) {
+          await addMealToSelectedCells('', selected.name);
+        } else {
+          await addMealToSelectedCells(selected.id);
+        }
+      } else if (multiCellQuery.trim()) {
+        await addMealToSelectedCells('', multiCellQuery.trim());
+      }
+      setMultiCellSelectedIndex(0);
+    } else if (e.key === 'Escape') {
+      setShowMultiCellList(false);
+      setMultiCellSelectedIndex(0);
+      multiCellInputRef.current?.blur();
+    }
+  };
+
+  React.useEffect(() => {
+    setMultiCellSelectedIndex(0);
+  }, [multiCellQuery]);
 
   // Enhanced grocery list with status tracking
   type GroceryItemStatus = 'needed' | 'at_home' | 'in_cart' | 'purchased';
@@ -2601,20 +2752,83 @@ const MealPlanning: React.FC = () => {
               </span>
             </div>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-              <input
-                type="text"
-                placeholder="Type meal name..."
-                className="w-full sm:w-64 rounded-md border border-indigo-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                onKeyDown={async (e) => {
-                  if (e.key === 'Enter') {
-                    const value = (e.target as HTMLInputElement).value.trim();
-                    if (value) {
-                      await addMealToSelectedCells('', value);
-                      (e.target as HTMLInputElement).value = '';
-                    }
-                  }
-                }}
-              />
+              <div className="relative w-full sm:w-64">
+                <input
+                  ref={multiCellInputRef}
+                  type="text"
+                  value={multiCellQuery}
+                  onChange={(e) => { setMultiCellQuery(e.target.value); setShowMultiCellList(true); }}
+                  onFocus={() => setShowMultiCellList(true)}
+                  onBlur={() => setTimeout(() => setShowMultiCellList(false), 200)}
+                  onKeyDown={handleMultiCellKeyDown}
+                  placeholder="Type meal name..."
+                  className="w-full rounded-md border border-indigo-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                {showMultiCellList && multiCellQuery.trim().length > 0 && multiCellInputRef.current && createPortal(
+                  <div className="fixed z-[100] min-w-[240px] max-w-[320px] rounded-lg border border-slate-200 bg-white shadow-2xl ring-1 ring-black/5" style={{
+                    left: multiCellInputRef.current.getBoundingClientRect().left,
+                    top: multiCellInputRef.current.getBoundingClientRect().bottom + 4,
+                  }}>
+                    {multiCellMatches.length === 0 ? (
+                      <button
+                        type="button"
+                        className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-slate-700 hover:bg-indigo-50 transition-colors first:rounded-t-lg last:rounded-b-lg"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={async () => {
+                          await addMealToSelectedCells('', multiCellQuery.trim());
+                          setShowMultiCellList(false);
+                        }}
+                      >
+                        <span className="flex h-6 w-6 items-center justify-center rounded-md bg-indigo-100 text-xs font-semibold text-indigo-700">+</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="truncate font-medium">Add "{multiCellQuery.trim()}"</div>
+                          <div className="text-xs text-slate-500">Create new meal</div>
+                        </div>
+                      </button>
+                    ) : (
+                      <div className="max-h-[280px] overflow-auto py-1">
+                        {multiCellMatches.map((r: any, idx: number) => {
+                          const isSelected = idx === multiCellSelectedIndex;
+                          const isRecipe = r.type === 'recipe';
+                          const isCustom = r.type === 'custom';
+                          return (
+                            <button
+                              key={`${r.id}-${idx}`}
+                              type="button"
+                              className={`flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors ${
+                                isSelected ? 'bg-indigo-50 text-indigo-900' : 'text-slate-700 hover:bg-slate-50'
+                              }`}
+                              onMouseDown={(e) => e.preventDefault()}
+                              onMouseEnter={() => setMultiCellSelectedIndex(idx)}
+                              onClick={async () => {
+                                if (isCustom) {
+                                  await addMealToSelectedCells('', r.name);
+                                } else {
+                                  await addMealToSelectedCells(r.id);
+                                }
+                                setShowMultiCellList(false);
+                              }}
+                            >
+                              <span className={`flex h-6 w-6 items-center justify-center rounded-md text-xs font-semibold ${
+                                isRecipe ? 'bg-emerald-100 text-emerald-700' : isCustom ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700'
+                              }`}>
+                                {isRecipe ? '📖' : isCustom ? '⭐' : '🍽️'}
+                              </span>
+                              <div className="flex-1 min-w-0">
+                                <div className="truncate font-medium">{r.name}</div>
+                                <div className="text-xs text-slate-500">
+                                  {isRecipe ? 'Recipe' : isCustom ? `Used ${r.count || 1}x` : 'Meal option'}
+                                </div>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>,
+                  document.body
+                )}
+              </div>
               <button
                 type="button"
                 onClick={clearSelection}
