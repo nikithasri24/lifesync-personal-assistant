@@ -169,16 +169,26 @@ export default function SeventyFiveHard() {
 
   const exportChallenges = () => {
     try {
+      if (seventyFiveHardChallenges.length === 0) {
+        showGlobalToast?.('No challenges to export', 'info');
+        return;
+      }
+
       const data = JSON.stringify(seventyFiveHardChallenges, null, 2);
       const blob = new Blob([data], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = '75hard-export.json';
+      a.download = `75hard-export-${format(new Date(), 'yyyy-MM-dd')}.json`;
       a.click();
       URL.revokeObjectURL(url);
+      showGlobalToast?.(`Exported ${seventyFiveHardChallenges.length} challenge${seventyFiveHardChallenges.length > 1 ? 's' : ''}`, 'success');
     } catch (e) {
       console.error('[75Hard] Export failed', e);
+      const errorMessage = e instanceof Error
+        ? `Export failed: ${e.message}`
+        : 'Export failed. Please try again.';
+      showGlobalToast?.(errorMessage, 'error');
     }
   };
 
@@ -188,10 +198,34 @@ export default function SeventyFiveHard() {
       try {
         const text = String(reader.result || '');
         const imported = JSON.parse(text) as SeventyFiveHardChallenge[];
+
+        if (!Array.isArray(imported)) {
+          showGlobalToast?.('Import failed: Invalid file format. Expected an array of challenges.', 'error');
+          return;
+        }
+
         // Merge: append imported challenges
-        imported.forEach((c) => addSeventyFiveHardChallenge?.(c));
+        let importedCount = 0;
+        imported.forEach((c) => {
+          try {
+            addSeventyFiveHardChallenge?.(c);
+            importedCount++;
+          } catch (err) {
+            console.error('[75Hard] Failed to import challenge', c.name, err);
+          }
+        });
+
+        if (importedCount > 0) {
+          showGlobalToast?.(`Successfully imported ${importedCount} challenge${importedCount > 1 ? 's' : ''}`, 'success');
+        } else {
+          showGlobalToast?.('No challenges were imported', 'error');
+        }
       } catch (e) {
         console.error('[75Hard] Import failed', e);
+        const errorMessage = e instanceof Error
+          ? `Import failed: ${e.message}`
+          : 'Import failed. Please check the file format and try again.';
+        showGlobalToast?.(errorMessage, 'error');
       }
     };
     reader.readAsText(file);
@@ -574,7 +608,10 @@ export default function SeventyFiveHard() {
                   showGlobalToast?.('Synced 75 Hard to cloud', 'success');
                 } catch (err) {
                   console.error('[75Hard] Sync failed', err);
-                  showGlobalToast?.('Sync failed', 'error');
+                  const errorMessage = err instanceof Error
+                    ? `Sync failed: ${err.message}`
+                    : 'Sync failed. Please check your connection and try again.';
+                  showGlobalToast?.(errorMessage, 'error');
                 } finally {
                   setSyncing(false);
                 }
