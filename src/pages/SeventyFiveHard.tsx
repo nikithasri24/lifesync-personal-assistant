@@ -81,11 +81,28 @@ export default function SeventyFiveHard() {
   const [editingChallenge, setEditingChallenge] = useState<string | null>(null);
   const [showEditChallengeForm, setShowEditChallengeForm] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetDate, setResetDate] = useState<string>('');
   const [showDayForm, setShowDayForm] = useState(false);
   const [selectedChallenge, setSelectedChallenge] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    show: boolean;
+    title: string;
+    message: string;
+    confirmText: string;
+    onConfirm: () => void;
+    variant?: 'danger' | 'warning';
+  }>({
+    show: false,
+    title: '',
+    message: '',
+    confirmText: 'Confirm',
+    onConfirm: () => {},
+    variant: 'warning'
+  });
 
   const [challengeFormData, setChallengeFormData] = useState({
     name: '',
@@ -110,6 +127,22 @@ export default function SeventyFiveHard() {
     notes: '',
     progressPhotoUrl: ''
   });
+
+  const [photoPreview, setPhotoPreview] = useState<string>('');
+
+  const handlePhotoUpload = (file: File) => {
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setDayFormData(prev => ({ ...prev, progressPhotoUrl: base64String }));
+        setPhotoPreview(base64String);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      showGlobalToast?.('Please select a valid image file', 'error');
+    }
+  };
 
   // Helper: derive daily target with sensible fallback for existing data
   const getRuleDailyTarget = (rule: SeventyFiveHardRule) => {
@@ -459,15 +492,68 @@ export default function SeventyFiveHard() {
   const getChallengeProgress = (challenge: SeventyFiveHardChallenge) => {
     const totalDays = Math.min(challenge.currentDay, 75);
     let completedDays = 0;
-    
+
     for (let day = 1; day <= totalDays; day++) {
       const progress = getDayProgress(challenge, day);
       if (progress.completed === progress.total) {
         completedDays++;
       }
     }
-    
+
     return { completedDays, totalDays: 75 };
+  };
+
+  const getStreakStats = (challenge: SeventyFiveHardChallenge) => {
+    const totalDays = Math.min(challenge.currentDay, 75);
+    let currentStreak = 0;
+    let longestStreak = 0;
+    let tempStreak = 0;
+
+    // Calculate streaks by iterating through days
+    for (let day = 1; day <= totalDays; day++) {
+      const progress = getDayProgress(challenge, day);
+      const isDayComplete = progress.completed === progress.total && progress.total > 0;
+
+      if (isDayComplete) {
+        tempStreak++;
+        longestStreak = Math.max(longestStreak, tempStreak);
+      } else {
+        tempStreak = 0;
+      }
+    }
+
+    // Current streak is the temp streak if we're still on a streak
+    const latestDayProgress = getDayProgress(challenge, totalDays);
+    const isLatestDayComplete = latestDayProgress.completed === latestDayProgress.total && latestDayProgress.total > 0;
+    currentStreak = isLatestDayComplete ? tempStreak : 0;
+
+    return { currentStreak, longestStreak };
+  };
+
+  const getRuleCompletionStats = (challenge: SeventyFiveHardChallenge) => {
+    const totalDays = Math.min(challenge.currentDay, 75);
+    const ruleStats: Record<string, { completed: number; total: number; percentage: number }> = {};
+
+    challenge.rules.forEach(rule => {
+      let completedCount = 0;
+
+      for (let day = 1; day <= totalDays; day++) {
+        const entry = challenge.dailyEntries.find(e => e.day === day);
+        const completion = entry?.ruleCompletions.find(c => c.ruleId === rule.id);
+
+        if (completion?.completed) {
+          completedCount++;
+        }
+      }
+
+      ruleStats[rule.id] = {
+        completed: completedCount,
+        total: totalDays,
+        percentage: totalDays > 0 ? Math.round((completedCount / totalDays) * 100) : 0
+      };
+    });
+
+    return ruleStats;
   };
 
   // Small inline SVG sparkline for weight trend
@@ -543,7 +629,21 @@ export default function SeventyFiveHard() {
           </div>
         )}
         <div className="flex items-center gap-3">
-          {sfhLastSynced && (
+          {syncError && (
+            <div className="flex items-center gap-2 text-xs text-red-600 bg-red-50 px-2 py-1 rounded">
+              <span>Sync error: {syncError}</span>
+              <button
+                onClick={async () => {
+                  const syncButton = document.querySelector('[data-sync-button]') as HTMLButtonElement;
+                  syncButton?.click();
+                }}
+                className="underline hover:no-underline"
+              >
+                Retry
+              </button>
+            </div>
+          )}
+          {!syncError && sfhLastSynced && (
             <span className="text-xs text-gray-500">Last synced: {format(sfhLastSynced, 'MMM dd, HH:mm')}</span>
           )}
           <button onClick={exportChallenges} className="btn-secondary text-sm">Export</button>
@@ -562,62 +662,75 @@ export default function SeventyFiveHard() {
           </label>
           {isSupabaseConfigured && (
             <button
-              className={`btn-secondary text-sm ${syncing ? 'opacity-60 cursor-not-allowed' : ''}`}
+              data-sync-button
+              className={`btn-secondary text-sm flex items-center gap-2 ${syncing ? 'opacity-60 cursor-not-allowed' : ''}`}
               disabled={syncing}
               onClick={async () => {
-                try {
-                  setSyncing(true);
-                  showGlobalToast?.('Syncing 75 Hard to cloud...', 'info');
-                  const remote = await apiClient.getSFHChallenges();
-                  const remoteKey = new Map(remote.map(c => [`${c.name}|${c.start_date}`, c] as const));
-                  for (const c of seventyFiveHardChallenges) {
-                    const key = `${c.name}|${format(c.startDate, 'yyyy-MM-dd')}`;
-                    let remoteChallenge = remoteKey.get(key) || null;
-                    if (!remoteChallenge) {
-                      const created = await apiClient.createSFHChallenge({
-                        name: c.name,
-                        start_date: format(c.startDate, 'yyyy-MM-dd'),
-                        end_date: format(c.endDate, 'yyyy-MM-dd'),
-                        is_active: c.isActive,
-                        current_day: c.currentDay,
-                        rules: c.rules.map(r => ({ id: r.id, title: r.title, description: r.description, is_required: r.isRequired, is_custom: r.isCustom, daily_target: r.dailyTarget, segment_labels: r.segmentLabels })),
-                        notes: c.notes || null,
-                      });
-                      remoteChallenge = created;
-                      remoteKey.set(key, created);
-                    }
-                    const remoteEntries = await apiClient.getSFHEntries([remoteChallenge.id!]);
-                    const remoteDates = new Set(remoteEntries.map(e => e.date));
-                    for (const e of (c.dailyEntries || [])) {
-                      const d = format(e.date, 'yyyy-MM-dd');
-                      if (!remoteDates.has(d)) {
-                        await apiClient.createSFHEntry({
-                          challenge_id: remoteChallenge.id!,
-                          date: d,
-                          day: e.day,
-                          rule_completions: e.ruleCompletions.map(rc => ({ rule_id: rc.ruleId, completed: rc.completed, completed_at: rc.completedAt ? rc.completedAt.toISOString() : null, segments: rc.segments })),
-                          notes: e.notes || null,
-                          progress_photo_url: e.progressPhotoUrl || null,
-                          weight: e.weight ?? null,
-                          measurements: e.measurements ?? null,
+                const performSync = async () => {
+                  try {
+                    setSyncing(true);
+                    setSyncError(null);
+                    showGlobalToast?.('Syncing 75 Hard to cloud...', 'info');
+                    const remote = await apiClient.getSFHChallenges();
+                    const remoteKey = new Map(remote.map(c => [`${c.name}|${c.start_date}` as const, c] as const));
+                    for (const c of seventyFiveHardChallenges) {
+                      const key = `${c.name}|${format(c.startDate, 'yyyy-MM-dd')}` as `${string}|${string}`;
+                      let remoteChallenge = remoteKey.get(key) || null;
+                      if (!remoteChallenge) {
+                        const created = await apiClient.createSFHChallenge({
+                          name: c.name,
+                          start_date: format(c.startDate, 'yyyy-MM-dd'),
+                          end_date: format(c.endDate, 'yyyy-MM-dd'),
+                          is_active: c.isActive,
+                          current_day: c.currentDay,
+                          rules: c.rules.map(r => ({ id: r.id, title: r.title, description: r.description, is_required: r.isRequired, is_custom: r.isCustom, daily_target: r.dailyTarget, segment_labels: r.segmentLabels })),
+                          notes: c.notes || null,
                         });
+                        remoteChallenge = created;
+                        remoteKey.set(key, created);
+                      }
+                      const remoteEntries = await apiClient.getSFHEntries([remoteChallenge.id!]);
+                      const remoteDates = new Set(remoteEntries.map(e => e.date));
+                      for (const e of (c.dailyEntries || [])) {
+                        const d = format(e.date, 'yyyy-MM-dd');
+                        if (!remoteDates.has(d)) {
+                          await apiClient.createSFHEntry({
+                            challenge_id: remoteChallenge.id!,
+                            date: d,
+                            day: e.day,
+                            rule_completions: e.ruleCompletions.map(rc => ({ rule_id: rc.ruleId, completed: rc.completed, completed_at: rc.completedAt ? rc.completedAt.toISOString() : null, segments: rc.segments })),
+                            notes: e.notes || null,
+                            progress_photo_url: e.progressPhotoUrl || null,
+                            weight: e.weight ?? null,
+                            measurements: e.measurements ?? null,
+                          });
+                        }
                       }
                     }
+                    await initializeData?.();
+                    setSyncError(null);
+                    showGlobalToast?.('Synced 75 Hard to cloud successfully', 'success');
+                  } catch (err) {
+                    console.error('[75Hard] Sync failed', err);
+                    const errorMessage = err instanceof Error
+                      ? err.message
+                      : 'Unknown error occurred';
+                    setSyncError(errorMessage);
+                    showGlobalToast?.(`Sync failed: ${errorMessage}. Click retry to try again.`, 'error');
+                  } finally {
+                    setSyncing(false);
                   }
-                  await initializeData?.();
-                  showGlobalToast?.('Synced 75 Hard to cloud', 'success');
-                } catch (err) {
-                  console.error('[75Hard] Sync failed', err);
-                  const errorMessage = err instanceof Error
-                    ? `Sync failed: ${err.message}`
-                    : 'Sync failed. Please check your connection and try again.';
-                  showGlobalToast?.(errorMessage, 'error');
-                } finally {
-                  setSyncing(false);
-                }
+                };
+                await performSync();
               }}
             >
-              {syncing ? 'Syncing...' : 'Sync to Cloud'}
+              {syncing && (
+                <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              )}
+              <span>{syncing ? 'Syncing...' : 'Sync to Cloud'}</span>
             </button>
           )}
           <button
@@ -658,10 +771,20 @@ export default function SeventyFiveHard() {
                 </p>
               </div>
               <div className="flex items-center space-x-2">
-                <button 
+                <button
                   type="button"
                   onClick={() => {
-                    updateSeventyFiveHardChallenge?.(activeChallenge.id, { isActive: false });
+                    setConfirmDialog({
+                      show: true,
+                      title: 'Pause Challenge?',
+                      message: 'Pausing will stop daily progress tracking. You can resume later, but your current day count will be preserved. Are you sure?',
+                      confirmText: 'Pause Challenge',
+                      variant: 'warning',
+                      onConfirm: () => {
+                        updateSeventyFiveHardChallenge?.(activeChallenge.id, { isActive: false });
+                        setConfirmDialog(prev => ({ ...prev, show: false }));
+                      }
+                    });
                   }}
                   className="btn-secondary text-sm flex items-center space-x-1 relative z-10 pointer-events-auto"
                 >
@@ -682,6 +805,44 @@ export default function SeventyFiveHard() {
                   className="btn-secondary text-sm"
                 >
                   Reset Start
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setConfirmDialog({
+                      show: true,
+                      title: 'Restart Challenge?',
+                      message: 'This will create a fresh 75 Hard challenge with the same rules. Your current progress will be saved as a paused challenge for reference. Ready to start over?',
+                      confirmText: 'Restart Challenge',
+                      variant: 'warning',
+                      onConfirm: () => {
+                        // Pause the current challenge
+                        updateSeventyFiveHardChallenge?.(activeChallenge.id, { isActive: false });
+
+                        // Create a new challenge with the same rules
+                        const newChallenge: SeventyFiveHardChallenge = {
+                          id: generateId(),
+                          name: `${activeChallenge.name} (Restart)`,
+                          startDate: new Date(),
+                          endDate: addDays(new Date(), 74),
+                          isActive: true,
+                          currentDay: 1,
+                          rules: activeChallenge.rules.map(r => ({ ...r, id: generateId() })),
+                          dailyEntries: [],
+                          notes: activeChallenge.notes,
+                          createdAt: new Date()
+                        };
+
+                        addSeventyFiveHardChallenge?.(newChallenge);
+                        showGlobalToast?.('Challenge restarted! Your previous attempt has been saved.', 'success');
+                        setConfirmDialog(prev => ({ ...prev, show: false }));
+                      }
+                    });
+                  }}
+                  className="btn-secondary text-sm flex items-center space-x-1"
+                >
+                  <RotateCcw size={16} />
+                  <span>Restart</span>
                 </button>
               </div>
             </div>
@@ -704,6 +865,75 @@ export default function SeventyFiveHard() {
                 />
               </div>
             </div>
+
+            {/* Analytics Section */}
+            {(() => {
+              const streakStats = getStreakStats(activeChallenge);
+              const ruleStats = getRuleCompletionStats(activeChallenge);
+
+              return (
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <Target size={18} /> Analytics & Insights
+                  </h3>
+
+                  {/* Streak Stats */}
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div className="p-4 rounded-lg border border-gray-200 bg-gradient-to-br from-blue-50 to-blue-100">
+                      <div className="text-3xl font-bold text-blue-600 mb-1">
+                        {streakStats.currentStreak}
+                      </div>
+                      <div className="text-sm font-medium text-blue-800">Current Streak</div>
+                      <div className="text-xs text-blue-600 mt-1">
+                        {streakStats.currentStreak === 0 ? 'Complete today to start!' : 'consecutive days'}
+                      </div>
+                    </div>
+                    <div className="p-4 rounded-lg border border-gray-200 bg-gradient-to-br from-purple-50 to-purple-100">
+                      <div className="text-3xl font-bold text-purple-600 mb-1">
+                        {streakStats.longestStreak}
+                      </div>
+                      <div className="text-sm font-medium text-purple-800">Longest Streak</div>
+                      <div className="text-xs text-purple-600 mt-1">
+                        {streakStats.longestStreak === 0 ? 'No streaks yet' : 'consecutive days'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Rule Completion Stats */}
+                  <div className="p-4 rounded-lg border border-gray-200 bg-white">
+                    <h4 className="text-sm font-semibold text-gray-900 mb-3">Rule Completion Rates</h4>
+                    <div className="space-y-3">
+                      {activeChallenge.rules.map((rule) => {
+                        const stats = ruleStats[rule.id];
+                        if (!stats) return null;
+
+                        return (
+                          <div key={rule.id}>
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-sm font-medium text-gray-700">{rule.title}</span>
+                              <span className="text-sm text-gray-600">
+                                {stats.completed}/{stats.total} ({stats.percentage}%)
+                              </span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div
+                                className={`h-2 rounded-full transition-all duration-300 ${
+                                  stats.percentage === 100 ? 'bg-green-500' :
+                                  stats.percentage >= 75 ? 'bg-blue-500' :
+                                  stats.percentage >= 50 ? 'bg-yellow-500' :
+                                  'bg-red-500'
+                                }`}
+                                style={{ width: `${stats.percentage}%` }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Progress Charts */}
             <div className="mb-6">
@@ -747,25 +977,188 @@ export default function SeventyFiveHard() {
               </div>
             </div>
 
+            {/* Progress Photos Gallery */}
+            {(() => {
+              const photosWithDays = activeChallenge.dailyEntries
+                .filter(e => e.progressPhotoUrl)
+                .sort((a, b) => a.day - b.day);
+
+              if (photosWithDays.length === 0) return null;
+
+              return (
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <Camera size={18} /> Progress Photos ({photosWithDays.length})
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {photosWithDays.map((entry) => (
+                      <div key={entry.id} className="relative group">
+                        <img
+                          src={entry.progressPhotoUrl}
+                          alt={`Day ${entry.day} progress`}
+                          className="w-full h-32 object-cover rounded-lg border border-gray-300 cursor-pointer hover:opacity-90 transition-opacity"
+                          onClick={() => {
+                            // Open in new tab for full view
+                            window.open(entry.progressPhotoUrl, '_blank');
+                          }}
+                        />
+                        <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded-b-lg">
+                          Day {entry.day}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Calendar View */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <Calendar size={18} /> 75-Day Calendar
+                </h3>
+                <button
+                  onClick={() => setShowCalendar(!showCalendar)}
+                  className="btn-secondary text-sm"
+                >
+                  {showCalendar ? 'Hide Calendar' : 'Show Calendar'}
+                </button>
+              </div>
+
+              {showCalendar && (
+                <div className="p-4 rounded-lg border border-gray-200 bg-white">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-4 text-xs">
+                      <div className="flex items-center gap-1">
+                        <div className="w-4 h-4 rounded bg-green-500"></div>
+                        <span>Complete</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <div className="w-4 h-4 rounded bg-yellow-500"></div>
+                        <span>Partial</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <div className="w-4 h-4 rounded bg-gray-300"></div>
+                        <span>Incomplete</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <div className="w-4 h-4 rounded border-2 border-blue-500"></div>
+                        <span>Today</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-7 sm:grid-cols-10 md:grid-cols-15 gap-2">
+                    {Array.from({ length: 75 }, (_, i) => i + 1).map((dayNum) => {
+                      const dayDate = addDays(activeChallenge.startDate, dayNum - 1);
+                      const entry = activeChallenge.dailyEntries.find(e => e.day === dayNum);
+                      const progress = entry
+                        ? {
+                            completed: entry.ruleCompletions.filter(c => c.completed).length,
+                            total: entry.ruleCompletions.length
+                          }
+                        : { completed: 0, total: activeChallenge.rules.length };
+
+                      const isComplete = progress.completed === progress.total && progress.total > 0;
+                      const isPartial = progress.completed > 0 && progress.completed < progress.total;
+                      const isToday = dayNum === activeChallenge.currentDay;
+                      const isFuture = dayNum > activeChallenge.currentDay;
+
+                      return (
+                        <button
+                          key={dayNum}
+                          onClick={() => {
+                            if (!isFuture) {
+                              const entry = activeChallenge.dailyEntries.find(e => e.day === dayNum);
+                              setDayFormData({
+                                weight: entry?.weight?.toString() || '',
+                                measurements: {
+                                  chest: entry?.measurements?.chest?.toString() || '',
+                                  waist: entry?.measurements?.waist?.toString() || '',
+                                  hips: entry?.measurements?.hips?.toString() || '',
+                                  arms: entry?.measurements?.arms?.toString() || '',
+                                  thighs: entry?.measurements?.thighs?.toString() || ''
+                                },
+                                notes: entry?.notes || '',
+                                progressPhotoUrl: entry?.progressPhotoUrl || ''
+                              });
+                              setPhotoPreview(entry?.progressPhotoUrl || '');
+                              setSelectedChallenge(activeChallenge.id);
+                              setSelectedDate(dayDate);
+                              setShowDayForm(true);
+                            }
+                          }}
+                          disabled={isFuture}
+                          className={`
+                            aspect-square rounded text-sm font-medium transition-all duration-200
+                            ${isToday ? 'ring-2 ring-blue-500 ring-offset-2' : ''}
+                            ${isComplete ? 'bg-green-500 text-white hover:bg-green-600' : ''}
+                            ${isPartial ? 'bg-yellow-500 text-white hover:bg-yellow-600' : ''}
+                            ${!isComplete && !isPartial && !isFuture ? 'bg-gray-300 text-gray-700 hover:bg-gray-400' : ''}
+                            ${isFuture ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'cursor-pointer'}
+                          `}
+                          title={`Day ${dayNum} - ${format(dayDate, 'MMM dd')} - ${isComplete ? 'Complete' : isPartial ? 'Partial' : isFuture ? 'Future' : 'Incomplete'}`}
+                        >
+                          {dayNum}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <p className="text-xs text-gray-500 mt-3">
+                    Click on any past or current day to view or edit details
+                  </p>
+                </div>
+              )}
+            </div>
+
             {/* Today's Rules */}
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center space-x-2">
-                <Calendar size={20} />
-                <span>Today - Day {activeChallenge.currentDay}</span>
-              </h3>
-              
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center space-x-2">
+                  <Calendar size={20} />
+                  <span>Today - Day {activeChallenge.currentDay}</span>
+                </h3>
+                <button
+                  onClick={() => {
+                    const entry = getCurrentDayEntry(activeChallenge);
+                    setDayFormData({
+                      weight: entry?.weight?.toString() || '',
+                      measurements: {
+                        chest: entry?.measurements?.chest?.toString() || '',
+                        waist: entry?.measurements?.waist?.toString() || '',
+                        hips: entry?.measurements?.hips?.toString() || '',
+                        arms: entry?.measurements?.arms?.toString() || '',
+                        thighs: entry?.measurements?.thighs?.toString() || ''
+                      },
+                      notes: entry?.notes || '',
+                      progressPhotoUrl: entry?.progressPhotoUrl || ''
+                    });
+                    setPhotoPreview(entry?.progressPhotoUrl || '');
+                    setSelectedChallenge(activeChallenge.id);
+                    setSelectedDate(new Date());
+                    setShowDayForm(true);
+                  }}
+                  className="btn-secondary text-sm flex items-center space-x-1"
+                >
+                  <Edit3 size={16} />
+                  <span>Add Daily Details</span>
+                </button>
+              </div>
+
               <div className="grid gap-3">
                 {activeChallenge.rules.map((rule) => {
                   const entry = getCurrentDayEntry(activeChallenge);
                   const completion = entry?.ruleCompletions.find(c => c.ruleId === rule.id);
                   const isCompleted = completion?.completed || false;
-                  
+
                   return (
                     <div
                       key={rule.id}
                       className={`flex items-center justify-between p-4 rounded-lg border-2 transition-all duration-200 ${
-                        isCompleted 
-                          ? 'border-green-200 bg-green-50' 
+                        isCompleted
+                          ? 'border-green-200 bg-green-50'
                           : 'border-gray-200 bg-white hover:border-gray-300'
                       }`}
                     >
@@ -811,7 +1204,7 @@ export default function SeventyFiveHard() {
                           </p>
                         </div>
                       </div>
-                      
+
                       {completion?.completedAt && (
                         <span className="text-xs text-green-600">
                           {format(completion.completedAt, 'HH:mm')}
@@ -1229,7 +1622,11 @@ export default function SeventyFiveHard() {
               </button>
             </div>
             <div className="p-6 space-y-3">
-              <p className="text-sm text-gray-700">Pick a new start date. This will reset your day count and clear previous daily entries.</p>
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-3">
+                <p className="text-sm text-red-800 font-medium">Warning: This action cannot be undone!</p>
+                <p className="text-xs text-red-700 mt-1">Resetting will clear all your daily entries, progress photos, weight, and measurement data.</p>
+              </div>
+              <p className="text-sm text-gray-700">Pick a new start date. This will reset your day count to Day 1 and clear all progress.</p>
               <label className="block text-sm font-medium text-gray-700">New Start Date</label>
               <input type="date" value={resetDate} onChange={(e) => setResetDate(e.target.value)} className="input-field" />
               <p className="text-xs text-gray-500">New end date will be {(() => { try { const sd = new Date(resetDate); return format(addDays(sd, 74), 'MMM dd, yyyy'); } catch { return '—' } })()}</p>
@@ -1247,6 +1644,285 @@ export default function SeventyFiveHard() {
               >
                 Reset
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Daily Entry Modal */}
+      {showDayForm && selectedChallenge && selectedDate && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50 p-4 overflow-y-auto"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowDayForm(false) }}
+        >
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl my-8 flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <div className="flex items-center gap-2">
+                <Scale size={20} className="text-gray-700" />
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Daily Entry - {format(selectedDate, 'MMM dd, yyyy')}
+                </h3>
+              </div>
+              <button onClick={() => setShowDayForm(false)} className="p-2 hover:bg-gray-100 rounded-lg" aria-label="Close">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6 max-h-[70vh]">
+              <form
+                id="day-entry-form"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const challenge = seventyFiveHardChallenges.find(c => c.id === selectedChallenge);
+                  if (!challenge) return;
+
+                  const dayNumber = differenceInDays(selectedDate, challenge.startDate) + 1;
+                  let entry = challenge.dailyEntries.find(e => e.day === dayNumber);
+
+                  const measurementsRaw = {
+                    chest: dayFormData.measurements.chest ? parseFloat(dayFormData.measurements.chest) : undefined,
+                    waist: dayFormData.measurements.waist ? parseFloat(dayFormData.measurements.waist) : undefined,
+                    hips: dayFormData.measurements.hips ? parseFloat(dayFormData.measurements.hips) : undefined,
+                    arms: dayFormData.measurements.arms ? parseFloat(dayFormData.measurements.arms) : undefined,
+                    thighs: dayFormData.measurements.thighs ? parseFloat(dayFormData.measurements.thighs) : undefined
+                  };
+
+                  // Filter out undefined values
+                  const measurements: Record<string, number> = Object.entries(measurementsRaw)
+                    .filter(([_, v]) => v !== undefined)
+                    .reduce((acc, [k, v]) => ({ ...acc, [k]: v! }), {});
+
+                  if (!entry) {
+                    // Create new entry
+                    const newEntry: SeventyFiveHardEntry = {
+                      id: generateId(),
+                      challengeId: selectedChallenge,
+                      date: selectedDate,
+                      day: dayNumber,
+                      ruleCompletions: challenge.rules.map(rule => ({
+                        ruleId: rule.id,
+                        completed: false
+                      })),
+                      notes: dayFormData.notes,
+                      progressPhotoUrl: dayFormData.progressPhotoUrl,
+                      weight: dayFormData.weight ? parseFloat(dayFormData.weight) : undefined,
+                      measurements
+                    };
+                    addSeventyFiveHardEntry?.(newEntry);
+                  } else {
+                    // Update existing entry
+                    updateSeventyFiveHardEntry?.(entry.id, {
+                      notes: dayFormData.notes,
+                      progressPhotoUrl: dayFormData.progressPhotoUrl,
+                      weight: dayFormData.weight ? parseFloat(dayFormData.weight) : undefined,
+                      measurements
+                    });
+                  }
+
+                  showGlobalToast?.('Daily entry saved successfully', 'success');
+                  setShowDayForm(false);
+                }}
+                className="space-y-4"
+              >
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                    <Scale size={16} />
+                    Weight (lbs)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={dayFormData.weight}
+                    onChange={(e) => setDayFormData(prev => ({ ...prev, weight: e.target.value }))}
+                    className="input-field"
+                    placeholder="e.g., 185.5"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                    <Ruler size={16} />
+                    Body Measurements (inches)
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Chest</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={dayFormData.measurements.chest}
+                        onChange={(e) => setDayFormData(prev => ({
+                          ...prev,
+                          measurements: { ...prev.measurements, chest: e.target.value }
+                        }))}
+                        className="input-field text-sm"
+                        placeholder="e.g., 42.0"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Waist</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={dayFormData.measurements.waist}
+                        onChange={(e) => setDayFormData(prev => ({
+                          ...prev,
+                          measurements: { ...prev.measurements, waist: e.target.value }
+                        }))}
+                        className="input-field text-sm"
+                        placeholder="e.g., 32.5"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Hips</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={dayFormData.measurements.hips}
+                        onChange={(e) => setDayFormData(prev => ({
+                          ...prev,
+                          measurements: { ...prev.measurements, hips: e.target.value }
+                        }))}
+                        className="input-field text-sm"
+                        placeholder="e.g., 38.0"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Arms</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={dayFormData.measurements.arms}
+                        onChange={(e) => setDayFormData(prev => ({
+                          ...prev,
+                          measurements: { ...prev.measurements, arms: e.target.value }
+                        }))}
+                        className="input-field text-sm"
+                        placeholder="e.g., 14.5"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Thighs</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={dayFormData.measurements.thighs}
+                        onChange={(e) => setDayFormData(prev => ({
+                          ...prev,
+                          measurements: { ...prev.measurements, thighs: e.target.value }
+                        }))}
+                        className="input-field text-sm"
+                        placeholder="e.g., 24.0"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                    <Camera size={16} />
+                    Progress Photo
+                  </label>
+
+                  {photoPreview && (
+                    <div className="mb-3 relative">
+                      <img
+                        src={photoPreview}
+                        alt="Progress photo preview"
+                        className="w-full max-w-md h-48 object-cover rounded-lg border border-gray-300"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPhotoPreview('');
+                          setDayFormData(prev => ({ ...prev, progressPhotoUrl: '' }));
+                        }}
+                        className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors"
+                        title="Remove photo"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <label className="btn-secondary text-sm cursor-pointer inline-flex items-center space-x-2">
+                      <Camera size={16} />
+                      <span>Upload Photo</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handlePhotoUpload(file);
+                          e.currentTarget.value = '';
+                        }}
+                      />
+                    </label>
+                    <p className="text-xs text-gray-500">
+                      Or enter a URL below
+                    </p>
+                    <input
+                      type="text"
+                      value={dayFormData.progressPhotoUrl.startsWith('data:') ? '' : dayFormData.progressPhotoUrl}
+                      onChange={(e) => {
+                        setDayFormData(prev => ({ ...prev, progressPhotoUrl: e.target.value }));
+                        setPhotoPreview(e.target.value);
+                      }}
+                      className="input-field"
+                      placeholder="https://example.com/photo.jpg"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Daily Notes
+                  </label>
+                  <textarea
+                    value={dayFormData.notes}
+                    onChange={(e) => setDayFormData(prev => ({ ...prev, notes: e.target.value }))}
+                    className="input-field"
+                    rows={4}
+                    placeholder="How did today go? Any reflections or observations..."
+                  />
+                </div>
+              </form>
+            </div>
+
+            <div className="flex justify-end space-x-3 p-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
+              <button onClick={() => setShowDayForm(false)} className="btn-secondary">Cancel</button>
+              <button type="submit" form="day-entry-form" className="btn-primary">Save Entry</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Dialog */}
+      {confirmDialog.show && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={(e) => { if (e.target === e.currentTarget) setConfirmDialog(prev => ({ ...prev, show: false })) }}
+        >
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">{confirmDialog.title}</h3>
+              <p className="text-sm text-gray-700 mb-6">{confirmDialog.message}</p>
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => setConfirmDialog(prev => ({ ...prev, show: false }))}
+                  className="btn-secondary"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDialog.onConfirm}
+                  className={confirmDialog.variant === 'danger' ? 'bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors' : 'btn-primary'}
+                >
+                  {confirmDialog.confirmText}
+                </button>
+              </div>
             </div>
           </div>
         </div>
