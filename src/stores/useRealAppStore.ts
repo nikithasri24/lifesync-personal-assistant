@@ -2316,54 +2316,87 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
 
   // 75 Hard local-only persistence
   addSeventyFiveHardChallenge: async (challenge) => {
-    let toAdd = challenge
+    // Optimistic update: Add to local state immediately
+    const challenges = [...get().seventyFiveHardChallenges, challenge]
+    set({ seventyFiveHardChallenges: challenges })
+    try { localStorage.setItem('lifesync:75hard', JSON.stringify(challenges)) } catch {}
+
+    // Sync to cloud in background
     if (isSupabaseConfigured) {
       try {
         const created = await apiClient.createSFHChallenge(buildSFHChallengeInsert(challenge))
-        toAdd = mapSFHChallengeDataToChallenge(created)
+        const mapped = mapSFHChallengeDataToChallenge(created)
+        // Update with server-assigned ID if different
+        if (mapped.id !== challenge.id) {
+          const updatedChallenges = get().seventyFiveHardChallenges.map(c =>
+            c.id === challenge.id ? { ...c, id: mapped.id } : c
+          )
+          set({ seventyFiveHardChallenges: updatedChallenges })
+          try { localStorage.setItem('lifesync:75hard', JSON.stringify(updatedChallenges)) } catch {}
+        }
       } catch (e) {
-        console.warn('[75Hard] Cloud create failed; keeping local', e)
+        console.warn('[75Hard] Cloud create failed; local state already updated', e)
       }
     }
-    const challenges = [...get().seventyFiveHardChallenges, toAdd]
-    set({ seventyFiveHardChallenges: challenges })
-    try { localStorage.setItem('lifesync:75hard', JSON.stringify(challenges)) } catch {}
   },
   updateSeventyFiveHardChallenge: async (id, updates) => {
+    // Optimistic update: Update local state immediately for instant UI feedback
+    const challenges = get().seventyFiveHardChallenges.map((c) => (c.id === id ? { ...c, ...updates } : c))
+    set({ seventyFiveHardChallenges: challenges })
+    try { localStorage.setItem('lifesync:75hard', JSON.stringify(challenges)) } catch {}
+
+    // Sync to cloud in background (don't block UI)
     if (isSupabaseConfigured) {
       try {
         await apiClient.updateSFHChallenge(id, buildSFHChallengeUpdate(updates))
       } catch (e) {
-        console.warn('[75Hard] Cloud update failed; applying locally', e)
+        console.warn('[75Hard] Cloud update failed; local state already updated', e)
       }
     }
-    const challenges = get().seventyFiveHardChallenges.map((c) => (c.id === id ? { ...c, ...updates } : c))
-    set({ seventyFiveHardChallenges: challenges })
-    try { localStorage.setItem('lifesync:75hard', JSON.stringify(challenges)) } catch {}
   },
   deleteSeventyFiveHardChallenge: async (id) => {
-    if (isSupabaseConfigured) {
-      try { await apiClient.deleteSFHChallenge(id) } catch (e) { console.warn('[75Hard] Cloud delete failed; deleting locally', e) }
-    }
+    // Optimistic update: Remove from local state immediately
     const challenges = get().seventyFiveHardChallenges.filter((c) => c.id !== id)
     set({ seventyFiveHardChallenges: challenges })
     try { localStorage.setItem('lifesync:75hard', JSON.stringify(challenges)) } catch {}
-  },
-  addSeventyFiveHardEntry: async (entry) => {
-    let toAdd = entry
+
+    // Sync to cloud in background
     if (isSupabaseConfigured) {
       try {
-        const created = await apiClient.createSFHEntry(buildSFHEntryInsert(entry))
-        toAdd = mapSFHEntryDataToEntry(created)
+        await apiClient.deleteSFHChallenge(id)
       } catch (e) {
-        console.warn('[75Hard] Cloud entry create failed; keeping local', e)
+        console.warn('[75Hard] Cloud delete failed; local state already updated', e)
       }
     }
-    const challenges = get().seventyFiveHardChallenges.map((c) => (
-      c.id === toAdd.challengeId ? { ...c, dailyEntries: [...c.dailyEntries, toAdd] } : c
+  },
+  addSeventyFiveHardEntry: async (entry) => {
+    // Optimistic update: Add entry to local state immediately
+    let challenges = get().seventyFiveHardChallenges.map((c) => (
+      c.id === entry.challengeId ? { ...c, dailyEntries: [...c.dailyEntries, entry] } : c
     ))
     set({ seventyFiveHardChallenges: challenges })
     try { localStorage.setItem('lifesync:75hard', JSON.stringify(challenges)) } catch {}
+
+    // Sync to cloud in background
+    if (isSupabaseConfigured) {
+      try {
+        const created = await apiClient.createSFHEntry(buildSFHEntryInsert(entry))
+        const mapped = mapSFHEntryDataToEntry(created)
+        // Update with server-assigned ID if different
+        if (mapped.id !== entry.id) {
+          challenges = get().seventyFiveHardChallenges.map((c) => (
+            c.id === entry.challengeId ? {
+              ...c,
+              dailyEntries: c.dailyEntries.map(e => e.id === entry.id ? { ...e, id: mapped.id } : e)
+            } : c
+          ))
+          set({ seventyFiveHardChallenges: challenges })
+          try { localStorage.setItem('lifesync:75hard', JSON.stringify(challenges)) } catch {}
+        }
+      } catch (e) {
+        console.warn('[75Hard] Cloud entry create failed; local state already updated', e)
+      }
+    }
   },
   updateSeventyFiveHardEntry: async (id, updates) => {
     let createdMapped: import('../types').SeventyFiveHardEntry | null = null
