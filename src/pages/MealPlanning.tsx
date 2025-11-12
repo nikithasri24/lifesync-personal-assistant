@@ -2139,6 +2139,7 @@ const MealPlanning: React.FC = () => {
 
   // Recipe search/filter state
   const [recipeSearchQuery, setRecipeSearchQuery] = useState('');
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 
   useEffect(() => {
     void loadRecipes();
@@ -2479,27 +2480,37 @@ const MealPlanning: React.FC = () => {
   const inCartItems = groceryList.filter(item => item.status === 'in_cart');
   const purchasedItems = groceryList.filter(item => item.status === 'purchased');
 
-  // Filter recipes based on search query
+  // Filter recipes based on search query and favorites
   const filteredRecipes = useMemo(() => {
-    if (!recipeSearchQuery.trim()) return recipes;
+    let result = recipes;
 
-    const query = recipeSearchQuery.toLowerCase().trim();
-    return recipes.filter(recipe => {
-      // Search in name
-      if (recipe.name.toLowerCase().includes(query)) return true;
+    // Filter by favorites first
+    if (showFavoritesOnly) {
+      result = result.filter(recipe => recipe.isFavorite === true);
+    }
 
-      // Search in tags
-      if (recipe.tags?.some(tag => tag.toLowerCase().includes(query))) return true;
+    // Then filter by search query
+    if (recipeSearchQuery.trim()) {
+      const query = recipeSearchQuery.toLowerCase().trim();
+      result = result.filter(recipe => {
+        // Search in name
+        if (recipe.name.toLowerCase().includes(query)) return true;
 
-      // Search in cuisine
-      if (recipe.cuisine?.toLowerCase().includes(query)) return true;
+        // Search in tags
+        if (recipe.tags?.some(tag => tag.toLowerCase().includes(query))) return true;
 
-      // Search in difficulty
-      if (recipe.difficulty?.toLowerCase().includes(query)) return true;
+        // Search in cuisine
+        if (recipe.cuisine?.toLowerCase().includes(query)) return true;
 
-      return false;
-    });
-  }, [recipes, recipeSearchQuery]);
+        // Search in difficulty
+        if (recipe.difficulty?.toLowerCase().includes(query)) return true;
+
+        return false;
+      });
+    }
+
+    return result;
+  }, [recipes, recipeSearchQuery, showFavoritesOnly]);
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6 p-6">
@@ -3129,27 +3140,42 @@ const MealPlanning: React.FC = () => {
           <h2 className="text-lg font-semibold text-slate-900">Saved recipes</h2>
           <div className="flex items-center gap-2">
             {recipes.length > 0 && (
-              <button
-                type="button"
-                onClick={async () => {
-                  if (confirm('Delete ALL saved recipes? This cannot be undone.')) {
-                    try {
-                      await useAppStore.getState().deleteAllRecipes?.()
-                    } catch (e) {
-                      console.error('Failed to delete all recipes', e)
+              <>
+                <button
+                  type="button"
+                  onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+                  className={`text-xs rounded-md px-3 py-1 transition ${
+                    showFavoritesOnly
+                      ? 'bg-pink-600 text-white hover:bg-pink-500'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                  title={showFavoritesOnly ? 'Show all recipes' : 'Show favorites only'}
+                >
+                  <Heart className={`inline h-3 w-3 mr-1 ${showFavoritesOnly ? 'fill-current' : ''}`} />
+                  {showFavoritesOnly ? 'Favorites' : 'All'}
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (confirm('Delete ALL saved recipes? This cannot be undone.')) {
+                      try {
+                        await useAppStore.getState().deleteAllRecipes?.()
+                      } catch (e) {
+                        console.error('Failed to delete all recipes', e)
+                      }
                     }
-                  }
-                }}
-                className="text-xs rounded-md px-3 py-1 bg-rose-600 text-white hover:bg-rose-500"
-                title="Delete all saved recipes"
-              >
-                Delete all
-              </button>
+                  }}
+                  className="text-xs rounded-md px-3 py-1 bg-rose-600 text-white hover:bg-rose-500"
+                  title="Delete all saved recipes"
+                >
+                  Delete all
+                </button>
+              </>
             )}
           </div>
         </div>
         <p className="text-sm text-slate-600">
-          {recipes.length === 0 ? 'Your clipped recipes.' : `${filteredRecipes.length} of ${recipes.length} recipes`}
+          {recipes.length === 0 ? 'Your clipped recipes.' : `${filteredRecipes.length} of ${recipes.length} recipes${showFavoritesOnly ? ' (favorites)' : ''}`}
         </p>
 
         {recipes.length > 0 && (
@@ -3410,22 +3436,22 @@ export default MealPlanning;
 
 // Compact recipe card with image header, overlay title, domain + quick actions
 function RecipeCard({ recipe, onView, onEdit, onDelete }: { recipe: Recipe; onView: () => void; onEdit: () => void; onDelete: () => void }) {
-  const [isFav, setIsFav] = useState(false);
+  const { updateRecipe } = useAppStore();
   const totalTime = (recipe.prepTime || 0) + (recipe.cookTime || 0);
   const domain = useMemo(() => {
     try { return recipe.sourceUrl ? new URL(recipe.sourceUrl).hostname.replace(/^www\./, '') : ''; } catch { return ''; }
   }, [recipe.sourceUrl]);
   const favicon = domain ? `https://www.google.com/s2/favicons?sz=64&domain=${encodeURIComponent(domain)}` : '';
 
-  // Debug: Log recipe data
-  console.log('RecipeCard rendering:', {
-    id: recipe.id,
-    name: recipe.name,
-    hasName: !!recipe.name,
-    nameLength: recipe.name?.length,
-    description: recipe.description?.substring(0, 50),
-    hasImage: !!recipe.image
-  });
+  const toggleFavorite = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!recipe.id) return;
+    try {
+      await updateRecipe(recipe.id, { isFavorite: !recipe.isFavorite });
+    } catch (error) {
+      console.error('Failed to toggle favorite:', error);
+    }
+  };
 
   return (
     <li
@@ -3478,6 +3504,19 @@ function RecipeCard({ recipe, onView, onEdit, onDelete }: { recipe: Recipe; onVi
         <div className="absolute right-2 top-2 flex gap-2 z-10" onClick={(e) => e.stopPropagation()}>
           <button
             type="button"
+            onClick={toggleFavorite}
+            className={`rounded-md p-1.5 shadow-lg border transition ${
+              recipe.isFavorite
+                ? 'bg-pink-500 text-white hover:bg-pink-600 border-pink-500'
+                : 'bg-white text-slate-700 hover:bg-slate-100 border-slate-200'
+            }`}
+            title={recipe.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+            aria-label={recipe.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+          >
+            <Heart className={`h-4 w-4 ${recipe.isFavorite ? 'fill-current' : ''}`} />
+          </button>
+          <button
+            type="button"
             onClick={() => onEdit()}
             className="rounded-md bg-white p-1.5 text-slate-700 hover:bg-slate-100 shadow-lg border border-slate-200"
             title="Edit recipe"
@@ -3502,6 +3541,19 @@ function RecipeCard({ recipe, onView, onEdit, onDelete }: { recipe: Recipe; onVi
             {recipe.name || 'Untitled Recipe'}
           </h3>
           <div className="flex gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              onClick={toggleFavorite}
+              className={`rounded p-1.5 transition ${
+                recipe.isFavorite
+                  ? 'text-pink-600 dark:text-pink-400 hover:bg-pink-50 dark:hover:bg-pink-900/20'
+                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
+              }`}
+              title={recipe.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+              aria-label={recipe.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+            >
+              <Heart className={`h-5 w-5 ${recipe.isFavorite ? 'fill-current' : ''}`} />
+            </button>
             <button
               type="button"
               onClick={async () => {

@@ -214,6 +214,7 @@ export interface Recipe {
   rating?: number;
   notes?: string;
   image?: string;
+  isFavorite?: boolean;
   calories?: number;
   cuisine?: string;
   dietaryRestrictions?: string[];
