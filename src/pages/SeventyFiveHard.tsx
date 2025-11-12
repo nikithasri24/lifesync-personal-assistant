@@ -199,10 +199,36 @@ export default function SeventyFiveHard() {
 
   const handleCreateChallenge = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
+    // Validation
+    const trimmedName = challengeFormData.name.trim();
+    if (!trimmedName) {
+      showGlobalToast?.('Please enter a challenge name', 'error');
+      return;
+    }
+
+    if (!challengeFormData.startDate) {
+      showGlobalToast?.('Please select a start date', 'error');
+      return;
+    }
+
     const startDate = new Date(challengeFormData.startDate);
+    const today = new Date();
+    const oneYearAgo = addDays(today, -365);
+    const oneYearAhead = addDays(today, 365);
+
+    if (startDate < oneYearAgo) {
+      showGlobalToast?.('Start date cannot be more than 1 year in the past', 'error');
+      return;
+    }
+
+    if (startDate > oneYearAhead) {
+      showGlobalToast?.('Start date cannot be more than 1 year in the future', 'error');
+      return;
+    }
+
     const endDate = addDays(startDate, 74); // 75 days total
-    
+
     const rules: SeventyFiveHardRule[] = [
       ...challengeFormData.defaultRules,
       ...challengeFormData.customRules.map(title => ({
@@ -214,9 +240,14 @@ export default function SeventyFiveHard() {
       }))
     ];
 
+    if (rules.length === 0) {
+      showGlobalToast?.('Please select at least one rule', 'error');
+      return;
+    }
+
     const newChallenge: SeventyFiveHardChallenge = {
       id: generateId(),
-      name: challengeFormData.name || '75 Hard Challenge',
+      name: trimmedName,
       startDate,
       endDate,
       isActive: true,
