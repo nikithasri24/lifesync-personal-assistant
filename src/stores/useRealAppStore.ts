@@ -1184,6 +1184,9 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
         apiClient.getSFHChallenges().catch(() => []),
       ])
 
+      // Show UI immediately after main data loads
+      set({ loading: false })
+
       // (Travel features removed)
 
       let habitEntries: HabitEntryData[] = []
@@ -1386,7 +1389,6 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
         financialTransactions: transactionsRaw ?? [],
         financesLoading: false,
         userStats,
-        loading: false,
         seventyFiveHardChallenges: sfhChallenges,
       })
     } catch (error) {
