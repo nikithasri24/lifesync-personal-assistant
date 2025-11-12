@@ -250,3 +250,145 @@ utilRouter.post(
     }
   }
 )
+
+// ========== AI Recipe Extraction (Groq) ==========
+const recipeExtractionBody = z.object({
+  transcript: z.string().optional(),
+  description: z.string().optional(),
+  title: z.string().optional(),
+})
+
+utilRouter.post(
+  '/youtube/extract-recipe',
+  validate({ body: recipeExtractionBody }),
+  async (req: any, res: any) => {
+    const { transcript, description, title } = req.body as any
+    const apiKey = process.env.GROQ_API_KEY
+
+    if (!apiKey) {
+      return res.status(400).json({
+        error: 'GROQ_API_KEY not configured. Using fallback parser.',
+        useFallback: true
+      })
+    }
+
+    if (!transcript && !description) {
+      return res.status(400).json({ error: 'Provide transcript or description' })
+    }
+
+    const prompt = `You are a recipe extraction expert. Extract recipe information from the following video content and return ONLY valid JSON.
+
+Video Title: ${title || 'Unknown'}
+
+Transcript: ${transcript || 'Not available'}
+
+Description: ${description || 'Not available'}
+
+Extract and return a JSON object with this exact structure:
+{
+  "name": "Recipe name from video",
+  "description": "Brief description of the dish",
+  "ingredients": [
+    {"name": "ingredient name", "amount": "2", "unit": "cups"},
+    {"name": "ingredient name"}
+  ],
+  "instructions": ["Step 1...", "Step 2..."],
+  "prepTime": 15,
+  "cookTime": 30,
+  "servings": 4,
+  "difficulty": "easy|medium|hard",
+  "cuisine": "italian|chinese|mexican|indian|etc",
+  "tags": ["tag1", "tag2"]
+}
+
+IMPORTANT:
+- Extract ALL ingredients mentioned with amounts when available
+- Include ALL cooking steps in order
+- Estimate prepTime and cookTime in minutes based on the recipe
+- Set difficulty based on number of steps and complexity
+- If information is missing, make reasonable estimates
+- Return ONLY the JSON object, no other text
+
+JSON:`
+
+    try {
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'llama-3.1-70b-versatile',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a recipe extraction expert. Always return valid JSON only, no markdown, no explanations.'
+            },
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          temperature: 0.3,
+          max_tokens: 2000,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => '')
+        console.error('Groq API error:', response.status, errorText)
+        return res.status(502).json({
+          error: 'AI extraction failed',
+          status: response.status,
+          useFallback: true
+        })
+      }
+
+      const data: any = await response.json()
+      const content = data?.choices?.[0]?.message?.content || ''
+
+      // Clean up response - remove markdown code blocks if present
+      const jsonMatch = content.match(/\{[\s\S]*\}/)
+      const jsonStr = jsonMatch ? jsonMatch[0] : content
+
+      try {
+        const recipe = JSON.parse(jsonStr)
+
+        // Validate and normalize the response
+        const normalized = {
+          name: recipe.name || title || 'YouTube Recipe',
+          description: recipe.description || '',
+          ingredients: Array.isArray(recipe.ingredients)
+            ? recipe.ingredients.map((ing: any) => ({
+                name: ing.name || ing,
+                amount: ing.amount,
+                unit: ing.unit
+              }))
+            : [],
+          instructions: Array.isArray(recipe.instructions) ? recipe.instructions : [],
+          prepTime: Number(recipe.prepTime) || 15,
+          cookTime: Number(recipe.cookTime) || 30,
+          servings: Number(recipe.servings) || 4,
+          difficulty: recipe.difficulty || 'medium',
+          cuisine: recipe.cuisine || 'other',
+          tags: Array.isArray(recipe.tags) ? recipe.tags : ['video', 'youtube'],
+        }
+
+        return res.json(normalized)
+      } catch (parseError) {
+        console.error('Failed to parse Groq response:', parseError)
+        return res.status(500).json({
+          error: 'Failed to parse AI response',
+          useFallback: true
+        })
+      }
+    } catch (error) {
+      console.error('Groq API request failed:', error)
+      return res.status(500).json({
+        error: 'AI extraction service unavailable',
+        useFallback: true
+      })
+    }
+  }
+)

@@ -346,6 +346,55 @@ async function fetchYoutubeRecipe(url: string, lang: string = 'en'): Promise<Omi
   const data = await snippetResp.json();
   const snippet = data?.items?.[0]?.snippet;
   if (!snippet) throw new Error('Video metadata not available.');
+
+  // Get transcript data
+  let transcriptText = '';
+  if (transcriptResp.ok) {
+    const tr = await transcriptResp.json();
+    const transcript = Array.isArray(tr.transcript) ? tr.transcript : [];
+    transcriptText = transcript.map((t: any) => t.text).join(' ');
+  }
+
+  // Try AI-powered extraction first
+  try {
+    const aiResp = await fetch('/api/youtube/extract-recipe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: snippet.title,
+        transcript: transcriptText,
+        description: snippet.description
+      })
+    });
+
+    if (aiResp.ok) {
+      const aiData = await aiResp.json();
+      // Merge AI results with video metadata
+      return {
+        name: aiData.name || snippet.title || 'YouTube Recipe',
+        description: aiData.description || snippet.description?.split('\n')[0] || '',
+        ingredients: aiData.ingredients || [],
+        instructions: aiData.instructions || [],
+        prepTime: aiData.prepTime,
+        cookTime: aiData.cookTime,
+        servings: aiData.servings,
+        difficulty: aiData.difficulty,
+        tags: [...(aiData.tags || []), 'video', 'youtube', 'ai-extracted'],
+        rating: undefined,
+        notes: undefined,
+        image: snippet.thumbnails?.medium?.url ?? snippet.thumbnails?.default?.url ?? undefined,
+        isFavorite: false,
+        calories: undefined,
+        cuisine: aiData.cuisine || 'other',
+        dietaryRestrictions: [],
+        nutritionInfo: undefined,
+      };
+    }
+  } catch (aiError) {
+    console.warn('AI extraction failed, falling back to regex parser:', aiError);
+  }
+
+  // Fallback to original regex-based parsing
   let ingredients: { name: string }[] = [];
   let instructions: string[] = [];
   if (transcriptResp.ok) {
@@ -383,11 +432,6 @@ async function fetchYoutubeRecipe(url: string, lang: string = 'en'): Promise<Omi
     cuisine: 'other',
     dietaryRestrictions: [],
     nutritionInfo: undefined,
-    flowChart: undefined,
-    sourceType: 'youtube',
-    sourceUrl: url,
-    authorName: snippet.channelTitle ?? undefined,
-    videoThumbnail: snippet.thumbnails?.medium?.url ?? snippet.thumbnails?.default?.url ?? undefined,
   };
 }
 
