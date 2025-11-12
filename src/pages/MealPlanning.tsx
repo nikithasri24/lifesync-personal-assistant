@@ -3456,7 +3456,7 @@ function RecipeCard({ recipe, onView, onEdit, onDelete }: { recipe: Recipe; onVi
   return (
     <li
       onClick={onView}
-      className="group relative overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm ring-1 ring-black/5 transition hover:-translate-y-0.5 hover:shadow-md hover:ring-indigo-200 cursor-pointer h-[280px] flex flex-col"
+      className="group relative overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm ring-1 ring-black/5 transition hover:-translate-y-0.5 hover:shadow-md hover:ring-indigo-200 cursor-pointer flex flex-col"
     >
       <div className="relative w-full h-[180px] overflow-hidden flex-shrink-0">
         {recipe.image ? (
@@ -3535,11 +3535,27 @@ function RecipeCard({ recipe, onView, onEdit, onDelete }: { recipe: Recipe; onVi
           </button>
         </div>
       </div>
-      <div className="p-3 h-[100px] flex-shrink-0 flex flex-col">
-        <div className="flex items-start justify-between gap-2 mb-1">
-          <h3 className="text-sm font-semibold text-slate-900 dark:text-white line-clamp-1 flex-1">
-            {recipe.name || 'Untitled Recipe'}
-          </h3>
+      <div className="p-3 flex-shrink-0 flex flex-col gap-2">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <h3 className="text-sm font-semibold text-slate-900 dark:text-white line-clamp-1">
+              {recipe.name || 'Untitled Recipe'}
+            </h3>
+            {recipe.rating && (
+              <div className="flex items-center gap-1 mt-1">
+                {Array.from({ length: 5 }, (_, i) => (
+                  <svg
+                    key={i}
+                    className={`h-3 w-3 ${i < recipe.rating! ? 'text-amber-400 fill-current' : 'text-slate-300'}`}
+                    viewBox="0 0 20 20"
+                  >
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                  </svg>
+                ))}
+                <span className="text-xs text-slate-600 dark:text-slate-400 ml-1">({recipe.rating})</span>
+              </div>
+            )}
+          </div>
           <div className="flex gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
             <button
               type="button"
@@ -3614,9 +3630,26 @@ function RecipeCard({ recipe, onView, onEdit, onDelete }: { recipe: Recipe; onVi
             </button>
           </div>
         </div>
-        <p className="line-clamp-2 text-xs text-slate-600 dark:text-slate-400">
+        <p className="line-clamp-1 text-xs text-slate-600 dark:text-slate-400">
           {recipe.description || 'No description available'}
         </p>
+        {recipe.tags && recipe.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {recipe.tags.slice(0, 3).map((tag, idx) => (
+              <span
+                key={idx}
+                className="inline-flex items-center rounded-full bg-indigo-50 dark:bg-indigo-900/20 px-2 py-0.5 text-[10px] font-medium text-indigo-700 dark:text-indigo-300"
+              >
+                {tag}
+              </span>
+            ))}
+            {recipe.tags.length > 3 && (
+              <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-slate-700 px-2 py-0.5 text-[10px] font-medium text-slate-600 dark:text-slate-400">
+                +{recipe.tags.length - 3}
+              </span>
+            )}
+          </div>
+        )}
       </div>
     </li>
   );
