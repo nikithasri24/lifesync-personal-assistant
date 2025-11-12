@@ -2517,13 +2517,13 @@ const MealPlanning: React.FC = () => {
   }, [recipes, recipeSearchQuery, showFavoritesOnly]);
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-6 p-6">
-      <header className="flex flex-wrap items-center justify-between gap-4">
+    <div className="mx-auto flex max-w-6xl flex-col gap-4 sm:gap-6 p-3 sm:p-6">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Meal planning</h1>
-          <p className="text-sm text-slate-600">Plan your week, import recipes, and keep dinner decisions simple.</p>
+          <h1 className="text-xl sm:text-2xl font-semibold text-slate-900">Meal planning</h1>
+          <p className="text-xs sm:text-sm text-slate-600">Plan your week, import recipes, and keep dinner decisions simple.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {/* Date picker popover to anchor the week */}
           <DatePickerPopover
             value={currentWeekStart}
@@ -2533,44 +2533,48 @@ const MealPlanning: React.FC = () => {
           <button
             type="button"
             onClick={() => setCurrentWeekStart((date) => addDays(date, -7))}
-            className="rounded-full border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+            className="rounded-full border border-slate-200 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-slate-600 transition hover:bg-slate-50"
           >
-            Previous
+            <span className="hidden sm:inline">Previous</span>
+            <span className="sm:hidden">Prev</span>
           </button>
           <button
             type="button"
             onClick={() => setCurrentWeekStart(startOfWeek(new Date(), { weekStartsOn }))}
-            className="rounded-full border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+            className="rounded-full border border-slate-200 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-slate-600 transition hover:bg-slate-50"
           >
-            This week
+            <span className="hidden sm:inline">This week</span>
+            <span className="sm:hidden">Today</span>
           </button>
           <button
             type="button"
             onClick={() => setCurrentWeekStart((date) => addDays(date, 7))}
-            className="rounded-full border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+            className="rounded-full border border-slate-200 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-slate-600 transition hover:bg-slate-50"
           >
             Next
           </button>
           <button
             type="button"
             onClick={() => setShowCopyWeek(true)}
-            className="rounded-full border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-700 transition hover:bg-indigo-100"
+            className="rounded-full border border-indigo-200 bg-indigo-50 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-indigo-700 transition hover:bg-indigo-100"
             title="Copy this week's meals to another week"
           >
-            Copy Week
+            <span className="hidden sm:inline">Copy Week</span>
+            <span className="sm:hidden">Copy</span>
           </button>
           <button
             type="button"
             onClick={() => setShowGroceryList(true)}
-            className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-100"
+            className="rounded-full border border-emerald-200 bg-emerald-50 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-emerald-700 transition hover:bg-emerald-100"
             title="Generate grocery list from recipes"
           >
-            Grocery List
+            <span className="hidden sm:inline">Grocery List</span>
+            <span className="sm:hidden">List</span>
           </button>
           <button
             type="button"
             onClick={() => window.print()}
-            className="rounded-full border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+            className="rounded-full border border-slate-200 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-slate-600 transition hover:bg-slate-50"
             title="Print weekly plan"
           >
             Print
@@ -2580,9 +2584,9 @@ const MealPlanning: React.FC = () => {
 
       {/* Selection toolbar */}
       {isSelectionMode && selectedCells.size > 0 && (
-        <section className="rounded-lg border-2 border-indigo-500 bg-indigo-50 p-4 shadow-lg animate-in slide-in-from-top">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+        <section className="rounded-lg border-2 border-indigo-500 bg-indigo-50 p-3 sm:p-4 shadow-lg animate-in slide-in-from-top">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
               <div className="flex items-center gap-2">
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-600 text-white font-semibold text-sm">
                   {selectedCells.size}
@@ -2592,14 +2596,15 @@ const MealPlanning: React.FC = () => {
                 </span>
               </div>
               <span className="text-xs text-indigo-600">
-                Cmd/Ctrl + click to select more cells
+                <span className="hidden sm:inline">Cmd/Ctrl + click to select more cells</span>
+                <span className="sm:hidden">Tap cells to select</span>
               </span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
               <input
                 type="text"
                 placeholder="Type meal name..."
-                className="w-64 rounded-md border border-indigo-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full sm:w-64 rounded-md border border-indigo-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 onKeyDown={async (e) => {
                   if (e.key === 'Enter') {
                     const value = (e.target as HTMLInputElement).value.trim();
