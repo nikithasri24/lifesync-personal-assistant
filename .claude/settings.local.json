@@ -26,7 +26,11 @@
       "Bash(ps:*)",
       "Bash(kill:*)",
       "Bash(npm run:*)",
-      "Bash(xargs kill:*)"
+      "Bash(xargs kill:*)",
+      "WebFetch(domain:cliprecipe.com)",
+      "Bash(git restore:*)",
+      "Bash(.env)",
+      "Bash(/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/server/.env)"
     ],
     "deny": [],
     "ask": []
