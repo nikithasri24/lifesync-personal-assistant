@@ -27,6 +27,7 @@ import {
 import EmptyState from './components/EmptyState';
 import ChallengeSetupForm from './components/ChallengeSetupForm';
 import DailyCheckIn from './components/DailyCheckIn';
+import ProgressView from './components/ProgressView';
 import FailurePromptModal from './components/FailurePromptModal';
 import CompletedView from './components/CompletedView';
 import DeleteChallengeModal from './components/DeleteChallengeModal';
@@ -34,6 +35,7 @@ import DeleteChallengeModal from './components/DeleteChallengeModal';
 export default function SeventyFiveHard() {
   const [showSetupForm, setShowSetupForm] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<'today' | 'progress'>('today');
 
   // Get state from store
   const {
@@ -179,18 +181,50 @@ export default function SeventyFiveHard() {
     );
   }
 
-  // Active challenge - show daily check-in
+  // Active challenge - show tabs and content
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <DailyCheckIn
-        challenge={challenge}
-        checkIn={todayCheckIn || null}
-        onToggleTask={handleToggleTask}
-        onUploadPhoto={handleUploadPhoto}
-        onUpdateNotes={handleUpdateNotes}
-        onUpdateWeight={handleUpdateWeight}
-        onDeleteChallenge={handleDeleteChallenge}
-      />
+      {/* Tab Navigation */}
+      <div className="flex gap-2 mb-6">
+        <button
+          onClick={() => setActiveTab('today')}
+          className={`flex-1 sm:flex-none sm:px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
+            activeTab === 'today'
+              ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md shadow-purple-500/30'
+              : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+          }`}
+        >
+          Today
+        </button>
+        <button
+          onClick={() => setActiveTab('progress')}
+          className={`flex-1 sm:flex-none sm:px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
+            activeTab === 'progress'
+              ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md shadow-purple-500/30'
+              : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+          }`}
+        >
+          Progress
+        </button>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === 'today' ? (
+        <DailyCheckIn
+          challenge={challenge}
+          checkIn={todayCheckIn || null}
+          onToggleTask={handleToggleTask}
+          onUploadPhoto={handleUploadPhoto}
+          onUpdateNotes={handleUpdateNotes}
+          onUpdateWeight={handleUpdateWeight}
+          onDeleteChallenge={handleDeleteChallenge}
+        />
+      ) : (
+        <ProgressView
+          challenge={challenge}
+          checkIns={checkIns}
+        />
+      )}
     </div>
   );
 }
