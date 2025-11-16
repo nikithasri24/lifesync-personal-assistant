@@ -468,7 +468,7 @@ export const createSeventyFiveHardStore: StateCreator<
 
   /**
    * Upload progress photo
-   * - Compresses image
+   * - Validates file type, size, and content
    * - Uploads to Supabase Storage
    * - Updates today's check-in
    */
@@ -482,6 +482,44 @@ export const createSeventyFiveHardStore: StateCreator<
 
       if (!todayCheckIn) {
         return { success: false, error: 'No check-in for today' };
+      }
+
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      if (!allowedTypes.includes(file.type)) {
+        return {
+          success: false,
+          error: 'Invalid file type. Please upload a JPEG, PNG, or WebP image.'
+        };
+      }
+
+      // Validate file size (5MB limit)
+      const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+      if (file.size > maxSize) {
+        return {
+          success: false,
+          error: `File too large (${(file.size / 1024 / 1024).toFixed(2)}MB). Maximum size is 5MB.`
+        };
+      }
+
+      // Validate it's actually an image by checking dimensions
+      try {
+        await new Promise((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => {
+            if (img.width < 1 || img.height < 1) {
+              reject(new Error('Invalid image dimensions'));
+            }
+            resolve(true);
+          };
+          img.onerror = () => reject(new Error('Failed to load image'));
+          img.src = URL.createObjectURL(file);
+        });
+      } catch (imgError) {
+        return {
+          success: false,
+          error: 'Invalid image file. Please upload a valid image.'
+        };
       }
 
       console.log('[75Hard] Uploading photo...');
