@@ -37,7 +37,7 @@ import { MetricCard } from '../../../components/DataVisualization';
 // Import sub-components
 import WeightChart from './WeightChart';
 import PhotoGallery from './PhotoGallery';
-// import DailyDetailsModal from './DailyDetailsModal';
+import DailyDetailsModal from './DailyDetailsModal';
 
 interface ProgressViewProps {
   challenge: SeventyFiveHardChallenge;
@@ -208,22 +208,16 @@ export default function ProgressView({ challenge, checkIns }: ProgressViewProps)
       {/* Photo Gallery */}
       <PhotoGallery checkIns={checkIns} onPhotoClick={handlePhotoClick} />
 
-      {/* Daily Details Modal Placeholder */}
+      {/* Daily Details Modal */}
       {showModal && selectedCheckIn && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md">
-            <h3 className="font-semibold mb-2">Day {selectedCheckIn.dayNumber}</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              {format(selectedCheckIn.date, 'MMMM d, yyyy')}
-            </p>
-            <button
-              onClick={handleCloseModal}
-              className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-            >
-              Close
-            </button>
-          </div>
-        </div>
+        <DailyDetailsModal
+          checkIn={selectedCheckIn}
+          challenge={challenge}
+          onClose={handleCloseModal}
+          onNavigate={handleNavigate}
+          canNavigatePrev={checkIns.findIndex(ci => ci.id === selectedCheckIn.id) < checkIns.length - 1}
+          canNavigateNext={checkIns.findIndex(ci => ci.id === selectedCheckIn.id) > 0}
+        />
       )}
     </div>
   );
