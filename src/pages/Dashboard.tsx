@@ -1,7 +1,7 @@
-import { 
-  CheckSquare, 
-  Target, 
-  FileText, 
+import {
+  CheckSquare,
+  Target,
+  FileText,
   BookOpen,
   TrendingUp
 } from 'lucide-react';
@@ -11,6 +11,7 @@ import { SkeletonCard } from '../components/LoadingSpinner';
 import { useState, useEffect } from 'react';
 import { Toast } from '../components/Toast';
 import { useToast } from '../hooks/useToast';
+import SeventyFiveHardWidget from '../components/SeventyFiveHardWidget';
 
 export default function Dashboard() {
   const { ensureSFHTasksForToday } = useAppStore();
@@ -194,6 +195,9 @@ export default function Dashboard() {
           </div>
         ))}
       </div>
+
+      {/* 75 Hard Challenge Widget */}
+      <SeventyFiveHardWidget />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Today's Tasks */}
