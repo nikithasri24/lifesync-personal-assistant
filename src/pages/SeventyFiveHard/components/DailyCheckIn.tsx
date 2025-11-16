@@ -9,7 +9,7 @@
  * - Success message when all tasks complete
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Camera, Edit3, Scale, CheckCircle2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { getCompletionPercentage } from '../../../types/seventyFiveHard';
@@ -36,6 +36,10 @@ export default function DailyCheckIn({
   const [weight, setWeight] = useState(checkIn?.weight?.toString() || '');
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
+  // Debounce timers
+  const notesDebounceTimer = useRef<NodeJS.Timeout | null>(null);
+  const weightDebounceTimer = useRef<NodeJS.Timeout | null>(null);
+
   // Sync local state when checkIn changes
   useEffect(() => {
     if (checkIn) {
@@ -43,6 +47,14 @@ export default function DailyCheckIn({
       setWeight(checkIn.weight?.toString() || '');
     }
   }, [checkIn]);
+
+  // Cleanup debounce timers on unmount
+  useEffect(() => {
+    return () => {
+      if (notesDebounceTimer.current) clearTimeout(notesDebounceTimer.current);
+      if (weightDebounceTimer.current) clearTimeout(weightDebounceTimer.current);
+    };
+  }, []);
 
   if (!checkIn) {
     return (
@@ -71,38 +83,101 @@ export default function DailyCheckIn({
     }
   };
 
+  const handleNotesChange = (newNotes: string) => {
+    setNotes(newNotes);
+
+    // Clear existing timer
+    if (notesDebounceTimer.current) {
+      clearTimeout(notesDebounceTimer.current);
+    }
+
+    // Set new timer to update after 1 second of no typing
+    notesDebounceTimer.current = setTimeout(() => {
+      // Enforce max length (database constraint is 1000)
+      if (newNotes.length > 1000) {
+        alert('Notes must be 1000 characters or less');
+        setNotes(checkIn?.notes || '');
+        return;
+      }
+
+      // Only update if changed
+      if (newNotes !== checkIn?.notes) {
+        onUpdateNotes(newNotes);
+      }
+    }, 1000);
+  };
+
   const handleNotesBlur = () => {
+    // Clear debounce timer and save immediately on blur
+    if (notesDebounceTimer.current) {
+      clearTimeout(notesDebounceTimer.current);
+    }
+
     // Enforce max length (database constraint is 1000)
     if (notes.length > 1000) {
       alert('Notes must be 1000 characters or less');
-      setNotes(checkIn.notes || '');
+      setNotes(checkIn?.notes || '');
       return;
     }
 
     // Only update if changed
-    if (notes !== checkIn.notes) {
+    if (notes !== checkIn?.notes) {
       onUpdateNotes(notes);
     }
   };
 
+  const handleWeightChange = (newWeight: string) => {
+    setWeight(newWeight);
+
+    // Clear existing timer
+    if (weightDebounceTimer.current) {
+      clearTimeout(weightDebounceTimer.current);
+    }
+
+    // Set new timer to update after 1 second of no typing
+    weightDebounceTimer.current = setTimeout(() => {
+      const weightNum = parseFloat(newWeight);
+
+      // Validate weight is a number
+      if (isNaN(weightNum)) {
+        return;
+      }
+
+      // Validate reasonable range (20-500 kg or ~50-1100 lbs)
+      if (weightNum < 20 || weightNum > 1100) {
+        return;
+      }
+
+      // Only update if changed
+      if (weightNum !== checkIn?.weight) {
+        onUpdateWeight(weightNum);
+      }
+    }, 1000);
+  };
+
   const handleWeightBlur = () => {
+    // Clear debounce timer and validate immediately on blur
+    if (weightDebounceTimer.current) {
+      clearTimeout(weightDebounceTimer.current);
+    }
+
     const weightNum = parseFloat(weight);
 
     // Validate weight is a number
     if (isNaN(weightNum)) {
-      setWeight(checkIn.weight?.toString() || '');
+      setWeight(checkIn?.weight?.toString() || '');
       return;
     }
 
     // Validate reasonable range (20-500 kg or ~50-1100 lbs)
     if (weightNum < 20 || weightNum > 1100) {
       alert('Please enter a valid weight between 20-500 kg or 50-1100 lbs');
-      setWeight(checkIn.weight?.toString() || '');
+      setWeight(checkIn?.weight?.toString() || '');
       return;
     }
 
     // Only update if changed
-    if (weightNum !== checkIn.weight) {
+    if (weightNum !== checkIn?.weight) {
       onUpdateWeight(weightNum);
     }
   };
@@ -255,7 +330,7 @@ export default function DailyCheckIn({
             <input
               type="number"
               value={weight}
-              onChange={(e) => setWeight(e.target.value)}
+              onChange={(e) => handleWeightChange(e.target.value)}
               onBlur={handleWeightBlur}
               placeholder="Enter weight"
               step="0.1"
@@ -279,7 +354,7 @@ export default function DailyCheckIn({
           </div>
           <textarea
             value={notes}
-            onChange={(e) => setNotes(e.target.value)}
+            onChange={(e) => handleNotesChange(e.target.value)}
             onBlur={handleNotesBlur}
             placeholder="How did today go? Any challenges or wins?"
             rows={4}
