@@ -1607,6 +1607,24 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
       return
     }
 
+    // ==================== NEW 75 Hard System (Clean Architecture) ====================
+    // Bi-directional sync: Todo completion → 75 Hard task completion
+    if ((current.tags || []).includes('75hard')) {
+      try {
+        // Import the sync function dynamically to avoid circular dependency
+        const { syncTodoCompletionToSFH } = await import('./seventyFiveHardActions');
+
+        // Sync to 75 Hard (this will toggle the 75 Hard task)
+        await syncTodoCompletionToSFH(id);
+
+        // Don't delete the todo - it stays in the list
+        // The todo will be updated by ensureSFHTodosForToday() after 75 Hard task is toggled
+        console.log('[Todo→75Hard] Synced todo completion to 75 Hard');
+      } catch (error) {
+        console.error('[Todo→75Hard] Failed to sync to 75 Hard:', error);
+      }
+    }
+
     if (!isSupabaseConfigured) {
       const tasks = get().tasks.map((task) =>
         task.id === id
