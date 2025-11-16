@@ -17,12 +17,13 @@ import MealPlanning from './pages/MealPlanning';
 import ProjectTracking from './pages/ProjectTracking';
 import Travel from './pages/Travel';
 import Finances from './pages/Finances';
-import SeventyFiveHard from './pages/SeventyFiveHard';
+import SeventyFiveHard from './pages/SeventyFiveHard/index';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import LoadingSpinner from './components/LoadingSpinner';
 import { AuthGate } from './components/AuthGate';
 import { useAuth } from './hooks/useAuth';
 import { isSupabaseConfigured } from './lib/supabase';
+import { loadSFHChallenge } from './stores/seventyFiveHardActions';
 
 function App() {
   const { activeView, loading, initializeData } = useRealAppStore();
@@ -56,24 +57,21 @@ function App() {
     }
 
     initializedFor.current = user.id;
-    initializeData();
-    console.log('🔄 Initialized LifeSync data for Supabase user');
 
-    // Run daily 75 Hard task creation (cron-like behavior)
-    // This runs once per day when the app first loads
-    const runDailyTaskCreation = async () => {
+    // Initialize data and load 75 Hard challenge
+    (async () => {
       try {
-        const { ensureSFHTasksForToday } = useRealAppStore.getState();
-        await ensureSFHTasksForToday?.();
-      } catch (error) {
-        console.error('Failed to create daily 75 Hard tasks:', error);
-      }
-    };
+        await initializeData();
+        console.log('🔄 Initialized LifeSync data for Supabase user');
 
-    // Run after a short delay to ensure data is loaded
-    setTimeout(() => {
-      runDailyTaskCreation();
-    }, 1000);
+        // Load active 75 Hard challenge (new architecture)
+        // This will check for missed days and show failure prompt if needed
+        await loadSFHChallenge();
+        console.log('✅ 75 Hard challenge loaded');
+      } catch (error) {
+        console.error('Failed to initialize data or load 75 Hard challenge:', error);
+      }
+    })();
   }, [initializeData, user, authLoading]);
 
   // Show loading spinner while initializing

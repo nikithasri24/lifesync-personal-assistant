@@ -83,31 +83,32 @@ export default function ChallengeSetupForm({ onSubmit, onCancel }: ChallengeSetu
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-hidden">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full h-[90vh] flex flex-col overflow-hidden">
-        {/* Header */}
-        <div className="flex-shrink-0 flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Start 75 Hard Challenge
-            </h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              Customize your tasks below. They'll be locked once you start.
-            </p>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full" style={{ maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+        {/* Header - Fixed */}
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700" style={{ flexShrink: 0 }}>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                Start 75 Hard Challenge
+              </h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                Customize your tasks below. They'll be locked once you start.
+              </p>
+            </div>
+            <button
+              onClick={onCancel}
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              disabled={isSubmitting}
+            >
+              <X className="w-6 h-6" />
+            </button>
           </div>
-          <button
-            onClick={onCancel}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-            disabled={isSubmitting}
-          >
-            <X className="w-6 h-6" />
-          </button>
         </div>
 
-        {/* Form - Full height with scrollable area */}
-        <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden" style={{ minHeight: 0 }}>
-          {/* Scrollable content area */}
-          <div className="flex-1 overflow-y-auto p-6" style={{ minHeight: 0, overflowY: 'auto' }}>
+        {/* Scrollable content */}
+        <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }} className="p-6">
+          <form onSubmit={handleSubmit} id="challenge-form" className="space-y-4">
             {/* Tasks */}
             <div className="space-y-3 mb-4">
               {tasks.map((task, index) => (
@@ -191,29 +192,30 @@ export default function ChallengeSetupForm({ onSubmit, onCancel }: ChallengeSetu
                 <p className="text-sm text-red-800 dark:text-red-300">{error}</p>
               </div>
             )}
-          </div>
+          </form>
+        </div>
 
-          {/* Footer - Fixed at bottom */}
-          <div className="flex-shrink-0 p-6 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-            <div className="flex items-center justify-end gap-3">
-              <button
-                type="button"
-                onClick={onCancel}
-                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                disabled={isSubmitting}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-6 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? 'Starting...' : 'Start Challenge'}
-              </button>
-            </div>
+        {/* Footer - Fixed at bottom */}
+        <div className="p-6 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800" style={{ flexShrink: 0 }}>
+          <div className="flex items-center justify-end gap-3">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              disabled={isSubmitting}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              form="challenge-form"
+              className="px-6 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Starting...' : 'Start Challenge'}
+            </button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );

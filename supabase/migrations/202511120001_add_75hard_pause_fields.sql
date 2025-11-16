@@ -16,11 +16,25 @@ COMMENT ON COLUMN sfh_challenges.total_pause_duration IS 'Total number of days t
 COMMENT ON COLUMN sfh_challenges.pause_count IS 'Number of times the challenge has been paused';
 
 -- Add check constraint to ensure pause count is non-negative
-ALTER TABLE sfh_challenges
-    ADD CONSTRAINT check_pause_count_non_negative
-    CHECK (pause_count >= 0);
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'check_pause_count_non_negative'
+    ) THEN
+        ALTER TABLE sfh_challenges
+            ADD CONSTRAINT check_pause_count_non_negative
+            CHECK (pause_count >= 0);
+    END IF;
+END $$;
 
 -- Add check constraint to ensure total pause duration is non-negative
-ALTER TABLE sfh_challenges
-    ADD CONSTRAINT check_total_pause_duration_non_negative
-    CHECK (total_pause_duration >= 0);
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'check_total_pause_duration_non_negative'
+    ) THEN
+        ALTER TABLE sfh_challenges
+            ADD CONSTRAINT check_total_pause_duration_non_negative
+            CHECK (total_pause_duration >= 0);
+    END IF;
+END $$;

@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { addDays, startOfWeek, isSameDay, differenceInDays, format as formatDate } from 'date-fns'
+import { addDays, startOfWeek, isSameDay, differenceInDays, format as formatDate, startOfDay } from 'date-fns'
 import {
   ensureSupabase,
   isSupabaseConfigured,
@@ -8,8 +8,6 @@ import {
   apiClient,
   type HabitData,
   type HabitEntryData,
-  type SFHChallengeData,
-  type SFHEntryData,
   type MealPlanData,
   type PlannedMealData,
   type PantryItemData,
@@ -39,6 +37,13 @@ import type {
   TodoItem,
   UserStats,
 } from '../types'
+import type { SFHChallengeData, SFHEntryData } from '../services/types'
+import type {
+  SeventyFiveHardChallenge as NewChallenge,
+  DailyCheckIn as NewCheckIn,
+  Task,
+  TaskCompletion
+} from '../types/seventyFiveHard'
 
 type ViewKey =
   | 'dashboard'
@@ -162,10 +167,21 @@ interface RealAppState {
   financialAccounts: FinancialAccountData[]
   financialTransactions: FinancialTransactionData[]
 
-  // 75 Hard
-  seventyFiveHardChallenges: import('../types').SeventyFiveHardChallenge[]
-  addSeventyFiveHardChallenge?: (c: import('../types').SeventyFiveHardChallenge) => void
-  updateSeventyFiveHardChallenge?: (id: string, updates: Partial<import('../types').SeventyFiveHardChallenge>) => void
+  // ==================== 75 Hard (New Architecture) ====================
+  // State
+  sfhChallenge: import('../types/seventyFiveHard').SeventyFiveHardChallenge | null
+  sfhCheckIns: import('../types/seventyFiveHard').DailyCheckIn[]
+  sfhShowFailurePrompt: boolean
+  sfhFailureDate: Date | null
+  sfhShowDayCompleteMessage: boolean
+  sfhShowCelebration: boolean
+
+  // Note: 75 Hard actions are in src/stores/seventyFiveHardActions.ts (standalone functions)
+
+  // ==================== 75 Hard (Legacy - DEPRECATED) ====================
+  seventyFiveHardChallenges: import('../types').LegacySeventyFiveHardChallenge[]
+  addSeventyFiveHardChallenge?: (c: import('../types').LegacySeventyFiveHardChallenge) => void
+  updateSeventyFiveHardChallenge?: (id: string, updates: Partial<import('../types').LegacySeventyFiveHardChallenge>) => void
   deleteSeventyFiveHardChallenge?: (id: string) => void
   addSeventyFiveHardEntry?: (e: import('../types').SeventyFiveHardEntry) => void
   updateSeventyFiveHardEntry?: (id: string, updates: Partial<import('../types').SeventyFiveHardEntry>) => void
@@ -911,97 +927,66 @@ const computeUserStats = (tasks: TodoItem[], habits: Habit[]): UserStats => {
   }
 }
 
-// 75 Hard mappers
-const mapSFHChallengeDataToChallenge = (c: SFHChallengeData): import('../types').SeventyFiveHardChallenge => ({
+// 75 Hard mappers - updated for new simplified schema
+const mapSFHChallengeDataToChallenge = (c: SFHChallengeData): NewChallenge => ({
   id: c.id ?? createId(),
-  name: c.name,
+  userId: c.user_id ?? '',
   startDate: new Date(c.start_date),
-  endDate: new Date(c.end_date),
-  isActive: c.is_active,
   currentDay: c.current_day,
-  rules: (c.rules || []).map((r: any) => ({
-    id: r.id,
-    title: r.title,
-    description: r.description,
-    isRequired: !!r.is_required,
-    isCustom: !!r.is_custom,
-    dailyTarget: r.daily_target ?? undefined,
-    segmentLabels: Array.isArray(r.segment_labels) ? r.segment_labels : undefined,
-  })),
-  dailyEntries: [],
-  notes: c.notes ?? undefined,
-  pausedAt: c.paused_at ? new Date(c.paused_at) : undefined,
-  resumedAt: c.resumed_at ? new Date(c.resumed_at) : undefined,
-  totalPauseDuration: c.total_pause_duration ?? undefined,
-  pauseCount: c.pause_count ?? undefined,
+  status: c.status as 'active' | 'completed',
+  tasks: (c.tasks || []) as Task[],
+  completedAt: c.completed_at ? new Date(c.completed_at) : undefined,
   createdAt: c.created_at ? new Date(c.created_at) : new Date(),
+  updatedAt: c.updated_at ? new Date(c.updated_at) : new Date(),
 })
 
-const mapSFHEntryDataToEntry = (e: SFHEntryData): import('../types').SeventyFiveHardEntry => ({
+const mapSFHEntryDataToEntry = (e: SFHEntryData): NewCheckIn => ({
   id: e.id ?? createId(),
   challengeId: e.challenge_id,
   date: new Date(e.date),
-  day: e.day,
-  ruleCompletions: (e.rule_completions || []).map((rc: any) => ({
-    ruleId: rc.rule_id,
-    completed: !!rc.completed,
-    completedAt: rc.completed_at ? new Date(rc.completed_at) : undefined,
-    segments: Array.isArray(rc.segments) ? rc.segments.map((b: any) => !!b) : undefined,
-  })),
-  notes: e.notes ?? undefined,
-  progressPhotoUrl: e.progress_photo_url ?? undefined,
+  dayNumber: e.day_number,
+  taskCompletions: (e.task_completions || []).map((tc: any) => ({
+    taskId: tc.taskId,
+    completed: !!tc.completed,
+    completedAt: tc.completedAt ? new Date(tc.completedAt) : undefined,
+  })) as TaskCompletion[],
+  photo: e.photo ?? undefined,
   weight: e.weight ?? undefined,
-  measurements: e.measurements ?? {},
+  notes: e.notes ?? undefined,
+  createdAt: e.created_at ? new Date(e.created_at) : new Date(),
+  updatedAt: e.updated_at ? new Date(e.updated_at) : new Date(),
 })
 
 const buildSFHChallengeInsert = (
-  c: import('../types').SeventyFiveHardChallenge,
-): Omit<SFHChallengeData, 'id' | 'created_at' | 'user_id'> => ({
-  name: c.name,
+  c: NewChallenge,
+): Omit<SFHChallengeData, 'id' | 'created_at' | 'updated_at' | 'user_id'> => ({
   start_date: formatDate(c.startDate, 'yyyy-MM-dd'),
-  end_date: formatDate(c.endDate, 'yyyy-MM-dd'),
-  is_active: c.isActive,
   current_day: c.currentDay,
-  rules: c.rules.map((r) => ({
-    id: r.id,
-    title: r.title,
-    description: r.description,
-    is_required: r.isRequired,
-    is_custom: r.isCustom,
-    daily_target: r.dailyTarget,
-    segment_labels: r.segmentLabels,
+  status: c.status,
+  tasks: c.tasks.map((t) => ({
+    id: t.id,
+    title: t.title,
+    description: t.description ?? '',
+    order: t.order,
   })),
-  notes: c.notes ?? null,
-  paused_at: c.pausedAt ? c.pausedAt.toISOString() : null,
-  resumed_at: c.resumedAt ? c.resumedAt.toISOString() : null,
-  total_pause_duration: c.totalPauseDuration ?? 0,
-  pause_count: c.pauseCount ?? 0,
+  completed_at: c.completedAt ? c.completedAt.toISOString() : null,
 })
 
 const buildSFHChallengeUpdate = (
-  updates: Partial<import('../types').SeventyFiveHardChallenge>,
+  updates: Partial<NewChallenge>,
 ): Partial<SFHChallengeData> => ({
-  name: updates.name,
   start_date: updates.startDate ? formatDate(updates.startDate, 'yyyy-MM-dd') : undefined,
-  end_date: updates.endDate ? formatDate(updates.endDate, 'yyyy-MM-dd') : undefined,
-  is_active: updates.isActive,
   current_day: updates.currentDay,
-  rules: updates.rules
-    ? updates.rules.map((r) => ({
-        id: r.id,
-        title: r.title,
-        description: r.description,
-        is_required: r.isRequired,
-        is_custom: r.isCustom,
-        daily_target: r.dailyTarget,
-        segment_labels: r.segmentLabels,
+  status: updates.status,
+  tasks: updates.tasks
+    ? updates.tasks.map((t) => ({
+        id: t.id,
+        title: t.title,
+        description: t.description ?? '',
+        order: t.order,
       }))
     : undefined,
-  notes: updates.notes,
-  paused_at: updates.pausedAt !== undefined ? (updates.pausedAt ? updates.pausedAt.toISOString() : null) : undefined,
-  resumed_at: updates.resumedAt !== undefined ? (updates.resumedAt ? updates.resumedAt.toISOString() : null) : undefined,
-  total_pause_duration: updates.totalPauseDuration,
-  pause_count: updates.pauseCount,
+  completed_at: updates.completedAt !== undefined ? (updates.completedAt ? updates.completedAt.toISOString() : null) : undefined,
 })
 
 const toIsoSafe = (v: any): string | null => {
@@ -1070,6 +1055,14 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
       return (raw as ViewKey) || 'dashboard'
     } catch { return 'dashboard' }
   })(),
+
+  // 75 Hard (New Architecture) - Initial State
+  sfhChallenge: null,
+  sfhCheckIns: [],
+  sfhShowFailurePrompt: false,
+  sfhFailureDate: null,
+  sfhShowDayCompleteMessage: false,
+  sfhShowCelebration: false,
   // Global settings
   weekStartsOn: (() => {
     try {
@@ -1253,35 +1246,31 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
       })
       const focusSessions = focusSessionsRaw.map(mapFocusSessionDataToSession)
 
-      // 75 Hard: load entries and map
+      // 75 Hard: LEGACY SYNC DISABLED
+      // The new architecture uses loadSFHChallenge() from seventyFiveHardActions.ts
+      // which populates sfhChallenge and sfhCheckIns (not seventyFiveHardChallenges)
+      // Set legacy field to empty array - it's deprecated
+      const legacyChallenges: import('../types').LegacySeventyFiveHardChallenge[] = []
+
+      // Skip loading legacy 75Hard data - it's handled by the new actions
+      /*
       let sfhEntriesRaw: SFHEntryData[] = []
       const challengeIds = (sfhChallengesRaw as SFHChallengeData[]).map((c) => c.id!).filter(Boolean) as string[]
       if (challengeIds.length) {
         sfhEntriesRaw = await apiClient.getSFHEntries(challengeIds).catch(() => [])
       }
       let sfhChallenges = (sfhChallengesRaw as SFHChallengeData[]).map(mapSFHChallengeDataToChallenge)
-      const entriesByChallenge = sfhEntriesRaw.reduce<Record<string, import('../types').SeventyFiveHardEntry[]>>((acc, e) => {
+      const entriesByChallenge = sfhEntriesRaw.reduce<Record<string, NewCheckIn[]>>((acc, e) => {
         const entry = mapSFHEntryDataToEntry(e)
         const key = entry.challengeId
         acc[key] = acc[key] || []
         acc[key].push(entry)
         return acc
       }, {})
-      sfhChallenges.forEach((c) => {
-        const entries = entriesByChallenge[c.id] || []
-        // De-duplicate entries by id|date to avoid duplicates from merges
-        const seenE = new Set<string>()
-        const uniqueE: typeof entries = []
-        for (const e of entries) {
-          const k = `${e.id || ''}|${formatDate(e.date, 'yyyy-MM-dd')}`
-          if (seenE.has(k)) continue
-          seenE.add(k)
-          uniqueE.push(e)
-        }
-        c.dailyEntries = uniqueE
-      })
+      */
 
-      // Merge any local challenges not present in cloud (by name + start_date)
+      // LEGACY: localStorage merge disabled - new architecture doesn't use this
+      /*
       try {
         const localRaw = localStorage.getItem('lifesync:75hard')
         if (localRaw) {
@@ -1356,6 +1345,7 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
           }
         }
       } catch {}
+      */
 
       let shoppingLists = shoppingListsRaw
       let activeShoppingListId = shoppingLists[0]?.id ?? null
@@ -1374,7 +1364,8 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
         shoppingItems = shoppingItemsRaw.map(mapShoppingItemDataToShoppingItem)
       }
 
-      // Final de-duplication of 75 Hard challenges by (id|name|startDate)
+      // LEGACY: De-duplication disabled - new architecture handles this
+      /*
       {
         const seen = new Set<string>()
         const uniq: typeof sfhChallenges = []
@@ -1386,6 +1377,7 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
         }
         sfhChallenges = uniq
       }
+      */
 
       const pantryItems = pantryRaw.map(mapPantryItemDataToPantryItem)
       const mealPlans = mealPlansRaw.map(mapMealPlanDataToMealPlanWeek)
@@ -1414,7 +1406,7 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
         financialTransactions: transactionsRaw ?? [],
         financesLoading: false,
         userStats,
-        seventyFiveHardChallenges: sfhChallenges,
+        seventyFiveHardChallenges: legacyChallenges,
       })
 
       // Update current day for all active challenges after initialization
@@ -2332,62 +2324,30 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
     }))
   },
 
-  // 75 Hard local-only persistence
+  // 75 Hard DEPRECATED - Use seventyFiveHardActions.ts instead
   addSeventyFiveHardChallenge: async (challenge) => {
-    // Optimistic update: Add to local state immediately
-    const challenges = [...get().seventyFiveHardChallenges, challenge]
-    set({ seventyFiveHardChallenges: challenges })
-    try { localStorage.setItem('lifesync:75hard', JSON.stringify(challenges)) } catch {}
-
-    // Sync to cloud in background
-    if (isSupabaseConfigured) {
-      try {
-        const created = await apiClient.createSFHChallenge(buildSFHChallengeInsert(challenge))
-        const mapped = mapSFHChallengeDataToChallenge(created)
-        // Update with server-assigned ID if different
-        if (mapped.id !== challenge.id) {
-          const updatedChallenges = get().seventyFiveHardChallenges.map(c =>
-            c.id === challenge.id ? { ...c, id: mapped.id } : c
-          )
-          set({ seventyFiveHardChallenges: updatedChallenges })
-          try { localStorage.setItem('lifesync:75hard', JSON.stringify(updatedChallenges)) } catch {}
-        }
-      } catch (e) {
-        console.warn('[75Hard] Cloud create failed; local state already updated', e)
-      }
-    }
+    console.warn('[75Hard] DEPRECATED: addSeventyFiveHardChallenge is no longer supported. Use startSFHChallenge() from seventyFiveHardActions.ts instead.')
+    // No-op - legacy method disabled
   },
   updateSeventyFiveHardChallenge: async (id, updates) => {
-    // Optimistic update: Update local state immediately for instant UI feedback
-    const challenges = get().seventyFiveHardChallenges.map((c) => (c.id === id ? { ...c, ...updates } : c))
-    set({ seventyFiveHardChallenges: challenges })
-    try { localStorage.setItem('lifesync:75hard', JSON.stringify(challenges)) } catch {}
-
-    // Sync to cloud in background (don't block UI)
-    if (isSupabaseConfigured) {
-      try {
-        await apiClient.updateSFHChallenge(id, buildSFHChallengeUpdate(updates))
-      } catch (e) {
-        console.warn('[75Hard] Cloud update failed; local state already updated', e)
-      }
-    }
+    console.warn('[75Hard] DEPRECATED: updateSeventyFiveHardChallenge is no longer supported. Use actions from seventyFiveHardActions.ts instead.')
+    // No-op - legacy method disabled
   },
   deleteSeventyFiveHardChallenge: async (id) => {
-    // Optimistic update: Remove from local state immediately
-    const challenges = get().seventyFiveHardChallenges.filter((c) => c.id !== id)
-    set({ seventyFiveHardChallenges: challenges })
-    try { localStorage.setItem('lifesync:75hard', JSON.stringify(challenges)) } catch {}
-
-    // Sync to cloud in background
-    if (isSupabaseConfigured) {
-      try {
-        await apiClient.deleteSFHChallenge(id)
-      } catch (e) {
-        console.warn('[75Hard] Cloud delete failed; local state already updated', e)
-      }
-    }
+    console.warn('[75Hard] DEPRECATED: deleteSeventyFiveHardChallenge is no longer supported. Use actions from seventyFiveHardActions.ts instead.')
+    // No-op - legacy method disabled
   },
   addSeventyFiveHardEntry: async (entry) => {
+    console.warn('[75Hard] DEPRECATED: addSeventyFiveHardEntry is no longer supported. Use actions from seventyFiveHardActions.ts instead.')
+    // No-op - legacy method disabled
+  },
+  updateSeventyFiveHardEntry: async (id, updates) => {
+    console.warn('[75Hard] DEPRECATED: updateSeventyFiveHardEntry is no longer supported. Use actions from seventyFiveHardActions.ts instead.')
+    // No-op - legacy method disabled
+  },
+  /*
+  // LEGACY METHODS DISABLED - Preserved as comments for reference
+  addSeventyFiveHardEntry__OLD: async (entry) => {
     // Optimistic update: Add entry to local state immediately
     let challenges = get().seventyFiveHardChallenges.map((c) => (
       c.id === entry.challengeId ? { ...c, dailyEntries: [...c.dailyEntries, entry] } : c
@@ -2534,6 +2494,7 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
       console.warn('[75Hard] Failed to cleanup tasks after entry update', e)
     }
   },
+  */
 
   addShoppingItem: async (itemInput) => {
     if (!isSupabaseConfigured) {
@@ -2833,6 +2794,27 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
     let tasksCreated = 0
     const MAX_TASKS_PER_RUN = 20 // Safety limit
 
+    // Performance optimization: Pre-build Set of existing 75Hard task keys
+    // This reduces O(n*m) complexity to O(n) + O(1) lookups
+    const existingTaskKeys = new Set<string>()
+    for (const task of state.tasks) {
+      if (task.deleted || task.completed) continue
+      const tags = task.tags || []
+      if (!tags.includes('sfh')) continue
+
+      // Extract key components from tags
+      const sfhTag = tags.find(t => t.startsWith('sfh:') && t !== 'sfh')
+      const ruleTag = tags.find(t => t.startsWith('sfhRule:'))
+      const dayTag = tags.find(t => t.startsWith('sfhDay:'))
+      const segTag = tags.find(t => t.startsWith('sfhSeg:'))
+
+      if (sfhTag && ruleTag && dayTag && segTag) {
+        const key = `${sfhTag}|${ruleTag}|${dayTag}|${segTag}`
+        existingTaskKeys.add(key)
+      }
+    }
+    console.log('[75Hard] Pre-built task index with', existingTaskKeys.size, 'existing tasks')
+
     // Deduplicate challenges by name+startDate (not just ID, as duplicates may have different IDs)
     const processedChallengeKeys = new Set<string>()
     const uniqueChallenges = state.seventyFiveHardChallenges.filter(ch => {
@@ -2882,16 +2864,8 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
           // Create unique key for this task
           const taskKey = `sfh:${ch.id}|sfhRule:${rule.id}|sfhDay:${dayNumber}|sfhSeg:${i}`
 
-          // Skip if already exists in DB or we're creating it in this run
-          const exists = state.tasks.some(t => (t.tags || []).includes('sfh')
-            && (t.tags || []).includes(`sfh:${ch.id}`)
-            && (t.tags || []).includes(`sfhRule:${rule.id}`)
-            && (t.tags || []).includes(`sfhDay:${dayNumber}`)
-            && (t.tags || []).includes(`sfhSeg:${i}`)
-            && !t.deleted
-            && !t.completed)
-
-          if (exists) {
+          // Skip if already exists in DB (O(1) lookup instead of O(n))
+          if (existingTaskKeys.has(taskKey)) {
             console.log('[75Hard] Task already exists:', title, `(${i + 1}/${target})`)
             continue
           }
@@ -3132,4 +3106,7 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
     }
     console.log('[75Hard] Reset sfhEnsuredForDate - tasks will be recreated on next ensureSFHTasksForToday call')
   },
+
+  // ==================== 75 Hard (New Architecture) Methods ====================
+
 }))
