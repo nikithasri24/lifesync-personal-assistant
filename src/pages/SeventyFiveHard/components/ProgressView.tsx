@@ -36,7 +36,7 @@ import { MetricCard } from '../../../components/DataVisualization';
 
 // Import sub-components
 import WeightChart from './WeightChart';
-// import PhotoGallery from './PhotoGallery';
+import PhotoGallery from './PhotoGallery';
 // import DailyDetailsModal from './DailyDetailsModal';
 
 interface ProgressViewProps {
@@ -205,32 +205,8 @@ export default function ProgressView({ challenge, checkIns }: ProgressViewProps)
       {/* Weight Chart */}
       <WeightChart checkIns={checkIns} />
 
-      {/* Photo Gallery Placeholder */}
-      {additionalMetrics.photosCount > 0 ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Progress Photos
-            </h3>
-            <span className="text-sm text-gray-500 dark:text-gray-400">
-              {additionalMetrics.photosCount} {additionalMetrics.photosCount === 1 ? 'photo' : 'photos'}
-            </span>
-          </div>
-          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-            Photo gallery will be implemented next
-          </div>
-        </div>
-      ) : (
-        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700 p-8 text-center">
-          <Camera className="w-12 h-12 text-gray-400 dark:text-gray-600 mx-auto mb-3" />
-          <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-1">
-            No Progress Photos Yet
-          </h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            Upload photos from the Today tab to build your visual progress timeline
-          </p>
-        </div>
-      )}
+      {/* Photo Gallery */}
+      <PhotoGallery checkIns={checkIns} onPhotoClick={handlePhotoClick} />
 
       {/* Daily Details Modal Placeholder */}
       {showModal && selectedCheckIn && (
