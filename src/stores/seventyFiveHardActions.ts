@@ -813,3 +813,63 @@ export async function completeSFHChallenge() {
 
   console.log('[75Hard] ✅ Challenge completed!');
 }
+
+/**
+ * Delete challenge completely
+ * Removes the challenge and all associated check-ins from the database
+ */
+export async function deleteSFHChallenge() {
+  const { sfhChallenge: challenge } = getStore();
+  if (!challenge) {
+    console.error('[75Hard] deleteSFHChallenge called without challenge');
+    return { success: false, error: 'No active challenge to delete' };
+  }
+
+  console.log('[75Hard] Deleting challenge...');
+
+  const supabase = ensureSupabase();
+
+  try {
+    // Step 1: Delete all check-ins first (foreign key constraint)
+    const { error: deleteCheckInsError } = await supabase
+      .from('sfh_daily_checkins')
+      .delete()
+      .eq('challenge_id', challenge.id);
+
+    if (deleteCheckInsError) {
+      console.error('[75Hard] Failed to delete check-ins:', deleteCheckInsError);
+      throw deleteCheckInsError;
+    }
+
+    console.log('[75Hard] Deleted all check-ins');
+
+    // Step 2: Delete the challenge
+    const { error: deleteChallengeError } = await supabase
+      .from('sfh_challenge')
+      .delete()
+      .eq('id', challenge.id);
+
+    if (deleteChallengeError) {
+      console.error('[75Hard] Failed to delete challenge:', deleteChallengeError);
+      throw deleteChallengeError;
+    }
+
+    console.log('[75Hard] Deleted challenge');
+
+    // Step 3: Clear from store
+    setStore({
+      sfhChallenge: null,
+      sfhCheckIns: [],
+      sfhShowFailurePrompt: false,
+      sfhFailureDate: null,
+      sfhShowDayCompleteMessage: false,
+      sfhShowCelebration: false
+    });
+
+    console.log('[75Hard] ✅ Challenge deleted successfully');
+    return { success: true };
+  } catch (error) {
+    console.error('[75Hard] Error in deleteSFHChallenge:', error);
+    return { success: false, error: 'Failed to delete challenge. Please try again.' };
+  }
+}

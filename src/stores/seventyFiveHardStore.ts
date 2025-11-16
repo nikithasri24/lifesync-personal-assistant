@@ -57,6 +57,7 @@ export interface SeventyFiveHardState {
   updateCheckInWeight: (weight: number) => Promise<void>;
   resetChallenge: () => Promise<void>;
   completeChallenge: () => Promise<void>;
+  deleteChallenge: () => Promise<{ success: boolean; error?: string }>;
 }
 
 // ==================== Store Implementation ====================
@@ -720,5 +721,66 @@ export const createSeventyFiveHardStore: StateCreator<
     await get().loadChallenge();
 
     console.log('[75Hard] ✅ Challenge completed!');
+  },
+
+  /**
+   * Delete challenge completely
+   * - Removes challenge and all check-ins from database
+   * - Clears all state
+   */
+  deleteChallenge: async () => {
+    const { challenge } = get();
+    if (!challenge) {
+      console.error('[75Hard] deleteChallenge called without challenge');
+      return { success: false, error: 'No active challenge to delete' };
+    }
+
+    console.log('[75Hard] Deleting challenge...');
+
+    const supabase = ensureSupabase();
+
+    try {
+      // Step 1: Delete all check-ins first (foreign key constraint)
+      const { error: deleteCheckInsError } = await supabase
+        .from('sfh_daily_checkins')
+        .delete()
+        .eq('challenge_id', challenge.id);
+
+      if (deleteCheckInsError) {
+        console.error('[75Hard] Failed to delete check-ins:', deleteCheckInsError);
+        throw deleteCheckInsError;
+      }
+
+      console.log('[75Hard] Deleted all check-ins');
+
+      // Step 2: Delete the challenge
+      const { error: deleteChallengeError } = await supabase
+        .from('sfh_challenge')
+        .delete()
+        .eq('id', challenge.id);
+
+      if (deleteChallengeError) {
+        console.error('[75Hard] Failed to delete challenge:', deleteChallengeError);
+        throw deleteChallengeError;
+      }
+
+      console.log('[75Hard] Deleted challenge');
+
+      // Step 3: Clear from store
+      set({
+        challenge: null,
+        checkIns: [],
+        showFailurePrompt: false,
+        failureDate: null,
+        showDayCompleteMessage: false,
+        showCelebration: false
+      });
+
+      console.log('[75Hard] ✅ Challenge deleted successfully');
+      return { success: true };
+    } catch (error) {
+      console.error('[75Hard] Error in deleteChallenge:', error);
+      return { success: false, error: 'Failed to delete challenge. Please try again.' };
+    }
   },
 });

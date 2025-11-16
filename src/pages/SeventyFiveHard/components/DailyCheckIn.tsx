@@ -10,7 +10,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, Edit3, Scale, CheckCircle2 } from 'lucide-react';
+import { Camera, Edit3, Scale, CheckCircle2, MoreVertical, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { getCompletionPercentage } from '../../../types/seventyFiveHard';
 import type { SeventyFiveHardChallenge, DailyCheckIn as DailyCheckInType } from '../../../types/seventyFiveHard';
@@ -22,6 +22,7 @@ interface DailyCheckInProps {
   onUploadPhoto: (file: File) => Promise<void>;
   onUpdateNotes: (notes: string) => Promise<void>;
   onUpdateWeight: (weight: number) => Promise<void>;
+  onDeleteChallenge: () => void;
 }
 
 export default function DailyCheckIn({
@@ -30,11 +31,13 @@ export default function DailyCheckIn({
   onToggleTask,
   onUploadPhoto,
   onUpdateNotes,
-  onUpdateWeight
+  onUpdateWeight,
+  onDeleteChallenge
 }: DailyCheckInProps) {
   const [notes, setNotes] = useState(checkIn?.notes || '');
   const [weight, setWeight] = useState(checkIn?.weight?.toString() || '');
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
 
   // Debounce timers
   const notesDebounceTimer = useRef<NodeJS.Timeout | null>(null);
@@ -193,9 +196,35 @@ export default function DailyCheckIn({
               Started {format(challenge.startDate, 'MMM d, yyyy')}
             </p>
           </div>
-          <div className="text-right">
-            <div className="text-4xl font-bold text-gray-900 dark:text-white">{tasksCompleted}/{totalTasks}</div>
-            <p className="text-gray-600 dark:text-gray-400 text-sm">Tasks Complete</p>
+          <div className="flex items-center gap-4">
+            <div className="text-right">
+              <div className="text-4xl font-bold text-gray-900 dark:text-white">{tasksCompleted}/{totalTasks}</div>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">Tasks Complete</p>
+            </div>
+            {/* Menu */}
+            <div className="relative">
+              <button
+                onClick={() => setShowMenu(!showMenu)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                title="Options"
+              >
+                <MoreVertical className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+              </button>
+              {showMenu && (
+                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10">
+                  <button
+                    onClick={() => {
+                      setShowMenu(false);
+                      onDeleteChallenge();
+                    }}
+                    className="w-full flex items-center gap-2 px-4 py-3 text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors rounded-lg"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Delete Challenge
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
