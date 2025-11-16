@@ -34,8 +34,8 @@ import {
 } from '../../../types/seventyFiveHard';
 import { MetricCard } from '../../../components/DataVisualization';
 
-// Import sub-components (to be created)
-// import WeightChart from './WeightChart';
+// Import sub-components
+import WeightChart from './WeightChart';
 // import PhotoGallery from './PhotoGallery';
 // import DailyDetailsModal from './DailyDetailsModal';
 
@@ -202,27 +202,8 @@ export default function ProgressView({ challenge, checkIns }: ProgressViewProps)
         )}
       </div>
 
-      {/* Weight Chart Placeholder */}
-      {additionalMetrics.hasWeightData ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Weight Trend
-          </h3>
-          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-            Weight chart will be implemented next
-          </div>
-        </div>
-      ) : (
-        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700 p-8 text-center">
-          <Scale className="w-12 h-12 text-gray-400 dark:text-gray-600 mx-auto mb-3" />
-          <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-1">
-            No Weight Data Tracked
-          </h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            Start logging your weight from the Today tab to see trends here
-          </p>
-        </div>
-      )}
+      {/* Weight Chart */}
+      <WeightChart checkIns={checkIns} />
 
       {/* Photo Gallery Placeholder */}
       {additionalMetrics.photosCount > 0 ? (
