@@ -72,6 +72,14 @@ export default function DailyCheckIn({
   };
 
   const handleNotesBlur = () => {
+    // Enforce max length (database constraint is 1000)
+    if (notes.length > 1000) {
+      alert('Notes must be 1000 characters or less');
+      setNotes(checkIn.notes || '');
+      return;
+    }
+
+    // Only update if changed
     if (notes !== checkIn.notes) {
       onUpdateNotes(notes);
     }
