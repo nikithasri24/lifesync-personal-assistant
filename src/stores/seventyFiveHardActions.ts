@@ -7,28 +7,21 @@
 
 import { startOfDay, addDays, differenceInDays, isSameDay, format } from 'date-fns';
 import { ensureSupabase } from '../lib/supabase';
+import {
+  mapRowToChallenge as mapRow,
+  mapRowToCheckIn as mapCheckIn,
+  generateId as genId,
+  createInitialTaskCompletions as createTasks,
+  validateTasks as validate,
+  CHALLENGE_CONSTANTS as constants,
+} from '../types/seventyFiveHard';
 import type {
   Task,
   TaskCompletion,
   ChallengeRow,
   CheckInRow,
-  mapRowToChallenge,
-  mapRowToCheckIn,
-  generateId,
-  createInitialTaskCompletions,
-  validateTasks,
-  CHALLENGE_CONSTANTS,
 } from '../types/seventyFiveHard';
 import { useRealAppStore } from './useRealAppStore';
-
-const {
-  mapRowToChallenge: mapRow,
-  mapRowToCheckIn: mapCheckIn,
-  generateId: genId,
-  createInitialTaskCompletions: createTasks,
-  validateTasks: validate,
-  CHALLENGE_CONSTANTS: constants,
-} = await import('../types/seventyFiveHard');
 
 // Helper to get/set store state
 const getStore = () => useRealAppStore.getState();
