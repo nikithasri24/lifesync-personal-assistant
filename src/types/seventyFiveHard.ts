@@ -1,313 +1,122 @@
 /**
- * 75 Hard Challenge - Type Definitions
+ * 75 Hard Challenge - Simplified Type Definitions
  *
- * Uses discriminated unions for better type safety and explicit state management.
- * Follows best practices: immutability, nominal types, and strict validation.
+ * Clean, minimal types for the simplified architecture:
+ * - ONE challenge per user (active or completed)
+ * - Customizable tasks (editable at creation, locked after)
+ * - Daily check-ins (not in general Todos)
+ * - Auto-reset on missed day (no pause/resume)
  */
 
-// ==================== Base Types ====================
+// ==================== Core Types ====================
 
 /**
- * Branded type for IDs to prevent mixing different entity IDs
+ * A single task in the 75 Hard challenge
+ * Defined at challenge creation, immutable afterward
  */
-export type ChallengeId = string & { readonly __brand: 'ChallengeId' };
-export type RuleId = string & { readonly __brand: 'RuleId' };
-export type EntryId = string & { readonly __brand: 'EntryId' };
-
-export const createChallengeId = (id: string): ChallengeId => id as ChallengeId;
-export const createRuleId = (id: string): RuleId => id as RuleId;
-export const createEntryId = (id: string): EntryId => id as EntryId;
-
-// ==================== Rule Types ====================
-
-export interface BaseRule {
-  id: RuleId;
+export interface Task {
+  id: string;
   title: string;
-  description: string;
-  isRequired: boolean;
-  isCustom: boolean;
+  description?: string;
+  order: number; // Display order (1, 2, 3...)
 }
-
-export interface SingleTargetRule extends BaseRule {
-  type: 'single';
-  dailyTarget: 1;
-}
-
-export interface MultiTargetRule extends BaseRule {
-  type: 'multi';
-  dailyTarget: number; // > 1
-  segmentLabels?: string[];
-}
-
-export type SeventyFiveHardRule = SingleTargetRule | MultiTargetRule;
-
-// ==================== Challenge States ====================
 
 /**
- * Base challenge data shared by all states
+ * Challenge status - only TWO states
  */
-interface BaseChallengeData {
-  id: ChallengeId;
-  name: string;
+export type ChallengeStatus = 'active' | 'completed';
+
+/**
+ * The 75 Hard challenge
+ * ONE challenge per user at a time
+ */
+export interface SeventyFiveHardChallenge {
+  id: string;
+  userId: string;
+
+  // Core fields
   startDate: Date;
-  endDate: Date;
   currentDay: number; // 1-75
-  rules: readonly SeventyFiveHardRule[];
-  dailyEntries: readonly SeventyFiveHardEntry[];
-  notes?: string;
+  status: ChallengeStatus;
+
+  // Tasks (locked once challenge starts)
+  tasks: Task[];
+
+  // Completion
+  completedAt?: Date; // Only set when day 75 completed
+
+  // Metadata
   createdAt: Date;
   updatedAt: Date;
 }
 
 /**
- * Active challenge - currently in progress
+ * Tracks completion of a single task on a specific day
  */
-export interface ActiveChallenge extends BaseChallengeData {
-  status: 'active';
-  isActive: true;
-  // Pause data must not exist
-  pausedAt?: never;
-  resumedAt?: never;
-  totalPauseDuration?: never;
-  pauseCount?: never;
-}
-
-/**
- * Paused challenge - temporarily stopped
- */
-export interface PausedChallenge extends BaseChallengeData {
-  status: 'paused';
-  isActive: false;
-  // Pause data is required
-  pausedAt: Date;
-  totalPauseDuration: number; // in days
-  pauseCount: number; // number of times paused
-  // Resume data from previous resume
-  resumedAt?: Date;
-}
-
-/**
- * Completed challenge - finished all 75 days
- */
-export interface CompletedChallenge extends BaseChallengeData {
-  status: 'completed';
-  isActive: false;
-  completedAt: Date;
-  // Optional pause history
-  pausedAt?: Date;
-  resumedAt?: Date;
-  totalPauseDuration?: number;
-  pauseCount?: number;
-}
-
-/**
- * Failed challenge - didn't complete, permanently stopped
- */
-export interface FailedChallenge extends BaseChallengeData {
-  status: 'failed';
-  isActive: false;
-  failedAt: Date;
-  failureReason?: string;
-  // Optional pause history
-  pausedAt?: Date;
-  resumedAt?: Date;
-  totalPauseDuration?: number;
-  pauseCount?: number;
-}
-
-/**
- * Discriminated union of all challenge states
- */
-export type SeventyFiveHardChallenge =
-  | ActiveChallenge
-  | PausedChallenge
-  | CompletedChallenge
-  | FailedChallenge;
-
-// ==================== Entry Types ====================
-
-export interface RuleCompletion {
-  ruleId: RuleId;
+export interface TaskCompletion {
+  taskId: string; // References Task.id
   completed: boolean;
-  completedAt?: Date;
-  // For multi-target rules
-  segments?: boolean[];
+  completedAt?: Date; // When checkbox was checked
 }
 
-export interface SeventyFiveHardEntry {
-  id: EntryId;
-  challengeId: ChallengeId;
-  date: Date;
-  day: number; // 1-75
-  ruleCompletions: readonly RuleCompletion[];
-  notes?: string;
-  progressPhotoUrl?: string;
-  weight?: number;
-  measurements?: {
-    chest?: number;
-    waist?: number;
-    hips?: number;
-    arms?: number;
-    thighs?: number;
-  };
+/**
+ * Daily check-in
+ * One per day, tracks completion of all tasks
+ */
+export interface DailyCheckIn {
+  id: string;
+  challengeId: string;
+
+  // Which day
+  date: Date; // Calendar date (e.g., 2025-01-15)
+  dayNumber: number; // Challenge day (1-75)
+
+  // Task completions (dynamic based on challenge.tasks)
+  taskCompletions: TaskCompletion[];
+
+  // Optional data
+  photo?: string; // Photo URL
+  weight?: number; // Weight in kg or lbs
+  notes?: string; // User notes
+
+  // Metadata
   createdAt: Date;
   updatedAt: Date;
 }
 
-// ==================== Validation Types ====================
+// ==================== Default Tasks ====================
 
-export interface ValidationError {
-  field: string;
-  message: string;
-  code: string;
-}
-
-export type ValidationResult<T> =
-  | { success: true; data: T }
-  | { success: false; errors: ValidationError[] };
-
-// ==================== API Result Types ====================
-
-export type Result<T, E = Error> =
-  | { ok: true; value: T }
-  | { ok: false; error: E };
-
-export class ChallengeError extends Error {
-  constructor(
-    message: string,
-    public code: string,
-    public details?: unknown
-  ) {
-    super(message);
-    this.name = 'ChallengeError';
+/**
+ * Default 75 Hard tasks (pre-filled in setup form)
+ * User can edit these before starting
+ */
+export const DEFAULT_TASKS: Omit<Task, 'id'>[] = [
+  {
+    title: 'Follow a Diet',
+    description: 'No cheat meals or alcohol',
+    order: 1
+  },
+  {
+    title: 'Workout Twice Daily',
+    description: '45 minutes each, one must be outdoors',
+    order: 2
+  },
+  {
+    title: 'Drink 1 Gallon of Water',
+    description: '',
+    order: 3
+  },
+  {
+    title: 'Read 10 Pages',
+    description: 'Non-fiction or personal development',
+    order: 4
+  },
+  {
+    title: 'Take Progress Photo',
+    description: '',
+    order: 5
   }
-}
-
-// ==================== Command/Event Types ====================
-
-/**
- * Commands - actions that can be performed
- */
-export interface CreateChallengeCommand {
-  name: string;
-  startDate: Date;
-  rules: Omit<SeventyFiveHardRule, 'id'>[];
-  notes?: string;
-}
-
-export interface PauseChallengeCommand {
-  challengeId: ChallengeId;
-  pausedAt: Date;
-}
-
-export interface ResumeChallengeCommand {
-  challengeId: ChallengeId;
-  resumedAt: Date;
-}
-
-export interface CompleteDayCommand {
-  challengeId: ChallengeId;
-  date: Date;
-  ruleCompletions: Omit<RuleCompletion, 'completedAt'>[];
-  weight?: number;
-  measurements?: SeventyFiveHardEntry['measurements'];
-  notes?: string;
-  photo?: File;
-}
-
-/**
- * Events - things that happened
- */
-export interface ChallengeCreatedEvent {
-  type: 'challenge_created';
-  challenge: ActiveChallenge;
-  timestamp: Date;
-}
-
-export interface ChallengePausedEvent {
-  type: 'challenge_paused';
-  challengeId: ChallengeId;
-  currentDay: number;
-  pausedAt: Date;
-  timestamp: Date;
-}
-
-export interface ChallengeResumedEvent {
-  type: 'challenge_resumed';
-  challengeId: ChallengeId;
-  currentDay: number;
-  resumedAt: Date;
-  pauseDuration: number;
-  timestamp: Date;
-}
-
-export interface DayCompletedEvent {
-  type: 'day_completed';
-  challengeId: ChallengeId;
-  day: number;
-  entry: SeventyFiveHardEntry;
-  timestamp: Date;
-}
-
-export interface ChallengeCompletedEvent {
-  type: 'challenge_completed';
-  challengeId: ChallengeId;
-  completedAt: Date;
-  timestamp: Date;
-}
-
-export type ChallengeEvent =
-  | ChallengeCreatedEvent
-  | ChallengePausedEvent
-  | ChallengeResumedEvent
-  | DayCompletedEvent
-  | ChallengeCompletedEvent;
-
-// ==================== Query Types ====================
-
-export interface ChallengeFilters {
-  status?: SeventyFiveHardChallenge['status'];
-  startDateFrom?: Date;
-  startDateTo?: Date;
-  includeEntries?: boolean;
-}
-
-export interface ChallengeStats {
-  totalChallenges: number;
-  activeChallenges: number;
-  completedChallenges: number;
-  failedChallenges: number;
-  pausedChallenges: number;
-  completionRate: number; // 0-100
-  averageDaysCompleted: number;
-  longestStreak: number;
-}
-
-// ==================== Type Guards ====================
-
-export const isActiveChallenge = (
-  challenge: SeventyFiveHardChallenge
-): challenge is ActiveChallenge => challenge.status === 'active';
-
-export const isPausedChallenge = (
-  challenge: SeventyFiveHardChallenge
-): challenge is PausedChallenge => challenge.status === 'paused';
-
-export const isCompletedChallenge = (
-  challenge: SeventyFiveHardChallenge
-): challenge is CompletedChallenge => challenge.status === 'completed';
-
-export const isFailedChallenge = (
-  challenge: SeventyFiveHardChallenge
-): challenge is FailedChallenge => challenge.status === 'failed';
-
-export const isMultiTargetRule = (
-  rule: SeventyFiveHardRule
-): rule is MultiTargetRule => rule.type === 'multi';
-
-export const isSingleTargetRule = (
-  rule: SeventyFiveHardRule
-): rule is SingleTargetRule => rule.type === 'single';
+];
 
 // ==================== Constants ====================
 
@@ -315,8 +124,271 @@ export const CHALLENGE_CONSTANTS = {
   TOTAL_DAYS: 75,
   MIN_DAY: 1,
   MAX_DAY: 75,
-  MAX_CHALLENGE_NAME_LENGTH: 100,
+  MIN_TASKS: 1,
+  MAX_TASKS: 20,
+  MAX_TITLE_LENGTH: 100,
+  MAX_DESCRIPTION_LENGTH: 200,
   MAX_NOTES_LENGTH: 1000,
-  MAX_RULES: 20,
-  MAX_SEGMENTS_PER_RULE: 10,
 } as const;
+
+// ==================== Type Guards ====================
+
+/**
+ * Check if challenge is active
+ */
+export const isActiveChallenge = (
+  challenge: SeventyFiveHardChallenge | null | undefined
+): challenge is SeventyFiveHardChallenge => {
+  return challenge?.status === 'active';
+};
+
+/**
+ * Check if challenge is completed
+ */
+export const isCompletedChallenge = (
+  challenge: SeventyFiveHardChallenge | null | undefined
+): challenge is SeventyFiveHardChallenge => {
+  return challenge?.status === 'completed';
+};
+
+/**
+ * Check if all tasks in a check-in are completed
+ */
+export const areAllTasksComplete = (
+  taskCompletions: TaskCompletion[]
+): boolean => {
+  return taskCompletions.length > 0 && taskCompletions.every(tc => tc.completed);
+};
+
+/**
+ * Calculate completion percentage for a check-in
+ */
+export const getCompletionPercentage = (
+  taskCompletions: TaskCompletion[]
+): number => {
+  if (taskCompletions.length === 0) return 0;
+  const completed = taskCompletions.filter(tc => tc.completed).length;
+  return Math.round((completed / taskCompletions.length) * 100);
+};
+
+// ==================== Helper Functions ====================
+
+/**
+ * Generate a unique ID for tasks, check-ins, etc.
+ * Uses crypto.randomUUID() for cryptographically secure IDs
+ */
+export const generateId = (): string => {
+  return crypto.randomUUID();
+};
+
+/**
+ * Create tasks from default templates with generated IDs
+ */
+export const createDefaultTasks = (): Task[] => {
+  return DEFAULT_TASKS.map((template, index) => ({
+    ...template,
+    id: generateId(),
+    order: index + 1
+  }));
+};
+
+/**
+ * Validate task array
+ */
+export const validateTasks = (tasks: Omit<Task, 'id'>[]): string | null => {
+  if (tasks.length < CHALLENGE_CONSTANTS.MIN_TASKS) {
+    return 'At least one task is required';
+  }
+
+  if (tasks.length > CHALLENGE_CONSTANTS.MAX_TASKS) {
+    return `Maximum ${CHALLENGE_CONSTANTS.MAX_TASKS} tasks allowed`;
+  }
+
+  for (const task of tasks) {
+    if (!task.title || task.title.trim().length === 0) {
+      return 'All tasks must have a title';
+    }
+
+    if (task.title.length > CHALLENGE_CONSTANTS.MAX_TITLE_LENGTH) {
+      return `Task title must be ${CHALLENGE_CONSTANTS.MAX_TITLE_LENGTH} characters or less`;
+    }
+
+    if (task.description && task.description.length > CHALLENGE_CONSTANTS.MAX_DESCRIPTION_LENGTH) {
+      return `Task description must be ${CHALLENGE_CONSTANTS.MAX_DESCRIPTION_LENGTH} characters or less`;
+    }
+  }
+
+  return null;
+};
+
+/**
+ * Create initial task completions for a new check-in
+ */
+export const createInitialTaskCompletions = (tasks: Task[]): TaskCompletion[] => {
+  return tasks.map(task => ({
+    taskId: task.id,
+    completed: false
+  }));
+};
+
+// ==================== Database Mapping Types ====================
+
+/**
+ * Database representation of a challenge (for Supabase)
+ */
+export interface ChallengeRow {
+  id: string;
+  user_id: string;
+  start_date: string; // ISO date string
+  current_day: number;
+  status: string;
+  tasks: unknown; // JSONB
+  completed_at?: string; // ISO timestamp
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Database representation of a check-in (for Supabase)
+ */
+export interface CheckInRow {
+  id: string;
+  challenge_id: string;
+  date: string; // ISO date string
+  day_number: number;
+  task_completions: unknown; // JSONB
+  photo?: string;
+  weight?: number;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Map database row to Challenge type
+ */
+export const mapRowToChallenge = (row: ChallengeRow): SeventyFiveHardChallenge => {
+  // Parse start_date as local date (not UTC) to avoid timezone issues
+  // row.start_date is "YYYY-MM-DD" string from database
+  const [year, month, day] = row.start_date.split('-').map(Number);
+  const startDate = new Date(year, month - 1, day); // month is 0-indexed in JS Date
+
+  return {
+    id: row.id,
+    userId: row.user_id,
+    startDate,
+    currentDay: row.current_day,
+    status: row.status as ChallengeStatus,
+    tasks: row.tasks as Task[],
+    completedAt: row.completed_at ? new Date(row.completed_at) : undefined,
+    createdAt: new Date(row.created_at),
+    updatedAt: new Date(row.updated_at)
+  };
+};
+
+/**
+ * Map Challenge to database insert object
+ */
+export const mapChallengeToInsert = (challenge: Partial<SeventyFiveHardChallenge>) => {
+  return {
+    user_id: challenge.userId,
+    start_date: challenge.startDate?.toISOString().split('T')[0],
+    current_day: challenge.currentDay,
+    status: challenge.status,
+    tasks: challenge.tasks,
+    completed_at: challenge.completedAt?.toISOString(),
+  };
+};
+
+/**
+ * Map database row to CheckIn type
+ */
+export const mapRowToCheckIn = (row: CheckInRow): DailyCheckIn => {
+  // Parse date as local date (not UTC) to avoid timezone issues
+  // row.date is "YYYY-MM-DD" string from database
+  const [year, month, day] = row.date.split('-').map(Number);
+  const date = new Date(year, month - 1, day); // month is 0-indexed in JS Date
+
+  return {
+    id: row.id,
+    challengeId: row.challenge_id,
+    date,
+    dayNumber: row.day_number,
+    taskCompletions: row.task_completions as TaskCompletion[],
+    photo: row.photo,
+    weight: row.weight,
+    notes: row.notes,
+    createdAt: new Date(row.created_at),
+    updatedAt: new Date(row.updated_at)
+  };
+};
+
+/**
+ * Map CheckIn to database insert object
+ */
+export const mapCheckInToInsert = (checkIn: Partial<DailyCheckIn>) => {
+  return {
+    challenge_id: checkIn.challengeId,
+    date: checkIn.date?.toISOString().split('T')[0],
+    day_number: checkIn.dayNumber,
+    task_completions: checkIn.taskCompletions,
+    photo: checkIn.photo,
+    weight: checkIn.weight,
+    notes: checkIn.notes,
+  };
+};
+
+// ==================== Statistics Types ====================
+
+/**
+ * Challenge statistics for display
+ */
+export interface ChallengeStats {
+  totalDaysCompleted: number;
+  currentStreak: number;
+  completionRate: number; // 0-100
+  daysRemaining: number;
+  estimatedCompletionDate?: Date;
+}
+
+/**
+ * Calculate challenge statistics
+ */
+export const calculateStats = (
+  challenge: SeventyFiveHardChallenge,
+  checkIns: DailyCheckIn[]
+): ChallengeStats => {
+  const totalDaysCompleted = checkIns.filter(c => areAllTasksComplete(c.taskCompletions)).length;
+  const daysRemaining = CHALLENGE_CONSTANTS.TOTAL_DAYS - challenge.currentDay + 1;
+
+  // Calculate current streak (consecutive days from most recent)
+  let currentStreak = 0;
+  const sortedCheckIns = [...checkIns].sort((a, b) => b.date.getTime() - a.date.getTime());
+
+  for (const checkIn of sortedCheckIns) {
+    if (areAllTasksComplete(checkIn.taskCompletions)) {
+      currentStreak++;
+    } else {
+      break;
+    }
+  }
+
+  const completionRate = challenge.currentDay > 1
+    ? Math.round((totalDaysCompleted / (challenge.currentDay - 1)) * 100)
+    : 0;
+
+  // Estimate completion date
+  let estimatedCompletionDate: Date | undefined;
+  if (challenge.status === 'active') {
+    estimatedCompletionDate = new Date(challenge.startDate);
+    estimatedCompletionDate.setDate(estimatedCompletionDate.getDate() + CHALLENGE_CONSTANTS.TOTAL_DAYS - 1);
+  }
+
+  return {
+    totalDaysCompleted,
+    currentStreak,
+    completionRate,
+    daysRemaining,
+    estimatedCompletionDate
+  };
+};
