@@ -874,3 +874,187 @@ export async function deleteSFHChallenge() {
     return { success: false, error: 'Failed to delete challenge. Please try again.' };
   }
 }
+
+// ==================== Cross-Feature Integration: 75 Hard ↔ Todos ====================
+
+/**
+ * Tag constants for identifying 75 Hard todos
+ */
+const TODO_TAGS = {
+  MARKER: '75hard',
+  challenge: (challengeId: string) => `75hard:challenge-${challengeId}`,
+  day: (dayNumber: number) => `75hard:day-${dayNumber}`,
+  task: (taskId: string) => `75hard:task-${taskId}`,
+} as const;
+
+/**
+ * Parse tags from a todo to extract 75 Hard metadata
+ */
+function parseSFHTodoTags(tags: string[]): {
+  isSFHTodo: boolean;
+  challengeId?: string;
+  dayNumber?: number;
+  taskId?: string;
+} {
+  const isSFHTodo = tags.includes(TODO_TAGS.MARKER);
+  if (!isSFHTodo) return { isSFHTodo: false };
+
+  const challengeTag = tags.find(t => t.startsWith('75hard:challenge-'));
+  const dayTag = tags.find(t => t.startsWith('75hard:day-'));
+  const taskTag = tags.find(t => t.startsWith('75hard:task-'));
+
+  return {
+    isSFHTodo: true,
+    challengeId: challengeTag?.split('-')[1],
+    dayNumber: dayTag ? parseInt(dayTag.split('-')[1], 10) : undefined,
+    taskId: taskTag?.split('-')[1],
+  };
+}
+
+/**
+ * Create or update a todo from a 75 Hard task
+ * Returns the todo ID
+ */
+async function createOrUpdateTodoFromSFHTask(
+  challengeId: string,
+  task: Task,
+  dayNumber: number,
+  completed: boolean
+): Promise<string | null> {
+  try {
+    const store = getStore();
+    const today = startOfDay(new Date());
+
+    // Check if todo already exists
+    const existingTodo = store.todos.find(t => {
+      const meta = parseSFHTodoTags(t.tags);
+      return meta.isSFHTodo &&
+        meta.challengeId === challengeId &&
+        meta.dayNumber === dayNumber &&
+        meta.taskId === task.id &&
+        !t.deleted;
+    });
+
+    const todoData = {
+      title: `🔥 ${task.name}`,
+      description: task.details || `75 Hard - Day ${dayNumber}`,
+      status: (completed ? 'done' : 'todo') as 'done' | 'todo',
+      priority: 'high' as const,
+      categoryId: 'health' as const,
+      tags: [
+        TODO_TAGS.MARKER,
+        TODO_TAGS.challenge(challengeId),
+        TODO_TAGS.day(dayNumber),
+        TODO_TAGS.task(task.id),
+      ],
+      dueDate: today,
+      completed,
+      completedAt: completed ? new Date() : undefined,
+      notes: `Part of 75 Hard Challenge (Day ${dayNumber}/75)`,
+    };
+
+    if (existingTodo) {
+      // Update existing todo
+      await store.updateTodo(existingTodo.id, {
+        ...todoData,
+        completedAt: completed ? (existingTodo.completedAt || new Date()) : undefined,
+      });
+      console.log(`[75Hard→Todo] ✅ Updated todo for task: ${task.name}`);
+      return existingTodo.id;
+    } else {
+      // Create new todo
+      const newTodo = await store.addTodo(todoData);
+      console.log(`[75Hard→Todo] ✅ Created todo for task: ${task.name}`);
+      return newTodo.id;
+    }
+  } catch (error) {
+    console.error('[75Hard→Todo] Error creating/updating todo:', error);
+    return null;
+  }
+}
+
+/**
+ * Ensure todos exist for today's 75 Hard tasks
+ * Called after check-in is created or when loading challenge
+ */
+export async function ensureSFHTodosForToday() {
+  const { sfhChallenge: challenge, sfhCheckIns: checkIns } = getStore();
+  if (!challenge || challenge.status !== 'active') {
+    console.log('[75Hard→Todo] No active challenge, skipping todo sync');
+    return;
+  }
+
+  const today = startOfDay(new Date());
+  const todayCheckIn = checkIns.find(c => isSameDay(c.date, today));
+
+  if (!todayCheckIn) {
+    console.log('[75Hard→Todo] No check-in for today, skipping todo sync');
+    return;
+  }
+
+  console.log('[75Hard→Todo] Syncing todos for Day', todayCheckIn.dayNumber);
+
+  // Create/update todos for each task
+  for (const task of challenge.tasks) {
+    const completion = todayCheckIn.taskCompletions.find(tc => tc.taskId === task.id);
+    const isCompleted = completion?.completed || false;
+
+    await createOrUpdateTodoFromSFHTask(
+      challenge.id,
+      task,
+      todayCheckIn.dayNumber,
+      isCompleted
+    );
+  }
+
+  // Cleanup: Delete todos for previous days
+  await cleanupOldSFHTodos(challenge.id, todayCheckIn.dayNumber);
+}
+
+/**
+ * Delete todos from previous days to keep the list clean
+ */
+async function cleanupOldSFHTodos(challengeId: string, currentDay: number) {
+  const store = getStore();
+  const today = startOfDay(new Date());
+
+  for (const todo of store.todos) {
+    const meta = parseSFHTodoTags(todo.tags);
+    if (!meta.isSFHTodo || meta.challengeId !== challengeId) continue;
+    if (todo.deleted) continue;
+
+    // Delete if from previous day OR if due date is before today
+    const isPreviousDay = meta.dayNumber && meta.dayNumber < currentDay;
+    const isOldDueDate = todo.dueDate && todo.dueDate < today;
+
+    if (isPreviousDay || isOldDueDate) {
+      await store.deleteTodo(todo.id);
+      console.log(`[75Hard→Todo] Deleted old todo for Day ${meta.dayNumber}`);
+    }
+  }
+}
+
+/**
+ * Sync todo completion to 75 Hard task
+ * Called when user checks off a 75 Hard todo
+ */
+export async function syncTodoCompletionToSFH(todoId: string) {
+  const store = getStore();
+  const todo = store.todos.find(t => t.id === todoId);
+  if (!todo) return;
+
+  const meta = parseSFHTodoTags(todo.tags);
+  if (!meta.isSFHTodo || !meta.taskId) return;
+
+  console.log('[Todo→75Hard] Syncing completion to 75 Hard task:', meta.taskId);
+
+  // Toggle the 75 Hard task
+  await toggleSFHTask(meta.taskId);
+}
+
+/**
+ * Check if a todo is a 75 Hard todo
+ */
+export function isSFHTodo(todo: { tags: string[] }): boolean {
+  return todo.tags.includes(TODO_TAGS.MARKER);
+}
