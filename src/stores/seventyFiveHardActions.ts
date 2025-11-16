@@ -407,10 +407,19 @@ export async function ensureTodaySFHCheckIn() {
   }
 }
 
+// Track tasks currently being toggled to prevent race conditions
+const togglingTasks = new Set<string>();
+
 /**
  * Toggle task completion
  */
 export async function toggleSFHTask(taskId: string) {
+  // Prevent concurrent toggles of the same task
+  if (togglingTasks.has(taskId)) {
+    console.log('[75Hard] Task toggle already in progress, ignoring duplicate request');
+    return;
+  }
+
   const { sfhChallenge: challenge, sfhCheckIns: checkIns } = getStore();
   if (!challenge) {
     console.error('[75Hard] toggleSFHTask called without challenge');
@@ -426,26 +435,29 @@ export async function toggleSFHTask(taskId: string) {
     return;
   }
 
-  const supabase = ensureSupabase();
-
-  const updatedCompletions = todayCheckIn.taskCompletions.map(tc =>
-    tc.taskId === taskId
-      ? {
-          ...tc,
-          completed: !tc.completed,
-          completedAt: !tc.completed ? new Date() : undefined,
-        }
-      : tc
-  );
-
-  // Optimistic update
-  setStore({
-    sfhCheckIns: checkIns.map(c =>
-      c.id === todayCheckIn.id ? { ...c, taskCompletions: updatedCompletions } : c
-    ),
-  });
+  // Mark task as being toggled
+  togglingTasks.add(taskId);
 
   try {
+    const supabase = ensureSupabase();
+
+    const updatedCompletions = todayCheckIn.taskCompletions.map(tc =>
+      tc.taskId === taskId
+        ? {
+            ...tc,
+            completed: !tc.completed,
+            completedAt: !tc.completed ? new Date() : undefined,
+          }
+        : tc
+    );
+
+    // Optimistic update
+    setStore({
+      sfhCheckIns: checkIns.map(c =>
+        c.id === todayCheckIn.id ? { ...c, taskCompletions: updatedCompletions } : c
+      ),
+    });
+
     const { error } = await supabase
       .from('sfh_daily_checkins')
       .update({
@@ -462,6 +474,24 @@ export async function toggleSFHTask(taskId: string) {
       getStore().showGlobalToast?.('Failed to update task. Please try again.', 'error');
       return;
     }
+
+    // Check if all tasks complete (only if no error)
+    const allComplete = updatedCompletions.every(tc => tc.completed);
+
+    if (allComplete) {
+      console.log('[75Hard] ✅ All tasks complete for today!');
+      setStore({ sfhShowDayCompleteMessage: true });
+
+      setTimeout(() => {
+        setStore({ sfhShowDayCompleteMessage: false });
+      }, 3000);
+
+      if (challenge.currentDay === constants.TOTAL_DAYS) {
+        console.log('[75Hard] 🎉 Challenge complete!');
+        await completeSFHChallenge();
+      }
+      // Note: Don't increment current_day here - it will be updated when tomorrow's check-in is created
+    }
   } catch (error) {
     console.error('[75Hard] Error in toggleSFHTask:', error);
     // Revert optimistic update
@@ -469,24 +499,9 @@ export async function toggleSFHTask(taskId: string) {
       sfhCheckIns: checkIns
     });
     getStore().showGlobalToast?.('Failed to update task. Please try again.', 'error');
-    return;
-  }
-
-  const allComplete = updatedCompletions.every(tc => tc.completed);
-
-  if (allComplete) {
-    console.log('[75Hard] ✅ All tasks complete for today!');
-    setStore({ sfhShowDayCompleteMessage: true });
-
-    setTimeout(() => {
-      setStore({ sfhShowDayCompleteMessage: false });
-    }, 3000);
-
-    if (challenge.currentDay === constants.TOTAL_DAYS) {
-      console.log('[75Hard] 🎉 Challenge complete!');
-      await completeSFHChallenge();
-    }
-    // Note: Don't increment current_day here - it will be updated when tomorrow's check-in is created
+  } finally {
+    // Always remove from toggling set
+    togglingTasks.delete(taskId);
   }
 }
 

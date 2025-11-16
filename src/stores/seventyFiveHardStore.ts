@@ -61,6 +61,9 @@ export interface SeventyFiveHardState {
 
 // ==================== Store Implementation ====================
 
+// Track tasks currently being toggled to prevent race conditions
+const togglingTasks = new Set<string>();
+
 export const createSeventyFiveHardStore: StateCreator<
   SeventyFiveHardState,
   [],
@@ -378,6 +381,12 @@ export const createSeventyFiveHardStore: StateCreator<
    * - Checks if day complete / challenge complete
    */
   toggleTask: async (taskId: string) => {
+    // Prevent concurrent toggles of the same task
+    if (togglingTasks.has(taskId)) {
+      console.log('[75Hard] Task toggle already in progress, ignoring duplicate request');
+      return;
+    }
+
     const { challenge, checkIns } = get();
     if (!challenge) return;
 
@@ -389,52 +398,71 @@ export const createSeventyFiveHardStore: StateCreator<
       return;
     }
 
-    // Toggle completion
-    const updatedCompletions = todayCheckIn.taskCompletions.map(tc =>
-      tc.taskId === taskId
-        ? {
-            ...tc,
-            completed: !tc.completed,
-            completedAt: !tc.completed ? new Date() : undefined,
-          }
-        : tc
-    );
+    // Mark task as being toggled
+    togglingTasks.add(taskId);
 
-    // Optimistic update
-    set({
-      checkIns: checkIns.map(c =>
-        c.id === todayCheckIn.id ? { ...c, taskCompletions: updatedCompletions } : c
-      ),
-    });
+    try {
+      // Toggle completion
+      const updatedCompletions = todayCheckIn.taskCompletions.map(tc =>
+        tc.taskId === taskId
+          ? {
+              ...tc,
+              completed: !tc.completed,
+              completedAt: !tc.completed ? new Date() : undefined,
+            }
+          : tc
+      );
 
-    // Persist to database
-    const supabase = ensureSupabase();
-    await supabase
-      .from('sfh_daily_checkins')
-      .update({
-        task_completions: updatedCompletions,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', todayCheckIn.id);
+      // Optimistic update
+      set({
+        checkIns: checkIns.map(c =>
+          c.id === todayCheckIn.id ? { ...c, taskCompletions: updatedCompletions } : c
+        ),
+      });
 
-    // Check if all tasks complete
-    const allComplete = updatedCompletions.every(tc => tc.completed);
+      // Persist to database
+      const supabase = ensureSupabase();
+      const { error } = await supabase
+        .from('sfh_daily_checkins')
+        .update({
+          task_completions: updatedCompletions,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', todayCheckIn.id);
 
-    if (allComplete) {
-      console.log('[75Hard] ✅ All tasks complete for today!');
-      set({ showDayCompleteMessage: true });
-
-      // Auto-hide after 3 seconds
-      setTimeout(() => {
-        set({ showDayCompleteMessage: false });
-      }, 3000);
-
-      // Check if this completes the challenge (day 75)
-      if (challenge.currentDay === CHALLENGE_CONSTANTS.TOTAL_DAYS) {
-        console.log('[75Hard] 🎉 Challenge complete!');
-        await get().completeChallenge();
+      if (error) {
+        console.error('[75Hard] Failed to toggle task:', error);
+        // Revert optimistic update
+        set({ checkIns });
+        return;
       }
-      // Note: Don't increment current_day here - it will be updated when tomorrow's check-in is created
+
+      // Check if all tasks complete (only if no error)
+      const allComplete = updatedCompletions.every(tc => tc.completed);
+
+      if (allComplete) {
+        console.log('[75Hard] ✅ All tasks complete for today!');
+        set({ showDayCompleteMessage: true });
+
+        // Auto-hide after 3 seconds
+        setTimeout(() => {
+          set({ showDayCompleteMessage: false });
+        }, 3000);
+
+        // Check if this completes the challenge (day 75)
+        if (challenge.currentDay === CHALLENGE_CONSTANTS.TOTAL_DAYS) {
+          console.log('[75Hard] 🎉 Challenge complete!');
+          await get().completeChallenge();
+        }
+        // Note: Don't increment current_day here - it will be updated when tomorrow's check-in is created
+      }
+    } catch (error) {
+      console.error('[75Hard] Error in toggleTask:', error);
+      // Revert optimistic update
+      set({ checkIns });
+    } finally {
+      // Always remove from toggling set
+      togglingTasks.delete(taskId);
     }
   },
 
