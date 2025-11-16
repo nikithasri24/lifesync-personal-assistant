@@ -168,6 +168,9 @@ export async function loadSFHChallenge() {
     setStore({ sfhChallenge: challenge, sfhCheckIns: checkIns });
 
     await checkForMissedSFHDay();
+
+    // Sync to todos (ensure todos exist for today)
+    await ensureSFHTodosForToday();
   } catch (error) {
     console.error('[75Hard] Unexpected error loading challenge:', error);
   }
@@ -400,6 +403,9 @@ export async function ensureTodaySFHCheckIn() {
       const mappedCheckIn = mapCheckIn(newCheckIn as CheckInRow);
       setStore({ sfhCheckIns: [...checkIns, mappedCheckIn] });
       console.log('[75Hard] Today check-in created and added to store');
+
+      // Sync to todos (auto-create todos for today's tasks)
+      await ensureSFHTodosForToday();
     }
   }
 }
@@ -489,6 +495,9 @@ export async function toggleSFHTask(taskId: string) {
       }
       // Note: Don't increment current_day here - it will be updated when tomorrow's check-in is created
     }
+
+    // Sync to todos (update todo completion status)
+    await ensureSFHTodosForToday();
   } catch (error) {
     console.error('[75Hard] Error in toggleSFHTask:', error);
     // Revert optimistic update
