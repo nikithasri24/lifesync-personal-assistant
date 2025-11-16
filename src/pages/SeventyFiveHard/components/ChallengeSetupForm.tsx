@@ -104,116 +104,116 @@ export default function ChallengeSetupForm({ onSubmit, onCancel }: ChallengeSetu
           </button>
         </div>
 
-        {/* Form - Scrollable Area */}
-        <div className="flex-1 overflow-y-auto">
-          <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {/* Tasks */}
-          <div className="space-y-3">
-            {tasks.map((task, index) => (
-              <div
-                key={index}
-                className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 space-y-3"
-              >
-                <div className="flex items-start gap-3">
-                  {/* Drag handle (visual only for now) */}
-                  <div className="flex-shrink-0 text-gray-400 mt-2">
-                    <GripVertical className="w-5 h-5" />
+        {/* Form - Full height with scrollable area */}
+        <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+          {/* Scrollable content area */}
+          <div className="flex-1 overflow-y-auto p-6">
+            {/* Tasks */}
+            <div className="space-y-3 mb-4">
+              {tasks.map((task, index) => (
+                <div
+                  key={index}
+                  className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 space-y-3"
+                >
+                  <div className="flex items-start gap-3">
+                    {/* Drag handle (visual only for now) */}
+                    <div className="flex-shrink-0 text-gray-400 mt-2">
+                      <GripVertical className="w-5 h-5" />
+                    </div>
+
+                    {/* Task number */}
+                    <div className="flex-shrink-0 w-8 h-8 bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded-full flex items-center justify-center font-semibold text-sm mt-1">
+                      {index + 1}
+                    </div>
+
+                    {/* Inputs */}
+                    <div className="flex-1 space-y-2">
+                      {/* Title */}
+                      <input
+                        type="text"
+                        value={task.title}
+                        onChange={(e) => handleUpdateTask(index, 'title', e.target.value)}
+                        placeholder="Task title (required)"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        maxLength={100}
+                        required
+                        disabled={isSubmitting}
+                      />
+
+                      {/* Description */}
+                      <input
+                        type="text"
+                        value={task.description}
+                        onChange={(e) => handleUpdateTask(index, 'description', e.target.value)}
+                        placeholder="Description (optional)"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
+                        maxLength={200}
+                        disabled={isSubmitting}
+                      />
+                    </div>
+
+                    {/* Remove button */}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveTask(index)}
+                      className="flex-shrink-0 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 mt-2"
+                      disabled={isSubmitting || tasks.length === 1}
+                      title={tasks.length === 1 ? 'At least one task required' : 'Remove task'}
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
                   </div>
-
-                  {/* Task number */}
-                  <div className="flex-shrink-0 w-8 h-8 bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded-full flex items-center justify-center font-semibold text-sm mt-1">
-                    {index + 1}
-                  </div>
-
-                  {/* Inputs */}
-                  <div className="flex-1 space-y-2">
-                    {/* Title */}
-                    <input
-                      type="text"
-                      value={task.title}
-                      onChange={(e) => handleUpdateTask(index, 'title', e.target.value)}
-                      placeholder="Task title (required)"
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                      maxLength={100}
-                      required
-                      disabled={isSubmitting}
-                    />
-
-                    {/* Description */}
-                    <input
-                      type="text"
-                      value={task.description}
-                      onChange={(e) => handleUpdateTask(index, 'description', e.target.value)}
-                      placeholder="Description (optional)"
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
-                      maxLength={200}
-                      disabled={isSubmitting}
-                    />
-                  </div>
-
-                  {/* Remove button */}
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveTask(index)}
-                    className="flex-shrink-0 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 mt-2"
-                    disabled={isSubmitting || tasks.length === 1}
-                    title={tasks.length === 1 ? 'At least one task required' : 'Remove task'}
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
                 </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Add task button */}
-          {tasks.length < 20 && (
-            <button
-              type="button"
-              onClick={handleAddTask}
-              className="w-full py-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-400 hover:border-primary-500 hover:text-primary-600 dark:hover:text-primary-400 flex items-center justify-center gap-2 transition-colors"
-              disabled={isSubmitting}
-            >
-              <Plus className="w-5 h-5" />
-              Add Custom Task
-            </button>
-          )}
-
-          {/* Task count */}
-          <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
-            {tasks.length} of 20 tasks
-          </p>
-
-          {/* Error message */}
-          {error && (
-            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-              <p className="text-sm text-red-800 dark:text-red-300">{error}</p>
+              ))}
             </div>
-          )}
-          </form>
-        </div>
 
-        {/* Footer */}
-        <div className="flex-shrink-0 p-6 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-          <div className="flex items-center justify-end gap-3">
-            <button
-              type="button"
-              onClick={onCancel}
-              className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-              disabled={isSubmitting}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              onClick={handleSubmit}
-              className="px-6 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? 'Starting...' : 'Start Challenge'}
-            </button>
+            {/* Add task button */}
+            {tasks.length < 20 && (
+              <button
+                type="button"
+                onClick={handleAddTask}
+                className="w-full py-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-400 hover:border-primary-500 hover:text-primary-600 dark:hover:text-primary-400 flex items-center justify-center gap-2 transition-colors mb-4"
+                disabled={isSubmitting}
+              >
+                <Plus className="w-5 h-5" />
+                Add Custom Task
+              </button>
+            )}
+
+            {/* Task count */}
+            <p className="text-sm text-gray-500 dark:text-gray-400 text-center mb-4">
+              {tasks.length} of 20 tasks
+            </p>
+
+            {/* Error message */}
+            {error && (
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                <p className="text-sm text-red-800 dark:text-red-300">{error}</p>
+              </div>
+            )}
           </div>
-        </div>
+
+          {/* Footer - Fixed at bottom */}
+          <div className="flex-shrink-0 p-6 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+            <div className="flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={onCancel}
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                disabled={isSubmitting}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-6 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'Starting...' : 'Start Challenge'}
+              </button>
+            </div>
+          </div>
+        </form>
       </div>
     </div>
   );
