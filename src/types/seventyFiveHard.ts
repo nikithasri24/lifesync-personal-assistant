@@ -268,10 +268,10 @@ export interface CheckInRow {
  * Map database row to Challenge type
  */
 export const mapRowToChallenge = (row: ChallengeRow): SeventyFiveHardChallenge => {
-  // Parse start_date as local date (not UTC) to avoid timezone issues
-  // row.start_date is "YYYY-MM-DD" string from database
-  const [year, month, day] = row.start_date.split('-').map(Number);
-  const startDate = new Date(year, month - 1, day); // month is 0-indexed in JS Date
+  // Parse dates using parseISO for proper timezone handling
+  // Note: For date-only fields (start_date), we create a local date to avoid timezone shifts
+  const dateParts = row.start_date.split('-').map(Number);
+  const startDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
 
   return {
     id: row.id,
@@ -304,10 +304,10 @@ export const mapChallengeToInsert = (challenge: Partial<SeventyFiveHardChallenge
  * Map database row to CheckIn type
  */
 export const mapRowToCheckIn = (row: CheckInRow): DailyCheckIn => {
-  // Parse date as local date (not UTC) to avoid timezone issues
+  // Parse date as local date to avoid timezone issues
   // row.date is "YYYY-MM-DD" string from database
-  const [year, month, day] = row.date.split('-').map(Number);
-  const date = new Date(year, month - 1, day); // month is 0-indexed in JS Date
+  const dateParts = row.date.split('-').map(Number);
+  const date = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
 
   return {
     id: row.id,
