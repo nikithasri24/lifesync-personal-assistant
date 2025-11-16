@@ -692,6 +692,7 @@ export async function updateSFHCheckInWeight(weight: number) {
       .from('sfh_daily_checkins')
       .update({
         weight,
+        updated_at: new Date().toISOString(),
       })
       .eq('id', todayCheckIn.id);
 
