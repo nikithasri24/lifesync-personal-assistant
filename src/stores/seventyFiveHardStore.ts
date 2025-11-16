@@ -352,13 +352,17 @@ export const createSeventyFiveHardStore: StateCreator<
       // Calculate day number from date difference (not from current_day)
       const dayNumber = differenceInDays(today, startOfDay(challenge.startDate)) + 1;
 
+      // Use upsert to prevent duplicate check-ins (race condition safe)
       await supabase
         .from('sfh_daily_checkins')
-        .insert({
+        .upsert({
           challenge_id: challenge.id,
           date: today.toISOString().split('T')[0],
           day_number: dayNumber,
           task_completions: taskCompletions,
+        }, {
+          onConflict: 'challenge_id,date',
+          ignoreDuplicates: false
         });
 
       // Update current_day to match the day we just created

@@ -373,13 +373,17 @@ export async function ensureTodaySFHCheckIn() {
     // Calculate day number from date difference (not from current_day)
     const dayNumber = differenceInDays(today, startOfDay(challenge.startDate)) + 1;
 
+    // Use upsert to prevent duplicate check-ins (race condition safe)
     const { data: newCheckIn } = await supabase
       .from('sfh_daily_checkins')
-      .insert({
+      .upsert({
         challenge_id: challenge.id,
         date: format(today, 'yyyy-MM-dd'),
         day_number: dayNumber,
         task_completions: taskCompletions,
+      }, {
+        onConflict: 'challenge_id,date',
+        ignoreDuplicates: false
       })
       .select()
       .single();
