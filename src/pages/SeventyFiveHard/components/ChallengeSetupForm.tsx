@@ -105,9 +105,9 @@ export default function ChallengeSetupForm({ onSubmit, onCancel }: ChallengeSetu
         </div>
 
         {/* Form - Full height with scrollable area */}
-        <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+        <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden" style={{ minHeight: 0 }}>
           {/* Scrollable content area */}
-          <div className="flex-1 overflow-y-auto p-6">
+          <div className="flex-1 overflow-y-auto p-6" style={{ minHeight: 0, overflowY: 'auto' }}>
             {/* Tasks */}
             <div className="space-y-3 mb-4">
               {tasks.map((task, index) => (
