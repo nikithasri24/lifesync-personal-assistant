@@ -128,7 +128,7 @@ export const createSeventyFiveHardStore: StateCreator<
       // Create challenge
       const challengeData = {
         user_id: user.id,
-        start_date: today.toISOString().split('T')[0],
+        start_date: formatDate(today, 'yyyy-MM-dd'),
         current_day: 1,
         status: 'active' as const,
         tasks: tasksWithIds,
@@ -150,7 +150,7 @@ export const createSeventyFiveHardStore: StateCreator<
 
       const checkInData = {
         challenge_id: newChallenge.id,
-        date: today.toISOString().split('T')[0],
+        date: formatDate(today, 'yyyy-MM-dd'),
         day_number: 1,
         task_completions: taskCompletions,
       };
@@ -317,7 +317,7 @@ export const createSeventyFiveHardStore: StateCreator<
         .from('sfh_daily_checkins')
         .upsert({
           challenge_id: challenge.id,
-          date: failureDate.toISOString().split('T')[0],
+          date: formatDate(failureDate, 'yyyy-MM-dd'),
           day_number: dayNumber,
           task_completions: allTasksComplete,
         });
@@ -357,7 +357,7 @@ export const createSeventyFiveHardStore: StateCreator<
         .from('sfh_daily_checkins')
         .upsert({
           challenge_id: challenge.id,
-          date: today.toISOString().split('T')[0],
+          date: formatDate(today, 'yyyy-MM-dd'),
           day_number: dayNumber,
           task_completions: taskCompletions,
         }, {
@@ -657,7 +657,7 @@ export const createSeventyFiveHardStore: StateCreator<
     await supabase
       .from('sfh_challenge')
       .update({
-        start_date: today.toISOString().split('T')[0],
+        start_date: formatDate(today, 'yyyy-MM-dd'),
         current_day: 1,
         updated_at: new Date().toISOString(),
       })
