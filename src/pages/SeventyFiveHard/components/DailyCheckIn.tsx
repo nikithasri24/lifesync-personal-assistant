@@ -9,7 +9,7 @@
  * - Success message when all tasks complete
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Camera, Edit3, Scale, CheckCircle2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { getCompletionPercentage } from '../../../types/seventyFiveHard';
@@ -35,6 +35,14 @@ export default function DailyCheckIn({
   const [notes, setNotes] = useState(checkIn?.notes || '');
   const [weight, setWeight] = useState(checkIn?.weight?.toString() || '');
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+
+  // Sync local state when checkIn changes
+  useEffect(() => {
+    if (checkIn) {
+      setNotes(checkIn.notes || '');
+      setWeight(checkIn.weight?.toString() || '');
+    }
+  }, [checkIn]);
 
   if (!checkIn) {
     return (
