@@ -12,11 +12,14 @@ This PR addresses critical bugs, adds significant performance optimizations, and
 
 ### 🐛 Bug Fixes
 
-**Overdue 75 Hard Tasks Accumulating** (commit 4812525) ⚠️ **CRITICAL**
-- Fixed issue where old 75 Hard todos from previous days weren't being cleaned up
-- **Root Cause:** Cleanup only ran when visiting 75 Hard page, not on Dashboard load
-- **Solution:** Added call to `ensureSFHTodosForToday()` when Dashboard loads (with dynamic import)
-- **Impact:** Old todos automatically deleted daily, no overdue 75 Hard tasks accumulating
+**Task Duplication on Page Reload** (commit 43f5a02) ⚠️ **CRITICAL**
+- Fixed issue where each page reload created 3 duplicate tasks
+- **Root Cause:** Race condition between App.tsx and Dashboard.tsx both calling `ensureSFHTodosForToday()`
+  - App.tsx calls `loadSFHChallenge()` → `ensureSFHTodosForToday()` on app init
+  - Dashboard.tsx also called `ensureSFHTodosForToday()` when Dashboard loads (commit 4812525)
+  - Both calls ran concurrently, checked for existing todos (finding none), and created duplicates
+- **Solution:** Removed Dashboard.tsx call since App.tsx already handles cleanup/sync on app load
+- **Impact:** Eliminates duplicate task creation, cleanup still happens via App.tsx initialization
 
 **75 Hard Tasks Showing in Tasks Tab** (commit f89cd3f) ⚠️ **CRITICAL**
 - Fixed issue where 75 Hard tasks were appearing in Tasks tab alongside regular todos
@@ -121,15 +124,17 @@ npm test
 - Duplicate 75 Hard tasks created by two systems
 - 75 Hard tasks cluttering Tasks tab
 - Old 75 Hard todos accumulating as overdue tasks
+- Each page reload created 3 duplicate tasks (race condition)
 
 ### After:
 - Tasks display proper names: "🔥 Follow a Diet", "🔥 Workout Twice Daily", etc.
 - Widget only re-renders when necessary (60% reduction)
 - Todo sync operations run in parallel (5x faster)
 - 27 comprehensive tests with 100% coverage of optimizations
-- Single optimized task creation system
+- Single optimized task creation system (no duplicates)
 - 75 Hard tasks only in dedicated 75 Hard UI
-- Old todos automatically cleaned up daily
+- Old todos automatically cleaned up on app load
+- No duplicate task creation on page reload
 
 ## Commits Included
 1. `c705ffb` - fix(75-hard): correct Task property names from name/details to title/description
@@ -137,7 +142,8 @@ npm test
 3. `e285660` - test(75-hard): add comprehensive test coverage for widget and performance optimizations
 4. `147e054` - fix(75-hard): prevent duplicate task creation from old and new systems ⚠️ **CRITICAL**
 5. `f89cd3f` - fix(todos): exclude 75 Hard tasks from Tasks tab to prevent clutter ⚠️ **CRITICAL**
-6. `4812525` - fix(75-hard): ensure old todos are cleaned up when Dashboard loads ⚠️ **CRITICAL**
+6. `4812525` - fix(75-hard): ensure old todos are cleaned up when Dashboard loads (introduced race condition)
+7. `43f5a02` - fix(75-hard): remove duplicate ensureSFHTodosForToday call to prevent task duplication ⚠️ **CRITICAL**
 
 ## Checklist
 - [x] Bug fixes implemented and tested
