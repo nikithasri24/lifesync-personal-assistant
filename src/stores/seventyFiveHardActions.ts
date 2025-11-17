@@ -1006,18 +1006,24 @@ export async function ensureSFHTodosForToday() {
 
   console.log('[75Hard→Todo] Syncing todos for Day', todayCheckIn.dayNumber);
 
-  // Create/update todos for each task
-  for (const task of challenge.tasks) {
-    const completion = todayCheckIn.taskCompletions.find(tc => tc.taskId === task.id);
-    const isCompleted = completion?.completed || false;
+  // Create completion map for O(1) lookups
+  const completionMap = new Map<string, boolean>();
+  todayCheckIn.taskCompletions.forEach(tc => {
+    completionMap.set(tc.taskId, tc.completed);
+  });
 
-    await createOrUpdateTodoFromSFHTask(
+  // Create/update todos in parallel for better performance
+  const todoPromises = challenge.tasks.map(task => {
+    const isCompleted = completionMap.get(task.id) || false;
+    return createOrUpdateTodoFromSFHTask(
       challenge.id,
       task,
       todayCheckIn.dayNumber,
       isCompleted
     );
-  }
+  });
+
+  await Promise.all(todoPromises);
 
   // Cleanup: Delete todos for previous days
   await cleanupOldSFHTodos(challenge.id, todayCheckIn.dayNumber);
@@ -1030,19 +1036,28 @@ async function cleanupOldSFHTodos(challengeId: string, currentDay: number) {
   const store = getStore();
   const today = startOfDay(new Date());
 
-  for (const todo of store.todos) {
+  // Filter todos that need deletion first, then delete in parallel
+  const todosToDelete = store.todos.filter(todo => {
+    if (todo.deleted) return false;
+
     const meta = parseSFHTodoTags(todo.tags);
-    if (!meta.isSFHTodo || meta.challengeId !== challengeId) continue;
-    if (todo.deleted) continue;
+    if (!meta.isSFHTodo || meta.challengeId !== challengeId) return false;
 
     // Delete if from previous day OR if due date is before today
     const isPreviousDay = meta.dayNumber && meta.dayNumber < currentDay;
     const isOldDueDate = todo.dueDate && todo.dueDate < today;
 
-    if (isPreviousDay || isOldDueDate) {
-      await store.deleteTodo(todo.id);
-      console.log(`[75Hard→Todo] Deleted old todo for Day ${meta.dayNumber}`);
-    }
+    return isPreviousDay || isOldDueDate;
+  });
+
+  // Delete all old todos in parallel
+  if (todosToDelete.length > 0) {
+    await Promise.all(
+      todosToDelete.map(todo => {
+        console.log(`[75Hard→Todo] Deleted old todo for Day ${parseSFHTodoTags(todo.tags).dayNumber}`);
+        return store.deleteTodo(todo.id);
+      })
+    );
   }
 }
 

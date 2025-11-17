@@ -14,7 +14,7 @@
  * @component
  */
 
-import React from 'react';
+import React, { useMemo, useCallback } from 'react';
 import {
   Flame,
   CheckCircle2,
@@ -35,30 +35,50 @@ export default function SeventyFiveHardWidget() {
     return null;
   }
 
-  // Get today's check-in
-  const today = startOfDay(new Date());
-  const todayCheckIn = sfhCheckIns.find(c => isSameDay(c.date, today));
+  // Memoize today's date to avoid recalculating
+  const today = useMemo(() => startOfDay(new Date()), []);
+
+  // Memoize today's check-in lookup
+  const todayCheckIn = useMemo(
+    () => sfhCheckIns.find(c => isSameDay(c.date, today)),
+    [sfhCheckIns, today]
+  );
 
   if (!todayCheckIn) {
     return null;
   }
 
-  // Calculate stats
-  const completedTasks = todayCheckIn.taskCompletions.filter(tc => tc.completed).length;
-  const totalTasks = sfhChallenge.tasks.length;
-  const allComplete = completedTasks === totalTasks;
-  const progress = (sfhChallenge.currentDay / 75) * 100;
-  const daysRemaining = 75 - sfhChallenge.currentDay;
+  // Memoize task completion map for O(1) lookups
+  const taskCompletionMap = useMemo(() => {
+    const map = new Map<string, boolean>();
+    todayCheckIn.taskCompletions.forEach(tc => {
+      map.set(tc.taskId, tc.completed);
+    });
+    return map;
+  }, [todayCheckIn.taskCompletions]);
 
-  // Handler to toggle task
-  const handleToggleTask = async (taskId: string) => {
+  // Memoize stats calculations
+  const stats = useMemo(() => {
+    const completedTasks = todayCheckIn.taskCompletions.filter(tc => tc.completed).length;
+    const totalTasks = sfhChallenge.tasks.length;
+    return {
+      completedTasks,
+      totalTasks,
+      allComplete: completedTasks === totalTasks,
+      progress: (sfhChallenge.currentDay / 75) * 100,
+      daysRemaining: 75 - sfhChallenge.currentDay,
+    };
+  }, [todayCheckIn.taskCompletions, sfhChallenge.tasks.length, sfhChallenge.currentDay]);
+
+  // Memoize handler to toggle task
+  const handleToggleTask = useCallback(async (taskId: string) => {
     await toggleSFHTask(taskId);
-  };
+  }, []);
 
-  // Navigate to full 75 Hard page
-  const handleViewFull = () => {
+  // Memoize navigation handler
+  const handleViewFull = useCallback(() => {
     setActiveView('seventy-five-hard');
-  };
+  }, [setActiveView]);
 
   return (
     <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl border-2 border-purple-200 dark:border-purple-800 p-6 shadow-lg">
@@ -93,13 +113,13 @@ export default function SeventyFiveHardWidget() {
             Progress
           </span>
           <span className="text-gray-600 dark:text-gray-400">
-            {Math.round(progress)}%
+            {Math.round(stats.progress)}%
           </span>
         </div>
         <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
           <div
             className="h-full bg-gradient-to-r from-purple-600 to-pink-600 transition-all duration-500"
-            style={{ width: `${progress}%` }}
+            style={{ width: `${stats.progress}%` }}
           />
         </div>
       </div>
@@ -116,7 +136,7 @@ export default function SeventyFiveHardWidget() {
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-lg p-3 text-center">
           <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-            {daysRemaining}
+            {stats.daysRemaining}
           </div>
           <div className="text-xs text-gray-600 dark:text-gray-400">
             Remaining
@@ -124,7 +144,7 @@ export default function SeventyFiveHardWidget() {
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-lg p-3 text-center">
           <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-            {completedTasks}/{totalTasks}
+            {stats.completedTasks}/{stats.totalTasks}
           </div>
           <div className="text-xs text-gray-600 dark:text-gray-400">
             Today
@@ -138,7 +158,7 @@ export default function SeventyFiveHardWidget() {
           <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
             Today's Tasks
           </h4>
-          {allComplete && (
+          {stats.allComplete && (
             <span className="text-xs font-medium text-green-600 dark:text-green-400 flex items-center gap-1">
               <CheckCircle2 className="w-3 h-3" />
               All Done!
@@ -147,8 +167,7 @@ export default function SeventyFiveHardWidget() {
         </div>
 
         {sfhChallenge.tasks.map((task) => {
-          const completion = todayCheckIn.taskCompletions.find(tc => tc.taskId === task.id);
-          const isCompleted = completion?.completed || false;
+          const isCompleted = taskCompletionMap.get(task.id) || false;
 
           return (
             <button
@@ -189,7 +208,7 @@ export default function SeventyFiveHardWidget() {
       </div>
 
       {/* Quick Action Hint */}
-      {!allComplete && (
+      {!stats.allComplete && (
         <div className="mt-4 text-center">
           <p className="text-xs text-gray-600 dark:text-gray-400">
             💡 Tap tasks to mark complete, or visit 75 Hard page for photos & notes

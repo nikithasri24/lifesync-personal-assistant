@@ -10,7 +10,7 @@
  * Complexity: ~200 lines (down from 2300+)
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useAppStore } from '../../stores/useAppStore';
 import {
   loadSFHChallenge,
@@ -22,6 +22,7 @@ import {
   handleSFHFailureResponse,
   deleteSFHChallenge,
 } from '../../stores/seventyFiveHardActions';
+import { isSameDay, startOfDay } from 'date-fns';
 
 // Import components
 import EmptyState from './components/EmptyState';
@@ -51,24 +52,19 @@ export default function SeventyFiveHard() {
     loadSFHChallenge();
   }, []);
 
-  // Get today's check-in
-  const todayCheckIn = checkIns.find(c => {
-    const today = new Date();
-    const checkInDate = new Date(c.date);
-    return (
-      checkInDate.getFullYear() === today.getFullYear() &&
-      checkInDate.getMonth() === today.getMonth() &&
-      checkInDate.getDate() === today.getDate()
-    );
-  });
+  // Memoize today's check-in lookup (more efficient than manual comparison)
+  const todayCheckIn = useMemo(() => {
+    const today = startOfDay(new Date());
+    return checkIns.find(c => isSameDay(c.date, today)) || null;
+  }, [checkIns]);
 
   // ==================== Handlers ====================
 
-  const handleStartChallenge = () => {
+  const handleStartChallenge = useCallback(() => {
     setShowSetupForm(true);
-  };
+  }, []);
 
-  const handleSubmitChallenge = async (tasks: Omit<import('../../types/seventyFiveHard').Task, 'id'>[]) => {
+  const handleSubmitChallenge = useCallback(async (tasks: Omit<import('../../types/seventyFiveHard').Task, 'id'>[]) => {
     const result = await startSFHChallenge(tasks);
     if (result.success) {
       setShowSetupForm(false);
@@ -76,52 +72,52 @@ export default function SeventyFiveHard() {
       // Error is already logged, could show toast here
       alert(result.error || 'Failed to start challenge');
     }
-  };
+  }, []);
 
-  const handleCancelSetup = () => {
+  const handleCancelSetup = useCallback(() => {
     setShowSetupForm(false);
-  };
+  }, []);
 
-  const handleToggleTask = async (taskId: string) => {
+  const handleToggleTask = useCallback(async (taskId: string) => {
     await toggleSFHTask(taskId);
-  };
+  }, []);
 
-  const handleUploadPhoto = async (file: File) => {
+  const handleUploadPhoto = useCallback(async (file: File) => {
     await uploadSFHPhoto(file);
-  };
+  }, []);
 
-  const handleUpdateNotes = async (notes: string) => {
+  const handleUpdateNotes = useCallback(async (notes: string) => {
     await updateSFHCheckInNotes(notes);
-  };
+  }, []);
 
-  const handleUpdateWeight = async (weight: number) => {
+  const handleUpdateWeight = useCallback(async (weight: number) => {
     await updateSFHCheckInWeight(weight);
-  };
+  }, []);
 
-  const handleFailureYes = async () => {
+  const handleFailureYes = useCallback(async () => {
     await handleSFHFailureResponse(true);
-  };
+  }, []);
 
-  const handleFailureNo = async () => {
+  const handleFailureNo = useCallback(async () => {
     await handleSFHFailureResponse(false);
-  };
+  }, []);
 
-  const handleDeleteChallenge = () => {
+  const handleDeleteChallenge = useCallback(() => {
     setShowDeleteModal(true);
-  };
+  }, []);
 
-  const handleConfirmDelete = async () => {
+  const handleConfirmDelete = useCallback(async () => {
     const result = await deleteSFHChallenge();
     if (result.success) {
       setShowDeleteModal(false);
     } else {
       alert(result.error || 'Failed to delete challenge');
     }
-  };
+  }, []);
 
-  const handleCancelDelete = () => {
+  const handleCancelDelete = useCallback(() => {
     setShowDeleteModal(false);
-  };
+  }, []);
 
   // ==================== Render ====================
 
