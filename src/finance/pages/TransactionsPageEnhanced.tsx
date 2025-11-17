@@ -14,6 +14,7 @@ import { FiltersBar } from '../components/FiltersBar';
 import { Button } from '../ui/Button';
 import { ConfidenceIndicator } from '../components/ConfidenceBadge';
 import { AutoCategorizeModal } from '../components/AutoCategorizeModal';
+import { QuickAddTransaction } from '../components/QuickAddTransaction';
 import { getFinanceAPI } from '../data';
 import { formatCurrency } from '../utils/currency';
 import useFinanceFilters from '../store/useFinanceFilters';
@@ -25,6 +26,7 @@ const TransactionsPageEnhanced: React.FC = () => {
   const [next, setNext] = React.useState<string | undefined>();
   const [loading, setLoading] = React.useState(false);
   const [showAutoCategorize, setShowAutoCategorize] = React.useState(false);
+  const [showQuickAdd, setShowQuickAdd] = React.useState(false);
   const [userId, setUserId] = React.useState<string | null>(null);
   const filters = useFinanceFilters();
 
@@ -123,6 +125,12 @@ const TransactionsPageEnhanced: React.FC = () => {
         title="Transactions"
         actions={
           <div className="flex gap-2">
+            <Button
+              onClick={() => setShowQuickAdd(true)}
+              disabled={loading}
+            >
+              + Add Transaction
+            </Button>
             {uncategorizedCount > 0 && userId && (
               <Button
                 variant="outline"
@@ -208,6 +216,14 @@ const TransactionsPageEnhanced: React.FC = () => {
           )}
         </div>
       </Card>
+
+      {/* Quick Add Modal */}
+      {showQuickAdd && (
+        <QuickAddTransaction
+          onClose={() => setShowQuickAdd(false)}
+          onSuccess={() => load()}
+        />
+      )}
 
       {/* Auto-Categorize Modal */}
       {showAutoCategorize && userId && (
