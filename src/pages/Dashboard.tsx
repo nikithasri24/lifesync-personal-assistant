@@ -14,10 +14,9 @@ import { useToast } from '../hooks/useToast';
 import SeventyFiveHardWidget from '../components/SeventyFiveHardWidget';
 
 export default function Dashboard() {
-  const { ensureSFHTasksForToday } = useAppStore();
-  const { 
-    habits, 
-    notes, 
+  const {
+    habits,
+    notes,
     journalEntries,
     completeHabit,
     setActiveView,
@@ -58,16 +57,19 @@ export default function Dashboard() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Ensure 75 Hard tasks for today are present so they show up in the Tasks section
-  useEffect(() => {
-    ensureSFHTasksForToday?.();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Note: 75 Hard todos are now managed by the new integration system
+  // via ensureSFHTodosForToday() in seventyFiveHardActions.ts
+  // No need to call the old ensureSFHTasksForToday() here
 
-  const isSFH = (t: any) => Array.isArray(t.tags) && t.tags.includes('sfh');
-  const todayTodosAll = tasks.filter(task => 
-    task.status !== 'done' && !task.deleted && 
-    task.dueDate && 
+  // Helper to identify 75 Hard tasks (both old 'sfh' tag and new '75hard' tag)
+  const isSFH = (t: any) => {
+    const tags = Array.isArray(t.tags) ? t.tags : [];
+    return tags.includes('sfh') || tags.includes('75hard');
+  };
+
+  const todayTodosAll = tasks.filter(task =>
+    task.status !== 'done' && !task.deleted &&
+    task.dueDate &&
     isToday(task.dueDate)
   );
   // Exclude 75 Hard from Dashboard metrics and list to focus on actual tasks
