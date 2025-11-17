@@ -57,9 +57,19 @@ export default function Dashboard() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Note: 75 Hard todos are now managed by the new integration system
-  // via ensureSFHTodosForToday() in seventyFiveHardActions.ts
-  // No need to call the old ensureSFHTasksForToday() here
+  // Ensure 75 Hard todos are synced when Dashboard loads
+  // This ensures cleanup of old todos and creation of today's todos
+  useEffect(() => {
+    const syncSFHTodos = async () => {
+      try {
+        const { ensureSFHTodosForToday } = await import('../stores/seventyFiveHardActions');
+        await ensureSFHTodosForToday();
+      } catch (error) {
+        console.error('[Dashboard] Failed to sync 75 Hard todos:', error);
+      }
+    };
+    syncSFHTodos();
+  }, []);
 
   // Helper to identify 75 Hard tasks (both old 'sfh' tag and new '75hard' tag)
   const isSFH = (t: any) => {
