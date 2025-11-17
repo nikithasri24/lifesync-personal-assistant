@@ -101,16 +101,16 @@ export default function Dashboard() {
     return entryDate >= weekAgo;
   });
 
+  // Dashboard completion stats - exclude 75 Hard tasks since they're managed separately
   const completedTodosThisWeek = tasks.filter(task => {
     if (task.status !== 'done' || task.deleted) return false;
+    if (isSFH(task)) return false; // Exclude 75 Hard tasks from completion stats
     const completedDate = task.completedAt || task.updatedAt || task.createdAt;
     if (!completedDate) return false;
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
     return completedDate >= weekAgo;
   });
-  // Dashboard completion stats exclude 75 Hard as well
-  const completedTodosThisWeekCount = completedTodosThisWeek.filter(t => !isSFH(t)).length;
 
   const statsCards = [
     {

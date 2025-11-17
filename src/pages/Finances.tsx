@@ -1,6 +1,7 @@
 import React from 'react'
 
 const DashboardPage = React.lazy(() => import('../finance/pages/DashboardPage'))
+const ReportsPage = React.lazy(() => import('../finance/pages/ReportsPage'))
 const AccountsPage = React.lazy(() => import('../finance/pages/AccountsPage'))
 const TransactionsPage = React.lazy(() => import('../finance/pages/TransactionsPageEnhanced'))
 const BudgetsPage = React.lazy(() => import('../finance/pages/BudgetsPage'))
@@ -8,10 +9,11 @@ const NetWorthPage = React.lazy(() => import('../finance/pages/NetWorthPage'))
 const GoalsPage = React.lazy(() => import('../finance/pages/GoalsPage'))
 const SettingsPage = React.lazy(() => import('../finance/pages/SettingsPage'))
 
-type TabKey = 'dashboard' | 'accounts' | 'transactions' | 'budgets' | 'networth' | 'goals' | 'settings'
+type TabKey = 'dashboard' | 'reports' | 'accounts' | 'transactions' | 'budgets' | 'networth' | 'goals' | 'settings'
 
 const tabs: { key: TabKey; label: string }[] = [
   { key: 'dashboard', label: 'Dashboard' },
+  { key: 'reports', label: 'Reports' },
   { key: 'accounts', label: 'Accounts' },
   { key: 'transactions', label: 'Transactions' },
   { key: 'budgets', label: 'Budgets' },
@@ -35,7 +37,7 @@ const Finances: React.FC = () => {
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`rounded-full px-3 py-1.5 text-sm border ${tab === t.key ? 'bg-slate-900 text-white border-slate-900' : 'bg-white border-slate-200 hover:bg-slate-50'}`}
+            className={`rounded-full px-3 py-1.5 text-sm border transition-colors ${tab === t.key ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100 hover:text-gray-900 hover:border-gray-400'}`}
             aria-current={tab === t.key ? 'page' : undefined}
           >
             {t.label}
@@ -46,6 +48,7 @@ const Finances: React.FC = () => {
       <div>
         <React.Suspense fallback={<div>Loading finance…</div>}>
           {tab === 'dashboard' && <DashboardPage />}
+          {tab === 'reports' && <ReportsPage />}
           {tab === 'accounts' && <AccountsPage />}
           {tab === 'transactions' && <TransactionsPage />}
           {tab === 'budgets' && <BudgetsPage />}

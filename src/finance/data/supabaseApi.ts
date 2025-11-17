@@ -184,60 +184,63 @@ export class SupabaseApi implements FinanceAPI {
     const uid = await getUid(this.client);
 
     // Validate inputs
-    if (budget.limit < 0) {
+    if (!budget.categoryId) {
+      throw new Error('Category ID is required');
+    }
+    if (!budget.month) {
+      throw new Error('Month is required');
+    }
+    if (typeof budget.limit !== 'number' || budget.limit < 0) {
       throw new Error('Budget limit must be a positive number');
     }
 
     // Ensure month is in YYYY-MM format (database column is char(7))
     const monthDate = budget.month.length === 7 ? budget.month : budget.month.slice(0, 7);
 
-    // Check if budget already exists
-    const { data: existing, error: selectError } = await this.client
-      .from('budgets')
-      .select('id')
-      .eq('user_id', uid)
-      .eq('category_id', budget.categoryId)
-      .eq('month', monthDate)
-      .maybeSingle(); // Use maybeSingle() to avoid 406 error when no rows found
-
-    // If there was an error other than "not found", throw it
-    if (selectError && selectError.code !== 'PGRST116') {
-      throw selectError;
+    // Validate month format
+    if (!/^\d{4}-\d{2}$/.test(monthDate)) {
+      throw new Error('Invalid month format. Expected YYYY-MM');
     }
 
-    if (existing) {
-      // Update existing budget
-      const { error } = await this.client
-        .from('budgets')
-        .update({ limit_amount: budget.limit })
-        .eq('id', existing.id);
+    const row: any = {
+      user_id: uid,
+      category_id: budget.categoryId,
+      month: monthDate,
+      limit_amount: budget.limit,
+    };
 
-      if (error) throw error;
-    } else {
-      // Insert new budget
-      const row: any = {
-        user_id: uid,
-        category_id: budget.categoryId,
-        month: monthDate,
-        limit_amount: budget.limit,
-      };
+    // Use upsert with the unique constraint on (user_id, category_id, month)
+    // This will insert if not exists, or update if exists
+    const { error } = await this.client
+      .from('budgets')
+      .upsert(row, {
+        onConflict: 'user_id,category_id,month'
+      });
 
-      const { error } = await this.client
-        .from('budgets')
-        .insert(row);
-
-      if (error) {
-        console.error('Budget insert error:', error);
-        throw error;
-      }
+    if (error) {
+      console.error('Budget upsert error:', error);
+      throw new Error(`Failed to save budget: ${error.message}`);
     }
   }
 
   async deleteBudget(categoryId: string, month: string): Promise<void> {
     const uid = await getUid(this.client);
 
+    // Validate inputs
+    if (!categoryId) {
+      throw new Error('Category ID is required');
+    }
+    if (!month) {
+      throw new Error('Month is required');
+    }
+
     // Ensure month is in YYYY-MM format (database column is char(7))
     const monthDate = month.length === 7 ? month : month.slice(0, 7);
+
+    // Validate month format
+    if (!/^\d{4}-\d{2}$/.test(monthDate)) {
+      throw new Error('Invalid month format. Expected YYYY-MM');
+    }
 
     const { error } = await this.client
       .from('budgets')
@@ -246,7 +249,10 @@ export class SupabaseApi implements FinanceAPI {
       .eq('category_id', categoryId)
       .eq('month', monthDate);
 
-    if (error) throw error;
+    if (error) {
+      console.error('Budget delete error:', error);
+      throw new Error(`Failed to delete budget: ${error.message}`);
+    }
   }
 
   async listCategories(): Promise<Category[]> {

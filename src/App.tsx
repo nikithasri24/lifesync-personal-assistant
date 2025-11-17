@@ -24,6 +24,12 @@ import { AuthGate } from './components/AuthGate';
 import { useAuth } from './hooks/useAuth';
 import { isSupabaseConfigured } from './lib/supabase';
 import { loadSFHChallenge } from './stores/seventyFiveHardActions';
+import { cleanup75HardDuplicates } from './utils/cleanup75HardDuplicates';
+
+// Expose cleanup function globally for debugging
+if (typeof window !== 'undefined') {
+  (window as any).cleanup75HardDuplicates = cleanup75HardDuplicates;
+}
 
 function App() {
   const { activeView, loading, initializeData } = useRealAppStore();

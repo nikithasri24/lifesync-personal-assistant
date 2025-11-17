@@ -26,6 +26,7 @@ import {
 import { useAppStore } from '../stores/useAppStore';
 import { toggleSFHTask } from '../stores/seventyFiveHardActions';
 import { isSameDay, startOfDay } from 'date-fns';
+import { getDailyQuote } from '../utils/motivationalQuotes';
 
 export default function SeventyFiveHardWidget() {
   const { sfhChallenge, sfhCheckIns, setActiveView } = useAppStore();
@@ -154,57 +155,48 @@ export default function SeventyFiveHardWidget() {
 
       {/* Today's Tasks */}
       <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
-            Today's Tasks
-          </h4>
-          {stats.allComplete && (
-            <span className="text-xs font-medium text-green-600 dark:text-green-400 flex items-center gap-1">
-              <CheckCircle2 className="w-3 h-3" />
-              All Done!
-            </span>
-          )}
-        </div>
+        {stats.allComplete ? (
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg p-3 border border-green-200 dark:border-green-800">
+            <div className="flex items-start gap-2">
+              <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+              <p className="text-xs font-medium text-green-900 dark:text-green-100 leading-relaxed">
+                {getDailyQuote(sfhChallenge.currentDay)}
+              </p>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
+                Today's Tasks
+              </h4>
+            </div>
 
-        {sfhChallenge.tasks.map((task) => {
-          const isCompleted = taskCompletionMap.get(task.id) || false;
-
-          return (
-            <button
-              key={task.id}
-              onClick={() => handleToggleTask(task.id)}
-              className={`w-full flex items-center gap-3 p-3 rounded-lg transition-all ${
-                isCompleted
-                  ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800'
-                  : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-700'
-              }`}
-            >
-              {isCompleted ? (
-                <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0" />
-              ) : (
-                <Circle className="w-5 h-5 text-gray-400 flex-shrink-0" />
-              )}
-              <div className="flex-1 text-left">
-                <p className={`text-sm font-medium ${
-                  isCompleted
-                    ? 'text-green-900 dark:text-green-100 line-through'
-                    : 'text-gray-900 dark:text-white'
-                }`}>
-                  {task.title}
-                </p>
-                {task.description && (
-                  <p className={`text-xs ${
-                    isCompleted
-                      ? 'text-green-700 dark:text-green-300'
-                      : 'text-gray-600 dark:text-gray-400'
-                  }`}>
-                    {task.description}
-                  </p>
-                )}
-              </div>
-            </button>
-          );
-        })}
+            {sfhChallenge.tasks
+              .filter((task) => !taskCompletionMap.get(task.id))
+              .map((task) => {
+                return (
+                  <button
+                    key={task.id}
+                    onClick={() => handleToggleTask(task.id)}
+                    className="w-full flex items-center gap-3 p-3 rounded-lg transition-all bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-700"
+                  >
+                    <Circle className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                    <div className="flex-1 text-left">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                        {task.title}
+                      </p>
+                      {task.description && (
+                        <p className="text-xs text-gray-600 dark:text-gray-400">
+                          {task.description}
+                        </p>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+          </>
+        )}
       </div>
 
       {/* Quick Action Hint */}

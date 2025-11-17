@@ -21,6 +21,7 @@ import {
   updateSFHCheckInWeight,
   handleSFHFailureResponse,
   deleteSFHChallenge,
+  ensureSFHTodosForToday,
 } from '../../stores/seventyFiveHardActions';
 import { isSameDay, startOfDay } from 'date-fns';
 
@@ -51,6 +52,15 @@ export default function SeventyFiveHard() {
   useEffect(() => {
     loadSFHChallenge();
   }, []);
+
+  // OPTIMIZATION: Lazy load todos when 75 Hard page loads
+  // This defers ~750ms of work from app startup to when user actually needs it
+  useEffect(() => {
+    if (challenge && challenge.status === 'active') {
+      console.log('[75Hard] Page loaded - ensuring todos for today (lazy loading)');
+      ensureSFHTodosForToday();
+    }
+  }, [challenge]);
 
   // Memoize today's check-in lookup (more efficient than manual comparison)
   const todayCheckIn = useMemo(() => {

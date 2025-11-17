@@ -244,14 +244,17 @@ export default function DailyCheckIn({
 
       {/* Success message */}
       {allComplete && (
-        <div className="bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 border-2 border-amber-300 dark:border-amber-700 rounded-lg p-4 flex items-center gap-3 shadow-md">
-          <CheckCircle2 className="w-6 h-6 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+        <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-2 border-green-300 dark:border-green-700 rounded-lg p-4 flex items-center gap-3 shadow-md">
+          <CheckCircle2 className="w-6 h-6 text-green-600 dark:text-green-400 flex-shrink-0" />
           <div>
-            <h3 className="font-semibold text-amber-900 dark:text-amber-100">
+            <h3 className="font-semibold text-green-900 dark:text-green-100">
               Great job! All tasks completed for today!
             </h3>
-            <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
-              Come back tomorrow for Day {challenge.currentDay + 1}
+            <p className="text-sm text-green-700 dark:text-green-300 mt-1">
+              {challenge.currentDay < 75
+                ? `Come back tomorrow for Day ${challenge.currentDay + 1}`
+                : "You've completed the 75 Hard Challenge! 🎉"
+              }
             </p>
           </div>
         </div>
