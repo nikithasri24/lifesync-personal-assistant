@@ -948,8 +948,8 @@ async function createOrUpdateTodoFromSFHTask(
     });
 
     const todoData = {
-      title: `🔥 ${task.name}`,
-      description: task.details || `75 Hard - Day ${dayNumber}`,
+      title: `🔥 ${task.title}`,
+      description: task.description || `75 Hard - Day ${dayNumber}`,
       status: (completed ? 'done' : 'todo') as 'done' | 'todo',
       priority: 'high' as const,
       categoryId: 'health' as const,
@@ -971,12 +971,12 @@ async function createOrUpdateTodoFromSFHTask(
         ...todoData,
         completedAt: completed ? (existingTodo.completedAt || new Date()) : undefined,
       });
-      console.log(`[75Hard→Todo] ✅ Updated todo for task: ${task.name}`);
+      console.log(`[75Hard→Todo] ✅ Updated todo for task: ${task.title}`);
       return existingTodo.id;
     } else {
       // Create new todo
       const newTodo = await store.addTodo(todoData);
-      console.log(`[75Hard→Todo] ✅ Created todo for task: ${task.name}`);
+      console.log(`[75Hard→Todo] ✅ Created todo for task: ${task.title}`);
       return newTodo.id;
     }
   } catch (error) {
@@ -1113,7 +1113,7 @@ export async function create75HardJournalEntry(dayNumber: number) {
 
     // Build journal content
     const tasksList = challenge.tasks.map((task, index) => {
-      return `${index + 1}. ✅ ${task.name}${task.details ? ` (${task.details})` : ''}`;
+      return `${index + 1}. ✅ ${task.title}${task.description ? ` (${task.description})` : ''}`;
     }).join('\n');
 
     const weightSection = todayCheckIn.weight

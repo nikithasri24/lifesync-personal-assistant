@@ -171,15 +171,15 @@ export default function SeventyFiveHardWidget() {
                     ? 'text-green-900 dark:text-green-100 line-through'
                     : 'text-gray-900 dark:text-white'
                 }`}>
-                  {task.name}
+                  {task.title}
                 </p>
-                {task.details && (
+                {task.description && (
                   <p className={`text-xs ${
                     isCompleted
                       ? 'text-green-700 dark:text-green-300'
                       : 'text-gray-600 dark:text-gray-400'
                   }`}>
-                    {task.details}
+                    {task.description}
                   </p>
                 )}
               </div>

@@ -189,15 +189,15 @@ export default function DailyDetailsModal({
                           ? 'text-green-900 dark:text-green-100'
                           : 'text-gray-900 dark:text-gray-100'
                       }`}>
-                        {task.name}
+                        {task.title}
                       </p>
-                      {task.details && (
+                      {task.description && (
                         <p className={`text-sm ${
                           completed
                             ? 'text-green-700 dark:text-green-300'
                             : 'text-gray-600 dark:text-gray-400'
                         }`}>
-                          {task.details}
+                          {task.description}
                         </p>
                       )}
                     </div>
