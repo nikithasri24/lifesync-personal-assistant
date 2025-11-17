@@ -19,6 +19,8 @@ export interface FinanceAPI {
   upsertTransaction(txn: TransactionInput): Promise<void>;
   deleteTransaction(id: string): Promise<void>;
   listBudgets(monthISO: string): Promise<Budget[]>;
+  upsertBudget(budget: { categoryId: string; month: string; limit: number }): Promise<void>;
+  deleteBudget(categoryId: string, month: string): Promise<void>;
   listCategories(): Promise<Category[]>;
   listNetWorth(): Promise<NetPoint[]>;
   listGoals(): Promise<Goal[]>;

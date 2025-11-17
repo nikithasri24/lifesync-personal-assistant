@@ -178,6 +178,50 @@ export class SupabaseApi implements FinanceAPI {
     return (data ?? []).map((r: any) => ({ id: r.id, categoryId: r.category_id, month: r.month, limit: Number(r.limit_amount) }));
   }
 
+  async upsertBudget(budget: { categoryId: string; month: string; limit: number }): Promise<void> {
+    const uid = await getUid(this.client);
+
+    // Validate inputs
+    if (budget.limit < 0) {
+      throw new Error('Budget limit must be a positive number');
+    }
+
+    // Ensure month is first day of month (YYYY-MM format gets converted to YYYY-MM-01)
+    const monthDate = budget.month.length === 7 ? `${budget.month}-01` : budget.month;
+
+    const row: any = {
+      user_id: uid,
+      category_id: budget.categoryId,
+      month: monthDate,
+      limit_amount: budget.limit,
+    };
+
+    const { error } = await this.client
+      .from('budgets')
+      .upsert(row, {
+        onConflict: 'user_id,category_id,month',
+        ignoreDuplicates: false
+      });
+
+    if (error) throw error;
+  }
+
+  async deleteBudget(categoryId: string, month: string): Promise<void> {
+    const uid = await getUid(this.client);
+
+    // Ensure month is first day of month
+    const monthDate = month.length === 7 ? `${month}-01` : month;
+
+    const { error } = await this.client
+      .from('budgets')
+      .delete()
+      .eq('user_id', uid)
+      .eq('category_id', categoryId)
+      .eq('month', monthDate);
+
+    if (error) throw error;
+  }
+
   async listCategories(): Promise<Category[]> {
     const uid = await getUid(this.client);
     const { data, error } = await this.client

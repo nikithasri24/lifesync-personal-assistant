@@ -100,6 +100,50 @@ export class MockApi implements FinanceAPI {
     return budgets.filter((b) => b.month === monthISO);
   }
 
+  async upsertBudget(budget: { categoryId: string; month: string; limit: number }): Promise<void> {
+    await sleep(randomLatency());
+
+    // Normalize month format
+    const monthDate = budget.month.length === 7 ? `${budget.month}-01` : budget.month;
+
+    // Find existing budget
+    const idx = budgets.findIndex(
+      (b) => b.categoryId === budget.categoryId && b.month === monthDate
+    );
+
+    if (idx >= 0) {
+      // Update existing
+      (budgets as any)[idx] = {
+        ...(budgets as any)[idx],
+        limit: budget.limit,
+      };
+    } else {
+      // Create new
+      const id = `mock_budget_${Math.random().toString(36).slice(2)}`;
+      (budgets as any).push({
+        id,
+        categoryId: budget.categoryId,
+        month: monthDate,
+        limit: budget.limit,
+      });
+    }
+  }
+
+  async deleteBudget(categoryId: string, month: string): Promise<void> {
+    await sleep(randomLatency());
+
+    // Normalize month format
+    const monthDate = month.length === 7 ? `${month}-01` : month;
+
+    const idx = budgets.findIndex(
+      (b) => b.categoryId === categoryId && b.month === monthDate
+    );
+
+    if (idx >= 0) {
+      (budgets as any).splice(idx, 1);
+    }
+  }
+
   async listCategories(): Promise<Category[]> {
     await sleep(randomLatency());
     return categories;
