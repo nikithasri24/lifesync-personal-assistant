@@ -57,19 +57,8 @@ export default function Dashboard() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Ensure 75 Hard todos are synced when Dashboard loads
-  // This ensures cleanup of old todos and creation of today's todos
-  useEffect(() => {
-    const syncSFHTodos = async () => {
-      try {
-        const { ensureSFHTodosForToday } = await import('../stores/seventyFiveHardActions');
-        await ensureSFHTodosForToday();
-      } catch (error) {
-        console.error('[Dashboard] Failed to sync 75 Hard todos:', error);
-      }
-    };
-    syncSFHTodos();
-  }, []);
+  // Note: 75 Hard todo cleanup/sync is already handled by App.tsx → loadSFHChallenge() → ensureSFHTodosForToday()
+  // No need to call it again here to avoid race condition and duplicate task creation
 
   // Helper to identify 75 Hard tasks (both old 'sfh' tag and new '75hard' tag)
   const isSFH = (t: any) => {
