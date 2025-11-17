@@ -173,11 +173,11 @@ export class SupabaseApi implements FinanceAPI {
     const monthDate = monthISO.length === 7 ? monthISO : monthISO.slice(0, 7);
     const { data, error } = await this.client
       .from('budgets')
-      .select('id,category_id,month,limit_amount')
+      .select('id,category_id,month,amount')  // Database column is 'amount'
       .eq('user_id', uid)
       .eq('month', monthDate);
     if (error) throw error;
-    return (data ?? []).map((r: any) => ({ id: r.id, categoryId: r.category_id, month: r.month, limit: Number(r.limit_amount) }));
+    return (data ?? []).map((r: any) => ({ id: r.id, categoryId: r.category_id, month: r.month, limit: Number(r.amount) }));  // Map 'amount' to 'limit'
   }
 
   async upsertBudget(budget: { categoryId: string; month: string; limit: number }): Promise<void> {
@@ -206,7 +206,7 @@ export class SupabaseApi implements FinanceAPI {
       user_id: uid,
       category_id: budget.categoryId,
       month: monthDate,
-      limit_amount: budget.limit,
+      amount: budget.limit,  // Database column is 'amount', not 'limit_amount'
     };
 
     // Use upsert with the unique constraint on (user_id, category_id, month)
