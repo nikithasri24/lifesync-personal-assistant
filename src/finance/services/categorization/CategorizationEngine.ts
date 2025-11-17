@@ -10,7 +10,7 @@
  * Target: 85%+ accuracy without AI APIs
  */
 
-import { supabase } from '../../../lib/supabase';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   normalizeMerchantName,
   similarity,
@@ -80,12 +80,14 @@ export interface CategorizationResult {
 
 export class CategorizationEngine {
   private userId: string;
+  private supabase: SupabaseClient;
   private userRulesCache: CategorizationRule[] | null = null;
   private merchantDbCache: Map<string, MerchantData> | null = null;
   private categoryCache: Map<string, { id: string; name: string }> | null = null;
 
-  constructor(userId: string) {
+  constructor(userId: string, supabase: SupabaseClient) {
     this.userId = userId;
+    this.supabase = supabase;
   }
 
   /**

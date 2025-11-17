@@ -41,6 +41,11 @@ export type Transaction = {
   amount: number;
   type: TxnType;
   notes?: string;
+  // Categorization support
+  merchantName?: string;
+  confidenceScore?: number; // 0-1, null = manually categorized
+  suggestedCategoryId?: string;
+  categorizationRuleId?: string;
 };
 
 export type Budget = {
