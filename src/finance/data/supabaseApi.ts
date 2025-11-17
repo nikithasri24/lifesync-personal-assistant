@@ -169,11 +169,13 @@ export class SupabaseApi implements FinanceAPI {
 
   async listBudgets(monthISO: string): Promise<Budget[]> {
     const uid = await getUid(this.client);
+    // Ensure month is in YYYY-MM format for query
+    const monthDate = monthISO.length === 7 ? monthISO : monthISO.slice(0, 7);
     const { data, error } = await this.client
       .from('budgets')
       .select('id,category_id,month,limit_amount')
       .eq('user_id', uid)
-      .eq('month', monthISO);
+      .eq('month', monthDate);
     if (error) throw error;
     return (data ?? []).map((r: any) => ({ id: r.id, categoryId: r.category_id, month: r.month, limit: Number(r.limit_amount) }));
   }
@@ -186,31 +188,56 @@ export class SupabaseApi implements FinanceAPI {
       throw new Error('Budget limit must be a positive number');
     }
 
-    // Ensure month is first day of month (YYYY-MM format gets converted to YYYY-MM-01)
-    const monthDate = budget.month.length === 7 ? `${budget.month}-01` : budget.month;
+    // Ensure month is in YYYY-MM format (database column is char(7))
+    const monthDate = budget.month.length === 7 ? budget.month : budget.month.slice(0, 7);
 
-    const row: any = {
-      user_id: uid,
-      category_id: budget.categoryId,
-      month: monthDate,
-      limit_amount: budget.limit,
-    };
-
-    const { error } = await this.client
+    // Check if budget already exists
+    const { data: existing, error: selectError } = await this.client
       .from('budgets')
-      .upsert(row, {
-        onConflict: 'user_id,category_id,month',
-        ignoreDuplicates: false
-      });
+      .select('id')
+      .eq('user_id', uid)
+      .eq('category_id', budget.categoryId)
+      .eq('month', monthDate)
+      .maybeSingle(); // Use maybeSingle() to avoid 406 error when no rows found
 
-    if (error) throw error;
+    // If there was an error other than "not found", throw it
+    if (selectError && selectError.code !== 'PGRST116') {
+      throw selectError;
+    }
+
+    if (existing) {
+      // Update existing budget
+      const { error } = await this.client
+        .from('budgets')
+        .update({ limit_amount: budget.limit })
+        .eq('id', existing.id);
+
+      if (error) throw error;
+    } else {
+      // Insert new budget
+      const row: any = {
+        user_id: uid,
+        category_id: budget.categoryId,
+        month: monthDate,
+        limit_amount: budget.limit,
+      };
+
+      const { error } = await this.client
+        .from('budgets')
+        .insert(row);
+
+      if (error) {
+        console.error('Budget insert error:', error);
+        throw error;
+      }
+    }
   }
 
   async deleteBudget(categoryId: string, month: string): Promise<void> {
     const uid = await getUid(this.client);
 
-    // Ensure month is first day of month
-    const monthDate = month.length === 7 ? `${month}-01` : month;
+    // Ensure month is in YYYY-MM format (database column is char(7))
+    const monthDate = month.length === 7 ? month : month.slice(0, 7);
 
     const { error } = await this.client
       .from('budgets')

@@ -103,8 +103,8 @@ export class MockApi implements FinanceAPI {
   async upsertBudget(budget: { categoryId: string; month: string; limit: number }): Promise<void> {
     await sleep(randomLatency());
 
-    // Normalize month format
-    const monthDate = budget.month.length === 7 ? `${budget.month}-01` : budget.month;
+    // Normalize month format (YYYY-MM)
+    const monthDate = budget.month.length === 7 ? budget.month : budget.month.slice(0, 7);
 
     // Find existing budget
     const idx = budgets.findIndex(
@@ -132,8 +132,8 @@ export class MockApi implements FinanceAPI {
   async deleteBudget(categoryId: string, month: string): Promise<void> {
     await sleep(randomLatency());
 
-    // Normalize month format
-    const monthDate = month.length === 7 ? `${month}-01` : month;
+    // Normalize month format (YYYY-MM)
+    const monthDate = month.length === 7 ? month : month.slice(0, 7);
 
     const idx = budgets.findIndex(
       (b) => b.categoryId === categoryId && b.month === monthDate
