@@ -940,6 +940,16 @@ async function createOrUpdateTodoFromSFHTask(
     console.log(`[75Hard→Todo] Checking for existing todo: task="${task.title}", day=${dayNumber}, challenge=${challengeId.slice(0, 8)}`);
     console.log(`[75Hard→Todo] Total todos in store: ${store.todos.length}`);
 
+    // First, let's see ALL todos that have 75hard tag
+    const all75HardTodos = store.todos.filter(t => {
+      const tags = Array.isArray(t.tags) ? t.tags : [];
+      return tags.includes('75hard');
+    });
+    console.log(`[75Hard→Todo] Found ${all75HardTodos.length} todos with '75hard' tag in store`);
+    all75HardTodos.forEach(t => {
+      console.log(`[75Hard→Todo]   - "${t.title}", tags=${JSON.stringify(t.tags)}, deleted=${t.deleted}`);
+    });
+
     // Check if todo already exists
     const existingTodo = store.todos.find(t => {
       const meta = parseSFHTodoTags(t.tags);
@@ -949,8 +959,8 @@ async function createOrUpdateTodoFromSFHTask(
         meta.taskId === task.id &&
         !t.deleted;
 
-      if (meta.isSFHTodo && meta.taskId === task.id) {
-        console.log(`[75Hard→Todo]   Found 75Hard todo: "${t.title}", day=${meta.dayNumber}, deleted=${t.deleted}, matches=${matches}`);
+      if (meta.isSFHTodo) {
+        console.log(`[75Hard→Todo]   Checking 75Hard todo: "${t.title}", taskId=${meta.taskId}, searchTaskId=${task.id}, day=${meta.dayNumber}, deleted=${t.deleted}, matches=${matches}`);
       }
 
       return matches;
