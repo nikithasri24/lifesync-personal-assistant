@@ -15,6 +15,7 @@ import { Button } from '../ui/Button';
 import { ConfidenceIndicator } from '../components/ConfidenceBadge';
 import { AutoCategorizeModal } from '../components/AutoCategorizeModal';
 import { QuickAddTransaction } from '../components/QuickAddTransaction';
+import ImportCSVButton from '../components/ImportCSVButton';
 import { getFinanceAPI } from '../data';
 import { formatCurrency } from '../utils/currency';
 import useFinanceFilters from '../store/useFinanceFilters';
@@ -28,11 +29,14 @@ const TransactionsPageEnhanced: React.FC = () => {
   const [showAutoCategorize, setShowAutoCategorize] = React.useState(false);
   const [showQuickAdd, setShowQuickAdd] = React.useState(false);
   const [userId, setUserId] = React.useState<string | null>(null);
+  const [categories, setCategories] = React.useState<Map<string, string>>(new Map());
   const filters = useFinanceFilters();
 
-  // Get user ID
+  // Get user ID and load categories
   React.useEffect(() => {
-    async function getUserId() {
+    let cancelled = false;
+
+    async function getUserIdAndCategories() {
       try {
         const { createClient } = await import('@supabase/supabase-js');
         const supabase = createClient(
@@ -40,30 +44,66 @@ const TransactionsPageEnhanced: React.FC = () => {
           import.meta.env.VITE_SUPABASE_ANON_KEY
         );
         const { data } = await supabase.auth.getUser();
+
+        if (cancelled) return;
+
         if (data.user) {
           setUserId(data.user.id);
+
+          // Load categories
+          const api = await getFinanceAPI();
+          const cats = await api.listCategories();
+
+          if (cancelled) return;
+
+          const categoryMap = new Map<string, string>();
+          cats.forEach(cat => {
+            categoryMap.set(cat.id, cat.name);
+          });
+          setCategories(categoryMap);
         }
       } catch (error) {
-        console.error('Failed to get user ID:', error);
+        console.error('Failed to get user ID or categories:', error);
       }
     }
-    getUserId();
+
+    getUserIdAndCategories();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const load = async (cursor?: string) => {
     setLoading(true);
-    const api = await getFinanceAPI();
-    const { items, nextCursor } = await api.listTransactions({
-      text: filters.text,
-      fromISO: filters.fromISO,
-      toISO: filters.toISO,
-      type: filters.type,
-      cursor,
-      limit: 100,
-    });
-    setRows(cursor ? (r) => [...r, ...items] : items);
-    setNext(nextCursor);
-    setLoading(false);
+    try {
+      const api = await getFinanceAPI();
+      console.log('Loading transactions with filters:', {
+        text: filters.text,
+        fromISO: filters.fromISO,
+        toISO: filters.toISO,
+        type: filters.type,
+        cursor,
+        limit: 100
+      });
+
+      const { items, nextCursor } = await api.listTransactions({
+        text: filters.text,
+        fromISO: filters.fromISO,
+        toISO: filters.toISO,
+        type: filters.type,
+        cursor,
+        limit: 100,
+      });
+
+      console.log(`Loaded ${items.length} transactions from database`);
+      setRows(cursor ? (r) => [...r, ...items] : items);
+      setNext(nextCursor);
+    } catch (error) {
+      console.error('Failed to load transactions:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   React.useEffect(() => {
@@ -112,6 +152,30 @@ const TransactionsPageEnhanced: React.FC = () => {
     }
   };
 
+  const handleClearAll = async () => {
+    if (!confirm('⚠️ This will delete ALL transactions. Are you sure?')) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const api = await getFinanceAPI();
+
+      // Delete all transactions one by one
+      for (const txn of rows) {
+        await api.deleteTransaction(txn.id);
+      }
+
+      alert('✓ All transactions cleared!');
+      await load(); // Reload
+    } catch (error) {
+      console.error('Failed to clear transactions:', error);
+      alert(`Failed to clear transactions: ${error}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const total = rows.reduce((s, t) => s + (t.type === 'credit' ? t.amount : -t.amount), 0);
   const uncategorizedCount = rows.filter(r => !r.categoryId).length;
 
@@ -124,13 +188,14 @@ const TransactionsPageEnhanced: React.FC = () => {
       <Card
         title="Transactions"
         actions={
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button
               onClick={() => setShowQuickAdd(true)}
               disabled={loading}
             >
               + Add Transaction
             </Button>
+            <ImportCSVButton onSuccess={() => load()} />
             {uncategorizedCount > 0 && userId && (
               <Button
                 variant="outline"
@@ -143,9 +208,20 @@ const TransactionsPageEnhanced: React.FC = () => {
             <Button
               variant="outline"
               onClick={() => downloadCSV('transactions.csv', toCSV(rows))}
+              disabled={loading}
             >
               Export CSV
             </Button>
+            {rows.length > 0 && (
+              <Button
+                variant="ghost"
+                onClick={handleClearAll}
+                disabled={loading}
+                className="text-rose-600 hover:bg-rose-50"
+              >
+                🗑️ Clear All
+              </Button>
+            )}
           </div>
         }
       >
@@ -186,7 +262,7 @@ const TransactionsPageEnhanced: React.FC = () => {
               render: (r) => (
                 <div className="flex items-center gap-2">
                   <span className={r.categoryId ? '' : 'text-slate-400 italic'}>
-                    {r.categoryId ? 'Categorized' : 'Uncategorized'}
+                    {r.categoryId ? categories.get(r.categoryId) || 'Categorized' : 'Uncategorized'}
                   </span>
                   {r.confidenceScore !== undefined && r.confidenceScore !== null && (
                     <ConfidenceIndicator score={r.confidenceScore} />
@@ -228,7 +304,13 @@ const TransactionsPageEnhanced: React.FC = () => {
       {/* Auto-Categorize Modal */}
       {showAutoCategorize && userId && (
         <AutoCategorizeModal
-          transactions={rows}
+          transactions={rows.map(r => ({
+            id: r.id,
+            description: r.description,
+            amount: r.amount,
+            date: r.dateISO,
+            categoryId: r.categoryId
+          }))}
           userId={userId}
           onClose={() => setShowAutoCategorize(false)}
           onApply={handleAutoCategorize}

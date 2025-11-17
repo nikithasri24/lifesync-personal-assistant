@@ -75,17 +75,49 @@ alter table networth enable row level security;
 alter table goals enable row level security;
 
 -- simple per-user policy (supabase auth uid())
-create policy if not exists "own_rows_select" on institutions for select using (auth.uid() = user_id);
-create policy if not exists "own_rows_crud"   on institutions for all    using (auth.uid() = user_id) with check (auth.uid() = user_id);
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "own_rows_select" ON institutions;
+DROP POLICY IF EXISTS "own_rows_crud" ON institutions;
+DROP POLICY IF EXISTS "own_rows_select" ON accounts;
+DROP POLICY IF EXISTS "own_rows_crud" ON accounts;
+DROP POLICY IF EXISTS "own_rows_select" ON categories;
+DROP POLICY IF EXISTS "own_rows_crud" ON categories;
+DROP POLICY IF EXISTS "own_rows_select" ON transactions;
+DROP POLICY IF EXISTS "own_rows_crud" ON transactions;
+DROP POLICY IF EXISTS "own_rows_select" ON budgets;
+DROP POLICY IF EXISTS "own_rows_crud" ON budgets;
+DROP POLICY IF EXISTS "own_rows_select" ON networth;
+DROP POLICY IF EXISTS "own_rows_crud" ON networth;
+DROP POLICY IF EXISTS "own_rows_select" ON goals;
+DROP POLICY IF EXISTS "own_rows_crud" ON goals;
 
-do $$
-declare t text;
-begin
-  foreach t in array ['accounts','categories','transactions','budgets','networth','goals'] loop
-    execute format('create policy if not exists "own_rows_select" on %I for select using (auth.uid() = user_id);', t);
-    execute format('create policy if not exists "own_rows_crud"   on %I for all    using (auth.uid() = user_id) with check (auth.uid() = user_id);', t);
-  end loop;
-end $$;
+-- Create policies for institutions
+CREATE POLICY "own_rows_select" ON institutions FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "own_rows_crud" ON institutions FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+-- Create policies for accounts
+CREATE POLICY "own_rows_select" ON accounts FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "own_rows_crud" ON accounts FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+-- Create policies for categories
+CREATE POLICY "own_rows_select" ON categories FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "own_rows_crud" ON categories FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+-- Create policies for transactions
+CREATE POLICY "own_rows_select" ON transactions FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "own_rows_crud" ON transactions FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+-- Create policies for budgets
+CREATE POLICY "own_rows_select" ON budgets FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "own_rows_crud" ON budgets FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+-- Create policies for networth
+CREATE POLICY "own_rows_select" ON networth FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "own_rows_crud" ON networth FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+-- Create policies for goals
+CREATE POLICY "own_rows_select" ON goals FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "own_rows_crud" ON goals FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 -- helpful indexes
 create index if not exists idx_txn_user_date on transactions(user_id, date desc);

@@ -24,7 +24,11 @@ async function getUid(client: SupabaseClient): Promise<string> {
 }
 
 export class SupabaseApi implements FinanceAPI {
-  constructor(private client: SupabaseClient) {}
+  private client: SupabaseClient;
+
+  constructor(client: SupabaseClient) {
+    this.client = client;
+  }
 
   async listInstitutions(): Promise<Institution[]> {
     const uid = await getUid(this.client);

@@ -163,7 +163,7 @@ export class CategorizationEngine {
     const merchantName = normalizeMerchantName(transaction.description);
 
     // Check if rule already exists for this merchant
-    const { data: existingRules } = await supabase
+    const { data: existingRules } = await this.supabase
       .from('categorization_rules')
       .select('*')
       .eq('user_id', this.userId)
@@ -173,7 +173,7 @@ export class CategorizationEngine {
     if (existingRules && existingRules.length > 0) {
       // Update existing rule
       const rule = existingRules[0];
-      await supabase
+      await this.supabase
         .from('categorization_rules')
         .update({
           category_id: correctCategoryId,
@@ -184,7 +184,7 @@ export class CategorizationEngine {
         .eq('id', rule.id);
     } else {
       // Create new rule
-      await supabase.from('categorization_rules').insert({
+      await this.supabase.from('categorization_rules').insert({
         user_id: this.userId,
         merchant_pattern: merchantName,
         category_id: correctCategoryId,
@@ -208,7 +208,7 @@ export class CategorizationEngine {
     amountMin?: number;
     amountMax?: number;
   }): Promise<void> {
-    await supabase.from('categorization_rules').insert({
+    await this.supabase.from('categorization_rules').insert({
       user_id: this.userId,
       merchant_pattern: rule.merchantPattern,
       category_id: rule.categoryId,
@@ -346,7 +346,7 @@ export class CategorizationEngine {
     merchantName: string
   ): Promise<CategorizationResult | null> {
     // Get user's past transactions with similar merchant names
-    const { data: similarTxns } = await supabase
+    const { data: similarTxns } = await this.supabase
       .from('transactions')
       .select('merchant_name, category_id, amount')
       .eq('user_id', this.userId)
@@ -477,13 +477,13 @@ export class CategorizationEngine {
       return this.userRulesCache;
     }
 
-    const { data } = await supabase
+    const { data } = await this.supabase
       .from('categorization_rules')
       .select('*')
       .eq('user_id', this.userId)
       .order('priority', { ascending: false });
 
-    this.userRulesCache = (data || []).map(row => ({
+    this.userRulesCache = (data || []).map((row: any) => ({
       id: row.id,
       userId: row.user_id,
       merchantPattern: row.merchant_pattern,
@@ -502,7 +502,7 @@ export class CategorizationEngine {
       updatedAt: new Date(row.updated_at)
     }));
 
-    return this.userRulesCache;
+    return this.userRulesCache || [];
   }
 
   private async loadMerchantDatabase(): Promise<Map<string, MerchantData>> {
@@ -510,7 +510,7 @@ export class CategorizationEngine {
       return this.merchantDbCache;
     }
 
-    const { data } = await supabase
+    const { data } = await this.supabase
       .from('merchant_database')
       .select('*')
       .order('match_count', { ascending: false });
@@ -537,7 +537,7 @@ export class CategorizationEngine {
       return this.categoryCache;
     }
 
-    const { data } = await supabase
+    const { data } = await this.supabase
       .from('categories')
       .select('id, name')
       .eq('user_id', this.userId);

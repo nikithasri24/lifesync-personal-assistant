@@ -40,7 +40,11 @@ export const AutoCategorizeModal: React.FC<AutoCategorizeModalProps> = ({
 
   // Run categorization on mount
   React.useEffect(() => {
+    let cancelled = false;
+
     async function categorize() {
+      if (cancelled) return;
+
       setLoading(true);
       setStep('analyzing');
 
@@ -61,6 +65,8 @@ export const AutoCategorizeModal: React.FC<AutoCategorizeModalProps> = ({
           date: t.date
         })));
 
+        if (cancelled) return;
+
         setResults(categorizedResults);
 
         // Auto-select high confidence results
@@ -76,12 +82,18 @@ export const AutoCategorizeModal: React.FC<AutoCategorizeModalProps> = ({
       } catch (error) {
         console.error('Categorization failed:', error);
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     }
 
     categorize();
-  }, []);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
 
   const handleApply = async () => {
     setLoading(true);
@@ -142,10 +154,16 @@ export const AutoCategorizeModal: React.FC<AutoCategorizeModalProps> = ({
   const lowConfidence = Array.from(results.values()).filter(r => r.categoryId && r.confidence < 0.6).length;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-lg shadow-xl max-w-4xl w-full my-8 flex flex-col max-h-[calc(100vh-4rem)]"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
-        <div className="p-6 border-b border-slate-200">
+        <div className="p-6 border-b border-slate-200 flex-shrink-0">
           <h2 className="text-2xl font-semibold text-slate-900">Auto-Categorize Transactions</h2>
           <p className="text-sm text-slate-600 mt-1">
             Review and apply categorization suggestions
@@ -153,7 +171,7 @@ export const AutoCategorizeModal: React.FC<AutoCategorizeModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-6 min-h-0">
           {step === 'analyzing' && (
             <div className="flex flex-col items-center justify-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-900 mb-4"></div>
@@ -286,7 +304,7 @@ export const AutoCategorizeModal: React.FC<AutoCategorizeModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-slate-200 flex justify-between">
+        <div className="p-6 border-t border-slate-200 flex justify-between flex-shrink-0">
           <Button variant="ghost" onClick={onClose} disabled={loading}>
             Cancel
           </Button>

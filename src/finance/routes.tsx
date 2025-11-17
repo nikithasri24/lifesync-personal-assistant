@@ -11,7 +11,7 @@ export type RouteObject = {
 // Lazy pages to keep tree-shakable
 const DashboardPage = React.lazy(() => import('./pages/DashboardPage'));
 const AccountsPage = React.lazy(() => import('./pages/AccountsPage'));
-const TransactionsPage = React.lazy(() => import('./pages/TransactionsPage'));
+const TransactionsPage = React.lazy(() => import('./pages/TransactionsPageEnhanced'));
 const BudgetsPage = React.lazy(() => import('./pages/BudgetsPage'));
 const NetWorthPage = React.lazy(() => import('./pages/NetWorthPage'));
 const GoalsPage = React.lazy(() => import('./pages/GoalsPage'));
