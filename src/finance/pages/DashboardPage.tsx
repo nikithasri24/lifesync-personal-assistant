@@ -182,7 +182,7 @@ const DashboardPage: React.FC = () => {
         {loading ? (
           <div>Loading…</div>
         ) : (
-          <div className="grid grid-cols-3 gap-2 text-sm">
+          <div className="grid grid-cols-4 gap-2 text-sm">
             <div className="rounded-lg bg-emerald-50 p-3">
               <div className="text-emerald-700">Income</div>
               <div className="text-lg font-semibold">{formatCurrency(income)}</div>
@@ -190,6 +190,13 @@ const DashboardPage: React.FC = () => {
             <div className="rounded-lg bg-rose-50 p-3">
               <div className="text-rose-700">Expenses</div>
               <div className="text-lg font-semibold">{formatCurrency(expense)}</div>
+            </div>
+            <div className="rounded-lg bg-blue-50 p-3">
+              <div className="text-blue-700">Savings</div>
+              <div className="text-lg font-semibold">{formatCurrency(cashflow)}</div>
+              <div className="text-xs text-blue-600 mt-1">
+                {income > 0 ? `${((cashflow / income) * 100).toFixed(1)}%` : '0%'}
+              </div>
             </div>
             <div className="rounded-lg bg-slate-50 p-3">
               <div className="text-slate-700">Net</div>
