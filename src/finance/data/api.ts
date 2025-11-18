@@ -26,6 +26,7 @@ import type {
 export interface FinanceAPI {
   listInstitutions(): Promise<Institution[]>;
   listAccounts(): Promise<Account[]>;
+  updateAccount(accountId: string, updates: Partial<Account>): Promise<void>;
   listTransactions(params: TxnQuery): Promise<Paginated<Transaction>>;
   upsertTransaction(txn: TransactionInput): Promise<void>;
   deleteTransaction(id: string): Promise<void>;

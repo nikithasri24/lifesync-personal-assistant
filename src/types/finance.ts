@@ -29,6 +29,21 @@ export interface Account {
   notes?: string;
   createdAt: Date;
   updatedAt: Date;
+
+  // Credit card specific fields
+  creditLimit?: number;
+  apr?: number;
+  paymentDueDay?: number;
+  minimumPayment?: number;
+  statementBalance?: number;
+  statementDate?: Date;
+
+  // Rewards tracking
+  annualFee?: number;
+  annualFeeDueDate?: Date;
+  rewardsBalance?: number;
+  rewardsType?: 'points' | 'miles' | 'cashback';
+  baseRewardsRate?: number;
 }
 
 // Transaction Management
@@ -272,6 +287,79 @@ export interface PayoffStrategy {
   monthsToPayoff: number;
   totalInterest: number;
   monthlyPayment: number;
+}
+
+// Credit Card Rewards & Benefits
+export interface CardBenefit {
+  id: string;
+  userId: string;
+  accountId: string;
+  benefitType: 'recurring_credit' | 'travel_credit' | 'protection' | 'lounge_access' | 'other';
+  name: string;
+  description?: string;
+  value?: number;
+  frequency?: 'annual' | 'monthly' | 'quarterly' | 'once' | 'per_use';
+  usedAmount: number;
+  resetDate?: Date;
+  active: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CardCategoryBonus {
+  id: string;
+  userId: string;
+  accountId: string;
+  category: string;
+  rewardsRate: number;
+  isRotating: boolean;
+  startDate?: Date;
+  endDate?: Date;
+  createdAt: Date;
+}
+
+export interface WelcomeBonus {
+  id: string;
+  userId: string;
+  accountId: string;
+  bonusAmount: number;
+  requiredSpend: number;
+  currentSpend: number;
+  deadline: Date;
+  completed: boolean;
+  completedDate?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CardOffer {
+  id: string;
+  userId: string;
+  accountId: string;
+  merchant: string;
+  offerType: 'cashback' | 'statement_credit' | 'bonus_points';
+  offerAmount: number;
+  requiredSpend?: number;
+  expirationDate?: Date;
+  activated: boolean;
+  activatedDate?: Date;
+  redeemed: boolean;
+  redeemedDate?: Date;
+  createdAt: Date;
+}
+
+export interface RewardsHistory {
+  id: string;
+  userId: string;
+  accountId: string;
+  date: Date;
+  pointsEarned: number;
+  pointsRedeemed: number;
+  balance: number;
+  description?: string;
+  transactionId?: string;
+  category?: string;
+  createdAt: Date;
 }
 
 // Tax Management

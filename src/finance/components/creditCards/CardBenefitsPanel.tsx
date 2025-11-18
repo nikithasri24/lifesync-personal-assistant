@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { Gift, TrendingUp, Target, Tag, Calendar, DollarSign, Award, Plane, Coffee } from 'lucide-react';
-import type { CardBenefit, CardCategoryBonus, WelcomeBonus, CardOffer } from '../../types';
+import type { CardBenefit, CardCategoryBonus, WelcomeBonus, CardOffer, Account } from '../../types';
 import { formatCurrency } from '../../utils/currency';
 
 interface CardBenefitsPanelProps {

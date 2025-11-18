@@ -51,6 +51,22 @@ export class SupabaseApi implements FinanceAPI {
     return (data ?? []).map((r: any) => ({ id: r.id, name: r.name, logoUrl: r.logo_url ?? undefined }));
   }
 
+  async updateAccount(accountId: string, updates: Partial<Account>): Promise<void> {
+    const uid = await getUid(this.client);
+    const { error } = await this.client
+      .from('accounts')
+      .update({
+        rewards_balance: updates.rewardsBalance,
+        rewards_type: updates.rewardsType,
+        base_rewards_rate: updates.baseRewardsRate,
+        annual_fee: updates.annualFee,
+        annual_fee_due_date: updates.annualFeeDueDate,
+      })
+      .eq('id', accountId)
+      .eq('user_id', uid);
+    if (error) throw error;
+  }
+
   async listAccounts(): Promise<Account[]> {
     const uid = await getUid(this.client);
     const { data, error } = await this.client

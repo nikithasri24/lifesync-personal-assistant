@@ -47,6 +47,14 @@ export class MockApi implements FinanceAPI {
     return accounts;
   }
 
+  async updateAccount(accountId: string, updates: Partial<Account>): Promise<void> {
+    await sleep(randomLatency());
+    const account = accounts.find(a => a.id === accountId);
+    if (account) {
+      Object.assign(account, updates);
+    }
+  }
+
   async listTransactions(params: TxnQuery): Promise<Paginated<Transaction>> {
     await sleep(randomLatency());
     const {
