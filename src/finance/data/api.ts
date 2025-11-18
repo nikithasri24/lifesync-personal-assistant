@@ -3,6 +3,8 @@ import type {
   Account,
   Transaction,
   Budget,
+  BudgetTemplate,
+  BudgetTemplateInput,
   Category,
   NetPoint,
   Goal,
@@ -21,6 +23,10 @@ export interface FinanceAPI {
   listBudgets(monthISO: string): Promise<Budget[]>;
   upsertBudget(budget: { categoryId: string; month: string; limit: number }): Promise<void>;
   deleteBudget(categoryId: string, month: string): Promise<void>;
+  listBudgetTemplates(): Promise<BudgetTemplate[]>;
+  upsertBudgetTemplate(template: BudgetTemplateInput): Promise<void>;
+  deleteBudgetTemplate(categoryId: string): Promise<void>;
+  initializeBudgetsFromTemplates(month: string): Promise<number>;
   listCategories(): Promise<Category[]>;
   listNetWorth(): Promise<NetPoint[]>;
   listGoals(): Promise<Goal[]>;

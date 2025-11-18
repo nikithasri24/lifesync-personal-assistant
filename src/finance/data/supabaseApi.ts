@@ -2,6 +2,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type {
   Account,
   Budget,
+  BudgetTemplate,
+  BudgetTemplateInput,
   Category,
   Goal,
   GoalInput,
@@ -171,13 +173,19 @@ export class SupabaseApi implements FinanceAPI {
     const uid = await getUid(this.client);
     // Ensure month is in YYYY-MM format for query
     const monthDate = monthISO.length === 7 ? monthISO : monthISO.slice(0, 7);
+
     const { data, error } = await this.client
       .from('budgets')
-      .select('id,category_id,month,amount')  // Database column is 'amount'
+      .select('id,category_id,month,limit_amount')
       .eq('user_id', uid)
       .eq('month', monthDate);
     if (error) throw error;
-    return (data ?? []).map((r: any) => ({ id: r.id, categoryId: r.category_id, month: r.month, limit: Number(r.amount) }));  // Map 'amount' to 'limit'
+    return (data ?? []).map((r: any) => ({
+      id: r.id,
+      categoryId: r.category_id,
+      month: r.month,
+      limit: Number(r.limit_amount)
+    }));
   }
 
   async upsertBudget(budget: { categoryId: string; month: string; limit: number }): Promise<void> {
@@ -194,7 +202,7 @@ export class SupabaseApi implements FinanceAPI {
       throw new Error('Budget limit must be a positive number');
     }
 
-    // Ensure month is in YYYY-MM format (database column is char(7))
+    // Ensure month is in YYYY-MM format
     const monthDate = budget.month.length === 7 ? budget.month : budget.month.slice(0, 7);
 
     // Validate month format
@@ -202,15 +210,24 @@ export class SupabaseApi implements FinanceAPI {
       throw new Error('Invalid month format. Expected YYYY-MM');
     }
 
+    /**
+     * Clean database schema (after migration):
+     * - id: uuid PRIMARY KEY
+     * - user_id: uuid NOT NULL
+     * - category_id: uuid NOT NULL REFERENCES categories(id)
+     * - month: char(7) NOT NULL (format: YYYY-MM)
+     * - limit_amount: numeric NOT NULL (the budget limit)
+     *
+     * UNIQUE constraint on (user_id, category_id, month)
+     */
     const row: any = {
       user_id: uid,
       category_id: budget.categoryId,
       month: monthDate,
-      amount: budget.limit,  // Database column is 'amount', not 'limit_amount'
+      limit_amount: budget.limit,
     };
 
     // Use upsert with the unique constraint on (user_id, category_id, month)
-    // This will insert if not exists, or update if exists
     const { error } = await this.client
       .from('budgets')
       .upsert(row, {
@@ -219,6 +236,7 @@ export class SupabaseApi implements FinanceAPI {
 
     if (error) {
       console.error('Budget upsert error:', error);
+      console.error('Row data:', row);
       throw new Error(`Failed to save budget: ${error.message}`);
     }
   }
@@ -253,6 +271,99 @@ export class SupabaseApi implements FinanceAPI {
       console.error('Budget delete error:', error);
       throw new Error(`Failed to delete budget: ${error.message}`);
     }
+  }
+
+  async listBudgetTemplates(): Promise<BudgetTemplate[]> {
+    const uid = await getUid(this.client);
+    const { data, error } = await this.client
+      .from('budget_templates')
+      .select('id,category_id,default_amount')
+      .eq('user_id', uid);
+    if (error) throw error;
+    return (data ?? []).map((r: any) => ({
+      id: r.id,
+      categoryId: r.category_id,
+      defaultAmount: Number(r.default_amount),
+    }));
+  }
+
+  async upsertBudgetTemplate(template: BudgetTemplateInput): Promise<void> {
+    const uid = await getUid(this.client);
+
+    // Validate inputs
+    if (!template.categoryId) {
+      throw new Error('Category ID is required');
+    }
+    if (typeof template.defaultAmount !== 'number' || template.defaultAmount < 0) {
+      throw new Error('Default amount must be a positive number');
+    }
+
+    const row: any = {
+      id: template.id,
+      user_id: uid,
+      category_id: template.categoryId,
+      default_amount: template.defaultAmount,
+    };
+
+    const { error } = await this.client
+      .from('budget_templates')
+      .upsert(row, {
+        onConflict: 'user_id,category_id'
+      });
+
+    if (error) {
+      console.error('Budget template upsert error:', error);
+      throw new Error(`Failed to save budget template: ${error.message}`);
+    }
+  }
+
+  async deleteBudgetTemplate(categoryId: string): Promise<void> {
+    const uid = await getUid(this.client);
+
+    if (!categoryId) {
+      throw new Error('Category ID is required');
+    }
+
+    const { error } = await this.client
+      .from('budget_templates')
+      .delete()
+      .eq('user_id', uid)
+      .eq('category_id', categoryId);
+
+    if (error) {
+      console.error('Budget template delete error:', error);
+      throw new Error(`Failed to delete budget template: ${error.message}`);
+    }
+  }
+
+  async initializeBudgetsFromTemplates(month: string): Promise<number> {
+    const uid = await getUid(this.client);
+
+    // Validate inputs
+    if (!month) {
+      throw new Error('Month is required');
+    }
+
+    // Ensure month is in YYYY-MM format
+    const monthDate = month.length === 7 ? month : month.slice(0, 7);
+
+    // Validate month format
+    if (!/^\d{4}-\d{2}$/.test(monthDate)) {
+      throw new Error('Invalid month format. Expected YYYY-MM');
+    }
+
+    // Call the database function to initialize budgets from templates
+    const { data, error } = await this.client.rpc('initialize_budgets_from_templates', {
+      p_user_id: uid,
+      p_month: monthDate,
+    });
+
+    if (error) {
+      console.error('Initialize budgets from templates error:', error);
+      throw new Error(`Failed to initialize budgets: ${error.message}`);
+    }
+
+    return Number(data ?? 0);
   }
 
   async listCategories(): Promise<Category[]> {

@@ -1,6 +1,8 @@
 import type {
   Account,
   Budget,
+  BudgetTemplate,
+  BudgetTemplateInput,
   Category,
   Goal,
   GoalInput,
@@ -22,6 +24,9 @@ const transactions: Transaction[] = (await import('./seed/transactions.json')).d
 const budgets: Budget[] = (await import('./seed/budgets.json')).default as any;
 const networth: NetPoint[] = (await import('./seed/networth.json')).default as any;
 const goals: Goal[] = (await import('./seed/goals.json')).default as any;
+
+// Budget templates (in-memory for mock)
+const budgetTemplates: BudgetTemplate[] = [];
 
 function sleep(ms: number) {
   return new Promise((res) => setTimeout(res, ms));
@@ -142,6 +147,72 @@ export class MockApi implements FinanceAPI {
     if (idx >= 0) {
       (budgets as any).splice(idx, 1);
     }
+  }
+
+  async listBudgetTemplates(): Promise<BudgetTemplate[]> {
+    await sleep(randomLatency());
+    return budgetTemplates;
+  }
+
+  async upsertBudgetTemplate(template: BudgetTemplateInput): Promise<void> {
+    await sleep(randomLatency());
+
+    // Find existing template
+    const idx = budgetTemplates.findIndex((t) => t.categoryId === template.categoryId);
+
+    if (idx >= 0) {
+      // Update existing
+      (budgetTemplates as any)[idx] = {
+        ...(budgetTemplates as any)[idx],
+        defaultAmount: template.defaultAmount,
+      };
+    } else {
+      // Create new
+      const id = template.id || `mock_template_${Math.random().toString(36).slice(2)}`;
+      (budgetTemplates as any).push({
+        id,
+        categoryId: template.categoryId,
+        defaultAmount: template.defaultAmount,
+      });
+    }
+  }
+
+  async deleteBudgetTemplate(categoryId: string): Promise<void> {
+    await sleep(randomLatency());
+
+    const idx = budgetTemplates.findIndex((t) => t.categoryId === categoryId);
+    if (idx >= 0) {
+      (budgetTemplates as any).splice(idx, 1);
+    }
+  }
+
+  async initializeBudgetsFromTemplates(month: string): Promise<number> {
+    await sleep(randomLatency());
+
+    // Normalize month format (YYYY-MM)
+    const monthDate = month.length === 7 ? month : month.slice(0, 7);
+
+    let count = 0;
+    for (const template of budgetTemplates) {
+      // Check if budget already exists for this category and month
+      const exists = budgets.some(
+        (b) => b.categoryId === template.categoryId && b.month === monthDate
+      );
+
+      if (!exists) {
+        // Create budget from template
+        const id = `mock_budget_${Math.random().toString(36).slice(2)}`;
+        (budgets as any).push({
+          id,
+          categoryId: template.categoryId,
+          month: monthDate,
+          limit: template.defaultAmount,
+        });
+        count++;
+      }
+    }
+
+    return count;
   }
 
   async listCategories(): Promise<Category[]> {

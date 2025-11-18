@@ -55,6 +55,14 @@ export type Budget = {
   limit: number;
 };
 
+export type BudgetTemplate = {
+  id: string;
+  categoryId: string;
+  defaultAmount: number;
+};
+
+export type BudgetTemplateInput = Omit<BudgetTemplate, 'id'> & { id?: string };
+
 export type NetPoint = {
   month: string; // YYYY-MM
   assets: number;
