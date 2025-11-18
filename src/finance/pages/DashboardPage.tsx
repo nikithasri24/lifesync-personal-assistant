@@ -62,7 +62,35 @@ const DashboardPage: React.FC = () => {
   }, [month, initialized]);
 
   const { from, to } = monthRange(month);
-  const monthTxns = txns.filter((t) => t.dateISO >= from && t.dateISO <= to);
+  // Filter transactions by extracting just the YYYY-MM part for comparison
+  const monthTxns = txns.filter((t) => {
+    const txnMonth = t.dateISO.slice(0, 7); // Extract YYYY-MM
+    return txnMonth === month;
+  });
+
+  // Debug logging
+  React.useEffect(() => {
+    console.log('[Dashboard] Transaction Filtering:', {
+      selectedMonth: month,
+      totalTransactions: txns.length,
+      monthTransactions: monthTxns.length,
+      allTxnMonths: [...new Set(txns.map(t => t.dateISO.slice(0, 7)))].sort(),
+      sampleTxns: txns.slice(0, 3).map(t => ({
+        date: t.dateISO,
+        month: t.dateISO.slice(0, 7),
+        desc: t.description,
+        type: t.type,
+        amount: t.amount
+      })),
+      monthTxnsSample: monthTxns.slice(0, 3).map(t => ({
+        date: t.dateISO,
+        desc: t.description,
+        type: t.type,
+        amount: t.amount
+      }))
+    });
+  }, [month, txns.length, monthTxns.length]);
+
   const income = monthTxns.filter((t) => t.type === 'credit').reduce((s, t) => s + t.amount, 0);
   const expense = monthTxns.filter((t) => t.type === 'debit').reduce((s, t) => s + t.amount, 0);
   const cashflow = income - expense;
@@ -70,8 +98,8 @@ const DashboardPage: React.FC = () => {
   // Calculate metrics for Money Flow visualization
   const currentPeriod = React.useMemo(() => {
     return {
-      startDate: from,
-      endDate: to,
+      from: from,
+      to: to,
       label: month,
     };
   }, [from, to, month]);
@@ -83,8 +111,8 @@ const DashboardPage: React.FC = () => {
     const prevMonthStr = `${prevYear}-${String(prevMonth).padStart(2, '0')}`;
     const { from: prevFrom, to: prevTo } = monthRange(prevMonthStr);
     return {
-      startDate: prevFrom,
-      endDate: prevTo,
+      from: prevFrom,
+      to: prevTo,
       label: prevMonthStr,
     };
   }, [month]);
@@ -98,6 +126,20 @@ const DashboardPage: React.FC = () => {
     previousPeriod,
     topCategoriesLimit: 10,
   });
+
+  // Debug metrics
+  React.useEffect(() => {
+    if (!loading && txns.length > 0) {
+      console.log('[Dashboard] Metrics Debug:', {
+        sankeyDataLength: metrics.sankeyData.length,
+        sankeyData: metrics.sankeyData,
+        currentPeriod,
+        txnsTotal: txns.length,
+        monthTxnsTotal: monthTxns.length,
+        categoriesTotal: categories.length,
+      });
+    }
+  }, [loading, metrics.sankeyData, currentPeriod, txns.length, monthTxns.length, categories.length]);
 
   // Calculate spending by category
   const spendingMap = monthTxns.filter((t) => t.type === 'debit').reduce<Record<string, number>>((acc, t) => {
