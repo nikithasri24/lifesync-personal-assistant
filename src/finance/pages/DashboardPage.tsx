@@ -166,6 +166,18 @@ const DashboardPage: React.FC = () => {
 
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <Card title="Month" actions={
+        <select className="rounded-md border border-slate-300 px-2 py-1 text-sm" value={month} onChange={(e) => setMonth(e.target.value)}>
+          {monthsInTx.map((m) => (
+            <option key={m} value={m}>
+              {m}
+            </option>
+          ))}
+        </select>
+      }>
+        <div className="text-sm text-slate-600">Showing data for {month}</div>
+      </Card>
+
       <Card title="Cash Flow (This Month)">
         {loading ? (
           <div>Loading…</div>
@@ -220,18 +232,6 @@ const DashboardPage: React.FC = () => {
             </div>
           ))}
         </div>
-      </Card>
-
-      <Card title="Month" actions={
-        <select className="rounded-md border border-slate-300 px-2 py-1 text-sm" value={month} onChange={(e) => setMonth(e.target.value)}>
-          {monthsInTx.map((m) => (
-            <option key={m} value={m}>
-              {m}
-            </option>
-          ))}
-        </select>
-      }>
-        <div className="text-sm text-slate-600">Showing data for {month}</div>
       </Card>
 
       <Card
