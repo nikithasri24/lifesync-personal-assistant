@@ -12,6 +12,8 @@ export type AccountType =
   | 'loan'
   | 'investment';
 
+export type RewardsType = 'points' | 'miles' | 'cashback';
+
 export type Account = {
   id: string;
   institutionId?: string;
@@ -20,6 +22,19 @@ export type Account = {
   balance: number;
   lastUpdatedISO: string;
   liability?: boolean;
+  // Credit card specific fields
+  creditLimit?: number;
+  apr?: number;
+  paymentDueDay?: number; // Day of month (1-31)
+  minimumPayment?: number;
+  statementBalance?: number;
+  statementDate?: string; // ISO date string
+  // Rewards fields
+  annualFee?: number;
+  annualFeeDueDate?: string; // ISO date string
+  rewardsBalance?: number;
+  rewardsType?: RewardsType;
+  baseRewardsRate?: number; // Base earning rate (e.g., 1.0 for 1%)
 };
 
 export type Category = {
@@ -120,6 +135,101 @@ export type TxnQuery = {
 export type Paginated<T> = {
   items: T[];
   nextCursor?: string;
+};
+
+export type CreditCardStatement = {
+  id: string;
+  accountId: string;
+  statementDate: string; // ISO date
+  dueDate: string; // ISO date
+  balance: number;
+  minimumPayment: number;
+  apr?: number;
+  paid: boolean;
+  paidAmount?: number;
+  paidDate?: string; // ISO date
+  createdAt: string;
+};
+
+export type CreditCardStatementInput = Omit<CreditCardStatement, 'id' | 'createdAt'> & {
+  id?: string;
+};
+
+export type BenefitType = 'recurring_credit' | 'travel_credit' | 'protection' | 'lounge_access' | 'other';
+export type BenefitFrequency = 'annual' | 'monthly' | 'quarterly' | 'once' | 'per_use';
+
+export type CardBenefit = {
+  id: string;
+  accountId: string;
+  benefitType: BenefitType;
+  name: string;
+  description?: string;
+  value?: number;
+  frequency?: BenefitFrequency;
+  usedAmount: number;
+  resetDate?: string; // ISO date
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CardBenefitInput = Omit<CardBenefit, 'id' | 'createdAt' | 'updatedAt'> & {
+  id?: string;
+};
+
+export type SpendingCategory = 'dining' | 'travel' | 'groceries' | 'gas' | 'online' | 'all_other';
+
+export type CardCategoryBonus = {
+  id: string;
+  accountId: string;
+  category: SpendingCategory;
+  rewardsRate: number; // e.g., 3.0 for 3x points
+  isRotating: boolean;
+  startDate?: string; // ISO date
+  endDate?: string; // ISO date
+  createdAt: string;
+};
+
+export type CardCategoryBonusInput = Omit<CardCategoryBonus, 'id' | 'createdAt'> & {
+  id?: string;
+};
+
+export type WelcomeBonus = {
+  id: string;
+  accountId: string;
+  bonusAmount: number;
+  requiredSpend: number;
+  currentSpend: number;
+  deadline: string; // ISO date
+  completed: boolean;
+  completedDate?: string; // ISO date
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type WelcomeBonusInput = Omit<WelcomeBonus, 'id' | 'createdAt' | 'updatedAt'> & {
+  id?: string;
+};
+
+export type OfferType = 'cashback' | 'statement_credit' | 'bonus_points';
+
+export type CardOffer = {
+  id: string;
+  accountId: string;
+  merchant: string;
+  offerType: OfferType;
+  offerAmount: number;
+  requiredSpend?: number;
+  expirationDate?: string; // ISO date
+  activated: boolean;
+  activatedDate?: string; // ISO date
+  redeemed: boolean;
+  redeemedDate?: string; // ISO date
+  createdAt: string;
+};
+
+export type CardOfferInput = Omit<CardOffer, 'id' | 'createdAt'> & {
+  id?: string;
 };
 
 export type TransactionInput = Omit<Transaction, 'id'> & { id?: string };

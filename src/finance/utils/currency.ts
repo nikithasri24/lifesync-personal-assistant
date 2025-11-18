@@ -1,4 +1,19 @@
-export function formatCurrency(n: number, currency = 'USD', locale = 'en-US') {
-  return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(n);
+export function formatCurrency(
+  n: number,
+  fractionDigits?: number,
+  currency = 'USD',
+  locale = 'en-US'
+) {
+  const options: Intl.NumberFormatOptions = {
+    style: 'currency',
+    currency,
+  };
+
+  if (fractionDigits !== undefined) {
+    options.minimumFractionDigits = fractionDigits;
+    options.maximumFractionDigits = fractionDigits;
+  }
+
+  return new Intl.NumberFormat(locale, options).format(n);
 }
 

@@ -46,7 +46,7 @@ export class SupabaseApi implements FinanceAPI {
     const uid = await getUid(this.client);
     const { data, error } = await this.client
       .from('accounts')
-      .select('id,name,type,balance,liability,last_updated,institution_id')
+      .select('id,name,type,balance,liability,last_updated,institution_id,credit_limit,apr,payment_due_day,minimum_payment,statement_balance,statement_date,annual_fee,annual_fee_due_date,rewards_balance,rewards_type,base_rewards_rate')
       .eq('user_id', uid);
     if (error) throw error;
     return (data ?? []).map((r: any) => ({
@@ -57,6 +57,17 @@ export class SupabaseApi implements FinanceAPI {
       liability: !!r.liability,
       lastUpdatedISO: new Date(r.last_updated).toISOString(),
       institutionId: r.institution_id ?? undefined,
+      creditLimit: r.credit_limit ? Number(r.credit_limit) : undefined,
+      apr: r.apr ? Number(r.apr) : undefined,
+      paymentDueDay: r.payment_due_day ?? undefined,
+      minimumPayment: r.minimum_payment ? Number(r.minimum_payment) : undefined,
+      statementBalance: r.statement_balance ? Number(r.statement_balance) : undefined,
+      statementDate: r.statement_date ? new Date(r.statement_date).toISOString().split('T')[0] : undefined,
+      annualFee: r.annual_fee ? Number(r.annual_fee) : undefined,
+      annualFeeDueDate: r.annual_fee_due_date ? new Date(r.annual_fee_due_date).toISOString().split('T')[0] : undefined,
+      rewardsBalance: r.rewards_balance ? Number(r.rewards_balance) : undefined,
+      rewardsType: r.rewards_type ?? undefined,
+      baseRewardsRate: r.base_rewards_rate ? Number(r.base_rewards_rate) : undefined,
     }));
   }
 

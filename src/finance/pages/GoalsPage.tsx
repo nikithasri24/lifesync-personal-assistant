@@ -25,7 +25,7 @@ const GoalsPage: React.FC = () => {
       const api = await getFinanceAPI();
       const [goalsData, accountsData] = await Promise.all([
         api.listGoals(),
-        api.listAccounts({ limit: 1000 }).then(p => p.items),
+        api.listAccounts(),
       ]);
 
       console.log('[GoalsPage] Loaded:', {

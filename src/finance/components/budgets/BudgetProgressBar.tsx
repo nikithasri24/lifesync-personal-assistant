@@ -48,7 +48,7 @@ const BudgetProgressBar: React.FC<BudgetProgressBarProps> = ({
   const color = getBudgetColor(status);
 
   // Color classes based on status
-  const colorClasses = {
+  const colorClasses: Record<string, { bg: string; text: string }> = {
     emerald: {
       bg: 'bg-emerald-500',
       text: 'text-emerald-700',

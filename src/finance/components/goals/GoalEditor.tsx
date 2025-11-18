@@ -27,7 +27,6 @@ export const GoalEditor: React.FC<GoalEditorProps> = ({
   const [form, setForm] = React.useState<Partial<GoalInput>>({
     type: 'savings',
     currentAmount: 0,
-    startingAmount: 0,
     trackNetworth: false,
   });
   const [saving, setSaving] = React.useState(false);
@@ -42,7 +41,6 @@ export const GoalEditor: React.FC<GoalEditorProps> = ({
           name: goal.name,
           targetAmount: goal.targetAmount,
           currentAmount: goal.currentAmount,
-          startingAmount: goal.startingAmount,
           dueDateISO: goal.dueDateISO,
           type: goal.type,
           linkedAccountId: goal.linkedAccountId,
@@ -53,7 +51,6 @@ export const GoalEditor: React.FC<GoalEditorProps> = ({
         setForm({
           type: 'savings',
           currentAmount: 0,
-          startingAmount: 0,
           trackNetworth: false,
           dueDateISO: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 year from now
         });
@@ -90,7 +87,7 @@ export const GoalEditor: React.FC<GoalEditorProps> = ({
         name: form.name!,
         targetAmount: form.targetAmount!,
         currentAmount: form.currentAmount || 0,
-        startingAmount: form.startingAmount || 0,
+        startingAmount: 0, // Always start from 0
         dueDateISO: form.dueDateISO!,
         type: form.type || 'savings',
         linkedAccountId: form.linkedAccountId,
@@ -218,23 +215,7 @@ export const GoalEditor: React.FC<GoalEditorProps> = ({
             </div>
 
             {/* Amounts Row */}
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Starting Amount
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">$</span>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={form.startingAmount || ''}
-                    onChange={(e) => setForm({ ...form, startingAmount: parseFloat(e.target.value) || 0 })}
-                    className="w-full rounded-lg border border-slate-300 bg-white pl-7 pr-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-              </div>
+            <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
                   Current Amount
@@ -276,8 +257,12 @@ export const GoalEditor: React.FC<GoalEditorProps> = ({
               </label>
               <input
                 type="date"
-                value={form.dueDateISO ? new Date(form.dueDateISO).toISOString().split('T')[0] : ''}
-                onChange={(e) => setForm({ ...form, dueDateISO: new Date(e.target.value).toISOString() })}
+                value={form.dueDateISO ? form.dueDateISO.split('T')[0] : ''}
+                onChange={(e) => {
+                  if (e.target.value) {
+                    setForm({ ...form, dueDateISO: e.target.value + 'T00:00:00.000Z' });
+                  }
+                }}
                 className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>

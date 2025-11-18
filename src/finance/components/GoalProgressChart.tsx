@@ -1,6 +1,6 @@
 /**
  * GoalProgressChart Component
- * Shows expected vs actual progress towards a goal with visual indicators
+ * Simple progress chart matching the app's design system
  */
 
 import React from 'react';
@@ -22,29 +22,28 @@ export const GoalProgressChart: React.FC<GoalProgressChartProps> = ({
   currentAmount,
   height = 120,
 }) => {
-  const width = 100; // Percentage-based width
-  const padding = { top: 10, right: 10, bottom: 20, left: 10 };
+  const width = 600;
+  const padding = { top: 10, right: 40, bottom: 25, left: 60 };
+  const chartWidth = width - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
 
   // Combine all points to find the max value for scaling
   const allPoints = [...expectedPath, ...actualPath];
   const maxAmount = Math.max(targetAmount, ...allPoints.map(p => p.amount));
-  const minAmount = 0;
 
   // Scale functions
   const scaleY = (amount: number) => {
-    const ratio = (amount - minAmount) / (maxAmount - minAmount);
-    return chartHeight - (ratio * chartHeight) + padding.top;
+    const ratio = amount / maxAmount;
+    return padding.top + chartHeight - (ratio * chartHeight);
   };
 
   const scaleX = (index: number, totalPoints: number) => {
-    return (index / Math.max(1, totalPoints - 1)) * 100;
+    return padding.left + (index / Math.max(1, totalPoints - 1)) * chartWidth;
   };
 
   // Generate path string for SVG
   const generatePath = (points: GoalProgressPoint[]) => {
     if (points.length === 0) return '';
-
     return points.map((p, i) => {
       const x = scaleX(i, points.length);
       const y = scaleY(p.amount);
@@ -60,92 +59,133 @@ export const GoalProgressChart: React.FC<GoalProgressChartProps> = ({
     return new Date(dateISO).toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
   };
 
+  // Y-axis labels
+  const yLabels = [
+    { amount: targetAmount, label: formatCurrency(targetAmount, 0) },
+    { amount: 0, label: '$0' },
+  ];
+
   return (
-    <div className="relative w-full" style={{ height: `${height}px` }}>
-      <svg
-        viewBox={`0 0 100 ${height}`}
-        preserveAspectRatio="none"
-        className="w-full h-full"
-      >
-        {/* Background grid lines */}
-        <line x1="0" y1={scaleY(targetAmount)} x2="100" y2={scaleY(targetAmount)} stroke="#cbd5e1" strokeWidth="0.5" strokeDasharray="2,2" />
-        <line x1="0" y1={scaleY(targetAmount / 2)} x2="100" y2={scaleY(targetAmount / 2)} stroke="#e2e8f0" strokeWidth="0.3" />
+    <div className="w-full">
+      {/* Chart Title */}
+      <h4 className="text-xs font-medium text-primary opacity-70 mb-2">Progress Timeline</h4>
 
-        {/* Expected path (dashed line) */}
-        {expectedPathString && (
-          <path
-            d={expectedPathString}
-            fill="none"
-            stroke="#94a3b8"
-            strokeWidth="0.8"
-            strokeDasharray="3,3"
-            vectorEffect="non-scaling-stroke"
+      {/* Chart Container */}
+      <div className="relative w-full">
+        <svg
+          width="100%"
+          height={height}
+          viewBox={`0 0 ${width} ${height}`}
+          preserveAspectRatio="xMidYMid meet"
+          className="w-full"
+        >
+          {/* Grid lines */}
+          {yLabels.map((label, i) => (
+            <line
+              key={i}
+              x1={padding.left}
+              y1={scaleY(label.amount)}
+              x2={padding.left + chartWidth}
+              y2={scaleY(label.amount)}
+              stroke="currentColor"
+              strokeWidth="1"
+              opacity="0.15"
+            />
+          ))}
+
+          {/* Expected path (dashed) */}
+          {expectedPathString && (
+            <path
+              d={expectedPathString}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              opacity="0.4"
+              strokeDasharray="4,4"
+            />
+          )}
+
+          {/* Actual path */}
+          {actualPathString && (
+            <path
+              d={actualPathString}
+              fill="none"
+              stroke="#60a5fa"
+              strokeWidth="2"
+            />
+          )}
+
+          {/* Target line */}
+          <line
+            x1={padding.left}
+            y1={scaleY(targetAmount)}
+            x2={padding.left + chartWidth}
+            y2={scaleY(targetAmount)}
+            stroke="#34d399"
+            strokeWidth="2"
           />
-        )}
 
-        {/* Actual path (solid line) */}
-        {actualPathString && (
-          <path
-            d={actualPathString}
-            fill="none"
-            stroke="#3b82f6"
-            strokeWidth="1.2"
-            vectorEffect="non-scaling-stroke"
-          />
-        )}
+          {/* Y-axis labels */}
+          {yLabels.map((label, i) => (
+            <text
+              key={i}
+              x={padding.left - 10}
+              y={scaleY(label.amount)}
+              textAnchor="end"
+              dominantBaseline="middle"
+              fontSize="11"
+              fill="currentColor"
+              opacity="0.6"
+            >
+              {label.label}
+            </text>
+          ))}
 
-        {/* Current progress dot */}
-        {actualPath.length > 0 && (
-          <circle
-            cx={scaleX(actualPath.length - 1, expectedPath.length)}
-            cy={scaleY(actualPath[actualPath.length - 1].amount)}
-            r="1.5"
-            fill="#3b82f6"
-            vectorEffect="non-scaling-stroke"
-          />
-        )}
-
-        {/* Target line */}
-        <line
-          x1="0"
-          y1={scaleY(targetAmount)}
-          x2="100"
-          y2={scaleY(targetAmount)}
-          stroke="#10b981"
-          strokeWidth="0.8"
-          vectorEffect="non-scaling-stroke"
-        />
-      </svg>
+          {/* X-axis labels */}
+          {expectedPath.length > 0 && (
+            <>
+              <text
+                x={padding.left}
+                y={height - 5}
+                textAnchor="start"
+                fontSize="11"
+                fill="currentColor"
+                opacity="0.6"
+              >
+                {formatDate(expectedPath[0].dateISO)}
+              </text>
+              <text
+                x={padding.left + chartWidth}
+                y={height - 5}
+                textAnchor="end"
+                fontSize="11"
+                fill="currentColor"
+                opacity="0.6"
+              >
+                {formatDate(expectedPath[expectedPath.length - 1].dateISO)}
+              </text>
+            </>
+          )}
+        </svg>
+      </div>
 
       {/* Legend */}
-      <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center gap-4 text-xs text-slate-600">
+      <div className="mt-2 flex items-center justify-center gap-4 text-xs text-primary opacity-70">
         <div className="flex items-center gap-1.5">
-          <div className="w-4 h-0.5 bg-slate-400 border-t border-dashed border-slate-400"></div>
+          <div className="w-3 h-0.5 border-t border-dashed border-current opacity-40"></div>
           <span>Expected</span>
         </div>
         {actualPath.length > 0 && (
           <div className="flex items-center gap-1.5">
-            <div className="w-4 h-0.5 bg-blue-500"></div>
+            <div className="w-3 h-0.5 bg-blue-400"></div>
             <span>Actual</span>
           </div>
         )}
         <div className="flex items-center gap-1.5">
-          <div className="w-4 h-0.5 bg-emerald-500"></div>
+          <div className="w-3 h-0.5 bg-emerald-400"></div>
           <span>Target</span>
         </div>
       </div>
-
-      {/* Start and end labels */}
-      {expectedPath.length > 0 && (
-        <>
-          <div className="absolute bottom-5 left-0 text-xs text-slate-500">
-            {formatDate(expectedPath[0].dateISO)}
-          </div>
-          <div className="absolute bottom-5 right-0 text-xs text-slate-500">
-            {formatDate(expectedPath[expectedPath.length - 1].dateISO)}
-          </div>
-        </>
-      )}
     </div>
   );
 };

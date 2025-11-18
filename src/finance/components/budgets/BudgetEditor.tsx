@@ -5,9 +5,10 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { X, Save, AlertCircle, DollarSign } from 'lucide-react';
+import { X, Save, AlertCircle, DollarSign, TrendingUp, Lightbulb } from 'lucide-react';
 import { formatCurrency } from '../../utils/currency';
 import type { Budget, Category } from '../../types';
+import type { BudgetRecommendation } from '../../utils/budgetRecommendations';
 
 export interface BudgetEditorProps {
   isOpen: boolean;
@@ -18,6 +19,9 @@ export interface BudgetEditorProps {
   existingBudget?: Budget;
   previousMonthSpent?: number;
   categoryName?: string;
+  recommendation?: BudgetRecommendation | null;
+  onCategoryChange?: (categoryId: string) => void;
+  initialCategoryId?: string;
 }
 
 const BudgetEditor: React.FC<BudgetEditorProps> = ({
@@ -29,8 +33,11 @@ const BudgetEditor: React.FC<BudgetEditorProps> = ({
   existingBudget,
   previousMonthSpent,
   categoryName,
+  recommendation,
+  onCategoryChange,
+  initialCategoryId,
 }) => {
-  const [categoryId, setCategoryId] = useState(existingBudget?.categoryId || '');
+  const [categoryId, setCategoryId] = useState(existingBudget?.categoryId || initialCategoryId || '');
   const [limit, setLimit] = useState(existingBudget?.limit?.toString() || '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -40,11 +47,32 @@ const BudgetEditor: React.FC<BudgetEditorProps> = ({
   // Reset form when modal opens/closes or budget changes
   useEffect(() => {
     if (isOpen) {
-      setCategoryId(existingBudget?.categoryId || '');
-      setLimit(existingBudget?.limit?.toString() || '');
+      console.log('[BudgetEditor] Modal opened with:', {
+        existingBudget,
+        recommendation,
+        categoriesCount: categories.length,
+        initialCategoryId,
+      });
+
+      const selectedCategory = existingBudget?.categoryId || initialCategoryId || '';
+      console.log('[BudgetEditor] Setting category to:', selectedCategory);
+      setCategoryId(selectedCategory);
+
+      // Pre-fill with recommendation for new budgets, or existing limit for edits
+      if (existingBudget) {
+        console.log('[BudgetEditor] Editing existing budget, setting limit to:', existingBudget.limit);
+        setLimit(existingBudget.limit?.toString() || '');
+      } else if (recommendation?.suggested) {
+        console.log('[BudgetEditor] Pre-filling with recommendation:', recommendation.suggested);
+        setLimit(recommendation.suggested.toString());
+      } else {
+        console.log('[BudgetEditor] No recommendation available, leaving limit empty');
+        setLimit('');
+      }
+
       setError('');
     }
-  }, [isOpen, existingBudget]);
+  }, [isOpen, existingBudget, recommendation, categories.length, initialCategoryId]);
 
   // Don't render if not open
   if (!isOpen) return null;
@@ -99,9 +127,9 @@ const BudgetEditor: React.FC<BudgetEditorProps> = ({
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
       onClick={handleBackdropClick}
     >
-      <div className="relative w-full max-w-md rounded-2xl bg-white shadow-2xl ring-1 ring-black/5">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+      <div className="relative w-full max-w-md max-h-[90vh] rounded-2xl bg-white shadow-2xl ring-1 ring-black/5 flex flex-col">
+        {/* Header - Fixed */}
+        <div className="flex-shrink-0 flex items-center justify-between border-b border-slate-200 px-6 py-4">
           <div>
             <h2 className="text-lg font-semibold text-slate-900">
               {isEditing ? 'Edit Budget' : 'Create Budget'}
@@ -117,8 +145,8 @@ const BudgetEditor: React.FC<BudgetEditorProps> = ({
           </button>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-5">
+        {/* Form - Scrollable */}
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto min-h-0 px-6 py-5 space-y-5">
           {/* Category Selector */}
           <div>
             <label htmlFor="category" className="block text-sm font-medium text-slate-700 mb-2">
@@ -127,7 +155,15 @@ const BudgetEditor: React.FC<BudgetEditorProps> = ({
             <select
               id="category"
               value={categoryId}
-              onChange={(e) => setCategoryId(e.target.value)}
+              onChange={(e) => {
+                const newCategoryId = e.target.value;
+                console.log('[BudgetEditor] Category changed to:', newCategoryId);
+                setCategoryId(newCategoryId);
+                if (onCategoryChange) {
+                  console.log('[BudgetEditor] Calling onCategoryChange callback');
+                  onCategoryChange(newCategoryId);
+                }
+              }}
               disabled={isEditing || saving}
               className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed"
               required
@@ -169,6 +205,50 @@ const BudgetEditor: React.FC<BudgetEditorProps> = ({
               />
             </div>
           </div>
+
+          {/* Smart Recommendation */}
+          {recommendation && !isEditing && (
+            <div className={`rounded-lg border p-3 ${
+              recommendation.confidence === 'high'
+                ? 'bg-emerald-50 border-emerald-200'
+                : recommendation.confidence === 'medium'
+                ? 'bg-blue-50 border-blue-200'
+                : 'bg-amber-50 border-amber-200'
+            }`}>
+              <div className="flex items-start gap-2">
+                <Lightbulb className={`h-4 w-4 flex-shrink-0 mt-0.5 ${
+                  recommendation.confidence === 'high'
+                    ? 'text-emerald-600'
+                    : recommendation.confidence === 'medium'
+                    ? 'text-blue-600'
+                    : 'text-amber-600'
+                }`} />
+                <div className="flex-1 min-w-0">
+                  <p className={`text-xs font-medium ${
+                    recommendation.confidence === 'high'
+                      ? 'text-emerald-900'
+                      : recommendation.confidence === 'medium'
+                      ? 'text-blue-900'
+                      : 'text-amber-900'
+                  }`}>
+                    Smart Recommendation
+                  </p>
+                  <p className="text-xs text-slate-700 mt-1">
+                    Based on {recommendation.monthsAnalyzed} month{recommendation.monthsAnalyzed > 1 ? 's' : ''} of spending:
+                    <span className="font-semibold"> ${recommendation.average.toFixed(0)}</span> avg
+                    {recommendation.min !== recommendation.max && (
+                      <span className="text-slate-600">
+                        {' '}(${recommendation.min.toFixed(0)} - ${recommendation.max.toFixed(0)})
+                      </span>
+                    )}
+                  </p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Suggested amount includes 10% buffer for safety
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Historical Insight */}
           {previousMonthSpent !== undefined && previousMonthSpent > 0 && (
