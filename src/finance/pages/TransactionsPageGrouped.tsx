@@ -156,11 +156,123 @@ const TransactionsPageGrouped: React.FC = () => {
     0
   );
 
+  // Calculate budget summary metrics
+  const budgetSummary = React.useMemo(() => {
+    const categoriesWithBudgets = groupedTransactions.filter(g => g.budgetLimit);
+    const totalBudgeted = categoriesWithBudgets.reduce((sum, g) => sum + (g.budgetLimit || 0), 0);
+    const totalSpent = categoriesWithBudgets.reduce((sum, g) => sum + g.total, 0);
+    const totalRemaining = totalBudgeted - totalSpent;
+    const overBudgetCount = categoriesWithBudgets.filter(g => g.total > (g.budgetLimit || 0)).length;
+
+    return {
+      categoriesWithBudgets: categoriesWithBudgets.length,
+      totalCategories: groupedTransactions.length,
+      totalBudgeted,
+      totalSpent,
+      totalRemaining,
+      overBudgetCount,
+      utilizationPercent: totalBudgeted > 0 ? (totalSpent / totalBudgeted) * 100 : 0,
+    };
+  }, [groupedTransactions]);
+
   return (
     <div className="space-y-4">
       <Card title="Filters">
         <FiltersBar onApply={() => loadData()} onReset={() => filters.reset()} />
       </Card>
+
+      {/* Budget Summary */}
+      {budgetSummary.categoriesWithBudgets > 0 && (
+        <Card title="Budget Summary">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {/* Total Budgeted */}
+            <div className="bg-blue-50 rounded-lg p-4">
+              <div className="text-xs font-medium text-blue-700 mb-1">Total Budgeted</div>
+              <div className="text-2xl font-bold text-blue-900">{formatCurrency(budgetSummary.totalBudgeted)}</div>
+              <div className="text-xs text-blue-600 mt-1">
+                {budgetSummary.categoriesWithBudgets} of {budgetSummary.totalCategories} categories
+              </div>
+            </div>
+
+            {/* Total Spent */}
+            <div className="bg-slate-50 rounded-lg p-4">
+              <div className="text-xs font-medium text-slate-700 mb-1">Total Spent</div>
+              <div className="text-2xl font-bold text-slate-900">{formatCurrency(budgetSummary.totalSpent)}</div>
+              <div className="text-xs text-slate-600 mt-1">
+                {budgetSummary.utilizationPercent.toFixed(1)}% utilized
+              </div>
+            </div>
+
+            {/* Remaining */}
+            <div className={`rounded-lg p-4 ${
+              budgetSummary.totalRemaining < 0 ? 'bg-rose-50' : 'bg-emerald-50'
+            }`}>
+              <div className={`text-xs font-medium mb-1 ${
+                budgetSummary.totalRemaining < 0 ? 'text-rose-700' : 'text-emerald-700'
+              }`}>
+                {budgetSummary.totalRemaining < 0 ? 'Over Budget' : 'Remaining'}
+              </div>
+              <div className={`text-2xl font-bold ${
+                budgetSummary.totalRemaining < 0 ? 'text-rose-900' : 'text-emerald-900'
+              }`}>
+                {formatCurrency(Math.abs(budgetSummary.totalRemaining))}
+              </div>
+              <div className={`text-xs mt-1 ${
+                budgetSummary.totalRemaining < 0 ? 'text-rose-600' : 'text-emerald-600'
+              }`}>
+                {budgetSummary.totalRemaining < 0 ? 'Need to reduce' : 'Available to spend'}
+              </div>
+            </div>
+
+            {/* Alerts */}
+            <div className={`rounded-lg p-4 ${
+              budgetSummary.overBudgetCount > 0 ? 'bg-amber-50' : 'bg-green-50'
+            }`}>
+              <div className={`text-xs font-medium mb-1 ${
+                budgetSummary.overBudgetCount > 0 ? 'text-amber-700' : 'text-green-700'
+              }`}>
+                Budget Status
+              </div>
+              <div className={`text-2xl font-bold ${
+                budgetSummary.overBudgetCount > 0 ? 'text-amber-900' : 'text-green-900'
+              }`}>
+                {budgetSummary.overBudgetCount}
+              </div>
+              <div className={`text-xs mt-1 ${
+                budgetSummary.overBudgetCount > 0 ? 'text-amber-600' : 'text-green-600'
+              }`}>
+                {budgetSummary.overBudgetCount > 0
+                  ? `${budgetSummary.overBudgetCount} over budget`
+                  : 'All on track'}
+              </div>
+            </div>
+          </div>
+
+          {/* Overall Progress Bar */}
+          <div className="mt-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-slate-700">Overall Budget Progress</span>
+              <span className="text-xs text-slate-600">
+                {budgetSummary.utilizationPercent.toFixed(1)}%
+              </span>
+            </div>
+            <div className="h-3 w-full rounded-full bg-slate-200 overflow-hidden">
+              <div
+                className={`h-full transition-all duration-300 ${
+                  budgetSummary.utilizationPercent > 100
+                    ? 'bg-rose-500'
+                    : budgetSummary.utilizationPercent > 90
+                    ? 'bg-amber-500'
+                    : 'bg-emerald-500'
+                }`}
+                style={{
+                  width: `${Math.min(100, budgetSummary.utilizationPercent)}%`,
+                }}
+              />
+            </div>
+          </div>
+        </Card>
+      )}
 
       <Card
         title="Transactions by Category"
