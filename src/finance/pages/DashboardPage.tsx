@@ -15,11 +15,31 @@ const DashboardPage: React.FC = () => {
   const [budgets, setBudgets] = React.useState<any[]>([]);
   const [txns, setTxns] = React.useState<Transaction[]>([]);
 
+  // Initialize month from transactions only on first load
+  const [initialized, setInitialized] = React.useState(false);
+
   React.useEffect(() => {
     let mounted = true;
     (async () => {
       setLoading(true);
       const api = await getFinanceAPI();
+
+      // On first load, get transactions to determine the month
+      if (!initialized) {
+        const { items: txItems } = await api.listTransactions({ limit: 500 });
+        if (!mounted) return;
+
+        const txMonths = Array.from(new Set(txItems.map((t) => t.dateISO.slice(0, 7)))).sort();
+        const latest = txMonths[txMonths.length - 1] || currentMonth();
+
+        setTxns(txItems);
+        setMonth(latest);
+        setInitialized(true);
+        setLoading(false);
+        return;
+      }
+
+      // Load all data for the selected month
       const [{ items: txItems }, accts, cats, b, nw] = await Promise.all([
         api.listTransactions({ limit: 500 }),
         api.listAccounts(),
@@ -27,22 +47,19 @@ const DashboardPage: React.FC = () => {
         api.listBudgets(month),
         api.listNetWorth(),
       ]);
+
       if (!mounted) return;
       setTxns(txItems);
       setAccounts(accts);
       setCategories(cats);
       setBudgets(b);
       setNet(nw);
-      // Default to the latest month found in transactions if available
-      const txMonths = Array.from(new Set(txItems.map((t) => t.dateISO.slice(0, 7)))).sort();
-      const latest = txMonths[txMonths.length - 1];
-      if (latest && latest !== month) setMonth(latest);
       setLoading(false);
     })();
     return () => {
       mounted = false;
     };
-  }, [month]);
+  }, [month, initialized]);
 
   const { from, to } = monthRange(month);
   const monthTxns = txns.filter((t) => t.dateISO >= from && t.dateISO <= to);
