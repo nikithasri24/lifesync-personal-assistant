@@ -133,11 +133,12 @@ const DashboardPage: React.FC = () => {
   // Get unique years from transactions
   const yearsInTx = Array.from(new Set(txns.map((t) => new Date(t.dateISO).getFullYear()))).sort();
 
-  // For each month of the year, compare across years
+  // For each month of the year, compare across years (only include months with data)
   const yoyData: Record<string, any>[] = [];
   for (let monthNum = 1; monthNum <= 12; monthNum++) {
     const monthLabel = new Date(2000, monthNum - 1, 1).toLocaleString('default', { month: 'short' });
     const dataPoint: Record<string, any> = { month: monthLabel };
+    let hasData = false;
 
     yearsInTx.forEach((year) => {
       const monthStr = `${year}-${String(monthNum).padStart(2, '0')}`;
@@ -146,10 +147,16 @@ const DashboardPage: React.FC = () => {
 
       // Sum all category spending for this month-year
       const totalSpending = mTxns.reduce((sum, t) => sum + t.amount, 0);
+      if (totalSpending > 0) {
+        hasData = true;
+      }
       dataPoint[year.toString()] = totalSpending;
     });
 
-    yoyData.push(dataPoint);
+    // Only include months that have at least some spending data
+    if (hasData) {
+      yoyData.push(dataPoint);
+    }
   }
 
   // Get top 5 categories for stacked chart
@@ -262,23 +269,43 @@ const DashboardPage: React.FC = () => {
         <div className="text-sm text-slate-600">Showing data for {month}</div>
       </Card>
 
-      <Card title="Month-on-Month Analysis (Top 5 Categories)" className="md:col-span-2 xl:col-span-3">
+      <Card
+        title="Month-on-Month Analysis"
+        className="md:col-span-2 xl:col-span-3"
+        description="Top 5 spending categories over the last 6 months"
+      >
         {loading ? (
-          <div>Loading…</div>
+          <div className="flex items-center justify-center py-12">
+            <div className="text-sm text-slate-500">Loading chart data…</div>
+          </div>
         ) : momData.length > 0 && stackKeys.length > 0 ? (
-          <StackedBarChart data={momData} xKey="month" stackKeys={stackKeys} height={320} />
+          <div className="pt-2">
+            <StackedBarChart data={momData} xKey="month" stackKeys={stackKeys} height={360} />
+          </div>
         ) : (
-          <div className="text-sm text-slate-500">No data available for month-on-month comparison</div>
+          <div className="flex items-center justify-center py-12">
+            <div className="text-sm text-slate-500">No data available for month-on-month comparison</div>
+          </div>
         )}
       </Card>
 
-      <Card title="Year-on-Year Spending Comparison" className="md:col-span-2 xl:col-span-3">
+      <Card
+        title="Year-on-Year Spending Comparison"
+        className="md:col-span-2 xl:col-span-3"
+        description="Total spending by month across different years"
+      >
         {loading ? (
-          <div>Loading…</div>
+          <div className="flex items-center justify-center py-12">
+            <div className="text-sm text-slate-500">Loading chart data…</div>
+          </div>
         ) : yoyData.length > 0 && yearStackKeys.length > 0 ? (
-          <StackedBarChart data={yoyData} xKey="month" stackKeys={yearStackKeys} height={320} />
+          <div className="pt-2">
+            <StackedBarChart data={yoyData} xKey="month" stackKeys={yearStackKeys} height={360} />
+          </div>
         ) : (
-          <div className="text-sm text-slate-500">No data available for year-on-year comparison</div>
+          <div className="flex items-center justify-center py-12">
+            <div className="text-sm text-slate-500">No data available for year-on-year comparison</div>
+          </div>
         )}
       </Card>
     </div>
