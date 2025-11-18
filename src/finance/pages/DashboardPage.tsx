@@ -2,6 +2,7 @@ import React from 'react';
 import { Card } from '../components/Card';
 import { StackedBarChart } from '../components/StackedBarChart';
 import SankeyChart from '../components/visualizations/SankeyChart';
+import { FinancialInsightsCard } from '../components/insights/FinancialInsightsCard';
 import { formatCurrency } from '../utils/currency';
 import { currentMonth, monthRange, toMonth } from '../utils/date';
 import { getTimePeriodRange } from '../utils/timePeriodUtils';
@@ -242,18 +243,28 @@ const DashboardPage: React.FC = () => {
   });
 
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-      <Card title="Month" actions={
-        <select className="rounded-md border border-slate-300 px-2 py-1 text-sm" value={month} onChange={(e) => setMonth(e.target.value)}>
-          {monthsInTx.map((m) => (
-            <option key={m} value={m}>
-              {m}
-            </option>
-          ))}
-        </select>
-      }>
-        <div className="text-sm text-slate-600">Showing data for {month}</div>
-      </Card>
+    <div className="space-y-4">
+      {/* Financial Insights - Full Width */}
+      <div className="w-full">
+        <FinancialInsightsCard
+          transactions={txns}
+          accounts={accounts}
+          goals={[]}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <Card title="Month" actions={
+          <select className="rounded-md border border-slate-300 px-2 py-1 text-sm" value={month} onChange={(e) => setMonth(e.target.value)}>
+            {monthsInTx.map((m) => (
+              <option key={m} value={m}>
+                {m}
+              </option>
+            ))}
+          </select>
+        }>
+          <div className="text-sm text-slate-600">Showing data for {month}</div>
+        </Card>
 
       <Card title="Cash Flow (This Month)">
         {loading ? (
@@ -377,6 +388,7 @@ const DashboardPage: React.FC = () => {
           </div>
         )}
       </Card>
+    </div>
     </div>
   );
 };
