@@ -12,6 +12,15 @@ import type {
   Paginated,
   TransactionInput,
   GoalInput,
+  GoalProgressPoint,
+  CardBenefit,
+  CardBenefitInput,
+  CardCategoryBonus,
+  CardCategoryBonusInput,
+  WelcomeBonus,
+  WelcomeBonusInput,
+  CardOffer,
+  CardOfferInput,
 } from '../types';
 
 export interface FinanceAPI {
@@ -34,4 +43,14 @@ export interface FinanceAPI {
   deleteGoal(goalId: string): Promise<void>;
   getGoalProgressHistory(goalId: string): Promise<GoalProgressPoint[]>;
   syncGoalFromAccount(goalId: string): Promise<void>;
+  // Credit card benefits
+  listCardBenefits(accountId: string): Promise<CardBenefit[]>;
+  upsertCardBenefit(accountId: string, benefit: CardBenefitInput): Promise<void>;
+  deleteCardBenefit(benefitId: string): Promise<void>;
+  listCategoryBonuses(accountId: string): Promise<CardCategoryBonus[]>;
+  upsertCategoryBonus(accountId: string, bonus: CardCategoryBonusInput): Promise<void>;
+  listWelcomeBonuses(accountId: string): Promise<WelcomeBonus[]>;
+  upsertWelcomeBonus(accountId: string, bonus: WelcomeBonusInput): Promise<void>;
+  listCardOffers(accountId: string): Promise<CardOffer[]>;
+  upsertCardOffer(accountId: string, offer: CardOfferInput): Promise<void>;
 }

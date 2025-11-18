@@ -4,15 +4,24 @@ import type {
   Budget,
   BudgetTemplate,
   BudgetTemplateInput,
+  CardBenefit,
+  CardBenefitInput,
+  CardCategoryBonus,
+  CardCategoryBonusInput,
+  CardOffer,
+  CardOfferInput,
   Category,
   Goal,
   GoalInput,
+  GoalProgressPoint,
   Institution,
   NetPoint,
   Paginated,
   Transaction,
   TransactionInput,
   TxnQuery,
+  WelcomeBonus,
+  WelcomeBonusInput,
 } from '../types';
 import type { FinanceAPI } from './api';
 import { validateGoalInput, validateTransactionInput } from '../utils/validate';
@@ -468,9 +477,190 @@ export class SupabaseApi implements FinanceAPI {
   }
 
   async syncGoalFromAccount(goalId: string): Promise<void> {
-    const { error } = await this.client.rpc('sync_goal_from_account', {
+    const { error} = await this.client.rpc('sync_goal_from_account', {
       p_goal_id: goalId,
     });
+    if (error) throw error;
+  }
+
+  // Credit Card Benefits API Methods
+  async listCardBenefits(accountId: string): Promise<CardBenefit[]> {
+    const uid = await getUid(this.client);
+    const { data, error } = await this.client
+      .from('card_benefits')
+      .select('*')
+      .eq('user_id', uid)
+      .eq('account_id', accountId)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return (data ?? []).map((r: any) => ({
+      id: r.id,
+      accountId: r.account_id,
+      benefitType: r.benefit_type,
+      name: r.name,
+      description: r.description ?? undefined,
+      value: r.value ? Number(r.value) : undefined,
+      frequency: r.frequency ?? undefined,
+      usedAmount: Number(r.used_amount),
+      resetDate: r.reset_date ? new Date(r.reset_date).toISOString().split('T')[0] : undefined,
+      active: r.active,
+      createdAt: new Date(r.created_at).toISOString(),
+      updatedAt: new Date(r.updated_at).toISOString(),
+    }));
+  }
+
+  async upsertCardBenefit(accountId: string, benefit: CardBenefitInput): Promise<void> {
+    const uid = await getUid(this.client);
+    const row: any = {
+      user_id: uid,
+      account_id: accountId,
+      benefit_type: benefit.benefitType,
+      name: benefit.name,
+      description: benefit.description,
+      value: benefit.value,
+      frequency: benefit.frequency,
+      used_amount: benefit.usedAmount,
+      reset_date: benefit.resetDate,
+      active: benefit.active,
+    };
+    if (benefit.id) row.id = benefit.id;
+
+    const { error } = await this.client.from('card_benefits').upsert(row);
+    if (error) throw error;
+  }
+
+  async deleteCardBenefit(benefitId: string): Promise<void> {
+    const uid = await getUid(this.client);
+    const { error } = await this.client
+      .from('card_benefits')
+      .delete()
+      .eq('id', benefitId)
+      .eq('user_id', uid);
+    if (error) throw error;
+  }
+
+  async listCategoryBonuses(accountId: string): Promise<CardCategoryBonus[]> {
+    const uid = await getUid(this.client);
+    const { data, error } = await this.client
+      .from('card_category_bonuses')
+      .select('*')
+      .eq('user_id', uid)
+      .eq('account_id', accountId)
+      .order('rewards_rate', { ascending: false });
+    if (error) throw error;
+    return (data ?? []).map((r: any) => ({
+      id: r.id,
+      accountId: r.account_id,
+      category: r.category,
+      rewardsRate: Number(r.rewards_rate),
+      isRotating: r.is_rotating,
+      startDate: r.start_date ? new Date(r.start_date).toISOString().split('T')[0] : undefined,
+      endDate: r.end_date ? new Date(r.end_date).toISOString().split('T')[0] : undefined,
+      createdAt: new Date(r.created_at).toISOString(),
+    }));
+  }
+
+  async upsertCategoryBonus(accountId: string, bonus: CardCategoryBonusInput): Promise<void> {
+    const uid = await getUid(this.client);
+    const row: any = {
+      user_id: uid,
+      account_id: accountId,
+      category: bonus.category,
+      rewards_rate: bonus.rewardsRate,
+      is_rotating: bonus.isRotating,
+      start_date: bonus.startDate,
+      end_date: bonus.endDate,
+    };
+    if (bonus.id) row.id = bonus.id;
+
+    const { error } = await this.client.from('card_category_bonuses').upsert(row);
+    if (error) throw error;
+  }
+
+  async listWelcomeBonuses(accountId: string): Promise<WelcomeBonus[]> {
+    const uid = await getUid(this.client);
+    const { data, error } = await this.client
+      .from('card_welcome_bonuses')
+      .select('*')
+      .eq('user_id', uid)
+      .eq('account_id', accountId)
+      .order('deadline', { ascending: true });
+    if (error) throw error;
+    return (data ?? []).map((r: any) => ({
+      id: r.id,
+      accountId: r.account_id,
+      bonusAmount: Number(r.bonus_amount),
+      requiredSpend: Number(r.required_spend),
+      currentSpend: Number(r.current_spend),
+      deadline: new Date(r.deadline).toISOString().split('T')[0],
+      completed: r.completed,
+      completedDate: r.completed_date ? new Date(r.completed_date).toISOString().split('T')[0] : undefined,
+      createdAt: new Date(r.created_at).toISOString(),
+      updatedAt: new Date(r.updated_at).toISOString(),
+    }));
+  }
+
+  async upsertWelcomeBonus(accountId: string, bonus: WelcomeBonusInput): Promise<void> {
+    const uid = await getUid(this.client);
+    const row: any = {
+      user_id: uid,
+      account_id: accountId,
+      bonus_amount: bonus.bonusAmount,
+      required_spend: bonus.requiredSpend,
+      current_spend: bonus.currentSpend,
+      deadline: bonus.deadline,
+      completed: bonus.completed,
+      completed_date: bonus.completedDate,
+    };
+    if (bonus.id) row.id = bonus.id;
+
+    const { error } = await this.client.from('card_welcome_bonuses').upsert(row);
+    if (error) throw error;
+  }
+
+  async listCardOffers(accountId: string): Promise<CardOffer[]> {
+    const uid = await getUid(this.client);
+    const { data, error } = await this.client
+      .from('card_offers')
+      .select('*')
+      .eq('user_id', uid)
+      .eq('account_id', accountId)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return (data ?? []).map((r: any) => ({
+      id: r.id,
+      accountId: r.account_id,
+      merchant: r.merchant,
+      offerType: r.offer_type,
+      offerAmount: Number(r.offer_amount),
+      requiredSpend: r.required_spend ? Number(r.required_spend) : undefined,
+      expirationDate: r.expiration_date ? new Date(r.expiration_date).toISOString().split('T')[0] : undefined,
+      activated: r.activated,
+      activatedDate: r.activated_date ? new Date(r.activated_date).toISOString().split('T')[0] : undefined,
+      redeemed: r.redeemed,
+      redeemedDate: r.redeemed_date ? new Date(r.redeemed_date).toISOString().split('T')[0] : undefined,
+      createdAt: new Date(r.created_at).toISOString(),
+    }));
+  }
+
+  async upsertCardOffer(accountId: string, offer: CardOfferInput): Promise<void> {
+    const uid = await getUid(this.client);
+    const row: any = {
+      user_id: uid,
+      account_id: accountId,
+      merchant: offer.merchant,
+      offer_type: offer.offerType,
+      offer_amount: offer.offerAmount,
+      required_spend: offer.requiredSpend,
+      expiration_date: offer.expirationDate,
+      activated: offer.activated,
+      activated_date: offer.activatedDate,
+      redeemed: offer.redeemed,
+      redeemed_date: offer.redeemedDate,
+    };
+    if (offer.id) row.id = offer.id;
+
+    const { error } = await this.client.from('card_offers').upsert(row);
     if (error) throw error;
   }
 }

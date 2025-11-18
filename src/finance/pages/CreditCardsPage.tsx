@@ -9,10 +9,12 @@ import { getFinanceAPI } from '../data';
 import type { Account } from '../types';
 import { formatCurrency } from '../utils/currency';
 import { CreditCardCard } from '../components/creditCards/CreditCardCard';
+import { CreditCardDetailsPage } from './CreditCardDetailsPage';
 
 const CreditCardsPage: React.FC = () => {
   const [creditCards, setCreditCards] = React.useState<Account[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [selectedCardId, setSelectedCardId] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     let mounted = true;
@@ -78,6 +80,16 @@ const CreditCardsPage: React.FC = () => {
           <p className="text-sm text-primary opacity-60">Loading credit cards...</p>
         </div>
       </div>
+    );
+  }
+
+  // Show details page if a card is selected
+  if (selectedCardId) {
+    return (
+      <CreditCardDetailsPage
+        accountId={selectedCardId}
+        onBack={() => setSelectedCardId(null)}
+      />
     );
   }
 
@@ -216,7 +228,13 @@ const CreditCardsPage: React.FC = () => {
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {creditCards.map(card => (
-            <CreditCardCard key={card.id} card={card} />
+            <div
+              key={card.id}
+              onClick={() => setSelectedCardId(card.id)}
+              className="cursor-pointer transition-transform hover:scale-[1.02]"
+            >
+              <CreditCardCard card={card} />
+            </div>
           ))}
         </div>
       </div>
