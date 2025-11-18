@@ -4,39 +4,51 @@
  */
 
 import React from 'react';
-import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus, Settings } from 'lucide-react';
 import { Card } from '../components/Card';
 import { FiltersBar } from '../components/FiltersBar';
 import { Button } from '../ui/Button';
 import { QuickAddTransaction } from '../components/QuickAddTransaction';
 import ImportCSVButton from '../components/ImportCSVButton';
 import { EditableTransactionRow } from '../components/transactions/EditableTransactionRow';
+import BudgetTemplateManager from '../components/budgets/BudgetTemplateManager';
 import { getFinanceAPI } from '../data';
 import { formatCurrency } from '../utils/currency';
 import useFinanceFilters from '../store/useFinanceFilters';
-import type { Transaction, Category } from '../types';
+import type { Transaction, Category, Budget } from '../types';
 
 type GroupedTransactions = {
   categoryId: string | null;
   categoryName: string;
   transactions: Transaction[];
   total: number;
+  budget?: Budget;
+  budgetLimit?: number;
 };
 
 const TransactionsPageGrouped: React.FC = () => {
   const [transactions, setTransactions] = React.useState<Transaction[]>([]);
   const [categories, setCategories] = React.useState<Category[]>([]);
+  const [budgets, setBudgets] = React.useState<Budget[]>([]);
+  const [budgetTemplates, setBudgetTemplates] = React.useState<Map<string, number>>(new Map());
   const [loading, setLoading] = React.useState(false);
   const [showQuickAdd, setShowQuickAdd] = React.useState(false);
+  const [showTemplateManager, setShowTemplateManager] = React.useState(false);
   const [collapsedGroups, setCollapsedGroups] = React.useState<Set<string>>(new Set());
   const filters = useFinanceFilters();
+
+  // Get current month in YYYY-MM format
+  const currentMonth = React.useMemo(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  }, []);
 
   const loadData = async () => {
     setLoading(true);
     try {
       const api = await getFinanceAPI();
 
-      const [txns, cats] = await Promise.all([
+      const [txns, cats, buds, templates] = await Promise.all([
         api.listTransactions({
           text: filters.text,
           fromISO: filters.fromISO,
@@ -45,10 +57,18 @@ const TransactionsPageGrouped: React.FC = () => {
           limit: 500,
         }),
         api.listCategories(),
+        api.listBudgets(currentMonth),
+        api.listBudgetTemplates(),
       ]);
 
       setTransactions(txns.items);
       setCategories(cats);
+      setBudgets(buds);
+
+      // Convert templates to Map
+      const templateMap = new Map<string, number>();
+      templates.forEach((t) => templateMap.set(t.categoryId, t.defaultAmount));
+      setBudgetTemplates(templateMap);
     } catch (error) {
       console.error('Failed to load data:', error);
     } finally {
@@ -86,17 +106,22 @@ const TransactionsPageGrouped: React.FC = () => {
         (a, b) => new Date(b.dateISO).getTime() - new Date(a.dateISO).getTime()
       );
 
-      // Calculate group total
-      const total = txns.reduce(
-        (sum, txn) => sum + (txn.type === 'credit' ? txn.amount : -txn.amount),
+      // Calculate group total (spent amount - only debits for budget comparison)
+      const spent = Math.abs(txns.reduce(
+        (sum, txn) => sum + (txn.type === 'debit' ? txn.amount : 0),
         0
-      );
+      ));
+
+      // Get budget for this category
+      const budget = categoryId ? budgets.find((b) => b.categoryId === categoryId) : undefined;
 
       result.push({
         categoryId,
         categoryName,
         transactions: sortedTxns,
-        total,
+        total: spent,
+        budget,
+        budgetLimit: budget?.limit,
       });
     });
 
@@ -106,7 +131,7 @@ const TransactionsPageGrouped: React.FC = () => {
       if (b.categoryId === null) return 1;
       return Math.abs(b.total) - Math.abs(a.total);
     });
-  }, [transactions, categories]);
+  }, [transactions, categories, budgets]);
 
   const toggleGroup = (categoryId: string | null) => {
     const key = categoryId || 'uncategorized';
@@ -146,6 +171,14 @@ const TransactionsPageGrouped: React.FC = () => {
               Add Transaction
             </Button>
             <ImportCSVButton onSuccess={() => loadData()} />
+            <Button
+              variant="outline"
+              onClick={() => setShowTemplateManager(true)}
+              disabled={loading}
+            >
+              <Settings className="h-4 w-4 mr-1" />
+              Budget Templates
+            </Button>
           </div>
         }
       >
@@ -185,42 +218,77 @@ const TransactionsPageGrouped: React.FC = () => {
                   className="rounded-lg border border-primary/20 overflow-hidden"
                 >
                   {/* Group Header */}
-                  <button
-                    onClick={() => toggleGroup(group.categoryId)}
-                    className="w-full flex items-center justify-between px-4 py-3 bg-slate-100 hover:bg-slate-200 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      {collapsed ? (
-                        <ChevronRight className="h-5 w-5 text-slate-700" />
-                      ) : (
-                        <ChevronDown className="h-5 w-5 text-slate-700" />
-                      )}
-                      <div className="text-left">
-                        <h3 className="font-semibold text-slate-900">
-                          {group.categoryName}
-                          {!group.categoryId && (
-                            <span className="ml-2 text-xs font-normal text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
-                              Needs categorization
-                            </span>
-                          )}
-                        </h3>
-                        <p className="text-xs text-slate-600">
-                          {group.transactions.length} transaction
-                          {group.transactions.length !== 1 ? 's' : ''}
-                        </p>
+                  <div className="bg-slate-100">
+                    <button
+                      onClick={() => toggleGroup(group.categoryId)}
+                      className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-200 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        {collapsed ? (
+                          <ChevronRight className="h-5 w-5 text-slate-700" />
+                        ) : (
+                          <ChevronDown className="h-5 w-5 text-slate-700" />
+                        )}
+                        <div className="text-left">
+                          <h3 className="font-semibold text-slate-900">
+                            {group.categoryName}
+                            {!group.categoryId && (
+                              <span className="ml-2 text-xs font-normal text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+                                Needs categorization
+                              </span>
+                            )}
+                          </h3>
+                          <p className="text-xs text-slate-600">
+                            {group.transactions.length} transaction
+                            {group.transactions.length !== 1 ? 's' : ''}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                    <div className="text-right">
-                      <p
-                        className={`font-semibold ${
-                          group.total >= 0 ? 'text-emerald-600' : 'text-rose-600'
-                        }`}
-                      >
-                        {group.total >= 0 ? '+' : ''}
-                        {formatCurrency(group.total)}
-                      </p>
-                    </div>
-                  </button>
+                      <div className="text-right">
+                        {group.budgetLimit ? (
+                          <div>
+                            <p className="text-sm font-semibold text-slate-900">
+                              <span className={group.total > group.budgetLimit ? 'text-rose-600' : 'text-emerald-600'}>
+                                {formatCurrency(group.total)}
+                              </span>
+                              {' / '}
+                              {formatCurrency(group.budgetLimit)}
+                            </p>
+                            <p className="text-xs text-slate-600">
+                              {formatCurrency(Math.max(0, group.budgetLimit - group.total))} remaining
+                            </p>
+                          </div>
+                        ) : (
+                          <div>
+                            <p className="font-semibold text-rose-600">
+                              {formatCurrency(group.total)}
+                            </p>
+                            <p className="text-xs text-slate-500 italic">No budget set</p>
+                          </div>
+                        )}
+                      </div>
+                    </button>
+
+                    {/* Budget Progress Bar */}
+                    {group.budgetLimit && (
+                      <div className="px-4 pb-3">
+                        <div className="h-2 w-full rounded-full bg-slate-200 overflow-hidden">
+                          <div
+                            className={`h-full transition-all duration-300 ${
+                              group.total > group.budgetLimit
+                                ? 'bg-rose-500'
+                                : group.total > group.budgetLimit * 0.9
+                                ? 'bg-amber-500'
+                                : 'bg-emerald-500'
+                            }`}
+                            style={{
+                              width: `${Math.min(100, (group.total / group.budgetLimit) * 100)}%`,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
                   {/* Group Transactions */}
                   {!collapsed && (
@@ -272,6 +340,32 @@ const TransactionsPageGrouped: React.FC = () => {
       {/* Quick Add Modal */}
       {showQuickAdd && (
         <QuickAddTransaction onClose={() => setShowQuickAdd(false)} onSuccess={() => loadData()} />
+      )}
+
+      {/* Budget Template Manager Modal */}
+      {showTemplateManager && (
+        <BudgetTemplateManager
+          isOpen={showTemplateManager}
+          onClose={() => setShowTemplateManager(false)}
+          categories={categories}
+          existingTemplates={budgetTemplates}
+          onSave={async (templates) => {
+            const api = await getFinanceAPI();
+            for (const template of templates) {
+              await api.upsertBudgetTemplate({
+                categoryId: template.categoryId,
+                defaultAmount: template.defaultAmount,
+              });
+            }
+            setShowTemplateManager(false);
+            loadData();
+          }}
+          onDelete={async (categoryId) => {
+            const api = await getFinanceAPI();
+            await api.deleteBudgetTemplate(categoryId);
+            loadData();
+          }}
+        />
       )}
     </div>
   );

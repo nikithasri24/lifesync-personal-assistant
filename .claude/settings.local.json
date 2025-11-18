@@ -68,7 +68,15 @@
       "Bash(src/finance/utils/categoryAggregator.ts )",
       "Bash(src/finance/utils/savingsRate.ts )",
       "Bash(src/finance/utils/timePeriodUtils.ts )",
-      "Bash(docs/FINANCE_IMPLEMENTATION_COMPLETE.md)"
+      "Bash(docs/FINANCE_IMPLEMENTATION_COMPLETE.md)",
+      "WebFetch(domain:help.rocketmoney.com)",
+      "Bash(./apply-budget-templates-migration.sh:*)",
+      "Bash(echo \"\n-- Apply just the budget templates migration\n\")",
+      "Bash(./show-migration.sh:*)",
+      "WebFetch(domain:www.monarchmoney.com)",
+      "WebFetch(domain:www.empower.com)",
+      "WebFetch(domain:www.monarch.com)",
+      "Bash(PGPASSWORD='AbNY4sCdEa6APPA' psql -h db.rfwaiijodrowakcpayoa.supabase.co -p 5432 -U postgres -d postgres -f supabase/migrations/20251118_add_credit_card_benefits.sql)"
     ],
     "deny": [],
     "ask": []
