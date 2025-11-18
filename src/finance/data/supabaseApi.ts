@@ -199,6 +199,7 @@ export class SupabaseApi implements FinanceAPI {
       .select('id,category_id,month,limit_amount')
       .eq('user_id', uid)
       .eq('month', monthDate);
+
     if (error) throw error;
     return (data ?? []).map((r: any) => ({
       id: r.id,

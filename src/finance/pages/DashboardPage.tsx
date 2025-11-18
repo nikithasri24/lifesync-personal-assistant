@@ -24,16 +24,17 @@ const DashboardPage: React.FC = () => {
       setLoading(true);
       const api = await getFinanceAPI();
 
-      // On first load, get transactions to determine the month
+      // On first load, get transactions and use current month by default
       if (!initialized) {
         const { items: txItems } = await api.listTransactions({ limit: 500 });
         if (!mounted) return;
 
-        const txMonths = Array.from(new Set(txItems.map((t) => t.dateISO.slice(0, 7)))).sort();
-        const latest = txMonths[txMonths.length - 1] || currentMonth();
+        // Use current month instead of latest transaction month
+        // This ensures budgets are shown for the current month
+        const defaultMonth = currentMonth();
 
         setTxns(txItems);
-        setMonth(latest);
+        setMonth(defaultMonth);
         setInitialized(true);
         setLoading(false);
         return;
@@ -47,7 +48,6 @@ const DashboardPage: React.FC = () => {
         api.listBudgets(month),
         api.listNetWorth(),
       ]);
-
       if (!mounted) return;
       setTxns(txItems);
       setAccounts(accts);
@@ -70,24 +70,42 @@ const DashboardPage: React.FC = () => {
   const totalLiab = accounts.filter((a) => a.liability).reduce((s, a) => s + a.balance, 0);
   const netPoints = net.map((n) => ({ month: n.month, net: n.assets - n.liabilities }));
 
-  // top 5 categories by spend
-  const spendByCat = Object.entries(
-    monthTxns.filter((t) => t.type === 'debit').reduce<Record<string, number>>((acc, t) => {
-      const key = t.categoryId ?? 'uncategorized';
-      acc[key] = (acc[key] ?? 0) + t.amount;
-      return acc;
-    }, {})
-  )
-    .map(([catId, total]) => ({
-      catId,
-      name: categories.find((c) => c.id === catId)?.name ?? 'Uncategorized',
-      total,
-      budget: budgets.find((b) => b.categoryId === catId)?.limit ?? 0,
-    }))
-    .sort((a, b) => b.total - a.total)
+  // Calculate spending by category
+  const spendingMap = monthTxns.filter((t) => t.type === 'debit').reduce<Record<string, number>>((acc, t) => {
+    const key = t.categoryId ?? 'uncategorized';
+    acc[key] = (acc[key] ?? 0) + t.amount;
+    return acc;
+  }, {});
+
+  // Include all budgeted categories, even if there's no spending
+  const allCategoryIds = new Set([
+    ...Object.keys(spendingMap),
+    ...budgets.map(b => b.categoryId)
+  ]);
+
+  // top 5 categories by spend or budget
+  const spendByCat = Array.from(allCategoryIds)
+    .map((catId) => {
+      const budget = budgets.find((b) => b.categoryId === catId);
+      const total = spendingMap[catId] || 0;
+      return {
+        catId,
+        name: categories.find((c) => c.id === catId)?.name ?? 'Uncategorized',
+        total,
+        budget: budget?.limit ?? 0,
+      };
+    })
+    .sort((a, b) => {
+      // Sort by spending first, then by budget
+      if (b.total !== a.total) return b.total - a.total;
+      return b.budget - a.budget;
+    })
     .slice(0, 5);
 
-  const monthsInTx = Array.from(new Set(txns.map((t) => toMonth(t.dateISO)))).sort();
+  // Get months from transactions and ensure current month is included
+  const monthsInTx = Array.from(
+    new Set([...txns.map((t) => toMonth(t.dateISO)), currentMonth()])
+  ).sort();
 
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">

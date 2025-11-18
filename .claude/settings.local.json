@@ -76,7 +76,8 @@
       "WebFetch(domain:www.monarchmoney.com)",
       "WebFetch(domain:www.empower.com)",
       "WebFetch(domain:www.monarch.com)",
-      "Bash(PGPASSWORD='AbNY4sCdEa6APPA' psql -h db.rfwaiijodrowakcpayoa.supabase.co -p 5432 -U postgres -d postgres -f supabase/migrations/20251118_add_credit_card_benefits.sql)"
+      "Bash(PGPASSWORD='AbNY4sCdEa6APPA' psql -h db.rfwaiijodrowakcpayoa.supabase.co -p 5432 -U postgres -d postgres -f supabase/migrations/20251118_add_credit_card_benefits.sql)",
+      "Bash(PGPASSWORD='AbNY4sCdEa6APPA' psql -h db.rfwaiijodrowakcpayoa.supabase.co -p 5432 -U postgres -d postgres -c \"SELECT id, user_id, name FROM categories WHERE id IN (''79b1892a-5759-432c-9f97-ca423cc20a6f'', ''8e2307df-0246-4c69-8c78-b1fc47488848'', ''9ed0787c-0ff0-4ffe-be7c-3ca80667ffdb'', ''fde75e1b-fac9-4877-87c7-c378a41d1b87'');\")"
     ],
     "deny": [],
     "ask": []
