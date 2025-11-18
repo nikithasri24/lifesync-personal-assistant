@@ -1,6 +1,5 @@
 import React from 'react';
 import { Card } from '../components/Card';
-import { ChartLazy } from '../components/ChartLazy';
 import { StackedBarChart } from '../components/StackedBarChart';
 import { formatCurrency } from '../utils/currency';
 import { currentMonth, monthRange, toMonth } from '../utils/date';
@@ -10,7 +9,6 @@ import type { Transaction } from '../types';
 const DashboardPage: React.FC = () => {
   const [loading, setLoading] = React.useState(true);
   const [month, setMonth] = React.useState(currentMonth());
-  const [net, setNet] = React.useState<{ month: string; assets: number; liabilities: number }[]>([]);
   const [accounts, setAccounts] = React.useState<any[]>([]);
   const [categories, setCategories] = React.useState<any[]>([]);
   const [budgets, setBudgets] = React.useState<any[]>([]);
@@ -42,19 +40,17 @@ const DashboardPage: React.FC = () => {
       }
 
       // Load all data for the selected month
-      const [{ items: txItems }, accts, cats, b, nw] = await Promise.all([
+      const [{ items: txItems }, accts, cats, b] = await Promise.all([
         api.listTransactions({ limit: 500 }),
         api.listAccounts(),
         api.listCategories(),
         api.listBudgets(month),
-        api.listNetWorth(),
       ]);
       if (!mounted) return;
       setTxns(txItems);
       setAccounts(accts);
       setCategories(cats);
       setBudgets(b);
-      setNet(nw);
       setLoading(false);
     })();
     return () => {
@@ -67,9 +63,6 @@ const DashboardPage: React.FC = () => {
   const income = monthTxns.filter((t) => t.type === 'credit').reduce((s, t) => s + t.amount, 0);
   const expense = monthTxns.filter((t) => t.type === 'debit').reduce((s, t) => s + t.amount, 0);
   const cashflow = income - expense;
-  const totalAssets = accounts.filter((a) => !a.liability).reduce((s, a) => s + a.balance, 0);
-  const totalLiab = accounts.filter((a) => a.liability).reduce((s, a) => s + a.balance, 0);
-  const netPoints = net.map((n) => ({ month: n.month, net: n.assets - n.liabilities }));
 
   // Calculate spending by category
   const spendingMap = monthTxns.filter((t) => t.type === 'debit').reduce<Record<string, number>>((acc, t) => {
@@ -192,10 +185,6 @@ const DashboardPage: React.FC = () => {
             </div>
           </div>
         )}
-      </Card>
-
-      <Card title="Net Worth">
-        <ChartLazy data={netPoints.map((p) => ({ month: p.month, net: p.net }))} xKey="month" yKeys={[{ key: 'net', color: '#0f172a', type: 'line' }]} />
       </Card>
 
       <Card title="Accounts Snapshot">
