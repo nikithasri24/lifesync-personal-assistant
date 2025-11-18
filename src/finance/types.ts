@@ -76,9 +76,34 @@ export type Goal = {
   name: string;
   targetAmount: number;
   currentAmount: number;
+  startingAmount: number;
   dueDateISO: string;
   type: GoalType;
   linkedCategoryId?: string;
+  linkedAccountId?: string; // Auto-track from account balance
+  trackNetworth?: boolean; // Track total networth instead
+  createdAtISO?: string;
+  updatedAtISO?: string;
+};
+
+export type GoalProgressPoint = {
+  dateISO: string;
+  amount: number;
+  note?: string;
+};
+
+export type GoalRecommendation = {
+  requiredMonthlyContribution: number;
+  onTrack: boolean;
+  projectedCompletionISO: string; // When you'll actually reach the goal at current rate
+  daysRemaining: number;
+  monthsRemaining: number;
+  status: 'ahead' | 'on-track' | 'behind' | 'at-risk';
+  message: string;
+};
+
+export type GoalInput = Omit<Goal, 'createdAtISO' | 'updatedAtISO'> & {
+  id?: string;
 };
 
 export type TxnQuery = {

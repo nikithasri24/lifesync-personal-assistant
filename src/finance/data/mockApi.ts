@@ -235,10 +235,44 @@ export class MockApi implements FinanceAPI {
     await sleep(randomLatency());
     if (goal.id) {
       const idx = goals.findIndex((g) => g.id === goal.id);
-      if (idx >= 0) (goals as any)[idx] = { ...(goals as any)[idx], ...goal };
+      if (idx >= 0) (goals as any)[idx] = { ...(goals as any)[idx], ...goal, updatedAtISO: new Date().toISOString() };
       return;
     }
     const id = `mock_goal_${Math.random().toString(36).slice(2)}`;
-    (goals as any).push({ ...goal, id });
+    const now = new Date().toISOString();
+    (goals as any).push({
+      ...goal,
+      id,
+      startingAmount: goal.startingAmount ?? 0,
+      currentAmount: goal.currentAmount ?? 0,
+      trackNetworth: goal.trackNetworth ?? false,
+      createdAtISO: now,
+      updatedAtISO: now,
+    });
+  }
+
+  async deleteGoal(goalId: string): Promise<void> {
+    await sleep(randomLatency());
+    const idx = goals.findIndex((g) => g.id === goalId);
+    if (idx >= 0) goals.splice(idx, 1);
+  }
+
+  async getGoalProgressHistory(goalId: string): Promise<GoalProgressPoint[]> {
+    await sleep(randomLatency());
+    // Mock: return empty array for now (in real app, this would come from database)
+    return [];
+  }
+
+  async syncGoalFromAccount(goalId: string): Promise<void> {
+    await sleep(randomLatency());
+    // Mock: simulate syncing goal from linked account
+    const goal = goals.find((g) => g.id === goalId);
+    if (!goal || !goal.linkedAccountId) return;
+
+    const account = accounts.find((a) => a.id === goal.linkedAccountId);
+    if (account) {
+      (goal as any).currentAmount = account.balance;
+      (goal as any).updatedAtISO = new Date().toISOString();
+    }
   }
 }

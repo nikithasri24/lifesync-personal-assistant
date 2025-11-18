@@ -391,7 +391,7 @@ export class SupabaseApi implements FinanceAPI {
     const uid = await getUid(this.client);
     const { data, error } = await this.client
       .from('goals')
-      .select('id,name,target_amount,current_amount,due_date,type,linked_category_id')
+      .select('id,name,target_amount,current_amount,starting_amount,due_date,type,linked_category_id,linked_account_id,track_networth,created_at,updated_at')
       .eq('user_id', uid);
     if (error) throw error;
     return (data ?? []).map((r: any) => ({
@@ -399,9 +399,14 @@ export class SupabaseApi implements FinanceAPI {
       name: r.name,
       targetAmount: Number(r.target_amount),
       currentAmount: Number(r.current_amount),
+      startingAmount: Number(r.starting_amount ?? 0),
       dueDateISO: new Date(r.due_date).toISOString(),
       type: r.type,
       linkedCategoryId: r.linked_category_id ?? undefined,
+      linkedAccountId: r.linked_account_id ?? undefined,
+      trackNetworth: r.track_networth ?? false,
+      createdAtISO: r.created_at ? new Date(r.created_at).toISOString() : undefined,
+      updatedAtISO: r.updated_at ? new Date(r.updated_at).toISOString() : undefined,
     }));
   }
 
@@ -414,11 +419,47 @@ export class SupabaseApi implements FinanceAPI {
       name: goal.name,
       target_amount: goal.targetAmount,
       current_amount: goal.currentAmount,
+      starting_amount: goal.startingAmount,
       due_date: goal.dueDateISO,
       type: goal.type,
       linked_category_id: goal.linkedCategoryId ?? null,
+      linked_account_id: goal.linkedAccountId ?? null,
+      track_networth: goal.trackNetworth ?? false,
     };
     const { error } = await this.client.from('goals').upsert(row).select('id').single();
+    if (error) throw error;
+  }
+
+  async deleteGoal(goalId: string): Promise<void> {
+    const uid = await getUid(this.client);
+    const { error } = await this.client
+      .from('goals')
+      .delete()
+      .eq('id', goalId)
+      .eq('user_id', uid);
+    if (error) throw error;
+  }
+
+  async getGoalProgressHistory(goalId: string): Promise<GoalProgressPoint[]> {
+    const uid = await getUid(this.client);
+    const { data, error } = await this.client
+      .from('goal_progress_history')
+      .select('recorded_at,amount,note')
+      .eq('goal_id', goalId)
+      .eq('user_id', uid)
+      .order('recorded_at', { ascending: true });
+    if (error) throw error;
+    return (data ?? []).map((r: any) => ({
+      dateISO: new Date(r.recorded_at).toISOString(),
+      amount: Number(r.amount),
+      note: r.note ?? undefined,
+    }));
+  }
+
+  async syncGoalFromAccount(goalId: string): Promise<void> {
+    const { error } = await this.client.rpc('sync_goal_from_account', {
+      p_goal_id: goalId,
+    });
     if (error) throw error;
   }
 }

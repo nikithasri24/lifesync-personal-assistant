@@ -31,4 +31,7 @@ export interface FinanceAPI {
   listNetWorth(): Promise<NetPoint[]>;
   listGoals(): Promise<Goal[]>;
   upsertGoal(goal: GoalInput): Promise<void>;
+  deleteGoal(goalId: string): Promise<void>;
+  getGoalProgressHistory(goalId: string): Promise<GoalProgressPoint[]>;
+  syncGoalFromAccount(goalId: string): Promise<void>;
 }
