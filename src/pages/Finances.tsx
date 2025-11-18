@@ -1,20 +1,16 @@
 import React from 'react'
 
 const DashboardPage = React.lazy(() => import('../finance/pages/DashboardPage'))
-const ReportsPage = React.lazy(() => import('../finance/pages/ReportsPage'))
-const AccountsPage = React.lazy(() => import('../finance/pages/AccountsPage'))
 const TransactionsPage = React.lazy(() => import('../finance/pages/TransactionsPageGrouped'))
 const NetWorthPage = React.lazy(() => import('../finance/pages/NetWorthPage'))
 const GoalsPage = React.lazy(() => import('../finance/pages/GoalsPage'))
 const CreditCardsPage = React.lazy(() => import('../finance/pages/CreditCardsPage'))
 const SettingsPage = React.lazy(() => import('../finance/pages/SettingsPage'))
 
-type TabKey = 'dashboard' | 'reports' | 'accounts' | 'transactions' | 'networth' | 'goals' | 'creditcards' | 'settings'
+type TabKey = 'dashboard' | 'transactions' | 'networth' | 'goals' | 'creditcards' | 'settings'
 
 const tabs: { key: TabKey; label: string }[] = [
   { key: 'dashboard', label: 'Dashboard' },
-  { key: 'reports', label: 'Reports' },
-  { key: 'accounts', label: 'Accounts' },
   { key: 'transactions', label: 'Transactions' },
   { key: 'networth', label: 'Net Worth' },
   { key: 'goals', label: 'Goals' },
@@ -48,8 +44,6 @@ const Finances: React.FC = () => {
       <div>
         <React.Suspense fallback={<div>Loading finance…</div>}>
           {tab === 'dashboard' && <DashboardPage />}
-          {tab === 'reports' && <ReportsPage />}
-          {tab === 'accounts' && <AccountsPage />}
           {tab === 'transactions' && <TransactionsPage />}
           {tab === 'networth' && <NetWorthPage />}
           {tab === 'goals' && <GoalsPage />}
