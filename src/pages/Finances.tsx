@@ -4,20 +4,18 @@ const DashboardPage = React.lazy(() => import('../finance/pages/DashboardPage'))
 const ReportsPage = React.lazy(() => import('../finance/pages/ReportsPage'))
 const AccountsPage = React.lazy(() => import('../finance/pages/AccountsPage'))
 const TransactionsPage = React.lazy(() => import('../finance/pages/TransactionsPageGrouped'))
-const BudgetsPage = React.lazy(() => import('../finance/pages/BudgetsPage'))
 const NetWorthPage = React.lazy(() => import('../finance/pages/NetWorthPage'))
 const GoalsPage = React.lazy(() => import('../finance/pages/GoalsPage'))
 const CreditCardsPage = React.lazy(() => import('../finance/pages/CreditCardsPage'))
 const SettingsPage = React.lazy(() => import('../finance/pages/SettingsPage'))
 
-type TabKey = 'dashboard' | 'reports' | 'accounts' | 'transactions' | 'budgets' | 'networth' | 'goals' | 'creditcards' | 'settings'
+type TabKey = 'dashboard' | 'reports' | 'accounts' | 'transactions' | 'networth' | 'goals' | 'creditcards' | 'settings'
 
 const tabs: { key: TabKey; label: string }[] = [
   { key: 'dashboard', label: 'Dashboard' },
   { key: 'reports', label: 'Reports' },
   { key: 'accounts', label: 'Accounts' },
   { key: 'transactions', label: 'Transactions' },
-  { key: 'budgets', label: 'Budgets' },
   { key: 'networth', label: 'Net Worth' },
   { key: 'goals', label: 'Goals' },
   { key: 'creditcards', label: 'Credit Cards' },
@@ -53,7 +51,6 @@ const Finances: React.FC = () => {
           {tab === 'reports' && <ReportsPage />}
           {tab === 'accounts' && <AccountsPage />}
           {tab === 'transactions' && <TransactionsPage />}
-          {tab === 'budgets' && <BudgetsPage />}
           {tab === 'networth' && <NetWorthPage />}
           {tab === 'goals' && <GoalsPage />}
           {tab === 'creditcards' && <CreditCardsPage />}
