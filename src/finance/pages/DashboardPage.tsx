@@ -108,57 +108,6 @@ const DashboardPage: React.FC = () => {
     new Set([...txns.map((t) => toMonth(t.dateISO)), currentMonth()])
   ).sort();
 
-  // Calculate month-on-month spending by category (last 6 months)
-  const last6Months = monthsInTx.slice(-6);
-  const momData = last6Months.map((m) => {
-    const { from: mFrom, to: mTo } = monthRange(m);
-    const mTxns = txns.filter((t) => t.dateISO >= mFrom && t.dateISO <= mTo && t.type === 'debit');
-    const dataPoint: Record<string, any> = { month: m };
-
-    // Calculate spending for each category
-    categories.forEach((cat) => {
-      const catSpending = mTxns
-        .filter((t) => t.categoryId === cat.id)
-        .reduce((sum, t) => sum + t.amount, 0);
-      dataPoint[cat.id] = catSpending;
-    });
-
-    return dataPoint;
-  });
-
-  // Calculate year-on-year spending by category (comparing same months across years)
-  const currentYear = new Date().getFullYear();
-  const currentMonthNum = new Date().getMonth() + 1;
-
-  // Get unique years from transactions
-  const yearsInTx = Array.from(new Set(txns.map((t) => new Date(t.dateISO).getFullYear()))).sort();
-
-  // For each month of the year, compare across years (only include months with data)
-  const yoyData: Record<string, any>[] = [];
-  for (let monthNum = 1; monthNum <= 12; monthNum++) {
-    const monthLabel = new Date(2000, monthNum - 1, 1).toLocaleString('default', { month: 'short' });
-    const dataPoint: Record<string, any> = { month: monthLabel };
-    let hasData = false;
-
-    yearsInTx.forEach((year) => {
-      const monthStr = `${year}-${String(monthNum).padStart(2, '0')}`;
-      const { from: mFrom, to: mTo } = monthRange(monthStr);
-      const mTxns = txns.filter((t) => t.dateISO >= mFrom && t.dateISO <= mTo && t.type === 'debit');
-
-      // Sum all category spending for this month-year
-      const totalSpending = mTxns.reduce((sum, t) => sum + t.amount, 0);
-      if (totalSpending > 0) {
-        hasData = true;
-      }
-      dataPoint[year.toString()] = totalSpending;
-    });
-
-    // Only include months that have at least some spending data
-    if (hasData) {
-      yoyData.push(dataPoint);
-    }
-  }
-
   // Get top 5 categories for stacked chart
   const topCategoriesForChart = Array.from(allCategoryIds)
     .map((catId) => {
@@ -187,13 +136,40 @@ const DashboardPage: React.FC = () => {
     label: cat.name,
   }));
 
-  // Define colors for years
-  const yearColors = ['#0f172a', '#1e40af', '#7c3aed', '#db2777', '#ea580c'];
-  const yearStackKeys = yearsInTx.map((year, idx) => ({
-    key: year.toString(),
-    color: yearColors[idx] || '#64748b',
-    label: year.toString(),
-  }));
+  // Calculate month-on-month spending by category (last 6 months)
+  const last6Months = monthsInTx.slice(-6);
+  const momData = last6Months.map((m) => {
+    const { from: mFrom, to: mTo } = monthRange(m);
+    const mTxns = txns.filter((t) => t.dateISO >= mFrom && t.dateISO <= mTo && t.type === 'debit');
+    const dataPoint: Record<string, any> = { month: m };
+
+    // Calculate spending for top categories only
+    topCategoriesForChart.forEach((cat) => {
+      const catSpending = mTxns
+        .filter((t) => t.categoryId === cat.id)
+        .reduce((sum, t) => sum + t.amount, 0);
+      dataPoint[cat.id] = catSpending;
+    });
+
+    return dataPoint;
+  });
+
+  // Calculate spending trends for ALL available months (full history)
+  const spendingTrendsData = monthsInTx.map((m) => {
+    const { from: mFrom, to: mTo } = monthRange(m);
+    const mTxns = txns.filter((t) => t.dateISO >= mFrom && t.dateISO <= mTo && t.type === 'debit');
+    const dataPoint: Record<string, any> = { month: m };
+
+    // Calculate spending for top categories
+    topCategoriesForChart.forEach((cat) => {
+      const catSpending = mTxns
+        .filter((t) => t.categoryId === cat.id)
+        .reduce((sum, t) => sum + t.amount, 0);
+      dataPoint[cat.id] = catSpending;
+    });
+
+    return dataPoint;
+  });
 
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -270,7 +246,7 @@ const DashboardPage: React.FC = () => {
       </Card>
 
       <Card
-        title="Month-on-Month Analysis"
+        title="Recent Spending Trends"
         className="md:col-span-2 xl:col-span-3"
         description="Top 5 spending categories over the last 6 months"
       >
@@ -284,27 +260,27 @@ const DashboardPage: React.FC = () => {
           </div>
         ) : (
           <div className="flex items-center justify-center py-12">
-            <div className="text-sm text-slate-500">No data available for month-on-month comparison</div>
+            <div className="text-sm text-slate-500">No spending data available</div>
           </div>
         )}
       </Card>
 
       <Card
-        title="Year-on-Year Spending Comparison"
+        title="Full Spending History"
         className="md:col-span-2 xl:col-span-3"
-        description="Total spending by month across different years"
+        description="All-time spending breakdown by top categories"
       >
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <div className="text-sm text-slate-500">Loading chart data…</div>
           </div>
-        ) : yoyData.length > 0 && yearStackKeys.length > 0 ? (
+        ) : spendingTrendsData.length > 0 && stackKeys.length > 0 ? (
           <div className="pt-2">
-            <StackedBarChart data={yoyData} xKey="month" stackKeys={yearStackKeys} height={360} />
+            <StackedBarChart data={spendingTrendsData} xKey="month" stackKeys={stackKeys} height={360} />
           </div>
         ) : (
           <div className="flex items-center justify-center py-12">
-            <div className="text-sm text-slate-500">No data available for year-on-year comparison</div>
+            <div className="text-sm text-slate-500">No historical spending data available</div>
           </div>
         )}
       </Card>
