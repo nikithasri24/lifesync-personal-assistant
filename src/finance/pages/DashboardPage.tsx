@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card } from '../components/Card';
 import { ChartLazy } from '../components/ChartLazy';
+import { StackedBarChart } from '../components/StackedBarChart';
 import { formatCurrency } from '../utils/currency';
 import { currentMonth, monthRange, toMonth } from '../utils/date';
 import { getFinanceAPI } from '../data';
@@ -107,6 +108,86 @@ const DashboardPage: React.FC = () => {
     new Set([...txns.map((t) => toMonth(t.dateISO)), currentMonth()])
   ).sort();
 
+  // Calculate month-on-month spending by category (last 6 months)
+  const last6Months = monthsInTx.slice(-6);
+  const momData = last6Months.map((m) => {
+    const { from: mFrom, to: mTo } = monthRange(m);
+    const mTxns = txns.filter((t) => t.dateISO >= mFrom && t.dateISO <= mTo && t.type === 'debit');
+    const dataPoint: Record<string, any> = { month: m };
+
+    // Calculate spending for each category
+    categories.forEach((cat) => {
+      const catSpending = mTxns
+        .filter((t) => t.categoryId === cat.id)
+        .reduce((sum, t) => sum + t.amount, 0);
+      dataPoint[cat.id] = catSpending;
+    });
+
+    return dataPoint;
+  });
+
+  // Calculate year-on-year spending by category (comparing same months across years)
+  const currentYear = new Date().getFullYear();
+  const currentMonthNum = new Date().getMonth() + 1;
+
+  // Get unique years from transactions
+  const yearsInTx = Array.from(new Set(txns.map((t) => new Date(t.dateISO).getFullYear()))).sort();
+
+  // For each month of the year, compare across years
+  const yoyData: Record<string, any>[] = [];
+  for (let monthNum = 1; monthNum <= 12; monthNum++) {
+    const monthLabel = new Date(2000, monthNum - 1, 1).toLocaleString('default', { month: 'short' });
+    const dataPoint: Record<string, any> = { month: monthLabel };
+
+    yearsInTx.forEach((year) => {
+      const monthStr = `${year}-${String(monthNum).padStart(2, '0')}`;
+      const { from: mFrom, to: mTo } = monthRange(monthStr);
+      const mTxns = txns.filter((t) => t.dateISO >= mFrom && t.dateISO <= mTo && t.type === 'debit');
+
+      // Sum all category spending for this month-year
+      const totalSpending = mTxns.reduce((sum, t) => sum + t.amount, 0);
+      dataPoint[year.toString()] = totalSpending;
+    });
+
+    yoyData.push(dataPoint);
+  }
+
+  // Get top 5 categories for stacked chart
+  const topCategoriesForChart = Array.from(allCategoryIds)
+    .map((catId) => {
+      const total = spendingMap[catId] || 0;
+      return {
+        id: catId,
+        name: categories.find((c) => c.id === catId)?.name ?? 'Uncategorized',
+        total,
+      };
+    })
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 5);
+
+  // Define colors for categories
+  const categoryColors = [
+    '#0f172a', // slate-900
+    '#1e40af', // blue-700
+    '#7c3aed', // violet-600
+    '#db2777', // pink-600
+    '#ea580c', // orange-600
+  ];
+
+  const stackKeys = topCategoriesForChart.map((cat, idx) => ({
+    key: cat.id,
+    color: categoryColors[idx] || '#64748b',
+    label: cat.name,
+  }));
+
+  // Define colors for years
+  const yearColors = ['#0f172a', '#1e40af', '#7c3aed', '#db2777', '#ea580c'];
+  const yearStackKeys = yearsInTx.map((year, idx) => ({
+    key: year.toString(),
+    color: yearColors[idx] || '#64748b',
+    label: year.toString(),
+  }));
+
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
       <Card title="Cash Flow (This Month)">
@@ -179,6 +260,26 @@ const DashboardPage: React.FC = () => {
         </select>
       }>
         <div className="text-sm text-slate-600">Showing data for {month}</div>
+      </Card>
+
+      <Card title="Month-on-Month Analysis (Top 5 Categories)" className="md:col-span-2 xl:col-span-3">
+        {loading ? (
+          <div>Loading…</div>
+        ) : momData.length > 0 && stackKeys.length > 0 ? (
+          <StackedBarChart data={momData} xKey="month" stackKeys={stackKeys} height={320} />
+        ) : (
+          <div className="text-sm text-slate-500">No data available for month-on-month comparison</div>
+        )}
+      </Card>
+
+      <Card title="Year-on-Year Spending Comparison" className="md:col-span-2 xl:col-span-3">
+        {loading ? (
+          <div>Loading…</div>
+        ) : yoyData.length > 0 && yearStackKeys.length > 0 ? (
+          <StackedBarChart data={yoyData} xKey="month" stackKeys={yearStackKeys} height={320} />
+        ) : (
+          <div className="text-sm text-slate-500">No data available for year-on-year comparison</div>
+        )}
       </Card>
     </div>
   );
