@@ -1,8 +1,11 @@
 import React from 'react';
 import { Card } from '../components/Card';
 import { StackedBarChart } from '../components/StackedBarChart';
+import SankeyChart from '../components/visualizations/SankeyChart';
 import { formatCurrency } from '../utils/currency';
 import { currentMonth, monthRange, toMonth } from '../utils/date';
+import { getTimePeriodRange } from '../utils/timePeriodUtils';
+import { useFinanceMetrics } from '../hooks/useFinanceMetrics';
 import { getFinanceAPI } from '../data';
 import type { Transaction } from '../types';
 
@@ -63,6 +66,37 @@ const DashboardPage: React.FC = () => {
   const income = monthTxns.filter((t) => t.type === 'credit').reduce((s, t) => s + t.amount, 0);
   const expense = monthTxns.filter((t) => t.type === 'debit').reduce((s, t) => s + t.amount, 0);
   const cashflow = income - expense;
+
+  // Calculate metrics for Money Flow visualization
+  const currentPeriod = React.useMemo(() => {
+    return {
+      startDate: from,
+      endDate: to,
+      label: month,
+    };
+  }, [from, to, month]);
+
+  const previousPeriod = React.useMemo(() => {
+    const [year, monthNum] = month.split('-').map(Number);
+    const prevMonth = monthNum === 1 ? 12 : monthNum - 1;
+    const prevYear = monthNum === 1 ? year - 1 : year;
+    const prevMonthStr = `${prevYear}-${String(prevMonth).padStart(2, '0')}`;
+    const { from: prevFrom, to: prevTo } = monthRange(prevMonthStr);
+    return {
+      startDate: prevFrom,
+      endDate: prevTo,
+      label: prevMonthStr,
+    };
+  }, [month]);
+
+  const metrics = useFinanceMetrics({
+    transactions: txns,
+    categories,
+    accounts,
+    currentPeriod,
+    previousPeriod,
+    topCategoriesLimit: 10,
+  });
 
   // Calculate spending by category
   const spendingMap = monthTxns.filter((t) => t.type === 'debit').reduce<Record<string, number>>((acc, t) => {
@@ -239,6 +273,26 @@ const DashboardPage: React.FC = () => {
             </div>
           ))}
         </div>
+      </Card>
+
+      <Card
+        title="Money Flow Visualization"
+        className="md:col-span-2 xl:col-span-3"
+        description="Visual representation of income sources flowing to expense categories"
+      >
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-sm text-slate-500">Loading chart data…</div>
+          </div>
+        ) : metrics.sankeyData.length > 0 ? (
+          <div className="pt-2">
+            <SankeyChart data={metrics.sankeyData} width={800} height={500} />
+          </div>
+        ) : (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-sm text-slate-500">No cash flow data for this period</div>
+          </div>
+        )}
       </Card>
 
       <Card
