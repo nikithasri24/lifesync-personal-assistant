@@ -89,10 +89,11 @@ const DashboardPage: React.FC = () => {
     };
   }, [month]);
 
+  // Only calculate metrics after data is loaded
   const metrics = useFinanceMetrics({
-    transactions: txns,
-    categories,
-    accounts,
+    transactions: loading ? [] : txns,
+    categories: loading ? [] : categories,
+    accounts: loading ? [] : accounts,
     currentPeriod,
     previousPeriod,
     topCategoriesLimit: 10,
