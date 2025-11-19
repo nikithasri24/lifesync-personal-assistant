@@ -1,10 +1,10 @@
 /**
- * TravelPage - Mappacker-style travel tracking
- * Clean, minimalist interface matching mappacker.com
+ * TravelPage - Interactive travel tracking with full OpenStreetMap integration
+ * Shows cities, states, roads, and all geographic details
  */
 
 import React from 'react';
-import MappackerStyleMap from '../components/MappackerStyleMap';
+import LeafletTravelMap from '../components/LeafletTravelMap';
 import { travelAPI } from '../data';
 import type { VisitStatus, VisitedLocation } from '../types';
 
@@ -86,7 +86,7 @@ const TravelPage: React.FC = () => {
   }
 
   return (
-    <MappackerStyleMap
+    <LeafletTravelMap
       visitedCountries={visitedCountriesMap}
       onCountryClick={handleCountryClick}
     />
