@@ -22,6 +22,7 @@ import {
 } from '../api/passportAPI';
 import type { VisaRequirement, UserPassport, UserVisa } from '../types/visa';
 import VisaMap from './VisaMap';
+import ExpiryAlerts from './ExpiryAlerts';
 
 interface DestinationRequirement {
   country: string;
@@ -320,6 +321,16 @@ const VisaCalculator: React.FC = () => {
           {passport ? 'Manage your passport and visas to see where you can travel' : 'Add your passport to get started'}
         </p>
       </div>
+
+      {/* Expiry Alerts */}
+      {(passport || userVisas.length > 0) && (
+        <div className="mb-6">
+          <ExpiryAlerts
+            passports={passport ? [passport] : []}
+            visas={userVisas}
+          />
+        </div>
+      )}
 
       {/* Passport Selection */}
       <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">

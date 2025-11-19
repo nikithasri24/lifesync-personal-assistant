@@ -17,6 +17,7 @@ import MealPlanning from './pages/MealPlanning';
 import ProjectTracking from './pages/ProjectTracking';
 import Travel from './pages/Travel';
 import VisaPage from './travel/pages/VisaPage';
+import TripPlanner from './travel/components/TripPlanner';
 import Finances from './pages/Finances';
 import SeventyFiveHard from './pages/SeventyFiveHard/index';
 import Skincare from './pages/Skincare';
@@ -126,6 +127,8 @@ function App() {
         return <Travel />;
       case 'visa':
         return <VisaPage />;
+      case 'trip-planner':
+        return <TripPlanner />;
       case 'finances':
         return <Finances />;
       case 'shopping':

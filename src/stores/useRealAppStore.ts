@@ -59,6 +59,7 @@ type ViewKey =
   | 'goals'
   | 'travel'
   | 'visa'
+  | 'trip-planner'
   | 'finances'
   | 'shopping'
   | 'meals'
