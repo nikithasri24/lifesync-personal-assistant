@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
-import { Plus, Target, Trash2, CheckCircle2, Sparkles, TrendingUp } from 'lucide-react';
+import { Plus, Target, Trash2, CheckCircle2, Sparkles, TrendingUp, Edit3 } from 'lucide-react';
 import {
   getUserLifeGoals,
   getUserLifeDreams,
@@ -82,6 +82,8 @@ const LifeGoals: React.FC = () => {
   const [dreamDraft, setDreamDraft] = useState<DreamDraft>(createDreamDraft);
   const [showGoalForm, setShowGoalForm] = useState(false);
   const [showDreamForm, setShowDreamForm] = useState(false);
+  const [editingProgress, setEditingProgress] = useState<string | null>(null);
+  const [progressValue, setProgressValue] = useState<number>(0);
 
   // Load goals and dreams on mount
   useEffect(() => {
@@ -216,6 +218,27 @@ const LifeGoals: React.FC = () => {
     }
   };
 
+  const handleUpdateProgress = async (goalId: string) => {
+    try {
+      const updatedGoal = await updateLifeGoal(goalId, {
+        progress: progressValue,
+        status: progressValue === 100 ? 'completed' : progressValue > 0 ? 'in-progress' : 'not-started',
+        completedDate: progressValue === 100 ? new Date().toISOString() : undefined,
+      });
+      setGoals(prev => prev.map(g => g.id === goalId ? updatedGoal : g));
+      setEditingProgress(null);
+      setProgressValue(0);
+    } catch (error) {
+      console.error('Error updating progress:', error);
+      alert('Failed to update progress. Please try again.');
+    }
+  };
+
+  const handleStartEditProgress = (goalId: string, currentProgress: number) => {
+    setEditingProgress(goalId);
+    setProgressValue(currentProgress);
+  };
+
   const renderGoalList = () => {
     if (goals.length === 0) {
       return <EmptyState label="No goals yet. Start by creating one." icon={<Target className="h-6 w-6" />} />;
@@ -253,12 +276,65 @@ const LifeGoals: React.FC = () => {
             {goal.description && (
               <p className="text-sm text-slate-600">{goal.description}</p>
             )}
+
+            {/* Progress bar */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-600 font-medium">Progress</span>
+                <span className="text-slate-700 font-semibold">{goal.progress}%</span>
+              </div>
+              <div className="w-full bg-slate-200 rounded-full h-2">
+                <div
+                  className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${goal.progress}%` }}
+                />
+              </div>
+
+              {/* Progress editor */}
+              {editingProgress === goal.id ? (
+                <div className="flex items-center gap-2 mt-2">
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="5"
+                    value={progressValue}
+                    onChange={(e) => setProgressValue(Number(e.target.value))}
+                    className="flex-1"
+                  />
+                  <span className="text-sm font-medium text-slate-700 w-12">{progressValue}%</span>
+                  <button
+                    onClick={() => handleUpdateProgress(goal.id)}
+                    className="px-3 py-1 bg-indigo-600 text-white text-xs rounded hover:bg-indigo-700"
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={() => {
+                      setEditingProgress(null);
+                      setProgressValue(0);
+                    }}
+                    className="px-3 py-1 bg-slate-200 text-slate-700 text-xs rounded hover:bg-slate-300"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => handleStartEditProgress(goal.id, goal.progress)}
+                  className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-700 font-medium"
+                >
+                  <Edit3 className="h-3 w-3" />
+                  Update progress
+                </button>
+              )}
+            </div>
+
             <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
               <span className="flex items-center gap-1">
                 <TrendingUp className="h-3 w-3" />
                 Status: {goal.status}
               </span>
-              <span>Progress: {goal.progress}%</span>
               {goal.targetDate && (
                 <span>Target: {new Date(goal.targetDate).toLocaleDateString()}</span>
               )}
