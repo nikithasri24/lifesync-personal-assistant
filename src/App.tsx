@@ -10,7 +10,7 @@ import TodosWorkingFollowUp from './pages/TodosWorkingFollowUp';
 import Notes from './pages/Notes';
 import Personal from './pages/Personal';
 import Journal from './pages/Journal';
-import Goals from './pages/Goals';
+import LifeGoals from './pages/LifeGoals';
 import AppleHealthCyclesSimple from './pages/AppleHealthCyclesSimple';
 import ShoppingSmart from './pages/ShoppingSmart';
 import MealPlanning from './pages/MealPlanning';
@@ -122,7 +122,7 @@ function App() {
       case 'journal':
         return <Journal />;
       case 'goals':
-        return <Goals />;
+        return <LifeGoals />;
       case 'travel':
         return <Travel />;
       case 'visa':
