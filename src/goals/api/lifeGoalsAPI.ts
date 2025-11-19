@@ -402,6 +402,96 @@ export async function deleteLifeDream(dreamId: string): Promise<void> {
   if (error) throw error;
 }
 
+/**
+ * Get all public goal templates
+ */
+export async function getGoalTemplates(): Promise<any[]> {
+  const { data, error } = await supabase
+    .from('life_goal_templates')
+    .select('*')
+    .eq('is_public', true)
+    .order('usage_count', { ascending: false });
+
+  if (error) throw error;
+  return data || [];
+}
+
+/**
+ * Create goal from template
+ */
+export async function createGoalFromTemplate(templateId: string, customTitle?: string): Promise<LifeGoalWithMilestones> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  // Get template
+  const { data: template, error: templateError } = await supabase
+    .from('life_goal_templates')
+    .select('*')
+    .eq('id', templateId)
+    .single();
+
+  if (templateError) throw templateError;
+  if (!template) throw new Error('Template not found');
+
+  // Create goal from template
+  const { data: goalData, error: goalError } = await supabase
+    .from('life_goals')
+    .insert({
+      user_id: user.id,
+      title: customTitle || template.name,
+      description: template.description,
+      category: template.category,
+      priority: 'medium',
+      difficulty: template.difficulty,
+      tags: template.suggested_tags || [],
+      template_id: templateId,
+      xp_reward: template.difficulty === 'extreme' ? 500 : template.difficulty === 'hard' ? 300 : template.difficulty === 'medium' ? 200 : 100,
+      target_date: template.estimated_duration_days
+        ? new Date(Date.now() + template.estimated_duration_days * 24 * 60 * 60 * 1000).toISOString()
+        : undefined,
+      start_date: new Date().toISOString(),
+    })
+    .select()
+    .single();
+
+  if (goalError) throw goalError;
+
+  const goal = mapDbToLifeGoal(goalData);
+
+  // Create milestones from template
+  const defaultMilestones = template.default_milestones as any[];
+  const milestones: LifeGoalMilestone[] = [];
+
+  if (defaultMilestones && defaultMilestones.length > 0) {
+    for (const milestone of defaultMilestones) {
+      const { data: milestoneData, error: milestoneError } = await supabase
+        .from('life_goal_milestones')
+        .insert({
+          goal_id: goal.id,
+          title: milestone.title,
+          description: milestone.description,
+          order_index: milestone.orderIndex,
+          target_date: milestone.estimatedDays
+            ? new Date(Date.now() + milestone.estimatedDays * 24 * 60 * 60 * 1000).toISOString()
+            : undefined,
+        })
+        .select()
+        .single();
+
+      if (milestoneError) throw milestoneError;
+      milestones.push(mapDbToMilestone(milestoneData));
+    }
+  }
+
+  // Increment template usage count
+  await supabase
+    .from('life_goal_templates')
+    .update({ usage_count: template.usage_count + 1 })
+    .eq('id', templateId);
+
+  return { ...goal, milestones };
+}
+
 // Mapper functions
 function mapDbToLifeGoal(data: any): LifeGoal {
   return {

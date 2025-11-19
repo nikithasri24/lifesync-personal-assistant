@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
-import { Plus, Target, Trash2, CheckCircle2, Sparkles, TrendingUp, Edit3 } from 'lucide-react';
+import { Plus, Target, Trash2, CheckCircle2, Sparkles, TrendingUp, Edit3, Lightbulb } from 'lucide-react';
 import {
   getUserLifeGoals,
   getUserLifeDreams,
@@ -10,6 +10,7 @@ import {
   createLifeDream,
   updateLifeDream,
   deleteLifeDream,
+  getLifeGoalById,
 } from '../goals/api/lifeGoalsAPI';
 import type {
   LifeGoal,
@@ -19,7 +20,9 @@ import type {
   DreamCategory,
   DreamPriority,
   DreamStatus,
+  LifeGoalWithMilestones,
 } from '../goals/types/lifeGoals';
+import GoalTemplates from '../goals/components/GoalTemplates';
 
 const GOAL_CATEGORIES: GoalCategory[] = ['personal', 'health', 'career', 'financial', 'fitness'];
 const GOAL_PRIORITIES: GoalPriority[] = ['low', 'medium', 'high', 'critical'];
@@ -82,6 +85,7 @@ const LifeGoals: React.FC = () => {
   const [dreamDraft, setDreamDraft] = useState<DreamDraft>(createDreamDraft);
   const [showGoalForm, setShowGoalForm] = useState(false);
   const [showDreamForm, setShowDreamForm] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
   const [editingProgress, setEditingProgress] = useState<string | null>(null);
   const [progressValue, setProgressValue] = useState<number>(0);
 
@@ -237,6 +241,11 @@ const LifeGoals: React.FC = () => {
   const handleStartEditProgress = (goalId: string, currentProgress: number) => {
     setEditingProgress(goalId);
     setProgressValue(currentProgress);
+  };
+
+  const handleGoalCreatedFromTemplate = (goal: LifeGoalWithMilestones) => {
+    setGoals(prev => [goal, ...prev]);
+    setShowTemplates(false);
   };
 
   const renderGoalList = () => {
@@ -413,7 +422,15 @@ const LifeGoals: React.FC = () => {
           <h1 className="text-2xl font-semibold text-slate-900">Goals & Dreams</h1>
           <p className="text-sm text-slate-600">Track meaningful progress and celebrate future aspirations.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setShowTemplates(true)}
+            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:from-purple-700 hover:to-indigo-700"
+          >
+            <Lightbulb className="h-4 w-4" />
+            Browse Templates
+          </button>
           <button
             type="button"
             onClick={() => {
@@ -656,6 +673,14 @@ const LifeGoals: React.FC = () => {
             </button>
           </div>
         </form>
+      )}
+
+      {/* Goal Templates Modal */}
+      {showTemplates && (
+        <GoalTemplates
+          onGoalCreated={handleGoalCreatedFromTemplate}
+          onClose={() => setShowTemplates(false)}
+        />
       )}
     </div>
   );
