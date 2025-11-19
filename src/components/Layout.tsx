@@ -1,10 +1,10 @@
-import { 
-  Home, 
-  Target, 
-  FileText, 
-  CheckSquare, 
-  FolderOpen, 
-  BookOpen, 
+import {
+  Home,
+  Target,
+  FileText,
+  CheckSquare,
+  FolderOpen,
+  BookOpen,
   Heart,
   Menu,
   X,
@@ -18,7 +18,8 @@ import {
   ShoppingCart,
   ChefHat,
   MapPin,
-  DollarSign
+  DollarSign,
+  Sparkles
 } from 'lucide-react';
 import { useAppStore } from '../stores/useAppStore';
 import Toast from './Toast';
@@ -39,6 +40,7 @@ const navigation = [
   { name: 'Mood', icon: Smile, view: 'mood' as const, section: 'wellbeing' },
   { name: '75 Hard', icon: Trophy, view: 'seventy-five-hard' as const, section: 'wellbeing' },
   { name: 'Period', icon: Droplets, view: 'period' as const, section: 'wellbeing' },
+  { name: 'Skincare', icon: Sparkles, view: 'skincare' as const, section: 'wellbeing' },
   { name: 'Travel', icon: MapPin, view: 'travel' as const, section: 'personal' },
   { name: 'Finances', icon: DollarSign, view: 'finances' as const, section: 'personal' },
   { name: 'Shopping', icon: ShoppingCart, view: 'shopping' as const, section: 'personal' },

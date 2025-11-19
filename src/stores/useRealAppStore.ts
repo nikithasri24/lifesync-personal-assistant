@@ -64,6 +64,7 @@ type ViewKey =
   | 'shared'
   | 'personal'
   | 'seventy-five-hard'
+  | 'skincare'
 
 type TaskStatusBackend = TaskData['status']
 

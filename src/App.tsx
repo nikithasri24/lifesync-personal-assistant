@@ -18,6 +18,7 @@ import ProjectTracking from './pages/ProjectTracking';
 import Travel from './pages/Travel';
 import Finances from './pages/Finances';
 import SeventyFiveHard from './pages/SeventyFiveHard/index';
+import Skincare from './pages/Skincare';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import LoadingSpinner from './components/LoadingSpinner';
 import { AuthGate } from './components/AuthGate';
@@ -134,6 +135,8 @@ function App() {
         return <Personal />;
       case 'seventy-five-hard':
         return <SeventyFiveHard />;
+      case 'skincare':
+        return <Skincare />;
       default:
         return <Dashboard />;
     }
