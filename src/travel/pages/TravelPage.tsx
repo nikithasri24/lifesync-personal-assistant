@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import LeafletTravelMap from '../components/LeafletTravelMap';
+import LeafletTravelMapV2 from '../components/LeafletTravelMapV2';
 import { travelAPI } from '../data';
 import type { VisitStatus, VisitedLocation } from '../types';
 
@@ -40,6 +40,17 @@ const TravelPage: React.FC = () => {
     return map;
   }, [visitedLocations]);
 
+  // Get visited states map
+  const visitedStatesMap = React.useMemo(() => {
+    const map: Record<string, VisitStatus> = {};
+    visitedLocations
+      .filter(loc => loc.locationType === 'state' && loc.stateCode)
+      .forEach(loc => {
+        map[loc.stateCode!] = loc.status;
+      });
+    return map;
+  }, [visitedLocations]);
+
   const handleCountryClick = async (countryCode: string) => {
     // Validate country code
     if (!countryCode || countryCode.length !== 2) {
@@ -54,23 +65,71 @@ const TravelPage: React.FC = () => {
       );
 
       if (existingLocation) {
+        // Optimistically update UI immediately
+        setVisitedLocations(prev => prev.filter(loc => loc.id !== existingLocation.id));
+
         // Remove if already visited
         await travelAPI.deleteLocation(existingLocation.id);
       } else {
         // Add as visited
-        await travelAPI.markLocation({
+        const newLocation = await travelAPI.markLocation({
           locationType: 'country',
           countryCode,
           countryName: countryCode, // Will be enriched with proper name from API
           status: 'visited',
           visitCount: 1,
         });
-      }
 
-      await loadData();
+        // Optimistically update UI immediately
+        setVisitedLocations(prev => [...prev, newLocation]);
+      }
     } catch (error) {
       console.error('Error toggling country:', error);
       alert('Failed to update country. Please try again.');
+      // Reload data to sync with server on error
+      await loadData();
+    }
+  };
+
+  const handleStateClick = async (stateCode: string, countryCode: string) => {
+    // Validate codes
+    if (!stateCode || !countryCode) {
+      console.error('Invalid state or country code:', { stateCode, countryCode });
+      return;
+    }
+
+    try {
+      // Check if state is already visited
+      const existingLocation = visitedLocations.find(
+        loc => loc.stateCode === stateCode && loc.locationType === 'state'
+      );
+
+      if (existingLocation) {
+        // Optimistically update UI immediately
+        setVisitedLocations(prev => prev.filter(loc => loc.id !== existingLocation.id));
+
+        // Remove if already visited
+        await travelAPI.deleteLocation(existingLocation.id);
+      } else {
+        // Add as visited
+        const newLocation = await travelAPI.markLocation({
+          locationType: 'state',
+          countryCode,
+          countryName: countryCode, // Will be enriched
+          stateCode,
+          stateName: stateCode, // Will be enriched
+          status: 'visited',
+          visitCount: 1,
+        });
+
+        // Optimistically update UI immediately
+        setVisitedLocations(prev => [...prev, newLocation]);
+      }
+    } catch (error) {
+      console.error('Error toggling state:', error);
+      alert('Failed to update state. Please try again.');
+      // Reload data to sync with server on error
+      await loadData();
     }
   };
 
@@ -86,9 +145,11 @@ const TravelPage: React.FC = () => {
   }
 
   return (
-    <LeafletTravelMap
+    <LeafletTravelMapV2
       visitedCountries={visitedCountriesMap}
       onCountryClick={handleCountryClick}
+      visitedStates={visitedStatesMap}
+      onStateClick={handleStateClick}
     />
   );
 };

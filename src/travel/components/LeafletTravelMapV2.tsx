@@ -1,23 +1,13 @@
 /**
- * LeafletTravelMap - Full-featured interactive map using OpenStreetMap tiles
- * Shows cities, states, roads, and all geographic details with zoom levels
+ * LeafletTravelMapV2 - Clean implementation with proper state-level tracking
+ * Properly handles click events for both countries and states
  */
 
 import React from 'react';
-import { MapContainer, TileLayer, GeoJSON, useMap, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, GeoJSON, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { VisitStatus } from '../types';
-
-// Component to track zoom level
-function ZoomTracker({ onZoomChange }: { onZoomChange: (zoom: number) => void }) {
-  const map = useMapEvents({
-    zoomend: () => {
-      onZoomChange(map.getZoom());
-    },
-  });
-  return null;
-}
 
 // Fix Leaflet default marker icon issue
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -27,7 +17,7 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-type LeafletTravelMapProps = {
+type LeafletTravelMapV2Props = {
   visitedCountries: Record<string, VisitStatus>;
   onCountryClick: (countryCode: string) => void;
   visitedStates?: Record<string, VisitStatus>;
@@ -45,7 +35,22 @@ interface CountryFeature {
   geometry: any;
 }
 
-const LeafletTravelMap: React.FC<LeafletTravelMapProps> = ({
+// Component to track zoom level
+function ZoomTracker({ onZoomChange }: { onZoomChange: (zoom: number) => void }) {
+  const map = useMapEvents({
+    zoomend: () => {
+      onZoomChange(map.getZoom());
+    },
+  });
+
+  React.useEffect(() => {
+    onZoomChange(map.getZoom());
+  }, []);
+
+  return null;
+}
+
+const LeafletTravelMapV2: React.FC<LeafletTravelMapV2Props> = ({
   visitedCountries,
   onCountryClick,
   visitedStates = {},
@@ -54,21 +59,12 @@ const LeafletTravelMap: React.FC<LeafletTravelMapProps> = ({
   const [countries, setCountries] = React.useState<CountryFeature[]>([]);
   const [states, setStates] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
-  const [loadingStates, setLoadingStates] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [currentZoom, setCurrentZoom] = React.useState(2);
-  const zoomRef = React.useRef(2);
+  const [showStatesAsCountries, setShowStatesAsCountries] = React.useState(true);
 
-  // Debug: Log when component mounts
-  React.useEffect(() => {
-    console.log('🗺️ LeafletTravelMap mounted');
-    console.log('Visited states:', visitedStates);
-  }, []);
-
-  // Update zoom ref when zoom changes
-  React.useEffect(() => {
-    zoomRef.current = currentZoom;
-  }, [currentZoom]);
+  const countryLayerRef = React.useRef<L.GeoJSON | null>(null);
+  const stateLayerRef = React.useRef<L.GeoJSON | null>(null);
 
   // Load countries data
   React.useEffect(() => {
@@ -85,32 +81,20 @@ const LeafletTravelMap: React.FC<LeafletTravelMapProps> = ({
 
         const geoJsonData: any = await response.json();
 
-        if (!geoJsonData || !geoJsonData.features) {
-          throw new Error('Invalid GeoJSON data');
-        }
-
         const countryFeatures = geoJsonData.features
-          .map((f: any) => {
-            const iso_a2 = f.properties?.ISO_A2 || f.properties?.iso_a2 || '';
-            const iso_a3 = f.properties?.ISO_A3 || f.properties?.iso_a3 || '';
-            const name = f.properties?.NAME || f.properties?.name || f.properties?.ADMIN || 'Unknown';
-
-            return {
-              type: 'Feature' as const,
-              id: f.id || iso_a2 || `country-${Math.random()}`,
-              properties: {
-                name: name,
-                iso_a2: iso_a2,
-                iso_a3: iso_a3,
-              },
-              geometry: f.geometry,
-            };
-          })
+          .map((f: any) => ({
+            type: 'Feature' as const,
+            id: f.id || f.properties?.ISO_A2 || `country-${Math.random()}`,
+            properties: {
+              name: f.properties?.NAME || f.properties?.name || 'Unknown',
+              iso_a2: f.properties?.ISO_A2 || f.properties?.iso_a2 || '',
+              iso_a3: f.properties?.ISO_A3 || f.properties?.iso_a3 || '',
+            },
+            geometry: f.geometry,
+          }))
           .filter((f: any) => {
-            const hasValidCode =
-              f.properties.iso_a2 && f.properties.iso_a2.length === 2 && f.properties.iso_a2 !== '-99';
-            const hasValidGeometry =
-              f.geometry && (f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon');
+            const hasValidCode = f.properties.iso_a2 && f.properties.iso_a2.length === 2 && f.properties.iso_a2 !== '-99';
+            const hasValidGeometry = f.geometry && (f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon');
             return hasValidCode && hasValidGeometry;
           });
 
@@ -128,17 +112,16 @@ const LeafletTravelMap: React.FC<LeafletTravelMapProps> = ({
     loadMapData();
   }, []);
 
-  // Load state/province boundaries
+  // Load state/province boundaries when zoomed in OR when checkbox is unchecked
   React.useEffect(() => {
-    const loadStateData = async () => {
-      if (loadingStates || states.length > 0) {
-        console.log('Skipping state load:', { loadingStates, statesCount: states.length });
-        return;
-      }
+    const shouldLoadStates = currentZoom >= 5 || !showStatesAsCountries;
 
+    if (!shouldLoadStates || states.length > 0) {
+      return; // Don't load if not needed or already loaded
+    }
+
+    const loadStateData = async () => {
       try {
-        console.log('Starting to load state boundaries...');
-        setLoadingStates(true);
         const response = await fetch(
           'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_admin_1_states_provinces.geojson'
         );
@@ -146,61 +129,37 @@ const LeafletTravelMap: React.FC<LeafletTravelMapProps> = ({
         if (response.ok) {
           const data = await response.json();
           setStates(data.features || []);
-          console.log(`✅ Loaded ${data.features?.length || 0} state/province boundaries`);
-          if (data.features && data.features.length > 0) {
-            console.log('Sample state:', data.features[0].properties);
-          }
-        } else {
-          console.error('Failed to fetch states:', response.status);
         }
       } catch (err) {
         console.error('Error loading state boundaries:', err);
-      } finally {
-        setLoadingStates(false);
       }
     };
 
-    // Only load states when zoomed in enough
-    console.log('Current zoom level:', currentZoom);
-    if (currentZoom >= 5) {
-      console.log('Zoom level >= 5, loading states...');
-      loadStateData();
-    } else {
-      console.log('Zoom level < 5, not loading states yet');
-    }
-  }, [currentZoom, loadingStates, states.length]);
+    loadStateData();
+  }, [currentZoom, showStatesAsCountries, states.length]);
 
-  const getCountryStyle = (countryCode: string, isHovered: boolean = false) => {
-    const hasVisited = visitedCountries[countryCode];
+  // Country style function
+  const getCountryStyle = (countryCode: string): L.PathOptions => {
+    const hasVisitedCountry = visitedCountries[countryCode];
 
-    if (isHovered) {
-      return {
-        fillColor: hasVisited ? '#16A34A' : '#9CA3AF',
-        fillOpacity: 0.5,
-        color: '#2D3748',
-        weight: 2,
-      };
-    }
+    // Check if any states from this country are visited (only if mode enabled)
+    const hasVisitedStates = showStatesAsCountries && Object.keys(visitedStates).some(stateCode =>
+      stateCode.startsWith(`${countryCode}-`)
+    );
+
+    const isVisited = hasVisitedCountry || hasVisitedStates;
 
     return {
-      fillColor: hasVisited ? '#86EFAC' : 'transparent',
-      fillOpacity: hasVisited ? 0.4 : 0,
+      fillColor: isVisited ? '#86EFAC' : 'transparent',
+      fillOpacity: isVisited ? 0.4 : 0,
       color: '#D4D2C5',
       weight: 1,
     };
   };
 
-  const getStateStyle = (stateCode: string, isHovered: boolean = false) => {
+  // State style function
+  const getStateStyle = (stateCode: string): L.PathOptions => {
     const hasVisited = visitedStates[stateCode];
-
-    if (isHovered) {
-      return {
-        fillColor: hasVisited ? '#059669' : '#6B7280',
-        fillOpacity: 0.6,
-        color: '#1F2937',
-        weight: 2,
-      };
-    }
 
     return {
       fillColor: hasVisited ? '#34D399' : 'transparent',
@@ -211,16 +170,15 @@ const LeafletTravelMap: React.FC<LeafletTravelMapProps> = ({
     };
   };
 
-  const onEachCountry = (feature: any, layer: L.Layer) => {
+  // Country layer setup
+  const onEachCountry = React.useCallback((feature: any, layer: L.Layer) => {
     const countryCode = feature.properties.iso_a2;
     const countryName = feature.properties.name;
 
-    // Style the country
     if (layer instanceof L.Path) {
       layer.setStyle(getCountryStyle(countryCode));
     }
 
-    // Bind popup
     layer.bindPopup(`
       <div class="p-2">
         <h3 class="font-semibold text-gray-900">${countryName}</h3>
@@ -230,51 +188,32 @@ const LeafletTravelMap: React.FC<LeafletTravelMapProps> = ({
       </div>
     `);
 
-    // Event handlers
     layer.on({
-      mouseover: (e: L.LeafletMouseEvent) => {
-        const target = e.target;
-        if (target instanceof L.Path) {
-          target.setStyle(getCountryStyle(countryCode, true));
-        }
-      },
-      mouseout: (e: L.LeafletMouseEvent) => {
-        const target = e.target;
-        if (target instanceof L.Path) {
-          target.setStyle(getCountryStyle(countryCode, false));
-        }
-      },
-      click: (e: L.LeafletMouseEvent) => {
-        // Only handle country clicks when zoomed out (not looking at states)
-        console.log('Country clicked, current zoom:', zoomRef.current);
-        if (zoomRef.current < 5) {
-          console.log('✓ Processing country click:', countryCode);
+      click: () => {
+        // Only handle country clicks when not zoomed into states
+        if (currentZoom < 5) {
           onCountryClick(countryCode);
-        } else {
-          console.log('✗ Country click ignored (zoom >= 5, expecting state click)');
         }
       },
     });
-  };
+  }, [visitedCountries, visitedStates, showStatesAsCountries, currentZoom, onCountryClick]);
 
+  // State layer setup
   const onEachState = (feature: any, layer: L.Layer) => {
     const stateName = feature.properties.name || feature.properties.NAME;
     const stateCode = feature.properties.iso_3166_2 || feature.properties.code_hasc;
     const countryCode = feature.properties.iso_a2 || feature.properties.adm0_a3;
 
-    if (!stateCode) {
-      console.log('State without code:', feature.properties);
-      return;
-    }
+    if (!stateCode) return;
 
-    console.log('Processing state:', { stateName, stateCode, countryCode });
-
-    // Style the state
     if (layer instanceof L.Path) {
       layer.setStyle(getStateStyle(stateCode));
+
+      // Make state layer interactive with higher priority
+      layer.options.interactive = true;
+      (layer as any).bringToFront();
     }
 
-    // Bind popup
     layer.bindPopup(`
       <div class="p-2">
         <h3 class="font-semibold text-gray-900">${stateName}</h3>
@@ -284,34 +223,18 @@ const LeafletTravelMap: React.FC<LeafletTravelMapProps> = ({
       </div>
     `);
 
-    // Event handlers
     layer.on({
-      mouseover: (e: L.LeafletMouseEvent) => {
-        const target = e.target;
-        if (target instanceof L.Path) {
-          target.setStyle(getStateStyle(stateCode, true));
-        }
-      },
-      mouseout: (e: L.LeafletMouseEvent) => {
-        const target = e.target;
-        if (target instanceof L.Path) {
-          target.setStyle(getStateStyle(stateCode, false));
-        }
-      },
       click: (e: L.LeafletMouseEvent) => {
         L.DomEvent.stopPropagation(e);
-        console.log('🎯 State clicked:', { stateName, stateCode, countryCode });
-        if (onStateClick) {
-          console.log('Calling onStateClick...');
+        if (onStateClick && currentZoom >= 5) {
           onStateClick(stateCode, countryCode);
-        } else {
-          console.log('⚠️ onStateClick is not defined!');
         }
       },
     });
   };
 
   const visitedCount = Object.keys(visitedCountries).length;
+  const visitedStatesCount = Object.keys(visitedStates).length;
 
   if (loading) {
     return (
@@ -349,8 +272,27 @@ const LeafletTravelMap: React.FC<LeafletTravelMapProps> = ({
         <div className="max-w-full mx-auto flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-900">Travel Map</h1>
           <div className="flex items-center gap-4">
+            {/* View Mode Toggle */}
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg border border-gray-200">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showStatesAsCountries}
+                  onChange={(e) => setShowStatesAsCountries(e.target.checked)}
+                  className="w-4 h-4 text-green-600 rounded"
+                />
+                <span className="text-xs font-medium text-gray-700">
+                  States count as country visits
+                </span>
+              </label>
+            </div>
+
             <div className="text-sm text-gray-600">
-              Zoom: {currentZoom} | States: {states.length} loaded
+              {currentZoom < 5 ? (
+                `Zoom in to see states (current: ${currentZoom})`
+              ) : (
+                `${visitedStatesCount} states visited`
+              )}
             </div>
             <div className="text-lg font-semibold text-green-600">
               {visitedCount} {visitedCount === 1 ? 'country' : 'countries'} visited
@@ -371,37 +313,37 @@ const LeafletTravelMap: React.FC<LeafletTravelMapProps> = ({
           maxBoundsViscosity={1.0}
           minZoom={2}
         >
-          {/* OpenStreetMap Tile Layer - Shows cities, roads, everything! */}
+          <ZoomTracker onZoomChange={setCurrentZoom} />
+
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             maxZoom={19}
           />
 
-          {/* Zoom tracker */}
-          <ZoomTracker onZoomChange={setCurrentZoom} />
-
-          {/* Country overlays for visited tracking */}
-          <GeoJSON
-            data={{
-              type: 'FeatureCollection',
-              features: countries,
-            }}
-            onEachFeature={onEachCountry}
-            key={JSON.stringify(visitedCountries)}
-          />
-
-          {/* State/Province overlays - shown when zoomed in */}
-          {currentZoom >= 5 && states.length > 0 && (
+          {/* Country layer - always show for borders and country clicks */}
+          {currentZoom < 5 && (
             <GeoJSON
+              ref={countryLayerRef}
+              data={{
+                type: 'FeatureCollection',
+                features: countries,
+              }}
+              onEachFeature={onEachCountry}
+              key={`countries-${JSON.stringify(visitedCountries)}-${JSON.stringify(visitedStates)}-${showStatesAsCountries}`}
+            />
+          )}
+
+          {/* State layer - show when zoomed in OR when checkbox is unchecked (to show state-level detail) */}
+          {(currentZoom >= 5 || !showStatesAsCountries) && states.length > 0 && (
+            <GeoJSON
+              ref={stateLayerRef}
               data={{
                 type: 'FeatureCollection',
                 features: states,
               }}
               onEachFeature={onEachState}
-              key={`states-${JSON.stringify(visitedStates)}`}
-              style={{ zIndex: 1000 }}
-              pane="overlayPane"
+              key={`states-${JSON.stringify(visitedStates)}-${currentZoom}-${showStatesAsCountries}`}
             />
           )}
         </MapContainer>
@@ -411,27 +353,36 @@ const LeafletTravelMap: React.FC<LeafletTravelMapProps> = ({
       <div className="fixed bottom-4 right-4 bg-white rounded-lg border border-gray-200 p-4 shadow-lg">
         <h4 className="text-sm font-semibold text-gray-700 mb-2">Legend</h4>
         <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded border border-gray-300 bg-green-300"></div>
-            <span className="text-xs text-gray-700 font-medium">Visited Country</span>
-          </div>
-          {currentZoom >= 5 && (
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded border border-gray-300 bg-emerald-400"></div>
-              <span className="text-xs text-gray-700 font-medium">Visited State</span>
-            </div>
+          {currentZoom < 5 ? (
+            <>
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded border border-gray-300 bg-green-300"></div>
+                <span className="text-xs text-gray-700 font-medium">Visited Country</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded border border-gray-300 bg-white"></div>
+                <span className="text-xs text-gray-700 font-medium">Not Visited</span>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded border border-gray-300 bg-emerald-400"></div>
+                <span className="text-xs text-gray-700 font-medium">Visited State</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded border border-gray-300 bg-white"></div>
+                <span className="text-xs text-gray-700 font-medium">Not Visited</span>
+              </div>
+            </>
           )}
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded border border-gray-300 bg-white"></div>
-            <span className="text-xs text-gray-700 font-medium">Not Visited</span>
-          </div>
         </div>
         <p className="text-xs text-gray-500 mt-3">
-          {currentZoom < 5 ? 'Zoom in to see states & provinces' : 'Click states to mark as visited'}
+          {currentZoom < 5 ? 'Zoom in (5+) to see & click states' : 'Click states to mark as visited'}
         </p>
       </div>
     </div>
   );
 };
 
-export default LeafletTravelMap;
+export default LeafletTravelMapV2;
