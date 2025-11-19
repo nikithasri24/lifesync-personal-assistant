@@ -21,8 +21,10 @@ import type {
   DreamPriority,
   DreamStatus,
   LifeGoalWithMilestones,
+  LifeGoalMilestone,
 } from '../goals/types/lifeGoals';
 import GoalTemplates from '../goals/components/GoalTemplates';
+import GoalMilestones from '../goals/components/GoalMilestones';
 
 const GOAL_CATEGORIES: GoalCategory[] = ['personal', 'health', 'career', 'financial', 'fitness'];
 const GOAL_PRIORITIES: GoalPriority[] = ['low', 'medium', 'high', 'critical'];
@@ -88,6 +90,8 @@ const LifeGoals: React.FC = () => {
   const [showTemplates, setShowTemplates] = useState(false);
   const [editingProgress, setEditingProgress] = useState<string | null>(null);
   const [progressValue, setProgressValue] = useState<number>(0);
+  const [expandedGoalId, setExpandedGoalId] = useState<string | null>(null);
+  const [goalMilestones, setGoalMilestones] = useState<Record<string, LifeGoalMilestone[]>>({});
 
   // Load goals and dreams on mount
   useEffect(() => {
@@ -245,7 +249,36 @@ const LifeGoals: React.FC = () => {
 
   const handleGoalCreatedFromTemplate = (goal: LifeGoalWithMilestones) => {
     setGoals(prev => [goal, ...prev]);
+    if (goal.milestones && goal.milestones.length > 0) {
+      setGoalMilestones(prev => ({ ...prev, [goal.id]: goal.milestones }));
+    }
     setShowTemplates(false);
+  };
+
+  const handleExpandGoal = async (goalId: string) => {
+    if (expandedGoalId === goalId) {
+      setExpandedGoalId(null);
+      return;
+    }
+
+    setExpandedGoalId(goalId);
+
+    // Load milestones if not already loaded
+    if (!goalMilestones[goalId]) {
+      try {
+        const goalWithMilestones = await getLifeGoalById(goalId);
+        if (goalWithMilestones) {
+          setGoalMilestones(prev => ({ ...prev, [goalId]: goalWithMilestones.milestones }));
+        }
+      } catch (error) {
+        console.error('Error loading milestones:', error);
+      }
+    }
+  };
+
+  const handleMilestonesUpdated = (goal: LifeGoal, milestones: LifeGoalMilestone[]) => {
+    setGoals(prev => prev.map(g => g.id === goal.id ? goal : g));
+    setGoalMilestones(prev => ({ ...prev, [goal.id]: milestones }));
   };
 
   const renderGoalList = () => {
@@ -255,7 +288,12 @@ const LifeGoals: React.FC = () => {
 
     return (
       <ul className="space-y-3">
-        {goals.map((goal) => (
+        {goals.map((goal) => {
+          const isExpanded = expandedGoalId === goal.id;
+          const milestonesForGoal = goalMilestones[goal.id] || [];
+          const hasMilestones = milestonesForGoal.length > 0;
+
+          return (
           <li key={goal.id} className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1">
@@ -347,9 +385,26 @@ const LifeGoals: React.FC = () => {
               {goal.targetDate && (
                 <span>Target: {new Date(goal.targetDate).toLocaleDateString()}</span>
               )}
+              {(hasMilestones || goal.templateId) && (
+                <button
+                  onClick={() => handleExpandGoal(goal.id)}
+                  className="ml-auto text-indigo-600 hover:text-indigo-700 font-medium"
+                >
+                  {isExpanded ? '▼ Hide milestones' : `▶ Show milestones${hasMilestones ? ` (${milestonesForGoal.length})` : ''}`}
+                </button>
+              )}
             </div>
+
+            {/* Milestones section */}
+            {isExpanded && (
+              <GoalMilestones
+                goal={goal}
+                milestones={milestonesForGoal}
+                onMilestonesUpdated={handleMilestonesUpdated}
+              />
+            )}
           </li>
-        ))}
+        )})}
       </ul>
     );
   };
