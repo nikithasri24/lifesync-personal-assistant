@@ -58,6 +58,7 @@ type ViewKey =
   | 'journal'
   | 'goals'
   | 'travel'
+  | 'visa'
   | 'finances'
   | 'shopping'
   | 'meals'

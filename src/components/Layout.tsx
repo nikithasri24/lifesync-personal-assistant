@@ -19,7 +19,8 @@ import {
   ChefHat,
   MapPin,
   DollarSign,
-  Sparkles
+  Sparkles,
+  Plane
 } from 'lucide-react';
 import { useAppStore } from '../stores/useAppStore';
 import Toast from './Toast';
@@ -42,6 +43,7 @@ const navigation = [
   { name: 'Period', icon: Droplets, view: 'period' as const, section: 'wellbeing' },
   { name: 'Skincare', icon: Sparkles, view: 'skincare' as const, section: 'wellbeing' },
   { name: 'Travel', icon: MapPin, view: 'travel' as const, section: 'personal' },
+  { name: 'Visa Calculator', icon: Plane, view: 'visa' as const, section: 'personal' },
   { name: 'Finances', icon: DollarSign, view: 'finances' as const, section: 'personal' },
   { name: 'Shopping', icon: ShoppingCart, view: 'shopping' as const, section: 'personal' },
   { name: 'Meals', icon: ChefHat, view: 'meals' as const, section: 'personal' },
@@ -195,6 +197,7 @@ export default function Layout({ children }: LayoutProps) {
                   {activeView === 'mood' && 'Track your wellbeing'}
                   {activeView === 'period' && 'Menstrual cycle tracking'}
                   {activeView === 'travel' && 'Plan and organize your trips'}
+                  {activeView === 'visa' && 'Calculate visa-free travel destinations'}
                   {activeView === 'finances' && 'Track income, expenses, and budgets'}
                   {activeView === 'shopping' && 'Smart grocery management'}
                   {activeView === 'meals' && 'Weekly meal planning'}

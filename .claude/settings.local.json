@@ -81,7 +81,10 @@
       "WebFetch(domain:projectionlab.com)",
       "WebFetch(domain:www.makingsenseofcents.com)",
       "WebFetch(domain:robberger.com)",
-      "WebFetch(domain:mappacker.com)"
+      "WebFetch(domain:mappacker.com)",
+      "Bash(PGPASSWORD='AbNY4sCdEa6APPA' psql -h db.rfwaiijodrowakcpayoa.supabase.co -p 5432 -U postgres -d postgres -f supabase/migrations/20251119_add_parks_and_islands.sql)",
+      "WebFetch(domain:en.wikipedia.org)",
+      "WebFetch(domain:github.com)"
     ],
     "deny": [],
     "ask": []

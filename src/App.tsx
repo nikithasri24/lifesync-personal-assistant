@@ -16,6 +16,7 @@ import ShoppingSmart from './pages/ShoppingSmart';
 import MealPlanning from './pages/MealPlanning';
 import ProjectTracking from './pages/ProjectTracking';
 import Travel from './pages/Travel';
+import VisaPage from './travel/pages/VisaPage';
 import Finances from './pages/Finances';
 import SeventyFiveHard from './pages/SeventyFiveHard/index';
 import Skincare from './pages/Skincare';
@@ -123,6 +124,8 @@ function App() {
         return <Goals />;
       case 'travel':
         return <Travel />;
+      case 'visa':
+        return <VisaPage />;
       case 'finances':
         return <Finances />;
       case 'shopping':
