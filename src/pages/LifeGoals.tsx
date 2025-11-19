@@ -27,6 +27,7 @@ import GoalTemplates from '../goals/components/GoalTemplates';
 import GoalMilestones from '../goals/components/GoalMilestones';
 import GoalStreaks from '../goals/components/GoalStreaks';
 import GoalGamification from '../goals/components/GoalGamification';
+import GoalCheckins from '../goals/components/GoalCheckins';
 
 const GOAL_CATEGORIES: GoalCategory[] = ['personal', 'health', 'career', 'financial', 'fitness'];
 const GOAL_PRIORITIES: GoalPriority[] = ['low', 'medium', 'high', 'critical'];
@@ -421,6 +422,8 @@ const LifeGoals: React.FC = () => {
                     onGoalUpdated={(updatedGoal) => setGoals(prev => prev.map(g => g.id === updatedGoal.id ? updatedGoal : g))}
                   />
                 )}
+                {/* Check-ins section */}
+                <GoalCheckins goal={goal} />
               </>
             )}
           </li>
