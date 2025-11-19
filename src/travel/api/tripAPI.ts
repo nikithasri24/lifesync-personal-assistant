@@ -3,7 +3,7 @@
  * CRUD operations for multi-country trip planning
  */
 
-import { supabase } from '../../config/supabase';
+import { supabase } from '../../lib/supabase';
 import type {
   Trip,
   TripDestination,
