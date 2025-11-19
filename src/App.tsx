@@ -8,7 +8,6 @@ import Habits from './pages/Habits';
 import Mood from './pages/Mood';
 import TodosWorkingFollowUp from './pages/TodosWorkingFollowUp';
 import Notes from './pages/Notes';
-import Personal from './pages/Personal';
 import Journal from './pages/Journal';
 import LifeGoals from './pages/LifeGoals';
 import AppleHealthCyclesSimple from './pages/AppleHealthCyclesSimple';
@@ -137,8 +136,6 @@ function App() {
         return <MealPlanning />;
       case 'shared':
         return <div className="text-center py-12 text-muted">Shared Lists & Gift Ideas feature coming soon...</div>;
-      case 'personal':
-        return <Personal />;
       case 'seventy-five-hard':
         return <SeventyFiveHard />;
       case 'skincare':

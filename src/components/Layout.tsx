@@ -51,7 +51,6 @@ const navigation = [
   { name: 'Meals', icon: ChefHat, view: 'meals' as const, section: 'personal' },
   { name: 'Goals', icon: Trophy, view: 'goals' as const, section: 'personal' },
   { name: 'Shared', icon: Users, view: 'shared' as const, section: 'personal' },
-  { name: 'Personal', icon: Heart, view: 'personal' as const, section: 'personal' },
 ];
 
 const navigationSections = {
@@ -206,7 +205,6 @@ export default function Layout({ children }: LayoutProps) {
                   {activeView === 'meals' && 'Weekly meal planning'}
                   {activeView === 'goals' && 'Achieve your dreams'}
                   {activeView === 'shared' && 'Collaborate and share'}
-                  {activeView === 'personal' && 'Life management'}
                 </p>
               </div>
             </div>

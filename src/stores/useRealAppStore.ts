@@ -64,7 +64,6 @@ type ViewKey =
   | 'shopping'
   | 'meals'
   | 'shared'
-  | 'personal'
   | 'seventy-five-hard'
   | 'skincare'
 
