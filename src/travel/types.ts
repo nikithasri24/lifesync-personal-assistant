@@ -3,7 +3,7 @@
  */
 
 // Location types
-export type LocationType = 'country' | 'state' | 'city' | 'region';
+export type LocationType = 'country' | 'state' | 'city' | 'region' | 'national_park' | 'island';
 
 export type VisitStatus = 'visited' | 'lived' | 'transit' | 'wishlist';
 
@@ -20,6 +20,9 @@ export type VisitedLocation = {
   stateName?: string;
   cityName?: string;
   regionName?: string;
+  islandName?: string; // For Hawaii, Greek islands, etc.
+  nationalParkId?: string; // ID from national parks database
+  nationalParkName?: string;
 
   // Visit info
   status: VisitStatus;

@@ -4,10 +4,12 @@
  */
 
 import React from 'react';
-import { MapContainer, TileLayer, GeoJSON, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, GeoJSON, useMapEvents, Marker, Tooltip } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { VisitStatus } from '../types';
+import { nationalParks } from '../data/nationalParks';
+import { islands } from '../data/islands';
 
 // Fix Leaflet default marker icon issue
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -17,11 +19,56 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
+// Custom icons for national parks and islands
+const createParkIcon = (visited: boolean) => {
+  return L.divIcon({
+    className: 'custom-park-icon',
+    html: `<div style="
+      background-color: ${visited ? '#10B981' : '#6B7280'};
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 2px solid white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    ">🌲</div>`,
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
+  });
+};
+
+const createIslandIcon = (visited: boolean) => {
+  return L.divIcon({
+    className: 'custom-island-icon',
+    html: `<div style="
+      background-color: ${visited ? '#3B82F6' : '#9CA3AF'};
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 2px solid white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    ">🏝️</div>`,
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
+  });
+};
+
 type LeafletTravelMapV2Props = {
   visitedCountries: Record<string, VisitStatus>;
   onCountryClick: (countryCode: string) => void;
   visitedStates?: Record<string, VisitStatus>;
   onStateClick?: (stateCode: string, countryCode: string) => void;
+  visitedParks?: Record<string, VisitStatus>; // Key is park ID
+  onParkClick?: (parkId: string) => void;
+  visitedIslands?: Record<string, VisitStatus>; // Key is island ID
+  onIslandClick?: (islandId: string) => void;
 };
 
 interface CountryFeature {
@@ -55,6 +102,10 @@ const LeafletTravelMapV2: React.FC<LeafletTravelMapV2Props> = ({
   onCountryClick,
   visitedStates = {},
   onStateClick,
+  visitedParks = {},
+  onParkClick,
+  visitedIslands = {},
+  onIslandClick,
 }) => {
   const [countries, setCountries] = React.useState<CountryFeature[]>([]);
   const [states, setStates] = React.useState<any[]>([]);
@@ -62,6 +113,8 @@ const LeafletTravelMapV2: React.FC<LeafletTravelMapV2Props> = ({
   const [error, setError] = React.useState<string | null>(null);
   const [currentZoom, setCurrentZoom] = React.useState(2);
   const [showStatesAsCountries, setShowStatesAsCountries] = React.useState(true);
+  const [showNationalParks, setShowNationalParks] = React.useState(false);
+  const [showIslands, setShowIslands] = React.useState(false);
 
   const countryLayerRef = React.useRef<L.GeoJSON | null>(null);
   const stateLayerRef = React.useRef<L.GeoJSON | null>(null);
@@ -271,7 +324,7 @@ const LeafletTravelMapV2: React.FC<LeafletTravelMapV2Props> = ({
       <div className="bg-white border-b border-gray-200 py-4 px-6">
         <div className="max-w-full mx-auto flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-900">Travel Map</h1>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             {/* View Mode Toggle */}
             <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg border border-gray-200">
               <label className="flex items-center gap-2 cursor-pointer">
@@ -284,6 +337,29 @@ const LeafletTravelMapV2: React.FC<LeafletTravelMapV2Props> = ({
                 <span className="text-xs font-medium text-gray-700">
                   States count as country visits
                 </span>
+              </label>
+            </div>
+
+            {/* Layer Toggles */}
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg border border-gray-200">
+              <label className="flex items-center gap-1.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showNationalParks}
+                  onChange={(e) => setShowNationalParks(e.target.checked)}
+                  className="w-4 h-4 text-green-600 rounded"
+                />
+                <span className="text-xs font-medium text-gray-700">🌲 Parks</span>
+              </label>
+              <div className="w-px h-4 bg-gray-300"></div>
+              <label className="flex items-center gap-1.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showIslands}
+                  onChange={(e) => setShowIslands(e.target.checked)}
+                  className="w-4 h-4 text-blue-600 rounded"
+                />
+                <span className="text-xs font-medium text-gray-700">🏝️ Islands</span>
               </label>
             </div>
 
@@ -346,6 +422,136 @@ const LeafletTravelMapV2: React.FC<LeafletTravelMapV2Props> = ({
               key={`states-${JSON.stringify(visitedStates)}-${currentZoom}-${showStatesAsCountries}`}
             />
           )}
+
+          {/* National Parks markers */}
+          {showNationalParks && nationalParks.map(park => {
+            const isVisited = !!visitedParks[park.id];
+            return (
+              <Marker
+                key={park.id}
+                position={[park.lat, park.lon]}
+                icon={createParkIcon(isVisited)}
+                eventHandlers={{
+                  click: () => onParkClick && onParkClick(park.id),
+                }}
+              >
+                <Tooltip direction="top" offset={[0, -10]} opacity={1}>
+                  <div style={{ padding: '8px', minWidth: '250px', maxWidth: '300px' }}>
+                    <h3 style={{
+                      fontWeight: 'bold',
+                      color: '#111827',
+                      fontSize: '15px',
+                      marginBottom: '6px',
+                      lineHeight: '1.3'
+                    }}>
+                      {park.name}
+                    </h3>
+                    {park.established && (
+                      <p style={{
+                        fontSize: '13px',
+                        color: '#374151',
+                        fontWeight: '500',
+                        margin: '3px 0'
+                      }}>
+                        Est. {park.established}
+                      </p>
+                    )}
+                    {park.unesco && (
+                      <p style={{
+                        fontSize: '12px',
+                        color: '#1d4ed8',
+                        fontWeight: 'bold',
+                        margin: '4px 0'
+                      }}>
+                        UNESCO World Heritage Site
+                      </p>
+                    )}
+                    {park.description && (
+                      <p style={{
+                        fontSize: '13px',
+                        color: '#1f2937',
+                        marginTop: '6px',
+                        lineHeight: '1.4'
+                      }}>
+                        {park.description}
+                      </p>
+                    )}
+                    <p style={{
+                      fontSize: '13px',
+                      marginTop: '8px',
+                      fontWeight: '600'
+                    }}>
+                      {isVisited ? (
+                        <span style={{ color: '#15803d' }}>✓ Visited</span>
+                      ) : (
+                        <span style={{ color: '#6b7280' }}>Click to mark as visited</span>
+                      )}
+                    </p>
+                  </div>
+                </Tooltip>
+              </Marker>
+            );
+          })}
+
+          {/* Islands markers */}
+          {showIslands && islands.map(island => {
+            const isVisited = !!visitedIslands[island.id];
+            return (
+              <Marker
+                key={island.id}
+                position={[island.lat, island.lon]}
+                icon={createIslandIcon(isVisited)}
+                eventHandlers={{
+                  click: () => onIslandClick && onIslandClick(island.id),
+                }}
+              >
+                <Tooltip direction="top" offset={[0, -10]} opacity={1}>
+                  <div style={{ padding: '8px', minWidth: '250px', maxWidth: '300px' }}>
+                    <h3 style={{
+                      fontWeight: 'bold',
+                      color: '#111827',
+                      fontSize: '15px',
+                      marginBottom: '6px',
+                      lineHeight: '1.3'
+                    }}>
+                      {island.name}
+                    </h3>
+                    {island.islandGroup && (
+                      <p style={{
+                        fontSize: '13px',
+                        color: '#374151',
+                        fontWeight: '500',
+                        margin: '3px 0'
+                      }}>
+                        {island.islandGroup}
+                      </p>
+                    )}
+                    {island.description && (
+                      <p style={{
+                        fontSize: '13px',
+                        color: '#1f2937',
+                        marginTop: '6px',
+                        lineHeight: '1.4'
+                      }}>
+                        {island.description}
+                      </p>
+                    )}
+                    <p style={{
+                      fontSize: '13px',
+                      marginTop: '8px',
+                      fontWeight: '600'
+                    }}>
+                      {isVisited ? (
+                        <span style={{ color: '#1d4ed8' }}>✓ Visited</span>
+                      ) : (
+                        <span style={{ color: '#6b7280' }}>Click to mark as visited</span>
+                      )}
+                    </p>
+                  </div>
+                </Tooltip>
+              </Marker>
+            );
+          })}
         </MapContainer>
       </div>
 
@@ -375,6 +581,44 @@ const LeafletTravelMapV2: React.FC<LeafletTravelMapV2Props> = ({
                 <span className="text-xs text-gray-700 font-medium">Not Visited</span>
               </div>
             </>
+          )}
+
+          {/* Park and Island markers */}
+          {(showNationalParks || showIslands) && (
+            <div className="border-t border-gray-200 mt-2 pt-2">
+              {showNationalParks && (
+                <>
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-full border-2 border-white bg-green-600 flex items-center justify-center text-xs shadow">
+                      🌲
+                    </div>
+                    <span className="text-xs text-gray-700 font-medium">Visited Park</span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-1">
+                    <div className="w-6 h-6 rounded-full border-2 border-white bg-gray-500 flex items-center justify-center text-xs shadow">
+                      🌲
+                    </div>
+                    <span className="text-xs text-gray-700 font-medium">Not Visited Park</span>
+                  </div>
+                </>
+              )}
+              {showIslands && (
+                <>
+                  <div className="flex items-center gap-2 mt-1">
+                    <div className="w-6 h-6 rounded-full border-2 border-white bg-blue-600 flex items-center justify-center text-xs shadow">
+                      🏝️
+                    </div>
+                    <span className="text-xs text-gray-700 font-medium">Visited Island</span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-1">
+                    <div className="w-6 h-6 rounded-full border-2 border-white bg-gray-400 flex items-center justify-center text-xs shadow">
+                      🏝️
+                    </div>
+                    <span className="text-xs text-gray-700 font-medium">Not Visited Island</span>
+                  </div>
+                </>
+              )}
+            </div>
           )}
         </div>
         <p className="text-xs text-gray-500 mt-3">
