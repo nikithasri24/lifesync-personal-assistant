@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
-import { Plus, Target, Trash2, CheckCircle2, Sparkles, TrendingUp, Edit3, Lightbulb } from 'lucide-react';
+import { Plus, Target, Trash2, CheckCircle2, Sparkles, TrendingUp, Edit3, Lightbulb, Trophy } from 'lucide-react';
 import {
   getUserLifeGoals,
   getUserLifeDreams,
@@ -25,6 +25,8 @@ import type {
 } from '../goals/types/lifeGoals';
 import GoalTemplates from '../goals/components/GoalTemplates';
 import GoalMilestones from '../goals/components/GoalMilestones';
+import GoalStreaks from '../goals/components/GoalStreaks';
+import GoalGamification from '../goals/components/GoalGamification';
 
 const GOAL_CATEGORIES: GoalCategory[] = ['personal', 'health', 'career', 'financial', 'fitness'];
 const GOAL_PRIORITIES: GoalPriority[] = ['low', 'medium', 'high', 'critical'];
@@ -39,6 +41,9 @@ type GoalDraft = {
   category: GoalCategory;
   priority: GoalPriority;
   targetDate: string;
+  streakEnabled: boolean;
+  streakFrequency: 'daily' | 'weekly';
+  streakTarget: string;
 };
 
 type DreamDraft = {
@@ -57,6 +62,9 @@ const createGoalDraft = (): GoalDraft => ({
   category: 'personal',
   priority: 'medium',
   targetDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+  streakEnabled: false,
+  streakFrequency: 'daily',
+  streakTarget: '',
 });
 
 const createDreamDraft = (): DreamDraft => ({
@@ -82,7 +90,7 @@ const LifeGoals: React.FC = () => {
   const [goals, setGoals] = useState<LifeGoal[]>([]);
   const [dreams, setDreams] = useState<LifeDream[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'goals' | 'dreams'>('goals');
+  const [activeTab, setActiveTab] = useState<'goals' | 'dreams' | 'progress'>('goals');
   const [goalDraft, setGoalDraft] = useState<GoalDraft>(createGoalDraft);
   const [dreamDraft, setDreamDraft] = useState<DreamDraft>(createDreamDraft);
   const [showGoalForm, setShowGoalForm] = useState(false);
@@ -143,6 +151,9 @@ const LifeGoals: React.FC = () => {
         priority: goalDraft.priority,
         targetDate: goalDraft.targetDate,
         startDate: new Date().toISOString(),
+        streakEnabled: goalDraft.streakEnabled,
+        streakFrequency: goalDraft.streakFrequency,
+        streakTarget: goalDraft.streakTarget ? Number(goalDraft.streakTarget) : undefined,
       });
       setGoals(prev => [newGoal, ...prev]);
       setGoalDraft(createGoalDraft());
@@ -397,11 +408,20 @@ const LifeGoals: React.FC = () => {
 
             {/* Milestones section */}
             {isExpanded && (
-              <GoalMilestones
-                goal={goal}
-                milestones={milestonesForGoal}
-                onMilestonesUpdated={handleMilestonesUpdated}
-              />
+              <>
+                <GoalMilestones
+                  goal={goal}
+                  milestones={milestonesForGoal}
+                  onMilestonesUpdated={handleMilestonesUpdated}
+                />
+                {/* Streaks section */}
+                {goal.streakEnabled && (
+                  <GoalStreaks
+                    goal={goal}
+                    onGoalUpdated={(updatedGoal) => setGoals(prev => prev.map(g => g.id === updatedGoal.id ? updatedGoal : g))}
+                  />
+                )}
+              </>
             )}
           </li>
         )})}
@@ -543,10 +563,22 @@ const LifeGoals: React.FC = () => {
         >
           Dreams
         </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('progress')}
+          className={`flex-1 rounded-full px-4 py-2 text-sm font-medium transition flex items-center justify-center gap-2 ${
+            activeTab === 'progress' ? 'bg-indigo-600 text-white' : 'border border-slate-200 text-slate-700 hover:bg-slate-50'
+          }`}
+        >
+          <Trophy className="h-4 w-4" />
+          Progress & XP
+        </button>
       </div>
 
       <section>
-        {activeTab === 'goals' ? renderGoalList() : renderDreamList()}
+        {activeTab === 'goals' && renderGoalList()}
+        {activeTab === 'dreams' && renderDreamList()}
+        {activeTab === 'progress' && <GoalGamification goals={goals} />}
       </section>
 
       {showGoalForm && (
@@ -605,6 +637,47 @@ const LifeGoals: React.FC = () => {
                 className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
               />
             </label>
+
+            {/* Streak tracking options */}
+            <div className="sm:col-span-2 border-t border-slate-200 pt-4">
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={goalDraft.streakEnabled}
+                  onChange={(e) => setGoalDraft((prev) => ({ ...prev, streakEnabled: e.target.checked }))}
+                  className="rounded border-slate-300"
+                />
+                <span className="font-medium text-slate-700">Enable daily streak tracking</span>
+              </label>
+              <p className="text-xs text-slate-500 mt-1 ml-6">Track daily progress with check-ins and earn XP for consistency</p>
+
+              {goalDraft.streakEnabled && (
+                <div className="mt-3 ml-6 grid gap-3 sm:grid-cols-2">
+                  <label className="flex flex-col gap-1 text-sm">
+                    <span className="font-medium text-slate-700">Frequency</span>
+                    <select
+                      value={goalDraft.streakFrequency}
+                      onChange={(e) => setGoalDraft((prev) => ({ ...prev, streakFrequency: e.target.value as 'daily' | 'weekly' }))}
+                      className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
+                    >
+                      <option value="daily">Daily</option>
+                      <option value="weekly">Weekly</option>
+                    </select>
+                  </label>
+                  <label className="flex flex-col gap-1 text-sm">
+                    <span className="font-medium text-slate-700">Target streak (days)</span>
+                    <input
+                      type="number"
+                      min="1"
+                      value={goalDraft.streakTarget}
+                      onChange={(e) => setGoalDraft((prev) => ({ ...prev, streakTarget: e.target.value }))}
+                      className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
+                      placeholder="e.g., 30"
+                    />
+                  </label>
+                </div>
+              )}
+            </div>
           </div>
           <div className="mt-6 flex gap-2">
             <button
