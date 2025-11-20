@@ -27,6 +27,7 @@ import { useAuth } from './hooks/useAuth';
 import { isSupabaseConfigured } from './lib/supabase';
 import { loadSFHChallenge } from './stores/seventyFiveHardActions';
 import { cleanup75HardDuplicates } from './utils/cleanup75HardDuplicates';
+import { migrateJournalEntries } from './utils/migrateJournalEntries';
 
 // Expose cleanup function globally for debugging
 if (typeof window !== 'undefined') {
@@ -71,6 +72,12 @@ function App() {
       try {
         await initializeData();
         console.log('🔄 Initialized LifeSync data for Supabase user');
+
+        // Migrate journal entries from localStorage to database (one-time)
+        const migrationResult = await migrateJournalEntries();
+        if (migrationResult.migrated > 0) {
+          console.log(`✅ Migrated ${migrationResult.migrated} journal entries to database`);
+        }
 
         // Load active 75 Hard challenge (new architecture)
         // This will check for missed days and show failure prompt if needed

@@ -2009,15 +2009,32 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
     set((state) => ({ notes: state.notes.filter((note) => note.id !== id) }))
   },
 
-  addJournalEntry: (entry) => {
-    const journalEntry: JournalEntry = {
-      ...entry,
-      id: createId(),
-      createdAt: new Date(),
-      attachments: entry.attachments ?? [],
-      tags: entry.tags ?? [],
+  addJournalEntry: async (entry) => {
+    try {
+      // Import dynamically to avoid circular dependencies
+      const { createJournalEntry } = await import('../api/journalAPI');
+
+      const journalEntry = await createJournalEntry({
+        title: entry.title || undefined,
+        content: entry.content,
+        mood: entry.mood,
+        tags: entry.tags ?? [],
+        attachments: entry.attachments ?? [],
+      });
+
+      set((state) => ({ journalEntries: [journalEntry, ...state.journalEntries] }));
+    } catch (error) {
+      console.error('Error creating journal entry:', error);
+      // Fallback to local storage for backwards compatibility
+      const journalEntry: JournalEntry = {
+        ...entry,
+        id: createId(),
+        createdAt: new Date(),
+        attachments: entry.attachments ?? [],
+        tags: entry.tags ?? [],
+      };
+      set((state) => ({ journalEntries: [journalEntry, ...state.journalEntries] }));
     }
-    set((state) => ({ journalEntries: [journalEntry, ...state.journalEntries] }))
   },
 
   deleteJournalEntry: (id) => {

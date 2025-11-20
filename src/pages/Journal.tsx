@@ -1,10 +1,10 @@
 import React from 'react';
-import GridJournal from './GridJournal';
+import GridJournalEnhanced from './GridJournalEnhanced';
 
-// The dedicated journal view reuses the grid journal experience for now.
-// This keeps the UI consistent while we expand richer layouts later.
+// The dedicated journal view uses the enhanced grid journal with database persistence,
+// edit functionality, delete confirmation, and search/filter capabilities.
 const Journal: React.FC = () => {
-  return <GridJournal />;
+  return <GridJournalEnhanced />;
 };
 
 export default Journal;

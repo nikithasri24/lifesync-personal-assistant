@@ -148,6 +148,8 @@ export interface JournalEntry {
   tags: string[];
   attachments: Attachment[];
   createdAt: Date;
+  weather?: any;
+  gratitude?: string;
 }
 
 export interface Goal {
