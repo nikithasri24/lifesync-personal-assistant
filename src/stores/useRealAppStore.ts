@@ -180,13 +180,8 @@ interface RealAppState {
 
   // Note: 75 Hard actions are in src/stores/seventyFiveHardActions.ts (standalone functions)
 
-  // ==================== 75 Hard (Legacy - DEPRECATED) ====================
+  // ==================== 75 Hard ====================
   seventyFiveHardChallenges: import('../types').LegacySeventyFiveHardChallenge[]
-  addSeventyFiveHardChallenge?: (c: import('../types').LegacySeventyFiveHardChallenge) => void
-  updateSeventyFiveHardChallenge?: (id: string, updates: Partial<import('../types').LegacySeventyFiveHardChallenge>) => void
-  deleteSeventyFiveHardChallenge?: (id: string) => void
-  addSeventyFiveHardEntry?: (e: import('../types').SeventyFiveHardEntry) => void
-  updateSeventyFiveHardEntry?: (id: string, updates: Partial<import('../types').SeventyFiveHardEntry>) => void
   updateActiveChallengesDays: () => void
   cleanupChallengeTasks: (challengeId: string) => Promise<void>
   resetSFHEnsuredDate: () => void
@@ -1085,12 +1080,7 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
   })(),
   sidebarCollapsed: false,
   globalToast: null,
-  sfhLastSynced: (() => {
-    try {
-      const raw = localStorage.getItem('lifesync:75hard:lastSynced')
-      return raw ? new Date(raw) : null
-    } catch { return null }
-  })(),
+  sfhLastSynced: null,
 
   tasks: [],
   todos: [],
@@ -1119,32 +1109,8 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
     } catch { return true }
   })(),
   sfhEnsureInProgress: false,
-  sfhEnsuredForDate: (() => {
-    try {
-      return localStorage.getItem('lifesync:sfh:ensuredForDate')
-    } catch { return null }
-  })(),
-  seventyFiveHardChallenges: (() => {
-    try {
-      const raw = localStorage.getItem('lifesync:75hard')
-      if (!raw) return []
-      const data = JSON.parse(raw)
-      return (data as any[]).map((c) => ({
-        ...c,
-        startDate: new Date(c.startDate),
-        endDate: new Date(c.endDate),
-        createdAt: new Date(c.createdAt),
-        dailyEntries: (c.dailyEntries || []).map((e: any) => ({
-          ...e,
-          date: new Date(e.date),
-          ruleCompletions: (e.ruleCompletions || []).map((rc: any) => ({
-            ...rc,
-            completedAt: rc.completedAt ? new Date(rc.completedAt) : undefined,
-          })),
-        })),
-      }))
-    } catch { return [] }
-  })(),
+  sfhEnsuredForDate: null,
+  seventyFiveHardChallenges: [],
 
   initializeData: async () => {
     if (!isSupabaseConfigured) {
@@ -1191,6 +1157,10 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
         accountsRaw,
         transactionsRaw,
         sfhChallengesRaw,
+        notesRaw,
+        journalEntriesRaw,
+        goalsRaw,
+        dreamsRaw,
       ] = await Promise.all([
         apiClient.getTasks(),
         apiClient.getProjects(),
@@ -1203,6 +1173,22 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
         apiClient.getFinancialAccounts().catch(() => []),
         apiClient.getFinancialTransactions().catch(() => []),
         apiClient.getSFHChallenges().catch(() => []),
+        (async () => {
+          const { getNotes } = await import('../api/notesAPI');
+          return getNotes().catch(() => []);
+        })(),
+        (async () => {
+          const { getJournalEntries } = await import('../api/journalAPI');
+          return getJournalEntries().catch(() => []);
+        })(),
+        (async () => {
+          const { getGoals } = await import('../api/goalsAPI');
+          return getGoals().catch(() => []);
+        })(),
+        (async () => {
+          const { getDreams } = await import('../api/goalsAPI');
+          return getDreams().catch(() => []);
+        })(),
       ])
 
       // Show UI immediately after main data loads
@@ -1408,6 +1394,10 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
         financialAccounts: accountsRaw ?? [],
         financialTransactions: transactionsRaw ?? [],
         financesLoading: false,
+        notes: notesRaw ?? [],
+        journalEntries: journalEntriesRaw ?? [],
+        goals: goalsRaw ?? [],
+        dreams: dreamsRaw ?? [],
         userStats,
         seventyFiveHardChallenges: legacyChallenges,
       })
@@ -1562,55 +1552,7 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
     }
 
     // If this is a 75 Hard task segment, reflect completion in challenge and then delete the task
-    if ((current.tags || []).includes('sfh')) {
-      try {
-        const chTag = (current.tags || []).find(t => t.startsWith('sfh:'))
-        const ruleTag = (current.tags || []).find(t => t.startsWith('sfhRule:'))
-        const dayTag = (current.tags || []).find(t => t.startsWith('sfhDay:'))
-        const segTag = (current.tags || []).find(t => t.startsWith('sfhSeg:'))
-        const challengeId = chTag?.split(':')[1]
-        const ruleId = ruleTag?.split(':')[1]
-        const day = Number(dayTag?.split(':')[1] || 0)
-        const seg = Number(segTag?.split(':')[1] || 0)
-        if (challengeId && ruleId && day > 0) {
-          // Toggle segment to completed
-          const ch = get().seventyFiveHardChallenges.find(c => c.id === challengeId)
-          if (ch) {
-            const date = new Date(ch.startDate.getTime())
-            date.setDate(ch.startDate.getDate() + (day - 1))
-            // Use page logic via store: update entry
-            // We can reuse updateSeventyFiveHardEntry by constructing updated ruleCompletions
-            const entry = ch.dailyEntries.find(e => e.day === day)
-            if (entry) {
-              const rc = entry.ruleCompletions.find(r => r.ruleId === ruleId)
-              if (rc) {
-                const targetRule = ch.rules.find(r => r.id === ruleId)
-                const target = (targetRule?.dailyTarget && targetRule.dailyTarget > 1) ? targetRule.dailyTarget : ((targetRule?.title || '').toLowerCase().includes('twice') ? 2 : 1)
-                if (target > 1) {
-                  const segs = Array.isArray(rc.segments) ? [...rc.segments] : Array.from({ length: target }, () => false)
-                  if (seg >= 0 && seg < segs.length) segs[seg] = true
-                  const done = segs.every(Boolean)
-                  await get().updateSeventyFiveHardEntry!(entry.id, { ruleCompletions: entry.ruleCompletions.map(r => r.ruleId === ruleId ? { ...r, segments: segs, completed: done, completedAt: done ? new Date() : undefined } : r) })
-                } else {
-                  await get().updateSeventyFiveHardEntry!(entry.id, { ruleCompletions: entry.ruleCompletions.map(r => r.ruleId === ruleId ? { ...r, completed: true, completedAt: new Date() } : r) })
-                }
-              }
-            } else {
-              // create new entry
-              const rc = ch.rules.map(r => ({ ruleId: r.id, completed: r.id === ruleId, completedAt: r.id === ruleId ? new Date() : undefined }))
-              await get().addSeventyFiveHardEntry!({ id: createId(), challengeId, date, day, ruleCompletions: rc as any, notes: '', progressPhotoUrl: '', weight: undefined, measurements: {} } as any)
-            }
-          }
-        }
-      } catch (e) {
-        console.warn('[75Hard] Failed to reflect SFH completion from task', e)
-      }
-      // Remove the task from list (soft delete)
-      await get().deleteTodo(id)
-      return
-    }
-
-    // ==================== NEW 75 Hard System (Clean Architecture) ====================
+    // ==================== 75 Hard System ====================
     // Bi-directional sync: Todo completion → 75 Hard task completion
     if ((current.tags || []).includes('75hard')) {
       try {
@@ -2491,177 +2433,6 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
     }))
   },
 
-  // 75 Hard DEPRECATED - Use seventyFiveHardActions.ts instead
-  addSeventyFiveHardChallenge: async (challenge) => {
-    console.warn('[75Hard] DEPRECATED: addSeventyFiveHardChallenge is no longer supported. Use startSFHChallenge() from seventyFiveHardActions.ts instead.')
-    // No-op - legacy method disabled
-  },
-  updateSeventyFiveHardChallenge: async (id, updates) => {
-    console.warn('[75Hard] DEPRECATED: updateSeventyFiveHardChallenge is no longer supported. Use actions from seventyFiveHardActions.ts instead.')
-    // No-op - legacy method disabled
-  },
-  deleteSeventyFiveHardChallenge: async (id) => {
-    console.warn('[75Hard] DEPRECATED: deleteSeventyFiveHardChallenge is no longer supported. Use actions from seventyFiveHardActions.ts instead.')
-    // No-op - legacy method disabled
-  },
-  addSeventyFiveHardEntry: async (entry) => {
-    console.warn('[75Hard] DEPRECATED: addSeventyFiveHardEntry is no longer supported. Use actions from seventyFiveHardActions.ts instead.')
-    // No-op - legacy method disabled
-  },
-  updateSeventyFiveHardEntry: async (id, updates) => {
-    console.warn('[75Hard] DEPRECATED: updateSeventyFiveHardEntry is no longer supported. Use actions from seventyFiveHardActions.ts instead.')
-    // No-op - legacy method disabled
-  },
-  /*
-  // LEGACY METHODS DISABLED - Preserved as comments for reference
-  addSeventyFiveHardEntry__OLD: async (entry) => {
-    // Optimistic update: Add entry to local state immediately
-    let challenges = get().seventyFiveHardChallenges.map((c) => (
-      c.id === entry.challengeId ? { ...c, dailyEntries: [...c.dailyEntries, entry] } : c
-    ))
-    set({ seventyFiveHardChallenges: challenges })
-    try { localStorage.setItem('lifesync:75hard', JSON.stringify(challenges)) } catch {}
-
-    // Sync to cloud in background
-    if (isSupabaseConfigured) {
-      try {
-        const created = await apiClient.createSFHEntry(buildSFHEntryInsert(entry))
-        const mapped = mapSFHEntryDataToEntry(created)
-        // Update with server-assigned ID if different
-        if (mapped.id !== entry.id) {
-          challenges = get().seventyFiveHardChallenges.map((c) => (
-            c.id === entry.challengeId ? {
-              ...c,
-              dailyEntries: c.dailyEntries.map(e => e.id === entry.id ? { ...e, id: mapped.id } : e)
-            } : c
-          ))
-          set({ seventyFiveHardChallenges: challenges })
-          try { localStorage.setItem('lifesync:75hard', JSON.stringify(challenges)) } catch {}
-        }
-      } catch (e) {
-        console.warn('[75Hard] Cloud entry create failed; local state already updated', e)
-      }
-    }
-  },
-  updateSeventyFiveHardEntry: async (id, updates) => {
-    let createdMapped: import('../types').SeventyFiveHardEntry | null = null
-    if (isSupabaseConfigured) {
-      try {
-        await apiClient.updateSFHEntry(id, buildSFHEntryUpdate(updates))
-      } catch (e: any) {
-        console.warn('[75Hard] Cloud entry update failed; applying locally', e)
-        // If the id is not a UUID (local-only entry), try creating it in cloud
-        try {
-          const state = get()
-          const owner = state.seventyFiveHardChallenges.find((c) => c.dailyEntries.some((en) => en.id === id))
-          const curr = owner?.dailyEntries.find((en) => en.id === id)
-          if (owner && curr) {
-            let ownerId = owner.id
-            const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(ownerId)
-            // If not a UUID, create the challenge in cloud and remap local state
-            if (!isUuid) {
-              try {
-                const createdCh = await apiClient.createSFHChallenge(buildSFHChallengeInsert(owner))
-                const mappedCh = mapSFHChallengeDataToChallenge(createdCh)
-                const oldId = owner.id
-                const newId = mappedCh.id
-                ownerId = newId
-                // Update store: replace challenge id and update tasks tags
-                const updatedChallenges = get().seventyFiveHardChallenges.map((c) =>
-                  c.id === oldId ? { ...c, id: newId } : c,
-                )
-                // Update any task tags referencing old challenge id
-                const updatedTasks = get().tasks.map((t) => {
-                  const tags = t.tags || []
-                  if (!tags.includes(`sfh:${oldId}`)) return t
-                  return {
-                    ...t,
-                    tags: tags.map((tg) => (tg === `sfh:${oldId}` ? `sfh:${newId}` : tg)),
-                  }
-                })
-                set({ seventyFiveHardChallenges: updatedChallenges, tasks: updatedTasks, todos: updatedTasks })
-                try { localStorage.setItem('lifesync:75hard', JSON.stringify(updatedChallenges)) } catch {}
-
-                // Migrate all existing local entries for this challenge to cloud
-                try {
-                  const entries = owner.dailyEntries || []
-                  for (const en of entries) {
-                    const payload = buildSFHEntryInsert({ ...en, challengeId: newId })
-                    const createdEntry = await apiClient.createSFHEntry(payload)
-                    if (en.id === id) {
-                      createdMapped = mapSFHEntryDataToEntry(createdEntry)
-                    }
-                  }
-                  // Notify globally
-                  get().showGlobalToast?.(`Moved '${owner.name}' to cloud`, 'success')
-                } catch (mErr) {
-                  console.warn('[75Hard] Failed to migrate entries for challenge', mErr)
-                }
-              } catch (e2) {
-                console.warn('[75Hard] Failed to create challenge in cloud for immediate write', e2)
-              }
-            }
-            // Now create the entry in cloud under ownerId if it looks valid
-            if (/^[0-9a-fA-F-]{36}$/.test(ownerId)) {
-              const merged: import('../types').SeventyFiveHardEntry = { ...curr, ...updates, challengeId: ownerId }
-              const created = await apiClient.createSFHEntry(buildSFHEntryInsert(merged))
-              createdMapped = mapSFHEntryDataToEntry(created)
-            }
-          }
-        } catch (err) {
-          console.warn('[75Hard] Cloud entry create after update failed', err)
-        }
-      }
-    }
-    const challenges = get().seventyFiveHardChallenges.map((c) => ({
-      ...c,
-      dailyEntries: c.dailyEntries.map((e) => (e.id === id ? (createdMapped ? createdMapped : { ...e, ...updates }) : e)),
-    }))
-    set({ seventyFiveHardChallenges: challenges })
-    try { localStorage.setItem('lifesync:75hard', JSON.stringify(challenges)) } catch {}
-    // 2-way cleanup: remove any linked tasks for segments that are now completed
-    try {
-      const state = get()
-      let ownerChallenge: import('../types').SeventyFiveHardChallenge | undefined
-      let entry: import('../types').SeventyFiveHardEntry | undefined
-      for (const ch of state.seventyFiveHardChallenges) {
-        const found = ch.dailyEntries.find((en) => en.id === (createdMapped ? createdMapped.id : id))
-        if (found) { ownerChallenge = ch; entry = found; break }
-      }
-      if (ownerChallenge && entry) {
-        const day = entry.day
-        for (const rc of entry.ruleCompletions) {
-          const rule = ownerChallenge.rules.find(r => r.id === rc.ruleId)
-          const title = (rule?.title || '').toLowerCase()
-          const target = (rule?.dailyTarget && rule.dailyTarget > 1) ? rule.dailyTarget : (title.includes('twice') ? 2 : 1)
-          if (target > 1) {
-            const segs = Array.isArray(rc.segments) ? rc.segments : []
-            for (let i = 0; i < segs.length; i++) {
-              if (!segs[i]) continue
-              const task = state.tasks.find(t => (t.tags || []).includes('sfh')
-                && (t.tags || []).includes(`sfh:${ownerChallenge!.id}`)
-                && (t.tags || []).includes(`sfhRule:${rc.ruleId}`)
-                && (t.tags || []).includes(`sfhDay:${day}`)
-                && (t.tags || []).includes(`sfhSeg:${i}`)
-                && !t.deleted)
-              if (task) { await state.deleteTodo(task.id) }
-            }
-          } else if (rc.completed) {
-            const task = state.tasks.find(t => (t.tags || []).includes('sfh')
-              && (t.tags || []).includes(`sfh:${ownerChallenge!.id}`)
-              && (t.tags || []).includes(`sfhRule:${rc.ruleId}`)
-              && (t.tags || []).includes(`sfhDay:${day}`)
-              && (t.tags || []).includes(`sfhSeg:0`)
-              && !t.deleted)
-            if (task) { await state.deleteTodo(task.id) }
-          }
-        }
-      }
-    } catch (e) {
-      console.warn('[75Hard] Failed to cleanup tasks after entry update', e)
-    }
-  },
-  */
 
   addShoppingItem: async (itemInput) => {
     if (!isSupabaseConfigured) {

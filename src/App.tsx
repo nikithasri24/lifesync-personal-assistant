@@ -5,11 +5,11 @@ import Dashboard from './pages/Dashboard';
 import Calendar from './pages/Calendar';
 import Focus from './pages/Focus';
 import Habits from './pages/Habits';
-import TodosWorkingFollowUp from './pages/TodosWorkingFollowUp';
+import Todos from './pages/Todos';
 import Notes from './pages/Notes';
 import Journal from './pages/Journal';
 import LifeGoals from './pages/LifeGoals';
-import AppleHealthCyclesSimple from './pages/AppleHealthCyclesSimple';
+import AppleHealthCycles from './pages/AppleHealthCycles';
 import ShoppingSmart from './pages/ShoppingSmart';
 import MealPlanning from './pages/MealPlanning';
 import ProjectTracking from './pages/ProjectTracking';
@@ -126,9 +126,9 @@ function App() {
       case 'habits':
         return <Habits />;
       case 'period':
-        return <AppleHealthCyclesSimple />;
+        return <AppleHealthCycles />;
       case 'todos':
-        return <TodosWorkingFollowUp />;
+        return <Todos />;
       case 'notes':
         return <Notes />;
       case 'projects':
