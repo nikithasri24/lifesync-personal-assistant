@@ -1,9 +1,22 @@
-import React, { useMemo, useState, useEffect } from 'react';
+/**
+ * Grid Journal Enhanced
+ *
+ * Migrated to use React Query for server state management
+ * Before: Manual loading with useEffect and state management
+ * After: Automatic caching, loading, and refetching with React Query
+ */
+
+import React, { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { format } from 'date-fns';
 import { Plus, Trash2, NotebookPen, Edit2, X, Search, Filter, Tag as TagIcon } from 'lucide-react';
 import type { JournalEntry, JournalMood } from '../types';
-import * as journalAPI from '../api/journalAPI';
+import {
+  useJournalEntries,
+  useCreateJournalEntry,
+  useUpdateJournalEntry,
+  useDeleteJournalEntry,
+} from '../hooks/useJournalQuery';
 
 type JournalDraft = {
   title: string;
@@ -30,18 +43,31 @@ const createDraft = (): JournalDraft => ({
 });
 
 const GridJournalEnhanced: React.FC = () => {
-  const [entries, setEntries] = useState<JournalEntry[]>([]);
-  const [draft, setDraft] = useState<JournalDraft>(createDraft);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-
   // Search and filter state
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMoods, setSelectedMoods] = useState<JournalMood[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
+
+  // Build filters object for React Query
+  const filters = useMemo(() => {
+    const f: any = {};
+    if (searchQuery) f.searchQuery = searchQuery;
+    if (selectedMoods.length > 0) f.moods = selectedMoods;
+    if (selectedTags.length > 0) f.tags = selectedTags;
+    return Object.keys(f).length > 0 ? f : undefined;
+  }, [searchQuery, selectedMoods, selectedTags]);
+
+  // React Query hooks - automatic loading and caching
+  const { data: entries = [], isLoading, error } = useJournalEntries(filters);
+  const createMutation = useCreateJournalEntry();
+  const updateMutation = useUpdateJournalEntry();
+  const deleteMutation = useDeleteJournalEntry();
+
+  // Form state
+  const [draft, setDraft] = useState<JournalDraft>(createDraft);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   // Available tags from entries
   const availableTags = useMemo(() => {
@@ -49,30 +75,6 @@ const GridJournalEnhanced: React.FC = () => {
     entries.forEach((entry) => entry.tags.forEach((tag) => tagSet.add(tag)));
     return Array.from(tagSet).sort();
   }, [entries]);
-
-  // Load entries
-  const loadEntries = async () => {
-    try {
-      setLoading(true);
-      const filters: journalAPI.JournalEntryFilters = {};
-
-      if (searchQuery) filters.searchQuery = searchQuery;
-      if (selectedMoods.length > 0) filters.moods = selectedMoods;
-      if (selectedTags.length > 0) filters.tags = selectedTags;
-
-      const data = await journalAPI.getJournalEntries(filters);
-      setEntries(data);
-    } catch (error) {
-      console.error('Error loading journal entries:', error);
-      alert('Failed to load journal entries');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadEntries();
-  }, [searchQuery, selectedMoods, selectedTags]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -83,35 +85,31 @@ const GridJournalEnhanced: React.FC = () => {
       .map((tag) => tag.trim())
       .filter(Boolean);
 
-    try {
-      setSubmitting(true);
+    const input = {
+      title: draft.title.trim() || undefined,
+      content: draft.content.trim(),
+      mood: draft.mood,
+      tags,
+    };
 
-      if (editingId) {
-        // Update existing entry
-        await journalAPI.updateJournalEntry(editingId, {
-          title: draft.title.trim() || undefined,
-          content: draft.content.trim(),
-          mood: draft.mood,
-          tags,
-        });
-      } else {
-        // Create new entry
-        await journalAPI.createJournalEntry({
-          title: draft.title.trim() || undefined,
-          content: draft.content.trim(),
-          mood: draft.mood,
-          tags,
-        });
-      }
-
-      setDraft(createDraft());
-      setEditingId(null);
-      await loadEntries();
-    } catch (error) {
-      console.error('Error saving journal entry:', error);
-      alert('Failed to save journal entry');
-    } finally {
-      setSubmitting(false);
+    if (editingId) {
+      // Update existing entry
+      updateMutation.mutate(
+        { id: editingId, updates: input },
+        {
+          onSuccess: () => {
+            setDraft(createDraft());
+            setEditingId(null);
+          },
+        }
+      );
+    } else {
+      // Create new entry
+      createMutation.mutate(input, {
+        onSuccess: () => {
+          setDraft(createDraft());
+        },
+      });
     }
   };
 
@@ -132,15 +130,12 @@ const GridJournalEnhanced: React.FC = () => {
     setEditingId(null);
   };
 
-  const handleDelete = async (id: string) => {
-    try {
-      await journalAPI.deleteJournalEntry(id);
-      setDeleteConfirm(null);
-      await loadEntries();
-    } catch (error) {
-      console.error('Error deleting journal entry:', error);
-      alert('Failed to delete journal entry');
-    }
+  const handleDelete = (id: string) => {
+    deleteMutation.mutate(id, {
+      onSuccess: () => {
+        setDeleteConfirm(null);
+      },
+    });
   };
 
   const toggleMoodFilter = (mood: JournalMood) => {
@@ -162,6 +157,26 @@ const GridJournalEnhanced: React.FC = () => {
   };
 
   const hasActiveFilters = searchQuery || selectedMoods.length > 0 || selectedTags.length > 0;
+  const isSubmitting = createMutation.isPending || updateMutation.isPending;
+
+  // Error state
+  if (error) {
+    return (
+      <div className="mx-auto flex max-w-4xl flex-col gap-6 p-6">
+        <header className="flex flex-col gap-2">
+          <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Journal</h1>
+          <p className="text-sm text-red-600">
+            Error loading journal entries: {error.message}
+          </p>
+        </header>
+        <div className="rounded-lg border border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800 p-4">
+          <p className="text-sm text-red-700 dark:text-red-300">
+            Unable to load your journal entries. Please try refreshing the page.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6 p-6">
@@ -274,7 +289,8 @@ const GridJournalEnhanced: React.FC = () => {
             <input
               value={draft.title}
               onChange={(event) => setDraft((prev) => ({ ...prev, title: event.target.value }))}
-              className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none dark:text-slate-100"
+              disabled={isSubmitting}
+              className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none dark:text-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
               placeholder="A quick headline for the day"
             />
           </label>
@@ -284,7 +300,8 @@ const GridJournalEnhanced: React.FC = () => {
               required
               value={draft.content}
               onChange={(event) => setDraft((prev) => ({ ...prev, content: event.target.value }))}
-              className="h-32 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none dark:text-slate-100"
+              disabled={isSubmitting}
+              className="h-32 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none dark:text-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
               placeholder="Capture highlights, lessons, or anything noteworthy"
             />
           </label>
@@ -293,7 +310,8 @@ const GridJournalEnhanced: React.FC = () => {
             <select
               value={draft.mood}
               onChange={(event) => setDraft((prev) => ({ ...prev, mood: event.target.value as JournalMood }))}
-              className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none dark:text-slate-100"
+              disabled={isSubmitting}
+              className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none dark:text-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {MOOD_OPTIONS.map((option) => (
                 <option key={option} value={option}>
@@ -307,20 +325,22 @@ const GridJournalEnhanced: React.FC = () => {
             <input
               value={draft.tags}
               onChange={(event) => setDraft((prev) => ({ ...prev, tags: event.target.value }))}
-              className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none dark:text-slate-100"
+              disabled={isSubmitting}
+              className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none dark:text-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
               placeholder="Creativity, focus, gratitude"
             />
           </label>
         </div>
-        <div className="mt-6 flex gap-2">
-          <button
-            type="submit"
-            disabled={submitting}
-            className="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:opacity-50"
-          >
-            {editingId ? <Edit2 className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-            {submitting ? 'Saving...' : editingId ? 'Update entry' : 'Save entry'}
-          </button>
+        <div className="mt-6 flex flex-col gap-2">
+          <div className="flex gap-2">
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {editingId ? <Edit2 className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+              {isSubmitting ? 'Saving...' : editingId ? 'Update entry' : 'Save entry'}
+            </button>
           {editingId && (
             <button
               type="button"
@@ -330,21 +350,28 @@ const GridJournalEnhanced: React.FC = () => {
               Cancel
             </button>
           )}
-          {!editingId && (
-            <button
-              type="button"
-              onClick={() => setDraft(createDraft())}
-              className="rounded-full border border-slate-200 dark:border-slate-600 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 transition hover:bg-slate-50 dark:hover:bg-slate-700"
-            >
-              Clear
-            </button>
+            {!editingId && (
+              <button
+                type="button"
+                onClick={() => setDraft(createDraft())}
+                className="rounded-full border border-slate-200 dark:border-slate-600 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 transition hover:bg-slate-50 dark:hover:bg-slate-700"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+          {/* Mutation error messages */}
+          {(createMutation.isError || updateMutation.isError) && (
+            <p className="text-sm text-red-600">
+              Error {editingId ? 'updating' : 'creating'} entry. Please try again.
+            </p>
           )}
         </div>
       </form>
 
       {/* Entries List */}
       <section className="space-y-3">
-        {loading ? (
+        {isLoading ? (
           <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-12 text-center text-slate-500 dark:text-slate-400">
             Loading entries...
           </div>
