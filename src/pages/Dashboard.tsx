@@ -12,43 +12,33 @@ import { useState, useEffect } from 'react';
 import { Toast } from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import SeventyFiveHardWidget from '../components/SeventyFiveHardWidget';
+import { useTasksQuery, useToggleTaskMutation } from '../hooks/useTasksQuery';
+import { useHabitsQuery, useCompleteHabitMutation } from '../hooks/useHabitsQuery';
+import { useNotesQuery } from '../hooks/useNotesQuery';
+import { useJournalQuery } from '../hooks/useJournalQuery';
 
 export default function Dashboard() {
-  const {
-    habits,
-    notes,
-    journalEntries,
-    completeHabit,
-    setActiveView,
-    tasks: storeTasks,
-    tasksLoading,
-    toggleTodo,
-    loadNotes,
-    loadJournalEntries,
-    notesLoaded,
-    journalEntriesLoaded,
-  } = useAppStore();
+  const { setActiveView } = useAppStore();
 
-  const tasks = storeTasks;
+  // React Query hooks for all data sources
+  const { data: tasks = [], isLoading: tasksLoading } = useTasksQuery();
+  const { data: habits = [] } = useHabitsQuery();
+  const { data: notes = [] } = useNotesQuery();
+  const { data: journalEntries = [] } = useJournalQuery();
+
+  const toggleTaskMutation = useToggleTaskMutation();
+  const completeHabitMutation = useCompleteHabitMutation();
 
   const [isLoading, setIsLoading] = useState(true);
   const [completingTask, setCompletingTask] = useState<string | null>(null);
   const { toast, showToast, dismissToast } = useToast();
 
-  // Lazy load notes and journal entries in the background after dashboard renders
-  useEffect(() => {
-    if (!notesLoaded && loadNotes) {
-      loadNotes();
-    }
-    if (!journalEntriesLoaded && loadJournalEntries) {
-      loadJournalEntries();
-    }
-  }, [loadNotes, loadJournalEntries, notesLoaded, journalEntriesLoaded]);
-
   const completeTask = async (taskId: string) => {
     try {
       setCompletingTask(taskId);
-      await toggleTodo(taskId);
+      const task = tasks.find((t) => t.id === taskId);
+      if (!task) return;
+      await toggleTaskMutation.mutateAsync({ taskId, currentStatus: task.status });
     } catch (error) {
       console.error('Failed to complete task:', error);
     } finally {
@@ -58,7 +48,7 @@ export default function Dashboard() {
 
   const completeHabitSafely = async (habitId: string) => {
     try {
-      await completeHabit(habitId);
+      await completeHabitMutation.mutateAsync(habitId);
     } catch (error) {
       console.error('[Dashboard] Failed to complete habit', error);
       showToast('Unable to record that habit completion. Please try again.', 'error');
