@@ -23,7 +23,6 @@ function matchCommand(text: string): { view?: string } | null {
     notes: 'notes',
     projects: 'projects',
     journal: 'journal',
-    period: 'period',
     travel: 'travel',
     finances: 'finances',
     finance: 'finances',
@@ -31,7 +30,6 @@ function matchCommand(text: string): { view?: string } | null {
     meals: 'meals',
     goals: 'goals',
     shared: 'shared',
-    personal: 'personal',
   }
   for (const key of Object.keys(map)) {
     if (t.includes(`go to ${key}`) || t === key || t.includes(`open ${key}`) || t.includes(`show ${key}`)) {

@@ -9,7 +9,6 @@ import Todos from './pages/Todos';
 import Notes from './pages/Notes';
 import Journal from './pages/Journal';
 import LifeGoals from './pages/LifeGoals';
-import AppleHealthCycles from './pages/AppleHealthCycles';
 import ShoppingSmart from './pages/ShoppingSmart';
 import MealPlanning from './pages/MealPlanning';
 import ProjectTracking from './pages/ProjectTracking';
@@ -105,8 +104,6 @@ function App() {
         return <Focus />;
       case 'habits':
         return <Habits />;
-      case 'period':
-        return <AppleHealthCycles />;
       case 'todos':
         return <Todos />;
       case 'notes':

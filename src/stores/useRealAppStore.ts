@@ -49,7 +49,6 @@ type ViewKey =
   | 'calendar'
   | 'focus'
   | 'habits'
-  | 'period'
   | 'todos'
   | 'notes'
   | 'projects'
