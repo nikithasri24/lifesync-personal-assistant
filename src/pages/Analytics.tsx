@@ -1,6 +1,5 @@
-import { useAppStore } from '../stores/useAppStore';
-import { 
-  TrendingUp, 
+import {
+  TrendingUp,
   Calendar,
   Target,
   CheckSquare,
@@ -9,9 +8,20 @@ import {
   Flame
 } from 'lucide-react';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, subDays, isToday, isSameDay } from 'date-fns';
+import { useHabitsQuery } from '../hooks/useHabitsQuery';
+import { useTasksQuery } from '../hooks/useTasksQuery';
+import { useJournalQuery } from '../hooks/useJournalQuery';
 
 export default function Analytics() {
-  const { habits, todos, journalEntries } = useAppStore();
+  const { data: habits = [] } = useHabitsQuery();
+  const { data: tasks = [] } = useTasksQuery();
+  const { data: journalEntries = [] } = useJournalQuery();
+
+  // Map tasks to todos format for backward compatibility
+  const todos = tasks.map((task) => ({
+    ...task,
+    completed: task.status === 'done',
+  }));
 
   // Calculate habit streaks
   const calculateStreak = (habit: any) => {
