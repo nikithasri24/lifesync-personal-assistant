@@ -23,7 +23,6 @@ function matchCommand(text: string): { view?: string } | null {
     notes: 'notes',
     projects: 'projects',
     journal: 'journal',
-    mood: 'mood',
     period: 'period',
     travel: 'travel',
     finances: 'finances',

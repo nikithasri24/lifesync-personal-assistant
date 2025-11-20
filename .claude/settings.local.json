@@ -169,7 +169,9 @@
       "Bash(git log:*)",
       "Bash(npx ts-prune:*)",
       "Bash(for comp in AIFinancialAdvisor SmartBillTracker AdvancedPortfolioAnalytics AccountReconciliation)",
-      "Bash(do echo \"=== $comp ===\")"
+      "Bash(do echo \"=== $comp ===\")",
+      "Bash(for file in src/pages/MealPlanning.tsx src/pages/Mood.tsx src/pages/Personal.tsx src/pages/ShoppingSmart.tsx)",
+      "Bash(do echo \"=== $file ===\" head -30 \"$file\")"
     ],
     "deny": [],
     "ask": []

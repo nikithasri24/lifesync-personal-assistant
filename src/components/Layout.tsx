@@ -196,7 +196,6 @@ export default function Layout({ children }: LayoutProps) {
                   {activeView === 'notes' && 'Capture your thoughts'}
                   {activeView === 'projects' && 'Project tracking and development overview'}
                   {activeView === 'journal' && 'Daily reflections'}
-                  {activeView === 'mood' && 'Track your wellbeing'}
                   {activeView === 'period' && 'Menstrual cycle tracking'}
                   {activeView === 'travel' && 'Plan and organize your trips'}
                   {activeView === 'visa' && 'Calculate visa-free travel destinations'}
