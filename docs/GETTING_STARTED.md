@@ -50,6 +50,25 @@ npm run dev
 
 Visit `http://localhost:5173`
 
+## Data Migration (If Upgrading)
+
+If you're upgrading from an older version that used localStorage, you'll need to migrate your data to Supabase.
+
+### Option 1: Browser Console (Recommended)
+
+1. Log in to the app
+2. Open browser console (F12)
+3. Run: `await runAllMigrations()`
+4. Wait for completion message
+
+### Option 2: Command Line
+
+```bash
+npm run migrate
+```
+
+**Note**: This only needs to be run once. Migration status is tracked in Supabase.
+
 ## First Steps
 
 ### Create an Account

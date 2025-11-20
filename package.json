@@ -49,6 +49,7 @@
     "data:download:us-geojson": "node scripts/download-us-states-geojson.mjs",
     "data:download:canada-geojson": "node scripts/download-canada-provinces-geojson.mjs",
     "data:download:india-geojson": "node scripts/download-india-states-geojson.mjs",
+    "migrate": "tsx src/scripts/runMigrations.ts",
     "migrate:75hard": "tsx src/scripts/migrate75HardData.ts",
     "validate:75hard": "tsx src/scripts/validate75HardMigration.ts",
     "cleanup:ports": "lsof -ti:3001,5173 | xargs kill -9 2>/dev/null || true",

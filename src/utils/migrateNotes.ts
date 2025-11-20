@@ -5,8 +5,14 @@
 
 import { supabase } from '../lib/supabase';
 import type { Note } from '../types';
+import {
+  isMigrationComplete as checkMigrationComplete,
+  markMigrationComplete as saveMigrationComplete,
+  migrationTrackingTableExists
+} from './migrationManager';
 
-const MIGRATION_KEY = 'notes_migrated';
+const MIGRATION_NAME = 'notes_v1';
+const LEGACY_MIGRATION_KEY = 'notes_migrated';
 
 interface LocalStorageState {
   state?: {
@@ -24,16 +30,30 @@ interface LocalStorageState {
 
 /**
  * Check if migration has already been completed
+ * Checks both new Supabase tracking and legacy localStorage flag
  */
-export function isMigrationComplete(): boolean {
-  return localStorage.getItem(MIGRATION_KEY) === 'true';
+async function isMigrationComplete(): Promise<boolean> {
+  // Check if migration tracking table exists
+  const tableExists = await migrationTrackingTableExists();
+
+  if (tableExists) {
+    // Use Supabase tracking
+    return await checkMigrationComplete(MIGRATION_NAME);
+  }
+
+  // Fallback to localStorage for backwards compatibility
+  return localStorage.getItem(LEGACY_MIGRATION_KEY) === 'true';
 }
 
 /**
- * Mark migration as complete
+ * Mark migration as complete in both systems
  */
-function markMigrationComplete(): void {
-  localStorage.setItem(MIGRATION_KEY, 'true');
+async function markMigrationComplete(result: { success: boolean; migrated: number; errors: number }): Promise<void> {
+  // Mark in Supabase (new system)
+  await saveMigrationComplete(MIGRATION_NAME, result);
+
+  // Also mark in localStorage for backwards compatibility
+  localStorage.setItem(LEGACY_MIGRATION_KEY, 'true');
 }
 
 /**
@@ -73,7 +93,7 @@ export async function migrateNotes(): Promise<{
   errors: number;
 }> {
   // Skip if already migrated
-  if (isMigrationComplete()) {
+  if (await isMigrationComplete()) {
     console.log('[Notes Migration] Already completed, skipping');
     return { success: true, migrated: 0, errors: 0 };
   }
@@ -88,7 +108,7 @@ export async function migrateNotes(): Promise<{
 
   if (localNotes.length === 0) {
     console.log('[Notes Migration] No notes to migrate');
-    markMigrationComplete();
+    await markMigrationComplete({ success: true, migrated: 0, errors: 0 });
     return { success: true, migrated: 0, errors: 0 };
   }
 
@@ -128,13 +148,14 @@ export async function migrateNotes(): Promise<{
 
   // Mark as complete even if some errors occurred
   // We don't want to keep retrying failed entries
-  markMigrationComplete();
-
-  return {
+  const result = {
     success: errors === 0,
     migrated,
     errors,
   };
+  await markMigrationComplete(result);
+
+  return result;
 }
 
 /**
