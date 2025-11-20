@@ -162,8 +162,19 @@ export async function createConnection(input: CreateConnectionInput): Promise<Pr
 
   if (invitationError) throw invitationError;
 
-  // TODO: Send email notification to receiver
-  // await sendInvitationEmail(receiverData.email, user.email, input.message);
+  // Send email notification to receiver
+  try {
+    await sendInvitationEmail({
+      to: receiverData.email,
+      fromEmail: user.email!,
+      fromName: user.user_metadata?.full_name,
+      relationship: input.relationship,
+      message: input.message,
+    });
+  } catch (emailError) {
+    console.error('Failed to send invitation email:', emailError);
+    // Don't fail the invitation if email fails
+  }
 
   return mapDbToConnection(connectionData);
 }
@@ -423,4 +434,35 @@ function mapDbToInvitation(data: any): ConnectionInvitation {
     createdAt: data.created_at,
     expiresAt: data.expires_at,
   };
+}
+
+// =====================================================
+// EMAIL NOTIFICATIONS
+// =====================================================
+
+/**
+ * Send invitation email via Supabase Edge Function
+ */
+async function sendInvitationEmail(params: {
+  to: string;
+  fromEmail: string;
+  fromName?: string;
+  relationship: string;
+  message?: string;
+}): Promise<void> {
+  const invitationUrl = `${window.location.origin}/#/shared`; // Deep link to invitations
+
+  const { data, error } = await supabase.functions.invoke('send-invitation-email', {
+    body: {
+      to: params.to,
+      fromEmail: params.fromEmail,
+      fromName: params.fromName,
+      relationship: params.relationship,
+      message: params.message,
+      invitationUrl,
+    },
+  });
+
+  if (error) throw error;
+  return data;
 }
