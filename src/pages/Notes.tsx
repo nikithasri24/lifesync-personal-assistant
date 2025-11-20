@@ -1,12 +1,20 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useState, useEffect } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { useAppStore } from '../stores/useAppStore';
+import { SkeletonCard } from '../components/LoadingSpinner';
 
 const Notes: React.FC = () => {
-  const { notes, addNote, deleteNote } = useAppStore();
+  const { notes, addNote, deleteNote, loadNotes, notesLoaded, notesLoading } = useAppStore();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [tags, setTags] = useState('');
+
+  // Lazy load notes when page mounts
+  useEffect(() => {
+    if (loadNotes && !notesLoaded && !notesLoading) {
+      loadNotes();
+    }
+  }, [loadNotes, notesLoaded, notesLoading]);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -16,6 +24,24 @@ const Notes: React.FC = () => {
     setContent('');
     setTags('');
   };
+
+  // Show loading state while notes are loading
+  if (notesLoading && !notesLoaded) {
+    return (
+      <div className="mx-auto flex max-w-4xl flex-col gap-6 p-6">
+        <header className="flex flex-col gap-2">
+          <h1 className="text-2xl font-semibold text-slate-900">Notes</h1>
+          <p className="text-sm text-slate-600">Loading your notes...</p>
+        </header>
+        <SkeletonCard className="h-64" />
+        <div className="space-y-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <SkeletonCard key={i} className="h-32" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6 p-6">

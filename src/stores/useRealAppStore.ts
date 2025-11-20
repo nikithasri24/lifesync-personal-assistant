@@ -1145,51 +1145,30 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
     try {
       const client = ensureSupabase()
 
+      // ⚡ OPTIMIZED: Only load critical data for Dashboard
+      // Everything else loads on-demand when user visits the page
       const [
         tasksRaw,
         projectsRaw,
         habitsRaw,
-        focusSessionsRaw,
-        shoppingListsRaw,
-        pantryRaw,
-        mealPlansRaw,
-        recipesRaw,
-        accountsRaw,
-        transactionsRaw,
-        sfhChallengesRaw,
-        notesRaw,
-        journalEntriesRaw,
-        goalsRaw,
-        dreamsRaw,
       ] = await Promise.all([
         apiClient.getTasks(),
         apiClient.getProjects(),
         apiClient.getHabits(),
-        apiClient.getFocusSessions().catch(() => []),
-        apiClient.getShoppingLists().catch(() => []),
-        apiClient.getPantryItems().catch(() => []),
-        apiClient.getMealPlans().catch(() => []),
-        apiClient.getRecipes().catch(() => []),
-        apiClient.getFinancialAccounts().catch(() => []),
-        apiClient.getFinancialTransactions().catch(() => []),
-        apiClient.getSFHChallenges().catch(() => []),
-        (async () => {
-          const { getNotes } = await import('../api/notesAPI');
-          return getNotes().catch(() => []);
-        })(),
-        (async () => {
-          const { getJournalEntries } = await import('../api/journalAPI');
-          return getJournalEntries().catch(() => []);
-        })(),
-        (async () => {
-          const { getGoals } = await import('../api/goalsAPI');
-          return getGoals().catch(() => []);
-        })(),
-        (async () => {
-          const { getDreams } = await import('../api/goalsAPI');
-          return getDreams().catch(() => []);
-        })(),
       ])
+
+      // Non-critical data moved to lazy loading:
+      // - Focus Sessions → Load when visiting Focus page
+      // - Shopping Lists → Load when visiting Shopping page
+      // - Pantry Items → Load when visiting Meal Planning
+      // - Meal Plans → Load when visiting Meal Planning (already has loadMealPlans())
+      // - Recipes → Load when visiting Meal Planning (already has loadRecipes())
+      // - Financial Accounts → Load when visiting Finances page
+      // - Transactions → Load when visiting Finances page
+      // - Notes → Load when visiting Notes page (lazy loaded)
+      // - Journal → Load when visiting Journal page (lazy loaded)
+      // - Goals → Load when visiting Goals page (lazy loaded)
+      // - Dreams → Load when visiting Goals page (lazy loaded)
 
       // Show UI immediately after main data loads
       set({ loading: false })
@@ -1233,7 +1212,6 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
         const entries = entriesByHabit.get(habit.id ?? '') ?? []
         return mapHabitDataToHabit(habit, entries)
       })
-      const focusSessions = focusSessionsRaw.map(mapFocusSessionDataToSession)
 
       // 75 Hard: LEGACY SYNC DISABLED
       // The new architecture uses loadSFHChallenge() from seventyFiveHardActions.ts
@@ -1336,41 +1314,7 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
       } catch {}
       */
 
-      let shoppingLists = shoppingListsRaw
-      let activeShoppingListId = shoppingLists[0]?.id ?? null
-      if (!activeShoppingListId) {
-        const createdList = await apiClient.createShoppingList({
-          name: 'Personal List',
-          status: 'active',
-        })
-        activeShoppingListId = createdList.id ?? null
-        shoppingLists = [createdList]
-      }
-
-      let shoppingItems: ShoppingItem[] = []
-      if (activeShoppingListId) {
-        const shoppingItemsRaw = await apiClient.getShoppingListItems(activeShoppingListId)
-        shoppingItems = shoppingItemsRaw.map(mapShoppingItemDataToShoppingItem)
-      }
-
-      // LEGACY: De-duplication disabled - new architecture handles this
-      /*
-      {
-        const seen = new Set<string>()
-        const uniq: typeof sfhChallenges = []
-        for (const c of sfhChallenges) {
-          const k = `${c.id || ''}|${c.name}|${formatDate(c.startDate, 'yyyy-MM-dd')}`
-          if (seen.has(k)) continue
-          seen.add(k)
-          uniq.push(c)
-        }
-        sfhChallenges = uniq
-      }
-      */
-
-      const pantryItems = pantryRaw.map(mapPantryItemDataToPantryItem)
-      const mealPlans = mealPlansRaw.map(mapMealPlanDataToMealPlanWeek)
-      const recipes = recipesRaw.map(mapRecipeDataToRecipe)
+      // Calculate derived state
       const habitCategories = deriveHabitCategories(habits)
       const userStats = computeUserStats(tasks, habits)
 
@@ -1382,24 +1326,25 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
         projectsLoading: false,
         habits,
         habitCategories,
-        focusSessions,
-        shoppingItems,
-        activeShoppingListId,
-        shoppingLoading: false,
-        pantryItems,
-        mealPlans,
-        mealPlansLoading: false,
-        recipes,
-        recipesLoading: false,
-        financialAccounts: accountsRaw ?? [],
-        financialTransactions: transactionsRaw ?? [],
-        financesLoading: false,
-        notes: notesRaw ?? [],
-        journalEntries: journalEntriesRaw ?? [],
-        goals: goalsRaw ?? [],
-        dreams: dreamsRaw ?? [],
         userStats,
-        seventyFiveHardChallenges: legacyChallenges,
+        // Everything else remains empty until lazy loaded
+        focusSessions: [],
+        shoppingItems: [],
+        activeShoppingListId: null,
+        shoppingLoading: false,
+        pantryItems: [],
+        mealPlans: [],
+        mealPlansLoading: false,
+        recipes: [],
+        recipesLoading: false,
+        financialAccounts: [],
+        financialTransactions: [],
+        financesLoading: false,
+        notes: [],
+        journalEntries: [],
+        goals: [],
+        dreams: [],
+        seventyFiveHardChallenges: [],
       })
 
       // Update current day for all active challenges after initialization

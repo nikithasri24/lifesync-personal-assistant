@@ -14,8 +14,11 @@ const createId = () => Math.random().toString(36).substring(2, 15);
 export interface JournalSlice {
   // State
   journalEntries: JournalEntry[];
+  journalEntriesLoaded: boolean;
+  journalEntriesLoading: boolean;
 
   // Actions
+  loadJournalEntries: () => Promise<void>;
   addJournalEntry: (entry: Omit<JournalEntry, 'id' | 'createdAt'>) => Promise<void>;
   deleteJournalEntry: (id: string) => Promise<void>;
 
@@ -27,11 +30,28 @@ export interface JournalSlice {
 export const createJournalSlice: StateCreator<JournalSlice> = (set, get) => ({
   // Initial state
   journalEntries: [],
+  journalEntriesLoaded: false,
+  journalEntriesLoading: false,
 
   // Internal setters (used by initializeData)
-  _setJournalEntries: (journalEntries) => set({ journalEntries }),
+  _setJournalEntries: (journalEntries) => set({ journalEntries, journalEntriesLoaded: true }),
 
   // ==================== Journal ====================
+
+  loadJournalEntries: async () => {
+    // Don't reload if already loaded or loading
+    if (get().journalEntriesLoaded || get().journalEntriesLoading) return;
+
+    set({ journalEntriesLoading: true });
+    try {
+      const { getJournalEntries } = await import('../../api/journalAPI');
+      const journalEntries = await getJournalEntries();
+      set({ journalEntries, journalEntriesLoaded: true, journalEntriesLoading: false });
+    } catch (error) {
+      console.error('Error loading journal entries:', error);
+      set({ journalEntriesLoading: false });
+    }
+  },
 
   addJournalEntry: async (entry) => {
     try {

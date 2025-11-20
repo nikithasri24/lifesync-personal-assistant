@@ -14,8 +14,11 @@ const createId = () => Math.random().toString(36).substring(2, 15);
 export interface NotesSlice {
   // State
   notes: Note[];
+  notesLoaded: boolean;
+  notesLoading: boolean;
 
   // Actions
+  loadNotes: () => Promise<void>;
   addNote: (note: Omit<Note, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   updateNote: (id: string, updates: Partial<Note>) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
@@ -28,11 +31,28 @@ export interface NotesSlice {
 export const createNotesSlice: StateCreator<NotesSlice> = (set, get) => ({
   // Initial state
   notes: [],
+  notesLoaded: false,
+  notesLoading: false,
 
   // Internal setters (used by initializeData)
-  _setNotes: (notes) => set({ notes }),
+  _setNotes: (notes) => set({ notes, notesLoaded: true }),
 
   // ==================== Notes ====================
+
+  loadNotes: async () => {
+    // Don't reload if already loaded or loading
+    if (get().notesLoaded || get().notesLoading) return;
+
+    set({ notesLoading: true });
+    try {
+      const { getNotes } = await import('../../api/notesAPI');
+      const notes = await getNotes();
+      set({ notes, notesLoaded: true, notesLoading: false });
+    } catch (error) {
+      console.error('Error loading notes:', error);
+      set({ notesLoading: false });
+    }
+  },
 
   addNote: async (noteInput) => {
     try {

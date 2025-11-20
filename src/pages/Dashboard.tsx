@@ -22,7 +22,11 @@ export default function Dashboard() {
     setActiveView,
     tasks: storeTasks,
     tasksLoading,
-    toggleTodo
+    toggleTodo,
+    loadNotes,
+    loadJournalEntries,
+    notesLoaded,
+    journalEntriesLoaded,
   } = useAppStore();
 
   const tasks = storeTasks;
@@ -30,6 +34,16 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [completingTask, setCompletingTask] = useState<string | null>(null);
   const { toast, showToast, dismissToast } = useToast();
+
+  // Lazy load notes and journal entries in the background after dashboard renders
+  useEffect(() => {
+    if (!notesLoaded && loadNotes) {
+      loadNotes();
+    }
+    if (!journalEntriesLoaded && loadJournalEntries) {
+      loadJournalEntries();
+    }
+  }, [loadNotes, loadJournalEntries, notesLoaded, journalEntriesLoaded]);
 
   const completeTask = async (taskId: string) => {
     try {
