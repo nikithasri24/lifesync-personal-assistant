@@ -230,3 +230,34 @@ export function useToggleShoppingItem() {
     },
   });
 }
+
+// ==================== Active Shopping List Helper ====================
+
+/**
+ * Hook to get or create the active shopping list
+ * Returns the first active list, or creates one if none exists
+ */
+export function useActiveShoppingList() {
+  const { data: lists, isLoading } = useShoppingLists();
+  const createList = useCreateShoppingList();
+
+  // Get first active list or first list
+  const activeList = lists?.find((list) => list.status === 'active') || lists?.[0];
+
+  const ensureActiveList = async () => {
+    if (activeList) return activeList;
+
+    // Create new list if none exists
+    return await createList.mutateAsync({
+      name: 'Shopping List',
+      status: 'active',
+    });
+  };
+
+  return {
+    activeList,
+    activeListId: activeList?.id ?? null,
+    isLoading,
+    ensureActiveList,
+  };
+}

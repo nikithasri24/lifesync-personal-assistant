@@ -1,5 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useAppStore } from '../stores/useAppStore';
+import {
+  useActiveShoppingList,
+  useShoppingItems,
+  useCreateShoppingItem,
+  useUpdateShoppingItem,
+  useDeleteShoppingItem,
+  useToggleShoppingItem,
+} from '../hooks/useShoppingQuery';
 import { 
   Plus, 
   ShoppingCart, 
@@ -152,16 +160,41 @@ const STORE_TYPES = {
 };
 
 export default function ShoppingSmart() {
-  // Get shopping items from global store
+  // React Query hooks for shopping data
+  const { activeListId, isLoading: isLoadingList, ensureActiveList } = useActiveShoppingList();
+  const { data: shoppingItemsData, isLoading: isLoadingItems } = useShoppingItems(activeListId);
+  const createItemMutation = useCreateShoppingItem();
+  const updateItemMutation = useUpdateShoppingItem();
+  const deleteItemMutation = useDeleteShoppingItem();
+  const toggleItemMutation = useToggleShoppingItem();
+
+  // Map React Query data to component format
+  const shoppingItems = useMemo(() => {
+    if (!shoppingItemsData) return [];
+    return shoppingItemsData.map((item) => ({
+      id: item.id ?? '',
+      name: item.name,
+      quantity: item.quantity ?? 1,
+      unit: item.unit ?? undefined,
+      category: (item.category as ShoppingItem['category']) ?? 'other',
+      subcategory: item.subcategory ?? undefined,
+      priority: (item.priority as ShoppingItem['priority']) ?? 'medium',
+      purchased: item.is_purchased ?? false,
+      estimatedPrice: item.estimated_price !== undefined ? Number(item.estimated_price) : undefined,
+      price: item.actual_price !== undefined ? Number(item.actual_price) : undefined,
+      tags: item.tags ?? [],
+      assignedStore: item.assigned_store ?? undefined,
+      bestStores: item.best_stores ?? [],
+      notes: item.notes ?? undefined,
+      createdAt: new Date(item.created_at ?? Date.now()),
+      updatedAt: new Date(item.updated_at ?? Date.now()),
+    }));
+  }, [shoppingItemsData]);
+
+  const shoppingLoading = isLoadingList || isLoadingItems;
+
+  // Get other store data that hasn't been migrated yet
   const {
-    shoppingItems,
-    shoppingLoaded,
-    shoppingLoading,
-    loadShoppingItems,
-    addShoppingItem,
-    updateShoppingItem,
-    deleteShoppingItem,
-    toggleShoppingItem,
     pantryItems,
     addPantryItem,
     updatePantryItem,
@@ -171,12 +204,93 @@ export default function ShoppingSmart() {
     financialAccounts,
   } = useAppStore();
 
-  // Lazy load shopping items when page mounts
+  // Ensure active shopping list exists on mount
   useEffect(() => {
-    if (loadShoppingItems && !shoppingLoaded && !shoppingLoading) {
-      loadShoppingItems();
+    if (!isLoadingList && !activeListId) {
+      ensureActiveList().catch((error) => {
+        console.error('Failed to create shopping list:', error);
+      });
     }
-  }, [loadShoppingItems, shoppingLoaded, shoppingLoading]);
+  }, [isLoadingList, activeListId, ensureActiveList]);
+
+  // Wrapper functions to maintain same API as Zustand store
+  const addShoppingItem = async (item: Omit<ShoppingItem, 'id' | 'createdAt' | 'updatedAt'>) => {
+    if (!activeListId) {
+      const list = await ensureActiveList();
+      const listId = list.id ?? '';
+      return createItemMutation.mutateAsync({
+        listId,
+        item: {
+          name: item.name,
+          quantity: item.quantity,
+          unit: item.unit ?? null,
+          category: item.category ?? null,
+          subcategory: item.subcategory ?? null,
+          priority: item.priority ?? 'medium',
+          estimated_price: item.estimatedPrice ?? null,
+          actual_price: item.price ?? null,
+          tags: item.tags ?? [],
+          assigned_store: item.assignedStore ?? null,
+          best_stores: item.bestStores ?? [],
+          notes: item.notes ?? null,
+          is_purchased: item.purchased ?? false,
+        },
+      });
+    }
+
+    return createItemMutation.mutateAsync({
+      listId: activeListId,
+      item: {
+        name: item.name,
+        quantity: item.quantity,
+        unit: item.unit ?? null,
+        category: item.category ?? null,
+        subcategory: item.subcategory ?? null,
+        priority: item.priority ?? 'medium',
+        estimated_price: item.estimatedPrice ?? null,
+        actual_price: item.price ?? null,
+        tags: item.tags ?? [],
+        assigned_store: item.assignedStore ?? null,
+        best_stores: item.bestStores ?? [],
+        notes: item.notes ?? null,
+        is_purchased: item.purchased ?? false,
+      },
+    });
+  };
+
+  const updateShoppingItem = (itemId: string, updates: Partial<ShoppingItem>) => {
+    return updateItemMutation.mutateAsync({
+      itemId,
+      updates: {
+        name: updates.name,
+        quantity: updates.quantity,
+        unit: updates.unit,
+        category: updates.category,
+        subcategory: updates.subcategory,
+        priority: updates.priority,
+        estimated_price: updates.estimatedPrice,
+        actual_price: updates.price,
+        tags: updates.tags,
+        assigned_store: updates.assignedStore,
+        best_stores: updates.bestStores,
+        notes: updates.notes,
+        is_purchased: updates.purchased,
+      },
+    });
+  };
+
+  const deleteShoppingItem = (itemId: string) => {
+    return deleteItemMutation.mutateAsync(itemId);
+  };
+
+  const toggleShoppingItem = (itemId: string) => {
+    const item = shoppingItems.find((i) => i.id === itemId);
+    if (!item) return Promise.resolve();
+    return toggleItemMutation.mutateAsync({
+      itemId,
+      currentStatus: item.purchased,
+    });
+  };
 
   // Sample stores with ratings and preferences
   const [stores] = useState<Store[]>([
