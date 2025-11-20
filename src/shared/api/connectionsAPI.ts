@@ -122,15 +122,18 @@ export async function createConnection(input: CreateConnectionInput): Promise<Pr
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
-  // Find receiver by email
+  // Find receiver by email using RPC function
   const { data: receiverData, error: receiverError } = await supabase
-    .from('auth.users')
-    .select('id')
-    .eq('email', input.receiverEmail)
+    .rpc('lookup_user_by_email', { user_email: input.receiverEmail })
     .single();
 
   if (receiverError || !receiverData) {
     throw new Error('User not found with that email');
+  }
+
+  // Check if trying to connect to yourself
+  if (receiverData.user_id === user.id) {
+    throw new Error('You cannot connect with yourself');
   }
 
   // Create connection
@@ -138,7 +141,7 @@ export async function createConnection(input: CreateConnectionInput): Promise<Pr
     .from('profile_connections')
     .insert({
       requester_id: user.id,
-      receiver_id: receiverData.id,
+      receiver_id: receiverData.user_id,
       relationship: input.relationship,
       requester_label: input.label,
       status: 'pending',
@@ -158,6 +161,9 @@ export async function createConnection(input: CreateConnectionInput): Promise<Pr
     });
 
   if (invitationError) throw invitationError;
+
+  // TODO: Send email notification to receiver
+  // await sendInvitationEmail(receiverData.email, user.email, input.message);
 
   return mapDbToConnection(connectionData);
 }
