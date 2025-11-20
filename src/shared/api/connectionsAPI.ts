@@ -31,15 +31,16 @@ export async function getUserConnections(): Promise<ConnectionWithUser[]> {
   if (!user) throw new Error('Not authenticated');
 
   const { data, error } = await supabase
-    .from('connections_with_users')
-    .select('*')
-    .or(`requester_id.eq.${user.id},receiver_id.eq.${user.id}`)
-    .eq('status', 'active')
-    .order('created_at', { ascending: false });
+    .rpc('get_connections_with_users');
 
   if (error) throw error;
 
-  return (data || []).map((conn: any) => {
+  // Filter for active connections and sort by created_at
+  const activeConnections = (data || [])
+    .filter((conn: any) => conn.status === 'active')
+    .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+  return activeConnections.map((conn: any) => {
     const isRequester = conn.requester_id === user.id;
     const otherUser = isRequester ? conn.receiver_user : conn.requester_user;
 
@@ -68,8 +69,7 @@ export async function getPendingInvitations(): Promise<{
   if (!user) throw new Error('Not authenticated');
 
   const { data, error } = await supabase
-    .from('invitations_with_connections')
-    .select('*');
+    .rpc('get_invitations_with_connections');
 
   if (error) throw error;
 
