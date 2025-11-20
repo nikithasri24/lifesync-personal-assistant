@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
 import { format } from 'date-fns';
 import { CalendarDays, CheckCircle2 } from 'lucide-react';
-import { useAppStore } from '../stores/useAppStore';
+import { useTasksQuery } from '../hooks/useTasksQuery';
 
 const Calendar: React.FC = () => {
-  const { tasks } = useAppStore();
+  const { data: tasks = [] } = useTasksQuery();
 
   const tasksByDate = useMemo(() => {
     const grouped = new Map<string, typeof tasks>();
