@@ -29,6 +29,7 @@ import { loadSFHChallenge } from './stores/seventyFiveHardActions';
 import { cleanup75HardDuplicates } from './utils/cleanup75HardDuplicates';
 import { migrateJournalEntries } from './utils/migrateJournalEntries';
 import { migrateNotes } from './utils/migrateNotes';
+import { migrateGoals } from './utils/migrateGoals';
 
 // Expose cleanup function globally for debugging
 if (typeof window !== 'undefined') {
@@ -84,6 +85,12 @@ function App() {
         const notesMigration = await migrateNotes();
         if (notesMigration.migrated > 0) {
           console.log(`✅ Migrated ${notesMigration.migrated} notes to database`);
+        }
+
+        // Migrate goals and dreams from localStorage to database (one-time)
+        const goalsMigration = await migrateGoals();
+        if (goalsMigration.goalsMigrated > 0 || goalsMigration.dreamsMigrated > 0) {
+          console.log(`✅ Migrated ${goalsMigration.goalsMigrated} goals and ${goalsMigration.dreamsMigrated} dreams to database`);
         }
 
         // Load active 75 Hard challenge (new architecture)

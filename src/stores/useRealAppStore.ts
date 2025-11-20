@@ -225,13 +225,13 @@ interface RealAppState {
   addJournalEntry: (entry: Omit<JournalEntry, 'id' | 'createdAt'>) => void
   deleteJournalEntry: (id: string) => void
 
-  addGoal: (goal: Omit<Goal, 'id' | 'createdAt'>) => void
-  updateGoal: (id: string, updates: Partial<Goal>) => void
-  deleteGoal: (id: string) => void
+  addGoal: (goal: Omit<Goal, 'id' | 'createdAt'>) => Promise<void>
+  updateGoal: (id: string, updates: Partial<Goal>) => Promise<void>
+  deleteGoal: (id: string) => Promise<void>
 
-  addDream: (dream: Omit<Dream, 'id' | 'createdAt' | 'lastUpdated'>) => void
-  updateDream: (id: string, updates: Partial<Dream>) => void
-  deleteDream: (id: string) => void
+  addDream: (dream: Omit<Dream, 'id' | 'createdAt' | 'lastUpdated'>) => Promise<void>
+  updateDream: (id: string, updates: Partial<Dream>) => Promise<void>
+  deleteDream: (id: string) => Promise<void>
 
   loadRecipes: () => Promise<void>
   addRecipe: (recipe: Omit<Recipe, 'id' | 'createdAt'>) => Promise<Recipe>
@@ -2084,48 +2084,136 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
     }))
   },
 
-  addGoal: (goalInput) => {
-    const goal: Goal = {
-      ...goalInput,
-      id: createId(),
-      createdAt: new Date(),
+  addGoal: async (goalInput) => {
+    try {
+      // Import dynamically to avoid circular dependencies
+      const { createGoal } = await import('../api/goalsAPI');
+
+      const goal = await createGoal({
+        title: goalInput.title,
+        description: goalInput.description,
+        category: goalInput.category,
+        targetDate: goalInput.targetDate,
+        status: goalInput.status,
+        progress: goalInput.progress,
+        priority: goalInput.priority,
+      });
+
+      set((state) => ({ goals: [...state.goals, goal] }));
+    } catch (error) {
+      console.error('Error creating goal:', error);
+      // Fallback to local storage for backwards compatibility
+      const goal: Goal = {
+        ...goalInput,
+        id: createId(),
+        createdAt: new Date(),
+      };
+      set((state) => ({ goals: [...state.goals, goal] }));
     }
-    set((state) => ({ goals: [...state.goals, goal] }))
   },
 
-  updateGoal: (id, updates) => {
-    set((state) => ({
-      goals: state.goals.map((goal) =>
-        goal.id === id ? { ...goal, ...updates, createdAt: goal.createdAt } : goal,
-      ),
-    }))
-  },
+  updateGoal: async (id, updates) => {
+    try {
+      const { updateGoal } = await import('../api/goalsAPI');
 
-  deleteGoal: (id) => {
-    set((state) => ({ goals: state.goals.filter((goal) => goal.id !== id) }))
-  },
+      const updatedGoal = await updateGoal(id, {
+        title: updates.title,
+        description: updates.description,
+        category: updates.category,
+        targetDate: updates.targetDate,
+        status: updates.status,
+        progress: updates.progress,
+        priority: updates.priority,
+      });
 
-  addDream: (dreamInput) => {
-    const dream: Dream = {
-      ...dreamInput,
-      id: createId(),
-      createdAt: new Date(),
-      lastUpdated: new Date(),
-      notes: dreamInput.notes ?? '',
+      set((state) => ({
+        goals: state.goals.map((goal) => (goal.id === id ? updatedGoal : goal)),
+      }));
+    } catch (error) {
+      console.error('Error updating goal:', error);
+      // Fallback to local update
+      set((state) => ({
+        goals: state.goals.map((goal) =>
+          goal.id === id ? { ...goal, ...updates, createdAt: goal.createdAt } : goal,
+        ),
+      }));
     }
-    set((state) => ({ dreams: [...state.dreams, dream] }))
   },
 
-  updateDream: (id, updates) => {
-    set((state) => ({
-      dreams: state.dreams.map((dream) =>
-        dream.id === id ? { ...dream, ...updates, lastUpdated: new Date() } : dream,
-      ),
-    }))
+  deleteGoal: async (id) => {
+    try {
+      const { deleteGoal } = await import('../api/goalsAPI');
+      await deleteGoal(id);
+      set((state) => ({ goals: state.goals.filter((goal) => goal.id !== id) }));
+    } catch (error) {
+      console.error('Error deleting goal:', error);
+      // Still remove from local state even if API fails
+      set((state) => ({ goals: state.goals.filter((goal) => goal.id !== id) }));
+    }
   },
 
-  deleteDream: (id) => {
-    set((state) => ({ dreams: state.dreams.filter((dream) => dream.id !== id) }))
+  addDream: async (dreamInput) => {
+    try {
+      // Import dynamically to avoid circular dependencies
+      const { createDream } = await import('../api/goalsAPI');
+
+      const dream = await createDream({
+        title: dreamInput.title,
+        description: dreamInput.description,
+        category: dreamInput.category,
+        notes: dreamInput.notes,
+      });
+
+      set((state) => ({ dreams: [...state.dreams, dream] }));
+    } catch (error) {
+      console.error('Error creating dream:', error);
+      // Fallback to local storage for backwards compatibility
+      const dream: Dream = {
+        ...dreamInput,
+        id: createId(),
+        createdAt: new Date(),
+        lastUpdated: new Date(),
+        notes: dreamInput.notes ?? '',
+      };
+      set((state) => ({ dreams: [...state.dreams, dream] }));
+    }
+  },
+
+  updateDream: async (id, updates) => {
+    try {
+      const { updateDream } = await import('../api/goalsAPI');
+
+      const updatedDream = await updateDream(id, {
+        title: updates.title,
+        description: updates.description,
+        category: updates.category,
+        notes: updates.notes,
+      });
+
+      set((state) => ({
+        dreams: state.dreams.map((dream) => (dream.id === id ? updatedDream : dream)),
+      }));
+    } catch (error) {
+      console.error('Error updating dream:', error);
+      // Fallback to local update
+      set((state) => ({
+        dreams: state.dreams.map((dream) =>
+          dream.id === id ? { ...dream, ...updates, lastUpdated: new Date() } : dream,
+        ),
+      }));
+    }
+  },
+
+  deleteDream: async (id) => {
+    try {
+      const { deleteDream } = await import('../api/goalsAPI');
+      await deleteDream(id);
+      set((state) => ({ dreams: state.dreams.filter((dream) => dream.id !== id) }));
+    } catch (error) {
+      console.error('Error deleting dream:', error);
+      // Still remove from local state even if API fails
+      set((state) => ({ dreams: state.dreams.filter((dream) => dream.id !== id) }));
+    }
   },
 
   loadRecipes: async () => {
