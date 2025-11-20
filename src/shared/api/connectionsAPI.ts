@@ -31,12 +31,8 @@ export async function getUserConnections(): Promise<ConnectionWithUser[]> {
   if (!user) throw new Error('Not authenticated');
 
   const { data, error } = await supabase
-    .from('profile_connections')
-    .select(`
-      *,
-      requester:auth.users!profile_connections_requester_id_fkey(id, email, raw_user_meta_data),
-      receiver:auth.users!profile_connections_receiver_id_fkey(id, email, raw_user_meta_data)
-    `)
+    .from('connections_with_users')
+    .select('*')
     .or(`requester_id.eq.${user.id},receiver_id.eq.${user.id}`)
     .eq('status', 'active')
     .order('created_at', { ascending: false });
@@ -45,15 +41,15 @@ export async function getUserConnections(): Promise<ConnectionWithUser[]> {
 
   return (data || []).map((conn: any) => {
     const isRequester = conn.requester_id === user.id;
-    const otherUser = isRequester ? conn.receiver : conn.requester;
+    const otherUser = isRequester ? conn.receiver_user : conn.requester_user;
 
     return {
       ...mapDbToConnection(conn),
       otherUser: {
         id: otherUser.id,
         email: otherUser.email,
-        fullName: otherUser.raw_user_meta_data?.full_name,
-        avatarUrl: otherUser.raw_user_meta_data?.avatar_url,
+        fullName: otherUser.full_name,
+        avatarUrl: otherUser.avatar_url,
       },
       myLabel: isRequester ? conn.requester_label : conn.receiver_label,
       theirLabel: isRequester ? conn.receiver_label : conn.requester_label,
@@ -72,16 +68,8 @@ export async function getPendingInvitations(): Promise<{
   if (!user) throw new Error('Not authenticated');
 
   const { data, error } = await supabase
-    .from('connection_invitations')
-    .select(`
-      *,
-      connection:profile_connections(
-        *,
-        requester:auth.users!profile_connections_requester_id_fkey(id, email, raw_user_meta_data),
-        receiver:auth.users!profile_connections_receiver_id_fkey(id, email, raw_user_meta_data)
-      )
-    `)
-    .not('connection', 'is', null);
+    .from('invitations_with_connections')
+    .select('*');
 
   if (error) throw error;
 
@@ -92,7 +80,7 @@ export async function getPendingInvitations(): Promise<{
     if (!inv.connection) return;
 
     const isRequester = inv.connection.requester_id === user.id;
-    const fromUser = isRequester ? inv.connection.requester : inv.connection.receiver;
+    const fromUser = isRequester ? inv.connection.requester_user : inv.connection.receiver_user;
 
     const pendingInv: PendingInvitation = {
       invitation: mapDbToInvitation(inv),
@@ -100,8 +88,8 @@ export async function getPendingInvitations(): Promise<{
       fromUser: {
         id: fromUser.id,
         email: fromUser.email,
-        fullName: fromUser.raw_user_meta_data?.full_name,
-        avatarUrl: fromUser.raw_user_meta_data?.avatar_url,
+        fullName: fromUser.full_name,
+        avatarUrl: fromUser.avatar_url,
       },
     };
 
