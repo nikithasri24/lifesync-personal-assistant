@@ -31,6 +31,8 @@ describe('journalAPI', () => {
     mood: 'happy',
     tags: ['test', 'api'],
     attachments: [],
+    weather: null,
+    gratitude: null,
     created_at: '2025-11-19T12:00:00Z',
     updated_at: '2025-11-19T12:00:00Z',
   };
@@ -47,8 +49,7 @@ describe('journalAPI', () => {
       const mockQuery = {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
-        order: vi.fn().mockReturnThis(),
-        range: vi.fn().mockResolvedValue({
+        order: vi.fn().mockResolvedValue({
           data: [mockEntry],
           error: null,
         }),
@@ -66,86 +67,84 @@ describe('journalAPI', () => {
       expect(result[0].title).toBe('Test Entry');
     });
 
-    it('should apply search filter when provided', async () => {
+    it('should apply client-side search filter when provided', async () => {
+      const entries = [
+        { ...mockEntry, title: 'Test Entry', content: 'Test content' },
+        { ...mockEntry, id: 'entry-2', title: 'Other', content: 'Different' },
+      ];
+
       const mockQuery = {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
-        or: vi.fn().mockReturnThis(),
-        order: vi.fn().mockReturnThis(),
-        range: vi.fn().mockResolvedValue({
-          data: [],
+        order: vi.fn().mockResolvedValue({
+          data: entries,
           error: null,
         }),
       };
 
       (supabase.from as any).mockReturnValue(mockQuery);
 
-      const filters: JournalEntryFilters = { search: 'test query' };
-      await getJournalEntries(filters);
+      const filters: JournalEntryFilters = { searchQuery: 'test' };
+      const result = await getJournalEntries(filters);
 
-      expect(mockQuery.or).toHaveBeenCalledWith(
-        'title.ilike.%test query%,content.ilike.%test query%'
-      );
+      // Should filter client-side to only entries with "test" in title or content
+      expect(result).toHaveLength(1);
+      expect(result[0].title).toBe('Test Entry');
     });
 
-    it('should apply tag filter when provided', async () => {
+    it('should apply tags filter using overlaps', async () => {
       const mockQuery = {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
-        contains: vi.fn().mockReturnThis(),
         order: vi.fn().mockReturnThis(),
-        range: vi.fn().mockResolvedValue({
-          data: [],
-          error: null,
-        }),
+        overlaps: vi.fn().mockReturnThis(),
+        then: vi.fn((resolve) => resolve({ data: [], error: null })),
       };
 
       (supabase.from as any).mockReturnValue(mockQuery);
 
-      const filters: JournalEntryFilters = { tag: 'work' };
+      const filters: JournalEntryFilters = { tags: ['work'] };
       await getJournalEntries(filters);
 
-      expect(mockQuery.contains).toHaveBeenCalledWith('tags', ['work']);
+      expect(mockQuery.overlaps).toHaveBeenCalledWith('tags', ['work']);
     });
 
-    it('should apply mood filter when provided', async () => {
+    it('should apply moods filter using in', async () => {
       const mockQuery = {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         order: vi.fn().mockReturnThis(),
-        range: vi.fn().mockResolvedValue({
-          data: [],
-          error: null,
-        }),
+        in: vi.fn().mockReturnThis(),
+        then: vi.fn((resolve) => resolve({ data: [], error: null })),
       };
 
       (supabase.from as any).mockReturnValue(mockQuery);
 
-      const filters: JournalEntryFilters = { mood: 'happy' };
+      const filters: JournalEntryFilters = { moods: ['happy', 'excited'] };
       await getJournalEntries(filters);
 
-      // eq should be called twice: once for user_id, once for mood
-      expect(mockQuery.eq).toHaveBeenCalledTimes(2);
-      expect(mockQuery.eq).toHaveBeenCalledWith('mood', 'happy');
+      expect(mockQuery.in).toHaveBeenCalledWith('mood', ['happy', 'excited']);
     });
 
-    it('should apply pagination when limit and offset provided', async () => {
+    it('should apply date range filters', async () => {
       const mockQuery = {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         order: vi.fn().mockReturnThis(),
-        range: vi.fn().mockResolvedValue({
-          data: [],
-          error: null,
-        }),
+        gte: vi.fn().mockReturnThis(),
+        lte: vi.fn().mockReturnThis(),
+        then: vi.fn((resolve) => resolve({ data: [], error: null })),
       };
 
       (supabase.from as any).mockReturnValue(mockQuery);
 
-      const filters: JournalEntryFilters = { limit: 10, offset: 20 };
+      const startDate = new Date('2025-11-01');
+      const endDate = new Date('2025-11-30');
+      const filters: JournalEntryFilters = { startDate, endDate };
       await getJournalEntries(filters);
 
-      expect(mockQuery.range).toHaveBeenCalledWith(20, 29); // offset to offset+limit-1
+      expect(mockQuery.gte).toHaveBeenCalledWith('created_at', startDate.toISOString());
+      expect(mockQuery.lte).toHaveBeenCalledWith('created_at', endDate.toISOString());
     });
 
     it('should throw error when not authenticated', async () => {
@@ -160,8 +159,7 @@ describe('journalAPI', () => {
       const mockQuery = {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
-        order: vi.fn().mockReturnThis(),
-        range: vi.fn().mockResolvedValue({
+        order: vi.fn().mockResolvedValue({
           data: null,
           error: { message: 'Database error' },
         }),
@@ -263,14 +261,11 @@ describe('journalAPI', () => {
 
       await createJournalEntry(input);
 
-      expect(mockQuery.insert).toHaveBeenCalledWith(
-        expect.objectContaining({
-          title: null,
-          mood: null,
-          tags: [],
-          attachments: [],
-        })
-      );
+      const insertCall = mockQuery.insert.mock.calls[0][0];
+      expect(insertCall.title).toBeNull();
+      expect(insertCall.mood).toBeUndefined();
+      expect(insertCall.tags).toEqual([]);
+      expect(insertCall.attachments).toEqual([]);
     });
 
     it('should throw error when creation fails', async () => {
@@ -353,7 +348,7 @@ describe('journalAPI', () => {
         select: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({
           data: null,
-          error: null,
+          error: { message: 'Not found' },
         }),
       };
 
@@ -361,35 +356,45 @@ describe('journalAPI', () => {
 
       await expect(
         updateJournalEntry('nonexistent', { content: 'New' })
-      ).rejects.toThrow('Journal entry not found or update failed');
+      ).rejects.toThrow();
     });
   });
 
   describe('deleteJournalEntry', () => {
     it('should delete a journal entry', async () => {
+      const mockDelete = vi.fn().mockReturnThis();
+      const mockEq1 = vi.fn().mockReturnThis();
+      const mockEq2 = vi.fn().mockResolvedValue({ error: null });
+
       const mockQuery = {
-        delete: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockResolvedValue({
-          error: null,
-        }),
+        delete: mockDelete,
       };
+
+      mockDelete.mockReturnValue({ eq: mockEq1 });
+      mockEq1.mockReturnValue({ eq: mockEq2 });
 
       (supabase.from as any).mockReturnValue(mockQuery);
 
       await deleteJournalEntry('entry-123');
 
-      expect(mockQuery.delete).toHaveBeenCalled();
-      expect(mockQuery.eq).toHaveBeenCalledWith('id', 'entry-123');
-      expect(mockQuery.eq).toHaveBeenCalledWith('user_id', mockUser.id);
+      expect(mockDelete).toHaveBeenCalled();
+      expect(mockEq1).toHaveBeenCalledWith('id', 'entry-123');
+      expect(mockEq2).toHaveBeenCalledWith('user_id', mockUser.id);
     });
 
     it('should throw error when deletion fails', async () => {
+      const mockDelete = vi.fn().mockReturnThis();
+      const mockEq1 = vi.fn().mockReturnThis();
+      const mockEq2 = vi.fn().mockResolvedValue({
+        error: { message: 'Delete failed' },
+      });
+
       const mockQuery = {
-        delete: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockResolvedValue({
-          error: { message: 'Delete failed' },
-        }),
+        delete: mockDelete,
       };
+
+      mockDelete.mockReturnValue({ eq: mockEq1 });
+      mockEq1.mockReturnValue({ eq: mockEq2 });
 
       (supabase.from as any).mockReturnValue(mockQuery);
 

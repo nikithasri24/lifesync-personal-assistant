@@ -58,46 +58,48 @@ describe('notesAPI', () => {
 
       expect(supabase.from).toHaveBeenCalledWith('notes');
       expect(mockQuery.eq).toHaveBeenCalledWith('user_id', mockUser.id);
-      expect(mockQuery.order).toHaveBeenCalledWith('updated_at', { ascending: false });
+      expect(mockQuery.order).toHaveBeenCalledWith('created_at', { ascending: false });
       expect(result).toHaveLength(1);
       expect(result[0].title).toBe('Test Note');
     });
 
-    it('should apply search filter when provided', async () => {
+    it('should apply client-side search filter when provided', async () => {
+      const notes = [
+        { ...mockNote, title: 'Test Note', content: 'Test content' },
+        { ...mockNote, id: 'note-2', title: 'Other', content: 'Different' },
+      ];
+
       const mockQuery = {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
-        or: vi.fn().mockReturnThis(),
         order: vi.fn().mockResolvedValue({
-          data: [],
+          data: notes,
           error: null,
         }),
       };
 
       (supabase.from as any).mockReturnValue(mockQuery);
 
-      const filters: NoteFilters = { search: 'test search' };
-      await getNotes(filters);
+      const filters: NoteFilters = { searchQuery: 'test' };
+      const result = await getNotes(filters);
 
-      expect(mockQuery.or).toHaveBeenCalledWith(
-        'title.ilike.%test search%,content.ilike.%test search%'
-      );
+      // Should filter client-side to only notes with "test" in title or content
+      expect(result).toHaveLength(1);
+      expect(result[0].title).toBe('Test Note');
     });
 
-    it('should apply tag filter when provided', async () => {
+    it('should apply tags filter using contains', async () => {
       const mockQuery = {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
+        order: vi.fn().mockReturnThis(),
         contains: vi.fn().mockReturnThis(),
-        order: vi.fn().mockResolvedValue({
-          data: [],
-          error: null,
-        }),
+        then: vi.fn((resolve) => resolve({ data: [], error: null })),
       };
 
       (supabase.from as any).mockReturnValue(mockQuery);
 
-      const filters: NoteFilters = { tag: 'work' };
+      const filters: NoteFilters = { tags: ['work'] };
       await getNotes(filters);
 
       expect(mockQuery.contains).toHaveBeenCalledWith('tags', ['work']);
@@ -107,10 +109,8 @@ describe('notesAPI', () => {
       const mockQuery = {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
-        order: vi.fn().mockResolvedValue({
-          data: [],
-          error: null,
-        }),
+        order: vi.fn().mockReturnThis(),
+        then: vi.fn((resolve) => resolve({ data: [], error: null })),
       };
 
       (supabase.from as any).mockReturnValue(mockQuery);
@@ -118,6 +118,8 @@ describe('notesAPI', () => {
       const filters: NoteFilters = { category: 'personal' };
       await getNotes(filters);
 
+      // eq should be called twice: once for user_id, once for category
+      expect(mockQuery.eq).toHaveBeenCalledTimes(2);
       expect(mockQuery.eq).toHaveBeenCalledWith('category', 'personal');
     });
 
@@ -322,29 +324,39 @@ describe('notesAPI', () => {
 
   describe('deleteNote', () => {
     it('should delete a note', async () => {
+      const mockDelete = vi.fn().mockReturnThis();
+      const mockEq1 = vi.fn().mockReturnThis();
+      const mockEq2 = vi.fn().mockResolvedValue({ error: null });
+
       const mockQuery = {
-        delete: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockResolvedValue({
-          error: null,
-        }),
+        delete: mockDelete,
       };
+
+      mockDelete.mockReturnValue({ eq: mockEq1 });
+      mockEq1.mockReturnValue({ eq: mockEq2 });
 
       (supabase.from as any).mockReturnValue(mockQuery);
 
       await deleteNote('note-123');
 
-      expect(mockQuery.delete).toHaveBeenCalled();
-      expect(mockQuery.eq).toHaveBeenCalledWith('id', 'note-123');
-      expect(mockQuery.eq).toHaveBeenCalledWith('user_id', mockUser.id);
+      expect(mockDelete).toHaveBeenCalled();
+      expect(mockEq1).toHaveBeenCalledWith('id', 'note-123');
+      expect(mockEq2).toHaveBeenCalledWith('user_id', mockUser.id);
     });
 
     it('should throw error when deletion fails', async () => {
+      const mockDelete = vi.fn().mockReturnThis();
+      const mockEq1 = vi.fn().mockReturnThis();
+      const mockEq2 = vi.fn().mockResolvedValue({
+        error: { message: 'Delete failed' },
+      });
+
       const mockQuery = {
-        delete: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockResolvedValue({
-          error: { message: 'Delete failed' },
-        }),
+        delete: mockDelete,
       };
+
+      mockDelete.mockReturnValue({ eq: mockEq1 });
+      mockEq1.mockReturnValue({ eq: mockEq2 });
 
       (supabase.from as any).mockReturnValue(mockQuery);
 

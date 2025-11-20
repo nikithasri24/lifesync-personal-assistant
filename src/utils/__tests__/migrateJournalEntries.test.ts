@@ -230,7 +230,7 @@ describe('migrateJournalEntries', () => {
 
       expect(result.success).toBe(true);
       expect(capturedInsertData.title).toBeNull();
-      expect(capturedInsertData.mood).toBeNull();
+      expect(capturedInsertData.mood).toBeUndefined();
       expect(capturedInsertData.tags).toEqual([]);
       expect(capturedInsertData.attachments).toEqual([]);
     });

@@ -89,10 +89,8 @@ describe('goalsAPI', () => {
         const mockQuery = {
           select: vi.fn().mockReturnThis(),
           eq: vi.fn().mockReturnThis(),
-          order: vi.fn().mockResolvedValue({
-            data: [],
-            error: null,
-          }),
+          order: vi.fn().mockReturnThis(),
+          then: vi.fn((resolve) => resolve({ data: [], error: null })),
         };
 
         (supabase.from as any).mockReturnValue(mockQuery);
@@ -109,10 +107,8 @@ describe('goalsAPI', () => {
         const mockQuery = {
           select: vi.fn().mockReturnThis(),
           eq: vi.fn().mockReturnThis(),
-          order: vi.fn().mockResolvedValue({
-            data: [],
-            error: null,
-          }),
+          order: vi.fn().mockReturnThis(),
+          then: vi.fn((resolve) => resolve({ data: [], error: null })),
         };
 
         (supabase.from as any).mockReturnValue(mockQuery);
@@ -127,10 +123,8 @@ describe('goalsAPI', () => {
         const mockQuery = {
           select: vi.fn().mockReturnThis(),
           eq: vi.fn().mockReturnThis(),
-          order: vi.fn().mockResolvedValue({
-            data: [],
-            error: null,
-          }),
+          order: vi.fn().mockReturnThis(),
+          then: vi.fn((resolve) => resolve({ data: [], error: null })),
         };
 
         (supabase.from as any).mockReturnValue(mockQuery);
@@ -286,20 +280,24 @@ describe('goalsAPI', () => {
 
     describe('deleteGoal', () => {
       it('should delete a goal', async () => {
+        const mockDelete = vi.fn().mockReturnThis();
+        const mockEq1 = vi.fn().mockReturnThis();
+        const mockEq2 = vi.fn().mockResolvedValue({ error: null });
+
         const mockQuery = {
-          delete: vi.fn().mockReturnThis(),
-          eq: vi.fn().mockResolvedValue({
-            error: null,
-          }),
+          delete: mockDelete,
         };
+
+        mockDelete.mockReturnValue({ eq: mockEq1 });
+        mockEq1.mockReturnValue({ eq: mockEq2 });
 
         (supabase.from as any).mockReturnValue(mockQuery);
 
         await deleteGoal('goal-123');
 
-        expect(mockQuery.delete).toHaveBeenCalled();
-        expect(mockQuery.eq).toHaveBeenCalledWith('id', 'goal-123');
-        expect(mockQuery.eq).toHaveBeenCalledWith('user_id', mockUser.id);
+        expect(mockDelete).toHaveBeenCalled();
+        expect(mockEq1).toHaveBeenCalledWith('id', 'goal-123');
+        expect(mockEq2).toHaveBeenCalledWith('user_id', mockUser.id);
       });
     });
   });
@@ -461,20 +459,24 @@ describe('goalsAPI', () => {
 
     describe('deleteDream', () => {
       it('should delete a dream', async () => {
+        const mockDelete = vi.fn().mockReturnThis();
+        const mockEq1 = vi.fn().mockReturnThis();
+        const mockEq2 = vi.fn().mockResolvedValue({ error: null });
+
         const mockQuery = {
-          delete: vi.fn().mockReturnThis(),
-          eq: vi.fn().mockResolvedValue({
-            error: null,
-          }),
+          delete: mockDelete,
         };
+
+        mockDelete.mockReturnValue({ eq: mockEq1 });
+        mockEq1.mockReturnValue({ eq: mockEq2 });
 
         (supabase.from as any).mockReturnValue(mockQuery);
 
         await deleteDream('dream-456');
 
-        expect(mockQuery.delete).toHaveBeenCalled();
-        expect(mockQuery.eq).toHaveBeenCalledWith('id', 'dream-456');
-        expect(mockQuery.eq).toHaveBeenCalledWith('user_id', mockUser.id);
+        expect(mockDelete).toHaveBeenCalled();
+        expect(mockEq1).toHaveBeenCalledWith('id', 'dream-456');
+        expect(mockEq2).toHaveBeenCalledWith('user_id', mockUser.id);
       });
     });
   });
