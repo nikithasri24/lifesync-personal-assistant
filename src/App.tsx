@@ -14,6 +14,7 @@ import AppleHealthCyclesSimple from './pages/AppleHealthCyclesSimple';
 import ShoppingSmart from './pages/ShoppingSmart';
 import MealPlanning from './pages/MealPlanning';
 import ProjectTracking from './pages/ProjectTracking';
+import Shared from './pages/Shared';
 import Travel from './pages/Travel';
 import VisaPage from './travel/pages/VisaPage';
 import TripPlanner from './travel/components/TripPlanner';
@@ -135,7 +136,7 @@ function App() {
       case 'meals':
         return <MealPlanning />;
       case 'shared':
-        return <div className="text-center py-12 text-muted">Shared Lists & Gift Ideas feature coming soon...</div>;
+        return <Shared />;
       case 'seventy-five-hard':
         return <SeventyFiveHard />;
       case 'skincare':
