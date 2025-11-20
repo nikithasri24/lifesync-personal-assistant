@@ -50,7 +50,6 @@ type ViewKey =
   | 'calendar'
   | 'focus'
   | 'habits'
-  | 'mood'
   | 'period'
   | 'todos'
   | 'notes'

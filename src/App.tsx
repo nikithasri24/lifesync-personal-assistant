@@ -5,7 +5,6 @@ import Dashboard from './pages/Dashboard';
 import Calendar from './pages/Calendar';
 import Focus from './pages/Focus';
 import Habits from './pages/Habits';
-import Mood from './pages/Mood';
 import TodosWorkingFollowUp from './pages/TodosWorkingFollowUp';
 import Notes from './pages/Notes';
 import Journal from './pages/Journal';
@@ -105,8 +104,6 @@ function App() {
         return <Focus />;
       case 'habits':
         return <Habits />;
-      case 'mood':
-        return <Mood />;
       case 'period':
         return <AppleHealthCyclesSimple />;
       case 'todos':
