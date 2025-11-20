@@ -21,7 +21,8 @@ import {
   DollarSign,
   Sparkles,
   Plane,
-  Map
+  Map,
+  MessageCircle
 } from 'lucide-react';
 import { useAppStore } from '../stores/useAppStore';
 import Toast from './Toast';
@@ -32,6 +33,7 @@ import clsx from 'clsx';
 
 const navigation = [
   { name: 'Dashboard', icon: Home, view: 'dashboard' as const, section: 'main' },
+  { name: 'AI Assistant', icon: MessageCircle, view: 'assistant' as const, section: 'main' },
   { name: 'Calendar', icon: Calendar, view: 'calendar' as const, section: 'main' },
   { name: 'Tasks', icon: CheckSquare, view: 'todos' as const, section: 'main' },
   { name: 'Focus', icon: Timer, view: 'focus' as const, section: 'main' },
