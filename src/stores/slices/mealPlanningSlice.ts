@@ -159,8 +159,12 @@ export interface MealPlanningSlice {
   recipes: Recipe[];
   mealPlans: MealPlanWeek[];
   pantryItems: PantryItem[];
+  recipesLoaded: boolean;
   recipesLoading: boolean;
+  mealPlansLoaded: boolean;
   mealPlansLoading: boolean;
+  pantryLoaded: boolean;
+  pantryLoading: boolean;
 
   // Actions - Recipes
   loadRecipes: () => Promise<void>;
@@ -192,24 +196,31 @@ export const createMealPlanningSlice: StateCreator<MealPlanningSlice> = (set, ge
   recipes: [],
   mealPlans: [],
   pantryItems: [],
+  recipesLoaded: false,
   recipesLoading: false,
+  mealPlansLoaded: false,
   mealPlansLoading: false,
+  pantryLoaded: false,
+  pantryLoading: false,
 
   // Internal setters
-  _setRecipes: (recipes) => set({ recipes }),
-  _setMealPlans: (mealPlans) => set({ mealPlans }),
-  _setPantryItems: (pantryItems) => set({ pantryItems }),
+  _setRecipes: (recipes) => set({ recipes, recipesLoaded: true }),
+  _setMealPlans: (mealPlans) => set({ mealPlans, mealPlansLoaded: true }),
+  _setPantryItems: (pantryItems) => set({ pantryItems, pantryLoaded: true }),
   _getWeekStartsOn: () => 0, // Default, will be overridden by parent store
 
   // ==================== Recipes ====================
 
   loadRecipes: async () => {
+    // Don't reload if already loaded or loading
+    if (get().recipesLoaded || get().recipesLoading) return;
+
     if (!isSupabaseConfigured) return;
     set({ recipesLoading: true });
     try {
       const recipesRaw = await apiClient.getRecipes();
       const recipes = recipesRaw.map(mapRecipeDataToRecipe);
-      set({ recipes, recipesLoading: false });
+      set({ recipes, recipesLoaded: true, recipesLoading: false });
     } catch (e) {
       console.warn('[Store] loadRecipes failed; showing empty list', e);
       set({ recipes: [], recipesLoading: false });
@@ -295,12 +306,15 @@ export const createMealPlanningSlice: StateCreator<MealPlanningSlice> = (set, ge
   // ==================== Meal Plans ====================
 
   loadMealPlans: async () => {
+    // Don't reload if already loaded or loading
+    if (get().mealPlansLoaded || get().mealPlansLoading) return;
+
     if (!isSupabaseConfigured) return;
     set({ mealPlansLoading: true });
     try {
       const mealPlansRaw = await apiClient.getMealPlans();
       const mealPlans = mealPlansRaw.map(mapMealPlanDataToMealPlanWeek);
-      set({ mealPlans, mealPlansLoading: false });
+      set({ mealPlans, mealPlansLoaded: true, mealPlansLoading: false });
     } catch (e) {
       console.warn('[Store] loadMealPlans failed; starting with none', e);
       set({ mealPlans: [], mealPlansLoading: false });

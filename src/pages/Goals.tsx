@@ -1,8 +1,9 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { addDays } from 'date-fns';
 import { Plus, Target, Trash2, CheckCircle2, Sparkles } from 'lucide-react';
 import { useAppStore } from '../stores/useAppStore';
+import { SkeletonCard } from '../components/LoadingSpinner';
 import type { Dream, Goal } from '../types';
 
 const GOAL_CATEGORIES: Goal['category'][] = ['personal', 'health', 'career', 'financial', 'fitness'];
@@ -127,9 +128,25 @@ const Goals: React.FC = () => {
     addDream,
     updateDream,
     deleteDream,
+    loadGoals,
+    loadDreams,
+    goalsLoaded,
+    goalsLoading,
+    dreamsLoaded,
+    dreamsLoading,
   } = useAppStore();
 
   const [activeTab, setActiveTab] = useState<'goals' | 'dreams'>('goals');
+
+  // Lazy load goals and dreams when page mounts
+  useEffect(() => {
+    if (loadGoals && !goalsLoaded && !goalsLoading) {
+      loadGoals();
+    }
+    if (loadDreams && !dreamsLoaded && !dreamsLoading) {
+      loadDreams();
+    }
+  }, [loadGoals, loadDreams, goalsLoaded, goalsLoading, dreamsLoaded, dreamsLoading]);
   const [goalDraft, setGoalDraft] = useState<GoalDraft>(createGoalDraft);
   const [dreamDraft, setDreamDraft] = useState<DreamDraft>(createDreamDraft);
   const [showGoalForm, setShowGoalForm] = useState(false);
@@ -170,6 +187,17 @@ const Goals: React.FC = () => {
   };
 
   const renderGoalList = () => {
+    // Show loading state
+    if (goalsLoading && !goalsLoaded) {
+      return (
+        <div className="space-y-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <SkeletonCard key={i} className="h-32" />
+          ))}
+        </div>
+      );
+    }
+
     if (goals.length === 0) {
       return <EmptyState label="No goals yet. Start by creating one." icon={<Target className="h-6 w-6" />} />;
     }
@@ -223,6 +251,17 @@ const Goals: React.FC = () => {
   };
 
   const renderDreamList = () => {
+    // Show loading state
+    if (dreamsLoading && !dreamsLoaded) {
+      return (
+        <div className="space-y-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <SkeletonCard key={i} className="h-32" />
+          ))}
+        </div>
+      );
+    }
+
     if (dreams.length === 0) {
       return <EmptyState label="No dreams captured yet. Start with one aspiration." />;
     }

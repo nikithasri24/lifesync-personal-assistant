@@ -129,9 +129,11 @@ export interface ShoppingSlice {
   // State
   shoppingItems: ShoppingItem[];
   activeShoppingListId: string | null;
+  shoppingLoaded: boolean;
   shoppingLoading: boolean;
 
   // Actions
+  loadShoppingItems: () => Promise<void>;
   addShoppingItem: (
     item: Omit<ShoppingItem, 'id' | 'createdAt' | 'updatedAt' | 'shoppingListId'>
   ) => Promise<ShoppingItem>;
@@ -149,13 +151,48 @@ export const createShoppingSlice: StateCreator<ShoppingSlice> = (set, get) => ({
   // Initial state
   shoppingItems: [],
   activeShoppingListId: null,
+  shoppingLoaded: false,
   shoppingLoading: false,
 
   // Internal setters (used by initializeData)
-  _setShoppingItems: (shoppingItems) => set({ shoppingItems }),
+  _setShoppingItems: (shoppingItems) => set({ shoppingItems, shoppingLoaded: true }),
   _setActiveShoppingListId: (id) => set({ activeShoppingListId: id }),
 
   // ==================== Shopping ====================
+
+  loadShoppingItems: async () => {
+    // Don't reload if already loaded or loading
+    if (get().shoppingLoaded || get().shoppingLoading) return;
+
+    if (!isSupabaseConfigured) return;
+    set({ shoppingLoading: true });
+    try {
+      const shoppingListsRaw = await apiClient.getShoppingLists();
+      let items: ShoppingItem[] = [];
+      let activeListId: string | null = null;
+
+      if (shoppingListsRaw.length > 0) {
+        // Use first active list or just first list
+        const activeList = shoppingListsRaw.find((list) => list.status === 'active') || shoppingListsRaw[0];
+        activeListId = activeList.id ?? null;
+
+        if (activeListId) {
+          const itemsRaw = await apiClient.getShoppingListItems(activeListId);
+          items = itemsRaw.map(mapShoppingItemDataToShoppingItem);
+        }
+      }
+
+      set({
+        shoppingItems: items,
+        activeShoppingListId: activeListId,
+        shoppingLoaded: true,
+        shoppingLoading: false,
+      });
+    } catch (e) {
+      console.warn('[Store] loadShoppingItems failed; showing empty list', e);
+      set({ shoppingItems: [], shoppingLoading: false });
+    }
+  },
 
   addShoppingItem: async (itemInput) => {
     if (!isSupabaseConfigured) {

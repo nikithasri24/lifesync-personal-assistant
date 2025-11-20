@@ -2112,6 +2112,9 @@ const MealPlanning: React.FC = () => {
   const {
     recipes,
     mealPlans,
+    recipesLoaded,
+    recipesLoading,
+    mealPlansLoaded,
     mealPlansLoading,
     loadRecipes,
     loadMealPlans,
@@ -2177,12 +2180,17 @@ const MealPlanning: React.FC = () => {
   const [recipeSearchQuery, setRecipeSearchQuery] = useState('');
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 
+  // Lazy load recipes and meal plans when page mounts
   useEffect(() => {
-    void loadRecipes();
-    void loadMealPlans();
+    if (loadRecipes && !recipesLoaded && !recipesLoading) {
+      void loadRecipes();
+    }
+    if (loadMealPlans && !mealPlansLoaded && !mealPlansLoading) {
+      void loadMealPlans();
+    }
     // Cleanup old drafts on component mount
     cleanupOldDrafts();
-  }, [loadRecipes, loadMealPlans]);
+  }, [loadRecipes, loadMealPlans, recipesLoaded, recipesLoading, mealPlansLoaded, mealPlansLoading]);
 
   useEffect(() => {
     setSelectedDateKey(toKey(currentWeekStart));

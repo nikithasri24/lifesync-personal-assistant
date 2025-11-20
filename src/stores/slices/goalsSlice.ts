@@ -15,6 +15,14 @@ export interface GoalsSlice {
   // State
   goals: Goal[];
   dreams: Dream[];
+  goalsLoaded: boolean;
+  goalsLoading: boolean;
+  dreamsLoaded: boolean;
+  dreamsLoading: boolean;
+
+  // Actions - Lazy Loading
+  loadGoals: () => Promise<void>;
+  loadDreams: () => Promise<void>;
 
   // Actions - Goals
   addGoal: (goal: Omit<Goal, 'id' | 'createdAt'>) => Promise<void>;
@@ -36,10 +44,44 @@ export const createGoalsSlice: StateCreator<GoalsSlice> = (set, get) => ({
   // Initial state
   goals: [],
   dreams: [],
+  goalsLoaded: false,
+  goalsLoading: false,
+  dreamsLoaded: false,
+  dreamsLoading: false,
 
   // Internal setters (used by initializeData)
-  _setGoals: (goals) => set({ goals }),
-  _setDreams: (dreams) => set({ dreams }),
+  _setGoals: (goals) => set({ goals, goalsLoaded: true }),
+  _setDreams: (dreams) => set({ dreams, dreamsLoaded: true }),
+
+  // ==================== Lazy Loading ====================
+
+  loadGoals: async () => {
+    if (get().goalsLoaded || get().goalsLoading) return;
+
+    set({ goalsLoading: true });
+    try {
+      const { getGoals } = await import('../../api/goalsAPI');
+      const goals = await getGoals();
+      set({ goals, goalsLoaded: true, goalsLoading: false });
+    } catch (error) {
+      console.error('Error loading goals:', error);
+      set({ goalsLoading: false });
+    }
+  },
+
+  loadDreams: async () => {
+    if (get().dreamsLoaded || get().dreamsLoading) return;
+
+    set({ dreamsLoading: true });
+    try {
+      const { getDreams } = await import('../../api/goalsAPI');
+      const dreams = await getDreams();
+      set({ dreams, dreamsLoaded: true, dreamsLoading: false });
+    } catch (error) {
+      console.error('Error loading dreams:', error);
+      set({ dreamsLoading: false });
+    }
+  },
 
   // ==================== Goals ====================
 

@@ -153,11 +153,14 @@ const STORE_TYPES = {
 
 export default function ShoppingSmart() {
   // Get shopping items from global store
-  const { 
-    shoppingItems, 
-    addShoppingItem, 
-    updateShoppingItem, 
-    deleteShoppingItem, 
+  const {
+    shoppingItems,
+    shoppingLoaded,
+    shoppingLoading,
+    loadShoppingItems,
+    addShoppingItem,
+    updateShoppingItem,
+    deleteShoppingItem,
     toggleShoppingItem,
     pantryItems,
     addPantryItem,
@@ -167,6 +170,13 @@ export default function ShoppingSmart() {
     addFinancialTransaction,
     financialAccounts,
   } = useAppStore();
+
+  // Lazy load shopping items when page mounts
+  useEffect(() => {
+    if (loadShoppingItems && !shoppingLoaded && !shoppingLoading) {
+      loadShoppingItems();
+    }
+  }, [loadShoppingItems, shoppingLoaded, shoppingLoading]);
 
   // Sample stores with ratings and preferences
   const [stores] = useState<Store[]>([

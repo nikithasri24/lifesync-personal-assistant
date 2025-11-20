@@ -142,6 +142,18 @@ interface RealAppState {
   recipesLoading: boolean
   shoppingLoading: boolean
   financesLoading: boolean
+  // Lazy loading flags
+  notesLoaded: boolean
+  notesLoading: boolean
+  journalEntriesLoaded: boolean
+  journalEntriesLoading: boolean
+  goalsLoaded: boolean
+  goalsLoading: boolean
+  dreamsLoaded: boolean
+  dreamsLoading: boolean
+  recipesLoaded: boolean
+  mealPlansLoaded: boolean
+  shoppingLoaded: boolean
   activeView: ViewKey
   sidebarCollapsed: boolean
   // Global settings
@@ -213,22 +225,32 @@ interface RealAppState {
   resetHabitToday: (id: string) => Promise<void>
   resetHabitHistory: (id: string) => Promise<void>
 
+  // Notes - Lazy loading
+  loadNotes: () => Promise<void>
   addNote: (note: Omit<Note, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>
   updateNote: (id: string, updates: Partial<Note>) => Promise<void>
   deleteNote: (id: string) => Promise<void>
 
+  // Journal - Lazy loading
+  loadJournalEntries: () => Promise<void>
   addJournalEntry: (entry: Omit<JournalEntry, 'id' | 'createdAt'>) => void
   deleteJournalEntry: (id: string) => void
 
+  // Goals - Lazy loading
+  loadGoals: () => Promise<void>
   addGoal: (goal: Omit<Goal, 'id' | 'createdAt'>) => Promise<void>
   updateGoal: (id: string, updates: Partial<Goal>) => Promise<void>
   deleteGoal: (id: string) => Promise<void>
 
+  // Dreams - Lazy loading
+  loadDreams: () => Promise<void>
   addDream: (dream: Omit<Dream, 'id' | 'createdAt' | 'lastUpdated'>) => Promise<void>
   updateDream: (id: string, updates: Partial<Dream>) => Promise<void>
   deleteDream: (id: string) => Promise<void>
 
+  // Recipes & Meal Plans - Lazy loading
   loadRecipes: () => Promise<void>
+  loadMealPlans: () => Promise<void>
   addRecipe: (recipe: Omit<Recipe, 'id' | 'createdAt'>) => Promise<Recipe>
   updateRecipe: (id: string, updates: Partial<Recipe>) => Promise<void>
   deleteRecipe: (id: string) => Promise<void>
@@ -246,6 +268,8 @@ interface RealAppState {
   addMoodEntry: (entry: Omit<MoodEntry, 'id' | 'createdAt'>) => void
   deleteMoodEntry: (id: string) => void
 
+  // Shopping - Lazy loading
+  loadShoppingItems: () => Promise<void>
   addShoppingItem: (item: Omit<ShoppingItem, 'id' | 'createdAt' | 'updatedAt' | 'shoppingListId'>) => Promise<ShoppingItem>
   updateShoppingItem: (id: string, updates: Partial<ShoppingItem>) => Promise<void>
   deleteShoppingItem: (id: string) => Promise<void>
@@ -1046,6 +1070,18 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
   recipesLoading: false,
   shoppingLoading: false,
   financesLoading: false,
+  // Lazy loading flags
+  notesLoaded: false,
+  notesLoading: false,
+  journalEntriesLoaded: false,
+  journalEntriesLoading: false,
+  goalsLoaded: false,
+  goalsLoading: false,
+  dreamsLoaded: false,
+  dreamsLoading: false,
+  recipesLoaded: false,
+  mealPlansLoaded: false,
+  shoppingLoaded: false,
   activeView: (() => {
     try {
       const raw = localStorage.getItem('lifesync:activeView')
@@ -1873,6 +1909,23 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
     set({ habits, habitCategories, userStats: computeUserStats(tasks, habits) })
   },
 
+  // ==================== Notes - Lazy Loading ====================
+
+  loadNotes: async () => {
+    // Don't reload if already loaded or loading
+    if (get().notesLoaded || get().notesLoading) return
+
+    set({ notesLoading: true })
+    try {
+      const { getNotes } = await import('../api/notesAPI')
+      const notes = await getNotes()
+      set({ notes, notesLoaded: true, notesLoading: false })
+    } catch (error) {
+      console.error('Error loading notes:', error)
+      set({ notesLoading: false })
+    }
+  },
+
   addNote: async (noteInput) => {
     try {
       // Import dynamically to avoid circular dependencies
@@ -1937,6 +1990,23 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
     }
   },
 
+  // ==================== Journal - Lazy Loading ====================
+
+  loadJournalEntries: async () => {
+    // Don't reload if already loaded or loading
+    if (get().journalEntriesLoaded || get().journalEntriesLoading) return
+
+    set({ journalEntriesLoading: true })
+    try {
+      const { getJournalEntries } = await import('../api/journalAPI')
+      const journalEntries = await getJournalEntries()
+      set({ journalEntries, journalEntriesLoaded: true, journalEntriesLoading: false })
+    } catch (error) {
+      console.error('Error loading journal entries:', error)
+      set({ journalEntriesLoading: false })
+    }
+  },
+
   addJournalEntry: async (entry) => {
     try {
       // Import dynamically to avoid circular dependencies
@@ -1969,6 +2039,23 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
     set((state) => ({
       journalEntries: state.journalEntries.filter((entry) => entry.id !== id),
     }))
+  },
+
+  // ==================== Goals - Lazy Loading ====================
+
+  loadGoals: async () => {
+    // Don't reload if already loaded or loading
+    if (get().goalsLoaded || get().goalsLoading) return
+
+    set({ goalsLoading: true })
+    try {
+      const { getGoals } = await import('../api/goalsAPI')
+      const goals = await getGoals()
+      set({ goals, goalsLoaded: true, goalsLoading: false })
+    } catch (error) {
+      console.error('Error loading goals:', error)
+      set({ goalsLoading: false })
+    }
   },
 
   addGoal: async (goalInput) => {
@@ -2039,6 +2126,23 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
     }
   },
 
+  // ==================== Dreams - Lazy Loading ====================
+
+  loadDreams: async () => {
+    // Don't reload if already loaded or loading
+    if (get().dreamsLoaded || get().dreamsLoading) return
+
+    set({ dreamsLoading: true })
+    try {
+      const { getDreams } = await import('../api/goalsAPI')
+      const dreams = await getDreams()
+      set({ dreams, dreamsLoaded: true, dreamsLoading: false })
+    } catch (error) {
+      console.error('Error loading dreams:', error)
+      set({ dreamsLoading: false })
+    }
+  },
+
   addDream: async (dreamInput) => {
     try {
       // Import dynamically to avoid circular dependencies
@@ -2104,12 +2208,15 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
   },
 
   loadRecipes: async () => {
+    // Don't reload if already loaded or loading
+    if (get().recipesLoaded || get().recipesLoading) return
+
     if (!isSupabaseConfigured) return
     set({ recipesLoading: true })
     try {
       const recipesRaw = await apiClient.getRecipes()
       const recipes = recipesRaw.map(mapRecipeDataToRecipe)
-      set({ recipes, recipesLoading: false })
+      set({ recipes, recipesLoaded: true, recipesLoading: false })
     } catch (e) {
       console.warn('[Store] loadRecipes failed; showing empty list', e)
       set({ recipes: [], recipesLoading: false })
@@ -2174,12 +2281,15 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
   },
 
   loadMealPlans: async () => {
+    // Don't reload if already loaded or loading
+    if (get().mealPlansLoaded || get().mealPlansLoading) return
+
     if (!isSupabaseConfigured) return
     set({ mealPlansLoading: true })
     try {
       const mealPlansRaw = await apiClient.getMealPlans()
       const mealPlans = mealPlansRaw.map(mapMealPlanDataToMealPlanWeek)
-      set({ mealPlans, mealPlansLoading: false })
+      set({ mealPlans, mealPlansLoaded: true, mealPlansLoading: false })
     } catch (e) {
       console.warn('[Store] loadMealPlans failed; starting with none', e)
       set({ mealPlans: [], mealPlansLoading: false })
@@ -2378,6 +2488,42 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
     }))
   },
 
+
+  // ==================== Shopping - Lazy Loading ====================
+
+  loadShoppingItems: async () => {
+    // Don't reload if already loaded or loading
+    if (get().shoppingLoaded || get().shoppingLoading) return
+
+    if (!isSupabaseConfigured) return
+    set({ shoppingLoading: true })
+    try {
+      const shoppingListsRaw = await apiClient.getShoppingLists()
+      let items: ShoppingItem[] = []
+      let activeListId: string | null = null
+
+      if (shoppingListsRaw.length > 0) {
+        // Use first active list or just first list
+        const activeList = shoppingListsRaw.find((list) => list.status === 'active') || shoppingListsRaw[0]
+        activeListId = activeList.id ?? null
+
+        if (activeListId) {
+          const itemsRaw = await apiClient.getShoppingListItems(activeListId)
+          items = itemsRaw.map(mapShoppingItemDataToShoppingItem)
+        }
+      }
+
+      set({
+        shoppingItems: items,
+        activeShoppingListId: activeListId,
+        shoppingLoaded: true,
+        shoppingLoading: false,
+      })
+    } catch (e) {
+      console.warn('[Store] loadShoppingItems failed; showing empty list', e)
+      set({ shoppingItems: [], shoppingLoading: false })
+    }
+  },
 
   addShoppingItem: async (itemInput) => {
     if (!isSupabaseConfigured) {
