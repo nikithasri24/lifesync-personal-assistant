@@ -165,7 +165,11 @@
       "Bash(TROUBLESHOOTING-GUIDE.md )",
       "Bash(AGENTS.md )",
       "Bash(docs/AGENT-NOTES.md )",
-      "Bash(docs/PRODUCTION-PLAN.md)"
+      "Bash(docs/PRODUCTION-PLAN.md)",
+      "Bash(git log:*)",
+      "Bash(npx ts-prune:*)",
+      "Bash(for comp in AIFinancialAdvisor SmartBillTracker AdvancedPortfolioAnalytics AccountReconciliation)",
+      "Bash(do echo \"=== $comp ===\")"
     ],
     "deny": [],
     "ask": []
