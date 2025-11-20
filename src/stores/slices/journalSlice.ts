@@ -10,6 +10,7 @@ import type {
   JournalEntryInput,
   JournalFilters,
 } from '@/api/journalAPI';
+import { logger } from '@/services/logger';
 
 export interface JournalSlice {
   // State
@@ -50,7 +51,7 @@ export const createJournalSlice: StateCreator<
       const entries = await getJournalEntries();
       set({ journalEntries: entries, journalLoaded: true, journalLoading: false });
     } catch (error) {
-      console.error('Error loading journal entries:', error);
+      logger.error('Journal', error as Error, { context: 'loadJournal' });
       set({ journalLoading: false });
       throw error;
     }
@@ -63,7 +64,7 @@ export const createJournalSlice: StateCreator<
       set((state) => ({ journalEntries: [entry, ...state.journalEntries] }));
       return entry;
     } catch (error) {
-      console.error('Error creating journal entry:', error);
+      logger.error('Journal', error as Error, { context: 'addJournalEntry' });
       throw error;
     }
   },
@@ -79,7 +80,7 @@ export const createJournalSlice: StateCreator<
       }));
       return updatedEntry;
     } catch (error) {
-      console.error('Error updating journal entry:', error);
+      logger.error('Journal', error as Error, { context: 'updateJournalEntry' });
       throw error;
     }
   },
@@ -92,7 +93,7 @@ export const createJournalSlice: StateCreator<
         journalEntries: state.journalEntries.filter((e) => e.id !== id),
       }));
     } catch (error) {
-      console.error('Error deleting journal entry:', error);
+      logger.error('Journal', error as Error, { context: 'deleteJournalEntry' });
       throw error;
     }
   },
@@ -102,7 +103,7 @@ export const createJournalSlice: StateCreator<
       const { searchJournalEntries } = await import('@/api/journalAPI');
       return await searchJournalEntries(filters);
     } catch (error) {
-      console.error('Error searching journal entries:', error);
+      logger.error('Journal', error as Error, { context: 'searchJournalEntries' });
       throw error;
     }
   },

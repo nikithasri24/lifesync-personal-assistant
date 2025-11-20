@@ -12,6 +12,7 @@ import type {
   DreamInput,
   GoalFilters,
 } from '@/goals/api/lifeGoalsAPI';
+import { logger } from '@/services/logger';
 
 export interface GoalsSlice {
   // State - Goals
@@ -64,7 +65,7 @@ export const createGoalsSlice: StateCreator<GoalsSlice, [], [], GoalsSlice> = (
       const goals = await getGoals();
       set({ goals, goalsLoaded: true, goalsLoading: false });
     } catch (error) {
-      console.error('Error loading goals:', error);
+      logger.error('Goals', error as Error, { context: 'loadGoals' });
       set({ goalsLoading: false });
       throw error;
     }
@@ -77,7 +78,7 @@ export const createGoalsSlice: StateCreator<GoalsSlice, [], [], GoalsSlice> = (
       set((state) => ({ goals: [...state.goals, goal] }));
       return goal;
     } catch (error) {
-      console.error('Error creating goal:', error);
+      logger.error('Goals', error as Error, { context: 'addGoal' });
       throw error;
     }
   },
@@ -91,7 +92,7 @@ export const createGoalsSlice: StateCreator<GoalsSlice, [], [], GoalsSlice> = (
       }));
       return updatedGoal;
     } catch (error) {
-      console.error('Error updating goal:', error);
+      logger.error('Goals', error as Error, { context: 'updateGoal' });
       throw error;
     }
   },
@@ -104,7 +105,7 @@ export const createGoalsSlice: StateCreator<GoalsSlice, [], [], GoalsSlice> = (
         goals: state.goals.filter((g) => g.id !== id),
       }));
     } catch (error) {
-      console.error('Error deleting goal:', error);
+      logger.error('Goals', error as Error, { context: 'deleteGoal' });
       throw error;
     }
   },
@@ -114,7 +115,7 @@ export const createGoalsSlice: StateCreator<GoalsSlice, [], [], GoalsSlice> = (
       const { searchGoals } = await import('@/goals/api/lifeGoalsAPI');
       return await searchGoals(filters);
     } catch (error) {
-      console.error('Error searching goals:', error);
+      logger.error('Goals', error as Error, { context: 'searchGoals' });
       throw error;
     }
   },
@@ -133,7 +134,7 @@ export const createGoalsSlice: StateCreator<GoalsSlice, [], [], GoalsSlice> = (
       const dreams = await getDreams();
       set({ dreams, dreamsLoaded: true, dreamsLoading: false });
     } catch (error) {
-      console.error('Error loading dreams:', error);
+      logger.error('Dreams', error as Error, { context: 'loadDreams' });
       set({ dreamsLoading: false });
       throw error;
     }
@@ -146,7 +147,7 @@ export const createGoalsSlice: StateCreator<GoalsSlice, [], [], GoalsSlice> = (
       set((state) => ({ dreams: [...state.dreams, dream] }));
       return dream;
     } catch (error) {
-      console.error('Error creating dream:', error);
+      logger.error('Dreams', error as Error, { context: 'addDream' });
       throw error;
     }
   },
@@ -160,7 +161,7 @@ export const createGoalsSlice: StateCreator<GoalsSlice, [], [], GoalsSlice> = (
       }));
       return updatedDream;
     } catch (error) {
-      console.error('Error updating dream:', error);
+      logger.error('Dreams', error as Error, { context: 'updateDream' });
       throw error;
     }
   },
@@ -173,7 +174,7 @@ export const createGoalsSlice: StateCreator<GoalsSlice, [], [], GoalsSlice> = (
         dreams: state.dreams.filter((d) => d.id !== id),
       }));
     } catch (error) {
-      console.error('Error deleting dream:', error);
+      logger.error('Dreams', error as Error, { context: 'deleteDream' });
       throw error;
     }
   },
