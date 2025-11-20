@@ -7,60 +7,25 @@ import { formatCurrency } from '../utils/currency';
 import { currentMonth, monthRange, toMonth } from '../utils/date';
 import { getTimePeriodRange } from '../utils/timePeriodUtils';
 import { useFinanceMetrics } from '../hooks/useFinanceMetrics';
-import { getFinanceAPI } from '../data';
+import {
+  useTransactionsQuery,
+  useAccountsQuery,
+  useCategoriesQuery,
+  useBudgetsQuery,
+} from '../hooks/useFinanceQuery';
 import type { Transaction } from '../types';
 
 const DashboardPage: React.FC = () => {
-  const [loading, setLoading] = React.useState(true);
   const [month, setMonth] = React.useState(currentMonth());
-  const [accounts, setAccounts] = React.useState<any[]>([]);
-  const [categories, setCategories] = React.useState<any[]>([]);
-  const [budgets, setBudgets] = React.useState<any[]>([]);
-  const [txns, setTxns] = React.useState<Transaction[]>([]);
 
-  // Initialize month from transactions only on first load
-  const [initialized, setInitialized] = React.useState(false);
+  // React Query hooks
+  const { data: transactionsData, isLoading: txnsLoading } = useTransactionsQuery({ limit: 500 });
+  const { data: accounts = [], isLoading: accountsLoading } = useAccountsQuery();
+  const { data: categories = [], isLoading: categoriesLoading } = useCategoriesQuery();
+  const { data: budgets = [], isLoading: budgetsLoading } = useBudgetsQuery(month);
 
-  React.useEffect(() => {
-    let mounted = true;
-    (async () => {
-      setLoading(true);
-      const api = await getFinanceAPI();
-
-      // On first load, get transactions and use current month by default
-      if (!initialized) {
-        const { items: txItems } = await api.listTransactions({ limit: 500 });
-        if (!mounted) return;
-
-        // Use current month instead of latest transaction month
-        // This ensures budgets are shown for the current month
-        const defaultMonth = currentMonth();
-
-        setTxns(txItems);
-        setMonth(defaultMonth);
-        setInitialized(true);
-        setLoading(false);
-        return;
-      }
-
-      // Load all data for the selected month
-      const [{ items: txItems }, accts, cats, b] = await Promise.all([
-        api.listTransactions({ limit: 500 }),
-        api.listAccounts(),
-        api.listCategories(),
-        api.listBudgets(month),
-      ]);
-      if (!mounted) return;
-      setTxns(txItems);
-      setAccounts(accts);
-      setCategories(cats);
-      setBudgets(b);
-      setLoading(false);
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, [month, initialized]);
+  const txns = transactionsData?.items || [];
+  const loading = txnsLoading || accountsLoading || categoriesLoading || budgetsLoading;
 
   const { from, to } = monthRange(month);
   // Filter transactions by extracting just the YYYY-MM part for comparison
