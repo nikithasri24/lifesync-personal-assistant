@@ -29,7 +29,6 @@ import type {
   JournalEntry,
   MealColumn,
   MealPlanWeek,
-  MoodEntry,
   Note,
   PantryItem,
   PlannedMeal,
@@ -174,7 +173,6 @@ interface RealAppState {
   recipes: Recipe[]
   pantryItems: PantryItem[]
   mealPlans: MealPlanWeek[]
-  moodEntries: MoodEntry[]
   userStats: UserStats
   shoppingItems: ShoppingItem[]
   activeShoppingListId: string | null
@@ -265,9 +263,6 @@ interface RealAppState {
   ) => Promise<PlannedMeal>
   updatePlannedMeal: (mealId: string, updates: Partial<PlannedMeal>) => Promise<void>
   deletePlannedMeal: (mealId: string) => Promise<void>
-
-  addMoodEntry: (entry: Omit<MoodEntry, 'id' | 'createdAt'>) => void
-  deleteMoodEntry: (id: string) => void
 
   // Shopping - Lazy loading
   loadShoppingItems: () => Promise<void>
@@ -1132,7 +1127,6 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
   recipes: [],
   pantryItems: [],
   mealPlans: [],
-  moodEntries: [],
   userStats: { level: 1, xp: 0, xpToNextLevel: 100, totalGoalsCompleted: 0 },
   shoppingItems: [],
   activeShoppingListId: null,
@@ -2473,20 +2467,6 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
       })),
     }))
   },
-
-  addMoodEntry: (entry) => {
-    const moodEntry: MoodEntry = {
-      ...entry,
-      id: createId(),
-      createdAt: new Date(),
-    }
-    set((state) => ({ moodEntries: [moodEntry, ...state.moodEntries] }))
-  },
-
-  deleteMoodEntry: (id) => {
-    set((state) => ({
-      moodEntries: state.moodEntries.filter((entry) => entry.id !== id),
-    }))
   },
 
 
