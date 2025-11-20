@@ -281,14 +281,6 @@ export interface PantryItem {
   updatedAt: Date;
 }
 
-export interface MoodEntry {
-  id: string;
-  mood: JournalMood;
-  energy: 'low' | 'medium' | 'high';
-  notes?: string;
-  createdAt: Date;
-}
-
 export interface UserStats {
   level: number;
   xp: number;

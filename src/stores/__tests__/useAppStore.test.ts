@@ -15,7 +15,6 @@ describe('useAppStore', () => {
       recipes: [],
       pantryItems: [],
       mealPlans: [],
-      moodEntries: [],
       userStats: { level: 1, xp: 0, xpToNextLevel: 100, totalGoalsCompleted: 0 },
       activeView: 'dashboard',
       sidebarCollapsed: false,
