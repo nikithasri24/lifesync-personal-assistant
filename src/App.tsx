@@ -28,6 +28,7 @@ import { isSupabaseConfigured } from './lib/supabase';
 import { loadSFHChallenge } from './stores/seventyFiveHardActions';
 import { cleanup75HardDuplicates } from './utils/cleanup75HardDuplicates';
 import { migrateJournalEntries } from './utils/migrateJournalEntries';
+import { migrateNotes } from './utils/migrateNotes';
 
 // Expose cleanup function globally for debugging
 if (typeof window !== 'undefined') {
@@ -74,9 +75,15 @@ function App() {
         console.log('🔄 Initialized LifeSync data for Supabase user');
 
         // Migrate journal entries from localStorage to database (one-time)
-        const migrationResult = await migrateJournalEntries();
-        if (migrationResult.migrated > 0) {
-          console.log(`✅ Migrated ${migrationResult.migrated} journal entries to database`);
+        const journalMigration = await migrateJournalEntries();
+        if (journalMigration.migrated > 0) {
+          console.log(`✅ Migrated ${journalMigration.migrated} journal entries to database`);
+        }
+
+        // Migrate notes from localStorage to database (one-time)
+        const notesMigration = await migrateNotes();
+        if (notesMigration.migrated > 0) {
+          console.log(`✅ Migrated ${notesMigration.migrated} notes to database`);
         }
 
         // Load active 75 Hard challenge (new architecture)

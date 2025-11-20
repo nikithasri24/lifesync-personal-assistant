@@ -126,6 +126,7 @@ export interface Note {
   title: string;
   content: string;
   tags: string[];
+  category?: string;
   createdAt: Date;
   updatedAt: Date;
 }
