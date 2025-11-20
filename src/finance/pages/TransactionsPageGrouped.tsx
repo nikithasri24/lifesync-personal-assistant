@@ -12,7 +12,12 @@ import { QuickAddTransaction } from '../components/QuickAddTransaction';
 import ImportCSVButton from '../components/ImportCSVButton';
 import { EditableTransactionRow } from '../components/transactions/EditableTransactionRow';
 import BudgetTemplateManager from '../components/budgets/BudgetTemplateManager';
-import { getFinanceAPI } from '../data';
+import {
+  useTransactionsQuery,
+  useCategoriesQuery,
+  useBudgetsQuery,
+  useBudgetTemplatesQuery,
+} from '../hooks/useFinanceQuery';
 import { formatCurrency } from '../utils/currency';
 import useFinanceFilters from '../store/useFinanceFilters';
 import type { Transaction, Category, Budget } from '../types';
@@ -27,11 +32,6 @@ type GroupedTransactions = {
 };
 
 const TransactionsPageGrouped: React.FC = () => {
-  const [transactions, setTransactions] = React.useState<Transaction[]>([]);
-  const [categories, setCategories] = React.useState<Category[]>([]);
-  const [budgets, setBudgets] = React.useState<Budget[]>([]);
-  const [budgetTemplates, setBudgetTemplates] = React.useState<Map<string, number>>(new Map());
-  const [loading, setLoading] = React.useState(false);
   const [showQuickAdd, setShowQuickAdd] = React.useState(false);
   const [showTemplateManager, setShowTemplateManager] = React.useState(false);
   const [collapsedGroups, setCollapsedGroups] = React.useState<Set<string>>(new Set());
@@ -43,43 +43,27 @@ const TransactionsPageGrouped: React.FC = () => {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   }, []);
 
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const api = await getFinanceAPI();
+  // React Query hooks
+  const { data: transactionsData, isLoading: txnsLoading } = useTransactionsQuery({
+    text: filters.text,
+    fromISO: filters.fromISO,
+    toISO: filters.toISO,
+    type: filters.type,
+    limit: 500,
+  });
+  const { data: categories = [], isLoading: categoriesLoading } = useCategoriesQuery();
+  const { data: budgets = [], isLoading: budgetsLoading } = useBudgetsQuery(currentMonth);
+  const { data: budgetTemplatesList = [], isLoading: templatesLoading } = useBudgetTemplatesQuery();
 
-      const [txns, cats, buds, templates] = await Promise.all([
-        api.listTransactions({
-          text: filters.text,
-          fromISO: filters.fromISO,
-          toISO: filters.toISO,
-          type: filters.type,
-          limit: 500,
-        }),
-        api.listCategories(),
-        api.listBudgets(currentMonth),
-        api.listBudgetTemplates(),
-      ]);
+  const transactions = transactionsData?.items || [];
+  const loading = txnsLoading || categoriesLoading || budgetsLoading || templatesLoading;
 
-      setTransactions(txns.items);
-      setCategories(cats);
-      setBudgets(buds);
-
-      // Convert templates to Map
-      const templateMap = new Map<string, number>();
-      templates.forEach((t) => templateMap.set(t.categoryId, t.defaultAmount));
-      setBudgetTemplates(templateMap);
-    } catch (error) {
-      console.error('Failed to load data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  React.useEffect(() => {
-    loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters.text, filters.fromISO, filters.toISO, filters.type]);
+  // Convert templates to Map
+  const budgetTemplates = React.useMemo(() => {
+    const templateMap = new Map<string, number>();
+    budgetTemplatesList.forEach((t) => templateMap.set(t.categoryId, t.defaultAmount));
+    return templateMap;
+  }, [budgetTemplatesList]);
 
   // Group transactions by category
   const groupedTransactions: GroupedTransactions[] = React.useMemo(() => {
