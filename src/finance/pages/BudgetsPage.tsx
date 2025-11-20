@@ -1,7 +1,13 @@
 import React from 'react';
 import { Plus, Settings } from 'lucide-react';
 import { currentMonth, monthRange } from '../utils/date';
-import { getFinanceAPI } from '../data';
+import {
+  useTransactionsQuery,
+  useBudgetsQuery,
+  useCategoriesQuery,
+  useBudgetTemplatesQuery,
+  useInitializeBudgetsMutation,
+} from '../hooks/useFinanceQuery';
 import type { Budget, Transaction, Category, BudgetTemplate } from '../types';
 import { MonthPicker } from '../components/MonthPicker';
 import BudgetCard from '../components/budgets/BudgetCard';
@@ -14,71 +20,46 @@ import { calculateBudgetRecommendation } from '../utils/budgetRecommendations';
 
 const BudgetsPage: React.FC = () => {
   const [month, setMonth] = React.useState(currentMonth());
-  const [budgets, setBudgets] = React.useState<Budget[]>([]);
-  const [templates, setTemplates] = React.useState<BudgetTemplate[]>([]);
-  const [categories, setCategories] = React.useState<Category[]>([]);
-  const [txns, setTxns] = React.useState<Transaction[]>([]);
-  const [months, setMonths] = React.useState<string[]>([]);
-  const [loading, setLoading] = React.useState(true);
   const [editorOpen, setEditorOpen] = React.useState(false);
   const [bulkEditorOpen, setBulkEditorOpen] = React.useState(false);
   const [templateManagerOpen, setTemplateManagerOpen] = React.useState(false);
   const [editingBudget, setEditingBudget] = React.useState<Budget | undefined>(undefined);
   const [selectedCategoryId, setSelectedCategoryId] = React.useState<string>('');
 
-  // Load data
-  const loadData = React.useCallback(async () => {
-    setLoading(true);
-    try {
-      console.log('[BudgetsPage] Loading data for month:', month);
-      const api = await getFinanceAPI();
-      const [{ items }, b, c, t] = await Promise.all([
-        api.listTransactions({ limit: 1000 }),
-        api.listBudgets(month),
-        api.listCategories(),
-        api.listBudgetTemplates(),
-      ]);
+  // React Query hooks
+  const { data: transactionsData, isLoading: txnsLoading } = useTransactionsQuery({ limit: 1000 });
+  const { data: budgetsData = [], isLoading: budgetsLoading } = useBudgetsQuery(month);
+  const { data: categories = [], isLoading: categoriesLoading } = useCategoriesQuery();
+  const { data: templates = [], isLoading: templatesLoading } = useBudgetTemplatesQuery();
+  const initializeBudgetsMutation = useInitializeBudgetsMutation();
 
-      // Auto-initialize budgets from templates if this month has no budgets
-      if (b.length === 0) {
-        console.log('[BudgetsPage] No budgets found for', month, '- initializing from templates');
-        const initialized = await api.initializeBudgetsFromTemplates(month);
-        if (initialized > 0) {
-          console.log('[BudgetsPage] Initialized', initialized, 'budgets from templates');
-          // Reload budgets after initialization
-          const newBudgets = await api.listBudgets(month);
-          setBudgets(newBudgets);
-        } else {
-          console.log('[BudgetsPage] No templates found to initialize budgets');
-          setBudgets(b);
-        }
-      } else {
-        setBudgets(b);
-      }
+  const txns = transactionsData?.items || [];
+  const budgets = budgetsData;
+  const loading = txnsLoading || budgetsLoading || categoriesLoading || templatesLoading;
 
-      console.log('[BudgetsPage] Loaded:', {
-        transactions: items.length,
-        budgets: b.length,
-        categories: c.length,
-        templates: t.length,
-      });
-      console.log('[BudgetsPage] Budgets:', b);
-      console.log('[BudgetsPage] Categories:', c);
-      console.log('[BudgetsPage] Templates:', t);
-      setTxns(items);
-      setCategories(c);
-      setTemplates(t);
-      setMonths(Array.from(new Set(items.map((t) => t.dateISO.slice(0, 7)))).sort().reverse());
-    } catch (error) {
-      console.error('[BudgetsPage] Failed to load budgets:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [month]);
+  // Calculate months from transactions
+  const months = React.useMemo(() => {
+    return Array.from(new Set(txns.map((t) => t.dateISO.slice(0, 7)))).sort().reverse();
+  }, [txns]);
 
+  // Auto-initialize budgets from templates if this month has no budgets
   React.useEffect(() => {
-    loadData();
-  }, [loadData]);
+    if (!budgetsLoading && budgets.length === 0 && !initializeBudgetsMutation.isPending) {
+      console.log('[BudgetsPage] No budgets found for', month, '- initializing from templates');
+      initializeBudgetsMutation.mutate(month, {
+        onSuccess: (initialized) => {
+          if (initialized > 0) {
+            console.log('[BudgetsPage] Initialized', initialized, 'budgets from templates');
+          } else {
+            console.log('[BudgetsPage] No templates found to initialize budgets');
+          }
+        },
+        onError: (error) => {
+          console.error('[BudgetsPage] Failed to initialize budgets:', error);
+        },
+      });
+    }
+  }, [budgets.length, budgetsLoading, month, initializeBudgetsMutation]);
 
   // Calculate current month transactions
   const { from, to } = monthRange(month);
