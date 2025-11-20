@@ -20,6 +20,7 @@ import TripPlanner from './travel/components/TripPlanner';
 import Finances from './pages/Finances';
 import SeventyFiveHard from './pages/SeventyFiveHard/index';
 import Skincare from './pages/Skincare';
+import Assistant from './pages/Assistant';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import LoadingSpinner from './components/LoadingSpinner';
 import { AuthGate } from './components/AuthGate';
@@ -27,9 +28,6 @@ import { useAuth } from './hooks/useAuth';
 import { isSupabaseConfigured } from './lib/supabase';
 import { loadSFHChallenge } from './stores/seventyFiveHardActions';
 import { cleanup75HardDuplicates } from './utils/cleanup75HardDuplicates';
-import { migrateJournalEntries } from './utils/migrateJournalEntries';
-import { migrateNotes } from './utils/migrateNotes';
-import { migrateGoals } from './utils/migrateGoals';
 
 // Expose cleanup function globally for debugging
 if (typeof window !== 'undefined') {
@@ -74,24 +72,6 @@ function App() {
       try {
         await initializeData();
         console.log('🔄 Initialized LifeSync data for Supabase user');
-
-        // Migrate journal entries from localStorage to database (one-time)
-        const journalMigration = await migrateJournalEntries();
-        if (journalMigration.migrated > 0) {
-          console.log(`✅ Migrated ${journalMigration.migrated} journal entries to database`);
-        }
-
-        // Migrate notes from localStorage to database (one-time)
-        const notesMigration = await migrateNotes();
-        if (notesMigration.migrated > 0) {
-          console.log(`✅ Migrated ${notesMigration.migrated} notes to database`);
-        }
-
-        // Migrate goals and dreams from localStorage to database (one-time)
-        const goalsMigration = await migrateGoals();
-        if (goalsMigration.goalsMigrated > 0 || goalsMigration.dreamsMigrated > 0) {
-          console.log(`✅ Migrated ${goalsMigration.goalsMigrated} goals and ${goalsMigration.dreamsMigrated} dreams to database`);
-        }
 
         // Load active 75 Hard challenge (new architecture)
         // This will check for missed days and show failure prompt if needed
@@ -159,6 +139,8 @@ function App() {
         return <SeventyFiveHard />;
       case 'skincare':
         return <Skincare />;
+      case 'assistant':
+        return <Assistant />;
       default:
         return <Dashboard />;
     }
