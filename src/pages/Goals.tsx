@@ -1,32 +1,49 @@
-import React, { useMemo, useState, useEffect } from 'react';
+/**
+ * Goals and Dreams Page
+ *
+ * Migrated to use React Query for server state management
+ * Before: Manual loading with useEffect and Zustand store
+ * After: Automatic caching, loading, and refetching with React Query
+ */
+
+import React, { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { addDays } from 'date-fns';
 import { Plus, Target, Trash2, CheckCircle2, Sparkles } from 'lucide-react';
-import { useAppStore } from '../stores/useAppStore';
 import { SkeletonCard } from '../components/LoadingSpinner';
-import type { Dream, Goal } from '../types';
+import {
+  useLifeGoals,
+  useCreateLifeGoal,
+  useUpdateLifeGoal,
+  useDeleteLifeGoal,
+  useLifeDreams,
+  useCreateLifeDream,
+  useUpdateLifeDream,
+  useDeleteLifeDream,
+} from '../hooks/useGoalsQuery';
+import type { LifeGoal, LifeDream } from '../goals/types/lifeGoals';
 
-const GOAL_CATEGORIES: Goal['category'][] = ['personal', 'health', 'career', 'financial', 'fitness'];
-const GOAL_PRIORITIES: Goal['priority'][] = ['low', 'medium', 'high', 'critical'];
+const GOAL_CATEGORIES: LifeGoal['category'][] = ['personal', 'health', 'career', 'financial', 'fitness'];
+const GOAL_PRIORITIES: LifeGoal['priority'][] = ['low', 'medium', 'high', 'critical'];
 
-const DREAM_CATEGORIES: Dream['category'][] = ['travel', 'experiences', 'possessions', 'achievements', 'relationships', 'lifestyle'];
-const DREAM_PRIORITIES: Dream['priority'][] = ['someday', 'within-5-years', 'within-10-years', 'lifetime'];
-const DREAM_STATUSES: Dream['status'][] = ['dreaming', 'planning', 'in-progress', 'achieved', 'no-longer-interested'];
+const DREAM_CATEGORIES: LifeDream['category'][] = ['travel', 'experiences', 'possessions', 'achievements', 'relationships', 'lifestyle'];
+const DREAM_PRIORITIES: LifeDream['priority'][] = ['someday', 'within-5-years', 'within-10-years', 'lifetime'];
+const DREAM_STATUSES: LifeDream['status'][] = ['dreaming', 'planning', 'in-progress', 'achieved', 'no-longer-interested'];
 
 type GoalDraft = {
   title: string;
   description: string;
-  category: Goal['category'];
-  priority: Goal['priority'];
+  category: LifeGoal['category'];
+  priority: LifeGoal['priority'];
   targetDate: string;
 };
 
 type DreamDraft = {
   title: string;
   description: string;
-  category: Dream['category'];
-  priority: Dream['priority'];
-  status: Dream['status'];
+  category: LifeDream['category'];
+  priority: LifeDream['priority'];
+  status: LifeDream['status'];
   estimatedCost: string;
   estimatedTimeframe: string;
 };
@@ -49,44 +66,23 @@ const createDreamDraft = (): DreamDraft => ({
   estimatedTimeframe: '',
 });
 
-const mapGoalDraftToGoal = (draft: GoalDraft): Omit<Goal, 'id' | 'createdAt'> => {
-  const now = new Date();
-  const targetDate = draft.targetDate ? new Date(draft.targetDate) : addDays(now, 30);
+const mapGoalDraftToCreateInput = (draft: GoalDraft) => {
+  const targetDate = draft.targetDate ? new Date(draft.targetDate) : addDays(new Date(), 30);
   return {
     title: draft.title.trim(),
     description: draft.description.trim(),
     category: draft.category,
     priority: draft.priority,
-    status: 'not-started',
-    progress: 0,
-    targetValue: undefined,
-    currentValue: undefined,
-    unit: undefined,
-    startDate: now,
-    targetDate,
-    completedDate: undefined,
-    milestones: [],
-    tags: [],
-    isPublic: false,
-    difficulty: 'medium',
-    xpReward: 100,
-    streakDays: 0,
-    lastUpdated: now,
-    notes: '',
-    attachments: [],
-    subGoals: [],
-    streakEnabled: false,
-    streakFrequency: 'daily',
-    streakTarget: undefined,
-    streakHistory: [],
-    lastStreakUpdate: undefined,
-    longestStreak: 0,
-    currentStreak: 0,
+    startDate: new Date().toISOString(),
+    targetDate: targetDate.toISOString(),
+    difficulty: 'medium' as const,
+    currentValue: 0,
+    targetValue: 100,
+    unit: 'percent',
   };
 };
 
-const mapDreamDraftToDream = (draft: DreamDraft): Omit<Dream, 'id' | 'createdAt'> => {
-  const now = new Date();
+const mapDreamDraftToCreateInput = (draft: DreamDraft) => {
   const estimatedCost = draft.estimatedCost.trim();
   return {
     title: draft.title.trim(),
@@ -96,16 +92,6 @@ const mapDreamDraftToDream = (draft: DreamDraft): Omit<Dream, 'id' | 'createdAt'
     status: draft.status,
     estimatedCost: estimatedCost ? Number(estimatedCost) : undefined,
     estimatedTimeframe: draft.estimatedTimeframe.trim() || undefined,
-    requiredResources: [],
-    inspirationSources: [],
-    tags: [],
-    isPublic: false,
-    lastUpdated: now,
-    achievedAt: undefined,
-    notes: '',
-    attachments: [],
-    relatedGoals: [],
-    visualBoard: [],
   };
 };
 
@@ -119,34 +105,19 @@ const EmptyState: React.FC<{ label: string; icon?: React.ReactNode }> = ({ label
 );
 
 const Goals: React.FC = () => {
-  const {
-    goals,
-    dreams,
-    addGoal,
-    updateGoal,
-    deleteGoal,
-    addDream,
-    updateDream,
-    deleteDream,
-    loadGoals,
-    loadDreams,
-    goalsLoaded,
-    goalsLoading,
-    dreamsLoaded,
-    dreamsLoading,
-  } = useAppStore();
+  // React Query hooks - automatic loading and caching
+  const { data: goals = [], isLoading: goalsLoading, error: goalsError } = useLifeGoals();
+  const { data: dreams = [], isLoading: dreamsLoading, error: dreamsError } = useLifeDreams();
+
+  const createGoalMutation = useCreateLifeGoal();
+  const updateGoalMutation = useUpdateLifeGoal();
+  const deleteGoalMutation = useDeleteLifeGoal();
+
+  const createDreamMutation = useCreateLifeDream();
+  const updateDreamMutation = useUpdateLifeDream();
+  const deleteDreamMutation = useDeleteLifeDream();
 
   const [activeTab, setActiveTab] = useState<'goals' | 'dreams'>('goals');
-
-  // Lazy load goals and dreams when page mounts
-  useEffect(() => {
-    if (loadGoals && !goalsLoaded && !goalsLoading) {
-      loadGoals();
-    }
-    if (loadDreams && !dreamsLoaded && !dreamsLoading) {
-      loadDreams();
-    }
-  }, [loadGoals, loadDreams, goalsLoaded, goalsLoading, dreamsLoaded, dreamsLoading]);
   const [goalDraft, setGoalDraft] = useState<GoalDraft>(createGoalDraft);
   const [dreamDraft, setDreamDraft] = useState<DreamDraft>(createDreamDraft);
   const [showGoalForm, setShowGoalForm] = useState(false);
@@ -173,27 +144,46 @@ const Goals: React.FC = () => {
   const handleGoalSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!goalDraft.title.trim()) return;
-    addGoal(mapGoalDraftToGoal(goalDraft));
-    setGoalDraft(createGoalDraft());
-    setShowGoalForm(false);
+
+    createGoalMutation.mutate(mapGoalDraftToCreateInput(goalDraft), {
+      onSuccess: () => {
+        setGoalDraft(createGoalDraft());
+        setShowGoalForm(false);
+      },
+    });
   };
 
   const handleDreamSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!dreamDraft.title.trim()) return;
-    addDream(mapDreamDraftToDream(dreamDraft));
-    setDreamDraft(createDreamDraft());
-    setShowDreamForm(false);
+
+    createDreamMutation.mutate(mapDreamDraftToCreateInput(dreamDraft), {
+      onSuccess: () => {
+        setDreamDraft(createDreamDraft());
+        setShowDreamForm(false);
+      },
+    });
   };
 
   const renderGoalList = () => {
     // Show loading state
-    if (goalsLoading && !goalsLoaded) {
+    if (goalsLoading) {
       return (
         <div className="space-y-3">
           {Array.from({ length: 3 }).map((_, i) => (
             <SkeletonCard key={i} className="h-32" />
           ))}
+        </div>
+      );
+    }
+
+    // Show error state
+    if (goalsError) {
+      return (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+          <p className="text-sm text-red-700">
+            Error loading goals. Please try refreshing the page.
+          </p>
         </div>
       );
     }
@@ -214,21 +204,25 @@ const Goals: React.FC = () => {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => updateGoal(goal.id, {
-                    status: 'completed',
-                    progress: 100,
-                    completedDate: new Date(),
-                    lastUpdated: new Date(),
+                  onClick={() => updateGoalMutation.mutate({
+                    id: goal.id,
+                    updates: {
+                      status: 'completed',
+                      progress: 100,
+                      completedDate: new Date().toISOString(),
+                    },
                   })}
-                  className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-600 transition hover:bg-emerald-100"
+                  disabled={updateGoalMutation.isPending}
+                  className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-600 transition hover:bg-emerald-100 disabled:opacity-50"
                 >
                   <CheckCircle2 className="h-4 w-4" />
                   Mark complete
                 </button>
                 <button
                   type="button"
-                  onClick={() => deleteGoal(goal.id)}
-                  className="rounded-full border border-slate-200 p-1 text-slate-500 transition hover:bg-slate-100"
+                  onClick={() => deleteGoalMutation.mutate(goal.id)}
+                  disabled={deleteGoalMutation.isPending}
+                  className="rounded-full border border-slate-200 p-1 text-slate-500 transition hover:bg-slate-100 disabled:opacity-50"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
@@ -241,7 +235,7 @@ const Goals: React.FC = () => {
               <span>Status: {goal.status}</span>
               <span>Progress: {goal.progress}%</span>
               {goal.targetDate && (
-                <span>Target date: {goal.targetDate.toLocaleDateString()}</span>
+                <span>Target date: {new Date(goal.targetDate).toLocaleDateString()}</span>
               )}
             </div>
           </li>
@@ -252,12 +246,23 @@ const Goals: React.FC = () => {
 
   const renderDreamList = () => {
     // Show loading state
-    if (dreamsLoading && !dreamsLoaded) {
+    if (dreamsLoading) {
       return (
         <div className="space-y-3">
           {Array.from({ length: 3 }).map((_, i) => (
             <SkeletonCard key={i} className="h-32" />
           ))}
+        </div>
+      );
+    }
+
+    // Show error state
+    if (dreamsError) {
+      return (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+          <p className="text-sm text-red-700">
+            Error loading dreams. Please try refreshing the page.
+          </p>
         </div>
       );
     }
@@ -278,20 +283,24 @@ const Goals: React.FC = () => {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => updateDream(dream.id, {
-                    status: 'achieved',
-                    achievedAt: new Date(),
-                    lastUpdated: new Date(),
+                  onClick={() => updateDreamMutation.mutate({
+                    id: dream.id,
+                    updates: {
+                      status: 'achieved',
+                      achievedAt: new Date().toISOString(),
+                    },
                   })}
-                  className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-600 transition hover:bg-indigo-100"
+                  disabled={updateDreamMutation.isPending}
+                  className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-600 transition hover:bg-indigo-100 disabled:opacity-50"
                 >
                   <Sparkles className="h-4 w-4" />
                   Mark achieved
                 </button>
                 <button
                   type="button"
-                  onClick={() => deleteDream(dream.id)}
-                  className="rounded-full border border-slate-200 p-1 text-slate-500 transition hover:bg-slate-100"
+                  onClick={() => deleteDreamMutation.mutate(dream.id)}
+                  disabled={deleteDreamMutation.isPending}
+                  className="rounded-full border border-slate-200 p-1 text-slate-500 transition hover:bg-slate-100 disabled:opacity-50"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
