@@ -1,17 +1,17 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Plus, Target, Trash2, CheckCircle2, Sparkles, TrendingUp, Edit3, Lightbulb, Trophy } from 'lucide-react';
 import {
-  getUserLifeGoals,
-  getUserLifeDreams,
-  createLifeGoal,
-  updateLifeGoal,
-  deleteLifeGoal,
-  createLifeDream,
-  updateLifeDream,
-  deleteLifeDream,
-  getLifeGoalById,
-} from '../goals/api/lifeGoalsAPI';
+  useLifeGoalsQuery,
+  useLifeDreamsQuery,
+  useCreateLifeGoalMutation,
+  useUpdateLifeGoalMutation,
+  useDeleteLifeGoalMutation,
+  useCreateLifeDreamMutation,
+  useUpdateLifeDreamMutation,
+  useDeleteLifeDreamMutation,
+  useLifeGoalQuery,
+} from '../goals/hooks/useLifeGoalsQuery';
 import type {
   LifeGoal,
   LifeDream,
@@ -88,9 +88,19 @@ const EmptyState: React.FC<{ label: string; icon?: React.ReactNode }> = ({ label
 );
 
 const LifeGoals: React.FC = () => {
-  const [goals, setGoals] = useState<LifeGoal[]>([]);
-  const [dreams, setDreams] = useState<LifeDream[]>([]);
-  const [loading, setLoading] = useState(true);
+  // React Query hooks
+  const { data: goals = [], isLoading: goalsLoading } = useLifeGoalsQuery();
+  const { data: dreams = [], isLoading: dreamsLoading } = useLifeDreamsQuery();
+  const createGoalMutation = useCreateLifeGoalMutation();
+  const updateGoalMutation = useUpdateLifeGoalMutation();
+  const deleteGoalMutation = useDeleteLifeGoalMutation();
+  const createDreamMutation = useCreateLifeDreamMutation();
+  const updateDreamMutation = useUpdateLifeDreamMutation();
+  const deleteDreamMutation = useDeleteLifeDreamMutation();
+
+  const loading = goalsLoading || dreamsLoading;
+
+  // UI state
   const [activeTab, setActiveTab] = useState<'goals' | 'dreams' | 'progress'>('goals');
   const [goalDraft, setGoalDraft] = useState<GoalDraft>(createGoalDraft);
   const [dreamDraft, setDreamDraft] = useState<DreamDraft>(createDreamDraft);
@@ -101,26 +111,6 @@ const LifeGoals: React.FC = () => {
   const [progressValue, setProgressValue] = useState<number>(0);
   const [expandedGoalId, setExpandedGoalId] = useState<string | null>(null);
   const [goalMilestones, setGoalMilestones] = useState<Record<string, LifeGoalMilestone[]>>({});
-
-  // Load goals and dreams on mount
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        setLoading(true);
-        const [goalsData, dreamsData] = await Promise.all([
-          getUserLifeGoals(),
-          getUserLifeDreams(),
-        ]);
-        setGoals(goalsData);
-        setDreams(dreamsData);
-      } catch (error) {
-        console.error('Error loading goals/dreams:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadData();
-  }, []);
 
   const goalStats = useMemo(() => {
     const completed = goals.filter((goal) => goal.status === 'completed').length;
@@ -145,7 +135,7 @@ const LifeGoals: React.FC = () => {
     if (!goalDraft.title.trim()) return;
 
     try {
-      const newGoal = await createLifeGoal({
+      await createGoalMutation.mutateAsync({
         title: goalDraft.title,
         description: goalDraft.description,
         category: goalDraft.category,
@@ -156,7 +146,6 @@ const LifeGoals: React.FC = () => {
         streakFrequency: goalDraft.streakFrequency,
         streakTarget: goalDraft.streakTarget ? Number(goalDraft.streakTarget) : undefined,
       });
-      setGoals(prev => [newGoal, ...prev]);
       setGoalDraft(createGoalDraft());
       setShowGoalForm(false);
     } catch (error) {
@@ -170,7 +159,7 @@ const LifeGoals: React.FC = () => {
     if (!dreamDraft.title.trim()) return;
 
     try {
-      const newDream = await createLifeDream({
+      await createDreamMutation.mutateAsync({
         title: dreamDraft.title,
         description: dreamDraft.description,
         category: dreamDraft.category,
@@ -178,7 +167,6 @@ const LifeGoals: React.FC = () => {
         estimatedCost: dreamDraft.estimatedCost ? Number(dreamDraft.estimatedCost) : undefined,
         estimatedTimeframe: dreamDraft.estimatedTimeframe || undefined,
       });
-      setDreams(prev => [newDream, ...prev]);
       setDreamDraft(createDreamDraft());
       setShowDreamForm(false);
     } catch (error) {
@@ -189,12 +177,14 @@ const LifeGoals: React.FC = () => {
 
   const handleMarkGoalComplete = async (goalId: string) => {
     try {
-      const updatedGoal = await updateLifeGoal(goalId, {
-        status: 'completed',
-        progress: 100,
-        completedDate: new Date().toISOString(),
+      await updateGoalMutation.mutateAsync({
+        goalId,
+        updates: {
+          status: 'completed',
+          progress: 100,
+          completedDate: new Date().toISOString(),
+        },
       });
-      setGoals(prev => prev.map(g => g.id === goalId ? updatedGoal : g));
     } catch (error) {
       console.error('Error updating goal:', error);
       alert('Failed to update goal. Please try again.');
@@ -205,8 +195,7 @@ const LifeGoals: React.FC = () => {
     if (!confirm('Are you sure you want to delete this goal?')) return;
 
     try {
-      await deleteLifeGoal(goalId);
-      setGoals(prev => prev.filter(g => g.id !== goalId));
+      await deleteGoalMutation.mutateAsync(goalId);
     } catch (error) {
       console.error('Error deleting goal:', error);
       alert('Failed to delete goal. Please try again.');
@@ -215,11 +204,13 @@ const LifeGoals: React.FC = () => {
 
   const handleMarkDreamAchieved = async (dreamId: string) => {
     try {
-      const updatedDream = await updateLifeDream(dreamId, {
-        status: 'achieved',
-        achievedAt: new Date().toISOString(),
+      await updateDreamMutation.mutateAsync({
+        dreamId,
+        updates: {
+          status: 'achieved',
+          achievedAt: new Date().toISOString(),
+        },
       });
-      setDreams(prev => prev.map(d => d.id === dreamId ? updatedDream : d));
     } catch (error) {
       console.error('Error updating dream:', error);
       alert('Failed to update dream. Please try again.');
@@ -230,8 +221,7 @@ const LifeGoals: React.FC = () => {
     if (!confirm('Are you sure you want to delete this dream?')) return;
 
     try {
-      await deleteLifeDream(dreamId);
-      setDreams(prev => prev.filter(d => d.id !== dreamId));
+      await deleteDreamMutation.mutateAsync(dreamId);
     } catch (error) {
       console.error('Error deleting dream:', error);
       alert('Failed to delete dream. Please try again.');
@@ -240,12 +230,14 @@ const LifeGoals: React.FC = () => {
 
   const handleUpdateProgress = async (goalId: string) => {
     try {
-      const updatedGoal = await updateLifeGoal(goalId, {
-        progress: progressValue,
-        status: progressValue === 100 ? 'completed' : progressValue > 0 ? 'in-progress' : 'not-started',
-        completedDate: progressValue === 100 ? new Date().toISOString() : undefined,
+      await updateGoalMutation.mutateAsync({
+        goalId,
+        updates: {
+          progress: progressValue,
+          status: progressValue === 100 ? 'completed' : progressValue > 0 ? 'in-progress' : 'not-started',
+          completedDate: progressValue === 100 ? new Date().toISOString() : undefined,
+        },
       });
-      setGoals(prev => prev.map(g => g.id === goalId ? updatedGoal : g));
       setEditingProgress(null);
       setProgressValue(0);
     } catch (error) {
@@ -260,36 +252,25 @@ const LifeGoals: React.FC = () => {
   };
 
   const handleGoalCreatedFromTemplate = (goal: LifeGoalWithMilestones) => {
-    setGoals(prev => [goal, ...prev]);
+    // React Query automatically updates the cache via mutation
     if (goal.milestones && goal.milestones.length > 0) {
       setGoalMilestones(prev => ({ ...prev, [goal.id]: goal.milestones }));
     }
     setShowTemplates(false);
   };
 
-  const handleExpandGoal = async (goalId: string) => {
+  const handleExpandGoal = (goalId: string) => {
     if (expandedGoalId === goalId) {
       setExpandedGoalId(null);
       return;
     }
 
     setExpandedGoalId(goalId);
-
-    // Load milestones if not already loaded
-    if (!goalMilestones[goalId]) {
-      try {
-        const goalWithMilestones = await getLifeGoalById(goalId);
-        if (goalWithMilestones) {
-          setGoalMilestones(prev => ({ ...prev, [goalId]: goalWithMilestones.milestones }));
-        }
-      } catch (error) {
-        console.error('Error loading milestones:', error);
-      }
-    }
+    // Milestone loading is handled by child component GoalMilestones
   };
 
   const handleMilestonesUpdated = (goal: LifeGoal, milestones: LifeGoalMilestone[]) => {
-    setGoals(prev => prev.map(g => g.id === goal.id ? goal : g));
+    // React Query cache is automatically updated by mutations
     setGoalMilestones(prev => ({ ...prev, [goal.id]: milestones }));
   };
 
