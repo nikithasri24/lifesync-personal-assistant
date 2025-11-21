@@ -5,6 +5,7 @@
 
 import { useState, useCallback } from 'react';
 import { logger } from '../../services/logger';
+import '../../types/experimental-web-apis';
 
 interface UseVoiceInputReturn {
   isListening: boolean;
@@ -16,25 +17,25 @@ export function useVoiceInput(): UseVoiceInputReturn {
   const [isListening, setIsListening] = useState(false);
 
   const startVoiceInput = useCallback((onResult: (transcript: string) => void) => {
-    if (!('webkitSpeechRecognition' in window)) {
+    if (!window.webkitSpeechRecognition) {
       logger.warn('useVoiceInput', 'Speech recognition not supported');
       return;
     }
 
-    const recognition = new (window as any).webkitSpeechRecognition();
+    const recognition = new window.webkitSpeechRecognition();
     recognition.continuous = false;
     recognition.interimResults = false;
     recognition.lang = 'en-US';
 
     setIsListening(true);
 
-    recognition.onresult = (event: any) => {
+    recognition.onresult = (event) => {
       const transcript = event.results[0][0].transcript;
       onResult(transcript);
       setIsListening(false);
     };
 
-    recognition.onerror = (error: any) => {
+    recognition.onerror = (error) => {
       logger.error('useVoiceInput', 'Speech recognition error:', error);
       setIsListening(false);
     };
