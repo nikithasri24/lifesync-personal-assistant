@@ -33,7 +33,7 @@ const Assistant = lazy(() => import('./pages/Assistant'));
 
 // Expose cleanup function globally for debugging
 if (typeof window !== 'undefined') {
-  (window as any).cleanup75HardDuplicates = cleanup75HardDuplicates;
+  window.cleanup75HardDuplicates = cleanup75HardDuplicates;
 }
 
 function App() {

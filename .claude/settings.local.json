@@ -29,7 +29,12 @@
       "Bash(npx tsc:*)",
       "Bash(mkdir:*)",
       "Bash(curl:*)",
-      "Bash(tr:*)"
+      "Bash(tr:*)",
+      "Bash(__NEW_LINE__ sed -i.bak 's/await (receiptVideoRef\\.current as any)\\.play();/await receiptVideoRef.current.play();/g' /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/shopping/hooks/useReceiptScanner.ts)",
+      "Bash(__NEW_LINE__ sed -i.bak 's/(receiptVideoRef\\.current as any)\\.srcObject = null;/receiptVideoRef.current.srcObject = null;/g' /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/shopping/hooks/useReceiptScanner.ts)",
+      "Bash(__NEW_LINE__ sed -i.bak 's/new (window as any)\\.TextDetector();/new window.TextDetector();/g' /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/shopping/hooks/useReceiptScanner.ts)",
+      "Bash(__NEW_LINE__ rm /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/shopping/hooks/useReceiptScanner.ts.bak)",
+      "Bash(__NEW_LINE__ echo \"Fixed useReceiptScanner.ts\")"
     ],
     "deny": [],
     "ask": []

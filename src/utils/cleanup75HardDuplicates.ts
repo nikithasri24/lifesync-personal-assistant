@@ -77,5 +77,5 @@ export async function cleanup75HardDuplicates() {
 
 // Make it available globally
 if (typeof window !== 'undefined') {
-  (window as any).cleanup75HardDuplicates = cleanup75HardDuplicates;
+  window.cleanup75HardDuplicates = cleanup75HardDuplicates;
 }

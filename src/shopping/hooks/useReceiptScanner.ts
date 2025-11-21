@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { logger } from '../../services/logger';
 import { parseReceiptToItems, parseReceiptMeta, type ParsedReceiptItem } from '../services/receiptParser';
+import '../../types/experimental-web-apis';
 
 export function useReceiptScanner() {
   const [receiptImageUrl, setReceiptImageUrl] = useState<string | null>(null);
@@ -39,9 +40,9 @@ export function useReceiptScanner() {
         audio: false
       });
       if (receiptVideoRef.current) {
-        receiptVideoRef.current.srcObject = stream as any;
+        receiptVideoRef.current.srcObject = stream;
         try {
-          await (receiptVideoRef.current as any).play();
+          await receiptVideoRef.current.play();
         } catch {}
       }
       setReceiptCameraMsg(null);
@@ -57,7 +58,7 @@ export function useReceiptScanner() {
       stream.getTracks?.().forEach((t: any) => t.stop());
     }
     if (receiptVideoRef.current) {
-      (receiptVideoRef.current as any).srcObject = null;
+      receiptVideoRef.current.srcObject = null;
     }
     setReceiptCameraOn(false);
     setReceiptCameraMsg(null);
@@ -92,7 +93,7 @@ export function useReceiptScanner() {
         const bitmap = await createImageBitmap(img);
 
         // @ts-expect-error experimental API
-        const td = new (window as any).TextDetector();
+        const td = new window.TextDetector();
         const results = await td.detect(bitmap);
         let text = '';
 

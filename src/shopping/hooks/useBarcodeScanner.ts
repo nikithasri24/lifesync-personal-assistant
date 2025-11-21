@@ -5,6 +5,7 @@
 
 import { useState, useRef, useCallback } from 'react';
 import { logger } from '../../services/logger';
+import '../../types/experimental-web-apis';
 
 interface ProductInfo {
   name: string;
@@ -32,7 +33,7 @@ export function useBarcodeScanner(
   const [barcodeResult, setBarcodeResult] = useState<string | null>(null);
   const [captureMessage, setCaptureMessage] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const barcodeDetectorRef = useRef<any>(null);
+  const barcodeDetectorRef = useRef<BarcodeDetector | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
   const lookupProduct = async (barcode: string): Promise<ProductInfo> => {
@@ -101,8 +102,8 @@ export function useBarcodeScanner(
       let formats: string[] | undefined = undefined;
       try {
         const supported: string[] =
-          typeof (window as any).BarcodeDetector.getSupportedFormats === 'function'
-            ? await (window as any).BarcodeDetector.getSupportedFormats()
+          window.BarcodeDetector && typeof window.BarcodeDetector.getSupportedFormats === 'function'
+            ? await window.BarcodeDetector.getSupportedFormats()
             : [];
         if (Array.isArray(supported) && supported.length) {
           const supportedSet = new Set(supported);
@@ -111,7 +112,7 @@ export function useBarcodeScanner(
       } catch {}
 
       const detectorOpts = formats && formats.length ? { formats } : undefined;
-      const barcodeDetector = new (window as any).BarcodeDetector(detectorOpts);
+      const barcodeDetector = new window.BarcodeDetector(detectorOpts);
       barcodeDetectorRef.current = barcodeDetector;
 
       // Get camera stream
@@ -128,9 +129,9 @@ export function useBarcodeScanner(
 
       // Attach stream to video element
       if (videoRef.current) {
-        videoRef.current.srcObject = stream as any;
+        videoRef.current.srcObject = stream;
         try {
-          await (videoRef.current as any).play();
+          await videoRef.current.play();
         } catch {}
       }
 

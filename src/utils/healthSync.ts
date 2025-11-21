@@ -14,9 +14,9 @@ export class HealthKitIntegration {
   private checkSupport(): boolean {
     // Check if we're on iOS Safari or a native app with HealthKit
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    const hasHealthKit = typeof (window as any).webkit !== 'undefined' && 
-                        typeof (window as any).webkit.messageHandlers !== 'undefined' &&
-                        typeof (window as any).webkit.messageHandlers.health !== 'undefined';
+    const hasHealthKit = window.webkit !== undefined && 
+                        window.webkit?.messageHandlers !== undefined &&
+                        window.webkit?.messageHandlers?.health !== undefined;
     
     // Also check for PWA capabilities
     const isPWA = window.matchMedia('(display-mode: standalone)').matches;
@@ -29,8 +29,8 @@ export class HealthKitIntegration {
     
     try {
       // Try to access the Health app integration
-      if ((window as any).webkit?.messageHandlers?.health) {
-        this.healthStore = (window as any).webkit.messageHandlers.health;
+      if (window.webkit?.messageHandlers?.health) {
+        this.healthStore = window.webkit.messageHandlers.health;
       } else if ('HealthKit' in window) {
         this.healthStore = (window as any).HealthKit;
       }
