@@ -3,13 +3,15 @@
  * Shows cities, states, roads, and all geographic details
  */
 
-import React from 'react';
-import LeafletTravelMapV2 from '../components/LeafletTravelMapV2';
+import React, { lazy, Suspense } from 'react';
 import { travelAPI } from '../data';
 import type { VisitStatus, VisitedLocation } from '../types';
 import { nationalParks, getParksByState } from '../data/nationalParks';
 import { islands, getIslandsByState } from '../data/islands';
 import { logger } from '../../services/logger';
+
+// Lazy load the map component to defer loading Leaflet
+const LeafletTravelMapV2 = lazy(() => import('../components/LeafletTravelMapV2'));
 
 const TravelPage: React.FC = () => {
   const [loading, setLoading] = React.useState(true);
@@ -390,16 +392,25 @@ const TravelPage: React.FC = () => {
   }
 
   return (
-    <LeafletTravelMapV2
-      visitedCountries={visitedCountriesMap}
-      onCountryClick={handleCountryClick}
-      visitedStates={visitedStatesMap}
-      onStateClick={handleStateClick}
-      visitedParks={visitedParksMap}
-      onParkClick={handleParkClick}
-      visitedIslands={visitedIslandsMap}
-      onIslandClick={handleIslandClick}
-    />
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen bg-white">
+        <div className="text-center">
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-blue-500 border-t-transparent mx-auto mb-4" />
+          <p className="text-gray-600">Loading map...</p>
+        </div>
+      </div>
+    }>
+      <LeafletTravelMapV2
+        visitedCountries={visitedCountriesMap}
+        onCountryClick={handleCountryClick}
+        visitedStates={visitedStatesMap}
+        onStateClick={handleStateClick}
+        visitedParks={visitedParksMap}
+        onParkClick={handleParkClick}
+        visitedIslands={visitedIslandsMap}
+        onIslandClick={handleIslandClick}
+      />
+    </Suspense>
   );
 };
 

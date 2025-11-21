@@ -3,7 +3,7 @@
  * Shows net worth growth, goal timelines, and retirement projections
  */
 
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import {
   TrendingUp,
   Target,
@@ -13,7 +13,6 @@ import {
   Zap,
   Settings,
 } from 'lucide-react';
-import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import type { Account, Transaction, Goal } from '../types';
 import { getFinanceAPI } from '../data';
 import {
@@ -26,6 +25,10 @@ import {
   calculateCompoundInterest,
 } from '../utils/calculations';
 import { formatCurrency } from '../utils/currency';
+
+// Lazy load chart components to defer loading Recharts
+const NetWorthChart = lazy(() => import('../components/ProjectionCharts').then(module => ({ default: module.NetWorthChart })));
+const CompoundInterestChart = lazy(() => import('../components/ProjectionCharts').then(module => ({ default: module.CompoundInterestChart })));
 
 const ProjectionsPage: React.FC = () => {
   const [loading, setLoading] = React.useState(true);
@@ -260,60 +263,16 @@ const ProjectionsPage: React.FC = () => {
           Projected growth based on current savings rate of {savingsRate.savingsRate.toFixed(1)}%
           ({formatCurrency(savingsRate.monthlySavings)}/month)
         </p>
-        <ResponsiveContainer width="100%" height={350}>
-          <AreaChart data={netWorthChartData}>
-            <defs>
-              <linearGradient id="colorOptimistic" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-              </linearGradient>
-              <linearGradient id="colorBase" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-              </linearGradient>
-              <linearGradient id="colorPessimistic" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3}/>
-                <stop offset="95%" stopColor="#f59e0b" stopOpacity={0}/>
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-            <XAxis dataKey="year" stroke="#6b7280" />
-            <YAxis
-              stroke="#6b7280"
-              tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
-            />
-            <Tooltip
-              formatter={(value: number) => formatCurrency(value)}
-              contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px' }}
-            />
-            <Legend />
-            <Area
-              type="monotone"
-              dataKey="optimistic"
-              stroke="#10b981"
-              fillOpacity={1}
-              fill="url(#colorOptimistic)"
-              name="Optimistic (+3%)"
-            />
-            <Area
-              type="monotone"
-              dataKey="value"
-              stroke="#3b82f6"
-              fillOpacity={1}
-              fill="url(#colorBase)"
-              strokeWidth={3}
-              name="Base Case"
-            />
-            <Area
-              type="monotone"
-              dataKey="pessimistic"
-              stroke="#f59e0b"
-              fillOpacity={1}
-              fill="url(#colorPessimistic)"
-              name="Pessimistic (-3%)"
-            />
-          </AreaChart>
-        </ResponsiveContainer>
+        <Suspense fallback={
+          <div className="flex items-center justify-center h-[350px]">
+            <div className="text-center">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent mx-auto mb-2" />
+              <p className="text-sm text-primary opacity-60">Loading chart...</p>
+            </div>
+          </div>
+        }>
+          <NetWorthChart data={netWorthChartData} />
+        </Suspense>
         <div className="grid grid-cols-3 gap-4 mt-4">
           <div className="text-center p-3 rounded-lg bg-emerald-50">
             <p className="text-xs text-emerald-700 mb-1">Best Case</p>
@@ -347,23 +306,16 @@ const ProjectionsPage: React.FC = () => {
           Monthly: {formatCurrency(savingsRate.monthlySavings || 500)} •
           Return: {annualReturnRate}%
         </p>
-        <ResponsiveContainer width="100%" height={350}>
-          <BarChart data={compoundInterestChartData.filter((_, i) => i % 2 === 0)}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-            <XAxis dataKey="year" stroke="#6b7280" />
-            <YAxis
-              stroke="#6b7280"
-              tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
-            />
-            <Tooltip
-              formatter={(value: number) => formatCurrency(value)}
-              contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px' }}
-            />
-            <Legend />
-            <Bar dataKey="contributions" stackId="a" fill="#3b82f6" name="Contributions" />
-            <Bar dataKey="gains" stackId="a" fill="#10b981" name="Investment Gains" />
-          </BarChart>
-        </ResponsiveContainer>
+        <Suspense fallback={
+          <div className="flex items-center justify-center h-[350px]">
+            <div className="text-center">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent mx-auto mb-2" />
+              <p className="text-sm text-primary opacity-60">Loading chart...</p>
+            </div>
+          </div>
+        }>
+          <CompoundInterestChart data={compoundInterestChartData.filter((_, i) => i % 2 === 0)} />
+        </Suspense>
         <div className="mt-4 p-4 rounded-lg bg-gradient-to-r from-purple-50 to-pink-50">
           <p className="text-sm font-semibold text-purple-900 mb-2">30-Year Summary:</p>
           <div className="grid grid-cols-3 gap-4 text-sm">
