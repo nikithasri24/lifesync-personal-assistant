@@ -6,7 +6,11 @@
       "Bash(git commit:*)",
       "Bash(npm run build:*)",
       "Bash(npm run type-check:*)",
-      "Bash(git restore:*)"
+      "Bash(git restore:*)",
+      "Bash(/tmp/meal_part1.txt)",
+      "Bash(/tmp/meal_part2.txt)",
+      "Bash(cat:*)",
+      "Bash(src/pages/MealPlanning.tsx)"
     ],
     "deny": [],
     "ask": []
