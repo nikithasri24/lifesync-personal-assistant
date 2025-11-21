@@ -1,17 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { logger } from '../services/logger';
-
 import { createPortal } from 'react-dom';
-import type { FormEvent } from 'react';
 import { addDays, format, isSameWeek, startOfWeek, isSameDay } from 'date-fns';
-import { CalendarDays, ChefHat, Loader2, Plus, Trash2, Save, Pencil, ExternalLink, Heart, Clock, Users, Youtube, Search, X } from 'lucide-react';
+import { CalendarDays, ChefHat, Loader2, Plus, Trash2, Save, Pencil, Heart, Youtube, Search, X } from 'lucide-react';
 import DatePickerPopover from '../components/DatePickerPopover';
 import { useAppStore } from '../stores/useAppStore';
 import type { MealPlanWeek, PlannedMeal, Recipe } from '../types';
 import {
   useRecipesQuery,
   useMealPlansQuery,
-  useMealPlanForWeek,
   useCreateRecipeMutation,
   useUpdateRecipeMutation,
   useDeleteRecipeMutation,
@@ -19,34 +16,34 @@ import {
   useCreateMealPlanMutation,
   useCreatePlannedMealMutation,
   useUpdatePlannedMealMutation,
-  useDeletePlannedMealMutation,
-  usePantryItemsQuery,
-  useCreatePantryItemMutation,
-  useUpdatePantryItemMutation,
-  useDeletePantryItemMutation,
 } from '../mealPlanning/hooks/useMealPlanningQuery';
 
-// Import new modular components
+// Import hooks
+import { useMealFormModals } from '../mealPlanning/hooks/useMealFormModals';
+import { useWeekNavigation } from '../mealPlanning/hooks/useWeekNavigation';
+import { useRecipeImport } from '../mealPlanning/hooks/useRecipeImport';
+import { useGroceryList } from '../mealPlanning/hooks/useGroceryList';
+import { useMultiCellSelection } from '../mealPlanning/hooks/useMultiCellSelection';
+
+// Import components
 import RecipeCard from '../mealPlanning/components/recipe/RecipeCard';
-import MealItem from '../mealPlanning/components/mealPlan/MealItem';
-import MealCell from '../mealPlanning/components/mealPlan/MealCell';
 import CellWithMeals from '../mealPlanning/components/mealPlan/CellWithMeals';
 import AddMealControl from '../mealPlanning/components/mealPlan/AddMealControl';
+import { MealOptionsManager } from '../mealPlanning/components/views/MealOptionsManager';
 
-// Import parser services
-import {
-  fetchYoutubeRecipe,
-  normalizeFractions as normalizeYoutubeFractions
-} from '../mealPlanning/services/parsers/youtubeParser';
-import {
-  parseTextToRecipe,
-  normalizeFractions as normalizeTextFractions
-} from '../mealPlanning/services/parsers/textParser';
+// Import modals
+import { QuickRecipeModal } from '../mealPlanning/components/modals/QuickRecipeModal';
+import { SimpleRecipeEditModal } from '../mealPlanning/components/modals/SimpleRecipeEditModal';
+import { RecipeEditModal } from '../mealPlanning/components/modals/RecipeEditModal';
+import { RecipeViewModal } from '../mealPlanning/components/modals/RecipeViewModal';
+import { GroceryListModal } from '../mealPlanning/components/modals/GroceryListModal';
+import { CopyWeekModal } from '../mealPlanning/components/modals/CopyWeekModal';
+
+// Import utilities
+import { toKey, ensureDate, parseLocalDateKey } from '../mealPlanning/utils';
+import { fetchClippedRecipe } from '../mealPlanning/utils/recipeUtils';
 
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack'];
-
-const toKey = (date: Date) => format(date, 'yyyy-MM-dd');
-const ensureDate = (value: Date | string): Date => (value instanceof Date ? value : new Date(value));
 
 // Cleanup old meal drafts from localStorage (older than 7 days)
 const cleanupOldDrafts = () => {
@@ -59,7 +56,6 @@ const cleanupOldDrafts = () => {
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (key && key.startsWith('meal-draft-')) {
-        // Extract date from key: "meal-draft-2025-01-14-breakfast"
         const match = key.match(/meal-draft-(\d{4}-\d{2}-\d{2})/);
         if (match) {
           const draftDate = new Date(match[1]);
@@ -70,7 +66,7 @@ const cleanupOldDrafts = () => {
       }
     }
 
-    keysToRemove.forEach(key => localStorage.removeItem(key));
+    keysToRemove.forEach((key) => localStorage.removeItem(key));
     if (keysToRemove.length > 0) {
       logger.debug('MealPlanning', `Cleaned up ${keysToRemove.length} old meal drafts`);
     }
@@ -79,1438 +75,84 @@ const cleanupOldDrafts = () => {
   }
 };
 
-// Parser functions moved to separate service modules:
-// - src/mealPlanning/services/parsers/youtubeParser.ts
-// - src/mealPlanning/services/parsers/textParser.ts
-
-// Parse a yyyy-MM-dd key into a local Date at midnight (avoid UTC shift)
-function parseLocalDateKey(key: string): Date {
-  const [y, m, d] = key.split('-').map((s) => Number(s));
-  return new Date(y, (m || 1) - 1, d || 1, 0, 0, 0, 0);
-}
-
-function ModalShell({
-  title,
-  subtitle,
-  onClose,
-  maxWidthClass = 'max-w-2xl',
-  headerRight,
-  children,
-}: {
-  title: string;
-  subtitle?: string;
-  onClose: () => void;
-  maxWidthClass?: string;
-  headerRight?: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return createPortal(
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="modal-title"
-      onClick={onClose}
-    >
-      <div
-        style={{height: '350px'}}
-        className={`w-full ${maxWidthClass} rounded-xl border-4 border-indigo-500/30 bg-white shadow-[0_20px_60px_rgba(0,0,0,0.5)] ring-4 ring-white flex flex-col overflow-hidden`}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 flex-shrink-0">
-          <div>
-            <h3 id="modal-title" className="text-base font-semibold text-slate-900">{title}</h3>
-            {subtitle && <p className="text-xs text-slate-500">{subtitle}</p>}
-          </div>
-          <div className="flex items-center gap-3">
-            {headerRight}
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-              aria-label="Close"
-              title="Close"
-            >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-auto p-4">
-          {children}
-        </div>
-      </div>
-    </div>,
-    document.body
-  );
-}
-
-function QuickRecipeModal({ initialName, onSave, onClose }: {
-  initialName: string;
-  onSave: (recipe: Omit<Recipe, 'id' | 'createdAt'>) => void;
-  onClose: () => void;
-}) {
-  const [name, setName] = useState(initialName);
-  const [ingredientsText, setIngredientsText] = useState('');
-  const [instructionsText, setInstructionsText] = useState('');
-  const [saving, setSaving] = useState(false);
-  const titleId = 'quick-recipe-modal-title';
-
-  // Lock background scroll while modal is open
-  useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => {
-      document.body.style.overflow = prev;
-      window.removeEventListener('keydown', onKey);
-    };
-  }, [onClose]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-
-    // Parse ingredients from comma-separated or line-separated text
-    const ingredientLines = ingredientsText
-      .split(/[,\n]/)
-      .map(line => line.trim())
-      .filter(line => line.length > 0);
-
-    const ingredients = ingredientLines.map(line => {
-      // Try to parse "amount unit name" format (e.g., "2 cups flour")
-      const match = line.match(/^(\d+(?:\.\d+)?)\s+(\w+)\s+(.+)$/);
-      if (match) {
-        return { amount: match[1], unit: match[2], name: match[3] };
-      }
-      // Try "amount name" format (e.g., "2 onions")
-      const match2 = line.match(/^(\d+(?:\.\d+)?)\s+(.+)$/);
-      if (match2) {
-        return { amount: match2[1], unit: undefined, name: match2[2] };
-      }
-      // Just the name
-      return { amount: undefined, unit: undefined, name: line };
-    });
-
-    // Parse instructions from line-separated text
-    const instructions = instructionsText
-      .split('\n')
-      .map(line => line.trim())
-      .filter(line => line.length > 0);
-
-    const recipeData: Omit<Recipe, 'id' | 'createdAt'> = {
-      name: name.trim(),
-      description: undefined,
-      ingredients,
-      instructions,
-      prepTime: undefined,
-      cookTime: undefined,
-      servings: 4,
-      tags: [],
-      imageUrl: undefined,
-      sourceUrl: undefined,
-      videoUrl: undefined,
-      videoThumbnail: undefined,
-      notes: undefined,
-    };
-
-    await onSave(recipeData);
-    setSaving(false);
-  };
-
-  return (
-    <ModalShell title="Recipe" subtitle={`Quick recipe for "${initialName}"`} onClose={onClose} maxWidthClass="max-w-lg">
-      <form onSubmit={handleSubmit}>
-          <div className="space-y-3">
-          <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1">Recipe Name</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              placeholder="e.g., Bagel with Cream Cheese"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1">
-              Ingredients <span className="text-slate-400 font-normal">(one per line)</span>
-            </label>
-            <textarea
-              value={ingredientsText}
-              onChange={(e) => setIngredientsText(e.target.value)}
-              rows={4}
-              className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              placeholder="2 bagels&#10;4 oz cream cheese&#10;1 tomato&#10;salt, pepper"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1">
-              Instructions <span className="text-slate-400 font-normal">(optional)</span>
-            </label>
-            <textarea
-              value={instructionsText}
-              onChange={(e) => setInstructionsText(e.target.value)}
-              rows={3}
-              className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              placeholder="Toast bagels, spread cream cheese..."
-            />
-          </div>
-
-          <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={saving}
-              className="rounded-md px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={saving || !name.trim()}
-              className="inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
-            >
-              {saving ? (
-                <>
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="h-3.5 w-3.5" />
-                  Save
-                </>
-              )}
-            </button>
-          </div>
-          </div>
-        </form>
-    </ModalShell>
-  );
-}
-
-function SimpleRecipeEditModal({ recipe, onSave, onClose }: {
-  recipe: Recipe;
-  onSave: (updates: Partial<Recipe>) => void | Promise<void>;
-  onClose: () => void;
-}) {
-  const [name, setName] = useState(recipe.name || '');
-  const [ingredientsText, setIngredientsText] = useState(
-    (recipe.ingredients || [])
-      .map(ing => [ing.amount, ing.unit, ing.name].filter(Boolean).join(' '))
-      .join('\n')
-  );
-  const [instructionsText, setInstructionsText] = useState((recipe.instructions || []).join('\n'));
-  const [saving, setSaving] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-    const ingredientLines = ingredientsText
-      .split(/[\n,]/)
-      .map(l => l.trim())
-      .filter(Boolean);
-    const ingredients = ingredientLines.map(line => {
-      const m1 = line.match(/^(\d+(?:\.\d+)?)\s+(\w+)\s+(.+)$/);
-      if (m1) return { amount: m1[1], unit: m1[2], name: m1[3] };
-      const m2 = line.match(/^(\d+(?:\.\d+)?)\s+(.+)$/);
-      if (m2) return { amount: m2[1], unit: undefined, name: m2[2] };
-      return { name: line } as any;
-    });
-    const instructions = instructionsText.split('\n').map(l => l.trim()).filter(Boolean);
-    await onSave({
-      name: name.trim() || 'Untitled',
-      ingredients,
-      instructions,
-    });
-    setSaving(false);
-  };
-
-  return (
-    <ModalShell title="Recipe" subtitle={recipe.name} onClose={onClose} maxWidthClass="max-w-lg">
-      <form onSubmit={handleSubmit}>
-        <div className="space-y-3">
-          <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1">Recipe Name</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              placeholder="e.g., Veg Pulao"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1">Ingredients <span className="text-slate-400 font-normal">(one per line)</span></label>
-            <textarea
-              value={ingredientsText}
-              onChange={(e) => setIngredientsText(e.target.value)}
-              rows={6}
-              className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              placeholder="2 cups rice\n1 onion\nspices"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1">Instructions <span className="text-slate-400 font-normal">(optional)</span></label>
-            <textarea
-              value={instructionsText}
-              onChange={(e) => setInstructionsText(e.target.value)}
-              rows={6}
-              className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              placeholder="Rinse rice..."
-            />
-          </div>
-          <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={saving}
-              className="rounded-md px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={saving || !name.trim()}
-              className="inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
-            >
-              {saving ? (
-                <>
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="h-3.5 w-3.5" />
-                  Save
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      </form>
-    </ModalShell>
-  );
-}
-
-// Wrapper for CellWithMeals - provides modal callbacks to the modular component
-function CellWithMealsWrapper({ dateKey, mealType, dayMeals, recipes, onShowRecipeForm, onShowSimpleEdit }: {
-  dateKey: string;
-  mealType: string;
-  dayMeals: PlannedMeal[];
-  recipes: Recipe[];
-  onShowRecipeForm: (initialName: string, onSave: (recipe: Recipe) => void) => void;
-  onShowSimpleEdit: (recipe: Recipe, onSave: (updates: Partial<Recipe>) => void) => void;
-}) {
-  return (
-    <CellWithMeals
-      dateKey={dateKey}
-      mealType={mealType}
-      dayMeals={dayMeals}
-      recipes={recipes}
-      onShowRecipeForm={onShowRecipeForm}
-      onShowSimpleEdit={onShowSimpleEdit}
-      renderAddControl={(triggerRef) => (
-        <AddMealControl
-          dateKey={dateKey}
-          mealType={mealType}
-          showByDefault={false}
-          compact={true}
-          triggerRef={triggerRef}
-        />
-      )}
-    />
-  );
-}
-
-
-// Auto-fetch recipe from Google search
-async function fetchRecipeFromGoogle(mealName: string): Promise<Omit<Recipe, 'id' | 'createdAt'> | null> {
-  const scaffold = (name: string): Omit<Recipe, 'id' | 'createdAt'> => ({
-    name,
-    description: '',
-    ingredients: [
-      { name: name },
-      { name: '1 tbsp oil' },
-      { name: 'salt to taste' },
-    ],
-    instructions: [
-      `Prepare ${name.toLowerCase()}.`,
-      `Cook ${name.toLowerCase()} to desired doneness.`,
-      'Adjust seasoning and serve.',
-    ],
-    prepTime: undefined,
-    cookTime: undefined,
-    servings: 4,
-    difficulty: 'medium',
-    tags: ['auto-scaffold'],
-    rating: undefined,
-    notes: undefined,
-    image: undefined,
-    isFavorite: false,
-    calories: undefined,
-    cuisine: 'other',
-    dietaryRestrictions: [],
-    nutritionInfo: undefined,
-  });
-  try {
-    // Use our backend recipe search endpoint
-    const apiUrl = `/api/recipe/search?q=${encodeURIComponent(mealName)}`;
-
-    const response = await fetch(apiUrl, { headers: { Accept: 'application/json' } });
-    if (!response.ok) {
-      logger.warn('MealPlanning', 'Recipe search failed (non-OK). Using scaffold.');
-      return scaffold(mealName);
-    }
-
-    const data = await response.json();
-    const ingredients = Array.isArray(data.ingredients) && data.ingredients.length
-      ? data.ingredients
-      : [{ name: 'Add ingredients...' }];
-    const instructions: string[] = Array.isArray(data.instructions) && data.instructions.length
-      ? data.instructions
-      : ['Add instructions...'];
-
-    return {
-      name: data.name || mealName,
-      description: data.description || '',
-      ingredients,
-      instructions,
-      prepTime: Number.isFinite(Number(data.prepTime)) ? Number(data.prepTime) : undefined,
-      cookTime: Number.isFinite(Number(data.cookTime)) ? Number(data.cookTime) : undefined,
-      servings: Number.isFinite(Number(data.servings)) ? Number(data.servings) : 4,
-      difficulty: 'medium',
-      tags: Array.isArray(data.tags) ? data.tags : ['auto-fetched'],
-      rating: undefined,
-      notes: undefined,
-      image: data.image || undefined,
-      isFavorite: false,
-      calories: undefined,
-      cuisine: 'other',
-      dietaryRestrictions: [],
-      nutritionInfo: undefined,
-    };
-  } catch (error) {
-    logger.warn('MealPlanning', 'Failed to fetch recipe from Google. Using scaffold:', error);
-    return scaffold(mealName);
-  }
-}
-
-// Generic clipper: fetch via server-side endpoint that parses JSON-LD/OG tags
-async function fetchClippedRecipe(url: string): Promise<Omit<Recipe, 'id' | 'createdAt'>> {
-  const clipperBase = import.meta.env.VITE_RECIPE_CLIPPER_URL?.trim() || '/api/clip/recipe';
-  const apiUrl = `${clipperBase}${clipperBase.includes('?') ? '&' : '?'}url=${encodeURIComponent(url)}`;
-  let response: Response;
-  try {
-    response = await fetch(apiUrl, { headers: { Accept: 'application/json' } });
-  } catch (e) {
-    throw new Error('Unable to reach the recipe clipper service.');
-  }
-  if (!response.ok) throw new Error('Failed to clip recipe.');
-  const data = await response.json();
-  const ingredients = Array.isArray(data.ingredients) && data.ingredients.length
-    ? data.ingredients
-    : [{ name: 'Ingredient 1' }, { name: 'Ingredient 2' }];
-  const instructions: string[] = Array.isArray(data.instructions) && data.instructions.length
-    ? data.instructions
-    : ['Follow the steps on the source page.'];
-  return {
-    name: data.name || 'Clipped Recipe',
-    description: data.description || '',
-    ingredients,
-    instructions,
-    prepTime: Number.isFinite(Number(data.prepTime)) ? Number(data.prepTime) : 10,
-    cookTime: Number.isFinite(Number(data.cookTime)) ? Number(data.cookTime) : 20,
-    servings: Number.isFinite(Number(data.servings)) ? Number(data.servings) : 2,
-    difficulty: 'medium',
-    tags: Array.isArray(data.tags) ? data.tags : ['clipped'],
-    rating: undefined,
-    notes: undefined,
-    image: data.image || undefined,
-    isFavorite: false,
-    calories: undefined,
-    cuisine: 'other',
-    dietaryRestrictions: [],
-    nutritionInfo: undefined,
-    flowChart: undefined,
-    sourceType: 'manual',
-    sourceUrl: url,
-    authorName: data.authorName || undefined,
-    videoThumbnail: undefined,
-  };
-}
-
-function MealOptionsManager() {
-  const { mealOptions, addMealOption, removeMealOption } = useAppStore();
-  const [inputs, setInputs] = useState({ breakfast: '', lunch: '', dinner: '', snack: '' });
-  const sections: Array<{ key: keyof typeof mealOptions; label: string; color: string }> = [
-    { key: 'breakfast', label: 'Breakfast', color: 'text-amber-600' },
-    { key: 'lunch', label: 'Lunch', color: 'text-emerald-600' },
-    { key: 'dinner', label: 'Dinner', color: 'text-indigo-600' },
-    { key: 'snack', label: 'Snacks', color: 'text-pink-600' },
-  ];
-  return (
-    <div className="mt-4 grid gap-4 sm:grid-cols-2">
-      {sections.map(({ key, label, color }) => (
-        <div key={key} className="rounded-md border border-slate-200 p-3">
-          <h3 className={`text-sm font-semibold ${color}`}>{label}</h3>
-          <div className="mt-2 flex gap-2">
-            <input
-              value={inputs[key]}
-              onChange={(e) => setInputs((s) => ({ ...s, [key]: e.target.value }))}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  const v = inputs[key].trim();
-                  if (v) { addMealOption(key as any, v); setInputs((s) => ({ ...s, [key]: '' })); }
-                }
-              }}
-              placeholder={`Add ${label.toLowerCase()} option…`}
-              className="flex-1 rounded-md border border-slate-300 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-            <button
-              type="button"
-              onClick={() => { const v = inputs[key].trim(); if (v) { addMealOption(key as any, v); setInputs((s) => ({ ...s, [key]: '' })); } }}
-              className="rounded-md bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-500"
-            >
-              Add
-            </button>
-          </div>
-          <ul className="mt-2 flex flex-wrap gap-2">
-            {(mealOptions[key] || []).map((name) => (
-              <li
-                key={name}
-                className="group inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs cursor-grab active:cursor-grabbing"
-                draggable
-                onDragStart={(e) => {
-                  e.dataTransfer.setData('text/meal-option', name);
-                  e.dataTransfer.effectAllowed = 'copy';
-                }}
-                title="Drag into the weekly planner to add"
-              >
-                <span>{name}</span>
-                <button
-                  type="button"
-                  onClick={() => removeMealOption(key as any, name)}
-                  className="text-slate-400 hover:text-rose-600"
-                  title="Remove"
-                >
-                  ×
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function RecipeMealTypeChips({ recipe }: { recipe: Recipe }) {
-  const updateRecipeMutation = useUpdateRecipeMutation();
-  const types: Array<{ key: 'breakfast'|'lunch'|'dinner'|'snack'; label: string; color: string }> = [
-    { key: 'breakfast', label: 'Breakfast', color: '' },
-    { key: 'lunch', label: 'Lunch', color: '' },
-    { key: 'dinner', label: 'Dinner', color: '' },
-    { key: 'snack', label: 'Snack', color: '' },
-  ];
-  const tags = recipe.tags || [];
-  const toggle = async (k: 'breakfast'|'lunch'|'dinner'|'snack') => {
-    const token = `meal:${k}`;
-    const has = tags.includes(token);
-    const next = has ? tags.filter(t => t !== token) : [...tags, token];
-    await updateRecipeMutation.mutateAsync({ recipeId: recipe.id!, updates: { tags: next } });
-  };
-  return (
-    <div className="mt-3 flex flex-wrap gap-2">
-      {types.map(t => {
-        const active = tags.includes(`meal:${t.key}`);
-        const activeMap: Record<typeof t.key, string> = {
-          breakfast: 'bg-amber-600 text-white border-amber-600',
-          lunch: 'bg-emerald-600 text-white border-emerald-600',
-          dinner: 'bg-indigo-600 text-white border-indigo-600',
-          snack: 'bg-pink-600 text-white border-pink-600',
-        } as const;
-        const inactiveMap: Record<typeof t.key, string> = {
-          breakfast: 'text-amber-700 border-amber-300 bg-white hover:bg-amber-50',
-          lunch: 'text-emerald-700 border-emerald-300 bg-white hover:bg-emerald-50',
-          dinner: 'text-indigo-700 border-indigo-300 bg-white hover:bg-indigo-50',
-          snack: 'text-pink-700 border-pink-300 bg-white hover:bg-pink-50',
-        } as const;
-        return (
-          <button
-            key={t.key}
-            type="button"
-            onClick={() => toggle(t.key)}
-            className={`px-2 py-0.5 text-xs rounded-full border transition-colors ${active ? activeMap[t.key] : inactiveMap[t.key]}`}
-            title={`Label as ${t.label}`}
-          >
-            {t.label}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-function RecipeEditModal({ recipe, onClose }: { recipe: Recipe; onClose: () => void }) {
-  const updateRecipeMutation = useUpdateRecipeMutation();
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [lastSaved, setLastSaved] = useState<Date>(new Date());
-  const autoSaveTimerRef = React.useRef<NodeJS.Timeout | null>(null);
-
-  const [form, setForm] = useState({
-    name: recipe.name || '',
-    description: recipe.description || '',
-    servings: String(recipe.servings ?? 1),
-    prepTime: String(recipe.prepTime ?? 0),
-    cookTime: String(recipe.cookTime ?? 0),
-    difficulty: recipe.difficulty || 'medium',
-    tags: (recipe.tags || []).join(', '),
-    instructions: (recipe.instructions || []).join('\n'),
-    ingredients: (recipe.ingredients || []).map(ing => {
-      const parts = [ing.amount, ing.unit, ing.name].filter(Boolean);
-      return parts.join(' ');
-    }).join('\n'),
-  });
-
-  // Handle Escape key to close modal
-  React.useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', handleEscape);
-    return () => window.removeEventListener('keydown', handleEscape);
-  }, [onClose]);
-
-  // Auto-save functionality - debounced by 2 seconds
-  React.useEffect(() => {
-    // Clear existing timer
-    if (autoSaveTimerRef.current) {
-      clearTimeout(autoSaveTimerRef.current);
-    }
-
-    // Set new timer for auto-save
-    autoSaveTimerRef.current = setTimeout(async () => {
-      try {
-        setSaving(true);
-        setError(null);
-
-        // Parse ingredients from text
-        const ingredientLines = form.ingredients
-          .split(/\r?\n/)
-          .map((line) => line.trim())
-          .filter(Boolean);
-
-        const parsedIngredients = ingredientLines.map((line) => {
-          const match1 = line.match(/^(\d+(?:\.\d+)?)\s+(\w+)\s+(.+)$/);
-          if (match1) {
-            return { amount: match1[1], unit: match1[2], name: match1[3] };
-          }
-          const match2 = line.match(/^(\d+(?:\.\d+)?)\s+(.+)$/);
-          if (match2) {
-            return { amount: match2[1], unit: undefined, name: match2[2] };
-          }
-          return { amount: undefined, unit: undefined, name: line };
-        });
-
-        const updates: Partial<Recipe> = {
-          name: form.name.trim() || 'Untitled',
-          description: form.description.trim(),
-          servings: Number.isFinite(Number(form.servings)) ? Number(form.servings) : recipe.servings,
-          prepTime: Number.isFinite(Number(form.prepTime)) ? Number(form.prepTime) : recipe.prepTime,
-          cookTime: Number.isFinite(Number(form.cookTime)) ? Number(form.cookTime) : recipe.cookTime,
-          difficulty: (form.difficulty as Recipe['difficulty']) || recipe.difficulty,
-          tags: form.tags.split(',').map((t) => t.trim()).filter(Boolean),
-          instructions: form.instructions.split(/\r?\n/).map((l) => l.trim()).filter(Boolean),
-          ingredients: parsedIngredients,
-        };
-
-        await updateRecipeMutation.mutateAsync({ recipeId: recipe.id!, updates });
-        setLastSaved(new Date());
-      } catch (err) {
-        logger.error('MealPlanning', 'Auto-save failed:', err);
-        setError('Auto-save failed');
-      } finally {
-        setSaving(false);
-      }
-    }, 2000); // 2 second debounce
-
-    // Cleanup on unmount
-    return () => {
-      if (autoSaveTimerRef.current) {
-        clearTimeout(autoSaveTimerRef.current);
-      }
-    };
-  }, [form, recipe.id, updateRecipeMutation]);
-
-  const onSubmit: React.FormEventHandler<HTMLFormElement> = async (e) => {
-    e.preventDefault();
-    setSaving(true);
-    setError(null);
-    try {
-      // Parse ingredients from text
-      const ingredientLines = form.ingredients
-        .split(/\r?\n/)
-        .map((line) => line.trim())
-        .filter(Boolean);
-
-      const parsedIngredients = ingredientLines.map((line) => {
-        // Try to parse "amount unit name" format (e.g., "2 cups flour")
-        const match1 = line.match(/^(\d+(?:\.\d+)?)\s+(\w+)\s+(.+)$/);
-        if (match1) {
-          return { amount: match1[1], unit: match1[2], name: match1[3] };
-        }
-        // Try "amount name" format (e.g., "2 onions")
-        const match2 = line.match(/^(\d+(?:\.\d+)?)\s+(.+)$/);
-        if (match2) {
-          return { amount: match2[1], unit: undefined, name: match2[2] };
-        }
-        // Just the name
-        return { amount: undefined, unit: undefined, name: line };
-      });
-
-      const updates: Partial<Recipe> = {
-        name: form.name.trim() || 'Untitled',
-        description: form.description.trim(),
-        servings: Number.isFinite(Number(form.servings)) ? Number(form.servings) : recipe.servings,
-        prepTime: Number.isFinite(Number(form.prepTime)) ? Number(form.prepTime) : recipe.prepTime,
-        cookTime: Number.isFinite(Number(form.cookTime)) ? Number(form.cookTime) : recipe.cookTime,
-        difficulty: (form.difficulty as Recipe['difficulty']) || recipe.difficulty,
-        tags: form.tags
-          .split(',')
-          .map((t) => t.trim())
-          .filter(Boolean),
-        instructions: form.instructions
-          .split(/\r?\n/)
-          .map((l) => l.trim())
-          .filter(Boolean),
-        ingredients: parsedIngredients,
-      };
-      await updateRecipeMutation.mutateAsync({ recipeId: recipe.id!, updates });
-      onClose();
-    } catch (err) {
-      logger.error('MealPlanning', 'Failed to update recipe', err);
-      setError('Failed to save changes. Please try again.');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" onClick={onClose}>
-      <div style={{height: '350px'}} className="w-full max-w-2xl rounded-xl border-4 border-indigo-500/30 bg-white shadow-[0_20px_60px_rgba(0,0,0,0.5)] ring-4 ring-white flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between p-3 border-b border-slate-200 flex-shrink-0">
-          <h3 className="text-lg font-semibold text-slate-900">Edit recipe</h3>
-          <div className="flex items-center gap-3">
-            <div className="text-xs text-slate-500">
-              {saving ? (
-                <span className="flex items-center gap-1">
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                  Saving...
-                </span>
-              ) : (
-                <span className="text-emerald-600">Auto-saved</span>
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-              aria-label="Close"
-              title="Close"
-            >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        </div>
-        <form onSubmit={onSubmit} className="flex-1 overflow-auto p-3">
-          <div className="grid gap-4">
-          {error && (
-            <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</div>
-          )}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium text-slate-700">Name</span>
-              <input
-                value={form.name}
-                onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))}
-                className="rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-indigo-500 focus:outline-none"
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium text-slate-700">Difficulty</span>
-              <select
-                value={form.difficulty}
-                onChange={(e) => setForm((s) => ({ ...s, difficulty: e.target.value as 'easy' | 'medium' | 'hard' }))}
-                className="rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-indigo-500 focus:outline-none"
-              >
-                <option value="easy">easy</option>
-                <option value="medium">medium</option>
-                <option value="hard">hard</option>
-              </select>
-            </label>
-          </div>
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium text-slate-700">Description</span>
-            <textarea
-              rows={2}
-              value={form.description}
-              onChange={(e) => setForm((s) => ({ ...s, description: e.target.value }))}
-              className="rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-indigo-500 focus:outline-none"
-            />
-          </label>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium text-slate-700">Servings</span>
-              <input
-                type="number"
-                min={1}
-                value={form.servings}
-                onChange={(e) => setForm((s) => ({ ...s, servings: e.target.value }))}
-                className="rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-indigo-500 focus:outline-none"
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium text-slate-700">Prep time (min)</span>
-              <input
-                type="number"
-                min={0}
-                value={form.prepTime}
-                onChange={(e) => setForm((s) => ({ ...s, prepTime: e.target.value }))}
-                className="rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-indigo-500 focus:outline-none"
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium text-slate-700">Cook time (min)</span>
-              <input
-                type="number"
-                min={0}
-                value={form.cookTime}
-                onChange={(e) => setForm((s) => ({ ...s, cookTime: e.target.value }))}
-                className="rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-indigo-500 focus:outline-none"
-              />
-            </label>
-          </div>
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium text-slate-700">Tags (comma separated)</span>
-            <input
-              value={form.tags}
-              onChange={(e) => setForm((s) => ({ ...s, tags: e.target.value }))}
-              className="rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-indigo-500 focus:outline-none"
-              placeholder="e.g. meal:breakfast, quick, vegetarian"
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium text-slate-700">Ingredients (one per line)</span>
-            <textarea
-              rows={6}
-              value={form.ingredients}
-              onChange={(e) => setForm((s) => ({ ...s, ingredients: e.target.value }))}
-              className="rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-indigo-500 focus:outline-none"
-              placeholder="2 cups flour&#10;1 tsp salt&#10;3 eggs"
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium text-slate-700">Instructions (one per line)</span>
-            <textarea
-              rows={6}
-              value={form.instructions}
-              onChange={(e) => setForm((s) => ({ ...s, instructions: e.target.value }))}
-              className="rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-indigo-500 focus:outline-none"
-            />
-          </label>
-          <div className="mt-2 flex items-center justify-end gap-2 border-t border-slate-200 pt-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-md px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100"
-              disabled={saving}
-            >
-              Close
-            </button>
-          </div>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
-
-// Multi-cell selection types
-type CellKey = string; // format: "yyyy-MM-dd:mealType"
-
 const MealPlanning: React.FC = () => {
   // React Query hooks
   const { data: recipes = [], isLoading: recipesLoading } = useRecipesQuery();
   const { data: mealPlans = [], isLoading: mealPlansLoading } = useMealPlansQuery();
   const createRecipeMutation = useCreateRecipeMutation();
+  const updateRecipeMutation = useUpdateRecipeMutation();
   const createPlannedMealMutation = useCreatePlannedMealMutation();
   const updatePlannedMealMutation = useUpdatePlannedMealMutation();
-  const deletePlannedMealMutation = useDeletePlannedMealMutation();
+  const deleteRecipeMutation = useDeleteRecipeMutation();
   const deleteAllRecipesMutation = useDeleteAllRecipesMutation();
   const createMealPlanMutation = useCreateMealPlanMutation();
 
-  // Global UI settings (kept from Zustand)
-  const { weekStartsOn, setWeekStartsOn, addNote, showGlobalToast } = useAppStore();
-  const [currentWeekStart, setCurrentWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn }));
-  const [activePlanId, setActivePlanId] = useState<string | null>(null);
-  const [isEnsuringPlan, setIsEnsuringPlan] = useState(false);
+  // Global UI settings
+  const { weekStartsOn, showGlobalToast, addNote } = useAppStore();
 
-  // Multi-cell selection state
-  const [selectedCells, setSelectedCells] = useState<Set<CellKey>>(new Set());
-  const [isSelectionMode, setIsSelectionMode] = useState(false);
-  const [multiCellQuery, setMultiCellQuery] = useState('');
-  const [showMultiCellList, setShowMultiCellList] = useState(false);
-  const [multiCellSelectedIndex, setMultiCellSelectedIndex] = useState(0);
-  const multiCellInputRef = React.useRef<HTMLInputElement | null>(null);
-
-  const [selectedRecipeId, setSelectedRecipeId] = useState('');
-  const [selectedMealType, setSelectedMealType] = useState<string>(MEAL_TYPES[2]);
-  const [selectedDateKey, setSelectedDateKey] = useState(() => toKey(startOfWeek(new Date(), { weekStartsOn }))); // Based on setting
-  const [servings, setServings] = useState(4);
-  const [scheduleError, setScheduleError] = useState<string | null>(null);
-  const [isScheduling, setIsScheduling] = useState(false);
-
-  const [importUrl, setImportUrl] = useState('');
-  const [isImporting, setIsImporting] = useState(false);
-  const [importError, setImportError] = useState<string | null>(null);
-  const [importDraft, setImportDraft] = useState<Omit<Recipe, 'id' | 'createdAt'> | null>(null);
-  const [importScheduleType, setImportScheduleType] = useState<string>(MEAL_TYPES[2]);
-  const [importScheduleDateKey, setImportScheduleDateKey] = useState<string>(() => toKey(startOfWeek(new Date(), { weekStartsOn })));
-
-  // Video import state (YouTube)
-  const [videoUrl, setVideoUrl] = useState('');
-  const [videoLang, setVideoLang] = useState('en');
-  const [isVideoImporting, setIsVideoImporting] = useState(false);
-  const [videoImportError, setVideoImportError] = useState<string | null>(null);
-  const [videoDraft, setVideoDraft] = useState<Omit<Recipe, 'id' | 'createdAt'> | null>(null);
-
-  // Paste Text extractor state
-  const [textInput, setTextInput] = useState('');
-  const [textTitle, setTextTitle] = useState('');
-  const [isTextParsing, setIsTextParsing] = useState(false);
-  const [textError, setTextError] = useState<string | null>(null);
-  const [textDraft, setTextDraft] = useState<Omit<Recipe, 'id' | 'createdAt'> | null>(null);
-  const [textImageUrl, setTextImageUrl] = useState('');
-
-  // Grocery list state
-  const [showGroceryList, setShowGroceryList] = useState(false);
+  // Custom hooks
+  const modalState = useMealFormModals();
+  const weekNav = useWeekNavigation(weekStartsOn, mealPlans);
+  const recipeImport = useRecipeImport();
+  const groceryState = useGroceryList(
+    weekNav.activePlan?.meals ?? [],
+    recipes,
+    toKey(weekNav.currentWeekStart)
+  );
+  const multiCellSelection = useMultiCellSelection(
+    recipes,
+    mealPlans,
+    weekNav.activePlan,
+    createPlannedMealMutation.mutateAsync,
+    showGlobalToast
+  );
 
   // Copy week state
-  const [showCopyWeek, setShowCopyWeek] = useState(false);
-
-  // Modal state for MealItem callbacks
-  const [recipeFormModal, setRecipeFormModal] = useState<{ initialName: string; onSave: (recipe: Recipe) => void } | null>(null);
-  const [simpleEditModal, setSimpleEditModal] = useState<{ recipe: Recipe; onSave: (updates: Partial<Recipe>) => void } | null>(null);
-  const [copyTargetWeek, setCopyTargetWeek] = useState<Date>(addDays(currentWeekStart, 7));
+  const [copyTargetWeek, setCopyTargetWeek] = useState<Date>(addDays(weekNav.currentWeekStart, 7));
 
   // Recipe search/filter state
   const [recipeSearchQuery, setRecipeSearchQuery] = useState('');
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 
-  // Cleanup old drafts on component mount
+  // Cleanup old drafts on mount
   useEffect(() => {
     cleanupOldDrafts();
   }, []);
 
+  // Update copy target when week changes
   useEffect(() => {
-    setSelectedDateKey(toKey(currentWeekStart));
-  }, [currentWeekStart]);
+    setCopyTargetWeek(addDays(weekNav.currentWeekStart, 7));
+  }, [weekNav.currentWeekStart]);
 
-  // Re-align current week when weekStartsOn changes
-  useEffect(() => {
-    setCurrentWeekStart((prev) => startOfWeek(prev, { weekStartsOn }));
-    setSelectedDateKey((prev) => {
-      const d = new Date(prev)
-      return toKey(startOfWeek(d, { weekStartsOn }))
-    });
-  }, [weekStartsOn]);
-
-  // Don't eagerly create plans - just find existing ones
-  // Plans are created lazily when user adds a meal
-  useEffect(() => {
-    const existingPlan = mealPlans.find((plan) =>
-      isSameWeek(ensureDate(plan.weekStartDate), currentWeekStart, { weekStartsOn })
-    );
-
-    if (existingPlan) {
-      setActivePlanId(existingPlan.id);
-    } else {
-      // No plan for this week yet - that's OK, will be created when user adds a meal
-      setActivePlanId(null);
-    }
-    setIsEnsuringPlan(false);
-  }, [currentWeekStart, mealPlans, weekStartsOn]);
-
-  const activePlan: MealPlanWeek | null = useMemo(() => {
-    if (activePlanId) {
-      const plan = mealPlans.find((item) => item.id === activePlanId);
-      if (plan) {
-        return plan;
-      }
-    }
-
-    return (
-      mealPlans.find((plan) =>
-        isSameWeek(ensureDate(plan.weekStartDate), currentWeekStart, { weekStartsOn }),
-      ) ?? null
-    );
-  }, [activePlanId, mealPlans, currentWeekStart, weekStartsOn]);
-
-  const weekDays = useMemo(
-    () => Array.from({ length: 7 }, (_, index) => addDays(currentWeekStart, index)),
-    [currentWeekStart],
-  );
-
-  const plannedMeals = activePlan?.meals ?? [];
+  const plannedMeals = weekNav.activePlan?.meals ?? [];
   const mealsByDate: Record<string, PlannedMeal[]> = useMemo(() => {
-    return plannedMeals.reduce<Record<string, PlannedMeal[]>>((accumulator, meal) => {
+    return plannedMeals.reduce<Record<string, PlannedMeal[]>>((acc, meal) => {
       const key = toKey(ensureDate(meal.date));
-      if (!accumulator[key]) {
-        accumulator[key] = [];
+      if (!acc[key]) {
+        acc[key] = [];
       }
-      accumulator[key].push(meal);
-      return accumulator;
+      acc[key].push(meal);
+      return acc;
     }, {});
   }, [plannedMeals]);
 
-  const handleImportRecipe = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!importUrl.trim()) return;
+  const isLoading = mealPlansLoading || weekNav.isEnsuringPlan;
 
-    setIsImporting(true);
-    setImportError(null);
-    try {
-      const recipe = await fetchClippedRecipe(importUrl.trim());
-      setImportDraft(recipe);
-      setImportUrl('');
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to import recipe.';
-      setImportError(message);
-    } finally {
-      setIsImporting(false);
-    }
-  };
-
-  const saveImportedRecipe = async () => {
-    if (!importDraft) return;
-    try {
-      await createRecipeMutation.mutateAsync(importDraft);
-      setImportDraft(null);
-    } catch (e) {
-      setImportError('Failed to save recipe');
-    }
-  };
-
-  // v1: omit plan scheduling integration; we only save clipped recipe
-
-  const saveImportedAsNote = async () => {
-    if (!importDraft) return;
-    try {
-      const title = importDraft.name || 'Imported Recipe';
-      const lines: string[] = [];
-      lines.push(`# ${title}`);
-      if (importDraft.sourceUrl) {
-        lines.push('');
-        lines.push(`Source: ${importDraft.sourceUrl}`);
-      }
-      if (importDraft.description) {
-        lines.push('');
-        lines.push(importDraft.description);
-      }
-      if (Array.isArray(importDraft.ingredients) && importDraft.ingredients.length) {
-        lines.push('');
-        lines.push('## Ingredients');
-        for (const ing of importDraft.ingredients) {
-          lines.push(`- ${ing.name}`);
-        }
-      }
-      if (Array.isArray(importDraft.instructions) && importDraft.instructions.length) {
-        lines.push('');
-        lines.push('## Instructions');
-        importDraft.instructions.forEach((step, idx) => {
-          lines.push(`${idx + 1}. ${step}`);
-        });
-      }
-      const content = lines.join('\n');
-      await addNote({ title, content, tags: ['recipe', 'youtube', 'imported'] });
-      setImportDraft(null);
-    } catch (e) {
-      setImportError('Failed to save as note');
-    }
-  };
-
-  const handleScheduleMeal = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!activePlan) {
-      setScheduleError('Create or load a meal plan first.');
-      return;
-    }
-    if (!selectedRecipeId) {
-      setScheduleError('Select a recipe to schedule.');
-      return;
-    }
-
-    const recipe = recipes.find((item) => item.id === selectedRecipeId);
-    if (!recipe) {
-      setScheduleError('Recipe not found.');
-      return;
-    }
-
-    setIsScheduling(true);
-    setScheduleError(null);
-    try {
-      await createPlannedMealMutation.mutateAsync({
-        planId: activePlan.id,
-        meal: {
-          date: new Date(selectedDateKey),
-          mealType: selectedMealType,
-          recipeId: recipe.id,
-          customMeal: undefined,
-          servings,
-          peopleCount: servings,
-          status: 'planned',
-          notes: undefined,
-          preparedAt: undefined,
-          consumedAt: undefined,
-        }
-      });
-      setSelectedRecipeId('');
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to schedule meal.';
-      setScheduleError(message);
-    } finally {
-      setIsScheduling(false);
-    }
-  };
-
-  const plannedCount = plannedMeals.length;
-  const completedCount = plannedMeals.filter((meal) => meal.status === 'eaten').length;
-
-  const isLoading = mealPlansLoading || isEnsuringPlan;
-
-  // Multi-cell selection handlers
-  const makeCellKey = (dateKey: string, mealType: string): CellKey => `${dateKey}:${mealType}`;
-
-  const handleCellClick = (dateKey: string, mealType: string, event: React.MouseEvent) => {
-    const cellKey = makeCellKey(dateKey, mealType);
-
-    if (event.metaKey || event.ctrlKey) {
-      // Toggle selection with Cmd/Ctrl
-      setIsSelectionMode(true);
-      setSelectedCells(prev => {
-        const next = new Set(prev);
-        if (next.has(cellKey)) {
-          next.delete(cellKey);
-        } else {
-          next.add(cellKey);
-        }
-        // Exit selection mode if no cells selected
-        if (next.size === 0) {
-          setIsSelectionMode(false);
-        }
-        return next;
-      });
-    }
-  };
-
-  const clearSelection = () => {
-    setSelectedCells(new Set());
-    setIsSelectionMode(false);
-  };
-
-  const addMealToSelectedCells = async (recipeId: string, customMeal?: string) => {
-    if (!activePlan || selectedCells.size === 0) return;
-
-    try {
-      const promises = Array.from(selectedCells).map(cellKey => {
-        const [dateKey, mealType] = cellKey.split(':');
-        return createPlannedMealMutation.mutateAsync({
-          planId: activePlan.id,
-          meal: {
-            date: parseLocalDateKey(dateKey),
-            mealType,
-            recipeId: recipeId || undefined,
-            customMeal: customMeal || undefined,
-            servings: 4,
-            peopleCount: 4,
-            status: 'planned',
-            notes: undefined,
-            preparedAt: undefined,
-            consumedAt: undefined,
-          }
-        });
-      });
-
-      await Promise.all(promises);
-      showGlobalToast(`Added meal to ${selectedCells.size} cells`, 'success');
-      clearSelection();
-      setMultiCellQuery('');
-    } catch (error) {
-      logger.error('MealPlanning', 'Failed to add meals to selected cells:', error);
-      showGlobalToast('Failed to add meals', 'error');
-    }
-  };
-
-  // Multi-cell selection autocomplete matches
-  const multiCellMatches = React.useMemo(() => {
-    const q = multiCellQuery.trim().toLowerCase();
-
-    if (!q) {
-      return [];
-    }
-
-    const scoreMatch = (text: string, query: string): number => {
-      const lower = text.toLowerCase();
-      if (lower === query) return 1000;
-      if (lower.startsWith(query)) return 900;
-      const words = lower.split(/\s+/);
-      if (words.some(w => w.startsWith(query))) return 800;
-      if (lower.includes(query)) return 700;
-      let fuzzyScore = 0;
-      let queryIdx = 0;
-      for (let i = 0; i < lower.length && queryIdx < query.length; i++) {
-        if (lower[i] === query[queryIdx]) {
-          fuzzyScore += (100 - i);
-          queryIdx++;
-        }
-      }
-      if (queryIdx === query.length) return fuzzyScore;
-      return 0;
-    };
-
-    const candidates: Array<{ id: string; name: string; score: number; type: 'custom' | 'option' | 'recipe'; count?: number }> = [];
-
-    // Add historical custom meals
-    const customMeals = new Map<string, { name: string; count: number; lastUsed: Date }>();
-    mealPlans.forEach(plan => {
-      plan.meals?.forEach(meal => {
-        if (meal.customMeal && !meal.recipeId) {
-          const key = meal.customMeal.toLowerCase();
-          const existing = customMeals.get(key);
-          const mealDate = ensureDate(meal.date);
-          if (existing) {
-            existing.count++;
-            if (mealDate > existing.lastUsed) {
-              existing.lastUsed = mealDate;
-            }
-          } else {
-            customMeals.set(key, {
-              name: meal.customMeal,
-              count: 1,
-              lastUsed: mealDate
-            });
-          }
-        }
-      });
-    });
-
-    customMeals.forEach(item => {
-      const score = scoreMatch(item.name, q);
-      if (score > 0) {
-        candidates.push({ id: `__custom__:${item.name}`, name: item.name, score, type: 'custom', count: item.count });
-      }
-    });
-
-    // Add recipes
-    recipes.forEach(recipe => {
-      const score = scoreMatch(recipe.name, q);
-      if (score > 0) {
-        candidates.push({ id: recipe.id!, name: recipe.name, score, type: 'recipe' });
-      }
-    });
-
-    // Deduplicate and sort
-    const deduped = new Map<string, typeof candidates[0]>();
-    candidates.forEach(candidate => {
-      const key = candidate.name.toLowerCase();
-      const existing = deduped.get(key);
-      if (!existing || candidate.score > existing.score) {
-        deduped.set(key, candidate);
-      }
-    });
-
-    return Array.from(deduped.values())
-      .sort((a, b) => {
-        if (b.score !== a.score) return b.score - a.score;
-        return a.name.localeCompare(b.name);
-      })
-      .slice(0, 12);
-  }, [multiCellQuery, recipes, mealPlans]);
-
-  const handleMultiCellKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      setMultiCellSelectedIndex((prev) => Math.min(prev + 1, multiCellMatches.length - 1));
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setMultiCellSelectedIndex((prev) => Math.max(prev - 1, 0));
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      if (multiCellMatches.length > 0) {
-        const selected = multiCellMatches[multiCellSelectedIndex];
-        const idStr = String(selected.id);
-        if (idStr.startsWith('__custom__:')) {
-          await addMealToSelectedCells('', selected.name);
-        } else {
-          await addMealToSelectedCells(selected.id);
-        }
-      } else if (multiCellQuery.trim()) {
-        await addMealToSelectedCells('', multiCellQuery.trim());
-      }
-      setMultiCellSelectedIndex(0);
-    } else if (e.key === 'Escape') {
-      setShowMultiCellList(false);
-      setMultiCellSelectedIndex(0);
-      multiCellInputRef.current?.blur();
-    }
-  };
-
-  React.useEffect(() => {
-    setMultiCellSelectedIndex(0);
-  }, [multiCellQuery]);
-
-  // Enhanced grocery list with status tracking
-  type GroceryItemStatus = 'needed' | 'at_home' | 'in_cart' | 'purchased';
-
-  interface GroceryItem {
-    id: string;
-    name: string;
-    amount?: string;
-    unit?: string;
-    recipes: string[];
-    status: GroceryItemStatus;
-  }
-
-  // Load grocery item statuses from localStorage for current week
-  const groceryStorageKey = `grocery-statuses-${toKey(currentWeekStart)}`;
-  const [groceryItemStatuses, setGroceryItemStatuses] = useState<Map<string, GroceryItemStatus>>(() => {
-    try {
-      const stored = localStorage.getItem(groceryStorageKey);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        return new Map(Object.entries(parsed));
-      }
-    } catch (error) {
-      logger.error('MealPlanning', 'Failed to load grocery statuses:', error);
-    }
-    return new Map();
-  });
-
-  // Persist grocery statuses to localStorage whenever they change
-  useEffect(() => {
-    try {
-      const obj = Object.fromEntries(groceryItemStatuses);
-      localStorage.setItem(groceryStorageKey, JSON.stringify(obj));
-    } catch (error) {
-      logger.error('MealPlanning', 'Failed to save grocery statuses:', error);
-    }
-  }, [groceryItemStatuses, groceryStorageKey]);
-
-  // Generate grocery list from current week's recipes
-  const groceryList = useMemo(() => {
-    const ingredientMap = new Map<string, { name: string; amount?: string; unit?: string; recipes: string[] }>();
-
-    plannedMeals.forEach(meal => {
-      if (meal.recipeId) {
-        const recipe = recipes.find(r => r.id === meal.recipeId);
-        if (recipe && recipe.ingredients) {
-          recipe.ingredients.forEach(ing => {
-            const key = ing.name.toLowerCase().trim();
-            const existing = ingredientMap.get(key);
-
-            if (existing) {
-              if (!existing.recipes.includes(recipe.name)) {
-                existing.recipes.push(recipe.name);
-              }
-            } else {
-              ingredientMap.set(key, {
-                name: ing.name,
-                amount: ing.amount,
-                unit: ing.unit,
-                recipes: [recipe.name]
-              });
-            }
-          });
-        }
-      }
-    });
-
-    const items: GroceryItem[] = Array.from(ingredientMap.values()).map(item => {
-      const itemKey = item.name.toLowerCase().trim();
-      return {
-        id: itemKey,
-        ...item,
-        status: groceryItemStatuses.get(itemKey) || 'needed'
-      };
-    });
-
-    return items.sort((a, b) => a.name.localeCompare(b.name));
-  }, [plannedMeals, recipes, groceryItemStatuses]);
-
-  const updateGroceryItemStatus = (itemId: string, status: GroceryItemStatus) => {
-    setGroceryItemStatuses(prev => {
-      const next = new Map(prev);
-      next.set(itemId, status);
-      return next;
-    });
-  };
-
-  const getStatusColor = (status: GroceryItemStatus) => {
-    switch (status) {
-      case 'at_home': return 'bg-green-100 text-green-800 border-green-300';
-      case 'in_cart': return 'bg-indigo-100 text-indigo-800 border-indigo-300';
-      case 'purchased': return 'bg-gray-100 text-gray-600 border-gray-300 line-through';
-      default: return 'bg-white text-slate-900 border-slate-200';
-    }
-  };
-
-  const neededItems = groceryList.filter(item => item.status === 'needed');
-  const atHomeItems = groceryList.filter(item => item.status === 'at_home');
-  const inCartItems = groceryList.filter(item => item.status === 'in_cart');
-  const purchasedItems = groceryList.filter(item => item.status === 'purchased');
-
-  // Filter recipes based on search query and favorites
+  // Filter recipes
   const filteredRecipes = useMemo(() => {
     let result = recipes;
 
-    // Filter by favorites first
     if (showFavoritesOnly) {
-      result = result.filter(recipe => recipe.isFavorite === true);
+      result = result.filter((recipe) => recipe.isFavorite === true);
     }
 
-    // Then filter by search query
     if (recipeSearchQuery.trim()) {
       const query = recipeSearchQuery.toLowerCase().trim();
-      result = result.filter(recipe => {
-        // Search in name
+      result = result.filter((recipe) => {
         if (recipe.name.toLowerCase().includes(query)) return true;
-
-        // Search in tags
-        if (recipe.tags?.some(tag => tag.toLowerCase().includes(query))) return true;
-
-        // Search in cuisine
+        if (recipe.tags?.some((tag) => tag.toLowerCase().includes(query))) return true;
         if (recipe.cuisine?.toLowerCase().includes(query)) return true;
-
-        // Search in difficulty
         if (recipe.difficulty?.toLowerCase().includes(query)) return true;
-
         return false;
       });
     }
@@ -1518,23 +160,144 @@ const MealPlanning: React.FC = () => {
     return result;
   }, [recipes, recipeSearchQuery, showFavoritesOnly]);
 
+  // Handle URL import
+  const handleImportRecipe = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!recipeImport.importUrl.trim()) return;
+
+    recipeImport.setIsImporting(true);
+    recipeImport.setImportError(null);
+    try {
+      const recipe = await fetchClippedRecipe(recipeImport.importUrl.trim());
+      recipeImport.setImportDraft(recipe);
+      recipeImport.setImportUrl('');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to import recipe.';
+      recipeImport.setImportError(message);
+    } finally {
+      recipeImport.setIsImporting(false);
+    }
+  };
+
+  const saveImportedRecipe = async () => {
+    if (!recipeImport.importDraft) return;
+    try {
+      await createRecipeMutation.mutateAsync(recipeImport.importDraft);
+      recipeImport.clearUrlImport();
+    } catch (e) {
+      recipeImport.setImportError('Failed to save recipe');
+    }
+  };
+
+  const saveImportedAsNote = async () => {
+    if (!recipeImport.importDraft) return;
+    try {
+      const title = recipeImport.importDraft.name || 'Imported Recipe';
+      const lines: string[] = [];
+      lines.push(`# ${title}`);
+      if (recipeImport.importDraft.sourceUrl) {
+        lines.push('');
+        lines.push(`Source: ${recipeImport.importDraft.sourceUrl}`);
+      }
+      if (recipeImport.importDraft.description) {
+        lines.push('');
+        lines.push(recipeImport.importDraft.description);
+      }
+      if (Array.isArray(recipeImport.importDraft.ingredients) && recipeImport.importDraft.ingredients.length) {
+        lines.push('');
+        lines.push('## Ingredients');
+        for (const ing of recipeImport.importDraft.ingredients) {
+          lines.push(`- ${ing.name}`);
+        }
+      }
+      if (Array.isArray(recipeImport.importDraft.instructions) && recipeImport.importDraft.instructions.length) {
+        lines.push('');
+        lines.push('## Instructions');
+        recipeImport.importDraft.instructions.forEach((step, idx) => {
+          lines.push(`${idx + 1}. ${step}`);
+        });
+      }
+      const content = lines.join('\n');
+      await addNote({ title, content, tags: ['recipe', 'imported'] });
+      recipeImport.clearUrlImport();
+    } catch (e) {
+      recipeImport.setImportError('Failed to save as note');
+    }
+  };
+
+  // Copy week handler
+  const handleCopyWeek = async () => {
+    try {
+      let targetPlan = mealPlans.find((p) =>
+        isSameWeek(ensureDate(p.weekStartDate), copyTargetWeek, { weekStartsOn })
+      );
+
+      if (!targetPlan) {
+        targetPlan = await createMealPlanMutation.mutateAsync({
+          weekStartDate: copyTargetWeek,
+          name: 'Meal plan',
+          weekStartsOn,
+        });
+      }
+
+      if (!targetPlan) {
+        showGlobalToast('Failed to create target week plan', 'error');
+        return;
+      }
+
+      const daysDiff = Math.floor(
+        (copyTargetWeek.getTime() - weekNav.currentWeekStart.getTime()) / (1000 * 60 * 60 * 24)
+      );
+
+      const copyPromises = plannedMeals.map((meal) => {
+        const originalDate = ensureDate(meal.date);
+        const newDate = addDays(originalDate, daysDiff);
+
+        return createPlannedMealMutation.mutateAsync({
+          planId: targetPlan.id,
+          meal: {
+            date: newDate,
+            mealType: meal.mealType,
+            recipeId: meal.recipeId,
+            customMeal: meal.customMeal,
+            servings: meal.servings || 4,
+            peopleCount: meal.peopleCount || meal.servings || 4,
+            status: 'planned',
+            notes: meal.notes,
+            preparedAt: undefined,
+            consumedAt: undefined,
+          },
+        });
+      });
+
+      await Promise.all(copyPromises);
+      showGlobalToast(`Copied ${plannedMeals.length} meals to target week`, 'success');
+      modalState.setShowCopyWeek(false);
+      weekNav.goToWeek(copyTargetWeek);
+    } catch (error) {
+      logger.error('MealPlanning', 'Failed to copy week:', error);
+      showGlobalToast('Failed to copy meals', 'error');
+    }
+  };
+
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-4 sm:gap-6 p-3 sm:p-6">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-xl sm:text-2xl font-semibold text-slate-900">Meal planning</h1>
-          <p className="text-xs sm:text-sm text-slate-600">Plan your week, import recipes, and keep dinner decisions simple.</p>
+          <p className="text-xs sm:text-sm text-slate-600">
+            Plan your week, import recipes, and keep dinner decisions simple.
+          </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {/* Date picker popover to anchor the week */}
           <DatePickerPopover
-            value={currentWeekStart}
-            onChange={(d) => setCurrentWeekStart(startOfWeek(d, { weekStartsOn }))}
+            value={weekNav.currentWeekStart}
+            onChange={weekNav.goToWeek}
             weekStartsOn={weekStartsOn}
           />
           <button
             type="button"
-            onClick={() => setCurrentWeekStart((date) => addDays(date, -7))}
+            onClick={weekNav.goToPreviousWeek}
             className="rounded-full border border-slate-200 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-slate-600 transition hover:bg-slate-50"
           >
             <span className="hidden sm:inline">Previous</span>
@@ -1542,7 +305,7 @@ const MealPlanning: React.FC = () => {
           </button>
           <button
             type="button"
-            onClick={() => setCurrentWeekStart(startOfWeek(new Date(), { weekStartsOn }))}
+            onClick={weekNav.goToThisWeek}
             className="rounded-full border border-slate-200 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-slate-600 transition hover:bg-slate-50"
           >
             <span className="hidden sm:inline">This week</span>
@@ -1550,14 +313,14 @@ const MealPlanning: React.FC = () => {
           </button>
           <button
             type="button"
-            onClick={() => setCurrentWeekStart((date) => addDays(date, 7))}
+            onClick={weekNav.goToNextWeek}
             className="rounded-full border border-slate-200 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-slate-600 transition hover:bg-slate-50"
           >
             Next
           </button>
           <button
             type="button"
-            onClick={() => setShowCopyWeek(true)}
+            onClick={() => modalState.setShowCopyWeek(true)}
             className="rounded-full border border-indigo-200 bg-indigo-50 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-indigo-700 transition hover:bg-indigo-100"
             title="Copy this week's meals to another week"
           >
@@ -1566,7 +329,7 @@ const MealPlanning: React.FC = () => {
           </button>
           <button
             type="button"
-            onClick={() => setShowGroceryList(true)}
+            onClick={() => modalState.setShowGroceryList(true)}
             className="rounded-full border border-emerald-200 bg-emerald-50 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-emerald-700 transition hover:bg-emerald-100"
             title="Generate grocery list from recipes"
           >
@@ -1584,115 +347,25 @@ const MealPlanning: React.FC = () => {
         </div>
       </header>
 
-      {/* Selection toolbar */}
-      {isSelectionMode && selectedCells.size > 0 && (
-        <section className="rounded-lg border-2 border-indigo-500 bg-indigo-50 p-3 sm:p-4 shadow-lg animate-in slide-in-from-top">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-              <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-600 text-white font-semibold text-sm">
-                  {selectedCells.size}
-                </div>
-                <span className="text-sm font-medium text-indigo-900">
-                  {selectedCells.size} cell{selectedCells.size > 1 ? 's' : ''} selected
-                </span>
-              </div>
-              <span className="text-xs text-indigo-600">
-                <span className="hidden sm:inline">Cmd/Ctrl + click to select more cells</span>
-                <span className="sm:hidden">Tap cells to select</span>
-              </span>
-            </div>
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-              <div className="relative w-full sm:w-64">
-                <input
-                  ref={multiCellInputRef}
-                  type="text"
-                  value={multiCellQuery}
-                  onChange={(e) => { setMultiCellQuery(e.target.value); setShowMultiCellList(true); }}
-                  onFocus={() => setShowMultiCellList(true)}
-                  onBlur={() => setTimeout(() => setShowMultiCellList(false), 200)}
-                  onKeyDown={handleMultiCellKeyDown}
-                  placeholder="Type meal name..."
-                  className="w-full rounded-md border border-indigo-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-                {showMultiCellList && multiCellQuery.trim().length > 0 && multiCellInputRef.current && createPortal(
-                  <div className="fixed z-[100] min-w-[240px] max-w-[320px] rounded-lg border border-slate-200 bg-white shadow-2xl ring-1 ring-black/5" style={{
-                    left: multiCellInputRef.current.getBoundingClientRect().left,
-                    top: multiCellInputRef.current.getBoundingClientRect().bottom + 4,
-                  }}>
-                    {multiCellMatches.length === 0 ? (
-                      <button
-                        type="button"
-                        className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-slate-700 hover:bg-indigo-50 transition-colors first:rounded-t-lg last:rounded-b-lg"
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={async () => {
-                          await addMealToSelectedCells('', multiCellQuery.trim());
-                          setShowMultiCellList(false);
-                        }}
-                      >
-                        <span className="flex h-6 w-6 items-center justify-center rounded-md bg-indigo-100 text-xs font-semibold text-indigo-700">+</span>
-                        <div className="flex-1 min-w-0">
-                          <div className="truncate font-medium">Add "{multiCellQuery.trim()}"</div>
-                          <div className="text-xs text-slate-500">Create new meal</div>
-                        </div>
-                      </button>
-                    ) : (
-                      <div className="max-h-[280px] overflow-auto py-1">
-                        {multiCellMatches.map((r: any, idx: number) => {
-                          const isSelected = idx === multiCellSelectedIndex;
-                          const isRecipe = r.type === 'recipe';
-                          const isCustom = r.type === 'custom';
-                          return (
-                            <button
-                              key={`${r.id}-${idx}`}
-                              type="button"
-                              className={`flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors ${
-                                isSelected ? 'bg-indigo-50 text-indigo-900' : 'text-slate-700 hover:bg-slate-50'
-                              }`}
-                              onMouseDown={(e) => e.preventDefault()}
-                              onMouseEnter={() => setMultiCellSelectedIndex(idx)}
-                              onClick={async () => {
-                                if (isCustom) {
-                                  await addMealToSelectedCells('', r.name);
-                                } else {
-                                  await addMealToSelectedCells(r.id);
-                                }
-                                setShowMultiCellList(false);
-                              }}
-                            >
-                              <span className={`flex h-6 w-6 items-center justify-center rounded-md text-xs font-semibold ${
-                                isRecipe ? 'bg-emerald-100 text-emerald-700' : isCustom ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700'
-                              }`}>
-                                {isRecipe ? '📖' : isCustom ? '⭐' : '🍽️'}
-                              </span>
-                              <div className="flex-1 min-w-0">
-                                <div className="truncate font-medium">{r.name}</div>
-                                <div className="text-xs text-slate-500">
-                                  {isRecipe ? 'Recipe' : isCustom ? `Used ${r.count || 1}x` : 'Meal option'}
-                                </div>
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>,
-                  document.body
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={clearSelection}
-                className="rounded-md border border-indigo-300 px-4 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-100 transition"
-              >
-                Clear Selection
-              </button>
-            </div>
-          </div>
-        </section>
+      {/* Multi-cell selection toolbar */}
+      {multiCellSelection.isSelectionMode && multiCellSelection.selectedCells.size > 0 && (
+        <SelectionToolbar
+          selectedCount={multiCellSelection.selectedCells.size}
+          query={multiCellSelection.multiCellQuery}
+          onQueryChange={multiCellSelection.setMultiCellQuery}
+          matches={multiCellSelection.multiCellMatches}
+          selectedIndex={multiCellSelection.multiCellSelectedIndex}
+          onIndexChange={multiCellSelection.setMultiCellSelectedIndex}
+          onKeyDown={multiCellSelection.handleMultiCellKeyDown}
+          inputRef={multiCellSelection.multiCellInputRef}
+          showList={multiCellSelection.showMultiCellList}
+          onShowListChange={multiCellSelection.setShowMultiCellList}
+          onAddMeal={multiCellSelection.addMealToSelectedCells}
+          onClearSelection={multiCellSelection.clearSelection}
+        />
       )}
 
-      {/* Weekly overview moved to top */}
+      {/* Weekly overview */}
       <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm order-1">
         <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
           <CalendarDays className="h-5 w-5 text-sky-500" />
@@ -1706,1098 +379,804 @@ const MealPlanning: React.FC = () => {
           </div>
         )}
 
-        {!isLoading && weekDays.length > 0 && (
-          <div className="mt-6">
-            <div className="overflow-x-auto">
-              {/* Header row */}
-              <div className="grid" style={{ gridTemplateColumns: `140px repeat(4, minmax(160px, 1fr))` }}>
-                <div className="p-3 border-b border-r border-slate-200 sticky left-0 bg-white z-20" />
-                {MEAL_TYPES.map((mealType) => (
-                  <div
-                    key={mealType}
-                    className="p-3 border-b border-r border-slate-200 text-sm font-semibold text-slate-900 bg-white text-center capitalize"
-                  >
-                    {mealType}
-                  </div>
-                ))}
-              </div>
-              {/* Day rows */}
-              {weekDays.map((d) => {
-                const key = toKey(d);
-                const today = new Date();
-                const highlight = isSameDay(d, today);
-                return (
-                  <div key={key} className="grid" style={{ gridTemplateColumns: `140px repeat(4, minmax(160px, 1fr))` }}>
-                    {/* Day label */}
-                    <div className={`relative p-3 border-b border-r border-slate-200 bg-slate-50 text-sm font-medium text-slate-800 flex flex-col justify-center sticky left-0 z-10`}>
-                      {highlight && (
-                        <div className="absolute inset-y-0 left-0 w-1 bg-indigo-500 rounded-r-sm" aria-hidden />
-                      )}
-                      <div className={highlight ? 'text-indigo-700 font-semibold' : ''}>
-                        {format(d, 'EEE')}
-                      </div>
-                      <div className="text-xs text-slate-500">{format(d, 'MMM d')}</div>
-                    </div>
-                    {MEAL_TYPES.map((mealType) => {
-                      const dayMeals = (mealsByDate[key] ?? []).filter((m) => m.mealType === mealType);
-                      const cellKey = makeCellKey(key, mealType);
-                      const isSelected = selectedCells.has(cellKey);
-                      const hasContent = dayMeals.length > 0;
-
-                      return (
-                        <div
-                          key={`${key}-${mealType}`}
-                          className={`relative p-3 border-b border-l border-r border-slate-200 overflow-hidden cursor-pointer transition-colors ${
-                            isSelected ? 'bg-indigo-100 border-indigo-400 ring-2 ring-indigo-400' : ''
-                          } ${hasContent ? 'bg-amber-50/30' : ''}`}
-                          onClick={(e) => handleCellClick(key, mealType, e)}
-                          onDragOver={(e) => e.preventDefault()}
-                          onDrop={async (e) => {
-                            if (!activePlan) return;
-                            const optionName = e.dataTransfer.getData('text/meal-option');
-                            if (optionName) {
-                              await createPlannedMealMutation.mutateAsync({
-                                planId: activePlan.id,
-                                meal: {
-                                  date: parseLocalDateKey(key),
-                                  mealType,
-                                  recipeId: undefined,
-                                  customMeal: optionName,
-                                  servings: 4,
-                                  peopleCount: 4,
-                                  status: 'planned',
-                                  notes: undefined,
-                                  preparedAt: undefined,
-                                  consumedAt: undefined,
-                                }
-                              });
-                              return;
-                            }
-
-                            const recipeDragged = e.dataTransfer.getData('text/recipe-id');
-                            if (recipeDragged) {
-                              await createPlannedMealMutation.mutateAsync({
-                                planId: activePlan.id,
-                                meal: {
-                                  date: parseLocalDateKey(key),
-                                  mealType,
-                                  recipeId: recipeDragged,
-                                  customMeal: undefined,
-                                  servings: 4,
-                                  peopleCount: 4,
-                                  status: 'planned',
-                                  notes: undefined,
-                                  preparedAt: undefined,
-                                  consumedAt: undefined,
-                                }
-                              });
-                              return;
-                            }
-
-                            const mealId = e.dataTransfer.getData('text/meal-id');
-                            if (!mealId) return;
-                            if (e.altKey) {
-                              // Copy
-                              const source = plannedMeals.find((m) => m.id === mealId);
-                              if (!source) return;
-                              await createPlannedMealMutation.mutateAsync({
-                                planId: activePlan.id,
-                                meal: {
-                                  date: parseLocalDateKey(key),
-                                  mealType,
-                                  recipeId: source.recipeId,
-                                  customMeal: source.customMeal,
-                                  servings: source.servings ?? 4,
-                                  peopleCount: source.peopleCount ?? source.servings ?? 4,
-                                  status: 'planned',
-                                  notes: undefined,
-                                  preparedAt: undefined,
-                                  consumedAt: undefined,
-                                }
-                              });
-                            } else {
-                              // Move
-                              await updatePlannedMealMutation.mutateAsync({
-                                mealId,
-                                updates: { date: parseLocalDateKey(key), mealType }
-                              });
-                            }
-                          }}
-                        >
-                          {highlight && (
-                            <div className="absolute inset-y-0 left-0 w-1 bg-indigo-300" aria-hidden />
-                          )}
-                          {/* Chef hat indicator for populated cells */}
-                          {hasContent && (
-                            <div className="absolute top-1 right-1 z-10">
-                              <ChefHat className="w-4 h-4 text-amber-600" />
-                            </div>
-                          )}
-                          <div className="h-full overflow-auto space-y-2 group/cell relative">
-                            {dayMeals.length > 0 ? (
-                              <CellWithMealsWrapper
-                                dateKey={key}
-                                mealType={mealType}
-                                dayMeals={dayMeals}
-                                recipes={recipes}
-                                onShowRecipeForm={(initialName, onSave) => setRecipeFormModal({ initialName, onSave })}
-                                onShowSimpleEdit={(recipe, onSave) => setSimpleEditModal({ recipe, onSave })}
-                              />
-                            ) : (
-                              <AddMealControl
-                                dateKey={key}
-                                mealType={mealType}
-                                showByDefault={true}
-                                compact={false}
-                              />
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+        {!isLoading && weekNav.weekDays.length > 0 && (
+          <WeeklyGrid
+            weekDays={weekNav.weekDays}
+            mealsByDate={mealsByDate}
+            recipes={recipes}
+            activePlan={weekNav.activePlan}
+            selectedCells={multiCellSelection.selectedCells}
+            makeCellKey={multiCellSelection.makeCellKey}
+            onCellClick={multiCellSelection.handleCellClick}
+            onShowRecipeForm={modalState.openRecipeForm}
+            onShowSimpleEdit={modalState.openSimpleEdit}
+            createPlannedMeal={createPlannedMealMutation.mutateAsync}
+            updatePlannedMeal={updatePlannedMealMutation.mutateAsync}
+          />
         )}
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-2">
-        {/* Video → Recipe (YouTube) */}
-        <form
-          onSubmit={async (e) => {
-            e.preventDefault();
-            if (!videoUrl.trim()) return;
-            setIsVideoImporting(true);
-            setVideoImportError(null);
-            try {
-              const recipe = await fetchYoutubeRecipe(videoUrl.trim(), videoLang);
-              setVideoDraft(recipe);
-              setVideoUrl('');
-            } catch (err) {
-              const msg = err instanceof Error ? err.message : 'Unable to import from video.';
-              setVideoImportError(msg);
-            } finally {
-              setIsVideoImporting(false);
-            }
-          }}
-          className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
-        >
-          <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
-            <Youtube className="h-5 w-5 text-rose-600" />
-            Video to Recipe
-          </h2>
-          <p className="mt-1 text-sm text-slate-600">Paste a YouTube link. We’ll extract the title, thumbnail, ingredients and steps from the description.</p>
-          <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-            <input
-              value={videoUrl}
-              onChange={(e) => setVideoUrl(e.target.value)}
-              placeholder="https://www.youtube.com/watch?v=..."
-              className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
-            />
-            <select
-              value={videoLang}
-              onChange={(e) => setVideoLang(e.target.value)}
-              className="rounded-lg border border-slate-300 px-2 py-2 text-sm focus:border-indigo-500 focus:outline-none"
-              title="Caption language"
-            >
-              <option value="en">English</option>
-              <option value="es">Spanish</option>
-              <option value="fr">French</option>
-              <option value="de">German</option>
-              <option value="it">Italian</option>
-              <option value="pt">Portuguese</option>
-              <option value="hi">Hindi</option>
-              <option value="ja">Japanese</option>
-            </select>
-            <button
-              type="submit"
-              disabled={isVideoImporting}
-              className="inline-flex items-center justify-center gap-2 rounded-full bg-rose-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-rose-500 disabled:opacity-60"
-            >
-              {isVideoImporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-              Convert
-            </button>
-          </div>
-          {videoImportError && <p className="mt-3 text-sm text-rose-600">{videoImportError}</p>}
+      {/* Import sections */}
+      <ImportSections
+        recipeImport={recipeImport}
+        createRecipe={createRecipeMutation.mutateAsync}
+        handleImportRecipe={handleImportRecipe}
+        saveImportedRecipe={saveImportedRecipe}
+      />
 
-          {isVideoImporting && !videoDraft && (
-            <div className="mt-6 grid gap-4 sm:grid-cols-2 animate-pulse">
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                <div className="h-4 w-24 rounded bg-slate-200" />
-                <div className="mt-3 h-6 w-3/4 rounded bg-slate-200" />
-                <div className="mt-3 h-40 w-full rounded bg-slate-200" />
-                <div className="mt-3 h-3 w-5/6 rounded bg-slate-200" />
-                <div className="mt-2 h-3 w-2/3 rounded bg-slate-200" />
-              </div>
-              <div className="rounded-lg border border-slate-200 bg-white p-4">
-                <div className="h-4 w-20 rounded bg-slate-200" />
-                <div className="mt-3 h-9 w-full rounded bg-slate-200" />
-                <div className="mt-2 h-9 w-1/2 rounded bg-slate-200" />
-                <div className="mt-4 h-9 w-32 rounded-full bg-slate-200" />
-              </div>
-            </div>
-          )}
+      {/* Saved recipes */}
+      <SavedRecipesSection
+        recipes={filteredRecipes}
+        allRecipesCount={recipes.length}
+        showFavoritesOnly={showFavoritesOnly}
+        onToggleFavorites={() => setShowFavoritesOnly(!showFavoritesOnly)}
+        searchQuery={recipeSearchQuery}
+        onSearchChange={setRecipeSearchQuery}
+        onDeleteAll={deleteAllRecipesMutation.mutateAsync}
+        onViewRecipe={modalState.openRecipeView}
+        onEditRecipe={modalState.openRecipeEdit}
+        onDeleteRecipe={deleteRecipeMutation.mutate}
+      />
 
-          {videoDraft && (
-            <div className={`mt-6 grid gap-4 ${videoDraft.instructions.length > 0 ? 'sm:grid-cols-2' : ''}`}>
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2"><ChefHat className="h-4 w-4 text-amber-500" /> Preview</h3>
-                <p className="mt-2 text-base font-medium text-slate-900">{videoDraft.name}</p>
-                {videoDraft.image && (
-                  <img src={videoDraft.image} alt="Recipe thumbnail" className="mt-2 w-full rounded" />
-                )}
-                {videoDraft.description && (
-                  <p className="mt-2 text-xs text-slate-600 line-clamp-4">{videoDraft.description}</p>
-                )}
-                <p className="mt-2 text-xs text-slate-500">Prep {videoDraft.prepTime} min • Cook {videoDraft.cookTime} min • Serves {videoDraft.servings}</p>
-                <div className={`mt-3 grid gap-4 ${videoDraft.instructions.length > 0 ? 'grid-cols-2' : 'grid-cols-1'}`}>
-                  <div>
-                    <p className="text-xs font-semibold text-slate-700">Ingredients</p>
-                    <ul className="mt-1 list-disc pl-4 text-xs text-slate-600 max-h-28 overflow-auto">
-                      {videoDraft.ingredients.map((i, idx) => <li key={idx}>{i.name}</li>)}
-                    </ul>
-                  </div>
-                  {videoDraft.instructions.length > 0 && (
-                    <div>
-                      <p className="text-xs font-semibold text-slate-700">Steps</p>
-                      <ol className="mt-1 list-decimal pl-4 text-xs text-slate-600 max-h-28 overflow-auto">
-                        {videoDraft.instructions.map((s, idx) => <li key={idx}>{s}</li>)}
-                      </ol>
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className="rounded-lg border border-slate-200 bg-white p-4">
-                <h3 className="text-sm font-semibold text-slate-900">Add to recipes</h3>
-                <div className="mt-4 flex gap-2">
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      if (!videoDraft) return;
-                      try { await createRecipeMutation.mutateAsync(videoDraft); setVideoDraft(null); }
-                      catch { setVideoImportError('Failed to save recipe'); }
-                    }}
-                    className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
-                  >
-                    <Save className="h-4 w-4" /> Save recipe
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setVideoDraft(null)}
-                    className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-        </form>
+      {/* Modals */}
+      <GroceryListModal
+        isOpen={modalState.showGroceryList}
+        onClose={() => modalState.setShowGroceryList(false)}
+        groceryList={groceryState.groceryList}
+        neededItems={groceryState.neededItems}
+        atHomeItems={groceryState.atHomeItems}
+        inCartItems={groceryState.inCartItems}
+        purchasedItems={groceryState.purchasedItems}
+        weekStartDate={weekNav.currentWeekStart}
+        updateItemStatus={groceryState.updateItemStatus}
+        getStatusColor={groceryState.getStatusColor}
+        onCopyCart={() => {
+          const text = groceryState.inCartItems
+            .map((item) => {
+              const amount =
+                item.amount && item.unit ? `${item.amount} ${item.unit}` : item.amount || '';
+              return `☐ ${amount} ${item.name}`.trim();
+            })
+            .join('\n');
+          navigator.clipboard.writeText(text);
+          showGlobalToast('Shopping list copied to clipboard!', 'success');
+        }}
+      />
 
-        <form onSubmit={handleImportRecipe} className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
-            <CalendarDays className="h-5 w-5 text-indigo-600" />
-            Clip from URL
-          </h2>
-          <p className="mt-1 text-sm text-slate-600">Paste a recipe link. We’ll fetch title, image, ingredients and steps.</p>
-          <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-            <input
-              value={importUrl}
-              onChange={(event) => setImportUrl(event.target.value)}
-              placeholder="https://example.com/recipe/..."
-              className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
-            />
-            <button
-              type="submit"
-              disabled={isImporting}
-              className="inline-flex items-center justify-center gap-2 rounded-full bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:opacity-60"
-            >
-              {isImporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-              Clip recipe
-            </button>
-          </div>
-          {importError && <p className="mt-3 text-sm text-rose-600">{importError}</p>}
+      <CopyWeekModal
+        isOpen={modalState.showCopyWeek}
+        onClose={() => modalState.setShowCopyWeek(false)}
+        sourceWeekStart={weekNav.currentWeekStart}
+        targetWeekStart={copyTargetWeek}
+        onTargetWeekChange={(d) => setCopyTargetWeek(startOfWeek(d, { weekStartsOn }))}
+        mealCount={plannedMeals.length}
+        weekStartsOn={weekStartsOn}
+        onCopy={handleCopyWeek}
+      />
 
-          {isImporting && !importDraft && (
-            <div className="mt-6 grid gap-4 sm:grid-cols-2 animate-pulse">
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                <div className="h-4 w-24 rounded bg-slate-200" />
-                <div className="mt-3 h-6 w-3/4 rounded bg-slate-200" />
-                <div className="mt-3 h-40 w-full rounded bg-slate-200" />
-                <div className="mt-3 h-3 w-5/6 rounded bg-slate-200" />
-                <div className="mt-2 h-3 w-2/3 rounded bg-slate-200" />
-              </div>
-              <div className="rounded-lg border border-slate-200 bg-white p-4">
-                <div className="h-4 w-20 rounded bg-slate-200" />
-                <div className="mt-3 h-9 w-full rounded bg-slate-200" />
-                <div className="mt-2 h-9 w-1/2 rounded bg-slate-200" />
-                <div className="mt-4 h-9 w-32 rounded-full bg-slate-200" />
-              </div>
-            </div>
-          )}
-
-          {importDraft && (
-            <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2"><ChefHat className="h-4 w-4 text-amber-500" /> Preview</h3>
-                <p className="mt-2 text-base font-medium text-slate-900">{importDraft.name}</p>
-                {importDraft.image && (
-                  <img src={importDraft.image} alt="Recipe thumbnail" className="mt-2 w-full rounded" />
-                )}
-                {importDraft.description && (
-                  <p className="mt-2 text-xs text-slate-600 line-clamp-4">{importDraft.description}</p>
-                )}
-                <p className="mt-2 text-xs text-slate-500">Prep {importDraft.prepTime} min • Cook {importDraft.cookTime} min • Serves {importDraft.servings}</p>
-              </div>
-              <div className="rounded-lg border border-slate-200 bg-white p-4">
-                <h3 className="text-sm font-semibold text-slate-900">Save</h3>
-                <div className="mt-4 flex gap-2">
-                  <button
-                    type="button"
-                    onClick={saveImportedRecipe}
-                    className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
-                  >
-                    <Save className="h-4 w-4" /> Save recipe
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setImportDraft(null)}
-                    className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-        </form>
-
-        {/* Paste Text → Recipe */}
-        <form
-          onSubmit={async (e) => {
-            e.preventDefault();
-            if (!textInput.trim()) return;
-            setIsTextParsing(true);
-            setTextError(null);
-            try {
-              const draft = parseTextToRecipe(textInput.trim(), textTitle.trim());
-              setTextDraft(draft);
-            } catch (err) {
-              const msg = err instanceof Error ? err.message : 'Unable to parse text.';
-              setTextError(msg);
-            } finally {
-              setIsTextParsing(false);
-            }
-          }}
-          className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
-        >
-          <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
-            <ChefHat className="h-5 w-5 text-amber-600" />
-            Paste Text
-          </h2>
-          <p className="mt-1 text-sm text-slate-600">Paste any recipe text. We’ll extract ingredients and directions heuristically.</p>
-          <div className="mt-3 grid gap-3">
-            <input
-              value={textTitle}
-              onChange={(e) => setTextTitle(e.target.value)}
-              placeholder="Optional title"
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
-            />
-            <input
-              value={textImageUrl}
-              onChange={(e) => setTextImageUrl(e.target.value)}
-              placeholder="Optional image URL"
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
-            />
-            <textarea
-              rows={8}
-              value={textInput}
-              onChange={(e) => setTextInput(e.target.value)}
-              placeholder="Ingredients and directions..."
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
-            />
-          </div>
-          <div className="mt-3 flex gap-2">
-            <button
-              type="submit"
-              disabled={isTextParsing}
-              className="inline-flex items-center justify-center gap-2 rounded-full bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:opacity-60"
-            >
-              {isTextParsing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-              Parse text
-            </button>
-            <button
-              type="button"
-              onClick={() => { setTextInput(''); setTextTitle(''); setTextImageUrl(''); setTextError(null); setTextDraft(null); }}
-              className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
-            >
-              Clear
-            </button>
-          </div>
-          {textError && <p className="mt-3 text-sm text-rose-600">{textError}</p>}
-
-          {textDraft && (
-            <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2"><ChefHat className="h-4 w-4 text-amber-500" /> Preview</h3>
-                <p className="mt-2 text-base font-medium text-slate-900">{textDraft.name}</p>
-                { (textDraft.image || textImageUrl) && (
-                  <img src={textDraft.image || textImageUrl} alt="Recipe" className="mt-2 w-full rounded object-cover" />
-                )}
-                {textDraft.description && (
-                  <p className="mt-2 text-xs text-slate-600 line-clamp-4">{textDraft.description}</p>
-                )}
-                <p className="mt-2 text-xs text-slate-500">Prep {textDraft.prepTime} min • Cook {textDraft.cookTime} min • Serves {textDraft.servings}</p>
-                <div className="mt-3 grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <p className="text-xs font-semibold text-slate-700">Ingredients</p>
-                    <ul className="mt-1 list-disc pl-4 text-xs text-slate-600 max-h-36 overflow-auto">
-                      {textDraft.ingredients.map((i, idx) => <li key={idx}>{i.name}</li>)}
-                    </ul>
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-slate-700">Steps</p>
-                    <ol className="mt-1 list-decimal pl-4 text-xs text-slate-600 max-h-36 overflow-auto">
-                      {textDraft.instructions.map((s, idx) => <li key={idx}>{s}</li>)}
-                    </ol>
-                  </div>
-                </div>
-                {(textDraft.tags?.some(t => t.startsWith('equip:')) || textDraft.notes) && (
-                  <div className="mt-3 grid gap-4 sm:grid-cols-2">
-                    {textDraft.tags?.some(t => t.startsWith('equip:')) && (
-                      <div>
-                        <p className="text-xs font-semibold text-slate-700">Equipment</p>
-                        <ul className="mt-1 list-disc pl-4 text-xs text-slate-600 max-h-28 overflow-auto">
-                          {textDraft.tags.filter(t => t.startsWith('equip:')).map((t, i) => <li key={i}>{t.replace('equip:','')}</li>)}
-                        </ul>
-                      </div>
-                    )}
-                    {textDraft.notes && (
-                      <div>
-                        <p className="text-xs font-semibold text-slate-700">Tips</p>
-                        <div className="mt-1 text-xs text-slate-600 whitespace-pre-wrap max-h-28 overflow-auto">{textDraft.notes}</div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-              <div className="rounded-lg border border-slate-200 bg-white p-4">
-                <h3 className="text-sm font-semibold text-slate-900">Add to recipes</h3>
-                <div className="mt-4 flex gap-2">
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      if (!textDraft) return;
-                      try {
-                        await createRecipeMutation.mutateAsync({ ...textDraft, image: (textDraft.image || textImageUrl) || undefined });
-                        setTextDraft(null);
-                        setTextImageUrl('');
-                      } catch (e) {
-                        logger.error('MealPlanning', 'Save recipe failed', e);
-                        const msg = e instanceof Error ? e.message : 'Failed to save recipe';
-                        setTextError(msg);
-                      }
-                    }}
-                    className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
-                  >
-                    <Save className="h-4 w-4" /> Save recipe
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setTextDraft(null)}
-                    className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-        </form>
-      </section>
-
-      <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-slate-900">Saved recipes</h2>
-          <div className="flex items-center gap-2">
-            {recipes.length > 0 && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
-                  className={`text-xs rounded-md px-3 py-1 transition ${
-                    showFavoritesOnly
-                      ? 'bg-pink-600 text-white hover:bg-pink-500'
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                  }`}
-                  title={showFavoritesOnly ? 'Show all recipes' : 'Show favorites only'}
-                >
-                  <Heart className={`inline h-3 w-3 mr-1 ${showFavoritesOnly ? 'fill-current' : ''}`} />
-                  {showFavoritesOnly ? 'Favorites' : 'All'}
-                </button>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    if (confirm('Delete ALL saved recipes? This cannot be undone.')) {
-                      try {
-                        await deleteAllRecipesMutation.mutateAsync();
-                      } catch (e) {
-                        logger.error('MealPlanning', 'Failed to delete all recipes', e)
-                      }
-                    }
-                  }}
-                  className="text-xs rounded-md px-3 py-1 bg-rose-600 text-white hover:bg-rose-500"
-                  title="Delete all saved recipes"
-                >
-                  Delete all
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-        <p className="text-sm text-slate-600">
-          {recipes.length === 0 ? 'Your clipped recipes.' : `${filteredRecipes.length} of ${recipes.length} recipes${showFavoritesOnly ? ' (favorites)' : ''}`}
-        </p>
-
-        {recipes.length > 0 && (
-          <div className="mt-4 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <input
-              type="text"
-              value={recipeSearchQuery}
-              onChange={(e) => setRecipeSearchQuery(e.target.value)}
-              placeholder="Search recipes by name, tags, cuisine, or difficulty..."
-              className="w-full pl-10 pr-10 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            />
-            {recipeSearchQuery && (
-              <button
-                type="button"
-                onClick={() => setRecipeSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                aria-label="Clear search"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
-          </div>
-        )}
-
-        {recipes.length === 0 ? (
-          <div className="mt-4 rounded-lg border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-slate-500">
-            Clip a recipe above to get started.
-          </div>
-        ) : filteredRecipes.length === 0 ? (
-          <div className="mt-4 rounded-lg border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-slate-500">
-            No recipes match your search. Try different keywords.
-          </div>
-        ) : (
-          <>
-            <SavedRecipesList recipes={filteredRecipes} />
-          </>
-        )}
-      </section>
-
-      {/* Enhanced Interactive Grocery List Modal */}
-      {showGroceryList && (
-        <ModalShell
-          title="Smart Grocery List"
-          subtitle={`Week of ${format(currentWeekStart, 'MMM d, yyyy')}`}
-          onClose={() => setShowGroceryList(false)}
-          maxWidthClass="max-w-4xl"
-        >
-            <div className="space-y-4">
-              {/* Status Summary */}
-              <div className="grid grid-cols-4 gap-3">
-                <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-center">
-                  <div className="text-2xl font-bold text-slate-900">{neededItems.length}</div>
-                  <div className="text-xs text-slate-600">Needed</div>
-                </div>
-                <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-center">
-                  <div className="text-2xl font-bold text-green-700">{atHomeItems.length}</div>
-                  <div className="text-xs text-green-600">At Home</div>
-                </div>
-                <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-3 text-center">
-                  <div className="text-2xl font-bold text-indigo-700">{inCartItems.length}</div>
-                  <div className="text-xs text-indigo-600">In Cart</div>
-                </div>
-                <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-center">
-                  <div className="text-2xl font-bold text-gray-600">{purchasedItems.length}</div>
-                  <div className="text-xs text-gray-500">Purchased</div>
-                </div>
-              </div>
-
-              {groceryList.length === 0 ? (
-                <div className="py-12 text-center text-slate-500">
-                  <ChefHat className="w-16 h-16 mx-auto text-slate-300 mb-4" />
-                  <p className="text-lg font-medium">No recipes with ingredients in this week's plan.</p>
-                  <p className="mt-1 text-sm">Add some recipes to your meal plan to generate a grocery list.</p>
-                </div>
-              ) : (
-                <div className="max-h-[400px] overflow-auto">
-                  {/* Needed Items */}
-                  {neededItems.length > 0 && (
-                    <div className="mb-4">
-                      <h3 className="text-sm font-semibold text-slate-700 mb-2 sticky top-0 bg-white py-2">
-                        Items to Buy ({neededItems.length})
-                      </h3>
-                      <ul className="space-y-2">
-                        {neededItems.map((item) => (
-                          <li key={item.id} className={`flex items-start gap-3 rounded-lg border p-3 transition ${getStatusColor(item.status)}`}>
-                            <div className="flex-1">
-                              <div className="font-medium">
-                                {item.amount && item.unit ? `${item.amount} ${item.unit} ` : item.amount ? `${item.amount} ` : ''}
-                                {item.name}
-                              </div>
-                              <div className="mt-0.5 text-xs opacity-70">
-                                For: {item.recipes.join(', ')}
-                              </div>
-                            </div>
-                            <div className="flex gap-1">
-                              <button
-                                type="button"
-                                onClick={() => updateGroceryItemStatus(item.id, 'at_home')}
-                                className="rounded px-2 py-1 text-xs font-medium bg-green-100 text-green-700 hover:bg-green-200"
-                                title="Mark as at home"
-                              >
-                                At Home
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => updateGroceryItemStatus(item.id, 'in_cart')}
-                                className="rounded px-2 py-1 text-xs font-medium bg-indigo-100 text-indigo-700 hover:bg-indigo-200"
-                                title="Add to cart"
-                              >
-                                Add to Cart
-                              </button>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {/* In Cart Items */}
-                  {inCartItems.length > 0 && (
-                    <div className="mb-4">
-                      <h3 className="text-sm font-semibold text-indigo-700 mb-2 sticky top-0 bg-white py-2">
-                        In Your Cart ({inCartItems.length})
-                      </h3>
-                      <ul className="space-y-2">
-                        {inCartItems.map((item) => (
-                          <li key={item.id} className={`flex items-start gap-3 rounded-lg border p-3 transition ${getStatusColor(item.status)}`}>
-                            <div className="flex-1">
-                              <div className="font-medium">
-                                {item.amount && item.unit ? `${item.amount} ${item.unit} ` : item.amount ? `${item.amount} ` : ''}
-                                {item.name}
-                              </div>
-                              <div className="mt-0.5 text-xs opacity-70">
-                                For: {item.recipes.join(', ')}
-                              </div>
-                            </div>
-                            <div className="flex gap-1">
-                              <button
-                                type="button"
-                                onClick={() => updateGroceryItemStatus(item.id, 'needed')}
-                                className="rounded px-2 py-1 text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200"
-                                title="Move back to needed"
-                              >
-                                Remove
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => updateGroceryItemStatus(item.id, 'purchased')}
-                                className="rounded px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200"
-                                title="Mark as purchased"
-                              >
-                                Purchased
-                              </button>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {/* At Home Items */}
-                  {atHomeItems.length > 0 && (
-                    <div className="mb-4">
-                      <h3 className="text-sm font-semibold text-green-700 mb-2 sticky top-0 bg-white py-2">
-                        Already at Home ({atHomeItems.length})
-                      </h3>
-                      <ul className="space-y-2">
-                        {atHomeItems.map((item) => (
-                          <li key={item.id} className={`flex items-start gap-3 rounded-lg border p-3 transition ${getStatusColor(item.status)}`}>
-                            <div className="flex-1">
-                              <div className="font-medium">
-                                {item.amount && item.unit ? `${item.amount} ${item.unit} ` : item.amount ? `${item.amount} ` : ''}
-                                {item.name}
-                              </div>
-                              <div className="mt-0.5 text-xs opacity-70">
-                                For: {item.recipes.join(', ')}
-                              </div>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => updateGroceryItemStatus(item.id, 'needed')}
-                              className="rounded px-2 py-1 text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200"
-                              title="Move back to needed"
-                            >
-                              Need to Buy
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div className="border-t border-slate-200 pt-4 flex items-center justify-between">
-              <div className="text-sm text-slate-600">
-                <span className="font-medium">{groceryList.length}</span> total items •
-                <span className="font-medium text-indigo-600"> {inCartItems.length}</span> in cart
-              </div>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const text = inCartItems.map(item => {
-                      const amount = item.amount && item.unit ? `${item.amount} ${item.unit}` : item.amount || '';
-                      return `☐ ${amount} ${item.name}`.trim();
-                    }).join('\n');
-                    navigator.clipboard.writeText(text);
-                    showGlobalToast('Shopping list copied to clipboard!', 'success');
-                  }}
-                  className="rounded-md border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                >
-                  Copy Cart List
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowGroceryList(false)}
-                  className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
-                >
-                  Done
-                </button>
-              </div>
-            </div>
-        </ModalShell>
-      )}
-
-      {/* Copy Week Modal */}
-      {showCopyWeek && (
-        <ModalShell
-          title="Copy Week"
-          subtitle={`Copy meals from week of ${format(currentWeekStart, 'MMM d, yyyy')}`}
-          onClose={() => setShowCopyWeek(false)}
-          maxWidthClass="max-w-md"
-        >
-          <div className="space-y-4">
-            <p className="text-sm text-slate-600">
-              Select the target week to copy all {plannedMeals.length} meal{plannedMeals.length !== 1 ? 's' : ''} to:
-            </p>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Target Week Start Date
-              </label>
-              <DatePickerPopover
-                value={copyTargetWeek}
-                onChange={(d) => setCopyTargetWeek(startOfWeek(d, { weekStartsOn }))}
-                weekStartsOn={weekStartsOn}
-              />
-              <p className="mt-2 text-xs text-slate-500">
-                Week of {format(copyTargetWeek, 'MMM d')} - {format(addDays(copyTargetWeek, 6), 'MMM d, yyyy')}
-              </p>
-            </div>
-
-            {plannedMeals.length === 0 && (
-              <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 text-sm text-amber-800">
-                Current week has no meals to copy.
-              </div>
-            )}
-
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200">
-              <button
-                type="button"
-                onClick={() => setShowCopyWeek(false)}
-                className="rounded-md px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={plannedMeals.length === 0}
-                onClick={async () => {
-                  try {
-                    // Find or create meal plan for target week
-                    let targetPlan = mealPlans.find(p => isSameWeek(ensureDate(p.weekStartDate), copyTargetWeek, { weekStartsOn }));
-
-                    if (!targetPlan) {
-                      targetPlan = await createMealPlanMutation.mutateAsync({
-                        weekStartDate: copyTargetWeek,
-                        name: 'Meal plan',
-                        weekStartsOn
-                      });
-                    }
-
-                    if (!targetPlan) {
-                      showGlobalToast('Failed to create target week plan', 'error');
-                      return;
-                    }
-
-                    // Calculate day offset between weeks
-                    const daysDiff = Math.floor((copyTargetWeek.getTime() - currentWeekStart.getTime()) / (1000 * 60 * 60 * 24));
-
-                    // Copy all meals with adjusted dates
-                    const copyPromises = plannedMeals.map(meal => {
-                      const originalDate = ensureDate(meal.date);
-                      const newDate = addDays(originalDate, daysDiff);
-
-                      return createPlannedMealMutation.mutateAsync({
-                        planId: targetPlan.id,
-                        meal: {
-                          date: newDate,
-                          mealType: meal.mealType,
-                          recipeId: meal.recipeId,
-                          customMeal: meal.customMeal,
-                          servings: meal.servings || 4,
-                          peopleCount: meal.peopleCount || meal.servings || 4,
-                          status: 'planned',
-                          notes: meal.notes,
-                          preparedAt: undefined,
-                          consumedAt: undefined,
-                        }
-                      });
-                    });
-
-                    await Promise.all(copyPromises);
-                    showGlobalToast(`Copied ${plannedMeals.length} meals to target week`, 'success');
-                    setShowCopyWeek(false);
-
-                    // Optionally navigate to the target week
-                    setCurrentWeekStart(copyTargetWeek);
-                  } catch (error) {
-                    logger.error('MealPlanning', 'Failed to copy week:', error);
-                    showGlobalToast('Failed to copy meals', 'error');
-                  }
-                }}
-                className="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
-              >
-                Copy {plannedMeals.length} Meal{plannedMeals.length !== 1 ? 's' : ''}
-              </button>
-            </div>
-          </div>
-        </ModalShell>
-      )}
-
-      {/* Modal for creating recipe from custom meal */}
-      {recipeFormModal && (
+      {modalState.recipeFormModal && (
         <QuickRecipeModal
-          initialName={recipeFormModal.initialName}
-          onSave={recipeFormModal.onSave}
-          onClose={() => setRecipeFormModal(null)}
+          initialName={modalState.recipeFormModal.initialName}
+          onSave={modalState.recipeFormModal.onSave}
+          onClose={modalState.closeRecipeForm}
         />
       )}
 
-      {/* Modal for editing existing recipe */}
-      {simpleEditModal && (
+      {modalState.simpleEditModal && (
         <SimpleRecipeEditModal
-          recipe={simpleEditModal.recipe}
-          onSave={simpleEditModal.onSave}
-          onClose={() => setSimpleEditModal(null)}
+          recipe={modalState.simpleEditModal.recipe}
+          onSave={modalState.simpleEditModal.onSave}
+          onClose={modalState.closeSimpleEdit}
+        />
+      )}
+
+      {modalState.editingRecipeId && (
+        <RecipeEditModal
+          recipe={recipes.find((r) => r.id === modalState.editingRecipeId)!}
+          onClose={modalState.closeRecipeEdit}
+        />
+      )}
+
+      {modalState.viewingRecipeId && (
+        <RecipeViewModal
+          recipe={recipes.find((r) => r.id === modalState.viewingRecipeId)!}
+          onClose={modalState.closeRecipeView}
+          onEdit={() => {
+            modalState.openRecipeEdit(modalState.viewingRecipeId!);
+            modalState.closeRecipeView();
+          }}
         />
       )}
     </div>
   );
 };
 
-function SavedRecipesList({ recipes }: { recipes: Recipe[] }) {
-  const deleteRecipeMutation = useDeleteRecipeMutation();
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [viewingId, setViewingId] = useState<string | null>(null);
-  const editRecipe = useMemo(() => recipes.find((r) => r.id === editingId) || null, [editingId, recipes]);
-  const viewRecipe = useMemo(() => recipes.find((r) => r.id === viewingId) || null, [viewingId, recipes]);
+// Selection toolbar component
+function SelectionToolbar({
+  selectedCount,
+  query,
+  onQueryChange,
+  matches,
+  selectedIndex,
+  onIndexChange,
+  onKeyDown,
+  inputRef,
+  showList,
+  onShowListChange,
+  onAddMeal,
+  onClearSelection,
+}: any) {
   return (
-    <>
-      <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {recipes.map((r) => (
-          <RecipeCard
-            key={r.id}
-            recipe={r}
-            onView={() => setViewingId(r.id!)}
-            onEdit={() => setEditingId(r.id!)}
-            onDelete={() => deleteRecipeMutation.mutate(r.id!)}
+    <section className="rounded-lg border-2 border-indigo-500 bg-indigo-50 p-3 sm:p-4 shadow-lg animate-in slide-in-from-top">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-600 text-white font-semibold text-sm">
+              {selectedCount}
+            </div>
+            <span className="text-sm font-medium text-indigo-900">
+              {selectedCount} cell{selectedCount > 1 ? 's' : ''} selected
+            </span>
+          </div>
+          <span className="text-xs text-indigo-600">
+            <span className="hidden sm:inline">Cmd/Ctrl + click to select more cells</span>
+            <span className="sm:hidden">Tap cells to select</span>
+          </span>
+        </div>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          <div className="relative w-full sm:w-64">
+            <input
+              ref={inputRef}
+              type="text"
+              value={query}
+              onChange={(e) => {
+                onQueryChange(e.target.value);
+                onShowListChange(true);
+              }}
+              onFocus={() => onShowListChange(true)}
+              onBlur={() => setTimeout(() => onShowListChange(false), 200)}
+              onKeyDown={onKeyDown}
+              placeholder="Type meal name..."
+              className="w-full rounded-md border border-indigo-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+            {showList &&
+              query.trim().length > 0 &&
+              inputRef.current &&
+              createPortal(
+                <MultiCellDropdown
+                  matches={matches}
+                  selectedIndex={selectedIndex}
+                  onIndexChange={onIndexChange}
+                  onAddMeal={onAddMeal}
+                  onClose={() => onShowListChange(false)}
+                  query={query}
+                  inputRef={inputRef}
+                />,
+                document.body
+              )}
+          </div>
+          <button
+            type="button"
+            onClick={onClearSelection}
+            className="rounded-md border border-indigo-300 px-4 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-100 transition"
+          >
+            Clear Selection
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// Multi-cell dropdown component
+function MultiCellDropdown({ matches, selectedIndex, onIndexChange, onAddMeal, onClose, query, inputRef }: any) {
+  return (
+    <div
+      className="fixed z-[100] min-w-[240px] max-w-[320px] rounded-lg border border-slate-200 bg-white shadow-2xl ring-1 ring-black/5"
+      style={{
+        left: inputRef.current.getBoundingClientRect().left,
+        top: inputRef.current.getBoundingClientRect().bottom + 4,
+      }}
+    >
+      {matches.length === 0 ? (
+        <button
+          type="button"
+          className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-slate-700 hover:bg-indigo-50 transition-colors first:rounded-t-lg last:rounded-b-lg"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={async () => {
+            await onAddMeal('', query.trim());
+            onClose();
+          }}
+        >
+          <span className="flex h-6 w-6 items-center justify-center rounded-md bg-indigo-100 text-xs font-semibold text-indigo-700">
+            +
+          </span>
+          <div className="flex-1 min-w-0">
+            <div className="truncate font-medium">Add "{query.trim()}"</div>
+            <div className="text-xs text-slate-500">Create new meal</div>
+          </div>
+        </button>
+      ) : (
+        <div className="max-h-[280px] overflow-auto py-1">
+          {matches.map((r: any, idx: number) => {
+            const isSelected = idx === selectedIndex;
+            const isRecipe = r.type === 'recipe';
+            const isCustom = r.type === 'custom';
+            return (
+              <button
+                key={`${r.id}-${idx}`}
+                type="button"
+                className={`flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors ${
+                  isSelected ? 'bg-indigo-50 text-indigo-900' : 'text-slate-700 hover:bg-slate-50'
+                }`}
+                onMouseDown={(e) => e.preventDefault()}
+                onMouseEnter={() => onIndexChange(idx)}
+                onClick={async () => {
+                  if (isCustom) {
+                    await onAddMeal('', r.name);
+                  } else {
+                    await onAddMeal(r.id);
+                  }
+                  onClose();
+                }}
+              >
+                <span
+                  className={`flex h-6 w-6 items-center justify-center rounded-md text-xs font-semibold ${
+                    isRecipe
+                      ? 'bg-emerald-100 text-emerald-700'
+                      : isCustom
+                        ? 'bg-amber-100 text-amber-700'
+                        : 'bg-slate-100 text-slate-700'
+                  }`}
+                >
+                  {isRecipe ? '📖' : isCustom ? '⭐' : '🍽️'}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <div className="truncate font-medium">{r.name}</div>
+                  <div className="text-xs text-slate-500">
+                    {isRecipe ? 'Recipe' : isCustom ? `Used ${r.count || 1}x` : 'Meal option'}
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Weekly grid component
+function WeeklyGrid({
+  weekDays,
+  mealsByDate,
+  recipes,
+  activePlan,
+  selectedCells,
+  makeCellKey,
+  onCellClick,
+  onShowRecipeForm,
+  onShowSimpleEdit,
+  createPlannedMeal,
+  updatePlannedMeal,
+}: any) {
+  return (
+    <div className="mt-6">
+      <div className="overflow-x-auto">
+        {/* Header row */}
+        <div className="grid" style={{ gridTemplateColumns: `140px repeat(4, minmax(160px, 1fr))` }}>
+          <div className="p-3 border-b border-r border-slate-200 sticky left-0 bg-white z-20" />
+          {MEAL_TYPES.map((mealType) => (
+            <div
+              key={mealType}
+              className="p-3 border-b border-r border-slate-200 text-sm font-semibold text-slate-900 bg-white text-center capitalize"
+            >
+              {mealType}
+            </div>
+          ))}
+        </div>
+        {/* Day rows */}
+        {weekDays.map((d: Date) => {
+          const key = toKey(d);
+          const today = new Date();
+          const highlight = isSameDay(d, today);
+          return (
+            <div key={key} className="grid" style={{ gridTemplateColumns: `140px repeat(4, minmax(160px, 1fr))` }}>
+              {/* Day label */}
+              <div
+                className={`relative p-3 border-b border-r border-slate-200 bg-slate-50 text-sm font-medium text-slate-800 flex flex-col justify-center sticky left-0 z-10`}
+              >
+                {highlight && (
+                  <div className="absolute inset-y-0 left-0 w-1 bg-indigo-500 rounded-r-sm" aria-hidden />
+                )}
+                <div className={highlight ? 'text-indigo-700 font-semibold' : ''}>{format(d, 'EEE')}</div>
+                <div className="text-xs text-slate-500">{format(d, 'MMM d')}</div>
+              </div>
+              {MEAL_TYPES.map((mealType) => {
+                const dayMeals = (mealsByDate[key] ?? []).filter((m: PlannedMeal) => m.mealType === mealType);
+                const cellKey = makeCellKey(key, mealType);
+                const isSelected = selectedCells.has(cellKey);
+                const hasContent = dayMeals.length > 0;
+
+                return (
+                  <div
+                    key={`${key}-${mealType}`}
+                    className={`relative p-3 border-b border-l border-r border-slate-200 overflow-hidden cursor-pointer transition-colors ${
+                      isSelected ? 'bg-indigo-100 border-indigo-400 ring-2 ring-indigo-400' : ''
+                    } ${hasContent ? 'bg-amber-50/30' : ''}`}
+                    onClick={(e) => onCellClick(key, mealType, e)}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={async (e) => {
+                      if (!activePlan) return;
+                      const optionName = e.dataTransfer.getData('text/meal-option');
+                      if (optionName) {
+                        await createPlannedMeal({
+                          planId: activePlan.id,
+                          meal: {
+                            date: parseLocalDateKey(key),
+                            mealType,
+                            recipeId: undefined,
+                            customMeal: optionName,
+                            servings: 4,
+                            peopleCount: 4,
+                            status: 'planned',
+                            notes: undefined,
+                            preparedAt: undefined,
+                            consumedAt: undefined,
+                          },
+                        });
+                        return;
+                      }
+
+                      const recipeDragged = e.dataTransfer.getData('text/recipe-id');
+                      if (recipeDragged) {
+                        await createPlannedMeal({
+                          planId: activePlan.id,
+                          meal: {
+                            date: parseLocalDateKey(key),
+                            mealType,
+                            recipeId: recipeDragged,
+                            customMeal: undefined,
+                            servings: 4,
+                            peopleCount: 4,
+                            status: 'planned',
+                            notes: undefined,
+                            preparedAt: undefined,
+                            consumedAt: undefined,
+                          },
+                        });
+                        return;
+                      }
+
+                      const mealId = e.dataTransfer.getData('text/meal-id');
+                      if (!mealId) return;
+                      if (e.altKey) {
+                        const source = activePlan.meals?.find((m: PlannedMeal) => m.id === mealId);
+                        if (!source) return;
+                        await createPlannedMeal({
+                          planId: activePlan.id,
+                          meal: {
+                            date: parseLocalDateKey(key),
+                            mealType,
+                            recipeId: source.recipeId,
+                            customMeal: source.customMeal,
+                            servings: source.servings ?? 4,
+                            peopleCount: source.peopleCount ?? source.servings ?? 4,
+                            status: 'planned',
+                            notes: undefined,
+                            preparedAt: undefined,
+                            consumedAt: undefined,
+                          },
+                        });
+                      } else {
+                        await updatePlannedMeal({
+                          mealId,
+                          updates: { date: parseLocalDateKey(key), mealType },
+                        });
+                      }
+                    }}
+                  >
+                    {highlight && <div className="absolute inset-y-0 left-0 w-1 bg-indigo-300" aria-hidden />}
+                    {hasContent && (
+                      <div className="absolute top-1 right-1 z-10">
+                        <ChefHat className="w-4 h-4 text-amber-600" />
+                      </div>
+                    )}
+                    <div className="h-full overflow-auto space-y-2 group/cell relative">
+                      {dayMeals.length > 0 ? (
+                        <CellWithMeals
+                          dateKey={key}
+                          mealType={mealType}
+                          dayMeals={dayMeals}
+                          recipes={recipes}
+                          onShowRecipeForm={onShowRecipeForm}
+                          onShowSimpleEdit={onShowSimpleEdit}
+                          renderAddControl={(triggerRef) => (
+                            <AddMealControl
+                              dateKey={key}
+                              mealType={mealType}
+                              showByDefault={false}
+                              compact={true}
+                              triggerRef={triggerRef}
+                            />
+                          )}
+                        />
+                      ) : (
+                        <AddMealControl dateKey={key} mealType={mealType} showByDefault={true} compact={false} />
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// Import sections component
+function ImportSections({ recipeImport, createRecipe, handleImportRecipe, saveImportedRecipe }: any) {
+  return (
+    <section className="grid gap-6 lg:grid-cols-2">
+      {/* Video to Recipe (YouTube) */}
+      <form
+        onSubmit={async (e) => {
+          e.preventDefault();
+          await recipeImport.importFromVideo();
+        }}
+        className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
+      >
+        <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
+          <Youtube className="h-5 w-5 text-rose-600" />
+          Video to Recipe
+        </h2>
+        <p className="mt-1 text-sm text-slate-600">
+          Paste a YouTube link. We'll extract the title, thumbnail, ingredients and steps from the description.
+        </p>
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+          <input
+            value={recipeImport.videoUrl}
+            onChange={(e) => recipeImport.setVideoUrl(e.target.value)}
+            placeholder="https://www.youtube.com/watch?v=..."
+            className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
           />
-        ))}
-      </ul>
-      {viewRecipe && <RecipeViewModal recipe={viewRecipe} onClose={() => setViewingId(null)} onEdit={() => { setEditingId(viewRecipe.id!); setViewingId(null); }} />}
-      {editRecipe && <RecipeEditModal recipe={editRecipe} onClose={() => setEditingId(null)} />}
-    </>
+          <select
+            value={recipeImport.videoLang}
+            onChange={(e) => recipeImport.setVideoLang(e.target.value)}
+            className="rounded-lg border border-slate-300 px-2 py-2 text-sm focus:border-indigo-500 focus:outline-none"
+            title="Caption language"
+          >
+            <option value="en">English</option>
+            <option value="es">Spanish</option>
+            <option value="fr">French</option>
+            <option value="de">German</option>
+            <option value="it">Italian</option>
+            <option value="pt">Portuguese</option>
+            <option value="hi">Hindi</option>
+            <option value="ja">Japanese</option>
+          </select>
+          <button
+            type="submit"
+            disabled={recipeImport.isVideoImporting}
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-rose-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-rose-500 disabled:opacity-60"
+          >
+            {recipeImport.isVideoImporting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Plus className="h-4 w-4" />
+            )}
+            Convert
+          </button>
+        </div>
+        {recipeImport.videoImportError && (
+          <p className="mt-3 text-sm text-rose-600">{recipeImport.videoImportError}</p>
+        )}
+
+        {recipeImport.videoDraft && (
+          <RecipeDraftPreview
+            draft={recipeImport.videoDraft}
+            onSave={async () => {
+              try {
+                await createRecipe(recipeImport.videoDraft);
+                recipeImport.clearVideoImport();
+              } catch {
+                recipeImport.setVideoImportError?.('Failed to save recipe');
+              }
+            }}
+            onCancel={recipeImport.clearVideoImport}
+          />
+        )}
+      </form>
+
+      {/* Clip from URL */}
+      <form onSubmit={handleImportRecipe} className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
+          <CalendarDays className="h-5 w-5 text-indigo-600" />
+          Clip from URL
+        </h2>
+        <p className="mt-1 text-sm text-slate-600">
+          Paste a recipe link. We'll fetch title, image, ingredients and steps.
+        </p>
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+          <input
+            value={recipeImport.importUrl}
+            onChange={(e) => recipeImport.setImportUrl(e.target.value)}
+            placeholder="https://example.com/recipe/..."
+            className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
+          />
+          <button
+            type="submit"
+            disabled={recipeImport.isImporting}
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:opacity-60"
+          >
+            {recipeImport.isImporting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Plus className="h-4 w-4" />
+            )}
+            Clip recipe
+          </button>
+        </div>
+        {recipeImport.importError && <p className="mt-3 text-sm text-rose-600">{recipeImport.importError}</p>}
+
+        {recipeImport.importDraft && (
+          <RecipeDraftPreview
+            draft={recipeImport.importDraft}
+            onSave={saveImportedRecipe}
+            onCancel={recipeImport.clearUrlImport}
+          />
+        )}
+      </form>
+
+      {/* Paste Text */}
+      <form
+        onSubmit={async (e) => {
+          e.preventDefault();
+          await recipeImport.parseFromText();
+        }}
+        className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
+      >
+        <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
+          <ChefHat className="h-5 w-5 text-amber-600" />
+          Paste Text
+        </h2>
+        <p className="mt-1 text-sm text-slate-600">
+          Paste any recipe text. We'll extract ingredients and directions heuristically.
+        </p>
+        <div className="mt-3 grid gap-3">
+          <input
+            value={recipeImport.textTitle}
+            onChange={(e) => recipeImport.setTextTitle(e.target.value)}
+            placeholder="Optional title"
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
+          />
+          <input
+            value={recipeImport.textImageUrl}
+            onChange={(e) => recipeImport.setTextImageUrl(e.target.value)}
+            placeholder="Optional image URL"
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
+          />
+          <textarea
+            rows={8}
+            value={recipeImport.textInput}
+            onChange={(e) => recipeImport.setTextInput(e.target.value)}
+            placeholder="Ingredients and directions..."
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
+          />
+        </div>
+        <div className="mt-3 flex gap-2">
+          <button
+            type="submit"
+            disabled={recipeImport.isTextParsing}
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:opacity-60"
+          >
+            {recipeImport.isTextParsing ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Plus className="h-4 w-4" />
+            )}
+            Parse text
+          </button>
+          <button
+            type="button"
+            onClick={recipeImport.clearTextImport}
+            className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+          >
+            Clear
+          </button>
+        </div>
+        {recipeImport.textError && <p className="mt-3 text-sm text-rose-600">{recipeImport.textError}</p>}
+
+        {recipeImport.textDraft && (
+          <RecipeDraftPreview
+            draft={recipeImport.textDraft}
+            imageUrl={recipeImport.textImageUrl}
+            onSave={async () => {
+              try {
+                await createRecipe({
+                  ...recipeImport.textDraft,
+                  image: recipeImport.textDraft.image || recipeImport.textImageUrl || undefined,
+                });
+                recipeImport.clearTextImport();
+              } catch (e) {
+                recipeImport.setTextError?.('Failed to save recipe');
+              }
+            }}
+            onCancel={recipeImport.clearTextImport}
+          />
+        )}
+      </form>
+    </section>
+  );
+}
+
+// Recipe draft preview component
+function RecipeDraftPreview({ draft, imageUrl, onSave, onCancel }: any) {
+  return (
+    <div className="mt-6 grid gap-4 sm:grid-cols-2">
+      <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+        <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+          <ChefHat className="h-4 w-4 text-amber-500" /> Preview
+        </h3>
+        <p className="mt-2 text-base font-medium text-slate-900">{draft.name}</p>
+        {(draft.image || imageUrl) && (
+          <img src={draft.image || imageUrl} alt="Recipe" className="mt-2 w-full rounded object-cover" />
+        )}
+        {draft.description && <p className="mt-2 text-xs text-slate-600 line-clamp-4">{draft.description}</p>}
+        <p className="mt-2 text-xs text-slate-500">
+          Prep {draft.prepTime ?? 0} min • Cook {draft.cookTime ?? 0} min • Serves {draft.servings ?? 4}
+        </p>
+        <div className={`mt-3 grid gap-4 ${draft.instructions?.length > 0 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+          <div>
+            <p className="text-xs font-semibold text-slate-700">Ingredients</p>
+            <ul className="mt-1 list-disc pl-4 text-xs text-slate-600 max-h-28 overflow-auto">
+              {draft.ingredients?.map((i: any, idx: number) => (
+                <li key={idx}>{i.name}</li>
+              ))}
+            </ul>
+          </div>
+          {draft.instructions?.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-slate-700">Steps</p>
+              <ol className="mt-1 list-decimal pl-4 text-xs text-slate-600 max-h-28 overflow-auto">
+                {draft.instructions.map((s: string, idx: number) => (
+                  <li key={idx}>{s}</li>
+                ))}
+              </ol>
+            </div>
+          )}
+        </div>
+      </div>
+      <div className="rounded-lg border border-slate-200 bg-white p-4">
+        <h3 className="text-sm font-semibold text-slate-900">Add to recipes</h3>
+        <div className="mt-4 flex gap-2">
+          <button
+            type="button"
+            onClick={onSave}
+            className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
+          >
+            <Save className="h-4 w-4" /> Save recipe
+          </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Saved recipes section
+function SavedRecipesSection({
+  recipes,
+  allRecipesCount,
+  showFavoritesOnly,
+  onToggleFavorites,
+  searchQuery,
+  onSearchChange,
+  onDeleteAll,
+  onViewRecipe,
+  onEditRecipe,
+  onDeleteRecipe,
+}: any) {
+  return (
+    <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-slate-900">Saved recipes</h2>
+        <div className="flex items-center gap-2">
+          {allRecipesCount > 0 && (
+            <>
+              <button
+                type="button"
+                onClick={onToggleFavorites}
+                className={`text-xs rounded-md px-3 py-1 transition ${
+                  showFavoritesOnly
+                    ? 'bg-pink-600 text-white hover:bg-pink-500'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+                title={showFavoritesOnly ? 'Show all recipes' : 'Show favorites only'}
+              >
+                <Heart className={`inline h-3 w-3 mr-1 ${showFavoritesOnly ? 'fill-current' : ''}`} />
+                {showFavoritesOnly ? 'Favorites' : 'All'}
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (confirm('Delete ALL saved recipes? This cannot be undone.')) {
+                    try {
+                      await onDeleteAll();
+                    } catch (e) {
+                      logger.error('MealPlanning', 'Failed to delete all recipes', e);
+                    }
+                  }
+                }}
+                className="text-xs rounded-md px-3 py-1 bg-rose-600 text-white hover:bg-rose-500"
+                title="Delete all saved recipes"
+              >
+                Delete all
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+      <p className="text-sm text-slate-600">
+        {allRecipesCount === 0
+          ? 'Your clipped recipes.'
+          : `${recipes.length} of ${allRecipesCount} recipes${showFavoritesOnly ? ' (favorites)' : ''}`}
+      </p>
+
+      {allRecipesCount > 0 && (
+        <div className="mt-4 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+            placeholder="Search recipes by name, tags, cuisine, or difficulty..."
+            className="w-full pl-10 pr-10 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => onSearchChange('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              aria-label="Clear search"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+      )}
+
+      {allRecipesCount === 0 ? (
+        <div className="mt-4 rounded-lg border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-slate-500">
+          Clip a recipe above to get started.
+        </div>
+      ) : recipes.length === 0 ? (
+        <div className="mt-4 rounded-lg border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-slate-500">
+          No recipes match your search. Try different keywords.
+        </div>
+      ) : (
+        <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {recipes.map((r: Recipe) => (
+            <RecipeCard
+              key={r.id}
+              recipe={r}
+              onView={() => onViewRecipe(r.id!)}
+              onEdit={() => onEditRecipe(r.id!)}
+              onDelete={() => onDeleteRecipe(r.id!)}
+            />
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
 
 export default MealPlanning;
-
-// Compact recipe card with image header, overlay title, domain + quick actions
-
-// ========= Recipe View (organized sections) =========
-function RecipeViewModal({ recipe, onClose, onEdit }: { recipe: Recipe; onClose: () => void; onEdit: () => void }) {
-  const [servingsView, setServingsView] = useState<number>(recipe.servings || 1);
-  const factor = Math.max(0.25, (servingsView || 1) / Math.max(1, recipe.servings || 1));
-
-  const scaleNumber = (n: number) => {
-    const val = n * factor;
-    // Format: prefer 1 decimal if needed
-    return Math.abs(val - Math.round(val)) < 0.05 ? String(Math.round(val)) : String(Math.round(val * 10) / 10);
-  };
-
-  const scaleLine = (line: string): string => {
-    const src = normalizeYoutubeFractions(line);
-    // Match patterns like: 1 1/2, 1/2, 2-3, 2 to 3, 2.5
-    const patterns: RegExp[] = [
-      /^(\d+)[\s-](\d)\/(\d)/, // mixed number at start e.g., 1 1/2
-      /^(\d+)\/(\d+)/, // simple fraction
-      /^(\d+(?:\.\d+)?)/, // decimal or integer
-    ];
-    for (const re of patterns) {
-      const m = src.match(re);
-      if (m) {
-        if (re === patterns[0]) {
-          const whole = parseInt(m[1], 10);
-          const num = parseInt(m[2], 10);
-          const den = parseInt(m[3], 10);
-          const base = whole + num / den;
-          const scaled = scaleNumber(base);
-          return src.replace(re, scaled);
-        }
-        if (re === patterns[1]) {
-          const num = parseInt(m[1], 10);
-          const den = parseInt(m[2], 10);
-          const base = num / den;
-          const scaled = scaleNumber(base);
-          return src.replace(re, scaled);
-        }
-        if (re === patterns[2]) {
-          const base = parseFloat(m[1]);
-          const scaled = scaleNumber(base);
-          return src.replace(re, scaled);
-        }
-      }
-    }
-    return src; // fallback unchanged
-  };
-
-  const equipmentFromText = useMemo(() => {
-    const tools = ['pan', 'pot', 'oven', 'skillet', 'bowl', 'whisk', 'knife', 'cutting board', 'blender', 'mixer', 'baking sheet', 'saucepan', 'spatula', 'tray', 'foil', 'tongs'];
-    const text = `${(recipe.instructions || []).join(' ')} ${(recipe.description || '')}`.toLowerCase();
-    const found: string[] = [];
-    for (const t of tools) { if (text.includes(t) && !found.includes(t)) found.push(t); }
-    // Also include equipment from tags: equip:*
-    const equipTags = (recipe.tags || []).filter(t => t.startsWith('equip:')).map(t => t.replace('equip:',''));
-    for (const e of equipTags) { if (!found.includes(e)) found.push(e); }
-    return found;
-  }, [recipe.instructions, recipe.description, recipe.tags]);
-
-  return (
-    <ModalShell
-      title={recipe.name}
-      subtitle="Recipe"
-      onClose={onClose}
-      maxWidthClass="max-w-4xl"
-      headerRight={
-        <button onClick={onEdit} className="rounded-md border border-slate-300 px-3 py-1 text-sm font-medium text-slate-800 hover:bg-slate-50">Edit</button>
-      }
-    >
-        <div className="grid gap-4 md:grid-cols-2">
-          {recipe.image && (
-            <div className="md:col-span-2">
-              <img src={recipe.image} alt={recipe.name} className="w-full h-56 object-cover rounded-lg border border-slate-200" />
-            </div>
-          )}
-          {/* Directions */}
-          <section className="rounded-lg border border-slate-200 bg-white p-4">
-            <h4 className="text-sm font-semibold text-slate-900">Directions</h4>
-            {recipe.instructions && recipe.instructions.length > 0 ? (
-              <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-slate-700">
-                {recipe.instructions.map((s, i) => <li key={i}>{s}</li>)}
-              </ol>
-            ) : (
-              <p className="mt-2 text-sm text-slate-500">No directions provided.</p>
-            )}
-          </section>
-
-          {/* Ingredients + Portion size */}
-          <section className="rounded-lg border border-slate-200 bg-white p-4">
-            <div className="flex items-center justify-between">
-              <h4 className="text-sm font-semibold text-slate-900">Ingredients</h4>
-              <div className="flex items-center gap-2 text-sm">
-                <span className="text-slate-600">Portion size</span>
-                <input
-                  type="number"
-                  min={0.25}
-                  step={0.25}
-                  value={servingsView}
-                  onChange={(e) => setServingsView(Math.max(0.25, Number(e.target.value) || recipe.servings || 1))}
-                  className="w-20 rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-indigo-500 focus:outline-none"
-                />
-              </div>
-            </div>
-            {recipe.ingredients && recipe.ingredients.length > 0 ? (
-              <ul className="mt-2 list-disc pl-5 text-sm text-slate-700">
-                {recipe.ingredients.map((ing, i) => (
-                  <li key={i}>{ing.amount ? `${scaleNumber(Number(ing.amount))} ${ing.unit ?? ''} ${ing.name}`.trim() : scaleLine(ing.name)}</li>
-                ))}
-              </ul>
-            ) : (
-              <p className="mt-2 text-sm text-slate-500">No ingredients listed.</p>
-            )}
-          </section>
-
-          {/* Duration */}
-          <section className="rounded-lg border border-slate-200 bg-white p-4">
-            <h4 className="text-sm font-semibold text-slate-900">Duration</h4>
-            <div className="mt-2 grid grid-cols-3 gap-2 text-sm text-slate-700">
-              <div className="rounded border border-slate-200 bg-slate-50 p-2 text-center">
-                <div className="text-xs text-slate-500">Prep</div>
-                <div className="font-medium">{recipe.prepTime ?? 0} min</div>
-              </div>
-              <div className="rounded border border-slate-200 bg-slate-50 p-2 text-center">
-                <div className="text-xs text-slate-500">Cook</div>
-                <div className="font-medium">{recipe.cookTime ?? 0} min</div>
-              </div>
-              <div className="rounded border border-slate-200 bg-slate-50 p-2 text-center">
-                <div className="text-xs text-slate-500">Total</div>
-                <div className="font-medium">{(recipe.prepTime ?? 0) + (recipe.cookTime ?? 0)} min</div>
-              </div>
-            </div>
-          </section>
-
-          {/* Equipment */}
-          <section className="rounded-lg border border-slate-200 bg-white p-4">
-            <h4 className="text-sm font-semibold text-slate-900">Equipment</h4>
-            {equipmentFromText.length > 0 ? (
-              <ul className="mt-2 list-disc pl-5 text-sm text-slate-700">
-                {equipmentFromText.map((t) => <li key={t}>{t}</li>)}
-              </ul>
-            ) : (
-              <p className="mt-2 text-sm text-slate-500">No equipment detected.</p>
-            )}
-          </section>
-
-          {/* Tips */}
-          <section className="rounded-lg border border-slate-200 bg-white p-4 md:col-span-2">
-            <h4 className="text-sm font-semibold text-slate-900">Tips</h4>
-            {recipe.notes ? (
-              <p className="mt-2 whitespace-pre-wrap text-sm text-slate-700">{recipe.notes}</p>
-            ) : (
-              <p className="mt-2 text-sm text-slate-500">No tips yet.</p>
-            )}
-          </section>
-        </div>
-    </ModalShell>
-  );
-}
