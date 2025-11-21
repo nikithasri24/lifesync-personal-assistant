@@ -10,7 +10,8 @@
       "Bash(/tmp/meal_part1.txt)",
       "Bash(/tmp/meal_part2.txt)",
       "Bash(cat:*)",
-      "Bash(src/pages/MealPlanning.tsx)"
+      "Bash(src/pages/MealPlanning.tsx)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []
