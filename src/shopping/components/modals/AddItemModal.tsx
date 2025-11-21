@@ -8,6 +8,7 @@ import { X } from 'lucide-react';
 import type { ShoppingItemForm } from '../../types/forms';
 import type { Store } from '../../types';
 import { CATEGORY_ICONS, STORE_TYPES } from '../../constants';
+import { validateCategory, validatePriority } from '../../utils/typeValidators';
 
 interface AddItemModalProps {
   isOpen: boolean;
@@ -100,7 +101,7 @@ export function AddItemModal({
               </label>
               <select
                 value={formData.category}
-                onChange={(e) => onFormChange({ category: e.target.value as any })}
+                onChange={(e) => onFormChange({ category: validateCategory(e.target.value) })}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 {Object.entries(CATEGORY_ICONS).map(([category, icon]) => (
@@ -116,7 +117,7 @@ export function AddItemModal({
               </label>
               <select
                 value={formData.priority}
-                onChange={(e) => onFormChange({ priority: e.target.value as any })}
+                onChange={(e) => onFormChange({ priority: validatePriority(e.target.value) })}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="low">Low</option>

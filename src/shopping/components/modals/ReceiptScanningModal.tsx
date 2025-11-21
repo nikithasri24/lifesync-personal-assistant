@@ -308,7 +308,7 @@ export function ReceiptScanningModal({ isOpen, onClose, onAddToPantry, onLogExpe
                   <span className="text-gray-700">Category</span>
                   <select
                     value={receiptBulkCategory}
-                    onChange={(e) => setReceiptBulkCategory(e.target.value as any)}
+                    onChange={(e) => setReceiptBulkCategory(validateCategory(e.target.value))}
                     className="rounded border border-gray-300 px-2 py-1"
                   >
                     <option value="produce">Produce</option>
@@ -408,7 +408,7 @@ export function ReceiptScanningModal({ isOpen, onClose, onAddToPantry, onLogExpe
                         <td className="px-3 py-2 align-top">
                           <select
                             value={it.category}
-                            onChange={(e) => setParsedReceipt(list => list.map(x => x.id === it.id ? { ...x, category: e.target.value as any } : x))}
+                            onChange={(e) => setParsedReceipt(list => list.map(x => x.id === it.id ? { ...x, category: validateCategory(e.target.value) } : x))}
                             className="rounded border border-gray-300 px-2 py-1 text-sm"
                           >
                             <option value="produce">Produce</option>

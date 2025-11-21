@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Loader2, Save } from 'lucide-react';
 import { ModalShell } from './ModalShell';
-import type { Recipe } from '../../../types';
+import type { Recipe, Ingredient } from '../../../types';
 
 interface SimpleRecipeEditModalProps {
   recipe: Recipe;
@@ -28,12 +28,12 @@ export function SimpleRecipeEditModal({ recipe, onSave, onClose }: SimpleRecipeE
       .map((l) => l.trim())
       .filter(Boolean);
 
-    const ingredients = ingredientLines.map((line) => {
+    const ingredients = ingredientLines.map((line): Ingredient => {
       const m1 = line.match(/^(\d+(?:\.\d+)?)\s+(\w+)\s+(.+)$/);
       if (m1) return { amount: m1[1], unit: m1[2], name: m1[3] };
       const m2 = line.match(/^(\d+(?:\.\d+)?)\s+(.+)$/);
       if (m2) return { amount: m2[1], unit: undefined, name: m2[2] };
-      return { name: line } as any;
+      return { name: line };
     });
 
     const instructions = instructionsText

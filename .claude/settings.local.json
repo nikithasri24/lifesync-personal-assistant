@@ -27,7 +27,9 @@
       "Bash(tree:*)",
       "Bash(xargs:*)",
       "Bash(npx tsc:*)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(curl:*)",
+      "Bash(tr:*)"
     ],
     "deny": [],
     "ask": []

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import type { ShoppingItem } from '../../types';
+import { validateCategory } from '../../utils/typeValidators';
 
 interface AddPantryItemModalProps {
   isOpen: boolean;
@@ -94,7 +95,7 @@ export function AddPantryItemModal({ isOpen, onClose, onSave }: AddPantryItemMod
               <span className="text-gray-700">Category</span>
               <select
                 value={pantryForm.category}
-                onChange={(e) => setPantryForm(s => ({ ...s, category: e.target.value as any }))}
+                onChange={(e) => setPantryForm(s => ({ ...s, category: validateCategory(e.target.value) }))}
                 className="rounded border border-gray-300 px-2 py-1"
               >
                 <option value="produce">Produce</option>

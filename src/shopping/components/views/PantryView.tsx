@@ -262,7 +262,7 @@ export function PantryView({
           {/* Simple filters */}
           <select
             className="rounded border border-gray-300 px-2 py-1 text-sm"
-            onChange={(e) => setPantryFilter(e.target.value as any)}
+            onChange={(e) => setPantryFilter(validatePantryFilter(e.target.value))}
             defaultValue="all"
             title="Filter"
           >
@@ -273,7 +273,7 @@ export function PantryView({
           </select>
           <select
             className="rounded border border-gray-300 px-2 py-1 text-sm"
-            onChange={(e) => setPantrySort(e.target.value as any)}
+            onChange={(e) => setPantrySort(validatePantrySort(e.target.value))}
             defaultValue="expiry"
             title="Sort"
           >
