@@ -1,45 +1,79 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, within, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 import React from 'react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
-vi.mock('../../stores/useAppStore', () => ({
-  useAppStore: () => ({
-    habitCategories: [
-      { id: 'other', name: 'Other' },
-    ],
-    habits: [
+vi.mock('../../hooks/useHabitsQuery', () => ({
+  useHabits: () => ({
+    data: [
       {
         id: 'h5',
         name: 'Custom cadence',
         description: '',
         frequency: 'custom',
-        targetCount: 1,
-        categoryId: 'other',
+        target_count: 1,
+        category: 'other',
         color: '#22c55e',
-        currentProgress: 0,
-        streak: 0,
-        completions: [],
-        createdAt: new Date(),
+        user_id: 'user1',
+        created_at: new Date().toISOString(),
       },
     ],
-    addHabit: vi.fn(),
-    updateHabit: vi.fn(),
-    completeHabit: vi.fn(),
-    resetHabitToday: vi.fn(),
-    resetHabitHistory: vi.fn(),
-    deleteHabit: vi.fn(),
+    isLoading: false,
+    error: null,
+  }),
+  useHabitEntries: () => ({
+    data: [],
+    isLoading: false,
+    error: null,
+  }),
+  useCreateHabit: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+  useUpdateHabit: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+  useDeleteHabit: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+  useCreateHabitEntry: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+  useDeleteHabitEntriesForDate: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+  useDeleteAllHabitEntries: () => ({
+    mutate: vi.fn(),
+    isPending: false,
   }),
 }))
 
 describe('Habits frequency label: custom', () => {
   it('renders category and custom frequency in the header', async () => {
-    const { default: Habits } = await import('../Habits')
-    render(<Habits />)
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+      },
+    })
 
-    const card = screen.getByText('Custom cadence').closest('article') as HTMLElement
-    expect(card).toBeTruthy()
-    // Expect: "Other • custom" somewhere near the header meta
-    expect(within(card).getByText(/Other\s+•\s*custom/i)).toBeInTheDocument()
+    const { default: Habits } = await import('../Habits')
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <Habits />
+      </QueryClientProvider>
+    )
+
+    await waitFor(() => {
+      const card = screen.getByText('Custom cadence').closest('article') as HTMLElement
+      expect(card).toBeTruthy()
+      // Expect: "other • custom" somewhere near the header meta
+      expect(within(card).getByText(/other\s+•\s*custom/i)).toBeInTheDocument()
+    })
   })
 })
 

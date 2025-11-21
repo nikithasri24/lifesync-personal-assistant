@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { logger } from '../services/logger'
 
 // Prefer process.env when available (tests/scripts), fallback to Vite's import.meta.env
 const env = (typeof process !== 'undefined' ? process.env : {}) as Record<string, string | undefined>

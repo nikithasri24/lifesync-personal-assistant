@@ -1631,8 +1631,6 @@ function AddMealControl({ dateKey, mealType, onAdded, showByDefault = true, comp
   );
 }
 
-// (YouTube helpers removed for v1 Clip flow)
-
 // Auto-fetch recipe from Google search
 async function fetchRecipeFromGoogle(mealName: string): Promise<Omit<Recipe, 'id' | 'createdAt'> | null> {
   const scaffold = (name: string): Omit<Recipe, 'id' | 'createdAt'> => ({
@@ -1748,8 +1746,6 @@ async function fetchClippedRecipe(url: string): Promise<Omit<Recipe, 'id' | 'cre
     videoThumbnail: undefined,
   };
 }
-
-// (Legacy YouTube import removed in v1)
 
 function MealOptionsManager() {
   const { mealOptions, addMealOption, removeMealOption } = useAppStore();
@@ -3058,16 +3054,7 @@ const MealPlanning: React.FC = () => {
         )}
       </section>
 
-      {null}
-
       <section className="grid gap-6 lg:grid-cols-2">
-        {/* v2: Meal Options manager */}
-        {/* <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-900">Meal options</h2>
-          <p className="text-sm text-slate-600">Curate quick-pick options for each meal. These appear first when typing in the weekly planner.</p>
-          <MealOptionsManager />
-        </div> */}
-
         {/* Video → Recipe (YouTube) */}
         <form
           onSubmit={async (e) => {
@@ -3420,11 +3407,7 @@ const MealPlanning: React.FC = () => {
             </div>
           )}
         </form>
-
-        {/* Removed Schedule a meal form (inline add and drag/drop now available in the grid above) */}
       </section>
-
-      {/* Removed duplicate weekly overview (moved to top) */}
 
       <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex items-center justify-between">

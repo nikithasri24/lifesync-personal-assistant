@@ -232,7 +232,9 @@ export async function handleTodayOverview(
     logger.info('Tasks', Chalk.bold.blue(`\n📅 ${format(today, 'EEEE, MMMM d, yyyy')}`));
     if (currentlyWorking.length > 0) {
       logger.info('Tasks', Chalk.bold('\n🔄 Currently Working On:'));
-      logger.info('Tasks', `  • ${Chalk.white(task.title)}`));
+      currentlyWorking.forEach(task => {
+        logger.info('Tasks', `  • ${Chalk.white(task.title)}`);
+      });
     }
     if (overdueTasks.length > 0) {
       logger.info('Tasks', Chalk.bold.red('\n⚠️ Overdue Tasks:'));
