@@ -17,7 +17,6 @@
 
 import React, { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
-import { CheckCircle2, Pencil, Plus, RefreshCcw, Save, Trash2, X } from 'lucide-react';
 import { Toast } from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { SkeletonCard } from '../components/LoadingSpinner';
@@ -31,37 +30,11 @@ import {
   useDeleteHabitEntriesForDate,
   useDeleteAllHabitEntries,
 } from '../hooks/useHabitsQuery';
-import type { HabitData } from '../services/types';
 import { logger } from '../services/logger';
-
-type HabitDraft = {
-  name: string;
-  description: string;
-  frequency: 'daily' | 'weekly' | 'monthly';
-  category: string;
-  color: string;
-  targetValue: string;
-};
-
-const createDraft = (): HabitDraft => ({
-  name: '',
-  description: '',
-  frequency: 'daily',
-  category: 'general',
-  color: '#22c55e',
-  targetValue: '1',
-});
-
-const CATEGORIES = [
-  'general',
-  'health',
-  'fitness',
-  'learning',
-  'work',
-  'personal',
-  'creative',
-  'social'
-];
+import type { HabitDraft } from '../habits/types';
+import { createDraft, toHabitDraft } from '../habits/services/habitHelpers';
+import { HabitForm } from '../habits/components/HabitForm';
+import { HabitCard } from '../habits/components/HabitCard';
 
 const Habits: React.FC = () => {
   // React Query hooks - automatic loading and caching
@@ -76,7 +49,7 @@ const Habits: React.FC = () => {
   const deleteAllEntriesMutation = useDeleteAllHabitEntries();
 
   // UI State
-  const [draft, setDraft] = useState<HabitDraft>(createDraft);
+  const [draft, setDraft] = useState<HabitDraft>(createDraft());
   const [editingHabitId, setEditingHabitId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<HabitDraft | null>(null);
 
@@ -107,15 +80,6 @@ const Habits: React.FC = () => {
       };
     });
   }, [apiHabits, apiEntries, todayKey]);
-
-  const toHabitDraft = (habit: HabitData): HabitDraft => ({
-    name: habit.name,
-    description: habit.description || '',
-    frequency: (habit.frequency || 'daily') as 'daily' | 'weekly' | 'monthly',
-    category: habit.category || 'general',
-    color: habit.color || '#22c55e',
-    targetValue: String(habit.target_value || 1),
-  });
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -175,8 +139,10 @@ const Habits: React.FC = () => {
     });
   };
 
-  const startEditing = (habit: HabitData) => {
-    setEditingHabitId(habit.id!);
+  const startEditing = (habitId: string) => {
+    const habit = apiHabits.find(h => h.id === habitId);
+    if (!habit) return;
+    setEditingHabitId(habitId);
     setEditDraft(toHabitDraft(habit));
   };
 
@@ -296,109 +262,14 @@ const Habits: React.FC = () => {
         <p className="text-sm text-slate-600">A lightweight overview to help you stay consistent with the routines that matter.</p>
       </header>
 
-      <form onSubmit={handleSubmit} className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-slate-900">Add a habit</h2>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <label className="flex flex-col gap-1 text-sm sm:col-span-2">
-            <span className="font-medium text-slate-700">Name</span>
-            <input
-              data-testid="habit-add-name"
-              required
-              value={draft.name}
-              onChange={(event) => setDraft((prev) => ({ ...prev, name: event.target.value }))}
-              disabled={createHabitMutation.isPending}
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none disabled:opacity-50"
-              placeholder="Morning stretch"
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-sm sm:col-span-2">
-            <span className="font-medium text-slate-700">Description</span>
-            <textarea
-              value={draft.description}
-              onChange={(event) => setDraft((prev) => ({ ...prev, description: event.target.value }))}
-              disabled={createHabitMutation.isPending}
-              className="h-24 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none disabled:opacity-50"
-              placeholder="Optional details or reminders"
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium text-slate-700">Frequency</span>
-            <select
-              value={draft.frequency}
-              onChange={(event) => setDraft((prev) => ({ ...prev, frequency: event.target.value as 'daily' | 'weekly' | 'monthly' }))}
-              disabled={createHabitMutation.isPending}
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none disabled:opacity-50"
-            >
-              <option value="daily">Daily</option>
-              <option value="weekly">Weekly</option>
-              <option value="monthly">Monthly</option>
-            </select>
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium text-slate-700">Target count</span>
-            <input
-              type="number"
-              min={0}
-              value={draft.targetValue}
-              onChange={(event) => {
-                const value = event.target.value;
-                if (value === '' || Number(value) >= 0) {
-                  setDraft((prev) => ({ ...prev, targetValue: value }));
-                }
-              }}
-              disabled={createHabitMutation.isPending}
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none disabled:opacity-50"
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium text-slate-700">Category</span>
-            <select
-              value={draft.category}
-              onChange={(event) => setDraft((prev) => ({ ...prev, category: event.target.value }))}
-              disabled={createHabitMutation.isPending}
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none disabled:opacity-50"
-            >
-              {CATEGORIES.map((category) => (
-                <option key={category} value={category}>
-                  {category.charAt(0).toUpperCase() + category.slice(1)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium text-slate-700">Accent colour</span>
-            <input
-              type="color"
-              value={draft.color}
-              onChange={(event) => setDraft((prev) => ({ ...prev, color: event.target.value }))}
-              disabled={createHabitMutation.isPending}
-              className="h-10 rounded-lg border border-slate-200 px-2 disabled:opacity-50"
-            />
-          </label>
-        </div>
-        <div className="mt-6 flex gap-2">
-          <button
-            type="submit"
-            data-testid="habit-add-submit"
-            disabled={createHabitMutation.isPending}
-            className="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:opacity-50"
-          >
-            <Plus className="h-4 w-4" />
-            {createHabitMutation.isPending ? 'Saving...' : 'Save habit'}
-          </button>
-          <button
-            type="button"
-            onClick={() => setDraft(createDraft())}
-            disabled={createHabitMutation.isPending}
-            className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
-          >
-            Clear
-          </button>
-        </div>
-        {createHabitMutation.isError && (
-          <p className="mt-2 text-xs text-red-600">Failed to create habit. Please try again.</p>
-        )}
-      </form>
+      <HabitForm
+        draft={draft}
+        isSubmitting={createHabitMutation.isPending}
+        hasError={createHabitMutation.isError}
+        onDraftChange={setDraft}
+        onSubmit={handleSubmit}
+        onClear={() => setDraft(createDraft())}
+      />
 
       <section className="space-y-3">
         {habitsWithStats.length === 0 ? (
@@ -406,222 +277,33 @@ const Habits: React.FC = () => {
             No habits yet. Add one above to start tracking.
           </div>
         ) : (
-          habitsWithStats.map(({ habit, todayCompletions, targetCount, hasReachedTarget, currentStreak, totalCompletions }) => {
-            const isEditing = editingHabitId === habit.id && editDraft;
-
-            return (
-              <article
-                key={habit.id}
-                className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-5 shadow-sm"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="font-semibold text-slate-900">{habit.name}</p>
-                      {hasReachedTarget ? (
-                        <span className="rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-semibold text-green-600 border border-green-200">
-                          Completed today{targetCount > 1 ? ` (${todayCompletions}/${targetCount})` : ''}
-                        </span>
-                      ) : (
-                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600 border border-slate-200">
-                          Today {todayCompletions}/{targetCount}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-slate-500">{habit.category || 'general'} • {habit.frequency || 'daily'}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleCompleteHabit(habit.id!)}
-                      disabled={hasReachedTarget || isEditing || createEntryMutation.isPending}
-                      className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition ${
-                        hasReachedTarget || isEditing || createEntryMutation.isPending
-                          ? 'cursor-not-allowed bg-emerald-100 text-emerald-400'
-                          : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
-                      }`}
-                    >
-                      <CheckCircle2 className="h-4 w-4" />
-                      {hasReachedTarget ? 'Completed today' : createEntryMutation.isPending ? 'Saving...' : 'Complete today'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => (isEditing ? cancelEditing() : startEditing(habit))}
-                      disabled={updateHabitMutation.isPending}
-                      className={`inline-flex items-center gap-1 rounded-full border border-slate-200 px-3 py-1 text-xs font-medium transition disabled:opacity-50 ${
-                        isEditing ? 'bg-slate-100 text-slate-500' : 'text-slate-600 hover:bg-slate-100'
-                      }`}
-                    >
-                      {isEditing ? (
-                        <>
-                          <X className="h-4 w-4" />
-                          Cancel
-                        </>
-                      ) : (
-                        <>
-                          <Pencil className="h-4 w-4" />
-                          Edit
-                        </>
-                      )}
-                    </button>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleResetToday(habit.id!)}
-                        data-testid={`habit-reset-today-${habit.id}`}
-                        disabled={deleteEntriesForDateMutation.isPending}
-                        className="inline-flex items-center gap-1 rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-600 transition hover:bg-slate-100 disabled:opacity-50"
-                        title="Clear today's completion"
-                      >
-                        <RefreshCcw className="h-4 w-4" />
-                        {deleteEntriesForDateMutation.isPending ? 'Resetting...' : 'Reset today'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleResetHistory(habit.id!)}
-                        data-testid={`habit-reset-streak-${habit.id}`}
-                        disabled={deleteAllEntriesMutation.isPending}
-                        className="inline-flex items-center gap-1 rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-600 transition hover:bg-slate-100 disabled:opacity-50"
-                        title="Reset streak and history"
-                      >
-                        <RefreshCcw className="h-4 w-4" />
-                        {deleteAllEntriesMutation.isPending ? 'Resetting...' : 'Reset streak'}
-                      </button>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteHabit(habit.id!)}
-                      data-testid={`habit-delete-${habit.id}`}
-                      disabled={deleteHabitMutation.isPending}
-                      className="rounded-full border border-slate-200 p-1 text-slate-500 transition hover:bg-slate-100 disabled:opacity-50"
-                      aria-label="Delete habit"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-                {habit.description && <p className="text-sm text-slate-600">{habit.description}</p>}
-                <div className="flex flex-wrap gap-3 text-xs text-slate-500">
-                  <span>Target: {targetCount} per {habit.frequency === 'daily' ? 'day' : habit.frequency === 'weekly' ? 'week' : 'month'}</span>
-                  <span>Progress: {totalCompletions}</span>
-                  <span>Streak: {currentStreak}</span>
-                </div>
-                {isEditing && editDraft && (
-                  <form onSubmit={handleEditSubmit} className="mt-4 grid gap-3 border-t border-slate-200 pt-4 sm:grid-cols-2">
-                    <label className="flex flex-col gap-1 text-sm sm:col-span-2">
-                      <span className="font-medium text-slate-700">Name</span>
-                      <input
-                        data-testid="habit-edit-name"
-                        required
-                        value={editDraft.name}
-                        onChange={(event) =>
-                          setEditDraft((prev) => (prev ? { ...prev, name: event.target.value } : prev))
-                        }
-                        disabled={updateHabitMutation.isPending}
-                        className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none disabled:opacity-50"
-                      />
-                    </label>
-                    <label className="flex flex-col gap-1 text-sm sm:col-span-2">
-                      <span className="font-medium text-slate-700">Description</span>
-                      <textarea
-                        value={editDraft.description}
-                        onChange={(event) =>
-                          setEditDraft((prev) => (prev ? { ...prev, description: event.target.value } : prev))
-                        }
-                        disabled={updateHabitMutation.isPending}
-                        className="h-20 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none disabled:opacity-50"
-                      />
-                    </label>
-                    <label className="flex flex-col gap-1 text-sm">
-                      <span className="font-medium text-slate-700">Frequency</span>
-                      <select
-                        value={editDraft.frequency}
-                        onChange={(event) =>
-                          setEditDraft((prev) =>
-                            prev ? { ...prev, frequency: event.target.value as 'daily' | 'weekly' | 'monthly' } : prev,
-                          )
-                        }
-                        disabled={updateHabitMutation.isPending}
-                        className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none disabled:opacity-50"
-                      >
-                        <option value="daily">Daily</option>
-                        <option value="weekly">Weekly</option>
-                        <option value="monthly">Monthly</option>
-                      </select>
-                    </label>
-                    <label className="flex flex-col gap-1 text-sm">
-                      <span className="font-medium text-slate-700">Target count</span>
-                      <input
-                        type="number"
-                        min={0}
-                        value={editDraft.targetValue}
-                        onChange={(event) => {
-                          const value = event.target.value;
-                          if (value === '' || Number(value) >= 0) {
-                            setEditDraft((prev) => (prev ? { ...prev, targetValue: value } : prev));
-                          }
-                        }}
-                        disabled={updateHabitMutation.isPending}
-                        className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none disabled:opacity-50"
-                      />
-                    </label>
-                    <label className="flex flex-col gap-1 text-sm">
-                      <span className="font-medium text-slate-700">Category</span>
-                      <select
-                        value={editDraft.category}
-                        onChange={(event) =>
-                          setEditDraft((prev) => (prev ? { ...prev, category: event.target.value } : prev))
-                        }
-                        disabled={updateHabitMutation.isPending}
-                        className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none disabled:opacity-50"
-                      >
-                        {CATEGORIES.map((category) => (
-                          <option key={category} value={category}>
-                            {category.charAt(0).toUpperCase() + category.slice(1)}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className="flex flex-col gap-1 text-sm">
-                      <span className="font-medium text-slate-700">Accent colour</span>
-                      <input
-                        type="color"
-                        value={editDraft.color}
-                        onChange={(event) =>
-                          setEditDraft((prev) => (prev ? { ...prev, color: event.target.value } : prev))
-                        }
-                        disabled={updateHabitMutation.isPending}
-                        className="h-10 rounded-lg border border-slate-200 px-2 disabled:opacity-50"
-                      />
-                    </label>
-                    <div className="flex gap-2 sm:col-span-2">
-                      <button
-                        type="submit"
-                        data-testid="habit-save-changes"
-                        disabled={updateHabitMutation.isPending}
-                        className="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:opacity-50"
-                      >
-                        <Save className="h-4 w-4" />
-                        {updateHabitMutation.isPending ? 'Saving...' : 'Save changes'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={cancelEditing}
-                        disabled={updateHabitMutation.isPending}
-                        className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100 disabled:opacity-50"
-                      >
-                        <X className="h-4 w-4" />
-                        Cancel
-                      </button>
-                    </div>
-                    {updateHabitMutation.isError && (
-                      <p className="text-xs text-red-600 sm:col-span-2">Failed to update habit. Please try again.</p>
-                    )}
-                  </form>
-                )}
-              </article>
-            );
-          })
+          habitsWithStats.map(({ habit, todayCompletions, targetCount, hasReachedTarget, currentStreak, totalCompletions }) => (
+            <HabitCard
+              key={habit.id}
+              habit={habit}
+              todayCompletions={todayCompletions}
+              targetCount={targetCount}
+              hasReachedTarget={hasReachedTarget}
+              currentStreak={currentStreak}
+              totalCompletions={totalCompletions}
+              isEditing={editingHabitId === habit.id}
+              editDraft={editDraft}
+              isCompletingHabit={createEntryMutation.isPending}
+              isUpdating={updateHabitMutation.isPending}
+              hasUpdateError={updateHabitMutation.isError}
+              isResettingToday={deleteEntriesForDateMutation.isPending}
+              isResettingHistory={deleteAllEntriesMutation.isPending}
+              isDeleting={deleteHabitMutation.isPending}
+              onComplete={() => handleCompleteHabit(habit.id!)}
+              onStartEdit={() => startEditing(habit.id!)}
+              onCancelEdit={cancelEditing}
+              onEditDraftChange={setEditDraft}
+              onEditSubmit={handleEditSubmit}
+              onResetToday={() => handleResetToday(habit.id!)}
+              onResetHistory={() => handleResetHistory(habit.id!)}
+              onDelete={() => handleDeleteHabit(habit.id!)}
+            />
+          ))
         )}
       </section>
     </div>

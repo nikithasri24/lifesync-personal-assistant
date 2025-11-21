@@ -14,7 +14,15 @@
       "Bash(find:*)",
       "Bash({ sed -n '1,436p' /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/ShoppingSmart.tsx)",
       "Bash(})",
-      "Bash(/tmp/shopping_clean.tsx)"
+      "Bash(/tmp/shopping_clean.tsx)",
+      "Bash(/tmp/todos_part1.txt)",
+      "Bash(/tmp/todos_part2.txt)",
+      "Bash(/tmp/todos_combined.txt)",
+      "Bash(echo:*)",
+      "Bash(/tmp/meal_combined.txt)",
+      "Bash(npm run:*)",
+      "Bash(for file in src/pages/*.tsx)",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": []
