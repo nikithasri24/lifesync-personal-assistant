@@ -510,7 +510,7 @@ export interface FinancialError {
   code: string;
   message: string;
   field?: string;
-  details?: Record<string, any>;
+  details?: Record<string, string | number | boolean | null>;
 }
 
 // Utility Types

@@ -158,7 +158,7 @@ export interface AchievementRequirement {
   type: 'sessions' | 'time' | 'streak' | 'completion_rate' | 'special';
   target: number;
   timeframe?: 'day' | 'week' | 'month' | 'all_time';
-  conditions?: Record<string, any>;
+  conditions?: Record<string, string | number | boolean>;
 }
 
 export interface Goal {
@@ -301,7 +301,7 @@ export interface Integration {
 export interface IntegrationConfig {
   apiKey?: string;
   refreshToken?: string;
-  settings: Record<string, any>;
+  settings: Record<string, string | number | boolean>;
   permissions: string[];
   autoSync: boolean;
   syncInterval: number; // in minutes
