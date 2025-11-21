@@ -14,7 +14,7 @@ import {
   useUpdateRecipeMutation,
   useMealPlansQuery,
 } from '../../hooks/useMealPlanningQuery';
-import { useAppStore } from '../../../store';
+import { useAppStore } from '../../../stores';
 import { ensureDate } from '../../utils/mealPlanHelpers';
 import { logger } from '../../../services/logger';
 

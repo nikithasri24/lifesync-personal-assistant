@@ -15,7 +15,7 @@ import {
   useCreateRecipeMutation,
   useCreateMealPlanMutation,
 } from '../../hooks/useMealPlanningQuery';
-import { useAppStore } from '../../../store';
+import { useAppStore } from '../../../stores';
 import { parseLocalDateKey, ensureDate } from '../../utils/mealPlanHelpers';
 import { getMealDraft, saveMealDraft, clearMealDraft } from '../../services/storage/draftStorage';
 import { logger } from '../../../services/logger';
