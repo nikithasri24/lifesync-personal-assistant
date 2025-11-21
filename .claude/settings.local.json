@@ -23,7 +23,11 @@
       "Bash(npm run:*)",
       "Bash(for file in src/pages/*.tsx)",
       "Bash(done)",
-      "Bash(wc:*)"
+      "Bash(wc:*)",
+      "Bash(tree:*)",
+      "Bash(xargs:*)",
+      "Bash(npx tsc:*)",
+      "Bash(mkdir:*)"
     ],
     "deny": [],
     "ask": []

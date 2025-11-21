@@ -15,8 +15,10 @@ import { ShoppingHeader } from '../shopping/components/layout/ShoppingHeader';
 import { ViewTabs } from '../shopping/components/layout/ViewTabs';
 import { MasterListView, DistributeView, StoreListsView, PantryView } from '../shopping/components/views';
 import { AddItemModal, EditItemModal, BarcodeScannerModal, ReceiptScanningModal, AddPantryItemModal, ReplenishModal, StoreSuggestionsModal } from '../shopping/components/modals';
-import { useVoiceInput, useBarcodeScanner, useStoreSuggestions, usePantryManagement, useItemForm } from '../shopping/hooks';
+import { useVoiceInput, useBarcodeScanner, useStoreSuggestions, usePantryManagement, useItemForm, useShoppingModals } from '../shopping/hooks';
 import { smartRecommendStores } from '../shopping/utils/storeUtils';
+import { createShoppingItemFromPantry, exportPantryToCsv, downloadCsv } from '../shopping/utils/pantryUtils';
+import { PantryTableRow } from '../shopping/components/pantry/PantryTableRow';
 import {
   useActiveShoppingList,
   useShoppingItems,
@@ -166,33 +168,51 @@ export default function ShoppingSmart() {
   // Voice recognition
   const { isListening, startVoiceInput } = useVoiceInput();
 
+  // Modal state management using consolidated hook
+  const {
+    showAddItem,
+    setShowAddItem,
+    showEditItem,
+    editingItem,
+    openEditModal,
+    closeEditModal,
+    showAddPantry,
+    setShowAddPantry,
+    showScanReceipt,
+    setShowScanReceipt,
+    showLocationSuggestions,
+    selectedItemForSuggestions,
+    openStoreSuggestions,
+    closeStoreSuggestions,
+    showBarcodeScanner,
+    setShowBarcodeScanner,
+    barcodeResult,
+    setBarcodeResult,
+    showStorePrefs,
+    setShowStorePrefs,
+  } = useShoppingModals();
+
   // Barcode scanning
-  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const {
     isScanning,
-    barcodeResult,
     captureMessage,
     videoRef,
     startScanning,
     stopScanning,
     captureNow,
-    setBarcodeResult,
   } = useBarcodeScanner((barcode, productInfo) => {
-    setNewItem(prev => ({
-      ...prev,
+    newItemForm.updateForm({
       name: productInfo.name,
-      barcode: barcode,
       estimatedPrice: productInfo.price?.toString() || '',
       category: productInfo.category as any || 'other'
-    }));
+    });
+    setBarcodeResult(barcode);
     setShowAddItem(true);
     setShowBarcodeScanner(false);
   });
-  
+
   // Location-based suggestions using custom hook
   const { userLocation, getUserLocation, findNearbyStoresForItem } = useStoreSuggestions(stores);
-  const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
-  const [selectedItemForSuggestions, setSelectedItemForSuggestions] = useState<ShoppingItem | null>(null);
 
   // Pantry management using custom hook
   const {
@@ -210,11 +230,6 @@ export default function ShoppingSmart() {
     cancelReplenish,
     pantrySortedFiltered,
   } = usePantryManagement(pantryItems);
-
-  // Pantry modal state
-  const [showAddPantry, setShowAddPantry] = useState(false);
-  // Receipt scanning
-  const [showScanReceipt, setShowScanReceipt] = useState(false)
 
   // Heuristic parser to extract item lines from receipt text with auto-categorization
 
@@ -255,15 +270,9 @@ export default function ShoppingSmart() {
     setShowBarcodeScanner(false);
   };
 
-  // Show store suggestions for an item
-  const showStoreSuggestions = (item: ShoppingItem) => {
-    setSelectedItemForSuggestions(item);
-    setShowLocationSuggestions(true);
-  };
 
   // Start editing an item
   const startEditItem = (item: ShoppingItem) => {
-    setEditingItem(item);
     editItemForm.loadItem({
       name: item.name,
       quantity: item.quantity,
@@ -275,7 +284,7 @@ export default function ShoppingSmart() {
       notes: item.notes || '',
       preferredStore: item.assignedStore || ''
     });
-    setShowEditItem(true);
+    openEditModal(item);
   };
 
   // Update existing item
@@ -308,8 +317,7 @@ export default function ShoppingSmart() {
     };
 
     updateShoppingItem(editingItem.id, updatedData);
-    setShowEditItem(false);
-    setEditingItem(null);
+    closeEditModal();
     editItemForm.resetForm();
   };
 
@@ -390,7 +398,7 @@ export default function ShoppingSmart() {
             onToggleItem={toggleShoppingItem}
             onEditItem={startEditItem}
             onDeleteItem={deleteShoppingItem}
-            onFindStores={showStoreSuggestions}
+            onFindStores={openStoreSuggestions}
             onShowStorePrefs={() => setShowStorePrefs(true)}
           />
         )}
@@ -504,25 +512,8 @@ export default function ShoppingSmart() {
                 className="px-3 py-1 rounded border border-gray-300 text-sm hover:bg-gray-50"
                 title="Export pantry to CSV"
                 onClick={() => {
-                  const headers = ['Name','Quantity','Unit','Category','Expiration','LowStock','Threshold','Location']
-                  const rows = pantryItems.map(p => [
-                    p.name,
-                    String(p.quantity ?? ''),
-                    p.unit ?? '',
-                    p.category,
-                    p.expirationDate ? format(p.expirationDate, 'yyyy-MM-dd') : '',
-                    p.isLowStock ? 'yes' : 'no',
-                    p.lowStockThreshold != null ? String(p.lowStockThreshold) : '',
-                    p.location ?? '',
-                  ])
-                  const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n')
-                  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-                  const url = URL.createObjectURL(blob)
-                  const a = document.createElement('a')
-                  a.href = url
-                  a.download = `pantry-${format(new Date(), 'yyyyMMdd-HHmmss')}.csv`
-                  a.click()
-                  URL.revokeObjectURL(url)
+                  const csvContent = exportPantryToCsv(pantryItems);
+                  downloadCsv(csvContent, `pantry-${format(new Date(), 'yyyyMMdd-HHmmss')}.csv`);
                 }}
               >Export CSV</button>
               {/* Simple filters */}
@@ -795,10 +786,7 @@ export default function ShoppingSmart() {
         isOpen={showEditItem}
         formData={editItemForm.formData}
         stores={stores}
-        onClose={() => {
-          setShowEditItem(false);
-          setEditingItem(null);
-        }}
+        onClose={closeEditModal}
         onSubmit={updateExistingItem}
         onFormChange={(updates) => editItemForm.updateForm(updates)}
       />
@@ -821,7 +809,7 @@ export default function ShoppingSmart() {
         item={selectedItemForSuggestions}
         userLocation={userLocation}
         nearbyStores={selectedItemForSuggestions ? findNearbyStoresForItem(selectedItemForSuggestions) : []}
-        onClose={() => setShowLocationSuggestions(false)}
+        onClose={closeStoreSuggestions}
         onGetLocation={getUserLocation}
         onAssignStore={(storeId) => {
           if (selectedItemForSuggestions) {

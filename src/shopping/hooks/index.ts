@@ -9,3 +9,4 @@ export { useReceiptScanner } from './useReceiptScanner';
 export { useStoreSuggestions } from './useStoreSuggestions';
 export { usePantryManagement } from './usePantryManagement';
 export { useItemForm } from './useItemForm';
+export { useShoppingModals } from './useShoppingModals';
