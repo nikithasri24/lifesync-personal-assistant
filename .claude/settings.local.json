@@ -11,7 +11,10 @@
       "Bash(/tmp/meal_part2.txt)",
       "Bash(cat:*)",
       "Bash(src/pages/MealPlanning.tsx)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash({ sed -n '1,436p' /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/ShoppingSmart.tsx)",
+      "Bash(})",
+      "Bash(/tmp/shopping_clean.tsx)"
     ],
     "deny": [],
     "ask": []
