@@ -6,8 +6,6 @@ import {
 } from '../lib/supabase'
 import {
   apiClient,
-  type ShoppingItemData,
-  type ShoppingListData,
 } from '../services/apiClient'
 import type {
   UserStats,
@@ -34,44 +32,8 @@ type ViewKey =
   | 'skincare'
   | 'assistant'
 
-type ShoppingCategory =
-  | 'produce'
-  | 'dairy'
-  | 'meat'
-  | 'pantry'
-  | 'frozen'
-  | 'bakery'
-  | 'deli'
-  | 'household'
-  | 'personal'
-  | 'electronics'
-  | 'other'
-
-interface ShoppingItem {
-  id: string
-  shoppingListId: string
-  name: string
-  quantity: number
-  unit?: string
-  category?: ShoppingCategory
-  subcategory?: string
-  priority: 'low' | 'medium' | 'high'
-  purchased: boolean
-  estimatedPrice?: number
-  actualPrice?: number
-  tags?: string[]
-  assignedStore?: string
-  bestStores?: string[]
-  notes?: string
-  createdAt: Date
-  updatedAt: Date
-}
-
 export interface RealAppState {
   loading: boolean
-  shoppingLoading: boolean
-  // Lazy loading flags
-  shoppingLoaded: boolean
   activeView: ViewKey
   sidebarCollapsed: boolean
   // Global settings (UI preferences, not data)
@@ -79,8 +41,6 @@ export interface RealAppState {
   mealOptions: { breakfast: string[]; lunch: string[]; dinner: string[]; snack: string[] }
 
   userStats: UserStats
-  shoppingItems: ShoppingItem[]
-  activeShoppingListId: string | null
 
   // ==================== 75 Hard (New Architecture) ====================
   // State
@@ -105,13 +65,6 @@ export interface RealAppState {
   setWeekStartsOn: (ws: 0 | 1) => void
   addMealOption: (mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack', name: string) => void
   removeMealOption: (mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack', name: string) => void
-
-  // Shopping - Lazy loading
-  loadShoppingItems: () => Promise<void>
-  addShoppingItem: (item: Omit<ShoppingItem, 'id' | 'createdAt' | 'updatedAt' | 'shoppingListId'>) => Promise<ShoppingItem>
-  updateShoppingItem: (id: string, updates: Partial<ShoppingItem>) => Promise<void>
-  deleteShoppingItem: (id: string) => Promise<void>
-  toggleShoppingItem: (id: string) => Promise<void>
 
   // 75 Hard × Tasks integration
   showSFHTasksInTasks: boolean
@@ -148,73 +101,8 @@ const toDate = (value?: string | Date | null): Date | undefined => {
   return Number.isNaN(parsed.getTime()) ? undefined : parsed
 }
 
-const sanitize = <T extends Record<string, unknown>>(payload: T): T => {
-  const entries = Object.entries(payload).filter(([, value]) => value !== undefined)
-  return Object.fromEntries(entries) as T
-}
-
-const mapShoppingItemDataToShoppingItem = (item: ShoppingItemData): ShoppingItem => ({
-  id: item.id ?? createId(),
-  shoppingListId: item.shopping_list_id ?? 'unknown',
-  name: item.name,
-  quantity: item.quantity ?? 1,
-  unit: item.unit ?? undefined,
-  category: (item.category ?? 'other') as ShoppingCategory,
-  subcategory: item.subcategory ?? undefined,
-  priority: (item.priority as ShoppingItem['priority']) ?? 'medium',
-  purchased: item.is_purchased ?? false,
-  estimatedPrice: item.estimated_price !== undefined ? Number(item.estimated_price) : undefined,
-  actualPrice: item.actual_price !== undefined ? Number(item.actual_price) : undefined,
-  tags: item.tags ?? [],
-  assignedStore: item.assigned_store ?? undefined,
-  bestStores: item.best_stores ?? [],
-  notes: item.notes ?? undefined,
-  createdAt: toDate(item.created_at) ?? new Date(),
-  updatedAt: toDate(item.updated_at) ?? new Date(),
-})
-
-const buildShoppingItemInsertPayload = (
-  item: Omit<ShoppingItem, 'id' | 'createdAt' | 'updatedAt' | 'shoppingListId'>,
-): Omit<ShoppingItemData, 'id' | 'shopping_list_id' | 'created_at' | 'updated_at'> => ({
-  name: item.name,
-  quantity: item.quantity,
-  unit: item.unit ?? undefined,
-  category: item.category ?? undefined,
-  subcategory: item.subcategory ?? undefined,
-  priority: item.priority ?? 'medium',
-  estimated_price: item.estimatedPrice ?? undefined,
-  actual_price: item.actualPrice ?? undefined,
-  tags: item.tags ?? undefined,
-  assigned_store: item.assignedStore ?? undefined,
-  best_stores: item.bestStores ?? undefined,
-  notes: item.notes ?? undefined,
-  is_purchased: item.purchased ?? false,
-})
-
-const buildShoppingItemUpdatePayload = (
-  updates: Partial<ShoppingItem>,
-): Partial<ShoppingItemData> =>
-  sanitize({
-    name: updates.name,
-    quantity: updates.quantity,
-    unit: updates.unit,
-    category: updates.category,
-    subcategory: updates.subcategory,
-    priority: updates.priority,
-    estimated_price: updates.estimatedPrice,
-    actual_price: updates.actualPrice,
-    tags: updates.tags,
-    assigned_store: updates.assignedStore,
-    best_stores: updates.bestStores,
-    notes: updates.notes,
-    is_purchased: updates.purchased,
-  })
-
 export const useRealAppStore = create<RealAppState>((set, get) => ({
   loading: false,
-  shoppingLoading: false,
-  // Lazy loading flags
-  shoppingLoaded: false,
   activeView: (() => {
     try {
       const raw = localStorage.getItem('lifesync:activeView')
@@ -252,8 +140,6 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
   sfhLastSynced: null,
 
   userStats: { level: 1, xp: 0, xpToNextLevel: 100, totalGoalsCompleted: 0 },
-  shoppingItems: [],
-  activeShoppingListId: null,
   showSFHTasksInTasks: (() => {
     try {
       const raw = localStorage.getItem('lifesync:settings:sfhShowInTasks')
@@ -270,7 +156,6 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
       console.warn('[LifeSync] Supabase not configured; store will operate in local-only mode.')
       set({
         loading: false,
-        shoppingItems: [],
       })
       return
     }
@@ -283,9 +168,6 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
       // Only load critical data for Dashboard
       // Everything else loads on-demand when user visits the page
 
-      // Non-critical data moved to lazy loading:
-      // - Shopping Lists → Load when visiting Shopping page
-
       // Migrated to React Query:
       // - Tasks/Todos → Now using useTasksQuery hook
       // - Habits → Now using useHabitsQuery hook
@@ -296,6 +178,7 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
       // - Financial Accounts/Transactions → Now using useFinanceQuery hook
       // - Projects → Removed from Zustand store
       // - Meal Planning (Recipes, Meal Plans, Planned Meals, Pantry Items) → Now using React Query
+      // - Shopping Lists/Items → Now using useShoppingQuery hook
 
       set({
         loading: false,
@@ -340,125 +223,6 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
     })
   },
   setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
-
-  // ==================== Shopping - Lazy Loading ====================
-
-  loadShoppingItems: async () => {
-    // Don't reload if already loaded or loading
-    if (get().shoppingLoaded || get().shoppingLoading) return
-
-    if (!isSupabaseConfigured) return
-    set({ shoppingLoading: true })
-    try {
-      const shoppingListsRaw = await apiClient.getShoppingLists()
-      let items: ShoppingItem[] = []
-      let activeListId: string | null = null
-
-      if (shoppingListsRaw.length > 0) {
-        // Use first active list or just first list
-        const activeList = shoppingListsRaw.find((list) => list.status === 'active') || shoppingListsRaw[0]
-        activeListId = activeList.id ?? null
-
-        if (activeListId) {
-          const itemsRaw = await apiClient.getShoppingListItems(activeListId)
-          items = itemsRaw.map(mapShoppingItemDataToShoppingItem)
-        }
-      }
-
-      set({
-        shoppingItems: items,
-        activeShoppingListId: activeListId,
-        shoppingLoaded: true,
-        shoppingLoading: false,
-      })
-    } catch (e) {
-      console.warn('[Store] loadShoppingItems failed; showing empty list', e)
-      set({ shoppingItems: [], shoppingLoading: false })
-    }
-  },
-
-  addShoppingItem: async (itemInput) => {
-    if (!isSupabaseConfigured) {
-      const shoppingListId = get().activeShoppingListId ?? createId()
-      const item: ShoppingItem = {
-        ...itemInput,
-        id: createId(),
-        shoppingListId,
-        purchased: itemInput.purchased ?? false,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
-      set((state) => ({ shoppingItems: [...state.shoppingItems, item] }))
-      return item
-    }
-
-    let shoppingListId = get().activeShoppingListId
-    if (!shoppingListId) {
-      const newList = await apiClient.createShoppingList({
-        name: 'Personal List',
-        status: 'active',
-      })
-      shoppingListId = newList.id ?? null
-      set({ activeShoppingListId: shoppingListId })
-    }
-
-    if (!shoppingListId) {
-      throw new Error('Failed to determine active shopping list for Supabase insert.')
-    }
-
-    const payload = buildShoppingItemInsertPayload(itemInput)
-    const created = await apiClient.addShoppingItem(shoppingListId, payload)
-    const item = mapShoppingItemDataToShoppingItem(created)
-    set((state) => ({ shoppingItems: [...state.shoppingItems, item] }))
-    return item
-  },
-
-  updateShoppingItem: async (id, updates) => {
-    if (!isSupabaseConfigured) {
-      set((state) => ({
-        shoppingItems: state.shoppingItems.map((item) =>
-          item.id === id
-            ? {
-                ...item,
-                ...updates,
-                updatedAt: new Date(),
-              }
-            : item,
-        ),
-      }))
-      return
-    }
-
-    const payload = buildShoppingItemUpdatePayload(updates)
-    const updated = await apiClient.updateShoppingItem(id, payload)
-    const item = mapShoppingItemDataToShoppingItem(updated)
-    set((state) => ({
-      shoppingItems: state.shoppingItems.map((existing) =>
-        existing.id === id ? item : existing,
-      ),
-    }))
-  },
-
-  deleteShoppingItem: async (id) => {
-    if (isSupabaseConfigured) {
-      await apiClient.deleteShoppingItem(id)
-    }
-    set((state) => ({
-      shoppingItems: state.shoppingItems.filter((item) => item.id !== id),
-    }))
-  },
-
-  toggleShoppingItem: async (id) => {
-    const current = get().shoppingItems.find((item) => item.id === id)
-    if (!current) return
-
-    const updates: Partial<ShoppingItem> = {
-      purchased: !current.purchased,
-      updatedAt: new Date(),
-    }
-
-    await get().updateShoppingItem(id, updates)
-  },
 
   setShowSFHTasksInTasks: (show: boolean) => {
     set({ showSFHTasksInTasks: show })
