@@ -10,3 +10,4 @@ export { useStoreSuggestions } from './useStoreSuggestions';
 export { usePantryManagement } from './usePantryManagement';
 export { useItemForm } from './useItemForm';
 export { useShoppingModals } from './useShoppingModals';
+export { usePantryActions } from './usePantryActions';

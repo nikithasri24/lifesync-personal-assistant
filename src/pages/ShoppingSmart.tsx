@@ -15,10 +15,11 @@ import { ShoppingHeader } from '../shopping/components/layout/ShoppingHeader';
 import { ViewTabs } from '../shopping/components/layout/ViewTabs';
 import { MasterListView, DistributeView, StoreListsView, PantryView } from '../shopping/components/views';
 import { AddItemModal, EditItemModal, BarcodeScannerModal, ReceiptScanningModal, AddPantryItemModal, ReplenishModal, StoreSuggestionsModal } from '../shopping/components/modals';
-import { useVoiceInput, useBarcodeScanner, useStoreSuggestions, usePantryManagement, useItemForm, useShoppingModals } from '../shopping/hooks';
+import { PantryActionButtons } from '../shopping/components/pantry/PantryActionButtons';
+import { PantryTable } from '../shopping/components/pantry/PantryTable';
+import { useVoiceInput, useBarcodeScanner, useStoreSuggestions, usePantryManagement, useItemForm, useShoppingModals, usePantryActions } from '../shopping/hooks';
 import { smartRecommendStores } from '../shopping/utils/storeUtils';
-import { createShoppingItemFromPantry, exportPantryToCsv, downloadCsv } from '../shopping/utils/pantryUtils';
-import { PantryTableRow } from '../shopping/components/pantry/PantryTableRow';
+import { createShoppingItemFromPantry } from '../shopping/utils/pantryUtils';
 import {
   useActiveShoppingList,
   useShoppingItems,
@@ -115,9 +116,9 @@ export default function ShoppingSmart() {
   }, [isLoadingList, activeListId, ensureActiveList]);
 
   // Wrapper functions to maintain same API as Zustand store
-  const addShoppingItem = async (item: Omit<ShoppingItem, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const addShoppingItem = async (item: Omit<ShoppingItem, 'id' | 'createdAt' | 'updatedAt'>): Promise<void> => {
     const listId = activeListId || (await ensureActiveList()).id || '';
-    return createItemMutation.mutateAsync({
+    await createItemMutation.mutateAsync({
       listId,
       item: mapShoppingItemToCreateInput(item),
     });
@@ -153,10 +154,6 @@ export default function ShoppingSmart() {
   const [storeLists, setStoreLists] = useState<ShoppingList[]>([]);
 
   const [activeView, setActiveView] = useState<'master' | 'stores' | 'distribute' | 'pantry'>('master');
-  const [showAddItem, setShowAddItem] = useState(false);
-  const [showEditItem, setShowEditItem] = useState(false);
-  const [editingItem, setEditingItem] = useState<ShoppingItem | null>(null);
-  const [showStorePrefs, setShowStorePrefs] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStores, setSelectedStores] = useState<string[]>([]);
   const [distributionStrategy, setDistributionStrategy] = useState<DistributionStrategy>('mixed');
@@ -230,6 +227,9 @@ export default function ShoppingSmart() {
     cancelReplenish,
     pantrySortedFiltered,
   } = usePantryManagement(pantryItems);
+
+  // Pantry bulk actions using custom hook
+  const { addLowStockToShopping, addExpiredToShopping } = usePantryActions(pantryItems, addShoppingItem);
 
   // Heuristic parser to extract item lines from receipt text with auto-categorization
 
@@ -428,297 +428,76 @@ export default function ShoppingSmart() {
         <div className="bg-white rounded-xl shadow-sm border p-4 mt-4">
           <div className="flex items-center justify-between mb-4">
             <h4 className="text-lg font-semibold">Pantry</h4>
-            <div className="flex items-center gap-2">
-              {/* Summary */}
-              <span className="text-xs text-gray-600 hidden md:inline">
-                {pantryItems.filter(p => p.isLowStock).length} low-stock • {pantryItems.filter(p => p.expirationDate && differenceInCalendarDays(p.expirationDate, new Date()) < 0).length} expired
-              </span>
-              {/* Bulk add low-stock */}
-              <button
-                type="button"
-                className="px-3 py-1 rounded border border-gray-300 text-sm hover:bg-gray-50"
-                title="Add all low-stock items to shopping list"
-                onClick={async () => {
-                  const lows = pantryItems.filter(p => p.isLowStock && (p.lowStockThreshold ?? 0) > 0)
-                  for (const p of lows) {
-                    const target = p.lowStockThreshold ?? 0
-                    const need = Math.max(0, target - (p.quantity || 0)) || 1
-                    await addShoppingItem({
-                      name: p.name,
-                      quantity: need,
-                      unit: p.unit,
-                      category: p.category,
-                      subcategory: undefined,
-                      priority: 'medium',
-                      purchased: false,
-                      price: undefined,
-                      estimatedPrice: undefined,
-                      aisle: undefined,
-                      brand: undefined,
-                      size: undefined,
-                      notes: p.notes,
-                      imageUrl: undefined,
-                      nutritionInfo: undefined,
-                      tags: ['from:pantry'],
-                      addedBy: undefined,
-                      purchasedAt: undefined,
-                      purchasedBy: undefined,
-                      assignedStore: undefined,
-                      bestStores: [],
-                    })
-                  }
-                  showGlobalToast?.(`Added ${lows.length} low-stock items to shopping`, 'success')
-                }}
-              >Add low-stock to Shopping</button>
-              <button
-                type="button"
-                className="px-3 py-1 rounded border border-gray-300 text-sm hover:bg-gray-50"
-                title="Move all expired items to shopping list"
-                onClick={async () => {
-                  const now = new Date()
-                  const expired = pantryItems.filter(p => p.expirationDate && p.expirationDate.getTime() < now.getTime())
-                  for (const p of expired) {
-                    const qty = p.quantity && p.quantity > 0 ? p.quantity : 1
-                    await addShoppingItem({
-                      name: p.name,
-                      quantity: qty,
-                      unit: p.unit,
-                      category: p.category,
-                      subcategory: undefined,
-                      priority: 'medium',
-                      purchased: false,
-                      price: undefined,
-                      estimatedPrice: undefined,
-                      aisle: undefined,
-                      brand: undefined,
-                      size: undefined,
-                      notes: p.notes,
-                      imageUrl: undefined,
-                      nutritionInfo: undefined,
-                      tags: ['from:pantry','reason:expired'],
-                      addedBy: undefined,
-                      purchasedAt: undefined,
-                      purchasedBy: undefined,
-                      assignedStore: undefined,
-                      bestStores: [],
-                    })
-                  }
-                  showGlobalToast?.(`Moved ${expired.length} expired items to shopping`, 'info')
-                }}
-              >Move expired to Shopping</button>
-              {/* Export CSV */}
-              <button
-                type="button"
-                className="px-3 py-1 rounded border border-gray-300 text-sm hover:bg-gray-50"
-                title="Export pantry to CSV"
-                onClick={() => {
-                  const csvContent = exportPantryToCsv(pantryItems);
-                  downloadCsv(csvContent, `pantry-${format(new Date(), 'yyyyMMdd-HHmmss')}.csv`);
-                }}
-              >Export CSV</button>
-              {/* Simple filters */}
-              <select
-                className="rounded border border-gray-300 px-2 py-1 text-sm"
-                onChange={(e) => setPantryFilter(e.target.value as any)}
-                defaultValue="all"
-                title="Filter"
-              >
-                <option value="all">All</option>
-                <option value="soon">Expiring soon</option>
-                <option value="expired">Expired</option>
-                <option value="low">Low stock</option>
-              </select>
-              <select
-                className="rounded border border-gray-300 px-2 py-1 text-sm"
-                onChange={(e) => setPantrySort(e.target.value as any)}
-                defaultValue="expiry"
-                title="Sort"
-              >
-                <option value="expiry">Sort by expiry</option>
-                <option value="name">Sort by name</option>
-              </select>
-              <button onClick={() => setShowAddPantry(true)} className="btn-primary flex items-center space-x-2">
-                <Plus size={16} />
-                <span>Add Pantry Item</span>
-              </button>
-              <button onClick={() => setShowScanReceipt(true)} className="px-3 py-1 rounded border border-gray-300 text-sm hover:bg-gray-50 flex items-center gap-2" title="Scan receipt to auto-add items">
-                <Receipt size={16} />
-                <span>Scan Receipt</span>
-              </button>
-            </div>
+            <PantryActionButtons
+              pantryItems={pantryItems}
+              pantryFilter={pantryFilter}
+              pantrySort={pantrySort}
+              onFilterChange={setPantryFilter}
+              onSortChange={setPantrySort}
+              onAddLowStock={async () => {
+                const count = await addLowStockToShopping();
+                showGlobalToast?.(`Added ${count} low-stock items to shopping`, 'success');
+              }}
+              onAddExpired={async () => {
+                const count = await addExpiredToShopping();
+                showGlobalToast?.(`Moved ${count} expired items to shopping`, 'info');
+              }}
+              onAddItem={() => setShowAddPantry(true)}
+              onScanReceipt={() => setShowScanReceipt(true)}
+            />
           </div>
 
-          {pantryItems.length === 0 ? (
-            <p className="text-sm text-gray-500">No pantry items yet.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead>
-                  <tr className="text-left text-gray-600">
-                    <th className="py-2 px-3">Item</th>
-                    <th className="py-2 px-3">Qty</th>
-                    <th className="py-2 px-3">Expires</th>
-                    <th className="py-2 px-3">Status</th>
-                    <th className="py-2 px-3">Low stock</th>
-                    <th className="py-2 px-3">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pantrySortedFiltered.map((p) => {
-                    const days = p.expirationDate ? differenceInCalendarDays(p.expirationDate, new Date()) : null
-                    let status = '—'
-                    let cls = 'text-gray-600'
-                    if (days != null) {
-                      if (days < 0) { status = 'Expired'; cls = 'text-rose-700' }
-                      else if (days <= 7) { status = `Expires in ${days}d`; cls = 'text-amber-700' }
-                      else { status = `Fresh (${days}d)`; cls = 'text-emerald-700' }
-                    }
-                    return (
-                      <tr key={p.id} className="border-t">
-                        <td className="py-2 px-3 font-medium text-gray-900">{p.name}</td>
-                        <td className="py-2 px-3">
-                          {editingPantryId === p.id ? (
-                            <div className="flex items-center gap-2">
-                              <input type="number" min={0} value={editPantry.qty} onChange={(e) => setEditPantry(s => ({ ...s, qty: e.target.value }))} className="w-20 rounded border border-gray-300 px-2 py-1" />
-                              <input value={editPantry.unit} onChange={(e) => setEditPantry(s => ({ ...s, unit: e.target.value }))} className="w-20 rounded border border-gray-300 px-2 py-1" />
-                            </div>
-                          ) : (
-                            <>{p.quantity} {p.unit || ''}</>
-                          )}
-                        </td>
-                        <td className="py-2 px-3">
-                          {editingPantryId === p.id ? (
-                            <input type="date" value={editPantry.exp} onChange={(e) => setEditPantry(s => ({ ...s, exp: e.target.value }))} className="rounded border border-gray-300 px-2 py-1" />
-                          ) : (
-                            <>{p.expirationDate ? format(p.expirationDate, 'MMM d, yyyy') : '—'}</>
-                          )}
-                        </td>
-                        <td className="py-2 px-3"><span className={cls}>{status}</span></td>
-                        <td className="py-2 px-3">
-                          {editingPantryId === p.id ? (
-                            <div className="flex items-center gap-2">
-                              <label className="inline-flex items-center gap-1 text-xs text-gray-700">
-                                <input type="checkbox" checked={editPantry.low} onChange={(e) => setEditPantry(s => ({ ...s, low: e.target.checked }))} /> Low
-                              </label>
-                              <input type="number" min={0} placeholder="Threshold" value={editPantry.threshold} onChange={(e) => setEditPantry(s => ({ ...s, threshold: e.target.value }))} className="w-24 rounded border border-gray-300 px-2 py-1" />
-                            </div>
-                          ) : (
-                            <span className={`text-xs ${p.isLowStock ? 'text-amber-700' : 'text-gray-500'}`}>{p.isLowStock ? `Low (≤ ${p.lowStockThreshold ?? '—'})` : 'OK'}</span>
-                          )}
-                        </td>
-                        <td className="py-2 px-3 space-x-2">
-                          {editingPantryId === p.id ? (
-                            <>
-                              <button className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50" onClick={async () => {
-                                const qty = Number(editPantry.qty) || 0
-                                const exp = editPantry.exp ? new Date(editPantry.exp) : undefined
-                                await updatePantryItemMutation.mutateAsync({ itemId: p.id, updates: { quantity: qty, unit: editPantry.unit || undefined, expirationDate: exp, isLowStock: editPantry.low, lowStockThreshold: editPantry.threshold ? Number(editPantry.threshold) : undefined } })
-                                cancelEditing()
-                              }}>Save</button>
-                              <button className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50" onClick={() => setEditingPantryId(null)}>Cancel</button>
-                            </>
-                          ) : (
-                            <>
-                              <button
-                                className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50"
-                                onClick={() => {
-                                  startEditingPantry(p)
-                                }}
-                              >Edit</button>
-                              <button
-                                className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50"
-                                title="Replenish to target quantity"
-                                onClick={() => { startReplenish(p.id); }}
-                              >Replenish</button>
-                              <button
-                                className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50"
-                                onClick={() => {
-                                  void addShoppingItem({
-                                    name: p.name,
-                                    quantity: (p.lowStockThreshold && p.quantity < p.lowStockThreshold) ? (p.lowStockThreshold - p.quantity) : p.quantity || 1,
-                                    unit: p.unit,
-                                    category: p.category,
-                                    subcategory: undefined,
-                                    priority: 'medium',
-                                    purchased: false,
-                                    price: undefined,
-                                    estimatedPrice: undefined,
-                                    aisle: undefined,
-                                    brand: undefined,
-                                    size: undefined,
-                                    notes: p.notes,
-                                    imageUrl: undefined,
-                                    nutritionInfo: undefined,
-                                    tags: ['from:pantry'],
-                                    addedBy: undefined,
-                                    purchasedAt: undefined,
-                                    purchasedBy: undefined,
-                                    assignedStore: undefined,
-                                    bestStores: [],
-                                  })
-                                  showGlobalToast?.(`Added ${p.name} to shopping`, 'success')
-                                }}
-                              >Add to Shopping</button>
-                              <button
-                                className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50"
-                                onClick={() => void deletePantryItemMutation.mutate(p.id)}
-                              >Delete</button>
-                            </>
-                          )}
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
+          <PantryTable
+            items={pantrySortedFiltered}
+            editingItemId={editingPantryId}
+            editData={editPantry}
+            replenishId={replenishId}
+            onEditChange={(updates) => setEditPantry(s => ({ ...s, ...updates }))}
+            onSaveEdit={async (itemId) => {
+              const qty = Number(editPantry.qty) || 0;
+              const exp = editPantry.exp ? new Date(editPantry.exp) : undefined;
+              await updatePantryItemMutation.mutateAsync({
+                itemId,
+                updates: {
+                  quantity: qty,
+                  unit: editPantry.unit || undefined,
+                  expirationDate: exp,
+                  isLowStock: editPantry.low,
+                  lowStockThreshold: editPantry.threshold ? Number(editPantry.threshold) : undefined
+                }
+              });
+              cancelEditing();
+            }}
+            onCancelEdit={cancelEditing}
+            onStartEdit={startEditingPantry}
+            onStartReplenish={startReplenish}
+            onReplenish={async (targetQuantity) => {
+              const item = pantryItems.find(x => x.id === replenishId);
+              if (!item) return;
 
-          {replenishId && (() => {
-            const p = pantryItems.find(x => x.id === replenishId);
-            if (!p) return null;
-            return (
-              <ReplenishModal
-                itemName={p.name}
-                currentQuantity={p.quantity || 0}
-                suggestedTarget={p.lowStockThreshold || Math.max(p.quantity || 0, 1)}
-                onReplenish={async (targetQuantity) => {
-                  const need = Math.max(0, targetQuantity - (p.quantity || 0));
-                  if (need <= 0) {
-                    showGlobalToast?.('Already at or above target', 'info');
-                    cancelReplenish();
-                    return;
-                  }
-                  await addShoppingItem({
-                    name: p.name,
-                    quantity: need,
-                    unit: p.unit,
-                    category: p.category,
-                    subcategory: undefined,
-                    priority: 'medium',
-                    purchased: false,
-                    price: undefined,
-                    estimatedPrice: undefined,
-                    aisle: undefined,
-                    brand: undefined,
-                    size: undefined,
-                    notes: p.notes,
-                    imageUrl: undefined,
-                    nutritionInfo: undefined,
-                    tags: ['from:pantry','reason:replenish'],
-                    addedBy: undefined,
-                    purchasedAt: undefined,
-                    purchasedBy: undefined,
-                    assignedStore: undefined,
-                    bestStores: [],
-                  });
-                  showGlobalToast?.(`Added ${need} ${p.unit || ''} of ${p.name} to shopping`, 'success');
-                  cancelReplenish();
-                }}
-                onCancel={cancelReplenish}
-              />
-            );
-          })()}
+              const need = Math.max(0, targetQuantity - (item.quantity || 0));
+              if (need <= 0) {
+                showGlobalToast?.('Already at or above target', 'info');
+                cancelReplenish();
+                return;
+              }
+
+              const shoppingItem = createShoppingItemFromPantry(item, need);
+              await addShoppingItem({ ...shoppingItem, tags: ['from:pantry', 'reason:replenish'] });
+              showGlobalToast?.(`Added ${need} ${item.unit || ''} of ${item.name} to shopping`, 'success');
+              cancelReplenish();
+            }}
+            onCancelReplenish={cancelReplenish}
+            onAddToShopping={(item) => {
+              const qty = (item.lowStockThreshold && item.quantity < item.lowStockThreshold)
+                ? (item.lowStockThreshold - item.quantity)
+                : item.quantity || 1;
+              const shoppingItem = createShoppingItemFromPantry(item, qty);
+              void addShoppingItem(shoppingItem);
+              showGlobalToast?.(`Added ${item.name} to shopping`, 'success');
+            }}
+            onDelete={(itemId) => void deletePantryItemMutation.mutate(itemId)}
+          />
         </div>
       )}
 
