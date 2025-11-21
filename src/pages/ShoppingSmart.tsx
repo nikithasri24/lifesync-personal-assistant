@@ -8,6 +8,12 @@ import {
   useDeleteShoppingItem,
   useToggleShoppingItem,
 } from '../hooks/useShoppingQuery';
+import {
+  usePantryItemsQuery,
+  useCreatePantryItemMutation,
+  useUpdatePantryItemMutation,
+  useDeletePantryItemMutation,
+} from '../mealPlanning/hooks/useMealPlanningQuery';
 import { 
   Plus, 
   ShoppingCart, 
@@ -191,18 +197,16 @@ export default function ShoppingSmart() {
     }));
   }, [shoppingItemsData]);
 
-  const shoppingLoading = isLoadingList || isLoadingItems;
+  // React Query hooks for pantry data
+  const { data: pantryItems = [], isLoading: pantryLoading } = usePantryItemsQuery();
+  const createPantryItemMutation = useCreatePantryItemMutation();
+  const updatePantryItemMutation = useUpdatePantryItemMutation();
+  const deletePantryItemMutation = useDeletePantryItemMutation();
+
+  const shoppingLoading = isLoadingList || isLoadingItems || pantryLoading;
 
   // Get other store data that hasn't been migrated yet
-  const {
-    pantryItems,
-    addPantryItem,
-    updatePantryItem,
-    deletePantryItem,
-    showGlobalToast,
-    addFinancialTransaction,
-    financialAccounts,
-  } = useAppStore();
+  const { showGlobalToast, addFinancialTransaction, financialAccounts } = useAppStore();
 
   // Ensure active shopping list exists on mount
   useEffect(() => {
@@ -1780,7 +1784,7 @@ export default function ShoppingSmart() {
                               <button className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50" onClick={async () => {
                                 const qty = Number(editPantry.qty) || 0
                                 const exp = editPantry.exp ? new Date(editPantry.exp) : undefined
-                                await updatePantryItem(p.id, { quantity: qty, unit: editPantry.unit || undefined, expirationDate: exp, isLowStock: editPantry.low, lowStockThreshold: editPantry.threshold ? Number(editPantry.threshold) : undefined })
+                                await updatePantryItemMutation.mutateAsync({ itemId: p.id, updates: { quantity: qty, unit: editPantry.unit || undefined, expirationDate: exp, isLowStock: editPantry.low, lowStockThreshold: editPantry.threshold ? Number(editPantry.threshold) : undefined } })
                                 setEditingPantryId(null)
                               }}>Save</button>
                               <button className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50" onClick={() => setEditingPantryId(null)}>Cancel</button>
@@ -1830,7 +1834,7 @@ export default function ShoppingSmart() {
                               >Add to Shopping</button>
                               <button
                                 className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50"
-                                onClick={() => void deletePantryItem(p.id)}
+                                onClick={() => void deletePantryItemMutation.mutate(p.id)}
                               >Delete</button>
                             </>
                           )}
@@ -1947,7 +1951,7 @@ export default function ShoppingSmart() {
                 onClick={async () => {
                   const qty = Number(pantryForm.quantity) || 0
                   const exp = pantryForm.expiration ? new Date(pantryForm.expiration) : undefined
-                  await addPantryItem({ name: pantryForm.name.trim(), quantity: qty, unit: pantryForm.unit.trim() || undefined, category: pantryForm.category, expirationDate: exp, location: pantryFormLocation || undefined, lowStockThreshold: pantryFormThreshold ? Number(pantryFormThreshold) : undefined, isLowStock: pantryFormThreshold ? qty <= Number(pantryFormThreshold) : undefined })
+                  await createPantryItemMutation.mutateAsync({ name: pantryForm.name.trim(), quantity: qty, unit: pantryForm.unit.trim() || undefined, category: pantryForm.category, expirationDate: exp, location: pantryFormLocation || undefined, lowStockThreshold: pantryFormThreshold ? Number(pantryFormThreshold) : undefined, isLowStock: pantryFormThreshold ? qty <= Number(pantryFormThreshold) : undefined })
                   setPantryForm({ name: '', quantity: '1', unit: '', category: 'pantry', expiration: '' })
                   setPantryFormLocation('')
                   setPantryFormThreshold('')
@@ -2401,7 +2405,7 @@ export default function ShoppingSmart() {
                       const chosen = parsedReceipt.filter(x => x.selected)
                       for (const it of chosen) {
                         const thresholdNum = it.threshold ? Number(it.threshold) : undefined
-                        await addPantryItem({ name: it.name, quantity: it.quantity, category: it.category, lowStockThreshold: thresholdNum, isLowStock: thresholdNum != null ? it.quantity <= thresholdNum : undefined })
+                        await createPantryItemMutation.mutateAsync({ name: it.name, quantity: it.quantity, category: it.category, lowStockThreshold: thresholdNum, isLowStock: thresholdNum != null ? it.quantity <= thresholdNum : undefined })
                       }
                       showGlobalToast?.(`Added ${chosen.length} items to pantry`, 'success')
                       setShowScanReceipt(false); setReceiptImageUrl(null); setReceiptText(''); setParsedReceipt([])

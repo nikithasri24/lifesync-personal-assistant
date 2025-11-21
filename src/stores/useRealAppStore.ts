@@ -1,24 +1,15 @@
 import { create } from 'zustand'
-import { addDays, startOfWeek, differenceInDays, format as formatDate, startOfDay } from 'date-fns'
+import { differenceInDays } from 'date-fns'
 import {
   ensureSupabase,
   isSupabaseConfigured,
 } from '../lib/supabase'
 import {
   apiClient,
-  type MealPlanData,
-  type PlannedMealData,
-  type PantryItemData,
-  type RecipeData,
   type ShoppingItemData,
   type ShoppingListData,
 } from '../services/apiClient'
 import type {
-  MealColumn,
-  MealPlanWeek,
-  PantryItem,
-  PlannedMeal,
-  Recipe,
   UserStats,
 } from '../types'
 
@@ -76,24 +67,17 @@ interface ShoppingItem {
   updatedAt: Date
 }
 
-interface RealAppState {
+export interface RealAppState {
   loading: boolean
-  mealPlansLoading: boolean
-  recipesLoading: boolean
   shoppingLoading: boolean
   // Lazy loading flags
-  recipesLoaded: boolean
-  mealPlansLoaded: boolean
   shoppingLoaded: boolean
   activeView: ViewKey
   sidebarCollapsed: boolean
-  // Global settings
+  // Global settings (UI preferences, not data)
   weekStartsOn: 0 | 1
   mealOptions: { breakfast: string[]; lunch: string[]; dinner: string[]; snack: string[] }
 
-  recipes: Recipe[]
-  pantryItems: PantryItem[]
-  mealPlans: MealPlanWeek[]
   userStats: UserStats
   shoppingItems: ShoppingItem[]
   activeShoppingListId: string | null
@@ -122,34 +106,12 @@ interface RealAppState {
   addMealOption: (mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack', name: string) => void
   removeMealOption: (mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack', name: string) => void
 
-  // Recipes & Meal Plans - Lazy loading
-  loadRecipes: () => Promise<void>
-  loadMealPlans: () => Promise<void>
-  addRecipe: (recipe: Omit<Recipe, 'id' | 'createdAt'>) => Promise<Recipe>
-  updateRecipe: (id: string, updates: Partial<Recipe>) => Promise<void>
-  deleteRecipe: (id: string) => Promise<void>
-  deleteAllRecipes: () => Promise<void>
-
-  loadMealPlans: () => Promise<void>
-  ensureMealPlanForWeek: (weekStartDate: Date) => Promise<MealPlanWeek>
-  addPlannedMeal: (
-    planId: string,
-    meal: Omit<PlannedMeal, 'id' | 'mealPlanId' | 'createdAt'>,
-  ) => Promise<PlannedMeal>
-  updatePlannedMeal: (mealId: string, updates: Partial<PlannedMeal>) => Promise<void>
-  deletePlannedMeal: (mealId: string) => Promise<void>
-
   // Shopping - Lazy loading
   loadShoppingItems: () => Promise<void>
   addShoppingItem: (item: Omit<ShoppingItem, 'id' | 'createdAt' | 'updatedAt' | 'shoppingListId'>) => Promise<ShoppingItem>
   updateShoppingItem: (id: string, updates: Partial<ShoppingItem>) => Promise<void>
   deleteShoppingItem: (id: string) => Promise<void>
   toggleShoppingItem: (id: string) => Promise<void>
-
-  // Pantry
-  addPantryItem: (item: Omit<PantryItem, 'id' | 'updatedAt'>) => Promise<PantryItem>
-  updatePantryItem: (id: string, updates: Partial<PantryItem>) => Promise<void>
-  deletePantryItem: (id: string) => Promise<void>
 
   // 75 Hard × Tasks integration
   showSFHTasksInTasks: boolean
@@ -167,45 +129,6 @@ interface RealAppState {
   setSFHLastSynced: (d: Date) => void
 
 }
-
-const DEFAULT_MEAL_COLUMNS: MealColumn[] = [
-  {
-    id: 'breakfast',
-    name: 'Breakfast',
-    defaultServings: 2,
-    defaultPeopleCount: 2,
-    color: '#f97316',
-    icon: '☀️',
-    order: 1,
-  },
-  {
-    id: 'lunch',
-    name: 'Lunch',
-    defaultServings: 2,
-    defaultPeopleCount: 2,
-    color: '#10b981',
-    icon: '🥗',
-    order: 2,
-  },
-  {
-    id: 'dinner',
-    name: 'Dinner',
-    defaultServings: 4,
-    defaultPeopleCount: 4,
-    color: '#8b5cf6',
-    icon: '🍽️',
-    order: 3,
-  },
-  {
-    id: 'snack',
-    name: 'Snacks',
-    defaultServings: 1,
-    defaultPeopleCount: 1,
-    color: '#6b7280',
-    icon: '🍿',
-    order: 4,
-  },
-]
 
 const createId = () => {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -251,25 +174,22 @@ const mapShoppingItemDataToShoppingItem = (item: ShoppingItemData): ShoppingItem
 })
 
 const buildShoppingItemInsertPayload = (
-  listId: string,
   item: Omit<ShoppingItem, 'id' | 'createdAt' | 'updatedAt' | 'shoppingListId'>,
-): Omit<ShoppingItemData, 'id' | 'created_at' | 'updated_at'> =>
-  sanitize({
-    shopping_list_id: listId,
-    name: item.name,
-    quantity: item.quantity,
-    unit: item.unit ?? null,
-    category: item.category ?? null,
-    subcategory: item.subcategory ?? null,
-    priority: item.priority ?? 'medium',
-    estimated_price: item.estimatedPrice ?? null,
-    actual_price: item.actualPrice ?? null,
-    tags: item.tags ?? [],
-    assigned_store: item.assignedStore ?? null,
-    best_stores: item.bestStores ?? [],
-    notes: item.notes ?? null,
-    is_purchased: item.purchased ?? false,
-  })
+): Omit<ShoppingItemData, 'id' | 'shopping_list_id' | 'created_at' | 'updated_at'> => ({
+  name: item.name,
+  quantity: item.quantity,
+  unit: item.unit ?? undefined,
+  category: item.category ?? undefined,
+  subcategory: item.subcategory ?? undefined,
+  priority: item.priority ?? 'medium',
+  estimated_price: item.estimatedPrice ?? undefined,
+  actual_price: item.actualPrice ?? undefined,
+  tags: item.tags ?? undefined,
+  assigned_store: item.assignedStore ?? undefined,
+  best_stores: item.bestStores ?? undefined,
+  notes: item.notes ?? undefined,
+  is_purchased: item.purchased ?? false,
+})
 
 const buildShoppingItemUpdatePayload = (
   updates: Partial<ShoppingItem>,
@@ -290,251 +210,10 @@ const buildShoppingItemUpdatePayload = (
     is_purchased: updates.purchased,
   })
 
-const normalisePantryCategory = (category?: string | null): PantryItem['category'] => {
-  switch ((category ?? '').toLowerCase()) {
-    case 'produce':
-    case 'fruits':
-    case 'vegetables':
-      return 'produce'
-    case 'dairy':
-      return 'dairy'
-    case 'meat':
-    case 'protein':
-      return 'meat'
-    case 'pantry':
-    case 'dry-goods':
-      return 'pantry'
-    default:
-      return 'other'
-  }
-}
-
-const mapPantryItemDataToPantryItem = (item: PantryItemData): PantryItem => ({
-  id: item.id ?? createId(),
-  name: item.name,
-  quantity: Number(item.quantity ?? 0),
-  unit: item.unit ?? undefined,
-  category: normalisePantryCategory(item.category),
-  location: item.location ?? undefined,
-  expirationDate: toDate(item.expiration_date) ?? undefined,
-  notes: item.notes ?? undefined,
-  isLowStock: item.is_low_stock ?? undefined,
-  lowStockThreshold: item.low_stock_threshold ?? undefined,
-  updatedAt: toDate(item.updated_at) ?? new Date(),
-})
-
-const normaliseMealColumns = (columns: MealPlanData['meal_columns']): MealColumn[] => {
-  if (!columns) return DEFAULT_MEAL_COLUMNS
-  if (Array.isArray(columns)) {
-    return (columns as MealColumn[]).map((column, index) => ({
-      ...column,
-      order: column.order ?? index + 1,
-    }))
-  }
-  if (typeof columns === 'object') {
-    return Object.entries(columns).map(([id, value], index) => ({
-      id,
-      name: (value as { name?: string }).name ?? id,
-      defaultServings: (value as { defaultServings?: number }).defaultServings ?? 2,
-      defaultPeopleCount: (value as { defaultPeopleCount?: number }).defaultPeopleCount ?? 2,
-      color: (value as { color?: string }).color ?? '#6366f1',
-      icon: (value as { icon?: string }).icon ?? undefined,
-      order: (value as { order?: number }).order ?? index + 1,
-    }))
-  }
-  return DEFAULT_MEAL_COLUMNS
-}
-
-const serializeMealColumns = (columns: MealColumn[]): Record<string, unknown> =>
-  Object.fromEntries(
-    columns.map((column) => [column.id, { ...column }]),
-  )
-
-const mapPlannedMealDataToPlannedMeal = (meal: PlannedMealData): PlannedMeal => {
-  // Handle date-only strings (yyyy-MM-dd) as local dates
-  const d = meal.date && meal.date.length === 10
-    ? new Date(Number(meal.date.slice(0, 4)), Number(meal.date.slice(5, 7)) - 1, Number(meal.date.slice(8, 10)))
-    : toDate(meal.date)
-  return {
-    id: meal.id ?? createId(),
-    mealPlanId: meal.meal_plan_id ?? 'unknown',
-    date: d ?? new Date(),
-    mealType: meal.meal_type,
-    recipeId: meal.recipe_id ?? undefined,
-    customMeal: meal.custom_meal ?? undefined,
-    servings: meal.servings ?? 1,
-    peopleCount: meal.people_count ?? 1,
-    status: (meal.status as PlannedMeal['status']) ?? 'planned',
-    notes: meal.notes ?? undefined,
-    createdAt: toDate(meal.created_at) ?? new Date(),
-  }
-}
-
-const mapMealPlanDataToMealPlanWeek = (plan: MealPlanData): MealPlanWeek => {
-  const wsd = plan.week_start_date
-  const weekStart = wsd && wsd.length === 10
-    ? new Date(Number(wsd.slice(0, 4)), Number(wsd.slice(5, 7)) - 1, Number(wsd.slice(8, 10)))
-    : toDate(wsd)
-  return {
-    id: plan.id ?? createId(),
-    name: plan.name,
-    weekStartDate: weekStart ?? new Date(),
-    mealColumns: normaliseMealColumns(plan.meal_columns),
-    meals: (plan.planned_meals ?? []).map(mapPlannedMealDataToPlannedMeal),
-    notes: plan.notes ?? undefined,
-    createdAt: toDate(plan.created_at) ?? new Date(),
-    updatedAt: toDate(plan.updated_at) ?? new Date(),
-  }
-}
-
-const buildMealPlanInsertPayload = (
-  weekStartDate: Date,
-  name: string,
-): Omit<MealPlanData, 'id' | 'created_at' | 'updated_at'> =>
-  sanitize({
-    name,
-    // Store date-only to avoid timezone/week boundary bugs
-    week_start_date: formatDate(weekStartDate, 'yyyy-MM-dd'),
-    meal_columns: serializeMealColumns(DEFAULT_MEAL_COLUMNS),
-  })
-
-const buildMealPlanUpdatePayload = (
-  updates: Partial<MealPlanWeek>,
-): Partial<MealPlanData> =>
-  sanitize({
-    name: updates.name,
-    notes: updates.notes,
-    meal_columns: updates.mealColumns ? serializeMealColumns(updates.mealColumns) : undefined,
-  })
-
-const buildPlannedMealInsertPayload = (
-  planId: string,
-  meal: Omit<PlannedMeal, 'id' | 'mealPlanId' | 'createdAt'>,
-): Omit<PlannedMealData, 'id' | 'created_at' | 'updated_at'> =>
-  sanitize({
-    meal_plan_id: planId,
-    meal_type: meal.mealType,
-    date: formatDate(meal.date, 'yyyy-MM-dd'),
-    recipe_id: meal.recipeId ?? null,
-    custom_meal: meal.customMeal ?? null,
-    servings: meal.servings,
-    people_count: meal.peopleCount,
-    status: meal.status ?? 'planned',
-    notes: meal.notes ?? undefined,
-  })
-
-const mapRecipeDataToRecipe = (recipe: RecipeData): Recipe => ({
-  id: recipe.id ?? createId(),
-  name: recipe.name,
-  description: recipe.description ?? '',
-  ingredients: Array.isArray(recipe.ingredients)
-    ? recipe.ingredients.map((ing) => ({
-        name: ing.name,
-        amount: ing.amount ?? undefined,
-        unit: ing.unit ?? undefined,
-      }))
-    : [],
-  instructions: recipe.instructions
-    ? recipe.instructions
-        .split('\n')
-        .map((line) => line.trim())
-        .filter(Boolean)
-    : [],
-  prepTime: recipe.prep_time ?? 0,
-  cookTime: recipe.cook_time ?? 0,
-  servings: recipe.servings ?? 1,
-  difficulty: (recipe.difficulty as Recipe['difficulty']) ?? 'medium',
-  tags: recipe.tags ?? [],
-  rating: undefined,
-  notes: undefined,
-  image: recipe.video_thumbnail ?? undefined,
-  calories: recipe.calories_per_serving ?? undefined,
-  cuisine: recipe.cuisine ?? undefined,
-  dietaryRestrictions: recipe.dietary_restrictions ?? undefined,
-  nutritionInfo: recipe.nutrition_info ?? undefined,
-  flowChart: [],
-  sourceType: (recipe.source_type as Recipe['sourceType']) ?? undefined,
-  sourceUrl: recipe.source_url ?? undefined,
-  authorName: recipe.author_name ?? undefined,
-  videoThumbnail: recipe.video_thumbnail ?? undefined,
-  createdAt: toDate(recipe.created_at) ?? new Date(),
-})
-
-const buildRecipeInsertPayload = (
-  recipe: Omit<Recipe, 'id' | 'createdAt'>,
-): Omit<RecipeData, 'id' | 'created_at' | 'updated_at'> =>
-  sanitize({
-    name: recipe.name,
-    description: recipe.description ?? '',
-    cuisine: recipe.cuisine ?? null,
-    difficulty: recipe.difficulty ?? 'medium',
-    prep_time: recipe.prepTime ?? null,
-    cook_time: recipe.cookTime ?? null,
-    servings: recipe.servings ?? 1,
-    calories_per_serving: recipe.calories ?? null,
-    instructions: recipe.instructions.join('\n'),
-    ingredients: Array.isArray(recipe.ingredients) && recipe.ingredients.length > 0
-      ? recipe.ingredients.map((ing) => ({
-          name: ing.name,
-          amount: ing.amount ?? undefined,
-          unit: ing.unit ?? undefined,
-        }))
-      : null,
-    tags: recipe.tags ?? [],
-    dietary_restrictions: recipe.dietaryRestrictions ?? [],
-    nutrition_info: recipe.nutritionInfo ?? null,
-    source_type: recipe.sourceType ?? null,
-    source_url: recipe.sourceUrl ?? null,
-    author_name: recipe.authorName ?? null,
-    video_thumbnail: recipe.videoThumbnail ?? null,
-  })
-
-const buildRecipeUpdatePayload = (
-  updates: Partial<Recipe>,
-): Partial<RecipeData> =>
-  sanitize({
-    name: updates.name,
-    description: updates.description ?? undefined,
-    cuisine: updates.cuisine ?? undefined,
-    difficulty: updates.difficulty ?? undefined,
-    prep_time: updates.prepTime ?? undefined,
-    cook_time: updates.cookTime ?? undefined,
-    servings: updates.servings ?? undefined,
-    calories_per_serving: updates.calories ?? undefined,
-    instructions: updates.instructions ? updates.instructions.join('\n') : undefined,
-    ingredients: updates.ingredients
-      ? updates.ingredients.map((ing) => ({
-          name: ing.name,
-          amount: ing.amount ?? undefined,
-          unit: ing.unit ?? undefined,
-        }))
-      : undefined,
-    tags: updates.tags ?? undefined,
-    dietary_restrictions: updates.dietaryRestrictions ?? undefined,
-    nutrition_info: updates.nutritionInfo ?? undefined,
-    source_type: updates.sourceType ?? undefined,
-    source_url: updates.sourceUrl ?? undefined,
-    author_name: updates.authorName ?? undefined,
-    video_thumbnail: updates.videoThumbnail ?? undefined,
-  })
-
-const sameWeek = (a: Date, b: Date, weekStartsOn: number) => {
-  const weekA = startOfWeek(a, { weekStartsOn }).getTime()
-  const weekB = startOfWeek(b, { weekStartsOn }).getTime()
-  return weekA === weekB
-}
-
-// Lock to prevent concurrent creation of meal plans for the same week
-const creationLocks = new Map<string, Promise<MealPlanWeek>>()
-
 export const useRealAppStore = create<RealAppState>((set, get) => ({
   loading: false,
-  mealPlansLoading: false,
-  recipesLoading: false,
   shoppingLoading: false,
   // Lazy loading flags
-  recipesLoaded: false,
-  mealPlansLoaded: false,
   shoppingLoaded: false,
   activeView: (() => {
     try {
@@ -551,7 +230,7 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
   sfhFailureDate: null,
   sfhShowDayCompleteMessage: false,
   sfhShowCelebration: false,
-  // Global settings
+  // Global settings (UI preferences, not data)
   weekStartsOn: (() => {
     try {
       const raw = localStorage.getItem('lifesync:settings:weekStartsOn')
@@ -572,9 +251,6 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
   globalToast: null,
   sfhLastSynced: null,
 
-  recipes: [],
-  pantryItems: [],
-  mealPlans: [],
   userStats: { level: 1, xp: 0, xpToNextLevel: 100, totalGoalsCompleted: 0 },
   shoppingItems: [],
   activeShoppingListId: null,
@@ -595,9 +271,6 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
       set({
         loading: false,
         shoppingItems: [],
-        mealPlans: [],
-        recipes: [],
-        pantryItems: [],
       })
       return
     }
@@ -612,9 +285,6 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
 
       // Non-critical data moved to lazy loading:
       // - Shopping Lists → Load when visiting Shopping page
-      // - Pantry Items → Load when visiting Meal Planning
-      // - Meal Plans → Load when visiting Meal Planning (already has loadMealPlans())
-      // - Recipes → Load when visiting Meal Planning (already has loadRecipes())
 
       // Migrated to React Query:
       // - Tasks/Todos → Now using useTasksQuery hook
@@ -625,6 +295,7 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
       // - Goals/Dreams → Now using useLifeGoalsQuery hook
       // - Financial Accounts/Transactions → Now using useFinanceQuery hook
       // - Projects → Removed from Zustand store
+      // - Meal Planning (Recipes, Meal Plans, Planned Meals, Pantry Items) → Now using React Query
 
       set({
         loading: false,
@@ -669,272 +340,6 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
     })
   },
   setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
-
-  loadRecipes: async () => {
-    // Don't reload if already loaded or loading
-    if (get().recipesLoaded || get().recipesLoading) return
-
-    if (!isSupabaseConfigured) return
-    set({ recipesLoading: true })
-    try {
-      const recipesRaw = await apiClient.getRecipes()
-      const recipes = recipesRaw.map(mapRecipeDataToRecipe)
-      set({ recipes, recipesLoaded: true, recipesLoading: false })
-    } catch (e) {
-      console.warn('[Store] loadRecipes failed; showing empty list', e)
-      set({ recipes: [], recipesLoading: false })
-    }
-  },
-
-  addRecipe: async (recipeInput) => {
-    if (!isSupabaseConfigured) {
-      const recipe: Recipe = {
-        ...recipeInput,
-        id: createId(),
-        createdAt: new Date(),
-      }
-      set((state) => ({ recipes: [...state.recipes, recipe] }))
-      return recipe
-    }
-
-    const payload = buildRecipeInsertPayload(recipeInput)
-    const created = await apiClient.createRecipe(payload)
-    const recipe = mapRecipeDataToRecipe(created)
-    set((state) => ({ recipes: [...state.recipes, recipe] }))
-    return recipe
-  },
-  updateRecipe: async (id, updates) => {
-    if (!isSupabaseConfigured) {
-      set((state) => ({
-        recipes: state.recipes.map((r) => (r.id === id ? { ...r, ...updates } : r)),
-      }))
-      return
-    }
-    const payload = buildRecipeUpdatePayload(updates)
-    const updated = await apiClient.updateRecipe(id, payload)
-    const recipe = mapRecipeDataToRecipe(updated)
-    set((state) => ({
-      recipes: state.recipes.map((r) => (r.id === id ? recipe : r)),
-    }))
-  },
-  deleteRecipe: async (id) => {
-    if (!isSupabaseConfigured) {
-      set((state) => ({ recipes: state.recipes.filter((r) => r.id !== id) }))
-      return
-    }
-    try {
-      await apiClient.deleteRecipe(id)
-      set((state) => ({ recipes: state.recipes.filter((r) => r.id !== id) }))
-    } catch (e) {
-      console.error('Failed to delete recipe', id, e)
-      throw e
-    }
-  },
-  deleteAllRecipes: async () => {
-    const state = get()
-    if (!isSupabaseConfigured) {
-      set({ recipes: [] })
-      return
-    }
-    // Delete sequentially to avoid rate limits
-    for (const r of state.recipes) {
-      try { await apiClient.deleteRecipe(r.id!) } catch (e) { console.warn('Failed to delete recipe', r.id, e) }
-    }
-    set({ recipes: [] })
-  },
-
-  loadMealPlans: async () => {
-    // Don't reload if already loaded or loading
-    if (get().mealPlansLoaded || get().mealPlansLoading) return
-
-    if (!isSupabaseConfigured) return
-    set({ mealPlansLoading: true })
-    try {
-      const mealPlansRaw = await apiClient.getMealPlans()
-      const mealPlans = mealPlansRaw.map(mapMealPlanDataToMealPlanWeek)
-      set({ mealPlans, mealPlansLoaded: true, mealPlansLoading: false })
-    } catch (e) {
-      console.warn('[Store] loadMealPlans failed; starting with none', e)
-      set({ mealPlans: [], mealPlansLoading: false })
-    }
-  },
-
-  ensureMealPlanForWeek: async (weekStartDate) => {
-    const ws = get().weekStartsOn
-    const weekKey = startOfWeek(weekStartDate, { weekStartsOn: ws }).toISOString()
-
-    // Check if there's already a creation in progress for this week
-    const ongoing = creationLocks.get(weekKey)
-    if (ongoing) {
-      return await ongoing
-    }
-
-    // Create promise and store in lock map IMMEDIATELY
-    const creationPromise = (async () => {
-      try {
-        // Check existing plans in store first
-        const existing = get().mealPlans.find((plan) =>
-          sameWeek(plan.weekStartDate, weekStartDate, ws),
-        )
-        if (existing) {
-          return existing
-        }
-
-        if (!isSupabaseConfigured) {
-          const plan: MealPlanWeek = {
-            id: createId(),
-            name: 'Meal plan',
-            weekStartDate: startOfWeek(weekStartDate, { weekStartsOn: ws }),
-            mealColumns: DEFAULT_MEAL_COLUMNS,
-            meals: [],
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          }
-          set((state) => ({ mealPlans: [...state.mealPlans, plan] }))
-          return plan
-        }
-
-        // Database will handle duplicates with unique constraint
-        // If plan exists, upsert will return the existing one
-        const payload = buildMealPlanInsertPayload(
-          startOfWeek(weekStartDate, { weekStartsOn: ws }),
-          'Meal plan',
-        )
-        try {
-          const created = await apiClient.createMealPlan(payload)
-          const plan = mapMealPlanDataToMealPlanWeek(created)
-
-          // Check if already in store (another thread might have added it)
-          const alreadyInStore = get().mealPlans.find(p => p.id === plan.id)
-          if (!alreadyInStore) {
-            set((state) => ({ mealPlans: [...state.mealPlans, plan] }))
-          }
-
-          return plan
-        } catch (e) {
-          console.warn('[MealPlans] Cloud create failed; falling back to local-only plan', e)
-          const localPlan: MealPlanWeek = {
-            id: createId(),
-            name: 'Meal plan',
-            weekStartDate: startOfWeek(weekStartDate, { weekStartsOn: ws }),
-            mealColumns: DEFAULT_MEAL_COLUMNS,
-            meals: [],
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          }
-          set((state) => ({ mealPlans: [...state.mealPlans, localPlan] }))
-          // Surface a gentle notice once
-          try { get().showGlobalToast?.('Working locally — sign in to sync meals', 'info') } catch {}
-          return localPlan
-        }
-      } finally {
-        // Remove lock after creation completes
-        creationLocks.delete(weekKey)
-      }
-    })()
-
-    creationLocks.set(weekKey, creationPromise)
-    return await creationPromise
-  },
-
-  addPlannedMeal: async (planId, mealInput) => {
-    if (!isSupabaseConfigured) {
-      const meal: PlannedMeal = {
-        ...mealInput,
-        id: createId(),
-        mealPlanId: planId,
-        createdAt: new Date(),
-      }
-      set((state) => ({
-        mealPlans: state.mealPlans.map((plan) =>
-          plan.id === planId
-            ? { ...plan, meals: [...plan.meals, meal], updatedAt: new Date() }
-            : plan,
-        ),
-      }))
-      return meal
-    }
-    // Optimistic local add; try cloud, fall back gracefully
-    const optimistic: PlannedMeal = {
-      ...mealInput,
-      id: createId(),
-      mealPlanId: planId,
-      createdAt: new Date(),
-    }
-    set((state) => ({
-      mealPlans: state.mealPlans.map((plan) =>
-        plan.id === planId
-          ? { ...plan, meals: [...plan.meals, optimistic], updatedAt: new Date() }
-          : plan,
-      ),
-    }))
-    try {
-      const payload = buildPlannedMealInsertPayload(planId, mealInput)
-      const created = await apiClient.createPlannedMeal(payload)
-      const persisted = mapPlannedMealDataToPlannedMeal(created)
-      // Replace optimistic with persisted (id may differ)
-      set((state) => ({
-        mealPlans: state.mealPlans.map((plan) =>
-          plan.id === planId
-            ? {
-                ...plan,
-                meals: plan.meals.map((m) => (m.id === optimistic.id ? persisted : m)),
-                updatedAt: new Date(),
-              }
-            : plan,
-        ),
-      }))
-      return persisted
-    } catch (e) {
-      console.warn('[PlannedMeals] Cloud create failed; keeping local-only meal', e)
-      try { get().showGlobalToast?.('Added meal locally — sign in to sync', 'info') } catch {}
-      return optimistic
-    }
-  },
-
-  updatePlannedMeal: async (mealId, updates) => {
-    const state = get()
-    const plan = state.mealPlans.find((p) => p.meals.some((m) => m.id === mealId))
-    if (!plan) return
-    if (isSupabaseConfigured) {
-      await apiClient.updatePlannedMeal(mealId, sanitize({
-        // Keep date-only format to avoid timezone issues
-        date: updates.date ? formatDate(updates.date, 'yyyy-MM-dd') : undefined,
-        meal_type: updates.mealType,
-        recipe_id: updates.recipeId,
-        custom_meal: updates.customMeal,
-        servings: updates.servings,
-        people_count: updates.peopleCount,
-        status: updates.status as any,
-        notes: updates.notes,
-        prepared_at: updates.preparedAt ? updates.preparedAt.toISOString() : undefined,
-        consumed_at: updates.consumedAt ? updates.consumedAt.toISOString() : undefined,
-      }))
-    }
-    set(({ mealPlans }) => ({
-      mealPlans: mealPlans.map((p) =>
-        p.id === plan.id
-          ? {
-              ...p,
-              meals: p.meals.map((m) => (m.id === mealId ? { ...m, ...updates } : m)),
-              updatedAt: new Date(),
-            }
-          : p,
-      ),
-    }))
-  },
-
-  deletePlannedMeal: async (mealId) => {
-    if (isSupabaseConfigured) {
-      await apiClient.deletePlannedMeal(mealId)
-    }
-    set((state) => ({
-      mealPlans: state.mealPlans.map((plan) => ({
-        ...plan,
-        meals: plan.meals.filter((meal) => meal.id !== mealId),
-      })),
-    }))
-  },
 
   // ==================== Shopping - Lazy Loading ====================
 
@@ -1001,7 +406,7 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
       throw new Error('Failed to determine active shopping list for Supabase insert.')
     }
 
-    const payload = buildShoppingItemInsertPayload(shoppingListId, itemInput)
+    const payload = buildShoppingItemInsertPayload(itemInput)
     const created = await apiClient.addShoppingItem(shoppingListId, payload)
     const item = mapShoppingItemDataToShoppingItem(created)
     set((state) => ({ shoppingItems: [...state.shoppingItems, item] }))
@@ -1053,60 +458,6 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
     }
 
     await get().updateShoppingItem(id, updates)
-  },
-
-  // ===== Pantry management =====
-  addPantryItem: async (item) => {
-    if (!isSupabaseConfigured) {
-      const pantryItem: PantryItem = {
-        ...item,
-        id: createId(),
-        updatedAt: new Date(),
-      }
-      set((state) => ({ pantryItems: [pantryItem, ...state.pantryItems] }))
-      return pantryItem
-    }
-    const payload: Omit<PantryItemData, 'id' | 'created_at' | 'updated_at' | 'user_id'> = sanitize({
-      name: item.name,
-      quantity: item.quantity,
-      unit: item.unit ?? null,
-      category: item.category,
-      location: item.location ?? null,
-      expiration_date: item.expirationDate ? item.expirationDate.toISOString() : null,
-      notes: item.notes ?? null,
-      is_low_stock: item.isLowStock ?? null,
-      low_stock_threshold: item.lowStockThreshold ?? null,
-    })
-    const created = await apiClient.createPantryItem(payload)
-    const pantryItem = mapPantryItemDataToPantryItem(created)
-    set((state) => ({ pantryItems: [pantryItem, ...state.pantryItems] }))
-    return pantryItem
-  },
-  updatePantryItem: async (id, updates) => {
-    if (!isSupabaseConfigured) {
-      set((state) => ({ pantryItems: state.pantryItems.map((p) => (p.id === id ? { ...p, ...updates, updatedAt: new Date() } : p)) }))
-      return
-    }
-    const payload: Partial<PantryItemData> = sanitize({
-      name: updates.name,
-      quantity: updates.quantity,
-      unit: updates.unit,
-      category: updates.category,
-      location: updates.location,
-      expiration_date: updates.expirationDate ? updates.expirationDate.toISOString() : undefined,
-      notes: updates.notes,
-      is_low_stock: updates.isLowStock,
-      low_stock_threshold: updates.lowStockThreshold,
-    })
-    const updated = await apiClient.updatePantryItem(id, payload)
-    const mapped = mapPantryItemDataToPantryItem(updated)
-    set((state) => ({ pantryItems: state.pantryItems.map((p) => (p.id === id ? mapped : p)) }))
-  },
-  deletePantryItem: async (id) => {
-    if (isSupabaseConfigured) {
-      await apiClient.deletePantryItem(id)
-    }
-    set((state) => ({ pantryItems: state.pantryItems.filter((p) => p.id !== id) }))
   },
 
   setShowSFHTasksInTasks: (show: boolean) => {

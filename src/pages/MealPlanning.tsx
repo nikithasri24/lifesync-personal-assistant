@@ -6,6 +6,23 @@ import { CalendarDays, ChefHat, Loader2, Plus, Trash2, Save, Pencil, ExternalLin
 import DatePickerPopover from '../components/DatePickerPopover';
 import { useAppStore } from '../stores/useAppStore';
 import type { MealPlanWeek, PlannedMeal, Recipe } from '../types';
+import {
+  useRecipesQuery,
+  useMealPlansQuery,
+  useMealPlanForWeek,
+  useCreateRecipeMutation,
+  useUpdateRecipeMutation,
+  useDeleteRecipeMutation,
+  useDeleteAllRecipesMutation,
+  useCreateMealPlanMutation,
+  useCreatePlannedMealMutation,
+  useUpdatePlannedMealMutation,
+  useDeletePlannedMealMutation,
+  usePantryItemsQuery,
+  useCreatePantryItemMutation,
+  useUpdatePantryItemMutation,
+  useDeletePantryItemMutation,
+} from '../mealPlanning/hooks/useMealPlanningQuery';
 
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack'];
 
@@ -442,7 +459,12 @@ function parseLocalDateKey(key: string): Date {
 }
 
 function MealItem({ meal, recipes }: { meal: PlannedMeal; recipes: Recipe[] }) {
-  const { updatePlannedMeal, deletePlannedMeal, mealPlans, mealOptions, addRecipe, updateRecipe } = useAppStore();
+  const { mealOptions } = useAppStore();
+  const { data: mealPlans = [] } = useMealPlansQuery();
+  const updatePlannedMealMutation = useUpdatePlannedMealMutation();
+  const deletePlannedMealMutation = useDeletePlannedMealMutation();
+  const createRecipeMutation = useCreateRecipeMutation();
+  const updateRecipeMutation = useUpdateRecipeMutation();
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState('');
   const [showList, setShowList] = useState(false);
@@ -594,13 +616,19 @@ function MealItem({ meal, recipes }: { meal: PlannedMeal; recipes: Recipe[] }) {
     try {
       if (meal.recipeId) {
         // Convert recipe meal to custom meal
-        await updatePlannedMeal(meal.id, {
-          customMeal: trimmed,
-          recipeId: undefined
+        await updatePlannedMealMutation.mutateAsync({
+          mealId: meal.id,
+          updates: {
+            customMeal: trimmed,
+            recipeId: undefined
+          }
         });
       } else {
         // Update custom meal name
-        await updatePlannedMeal(meal.id, { customMeal: trimmed });
+        await updatePlannedMealMutation.mutateAsync({
+          mealId: meal.id,
+          updates: { customMeal: trimmed }
+        });
       }
     } catch (error) {
       console.error('Failed to update meal:', error);
@@ -755,7 +783,7 @@ function MealItem({ meal, recipes }: { meal: PlannedMeal; recipes: Recipe[] }) {
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                deletePlannedMeal(meal.id);
+                deletePlannedMealMutation.mutate(meal.id);
               }}
               className="p-1 text-slate-400 hover:text-rose-600 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
               aria-label="Remove meal"
@@ -771,9 +799,12 @@ function MealItem({ meal, recipes }: { meal: PlannedMeal; recipes: Recipe[] }) {
         <QuickRecipeModal
           initialName={meal.customMeal ?? ''}
           onSave={async (recipeData) => {
-            const newRecipe = await addRecipe(recipeData);
+            const newRecipe = await createRecipeMutation.mutateAsync(recipeData);
             if (newRecipe?.id) {
-              await updatePlannedMeal(meal.id, { recipeId: newRecipe.id, customMeal: undefined });
+              await updatePlannedMealMutation.mutateAsync({
+                mealId: meal.id,
+                updates: { recipeId: newRecipe.id, customMeal: undefined }
+              });
             }
             setShowRecipeForm(false);
           }}
@@ -785,7 +816,7 @@ function MealItem({ meal, recipes }: { meal: PlannedMeal; recipes: Recipe[] }) {
         <SimpleRecipeEditModal
           recipe={recipe}
           onSave={async (updates) => {
-            await updateRecipe(recipe.id!, updates);
+            await updateRecipeMutation.mutateAsync({ recipeId: recipe.id!, updates });
             setShowSimpleEdit(false);
           }}
           onClose={() => setShowSimpleEdit(false)}
@@ -1166,7 +1197,12 @@ function AddMealControl({ dateKey, mealType, onAdded, showByDefault = true, comp
   compact?: boolean;
   triggerRef?: React.MutableRefObject<(() => void) | null>;
 }) {
-  const { recipes, addPlannedMeal, mealPlans, ensureMealPlanForWeek, mealOptions, weekStartsOn, addRecipe } = useAppStore();
+  const { mealOptions, weekStartsOn } = useAppStore();
+  const { data: recipes = [] } = useRecipesQuery();
+  const { data: mealPlans = [] } = useMealPlansQuery();
+  const createPlannedMealMutation = useCreatePlannedMealMutation();
+  const createRecipeMutation = useCreateRecipeMutation();
+  const createMealPlanMutation = useCreateMealPlanMutation();
 
   // Unique key for this input slot
   const slotKey = `${dateKey}-${mealType}`;
@@ -1344,11 +1380,18 @@ function AddMealControl({ dateKey, mealType, onAdded, showByDefault = true, comp
 
   const add = async (recipeId?: string, customMeal?: string) => {
     try {
-      const plan = mealPlans.find(p => isSameWeek(ensureDate(p.weekStartDate), startOfWeek(parseLocalDateKey(dateKey), { weekStartsOn })))
-        || await ensureMealPlanForWeek(startOfWeek(parseLocalDateKey(dateKey), { weekStartsOn }));
+      const weekStart = startOfWeek(parseLocalDateKey(dateKey), { weekStartsOn });
+
+      // Find existing plan or create one
+      let plan = mealPlans.find(p => isSameWeek(ensureDate(p.weekStartDate), weekStart));
+
+      // If no plan exists, create one via mutation
       if (!plan) {
-        console.error('Failed to create or find meal plan');
-        return;
+        plan = await createMealPlanMutation.mutateAsync({
+          weekStartDate: weekStart,
+          name: 'Meal plan',
+          weekStartsOn
+        });
       }
 
       // Auto-link to existing recipe if one exists with the same name
@@ -1371,7 +1414,7 @@ function AddMealControl({ dateKey, mealType, onAdded, showByDefault = true, comp
           try {
             const fetchedRecipe = await fetchRecipeFromGoogle(customMeal);
             if (fetchedRecipe) {
-              const newRecipe = await addRecipe(fetchedRecipe);
+              const newRecipe = await createRecipeMutation.mutateAsync(fetchedRecipe);
               if (newRecipe?.id) {
                 finalRecipeId = newRecipe.id;
                 finalCustomMeal = undefined;
@@ -1385,17 +1428,20 @@ function AddMealControl({ dateKey, mealType, onAdded, showByDefault = true, comp
         }
       }
 
-      await addPlannedMeal(plan.id, {
-        date: parseLocalDateKey(dateKey),
-        mealType,
-        recipeId: finalRecipeId,
-        customMeal: finalCustomMeal,
-        servings: 4,
-        peopleCount: 4,
-        status: 'planned',
-        notes: undefined,
-        preparedAt: undefined,
-        consumedAt: undefined,
+      await createPlannedMealMutation.mutateAsync({
+        planId: plan.id,
+        meal: {
+          date: parseLocalDateKey(dateKey),
+          mealType,
+          recipeId: finalRecipeId,
+          customMeal: finalCustomMeal,
+          servings: 4,
+          peopleCount: 4,
+          status: 'planned',
+          notes: undefined,
+          preparedAt: undefined,
+          consumedAt: undefined,
+        }
       });
 
       // Clear the input and persisted draft
@@ -1432,7 +1478,7 @@ function AddMealControl({ dateKey, mealType, onAdded, showByDefault = true, comp
       // 2) Else, try to fetch a draft from Google and save it, then link
       const draft = await fetchRecipeFromGoogle(trimmed).catch(() => null);
       if (draft) {
-        const created = await addRecipe({ ...draft, name: trimmed });
+        const created = await createRecipeMutation.mutateAsync({ ...draft, name: trimmed });
         if (created?.id) {
           await add(created.id, undefined);
           return;
@@ -1770,7 +1816,7 @@ function MealOptionsManager() {
 }
 
 function RecipeMealTypeChips({ recipe }: { recipe: Recipe }) {
-  const { updateRecipe } = useAppStore();
+  const updateRecipeMutation = useUpdateRecipeMutation();
   const types: Array<{ key: 'breakfast'|'lunch'|'dinner'|'snack'; label: string; color: string }> = [
     { key: 'breakfast', label: 'Breakfast', color: '' },
     { key: 'lunch', label: 'Lunch', color: '' },
@@ -1782,7 +1828,7 @@ function RecipeMealTypeChips({ recipe }: { recipe: Recipe }) {
     const token = `meal:${k}`;
     const has = tags.includes(token);
     const next = has ? tags.filter(t => t !== token) : [...tags, token];
-    await updateRecipe(recipe.id!, { tags: next });
+    await updateRecipeMutation.mutateAsync({ recipeId: recipe.id!, updates: { tags: next } });
   };
   return (
     <div className="mt-3 flex flex-wrap gap-2">
@@ -1817,7 +1863,7 @@ function RecipeMealTypeChips({ recipe }: { recipe: Recipe }) {
 }
 
 function RecipeEditModal({ recipe, onClose }: { recipe: Recipe; onClose: () => void }) {
-  const { updateRecipe } = useAppStore();
+  const updateRecipeMutation = useUpdateRecipeMutation();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastSaved, setLastSaved] = useState<Date>(new Date());
@@ -1892,7 +1938,7 @@ function RecipeEditModal({ recipe, onClose }: { recipe: Recipe; onClose: () => v
           ingredients: parsedIngredients,
         };
 
-        await updateRecipe(recipe.id!, updates);
+        await updateRecipeMutation.mutateAsync({ recipeId: recipe.id!, updates });
         setLastSaved(new Date());
       } catch (err) {
         console.error('Auto-save failed:', err);
@@ -1908,7 +1954,7 @@ function RecipeEditModal({ recipe, onClose }: { recipe: Recipe; onClose: () => v
         clearTimeout(autoSaveTimerRef.current);
       }
     };
-  }, [form, recipe.id, updateRecipe]);
+  }, [form, recipe.id, updateRecipeMutation]);
 
   const onSubmit: React.FormEventHandler<HTMLFormElement> = async (e) => {
     e.preventDefault();
@@ -1953,7 +1999,7 @@ function RecipeEditModal({ recipe, onClose }: { recipe: Recipe; onClose: () => v
           .filter(Boolean),
         ingredients: parsedIngredients,
       };
-      await updateRecipe(recipe.id!, updates);
+      await updateRecipeMutation.mutateAsync({ recipeId: recipe.id!, updates });
       onClose();
     } catch (err) {
       console.error('Failed to update recipe', err);
@@ -2109,25 +2155,18 @@ function RecipeEditModal({ recipe, onClose }: { recipe: Recipe; onClose: () => v
 type CellKey = string; // format: "yyyy-MM-dd:mealType"
 
 const MealPlanning: React.FC = () => {
-  const {
-    recipes,
-    mealPlans,
-    recipesLoaded,
-    recipesLoading,
-    mealPlansLoaded,
-    mealPlansLoading,
-    loadRecipes,
-    loadMealPlans,
-    addRecipe,
-    ensureMealPlanForWeek,
-    addPlannedMeal,
-    updatePlannedMeal,
-    deletePlannedMeal,
-    addNote,
-    showGlobalToast,
-  } = useAppStore();
+  // React Query hooks
+  const { data: recipes = [], isLoading: recipesLoading } = useRecipesQuery();
+  const { data: mealPlans = [], isLoading: mealPlansLoading } = useMealPlansQuery();
+  const createRecipeMutation = useCreateRecipeMutation();
+  const createPlannedMealMutation = useCreatePlannedMealMutation();
+  const updatePlannedMealMutation = useUpdatePlannedMealMutation();
+  const deletePlannedMealMutation = useDeletePlannedMealMutation();
+  const deleteAllRecipesMutation = useDeleteAllRecipesMutation();
+  const createMealPlanMutation = useCreateMealPlanMutation();
 
-  const { weekStartsOn, setWeekStartsOn } = useAppStore();
+  // Global UI settings (kept from Zustand)
+  const { weekStartsOn, setWeekStartsOn, addNote, showGlobalToast } = useAppStore();
   const [currentWeekStart, setCurrentWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn }));
   const [activePlanId, setActivePlanId] = useState<string | null>(null);
   const [isEnsuringPlan, setIsEnsuringPlan] = useState(false);
@@ -2180,17 +2219,10 @@ const MealPlanning: React.FC = () => {
   const [recipeSearchQuery, setRecipeSearchQuery] = useState('');
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 
-  // Lazy load recipes and meal plans when page mounts
+  // Cleanup old drafts on component mount
   useEffect(() => {
-    if (loadRecipes && !recipesLoaded && !recipesLoading) {
-      void loadRecipes();
-    }
-    if (loadMealPlans && !mealPlansLoaded && !mealPlansLoading) {
-      void loadMealPlans();
-    }
-    // Cleanup old drafts on component mount
     cleanupOldDrafts();
-  }, [loadRecipes, loadMealPlans, recipesLoaded, recipesLoading, mealPlansLoaded, mealPlansLoading]);
+  }, []);
 
   useEffect(() => {
     setSelectedDateKey(toKey(currentWeekStart));
@@ -2274,7 +2306,7 @@ const MealPlanning: React.FC = () => {
   const saveImportedRecipe = async () => {
     if (!importDraft) return;
     try {
-      await addRecipe(importDraft);
+      await createRecipeMutation.mutateAsync(importDraft);
       setImportDraft(null);
     } catch (e) {
       setImportError('Failed to save recipe');
@@ -2339,17 +2371,20 @@ const MealPlanning: React.FC = () => {
     setIsScheduling(true);
     setScheduleError(null);
     try {
-      await addPlannedMeal(activePlan.id, {
-        date: new Date(selectedDateKey),
-        mealType: selectedMealType,
-        recipeId: recipe.id,
-        customMeal: undefined,
-        servings,
-        peopleCount: servings,
-        status: 'planned',
-        notes: undefined,
-        preparedAt: undefined,
-        consumedAt: undefined,
+      await createPlannedMealMutation.mutateAsync({
+        planId: activePlan.id,
+        meal: {
+          date: new Date(selectedDateKey),
+          mealType: selectedMealType,
+          recipeId: recipe.id,
+          customMeal: undefined,
+          servings,
+          peopleCount: servings,
+          status: 'planned',
+          notes: undefined,
+          preparedAt: undefined,
+          consumedAt: undefined,
+        }
       });
       setSelectedRecipeId('');
     } catch (error) {
@@ -2401,17 +2436,20 @@ const MealPlanning: React.FC = () => {
     try {
       const promises = Array.from(selectedCells).map(cellKey => {
         const [dateKey, mealType] = cellKey.split(':');
-        return addPlannedMeal(activePlan.id, {
-          date: parseLocalDateKey(dateKey),
-          mealType,
-          recipeId: recipeId || undefined,
-          customMeal: customMeal || undefined,
-          servings: 4,
-          peopleCount: 4,
-          status: 'planned',
-          notes: undefined,
-          preparedAt: undefined,
-          consumedAt: undefined,
+        return createPlannedMealMutation.mutateAsync({
+          planId: activePlan.id,
+          meal: {
+            date: parseLocalDateKey(dateKey),
+            mealType,
+            recipeId: recipeId || undefined,
+            customMeal: customMeal || undefined,
+            servings: 4,
+            peopleCount: 4,
+            status: 'planned',
+            notes: undefined,
+            preparedAt: undefined,
+            consumedAt: undefined,
+          }
         });
       });
 
@@ -2913,34 +2951,40 @@ const MealPlanning: React.FC = () => {
                             if (!activePlan) return;
                             const optionName = e.dataTransfer.getData('text/meal-option');
                             if (optionName) {
-                              await addPlannedMeal(activePlan.id, {
-                                date: parseLocalDateKey(key),
-                                mealType,
-                                recipeId: undefined,
-                                customMeal: optionName,
-                                servings: 4,
-                                peopleCount: 4,
-                                status: 'planned',
-                                notes: undefined,
-                                preparedAt: undefined,
-                                consumedAt: undefined,
+                              await createPlannedMealMutation.mutateAsync({
+                                planId: activePlan.id,
+                                meal: {
+                                  date: parseLocalDateKey(key),
+                                  mealType,
+                                  recipeId: undefined,
+                                  customMeal: optionName,
+                                  servings: 4,
+                                  peopleCount: 4,
+                                  status: 'planned',
+                                  notes: undefined,
+                                  preparedAt: undefined,
+                                  consumedAt: undefined,
+                                }
                               });
                               return;
                             }
 
                             const recipeDragged = e.dataTransfer.getData('text/recipe-id');
                             if (recipeDragged) {
-                              await addPlannedMeal(activePlan.id, {
-                                date: parseLocalDateKey(key),
-                                mealType,
-                                recipeId: recipeDragged,
-                                customMeal: undefined,
-                                servings: 4,
-                                peopleCount: 4,
-                                status: 'planned',
-                                notes: undefined,
-                                preparedAt: undefined,
-                                consumedAt: undefined,
+                              await createPlannedMealMutation.mutateAsync({
+                                planId: activePlan.id,
+                                meal: {
+                                  date: parseLocalDateKey(key),
+                                  mealType,
+                                  recipeId: recipeDragged,
+                                  customMeal: undefined,
+                                  servings: 4,
+                                  peopleCount: 4,
+                                  status: 'planned',
+                                  notes: undefined,
+                                  preparedAt: undefined,
+                                  consumedAt: undefined,
+                                }
                               });
                               return;
                             }
@@ -2951,21 +2995,27 @@ const MealPlanning: React.FC = () => {
                               // Copy
                               const source = plannedMeals.find((m) => m.id === mealId);
                               if (!source) return;
-                              await addPlannedMeal(activePlan.id, {
-                                date: parseLocalDateKey(key),
-                                mealType,
-                                recipeId: source.recipeId,
-                                customMeal: source.customMeal,
-                                servings: source.servings ?? 4,
-                                peopleCount: source.peopleCount ?? source.servings ?? 4,
-                                status: 'planned',
-                                notes: undefined,
-                                preparedAt: undefined,
-                                consumedAt: undefined,
+                              await createPlannedMealMutation.mutateAsync({
+                                planId: activePlan.id,
+                                meal: {
+                                  date: parseLocalDateKey(key),
+                                  mealType,
+                                  recipeId: source.recipeId,
+                                  customMeal: source.customMeal,
+                                  servings: source.servings ?? 4,
+                                  peopleCount: source.peopleCount ?? source.servings ?? 4,
+                                  status: 'planned',
+                                  notes: undefined,
+                                  preparedAt: undefined,
+                                  consumedAt: undefined,
+                                }
                               });
                             } else {
                               // Move
-                              await updatePlannedMeal(mealId, { date: parseLocalDateKey(key), mealType });
+                              await updatePlannedMealMutation.mutateAsync({
+                                mealId,
+                                updates: { date: parseLocalDateKey(key), mealType }
+                              });
                             }
                           }}
                         >
@@ -3128,7 +3178,7 @@ const MealPlanning: React.FC = () => {
                     type="button"
                     onClick={async () => {
                       if (!videoDraft) return;
-                      try { await addRecipe(videoDraft); setVideoDraft(null); }
+                      try { await createRecipeMutation.mutateAsync(videoDraft); setVideoDraft(null); }
                       catch { setVideoImportError('Failed to save recipe'); }
                     }}
                     className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
@@ -3343,7 +3393,7 @@ const MealPlanning: React.FC = () => {
                     onClick={async () => {
                       if (!textDraft) return;
                       try {
-                        await addRecipe({ ...textDraft, image: (textDraft.image || textImageUrl) || undefined });
+                        await createRecipeMutation.mutateAsync({ ...textDraft, image: (textDraft.image || textImageUrl) || undefined });
                         setTextDraft(null);
                         setTextImageUrl('');
                       } catch (e) {
@@ -3398,7 +3448,7 @@ const MealPlanning: React.FC = () => {
                   onClick={async () => {
                     if (confirm('Delete ALL saved recipes? This cannot be undone.')) {
                       try {
-                        await useAppStore.getState().deleteAllRecipes?.()
+                        await deleteAllRecipesMutation.mutateAsync();
                       } catch (e) {
                         console.error('Failed to delete all recipes', e)
                       }
@@ -3689,10 +3739,16 @@ const MealPlanning: React.FC = () => {
                 disabled={plannedMeals.length === 0}
                 onClick={async () => {
                   try {
-                    // Ensure target week has a meal plan
-                    const targetPlan = mealPlans.find(p =>
-                      isSameWeek(ensureDate(p.weekStartDate), copyTargetWeek, { weekStartsOn })
-                    ) || await ensureMealPlanForWeek(copyTargetWeek);
+                    // Find or create meal plan for target week
+                    let targetPlan = mealPlans.find(p => isSameWeek(ensureDate(p.weekStartDate), copyTargetWeek, { weekStartsOn }));
+
+                    if (!targetPlan) {
+                      targetPlan = await createMealPlanMutation.mutateAsync({
+                        weekStartDate: copyTargetWeek,
+                        name: 'Meal plan',
+                        weekStartsOn
+                      });
+                    }
 
                     if (!targetPlan) {
                       showGlobalToast('Failed to create target week plan', 'error');
@@ -3707,17 +3763,20 @@ const MealPlanning: React.FC = () => {
                       const originalDate = ensureDate(meal.date);
                       const newDate = addDays(originalDate, daysDiff);
 
-                      return addPlannedMeal(targetPlan.id, {
-                        date: newDate,
-                        mealType: meal.mealType,
-                        recipeId: meal.recipeId,
-                        customMeal: meal.customMeal,
-                        servings: meal.servings || 4,
-                        peopleCount: meal.peopleCount || meal.servings || 4,
-                        status: 'planned',
-                        notes: meal.notes,
-                        preparedAt: undefined,
-                        consumedAt: undefined,
+                      return createPlannedMealMutation.mutateAsync({
+                        planId: targetPlan.id,
+                        meal: {
+                          date: newDate,
+                          mealType: meal.mealType,
+                          recipeId: meal.recipeId,
+                          customMeal: meal.customMeal,
+                          servings: meal.servings || 4,
+                          peopleCount: meal.peopleCount || meal.servings || 4,
+                          status: 'planned',
+                          notes: meal.notes,
+                          preparedAt: undefined,
+                          consumedAt: undefined,
+                        }
                       });
                     });
 
@@ -3745,7 +3804,7 @@ const MealPlanning: React.FC = () => {
 };
 
 function SavedRecipesList({ recipes }: { recipes: Recipe[] }) {
-  const { deleteRecipe } = useAppStore();
+  const deleteRecipeMutation = useDeleteRecipeMutation();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [viewingId, setViewingId] = useState<string | null>(null);
   const editRecipe = useMemo(() => recipes.find((r) => r.id === editingId) || null, [editingId, recipes]);
@@ -3759,7 +3818,7 @@ function SavedRecipesList({ recipes }: { recipes: Recipe[] }) {
             recipe={r}
             onView={() => setViewingId(r.id!)}
             onEdit={() => setEditingId(r.id!)}
-            onDelete={() => void deleteRecipe(r.id!)}
+            onDelete={() => deleteRecipeMutation.mutate(r.id!)}
           />
         ))}
       </ul>
@@ -3773,7 +3832,7 @@ export default MealPlanning;
 
 // Compact recipe card with image header, overlay title, domain + quick actions
 function RecipeCard({ recipe, onView, onEdit, onDelete }: { recipe: Recipe; onView: () => void; onEdit: () => void; onDelete: () => void }) {
-  const { updateRecipe } = useAppStore();
+  const updateRecipeMutation = useUpdateRecipeMutation();
   const totalTime = (recipe.prepTime || 0) + (recipe.cookTime || 0);
   const domain = useMemo(() => {
     try { return recipe.sourceUrl ? new URL(recipe.sourceUrl).hostname.replace(/^www\./, '') : ''; } catch { return ''; }
@@ -3784,7 +3843,7 @@ function RecipeCard({ recipe, onView, onEdit, onDelete }: { recipe: Recipe; onVi
     e.stopPropagation();
     if (!recipe.id) return;
     try {
-      await updateRecipe(recipe.id, { isFavorite: !recipe.isFavorite });
+      await updateRecipeMutation.mutateAsync({ recipeId: recipe.id, updates: { isFavorite: !recipe.isFavorite } });
     } catch (error) {
       console.error('Failed to toggle favorite:', error);
     }
@@ -3912,7 +3971,6 @@ function RecipeCard({ recipe, onView, onEdit, onDelete }: { recipe: Recipe; onVi
               onClick={async () => {
                 try {
                   console.log('[Globe] Fetching recipe for:', recipe.name);
-                  const { updateRecipe } = useAppStore.getState();
                   const draft = await fetchRecipeFromGoogle(recipe.name);
                   console.log('[Globe] Fetched draft:', draft);
 
@@ -3927,9 +3985,12 @@ function RecipeCard({ recipe, onView, onEdit, onDelete }: { recipe: Recipe; onVi
                   }
 
                   console.log('[Globe] Updating recipe with ID:', recipe.id);
-                  await updateRecipe(recipe.id, {
-                    ...draft,
-                    name: recipe.name, // Keep original name
+                  await updateRecipeMutation.mutateAsync({
+                    recipeId: recipe.id,
+                    updates: {
+                      ...draft,
+                      name: recipe.name, // Keep original name
+                    }
                   });
                   console.log('[Globe] Recipe updated successfully');
                   useAppStore.getState().showGlobalToast('✅ Recipe updated!', 'success');
