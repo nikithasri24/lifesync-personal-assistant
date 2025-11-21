@@ -5,8 +5,12 @@
  * Matches the Forbes Advisor design with metric cards and visualizations.
  */
 
-import React, { useState, useEffect } from 'react';
-import { getFinanceAPI } from '../data';
+import React, { useState } from 'react';
+import {
+  useTransactionsQuery,
+  useCategoriesQuery,
+  useAccountsQuery,
+} from '../hooks/useFinanceQuery';
 import { getTimePeriodRange, getPreviousPeriodRange, type TimePeriod, type DateRange } from '../utils/timePeriodUtils';
 import { useFinanceMetrics } from '../hooks/useFinanceMetrics';
 import type { Transaction, Category, Account } from '../types';
@@ -25,50 +29,18 @@ type ReportTab = 'cash-flow' | 'spending' | 'income';
 const ReportsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ReportTab>('cash-flow');
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('last-6-months');
-  const [loading, setLoading] = useState(true);
 
-  // Data
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [accounts, setAccounts] = useState<Account[]>([]);
+  // React Query hooks
+  const { data: transactionsData, isLoading: txnsLoading } = useTransactionsQuery({ limit: 5000 });
+  const { data: categories = [], isLoading: categoriesLoading } = useCategoriesQuery();
+  const { data: accounts = [], isLoading: accountsLoading } = useAccountsQuery();
+
+  const transactions = transactionsData?.items || [];
+  const loading = txnsLoading || categoriesLoading || accountsLoading;
 
   // Date ranges
   const currentPeriod = getTimePeriodRange(timePeriod);
   const previousPeriod = getPreviousPeriodRange(currentPeriod);
-
-  // Load data
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      setLoading(true);
-      try {
-        const api = await getFinanceAPI();
-        const [{ items: txItems }, cats, accts] = await Promise.all([
-          api.listTransactions({ limit: 5000 }),
-          api.listCategories(),
-          api.listAccounts(),
-        ]);
-        if (!mounted) return;
-        console.log('📊 Finance Reports Debug:', {
-          transactions: txItems.length,
-          categories: cats.length,
-          accounts: accts.length,
-          sampleTransaction: txItems[0],
-          transactionDates: txItems.slice(0, 5).map(t => ({ date: t.date, desc: t.description, amount: t.amount })),
-        });
-        setTransactions(txItems);
-        setCategories(cats);
-        setAccounts(accts);
-      } catch (error) {
-        console.error('Failed to load finance data:', error);
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, []);
 
   // Calculate metrics using hook
   const metrics = useFinanceMetrics({
