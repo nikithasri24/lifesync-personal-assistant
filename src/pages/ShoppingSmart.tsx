@@ -9,14 +9,14 @@ import { CATEGORY_ICONS, STORE_TYPES } from '../shopping/constants';
 import { parseReceiptToItems, parseReceiptMeta, calculateReceiptCategorySummary, type ParsedReceiptItem } from '../shopping/services/receiptParser';
 import { distributeItemsToStores as distributeItems, findBestStoreForItem, type DistributionStrategy } from '../shopping/services/storeDistribution';
 import { lookupProductByBarcode } from '../shopping/services/barcodeService';
-import { getUserLocation as getLocation, calculateDistance, findNearbyStoresForItem, type Coordinates } from '../shopping/services/locationService';
 import { mapShoppingItemDataToModel, mapShoppingItemToCreateInput, mapShoppingItemToUpdateInput } from '../shopping/services/shoppingMappers';
 import { MOCK_STORES } from '../shopping/fixtures/mockStores';
 import { ShoppingHeader } from '../shopping/components/layout/ShoppingHeader';
 import { ViewTabs } from '../shopping/components/layout/ViewTabs';
 import { MasterListView, DistributeView, StoreListsView, PantryView } from '../shopping/components/views';
 import { AddItemModal, EditItemModal, BarcodeScannerModal, ReceiptScanningModal, AddPantryItemModal, ReplenishModal, StoreSuggestionsModal } from '../shopping/components/modals';
-import { useVoiceInput, useBarcodeScanner } from '../shopping/hooks';
+import { useVoiceInput, useBarcodeScanner, useStoreSuggestions, usePantryManagement, useItemForm } from '../shopping/hooks';
+import { smartRecommendStores } from '../shopping/utils/storeUtils';
 import {
   useActiveShoppingList,
   useShoppingItems,
@@ -159,29 +159,9 @@ export default function ShoppingSmart() {
   const [selectedStores, setSelectedStores] = useState<string[]>([]);
   const [distributionStrategy, setDistributionStrategy] = useState<DistributionStrategy>('mixed');
 
-  const [newItem, setNewItem] = useState<ShoppingItemForm>({
-    name: '',
-    quantity: 1,
-    unit: 'pcs',
-    category: 'other',
-    priority: 'medium',
-    estimatedPrice: '',
-    brand: '',
-    notes: '',
-    preferredStore: '' // New field for manual store preference
-  });
-
-  const [editItem, setEditItem] = useState<ShoppingItemForm>({
-    name: '',
-    quantity: 1,
-    unit: 'pcs',
-    category: 'other',
-    priority: 'medium',
-    estimatedPrice: '',
-    brand: '',
-    notes: '',
-    preferredStore: ''
-  });
+  // Form state management using consolidated hook
+  const newItemForm = useItemForm();
+  const editItemForm = useItemForm();
 
   // Voice recognition
   const { isListening, startVoiceInput } = useVoiceInput();
@@ -209,34 +189,32 @@ export default function ShoppingSmart() {
     setShowBarcodeScanner(false);
   });
   
-  // Location-based suggestions
-  const [userLocation, setUserLocation] = useState<Coordinates | null>(null);
+  // Location-based suggestions using custom hook
+  const { userLocation, getUserLocation, findNearbyStoresForItem } = useStoreSuggestions(stores);
   const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
   const [selectedItemForSuggestions, setSelectedItemForSuggestions] = useState<ShoppingItem | null>(null);
+
+  // Pantry management using custom hook
+  const {
+    pantryFilter,
+    setPantryFilter,
+    pantrySort,
+    setPantrySort,
+    editingPantryId,
+    editPantry,
+    setEditPantry,
+    startEditingPantry,
+    cancelEditing,
+    replenishId,
+    startReplenish,
+    cancelReplenish,
+    pantrySortedFiltered,
+  } = usePantryManagement(pantryItems);
+
   // Pantry modal state
   const [showAddPantry, setShowAddPantry] = useState(false);
-  const [pantryFilter, setPantryFilter] = useState<'all' | 'expired' | 'soon' | 'low'>('all')
-  const [pantrySort, setPantrySort] = useState<'expiry' | 'name'>('expiry')
-  const [editingPantryId, setEditingPantryId] = useState<string | null>(null)
-  const [editPantry, setEditPantry] = useState<{ qty: string; unit: string; exp: string; low: boolean; threshold: string }>({ qty: '0', unit: '', exp: '', low: false, threshold: '' })
-  const [replenishId, setReplenishId] = useState<string | null>(null)
   // Receipt scanning
   const [showScanReceipt, setShowScanReceipt] = useState(false)
-
-  const pantrySortedFiltered = React.useMemo(() => {
-    let items = [...pantryItems]
-    const now = new Date()
-    if (pantryFilter === 'expired') items = items.filter(p => p.expirationDate && p.expirationDate.getTime() < now.getTime())
-    if (pantryFilter === 'soon') items = items.filter(p => p.expirationDate && differenceInCalendarDays(p.expirationDate, now) <= 7 && differenceInCalendarDays(p.expirationDate, now) >= 0)
-    if (pantryFilter === 'low') items = items.filter(p => p.isLowStock)
-    if (pantrySort === 'expiry') items.sort((a,b) => {
-      const ax = a.expirationDate ? a.expirationDate.getTime() : Infinity
-      const bx = b.expirationDate ? b.expirationDate.getTime() : Infinity
-      return ax - bx
-    })
-    if (pantrySort === 'name') items.sort((a,b) => a.name.localeCompare(b.name))
-    return items
-  }, [pantryItems, pantryFilter, pantrySort])
 
   // Heuristic parser to extract item lines from receipt text with auto-categorization
 
@@ -261,7 +239,7 @@ export default function ShoppingSmart() {
   // Voice input handler
   const handleVoiceInput = () => {
     startVoiceInput((transcript) => {
-      setNewItem(prev => ({ ...prev, name: transcript }));
+      newItemForm.updateForm({ name: transcript });
       setShowAddItem(true);
     });
   };
@@ -277,83 +255,6 @@ export default function ShoppingSmart() {
     setShowBarcodeScanner(false);
   };
 
-  // Get user location for store suggestions
-  const getUserLocation = async () => {
-    if (!navigator.geolocation) {
-      alert('Geolocation is not supported by this browser.');
-      return;
-    }
-
-    try {
-      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject);
-      });
-      
-      setUserLocation({
-        lat: position.coords.latitude,
-        lng: position.coords.longitude
-      });
-    } catch (error) {
-      logger.error('ShoppingSmart', 'Error getting location:', error);
-      alert('Unable to get your location. Please enable location services.');
-    }
-  };
-
-  // Calculate distance between two coordinates
-  const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
-    const R = 3959; // Earth's radius in miles
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLng = (lng2 - lng1) * Math.PI / 180;
-    const a = 
-      Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-      Math.sin(dLng/2) * Math.sin(dLng/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c;
-  };
-
-  // Find nearby stores for a specific item
-  const findNearbyStoresForItem = (item: ShoppingItem) => {
-    if (!userLocation) {
-      getUserLocation();
-      return [];
-    }
-
-    const storesWithDistance = stores.map(store => ({
-      ...store,
-      actualDistance: store.coordinates 
-        ? calculateDistance(userLocation.lat, userLocation.lng, store.coordinates.lat, store.coordinates.lng)
-        : store.distance || 999
-    }));
-
-    // Filter and sort by relevance and distance
-    return storesWithDistance
-      .filter(store => 
-        store.bestFor.includes(item.category) || 
-        store.avgPrices[item.name] ||
-        store.specialties.some(specialty => 
-          (item.nutritionInfo?.organic && specialty === 'organic') ||
-          (item.category === 'produce' && specialty === 'organic')
-        )
-      )
-      .sort((a, b) => {
-        // Prioritize by relevance first, then distance
-        const aRelevance = (a.bestFor.includes(item.category) ? 2 : 0) + 
-                          (a.avgPrices[item.name] ? 3 : 0) + 
-                          (a.favorite ? 1 : 0);
-        const bRelevance = (b.bestFor.includes(item.category) ? 2 : 0) + 
-                          (b.avgPrices[item.name] ? 3 : 0) + 
-                          (b.favorite ? 1 : 0);
-        
-        if (aRelevance !== bRelevance) {
-          return bRelevance - aRelevance;
-        }
-        
-        return a.actualDistance - b.actualDistance;
-      })
-      .slice(0, 5); // Show top 5 suggestions
-  };
-
   // Show store suggestions for an item
   const showStoreSuggestions = (item: ShoppingItem) => {
     setSelectedItemForSuggestions(item);
@@ -363,7 +264,7 @@ export default function ShoppingSmart() {
   // Start editing an item
   const startEditItem = (item: ShoppingItem) => {
     setEditingItem(item);
-    setEditItem({
+    editItemForm.loadItem({
       name: item.name,
       quantity: item.quantity,
       unit: item.unit || 'pcs',
@@ -380,15 +281,16 @@ export default function ShoppingSmart() {
   // Update existing item
   const updateExistingItem = (e: React.FormEvent) => {
     e.preventDefault();
+    const editItem = editItemForm.formData;
     if (!editingItem || !editItem.name.trim()) return;
 
     // Use preferred store if specified, otherwise use existing recommendations
     let bestStores: string[];
     if (editItem.preferredStore) {
-      const smartRecommendation = smartRecommendStores(editItem.name, editItem.category);
+      const smartRecommendation = smartRecommendStores(stores, editItem.name, editItem.category);
       bestStores = [editItem.preferredStore, ...smartRecommendation.filter(id => id !== editItem.preferredStore)];
     } else {
-      bestStores = editingItem.bestStores || smartRecommendStores(editItem.name, editItem.category);
+      bestStores = editingItem.bestStores || smartRecommendStores(stores, editItem.name, editItem.category);
     }
 
     const updatedData = {
@@ -408,32 +310,23 @@ export default function ShoppingSmart() {
     updateShoppingItem(editingItem.id, updatedData);
     setShowEditItem(false);
     setEditingItem(null);
-    setEditItem({
-      name: '',
-      quantity: 1,
-      unit: 'pcs',
-      category: 'other',
-      priority: 'medium',
-      estimatedPrice: '',
-      brand: '',
-      notes: '',
-      preferredStore: ''
-    });
+    editItemForm.resetForm();
   };
 
   // Add item to master list
   const addItemToMaster = (e: React.FormEvent) => {
     e.preventDefault();
+    const newItem = newItemForm.formData;
     if (!newItem.name.trim()) return;
 
     // Use preferred store if specified, otherwise use AI recommendation
     let bestStores: string[];
     if (newItem.preferredStore) {
       // Put preferred store first, then add AI recommendations
-      const smartRecommendation = smartRecommendStores(newItem.name, newItem.category);
+      const smartRecommendation = smartRecommendStores(stores, newItem.name, newItem.category);
       bestStores = [newItem.preferredStore, ...smartRecommendation.filter(id => id !== newItem.preferredStore)];
     } else {
-      bestStores = smartRecommendStores(newItem.name, newItem.category);
+      bestStores = smartRecommendStores(stores, newItem.name, newItem.category);
     }
 
     const item = {
@@ -452,61 +345,12 @@ export default function ShoppingSmart() {
     };
 
     addShoppingItem(item);
-    setNewItem({
-      name: '',
-      quantity: 1,
-      unit: 'pcs',
-      category: 'other',
-      priority: 'medium',
-      estimatedPrice: '',
-      brand: '',
-      notes: '',
-      preferredStore: ''
-    });
+    newItemForm.resetForm();
     setBarcodeResult(null);
     setShowAddItem(false);
   };
 
   // Smart store recommendation algorithm
-  const smartRecommendStores = (itemName: string, category: string): string[] => {
-    return stores
-      .filter(store => 
-        store.bestFor.includes(category) || 
-        store.avgPrices[itemName] ||
-        (category === 'produce' && store.specialties.includes('organic'))
-      )
-      .sort((a, b) => {
-        // Score based on multiple factors
-        const scoreA = calculateStoreScore(a, category);
-        const scoreB = calculateStoreScore(b, category);
-        return scoreB - scoreA;
-      })
-      .map(store => store.id);
-  };
-
-  const calculateStoreScore = (store: StoreType, category: string): number => {
-    let score = 0;
-    
-    // Best for category
-    if (store.bestFor.includes(category)) score += 3;
-    
-    // Price rating (higher is better for affordability)
-    score += store.preferences.priceRating * 0.5;
-    
-    // Quality rating
-    score += store.preferences.qualityRating * 0.4;
-    
-    // Distance penalty (closer is better)
-    score -= (store.distance || 5) * 0.2;
-    
-    // Specialty bonus
-    if (store.specialties.length > 0) score += 0.5;
-    
-    // Favorite bonus
-    if (store.favorite) score += 1;
-    
-    return score;
-  };
 
   const filteredMasterItems = shoppingItems.filter(item =>
     searchQuery === '' || item.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -778,7 +622,7 @@ export default function ShoppingSmart() {
                                 const qty = Number(editPantry.qty) || 0
                                 const exp = editPantry.exp ? new Date(editPantry.exp) : undefined
                                 await updatePantryItemMutation.mutateAsync({ itemId: p.id, updates: { quantity: qty, unit: editPantry.unit || undefined, expirationDate: exp, isLowStock: editPantry.low, lowStockThreshold: editPantry.threshold ? Number(editPantry.threshold) : undefined } })
-                                setEditingPantryId(null)
+                                cancelEditing()
                               }}>Save</button>
                               <button className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50" onClick={() => setEditingPantryId(null)}>Cancel</button>
                             </>
@@ -787,14 +631,13 @@ export default function ShoppingSmart() {
                               <button
                                 className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50"
                                 onClick={() => {
-                                  setEditingPantryId(p.id)
-                                  setEditPantry({ qty: String(p.quantity), unit: p.unit || '', exp: p.expirationDate ? format(p.expirationDate, 'yyyy-MM-dd') : '', low: !!p.isLowStock, threshold: p.lowStockThreshold ? String(p.lowStockThreshold) : '' })
+                                  startEditingPantry(p)
                                 }}
                               >Edit</button>
                               <button
                                 className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50"
                                 title="Replenish to target quantity"
-                                onClick={() => { setReplenishId(p.id); }}
+                                onClick={() => { startReplenish(p.id); }}
                               >Replenish</button>
                               <button
                                 className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50"
@@ -852,7 +695,7 @@ export default function ShoppingSmart() {
                   const need = Math.max(0, targetQuantity - (p.quantity || 0));
                   if (need <= 0) {
                     showGlobalToast?.('Already at or above target', 'info');
-                    setReplenishId(null);
+                    cancelReplenish();
                     return;
                   }
                   await addShoppingItem({
@@ -879,9 +722,9 @@ export default function ShoppingSmart() {
                     bestStores: [],
                   });
                   showGlobalToast?.(`Added ${need} ${p.unit || ''} of ${p.name} to shopping`, 'success');
-                  setReplenishId(null);
+                  cancelReplenish();
                 }}
-                onCancel={() => setReplenishId(null)}
+                onCancel={cancelReplenish}
               />
             );
           })()}
@@ -950,25 +793,25 @@ export default function ShoppingSmart() {
       {/* Edit Item Modal */}
       <EditItemModal
         isOpen={showEditItem}
-        formData={editItem}
+        formData={editItemForm.formData}
         stores={stores}
         onClose={() => {
           setShowEditItem(false);
           setEditingItem(null);
         }}
         onSubmit={updateExistingItem}
-        onFormChange={(updates) => setEditItem(prev => ({ ...prev, ...updates }))}
+        onFormChange={(updates) => editItemForm.updateForm(updates)}
       />
 
       {/* Add Item Modal */}
       <AddItemModal
         isOpen={showAddItem}
-        formData={newItem}
+        formData={newItemForm.formData}
         barcodeResult={barcodeResult}
         stores={stores}
         onClose={() => setShowAddItem(false)}
         onSubmit={addItemToMaster}
-        onFormChange={(updates) => setNewItem(prev => ({ ...prev, ...updates }))}
+        onFormChange={(updates) => newItemForm.updateForm(updates)}
         onBarcodeChange={setBarcodeResult}
       />
 
