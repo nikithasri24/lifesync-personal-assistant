@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { CreditCard, TrendingDown, AlertTriangle, CheckCircle, Plus, Award } from 'lucide-react';
-import { getFinanceAPI } from '../data';
+import { useAccountsQuery, useUpdateAccountMutation } from '../hooks/useFinanceQuery';
 import type { Account } from '../types';
 import { formatCurrency } from '../utils/currency';
 import { CreditCardCard } from '../components/creditCards/CreditCardCard';
@@ -13,30 +13,17 @@ import { CreditCardDetailsPage } from './CreditCardDetailsPage';
 import { CreditCardPointsTracker } from '../components/creditCards/CreditCardPointsTracker';
 
 const CreditCardsPage: React.FC = () => {
-  const [creditCards, setCreditCards] = React.useState<Account[]>([]);
-  const [loading, setLoading] = React.useState(true);
   const [selectedCardId, setSelectedCardId] = React.useState<string | null>(null);
   const [showPointsTracker, setShowPointsTracker] = React.useState(false);
 
-  React.useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const api = await getFinanceAPI();
-        const accounts = await api.listAccounts();
-        const cards = accounts.filter(a => a.type === 'credit');
-        if (!mounted) return;
-        setCreditCards(cards);
-      } catch (error) {
-        console.error('[CreditCardsPage] Failed to load credit cards:', error);
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, []);
+  // React Query hooks
+  const { data: accounts = [], isLoading: loading } = useAccountsQuery();
+  const updateAccountMutation = useUpdateAccountMutation();
+
+  // Filter to only credit cards
+  const creditCards = React.useMemo(() => {
+    return accounts.filter(a => a.type === 'credit');
+  }, [accounts]);
 
   // Calculate summary metrics
   const totalBalance = creditCards.reduce((sum, card) => sum + Math.abs(card.balance), 0);
@@ -80,14 +67,10 @@ const CreditCardsPage: React.FC = () => {
   // Handle updating rewards balance
   const handleUpdatePoints = async (accountId: string, newBalance: number) => {
     try {
-      const api = await getFinanceAPI();
-      // Update the account with new rewards balance
-      await api.updateAccount(accountId, { rewardsBalance: newBalance });
-
-      // Refresh the cards list
-      const accounts = await api.listAccounts();
-      const cards = accounts.filter(a => a.type === 'credit');
-      setCreditCards(cards);
+      await updateAccountMutation.mutateAsync({
+        accountId,
+        updates: { rewardsBalance: newBalance }
+      });
     } catch (error) {
       console.error('[CreditCardsPage] Failed to update rewards balance:', error);
     }
