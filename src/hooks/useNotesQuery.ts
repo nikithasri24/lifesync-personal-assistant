@@ -16,6 +16,7 @@ import {
   type Note,
   type NoteInput,
 } from '@/api/notesAPI';
+import { logger } from '@/services/logger';
 
 /**
  * Get all notes
@@ -57,8 +58,13 @@ export function useCreateNote() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: createNote,
+    mutationFn: async (input: NoteInput) => {
+      logger.debug('Notes', 'Creating note', { title: input.title });
+      const result = await createNote(input);
+      return result;
+    },
     onSuccess: (newNote) => {
+      logger.info('Notes', 'Note created successfully', { id: newNote.id, title: newNote.title });
       // Invalidate and refetch notes list
       queryClient.invalidateQueries({ queryKey: queryKeys.notes.lists() });
 
@@ -66,6 +72,9 @@ export function useCreateNote() {
       queryClient.setQueryData<Note[]>(queryKeys.notes.lists(), (old) => {
         return old ? [...old, newNote] : [newNote];
       });
+    },
+    onError: (error: Error, input) => {
+      logger.error('Notes', 'Failed to create note', { error: error.message, title: input.title });
     },
   });
 }
@@ -81,9 +90,13 @@ export function useUpdateNote() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: Partial<NoteInput> }) =>
-      updateNote(id, updates),
+    mutationFn: async ({ id, updates }: { id: string; updates: Partial<NoteInput> }) => {
+      logger.debug('Notes', 'Updating note', { id, updates });
+      const result = await updateNote(id, updates);
+      return result;
+    },
     onSuccess: (updatedNote) => {
+      logger.info('Notes', 'Note updated successfully', { id: updatedNote.id, title: updatedNote.title });
       // Update note in list cache
       queryClient.setQueryData<Note[]>(queryKeys.notes.lists(), (old) => {
         return old?.map((note) =>
@@ -96,6 +109,9 @@ export function useUpdateNote() {
         queryKeys.notes.detail(updatedNote.id),
         updatedNote
       );
+    },
+    onError: (error: Error, { id }) => {
+      logger.error('Notes', 'Failed to update note', { error: error.message, id });
     },
   });
 }
@@ -111,8 +127,13 @@ export function useDeleteNote() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: deleteNote,
+    mutationFn: async (id: string) => {
+      logger.debug('Notes', 'Deleting note', { id });
+      const result = await deleteNote(id);
+      return result;
+    },
     onSuccess: (_data, deletedId) => {
+      logger.info('Notes', 'Note deleted successfully', { id: deletedId });
       // Remove note from list cache
       queryClient.setQueryData<Note[]>(queryKeys.notes.lists(), (old) => {
         return old?.filter((note) => note.id !== deletedId);
@@ -120,6 +141,9 @@ export function useDeleteNote() {
 
       // Remove individual note cache
       queryClient.removeQueries({ queryKey: queryKeys.notes.detail(deletedId) });
+    },
+    onError: (error: Error, id) => {
+      logger.error('Notes', 'Failed to delete note', { error: error.message, id });
     },
   });
 }

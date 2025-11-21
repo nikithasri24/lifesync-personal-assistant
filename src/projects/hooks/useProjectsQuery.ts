@@ -7,6 +7,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../services/apiClient';
 import type { ProjectData } from '../../services/types';
+import { logger } from '@/services/logger';
 
 // ==================== Types ====================
 
@@ -134,11 +135,13 @@ export function useCreateProjectMutation() {
 
   return useMutation({
     mutationFn: async (input: ProjectInput) => {
+      logger.debug('Projects', 'Creating project', { name: input.name, status: input.status });
       const payload = buildProjectInsertPayload(input);
       const created = await apiClient.createProject(payload);
       return mapProjectDataToProject(created);
     },
     onMutate: async (input) => {
+      logger.debug('Projects', 'Optimistic update: create project', { name: input.name });
       // Cancel outgoing queries
       await queryClient.cancelQueries({ queryKey: projectsKeys.list() });
 
@@ -162,14 +165,15 @@ export function useCreateProjectMutation() {
 
       return { previousProjects };
     },
-    onError: (err, variables, context) => {
+    onError: (err: Error, input, context) => {
+      logger.error('Projects', 'Failed to create project', { error: err.message, name: input.name });
       // Rollback on error
       if (context?.previousProjects) {
         queryClient.setQueryData(projectsKeys.list(), context.previousProjects);
       }
-      console.error('[useCreateProjectMutation] Error creating project:', err);
     },
     onSuccess: (newProject) => {
+      logger.info('Projects', 'Project created successfully', { id: newProject.id, name: newProject.name });
       // Replace temp project with real one
       queryClient.setQueryData<Project[]>(projectsKeys.list(), (old) => {
         if (!old) return [newProject];
@@ -187,11 +191,13 @@ export function useUpdateProjectMutation() {
 
   return useMutation({
     mutationFn: async ({ projectId, updates }: { projectId: string; updates: ProjectUpdate }) => {
+      logger.debug('Projects', 'Updating project', { projectId, updates });
       const payload = buildProjectUpdatePayload(updates);
       const updated = await apiClient.updateProject(projectId, payload);
       return mapProjectDataToProject(updated);
     },
     onMutate: async ({ projectId, updates }) => {
+      logger.debug('Projects', 'Optimistic update: project', { projectId, updates });
       // Cancel outgoing queries
       await queryClient.cancelQueries({ queryKey: projectsKeys.list() });
 
@@ -210,14 +216,15 @@ export function useUpdateProjectMutation() {
 
       return { previousProjects };
     },
-    onError: (err, variables, context) => {
+    onError: (err: Error, { projectId }, context) => {
+      logger.error('Projects', 'Failed to update project', { error: err.message, projectId });
       // Rollback on error
       if (context?.previousProjects) {
         queryClient.setQueryData(projectsKeys.list(), context.previousProjects);
       }
-      console.error('[useUpdateProjectMutation] Error updating project:', err);
     },
     onSuccess: (updatedProject) => {
+      logger.info('Projects', 'Project updated successfully', { id: updatedProject.id, name: updatedProject.name });
       // Update with server response
       queryClient.setQueryData<Project[]>(projectsKeys.list(), (old) => {
         if (!old) return [updatedProject];
@@ -235,10 +242,12 @@ export function useDeleteProjectMutation() {
 
   return useMutation({
     mutationFn: async (projectId: string) => {
+      logger.debug('Projects', 'Deleting project', { projectId });
       await apiClient.deleteProject(projectId);
       return projectId;
     },
     onMutate: async (projectId) => {
+      logger.debug('Projects', 'Optimistic update: delete project', { projectId });
       // Cancel outgoing queries
       await queryClient.cancelQueries({ queryKey: projectsKeys.list() });
 
@@ -253,14 +262,15 @@ export function useDeleteProjectMutation() {
 
       return { previousProjects };
     },
-    onError: (err, projectId, context) => {
+    onError: (err: Error, projectId, context) => {
+      logger.error('Projects', 'Failed to delete project', { error: err.message, projectId });
       // Rollback on error
       if (context?.previousProjects) {
         queryClient.setQueryData(projectsKeys.list(), context.previousProjects);
       }
-      console.error('[useDeleteProjectMutation] Error deleting project:', err);
     },
-    onSuccess: () => {
+    onSuccess: (projectId) => {
+      logger.info('Projects', 'Project deleted successfully', { id: projectId });
       // Invalidate to ensure consistency
       queryClient.invalidateQueries({ queryKey: projectsKeys.list() });
     },

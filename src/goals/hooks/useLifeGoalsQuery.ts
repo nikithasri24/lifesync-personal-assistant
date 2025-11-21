@@ -30,6 +30,7 @@ import type {
   CreateCheckinInput,
   LifeGoalWithMilestones,
 } from '../types/lifeGoals';
+import { logger } from '@/services/logger';
 
 // ==================== Query Keys ====================
 
@@ -79,8 +80,13 @@ export function useCreateLifeGoalMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (input: CreateLifeGoalInput) => createLifeGoal(input),
+    mutationFn: async (input: CreateLifeGoalInput) => {
+      logger.debug('Goals', 'Creating life goal', { title: input.title, category: input.category });
+      const result = await createLifeGoal(input);
+      return result;
+    },
     onMutate: async (input) => {
+      logger.debug('Goals', 'Optimistic update: create life goal', { title: input.title });
       await queryClient.cancelQueries({ queryKey: lifeGoalsKeys.goals() });
       const previousGoals = queryClient.getQueryData<LifeGoal[]>(lifeGoalsKeys.goals());
 
@@ -124,12 +130,14 @@ export function useCreateLifeGoalMutation() {
 
       return { previousGoals };
     },
-    onError: (err, variables, context) => {
+    onError: (err: Error, input, context) => {
+      logger.error('Goals', 'Failed to create life goal', { error: err.message, title: input.title });
       if (context?.previousGoals) {
         queryClient.setQueryData(lifeGoalsKeys.goals(), context.previousGoals);
       }
     },
     onSuccess: (newGoal) => {
+      logger.info('Goals', 'Life goal created successfully', { id: newGoal.id, title: newGoal.title });
       queryClient.setQueryData<LifeGoal[]>(lifeGoalsKeys.goals(), (old) => {
         if (!old) return [newGoal];
         return old.map((goal) => (goal.id.startsWith('temp-') ? newGoal : goal));
@@ -145,9 +153,13 @@ export function useUpdateLifeGoalMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ goalId, updates }: { goalId: string; updates: UpdateLifeGoalInput }) =>
-      updateLifeGoal(goalId, updates),
+    mutationFn: async ({ goalId, updates }: { goalId: string; updates: UpdateLifeGoalInput }) => {
+      logger.debug('Goals', 'Updating life goal', { goalId, updates });
+      const result = await updateLifeGoal(goalId, updates);
+      return result;
+    },
     onMutate: async ({ goalId, updates }) => {
+      logger.debug('Goals', 'Optimistic update: life goal', { goalId, updates });
       await queryClient.cancelQueries({ queryKey: lifeGoalsKeys.goals() });
       await queryClient.cancelQueries({ queryKey: lifeGoalsKeys.goal(goalId) });
 
@@ -175,7 +187,8 @@ export function useUpdateLifeGoalMutation() {
 
       return { previousGoals, previousGoal };
     },
-    onError: (err, { goalId }, context) => {
+    onError: (err: Error, { goalId }, context) => {
+      logger.error('Goals', 'Failed to update life goal', { error: err.message, goalId });
       if (context?.previousGoals) {
         queryClient.setQueryData(lifeGoalsKeys.goals(), context.previousGoals);
       }
@@ -184,6 +197,7 @@ export function useUpdateLifeGoalMutation() {
       }
     },
     onSuccess: (updatedGoal, { goalId }) => {
+      logger.info('Goals', 'Life goal updated successfully', { id: goalId, title: updatedGoal.title });
       queryClient.setQueryData<LifeGoal[]>(lifeGoalsKeys.goals(), (old) => {
         if (!old) return old;
         return old.map((goal) => (goal.id === goalId ? updatedGoal : goal));
@@ -203,8 +217,13 @@ export function useDeleteLifeGoalMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (goalId: string) => deleteLifeGoal(goalId),
+    mutationFn: async (goalId: string) => {
+      logger.debug('Goals', 'Deleting life goal', { goalId });
+      const result = await deleteLifeGoal(goalId);
+      return result;
+    },
     onMutate: async (goalId) => {
+      logger.debug('Goals', 'Optimistic update: delete life goal', { goalId });
       await queryClient.cancelQueries({ queryKey: lifeGoalsKeys.goals() });
       const previousGoals = queryClient.getQueryData<LifeGoal[]>(lifeGoalsKeys.goals());
 
@@ -215,12 +234,14 @@ export function useDeleteLifeGoalMutation() {
 
       return { previousGoals };
     },
-    onError: (err, goalId, context) => {
+    onError: (err: Error, goalId, context) => {
+      logger.error('Goals', 'Failed to delete life goal', { error: err.message, goalId });
       if (context?.previousGoals) {
         queryClient.setQueryData(lifeGoalsKeys.goals(), context.previousGoals);
       }
     },
     onSuccess: (_, goalId) => {
+      logger.info('Goals', 'Life goal deleted successfully', { id: goalId });
       queryClient.removeQueries({ queryKey: lifeGoalsKeys.goal(goalId) });
     },
   });
@@ -246,12 +267,20 @@ export function useCreateLifeDreamMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (input: CreateLifeDreamInput) => createLifeDream(input),
+    mutationFn: async (input: CreateLifeDreamInput) => {
+      logger.debug('Goals', 'Creating life dream', { title: input.title, category: input.category });
+      const result = await createLifeDream(input);
+      return result;
+    },
     onSuccess: (newDream) => {
+      logger.info('Goals', 'Life dream created successfully', { id: newDream.id, title: newDream.title });
       queryClient.setQueryData<LifeDream[]>(lifeGoalsKeys.dreams(), (old) => {
         if (!old) return [newDream];
         return [newDream, ...old];
       });
+    },
+    onError: (error: Error, input) => {
+      logger.error('Goals', 'Failed to create life dream', { error: error.message, title: input.title });
     },
   });
 }
@@ -263,13 +292,20 @@ export function useUpdateLifeDreamMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ dreamId, updates }: { dreamId: string; updates: UpdateLifeDreamInput }) =>
-      updateLifeDream(dreamId, updates),
+    mutationFn: async ({ dreamId, updates }: { dreamId: string; updates: UpdateLifeDreamInput }) => {
+      logger.debug('Goals', 'Updating life dream', { dreamId, updates });
+      const result = await updateLifeDream(dreamId, updates);
+      return result;
+    },
     onSuccess: (updatedDream, { dreamId }) => {
+      logger.info('Goals', 'Life dream updated successfully', { id: dreamId, title: updatedDream.title });
       queryClient.setQueryData<LifeDream[]>(lifeGoalsKeys.dreams(), (old) => {
         if (!old) return old;
         return old.map((dream) => (dream.id === dreamId ? updatedDream : dream));
       });
+    },
+    onError: (error: Error, { dreamId }) => {
+      logger.error('Goals', 'Failed to update life dream', { error: error.message, dreamId });
     },
   });
 }
@@ -281,12 +317,20 @@ export function useDeleteLifeDreamMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (dreamId: string) => deleteLifeDream(dreamId),
+    mutationFn: async (dreamId: string) => {
+      logger.debug('Goals', 'Deleting life dream', { dreamId });
+      const result = await deleteLifeDream(dreamId);
+      return result;
+    },
     onSuccess: (_, dreamId) => {
+      logger.info('Goals', 'Life dream deleted successfully', { id: dreamId });
       queryClient.setQueryData<LifeDream[]>(lifeGoalsKeys.dreams(), (old) => {
         if (!old) return old;
         return old.filter((dream) => dream.id !== dreamId);
       });
+    },
+    onError: (error: Error, dreamId) => {
+      logger.error('Goals', 'Failed to delete life dream', { error: error.message, dreamId });
     },
   });
 }
@@ -297,9 +341,17 @@ export function useAddMilestoneMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (input: CreateMilestoneInput) => addMilestone(input),
-    onSuccess: (_, { goalId }) => {
+    mutationFn: async (input: CreateMilestoneInput) => {
+      logger.debug('Goals', 'Adding milestone', { goalId: input.goalId, title: input.title });
+      const result = await addMilestone(input);
+      return result;
+    },
+    onSuccess: (milestone, { goalId }) => {
+      logger.info('Goals', 'Milestone added successfully', { id: milestone.id, goalId, title: milestone.title });
       queryClient.invalidateQueries({ queryKey: lifeGoalsKeys.goal(goalId) });
+    },
+    onError: (error: Error, input) => {
+      logger.error('Goals', 'Failed to add milestone', { error: error.message, goalId: input.goalId });
     },
   });
 }
@@ -308,7 +360,7 @@ export function useUpdateMilestoneMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       milestoneId,
       goalId,
       updates,
@@ -316,9 +368,17 @@ export function useUpdateMilestoneMutation() {
       milestoneId: string;
       goalId: string;
       updates: { isCompleted?: boolean; title?: string; description?: string; targetDate?: string };
-    }) => updateMilestone(milestoneId, updates),
-    onSuccess: (_, { goalId }) => {
+    }) => {
+      logger.debug('Goals', 'Updating milestone', { milestoneId, goalId, updates });
+      const result = await updateMilestone(milestoneId, updates);
+      return result;
+    },
+    onSuccess: (milestone, { goalId }) => {
+      logger.info('Goals', 'Milestone updated successfully', { id: milestone.id, goalId });
       queryClient.invalidateQueries({ queryKey: lifeGoalsKeys.goal(goalId) });
+    },
+    onError: (error: Error, { milestoneId, goalId }) => {
+      logger.error('Goals', 'Failed to update milestone', { error: error.message, milestoneId, goalId });
     },
   });
 }
@@ -327,10 +387,17 @@ export function useDeleteMilestoneMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ milestoneId, goalId }: { milestoneId: string; goalId: string }) =>
-      deleteMilestone(milestoneId),
-    onSuccess: (_, { goalId }) => {
+    mutationFn: async ({ milestoneId, goalId }: { milestoneId: string; goalId: string }) => {
+      logger.debug('Goals', 'Deleting milestone', { milestoneId, goalId });
+      const result = await deleteMilestone(milestoneId);
+      return result;
+    },
+    onSuccess: (_, { milestoneId, goalId }) => {
+      logger.info('Goals', 'Milestone deleted successfully', { id: milestoneId, goalId });
       queryClient.invalidateQueries({ queryKey: lifeGoalsKeys.goal(goalId) });
+    },
+    onError: (error: Error, { milestoneId, goalId }) => {
+      logger.error('Goals', 'Failed to delete milestone', { error: error.message, milestoneId, goalId });
     },
   });
 }
@@ -353,9 +420,17 @@ export function useCreateCheckinMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (input: CreateCheckinInput) => createCheckin(input),
-    onSuccess: (_, { goalId }) => {
+    mutationFn: async (input: CreateCheckinInput) => {
+      logger.debug('Goals', 'Creating check-in', { goalId: input.goalId, progressUpdate: input.progressUpdate });
+      const result = await createCheckin(input);
+      return result;
+    },
+    onSuccess: (checkin, { goalId }) => {
+      logger.info('Goals', 'Check-in created successfully', { id: checkin.id, goalId });
       queryClient.invalidateQueries({ queryKey: lifeGoalsKeys.checkins(goalId) });
+    },
+    onError: (error: Error, input) => {
+      logger.error('Goals', 'Failed to create check-in', { error: error.message, goalId: input.goalId });
     },
   });
 }
@@ -378,7 +453,7 @@ export function useRecordStreakMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       goalId,
       date,
       completed,
@@ -388,11 +463,19 @@ export function useRecordStreakMutation() {
       date: string;
       completed: boolean;
       notes?: string;
-    }) => recordStreak(goalId, date, completed, notes),
-    onSuccess: (_, { goalId }) => {
+    }) => {
+      logger.debug('Goals', 'Recording streak', { goalId, date, completed });
+      const result = await recordStreak(goalId, date, completed, notes);
+      return result;
+    },
+    onSuccess: (_, { goalId, date, completed }) => {
+      logger.info('Goals', 'Streak recorded successfully', { goalId, date, completed });
       queryClient.invalidateQueries({ queryKey: lifeGoalsKeys.streaks(goalId) });
       queryClient.invalidateQueries({ queryKey: lifeGoalsKeys.goal(goalId) });
       queryClient.invalidateQueries({ queryKey: lifeGoalsKeys.goals() });
+    },
+    onError: (error: Error, { goalId, date }) => {
+      logger.error('Goals', 'Failed to record streak', { error: error.message, goalId, date });
     },
   });
 }
@@ -411,13 +494,20 @@ export function useCreateGoalFromTemplateMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ templateId, customTitle }: { templateId: string; customTitle?: string }) =>
-      createGoalFromTemplate(templateId, customTitle),
+    mutationFn: async ({ templateId, customTitle }: { templateId: string; customTitle?: string }) => {
+      logger.debug('Goals', 'Creating goal from template', { templateId, customTitle });
+      const result = await createGoalFromTemplate(templateId, customTitle);
+      return result;
+    },
     onSuccess: (newGoal) => {
+      logger.info('Goals', 'Goal created from template successfully', { id: newGoal.id, title: newGoal.title });
       queryClient.setQueryData<LifeGoal[]>(lifeGoalsKeys.goals(), (old) => {
         if (!old) return [newGoal];
         return [newGoal, ...old];
       });
+    },
+    onError: (error: Error, { templateId }) => {
+      logger.error('Goals', 'Failed to create goal from template', { error: error.message, templateId });
     },
   });
 }

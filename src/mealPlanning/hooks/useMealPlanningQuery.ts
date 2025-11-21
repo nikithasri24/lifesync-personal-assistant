@@ -17,6 +17,7 @@ import type {
   PlannedMealData,
   PantryItemData,
 } from '../../services/types';
+import { logger } from '@/services/logger';
 
 // ==================== Types ====================
 
@@ -548,7 +549,7 @@ export function useCreateRecipeMutation() {
       if (context?.previousRecipes) {
         queryClient.setQueryData(mealPlanningKeys.recipesList(), context.previousRecipes);
       }
-      console.error('[useCreateRecipeMutation] Error creating recipe:', err);
+      logger.error('[useCreateRecipeMutation] Error creating recipe:', err);
     },
     onSuccess: (newRecipe) => {
       queryClient.setQueryData<Recipe[]>(mealPlanningKeys.recipesList(), (old) => {
@@ -586,7 +587,7 @@ export function useUpdateRecipeMutation() {
       if (context?.previousRecipes) {
         queryClient.setQueryData(mealPlanningKeys.recipesList(), context.previousRecipes);
       }
-      console.error('[useUpdateRecipeMutation] Error updating recipe:', err);
+      logger.error('[useUpdateRecipeMutation] Error updating recipe:', err);
     },
     onSuccess: (updatedRecipe) => {
       queryClient.setQueryData<Recipe[]>(mealPlanningKeys.recipesList(), (old) => {
@@ -623,7 +624,7 @@ export function useDeleteRecipeMutation() {
       if (context?.previousRecipes) {
         queryClient.setQueryData(mealPlanningKeys.recipesList(), context.previousRecipes);
       }
-      console.error('[useDeleteRecipeMutation] Error deleting recipe:', err);
+      logger.error('[useDeleteRecipeMutation] Error deleting recipe:', err);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: mealPlanningKeys.recipesList() });
@@ -646,7 +647,7 @@ export function useDeleteAllRecipesMutation() {
         try {
           await apiClient.deleteRecipe(recipe.id);
         } catch (e) {
-          console.warn('Failed to delete recipe', recipe.id, e);
+          logger.warn('Failed to delete recipe', recipe.id, e);
         }
       }
     },
@@ -662,7 +663,7 @@ export function useDeleteAllRecipesMutation() {
       if (context?.previousRecipes) {
         queryClient.setQueryData(mealPlanningKeys.recipesList(), context.previousRecipes);
       }
-      console.error('[useDeleteAllRecipesMutation] Error deleting all recipes:', err);
+      logger.error('[useDeleteAllRecipesMutation] Error deleting all recipes:', err);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: mealPlanningKeys.recipesList() });
@@ -747,7 +748,7 @@ export function useMealPlanForWeek(weekStartDate: Date, weekStartsOn: 0 | 1 = 0)
 
         return plan;
       } catch (e) {
-        console.warn('[MealPlanForWeek] Cloud create failed; falling back to local-only plan', e);
+        logger.warn('[MealPlanForWeek] Cloud create failed; falling back to local-only plan', e);
         const localPlan: MealPlanWeek = {
           id: `local-${Date.now()}`,
           name: 'Meal plan',
@@ -812,7 +813,7 @@ export function useCreateMealPlanMutation() {
       if (context?.previousPlans) {
         queryClient.setQueryData(mealPlanningKeys.mealPlansList(), context.previousPlans);
       }
-      console.error('[useCreateMealPlanMutation] Error creating meal plan:', err);
+      logger.error('[useCreateMealPlanMutation] Error creating meal plan:', err);
     },
     onSuccess: (newPlan) => {
       queryClient.setQueryData<MealPlanWeek[]>(mealPlanningKeys.mealPlansList(), (old) => {
@@ -858,7 +859,7 @@ export function useUpdateMealPlanMutation() {
       if (context?.previousPlans) {
         queryClient.setQueryData(mealPlanningKeys.mealPlansList(), context.previousPlans);
       }
-      console.error('[useUpdateMealPlanMutation] Error updating meal plan:', err);
+      logger.error('[useUpdateMealPlanMutation] Error updating meal plan:', err);
     },
     onSuccess: (updatedPlan) => {
       queryClient.setQueryData<MealPlanWeek[]>(mealPlanningKeys.mealPlansList(), (old) => {
@@ -899,7 +900,7 @@ export function useDeleteMealPlanMutation() {
       if (context?.previousPlans) {
         queryClient.setQueryData(mealPlanningKeys.mealPlansList(), context.previousPlans);
       }
-      console.error('[useDeleteMealPlanMutation] Error deleting meal plan:', err);
+      logger.error('[useDeleteMealPlanMutation] Error deleting meal plan:', err);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: mealPlanningKeys.mealPlansList() });
@@ -947,7 +948,7 @@ export function useCreatePlannedMealMutation() {
       if (context?.previousPlans) {
         queryClient.setQueryData(mealPlanningKeys.mealPlansList(), context.previousPlans);
       }
-      console.error('[useCreatePlannedMealMutation] Error creating planned meal:', err);
+      logger.error('[useCreatePlannedMealMutation] Error creating planned meal:', err);
     },
     onSuccess: (newMeal) => {
       queryClient.setQueryData<MealPlanWeek[]>(mealPlanningKeys.mealPlansList(), (old) => {
@@ -999,7 +1000,7 @@ export function useUpdatePlannedMealMutation() {
       if (context?.previousPlans) {
         queryClient.setQueryData(mealPlanningKeys.mealPlansList(), context.previousPlans);
       }
-      console.error('[useUpdatePlannedMealMutation] Error updating planned meal:', err);
+      logger.error('[useUpdatePlannedMealMutation] Error updating planned meal:', err);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: mealPlanningKeys.mealPlansList() });
@@ -1036,7 +1037,7 @@ export function useDeletePlannedMealMutation() {
       if (context?.previousPlans) {
         queryClient.setQueryData(mealPlanningKeys.mealPlansList(), context.previousPlans);
       }
-      console.error('[useDeletePlannedMealMutation] Error deleting planned meal:', err);
+      logger.error('[useDeletePlannedMealMutation] Error deleting planned meal:', err);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: mealPlanningKeys.mealPlansList() });
@@ -1096,7 +1097,7 @@ export function useCreatePantryItemMutation() {
       if (context?.previousItems) {
         queryClient.setQueryData(mealPlanningKeys.pantryList(), context.previousItems);
       }
-      console.error('[useCreatePantryItemMutation] Error creating pantry item:', err);
+      logger.error('[useCreatePantryItemMutation] Error creating pantry item:', err);
     },
     onSuccess: (newItem) => {
       queryClient.setQueryData<PantryItem[]>(mealPlanningKeys.pantryList(), (old) => {
@@ -1138,7 +1139,7 @@ export function useUpdatePantryItemMutation() {
       if (context?.previousItems) {
         queryClient.setQueryData(mealPlanningKeys.pantryList(), context.previousItems);
       }
-      console.error('[useUpdatePantryItemMutation] Error updating pantry item:', err);
+      logger.error('[useUpdatePantryItemMutation] Error updating pantry item:', err);
     },
     onSuccess: (updatedItem) => {
       queryClient.setQueryData<PantryItem[]>(mealPlanningKeys.pantryList(), (old) => {
@@ -1175,7 +1176,7 @@ export function useDeletePantryItemMutation() {
       if (context?.previousItems) {
         queryClient.setQueryData(mealPlanningKeys.pantryList(), context.previousItems);
       }
-      console.error('[useDeletePantryItemMutation] Error deleting pantry item:', err);
+      logger.error('[useDeletePantryItemMutation] Error deleting pantry item:', err);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: mealPlanningKeys.pantryList() });

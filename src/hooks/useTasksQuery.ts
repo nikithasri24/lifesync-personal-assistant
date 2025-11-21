@@ -22,6 +22,7 @@ import {
   updateProject,
   deleteProject,
 } from '@/api/tasksAPI';
+import { logger } from '@/services/logger';
 
 // =====================================================
 // TASKS QUERY HOOKS
@@ -71,8 +72,14 @@ export function useCreateTask() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: createTask,
+    mutationFn: async (input: Omit<TaskData, 'id' | 'created_at' | 'updated_at'>) => {
+      logger.debug('Tasks', 'Creating task', { title: input.title, priority: input.priority });
+      const result = await createTask(input);
+      return result;
+    },
     onSuccess: (newTask) => {
+      logger.info('Tasks', 'Task created successfully', { id: newTask.id, title: newTask.title });
+
       // Invalidate all task lists
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.lists() });
 
@@ -84,6 +91,9 @@ export function useCreateTask() {
         }
       );
     },
+    onError: (error: Error) => {
+      logger.error('Tasks', 'Failed to create task', { error: error.message });
+    },
   });
 }
 
@@ -94,9 +104,17 @@ export function useUpdateTask() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: Partial<TaskData> }) =>
-      updateTask(id, updates),
+    mutationFn: async ({ id, updates }: { id: string; updates: Partial<TaskData> }) => {
+      logger.debug('Tasks', 'Updating task', { id, updates });
+      const result = await updateTask(id, updates);
+      return result;
+    },
+    onMutate: async ({ id, updates }) => {
+      logger.debug('Tasks', 'Optimistic update: updating task', { id, updates });
+    },
     onSuccess: (updatedTask) => {
+      logger.info('Tasks', 'Task updated successfully', { id: updatedTask.id, title: updatedTask.title });
+
       // Invalidate all task lists
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.lists() });
 
@@ -116,6 +134,9 @@ export function useUpdateTask() {
         }
       );
     },
+    onError: (error: Error, { id }) => {
+      logger.error('Tasks', 'Failed to update task', { error: error.message, id });
+    },
   });
 }
 
@@ -126,8 +147,14 @@ export function useDeleteTask() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: deleteTask,
+    mutationFn: async (id: string) => {
+      logger.debug('Tasks', 'Deleting task (soft delete)', { id });
+      const result = await deleteTask(id);
+      return result;
+    },
     onSuccess: (_data, deletedId) => {
+      logger.info('Tasks', 'Task deleted successfully', { id: deletedId });
+
       // Invalidate all task lists
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.lists() });
 
@@ -143,6 +170,9 @@ export function useDeleteTask() {
         }
       );
     },
+    onError: (error: Error, id) => {
+      logger.error('Tasks', 'Failed to delete task', { error: error.message, id });
+    },
   });
 }
 
@@ -153,8 +183,14 @@ export function usePermanentlyDeleteTask() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: permanentlyDeleteTask,
+    mutationFn: async (id: string) => {
+      logger.debug('Tasks', 'Permanently deleting task', { id });
+      const result = await permanentlyDeleteTask(id);
+      return result;
+    },
     onSuccess: (_data, deletedId) => {
+      logger.info('Tasks', 'Task permanently deleted', { id: deletedId });
+
       // Invalidate all task lists
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.lists() });
 
@@ -169,6 +205,9 @@ export function usePermanentlyDeleteTask() {
         }
       );
     },
+    onError: (error: Error, id) => {
+      logger.error('Tasks', 'Failed to permanently delete task', { error: error.message, id });
+    },
   });
 }
 
@@ -179,8 +218,14 @@ export function useRestoreTask() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: restoreTask,
+    mutationFn: async (id: string) => {
+      logger.debug('Tasks', 'Restoring task', { id });
+      const result = await restoreTask(id);
+      return result;
+    },
     onSuccess: (restoredTask) => {
+      logger.info('Tasks', 'Task restored successfully', { id: restoredTask.id, title: restoredTask.title });
+
       // Invalidate all task lists
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.lists() });
 
@@ -193,6 +238,9 @@ export function useRestoreTask() {
           );
         }
       );
+    },
+    onError: (error: Error, id) => {
+      logger.error('Tasks', 'Failed to restore task', { error: error.message, id });
     },
   });
 }
@@ -239,8 +287,14 @@ export function useCreateProject() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: createProject,
+    mutationFn: async (input: Omit<ProjectData, 'id' | 'created_at' | 'updated_at'>) => {
+      logger.debug('Projects', 'Creating project', { name: input.name, status: input.status });
+      const result = await createProject(input);
+      return result;
+    },
     onSuccess: (newProject) => {
+      logger.info('Projects', 'Project created successfully', { id: newProject.id, name: newProject.name });
+
       // Invalidate all project queries
       queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'projects'] });
 
@@ -252,6 +306,9 @@ export function useCreateProject() {
         }
       );
     },
+    onError: (error: Error) => {
+      logger.error('Projects', 'Failed to create project', { error: error.message });
+    },
   });
 }
 
@@ -262,9 +319,17 @@ export function useUpdateProject() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: Partial<ProjectData> }) =>
-      updateProject(id, updates),
+    mutationFn: async ({ id, updates }: { id: string; updates: Partial<ProjectData> }) => {
+      logger.debug('Projects', 'Updating project', { id, updates });
+      const result = await updateProject(id, updates);
+      return result;
+    },
+    onMutate: async ({ id, updates }) => {
+      logger.debug('Projects', 'Optimistic update: updating project', { id, updates });
+    },
     onSuccess: (updatedProject) => {
+      logger.info('Projects', 'Project updated successfully', { id: updatedProject.id, name: updatedProject.name });
+
       // Invalidate all project queries
       queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'projects'] });
 
@@ -284,6 +349,9 @@ export function useUpdateProject() {
         }
       );
     },
+    onError: (error: Error, { id }) => {
+      logger.error('Projects', 'Failed to update project', { error: error.message, id });
+    },
   });
 }
 
@@ -294,8 +362,14 @@ export function useDeleteProject() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: deleteProject,
+    mutationFn: async (id: string) => {
+      logger.debug('Projects', 'Deleting project', { id });
+      const result = await deleteProject(id);
+      return result;
+    },
     onSuccess: (_data, deletedId) => {
+      logger.info('Projects', 'Project deleted successfully', { id: deletedId });
+
       // Invalidate all project queries
       queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'projects'] });
 
@@ -309,6 +383,9 @@ export function useDeleteProject() {
           return old?.filter((project) => project.id !== deletedId);
         }
       );
+    },
+    onError: (error: Error, id) => {
+      logger.error('Projects', 'Failed to delete project', { error: error.message, id });
     },
   });
 }
