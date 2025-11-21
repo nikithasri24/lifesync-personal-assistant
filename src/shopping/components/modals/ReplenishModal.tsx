@@ -1,0 +1,48 @@
+import React, { useState } from 'react';
+
+interface ReplenishModalProps {
+  itemName: string;
+  currentQuantity: number;
+  suggestedTarget: number;
+  onReplenish: (targetQuantity: number) => Promise<void>;
+  onCancel: () => void;
+}
+
+export function ReplenishModal({
+  itemName,
+  currentQuantity,
+  suggestedTarget,
+  onReplenish,
+  onCancel
+}: ReplenishModalProps) {
+  const [targetQuantity, setTargetQuantity] = useState(String(suggestedTarget));
+
+  const handleReplenish = async () => {
+    await onReplenish(Number(targetQuantity) || 0);
+  };
+
+  return (
+    <div className="mt-3 flex items-center gap-2 text-sm">
+      <span className="text-gray-700">Replenish {itemName} to target quantity:</span>
+      <input
+        type="number"
+        min={0}
+        value={targetQuantity}
+        onChange={(e) => setTargetQuantity(e.target.value)}
+        className="w-28 rounded border border-gray-300 px-2 py-1"
+      />
+      <button
+        className="px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-500"
+        onClick={handleReplenish}
+      >
+        Go
+      </button>
+      <button
+        className="px-3 py-1 rounded border border-gray-300 hover:bg-gray-50"
+        onClick={onCancel}
+      >
+        Cancel
+      </button>
+    </div>
+  );
+}
