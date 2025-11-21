@@ -37,8 +37,11 @@ import {
   Lightbulb
 } from 'lucide-react';
 import { format, isToday, isPast } from 'date-fns';
-import { useAppStore } from '../../../stores/useAppStore';
-import type { TodoItem, Project as StoreProject, FocusSession as StoreFocusSession } from '../../../types';
+import { useTasksQuery, useCreateTaskMutation, useUpdateTaskMutation, useToggleTaskMutation } from '../../../tasks/hooks/useTasksQuery';
+import { useProjectsQuery, useCreateProjectMutation } from '../../../projects/hooks/useProjectsQuery';
+import { useFocusSessionsQuery } from '../../../focus/hooks/useFocusQuery';
+import type { TodoItem, FocusSession as StoreFocusSession } from '../../../types';
+import type { Project as StoreProject } from '../../../projects/hooks/useProjectsQuery';
 
 type TaskStatusView = 'todo' | 'in_progress' | 'completed' | 'cancelled';
 
@@ -109,13 +112,28 @@ export const TaskFocusIntegration: React.FC<Props> = ({
   onTaskComplete,
   activeFocusSession
 }) => {
-  const storeTasks = useAppStore((state) => state.tasks);
-  const storeProjects = useAppStore((state) => state.projects);
-  const storeFocusSessions = useAppStore((state) => state.focusSessions);
-  const addTodo = useAppStore((state) => state.addTodo);
-  const updateTodo = useAppStore((state) => state.updateTodo);
-  const toggleTodo = useAppStore((state) => state.toggleTodo);
-  const addProject = useAppStore((state) => state.addProject);
+  // React Query hooks
+  const { data: storeTasks = [] } = useTasksQuery();
+  const { data: storeProjects = [] } = useProjectsQuery();
+  const { data: storeFocusSessions = [] } = useFocusSessionsQuery();
+  const createTaskMutation = useCreateTaskMutation();
+  const updateTaskMutation = useUpdateTaskMutation();
+  const toggleTaskMutation = useToggleTaskMutation();
+  const createProjectMutation = useCreateProjectMutation();
+
+  // Wrapper functions to maintain API compatibility
+  const addTodo = async (task: Parameters<typeof createTaskMutation.mutateAsync>[0]) => {
+    return await createTaskMutation.mutateAsync(task);
+  };
+  const updateTodo = async (id: string, updates: Parameters<typeof updateTaskMutation.mutateAsync>[0]['updates']) => {
+    await updateTaskMutation.mutateAsync({ taskId: id, updates });
+  };
+  const toggleTodo = async (id: string) => {
+    await toggleTaskMutation.mutateAsync(id);
+  };
+  const addProject = async (project: Parameters<typeof createProjectMutation.mutateAsync>[0]) => {
+    return await createProjectMutation.mutateAsync(project);
+  };
   const [activeTab, setActiveTab] = useState<'tasks' | 'projects' | 'analytics'>('tasks');
   const [filter, setFilter] = useState<'all' | 'today' | 'overdue' | 'completed'>('all');
   const [selectedProject, setSelectedProject] = useState<string>('all');

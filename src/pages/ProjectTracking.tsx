@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useRealAppStore } from '../stores/useRealAppStore';
+import React, { useState, useMemo } from 'react';
 import {
   FolderOpen,
   Plus,
@@ -16,13 +15,23 @@ import {
   ChevronDown,
   ChevronRight,
 } from 'lucide-react';
-import type { Project, TodoItem } from '../types';
+import { useProjectsQuery, useCreateProjectMutation, useUpdateProjectMutation, useDeleteProjectMutation } from '../projects/hooks/useProjectsQuery';
+import { useTasksQuery } from '../tasks/hooks/useTasksQuery';
+import type { Project } from '../projects/hooks/useProjectsQuery';
+import type { TodoItem } from '../types';
 
 type ViewMode = 'grid' | 'list';
 type StatusFilter = 'all' | 'active' | 'completed' | 'on_hold';
 
 const ProjectTracking: React.FC = () => {
-  const { projects, todos, addProject, updateProject, deleteProject } = useRealAppStore();
+  // React Query hooks
+  const { data: projects = [], isLoading: projectsLoading } = useProjectsQuery();
+  const { data: todos = [], isLoading: todosLoading } = useTasksQuery();
+  const createProjectMutation = useCreateProjectMutation();
+  const updateProjectMutation = useUpdateProjectMutation();
+  const deleteProjectMutation = useDeleteProjectMutation();
+
+  const loading = projectsLoading || todosLoading;
 
   // UI State
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
@@ -94,7 +103,7 @@ const ProjectTracking: React.FC = () => {
     if (!formData.name.trim()) return;
 
     try {
-      await addProject({
+      await createProjectMutation.mutateAsync({
         name: formData.name,
         description: formData.description || undefined,
         color: formData.color,
@@ -113,12 +122,15 @@ const ProjectTracking: React.FC = () => {
     if (!editingProject || !formData.name.trim()) return;
 
     try {
-      await updateProject(editingProject.id, {
-        name: formData.name,
-        description: formData.description || undefined,
-        color: formData.color,
-        icon: formData.icon,
-        status: formData.status,
+      await updateProjectMutation.mutateAsync({
+        projectId: editingProject.id,
+        updates: {
+          name: formData.name,
+          description: formData.description || undefined,
+          color: formData.color,
+          icon: formData.icon,
+          status: formData.status,
+        },
       });
 
       setEditingProject(null);
@@ -130,7 +142,7 @@ const ProjectTracking: React.FC = () => {
 
   const handleDeleteProject = async (id: string) => {
     try {
-      await deleteProject(id);
+      await deleteProjectMutation.mutateAsync(id);
       setDeleteConfirmId(null);
     } catch (error) {
       console.error('Failed to delete project:', error);
@@ -206,6 +218,17 @@ const ProjectTracking: React.FC = () => {
       completedTasks,
     };
   }, [projects, projectMetrics]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-500 border-t-transparent mx-auto mb-2" />
+          <p className="text-sm text-slate-600 dark:text-slate-400">Loading projects...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-7xl p-6">

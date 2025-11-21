@@ -9,7 +9,6 @@ import {
   type MealPlanData,
   type PlannedMealData,
   type PantryItemData,
-  type ProjectData,
   type RecipeData,
   type ShoppingItemData,
   type ShoppingListData,
@@ -43,17 +42,6 @@ type ViewKey =
   | 'seventy-five-hard'
   | 'skincare'
   | 'assistant'
-
-interface Project {
-  id: string
-  name: string
-  description?: string
-  color: string
-  status: 'active' | 'completed' | 'on_hold'
-  icon: string
-  createdAt: Date
-  updatedAt?: Date
-}
 
 type ShoppingCategory =
   | 'produce'
@@ -90,7 +78,6 @@ interface ShoppingItem {
 
 interface RealAppState {
   loading: boolean
-  projectsLoading: boolean
   mealPlansLoading: boolean
   recipesLoading: boolean
   shoppingLoading: boolean
@@ -104,7 +91,6 @@ interface RealAppState {
   weekStartsOn: 0 | 1
   mealOptions: { breakfast: string[]; lunch: string[]; dinner: string[]; snack: string[] }
 
-  projects: Project[]
   recipes: Recipe[]
   pantryItems: PantryItem[]
   mealPlans: MealPlanWeek[]
@@ -135,10 +121,6 @@ interface RealAppState {
   setWeekStartsOn: (ws: 0 | 1) => void
   addMealOption: (mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack', name: string) => void
   removeMealOption: (mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack', name: string) => void
-
-  addProject: (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Project>
-  updateProject: (id: string, updates: Partial<Project>) => Promise<void>
-  deleteProject: (id: string) => Promise<void>
 
   // Recipes & Meal Plans - Lazy loading
   loadRecipes: () => Promise<void>
@@ -247,39 +229,6 @@ const sanitize = <T extends Record<string, unknown>>(payload: T): T => {
   const entries = Object.entries(payload).filter(([, value]) => value !== undefined)
   return Object.fromEntries(entries) as T
 }
-
-const mapProjectDataToProject = (project: ProjectData): Project => ({
-  id: project.id ?? createId(),
-  name: project.name,
-  description: project.description ?? '',
-  color: project.color ?? '#6366f1',
-  status: (project.status as Project['status']) ?? 'active',
-  icon: project.icon ?? '📁',
-  createdAt: toDate(project.created_at) ?? new Date(),
-  updatedAt: toDate(project.updated_at),
-})
-
-const buildProjectInsertPayload = (
-  project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>,
-): Omit<ProjectData, 'id' | 'created_at' | 'updated_at'> =>
-  sanitize({
-    name: project.name,
-    description: project.description ?? '',
-    color: project.color ?? '#6366f1',
-    status: project.status ?? 'active',
-    icon: project.icon ?? '📁',
-  })
-
-const buildProjectUpdatePayload = (
-  updates: Partial<Project>,
-): Partial<ProjectData> =>
-  sanitize({
-    name: updates.name,
-    description: updates.description,
-    color: updates.color,
-    status: updates.status,
-    icon: updates.icon,
-  })
 
 const mapShoppingItemDataToShoppingItem = (item: ShoppingItemData): ShoppingItem => ({
   id: item.id ?? createId(),
@@ -580,7 +529,6 @@ const creationLocks = new Map<string, Promise<MealPlanWeek>>()
 
 export const useRealAppStore = create<RealAppState>((set, get) => ({
   loading: false,
-  projectsLoading: false,
   mealPlansLoading: false,
   recipesLoading: false,
   shoppingLoading: false,
@@ -624,7 +572,6 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
   globalToast: null,
   sfhLastSynced: null,
 
-  projects: [],
   recipes: [],
   pantryItems: [],
   mealPlans: [],
@@ -647,7 +594,6 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
       console.warn('[LifeSync] Supabase not configured; store will operate in local-only mode.')
       set({
         loading: false,
-        projects: [],
         shoppingItems: [],
         mealPlans: [],
         recipes: [],
@@ -658,17 +604,11 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
 
     set({
       loading: true,
-      projectsLoading: true,
     })
 
     try {
       // Only load critical data for Dashboard
       // Everything else loads on-demand when user visits the page
-      const [
-        projectsRaw,
-      ] = await Promise.all([
-        apiClient.getProjects(),
-      ])
 
       // Non-critical data moved to lazy loading:
       // - Shopping Lists → Load when visiting Shopping page
@@ -684,13 +624,10 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
       // - Journal → Now using useJournalQuery hook
       // - Goals/Dreams → Now using useLifeGoalsQuery hook
       // - Financial Accounts/Transactions → Now using useFinanceQuery hook
-
-      const projects = projectsRaw.map(mapProjectDataToProject)
+      // - Projects → Removed from Zustand store
 
       set({
         loading: false,
-        projectsLoading: false,
-        projects,
       })
 
       // Update current day for all active challenges after initialization
@@ -699,7 +636,6 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
       console.error('[LifeSync] Failed to initialise store from Supabase', error)
       set({
         loading: false,
-        projectsLoading: false,
       })
     }
   },
@@ -733,60 +669,6 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
     })
   },
   setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
-
-  addProject: async (projectInput) => {
-    if (!isSupabaseConfigured) {
-      const project: Project = {
-        id: createId(),
-        name: projectInput.name,
-        description: projectInput.description ?? '',
-        color: projectInput.color ?? '#6366f1',
-        status: projectInput.status ?? 'active',
-        icon: projectInput.icon ?? '📁',
-        createdAt: new Date(),
-      }
-      const projects = [...get().projects, project]
-      set({ projects })
-      return project
-    }
-
-    const payload = buildProjectInsertPayload(projectInput)
-    const created = await apiClient.createProject(payload)
-    const project = mapProjectDataToProject(created)
-    const projects = [...get().projects, project]
-    set({ projects })
-    return project
-  },
-
-  updateProject: async (id, updates) => {
-    if (!isSupabaseConfigured) {
-      const projects = get().projects.map((project) =>
-        project.id === id
-          ? { ...project, ...updates, updatedAt: new Date() }
-          : project,
-      )
-      set({ projects })
-      return
-    }
-
-    const payload = buildProjectUpdatePayload(updates)
-    const updated = await apiClient.updateProject(id, payload)
-    const project = mapProjectDataToProject(updated)
-    const projects = get().projects.map((item) => (item.id === id ? project : item))
-    set({ projects })
-  },
-
-  deleteProject: async (id) => {
-    if (!isSupabaseConfigured) {
-      const projects = get().projects.filter((project) => project.id !== id)
-      set({ projects })
-      return
-    }
-
-    await apiClient.deleteProject(id)
-    const projects = get().projects.filter((project) => project.id !== id)
-    set({ projects })
-  },
 
   loadRecipes: async () => {
     // Don't reload if already loaded or loading
