@@ -22,7 +22,8 @@
       "Bash(/tmp/meal_combined.txt)",
       "Bash(npm run:*)",
       "Bash(for file in src/pages/*.tsx)",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(wc:*)"
     ],
     "deny": [],
     "ask": []

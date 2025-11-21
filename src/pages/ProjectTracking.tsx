@@ -16,13 +16,20 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { useProjectsQuery, useCreateProjectMutation, useUpdateProjectMutation, useDeleteProjectMutation } from '../projects/hooks/useProjectsQuery';
-import { useTasksQuery } from '../tasks/hooks/useTasksQuery';
+import { useTasksQuery } from '../hooks/useTasksQuery';
 import type { Project } from '../projects/hooks/useProjectsQuery';
 import type { TodoItem } from '../types';
 import { logger } from '../services/logger';
-
-type ViewMode = 'grid' | 'list';
-type StatusFilter = 'all' | 'active' | 'completed' | 'on_hold';
+import type { ViewMode, StatusFilter, ProjectFormData } from '../projects/types';
+import {
+  calculateProjectMetrics,
+  calculateProjectStats,
+  getProjectMetrics,
+  createEmptyFormData,
+  projectToFormData,
+} from '../projects/services/projectHelpers';
+import { ProjectStats } from '../projects/components/ProjectStats';
+import { StatusBadge } from '../projects/components/StatusBadge';
 
 const ProjectTracking: React.FC = () => {
   // React Query hooks
@@ -44,30 +51,10 @@ const ProjectTracking: React.FC = () => {
   const [expandedProjectId, setExpandedProjectId] = useState<string | null>(null);
 
   // Form state
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    color: '#6366f1',
-    icon: '📁',
-    status: 'active' as const,
-  });
+  const [formData, setFormData] = useState<ProjectFormData>(createEmptyFormData());
 
   // Calculate project metrics
-  const projectMetrics = useMemo(() => {
-    return projects.map((project) => {
-      const projectTasks = todos.filter((task) => task.projectId === project.id && !task.deleted);
-      const completedTasks = projectTasks.filter((task) => task.completed);
-      const progress = projectTasks.length > 0 ? (completedTasks.length / projectTasks.length) * 100 : 0;
-
-      return {
-        projectId: project.id,
-        totalTasks: projectTasks.length,
-        completedTasks: completedTasks.length,
-        progress: Math.round(progress),
-        tasks: projectTasks,
-      };
-    });
-  }, [projects, todos]);
+  const projectMetrics = useMemo(() => calculateProjectMetrics(projects, todos), [projects, todos]);
 
   // Filter and search projects
   const filteredProjects = useMemo(() => {
@@ -91,14 +78,6 @@ const ProjectTracking: React.FC = () => {
     return filtered;
   }, [projects, statusFilter, searchQuery]);
 
-  const getMetrics = (projectId: string) => {
-    return projectMetrics.find((m) => m.projectId === projectId) || {
-      totalTasks: 0,
-      completedTasks: 0,
-      progress: 0,
-      tasks: [],
-    };
-  };
 
   const handleCreateProject = async () => {
     if (!formData.name.trim()) return;
@@ -152,23 +131,11 @@ const ProjectTracking: React.FC = () => {
 
   const openEditModal = (project: Project) => {
     setEditingProject(project);
-    setFormData({
-      name: project.name,
-      description: project.description || '',
-      color: project.color,
-      icon: project.icon,
-      status: project.status,
-    });
+    setFormData(projectToFormData(project));
   };
 
   const resetForm = () => {
-    setFormData({
-      name: '',
-      description: '',
-      color: '#6366f1',
-      icon: '📁',
-      status: 'active',
-    });
+    setFormData(createEmptyFormData());
   };
 
   const closeModal = () => {
@@ -177,48 +144,8 @@ const ProjectTracking: React.FC = () => {
     resetForm();
   };
 
-  const getStatusBadge = (status: Project['status']) => {
-    const statusConfig = {
-      active: { label: 'Active', className: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400' },
-      completed: { label: 'Completed', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' },
-      on_hold: { label: 'On Hold', className: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400' },
-    };
-
-    const config = statusConfig[status];
-    return (
-      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${config.className}`}>
-        {config.label}
-      </span>
-    );
-  };
-
-  const getStatusIcon = (status: Project['status']) => {
-    switch (status) {
-      case 'active':
-        return <Circle className="h-4 w-4 text-emerald-500" />;
-      case 'completed':
-        return <CheckCircle className="h-4 w-4 text-blue-500" />;
-      case 'on_hold':
-        return <Clock className="h-4 w-4 text-amber-500" />;
-    }
-  };
-
   // Statistics
-  const stats = useMemo(() => {
-    const totalProjects = projects.length;
-    const activeProjects = projects.filter((p) => p.status === 'active').length;
-    const completedProjects = projects.filter((p) => p.status === 'completed').length;
-    const totalTasks = projectMetrics.reduce((sum, m) => sum + m.totalTasks, 0);
-    const completedTasks = projectMetrics.reduce((sum, m) => sum + m.completedTasks, 0);
-
-    return {
-      totalProjects,
-      activeProjects,
-      completedProjects,
-      totalTasks,
-      completedTasks,
-    };
-  }, [projects, projectMetrics]);
+  const stats = useMemo(() => calculateProjectStats(projects, projectMetrics), [projects, projectMetrics]);
 
   if (loading) {
     return (
@@ -252,30 +179,7 @@ const ProjectTracking: React.FC = () => {
         </div>
 
         {/* Statistics */}
-        <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-5">
-          <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
-            <div className="text-2xl font-bold text-slate-900 dark:text-white">{stats.totalProjects}</div>
-            <div className="text-xs text-slate-600 dark:text-slate-400">Total Projects</div>
-          </div>
-          <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
-            <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{stats.activeProjects}</div>
-            <div className="text-xs text-slate-600 dark:text-slate-400">Active</div>
-          </div>
-          <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
-            <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.completedProjects}</div>
-            <div className="text-xs text-slate-600 dark:text-slate-400">Completed</div>
-          </div>
-          <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
-            <div className="text-2xl font-bold text-slate-900 dark:text-white">{stats.totalTasks}</div>
-            <div className="text-xs text-slate-600 dark:text-slate-400">Total Tasks</div>
-          </div>
-          <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
-            <div className="text-2xl font-bold text-slate-900 dark:text-white">
-              {stats.totalTasks > 0 ? Math.round((stats.completedTasks / stats.totalTasks) * 100) : 0}%
-            </div>
-            <div className="text-xs text-slate-600 dark:text-slate-400">Completion</div>
-          </div>
-        </div>
+        <ProjectStats stats={stats} />
       </div>
 
       {/* Filters and View Toggle */}
@@ -359,7 +263,7 @@ const ProjectTracking: React.FC = () => {
       ) : (
         <div className={viewMode === 'grid' ? 'grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3' : 'space-y-4'}>
           {filteredProjects.map((project) => {
-            const metrics = getMetrics(project.id);
+            const metrics = getProjectMetrics(project.id, projectMetrics);
             const isExpanded = expandedProjectId === project.id;
 
             return (
@@ -376,7 +280,7 @@ const ProjectTracking: React.FC = () => {
                         <h3 className="text-lg font-semibold text-slate-900 dark:text-white truncate">
                           {project.name}
                         </h3>
-                        {getStatusBadge(project.status)}
+                        <StatusBadge status={project.status} />
                       </div>
                       {project.description && (
                         <p className="mt-1 text-sm text-slate-600 dark:text-slate-400 line-clamp-2">
