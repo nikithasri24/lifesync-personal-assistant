@@ -8,37 +8,20 @@ import { TrendingUp, TrendingDown, DollarSign, PieChart, BarChart3 } from 'lucid
 import { Card } from '../components/Card';
 import { ChartLazy } from '../components/ChartLazy';
 import { formatCurrency } from '../utils/currency';
-import { getFinanceAPI } from '../data';
+import { useNetWorthQuery, useAccountsQuery } from '../hooks/useFinanceQuery';
 import type { Account, NetPoint } from '../types';
 
 const NetWorthPage: React.FC = () => {
-  const [data, setData] = React.useState<{ month: string; assets: number; liabilities: number; net: number }[]>([]);
-  const [accounts, setAccounts] = React.useState<Account[]>([]);
-  const [loading, setLoading] = React.useState(true);
+  // React Query hooks
+  const { data: netWorthData = [], isLoading: netWorthLoading } = useNetWorthQuery();
+  const { data: accounts = [], isLoading: accountsLoading } = useAccountsQuery();
 
-  React.useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const api = await getFinanceAPI();
-        const [points, accountsData] = await Promise.all([
-          api.listNetWorth(),
-          api.listAccounts(),
-        ]);
-        const rows = points.map((p) => ({ ...p, net: p.assets - p.liabilities }));
-        if (!mounted) return;
-        setData(rows);
-        setAccounts(accountsData);
-      } catch (error) {
-        console.error('[NetWorthPage] Failed to load data:', error);
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, []);
+  const loading = netWorthLoading || accountsLoading;
+
+  // Transform data to include net worth calculation
+  const data = React.useMemo(() => {
+    return netWorthData.map((p) => ({ ...p, net: p.assets - p.liabilities }));
+  }, [netWorthData]);
 
   // Calculate current metrics
   const last = data[data.length - 1];
