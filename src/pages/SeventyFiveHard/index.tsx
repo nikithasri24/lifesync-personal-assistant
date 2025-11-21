@@ -21,8 +21,8 @@ import {
   updateSFHCheckInWeight,
   handleSFHFailureResponse,
   deleteSFHChallenge,
-  ensureSFHTodosForToday,
-} from '../../stores/seventyFiveHardActions';
+  ensure75HardTodosForToday,
+} from '../../seventyFiveHard/actions';
 import { isSameDay, startOfDay } from 'date-fns';
 
 // Import components
@@ -59,7 +59,7 @@ export default function SeventyFiveHard() {
   useEffect(() => {
     if (challenge && challenge.status === 'active') {
       logger.debug('index', '[75Hard] Page loaded - ensuring todos for today (lazy loading)');
-      ensureSFHTodosForToday();
+      ensure75HardTodosForToday();
     }
   }, [challenge]);
 

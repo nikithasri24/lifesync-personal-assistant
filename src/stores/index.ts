@@ -7,7 +7,7 @@ export * from './useRealAppStore';
 
 // 75 Hard store
 export * from './seventyFiveHardStore';
-export * from './seventyFiveHardActions';
+export * from '../seventyFiveHard/actions';
 export * from './seventyFiveHardSelectors';
 
 // New composed store (modern approach)

@@ -24,7 +24,7 @@ import {
   Calendar
 } from 'lucide-react';
 import { useAppStore } from '../stores/useAppStore';
-import { toggleSFHTask } from '../stores/seventyFiveHardActions';
+import { toggleSFHTask } from '../seventyFiveHard/actions';
 import { isSameDay, startOfDay } from 'date-fns';
 import { getDailyQuote } from '../utils/motivationalQuotes';
 

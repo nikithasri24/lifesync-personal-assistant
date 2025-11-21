@@ -6,7 +6,7 @@ import LoadingSpinner from './components/LoadingSpinner';
 import { AuthGate } from './components/AuthGate';
 import { useAuth } from './hooks/useAuth';
 import { isSupabaseConfigured } from './lib/supabase';
-import { loadSFHChallenge } from './stores/seventyFiveHardActions';
+import { loadSFHChallenge } from './seventyFiveHard/actions';
 import { cleanup75HardDuplicates } from './utils/cleanup75HardDuplicates';
 import { logger } from 'services/logger';
 

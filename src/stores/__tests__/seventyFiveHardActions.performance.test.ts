@@ -32,7 +32,7 @@ vi.mock('../useRealAppStore', () => ({
 }));
 
 // Import after mocks
-import { ensureSFHTodosForToday } from '../seventyFiveHardActions';
+import { ensure75HardTodosForToday } from '../../seventyFiveHard/actions';
 
 describe('75 Hard Actions - Performance Optimizations', () => {
   const today = startOfDay(new Date());
@@ -74,7 +74,7 @@ describe('75 Hard Actions - Performance Optimizations', () => {
     vi.clearAllMocks();
   });
 
-  describe('ensureSFHTodosForToday - Parallel Operations', () => {
+  describe('ensure75HardTodosForToday - Parallel Operations', () => {
     it('should execute todo create/update operations in parallel', async () => {
       const mockAddTodo = vi.fn((data) => Promise.resolve({ id: `todo-${data.title}` }));
       const mockUpdateTodo = vi.fn(() => Promise.resolve());
@@ -90,7 +90,7 @@ describe('75 Hard Actions - Performance Optimizations', () => {
       });
 
       const startTime = Date.now();
-      await ensureSFHTodosForToday();
+      await ensure75HardTodosForToday();
       const endTime = Date.now();
 
       // Should have called addTodo for each task
@@ -117,7 +117,7 @@ describe('75 Hard Actions - Performance Optimizations', () => {
         deleteTodo: vi.fn(),
       });
 
-      await ensureSFHTodosForToday();
+      await ensure75HardTodosForToday();
 
       // Verify that todos were created with correct completion status
       // This tests that the Map lookup is working correctly
@@ -160,7 +160,7 @@ describe('75 Hard Actions - Performance Optimizations', () => {
       });
 
       const startTime = Date.now();
-      await ensureSFHTodosForToday();
+      await ensure75HardTodosForToday();
       const endTime = Date.now();
 
       // Should process all 5 tasks (create/update combined)
@@ -188,7 +188,7 @@ describe('75 Hard Actions - Performance Optimizations', () => {
       });
 
       const startTime = Date.now();
-      await ensureSFHTodosForToday();
+      await ensure75HardTodosForToday();
       const endTime = Date.now();
 
       // Should create 5 todos
@@ -215,7 +215,7 @@ describe('75 Hard Actions - Performance Optimizations', () => {
       });
 
       const startTime = Date.now();
-      await ensureSFHTodosForToday();
+      await ensure75HardTodosForToday();
       const endTime = Date.now();
 
       // With 5 tasks each taking 5ms sequentially = 25ms minimum
@@ -260,7 +260,7 @@ describe('75 Hard Actions - Performance Optimizations', () => {
       });
 
       const startTime = Date.now();
-      await ensureSFHTodosForToday();
+      await ensure75HardTodosForToday();
       const endTime = Date.now();
 
       // Should process all 20 tasks
