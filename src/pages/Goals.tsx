@@ -8,8 +8,7 @@
 
 import React, { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
-import { addDays } from 'date-fns';
-import { Plus, Target, Trash2, CheckCircle2, Sparkles } from 'lucide-react';
+import { Plus, Target, Trash2, CheckCircle2 } from 'lucide-react';
 import { SkeletonCard } from '../components/LoadingSpinner';
 import {
   useLifeGoals,
@@ -21,88 +20,21 @@ import {
   useUpdateLifeDream,
   useDeleteLifeDream,
 } from '../hooks/useGoalsQuery';
-import type { LifeGoal, LifeDream } from '../goals/types/lifeGoals';
-
-const GOAL_CATEGORIES: LifeGoal['category'][] = ['personal', 'health', 'career', 'financial', 'fitness'];
-const GOAL_PRIORITIES: LifeGoal['priority'][] = ['low', 'medium', 'high', 'critical'];
-
-const DREAM_CATEGORIES: LifeDream['category'][] = ['travel', 'experiences', 'possessions', 'achievements', 'relationships', 'lifestyle'];
-const DREAM_PRIORITIES: LifeDream['priority'][] = ['someday', 'within-5-years', 'within-10-years', 'lifetime'];
-const DREAM_STATUSES: LifeDream['status'][] = ['dreaming', 'planning', 'in-progress', 'achieved', 'no-longer-interested'];
-
-type GoalDraft = {
-  title: string;
-  description: string;
-  category: LifeGoal['category'];
-  priority: LifeGoal['priority'];
-  targetDate: string;
-};
-
-type DreamDraft = {
-  title: string;
-  description: string;
-  category: LifeDream['category'];
-  priority: LifeDream['priority'];
-  status: LifeDream['status'];
-  estimatedCost: string;
-  estimatedTimeframe: string;
-};
-
-const createGoalDraft = (): GoalDraft => ({
-  title: '',
-  description: '',
-  category: 'personal',
-  priority: 'medium',
-  targetDate: addDays(new Date(), 30).toISOString().slice(0, 10),
-});
-
-const createDreamDraft = (): DreamDraft => ({
-  title: '',
-  description: '',
-  category: 'travel',
-  priority: 'someday',
-  status: 'dreaming',
-  estimatedCost: '',
-  estimatedTimeframe: '',
-});
-
-const mapGoalDraftToCreateInput = (draft: GoalDraft) => {
-  const targetDate = draft.targetDate ? new Date(draft.targetDate) : addDays(new Date(), 30);
-  return {
-    title: draft.title.trim(),
-    description: draft.description.trim(),
-    category: draft.category,
-    priority: draft.priority,
-    startDate: new Date().toISOString(),
-    targetDate: targetDate.toISOString(),
-    difficulty: 'medium' as const,
-    currentValue: 0,
-    targetValue: 100,
-    unit: 'percent',
-  };
-};
-
-const mapDreamDraftToCreateInput = (draft: DreamDraft) => {
-  const estimatedCost = draft.estimatedCost.trim();
-  return {
-    title: draft.title.trim(),
-    description: draft.description.trim(),
-    category: draft.category,
-    priority: draft.priority,
-    status: draft.status,
-    estimatedCost: estimatedCost ? Number(estimatedCost) : undefined,
-    estimatedTimeframe: draft.estimatedTimeframe.trim() || undefined,
-  };
-};
-
-const EmptyState: React.FC<{ label: string; icon?: React.ReactNode }> = ({ label, icon }) => (
-  <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-slate-300 bg-white p-12 text-center text-slate-500">
-    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-50 text-indigo-500">
-      {icon ?? <Sparkles className="h-6 w-6" />}
-    </div>
-    <p className="text-sm font-medium">{label}</p>
-  </div>
-);
+import type { GoalDraft, DreamDraft } from '../goals/types/drafts';
+import {
+  GOAL_CATEGORIES,
+  GOAL_PRIORITIES,
+  DREAM_CATEGORIES,
+  DREAM_PRIORITIES,
+  DREAM_STATUSES,
+} from '../goals/constants';
+import {
+  createGoalDraft,
+  createDreamDraft,
+  mapGoalDraftToCreateInput,
+  mapDreamDraftToCreateInput,
+} from '../goals/services/goalHelpers';
+import { EmptyState } from '../goals/components/EmptyState';
 
 const Goals: React.FC = () => {
   // React Query hooks - automatic loading and caching
