@@ -1,13 +1,11 @@
 import { create } from 'zustand'
-import { addDays, startOfWeek, isSameDay, differenceInDays, format as formatDate, startOfDay } from 'date-fns'
+import { addDays, startOfWeek, differenceInDays, format as formatDate, startOfDay } from 'date-fns'
 import {
   ensureSupabase,
   isSupabaseConfigured,
 } from '../lib/supabase'
 import {
   apiClient,
-  type HabitData,
-  type HabitEntryData,
   type MealPlanData,
   type PlannedMealData,
   type PantryItemData,
@@ -15,34 +13,15 @@ import {
   type RecipeData,
   type ShoppingItemData,
   type ShoppingListData,
-  type TaskData,
-  type FocusSessionData,
-  type FinancialAccountData,
-  type FinancialTransactionData,
 } from '../services/apiClient'
 import type {
-  Dream,
-  Goal,
-  Habit,
-  HabitCategory,
-  HabitCompletion,
-  JournalEntry,
   MealColumn,
   MealPlanWeek,
-  Note,
   PantryItem,
   PlannedMeal,
   Recipe,
-  TodoItem,
   UserStats,
 } from '../types'
-import type { SFHChallengeData, SFHEntryData } from '../services/types'
-import type {
-  SeventyFiveHardChallenge as NewChallenge,
-  DailyCheckIn as NewCheckIn,
-  Task,
-  TaskCompletion
-} from '../types/seventyFiveHard'
 
 type ViewKey =
   | 'dashboard'
@@ -65,8 +44,6 @@ type ViewKey =
   | 'skincare'
   | 'assistant'
 
-type TaskStatusBackend = TaskData['status']
-
 interface Project {
   id: string
   name: string
@@ -76,19 +53,6 @@ interface Project {
   icon: string
   createdAt: Date
   updatedAt?: Date
-}
-
-interface FocusSession {
-  id: string
-  preset: string
-  duration: number
-  actualDuration?: number
-  startTime: Date
-  endTime?: Date
-  status: 'active' | 'completed' | 'cancelled' | 'paused'
-  taskId?: string
-  todoId?: string
-  notes?: string
 }
 
 type ShoppingCategory =
@@ -124,32 +88,13 @@ interface ShoppingItem {
   updatedAt: Date
 }
 
-interface FinancialTransactionInput {
-  accountId: string
-  amount: number
-  type: 'income' | 'expense'
-  description?: string
-  categoryId?: string
-  date?: Date
-}
-
 interface RealAppState {
   loading: boolean
-  tasksLoading: boolean
   projectsLoading: boolean
   mealPlansLoading: boolean
   recipesLoading: boolean
   shoppingLoading: boolean
-  financesLoading: boolean
   // Lazy loading flags
-  notesLoaded: boolean
-  notesLoading: boolean
-  journalEntriesLoaded: boolean
-  journalEntriesLoading: boolean
-  goalsLoaded: boolean
-  goalsLoading: boolean
-  dreamsLoaded: boolean
-  dreamsLoading: boolean
   recipesLoaded: boolean
   mealPlansLoaded: boolean
   shoppingLoaded: boolean
@@ -159,24 +104,13 @@ interface RealAppState {
   weekStartsOn: 0 | 1
   mealOptions: { breakfast: string[]; lunch: string[]; dinner: string[]; snack: string[] }
 
-  tasks: TodoItem[]
-  todos: TodoItem[]
   projects: Project[]
-  focusSessions: FocusSession[]
-  habits: Habit[]
-  habitCategories: HabitCategory[]
-  notes: Note[]
-  journalEntries: JournalEntry[]
-  goals: Goal[]
-  dreams: Dream[]
   recipes: Recipe[]
   pantryItems: PantryItem[]
   mealPlans: MealPlanWeek[]
   userStats: UserStats
   shoppingItems: ShoppingItem[]
   activeShoppingListId: string | null
-  financialAccounts: FinancialAccountData[]
-  financialTransactions: FinancialTransactionData[]
 
   // ==================== 75 Hard (New Architecture) ====================
   // State
@@ -193,7 +127,6 @@ interface RealAppState {
   // ==================== 75 Hard ====================
   seventyFiveHardChallenges: import('../types').LegacySeventyFiveHardChallenge[]
   updateActiveChallengesDays: () => void
-  cleanupChallengeTasks: (challengeId: string) => Promise<void>
   resetSFHEnsuredDate: () => void
 
   initializeData: () => Promise<void>
@@ -203,48 +136,9 @@ interface RealAppState {
   addMealOption: (mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack', name: string) => void
   removeMealOption: (mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack', name: string) => void
 
-  addTodo: (todo: Omit<TodoItem, 'id' | 'createdAt' | 'updatedAt'>) => Promise<TodoItem>
-  updateTodo: (id: string, updates: Partial<TodoItem>) => Promise<void>
-  deleteTodo: (id: string) => Promise<void>
-  toggleTodo: (id: string) => Promise<void>
-  addSubtask: (parentId: string, subtask: Omit<TodoItem, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>
-  restoreTodo: (id: string) => Promise<void>
-  permanentlyDeleteTodo: (id: string) => Promise<void>
-
   addProject: (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Project>
   updateProject: (id: string, updates: Partial<Project>) => Promise<void>
   deleteProject: (id: string) => Promise<void>
-
-  addHabit: (habit: Omit<Habit, 'id' | 'createdAt' | 'completions'>) => Promise<Habit>
-  updateHabit: (id: string, updates: Partial<Habit>) => Promise<void>
-  deleteHabit: (id: string) => Promise<void>
-  completeHabit: (id: string, options?: { value?: number; notes?: string }) => Promise<void>
-  resetHabit: (id: string) => Promise<void>
-  resetHabitToday: (id: string) => Promise<void>
-  resetHabitHistory: (id: string) => Promise<void>
-
-  // Notes - Lazy loading
-  loadNotes: () => Promise<void>
-  addNote: (note: Omit<Note, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>
-  updateNote: (id: string, updates: Partial<Note>) => Promise<void>
-  deleteNote: (id: string) => Promise<void>
-
-  // Journal - Lazy loading
-  loadJournalEntries: () => Promise<void>
-  addJournalEntry: (entry: Omit<JournalEntry, 'id' | 'createdAt'>) => void
-  deleteJournalEntry: (id: string) => void
-
-  // Goals - Lazy loading
-  loadGoals: () => Promise<void>
-  addGoal: (goal: Omit<Goal, 'id' | 'createdAt'>) => Promise<void>
-  updateGoal: (id: string, updates: Partial<Goal>) => Promise<void>
-  deleteGoal: (id: string) => Promise<void>
-
-  // Dreams - Lazy loading
-  loadDreams: () => Promise<void>
-  addDream: (dream: Omit<Dream, 'id' | 'createdAt' | 'lastUpdated'>) => Promise<void>
-  updateDream: (id: string, updates: Partial<Dream>) => Promise<void>
-  deleteDream: (id: string) => Promise<void>
 
   // Recipes & Meal Plans - Lazy loading
   loadRecipes: () => Promise<void>
@@ -275,14 +169,9 @@ interface RealAppState {
   updatePantryItem: (id: string, updates: Partial<PantryItem>) => Promise<void>
   deletePantryItem: (id: string) => Promise<void>
 
-  loadFinancialData: () => Promise<void>
-  addFinancialTransaction: (transaction: FinancialTransactionInput) => Promise<FinancialTransactionData | null>
-
   // 75 Hard × Tasks integration
-  ensureSFHTasksForToday: () => Promise<void>
   showSFHTasksInTasks: boolean
   setShowSFHTasksInTasks: (show: boolean) => void
-  resetSFHChallengeStart: (challengeId: string, startDate: Date) => Promise<void>
   sfhEnsureInProgress: boolean
   sfhEnsuredForDate: string | null
 
@@ -294,10 +183,6 @@ interface RealAppState {
   // 75 Hard sync status
   sfhLastSynced: Date | null
   setSFHLastSynced: (d: Date) => void
-
-  // One-time cleanup for duplicate SFH tasks
-  purgeSFHDuplicateTasks: () => Promise<void>
-  purgeNonSFHDuplicateTasks: () => Promise<void>
 
 }
 
@@ -363,107 +248,6 @@ const sanitize = <T extends Record<string, unknown>>(payload: T): T => {
   return Object.fromEntries(entries) as T
 }
 
-const toStoreStatus = (status?: TaskStatusBackend): TodoItem['status'] => {
-  switch (status) {
-    case 'in_progress':
-      return 'in-progress'
-    case 'waiting':
-      return 'waiting'
-    case 'scheduled':
-      return 'scheduled'
-    case 'done':
-      return 'done'
-    case 'todo':
-    default:
-      return 'todo'
-  }
-}
-
-const toBackendStatus = (status?: TodoItem['status']): TaskStatusBackend => {
-  switch (status) {
-    case 'in-progress':
-      return 'in_progress'
-    case 'waiting':
-      return 'waiting'
-    case 'scheduled':
-      return 'scheduled'
-    case 'done':
-      return 'done'
-    case 'todo':
-    default:
-      return 'todo'
-  }
-}
-
-const mapTaskDataToTodo = (task: TaskData): TodoItem => ({
-  id: task.id ?? createId(),
-  title: task.title,
-  description: task.description ?? '',
-  status: toStoreStatus(task.status),
-  priority: (task.priority as TodoItem['priority']) ?? 'medium',
-  categoryId: task.category ?? undefined,
-  projectId: task.project_id ?? undefined,
-  parentId: task.parent_id ?? undefined,
-  tags: task.tags ?? [],
-  estimatedTime: task.estimated_time ?? undefined,
-  actualTime: task.actual_time ?? undefined,
-  dueDate: toDate(task.due_date),
-  completed: Boolean(task.status === 'done' || task.completed_at),
-  completedAt: toDate(task.completed_at),
-  createdAt: toDate(task.created_at) ?? new Date(),
-  updatedAt: toDate(task.updated_at),
-  deleted: task.deleted ?? false,
-  deletedAt: toDate(task.deleted_at),
-})
-
-const buildTaskInsertPayload = (
-  todo: Omit<TodoItem, 'id' | 'createdAt' | 'updatedAt' | 'completed' | 'completedAt'> &
-    Partial<Pick<TodoItem, 'completed' | 'completedAt'>>,
-): Omit<TaskData, 'id' | 'created_at' | 'updated_at'> =>
-  sanitize({
-    title: todo.title,
-    description: todo.description ?? '',
-    status: toBackendStatus(todo.status ?? 'todo'),
-    priority: todo.priority ?? 'medium',
-    project_id: todo.projectId ?? undefined,
-    parent_id: todo.parentId ?? undefined,
-    estimated_time: todo.estimatedTime ?? undefined,
-    actual_time: todo.actualTime ?? undefined,
-    due_date: todo.dueDate ? todo.dueDate.toISOString() : undefined,
-    tags: todo.tags ?? [],
-    category: todo.categoryId ?? 'other',
-    completed_at: todo.completed
-      ? (todo.completedAt ?? new Date()).toISOString()
-      : undefined,
-    deleted: false,
-    notes: (todo as unknown as { notes?: string }).notes ?? undefined,
-  })
-
-const buildTaskUpdatePayload = (
-  updates: Partial<TodoItem>,
-): Partial<TaskData> =>
-  sanitize({
-    title: updates.title,
-    description: updates.description,
-    status: updates.status ? toBackendStatus(updates.status) : undefined,
-    priority: updates.priority,
-    project_id: updates.projectId,
-    parent_id: updates.parentId,
-    estimated_time: updates.estimatedTime,
-    actual_time: updates.actualTime,
-    due_date: updates.dueDate ? updates.dueDate.toISOString() : undefined,
-    tags: updates.tags,
-    category: updates.categoryId,
-    completed_at: updates.completed === undefined
-      ? undefined
-      : updates.completed
-        ? (updates.completedAt ?? new Date()).toISOString()
-        : null,
-    notes: (updates as unknown as { notes?: string }).notes,
-    deleted: updates.deleted,
-    deleted_at: updates.deletedAt ? updates.deletedAt.toISOString() : undefined,
-  })
-
 const mapProjectDataToProject = (project: ProjectData): Project => ({
   id: project.id ?? createId(),
   name: project.name,
@@ -496,137 +280,6 @@ const buildProjectUpdatePayload = (
     status: updates.status,
     icon: updates.icon,
   })
-
-const toHabitFrequency = (frequency?: HabitData['frequency']): Habit['frequency'] => {
-  switch (frequency) {
-    case 'weekly':
-      return 'weekly'
-    case 'monthly':
-      return 'monthly'
-    case 'daily':
-    default:
-      return 'daily'
-  }
-}
-
-const toHabitGoalMode = (
-  goalMode?: HabitData['goal_mode'],
-): Habit['goalMode'] => {
-  switch (goalMode) {
-    case 'total-goal':
-      return 'total-goal'
-    case 'daily-target':
-    default:
-      return 'daily-target'
-  }
-}
-
-const mapHabitEntryToCompletions = (entry: HabitEntryData): HabitCompletion[] => {
-  const count = Math.max(1, entry.value ?? 1)
-  // Normalize to a proper Date. If `date` is YYYY-MM-DD, prefer local midnight to match UI's local day logic.
-  let completedAt: Date | undefined
-  if (typeof entry.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(entry.date)) {
-    completedAt = new Date(`${entry.date}T00:00:00`)
-  } else {
-    completedAt = toDate(entry.date) ?? toDate(entry.created_at) ?? new Date()
-  }
-
-  return Array.from({ length: count }, (_, index) => ({
-    id: entry.id ? `${entry.id}-${index}` : createId(),
-    completedAt,
-    notes: entry.notes ?? undefined,
-  }))
-}
-
-const mapHabitDataToHabit = (
-  habit: HabitData,
-  entries: HabitEntryData[],
-): Habit => ({
-  id: habit.id ?? createId(),
-  name: habit.name,
-  description: habit.description ?? '',
-  frequency: toHabitFrequency(habit.frequency),
-  targetCount: habit.target_value ?? 1,
-  goalMode: toHabitGoalMode(habit.goal_mode),
-  goalTarget: habit.goal_target ?? undefined,
-  goalUnit: habit.goal_unit ?? undefined,
-  currentProgress: habit.current_progress ?? 0,
-  color: habit.color ?? '#22c55e',
-  categoryId: habit.category ?? 'general',
-  reminder: habit.reminder_enabled
-    ? {
-        enabled: true,
-        time: habit.reminder_time ?? '08:00',
-        days: [1, 2, 3, 4, 5, 6, 7],
-        title: habit.name,
-      }
-    : undefined,
-  completions: entries.flatMap(mapHabitEntryToCompletions),
-  createdAt: toDate(habit.created_at) ?? new Date(),
-  streak: habit.streak_count ?? 0,
-})
-
-const buildHabitInsertPayload = (
-  habit: Omit<Habit, 'id' | 'createdAt' | 'completions'>,
-): Omit<HabitData, 'id' | 'created_at' | 'updated_at'> =>
-  sanitize({
-    name: habit.name,
-    description: habit.description ?? '',
-    frequency: habit.frequency ?? 'daily',
-    target_value: habit.targetCount ?? 1,
-    goal_mode: habit.goalMode ?? 'daily-target',
-    goal_target: habit.goalTarget ?? null,
-    goal_unit: habit.goalUnit ?? null,
-    current_progress: habit.currentProgress ?? 0,
-    color: habit.color ?? '#22c55e',
-    category: habit.categoryId ?? 'general',
-    reminder_time: habit.reminder?.time ?? null,
-    reminder_enabled: habit.reminder?.enabled ?? false,
-    streak_count: habit.streak ?? 0,
-    icon: (habit as unknown as { icon?: string }).icon ?? null,
-  })
-
-const buildHabitUpdatePayload = (
-  updates: Partial<Habit>,
-): Partial<HabitData> =>
-  sanitize({
-    name: updates.name,
-    description: updates.description,
-    frequency: updates.frequency,
-    target_value: updates.targetCount,
-    goal_mode: updates.goalMode,
-    goal_target: updates.goalTarget,
-    goal_unit: updates.goalUnit,
-    current_progress: updates.currentProgress,
-    color: updates.color,
-    category: updates.categoryId,
-    reminder_time: updates.reminder?.time,
-    reminder_enabled: updates.reminder?.enabled,
-    streak_count: updates.streak,
-  })
-
-const deriveHabitCategories = (habits: Habit[]): HabitCategory[] => {
-  if (!habits.length) {
-    return [
-      { id: 'wellness', name: 'Wellness', description: 'Mind & body routines', color: '#22c55e' },
-      { id: 'growth', name: 'Growth', description: 'Learning and development', color: '#f97316' },
-    ]
-  }
-
-  const map = new Map<string, HabitCategory>()
-  habits.forEach((habit) => {
-    const key = habit.categoryId ?? 'general'
-    if (!map.has(key)) {
-      map.set(key, {
-        id: key,
-        name: key.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
-        description: 'Habits tagged as ' + key,
-        color: habit.color ?? '#6366f1',
-      })
-    }
-  })
-  return Array.from(map.values())
-}
 
 const mapShoppingItemDataToShoppingItem = (item: ShoppingItemData): ShoppingItem => ({
   id: item.id ?? createId(),
@@ -916,138 +569,6 @@ const buildRecipeUpdatePayload = (
     video_thumbnail: updates.videoThumbnail ?? undefined,
   })
 
-const mapFocusSessionDataToSession = (session: FocusSessionData): FocusSession => ({
-  id: session.id ?? createId(),
-  preset: session.preset ?? 'custom',
-  duration: session.duration ?? 0,
-  actualDuration: session.actual_duration ?? undefined,
-  startTime: toDate(session.start_time) ?? new Date(),
-  endTime: toDate(session.end_time),
-  status: (session.status as FocusSession['status']) ?? 'active',
-  taskId: session.task_id ?? undefined,
-  todoId: session.task_id ?? undefined,
-  notes: session.notes ?? undefined,
-})
-
-const computeUserStats = (tasks: TodoItem[], habits: Habit[]): UserStats => {
-  const completedTasks = tasks.filter((task) => task.completed && !task.deleted).length
-  const habitCount = habits.length
-  const xp = completedTasks * 25 + habitCount * 10
-  const level = Math.max(1, Math.floor(xp / 100) + 1)
-  const xpToNextLevel = 100 - (xp % 100)
-  return {
-    level,
-    xp,
-    xpToNextLevel,
-    totalGoalsCompleted: completedTasks,
-  }
-}
-
-// 75 Hard mappers - updated for new simplified schema
-const mapSFHChallengeDataToChallenge = (c: SFHChallengeData): NewChallenge => ({
-  id: c.id ?? createId(),
-  userId: c.user_id ?? '',
-  startDate: new Date(c.start_date),
-  currentDay: c.current_day,
-  status: c.status as 'active' | 'completed',
-  tasks: (c.tasks || []) as Task[],
-  completedAt: c.completed_at ? new Date(c.completed_at) : undefined,
-  createdAt: c.created_at ? new Date(c.created_at) : new Date(),
-  updatedAt: c.updated_at ? new Date(c.updated_at) : new Date(),
-})
-
-const mapSFHEntryDataToEntry = (e: SFHEntryData): NewCheckIn => ({
-  id: e.id ?? createId(),
-  challengeId: e.challenge_id,
-  date: new Date(e.date),
-  dayNumber: e.day_number,
-  taskCompletions: (e.task_completions || []).map((tc: any) => ({
-    taskId: tc.taskId,
-    completed: !!tc.completed,
-    completedAt: tc.completedAt ? new Date(tc.completedAt) : undefined,
-  })) as TaskCompletion[],
-  photo: e.photo ?? undefined,
-  weight: e.weight ?? undefined,
-  notes: e.notes ?? undefined,
-  createdAt: e.created_at ? new Date(e.created_at) : new Date(),
-  updatedAt: e.updated_at ? new Date(e.updated_at) : new Date(),
-})
-
-const buildSFHChallengeInsert = (
-  c: NewChallenge,
-): Omit<SFHChallengeData, 'id' | 'created_at' | 'updated_at' | 'user_id'> => ({
-  start_date: formatDate(c.startDate, 'yyyy-MM-dd'),
-  current_day: c.currentDay,
-  status: c.status,
-  tasks: c.tasks.map((t) => ({
-    id: t.id,
-    title: t.title,
-    description: t.description ?? '',
-    order: t.order,
-  })),
-  completed_at: c.completedAt ? c.completedAt.toISOString() : null,
-})
-
-const buildSFHChallengeUpdate = (
-  updates: Partial<NewChallenge>,
-): Partial<SFHChallengeData> => ({
-  start_date: updates.startDate ? formatDate(updates.startDate, 'yyyy-MM-dd') : undefined,
-  current_day: updates.currentDay,
-  status: updates.status,
-  tasks: updates.tasks
-    ? updates.tasks.map((t) => ({
-        id: t.id,
-        title: t.title,
-        description: t.description ?? '',
-        order: t.order,
-      }))
-    : undefined,
-  completed_at: updates.completedAt !== undefined ? (updates.completedAt ? updates.completedAt.toISOString() : null) : undefined,
-})
-
-const toIsoSafe = (v: any): string | null => {
-  if (!v) return null
-  const d = v instanceof Date ? v : new Date(v)
-  return Number.isNaN(d.getTime()) ? null : d.toISOString()
-}
-
-const buildSFHEntryInsert = (
-  e: import('../types').SeventyFiveHardEntry,
-): Omit<SFHEntryData, 'id' | 'created_at' | 'user_id'> => ({
-  challenge_id: e.challengeId,
-  date: formatDate(e.date, 'yyyy-MM-dd'),
-  day: e.day,
-  rule_completions: e.ruleCompletions.map((rc) => ({
-    rule_id: rc.ruleId,
-    completed: rc.completed,
-    completed_at: toIsoSafe(rc.completedAt),
-    segments: rc.segments,
-  })),
-  notes: e.notes ?? null,
-  progress_photo_url: e.progressPhotoUrl ?? null,
-  weight: e.weight ?? null,
-  measurements: e.measurements ?? null,
-})
-
-const buildSFHEntryUpdate = (
-  updates: Partial<import('../types').SeventyFiveHardEntry>,
-): Partial<SFHEntryData> => ({
-  date: updates.date ? formatDate(updates.date, 'yyyy-MM-dd') : undefined,
-  day: updates.day,
-  rule_completions: updates.ruleCompletions
-    ? updates.ruleCompletions.map((rc) => ({
-        rule_id: rc.ruleId,
-        completed: rc.completed,
-        completed_at: toIsoSafe(rc.completedAt),
-        segments: rc.segments,
-      }))
-    : undefined,
-  notes: updates.notes,
-  progress_photo_url: updates.progressPhotoUrl,
-  weight: updates.weight,
-  measurements: updates.measurements,
-})
-
 const sameWeek = (a: Date, b: Date, weekStartsOn: number) => {
   const weekA = startOfWeek(a, { weekStartsOn }).getTime()
   const weekB = startOfWeek(b, { weekStartsOn }).getTime()
@@ -1059,21 +580,11 @@ const creationLocks = new Map<string, Promise<MealPlanWeek>>()
 
 export const useRealAppStore = create<RealAppState>((set, get) => ({
   loading: false,
-  tasksLoading: false,
   projectsLoading: false,
   mealPlansLoading: false,
   recipesLoading: false,
   shoppingLoading: false,
-  financesLoading: false,
   // Lazy loading flags
-  notesLoaded: false,
-  notesLoading: false,
-  journalEntriesLoaded: false,
-  journalEntriesLoading: false,
-  goalsLoaded: false,
-  goalsLoading: false,
-  dreamsLoaded: false,
-  dreamsLoading: false,
   recipesLoaded: false,
   mealPlansLoaded: false,
   shoppingLoaded: false,
@@ -1113,24 +624,13 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
   globalToast: null,
   sfhLastSynced: null,
 
-  tasks: [],
-  todos: [],
   projects: [],
-  focusSessions: [],
-  habits: [],
-  habitCategories: [],
-  notes: [],
-  journalEntries: [],
-  goals: [],
-  dreams: [],
   recipes: [],
   pantryItems: [],
   mealPlans: [],
   userStats: { level: 1, xp: 0, xpToNextLevel: 100, totalGoalsCompleted: 0 },
   shoppingItems: [],
   activeShoppingListId: null,
-  financialAccounts: [],
-  financialTransactions: [],
   showSFHTasksInTasks: (() => {
     try {
       const raw = localStorage.getItem('lifesync:settings:sfhShowInTasks')
@@ -1147,234 +647,50 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
       console.warn('[LifeSync] Supabase not configured; store will operate in local-only mode.')
       set({
         loading: false,
-        tasks: [],
-        todos: [],
         projects: [],
-        habits: [],
-        habitCategories: deriveHabitCategories([]),
         shoppingItems: [],
         mealPlans: [],
         recipes: [],
         pantryItems: [],
-        focusSessions: [],
-        financialAccounts: [],
-        financialTransactions: [],
       })
       return
     }
 
     set({
       loading: true,
-      tasksLoading: true,
       projectsLoading: true,
-      mealPlansLoading: true,
-      recipesLoading: true,
-      shoppingLoading: true,
     })
 
     try {
-      const client = ensureSupabase()
-
-      // ⚡ OPTIMIZED: Only load critical data for Dashboard
+      // Only load critical data for Dashboard
       // Everything else loads on-demand when user visits the page
       const [
-        tasksRaw,
         projectsRaw,
-        habitsRaw,
       ] = await Promise.all([
-        apiClient.getTasks(),
         apiClient.getProjects(),
-        apiClient.getHabits(),
       ])
 
       // Non-critical data moved to lazy loading:
-      // - Focus Sessions → Load when visiting Focus page
       // - Shopping Lists → Load when visiting Shopping page
       // - Pantry Items → Load when visiting Meal Planning
       // - Meal Plans → Load when visiting Meal Planning (already has loadMealPlans())
       // - Recipes → Load when visiting Meal Planning (already has loadRecipes())
-      // - Financial Accounts → Load when visiting Finances page
-      // - Transactions → Load when visiting Finances page
-      // - Notes → Load when visiting Notes page (lazy loaded)
-      // - Journal → Load when visiting Journal page (lazy loaded)
-      // - Goals → Load when visiting Goals page (lazy loaded)
-      // - Dreams → Load when visiting Goals page (lazy loaded)
 
-      // Show UI immediately after main data loads
-      set({ loading: false })
+      // Migrated to React Query:
+      // - Tasks/Todos → Now using useTasksQuery hook
+      // - Habits → Now using useHabitsQuery hook
+      // - Focus Sessions → Now using useFocusQuery hook
+      // - Notes → Now using useNotesQuery hook
+      // - Journal → Now using useJournalQuery hook
+      // - Goals/Dreams → Now using useLifeGoalsQuery hook
+      // - Financial Accounts/Transactions → Now using useFinanceQuery hook
 
-      // (Travel features removed)
-
-      let habitEntries: HabitEntryData[] = []
-      const habitIds = habitsRaw.map((habit) => habit.id).filter(Boolean) as string[]
-      if (habitIds.length > 0) {
-        // Scope entries to the authenticated user for RLS-friendly reads
-        const authUser = (await ensureSupabase().auth.getUser()).data.user
-        const userId = authUser?.id
-        let query = client
-          .from('habit_entries')
-          .select('*')
-          .in('habit_id', habitIds)
-          .order('date', { ascending: true })
-        if (userId) {
-          query = query.eq('user_id', userId)
-        }
-        const { data, error } = await query
-        if (error) {
-          console.warn('[LifeSync] Failed to load habit entries:', error.message)
-        } else {
-          habitEntries = data ?? []
-        }
-      }
-
-      const entriesByHabit = habitEntries.reduce<Map<string, HabitEntryData[]>>((map, entry) => {
-        const key = entry.habit_id ?? ''
-        if (!map.has(key)) {
-          map.set(key, [])
-        }
-        map.get(key)!.push(entry)
-        return map
-      }, new Map())
-
-      const tasks = tasksRaw.map(mapTaskDataToTodo)
       const projects = projectsRaw.map(mapProjectDataToProject)
-      const habits = habitsRaw.map((habit) => {
-        const entries = entriesByHabit.get(habit.id ?? '') ?? []
-        return mapHabitDataToHabit(habit, entries)
-      })
-
-      // 75 Hard: LEGACY SYNC DISABLED
-      // The new architecture uses loadSFHChallenge() from seventyFiveHardActions.ts
-      // which populates sfhChallenge and sfhCheckIns (not seventyFiveHardChallenges)
-      // Set legacy field to empty array - it's deprecated
-      const legacyChallenges: import('../types').LegacySeventyFiveHardChallenge[] = []
-
-      // Skip loading legacy 75Hard data - it's handled by the new actions
-      /*
-      let sfhEntriesRaw: SFHEntryData[] = []
-      const challengeIds = (sfhChallengesRaw as SFHChallengeData[]).map((c) => c.id!).filter(Boolean) as string[]
-      if (challengeIds.length) {
-        sfhEntriesRaw = await apiClient.getSFHEntries(challengeIds).catch(() => [])
-      }
-      let sfhChallenges = (sfhChallengesRaw as SFHChallengeData[]).map(mapSFHChallengeDataToChallenge)
-      const entriesByChallenge = sfhEntriesRaw.reduce<Record<string, NewCheckIn[]>>((acc, e) => {
-        const entry = mapSFHEntryDataToEntry(e)
-        const key = entry.challengeId
-        acc[key] = acc[key] || []
-        acc[key].push(entry)
-        return acc
-      }, {})
-      */
-
-      // LEGACY: localStorage merge disabled - new architecture doesn't use this
-      /*
-      try {
-        const localRaw = localStorage.getItem('lifesync:75hard')
-        if (localRaw) {
-          const localList = JSON.parse(localRaw) as any[]
-          const keyOf = (x: any) => `${x.name}|${formatDate(new Date(x.startDate), 'yyyy-MM-dd')}`
-          const cloudKeys = new Set(sfhChallenges.map((c) => keyOf(c)))
-          for (const lc of localList) {
-            const key = `${lc.name}|${formatDate(new Date(lc.startDate), 'yyyy-MM-dd')}`
-            if (!cloudKeys.has(key)) {
-              sfhChallenges.push({
-                ...lc,
-                startDate: new Date(lc.startDate),
-                endDate: new Date(lc.endDate),
-                createdAt: new Date(lc.createdAt),
-              })
-            }
-          }
-
-          // Auto-sync missing locals to cloud (background), then mark as synced
-          if (isSupabaseConfigured) {
-            const syncedRaw = localStorage.getItem('lifesync:75hard:synced')
-            const synced = new Set<string>(syncedRaw ? JSON.parse(syncedRaw) : [])
-            let didSync = false
-            for (const lc of localList) {
-              const key = `${lc.name}|${formatDate(new Date(lc.startDate), 'yyyy-MM-dd')}`
-              if (!cloudKeys.has(key)) {
-                try {
-                  const created = await apiClient.createSFHChallenge({
-                    name: lc.name,
-                    start_date: formatDate(new Date(lc.startDate), 'yyyy-MM-dd'),
-                    end_date: formatDate(new Date(lc.endDate), 'yyyy-MM-dd'),
-                    is_active: !!lc.isActive,
-                    current_day: lc.currentDay ?? 1,
-                    rules: (lc.rules || []).map((r: any) => ({ id: r.id, title: r.title, description: r.description, is_required: !!r.isRequired, is_custom: !!r.isCustom, daily_target: r.dailyTarget, segment_labels: r.segmentLabels })),
-                    notes: lc.notes ?? null,
-                  })
-                  const remoteId = created.id!
-                  const remoteDates = new Set<string>()
-                  const entries = (lc.dailyEntries || []) as any[]
-                  for (const e of entries) {
-                    const d = formatDate(new Date(e.date), 'yyyy-MM-dd')
-                    if (!remoteDates.has(d)) {
-                      await apiClient.createSFHEntry({
-                        challenge_id: remoteId,
-                        date: d,
-                        day: e.day,
-                        rule_completions: (e.ruleCompletions || []).map((rc: any) => ({
-                          rule_id: rc.ruleId,
-                          completed: !!rc.completed,
-                          completed_at: rc.completedAt ? new Date(rc.completedAt).toISOString() : null,
-                          segments: rc.segments,
-                        })),
-                        notes: e.notes ?? null,
-                        progress_photo_url: e.progressPhotoUrl ?? null,
-                        weight: e.weight ?? null,
-                        measurements: e.measurements ?? null,
-                      })
-                      remoteDates.add(d)
-                    }
-                  }
-                  synced.add(key)
-                  didSync = true
-                } catch (e) {
-                  console.warn('[75Hard] Background sync failed for', key, e)
-                }
-              }
-            }
-            try { localStorage.setItem('lifesync:75hard:synced', JSON.stringify(Array.from(synced))) } catch {}
-            if (didSync) {
-              get().setSFHLastSynced?.(new Date())
-            }
-          }
-        }
-      } catch {}
-      */
-
-      // Calculate derived state
-      const habitCategories = deriveHabitCategories(habits)
-      const userStats = computeUserStats(tasks, habits)
 
       set({
-        tasks,
-        todos: tasks,
-        tasksLoading: false,
-        projects,
+        loading: false,
         projectsLoading: false,
-        habits,
-        habitCategories,
-        userStats,
-        // Everything else remains empty until lazy loaded
-        focusSessions: [],
-        shoppingItems: [],
-        activeShoppingListId: null,
-        shoppingLoading: false,
-        pantryItems: [],
-        mealPlans: [],
-        mealPlansLoading: false,
-        recipes: [],
-        recipesLoading: false,
-        financialAccounts: [],
-        financialTransactions: [],
-        financesLoading: false,
-        notes: [],
-        journalEntries: [],
-        goals: [],
-        dreams: [],
-        seventyFiveHardChallenges: [],
+        projects,
       })
 
       // Update current day for all active challenges after initialization
@@ -1383,12 +699,7 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
       console.error('[LifeSync] Failed to initialise store from Supabase', error)
       set({
         loading: false,
-        tasksLoading: false,
         projectsLoading: false,
-        mealPlansLoading: false,
-        recipesLoading: false,
-        shoppingLoading: false,
-        financesLoading: false,
       })
     }
   },
@@ -1422,157 +733,6 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
     })
   },
   setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
-
-  addTodo: async (todoInput) => {
-    if (!isSupabaseConfigured) {
-      const fallback: TodoItem = {
-        ...todoInput,
-        id: createId(),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        completed: todoInput.completed ?? false,
-        status: todoInput.status ?? 'todo',
-        priority: todoInput.priority ?? 'medium',
-        tags: todoInput.tags ?? [],
-        deleted: false,
-      }
-      const tasks = [...get().tasks, fallback]
-      const habits = get().habits
-      set({ tasks, todos: tasks, userStats: computeUserStats(tasks, habits) })
-      return fallback
-    }
-
-    const payload = buildTaskInsertPayload(todoInput)
-    const created = await apiClient.createTask(payload)
-    const todo = mapTaskDataToTodo(created)
-    const tasks = [...get().tasks, todo]
-    const habits = get().habits
-    set({ tasks, todos: tasks, userStats: computeUserStats(tasks, habits) })
-    return todo
-  },
-
-  updateTodo: async (id, updates) => {
-    if (!isSupabaseConfigured) {
-      const tasks = get().tasks.map((task) =>
-        task.id === id ? { ...task, ...updates, updatedAt: new Date() } : task,
-      )
-      const habits = get().habits
-      set({ tasks, todos: tasks, userStats: computeUserStats(tasks, habits) })
-      return
-    }
-
-    const payload = buildTaskUpdatePayload(updates)
-    const updated = await apiClient.updateTask(id, payload)
-    const current = get().tasks.find(t => t.id === id)
-    const partial = mapTaskDataToTodo(updated)
-    // Merge only defined fields from partial onto current to avoid losing data if API did not return full row
-    const merged: typeof partial = current
-      ? (Object.fromEntries(Object.entries({ ...current, ...partial }).map(([k, v]) => [k, (partial as any)[k] !== undefined ? (partial as any)[k] : (current as any)[k]])) as any)
-      : partial
-    const tasks = get().tasks.map((task) => (task.id === id ? (merged as any) : task))
-    const habits = get().habits
-    set({ tasks, todos: tasks, userStats: computeUserStats(tasks, habits) })
-  },
-
-  deleteTodo: async (id) => {
-    if (!isSupabaseConfigured) {
-      const tasks = get().tasks.filter((task) => task.id !== id)
-      const habits = get().habits
-      set({ tasks, todos: tasks, userStats: computeUserStats(tasks, habits) })
-      return
-    }
-
-    await apiClient.deleteTask(id)
-    const tasks = get().tasks.filter((task) => task.id !== id)
-    const habits = get().habits
-    set({ tasks, todos: tasks, userStats: computeUserStats(tasks, habits) })
-  },
-
-  restoreTodo: async (id) => {
-    if (!isSupabaseConfigured) {
-      const tasks = get().tasks.map((task) =>
-        task.id === id ? { ...task, deleted: false, deletedAt: undefined } : task,
-      )
-      const habits = get().habits
-      set({ tasks, todos: tasks, userStats: computeUserStats(tasks, habits) })
-      return
-    }
-
-    const restored = await apiClient.restoreTask(id)
-    const todo = mapTaskDataToTodo(restored)
-    const tasks = get().tasks.map((task) => (task.id === id ? todo : task))
-    const habits = get().habits
-    set({ tasks, todos: tasks, userStats: computeUserStats(tasks, habits) })
-  },
-
-  permanentlyDeleteTodo: async (id) => {
-    if (isSupabaseConfigured) {
-      await apiClient.permanentlyDeleteTask(id)
-    }
-    const tasks = get().tasks.filter((task) => task.id !== id)
-    const habits = get().habits
-    set({ tasks, todos: tasks, userStats: computeUserStats(tasks, habits) })
-  },
-
-  toggleTodo: async (id) => {
-    const current = get().tasks.find((task) => task.id === id)
-    if (!current) return
-
-    const nextCompleted = !current.completed
-    const updates: Partial<TodoItem> = {
-      completed: nextCompleted,
-      completedAt: nextCompleted ? new Date() : undefined,
-      status: nextCompleted ? 'done' : 'todo',
-      updatedAt: new Date(),
-    }
-
-    // If this is a 75 Hard task segment, reflect completion in challenge and then delete the task
-    // ==================== 75 Hard System ====================
-    // Bi-directional sync: Todo completion → 75 Hard task completion
-    if ((current.tags || []).includes('75hard')) {
-      try {
-        // Import the sync function dynamically to avoid circular dependency
-        const { syncTodoCompletionToSFH } = await import('./seventyFiveHardActions');
-
-        // Sync to 75 Hard (this will toggle the 75 Hard task)
-        await syncTodoCompletionToSFH(id);
-
-        // Don't delete the todo - it stays in the list
-        // The todo will be updated by ensureSFHTodosForToday() after 75 Hard task is toggled
-        console.log('[Todo→75Hard] Synced todo completion to 75 Hard');
-      } catch (error) {
-        console.error('[Todo→75Hard] Failed to sync to 75 Hard:', error);
-      }
-    }
-
-    if (!isSupabaseConfigured) {
-      const tasks = get().tasks.map((task) =>
-        task.id === id
-          ? { ...task, ...updates }
-          : task,
-      )
-      const habits = get().habits
-      set({ tasks, todos: tasks, userStats: computeUserStats(tasks, habits) })
-      return
-    }
-
-    const payload = buildTaskUpdatePayload(updates)
-    const updated = await apiClient.updateTask(id, payload)
-    const todo = mapTaskDataToTodo(updated)
-    const tasks = get().tasks.map((task) => (task.id === id ? todo : task))
-    const habits = get().habits
-    set({ tasks, todos: tasks, userStats: computeUserStats(tasks, habits) })
-  },
-
-  addSubtask: async (parentId, subtask) => {
-    const baseSubtask = {
-      ...subtask,
-      parentId,
-      status: subtask.status ?? 'todo',
-      completed: subtask.completed ?? false,
-    }
-    await get().addTodo(baseSubtask)
-  },
 
   addProject: async (projectInput) => {
     if (!isSupabaseConfigured) {
@@ -1626,579 +786,6 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
     await apiClient.deleteProject(id)
     const projects = get().projects.filter((project) => project.id !== id)
     set({ projects })
-  },
-
-  addHabit: async (habitInput) => {
-    if (!isSupabaseConfigured) {
-      const habit: Habit = {
-        ...habitInput,
-        id: createId(),
-        createdAt: new Date(),
-        completions: [],
-        currentProgress: habitInput.currentProgress ?? 0,
-        streak: habitInput.streak ?? 0,
-      }
-      const habits = [...get().habits, habit]
-      const habitCategories = deriveHabitCategories(habits)
-      const tasks = get().tasks
-      set({ habits, habitCategories, userStats: computeUserStats(tasks, habits) })
-      return habit
-    }
-
-    const payload = buildHabitInsertPayload(habitInput)
-    const created = await apiClient.createHabit(payload)
-    const habit = mapHabitDataToHabit(created, [])
-    const habits = [...get().habits, habit]
-    const habitCategories = deriveHabitCategories(habits)
-    const tasks = get().tasks
-    set({ habits, habitCategories, userStats: computeUserStats(tasks, habits) })
-    return habit
-  },
-
-  updateHabit: async (id, updates) => {
-    if (!isSupabaseConfigured) {
-      const habits = get().habits.map((habit) =>
-        habit.id === id
-          ? {
-              ...habit,
-              ...updates,
-            }
-          : habit,
-      )
-      const habitCategories = deriveHabitCategories(habits)
-      const tasks = get().tasks
-      set({ habits, habitCategories, userStats: computeUserStats(tasks, habits) })
-      return
-    }
-
-    const payload = buildHabitUpdatePayload(updates)
-    const updated = await apiClient.updateHabit(id, payload)
-    const completions = get().habits.find((habit) => habit.id === id)?.completions ?? []
-    const habit = mapHabitDataToHabit(updated, completions.map((completion) => ({
-      id: completion.id,
-      habit_id: id,
-      date: completion.completedAt.toISOString(),
-      created_at: completion.completedAt.toISOString(),
-      notes: completion.notes,
-    } as HabitEntryData)))
-    const habits = get().habits.map((item) => (item.id === id ? habit : item))
-    const habitCategories = deriveHabitCategories(habits)
-    const tasks = get().tasks
-    set({ habits, habitCategories, userStats: computeUserStats(tasks, habits) })
-  },
-
-  deleteHabit: async (id) => {
-    if (!isSupabaseConfigured) {
-      const habits = get().habits.filter((habit) => habit.id !== id)
-      const habitCategories = deriveHabitCategories(habits)
-      const tasks = get().tasks
-      set({ habits, habitCategories, userStats: computeUserStats(tasks, habits) })
-      return
-    }
-
-    await apiClient.deleteHabit(id)
-    const habits = get().habits.filter((habit) => habit.id !== id)
-    const habitCategories = deriveHabitCategories(habits)
-    const tasks = get().tasks
-    set({ habits, habitCategories, userStats: computeUserStats(tasks, habits) })
-  },
-
-  resetHabit: async (id) => {
-    const habit = get().habits.find((h) => h.id === id)
-    if (!habit) return
-
-    // Compute local date string yyyy-MM-dd for today
-    const d = new Date()
-    const yyyy = d.getFullYear()
-    const mm = String(d.getMonth() + 1).padStart(2, '0')
-    const dd = String(d.getDate()).padStart(2, '0')
-    const localDate = `${yyyy}-${mm}-${dd}`
-
-    if (isSupabaseConfigured) {
-      try {
-        // Remove today's entry so daily completion is cleared
-        await apiClient.deleteHabitEntryForDate(id, localDate)
-      } catch (e) {
-        console.warn('[Store] Failed to delete today\'s habit entry:', e)
-      }
-      try {
-        await apiClient.updateHabit(id, { current_progress: 0 as any, streak_count: 0 as any } as Partial<HabitData>)
-      } catch (e) {
-        console.warn('[Store] Failed to reset habit counters:', e)
-      }
-    }
-
-    // Update local state optimistically: clear today completions and reset counters
-    const today = new Date()
-    const habits = get().habits.map((h) => {
-      if (h.id !== id) return h
-      const pruned = h.completions.filter((c) => !isSameDay(c.completedAt, today))
-      return {
-        ...h,
-        completions: pruned,
-        currentProgress: 0,
-        streak: 0,
-      }
-    })
-    const habitCategories = deriveHabitCategories(habits)
-    const tasks = get().tasks
-    set({ habits, habitCategories, userStats: computeUserStats(tasks, habits) })
-  },
-
-  resetHabitToday: async (id) => {
-    const habit = get().habits.find((h) => h.id === id)
-    if (!habit) return
-    const d = new Date()
-    const yyyy = d.getFullYear()
-    const mm = String(d.getMonth() + 1).padStart(2, '0')
-    const dd = String(d.getDate()).padStart(2, '0')
-    const localDate = `${yyyy}-${mm}-${dd}`
-
-    let decrement = 0
-    if (isSupabaseConfigured) {
-      try {
-        const entry = await apiClient.getHabitEntryForDate(id, localDate)
-        decrement = Number(entry?.value ?? 0)
-      } catch {}
-      try {
-        await apiClient.deleteHabitEntryForDate(id, localDate)
-      } catch (e) {
-        console.warn('[Store] Failed to delete today\'s habit entry:', e)
-      }
-      try {
-        if (decrement > 0) {
-          await apiClient.updateHabit(id, { current_progress: Math.max(0, (habit.currentProgress ?? 0) - decrement) as any })
-        }
-      } catch (e) {
-        console.warn('[Store] Failed to update habit progress after today reset:', e)
-      }
-    }
-
-    // Update local state
-    const today = new Date()
-    const habits = get().habits.map((h) => {
-      if (h.id !== id) return h
-      const todayRemoved = h.completions.filter((c) => isSameDay(c.completedAt, today)).length
-      const pruned = h.completions.filter((c) => !isSameDay(c.completedAt, today))
-      return {
-        ...h,
-        completions: pruned,
-        currentProgress: Math.max(0, (h.currentProgress ?? 0) - (decrement || todayRemoved)),
-      }
-    })
-    const habitCategories = deriveHabitCategories(habits)
-    const tasks = get().tasks
-    set({ habits, habitCategories, userStats: computeUserStats(tasks, habits) })
-  },
-
-  resetHabitHistory: async (id) => {
-    const habit = get().habits.find((h) => h.id === id)
-    if (!habit) return
-    if (isSupabaseConfigured) {
-      try {
-        await apiClient.deleteAllHabitEntries(id)
-      } catch (e) {
-        console.warn('[Store] Failed to delete habit entries:', e)
-      }
-      try {
-        await apiClient.updateHabit(id, { current_progress: 0 as any, streak_count: 0 as any })
-      } catch (e) {
-        console.warn('[Store] Failed to reset habit counters:', e)
-      }
-    }
-    const habits = get().habits.map((h) => (h.id === id ? { ...h, completions: [], currentProgress: 0, streak: 0 } : h))
-    const habitCategories = deriveHabitCategories(habits)
-    const tasks = get().tasks
-    set({ habits, habitCategories, userStats: computeUserStats(tasks, habits) })
-  },
-
-  // Reset 75 Hard start date to a specific date; clears history and recalculates end/current day
-  resetSFHChallengeStart: async (challengeId: string, startDate: Date) => {
-    const ch = get().seventyFiveHardChallenges.find(c => c.id === challengeId)
-    if (!ch) return
-    const newStart = new Date(startDate)
-    const newEnd = addDays(newStart, 74)
-    const today = new Date()
-    const newDay = Math.max(1, Math.min(75, differenceInDays(today, newStart) + 1))
-
-    // Cloud sync
-    if (isSupabaseConfigured) {
-      try {
-        await apiClient.updateSFHChallenge(challengeId, {
-          start_date: formatDate(newStart, 'yyyy-MM-dd'),
-          end_date: formatDate(newEnd, 'yyyy-MM-dd'),
-          current_day: newDay,
-        } as any)
-        await apiClient.deleteSFHEntriesForChallenge(challengeId)
-      } catch (e) {
-        console.warn('[75Hard] Failed to reset start in cloud', e)
-      }
-    }
-
-    // Local update
-    const challenges = get().seventyFiveHardChallenges.map(c => c.id === challengeId ? {
-      ...c,
-      startDate: newStart,
-      endDate: newEnd,
-      currentDay: newDay,
-      dailyEntries: [],
-    } : c)
-    set({ seventyFiveHardChallenges: challenges })
-    try { localStorage.setItem('lifesync:75hard', JSON.stringify(challenges)) } catch {}
-
-    // Remove related tasks for this challenge for today and beyond (simple: by challenge tag)
-    try {
-      const tasks = get().tasks
-      for (const t of tasks) {
-        if ((t.tags || []).includes(`sfh:${challengeId}`) && !t.deleted) {
-          await get().deleteTodo(t.id)
-        }
-      }
-    } catch (e) {
-      console.warn('[75Hard] Failed to cleanup tasks after reset', e)
-    }
-  },
-
-  completeHabit: async (id, options) => {
-    const habit = get().habits.find((item) => item.id === id)
-    if (!habit) return
-
-    const completion: HabitCompletion = {
-      id: createId(),
-      completedAt: new Date(),
-      notes: options?.notes,
-    }
-
-    if (isSupabaseConfigured) {
-      // Use local calendar day string (yyyy-MM-dd) so UI's concept of "today" matches persistence
-      const d = new Date()
-      const yyyy = d.getFullYear()
-      const mm = String(d.getMonth() + 1).padStart(2, '0')
-      const dd = String(d.getDate()).padStart(2, '0')
-      const localDate = `${yyyy}-${mm}-${dd}`
-
-      await apiClient.addHabitEntry(id, {
-        date: localDate,
-        value: options?.value ?? 1,
-        notes: options?.notes ?? undefined,
-      })
-      await apiClient.updateHabit(id, {
-        current_progress: (habit.currentProgress ?? 0) + 1,
-        streak_count: (habit.streak ?? 0) + 1,
-      })
-    }
-
-    const habits = get().habits.map((item) =>
-      item.id === id
-        ? {
-            ...item,
-            completions: [...item.completions, completion],
-            currentProgress: (item.currentProgress ?? 0) + 1,
-            streak: (item.streak ?? 0) + 1,
-          }
-        : item,
-    )
-    const habitCategories = deriveHabitCategories(habits)
-    const tasks = get().tasks
-    set({ habits, habitCategories, userStats: computeUserStats(tasks, habits) })
-  },
-
-  // ==================== Notes - Lazy Loading ====================
-
-  loadNotes: async () => {
-    // Don't reload if already loaded or loading
-    if (get().notesLoaded || get().notesLoading) return
-
-    set({ notesLoading: true })
-    try {
-      const { getNotes } = await import('../api/notesAPI')
-      const notes = await getNotes()
-      set({ notes, notesLoaded: true, notesLoading: false })
-    } catch (error) {
-      console.error('Error loading notes:', error)
-      set({ notesLoading: false })
-    }
-  },
-
-  addNote: async (noteInput) => {
-    try {
-      // Import dynamically to avoid circular dependencies
-      const { createNote } = await import('../api/notesAPI');
-
-      const note = await createNote({
-        title: noteInput.title || undefined,
-        content: noteInput.content,
-        tags: noteInput.tags ?? [],
-        category: noteInput.category || undefined,
-      });
-
-      set((state) => ({ notes: [note, ...state.notes] }));
-    } catch (error) {
-      console.error('Error creating note:', error);
-      // Fallback to local storage for backwards compatibility
-      const note: Note = {
-        ...noteInput,
-        id: createId(),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        tags: noteInput.tags ?? [],
-      };
-      set((state) => ({ notes: [note, ...state.notes] }));
-    }
-  },
-
-  updateNote: async (id, updates) => {
-    try {
-      const { updateNote } = await import('../api/notesAPI');
-
-      const updatedNote = await updateNote(id, {
-        title: updates.title,
-        content: updates.content,
-        tags: updates.tags,
-        category: updates.category,
-      });
-
-      set((state) => ({
-        notes: state.notes.map((note) => (note.id === id ? updatedNote : note)),
-      }));
-    } catch (error) {
-      console.error('Error updating note:', error);
-      // Fallback to local update
-      set((state) => ({
-        notes: state.notes.map((note) =>
-          note.id === id ? { ...note, ...updates, updatedAt: new Date() } : note,
-        ),
-      }));
-    }
-  },
-
-  deleteNote: async (id) => {
-    try {
-      const { deleteNote } = await import('../api/notesAPI');
-      await deleteNote(id);
-      set((state) => ({ notes: state.notes.filter((note) => note.id !== id) }));
-    } catch (error) {
-      console.error('Error deleting note:', error);
-      // Still remove from local state even if API fails
-      set((state) => ({ notes: state.notes.filter((note) => note.id !== id) }));
-    }
-  },
-
-  // ==================== Journal - Lazy Loading ====================
-
-  loadJournalEntries: async () => {
-    // Don't reload if already loaded or loading
-    if (get().journalEntriesLoaded || get().journalEntriesLoading) return
-
-    set({ journalEntriesLoading: true })
-    try {
-      const { getJournalEntries } = await import('../api/journalAPI')
-      const journalEntries = await getJournalEntries()
-      set({ journalEntries, journalEntriesLoaded: true, journalEntriesLoading: false })
-    } catch (error) {
-      console.error('Error loading journal entries:', error)
-      set({ journalEntriesLoading: false })
-    }
-  },
-
-  addJournalEntry: async (entry) => {
-    try {
-      // Import dynamically to avoid circular dependencies
-      const { createJournalEntry } = await import('../api/journalAPI');
-
-      const journalEntry = await createJournalEntry({
-        title: entry.title || undefined,
-        content: entry.content,
-        mood: entry.mood,
-        tags: entry.tags ?? [],
-        attachments: entry.attachments ?? [],
-      });
-
-      set((state) => ({ journalEntries: [journalEntry, ...state.journalEntries] }));
-    } catch (error) {
-      console.error('Error creating journal entry:', error);
-      // Fallback to local storage for backwards compatibility
-      const journalEntry: JournalEntry = {
-        ...entry,
-        id: createId(),
-        createdAt: new Date(),
-        attachments: entry.attachments ?? [],
-        tags: entry.tags ?? [],
-      };
-      set((state) => ({ journalEntries: [journalEntry, ...state.journalEntries] }));
-    }
-  },
-
-  deleteJournalEntry: (id) => {
-    set((state) => ({
-      journalEntries: state.journalEntries.filter((entry) => entry.id !== id),
-    }))
-  },
-
-  // ==================== Goals - Lazy Loading ====================
-
-  loadGoals: async () => {
-    // Don't reload if already loaded or loading
-    if (get().goalsLoaded || get().goalsLoading) return
-
-    set({ goalsLoading: true })
-    try {
-      const { getGoals } = await import('../api/goalsAPI')
-      const goals = await getGoals()
-      set({ goals, goalsLoaded: true, goalsLoading: false })
-    } catch (error) {
-      console.error('Error loading goals:', error)
-      set({ goalsLoading: false })
-    }
-  },
-
-  addGoal: async (goalInput) => {
-    try {
-      // Import dynamically to avoid circular dependencies
-      const { createGoal } = await import('../api/goalsAPI');
-
-      const goal = await createGoal({
-        title: goalInput.title,
-        description: goalInput.description,
-        category: goalInput.category,
-        targetDate: goalInput.targetDate,
-        status: goalInput.status,
-        progress: goalInput.progress,
-        priority: goalInput.priority,
-      });
-
-      set((state) => ({ goals: [...state.goals, goal] }));
-    } catch (error) {
-      console.error('Error creating goal:', error);
-      // Fallback to local storage for backwards compatibility
-      const goal: Goal = {
-        ...goalInput,
-        id: createId(),
-        createdAt: new Date(),
-      };
-      set((state) => ({ goals: [...state.goals, goal] }));
-    }
-  },
-
-  updateGoal: async (id, updates) => {
-    try {
-      const { updateGoal } = await import('../api/goalsAPI');
-
-      const updatedGoal = await updateGoal(id, {
-        title: updates.title,
-        description: updates.description,
-        category: updates.category,
-        targetDate: updates.targetDate,
-        status: updates.status,
-        progress: updates.progress,
-        priority: updates.priority,
-      });
-
-      set((state) => ({
-        goals: state.goals.map((goal) => (goal.id === id ? updatedGoal : goal)),
-      }));
-    } catch (error) {
-      console.error('Error updating goal:', error);
-      // Fallback to local update
-      set((state) => ({
-        goals: state.goals.map((goal) =>
-          goal.id === id ? { ...goal, ...updates, createdAt: goal.createdAt } : goal,
-        ),
-      }));
-    }
-  },
-
-  deleteGoal: async (id) => {
-    try {
-      const { deleteGoal } = await import('../api/goalsAPI');
-      await deleteGoal(id);
-      set((state) => ({ goals: state.goals.filter((goal) => goal.id !== id) }));
-    } catch (error) {
-      console.error('Error deleting goal:', error);
-      // Still remove from local state even if API fails
-      set((state) => ({ goals: state.goals.filter((goal) => goal.id !== id) }));
-    }
-  },
-
-  // ==================== Dreams - Lazy Loading ====================
-
-  loadDreams: async () => {
-    // Don't reload if already loaded or loading
-    if (get().dreamsLoaded || get().dreamsLoading) return
-
-    set({ dreamsLoading: true })
-    try {
-      const { getDreams } = await import('../api/goalsAPI')
-      const dreams = await getDreams()
-      set({ dreams, dreamsLoaded: true, dreamsLoading: false })
-    } catch (error) {
-      console.error('Error loading dreams:', error)
-      set({ dreamsLoading: false })
-    }
-  },
-
-  addDream: async (dreamInput) => {
-    try {
-      // Import dynamically to avoid circular dependencies
-      const { createDream } = await import('../api/goalsAPI');
-
-      const dream = await createDream({
-        title: dreamInput.title,
-        description: dreamInput.description,
-        category: dreamInput.category,
-        notes: dreamInput.notes,
-      });
-
-      set((state) => ({ dreams: [...state.dreams, dream] }));
-    } catch (error) {
-      console.error('Error creating dream:', error);
-      // Fallback to local storage for backwards compatibility
-      const dream: Dream = {
-        ...dreamInput,
-        id: createId(),
-        createdAt: new Date(),
-        lastUpdated: new Date(),
-        notes: dreamInput.notes ?? '',
-      };
-      set((state) => ({ dreams: [...state.dreams, dream] }));
-    }
-  },
-
-  updateDream: async (id, updates) => {
-    try {
-      const { updateDream } = await import('../api/goalsAPI');
-
-      const updatedDream = await updateDream(id, {
-        title: updates.title,
-        description: updates.description,
-        category: updates.category,
-        notes: updates.notes,
-      });
-
-      set((state) => ({
-        dreams: state.dreams.map((dream) => (dream.id === id ? updatedDream : dream)),
-      }));
-    } catch (error) {
-      console.error('Error updating dream:', error);
-      // Fallback to local update
-      set((state) => ({
-        dreams: state.dreams.map((dream) =>
-          dream.id === id ? { ...dream, ...updates, lastUpdated: new Date() } : dream,
-        ),
-      }));
-    }
-  },
-
-  deleteDream: async (id) => {
-    try {
-      const { deleteDream } = await import('../api/goalsAPI');
-      await deleteDream(id);
-      set((state) => ({ dreams: state.dreams.filter((dream) => dream.id !== id) }));
-    } catch (error) {
-      console.error('Error deleting dream:', error);
-      // Still remove from local state even if API fails
-      set((state) => ({ dreams: state.dreams.filter((dream) => dream.id !== id) }));
-    }
   },
 
   loadRecipes: async () => {
@@ -2466,8 +1053,6 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
       })),
     }))
   },
-  },
-
 
   // ==================== Shopping - Lazy Loading ====================
 
@@ -2642,328 +1227,6 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
     set((state) => ({ pantryItems: state.pantryItems.filter((p) => p.id !== id) }))
   },
 
-  loadFinancialData: async () => {
-    if (!isSupabaseConfigured) {
-      set({
-        financialAccounts: [],
-        financialTransactions: [],
-        financesLoading: false,
-      })
-      return
-    }
-
-    set({ financesLoading: true })
-    try {
-      const [accounts, transactions] = await Promise.all([
-        apiClient.getFinancialAccounts(),
-        apiClient.getFinancialTransactions(),
-      ])
-
-      set({
-        financialAccounts: accounts ?? [],
-        financialTransactions: transactions ?? [],
-        financesLoading: false,
-      })
-    } catch (error) {
-      console.error('[LifeSync] Failed to load financial data', error)
-      set({ financesLoading: false })
-    }
-  },
-
-  addFinancialTransaction: async (input) => {
-    const transactionDate = input.date ?? new Date()
-
-    const normalizeAccounts = (accounts: FinancialAccountData[]): FinancialAccountData[] => {
-      const delta = input.type === 'expense' ? -Math.abs(input.amount) : Math.abs(input.amount)
-      return accounts.map((account) => {
-        if ((account.id ?? '') !== input.accountId) {
-          return account
-        }
-        const currentBalance = typeof account.balance === 'number' ? account.balance ?? 0 : Number(account.balance ?? 0)
-        return {
-          ...account,
-          balance: Number((currentBalance ?? 0) + delta),
-        }
-      })
-    }
-
-    if (!isSupabaseConfigured) {
-      const fallback: FinancialTransactionData = {
-        id: createId(),
-        account_id: input.accountId,
-        amount: input.amount,
-        type: input.type,
-        description: input.description ?? '',
-        category_id: input.categoryId,
-        date: transactionDate.toISOString(),
-        created_at: transactionDate.toISOString(),
-        updated_at: transactionDate.toISOString(),
-      }
-
-      set((state) => ({
-        financialTransactions: [fallback, ...state.financialTransactions],
-        financialAccounts: normalizeAccounts(state.financialAccounts),
-      }))
-
-      return fallback
-    }
-
-    const payload = sanitize({
-      account_id: input.accountId,
-      amount: input.amount,
-      type: input.type,
-      description: input.description ?? '',
-      category_id: input.categoryId ?? undefined,
-      date: transactionDate.toISOString(),
-    })
-
-    const created = await apiClient.createFinancialTransaction(payload)
-
-    set((state) => ({
-      financialTransactions: [created, ...state.financialTransactions],
-      financialAccounts: normalizeAccounts(state.financialAccounts),
-    }))
-
-    return created
-  },
-
-  // Create tasks for today's 75 Hard rules/segments not yet completed
-  ensureSFHTasksForToday: async () => {
-    const state = get()
-    if (!state.showSFHTasksInTasks) {
-      console.log('[75Hard] Task creation disabled (showSFHTasksInTasks is false)')
-      return
-    }
-
-    // Double-check lock pattern with timestamp
-    if (state.sfhEnsureInProgress) {
-      console.log('[75Hard] Task creation already in progress, skipping')
-      return
-    }
-
-    const today = new Date()
-    const todayKey = formatDate(today, 'yyyy-MM-dd')
-    if (state.sfhEnsuredForDate === todayKey) {
-      console.log('[75Hard] Tasks already ensured for today:', todayKey)
-      return
-    }
-
-    console.log('[75Hard] Starting task creation for:', todayKey)
-
-    // Acquire lock IMMEDIATELY
-    set({ sfhEnsureInProgress: true })
-
-    // Double-check after acquiring lock (in case of race condition)
-    const stateAfterLock = get()
-    if (stateAfterLock.sfhEnsuredForDate === todayKey) {
-      console.log('[75Hard] Another instance already completed task creation for today, aborting')
-      set({ sfhEnsureInProgress: false })
-      return
-    }
-
-    // Mark as ensured BEFORE we start (prevents retries on error)
-    set({ sfhEnsuredForDate: todayKey })
-    try {
-      localStorage.setItem('lifesync:sfh:ensuredForDate', todayKey)
-    } catch (err) {
-      console.warn('[75Hard] Failed to save ensuredForDate to localStorage:', err)
-    }
-    console.log('[75Hard] Marked as ensured for:', todayKey)
-
-    try {
-
-    // Delete all SFH tasks from previous days (yesterday and before)
-    try {
-      const yesterday = new Date(today)
-      yesterday.setDate(yesterday.getDate() - 1)
-
-      for (const task of state.tasks) {
-        const tags = task.tags || []
-        if (!tags.includes('sfh')) continue
-        if (task.deleted) continue
-
-        // Delete if due date is before today
-        if (task.dueDate && task.dueDate < today) {
-          const taskDate = new Date(task.dueDate)
-          taskDate.setHours(0, 0, 0, 0)
-          const todayDate = new Date(today)
-          todayDate.setHours(0, 0, 0, 0)
-
-          if (taskDate < todayDate) {
-            await state.deleteTodo(task.id)
-          }
-        }
-      }
-    } catch (err) {
-      console.warn('[75Hard] Failed to cleanup old tasks:', err)
-    }
-
-    // Track tasks we're creating in this run to avoid duplicates
-    const creatingTasksSet = new Set<string>()
-    let tasksCreated = 0
-    const MAX_TASKS_PER_RUN = 20 // Safety limit
-
-    // Performance optimization: Pre-build Set of existing 75Hard task keys
-    // This reduces O(n*m) complexity to O(n) + O(1) lookups
-    const existingTaskKeys = new Set<string>()
-    for (const task of state.tasks) {
-      if (task.deleted || task.completed) continue
-      const tags = task.tags || []
-      if (!tags.includes('sfh')) continue
-
-      // Extract key components from tags
-      const sfhTag = tags.find(t => t.startsWith('sfh:') && t !== 'sfh')
-      const ruleTag = tags.find(t => t.startsWith('sfhRule:'))
-      const dayTag = tags.find(t => t.startsWith('sfhDay:'))
-      const segTag = tags.find(t => t.startsWith('sfhSeg:'))
-
-      if (sfhTag && ruleTag && dayTag && segTag) {
-        const key = `${sfhTag}|${ruleTag}|${dayTag}|${segTag}`
-        existingTaskKeys.add(key)
-      }
-    }
-    console.log('[75Hard] Pre-built task index with', existingTaskKeys.size, 'existing tasks')
-
-    // Deduplicate challenges by name+startDate (not just ID, as duplicates may have different IDs)
-    const processedChallengeKeys = new Set<string>()
-    const uniqueChallenges = state.seventyFiveHardChallenges.filter(ch => {
-      const key = `${ch.name}|${formatDate(ch.startDate, 'yyyy-MM-dd')}`
-      if (processedChallengeKeys.has(key)) {
-        console.warn('[75Hard] Duplicate challenge detected, skipping:', ch.name, ch.id)
-        return false
-      }
-      processedChallengeKeys.add(key)
-      return true
-    })
-
-    console.log('[75Hard] Total challenges:', state.seventyFiveHardChallenges.length, 'Unique:', uniqueChallenges.length)
-
-    if (state.seventyFiveHardChallenges.length > uniqueChallenges.length) {
-      console.error('[75Hard] WARNING: Found', state.seventyFiveHardChallenges.length - uniqueChallenges.length, 'duplicate challenges! You should clean these up.')
-    }
-
-    for (const ch of uniqueChallenges) {
-      if (!ch.isActive) {
-        console.log('[75Hard] Skipping inactive challenge:', ch.name)
-        continue
-      }
-
-      const dayNumber = differenceInDays(today, ch.startDate) + 1
-      if (dayNumber < 1 || dayNumber > 75) {
-        console.log('[75Hard] Challenge day out of range:', dayNumber, 'for', ch.name)
-        continue
-      }
-
-      console.log('[75Hard] Processing challenge:', ch.name, 'Day:', dayNumber)
-      const entry = ch.dailyEntries.find(e => e.day === dayNumber)
-
-      for (const rule of ch.rules) {
-        const title = rule.title || 'Rule'
-        const target = (rule.dailyTarget && rule.dailyTarget > 1)
-          ? rule.dailyTarget
-          : (title.toLowerCase().includes('twice') ? 2 : 1)
-        const segs = (entry?.ruleCompletions.find(rc => rc.ruleId === rule.id)?.segments) || Array.from({ length: target }, () => false)
-
-        for (let i = 0; i < target; i++) {
-          if (segs[i]) {
-            console.log('[75Hard] Segment already completed:', title, `(${i + 1}/${target})`)
-            continue
-          }
-
-          // Create unique key for this task
-          const taskKey = `sfh:${ch.id}|sfhRule:${rule.id}|sfhDay:${dayNumber}|sfhSeg:${i}`
-
-          // Skip if already exists in DB (O(1) lookup instead of O(n))
-          if (existingTaskKeys.has(taskKey)) {
-            console.log('[75Hard] Task already exists:', title, `(${i + 1}/${target})`)
-            continue
-          }
-
-          if (creatingTasksSet.has(taskKey)) {
-            console.log('[75Hard] Task already queued:', title, `(${i + 1}/${target})`)
-            continue
-          }
-
-          // Safety check: prevent runaway task creation
-          if (tasksCreated >= MAX_TASKS_PER_RUN) {
-            console.error('[75Hard] SAFETY LIMIT REACHED: Stopped at', MAX_TASKS_PER_RUN, 'tasks')
-            throw new Error('Safety limit reached - too many tasks being created')
-          }
-
-          // Mark that we're creating this task
-          creatingTasksSet.add(taskKey)
-
-          let segLabel = ''
-          if (target > 1) {
-            // Friendly labels for twice-daily workout
-            const tl = title.toLowerCase()
-            if (target === 2 && (tl.includes('workout') || tl.includes('exercise'))) {
-              segLabel = i === 0 ? ' (Indoor)' : ' (Outdoor)'
-            } else {
-              const labels = rule.segmentLabels || []
-              if (labels[i] && labels[i].trim()) segLabel = ` (${labels[i]})`
-              else segLabel = ` (#${i + 1})`
-            }
-          }
-          const todoTitle = `[75 Hard] ${title}${segLabel}`
-
-          console.log('[75Hard] Creating task:', todoTitle)
-          await state.addTodo({
-            title: todoTitle,
-            description: rule.description || undefined,
-            status: 'todo',
-            priority: 'medium',
-            category: 'health',
-            tags: ['sfh', `sfh:${ch.id}`, `sfhRule:${rule.id}`, `sfhDay:${dayNumber}`, `sfhSeg:${i}`],
-            dueDate: today,
-            completed: false,
-            createdAt: new Date(),
-          } as any)
-          tasksCreated++
-        }
-      }
-    }
-
-    console.log('[75Hard] Total tasks created this run:', tasksCreated)
-    // Dedupe any duplicates by tag signature
-    try {
-      const current = get().tasks
-      const byKey: Record<string, string[]> = {}
-      for (const t of current) {
-        const tags = t.tags || []
-        if (!tags.includes('sfh')) continue
-        const chTag = tags.find(x => x.startsWith('sfh:'))
-        const rTag = tags.find(x => x.startsWith('sfhRule:'))
-        const dTag = tags.find(x => x.startsWith('sfhDay:'))
-        const sTag = tags.find(x => x.startsWith('sfhSeg:'))
-        if (!chTag || !rTag || !dTag || !sTag) continue
-        const key = `${chTag}|${rTag}|${dTag}|${sTag}`
-        byKey[key] = byKey[key] || []
-        byKey[key].push(t.id)
-      }
-      for (const key of Object.keys(byKey)) {
-        const ids = byKey[key]
-        if (ids.length <= 1) continue
-        for (let i = 1; i < ids.length; i++) {
-          await get().deleteTodo(ids[i])
-        }
-      }
-    } catch (dedupError) {
-      console.warn('[75Hard] Dedupe failed:', dedupError)
-    }
-
-    console.log('[75Hard] Task creation completed successfully for:', todayKey)
-  } catch (error) {
-    console.error('[75Hard] Task creation failed:', error)
-    // Note: sfhEnsuredForDate is already set earlier to prevent infinite retries on error
-    // This means we won't retry until tomorrow, which prevents error loops
-  } finally {
-    // Always reset the in-progress flag
-    set({ sfhEnsureInProgress: false })
-    console.log('[75Hard] Task creation lock released')
-  }
-  },
-
   setShowSFHTasksInTasks: (show: boolean) => {
     set({ showSFHTasksInTasks: show })
     try { localStorage.setItem('lifesync:settings:sfhShowInTasks', String(show)) } catch {}
@@ -2975,8 +1238,6 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
     set({ sfhLastSynced: d })
     try { localStorage.setItem('lifesync:75hard:lastSynced', d.toISOString()) } catch {}
   },
-
-  // ===== Travel slice (local-only persistence) =====
 
   updateActiveChallengesDays: () => {
     const state = get()
@@ -3007,101 +1268,6 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
       } catch (e) {
         console.warn('[75Hard] Failed to save updated challenges to localStorage', e)
       }
-    }
-  },
-
-  purgeSFHDuplicateTasks: async () => {
-    try {
-      const current = get().tasks
-      const byKey: Record<string, { id: string; createdAt: Date }[]> = {}
-      for (const t of current) {
-        const tags = t.tags || []
-        if (!tags.includes('sfh')) continue
-        const chTag = tags.find(x => x.startsWith('sfh:'))
-        const rTag = tags.find(x => x.startsWith('sfhRule:'))
-        const dTag = tags.find(x => x.startsWith('sfhDay:'))
-        const sTag = tags.find(x => x.startsWith('sfhSeg:'))
-        if (!chTag || !rTag || !dTag || !sTag) continue
-        const key = `${chTag}|${rTag}|${dTag}|${sTag}`
-        byKey[key] = byKey[key] || []
-        byKey[key].push({ id: t.id, createdAt: (t.createdAt instanceof Date) ? t.createdAt : new Date(t.createdAt as any) })
-      }
-      let removed = 0
-      for (const key of Object.keys(byKey)) {
-        const list = byKey[key]
-        if (list.length <= 1) continue
-        // Keep the earliest by createdAt
-        list.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
-        const toRemove = list.slice(1)
-        for (const item of toRemove) {
-          await get().deleteTodo(item.id)
-          removed++
-        }
-      }
-      if (removed > 0) {
-        get().showGlobalToast?.(`Removed ${removed} duplicate 75 Hard tasks`, 'success')
-      } else {
-        get().showGlobalToast?.('No duplicate 75 Hard tasks found', 'info')
-      }
-    } catch (e) {
-      console.warn('[75Hard] Purge duplicates failed', e)
-      get().showGlobalToast?.('Failed to purge duplicates', 'error')
-    }
-  },
-
-  purgeNonSFHDuplicateTasks: async () => {
-    try {
-      const current = get().tasks
-      const byKey: Record<string, { id: string; createdAt: Date }[]> = {}
-      for (const t of current) {
-        if (t.deleted) continue
-        if (t.status === 'done') continue
-        const tags = t.tags || []
-        if (tags.includes('sfh')) continue // skip SFH tasks handled elsewhere
-        if (!t.title || !t.dueDate) continue // only dedupe with same due date
-        const title = String(t.title).trim().toLowerCase()
-        const dateKey = formatDate(t.dueDate as Date, 'yyyy-MM-dd')
-        const key = `${title}|${dateKey}`
-        byKey[key] = byKey[key] || []
-        byKey[key].push({ id: t.id, createdAt: (t.createdAt instanceof Date) ? t.createdAt : new Date(t.createdAt as any) })
-      }
-      let removed = 0
-      for (const key of Object.keys(byKey)) {
-        const list = byKey[key]
-        if (list.length <= 1) continue
-        list.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
-        const toRemove = list.slice(1)
-        for (const item of toRemove) {
-          await get().deleteTodo(item.id)
-          removed++
-        }
-      }
-      if (removed > 0) get().showGlobalToast?.(`Removed ${removed} duplicate tasks`, 'success')
-      else get().showGlobalToast?.('No duplicate tasks found', 'info')
-    } catch (e) {
-      console.warn('[Tasks] Purge non-SFH duplicates failed', e)
-      get().showGlobalToast?.('Failed to purge duplicates', 'error')
-    }
-  },
-
-  // Centralized task cleanup for 75 Hard challenges
-  cleanupChallengeTasks: async (challengeId: string) => {
-    try {
-      const tasks = get().tasks
-      const tasksToDelete = tasks.filter(t =>
-        (t.tags || []).includes(`sfh:${challengeId}`) && !t.deleted
-      )
-
-      console.log(`[75Hard] Cleaning up ${tasksToDelete.length} tasks for challenge ${challengeId}`)
-
-      for (const task of tasksToDelete) {
-        await get().deleteTodo(task.id)
-      }
-
-      return Promise.resolve()
-    } catch (e) {
-      console.warn('[75Hard] Failed to cleanup challenge tasks', e)
-      return Promise.reject(e)
     }
   },
 
