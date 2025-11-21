@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { logger } from '../services/logger';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
 
@@ -66,7 +67,7 @@ export function useApiFocus() {
       const data = await response.json();
       setUserProfile(data);
     } catch (err) {
-      console.error('Error fetching user profile:', err);
+      logger.error('Error fetching user profile:', { err });
       setError(err instanceof Error ? err.message : 'Failed to fetch user profile');
     }
   }, []);
@@ -86,7 +87,7 @@ export function useApiFocus() {
       setUserProfile(data);
       return data;
     } catch (err) {
-      console.error('Error updating user profile:', err);
+      logger.error('Error updating user profile:', { err });
       throw err;
     }
   }, []);
@@ -99,7 +100,7 @@ export function useApiFocus() {
       const data = await response.json();
       setAchievements(data);
     } catch (err) {
-      console.error('Error fetching achievements:', err);
+      logger.error('Error fetching achievements:', { err });
       setError(err instanceof Error ? err.message : 'Failed to fetch achievements');
     }
   }, []);
@@ -112,7 +113,7 @@ export function useApiFocus() {
       const data = await response.json();
       setAnalyticsData(data);
     } catch (err) {
-      console.error('Error fetching analytics:', err);
+      logger.error('Error fetching analytics:', { err });
       setError(err instanceof Error ? err.message : 'Failed to fetch analytics');
     }
   }, []);
@@ -125,7 +126,7 @@ export function useApiFocus() {
       const data = await response.json();
       setFocusSessions(data);
     } catch (err) {
-      console.error('Error fetching focus sessions:', err);
+      logger.error('Error fetching focus sessions:', { err });
       setError(err instanceof Error ? err.message : 'Failed to fetch focus sessions');
     }
   }, []);
@@ -145,7 +146,7 @@ export function useApiFocus() {
       setFocusSessions(prev => [data, ...prev]);
       return data;
     } catch (err) {
-      console.error('Error creating focus session:', err);
+      logger.error('Error creating focus session:', { err });
       throw err;
     }
   }, []);
@@ -167,7 +168,7 @@ export function useApiFocus() {
       ));
       return data;
     } catch (err) {
-      console.error('Error updating focus session:', err);
+      logger.error('Error updating focus session:', { err });
       throw err;
     }
   }, []);
@@ -184,7 +185,7 @@ export function useApiFocus() {
         fetchFocusSessions()
       ]);
     } catch (err) {
-      console.error('Error refreshing focus data:', err);
+      logger.error('Error refreshing focus data:', { err });
     } finally {
       setLoading(false);
     }

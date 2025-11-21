@@ -34,19 +34,19 @@ export function useCreateShoppingList() {
 
   return useMutation({
     mutationFn: async (list: Omit<ShoppingListData, 'id' | 'created_at' | 'updated_at'>) => {
-      logger.debug('Shopping', 'Creating shopping list', { name: list.name });
+      logger.debug('Creating shopping list', { name: list.name });
       const result = await createShoppingList(list);
       return result;
     },
     onSuccess: (newList) => {
-      logger.info('Shopping', 'Shopping list created successfully', { id: newList.id, name: newList.name });
+      logger.info('Shopping list created successfully', { id: newList.id, name: newList.name });
       queryClient.setQueryData<ShoppingListData[]>(shoppingKeys.lists(), (old) => {
         if (!old) return [newList];
         return [...old, newList];
       });
     },
     onError: (error: Error, list) => {
-      logger.error('Shopping', 'Failed to create shopping list', { error: error.message, name: list.name });
+      logger.error('Failed to create shopping list', { error: error.message, name: list.name });
     },
   });
 }
@@ -76,12 +76,12 @@ export function useCreateShoppingItem() {
       listId: string;
       item: Omit<ShoppingItemData, 'id' | 'shopping_list_id' | 'created_at' | 'updated_at'>;
     }) => {
-      logger.debug('Shopping', 'Creating shopping item', { listId, name: item.name });
+      logger.debug('Creating shopping item', { listId, name: item.name });
       const result = await createShoppingItem(listId, item);
       return result;
     },
     onMutate: async ({ listId, item }) => {
-      logger.debug('Shopping', 'Optimistic update: create shopping item', { listId, name: item.name });
+      logger.debug('Optimistic update: create shopping item', { listId, name: item.name });
       // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: shoppingKeys.items(listId) });
 
@@ -107,14 +107,14 @@ export function useCreateShoppingItem() {
       return { previousItems };
     },
     onError: (err: Error, { listId, item }, context) => {
-      logger.error('Shopping', 'Failed to create shopping item', { error: err.message, listId, name: item.name });
+      logger.error('Failed to create shopping item', { error: err.message, listId, name: item.name });
       // Rollback on error
       if (context?.previousItems) {
         queryClient.setQueryData(shoppingKeys.items(listId), context.previousItems);
       }
     },
     onSuccess: (newItem, { listId }) => {
-      logger.info('Shopping', 'Shopping item created successfully', { id: newItem.id, listId, name: newItem.name });
+      logger.info('Shopping item created successfully', { id: newItem.id, listId, name: newItem.name });
       // Replace optimistic item with real one
       queryClient.setQueryData<ShoppingItemData[]>(shoppingKeys.items(listId), (old) => {
         if (!old) return [newItem];
@@ -129,12 +129,12 @@ export function useUpdateShoppingItem() {
 
   return useMutation({
     mutationFn: async ({ itemId, updates }: { itemId: string; updates: Partial<ShoppingItemData> }) => {
-      logger.debug('Shopping', 'Updating shopping item', { itemId, updates });
+      logger.debug('Updating shopping item', { itemId, updates });
       const result = await updateShoppingItem(itemId, updates);
       return result;
     },
     onMutate: async ({ itemId, updates }) => {
-      logger.debug('Shopping', 'Optimistic update: shopping item', { itemId, updates });
+      logger.debug('Optimistic update: shopping item', { itemId, updates });
       // Find which list this item belongs to by searching all item queries
       const queryCache = queryClient.getQueryCache();
       const itemQueries = queryCache.findAll({
@@ -169,14 +169,14 @@ export function useUpdateShoppingItem() {
       return { listId, previousItems };
     },
     onError: (err: Error, { itemId }, context) => {
-      logger.error('Shopping', 'Failed to update shopping item', { error: err.message, itemId });
+      logger.error('Failed to update shopping item', { error: err.message, itemId });
       // Rollback on error
       if (context?.listId && context?.previousItems) {
         queryClient.setQueryData(shoppingKeys.items(context.listId), context.previousItems);
       }
     },
     onSuccess: (updatedItem, { itemId }, context) => {
-      logger.info('Shopping', 'Shopping item updated successfully', { id: itemId, name: updatedItem.name });
+      logger.info('Shopping item updated successfully', { id: itemId, name: updatedItem.name });
       // Update with server response
       if (context?.listId) {
         queryClient.setQueryData<ShoppingItemData[]>(
@@ -196,12 +196,12 @@ export function useDeleteShoppingItem() {
 
   return useMutation({
     mutationFn: async (itemId: string) => {
-      logger.debug('Shopping', 'Deleting shopping item', { itemId });
+      logger.debug('Deleting shopping item', { itemId });
       const result = await deleteShoppingItem(itemId);
       return result;
     },
     onMutate: async (itemId) => {
-      logger.debug('Shopping', 'Optimistic update: delete shopping item', { itemId });
+      logger.debug('Optimistic update: delete shopping item', { itemId });
       // Find which list this item belongs to
       const queryCache = queryClient.getQueryCache();
       const itemQueries = queryCache.findAll({
@@ -234,14 +234,14 @@ export function useDeleteShoppingItem() {
       return { listId, previousItems };
     },
     onError: (err: Error, itemId, context) => {
-      logger.error('Shopping', 'Failed to delete shopping item', { error: err.message, itemId });
+      logger.error('Failed to delete shopping item', { error: err.message, itemId });
       // Rollback on error
       if (context?.listId && context?.previousItems) {
         queryClient.setQueryData(shoppingKeys.items(context.listId), context.previousItems);
       }
     },
     onSuccess: (_, itemId) => {
-      logger.info('Shopping', 'Shopping item deleted successfully', { id: itemId });
+      logger.info('Shopping item deleted successfully', { id: itemId });
     },
   });
 }

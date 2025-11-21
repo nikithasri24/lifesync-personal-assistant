@@ -6,6 +6,7 @@
 import type { FinanceAPI } from '../data/api';
 import { findCardTemplate, CREDIT_CARD_TEMPLATES } from './creditCardTemplates';
 import type { CardBenefitInput, CardCategoryBonusInput, WelcomeBonusInput } from '../types';
+import { logger } from '../../services/logger';
 
 /**
  * Automatically populate benefits for a credit card based on its name
@@ -51,7 +52,7 @@ export async function populateBenefitsFromTemplate(
 
     return { benefitsAdded, bonusesAdded, welcomeBonusAdded };
   } catch (error) {
-    console.error('Failed to populate benefits from template:', error);
+    logger.error('Failed to populate benefits from template:', { error });
     throw error;
   }
 }

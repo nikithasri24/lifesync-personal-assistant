@@ -17,6 +17,7 @@ import type { InsurancePolicy, InsurancePolicyInput } from '../types';
 import { formatCurrency } from '../utils/currency';
 import { InsuranceCard } from '../components/insurance/InsuranceCard';
 import { InsurancePolicyForm } from '../components/insurance/InsurancePolicyForm';
+import { logger } from '../../services/logger';
 
 const InsurancePage: React.FC = () => {
   const [policies, setPolicies] = React.useState<InsurancePolicy[]>([]);
@@ -34,7 +35,7 @@ const InsurancePage: React.FC = () => {
   }, []);
 
   const handleAddPolicy = () => {
-    console.log('Add Policy button clicked');
+    logger.debug('Insurance', 'Add Policy button clicked');
     setEditingPolicy(undefined);
     setShowForm(true);
   };

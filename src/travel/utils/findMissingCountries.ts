@@ -3,6 +3,8 @@
  */
 
 import { getAvailablePassportCountries } from '../data/visaRequirements';
+import { logger } from '../../services/logger';
+
 
 // List of countries from the Natural Earth GeoJSON dataset
 const geoJsonCountries = [
@@ -46,8 +48,8 @@ const geoJsonCountries = [
 async function findMissingCountries() {
   const availableCountries = getAvailablePassportCountries();
 
-  console.log('Countries in GeoJSON map but NOT in visa dataset:\n');
-  console.log('='.repeat(60));
+  logger.info('FindMissingCountries', 'Countries in GeoJSON map but NOT in visa dataset:\n');
+  logger.debug('FindMissingCountries', '='.repeat(60));
 
   const missingCountries: string[] = [];
 
@@ -66,7 +68,7 @@ async function findMissingCountries() {
 
   missingCountries.sort();
 
-  console.log(`\nTotal missing: ${missingCountries.length} countries/territories\n`);
+  logger.debug('FindMissingCountries', `\nTotal missing: ${missingCountries.length} countries/territories\n`);
 
   // Categorize them
   const territories = ['Greenland', 'French Guiana', 'Puerto Rico', 'Western Sahara',
@@ -76,17 +78,17 @@ async function findMissingCountries() {
   const actualCountries = missingCountries.filter(c => !territories.includes(c));
   const missingTerritories = missingCountries.filter(c => territories.includes(c));
 
-  console.log('TERRITORIES/SPECIAL REGIONS (expected to be missing):');
-  console.log('-'.repeat(60));
-  missingTerritories.forEach(country => console.log(`  - ${country}`));
+  logger.info('FindMissingCountries', 'TERRITORIES/SPECIAL REGIONS (expected to be missing):');
+  logger.debug('FindMissingCountries', '-'.repeat(60));
+  missingTerritories.forEach(country => logger.debug('FindMissingCountries', `  - ${country}`));
 
-  console.log('\n\nCOUNTRIES (need name mapping):');
-  console.log('-'.repeat(60));
-  actualCountries.forEach(country => console.log(`  - ${country}`));
+  logger.info('FindMissingCountries', '\n\nCOUNTRIES (need name mapping):');
+  logger.debug('FindMissingCountries', '-'.repeat(60));
+  actualCountries.forEach(country => logger.debug('FindMissingCountries', `  - ${country}`));
 
-  console.log('\n\nAll GeoJSON countries:', geoJsonCountries.length);
-  console.log('Countries in visa dataset:', availableCountries.length);
-  console.log('Missing from visa dataset:', missingCountries.length);
+  logger.info('FindMissingCountries', '\n\nAll GeoJSON countries:', geoJsonCountries.length);
+  logger.info('FindMissingCountries', 'Countries in visa dataset:', availableCountries.length);
+  logger.info('FindMissingCountries', 'Missing from visa dataset:', missingCountries.length);
 }
 
 findMissingCountries();

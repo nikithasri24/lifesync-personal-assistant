@@ -19,6 +19,7 @@ import { useProjectsQuery, useCreateProjectMutation, useUpdateProjectMutation, u
 import { useTasksQuery } from '../tasks/hooks/useTasksQuery';
 import type { Project } from '../projects/hooks/useProjectsQuery';
 import type { TodoItem } from '../types';
+import { logger } from '../services/logger';
 
 type ViewMode = 'grid' | 'list';
 type StatusFilter = 'all' | 'active' | 'completed' | 'on_hold';
@@ -114,7 +115,7 @@ const ProjectTracking: React.FC = () => {
       setShowCreateModal(false);
       resetForm();
     } catch (error) {
-      console.error('Failed to create project:', error);
+      logger.error('Failed to create project:', { error });
     }
   };
 
@@ -136,7 +137,7 @@ const ProjectTracking: React.FC = () => {
       setEditingProject(null);
       resetForm();
     } catch (error) {
-      console.error('Failed to update project:', error);
+      logger.error('Failed to update project:', { error });
     }
   };
 
@@ -145,7 +146,7 @@ const ProjectTracking: React.FC = () => {
       await deleteProjectMutation.mutateAsync(id);
       setDeleteConfirmId(null);
     } catch (error) {
-      console.error('Failed to delete project:', error);
+      logger.error('Failed to delete project:', { error });
     }
   };
 

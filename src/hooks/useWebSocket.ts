@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, startTransition } from 'react';
+import { logger } from '../services/logger';
 
 interface WebSocketMessage {
   type: string;
@@ -183,7 +184,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
                 onMessage?.(message);
               });
             } catch (error) {
-              console.error('Failed to handle WebSocket message:', error);
+              logger.error('Failed to handle WebSocket message:', { error });
             }
           }, 0);
         };
@@ -257,21 +258,21 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 
   const sendMessage = useCallback((message: any) => {
     if (!state.isConnected) {
-      console.warn('WebSocket is not connected');
+      logger.warn('WebSocket', 'WebSocket is not connected');
       return false;
     }
 
     try {
       if (simulateConnection) {
         // For simulation, just log the message
-        console.log('Simulated WebSocket send:', message);
+        logger.debug('Simulated WebSocket send:', { message });
         return true;
       } else if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
         wsRef.current.send(JSON.stringify(message));
         return true;
       }
     } catch (error) {
-      console.error('Failed to send WebSocket message:', error);
+      logger.error('Failed to send WebSocket message:', { error });
       setState(prev => ({ ...prev, error: 'Failed to send message' }));
     }
 

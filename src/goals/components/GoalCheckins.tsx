@@ -7,6 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { MessageSquare, Smile, Frown, Meh, TrendingUp, AlertCircle, Lightbulb, Plus, Calendar } from 'lucide-react';
 import { createCheckin, getGoalCheckins } from '../api/lifeGoalsAPI';
 import type { LifeGoal, LifeGoalCheckin } from '../types/lifeGoals';
+import { logger } from '../../services/logger';
 
 interface GoalCheckinsProps {
   goal: LifeGoal;
@@ -44,7 +45,7 @@ const GoalCheckins: React.FC<GoalCheckinsProps> = ({ goal }) => {
       const data = await getGoalCheckins(goal.id);
       setCheckins(data);
     } catch (error) {
-      console.error('Error loading check-ins:', error);
+      logger.error('Error loading check-ins:', { error });
     } finally {
       setLoading(false);
     }
@@ -80,7 +81,7 @@ const GoalCheckins: React.FC<GoalCheckinsProps> = ({ goal }) => {
       setNextActions('');
       setShowForm(false);
     } catch (error) {
-      console.error('Error creating check-in:', error);
+      logger.error('Error creating check-in:', { error });
       alert('Failed to save check-in');
     } finally {
       setSubmitting(false);

@@ -131,11 +131,11 @@ export function createShoppingCommand(): Command {
         });
 
         spinner.succeed(chalk.green(`Added "${item.name}" to shopping list`));
-        console.log(chalk.gray(`  ${item.quantity} ${item.unit} | ${item.category} | ${item.priority} priority`));
-        if (item.estimatedPrice) console.log(chalk.gray(`  Est. price: $${item.estimatedPrice.toFixed(2)}`));
+        logger.info('Shopping', chalk.gray(`  ${item.quantity} ${item.unit} | ${item.category} | ${item.priority} priority`));
+        logger.info('Shopping', chalk.gray(`  Est. price: $${item.estimatedPrice.toFixed(2)}`));
       } catch (error) {
         spinner.fail(chalk.red('Failed to add item'));
-        console.error(error);
+        logger.error('Shopping', error);
       }
     });
 
@@ -176,7 +176,7 @@ export function createShoppingCommand(): Command {
         spinner.succeed(chalk.green(`Found ${filteredItems.length} items`));
 
         if (filteredItems.length === 0) {
-          console.log(chalk.yellow('No items found'));
+          logger.info('Shopping', chalk.yellow('No items found'));
           return;
         }
 
@@ -188,28 +188,28 @@ export function createShoppingCommand(): Command {
         }, {} as Record<string, ShoppingItem[]>);
 
         Object.entries(grouped).forEach(([category, categoryItems]) => {
-          console.log(`\n${chalk.bold.blue(category.toUpperCase())}`);
+          logger.info('Shopping', `\n${chalk.bold.blue(category.toUpperCase())}`);
           categoryItems.forEach(item => {
             const priorityColor = item.priority === 'high' ? chalk.red :
                                  item.priority === 'medium' ? chalk.yellow : chalk.gray;
             const status = item.purchased ? chalk.green('✓') : chalk.gray('○');
             
-            console.log(`  ${status} ${chalk.white(item.name)} (${item.quantity} ${item.unit})`);
-            if (item.estimatedPrice) console.log(`    ${chalk.gray('$' + item.estimatedPrice.toFixed(2))}`);
-            if (item.assignedStore) console.log(`    ${chalk.blue(item.assignedStore)}`);
-            if (item.brand) console.log(`    ${chalk.gray(item.brand)}`);
-            if (item.priority !== 'medium') console.log(`    ${priorityColor(item.priority)}`);
+            logger.info('Shopping', `  ${status} ${chalk.white(item.name)} (${item.quantity} ${item.unit})`);
+            logger.info('Shopping', `    ${chalk.gray('$' + item.estimatedPrice.toFixed(2))}`);
+            logger.info('Shopping', `    ${chalk.blue(item.assignedStore)}`);
+            logger.info('Shopping', `    ${chalk.gray(item.brand)}`);
+            logger.info('Shopping', `    ${priorityColor(item.priority)}`);
           });
         });
 
         const totalCost = filteredItems.reduce((sum, item) => sum + (item.estimatedPrice || 0), 0);
         if (totalCost > 0) {
-          console.log(`\n${chalk.bold.green('Total estimated cost: $' + totalCost.toFixed(2))}`);
+          logger.info('Shopping', `\n${chalk.bold.green('Total estimated cost: $' + totalCost.toFixed(2))}`);
         }
 
       } catch (error) {
         spinner.fail(chalk.red('Failed to load shopping list'));
-        console.error(error);
+        logger.error('Shopping', error);
       }
     });
 
@@ -251,12 +251,12 @@ export function createShoppingCommand(): Command {
 
         spinner.succeed(chalk.green(`Marked "${item.name}" as purchased`));
         if (options.price) {
-          console.log(chalk.gray(`  Actual price: $${options.price}`));
+          logger.info('Shopping', chalk.gray(`  Actual price: $${options.price}`));
         }
 
       } catch (error) {
         spinner.fail(chalk.red('Failed to update item'));
-        console.error(error);
+        logger.error('Shopping', error);
       }
     });
 
@@ -300,7 +300,7 @@ export function createShoppingCommand(): Command {
 
       } catch (error) {
         spinner.fail(chalk.red('Failed to remove item'));
-        console.error(error);
+        logger.error('Shopping', error);
       }
     });
 
@@ -315,7 +315,7 @@ export function createShoppingCommand(): Command {
       const purchasedItems = items.filter(item => item.purchased);
 
       if (purchasedItems.length === 0) {
-        console.log(chalk.yellow('No purchased items to clear'));
+        logger.info('Shopping', chalk.yellow('No purchased items to clear'));
         return;
       }
 
@@ -327,7 +327,7 @@ export function createShoppingCommand(): Command {
       }]);
 
       if (!confirmed.confirm) {
-        console.log(chalk.yellow('Cancelled'));
+        logger.info('Shopping', chalk.yellow('Cancelled'));
         return;
       }
 
@@ -341,7 +341,7 @@ export function createShoppingCommand(): Command {
         spinner.succeed(chalk.green(`Cleared ${purchasedItems.length} purchased items`));
       } catch (error) {
         spinner.fail(chalk.red('Failed to clear items'));
-        console.error(error);
+        logger.error('Shopping', error);
       }
     });
 

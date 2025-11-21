@@ -33,6 +33,7 @@ import ProgressView from './components/ProgressView';
 import FailurePromptModal from './components/FailurePromptModal';
 import CompletedView from './components/CompletedView';
 import DeleteChallengeModal from './components/DeleteChallengeModal';
+import { logger } from '../../services/logger';
 
 export default function SeventyFiveHard() {
   const [showSetupForm, setShowSetupForm] = useState(false);
@@ -57,7 +58,7 @@ export default function SeventyFiveHard() {
   // This defers ~750ms of work from app startup to when user actually needs it
   useEffect(() => {
     if (challenge && challenge.status === 'active') {
-      console.log('[75Hard] Page loaded - ensuring todos for today (lazy loading)');
+      logger.debug('index', '[75Hard] Page loaded - ensuring todos for today (lazy loading)');
       ensureSFHTodosForToday();
     }
   }, [challenge]);

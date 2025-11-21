@@ -1,3 +1,10 @@
+const logger = {
+  debug: (domain, msg, ctx) => console.log(`[${domain}] ${msg}`, ctx || ''),
+  info: (domain, msg, ctx) => console.log(`[${domain}] ${msg}`, ctx || ''),
+  warn: (domain, msg, ctx) => console.warn(`[${domain}] ${msg}`, ctx || ''),
+  error: (domain, err, ctx) => console.error(`[${domain}]`, err, ctx || ''),
+};
+
 // Test PostgreSQL connection
 import { Pool } from 'pg';
 
@@ -11,23 +18,23 @@ const pool = new Pool({
 });
 
 async function testConnection() {
-  console.log('Testing connection to PostgreSQL...');
+  logger.info('TestDbConnection', 'Testing connection to PostgreSQL...');
   
   try {
     const client = await pool.connect();
-    console.log('✅ Successfully connected to PostgreSQL');
+    logger.info('TestDbConnection', '✅ Successfully connected to PostgreSQL');
     
     const result = await client.query('SELECT current_database(), current_user, version()');
-    console.log('Database:', result.rows[0].current_database);
-    console.log('User:', result.rows[0].current_user);
-    console.log('Version:', result.rows[0].version.split(' ')[0]);
+    logger.info('TestDbConnection', 'Database:', result.rows[0].current_database);
+    logger.info('TestDbConnection', 'User:', result.rows[0].current_user);
+    logger.info('TestDbConnection', 'Version:', result.rows[0].version.split(' ')[0]);
     
     client.release();
     await pool.end();
-    console.log('✅ Connection test completed successfully');
+    logger.info('TestDbConnection', '✅ Connection test completed successfully');
   } catch (err) {
-    console.error('❌ Connection failed:', err.message);
-    console.error('Error details:', err);
+    logger.error('TestDbConnection', '❌ Connection failed:', err.message);
+    logger.error('TestDbConnection', 'Error details:', err);
     process.exit(1);
   }
 }

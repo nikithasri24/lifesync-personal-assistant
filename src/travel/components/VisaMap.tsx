@@ -10,6 +10,7 @@ import 'leaflet/dist/leaflet.css';
 import { getVisaRequirement } from '../data/visaRequirements';
 import { getAdditionalAccessFromVisas } from '../data/visaBasedAccess';
 import type { VisaRequirement, UserVisa } from '../types/visa';
+import { logger } from '../../services/logger';
 
 interface VisaMapProps {
   passportCountry: string;
@@ -70,7 +71,7 @@ const VisaMap: React.FC<VisaMapProps> = ({ passportCountry, userVisas }) => {
         setLoading(false);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to load map data';
-        console.error('Error loading map data:', err);
+        logger.error('Error loading map data:', { err });
         setError(errorMessage);
         setLoading(false);
       }

@@ -7,6 +7,7 @@ import React, { useEffect, useState } from 'react';
 import { Target, Zap, Clock, Tag, TrendingUp, Award, BookOpen, X } from 'lucide-react';
 import { getGoalTemplates, createGoalFromTemplate } from '../api/lifeGoalsAPI';
 import type { LifeGoalWithMilestones } from '../types/lifeGoals';
+import { logger } from '../../services/logger';
 
 interface Template {
   id: string;
@@ -68,7 +69,7 @@ const GoalTemplates: React.FC<GoalTemplatesProps> = ({ onGoalCreated, onClose })
           usageCount: t.usage_count,
         })));
       } catch (error) {
-        console.error('Error loading templates:', error);
+        logger.error('Error loading templates:', { error });
       } finally {
         setLoading(false);
       }
@@ -83,7 +84,7 @@ const GoalTemplates: React.FC<GoalTemplatesProps> = ({ onGoalCreated, onClose })
       onGoalCreated(goal);
       onClose();
     } catch (error) {
-      console.error('Error creating goal from template:', error);
+      logger.error('Error creating goal from template:', { error });
       alert('Failed to create goal. Please try again.');
     } finally {
       setCreating(false);

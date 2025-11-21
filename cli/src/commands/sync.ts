@@ -84,11 +84,11 @@ export function createSyncCommand(): Command {
       
       try {
         const exportPath = await webAppSync.exportData();
-        console.log(chalk.green(`✓ Data exported successfully`));
-        console.log(chalk.gray(`File: ${exportPath}`));
-        console.log(chalk.gray('You can share this file or import it on another device'));
+        logger.info('Sync', chalk.green(`✓ Data exported successfully`));
+        logger.info('Sync', chalk.gray(`File: ${exportPath}`));
+        logger.info('Sync', chalk.gray('You can share this file or import it on another device'));
       } catch (error) {
-        console.error(chalk.red('Export failed:'), error);
+        logger.error('Sync', chalk.red('Export failed:'), error);
       }
     });
 
@@ -111,14 +111,14 @@ export function createSyncCommand(): Command {
         ]);
 
         if (!confirmed.confirm) {
-          console.log(chalk.yellow('Import cancelled'));
+          logger.info('Sync', chalk.yellow('Import cancelled'));
           return;
         }
 
         await webAppSync.importData(file);
-        console.log(chalk.green('✓ Data imported successfully'));
+        logger.info('Sync', chalk.green('✓ Data imported successfully'));
       } catch (error) {
-        console.error(chalk.red('Import failed:'), error);
+        logger.error('Sync', chalk.red('Import failed:'), error);
       }
     });
 
@@ -127,8 +127,8 @@ export function createSyncCommand(): Command {
     .command('auto')
     .description('Configure automatic synchronization')
     .action(async () => {
-      console.log(chalk.bold.blue('Automatic Sync Setup'));
-      console.log(chalk.gray('Configure when CLI should sync with web app\n'));
+      logger.info('Sync', chalk.bold.blue('Automatic Sync Setup'));
+      logger.info('Sync', chalk.gray('Configure when CLI should sync with web app\n'));
 
       const answers = await inquirer.prompt([
         {
@@ -163,10 +163,10 @@ export function createSyncCommand(): Command {
           }
         ]);
 
-        console.log(chalk.green('\n✓ Auto-sync configured'));
-        console.log(chalk.gray('Note: Auto-sync is simulated in this demo version'));
+        logger.info('Sync', chalk.green('\n✓ Auto-sync configured'));
+        logger.info('Sync', chalk.gray('Note: Auto-sync is simulated in this demo version'));
       } else {
-        console.log(chalk.yellow('Auto-sync disabled'));
+        logger.info('Sync', chalk.yellow('Auto-sync disabled'));
       }
     });
 
@@ -178,7 +178,7 @@ export function createSyncCommand(): Command {
     .action(async () => {
       await webAppSync.init();
       
-      console.log(chalk.bold.blue('Sync Status'));
+      logger.info('Sync', chalk.bold.blue('Sync Status'));
       
       try {
         // Test connection
@@ -192,22 +192,22 @@ export function createSyncCommand(): Command {
         spinner.succeed(chalk.green('Web app connection: OK'));
         
         // Show last sync times (simulated)
-        console.log(chalk.bold('\nLast Sync Times:'));
-        console.log(`  Shopping: ${chalk.gray('Never')}`);
-        console.log(`  Recipes: ${chalk.gray('Never')}`);
-        console.log(`  Meals: ${chalk.gray('Never')}`);
+        logger.info('Sync', chalk.bold('\nLast Sync Times:'));
+        logger.info('Sync', `  Shopping: ${chalk.gray('Never')}`);
+        logger.info('Sync', `  Recipes: ${chalk.gray('Never')}`);
+        logger.info('Sync', `  Meals: ${chalk.gray('Never')}`);
         
-        console.log(chalk.bold('\nAuto-sync: ') + chalk.gray('Disabled'));
+        logger.info('Sync', chalk.bold('\nAuto-sync: ') + chalk.gray('Disabled'));
         
-        console.log(chalk.yellow('\nTo sync now, run:'));
-        console.log(chalk.cyan('  lifesync sync all'));
+        logger.info('Sync', chalk.yellow('\nTo sync now, run:'));
+        logger.info('Sync', chalk.cyan('  lifesync sync all'));
         
       } catch (error) {
-        console.error(chalk.red('Connection failed:'), error);
-        console.log(chalk.yellow('\nTroubleshooting:'));
-        console.log('• Make sure the web app is running');
-        console.log('• Check your API URL in config: lifesync config show');
-        console.log('• Update API URL: lifesync config set apiUrl http://localhost:3000');
+        logger.error('Sync', chalk.red('Connection failed:'), error);
+        logger.info('Sync', chalk.yellow('\nTroubleshooting:'));
+        logger.info('Sync', '• Make sure the web app is running');
+        logger.info('Sync', '• Check your API URL in config: lifesync config show');
+        logger.info('Sync', '• Update API URL: lifesync config set apiUrl http://localhost:3000');
       }
     });
 

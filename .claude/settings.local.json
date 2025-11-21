@@ -171,7 +171,10 @@
       "Bash(for comp in AIFinancialAdvisor SmartBillTracker AdvancedPortfolioAnalytics AccountReconciliation)",
       "Bash(do echo \"=== $comp ===\")",
       "Bash(for file in src/pages/MealPlanning.tsx src/pages/Mood.tsx src/pages/Personal.tsx src/pages/ShoppingSmart.tsx)",
-      "Bash(do echo \"=== $file ===\" head -30 \"$file\")"
+      "Bash(do echo \"=== $file ===\" head -30 \"$file\")",
+      "Bash(for:*)",
+      "Bash(do echo '=== $file ===' grep console. $file)",
+      "Bash(cut:*)"
     ],
     "deny": [],
     "ask": []

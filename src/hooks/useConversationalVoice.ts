@@ -2,6 +2,8 @@
 // Works in Chrome, Safari, Edge (no API keys needed)
 
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { logger } from '../services/logger';
+
 import { ConversationEngine } from '../services/conversationEngine';
 
 // TypeScript declarations for Web Speech API
@@ -116,7 +118,7 @@ export function useConversationalVoice(userId: string) {
       // Process final transcript
       if (finalTranscript.trim()) {
         const userMessage = finalTranscript.trim();
-        console.log('[Voice] User said:', userMessage);
+        logger.info('UseConversationalVoice', '[Voice] User said:', userMessage);
 
         setState(prev => ({
           ...prev,
@@ -152,7 +154,7 @@ export function useConversationalVoice(userId: string) {
             }, 500);
           }
         } catch (error: any) {
-          console.error('[Voice] Error:', error);
+          logger.error('UseConversationalVoice', '[Voice] Error:', error);
           setState(prev => ({
             ...prev,
             isThinking: false,
@@ -163,7 +165,7 @@ export function useConversationalVoice(userId: string) {
     };
 
     recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-      console.error('[Voice] Recognition error:', event.error);
+      logger.error('UseConversationalVoice', '[Voice] Recognition error:', event.error);
 
       if (event.error === 'no-speech') {
         // User didn't say anything, just continue listening
@@ -217,7 +219,7 @@ export function useConversationalVoice(userId: string) {
       recognitionRef.current.start();
     } catch (error: any) {
       // Recognition might already be started
-      console.log('[Voice] Start error (might already be running):', error.message);
+      logger.info('UseConversationalVoice', '[Voice] Start error (might already be running):', error.message);
     }
   }, []);
 
@@ -257,12 +259,12 @@ export function useConversationalVoice(userId: string) {
       utterance.volume = 1.0;
 
       utterance.onend = () => {
-        console.log('[Voice] Finished speaking');
+        logger.info('UseConversationalVoice', '[Voice] Finished speaking');
         resolve();
       };
 
       utterance.onerror = (event) => {
-        console.error('[Voice] Speech synthesis error:', event);
+        logger.error('UseConversationalVoice', '[Voice] Speech synthesis error:', event);
         resolve(); // Resolve anyway to not block
       };
 

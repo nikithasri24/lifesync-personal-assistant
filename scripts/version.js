@@ -111,26 +111,26 @@ function showVersionInfo() {
   const pkg = getPackageInfo();
   const git = getGitInfo();
   
-  console.log(colorize('📦 LifeSync Version Information', 'cyan'));
-  console.log('================================');
-  console.log(`${colorize('Version:', 'yellow')} ${colorize(pkg.version, 'green')}`);
-  console.log(`${colorize('Name:', 'yellow')} ${pkg.name}`);
-  console.log(`${colorize('Description:', 'yellow')} ${pkg.description || 'No description'}`);
-  console.log();
+  logger.info('Version', colorize('📦 LifeSync Version Information', 'cyan'));
+  logger.info('Version', '================================');
+  logger.info('Version', `${colorize('Version:', 'yellow')} ${colorize(pkg.version, 'green')}`);
+  logger.info('Version', `${colorize('Name:', 'yellow')} ${pkg.name}`);
+  logger.info('Version', `${colorize('Description:', 'yellow')} ${pkg.description || 'No description'}`);
+  logger.info('Version', );
   
-  console.log(colorize('🔀 Git Information', 'cyan'));
-  console.log('==================');
-  console.log(`${colorize('Branch:', 'yellow')} ${colorize(git.branch, 'green')}`);
-  console.log(`${colorize('Commit:', 'yellow')} ${git.shortSha} (${git.sha})`);
-  console.log(`${colorize('Last Tag:', 'yellow')} ${git.lastTag}`);
-  console.log(`${colorize('Commits since tag:', 'yellow')} ${git.commitsSinceTag}`);
-  console.log();
+  logger.info('Version', colorize('🔀 Git Information', 'cyan'));
+  logger.info('Version', '==================');
+  logger.info('Version', `${colorize('Branch:', 'yellow')} ${colorize(git.branch, 'green')}`);
+  logger.info('Version', `${colorize('Commit:', 'yellow')} ${git.shortSha} (${git.sha})`);
+  logger.info('Version', `${colorize('Last Tag:', 'yellow')} ${git.lastTag}`);
+  logger.info('Version', `${colorize('Commits since tag:', 'yellow')} ${git.commitsSinceTag}`);
+  logger.info('Version', );
   
   const isDev = git.commitsSinceTag > 0 || git.branch !== 'main';
-  console.log(colorize('🏷️  Build Information', 'cyan'));
-  console.log('====================');
-  console.log(`${colorize('Type:', 'yellow')} ${isDev ? colorize('Development', 'yellow') : colorize('Release', 'green')}`);
-  console.log(`${colorize('Build Date:', 'yellow')} ${new Date().toISOString()}`);
+  logger.info('Version', colorize('🏷️  Build Information', 'cyan'));
+  logger.info('Version', '====================');
+  logger.info('Version', `${colorize('Type:', 'yellow')} ${isDev ? colorize('Development', 'yellow') : colorize('Release', 'green')}`);
+  logger.info('Version', `${colorize('Build Date:', 'yellow')} ${new Date().toISOString()}`);
   
   // Full version string
   const base = pkg.version;
@@ -139,7 +139,7 @@ function showVersionInfo() {
   const branch = git.branch !== 'main' ? `[${git.branch}]` : '';
   const fullVersion = `${base}${commits}${sha}${branch}`;
   
-  console.log(`${colorize('Full Version:', 'yellow')} ${colorize(fullVersion, 'magenta')}`);
+  logger.info('Version', `${colorize('Full Version:', 'yellow')} ${colorize(fullVersion, 'magenta')}`);
 }
 
 function bumpVersion(type = 'patch') {
@@ -149,17 +149,17 @@ function bumpVersion(type = 'patch') {
     throw new Error(`Invalid version type. Must be one of: ${validTypes.join(', ')}`);
   }
   
-  console.log(colorize(`🚀 Bumping ${type} version...`, 'cyan'));
+  logger.info('Version', colorize(`🚀 Bumping ${type} version...`, 'cyan'));
   
   try {
     execSync(`npm version ${type} --no-git-tag-version`, { stdio: 'inherit' });
     
     const pkg = getPackageInfo();
-    console.log(colorize(`✅ Version bumped to ${pkg.version}`, 'green'));
+    logger.info('Version', colorize(`✅ Version bumped to ${pkg.version}`, 'green'));
     
     // Generate updated version file
     const versionFile = generateVersionFile();
-    console.log(colorize(`📝 Updated version file: ${versionFile}`, 'blue'));
+    logger.info('Version', colorize(`📝 Updated version file: ${versionFile}`, 'blue'));
     
     return pkg.version;
   } catch (error) {
@@ -168,15 +168,15 @@ function bumpVersion(type = 'patch') {
 }
 
 function showVersionHistory() {
-  console.log(colorize('📜 Version History', 'cyan'));
-  console.log('=================');
+  logger.info('Version', colorize('📜 Version History', 'cyan'));
+  logger.info('Version', '=================');
   
   try {
     const gitLog = execSync('git tag --sort=-version:refname', { encoding: 'utf8' }).trim();
     const tags = gitLog.split('\n').filter(Boolean).slice(0, 10);
     
     if (tags.length === 0) {
-      console.log(colorize('No version tags found', 'yellow'));
+      logger.info('Version', colorize('No version tags found', 'yellow'));
       return;
     }
     
@@ -185,16 +185,16 @@ function showVersionHistory() {
         const date = execSync(`git log -1 --format=%ai ${tag}`, { encoding: 'utf8' }).trim();
         const message = execSync(`git tag -l --format='%(contents:subject)' ${tag}`, { encoding: 'utf8' }).trim();
         
-        console.log(`${colorize(tag, 'green')} - ${date.split(' ')[0]}`);
+        logger.info('Version', `${colorize(tag, 'green')} - ${date.split(' ')[0]}`);
         if (message) {
-          console.log(`  ${colorize(message, 'blue')}`);
+          logger.info('Version', `  ${colorize(message, 'blue')}`);
         }
       } catch (e) {
-        console.log(`${colorize(tag, 'green')} - Date unknown`);
+        logger.info('Version', `${colorize(tag, 'green')} - Date unknown`);
       }
     }
   } catch (error) {
-    console.log(colorize('No git history available', 'yellow'));
+    logger.info('Version', colorize('No git history available', 'yellow'));
   }
 }
 
@@ -216,7 +216,7 @@ function main() {
         
       case 'generate':
         const file = generateVersionFile();
-        console.log(colorize(`✅ Generated version file: ${file}`, 'green'));
+        logger.info('Version', colorize(`✅ Generated version file: ${file}`, 'green'));
         break;
         
       case 'history':
@@ -224,31 +224,31 @@ function main() {
         break;
         
       case 'help':
-        console.log(colorize('📖 Version Management Commands', 'cyan'));
-        console.log('==============================');
-        console.log(`${colorize('node scripts/version.js', 'green')} or ${colorize('npm run version', 'green')}`);
-        console.log('  Show current version information');
-        console.log();
-        console.log(`${colorize('node scripts/version.js bump [major|minor|patch]', 'green')}`);
-        console.log('  Bump version locally (default: patch)');
-        console.log();
-        console.log(`${colorize('node scripts/version.js generate', 'green')}`);
-        console.log('  Generate version.ts file');
-        console.log();
-        console.log(`${colorize('node scripts/version.js history', 'green')}`);
-        console.log('  Show version history from git tags');
-        console.log();
-        console.log(`${colorize('node scripts/version.js help', 'green')}`);
-        console.log('  Show this help message');
+        logger.info('Version', colorize('📖 Version Management Commands', 'cyan'));
+        logger.info('Version', '==============================');
+        logger.info('Version', `${colorize('node scripts/version.js', 'green')} or ${colorize('npm run version', 'green')}`);
+        logger.info('Version', '  Show current version information');
+        logger.info('Version', );
+        logger.info('Version', `${colorize('node scripts/version.js bump [major|minor|patch]', 'green')}`);
+        logger.info('Version', '  Bump version locally (default: patch)');
+        logger.info('Version', );
+        logger.info('Version', `${colorize('node scripts/version.js generate', 'green')}`);
+        logger.info('Version', '  Generate version.ts file');
+        logger.info('Version', );
+        logger.info('Version', `${colorize('node scripts/version.js history', 'green')}`);
+        logger.info('Version', '  Show version history from git tags');
+        logger.info('Version', );
+        logger.info('Version', `${colorize('node scripts/version.js help', 'green')}`);
+        logger.info('Version', '  Show this help message');
         break;
         
       default:
-        console.error(colorize(`❌ Unknown command: ${command}`, 'red'));
-        console.log(colorize('Run "node scripts/version.js help" for available commands', 'yellow'));
+        logger.error('Version', colorize(`❌ Unknown command: ${command}`, 'red'));
+        logger.info('Version', colorize('Run "node scripts/version.js help" for available commands', 'yellow'));
         process.exit(1);
     }
   } catch (error) {
-    console.error(colorize(`❌ Error: ${error.message}`, 'red'));
+    logger.error('Version', colorize(`❌ Error: ${error.message}`, 'red'));
     process.exit(1);
   }
 }

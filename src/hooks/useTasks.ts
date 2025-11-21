@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { db } from '../services/database'
 import type { Task, Project } from '../lib/supabase'
+import { logger } from '../services/logger';
 
 // Temporary user ID - in a real app, this would come from authentication
 const TEMP_USER_ID = 'temp-user-123'
@@ -48,7 +49,7 @@ export const useTasks = (): UseTasksReturn => {
       setProjects(projectsData)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load data')
-      console.error('Error loading data:', err)
+      logger.error('Error loading data:', { err });
     } finally {
       setLoading(false)
     }

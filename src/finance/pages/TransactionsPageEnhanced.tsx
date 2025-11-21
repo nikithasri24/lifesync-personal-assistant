@@ -21,6 +21,7 @@ import { formatCurrency } from '../utils/currency';
 import useFinanceFilters from '../store/useFinanceFilters';
 import type { Transaction } from '../types';
 import { toCSV, downloadCSV } from '../utils/csv';
+import { logger } from '../../services/logger';
 
 const TransactionsPageEnhanced: React.FC = () => {
   const [rows, setRows] = React.useState<Transaction[]>([]);
@@ -63,7 +64,7 @@ const TransactionsPageEnhanced: React.FC = () => {
           setCategories(categoryMap);
         }
       } catch (error) {
-        console.error('Failed to get user ID or categories:', error);
+        logger.error('Failed to get user ID or categories:', { error });
       }
     }
 
@@ -78,7 +79,7 @@ const TransactionsPageEnhanced: React.FC = () => {
     setLoading(true);
     try {
       const api = await getFinanceAPI();
-      console.log('Loading transactions with filters:', {
+      logger.debug('TransactionsPageEnhanced', 'Loading transactions with filters', {
         text: filters.text,
         fromISO: filters.fromISO,
         toISO: filters.toISO,
@@ -96,11 +97,11 @@ const TransactionsPageEnhanced: React.FC = () => {
         limit: 100,
       });
 
-      console.log(`Loaded ${items.length} transactions from database`);
+      logger.debug('TransactionsPageEnhanced', `Loaded ${items.length} transactions from database`);
       setRows(cursor ? (r) => [...r, ...items] : items);
       setNext(nextCursor);
     } catch (error) {
-      console.error('Failed to load transactions:', error);
+      logger.error('Failed to load transactions:', { error });
     } finally {
       setLoading(false);
     }
@@ -147,7 +148,7 @@ const TransactionsPageEnhanced: React.FC = () => {
       // Reload transactions
       await load();
     } catch (error) {
-      console.error('Failed to apply categorizations:', error);
+      logger.error('Failed to apply categorizations:', { error });
       alert('Failed to apply categorizations. Please try again.');
     }
   };
@@ -169,7 +170,7 @@ const TransactionsPageEnhanced: React.FC = () => {
       alert('✓ All transactions cleared!');
       await load(); // Reload
     } catch (error) {
-      console.error('Failed to clear transactions:', error);
+      logger.error('Failed to clear transactions:', { error });
       alert(`Failed to clear transactions: ${error}`);
     } finally {
       setLoading(false);

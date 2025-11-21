@@ -10,6 +10,7 @@ import 'leaflet/dist/leaflet.css';
 import type { VisitStatus } from '../types';
 import { nationalParks } from '../data/nationalParks';
 import { islands } from '../data/islands';
+import { logger } from '../../services/logger';
 
 // Fix Leaflet default marker icon issue
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -156,7 +157,7 @@ const LeafletTravelMapV2: React.FC<LeafletTravelMapV2Props> = ({
         setLoading(false);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to load map data';
-        console.error('Error loading map data:', err);
+        logger.error('Error loading map data:', { err });
         setError(errorMessage);
         setLoading(false);
       }
@@ -184,7 +185,7 @@ const LeafletTravelMapV2: React.FC<LeafletTravelMapV2Props> = ({
           setStates(data.features || []);
         }
       } catch (err) {
-        console.error('Error loading state boundaries:', err);
+        logger.error('Error loading state boundaries:', { err });
       }
     };
 

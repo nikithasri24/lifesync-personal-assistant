@@ -4,15 +4,16 @@
  */
 
 import { ensureSFHTodosForToday } from '../stores/seventyFiveHardActions';
+import { logger } from '../services/logger';
 
 async function resync() {
-  console.log('Re-syncing 75 Hard todos...');
+  logger.debug('Resync75HardTodos', 'Re-syncing 75 Hard todos...');
 
   try {
     await ensureSFHTodosForToday();
-    console.log('✅ Re-sync complete!');
+    logger.debug('Resync75HardTodos', '✅ Re-sync complete!');
   } catch (error) {
-    console.error('❌ Re-sync failed:', error);
+    logger.error('❌ Re-sync failed:', { error });
   }
 }
 

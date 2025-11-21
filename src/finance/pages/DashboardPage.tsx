@@ -36,7 +36,7 @@ const DashboardPage: React.FC = () => {
 
   // Debug logging
   React.useEffect(() => {
-    console.log('[Dashboard] Transaction Filtering:', {
+    logger.debug('DashboardPage', 'Transaction Filtering', {
       selectedMonth: month,
       totalTransactions: txns.length,
       monthTransactions: monthTxns.length,
@@ -96,7 +96,7 @@ const DashboardPage: React.FC = () => {
   // Debug metrics
   React.useEffect(() => {
     if (!loading && txns.length > 0) {
-      console.log('[Dashboard] Metrics Debug:', {
+      logger.debug('DashboardPage', 'Metrics Debug', {
         sankeyDataLength: metrics.sankeyData.length,
         sankeyData: metrics.sankeyData,
         currentPeriod,

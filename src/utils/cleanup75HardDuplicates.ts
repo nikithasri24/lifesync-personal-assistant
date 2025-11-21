@@ -6,9 +6,10 @@
  */
 
 import { useAppStore } from '../stores/useAppStore';
+import { logger } from '../services/logger';
 
 export async function cleanup75HardDuplicates() {
-  console.log('🧹 Starting cleanup of duplicate 75 Hard tasks...');
+  logger.debug('Utils', '🧹 Starting cleanup of duplicate 75 Hard tasks...');
 
   const store = useAppStore.getState();
   const todos = store.todos;
@@ -20,11 +21,11 @@ export async function cleanup75HardDuplicates() {
   });
 
   if (sfhTodos.length === 0) {
-    console.log('✅ No 75 Hard tasks found');
+    logger.debug('Utils', '✅ No 75 Hard tasks found');
     return;
   }
 
-  console.log(`📊 Found ${sfhTodos.length} total 75 Hard todos`);
+  logger.debug('Utils', `📊 Found ${sfhTodos.length} total 75 Hard todos`);
 
   // Group by unique combination
   const uniqueMap = new Map<string, any>();
@@ -45,33 +46,33 @@ export async function cleanup75HardDuplicates() {
 
     if (uniqueMap.has(uniqueKey)) {
       duplicates.push(todo.id);
-      console.log(`🗑️  Duplicate: "${todo.title}"`);
+      logger.debug('Utils', `🗑️  Duplicate: "${todo.title}"`);
     } else {
       uniqueMap.set(uniqueKey, todo);
-      console.log(`✅ Keeping: "${todo.title}"`);
+      logger.debug('Utils', `✅ Keeping: "${todo.title}"`);
     }
   }
 
-  console.log(`\n📊 Summary:`);
-  console.log(`   Total: ${sfhTodos.length}`);
-  console.log(`   Unique: ${uniqueMap.size}`);
-  console.log(`   Duplicates: ${duplicates.length}`);
+  logger.debug('Utils', `\n📊 Summary:`);
+  logger.debug('Utils', `   Total: ${sfhTodos.length}`);
+  logger.debug('Utils', `   Unique: ${uniqueMap.size}`);
+  logger.debug('Utils', `   Duplicates: ${duplicates.length}`);
 
   if (duplicates.length === 0) {
-    console.log('\n✅ No duplicates to clean up!');
+    logger.debug('Utils', '\n✅ No duplicates to clean up!');
     return;
   }
 
   // Delete duplicates
-  console.log(`\n🗑️  Deleting ${duplicates.length} duplicates...`);
+  logger.debug('Utils', `\n🗑️  Deleting ${duplicates.length} duplicates...`);
 
   for (const id of duplicates) {
     await store.deleteTodo(id);
   }
 
-  console.log('\n✅ Cleanup complete!');
-  console.log(`   Deleted ${duplicates.length} duplicate todos`);
-  console.log(`   Kept ${uniqueMap.size} unique todos`);
+  logger.debug('Utils', '\n✅ Cleanup complete!');
+  logger.debug('Utils', `   Deleted ${duplicates.length} duplicate todos`);
+  logger.debug('Utils', `   Kept ${uniqueMap.size} unique todos`);
 }
 
 // Make it available globally

@@ -82,14 +82,14 @@ export async function handleAddTask(
     } as any);
 
     spinner.succeed(Chalk.green(`Added task "${task.title}"`));
-    console.log(Chalk.gray(`  Priority: ${priority} | Category: ${category || 'default'}`));
-    if (dueDate) console.log(Chalk.gray(`  Due: ${format(dueDate, 'MMM d, yyyy')}`));
-    if (estimatedTime) console.log(Chalk.gray(`  Estimated time: ${estimatedTime} minutes`));
+    logger.info('Tasks', Chalk.gray(`  Priority: ${priority} | Category: ${category || 'default'}`));
+    logger.info('Tasks', Chalk.gray(`  Due: ${format(dueDate, 'MMM d, yyyy')}`));
+    logger.info('Tasks', Chalk.gray(`  Estimated time: ${estimatedTime} minutes`));
 
     return task;
   } catch (error) {
     spinner.fail(Chalk.red('Failed to add task'));
-    console.error(error);
+    logger.error('Tasks', error);
     throw error;
   }
 }
@@ -130,7 +130,7 @@ export async function handleListTasks(
 
     spinner.succeed(Chalk.green(`Found ${filteredTasks.length} tasks`))
     if (filteredTasks.length === 0) {
-      console.log(Chalk.yellow('No tasks found'))
+      logger.info('Tasks', Chalk.yellow('No tasks found'));
       return filteredTasks
     }
 
@@ -149,12 +149,12 @@ export async function handleListTasks(
         'pending-others': '⏳ Pending Others',
         'done': '✅ Done'
       } as const
-      console.log(`\n${Chalk.bold.blue(statusLabels[status as keyof typeof statusLabels])}`)
+      logger.info('Tasks', `\n${Chalk.bold.blue(statusLabels[status as keyof typeof statusLabels])}`);
       statusTasks.forEach(task => {
         const priorityIcon = task.priority === 'urgent' ? '🔴' : task.priority === 'high' ? '🟠' : task.priority === 'medium' ? '🟡' : '🟢'
         const statusIcon = task.status === 'done' ? '✅' : task.status === 'currently-working' ? '🔄' : task.status === 'pending-others' ? '⏳' : '○'
         const category = categories.find(c => c.id === task.categoryId)
-        console.log(`  ${statusIcon} ${Chalk.white(task.title)}`)
+        logger.info('Tasks', `  ${statusIcon} ${Chalk.white(task.title)}`);
         const details: string[] = []
         details.push(`${priorityIcon} ${task.priority}`)
         if (category) details.push(`📁 ${category.name}`)
@@ -163,15 +163,15 @@ export async function handleListTasks(
           details.push(dueColor(`📅 ${format(new Date(task.dueDate), 'MMM d')}`))
         }
         if (task.estimatedTime) details.push(`⏱️ ${task.estimatedTime}m`)
-        console.log(`    ${Chalk.gray(details.join(' • '))}`)
-        if (task.description) console.log(`    ${Chalk.gray(task.description)}`)
-        if (task.tags.length > 0) console.log(`    ${Chalk.cyan(task.tags.map(tag => `#${tag}`).join(' '))}`)
+        logger.info('Tasks', `    ${Chalk.gray(details.join(' • '))}`);
+        logger.info('Tasks', `    ${Chalk.gray(task.description)}`);
+        logger.info('Tasks', `    ${Chalk.cyan(task.tags.map(tag => `#${tag}`).join(' '))}`);
       })
     })
     return filteredTasks
   } catch (error) {
     spinner.fail(Chalk.red('Failed to load tasks'))
-    console.error(error)
+    logger.error('Tasks', error);
     throw error
   }
 }
@@ -210,7 +210,7 @@ export async function handleUpdateTaskStatus(
     return updates
   } catch (error) {
     spinner.fail(Chalk.red('Failed to update task status'))
-    console.error(error)
+    logger.error('Tasks', error);
     throw error
   }
 }
@@ -229,37 +229,37 @@ export async function handleTodayOverview(
     const overdueTasks = tasks.filter(task => task.dueDate && new Date(task.dueDate) < today && task.status !== 'done')
     const currentlyWorking = tasks.filter(task => task.status === 'currently-working')
     spinner.succeed(Chalk.green("Today's Overview"))
-    console.log(Chalk.bold.blue(`\n📅 ${format(today, 'EEEE, MMMM d, yyyy')}`))
+    logger.info('Tasks', Chalk.bold.blue(`\n📅 ${format(today, 'EEEE, MMMM d, yyyy')}`));
     if (currentlyWorking.length > 0) {
-      console.log(Chalk.bold('\n🔄 Currently Working On:'))
-      currentlyWorking.forEach(task => console.log(`  • ${Chalk.white(task.title)}`))
+      logger.info('Tasks', Chalk.bold('\n🔄 Currently Working On:'));
+      logger.info('Tasks', `  • ${Chalk.white(task.title)}`));
     }
     if (overdueTasks.length > 0) {
-      console.log(Chalk.bold.red('\n⚠️ Overdue Tasks:'))
+      logger.info('Tasks', Chalk.bold.red('\n⚠️ Overdue Tasks:'));
       overdueTasks.forEach(task => {
         const category = categories.find(c => c.id === task.categoryId)
-        console.log(`  • ${Chalk.red(task.title)} (${category?.name || 'Unknown'})`)
+        logger.info('Tasks', `  • ${Chalk.red(task.title)} (${category?.name || 'Unknown'})`);
       })
     }
     if (todaysTasks.length > 0) {
-      console.log(Chalk.bold('\n📋 Due Today:'))
+      logger.info('Tasks', Chalk.bold('\n📋 Due Today:'));
       todaysTasks.forEach(task => {
         const statusIcon = task.status === 'done' ? '✅' : task.status === 'currently-working' ? '🔄' : '○'
-        console.log(`  ${statusIcon} ${Chalk.white(task.title)}`)
+        logger.info('Tasks', `  ${statusIcon} ${Chalk.white(task.title)}`);
       })
     }
     if (todaysTasks.length === 0 && overdueTasks.length === 0 && currentlyWorking.length === 0) {
-      console.log(Chalk.green('\n🎉 All caught up! No tasks for today.'))
+      logger.info('Tasks', Chalk.green('\n🎉 All caught up! No tasks for today.'));
     }
     const totalPending = tasks.filter(t => t.status !== 'done').length
     const completedToday = tasks.filter(t => t.completedAt && format(new Date(t.completedAt), 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd')).length
-    console.log(Chalk.bold('\n📊 Quick Stats:'))
-    console.log(`  • ${totalPending} pending tasks`)
-    console.log(`  • ${completedToday} completed today`)
+    logger.info('Tasks', Chalk.bold('\n📊 Quick Stats:'));
+    logger.info('Tasks', `  • ${totalPending} pending tasks`);
+    logger.info('Tasks', `  • ${completedToday} completed today`);
     return { todaysTasks, overdueTasks, currentlyWorking }
   } catch (error) {
     spinner.fail(Chalk.red("Failed to load today's tasks"))
-    console.error(error)
+    logger.error('Tasks', error);
     throw error
   }
 }
@@ -283,7 +283,7 @@ export async function handleCompleteTask(
     return { id: task.id, status: 'done' }
   } catch (error) {
     spinner.fail(Chalk.red('Failed to complete task'))
-    console.error(error)
+    logger.error('Tasks', error);
     throw error
   }
 }
@@ -307,7 +307,7 @@ export async function handleStartTask(
     return { id: task.id, status: 'currently-working' }
   } catch (error) {
     spinner.fail(Chalk.red('Failed to start task'))
-    console.error(error)
+    logger.error('Tasks', error);
     throw error
   }
 }
@@ -336,7 +336,7 @@ export async function handleRemoveTask(
     return { id: task.id }
   } catch (error) {
     spinner.fail(Chalk.red('Failed to remove task'))
-    console.error(error)
+    logger.error('Tasks', error);
     throw error
   }
 }

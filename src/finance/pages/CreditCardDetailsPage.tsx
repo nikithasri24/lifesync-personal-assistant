@@ -9,6 +9,7 @@ import { getFinanceAPI } from '../data';
 import type { Account, CardBenefit, CardCategoryBonus, WelcomeBonus, CardOffer } from '../types';
 import { CreditCardCard } from '../components/creditCards/CreditCardCard';
 import { CardBenefitsPanel } from '../components/creditCards/CardBenefitsPanel';
+import { logger } from '../../services/logger';
 
 interface CreditCardDetailsPageProps {
   accountId: string;
@@ -53,7 +54,7 @@ export const CreditCardDetailsPage: React.FC<CreditCardDetailsPageProps> = ({ ac
       setWelcomeBonuses(welcomeData);
       setOffers(offersData);
     } catch (error) {
-      console.error('Failed to load card details:', error);
+      logger.error('Failed to load card details:', { error });
     } finally {
       setLoading(false);
     }

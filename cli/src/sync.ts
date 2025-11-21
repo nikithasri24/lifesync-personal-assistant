@@ -83,7 +83,7 @@ export class WebAppSync {
                 body: JSON.stringify(localItem)
               });
             } catch (updateError) {
-              console.warn(`Failed to sync item ${localItem.name}:`, updateError);
+              logger.warn('Sync', `Failed to sync item ${localItem.name}:`, updateError);
             }
           }
         }
@@ -134,7 +134,7 @@ export class WebAppSync {
                 body: JSON.stringify(localRecipe)
               });
             } catch (updateError) {
-              console.warn(`Failed to sync recipe ${localRecipe.name}:`, updateError);
+              logger.warn('Sync', `Failed to sync recipe ${localRecipe.name}:`, updateError);
             }
           }
         }
@@ -183,7 +183,7 @@ export class WebAppSync {
                 body: JSON.stringify(localMeal)
               });
             } catch (updateError) {
-              console.warn(`Failed to sync meal plan:`, updateError);
+              logger.warn('Sync', `Failed to sync meal plan:`, updateError);
             }
           }
         }
@@ -211,7 +211,7 @@ export class WebAppSync {
       spinner.succeed(chalk.green('Full sync completed successfully'));
     } catch (error) {
       spinner.fail(chalk.red('Sync failed'));
-      console.error(chalk.red('Error:'), error instanceof Error ? error.message : error);
+      logger.error('Sync', chalk.red('Error:'), error instanceof Error ? error.message : error);
     }
   }
 

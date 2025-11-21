@@ -3,6 +3,8 @@
  */
 
 import React from 'react';
+import { logger } from '../../services/logger';
+
 import type { VisitStatus } from '../types';
 
 type InteractiveWorldMapProps = {
@@ -43,9 +45,9 @@ const InteractiveWorldMap: React.FC<InteractiveWorldMapProps> = ({
       .then(data => {
         // Use D3 or similar to render the map
         // For now, we'll use a simpler approach
-        console.log('Map data loaded', data);
+        logger.info('InteractiveWorldMap', 'Map data loaded', data);
       })
-      .catch(err => console.error('Error loading map:', err));
+      .catch(err => logger.error('InteractiveWorldMap', 'Error loading map:', err));
   }, []);
 
   return (

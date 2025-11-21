@@ -32,6 +32,7 @@ import {
   useDeleteAllHabitEntries,
 } from '../hooks/useHabitsQuery';
 import type { HabitData } from '../services/types';
+import { logger } from '../services/logger';
 
 type HabitDraft = {
   name: string;
@@ -141,7 +142,7 @@ const Habits: React.FC = () => {
         showToast('Habit created successfully', 'success');
       },
       onError: (error) => {
-        console.error('[Habits] Failed to add habit', error);
+        logger.error('[Habits] Failed to add habit', { error });
         showToast('Unable to save the habit right now. Please try again.', 'error');
       },
     });
@@ -155,7 +156,7 @@ const Habits: React.FC = () => {
           showToast('Cleared today\'s completion', 'success');
         },
         onError: (error) => {
-          console.error('[Habits] Failed to reset today', error);
+          logger.error('[Habits] Failed to reset today', { error });
           showToast('Unable to reset today. Please try again.', 'error');
         },
       }
@@ -168,7 +169,7 @@ const Habits: React.FC = () => {
         showToast('Streak and history reset', 'success');
       },
       onError: (error) => {
-        console.error('[Habits] Failed to reset history', error);
+        logger.error('[Habits] Failed to reset history', { error });
         showToast('Unable to reset history. Please try again.', 'error');
       },
     });
@@ -211,7 +212,7 @@ const Habits: React.FC = () => {
           showToast('Habit updated successfully', 'success');
         },
         onError: (error) => {
-          console.error('[Habits] Failed to update habit', error);
+          logger.error('[Habits] Failed to update habit', { error });
           showToast('Saving changes failed. Please try again.', 'error');
         },
       }
@@ -230,7 +231,7 @@ const Habits: React.FC = () => {
           showToast('Habit completed!', 'success');
         },
         onError: (error) => {
-          console.error('[Habits] Failed to complete habit', error);
+          logger.error('[Habits] Failed to complete habit', { error });
           showToast('Could not record the completion. Please try again.', 'error');
         },
       }
@@ -243,7 +244,7 @@ const Habits: React.FC = () => {
         showToast('Habit deleted', 'success');
       },
       onError: (error) => {
-        console.error('[Habits] Failed to delete habit', error);
+        logger.error('[Habits] Failed to delete habit', { error });
         showToast('Deleting the habit failed. Please try again.', 'error');
       },
     });

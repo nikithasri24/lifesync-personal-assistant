@@ -31,7 +31,7 @@ export class DataManager {
       }
       return [];
     } catch (error) {
-      console.error(`Error reading ${type} data:`, error);
+      logger.error('Data', `Error reading ${type} data:`, error);
       return [];
     }
   }
@@ -41,7 +41,7 @@ export class DataManager {
       const filePath = this.getFilePath(type);
       await fs.writeJson(filePath, data, { spaces: 2 });
     } catch (error) {
-      console.error(`Error writing ${type} data:`, error);
+      logger.error('Data', `Error writing ${type} data:`, error);
     }
   }
 

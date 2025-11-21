@@ -3,6 +3,8 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import { logger } from '../services/logger';
+
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL!;
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY!;
@@ -14,11 +16,11 @@ async function addTravelCategory() {
   const { data: { user }, error: authError } = await supabase.auth.getUser();
 
   if (authError || !user) {
-    console.error('Authentication error:', authError);
+    logger.error('AddTravelCategory', 'Authentication error:', authError);
     return;
   }
 
-  console.log('Adding Travel category for user:', user.id);
+  logger.info('AddTravelCategory', 'Adding Travel category for user:', user.id);
 
   // Check if Travel category already exists
   const { data: existing, error: checkError } = await supabase
@@ -29,12 +31,12 @@ async function addTravelCategory() {
     .maybeSingle();
 
   if (checkError) {
-    console.error('Error checking for existing category:', checkError);
+    logger.error('AddTravelCategory', 'Error checking for existing category:', checkError);
     return;
   }
 
   if (existing) {
-    console.log('Travel category already exists:', existing.id);
+    logger.info('AddTravelCategory', 'Travel category already exists:', existing.id);
     return;
   }
 
@@ -51,19 +53,19 @@ async function addTravelCategory() {
     .single();
 
   if (error) {
-    console.error('Error adding Travel category:', error);
+    logger.error('AddTravelCategory', 'Error adding Travel category:', error);
     return;
   }
 
-  console.log('✅ Successfully added Travel category:', data);
+  logger.info('AddTravelCategory', '✅ Successfully added Travel category:', data);
 }
 
 addTravelCategory()
   .then(() => {
-    console.log('Script completed');
+    logger.info('AddTravelCategory', 'Script completed');
     process.exit(0);
   })
   .catch((err) => {
-    console.error('Script failed:', err);
+    logger.error('AddTravelCategory', 'Script failed:', err);
     process.exit(1);
   });

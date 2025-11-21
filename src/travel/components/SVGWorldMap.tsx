@@ -5,6 +5,7 @@
 
 import React from 'react';
 import type { VisitStatus } from '../types';
+import { logger } from '../../services/logger';
 
 type SVGWorldMapProps = {
   visitedCountries: Record<string, VisitStatus>;
@@ -70,7 +71,7 @@ const SVGWorldMap: React.FC<SVGWorldMapProps> = ({ visitedCountries, onCountryCl
         setCountries(getStaticCountryPaths());
         setLoading(false);
       } catch (error) {
-        console.error('Error loading map data:', error);
+        logger.error('Error loading map data:', { error });
         // Fallback to static paths
         setCountries(getStaticCountryPaths());
         setLoading(false);

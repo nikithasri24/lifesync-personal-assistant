@@ -1,4 +1,6 @@
 import React from 'react';
+import { logger } from '../../services/logger';
+
 import { Plus, Settings } from 'lucide-react';
 import { currentMonth, monthRange } from '../utils/date';
 import {
@@ -45,17 +47,17 @@ const BudgetsPage: React.FC = () => {
   // Auto-initialize budgets from templates if this month has no budgets
   React.useEffect(() => {
     if (!budgetsLoading && budgets.length === 0 && !initializeBudgetsMutation.isPending) {
-      console.log('[BudgetsPage] No budgets found for', month, '- initializing from templates');
+      logger.info('BudgetsPage', '[BudgetsPage] No budgets found for', month, '- initializing from templates');
       initializeBudgetsMutation.mutate(month, {
         onSuccess: (initialized) => {
           if (initialized > 0) {
-            console.log('[BudgetsPage] Initialized', initialized, 'budgets from templates');
+            logger.info('BudgetsPage', '[BudgetsPage] Initialized', initialized, 'budgets from templates');
           } else {
-            console.log('[BudgetsPage] No templates found to initialize budgets');
+            logger.info('BudgetsPage', '[BudgetsPage] No templates found to initialize budgets');
           }
         },
         onError: (error) => {
-          console.error('[BudgetsPage] Failed to initialize budgets:', error);
+          logger.error('BudgetsPage', '[BudgetsPage] Failed to initialize budgets:', error);
         },
       });
     }
@@ -123,17 +125,17 @@ const BudgetsPage: React.FC = () => {
   const categoryIdForRecommendation = editingBudget?.categoryId || selectedCategoryId;
   const budgetRecommendation = React.useMemo(() => {
     if (!categoryIdForRecommendation) {
-      console.log('[BudgetsPage] No category selected for recommendation');
+      logger.info('BudgetsPage', '[BudgetsPage] No category selected for recommendation');
       return null;
     }
     const rec = calculateBudgetRecommendation(txns, categoryIdForRecommendation, 3);
-    console.log('[BudgetsPage] Budget recommendation for category', categoryIdForRecommendation, ':', rec);
+    logger.info('BudgetsPage', '[BudgetsPage] Budget recommendation for category', categoryIdForRecommendation, ':', rec);
     return rec;
   }, [txns, categoryIdForRecommendation]);
 
   // Handlers
   const handleCreateBudget = () => {
-    console.log('[BudgetsPage] Opening bulk budget editor');
+    logger.info('BudgetsPage', '[BudgetsPage] Opening bulk budget editor');
     setBulkEditorOpen(true);
   };
 
@@ -151,7 +153,7 @@ const BudgetsPage: React.FC = () => {
 
   const handleSaveBulkBudgets = async (budgets: Array<{ categoryId: string; month: string; limit: number }>) => {
     const api = await getFinanceAPI();
-    console.log('[BudgetsPage] Saving', budgets.length, 'budgets');
+    logger.info('BudgetsPage', '[BudgetsPage] Saving', budgets.length, 'budgets');
     // Save all budgets
     for (const budget of budgets) {
       await api.upsertBudget(budget);
@@ -161,7 +163,7 @@ const BudgetsPage: React.FC = () => {
 
   const handleSaveTemplates = async (templates: Array<{ categoryId: string; defaultAmount: number }>) => {
     const api = await getFinanceAPI();
-    console.log('[BudgetsPage] Saving', templates.length, 'templates');
+    logger.info('BudgetsPage', '[BudgetsPage] Saving', templates.length, 'templates');
     // Save all templates
     for (const template of templates) {
       await api.upsertBudgetTemplate(template);

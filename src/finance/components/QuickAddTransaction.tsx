@@ -7,6 +7,7 @@
 import React from 'react';
 import { Button } from '../ui/Button';
 import { getFinanceAPI } from '../data';
+import { logger } from '../../services/logger';
 
 interface QuickAddTransactionProps {
   onClose: () => void;
@@ -36,7 +37,7 @@ export const QuickAddTransaction: React.FC<QuickAddTransactionProps> = ({ onClos
           setFormData(prev => ({ ...prev, accountId: accts[0].id }));
         }
       } catch (error) {
-        console.error('Failed to load accounts:', error);
+        logger.error('Failed to load accounts:', { error });
       }
     }
     loadAccounts();
@@ -60,7 +61,7 @@ export const QuickAddTransaction: React.FC<QuickAddTransactionProps> = ({ onClos
       onSuccess();
       onClose();
     } catch (error) {
-      console.error('Failed to add transaction:', error);
+      logger.error('Failed to add transaction:', { error });
       alert('Failed to add transaction. Check console for details.');
     } finally {
       setLoading(false);

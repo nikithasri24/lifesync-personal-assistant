@@ -11,6 +11,7 @@ import ProductFormModal from '../components/ProductFormModal';
 import RoutineEditorModal from '../components/RoutineEditorModal';
 import { skincareAPI } from '../data';
 import type { SkincareProduct, SkincareProductInput, SkincareRoutine, SkincareRoutineInput, SkincareLog } from '../types';
+import { logger } from '../../services/logger';
 
 type ViewType = 'journal' | 'products';
 
@@ -53,7 +54,7 @@ const SkincarePage: React.FC = () => {
       setRoutines(routinesData);
       setLogs(logsData.items);
     } catch (error) {
-      console.error('Error loading skincare data:', error);
+      logger.error('Error loading skincare data:', { error });
     } finally {
       setLoading(false);
     }
@@ -107,7 +108,7 @@ const SkincarePage: React.FC = () => {
         setLogs([newLog, ...logs]);
       }
     } catch (error) {
-      console.error('Error toggling completion:', error);
+      logger.error('Error toggling completion:', { error });
     }
   };
 
@@ -144,7 +145,7 @@ const SkincarePage: React.FC = () => {
       setShowProductModal(false);
       setEditingProduct(undefined);
     } catch (error) {
-      console.error('Error saving product:', error);
+      logger.error('Error saving product:', { error });
       alert('Failed to save product. Please try again.');
     }
   };
@@ -155,7 +156,7 @@ const SkincarePage: React.FC = () => {
       await skincareAPI.deleteProduct(id);
       setProducts(products.filter(p => p.id !== id));
     } catch (error) {
-      console.error('Error deleting product:', error);
+      logger.error('Error deleting product:', { error });
     }
   };
 
@@ -170,7 +171,7 @@ const SkincarePage: React.FC = () => {
       });
       setRoutines([...routines, newRoutine]);
     } catch (error) {
-      console.error('Error creating routine:', error);
+      logger.error('Error creating routine:', { error });
       alert('Failed to create routine. Please try again.');
     }
   };
@@ -189,7 +190,7 @@ const SkincarePage: React.FC = () => {
       setShowRoutineEditor(false);
       setEditingRoutine(undefined);
     } catch (error) {
-      console.error('Error saving routine:', error);
+      logger.error('Error saving routine:', { error });
       alert('Failed to save routine. Please try again.');
     }
   };
@@ -202,7 +203,7 @@ const SkincarePage: React.FC = () => {
       setShowRoutineEditor(false);
       setEditingRoutine(undefined);
     } catch (error) {
-      console.error('Error deleting routine:', error);
+      logger.error('Error deleting routine:', { error });
     }
   };
 

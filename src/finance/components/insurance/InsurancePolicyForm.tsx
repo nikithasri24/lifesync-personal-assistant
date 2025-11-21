@@ -6,6 +6,7 @@
 import React from 'react';
 import { X } from 'lucide-react';
 import type { InsurancePolicy, InsurancePolicyInput } from '../../types';
+import { logger } from '../../../services/logger';
 
 interface InsurancePolicyFormProps {
   policy?: InsurancePolicy;
@@ -18,7 +19,7 @@ export const InsurancePolicyForm: React.FC<InsurancePolicyFormProps> = ({
   onSave,
   onCancel,
 }) => {
-  console.log('InsurancePolicyForm rendered', { policy, showingForm: true });
+  logger.debug('InsurancePolicyForm rendered', { policy, showingForm: true });
 
   const [formData, setFormData] = React.useState<InsurancePolicyInput>({
     policyName: policy?.policyName || '',

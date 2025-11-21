@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import { CheckCircle2, Circle, Plus, Trash2, Calendar, Award } from 'lucide-react';
 import { addMilestone, updateMilestone, deleteMilestone, updateLifeGoal } from '../api/lifeGoalsAPI';
 import type { LifeGoalMilestone, LifeGoal } from '../types/lifeGoals';
+import { logger } from '../../services/logger';
 
 interface GoalMilestonesProps {
   goal: LifeGoal;
@@ -45,7 +46,7 @@ const GoalMilestones: React.FC<GoalMilestonesProps> = ({ goal, milestones, onMil
 
       onMilestonesUpdated(updatedGoal, updatedMilestones);
     } catch (error) {
-      console.error('Error updating milestone:', error);
+      logger.error('Error updating milestone:', { error });
       alert('Failed to update milestone');
     }
   };
@@ -70,7 +71,7 @@ const GoalMilestones: React.FC<GoalMilestonesProps> = ({ goal, milestones, onMil
       setNewMilestoneDate('');
       setShowAddForm(false);
     } catch (error) {
-      console.error('Error adding milestone:', error);
+      logger.error('Error adding milestone:', { error });
       alert('Failed to add milestone');
     }
   };
@@ -95,7 +96,7 @@ const GoalMilestones: React.FC<GoalMilestonesProps> = ({ goal, milestones, onMil
         onMilestonesUpdated(goal, updatedMilestones);
       }
     } catch (error) {
-      console.error('Error deleting milestone:', error);
+      logger.error('Error deleting milestone:', { error });
       alert('Failed to delete milestone');
     }
   };

@@ -23,6 +23,7 @@ import {
 import { apiClient } from '../services/apiClient';
 import { expenseCategorizationEngine, type CategorySuggestion } from '../services/expenseCategorizationEngine';
 import type { FinancialTransactionData } from '../services/types';
+import { logger } from '../services/logger';
 
 interface TransactionCategorization {
   transaction: FinancialTransactionData;
@@ -62,7 +63,7 @@ export default function SmartExpenseCategorizer() {
       setTransactions(recentTransactions);
       processCategorizations(recentTransactions);
     } catch (error) {
-      console.error('Failed to load transactions:', error);
+      logger.error('Failed to load transactions:', { error });
     } finally {
       setLoading(false);
     }
@@ -93,7 +94,7 @@ export default function SmartExpenseCategorizer() {
       setPotentialBills(bills);
 
     } catch (error) {
-      console.error('Failed to process categorizations:', error);
+      logger.error('Failed to process categorizations:', { error });
     } finally {
       setProcessing(false);
     }
@@ -120,7 +121,7 @@ export default function SmartExpenseCategorizer() {
       }
 
     } catch (error) {
-      console.error('Failed to update transaction category:', error);
+      logger.error('Failed to update transaction category:', { error });
     }
   };
 
@@ -140,7 +141,7 @@ export default function SmartExpenseCategorizer() {
       await Promise.all(updates);
 
     } catch (error) {
-      console.error('Failed to bulk categorize:', error);
+      logger.error('Failed to bulk categorize:', { error });
     } finally {
       setProcessing(false);
     }

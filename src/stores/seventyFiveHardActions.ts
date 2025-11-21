@@ -6,6 +6,8 @@
  */
 
 import { startOfDay, addDays, differenceInDays, isSameDay, format, subDays } from 'date-fns';
+import { logger } from '../services/logger';
+
 import { ensureSupabase } from '../lib/supabase';
 import {
   mapRowToChallenge as mapRow,
@@ -28,7 +30,7 @@ function measurePerformance<T>(name: string, fn: () => Promise<T>): Promise<T> {
   const start = performance.now();
   return fn().then(result => {
     const duration = performance.now() - start;
-    console.log(`[Perf] ${name}: ${duration.toFixed(2)}ms`);
+    logger.info('Perf', `${name}: ${duration.toFixed(2)}ms`);
     return result;
   });
 }
@@ -42,11 +44,11 @@ const setStore = (updates: any) => useRealAppStore.setState(updates);
  */
 export async function startSFHChallenge(tasks: Omit<Task, 'id'>[]) {
   try {
-    console.log('[75Hard] Starting new challenge...');
+    logger.info('SeventyFiveHardActions', '[75Hard] Starting new challenge...');
 
     const validationError = validate(tasks);
     if (validationError) {
-      console.error('[75Hard] Validation error:', validationError);
+      logger.error('SeventyFiveHardActions', '[75Hard] Validation error:', validationError);
       return { success: false, error: validationError };
     }
 
@@ -64,7 +66,7 @@ export async function startSFHChallenge(tasks: Omit<Task, 'id'>[]) {
       .maybeSingle();
 
     if (existing) {
-      console.error('[75Hard] User already has active challenge');
+      logger.error('SeventyFiveHardActions', '[75Hard] User already has active challenge');
       return { success: false, error: 'You already have an active challenge' };
     }
 
@@ -91,7 +93,7 @@ export async function startSFHChallenge(tasks: Omit<Task, 'id'>[]) {
       .single();
 
     if (challengeError) {
-      console.error('[75Hard] Error creating challenge:', challengeError);
+      logger.error('SeventyFiveHardActions', '[75Hard] Error creating challenge:', challengeError);
       return { success: false, error: 'Failed to create challenge' };
     }
 
@@ -109,18 +111,18 @@ export async function startSFHChallenge(tasks: Omit<Task, 'id'>[]) {
       .insert(checkInData);
 
     if (checkInError) {
-      console.error('[75Hard] Error creating check-in:', checkInError);
+      logger.error('SeventyFiveHardActions', '[75Hard] Error creating check-in:', checkInError);
       await supabase.from('sfh_challenge').delete().eq('id', newChallenge.id);
       return { success: false, error: 'Failed to create daily check-in' };
     }
 
-    console.log('[75Hard] ✅ Challenge created successfully');
+    logger.info('SeventyFiveHardActions', '[75Hard] ✅ Challenge created successfully');
 
     await loadSFHChallenge();
 
     return { success: true };
   } catch (error) {
-    console.error('[75Hard] Unexpected error:', error);
+    logger.error('SeventyFiveHardActions', '[75Hard] Unexpected error:', error);
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -134,12 +136,12 @@ export async function startSFHChallenge(tasks: Omit<Task, 'id'>[]) {
 export async function loadSFHChallenge() {
   return measurePerformance('loadSFHChallenge', async () => {
     try {
-      console.log('[75Hard] Loading challenge...');
+      logger.info('SeventyFiveHardActions', '[75Hard] Loading challenge...');
 
       const supabase = ensureSupabase();
       const user = (await supabase.auth.getUser()).data.user;
       if (!user) {
-        console.log('[75Hard] Not authenticated');
+        logger.info('SeventyFiveHardActions', '[75Hard] Not authenticated');
         setStore({ sfhChallenge: null, sfhCheckIns: [] });
         return;
       }
@@ -153,12 +155,12 @@ export async function loadSFHChallenge() {
         .maybeSingle();
 
       if (challengeError) {
-        console.error('[75Hard] Error loading challenge:', challengeError);
+        logger.error('SeventyFiveHardActions', '[75Hard] Error loading challenge:', challengeError);
         return;
       }
 
       if (!challengeRow) {
-        console.log('[75Hard] No active challenge found');
+        logger.info('SeventyFiveHardActions', '[75Hard] No active challenge found');
         setStore({ sfhChallenge: null, sfhCheckIns: [] });
         return;
       }
@@ -178,13 +180,13 @@ export async function loadSFHChallenge() {
         .order('date', { ascending: false });
 
       if (checkInsError) {
-        console.error('[75Hard] Error loading check-ins:', checkInsError);
+        logger.error('SeventyFiveHardActions', '[75Hard] Error loading check-ins:', checkInsError);
         return;
       }
 
       const checkIns = (checkInRows || []).map((row: CheckInRow) => mapCheckIn(row));
 
-      console.log('[75Hard] ✅ Loaded challenge:', challenge.id, 'with', checkIns.length, 'recent check-ins (7-day window)');
+      logger.info('SeventyFiveHardActions', '[75Hard] ✅ Loaded challenge:', challenge.id, 'with', checkIns.length, 'recent check-ins (7-day window)');
 
       setStore({
         sfhChallenge: challenge,
@@ -200,7 +202,7 @@ export async function loadSFHChallenge() {
       // Todos are now created lazily when user visits 75 Hard page
       await checkForMissedSFHDay();
     } catch (error) {
-      console.error('[75Hard] Unexpected error loading challenge:', error);
+      logger.error('SeventyFiveHardActions', '[75Hard] Unexpected error loading challenge:', error);
     }
   });
 }
@@ -213,7 +215,7 @@ export async function loadSFHCheckInsRange(startDate: Date, endDate: Date) {
   return measurePerformance('loadSFHCheckInsRange', async () => {
     const { sfhChallenge: challenge, sfhCheckIns: existingCheckIns, sfhCheckInsLoadedRange } = getStore();
     if (!challenge) {
-      console.log('[75Hard] No active challenge, skipping range load');
+      logger.info('SeventyFiveHardActions', '[75Hard] No active challenge, skipping range load');
       return;
     }
 
@@ -221,12 +223,12 @@ export async function loadSFHCheckInsRange(startDate: Date, endDate: Date) {
     if (sfhCheckInsLoadedRange) {
       const { from, to } = sfhCheckInsLoadedRange;
       if (from && to && startDate >= from && endDate <= to) {
-        console.log('[75Hard] Range already loaded:', format(startDate, 'yyyy-MM-dd'), 'to', format(endDate, 'yyyy-MM-dd'));
+        logger.info('SeventyFiveHardActions', '[75Hard] Range already loaded:', format(startDate, 'yyyy-MM-dd'), 'to', format(endDate, 'yyyy-MM-dd'));
         return;
       }
     }
 
-    console.log('[75Hard] Loading check-ins for range:', format(startDate, 'yyyy-MM-dd'), 'to', format(endDate, 'yyyy-MM-dd'));
+    logger.info('SeventyFiveHardActions', '[75Hard] Loading check-ins for range:', format(startDate, 'yyyy-MM-dd'), 'to', format(endDate, 'yyyy-MM-dd'));
 
     const supabase = ensureSupabase();
     const { data: checkInRows, error } = await supabase
@@ -238,7 +240,7 @@ export async function loadSFHCheckInsRange(startDate: Date, endDate: Date) {
       .order('date', { ascending: false });
 
     if (error) {
-      console.error('[75Hard] Error loading check-ins range:', error);
+      logger.error('SeventyFiveHardActions', '[75Hard] Error loading check-ins range:', error);
       return;
     }
 
@@ -268,7 +270,7 @@ export async function loadSFHCheckInsRange(startDate: Date, endDate: Date) {
       }
     });
 
-    console.log('[75Hard] ✅ Loaded', uniqueNewCheckIns.length, 'new check-ins. Total:', mergedCheckIns.length);
+    logger.info('SeventyFiveHardActions', '[75Hard] ✅ Loaded', uniqueNewCheckIns.length, 'new check-ins. Total:', mergedCheckIns.length);
   });
 }
 
@@ -284,13 +286,13 @@ export async function checkForMissedSFHDay() {
   const challengeStartDate = startOfDay(challenge.startDate);
 
   // Debug logging
-  console.log('[75Hard] checkForMissedDay - today:', format(today, 'yyyy-MM-dd'));
-  console.log('[75Hard] checkForMissedDay - yesterday:', format(yesterday, 'yyyy-MM-dd'));
-  console.log('[75Hard] checkForMissedDay - challenge.startDate:', format(challengeStartDate, 'yyyy-MM-dd'));
+  logger.info('SeventyFiveHardActions', '[75Hard] checkForMissedDay - today:', format(today, 'yyyy-MM-dd'));
+  logger.info('SeventyFiveHardActions', '[75Hard] checkForMissedDay - yesterday:', format(yesterday, 'yyyy-MM-dd'));
+  logger.info('SeventyFiveHardActions', '[75Hard] checkForMissedDay - challenge.startDate:', format(challengeStartDate, 'yyyy-MM-dd'));
 
   // If yesterday is before the start date, no need to check (challenge started today)
   if (yesterday < challengeStartDate) {
-    console.log('[75Hard] Challenge started today, no check needed');
+    logger.info('SeventyFiveHardActions', '[75Hard] Challenge started today, no check needed');
     return;
   }
 
@@ -299,21 +301,21 @@ export async function checkForMissedSFHDay() {
   let failureDetected = false;
 
   if (!yesterdayCheckIn) {
-    console.log('[75Hard] No check-in for yesterday - failure detected');
+    logger.info('SeventyFiveHardActions', '[75Hard] No check-in for yesterday - failure detected');
     failureDetected = true;
   } else {
     const allComplete = yesterdayCheckIn.taskCompletions.every(tc => tc.completed);
     if (!allComplete) {
-      console.log('[75Hard] Yesterday incomplete - failure detected');
+      logger.info('SeventyFiveHardActions', '[75Hard] Yesterday incomplete - failure detected');
       failureDetected = true;
     }
   }
 
   if (failureDetected) {
-    console.log('[75Hard] Showing failure prompt');
+    logger.info('SeventyFiveHardActions', '[75Hard] Showing failure prompt');
     setStore({ sfhShowFailurePrompt: true, sfhFailureDate: yesterday });
   } else {
-    console.log('[75Hard] Yesterday complete - ensure today check-in');
+    logger.info('SeventyFiveHardActions', '[75Hard] Yesterday complete - ensure today check-in');
     await ensureTodaySFHCheckIn();
   }
 }
@@ -324,7 +326,7 @@ export async function checkForMissedSFHDay() {
 export async function handleSFHFailureResponse(completed: boolean) {
   const { sfhChallenge: challenge, sfhFailureDate: failureDate } = getStore();
   if (!challenge || !failureDate) {
-    console.error('[75Hard] handleSFHFailureResponse called without challenge or failure date');
+    logger.error('SeventyFiveHardActions', '[75Hard] handleSFHFailureResponse called without challenge or failure date');
     return;
   }
 
@@ -336,7 +338,7 @@ export async function handleSFHFailureResponse(completed: boolean) {
 
   try {
     if (completed) {
-      console.log('[75Hard] User confirmed yesterday complete - creating check-in');
+      logger.info('SeventyFiveHardActions', '[75Hard] User confirmed yesterday complete - creating check-in');
 
       const allTasksComplete = challenge.tasks.map(t => ({
         taskId: t.id,
@@ -356,11 +358,11 @@ export async function handleSFHFailureResponse(completed: boolean) {
         });
 
       if (yesterdayError) {
-        console.error('[75Hard] Failed to create yesterday check-in:', yesterdayError);
+        logger.error('SeventyFiveHardActions', '[75Hard] Failed to create yesterday check-in:', yesterdayError);
         throw yesterdayError;
       }
 
-      console.log('[75Hard] Created yesterday check-in, now ensuring today check-in');
+      logger.info('SeventyFiveHardActions', '[75Hard] Created yesterday check-in, now ensuring today check-in');
 
       // Now create today's check-in
       const todayDayNumber = differenceInDays(today, challenge.startDate) + 1;
@@ -376,14 +378,14 @@ export async function handleSFHFailureResponse(completed: boolean) {
         });
 
       if (todayError) {
-        console.error('[75Hard] Failed to create today check-in:', todayError);
+        logger.error('SeventyFiveHardActions', '[75Hard] Failed to create today check-in:', todayError);
         throw todayError;
       }
 
-      console.log('[75Hard] Created today check-in');
+      logger.info('SeventyFiveHardActions', '[75Hard] Created today check-in');
     } else {
-      console.log('[75Hard] User confirmed failure - resetting challenge');
-      console.log('[75Hard] Resetting to start_date:', format(today, 'yyyy-MM-dd'));
+      logger.info('SeventyFiveHardActions', '[75Hard] User confirmed failure - resetting challenge');
+      logger.info('SeventyFiveHardActions', '[75Hard] Resetting to start_date:', format(today, 'yyyy-MM-dd'));
 
       // Step 1: Delete ALL check-ins first
       const { error: deleteError } = await supabase
@@ -392,11 +394,11 @@ export async function handleSFHFailureResponse(completed: boolean) {
         .eq('challenge_id', challenge.id);
 
       if (deleteError) {
-        console.error('[75Hard] Failed to delete check-ins:', deleteError);
+        logger.error('SeventyFiveHardActions', '[75Hard] Failed to delete check-ins:', deleteError);
         throw deleteError;
       }
 
-      console.log('[75Hard] Deleted all check-ins');
+      logger.info('SeventyFiveHardActions', '[75Hard] Deleted all check-ins');
 
       // Step 2: Update challenge start_date to today
       const { data: updatedChallenge, error: updateError } = await supabase
@@ -410,17 +412,17 @@ export async function handleSFHFailureResponse(completed: boolean) {
         .single();
 
       if (updateError) {
-        console.error('[75Hard] Failed to update challenge:', updateError);
+        logger.error('SeventyFiveHardActions', '[75Hard] Failed to update challenge:', updateError);
         throw updateError;
       }
 
       if (!updatedChallenge) {
-        console.error('[75Hard] Update returned no data - possible RLS issue');
+        logger.error('SeventyFiveHardActions', '[75Hard] Update returned no data - possible RLS issue');
         throw new Error('Failed to verify challenge update');
       }
 
-      console.log('[75Hard] Updated challenge start_date to', format(today, 'yyyy-MM-dd'));
-      console.log('[75Hard] Verified updated challenge:', updatedChallenge.start_date, 'current_day:', updatedChallenge.current_day);
+      logger.info('SeventyFiveHardActions', '[75Hard] Updated challenge start_date to', format(today, 'yyyy-MM-dd'));
+      logger.info('SeventyFiveHardActions', '[75Hard] Verified updated challenge:', updatedChallenge.start_date, 'current_day:', updatedChallenge.current_day);
 
       // Step 3: Create today's check-in for the fresh start
       const taskCompletions = createTasks(challenge.tasks);
@@ -434,18 +436,18 @@ export async function handleSFHFailureResponse(completed: boolean) {
         });
 
       if (insertError) {
-        console.error('[75Hard] Failed to create today check-in:', insertError);
+        logger.error('SeventyFiveHardActions', '[75Hard] Failed to create today check-in:', insertError);
         throw insertError;
       }
 
-      console.log('[75Hard] Created today check-in for fresh start');
+      logger.info('SeventyFiveHardActions', '[75Hard] Created today check-in for fresh start');
     }
 
     // Load challenge once at the end
-    console.log('[75Hard] Reloading challenge after handling failure response');
+    logger.info('SeventyFiveHardActions', '[75Hard] Reloading challenge after handling failure response');
     await loadSFHChallenge();
   } catch (error) {
-    console.error('[75Hard] Error in handleSFHFailureResponse:', error);
+    logger.error('SeventyFiveHardActions', '[75Hard] Error in handleSFHFailureResponse:', error);
     // Show error to user
     getStore().showGlobalToast?.('Failed to process response. Please try again.', 'error');
     // Reload challenge anyway to get current state
@@ -468,7 +470,7 @@ export async function ensureTodaySFHCheckIn() {
     const todayCheckIn = checkIns.find(c => isSameDay(c.date, today));
 
     if (!todayCheckIn) {
-      console.log('[75Hard] Creating today check-in');
+      logger.info('SeventyFiveHardActions', '[75Hard] Creating today check-in');
 
       const supabase = ensureSupabase();
       const taskCompletions = createTasks(challenge.tasks);
@@ -502,12 +504,12 @@ export async function ensureTodaySFHCheckIn() {
 
         const mappedCheckIn = mapCheckIn(newCheckIn as CheckInRow);
         setStore({ sfhCheckIns: [...checkIns, mappedCheckIn] });
-        console.log('[75Hard] Today check-in created and added to store');
+        logger.info('SeventyFiveHardActions', '[75Hard] Today check-in created and added to store');
 
         // OPTIMIZATION REMOVED: We no longer call ensureSFHTodosForToday() here
         // Todos will be created lazily when user visits the 75 Hard page
         // This saves ~750ms on app load for users who don't use 75 Hard
-        console.log('[75Hard] Todos will be created when 75 Hard page loads (lazy loading)');
+        logger.info('SeventyFiveHardActions', '[75Hard] Todos will be created when 75 Hard page loads (lazy loading)');
       }
     }
   });
@@ -553,7 +555,7 @@ function cleanExpiredCacheEntries() {
   expiredKeys.forEach(key => todoCreationCache.delete(key));
 
   if (expiredKeys.length > 0) {
-    console.log(`[75Hard→Todo] 🧹 Cleaned ${expiredKeys.length} expired cache entries`);
+    logger.info('75Hard→Todo', `🧹 Cleaned ${expiredKeys.length} expired cache entries`);
   }
 }
 
@@ -563,13 +565,13 @@ function cleanExpiredCacheEntries() {
 export async function toggleSFHTask(taskId: string) {
   // Prevent concurrent toggles of the same task
   if (togglingTasks.has(taskId)) {
-    console.log('[75Hard] Task toggle already in progress, ignoring duplicate request');
+    logger.info('SeventyFiveHardActions', '[75Hard] Task toggle already in progress, ignoring duplicate request');
     return;
   }
 
   const { sfhChallenge: challenge, sfhCheckIns: checkIns } = getStore();
   if (!challenge) {
-    console.error('[75Hard] toggleSFHTask called without challenge');
+    logger.error('SeventyFiveHardActions', '[75Hard] toggleSFHTask called without challenge');
     return;
   }
 
@@ -577,7 +579,7 @@ export async function toggleSFHTask(taskId: string) {
   const todayCheckIn = checkIns.find(c => isSameDay(c.date, today));
 
   if (!todayCheckIn) {
-    console.error('[75Hard] No check-in for today');
+    logger.error('SeventyFiveHardActions', '[75Hard] No check-in for today');
     getStore().showGlobalToast?.('No check-in found for today. Please refresh the page.', 'error');
     return;
   }
@@ -613,7 +615,7 @@ export async function toggleSFHTask(taskId: string) {
       .eq('id', todayCheckIn.id);
 
     if (error) {
-      console.error('[75Hard] Failed to toggle task:', error);
+      logger.error('SeventyFiveHardActions', '[75Hard] Failed to toggle task:', error);
       // Revert optimistic update
       setStore({
         sfhCheckIns: checkIns
@@ -626,7 +628,7 @@ export async function toggleSFHTask(taskId: string) {
     const allComplete = updatedCompletions.every(tc => tc.completed);
 
     if (allComplete) {
-      console.log('[75Hard] ✅ All tasks complete for today!');
+      logger.info('SeventyFiveHardActions', '[75Hard] ✅ All tasks complete for today!');
       setStore({ sfhShowDayCompleteMessage: true });
 
       setTimeout(() => {
@@ -637,7 +639,7 @@ export async function toggleSFHTask(taskId: string) {
       await create75HardJournalEntry(challenge.currentDay);
 
       if (challenge.currentDay === constants.TOTAL_DAYS) {
-        console.log('[75Hard] 🎉 Challenge complete!');
+        logger.info('SeventyFiveHardActions', '[75Hard] 🎉 Challenge complete!');
         await completeSFHChallenge();
       }
       // Note: Don't increment current_day here - it will be updated when tomorrow's check-in is created
@@ -647,7 +649,7 @@ export async function toggleSFHTask(taskId: string) {
     // directly update the corresponding todo's completion status
     await syncSingleTodoCompletion(taskId, updatedCompletions.find(tc => tc.taskId === taskId)!.completed);
   } catch (error) {
-    console.error('[75Hard] Error in toggleSFHTask:', error);
+    logger.error('SeventyFiveHardActions', '[75Hard] Error in toggleSFHTask:', error);
     // Revert optimistic update
     setStore({
       sfhCheckIns: checkIns
@@ -712,7 +714,7 @@ export async function uploadSFHPhoto(file: File) {
       };
     }
 
-    console.log('[75Hard] Uploading photo...');
+    logger.info('SeventyFiveHardActions', '[75Hard] Uploading photo...');
 
     const supabase = ensureSupabase();
 
@@ -727,7 +729,7 @@ export async function uploadSFHPhoto(file: File) {
       });
 
     if (error) {
-      console.error('[75Hard] Error uploading photo:', error);
+      logger.error('SeventyFiveHardActions', '[75Hard] Error uploading photo:', error);
 
       // Check if bucket doesn't exist
       if (error.message?.includes('Bucket not found')) {
@@ -754,7 +756,7 @@ export async function uploadSFHPhoto(file: File) {
       .eq('id', todayCheckIn.id);
 
     if (updateError) {
-      console.error('[75Hard] Failed to update photo URL in database:', updateError);
+      logger.error('SeventyFiveHardActions', '[75Hard] Failed to update photo URL in database:', updateError);
       return { success: false, error: 'Failed to save photo' };
     }
 
@@ -764,10 +766,10 @@ export async function uploadSFHPhoto(file: File) {
       ),
     });
 
-    console.log('[75Hard] ✅ Photo uploaded successfully');
+    logger.info('SeventyFiveHardActions', '[75Hard] ✅ Photo uploaded successfully');
     return { success: true };
   } catch (error) {
-    console.error('[75Hard] Unexpected error uploading photo:', error);
+    logger.error('SeventyFiveHardActions', '[75Hard] Unexpected error uploading photo:', error);
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -778,7 +780,7 @@ export async function uploadSFHPhoto(file: File) {
 export async function updateSFHCheckInNotes(notes: string) {
   const { sfhChallenge: challenge, sfhCheckIns: checkIns } = getStore();
   if (!challenge) {
-    console.error('[75Hard] updateSFHCheckInNotes called without challenge');
+    logger.error('SeventyFiveHardActions', '[75Hard] updateSFHCheckInNotes called without challenge');
     return;
   }
 
@@ -786,7 +788,7 @@ export async function updateSFHCheckInNotes(notes: string) {
   const todayCheckIn = checkIns.find(c => isSameDay(c.date, today));
 
   if (!todayCheckIn) {
-    console.error('[75Hard] No check-in for today');
+    logger.error('SeventyFiveHardActions', '[75Hard] No check-in for today');
     return;
   }
 
@@ -807,12 +809,12 @@ export async function updateSFHCheckInNotes(notes: string) {
       .eq('id', todayCheckIn.id);
 
     if (error) {
-      console.error('[75Hard] Failed to update notes:', error);
+      logger.error('SeventyFiveHardActions', '[75Hard] Failed to update notes:', error);
       // Revert optimistic update
       setStore({ sfhCheckIns: checkIns });
     }
   } catch (error) {
-    console.error('[75Hard] Error in updateSFHCheckInNotes:', error);
+    logger.error('SeventyFiveHardActions', '[75Hard] Error in updateSFHCheckInNotes:', error);
     // Revert optimistic update
     setStore({ sfhCheckIns: checkIns });
   }
@@ -824,7 +826,7 @@ export async function updateSFHCheckInNotes(notes: string) {
 export async function updateSFHCheckInWeight(weight: number) {
   const { sfhChallenge: challenge, sfhCheckIns: checkIns } = getStore();
   if (!challenge) {
-    console.error('[75Hard] updateSFHCheckInWeight called without challenge');
+    logger.error('SeventyFiveHardActions', '[75Hard] updateSFHCheckInWeight called without challenge');
     return;
   }
 
@@ -832,7 +834,7 @@ export async function updateSFHCheckInWeight(weight: number) {
   const todayCheckIn = checkIns.find(c => isSameDay(c.date, today));
 
   if (!todayCheckIn) {
-    console.error('[75Hard] No check-in for today');
+    logger.error('SeventyFiveHardActions', '[75Hard] No check-in for today');
     return;
   }
 
@@ -854,12 +856,12 @@ export async function updateSFHCheckInWeight(weight: number) {
       .eq('id', todayCheckIn.id);
 
     if (error) {
-      console.error('[75Hard] Failed to update weight:', error);
+      logger.error('SeventyFiveHardActions', '[75Hard] Failed to update weight:', error);
       // Revert optimistic update
       setStore({ sfhCheckIns: checkIns });
     }
   } catch (error) {
-    console.error('[75Hard] Error in updateSFHCheckInWeight:', error);
+    logger.error('SeventyFiveHardActions', '[75Hard] Error in updateSFHCheckInWeight:', error);
     // Revert optimistic update
     setStore({ sfhCheckIns: checkIns });
   }
@@ -871,11 +873,11 @@ export async function updateSFHCheckInWeight(weight: number) {
 export async function resetSFHChallenge() {
   const { sfhChallenge: challenge } = getStore();
   if (!challenge) {
-    console.error('[75Hard] resetSFHChallenge called without challenge');
+    logger.error('SeventyFiveHardActions', '[75Hard] resetSFHChallenge called without challenge');
     return;
   }
 
-  console.log('[75Hard] Resetting challenge...');
+  logger.info('SeventyFiveHardActions', '[75Hard] Resetting challenge...');
 
   const today = startOfDay(new Date());
   const supabase = ensureSupabase();
@@ -888,11 +890,11 @@ export async function resetSFHChallenge() {
       .eq('challenge_id', challenge.id);
 
     if (deleteError) {
-      console.error('[75Hard] Failed to delete check-ins during reset:', deleteError);
+      logger.error('SeventyFiveHardActions', '[75Hard] Failed to delete check-ins during reset:', deleteError);
       throw deleteError;
     }
 
-    console.log('[75Hard] Deleted all check-ins for fresh start');
+    logger.info('SeventyFiveHardActions', '[75Hard] Deleted all check-ins for fresh start');
 
     // Step 2: Update challenge
     const { data: updatedChallenge, error: updateError } = await supabase
@@ -906,17 +908,17 @@ export async function resetSFHChallenge() {
       .single();
 
     if (updateError) {
-      console.error('[75Hard] Failed to update challenge during reset:', updateError);
+      logger.error('SeventyFiveHardActions', '[75Hard] Failed to update challenge during reset:', updateError);
       throw updateError;
     }
 
     if (!updatedChallenge) {
-      console.error('[75Hard] Update returned no data during reset - possible RLS issue');
+      logger.error('SeventyFiveHardActions', '[75Hard] Update returned no data during reset - possible RLS issue');
       throw new Error('Failed to verify challenge update during reset');
     }
 
-    console.log('[75Hard] Updated challenge to start today');
-    console.log('[75Hard] Verified: start_date =', updatedChallenge.start_date, 'current_day =', updatedChallenge.current_day);
+    logger.info('SeventyFiveHardActions', '[75Hard] Updated challenge to start today');
+    logger.info('SeventyFiveHardActions', '[75Hard] Verified: start_date =', updatedChallenge.start_date, 'current_day =', updatedChallenge.current_day);
 
     // Step 3: Create today's check-in
     const taskCompletions = createTasks(challenge.tasks);
@@ -930,15 +932,15 @@ export async function resetSFHChallenge() {
       });
 
     if (insertError) {
-      console.error('[75Hard] Failed to create today check-in during reset:', insertError);
+      logger.error('SeventyFiveHardActions', '[75Hard] Failed to create today check-in during reset:', insertError);
       throw insertError;
     }
 
-    console.log('[75Hard] ✅ Challenge reset complete');
+    logger.info('SeventyFiveHardActions', '[75Hard] ✅ Challenge reset complete');
 
     await loadSFHChallenge();
   } catch (error) {
-    console.error('[75Hard] Error in resetSFHChallenge:', error);
+    logger.error('SeventyFiveHardActions', '[75Hard] Error in resetSFHChallenge:', error);
     getStore().showGlobalToast?.('Failed to reset challenge. Please try again.', 'error');
     await loadSFHChallenge();
   }
@@ -951,7 +953,7 @@ export async function completeSFHChallenge() {
   const { sfhChallenge: challenge } = getStore();
   if (!challenge) return;
 
-  console.log('[75Hard] 🎉 Completing challenge...');
+  logger.info('SeventyFiveHardActions', '[75Hard] 🎉 Completing challenge...');
 
   const completedAt = new Date();
   const supabase = ensureSupabase();
@@ -969,7 +971,7 @@ export async function completeSFHChallenge() {
 
   await loadSFHChallenge();
 
-  console.log('[75Hard] ✅ Challenge completed!');
+  logger.info('SeventyFiveHardActions', '[75Hard] ✅ Challenge completed!');
 }
 
 /**
@@ -979,11 +981,11 @@ export async function completeSFHChallenge() {
 export async function deleteSFHChallenge() {
   const { sfhChallenge: challenge } = getStore();
   if (!challenge) {
-    console.error('[75Hard] deleteSFHChallenge called without challenge');
+    logger.error('SeventyFiveHardActions', '[75Hard] deleteSFHChallenge called without challenge');
     return { success: false, error: 'No active challenge to delete' };
   }
 
-  console.log('[75Hard] Deleting challenge...');
+  logger.info('SeventyFiveHardActions', '[75Hard] Deleting challenge...');
 
   const supabase = ensureSupabase();
 
@@ -995,11 +997,11 @@ export async function deleteSFHChallenge() {
       .eq('challenge_id', challenge.id);
 
     if (deleteCheckInsError) {
-      console.error('[75Hard] Failed to delete check-ins:', deleteCheckInsError);
+      logger.error('SeventyFiveHardActions', '[75Hard] Failed to delete check-ins:', deleteCheckInsError);
       throw deleteCheckInsError;
     }
 
-    console.log('[75Hard] Deleted all check-ins');
+    logger.info('SeventyFiveHardActions', '[75Hard] Deleted all check-ins');
 
     // Step 2: Delete the challenge
     const { error: deleteChallengeError } = await supabase
@@ -1008,11 +1010,11 @@ export async function deleteSFHChallenge() {
       .eq('id', challenge.id);
 
     if (deleteChallengeError) {
-      console.error('[75Hard] Failed to delete challenge:', deleteChallengeError);
+      logger.error('SeventyFiveHardActions', '[75Hard] Failed to delete challenge:', deleteChallengeError);
       throw deleteChallengeError;
     }
 
-    console.log('[75Hard] Deleted challenge');
+    logger.info('SeventyFiveHardActions', '[75Hard] Deleted challenge');
 
     // Step 3: Clear from store
     setStore({
@@ -1024,10 +1026,10 @@ export async function deleteSFHChallenge() {
       sfhShowCelebration: false
     });
 
-    console.log('[75Hard] ✅ Challenge deleted successfully');
+    logger.info('SeventyFiveHardActions', '[75Hard] ✅ Challenge deleted successfully');
     return { success: true };
   } catch (error) {
-    console.error('[75Hard] Error in deleteSFHChallenge:', error);
+    logger.error('SeventyFiveHardActions', '[75Hard] Error in deleteSFHChallenge:', error);
     return { success: false, error: 'Failed to delete challenge. Please try again.' };
   }
 }
@@ -1086,18 +1088,18 @@ async function createOrUpdateTodoFromSFHTask(
     const today = startOfDay(new Date());
     const cacheKey = getTodoCacheKey(challengeId, dayNumber, task.id);
 
-    console.log(`[75Hard→Todo]   Processing task: "${task.title}" (day ${dayNumber})`);
+    logger.info('75Hard→Todo', `Processing task: "${task.title}" (day ${dayNumber})`);
 
     // GUARD 1: Check in-memory cache FIRST (fastest, most reliable)
     const cachedEntry = todoCreationCache.get(cacheKey);
     if (cachedEntry) {
-      console.log(`[75Hard→Todo]   💾 Found in cache (id: ${cachedEntry.todoId.slice(0, 8)}) - skipping duplicate creation`);
+      logger.info('75Hard→Todo', `💾 Found in cache (id: ${cachedEntry.todoId.slice(0, 8)}) - skipping duplicate creation`);
       // Update completion status if needed
       const updateStore = getStore();
       const existingInStore = updateStore.todos.find(t => t.id === cachedEntry.todoId);
       if (existingInStore && existingInStore.completed !== completed) {
         await updateStore.updateTodo(cachedEntry.todoId, { completed });
-        console.log(`[75Hard→Todo]   ✅ Updated completion status for "${task.title}"`);
+        logger.info('75Hard→Todo', `✅ Updated completion status for "${task.title}"`);
       }
       return cachedEntry.todoId;
     }
@@ -1117,9 +1119,9 @@ async function createOrUpdateTodoFromSFHTask(
     });
 
     if (existingTodo) {
-      console.log(`[75Hard→Todo]   ✓ Found existing todo (id: ${existingTodo.id.slice(0, 8)})`);
+      logger.info('75Hard→Todo', `✓ Found existing todo (id: ${existingTodo.id.slice(0, 8)})`);
     } else {
-      console.log(`[75Hard→Todo]   ✗ No existing todo found`);
+      logger.info('75Hard→Todo', `✗ No existing todo found`);
     }
 
     const todoData = {
@@ -1142,7 +1144,7 @@ async function createOrUpdateTodoFromSFHTask(
 
     if (existingTodo) {
       // Found in store - update and add to cache
-      console.log(`[75Hard→Todo]   ✓ Found in store (id: ${existingTodo.id.slice(0, 8)})`);
+      logger.info('75Hard→Todo', `✓ Found in store (id: ${existingTodo.id.slice(0, 8)})`);
 
       const updateStore = getStore();
       await updateStore.updateTodo(existingTodo.id, {
@@ -1159,11 +1161,11 @@ async function createOrUpdateTodoFromSFHTask(
         timestamp: Date.now()
       });
 
-      console.log(`[75Hard→Todo]   ✅ Updated "${task.title}" + cached`);
+      logger.info('75Hard→Todo', `✅ Updated "${task.title}" + cached`);
       return existingTodo.id;
     } else {
       // Create new todo and immediately add to cache
-      console.log(`[75Hard→Todo]   ✗ Not found - creating new todo`);
+      logger.info('75Hard→Todo', `✗ Not found - creating new todo`);
 
       const createStore = getStore();
       const newTodo = await createStore.addTodo(todoData);
@@ -1177,11 +1179,11 @@ async function createOrUpdateTodoFromSFHTask(
         timestamp: Date.now()
       });
 
-      console.log(`[75Hard→Todo]   ✅ Created "${task.title}" (id: ${newTodo.id.slice(0, 8)}) + cached`);
+      logger.info('75Hard→Todo', `✅ Created "${task.title}" (id: ${newTodo.id.slice(0, 8)}) + cached`);
       return newTodo.id;
     }
   } catch (error) {
-    console.error('[75Hard→Todo] ❌ Error creating/updating todo:', error);
+    logger.error('SeventyFiveHardActions', '[75Hard→Todo] ❌ Error creating/updating todo:', error);
     return null;
   }
 }
@@ -1198,14 +1200,14 @@ async function createOrUpdateTodoFromSFHTask(
  */
 export async function ensureSFHTodosForToday() {
   ensureCallCount++;
-  console.log(`[75Hard→Todo] 🔍 ensureSFHTodosForToday() called (call #${ensureCallCount})`);
+  logger.info('75Hard→Todo', `🔍 ensureSFHTodosForToday() called (call #${ensureCallCount})`);
 
   // Clean expired cache entries first
   cleanExpiredCacheEntries();
 
   // GUARD 1: If already running, return the existing promise
   if (ensuringTodosPromise) {
-    console.log('[75Hard→Todo] ⏸️  Execution already in progress, waiting for completion...');
+    logger.info('SeventyFiveHardActions', '[75Hard→Todo] ⏸️  Execution already in progress, waiting for completion...');
     return ensuringTodosPromise;
   }
 
@@ -1213,8 +1215,8 @@ export async function ensureSFHTodosForToday() {
   const now = Date.now();
   const timeSinceLastEnsure = now - lastEnsureTime;
   if (lastEnsureTime > 0 && timeSinceLastEnsure < ENSURE_DEBOUNCE_MS) {
-    console.log(`[75Hard→Todo] ⏭️  SKIPPED - called ${timeSinceLastEnsure}ms ago (debounce: ${ENSURE_DEBOUNCE_MS}ms) - preventing duplicate creation`);
-    console.log(`[75Hard→Todo] 📊 Cache status: ${todoCreationCache.size} entries cached`);
+    logger.info('75Hard→Todo', `⏭️  SKIPPED - called ${timeSinceLastEnsure}ms ago (debounce: ${ENSURE_DEBOUNCE_MS}ms) - preventing duplicate creation`);
+    logger.info('75Hard→Todo', `📊 Cache status: ${todoCreationCache.size} entries cached`);
     return;
   }
 
@@ -1224,11 +1226,11 @@ export async function ensureSFHTodosForToday() {
   // Create promise and store it to prevent concurrent executions
   ensuringTodosPromise = measurePerformance('ensureSFHTodosForToday:execution', async () => {
     try {
-      console.log('[75Hard→Todo] ▶️  Starting execution...');
+      logger.info('SeventyFiveHardActions', '[75Hard→Todo] ▶️  Starting execution...');
 
       const { sfhChallenge: challenge, sfhCheckIns: checkIns } = getStore();
       if (!challenge || challenge.status !== 'active') {
-        console.log('[75Hard→Todo] No active challenge, skipping todo sync');
+        logger.info('SeventyFiveHardActions', '[75Hard→Todo] No active challenge, skipping todo sync');
         return;
       }
 
@@ -1236,11 +1238,11 @@ export async function ensureSFHTodosForToday() {
       const todayCheckIn = checkIns.find(c => isSameDay(c.date, today));
 
       if (!todayCheckIn) {
-        console.log('[75Hard→Todo] No check-in for today, skipping todo sync');
+        logger.info('SeventyFiveHardActions', '[75Hard→Todo] No check-in for today, skipping todo sync');
         return;
       }
 
-      console.log('[75Hard→Todo] Processing', challenge.tasks.length, 'tasks for Day', todayCheckIn.dayNumber);
+      logger.info('SeventyFiveHardActions', '[75Hard→Todo] Processing', challenge.tasks.length, 'tasks for Day', todayCheckIn.dayNumber);
 
       // Create completion map for O(1) lookups
       const completionMap = new Map<string, boolean>();
@@ -1264,10 +1266,10 @@ export async function ensureSFHTodosForToday() {
       // Cleanup: Delete todos for previous days
       await cleanupOldSFHTodos(challenge.id, todayCheckIn.dayNumber);
 
-      console.log('[75Hard→Todo] ✅ Execution complete');
-      console.log(`[75Hard→Todo] 📊 Cache status: ${todoCreationCache.size} entries cached for future calls`);
+      logger.info('SeventyFiveHardActions', '[75Hard→Todo] ✅ Execution complete');
+      logger.info('75Hard→Todo', `📊 Cache status: ${todoCreationCache.size} entries cached for future calls`);
     } catch (error) {
-      console.error('[75Hard→Todo] ❌ Error during execution:', error);
+      logger.error('SeventyFiveHardActions', '[75Hard→Todo] ❌ Error during execution:', error);
       throw error;
     } finally {
       // Clear the promise to allow future executions
@@ -1285,7 +1287,7 @@ async function cleanupOldSFHTodos(challengeId: string, currentDay: number) {
   const store = getStore();
   const today = startOfDay(new Date());
 
-  console.log(`[75Hard→Todo] 🧹 Cleanup: current day=${currentDay}, today=${today.toISOString()}`);
+  logger.info('75Hard→Todo', `🧹 Cleanup: current day=${currentDay}, today=${today.toISOString()}`);
 
   // Filter todos that need deletion first, then delete in parallel
   const todosToDelete = store.todos.filter(todo => {
@@ -1301,27 +1303,27 @@ async function cleanupOldSFHTodos(challengeId: string, currentDay: number) {
     const shouldDelete = isPreviousDay || isOldDueDate;
 
     if (shouldDelete) {
-      console.log(`[75Hard→Todo]   Will delete: "${todo.title}", day=${meta.dayNumber}, dueDate=${todo.dueDate?.toISOString()}, isPreviousDay=${isPreviousDay}, isOldDueDate=${isOldDueDate}`);
+      logger.info('75Hard→Todo', `Will delete: "${todo.title}", day=${meta.dayNumber}, dueDate=${todo.dueDate?.toISOString()}, isPreviousDay=${isPreviousDay}, isOldDueDate=${isOldDueDate}`);
     }
 
     return shouldDelete;
   });
 
-  console.log(`[75Hard→Todo] Found ${todosToDelete.length} old todos to delete`);
+  logger.info('75Hard→Todo', `Found ${todosToDelete.length} old todos to delete`);
 
   // Delete all old todos in parallel
   if (todosToDelete.length > 0) {
     await Promise.all(
       todosToDelete.map(todo => {
         const meta = parseSFHTodoTags(todo.tags);
-        console.log(`[75Hard→Todo] ❌ Deleting old todo for Day ${meta.dayNumber}: "${todo.title}"`);
+        logger.info('75Hard→Todo', `❌ Deleting old todo for Day ${meta.dayNumber}: "${todo.title}"`);
 
         // Also remove from cache
         if (meta.challengeId && meta.dayNumber && meta.taskId) {
           const cacheKey = getTodoCacheKey(meta.challengeId, meta.dayNumber, meta.taskId);
           if (todoCreationCache.has(cacheKey)) {
             todoCreationCache.delete(cacheKey);
-            console.log(`[75Hard→Todo]   🗑️  Removed from cache: ${cacheKey}`);
+            logger.info('75Hard→Todo', `🗑️  Removed from cache: ${cacheKey}`);
           }
         }
 
@@ -1364,12 +1366,12 @@ async function syncSingleTodoCompletion(taskId: string, completed: boolean) {
         completedAt: completed ? new Date() : undefined,
         status: completed ? 'done' : 'todo'
       });
-      console.log(`[75Hard→Todo] ✅ Synced todo completion for task ${taskId}: ${completed}`);
+      logger.info('75Hard→Todo', `✅ Synced todo completion for task ${taskId}: ${completed}`);
     } else {
-      console.log(`[75Hard→Todo] ⚠️  No todo found for task ${taskId} - may need to create on next sync`);
+      logger.info('75Hard→Todo', `⚠️  No todo found for task ${taskId} - may need to create on next sync`);
     }
   } catch (error) {
-    console.error('[75Hard→Todo] Error syncing single todo:', error);
+    logger.error('SeventyFiveHardActions', '[75Hard→Todo] Error syncing single todo:', error);
   }
 }
 
@@ -1385,7 +1387,7 @@ export async function syncTodoCompletionToSFH(todoId: string) {
   const meta = parseSFHTodoTags(todo.tags);
   if (!meta.isSFHTodo || !meta.taskId) return;
 
-  console.log('[Todo→75Hard] Syncing completion to 75 Hard task:', meta.taskId);
+  logger.info('SeventyFiveHardActions', '[Todo→75Hard] Syncing completion to 75 Hard task:', meta.taskId);
 
   // Toggle the 75 Hard task
   await toggleSFHTask(meta.taskId);
@@ -1412,14 +1414,14 @@ export async function create75HardJournalEntry(dayNumber: number) {
   const todayCheckIn = checkIns.find(c => isSameDay(c.date, today));
 
   if (!todayCheckIn) {
-    console.log('[75Hard→Journal] No check-in for today, skipping journal entry');
+    logger.info('SeventyFiveHardActions', '[75Hard→Journal] No check-in for today, skipping journal entry');
     return;
   }
 
   // Only create entry if all tasks are complete
   const allComplete = todayCheckIn.taskCompletions.every(tc => tc.completed);
   if (!allComplete) {
-    console.log('[75Hard→Journal] Not all tasks complete, skipping journal entry');
+    logger.info('SeventyFiveHardActions', '[75Hard→Journal] Not all tasks complete, skipping journal entry');
     return;
   }
 
@@ -1434,7 +1436,7 @@ export async function create75HardJournalEntry(dayNumber: number) {
     });
 
     if (existingEntry) {
-      console.log('[75Hard→Journal] Journal entry already exists for today');
+      logger.info('SeventyFiveHardActions', '[75Hard→Journal] Journal entry already exists for today');
       return;
     }
 
@@ -1488,8 +1490,8 @@ ${weightSection}${notesSection}
       attachments,
     });
 
-    console.log(`[75Hard→Journal] ✅ Created journal entry for Day ${dayNumber}`);
+    logger.info('75Hard→Journal', `✅ Created journal entry for Day ${dayNumber}`);
   } catch (error) {
-    console.error('[75Hard→Journal] Error creating journal entry:', error);
+    logger.error('SeventyFiveHardActions', '[75Hard→Journal] Error creating journal entry:', error);
   }
 }

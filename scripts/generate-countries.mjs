@@ -38,11 +38,11 @@ async function main() {
   const outPath = path.resolve(__dirname, '../src/data/countries.json')
   fs.mkdirSync(path.dirname(outPath), { recursive: true })
   fs.writeFileSync(outPath, JSON.stringify(deduped, null, 2))
-  console.log(`Wrote ${deduped.length} countries to ${outPath}`)
+  logger.info('Generate-countries', `Wrote ${deduped.length} countries to ${outPath}`);
 }
 
 main().catch((err) => {
-  console.error(err)
+  logger.error('Generate-countries', err);
   process.exit(1)
 })
 

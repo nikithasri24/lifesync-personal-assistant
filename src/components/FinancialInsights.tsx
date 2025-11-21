@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { useState, useEffect } from 'react';
 import { apiClient } from '../services/apiClient';
+import { logger } from '../services/logger';
 import {
   Brain,
   TrendingUp,
@@ -75,7 +76,7 @@ export default function FinancialInsights() {
       const health = calculateFinancialHealth(transactions, accounts);
       setFinancialHealth(health);
     } catch (error) {
-      console.error('Failed to load financial data:', error);
+      logger.error('Failed to load financial data:', { error });
       // Fallback to empty state - no mock data
     } finally {
       setLoading(false);

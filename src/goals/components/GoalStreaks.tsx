@@ -7,6 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { Calendar, Flame, CheckCircle2, XCircle, TrendingUp, Award } from 'lucide-react';
 import { recordStreak, getStreakHistory, updateLifeGoal } from '../api/lifeGoalsAPI';
 import type { LifeGoal, LifeGoalStreakEntry } from '../types/lifeGoals';
+import { logger } from '../../services/logger';
 
 interface GoalStreaksProps {
   goal: LifeGoal;
@@ -33,7 +34,7 @@ const GoalStreaks: React.FC<GoalStreaksProps> = ({ goal, onGoalUpdated }) => {
       const history = await getStreakHistory(goal.id, 90); // Last 90 days
       setStreakHistory(history);
     } catch (error) {
-      console.error('Error loading streak history:', error);
+      logger.error('Error loading streak history:', { error });
     } finally {
       setLoading(false);
     }
@@ -64,7 +65,7 @@ const GoalStreaks: React.FC<GoalStreaksProps> = ({ goal, onGoalUpdated }) => {
       onGoalUpdated(updatedGoal);
       setTodayNote('');
     } catch (error) {
-      console.error('Error checking in:', error);
+      logger.error('Error checking in:', { error });
       alert('Failed to record check-in');
     } finally {
       setCheckingIn(false);

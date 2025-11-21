@@ -1,5 +1,6 @@
 import { ensureSupabase } from '../lib/supabase'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { logger } from './logger'
 import type {
   TaskData,
   ProjectData,
@@ -107,9 +108,9 @@ class SupabaseAdapter {
 
   // ===== Tasks =====
   async getTasks(): Promise<TaskData[]> {
-    console.log('[SupabaseAdapter] getTasks invoked');
+    logger.debug('SupabaseAdapter', 'getTasks invoked');
     const userId = this.requireUserId()
-    console.log('[SupabaseAdapter] getTasks user', userId);
+    logger.debug('getTasks user', { userId });
     const { data, error } = await this.client
       .from('tasks')
       .select('*')
@@ -138,7 +139,7 @@ class SupabaseAdapter {
       .single()
 
     if (error) throw new Error(error.message)
-    console.log('[SupabaseAdapter] createTask created task', data?.id)
+    logger.debug('createTask created task', { taskId: data?.id })
     return data as TaskData
   }
 
@@ -653,7 +654,7 @@ class SupabaseAdapter {
 
     if (findErr) {
       // Non-fatal: proceed to insert if lookup fails
-      console.warn('[SupabaseAdapter] find meal_plan failed; attempting insert', findErr)
+      logger.warn('find meal_plan failed; attempting insert', { error: findErr })
     } else if (existingRows && existingRows.length > 0) {
       return existingRows[0] as MealPlanData
     }
@@ -850,7 +851,7 @@ class SupabaseAdapter {
 
       if (updRes.error) {
         // Log and continue; we already created the base row
-        console.warn('[SupabaseAdapter] recipes patch failed:', updRes.error.message)
+        logger.warn('recipes patch failed', { error: updRes.error.message })
       } else if (updRes.data) {
         // If patch returned the full row, prefer it
         return updRes.data as RecipeData

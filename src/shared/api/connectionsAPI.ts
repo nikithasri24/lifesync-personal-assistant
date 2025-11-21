@@ -4,6 +4,8 @@
  */
 
 import { supabase } from '../../lib/supabase';
+import { logger } from '../../services/logger';
+
 import type {
   ProfileConnection,
   ModulePermission,
@@ -160,7 +162,7 @@ export async function createConnection(input: CreateConnectionInput): Promise<Pr
       message: input.message,
     });
   } catch (emailError) {
-    console.error('Failed to send invitation email:', emailError);
+    logger.error('ConnectionsAPI', 'Failed to send invitation email:', emailError);
     // Don't fail the invitation if email fails
   }
 

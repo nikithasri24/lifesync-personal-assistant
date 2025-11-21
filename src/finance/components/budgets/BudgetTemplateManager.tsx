@@ -1,6 +1,7 @@
 import React from 'react';
 import { X, Save, Trash2, Settings } from 'lucide-react';
 import type { BudgetTemplate, Category } from '../../types';
+import { logger } from '../../../services/logger';
 
 interface BudgetTemplateManagerProps {
   isOpen: boolean;
@@ -50,7 +51,7 @@ const BudgetTemplateManager: React.FC<BudgetTemplateManagerProps> = ({
       newTemplates.delete(categoryId);
       setTemplates(newTemplates);
     } catch (error) {
-      console.error('Failed to delete template:', error);
+      logger.error('Failed to delete template:', { error });
       alert('Failed to delete template');
     }
   };
@@ -65,7 +66,7 @@ const BudgetTemplateManager: React.FC<BudgetTemplateManagerProps> = ({
       await onSave(templatesToSave);
       onClose();
     } catch (error) {
-      console.error('Failed to save templates:', error);
+      logger.error('Failed to save templates:', { error });
       alert('Failed to save templates');
     } finally {
       setSaving(false);

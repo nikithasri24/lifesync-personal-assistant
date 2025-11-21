@@ -6,6 +6,7 @@ import { Mic, MicOff, Send, Sparkles, Trash2, Volume2, VolumeX } from 'lucide-re
 import { useConversationalVoice } from '../hooks/useConversationalVoice';
 import { useAuth } from '../hooks/useAuth';
 import type { ConversationMessage } from '../services/conversationEngine';
+import { logger } from '../services/logger';
 
 export default function Assistant() {
   const { user } = useAuth();
@@ -53,7 +54,7 @@ export default function Assistant() {
     try {
       await sendTextMessage(message);
     } catch (error) {
-      console.error('Failed to send message:', error);
+      logger.error('Failed to send message:', { error });
     }
   };
 

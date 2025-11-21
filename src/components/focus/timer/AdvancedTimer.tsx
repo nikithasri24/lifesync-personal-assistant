@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
+import { logger } from '../../../services/logger';
 import {
   Play,
   Pause,
@@ -239,7 +240,7 @@ export const AdvancedTimer: React.FC<Props> = ({
       playTone(659.25, now + 0.2, 0.2); // E5
       playTone(783.99, now + 0.4, 0.4); // G5
     } catch (error) {
-      console.log('Audio playback failed:', error);
+      logger.debug('Audio playback failed:', { error });
     }
   };
 

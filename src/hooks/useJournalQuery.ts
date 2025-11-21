@@ -85,12 +85,12 @@ export function useCreateJournalEntry() {
 
   return useMutation({
     mutationFn: async (input: CreateJournalEntryInput) => {
-      logger.debug('Journal', 'Creating journal entry', { title: input.title, mood: input.mood });
+      logger.debug('Creating journal entry', { title: input.title, mood: input.mood });
       const result = await createJournalEntry(input);
       return result;
     },
     onSuccess: (newEntry) => {
-      logger.info('Journal', 'Journal entry created successfully', { id: newEntry.id, title: newEntry.title });
+      logger.info('Journal entry created successfully', { id: newEntry.id, title: newEntry.title });
       // Invalidate all journal lists to refetch with new entry
       queryClient.invalidateQueries({ queryKey: queryKeys.journal.lists() });
 
@@ -103,7 +103,7 @@ export function useCreateJournalEntry() {
       );
     },
     onError: (error: Error, input) => {
-      logger.error('Journal', 'Failed to create journal entry', { error: error.message, title: input.title });
+      logger.error('Failed to create journal entry', { error: error.message, title: input.title });
     },
   });
 }
@@ -116,12 +116,12 @@ export function useUpdateJournalEntry() {
 
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: UpdateJournalEntryInput }) => {
-      logger.debug('Journal', 'Updating journal entry', { id, updates });
+      logger.debug('Updating journal entry', { id, updates });
       const result = await updateJournalEntry(id, updates);
       return result;
     },
     onSuccess: (updatedEntry) => {
-      logger.info('Journal', 'Journal entry updated successfully', { id: updatedEntry.id, title: updatedEntry.title });
+      logger.info('Journal entry updated successfully', { id: updatedEntry.id, title: updatedEntry.title });
       // Invalidate all journal lists
       queryClient.invalidateQueries({ queryKey: queryKeys.journal.lists() });
 
@@ -142,7 +142,7 @@ export function useUpdateJournalEntry() {
       );
     },
     onError: (error: Error, { id }) => {
-      logger.error('Journal', 'Failed to update journal entry', { error: error.message, id });
+      logger.error('Failed to update journal entry', { error: error.message, id });
     },
   });
 }
@@ -155,12 +155,12 @@ export function useDeleteJournalEntry() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      logger.debug('Journal', 'Deleting journal entry', { id });
+      logger.debug('Deleting journal entry', { id });
       const result = await deleteJournalEntry(id);
       return result;
     },
     onSuccess: (_data, deletedId) => {
-      logger.info('Journal', 'Journal entry deleted successfully', { id: deletedId });
+      logger.info('Journal entry deleted successfully', { id: deletedId });
       // Invalidate all journal lists
       queryClient.invalidateQueries({ queryKey: queryKeys.journal.lists() });
 
@@ -176,7 +176,7 @@ export function useDeleteJournalEntry() {
       );
     },
     onError: (error: Error, id) => {
-      logger.error('Journal', 'Failed to delete journal entry', { error: error.message, id });
+      logger.error('Failed to delete journal entry', { error: error.message, id });
     },
   });
 }

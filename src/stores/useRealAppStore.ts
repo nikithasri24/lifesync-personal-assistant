@@ -1,3 +1,4 @@
+import { logger } from '../services/logger';
 import { create } from 'zustand'
 import { differenceInDays } from 'date-fns'
 import {
@@ -88,7 +89,7 @@ const createId = () => {
     try {
       return crypto.randomUUID()
     } catch (error) {
-      console.warn('crypto.randomUUID failed, falling back to Math.random()', error)
+      logger.warn('UseRealAppStore', 'crypto.randomUUID failed, falling back to Math.random()', error)
     }
   }
   return Math.random().toString(36).slice(2, 10)
@@ -153,7 +154,7 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
 
   initializeData: async () => {
     if (!isSupabaseConfigured) {
-      console.warn('[LifeSync] Supabase not configured; store will operate in local-only mode.')
+      logger.warn('UseRealAppStore', '[LifeSync] Supabase not configured; store will operate in local-only mode.')
       set({
         loading: false,
       })
@@ -187,7 +188,7 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
       // Update current day for all active challenges after initialization
       get().updateActiveChallengesDays()
     } catch (error) {
-      console.error('[LifeSync] Failed to initialise store from Supabase', error)
+      logger.error('UseRealAppStore', '[LifeSync] Failed to initialise store from Supabase', error)
       set({
         loading: false,
       })
@@ -263,7 +264,7 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
       try {
         localStorage.setItem('lifesync:75hard', JSON.stringify(updatedChallenges))
       } catch (e) {
-        console.warn('[75Hard] Failed to save updated challenges to localStorage', e)
+        logger.warn('UseRealAppStore', '[75Hard] Failed to save updated challenges to localStorage', e)
       }
     }
   },
@@ -274,9 +275,9 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
     try {
       localStorage.removeItem('lifesync:sfh:ensuredForDate')
     } catch (err) {
-      console.warn('[75Hard] Failed to remove ensuredForDate from localStorage:', err)
+      logger.warn('UseRealAppStore', '[75Hard] Failed to remove ensuredForDate from localStorage:', err)
     }
-    console.log('[75Hard] Reset sfhEnsuredForDate - tasks will be recreated on next ensureSFHTasksForToday call')
+    logger.info('UseRealAppStore', '[75Hard] Reset sfhEnsuredForDate - tasks will be recreated on next ensureSFHTasksForToday call')
   },
 
   // ==================== 75 Hard (New Architecture) Methods ====================

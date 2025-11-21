@@ -5,6 +5,8 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import { logger } from '../services/logger';
+
 import * as fs from 'fs';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL!;
@@ -32,7 +34,7 @@ function parseCSV(filePath: string, month: string): ParsedTransaction[] {
   const categoryRow = lines[categoryRowIndex];
 
   if (!categoryRow) {
-    console.error('Category row not found');
+    logger.error('ImportFinanceCSV', 'Category row not found');
     return transactions;
   }
 
@@ -52,7 +54,7 @@ function parseCSV(filePath: string, month: string): ParsedTransaction[] {
     }
   }
 
-  console.log(`Found categories:`, categories.map(c => c.name));
+  logger.debug('ImportFinanceCSV', `Found categories:`, categories.map(c => c.name));
 
   // Parse transactions starting from row after category headers
   for (let rowIndex = categoryRowIndex + 1; rowIndex < lines.length; rowIndex++) {
@@ -126,7 +128,7 @@ async function getOrCreateCategory(
     .single();
 
   if (error) {
-    console.error(`Failed to create category ${mappedName}:`, error);
+    logger.error('ImportFinanceCSV', `Failed to create category ${mappedName}:`, error);
     throw error;
   }
 
@@ -159,7 +161,7 @@ async function importTransactions(
   accountId: string,
   transactions: ParsedTransaction[]
 ): Promise<void> {
-  console.log(`Importing ${transactions.length} transactions...`);
+  logger.debug('ImportFinanceCSV', `Importing ${transactions.length} transactions...`);
 
   let imported = 0;
   let skipped = 0;
@@ -184,18 +186,18 @@ async function importTransactions(
         });
 
       if (error) {
-        console.error(`Failed to import ${txn.description}:`, error);
+        logger.error('ImportFinanceCSV', `Failed to import ${txn.description}:`, error);
         skipped++;
       } else {
         imported++;
       }
     } catch (err) {
-      console.error(`Error processing ${txn.description}:`, err);
+      logger.error('ImportFinanceCSV', `Error processing ${txn.description}:`, err);
       skipped++;
     }
   }
 
-  console.log(`✓ Imported: ${imported}, Skipped: ${skipped}`);
+  logger.debug('ImportFinanceCSV', `✓ Imported: ${imported}, Skipped: ${skipped}`);
 }
 
 /**
@@ -207,16 +209,16 @@ async function main() {
   // Get user ID
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) {
-    console.error('Not authenticated');
+    logger.error('ImportFinanceCSV', 'Not authenticated');
     process.exit(1);
   }
 
   const userId = user.id;
-  console.log(`User ID: ${userId}`);
+  logger.debug('ImportFinanceCSV', `User ID: ${userId}`);
 
   // Get default account
   const accountId = await getDefaultAccount(supabase, userId);
-  console.log(`Account ID: ${accountId}`);
+  logger.debug('ImportFinanceCSV', `Account ID: ${accountId}`);
 
   // Parse and import each month
   const files = [
@@ -226,14 +228,14 @@ async function main() {
   ];
 
   for (const file of files) {
-    console.log(`\nProcessing ${file.path}...`);
+    logger.debug('ImportFinanceCSV', `\nProcessing ${file.path}...`);
     const transactions = parseCSV(file.path, file.month);
-    console.log(`Parsed ${transactions.length} transactions`);
+    logger.debug('ImportFinanceCSV', `Parsed ${transactions.length} transactions`);
 
     await importTransactions(supabase, userId, accountId, transactions);
   }
 
-  console.log('\n✓ Import complete!');
+  logger.info('ImportFinanceCSV', '\n✓ Import complete!');
 }
 
-main().catch(console.error);
+main().catch((error) => logger.error('ImportFinanceCSV', error));

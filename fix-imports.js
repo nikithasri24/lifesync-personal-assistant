@@ -1,9 +1,16 @@
+const logger = {
+  debug: (domain, msg, ctx) => console.log(`[${domain}] ${msg}`, ctx || ''),
+  info: (domain, msg, ctx) => console.log(`[${domain}] ${msg}`, ctx || ''),
+  warn: (domain, msg, ctx) => console.warn(`[${domain}] ${msg}`, ctx || ''),
+  error: (domain, err, ctx) => console.error(`[${domain}]`, err, ctx || ''),
+};
+
 #!/usr/bin/env node
 
 import { readFileSync, writeFileSync } from 'fs';
 import { glob } from 'glob';
 
-console.log('🔧 Starting automated import cleanup...');
+logger.info('FixImports', '🔧 Starting automated import cleanup...');
 
 // Get all TypeScript React files
 const files = glob.sync('src/**/*.{ts,tsx}', { 
@@ -54,16 +61,16 @@ files.forEach(filePath => {
 
     if (changes > 0) {
       writeFileSync(filePath, newContent);
-      console.log(`✅ Fixed ${changes} import issues in ${filePath.split('/').pop()}`);
+      logger.info('FixImports', `✅ Fixed ${changes} import issues in ${filePath.split('/').pop()}`);
       fixedFiles++;
       totalChanges += changes;
     }
 
   } catch (error) {
-    console.error(`❌ Error processing ${filePath}:`, error.message);
+    logger.error('FixImports', `❌ Error processing ${filePath}:`, error.message);
   }
 });
 
-console.log(`\n🎉 Import cleanup complete!`);
-console.log(`📁 Fixed ${fixedFiles} files`);
-console.log(`🔧 Made ${totalChanges} total changes`);
+logger.info('FixImports', `\n🎉 Import cleanup complete!`);
+logger.info('FixImports', `📁 Fixed ${fixedFiles} files`);
+logger.info('FixImports', `🔧 Made ${totalChanges} total changes`);

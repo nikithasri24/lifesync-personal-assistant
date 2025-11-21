@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 import { eachDayOfInterval, endOfWeek, format, startOfWeek } from 'date-fns'
 import { useAppStore } from '../../../stores/useAppStore'
+import { logger } from '../../../services/logger';
 
 type InsightType = 'positive' | 'suggestion' | 'warning'
 type InsightPriority = 'low' | 'medium' | 'high'
@@ -97,7 +98,7 @@ export const FocusAnalyticsDashboard: React.FC<Props> = ({
         const generated = generateAnalyticsFromSessions(sessions);
         setAnalyticsData(generated);
       } catch (error) {
-        console.error('Failed to load focus analytics:', error);
+        logger.error('Failed to load focus analytics:', { error });
         setAnalyticsData(defaultAnalytics());
       }
       setIsLoading(false);

@@ -3,6 +3,13 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Client } from 'pg';
 
+const logger = {
+  debug: (domain, msg, ctx) => console.log(`[${domain}] ${msg}`, ctx || ''),
+  info: (domain, msg, ctx) => console.log(`[${domain}] ${msg}`, ctx || ''),
+  warn: (domain, msg, ctx) => console.warn(`[${domain}] ${msg}`, ctx || ''),
+  error: (domain, err, ctx) => console.error(`[${domain}]`, err, ctx || ''),
+};
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -89,8 +96,8 @@ async function main() {
     process.env.SUPABASE_DB_CONNECTION;
 
   if (!connectionString) {
-    console.error(
-      'Set SUPABASE_DB_URL (or DATABASE_URL/POSTGRES_URL) to run the schema backup.',
+    logger.error('BackupSupabaseSchema',
+      'Set SUPABASE_DB_URL (or DATABASE_URL/POSTGRES_URL) to run the schema backup.'
     );
     process.exitCode = 1;
     return;
@@ -100,7 +107,7 @@ async function main() {
   try {
     await client.connect();
   } catch (error) {
-    console.error('Failed to connect to Supabase/Postgres:', error.message);
+    logger.error('BackupSupabaseSchema', 'Failed to connect to Supabase/Postgres:', error.message);
     process.exitCode = 1;
     return;
   }
@@ -114,9 +121,9 @@ async function main() {
 
     const snapshot = buildSnapshot(columnsResult.rows, constraintsResult.rows);
     const filename = writeSnapshot(snapshot);
-    console.log(`✅ Supabase schema snapshot saved to ${filename}`);
+    logger.info('BackupSupabaseSchema', `✅ Supabase schema snapshot saved to ${filename}`);
   } catch (error) {
-    console.error('Failed to create Supabase schema backup:', error.message);
+    logger.error('BackupSupabaseSchema', 'Failed to create Supabase schema backup:', error.message);
     process.exitCode = 1;
   } finally {
     await client.end();

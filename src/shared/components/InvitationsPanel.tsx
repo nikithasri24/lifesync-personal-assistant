@@ -8,6 +8,7 @@ import { Check, X, Send, Inbox } from 'lucide-react';
 import { acceptConnection, rejectConnection } from '../api/connectionsAPI';
 import type { PendingInvitation } from '../types/connections';
 import { RELATIONSHIP_INFO } from '../types/connections';
+import { logger } from '../../services/logger';
 
 interface InvitationsPanelProps {
   sentInvitations: PendingInvitation[];
@@ -30,7 +31,7 @@ const InvitationsPanel: React.FC<InvitationsPanelProps> = ({
       await acceptConnection({ connectionId });
       onInvitationAccepted();
     } catch (error) {
-      console.error('Error accepting invitation:', error);
+      logger.error('Error accepting invitation:', { error });
       alert('Failed to accept invitation');
     } finally {
       setProcessingId(null);
@@ -45,7 +46,7 @@ const InvitationsPanel: React.FC<InvitationsPanelProps> = ({
       await rejectConnection(connectionId);
       onInvitationRejected();
     } catch (error) {
-      console.error('Error rejecting invitation:', error);
+      logger.error('Error rejecting invitation:', { error });
       alert('Failed to reject invitation');
     } finally {
       setProcessingId(null);

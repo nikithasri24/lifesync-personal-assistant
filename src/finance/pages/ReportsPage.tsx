@@ -55,7 +55,7 @@ const ReportsPage: React.FC = () => {
   // Debug metrics
   React.useEffect(() => {
     if (!loading && transactions.length > 0) {
-      console.log('📈 Metrics Calculated:', {
+      logger.debug('ReportsPage', '📈 Metrics Calculated', {
         timePeriod,
         dateRange: `${currentPeriod.startDate} to ${currentPeriod.endDate}`,
         totalIncome: metrics.summary.totalIncome,

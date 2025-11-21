@@ -1,3 +1,10 @@
+const logger = {
+  debug: (domain, msg, ctx) => console.log(`[${domain}] ${msg}`, ctx || ''),
+  info: (domain, msg, ctx) => console.log(`[${domain}] ${msg}`, ctx || ''),
+  warn: (domain, msg, ctx) => console.warn(`[${domain}] ${msg}`, ctx || ''),
+  error: (domain, err, ctx) => console.error(`[${domain}]`, err, ctx || ''),
+};
+
 import express from 'express';
 import cors from 'cors';
 
@@ -8,7 +15,7 @@ const port = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
-console.log('🚀 LifeSync Mock API server starting...');
+logger.info('ApiServerMock', '🚀 LifeSync Mock API server starting...');
 
 // In-memory storage for created data
 const storage = {
@@ -251,18 +258,18 @@ app.get('/api/health', (req, res) => {
 app.get('/api/tasks', (req, res) => {
   // Filter out deleted tasks by default
   const activeTasks = storage.tasks.filter(task => !task.deleted);
-  console.log(`📋 Returning ${activeTasks.length} active tasks (${storage.tasks.length} total)`);
+  logger.info('ApiServerMock', `📋 Returning ${activeTasks.length} active tasks (${storage.tasks.length} total)`);
   res.json(activeTasks);
 });
 
 app.get('/api/tasks/deleted', (req, res) => {
   const deletedTasks = storage.tasks.filter(task => task.deleted === true);
-  console.log(`🗑️ Returning ${deletedTasks.length} deleted tasks`);
+  logger.info('ApiServerMock', `🗑️ Returning ${deletedTasks.length} deleted tasks`);
   res.json(deletedTasks);
 });
 
 app.get('/api/projects', (req, res) => {
-  console.log(`📁 Returning ${storage.projects.length} projects`);
+  logger.info('ApiServerMock', `📁 Returning ${storage.projects.length} projects`);
   res.json(storage.projects);
 });
 
@@ -271,7 +278,7 @@ app.get('/api/projects/:id/tasks', (req, res) => {
   const projectTasks = storage.tasks.filter(task => 
     task.project_id === projectId && !task.deleted
   );
-  console.log(`📋 Returning ${projectTasks.length} tasks for project ${projectId}`);
+  logger.info('ApiServerMock', `📋 Returning ${projectTasks.length} tasks for project ${projectId}`);
   res.json(projectTasks);
 });
 
@@ -290,22 +297,22 @@ app.get('/api/projects/:id/stats', (req, res) => {
       Math.round((projectTasks.filter(t => t.status === 'done').length / projectTasks.length) * 100) : 0
   };
   
-  console.log(`📊 Returning stats for project ${projectId}`);
+  logger.info('ApiServerMock', `📊 Returning stats for project ${projectId}`);
   res.json(stats);
 });
 
 app.get('/api/habits', (req, res) => {
-  console.log(`🎯 Returning ${storage.habits.length} habits`);
+  logger.info('ApiServerMock', `🎯 Returning ${storage.habits.length} habits`);
   res.json(storage.habits);
 });
 
 app.get('/api/financial/transactions', (req, res) => {
-  console.log(`💰 Returning ${storage.transactions.length} transactions`);
+  logger.info('ApiServerMock', `💰 Returning ${storage.transactions.length} transactions`);
   res.json(storage.transactions);
 });
 
 app.get('/api/shopping/lists', (req, res) => {
-  console.log(`🛒 Returning ${storage.shoppingLists.length} shopping lists`);
+  logger.info('ApiServerMock', `🛒 Returning ${storage.shoppingLists.length} shopping lists`);
   res.json(storage.shoppingLists);
 });
 
@@ -317,17 +324,17 @@ app.get('/api/shopping/items', (req, res) => {
     items = items.filter(item => item.list_id === list_id);
   }
   
-  console.log(`🛍️ Returning ${items.length} shopping items`);
+  logger.info('ApiServerMock', `🛍️ Returning ${items.length} shopping items`);
   res.json(items);
 });
 
 app.get('/api/focus/sessions', (req, res) => {
-  console.log(`🧘 Returning ${storage.focusSessions.length} focus sessions`);
+  logger.info('ApiServerMock', `🧘 Returning ${storage.focusSessions.length} focus sessions`);
   res.json(storage.focusSessions);
 });
 
 app.get('/api/focus/profiles', (req, res) => {
-  console.log(`🎯 Returning ${storage.focusProfiles.length} focus profiles`);
+  logger.info('ApiServerMock', `🎯 Returning ${storage.focusProfiles.length} focus profiles`);
   res.json(storage.focusProfiles);
 });
 
@@ -364,7 +371,7 @@ app.get('/api/focus/achievements', (req, res) => {
       category: 'streak'
     }
   ];
-  console.log(`🏆 Returning ${achievements.length} focus achievements`);
+  logger.info('ApiServerMock', `🏆 Returning ${achievements.length} focus achievements`);
   res.json(achievements);
 });
 
@@ -394,22 +401,22 @@ app.get('/api/focus/analytics', (req, res) => {
       { name: 'Quick Tasks', usage: 40 }
     ]
   };
-  console.log('📊 Returning focus analytics data');
+  logger.info('ApiServerMock', '📊 Returning focus analytics data');
   res.json(analytics);
 });
 
 app.get('/api/recipes', (req, res) => {
-  console.log(`🍳 Returning ${storage.recipes.length} recipes`);
+  logger.info('ApiServerMock', `🍳 Returning ${storage.recipes.length} recipes`);
   res.json(storage.recipes);
 });
 
 app.get('/api/finances/accounts', (req, res) => {
-  console.log(`💰 Returning ${storage.financialAccounts.length} financial accounts`);
+  logger.info('ApiServerMock', `💰 Returning ${storage.financialAccounts.length} financial accounts`);
   res.json(storage.financialAccounts);
 });
 
 app.get('/api/finances/transactions', (req, res) => {
-  console.log(`💳 Returning ${storage.transactions.length} transactions`);
+  logger.info('ApiServerMock', `💳 Returning ${storage.transactions.length} transactions`);
   res.json(storage.transactions);
 });
 
@@ -422,7 +429,7 @@ app.post('/api/tasks', (req, res) => {
     updated_at: new Date().toISOString()
   };
   storage.tasks.push(newTask);
-  console.log('✅ Created new task:', newTask.title, `(Total: ${storage.tasks.length})`);
+  logger.info('ApiServerMock', '✅ Created new task:', newTask.title, `(Total: ${storage.tasks.length})`);
   res.status(201).json(newTask);
 });
 
@@ -434,7 +441,7 @@ app.post('/api/tasks/:id/restore', (req, res) => {
       deleted: false,
       updated_at: new Date().toISOString()
     };
-    console.log('🔄 Restored task:', req.params.id);
+    logger.info('ApiServerMock', '🔄 Restored task:', req.params.id);
     res.json(storage.tasks[taskIndex]);
   } else {
     res.status(404).json({ error: 'Task not found' });
@@ -449,7 +456,7 @@ app.post('/api/projects', (req, res) => {
     updated_at: new Date().toISOString()
   };
   storage.projects.push(newProject);
-  console.log('✅ Created new project:', newProject.name, `(Total: ${storage.projects.length})`);
+  logger.info('ApiServerMock', '✅ Created new project:', newProject.name, `(Total: ${storage.projects.length})`);
   res.status(201).json(newProject);
 });
 
@@ -464,7 +471,7 @@ app.post('/api/habits', (req, res) => {
     updated_at: new Date().toISOString()
   };
   storage.habits.push(newHabit);
-  console.log('✅ Created new habit:', newHabit.name, `(Total: ${storage.habits.length})`);
+  logger.info('ApiServerMock', '✅ Created new habit:', newHabit.name, `(Total: ${storage.habits.length})`);
   res.status(201).json(newHabit);
 });
 
@@ -483,11 +490,11 @@ app.post('/api/habits/:id/entries', (req, res) => {
     if (habit.goal_mode === 'total-goal' || habit.goal_mode === 'course-completion') {
       habit.current_progress = (habit.current_progress || 0) + (req.body.value || 1);
       habit.updated_at = new Date().toISOString();
-      console.log(`📈 Updated habit progress: ${habit.name} - ${habit.current_progress}/${habit.goal_target} ${habit.goal_unit}`);
+      logger.info('ApiServerMock', `📈 Updated habit progress: ${habit.name} - ${habit.current_progress}/${habit.goal_target} ${habit.goal_unit}`);
     }
   }
   
-  console.log('✅ Added habit entry for habit:', req.params.id);
+  logger.info('ApiServerMock', '✅ Added habit entry for habit:', req.params.id);
   res.status(201).json(habitEntry);
 });
 
@@ -499,7 +506,7 @@ app.post('/api/financial/transactions', (req, res) => {
     updated_at: new Date().toISOString()
   };
   storage.transactions.push(newTransaction);
-  console.log('✅ Created new financial transaction:', newTransaction.description, `(Total: ${storage.transactions.length})`);
+  logger.info('ApiServerMock', '✅ Created new financial transaction:', newTransaction.description, `(Total: ${storage.transactions.length})`);
   res.status(201).json(newTransaction);
 });
 
@@ -511,7 +518,7 @@ app.post('/api/shopping/lists', (req, res) => {
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   };
-  console.log('✅ Created new shopping list:', newList.name);
+  logger.info('ApiServerMock', '✅ Created new shopping list:', newList.name);
   res.status(201).json(newList);
 });
 
@@ -523,7 +530,7 @@ app.post('/api/shopping/items', (req, res) => {
     created_at: new Date().toISOString()
   };
   storage.shoppingItems.push(newItem);
-  console.log('✅ Created new shopping item:', newItem.name, `(Total: ${storage.shoppingItems.length})`);
+  logger.info('ApiServerMock', '✅ Created new shopping item:', newItem.name, `(Total: ${storage.shoppingItems.length})`);
   res.status(201).json(newItem);
 });
 
@@ -535,7 +542,7 @@ app.post('/api/focus/profiles', (req, res) => {
     updated_at: new Date().toISOString()
   };
   storage.focusProfiles.push(newProfile);
-  console.log('✅ Created new focus profile:', newProfile.name, `(Total: ${storage.focusProfiles.length})`);
+  logger.info('ApiServerMock', '✅ Created new focus profile:', newProfile.name, `(Total: ${storage.focusProfiles.length})`);
   res.status(201).json(newProfile);
 });
 
@@ -549,7 +556,7 @@ app.post('/api/finances/accounts', (req, res) => {
     updated_at: new Date().toISOString()
   };
   storage.financialAccounts.push(newAccount);
-  console.log('✅ Created new financial account:', newAccount.name, `(Total: ${storage.financialAccounts.length})`);
+  logger.info('ApiServerMock', '✅ Created new financial account:', newAccount.name, `(Total: ${storage.financialAccounts.length})`);
   res.status(201).json(newAccount);
 });
 
@@ -561,7 +568,7 @@ app.post('/api/finances/transactions', (req, res) => {
     created_at: new Date().toISOString()
   };
   storage.transactions.push(newTransaction);
-  console.log('✅ Created new transaction:', newTransaction.description);
+  logger.info('ApiServerMock', '✅ Created new transaction:', newTransaction.description);
   res.status(201).json(newTransaction);
 });
 
@@ -574,7 +581,7 @@ app.post('/api/focus/sessions', (req, res) => {
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   };
-  console.log('✅ Created new focus session');
+  logger.info('ApiServerMock', '✅ Created new focus session');
   res.status(201).json(newSession);
 });
 
@@ -585,7 +592,7 @@ app.post('/api/recipes', (req, res) => {
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   };
-  console.log('✅ Created new recipe:', newRecipe.name);
+  logger.info('ApiServerMock', '✅ Created new recipe:', newRecipe.name);
   res.status(201).json(newRecipe);
 });
 
@@ -598,7 +605,7 @@ app.put('/api/tasks/:id', (req, res) => {
       ...req.body,
       updated_at: new Date().toISOString()
     };
-    console.log('✅ Updated task:', req.params.id);
+    logger.info('ApiServerMock', '✅ Updated task:', req.params.id);
     res.json(storage.tasks[taskIndex]);
   } else {
     res.status(404).json({ error: 'Task not found' });
@@ -611,7 +618,7 @@ app.put('/api/projects/:id', (req, res) => {
     ...req.body,
     updated_at: new Date().toISOString()
   };
-  console.log('✅ Updated project:', req.params.id);
+  logger.info('ApiServerMock', '✅ Updated project:', req.params.id);
   res.json(updatedProject);
 });
 
@@ -621,7 +628,7 @@ app.put('/api/focus/sessions/:id', (req, res) => {
     ...req.body,
     updated_at: new Date().toISOString()
   };
-  console.log('✅ Updated focus session:', req.params.id);
+  logger.info('ApiServerMock', '✅ Updated focus session:', req.params.id);
   res.json(updatedSession);
 });
 
@@ -633,7 +640,7 @@ app.put('/api/focus/profiles/:id', (req, res) => {
       ...req.body,
       updated_at: new Date().toISOString()
     };
-    console.log('✅ Updated focus profile:', req.params.id);
+    logger.info('ApiServerMock', '✅ Updated focus profile:', req.params.id);
     res.json(storage.focusProfiles[profileIndex]);
   } else {
     res.status(404).json({ error: 'Focus profile not found' });
@@ -648,7 +655,7 @@ app.put('/api/finances/accounts/:id', (req, res) => {
       ...req.body,
       updated_at: new Date().toISOString()
     };
-    console.log('✅ Updated financial account:', req.params.id);
+    logger.info('ApiServerMock', '✅ Updated financial account:', req.params.id);
     res.json(storage.financialAccounts[accountIndex]);
   } else {
     res.status(404).json({ error: 'Financial account not found' });
@@ -656,8 +663,8 @@ app.put('/api/finances/accounts/:id', (req, res) => {
 });
 
 app.put('/api/habits/:id', (req, res) => {
-  console.log('🔄 PUT request for habit:', req.params.id);
-  console.log('📋 Current habits in storage:', storage.habits.map(h => ({ id: h.id, name: h.name })));
+  logger.info('ApiServerMock', '🔄 PUT request for habit:', req.params.id);
+  logger.info('ApiServerMock', '📋 Current habits in storage:', storage.habits.map(h => ({ id: h.id, name: h.name })));
   
   const habitIndex = storage.habits.findIndex(h => h.id === req.params.id);
   if (habitIndex !== -1) {
@@ -667,11 +674,11 @@ app.put('/api/habits/:id', (req, res) => {
       updated_at: new Date().toISOString()
     };
     storage.habits[habitIndex] = updatedHabit;
-    console.log('✅ Updated habit:', req.params.id);
+    logger.info('ApiServerMock', '✅ Updated habit:', req.params.id);
     res.json(updatedHabit);
   } else {
-    console.log('❌ Habit not found for update:', req.params.id);
-    console.log('📋 Available habit IDs:', storage.habits.map(h => h.id));
+    logger.info('ApiServerMock', '❌ Habit not found for update:', req.params.id);
+    logger.info('ApiServerMock', '📋 Available habit IDs:', storage.habits.map(h => h.id));
     res.status(404).json({ error: 'Habit not found' });
   }
 });
@@ -686,7 +693,7 @@ app.delete('/api/tasks/:id', (req, res) => {
       deleted: true,
       updated_at: new Date().toISOString()
     };
-    console.log('🗑️ Soft deleted task:', req.params.id);
+    logger.info('ApiServerMock', '🗑️ Soft deleted task:', req.params.id);
     res.json({ message: 'Task deleted', task: storage.tasks[taskIndex] });
   } else {
     res.status(404).json({ error: 'Task not found' });
@@ -697,7 +704,7 @@ app.delete('/api/tasks/:id/permanent', (req, res) => {
   const taskIndex = storage.tasks.findIndex(t => t.id === req.params.id);
   if (taskIndex !== -1) {
     const deletedTask = storage.tasks.splice(taskIndex, 1)[0];
-    console.log('✅ Permanently deleted task:', req.params.id, `(Remaining: ${storage.tasks.length})`);
+    logger.info('ApiServerMock', '✅ Permanently deleted task:', req.params.id, `(Remaining: ${storage.tasks.length})`);
     res.json({ message: 'Task permanently deleted', task: deletedTask });
   } else {
     res.status(404).json({ error: 'Task not found' });
@@ -708,7 +715,7 @@ app.delete('/api/projects/:id', (req, res) => {
   const projectIndex = storage.projects.findIndex(p => p.id === req.params.id);
   if (projectIndex !== -1) {
     const deletedProject = storage.projects.splice(projectIndex, 1)[0];
-    console.log('✅ Deleted project:', req.params.id, `(Remaining: ${storage.projects.length})`);
+    logger.info('ApiServerMock', '✅ Deleted project:', req.params.id, `(Remaining: ${storage.projects.length})`);
     res.json({ message: 'Project deleted', project: deletedProject });
   } else {
     res.status(404).json({ error: 'Project not found' });
@@ -719,7 +726,7 @@ app.delete('/api/shopping/items/:id', (req, res) => {
   const itemIndex = storage.shoppingItems.findIndex(i => i.id === req.params.id);
   if (itemIndex !== -1) {
     const deletedItem = storage.shoppingItems.splice(itemIndex, 1)[0];
-    console.log('✅ Deleted shopping item:', deletedItem.name, `(Remaining: ${storage.shoppingItems.length})`);
+    logger.info('ApiServerMock', '✅ Deleted shopping item:', deletedItem.name, `(Remaining: ${storage.shoppingItems.length})`);
     res.json({ message: 'Shopping item deleted', item: deletedItem });
   } else {
     res.status(404).json({ error: 'Shopping item not found' });
@@ -730,7 +737,7 @@ app.delete('/api/habits/:id', (req, res) => {
   const habitIndex = storage.habits.findIndex(h => h.id === req.params.id);
   if (habitIndex !== -1) {
     const deletedHabit = storage.habits.splice(habitIndex, 1)[0];
-    console.log('✅ Deleted habit:', deletedHabit.name, `(Remaining: ${storage.habits.length})`);
+    logger.info('ApiServerMock', '✅ Deleted habit:', deletedHabit.name, `(Remaining: ${storage.habits.length})`);
     res.json({ message: 'Habit deleted', habit: deletedHabit });
   } else {
     res.status(404).json({ error: 'Habit not found' });
@@ -741,7 +748,7 @@ app.delete('/api/focus/profiles/:id', (req, res) => {
   const profileIndex = storage.focusProfiles.findIndex(p => p.id === req.params.id);
   if (profileIndex !== -1) {
     const deletedProfile = storage.focusProfiles.splice(profileIndex, 1)[0];
-    console.log('✅ Deleted focus profile:', deletedProfile.name, `(Remaining: ${storage.focusProfiles.length})`);
+    logger.info('ApiServerMock', '✅ Deleted focus profile:', deletedProfile.name, `(Remaining: ${storage.focusProfiles.length})`);
     res.json({ message: 'Focus profile deleted', profile: deletedProfile });
   } else {
     res.status(404).json({ error: 'Focus profile not found' });
@@ -760,9 +767,9 @@ app.get('/api/analytics/dashboard', (req, res) => {
 
 // Start server
 app.listen(port, '0.0.0.0', () => {
-  console.log(`🚀 LifeSync Mock API server running at http://0.0.0.0:${port}`);
-  console.log(`📊 Health check: http://10.247.209.223:${port}/api/health`);
-  console.log(`💡 All endpoints returning sample data for demonstration`);
+  logger.info('ApiServerMock', `🚀 LifeSync Mock API server running at http://0.0.0.0:${port}`);
+  logger.info('ApiServerMock', `📊 Health check: http://10.247.209.223:${port}/api/health`);
+  logger.info('ApiServerMock', `💡 All endpoints returning sample data for demonstration`);
 });
 
 export default app;

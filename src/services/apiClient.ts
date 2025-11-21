@@ -3,6 +3,7 @@
 
 import { isSupabaseConfigured } from '../lib/supabase';
 import SupabaseAdapter from './supabaseAdapter';
+import { logger } from './logger';
 import type {
   TaskData,
   ProjectData,
@@ -50,8 +51,8 @@ class ApiClient {
   private readonly supabaseAdapter = isSupabaseConfigured ? new SupabaseAdapter(() => this.userId) : null;
 
   constructor() {
-    console.log('[ApiClient] Supabase configured:', isSupabaseConfigured);
-    console.log('[ApiClient] Using Supabase adapter:', Boolean(this.supabaseAdapter));
+    logger.info('Supabase configured', { isSupabaseConfigured });
+    logger.info('Using Supabase adapter', { hasAdapter: Boolean(this.supabaseAdapter) });
   }
 
   setAuthContext(userId: string | null) {
@@ -77,7 +78,7 @@ class ApiClient {
 
       return await response.json();
     } catch (error) {
-      console.error(`API Request failed: ${endpoint}`, error);
+      logger.error('ApiClient', error instanceof Error ? error : new Error(`API Request failed: ${endpoint}`), { endpoint });
       throw error;
     }
   }

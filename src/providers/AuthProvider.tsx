@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import type { Session, User } from '@supabase/supabase-js'
 import { ensureSupabase, isSupabaseConfigured } from '../lib/supabase'
 import { apiClient } from '../services/apiClient'
+import { logger } from '../services/logger';
 
 interface AuthContextValue {
   user: User | null
@@ -54,7 +55,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           onConflict: 'id',
         })
     } catch (err) {
-      console.warn('Failed to ensure application user record:', err)
+      logger.warn('Failed to ensure application user record:', { err });
     }
   }, [])
 
@@ -82,7 +83,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       .getSession()
       .then(({ data, error }) => {
         if (error) {
-          console.error('Supabase session fetch failed:', error)
+          logger.error('Supabase session fetch failed:', { error });
           setError(error.message)
         }
         syncState(data.session ?? null)

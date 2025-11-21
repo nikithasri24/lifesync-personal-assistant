@@ -1,6 +1,7 @@
 import { ensureSupabase, isSupabaseConfigured } from '../lib/supabase'
 import type { Task, Project } from '../lib/supabase'
 import { RealtimeChannel, type SupabaseClient } from '@supabase/supabase-js'
+import { logger } from './logger'
 
 export class DatabaseService {
   private taskSubscription: RealtimeChannel | null = null
@@ -23,7 +24,7 @@ export class DatabaseService {
       .order('created_at', { ascending: false })
 
     if (error) {
-      console.error('Error fetching tasks:', error)
+      logger.error('DatabaseService', error, { operation: 'getTasks', userId })
       throw error
     }
 
@@ -38,7 +39,7 @@ export class DatabaseService {
       .single()
 
     if (error) {
-      console.error('Error creating task:', error)
+      logger.error('DatabaseService', error, { operation: 'createTask' })
       throw error
     }
 
@@ -54,7 +55,7 @@ export class DatabaseService {
       .single()
 
     if (error) {
-      console.error('Error updating task:', error)
+      logger.error('DatabaseService', error, { operation: 'updateTask', taskId: id })
       throw error
     }
 
@@ -68,7 +69,7 @@ export class DatabaseService {
       .eq('id', id)
 
     if (error) {
-      console.error('Error deleting task:', error)
+      logger.error('DatabaseService', error, { operation: 'deleteTask', taskId: id })
       throw error
     }
   }
@@ -82,7 +83,7 @@ export class DatabaseService {
       .single()
 
     if (error) {
-      console.error('Error restoring task:', error)
+      logger.error('DatabaseService', error, { operation: 'restoreTask', taskId: id })
       throw error
     }
 
@@ -96,7 +97,7 @@ export class DatabaseService {
       .eq('id', id)
 
     if (error) {
-      console.error('Error permanently deleting task:', error)
+      logger.error('DatabaseService', error, { operation: 'permanentlyDeleteTask', taskId: id })
       throw error
     }
   }
@@ -110,7 +111,7 @@ export class DatabaseService {
       .order('created_at', { ascending: false })
 
     if (error) {
-      console.error('Error fetching projects:', error)
+      logger.error('DatabaseService', error, { operation: 'getProjects', userId })
       throw error
     }
 
@@ -125,7 +126,7 @@ export class DatabaseService {
       .single()
 
     if (error) {
-      console.error('Error creating project:', error)
+      logger.error('DatabaseService', error, { operation: 'createProject' })
       throw error
     }
 
@@ -141,7 +142,7 @@ export class DatabaseService {
       .single()
 
     if (error) {
-      console.error('Error updating project:', error)
+      logger.error('DatabaseService', error, { operation: 'updateProject', projectId: id })
       throw error
     }
 
@@ -155,7 +156,7 @@ export class DatabaseService {
       .eq('id', id)
 
     if (error) {
-      console.error('Error deleting project:', error)
+      logger.error('DatabaseService', error, { operation: 'deleteProject', projectId: id })
       throw error
     }
   }
@@ -239,7 +240,7 @@ export class DatabaseService {
       .order('created_at', { ascending: false })
 
     if (error) {
-      console.error('Error fetching tasks by project:', error)
+      logger.error('DatabaseService', error, { operation: 'getTasksByProject', userId, projectId })
       throw error
     }
 
@@ -256,7 +257,7 @@ export class DatabaseService {
       .order('created_at', { ascending: false })
 
     if (error) {
-      console.error('Error fetching tasks by status:', error)
+      logger.error('DatabaseService', error, { operation: 'getTasksByStatus', userId, status })
       throw error
     }
 
@@ -279,7 +280,7 @@ export class DatabaseService {
       .order('due_date', { ascending: true })
 
     if (error) {
-      console.error('Error fetching tasks due today:', error)
+      logger.error('DatabaseService', error, { operation: 'getTasksDueToday', userId })
       throw error
     }
 
@@ -296,7 +297,7 @@ export class DatabaseService {
       .order('created_at', { ascending: false })
 
     if (error) {
-      console.error('Error searching tasks:', error)
+      logger.error('DatabaseService', error, { operation: 'searchTasks', userId, query })
       throw error
     }
 

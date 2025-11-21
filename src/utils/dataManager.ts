@@ -1,4 +1,5 @@
 import { useAppStore } from '../stores/useAppStore';
+import { logger } from '../services/logger';
 
 export interface ExportData {
   habits: any[];
@@ -147,7 +148,7 @@ export const createAutoBackup = () => {
     
     return backupKey;
   } catch (error) {
-    console.error('Failed to create backup:', error);
+    logger.error('Failed to create backup:', { error });
     return null;
   }
 };
@@ -179,7 +180,7 @@ export const restoreFromBackup = (backupKey: string) => {
     mergeImportedData(data, true);
     return true;
   } catch (error) {
-    console.error('Failed to restore backup:', error);
+    logger.error('Failed to restore backup:', { error });
     return false;
   }
 };

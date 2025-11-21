@@ -27,7 +27,7 @@ if (isSupabaseConfigured && supabaseUrl && supabaseAnonKey) {
     },
   })
 } else {
-  console.warn(
+  logger.warn('Supabase',
     '[LifeSync] Supabase environment variables are not configured. '
     + 'Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to enable persistence and collaboration.',
   )

@@ -27,6 +27,7 @@ import {
 import { apiClient } from '../services/apiClient';
 import { expenseCategorizationEngine } from '../services/expenseCategorizationEngine';
 import type { FinancialTransactionData, FinancialAccountData } from '../services/types';
+import { logger } from '../services/logger';
 
 interface BudgetRecommendation {
   category: string;
@@ -94,7 +95,7 @@ export default function SmartBudgetRecommendations() {
       const budget = generateSmartBudgetPlan(transactionData, accountData);
       setBudgetPlan(budget);
     } catch (error) {
-      console.error('Failed to load financial data:', error);
+      logger.error('Failed to load financial data:', { error });
     } finally {
       setLoading(false);
     }

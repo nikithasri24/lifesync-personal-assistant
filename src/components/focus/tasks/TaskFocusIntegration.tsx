@@ -42,6 +42,7 @@ import { useProjectsQuery, useCreateProjectMutation } from '../../../projects/ho
 import { useFocusSessionsQuery } from '../../../focus/hooks/useFocusQuery';
 import type { TodoItem, FocusSession as StoreFocusSession } from '../../../types';
 import type { Project as StoreProject } from '../../../projects/hooks/useProjectsQuery';
+import { logger } from '../../../services/logger';
 
 type TaskStatusView = 'todo' | 'in_progress' | 'completed' | 'cancelled';
 
@@ -409,7 +410,7 @@ export const TaskFocusIntegration: React.FC<Props> = ({
       });
       setShowCreateTask(false);
     } catch (error) {
-      console.error('Error creating task:', error);
+      logger.error('Error creating task:', { error });
     }
   };
 
@@ -436,7 +437,7 @@ export const TaskFocusIntegration: React.FC<Props> = ({
       });
       setShowCreateProject(false);
     } catch (error) {
-      console.error('Error creating project:', error);
+      logger.error('Error creating project:', { error });
     }
   };
 
@@ -454,16 +455,16 @@ export const TaskFocusIntegration: React.FC<Props> = ({
         onTaskComplete(taskId);
       }
     } catch (error) {
-      console.error('Error updating task status:', error);
+      logger.error('Error updating task status:', { error });
     }
   };
 
   const addSubtask = (taskId: string, subtaskTitle: string) => {
-    console.warn('Subtask creation is not yet integrated with the backend', { taskId, subtaskTitle });
+    logger.warn('Subtask creation is not yet integrated with the backend', { taskId, subtaskTitle });
   };
 
   const toggleSubtask = (taskId: string, subtaskId: string) => {
-    console.warn('Subtask updates are not yet integrated with the backend', { taskId, subtaskId });
+    logger.warn('Subtask updates are not yet integrated with the backend', { taskId, subtaskId });
   };
 
   return (

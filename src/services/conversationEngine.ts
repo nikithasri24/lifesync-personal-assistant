@@ -5,6 +5,7 @@ import Groq from 'groq-sdk';
 import { apiClient } from './apiClient';
 import { getFinanceAPI } from '../finance/data';
 import { startOfMonth, startOfWeek, addDays, isSameDay, isThisMonth } from 'date-fns';
+import { logger } from './logger';
 
 const groq = new Groq({
   apiKey: import.meta.env.GROQ_API_KEY,
@@ -200,7 +201,7 @@ const FUNCTION_DEFINITIONS = [
 
 // Function implementations
 async function executeFunction(name: string, args: any): Promise<any> {
-  console.log(`[ConversationEngine] Executing: ${name}`, args);
+  logger.debug('ConversationEngine', `[ConversationEngine] Executing: ${name}`, { args });
 
   try {
     switch (name) {
@@ -364,7 +365,7 @@ async function executeFunction(name: string, args: any): Promise<any> {
         throw new Error(`Unknown function: ${name}`);
     }
   } catch (error: any) {
-    console.error(`[ConversationEngine] Function error:`, error);
+    logger.error('ConversationEngine', `[ConversationEngine] Function error:`, { error });
     return {
       success: false,
       error: error.message || 'Function execution failed'
@@ -540,7 +541,7 @@ You: "Awesome goal! When are you planning to go? I'll help create a savings plan
       return { response: textResponse };
 
     } catch (error: any) {
-      console.error('[ConversationEngine] Error:', error);
+      logger.error('[ConversationEngine] Error:', { error });
 
       // Fallback response
       const fallback = "Sorry, I'm having trouble connecting right now. Please try again.";

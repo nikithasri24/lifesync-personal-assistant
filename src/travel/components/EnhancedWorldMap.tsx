@@ -7,6 +7,7 @@ import React from 'react';
 import { geoPath, geoMercator } from 'd3-geo';
 import { ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
 import type { VisitStatus } from '../types';
+import { logger } from '../../services/logger';
 
 type EnhancedWorldMapProps = {
   visitedCountries: Record<string, VisitStatus>;
@@ -56,7 +57,7 @@ const EnhancedWorldMap: React.FC<EnhancedWorldMapProps> = ({
         setCountries(getComprehensiveCountries());
         setLoading(false);
       } catch (error) {
-        console.error('Error loading map data:', error);
+        logger.error('Error loading map data:', { error });
         setCountries(getComprehensiveCountries());
         setLoading(false);
       }

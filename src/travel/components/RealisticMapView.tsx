@@ -9,6 +9,7 @@ import { feature } from 'topojson-client';
 import { ZoomIn, ZoomOut, Maximize2, Search, X } from 'lucide-react';
 import type { VisitStatus } from '../types';
 import type { Topology, GeometryCollection } from 'topojson-specification';
+import { logger } from '../../services/logger';
 
 type RealisticMapViewProps = {
   visitedCountries: Record<string, VisitStatus>;
@@ -81,7 +82,7 @@ const RealisticMapView: React.FC<RealisticMapViewProps> = ({
         setCountries(countryFeatures);
         setLoading(false);
       } catch (error) {
-        console.error('Error loading map data:', error);
+        logger.error('Error loading map data:', { error });
         setLoading(false);
       }
     };

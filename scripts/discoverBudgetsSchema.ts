@@ -6,36 +6,36 @@ const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1N
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 async function discoverSchema() {
-  console.log('\n=== Discovering Budgets Table Schema ===\n');
+  logger.info('DiscoverBudgetsSchema', '\n=== Discovering Budgets Table Schema ===\n');
 
   // Method 1: Get sample data to see actual columns
-  console.log('Method 1: Query sample data...');
+  logger.info('DiscoverBudgetsSchema', 'Method 1: Query sample data...');
   const { data: sampleData, error: sampleError } = await supabase
     .from('budgets')
     .select('*')
     .limit(1);
 
   if (sampleError) {
-    console.error('Sample data error:', sampleError);
+    logger.error('DiscoverBudgetsSchema', 'Sample data error:', sampleError);
   } else if (sampleData && sampleData.length > 0) {
-    console.log('\n✅ Found existing budget! Columns present:');
+    logger.info('DiscoverBudgetsSchema', '\n✅ Found existing budget! Columns present:');
     const columns = Object.keys(sampleData[0]);
     columns.forEach((col) => {
       const value = sampleData[0][col];
       const type = value === null ? 'null' : typeof value;
-      console.log(`  - ${col}: ${type} = ${JSON.stringify(value)}`);
+      logger.info('DiscoverBudgetsSchema', `  - ${col}: ${type} = ${JSON.stringify(value)}`);
     });
-    console.log('\nSample data:', JSON.stringify(sampleData[0], null, 2));
+    logger.info('DiscoverBudgetsSchema', '\nSample data:', JSON.stringify(sampleData[0], null, 2));
   } else {
-    console.log('No existing budgets found.');
+    logger.info('DiscoverBudgetsSchema', 'No existing budgets found.');
   }
 
   // Method 2: Try inserting with minimal data to see what's required
-  console.log('\n\nMethod 2: Attempt minimal insert to discover required columns...');
+  logger.info('DiscoverBudgetsSchema', '\n\nMethod 2: Attempt minimal insert to discover required columns...');
   const { data: userData, error: userError } = await supabase.auth.getUser();
 
   if (userError || !userData.user) {
-    console.error('User auth error:', userError);
+    logger.error('DiscoverBudgetsSchema', 'User auth error:', userError);
     return;
   }
 
@@ -46,35 +46,35 @@ async function discoverSchema() {
     amount: 100,
   };
 
-  console.log('\nAttempting insert with:', JSON.stringify(testInsert, null, 2));
+  logger.info('DiscoverBudgetsSchema', '\nAttempting insert with:', JSON.stringify(testInsert, null, 2));
   const { data: insertData, error: insertError } = await supabase
     .from('budgets')
     .insert(testInsert)
     .select();
 
   if (insertError) {
-    console.error('\n❌ Insert failed (expected):', insertError.message);
-    console.error('Error code:', insertError.code);
-    console.error('Error details:', insertError.details);
-    console.error('Error hint:', insertError.hint);
+    logger.error('DiscoverBudgetsSchema', '\n❌ Insert failed (expected):', insertError.message);
+    logger.error('DiscoverBudgetsSchema', 'Error code:', insertError.code);
+    logger.error('DiscoverBudgetsSchema', 'Error details:', insertError.details);
+    logger.error('DiscoverBudgetsSchema', 'Error hint:', insertError.hint);
 
     // Parse error to find missing column
     if (insertError.message.includes('null value in column')) {
       const match = insertError.message.match(/column "([^"]+)"/);
       if (match) {
-        console.log(`\n💡 Missing required column: "${match[1]}"`);
+        logger.info('DiscoverBudgetsSchema', `\n💡 Missing required column: "${match[1]}"`);
       }
     }
   } else {
-    console.log('\n✅ Insert succeeded! Data:', insertData);
+    logger.info('DiscoverBudgetsSchema', '\n✅ Insert succeeded! Data:', insertData);
     // Clean up test data
     if (insertData && insertData.length > 0) {
       await supabase.from('budgets').delete().eq('id', insertData[0].id);
-      console.log('Cleaned up test data');
+      logger.info('DiscoverBudgetsSchema', 'Cleaned up test data');
     }
   }
 
-  console.log('\n=== Schema Discovery Complete ===\n');
+  logger.info('DiscoverBudgetsSchema', '\n=== Schema Discovery Complete ===\n');
 }
 
-discoverSchema().catch(console.error);
+discoverSchema().catch((error) => logger.error('DiscoverBudgetsSchema', error));

@@ -16,16 +16,16 @@ export function createConfigCommand(): Command {
       try {
         const currentConfig = await loadConfig();
         
-        console.log(chalk.bold.blue('Current Configuration:'));
-        console.log(`  API URL: ${chalk.green(currentConfig.apiUrl)}`);
-        console.log(`  Data Path: ${chalk.green(currentConfig.dataPath)}`);
-        console.log(`  Username: ${chalk.green(currentConfig.username)}`);
-        console.log(`  Default Store: ${chalk.green(currentConfig.defaultStore || 'Not set')}`);
-        console.log(`  Default Meal Type: ${chalk.green(currentConfig.defaultMealType)}`);
-        console.log(`  Default Category: ${chalk.green(currentConfig.defaultCategory)}`);
+        logger.info('Config', chalk.bold.blue('Current Configuration:'));
+        logger.info('Config', `  API URL: ${chalk.green(currentConfig.apiUrl)}`);
+        logger.info('Config', `  Data Path: ${chalk.green(currentConfig.dataPath)}`);
+        logger.info('Config', `  Username: ${chalk.green(currentConfig.username)}`);
+        logger.info('Config', `  Default Store: ${chalk.green(currentConfig.defaultStore || 'Not set')}`);
+        logger.info('Config', `  Default Meal Type: ${chalk.green(currentConfig.defaultMealType)}`);
+        logger.info('Config', `  Default Category: ${chalk.green(currentConfig.defaultCategory)}`);
         
       } catch (error) {
-        console.error(chalk.red('Failed to load configuration'), error);
+        logger.error('Config', chalk.red('Failed to load configuration'), error);
       }
     });
 
@@ -53,10 +53,10 @@ export function createConfigCommand(): Command {
         }
 
         await updateConfig({ [key]: newValue });
-        console.log(chalk.green(`Set ${key} = ${newValue}`));
+        logger.info('Config', chalk.green(`Set ${key} = ${newValue}`));
         
       } catch (error) {
-        console.error(chalk.red('Failed to update configuration'), error);
+        logger.error('Config', chalk.red('Failed to update configuration'), error);
       }
     });
 
@@ -66,8 +66,8 @@ export function createConfigCommand(): Command {
     .alias('init')
     .description('Run initial setup wizard')
     .action(async () => {
-      console.log(chalk.bold.blue('LifeSync CLI Setup'));
-      console.log(chalk.gray('Configure your CLI preferences\n'));
+      logger.info('Config', chalk.bold.blue('LifeSync CLI Setup'));
+      logger.info('Config', chalk.gray('Configure your CLI preferences\n'));
 
       try {
         const currentConfig = await loadConfig();
@@ -103,12 +103,12 @@ export function createConfigCommand(): Command {
 
         await saveConfig({ ...currentConfig, ...answers });
         
-        console.log(chalk.green('\n✓ Setup completed successfully!'));
-        console.log(chalk.gray('You can now use LifeSync CLI commands.'));
-        console.log(chalk.gray('Run "lifesync --help" to see available commands.'));
+        logger.info('Config', chalk.green('\n✓ Setup completed successfully!'));
+        logger.info('Config', chalk.gray('You can now use LifeSync CLI commands.'));
+        logger.info('Config', chalk.gray('Run "lifesync --help" to see available commands.'));
         
       } catch (error) {
-        console.error(chalk.red('Setup failed'), error);
+        logger.error('Config', chalk.red('Setup failed'), error);
       }
     });
 
@@ -128,17 +128,17 @@ export function createConfigCommand(): Command {
         ]);
 
         if (!confirmed.confirm) {
-          console.log(chalk.yellow('Cancelled'));
+          logger.info('Config', chalk.yellow('Cancelled'));
           return;
         }
 
         const { DEFAULT_CONFIG } = await import('../config.js');
         await saveConfig(DEFAULT_CONFIG);
         
-        console.log(chalk.green('Configuration reset to defaults'));
+        logger.info('Config', chalk.green('Configuration reset to defaults'));
         
       } catch (error) {
-        console.error(chalk.red('Failed to reset configuration'), error);
+        logger.error('Config', chalk.red('Failed to reset configuration'), error);
       }
     });
 

@@ -23,6 +23,7 @@ import {
 import type { VisaRequirement, UserPassport, UserVisa } from '../types/visa';
 import VisaMap from './VisaMap';
 import ExpiryAlerts from './ExpiryAlerts';
+import { logger } from '../../services/logger';
 
 interface DestinationRequirement {
   country: string;
@@ -65,7 +66,7 @@ const VisaCalculator: React.FC = () => {
         setPassport(passportData);
         setUserVisas(visasData);
       } catch (error) {
-        console.error('Error loading passport/visa data:', error);
+        logger.error('Error loading passport/visa data:', { error });
       } finally {
         setLoading(false);
       }
@@ -238,7 +239,7 @@ const VisaCalculator: React.FC = () => {
       setShowPassportSelector(false);
       setSelectedPassportCountry('');
     } catch (error) {
-      console.error('Error adding passport:', error);
+      logger.error('Error adding passport:', { error });
       alert('Failed to save passport. Please try again.');
     }
   };
@@ -260,7 +261,7 @@ const VisaCalculator: React.FC = () => {
       setNewVisaMultipleEntry(true);
       setShowAddVisa(false);
     } catch (error) {
-      console.error('Error adding visa:', error);
+      logger.error('Error adding visa:', { error });
       alert('Failed to save visa. Please try again.');
     }
   };
@@ -270,7 +271,7 @@ const VisaCalculator: React.FC = () => {
       await deleteVisa(visaId);
       setUserVisas(prev => prev.filter(v => v.id !== visaId));
     } catch (error) {
-      console.error('Error removing visa:', error);
+      logger.error('Error removing visa:', { error });
       alert('Failed to remove visa. Please try again.');
     }
   };

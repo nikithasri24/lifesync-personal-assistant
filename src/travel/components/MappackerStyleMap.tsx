@@ -4,6 +4,8 @@
  */
 
 import React from 'react';
+import { logger } from '../../services/logger';
+
 import { geoPath, geoNaturalEarth1 } from 'd3-geo';
 import type { VisitStatus } from '../types';
 
@@ -68,7 +70,7 @@ const MappackerStyleMap: React.FC<MappackerStyleMapProps> = ({
         }
 
         // Debug: Check what properties are available
-        console.log('Sample feature properties:', geoJsonData.features[0]?.properties);
+        logger.info('MappackerStyleMap', 'Sample feature properties:', geoJsonData.features[0]?.properties);
 
         // Convert and filter features
         const countryFeatures = geoJsonData.features
@@ -101,8 +103,8 @@ const MappackerStyleMap: React.FC<MappackerStyleMapProps> = ({
             return hasValidCode && hasValidGeometry;
           });
 
-        console.log(`Loaded ${countryFeatures.length} valid countries from ${geoJsonData.features.length} total features`);
-        console.log('First 3 countries:', countryFeatures.slice(0, 3).map(c => ({
+        logger.debug('MappackerStyleMap', `Loaded ${countryFeatures.length} valid countries from ${geoJsonData.features.length} total features`);
+        logger.info('MappackerStyleMap', 'First 3 countries:', countryFeatures.slice(0, 3).map(c => ({
           name: c.properties.name,
           code: c.properties.iso_a2,
           id: c.id
@@ -119,7 +121,7 @@ const MappackerStyleMap: React.FC<MappackerStyleMapProps> = ({
         setLoading(false);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to load map data';
-        console.error('Error loading map data:', err);
+        logger.error('MappackerStyleMap', 'Error loading map data:', err);
         setError(errorMessage);
         setLoading(false);
       }
@@ -143,8 +145,8 @@ const MappackerStyleMap: React.FC<MappackerStyleMapProps> = ({
   // Debug: log countries when they change
   React.useEffect(() => {
     if (countries.length > 0) {
-      console.log(`Rendering map with ${countries.length} countries`);
-      console.log('First 3 countries:', countries.slice(0, 3).map(c => ({ name: c.properties.name, code: c.properties.iso_a2 })));
+      logger.debug('MappackerStyleMap', `Rendering map with ${countries.length} countries`);
+      logger.info('MappackerStyleMap', 'First 3 countries:', countries.slice(0, 3).map(c => ({ name: c.properties.name, code: c.properties.iso_a2 })));
     }
   }, [countries]);
 
@@ -250,7 +252,7 @@ const MappackerStyleMap: React.FC<MappackerStyleMapProps> = ({
                         />
                       );
                     } catch (err) {
-                      console.error(`Error rendering ${country.properties.name}:`, err);
+                      logger.error('MappackerStyleMap', `Error rendering ${country.properties.name}:`, err);
                       return null;
                     }
                   })}

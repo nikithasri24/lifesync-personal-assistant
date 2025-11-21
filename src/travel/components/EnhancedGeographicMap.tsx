@@ -8,6 +8,7 @@ import { geoPath, geoNaturalEarth1 } from 'd3-geo';
 import { Mountain, Waves, MapPin, Layers, Droplets, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
 import type { VisitStatus } from '../types';
 import { worldRivers, worldMountains, worldLakes, worldDeserts } from '../data/comprehensiveGeography';
+import { logger } from '../../services/logger';
 
 type EnhancedGeographicMapProps = {
   visitedCountries: Record<string, VisitStatus>;
@@ -127,7 +128,7 @@ const EnhancedGeographicMap: React.FC<EnhancedGeographicMapProps> = ({
         setLoading(false);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to load map data';
-        console.error('Error loading map data:', err);
+        logger.error('Error loading map data:', { err });
         setError(errorMessage);
         setLoading(false);
       }
@@ -149,10 +150,10 @@ const EnhancedGeographicMap: React.FC<EnhancedGeographicMapProps> = ({
         if (response.ok) {
           const data = await response.json();
           setStatesData(data.features || []);
-          console.log(`Loaded ${data.features?.length || 0} state/province boundaries`);
+          logger.debug('EnhancedGeographicMap', `Loaded ${data.features?.length || 0} state/province boundaries`);
         }
       } catch (err) {
-        console.error('Error loading state boundaries:', err);
+        logger.error('Error loading state boundaries:', { err });
       } finally {
         setLoadingStates(false);
       }

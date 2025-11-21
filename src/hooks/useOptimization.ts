@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { useMemo, useCallback, useRef, useEffect, useState } from 'react';
+import { logger } from '../services/logger';
 
 // Memoization hook for expensive calculations
 export function useMemoizedCalculation<T>(
@@ -146,7 +147,7 @@ export function usePerformanceMonitor(name: string) {
     return () => {
       const endTime = performance.now();
       const duration = endTime - startTime.current;
-      console.log(`${name} render time: ${duration.toFixed(2)}ms`);
+      logger.debug('Optimization', `${name} render time: ${duration.toFixed(2)}ms`);
     };
   });
 }
@@ -157,7 +158,7 @@ export function useMemoryMonitor(componentName: string) {
     if (process.env.NODE_ENV === 'development') {
       const memoryInfo = (performance as any).memory;
       if (memoryInfo) {
-        console.log(`${componentName} Memory Usage:`, {
+        logger.debug('Optimization', `${componentName} Memory Usage`, {
           used: Math.round(memoryInfo.usedJSHeapSize / 1048576) + ' MB',
           total: Math.round(memoryInfo.totalJSHeapSize / 1048576) + ' MB',
           limit: Math.round(memoryInfo.jsHeapSizeLimit / 1048576) + ' MB'

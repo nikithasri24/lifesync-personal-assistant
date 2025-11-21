@@ -29,6 +29,7 @@ import {
 } from '../utils/tripPlannerUtils';
 import type { Trip, TripWithDestinations } from '../types/trip';
 import type { UserPassport, UserVisa } from '../types/visa';
+import { logger } from '../../services/logger';
 
 const TripPlanner: React.FC = () => {
   const [trips, setTrips] = React.useState<Trip[]>([]);
@@ -64,7 +65,7 @@ const TripPlanner: React.FC = () => {
         setPassport(passportData);
         setUserVisas(visasData);
       } catch (error) {
-        console.error('Error loading trip planner data:', error);
+        logger.error('Error loading trip planner data:', { error });
       } finally {
         setLoading(false);
       }
@@ -78,7 +79,7 @@ const TripPlanner: React.FC = () => {
       const trip = await getTripById(tripId);
       setSelectedTrip(trip);
     } catch (error) {
-      console.error('Error loading trip details:', error);
+      logger.error('Error loading trip details:', { error });
     }
   };
 
@@ -104,7 +105,7 @@ const TripPlanner: React.FC = () => {
       // Load the new trip
       await loadTripDetails(trip.id);
     } catch (error) {
-      console.error('Error creating trip:', error);
+      logger.error('Error creating trip:', { error });
       alert('Failed to create trip. Please try again.');
     }
   };
@@ -120,7 +121,7 @@ const TripPlanner: React.FC = () => {
         setSelectedTrip(null);
       }
     } catch (error) {
-      console.error('Error deleting trip:', error);
+      logger.error('Error deleting trip:', { error });
       alert('Failed to delete trip. Please try again.');
     }
   };
@@ -185,7 +186,7 @@ const TripPlanner: React.FC = () => {
       setNewDestCountry('');
       setShowAddDestination(false);
     } catch (error) {
-      console.error('Error adding destination:', error);
+      logger.error('Error adding destination:', { error });
       alert('Failed to add destination. Please try again.');
     }
   };
@@ -198,7 +199,7 @@ const TripPlanner: React.FC = () => {
       await removeDestination(destId);
       await loadTripDetails(selectedTrip.id);
     } catch (error) {
-      console.error('Error removing destination:', error);
+      logger.error('Error removing destination:', { error });
       alert('Failed to remove destination. Please try again.');
     }
   };

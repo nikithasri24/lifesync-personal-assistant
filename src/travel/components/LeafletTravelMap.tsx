@@ -4,6 +4,8 @@
  */
 
 import React from 'react';
+import { logger } from '../../services/logger';
+
 import { MapContainer, TileLayer, GeoJSON, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -61,8 +63,8 @@ const LeafletTravelMap: React.FC<LeafletTravelMapProps> = ({
 
   // Debug: Log when component mounts
   React.useEffect(() => {
-    console.log('🗺️ LeafletTravelMap mounted');
-    console.log('Visited states:', visitedStates);
+    logger.info('LeafletTravelMap', '🗺️ LeafletTravelMap mounted');
+    logger.info('LeafletTravelMap', 'Visited states:', visitedStates);
   }, []);
 
   // Update zoom ref when zoom changes
@@ -119,7 +121,7 @@ const LeafletTravelMap: React.FC<LeafletTravelMapProps> = ({
         setLoading(false);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to load map data';
-        console.error('Error loading map data:', err);
+        logger.error('LeafletTravelMap', 'Error loading map data:', err);
         setError(errorMessage);
         setLoading(false);
       }
@@ -132,12 +134,12 @@ const LeafletTravelMap: React.FC<LeafletTravelMapProps> = ({
   React.useEffect(() => {
     const loadStateData = async () => {
       if (loadingStates || states.length > 0) {
-        console.log('Skipping state load:', { loadingStates, statesCount: states.length });
+        logger.info('LeafletTravelMap', 'Skipping state load:', { loadingStates, statesCount: states.length });
         return;
       }
 
       try {
-        console.log('Starting to load state boundaries...');
+        logger.info('LeafletTravelMap', 'Starting to load state boundaries...');
         setLoadingStates(true);
         const response = await fetch(
           'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_admin_1_states_provinces.geojson'
@@ -146,27 +148,27 @@ const LeafletTravelMap: React.FC<LeafletTravelMapProps> = ({
         if (response.ok) {
           const data = await response.json();
           setStates(data.features || []);
-          console.log(`✅ Loaded ${data.features?.length || 0} state/province boundaries`);
+          logger.debug('LeafletTravelMap', `✅ Loaded ${data.features?.length || 0} state/province boundaries`);
           if (data.features && data.features.length > 0) {
-            console.log('Sample state:', data.features[0].properties);
+            logger.info('LeafletTravelMap', 'Sample state:', data.features[0].properties);
           }
         } else {
-          console.error('Failed to fetch states:', response.status);
+          logger.error('LeafletTravelMap', 'Failed to fetch states:', response.status);
         }
       } catch (err) {
-        console.error('Error loading state boundaries:', err);
+        logger.error('LeafletTravelMap', 'Error loading state boundaries:', err);
       } finally {
         setLoadingStates(false);
       }
     };
 
     // Only load states when zoomed in enough
-    console.log('Current zoom level:', currentZoom);
+    logger.info('LeafletTravelMap', 'Current zoom level:', currentZoom);
     if (currentZoom >= 5) {
-      console.log('Zoom level >= 5, loading states...');
+      logger.info('LeafletTravelMap', 'Zoom level >= 5, loading states...');
       loadStateData();
     } else {
-      console.log('Zoom level < 5, not loading states yet');
+      logger.info('LeafletTravelMap', 'Zoom level < 5, not loading states yet');
     }
   }, [currentZoom, loadingStates, states.length]);
 
@@ -246,12 +248,12 @@ const LeafletTravelMap: React.FC<LeafletTravelMapProps> = ({
       },
       click: (e: L.LeafletMouseEvent) => {
         // Only handle country clicks when zoomed out (not looking at states)
-        console.log('Country clicked, current zoom:', zoomRef.current);
+        logger.info('LeafletTravelMap', 'Country clicked, current zoom:', zoomRef.current);
         if (zoomRef.current < 5) {
-          console.log('✓ Processing country click:', countryCode);
+          logger.info('LeafletTravelMap', '✓ Processing country click:', countryCode);
           onCountryClick(countryCode);
         } else {
-          console.log('✗ Country click ignored (zoom >= 5, expecting state click)');
+          logger.info('LeafletTravelMap', '✗ Country click ignored (zoom >= 5, expecting state click)');
         }
       },
     });
@@ -263,11 +265,11 @@ const LeafletTravelMap: React.FC<LeafletTravelMapProps> = ({
     const countryCode = feature.properties.iso_a2 || feature.properties.adm0_a3;
 
     if (!stateCode) {
-      console.log('State without code:', feature.properties);
+      logger.info('LeafletTravelMap', 'State without code:', feature.properties);
       return;
     }
 
-    console.log('Processing state:', { stateName, stateCode, countryCode });
+    logger.info('LeafletTravelMap', 'Processing state:', { stateName, stateCode, countryCode });
 
     // Style the state
     if (layer instanceof L.Path) {
@@ -300,12 +302,12 @@ const LeafletTravelMap: React.FC<LeafletTravelMapProps> = ({
       },
       click: (e: L.LeafletMouseEvent) => {
         L.DomEvent.stopPropagation(e);
-        console.log('🎯 State clicked:', { stateName, stateCode, countryCode });
+        logger.info('LeafletTravelMap', '🎯 State clicked:', { stateName, stateCode, countryCode });
         if (onStateClick) {
-          console.log('Calling onStateClick...');
+          logger.info('LeafletTravelMap', 'Calling onStateClick...');
           onStateClick(stateCode, countryCode);
         } else {
-          console.log('⚠️ onStateClick is not defined!');
+          logger.info('LeafletTravelMap', '⚠️ onStateClick is not defined!');
         }
       },
     });

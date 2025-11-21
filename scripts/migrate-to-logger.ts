@@ -1,158 +1,91 @@
+#!/usr/bin/env tsx
 /**
- * Migration Script: Console to Logger
- *
- * Intelligently replaces console.* calls with logger.* calls
- * Preserves domain tags and context
+ * Automated script to migrate console.* statements to logger
  */
 
-import * as fs from 'fs';
-import * as path from 'path';
+import { readFileSync, writeFileSync } from 'fs';
+import { globSync } from 'glob';
 
-interface Replacement {
-  file: string;
-  line: number;
-  from: string;
-  to: string;
+// Get domain from file path
+function getDomain(filePath: string): string {
+  const parts = filePath.split('/');
+  const filename = parts[parts.length - 1].replace(/\.(ts|tsx)$/, '');
+  
+  if (filePath.includes('/services/')) return filename.charAt(0).toUpperCase() + filename.slice(1);
+  if (filePath.includes('/hooks/')) return filename.replace(/^use/, '');
+  if (filePath.includes('/components/')) return filename;
+  if (filePath.includes('/pages/')) return filename.replace(/Page$/, '');
+  if (filePath.includes('/stores/')) return filename.replace(/(Store|use)/, '');
+  
+  return filename.charAt(0).toUpperCase() + filename.slice(1);
 }
 
-const replacements: Replacement[] = [];
-
-/**
- * Extract domain from console message
- * Examples:
- *   "[LifeSync] message" -> "LifeSync"
- *   "[Store] message" -> "Store"
- *   "[75Hard] message" -> "75Hard"
- *   "Failed to load" -> "App" (default)
- */
-function extractDomain(message: string): string {
-  const tagMatch = message.match(/^\[([^\]]+)\]/);
-  if (tagMatch) {
-    return tagMatch[1];
+// Process file
+function processFile(filePath: string): number {
+  let content = readFileSync(filePath, 'utf-8');
+  const original = content;
+  const domain = getDomain(filePath);
+  
+  // Skip if no console statements
+  if (!content.match(/console\.(log|error|warn|info|debug)\(/)) {
+    return 0;
   }
-
-  // Try to infer from context
-  if (message.includes('Supabase')) return 'Supabase';
-  if (message.includes('Auth')) return 'Auth';
-  if (message.includes('Store')) return 'Store';
-
-  return 'App'; // Default domain
-}
-
-/**
- * Clean message by removing domain tag
- * "[LifeSync] Failed" -> "Failed"
- */
-function cleanMessage(message: string): string {
-  return message.replace(/^\[[^\]]+\]\s*/, '');
-}
-
-/**
- * Convert console.log to logger.debug
- */
-function replaceConsoleLog(line: string): string {
-  // Pattern: console.log('[Domain] message', ...args)
-  const match = line.match(/console\.log\((.*?)\)/);
-  if (!match) return line;
-
-  const args = match[1];
-
-  // Extract first argument (the message)
-  const firstArgMatch = args.match(/^(['"`])(.+?)\1/);
-  if (!firstArgMatch) {
-    // Simple replacement if we can't parse
-    return line.replace('console.log', 'logger.debug');
-  }
-
-  const message = firstArgMatch[2];
-  const domain = extractDomain(message);
-  const cleanedMessage = cleanMessage(message);
-  const remainingArgs = args.substring(firstArgMatch[0].length).replace(/^,\s*/, '');
-
-  // Build new logger call
-  let newCall = `logger.debug('${domain}', '${cleanedMessage}'`;
-  if (remainingArgs) {
-    newCall += `, { data: ${remainingArgs} }`;
-  }
-  newCall += ')';
-
-  return line.replace(/console\.log\(.*?\)/, newCall);
-}
-
-/**
- * Convert console.error to logger.error
- */
-function replaceConsoleError(line: string): string {
-  // Pattern: console.error('[Domain] message', error)
-  const match = line.match(/console\.error\((.*?)\)/);
-  if (!match) return line;
-
-  const args = match[1];
-
-  // Extract first argument (the message)
-  const firstArgMatch = args.match(/^(['"`])(.+?)\1/);
-  if (!firstArgMatch) {
-    // Simple replacement if we can't parse
-    return line.replace('console.error', 'logger.error');
-  }
-
-  const message = firstArgMatch[2];
-  const domain = extractDomain(message);
-  const cleanedMessage = cleanMessage(message);
-  const remainingArgs = args.substring(firstArgMatch[0].length).replace(/^,\s*/, '');
-
-  // Build new logger call
-  let newCall = `logger.error('${domain}', `;
-
-  // If second arg looks like an Error object, use it
-  if (remainingArgs && (remainingArgs.includes('error') || remainingArgs.includes('Error') || remainingArgs.includes('e)'))) {
-    newCall += `${remainingArgs.split(',')[0].trim()}`;
-    const context = remainingArgs.split(',').slice(1).join(',').trim();
-    if (context) {
-      newCall += `, { context: '${cleanedMessage}', ${context} }`;
-    } else {
-      newCall += `, { context: '${cleanedMessage}' }`;
+  
+  // Add logger import if needed
+  const hasLoggerImport = content.includes("import { logger }");
+  if (!hasLoggerImport) {
+    const depth = filePath.split('/src/')[1]?.split('/').length - 1 || 0;
+    const relativePath = '../'.repeat(depth) + 'services/logger';
+    const importLine = `import { logger } from '${relativePath}';\n`;
+    
+    // Find last import
+    const lines = content.split('\n');
+    let lastImportIndex = -1;
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].startsWith('import ')) lastImportIndex = i;
     }
-  } else {
-    newCall += `new Error('${cleanedMessage}')`;
-    if (remainingArgs) {
-      newCall += `, { data: ${remainingArgs} }`;
+    
+    if (lastImportIndex >= 0) {
+      lines.splice(lastImportIndex + 1, 0, importLine);
+      content = lines.join('\n');
     }
   }
-
-  newCall += ')';
-
-  return line.replace(/console\.error\(.*?\)/, newCall);
+  
+  // Replace console statements
+  content = content.replace(/console\.error\((.*?)\)/g, (match, args) => {
+    if (args.match(/^(error|err|e)\b/)) {
+      return `logger.error('${domain}', ${args})`;
+    }
+    return `logger.error('${domain}', new Error(${args}))`;
+  });
+  
+  content = content.replace(/console\.warn\((.*?)\)/g, `logger.warn('${domain}', $1)`);
+  content = content.replace(/console\.info\((.*?)\)/g, `logger.info('${domain}', $1)`);
+  content = content.replace(/console\.debug\((.*?)\)/g, `logger.debug('${domain}', $1)`);
+  content = content.replace(/console\.log\((.*?)\)/g, `logger.debug('${domain}', $1)`);
+  
+  if (content !== original) {
+    writeFileSync(filePath, content, 'utf-8');
+    return 1;
+  }
+  
+  return 0;
 }
 
-/**
- * Convert console.warn to logger.warn
- */
-function replaceConsoleWarn(line: string): string {
-  // Similar to console.error
-  const match = line.match(/console\.warn\((.*?)\)/);
-  if (!match) return line;
+// Main
+const files = globSync('src/**/*.{ts,tsx}', {
+  ignore: ['**/node_modules/**', '**/*.test.*', '**/*.spec.*', '**/logger.ts']
+});
 
-  const args = match[1];
-  const firstArgMatch = args.match(/^(['"`])(.+?)\1/);
-  if (!firstArgMatch) {
-    return line.replace('console.warn', 'logger.warn');
+console.log(`Processing ${files.length} files...`);
+let modified = 0;
+
+for (const file of files) {
+  try {
+    modified += processFile(file);
+  } catch (err) {
+    console.error(`Error processing ${file}:`, err);
   }
-
-  const message = firstArgMatch[2];
-  const domain = extractDomain(message);
-  const cleanedMessage = cleanMessage(message);
-  const remainingArgs = args.substring(firstArgMatch[0].length).replace(/^,\s*/, '');
-
-  let newCall = `logger.warn('${domain}', '${cleanedMessage}'`;
-  if (remainingArgs) {
-    newCall += `, { data: ${remainingArgs} }`;
-  }
-  newCall += ')';
-
-  return line.replace(/console\.warn\(.*?\)/, newCall);
 }
 
-console.log('✅ Migration script created');
-console.log('This script shows the pattern for replacing console statements');
-console.log('Actual replacement will be done with sed commands for safety');
+console.log(`Modified ${modified} files`);

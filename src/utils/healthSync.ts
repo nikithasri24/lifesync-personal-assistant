@@ -1,4 +1,5 @@
 import type { HealthKitData, HealthSyncStatus, PeriodCycle, PeriodSymptom } from '../types/index';
+import { logger } from '../services/logger';
 
 // Enhanced Apple Health integration utilities
 export class HealthKitIntegration {
@@ -34,7 +35,7 @@ export class HealthKitIntegration {
         this.healthStore = (window as any).HealthKit;
       }
     } catch (error) {
-      console.log('HealthKit not available, using fallback methods');
+      logger.debug('Utils', 'HealthKit not available, using fallback methods');
     }
   }
 
@@ -60,7 +61,7 @@ export class HealthKitIntegration {
 
       return permission;
     } catch (error) {
-      console.error('Failed to request HealthKit permissions:', error);
+      logger.error('Failed to request HealthKit permissions:', { error });
       return false;
     }
   }
@@ -88,7 +89,7 @@ To sync with Apple Health:
       }
       return false;
     } catch (error) {
-      console.error('HealthKit permission request failed:', error);
+      logger.error('HealthKit permission request failed:', { error });
       return false;
     }
   }
@@ -158,7 +159,7 @@ To sync with Apple Health:
 
       return data;
     } catch (error) {
-      console.error('Failed to fetch live Health data:', error);
+      logger.error('Failed to fetch live Health data:', { error });
       return {};
     }
   }
@@ -178,7 +179,7 @@ To sync with Apple Health:
         endDate: endDate.toISOString()
       });
     } catch (error) {
-      console.error('Failed to query menstrual flow:', error);
+      logger.error('Failed to query menstrual flow:', { error });
       return null;
     }
   }
@@ -208,7 +209,7 @@ To sync with Apple Health:
       const results = await Promise.all(queries);
       return { samples: results.flat() };
     } catch (error) {
-      console.error('Failed to query symptoms:', error);
+      logger.error('Failed to query symptoms:', { error });
       return null;
     }
   }
@@ -224,7 +225,7 @@ To sync with Apple Health:
         endDate: new Date().toISOString()
       });
     } catch (error) {
-      console.error('Failed to query ovulation data:', error);
+      logger.error('Failed to query ovulation data:', { error });
       return null;
     }
   }
@@ -240,7 +241,7 @@ To sync with Apple Health:
         endDate: new Date().toISOString()
       });
     } catch (error) {
-      console.error('Failed to query basal body temperature:', error);
+      logger.error('Failed to query basal body temperature:', { error });
       return null;
     }
   }
@@ -262,7 +263,7 @@ To sync with Apple Health:
       // Method 3: Mock data for demo (remove in production)
       return this.generateMockHealthData();
     } catch (error) {
-      console.error('Fallback health query failed:', error);
+      logger.error('Fallback health query failed:', { error });
       return {};
     }
   }

@@ -42,6 +42,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { format, subDays, startOfDay, endOfDay } from 'date-fns';
+import { logger } from '../../../services/logger';
 
 interface WellnessEvent {
   id: string;
@@ -313,7 +314,7 @@ export const WellnessCenter: React.FC<Props> = ({
     }
 
     // Add visual reminder (you could implement a toast notification here)
-    console.log(`Wellness reminder: ${reminder.title} - ${reminder.message}`);
+    logger.debug('WellnessCenter', `Wellness reminder: ${reminder.title} - ${reminder.message}`);
   };
 
   const startBreathingExercise = (exercise: BreathingExercise) => {

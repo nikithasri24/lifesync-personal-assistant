@@ -16,6 +16,7 @@ import type {
   ModulePermissionLevel,
 } from '../types/connections';
 import { MODULE_CONFIGS, PERMISSION_LEVEL_INFO } from '../types/connections';
+import { logger } from '../../services/logger';
 
 interface PermissionManagerProps {
   connection: ConnectionWithUser;
@@ -38,7 +39,7 @@ const PermissionManager: React.FC<PermissionManagerProps> = ({ connection }) => 
       setMyPermissions(mine);
       setTheirPermissions(theirs);
     } catch (error) {
-      console.error('Error loading permissions:', error);
+      logger.error('Error loading permissions:', { error });
     } finally {
       setLoading(false);
     }
@@ -57,7 +58,7 @@ const PermissionManager: React.FC<PermissionManagerProps> = ({ connection }) => 
       });
       await loadPermissions();
     } catch (error) {
-      console.error('Error updating permission:', error);
+      logger.error('Error updating permission:', { error });
       alert('Failed to update permission');
     } finally {
       setUpdating(null);

@@ -28,6 +28,7 @@ import GoalMilestones from '../goals/components/GoalMilestones';
 import GoalStreaks from '../goals/components/GoalStreaks';
 import GoalGamification from '../goals/components/GoalGamification';
 import GoalCheckins from '../goals/components/GoalCheckins';
+import { logger } from '../services/logger';
 
 const GOAL_CATEGORIES: GoalCategory[] = ['personal', 'health', 'career', 'financial', 'fitness'];
 const GOAL_PRIORITIES: GoalPriority[] = ['low', 'medium', 'high', 'critical'];
@@ -149,7 +150,7 @@ const LifeGoals: React.FC = () => {
       setGoalDraft(createGoalDraft());
       setShowGoalForm(false);
     } catch (error) {
-      console.error('Error creating goal:', error);
+      logger.error('Error creating goal:', { error });
       alert('Failed to create goal. Please try again.');
     }
   };
@@ -170,7 +171,7 @@ const LifeGoals: React.FC = () => {
       setDreamDraft(createDreamDraft());
       setShowDreamForm(false);
     } catch (error) {
-      console.error('Error creating dream:', error);
+      logger.error('Error creating dream:', { error });
       alert('Failed to create dream. Please try again.');
     }
   };
@@ -186,7 +187,7 @@ const LifeGoals: React.FC = () => {
         },
       });
     } catch (error) {
-      console.error('Error updating goal:', error);
+      logger.error('Error updating goal:', { error });
       alert('Failed to update goal. Please try again.');
     }
   };
@@ -197,7 +198,7 @@ const LifeGoals: React.FC = () => {
     try {
       await deleteGoalMutation.mutateAsync(goalId);
     } catch (error) {
-      console.error('Error deleting goal:', error);
+      logger.error('Error deleting goal:', { error });
       alert('Failed to delete goal. Please try again.');
     }
   };
@@ -212,7 +213,7 @@ const LifeGoals: React.FC = () => {
         },
       });
     } catch (error) {
-      console.error('Error updating dream:', error);
+      logger.error('Error updating dream:', { error });
       alert('Failed to update dream. Please try again.');
     }
   };
@@ -223,7 +224,7 @@ const LifeGoals: React.FC = () => {
     try {
       await deleteDreamMutation.mutateAsync(dreamId);
     } catch (error) {
-      console.error('Error deleting dream:', error);
+      logger.error('Error deleting dream:', { error });
       alert('Failed to delete dream. Please try again.');
     }
   };
@@ -241,7 +242,7 @@ const LifeGoals: React.FC = () => {
       setEditingProgress(null);
       setProgressValue(0);
     } catch (error) {
-      console.error('Error updating progress:', error);
+      logger.error('Error updating progress:', { error });
       alert('Failed to update progress. Please try again.');
     }
   };

@@ -11,6 +11,7 @@ import { formatCurrency } from '../utils/currency';
 import { CreditCardCard } from '../components/creditCards/CreditCardCard';
 import { CreditCardDetailsPage } from './CreditCardDetailsPage';
 import { CreditCardPointsTracker } from '../components/creditCards/CreditCardPointsTracker';
+import { logger } from '../../services/logger';
 
 const CreditCardsPage: React.FC = () => {
   const [selectedCardId, setSelectedCardId] = React.useState<string | null>(null);
@@ -72,7 +73,7 @@ const CreditCardsPage: React.FC = () => {
         updates: { rewardsBalance: newBalance }
       });
     } catch (error) {
-      console.error('[CreditCardsPage] Failed to update rewards balance:', error);
+      logger.error('[CreditCardsPage] Failed to update rewards balance:', { error });
     }
   };
 

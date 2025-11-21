@@ -57,7 +57,7 @@ function parseRequirement(req: string): { requirement: VisaRequirement; daysAllo
   }
 
   // Default to visa required if unknown
-  console.warn(`Unknown requirement: ${req}`);
+  logger.warn('Utils', `Unknown requirement: ${req}`);
   return { requirement: 'visa-required' };
 }
 
@@ -111,6 +111,7 @@ export function generateTypeScriptFile(data: ProcessedVisaData, outputPath: stri
  */
 
 import type { VisaRequirement } from '../types/visa';
+import { logger } from '../../services/logger';
 
 export interface VisaRequirementEntry {
   requirement: VisaRequirement;
@@ -216,19 +217,19 @@ export function getAvailablePassportCountries(): string[] {
 `;
 
   fs.writeFileSync(outputPath, output, 'utf-8');
-  console.log(`Generated ${outputPath}`);
-  console.log(`- ${countryCount} passport countries`);
-  console.log(`- ${totalEntries} total entries`);
+  logger.debug('Utils', `Generated ${outputPath}`);
+  logger.debug('Utils', `- ${countryCount} passport countries`);
+  logger.debug('Utils', `- ${totalEntries} total entries`);
 }
 
 // Main execution
 const csvPath = '/tmp/passport-matrix.csv';
 const outputPath = '/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/travel/data/visaRequirements.ts';
 
-console.log('Processing visa data...');
+logger.debug('Utils', 'Processing visa data...');
 const data = processVisaDataFromCSV(csvPath);
 
-console.log('Generating TypeScript file...');
+logger.debug('Utils', 'Generating TypeScript file...');
 generateTypeScriptFile(data, outputPath);
 
-console.log('Done!');
+logger.debug('Utils', 'Done!');

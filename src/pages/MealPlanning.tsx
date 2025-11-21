@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { logger } from '../services/logger';
+
 import { createPortal } from 'react-dom';
 import type { FormEvent } from 'react';
 import { addDays, format, isSameWeek, startOfWeek, isSameDay } from 'date-fns';
@@ -53,10 +55,10 @@ const cleanupOldDrafts = () => {
 
     keysToRemove.forEach(key => localStorage.removeItem(key));
     if (keysToRemove.length > 0) {
-      console.log(`Cleaned up ${keysToRemove.length} old meal drafts`);
+      logger.debug('MealPlanning', `Cleaned up ${keysToRemove.length} old meal drafts`);
     }
   } catch (error) {
-    console.error('Failed to cleanup old drafts:', error);
+    logger.error('MealPlanning', 'Failed to cleanup old drafts:', error);
   }
 };
 
@@ -408,7 +410,7 @@ async function fetchYoutubeRecipe(url: string, lang: string = 'en'): Promise<Omi
       };
     }
   } catch (aiError) {
-    console.warn('AI extraction failed, falling back to regex parser:', aiError);
+    logger.warn('MealPlanning', 'AI extraction failed, falling back to regex parser:', aiError);
   }
 
   // Fallback to original regex-based parsing
@@ -631,7 +633,7 @@ function MealItem({ meal, recipes }: { meal: PlannedMeal; recipes: Recipe[] }) {
         });
       }
     } catch (error) {
-      console.error('Failed to update meal:', error);
+      logger.error('MealPlanning', 'Failed to update meal:', error);
       // Revert on error
       setEditValue(originalName);
     }
@@ -1246,7 +1248,7 @@ function AddMealControl({ dateKey, mealType, onAdded, showByDefault = true, comp
         setShowDraftIndicator(false);
       }
     } catch (error) {
-      console.error('Failed to save draft:', error);
+      logger.error('MealPlanning', 'Failed to save draft:', error);
     }
   }, [query, storageKey]);
 
@@ -1408,7 +1410,7 @@ function AddMealControl({ dateKey, mealType, onAdded, showByDefault = true, comp
           // Auto-link to existing recipe
           finalRecipeId = existingRecipe.id;
           finalCustomMeal = undefined;
-          console.log(`Auto-linked meal "${customMeal}" to existing recipe`);
+          logger.debug('MealPlanning', `Auto-linked meal "${customMeal}" to existing recipe`);
         } else {
           // Try to auto-fetch recipe from Google
           try {
@@ -1418,11 +1420,11 @@ function AddMealControl({ dateKey, mealType, onAdded, showByDefault = true, comp
               if (newRecipe?.id) {
                 finalRecipeId = newRecipe.id;
                 finalCustomMeal = undefined;
-                console.log(`Auto-created recipe for "${customMeal}" from Google`);
+                logger.debug('MealPlanning', `Auto-created recipe for "${customMeal}" from Google`);
               }
             }
           } catch (error) {
-            console.warn('Failed to auto-fetch recipe, using custom meal:', error);
+            logger.warn('MealPlanning', 'Failed to auto-fetch recipe, using custom meal:', error);
             // Will fall back to custom meal
           }
         }
@@ -1450,7 +1452,7 @@ function AddMealControl({ dateKey, mealType, onAdded, showByDefault = true, comp
       try {
         localStorage.removeItem(storageKey);
       } catch (error) {
-        console.error('Failed to clear draft:', error);
+        logger.error('MealPlanning', 'Failed to clear draft:', error);
       }
       // Hide input if it wasn't shown by default
       if (!showByDefault) {
@@ -1458,7 +1460,7 @@ function AddMealControl({ dateKey, mealType, onAdded, showByDefault = true, comp
       }
       onAdded?.();
     } catch (error) {
-      console.error('Failed to add meal:', error);
+      logger.error('MealPlanning', 'Failed to add meal:', error);
       // Keep the input open so user can try again
       setShowList(true);
     }
@@ -1487,7 +1489,7 @@ function AddMealControl({ dateKey, mealType, onAdded, showByDefault = true, comp
       // 3) Fallback: add as plain custom meal
       await add(undefined, trimmed);
     } catch (e) {
-      console.warn('Enrich add failed; falling back to custom meal', e);
+      logger.warn('MealPlanning', 'Enrich add failed; falling back to custom meal', e);
       await add(undefined, trimmed);
     }
   };
@@ -1666,7 +1668,7 @@ async function fetchRecipeFromGoogle(mealName: string): Promise<Omit<Recipe, 'id
 
     const response = await fetch(apiUrl, { headers: { Accept: 'application/json' } });
     if (!response.ok) {
-      console.warn('Recipe search failed (non-OK). Using scaffold.');
+      logger.warn('MealPlanning', 'Recipe search failed (non-OK). Using scaffold.');
       return scaffold(mealName);
     }
 
@@ -1698,7 +1700,7 @@ async function fetchRecipeFromGoogle(mealName: string): Promise<Omit<Recipe, 'id
       nutritionInfo: undefined,
     };
   } catch (error) {
-    console.warn('Failed to fetch recipe from Google. Using scaffold:', error);
+    logger.warn('MealPlanning', 'Failed to fetch recipe from Google. Using scaffold:', error);
     return scaffold(mealName);
   }
 }
@@ -1941,7 +1943,7 @@ function RecipeEditModal({ recipe, onClose }: { recipe: Recipe; onClose: () => v
         await updateRecipeMutation.mutateAsync({ recipeId: recipe.id!, updates });
         setLastSaved(new Date());
       } catch (err) {
-        console.error('Auto-save failed:', err);
+        logger.error('MealPlanning', 'Auto-save failed:', err);
         setError('Auto-save failed');
       } finally {
         setSaving(false);
@@ -2002,7 +2004,7 @@ function RecipeEditModal({ recipe, onClose }: { recipe: Recipe; onClose: () => v
       await updateRecipeMutation.mutateAsync({ recipeId: recipe.id!, updates });
       onClose();
     } catch (err) {
-      console.error('Failed to update recipe', err);
+      logger.error('MealPlanning', 'Failed to update recipe', err);
       setError('Failed to save changes. Please try again.');
     } finally {
       setSaving(false);
@@ -2458,7 +2460,7 @@ const MealPlanning: React.FC = () => {
       clearSelection();
       setMultiCellQuery('');
     } catch (error) {
-      console.error('Failed to add meals to selected cells:', error);
+      logger.error('MealPlanning', 'Failed to add meals to selected cells:', error);
       showGlobalToast('Failed to add meals', 'error');
     }
   };
@@ -2603,7 +2605,7 @@ const MealPlanning: React.FC = () => {
         return new Map(Object.entries(parsed));
       }
     } catch (error) {
-      console.error('Failed to load grocery statuses:', error);
+      logger.error('MealPlanning', 'Failed to load grocery statuses:', error);
     }
     return new Map();
   });
@@ -2614,7 +2616,7 @@ const MealPlanning: React.FC = () => {
       const obj = Object.fromEntries(groceryItemStatuses);
       localStorage.setItem(groceryStorageKey, JSON.stringify(obj));
     } catch (error) {
-      console.error('Failed to save grocery statuses:', error);
+      logger.error('MealPlanning', 'Failed to save grocery statuses:', error);
     }
   }, [groceryItemStatuses, groceryStorageKey]);
 
@@ -3397,7 +3399,7 @@ const MealPlanning: React.FC = () => {
                         setTextDraft(null);
                         setTextImageUrl('');
                       } catch (e) {
-                        console.error('Save recipe failed', e);
+                        logger.error('MealPlanning', 'Save recipe failed', e);
                         const msg = e instanceof Error ? e.message : 'Failed to save recipe';
                         setTextError(msg);
                       }
@@ -3450,7 +3452,7 @@ const MealPlanning: React.FC = () => {
                       try {
                         await deleteAllRecipesMutation.mutateAsync();
                       } catch (e) {
-                        console.error('Failed to delete all recipes', e)
+                        logger.error('MealPlanning', 'Failed to delete all recipes', e)
                       }
                     }
                   }}
@@ -3787,7 +3789,7 @@ const MealPlanning: React.FC = () => {
                     // Optionally navigate to the target week
                     setCurrentWeekStart(copyTargetWeek);
                   } catch (error) {
-                    console.error('Failed to copy week:', error);
+                    logger.error('MealPlanning', 'Failed to copy week:', error);
                     showGlobalToast('Failed to copy meals', 'error');
                   }
                 }}
@@ -3845,7 +3847,7 @@ function RecipeCard({ recipe, onView, onEdit, onDelete }: { recipe: Recipe; onVi
     try {
       await updateRecipeMutation.mutateAsync({ recipeId: recipe.id, updates: { isFavorite: !recipe.isFavorite } });
     } catch (error) {
-      console.error('Failed to toggle favorite:', error);
+      logger.error('MealPlanning', 'Failed to toggle favorite:', error);
     }
   };
 
@@ -3970,9 +3972,9 @@ function RecipeCard({ recipe, onView, onEdit, onDelete }: { recipe: Recipe; onVi
               type="button"
               onClick={async () => {
                 try {
-                  console.log('[Globe] Fetching recipe for:', recipe.name);
+                  logger.info('MealPlanning', '[Globe] Fetching recipe for:', recipe.name);
                   const draft = await fetchRecipeFromGoogle(recipe.name);
-                  console.log('[Globe] Fetched draft:', draft);
+                  logger.info('MealPlanning', '[Globe] Fetched draft:', draft);
 
                   if (!draft) {
                     useAppStore.getState().showGlobalToast('❌ No recipe data received', 'error');
@@ -3984,7 +3986,7 @@ function RecipeCard({ recipe, onView, onEdit, onDelete }: { recipe: Recipe; onVi
                     return;
                   }
 
-                  console.log('[Globe] Updating recipe with ID:', recipe.id);
+                  logger.info('MealPlanning', '[Globe] Updating recipe with ID:', recipe.id);
                   await updateRecipeMutation.mutateAsync({
                     recipeId: recipe.id,
                     updates: {
@@ -3992,10 +3994,10 @@ function RecipeCard({ recipe, onView, onEdit, onDelete }: { recipe: Recipe; onVi
                       name: recipe.name, // Keep original name
                     }
                   });
-                  console.log('[Globe] Recipe updated successfully');
+                  logger.info('MealPlanning', '[Globe] Recipe updated successfully');
                   useAppStore.getState().showGlobalToast('✅ Recipe updated!', 'success');
                 } catch (error) {
-                  console.error('[Globe] Failed to fetch recipe:', error);
+                  logger.error('MealPlanning', '[Globe] Failed to fetch recipe:', error);
                   const errorMsg = error instanceof Error ? error.message : 'Unknown error';
                   useAppStore.getState().showGlobalToast(`❌ Failed: ${errorMsg}`, 'error');
                 }

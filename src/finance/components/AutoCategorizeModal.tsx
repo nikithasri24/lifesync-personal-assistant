@@ -10,6 +10,7 @@ import { Button } from '../ui/Button';
 import { ConfidenceBadge, ConfidenceProgress } from './ConfidenceBadge';
 import { CategorizationEngine, type CategorizationResult } from '../services/categorization/CategorizationEngine';
 import { formatCurrency } from '../utils/currency';
+import { logger } from '../../services/logger';
 
 export interface AutoCategorizeModalProps {
   transactions: Array<{
@@ -80,7 +81,7 @@ export const AutoCategorizeModal: React.FC<AutoCategorizeModalProps> = ({
 
         setStep('review');
       } catch (error) {
-        console.error('Categorization failed:', error);
+        logger.error('Categorization failed:', { error });
       } finally {
         if (!cancelled) {
           setLoading(false);
@@ -116,7 +117,7 @@ export const AutoCategorizeModal: React.FC<AutoCategorizeModalProps> = ({
       await onApply(toApply);
       onClose();
     } catch (error) {
-      console.error('Failed to apply categorization:', error);
+      logger.error('Failed to apply categorization:', { error });
       setLoading(false);
       setStep('review');
     }

@@ -13,6 +13,7 @@ import type { ConnectionWithUser, PendingInvitation } from '../shared/types/conn
 import ConnectionsList from '../shared/components/ConnectionsList';
 import NewConnectionForm from '../shared/components/NewConnectionForm';
 import InvitationsPanel from '../shared/components/InvitationsPanel';
+import { logger } from '../services/logger';
 
 type TabView = 'connections' | 'invitations' | 'add';
 
@@ -38,7 +39,7 @@ const Shared: React.FC = () => {
       setSentInvitations(invitationsData.sent);
       setReceivedInvitations(invitationsData.received);
     } catch (error) {
-      console.error('Error loading connections:', error);
+      logger.error('Error loading connections:', { error });
     } finally {
       setLoading(false);
     }

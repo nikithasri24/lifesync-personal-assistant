@@ -9,6 +9,7 @@ import { travelAPI } from '../data';
 import type { VisitStatus, VisitedLocation } from '../types';
 import { nationalParks, getParksByState } from '../data/nationalParks';
 import { islands, getIslandsByState } from '../data/islands';
+import { logger } from '../../services/logger';
 
 const TravelPage: React.FC = () => {
   const [loading, setLoading] = React.useState(true);
@@ -25,7 +26,7 @@ const TravelPage: React.FC = () => {
       const locations = await travelAPI.listVisitedLocations();
       setVisitedLocations(locations);
     } catch (error) {
-      console.error('Error loading travel data:', error);
+      logger.error('Error loading travel data:', { error });
     } finally {
       setLoading(false);
     }
@@ -80,7 +81,7 @@ const TravelPage: React.FC = () => {
   const handleCountryClick = async (countryCode: string) => {
     // Validate country code
     if (!countryCode || countryCode.length !== 2) {
-      console.error('Invalid country code:', countryCode);
+      logger.error('Invalid country code:', { countryCode });
       return;
     }
 
@@ -110,7 +111,7 @@ const TravelPage: React.FC = () => {
         setVisitedLocations(prev => [...prev, newLocation]);
       }
     } catch (error) {
-      console.error('Error toggling country:', error);
+      logger.error('Error toggling country:', { error });
       alert('Failed to update country. Please try again.');
       // Reload data to sync with server on error
       await loadData();
@@ -120,7 +121,7 @@ const TravelPage: React.FC = () => {
   const handleStateClick = async (stateCode: string, countryCode: string) => {
     // Validate codes
     if (!stateCode || !countryCode) {
-      console.error('Invalid state or country code:', { stateCode, countryCode });
+      logger.error('Invalid state or country code:', { stateCode, countryCode });
       return;
     }
 
@@ -176,7 +177,7 @@ const TravelPage: React.FC = () => {
               });
               newParkLocations.push(parkLocation);
             } catch (err) {
-              console.error(`Failed to auto-mark park ${park.name}:`, err);
+              logger.error('Travel', `Failed to auto-mark park ${park.name}:`, { err });
             }
           }
         }
@@ -207,7 +208,7 @@ const TravelPage: React.FC = () => {
               });
               newIslandLocations.push(islandLocation);
             } catch (err) {
-              console.error(`Failed to auto-mark island ${island.name}:`, err);
+              logger.error('Travel', `Failed to auto-mark island ${island.name}:`, { err });
             }
           }
         }
@@ -215,11 +216,11 @@ const TravelPage: React.FC = () => {
         // Update UI with all new locations
         if (newParkLocations.length > 0 || newIslandLocations.length > 0) {
           setVisitedLocations(prev => [...prev, ...newParkLocations, ...newIslandLocations]);
-          console.log(`Auto-marked ${newParkLocations.length} parks and ${newIslandLocations.length} islands in ${stateCode}`);
+          logger.debug('Travel', `Auto-marked ${newParkLocations.length} parks and ${newIslandLocations.length} islands in ${stateCode}`);
         }
       }
     } catch (error) {
-      console.error('Error toggling state:', error);
+      logger.error('Error toggling state:', { error });
       alert('Failed to update state. Please try again.');
       // Reload data to sync with server on error
       await loadData();
@@ -230,7 +231,7 @@ const TravelPage: React.FC = () => {
     // Find park details
     const park = nationalParks.find(p => p.id === parkId);
     if (!park) {
-      console.error('Park not found:', parkId);
+      logger.error('Park not found:', { parkId });
       return;
     }
 
@@ -278,7 +279,7 @@ const TravelPage: React.FC = () => {
             );
 
             if (!stateAlreadyMarked) {
-              console.log(`All parks in ${park.stateCode} visited! Auto-marking state.`);
+              logger.debug('Travel', `All parks in ${park.stateCode} visited! Auto-marking state.`);
               const stateLocation = await travelAPI.markLocation({
                 locationType: 'state',
                 countryCode: park.countryCode,
@@ -294,7 +295,7 @@ const TravelPage: React.FC = () => {
         }
       }
     } catch (error) {
-      console.error('Error toggling park:', error);
+      logger.error('Error toggling park:', { error });
       alert('Failed to update park. Please try again.');
       // Reload data to sync with server on error
       await loadData();
@@ -305,7 +306,7 @@ const TravelPage: React.FC = () => {
     // Find island details
     const island = islands.find(i => i.id === islandId);
     if (!island) {
-      console.error('Island not found:', islandId);
+      logger.error('Island not found:', { islandId });
       return;
     }
 
@@ -354,7 +355,7 @@ const TravelPage: React.FC = () => {
             );
 
             if (!stateAlreadyMarked) {
-              console.log(`All islands in ${island.stateCode} visited! Auto-marking state.`);
+              logger.debug('Travel', `All islands in ${island.stateCode} visited! Auto-marking state.`);
               const stateLocation = await travelAPI.markLocation({
                 locationType: 'state',
                 countryCode: island.countryCode,
@@ -370,7 +371,7 @@ const TravelPage: React.FC = () => {
         }
       }
     } catch (error) {
-      console.error('Error toggling island:', error);
+      logger.error('Error toggling island:', { error });
       alert('Failed to update island. Please try again.');
       // Reload data to sync with server on error
       await loadData();

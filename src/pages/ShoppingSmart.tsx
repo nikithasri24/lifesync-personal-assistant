@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { logger } from '../services/logger';
+
 import { useAppStore } from '../stores/useAppStore';
 import {
   useActiveShoppingList,
@@ -212,7 +214,7 @@ export default function ShoppingSmart() {
   useEffect(() => {
     if (!isLoadingList && !activeListId) {
       ensureActiveList().catch((error) => {
-        console.error('Failed to create shopping list:', error);
+        logger.error('ShoppingSmart', 'Failed to create shopping list:', error);
       });
     }
   }, [isLoadingList, activeListId, ensureActiveList]);
@@ -915,7 +917,7 @@ export default function ShoppingSmart() {
             }
           } catch (error) {
             // Some browsers intermittently throw while the frame is not ready; keep trying
-            // console.warn('Barcode detection error:', error);
+            // logger.warn('ShoppingSmart', 'Barcode detection error:', error);
           }
 
           if (isScanning) {
@@ -937,7 +939,7 @@ export default function ShoppingSmart() {
         setIsScanning(false);
       }
     } catch (error) {
-      console.error('Camera access error:', error);
+      logger.error('ShoppingSmart', 'Camera access error:', error);
       alert('Camera access denied. Please enable camera permissions to scan barcodes.');
       setShowBarcodeScanner(false);
       setIsScanning(false);
@@ -1032,7 +1034,7 @@ export default function ShoppingSmart() {
         lng: position.coords.longitude
       });
     } catch (error) {
-      console.error('Error getting location:', error);
+      logger.error('ShoppingSmart', 'Error getting location:', error);
       alert('Unable to get your location. Please enable location services.');
     }
   };
@@ -2111,7 +2113,7 @@ export default function ShoppingSmart() {
                           alert('On-device text detection is not supported in this browser. Paste text below instead, or use Extract via server.')
                         }
                       } catch (e) {
-                        console.warn('Text detection failed', e)
+                        logger.warn('ShoppingSmart', 'Text detection failed', e)
                         alert('Text detection failed. Paste text below instead, or use Extract via server.')
                       }
                     }}

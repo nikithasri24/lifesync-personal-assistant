@@ -16,6 +16,7 @@ import { useTasksQuery, useToggleTaskMutation } from '../hooks/useTasksQuery';
 import { useHabitsQuery, useCompleteHabitMutation } from '../hooks/useHabitsQuery';
 import { useNotesQuery } from '../hooks/useNotesQuery';
 import { useJournalQuery } from '../hooks/useJournalQuery';
+import { logger } from '../services/logger';
 
 export default function Dashboard() {
   const { setActiveView } = useAppStore();
@@ -40,7 +41,7 @@ export default function Dashboard() {
       if (!task) return;
       await toggleTaskMutation.mutateAsync({ taskId, currentStatus: task.status });
     } catch (error) {
-      console.error('Failed to complete task:', error);
+      logger.error('Failed to complete task:', { error });
     } finally {
       setCompletingTask(null);
     }
@@ -50,7 +51,7 @@ export default function Dashboard() {
     try {
       await completeHabitMutation.mutateAsync(habitId);
     } catch (error) {
-      console.error('[Dashboard] Failed to complete habit', error);
+      logger.error('[Dashboard] Failed to complete habit', { error });
       showToast('Unable to record that habit completion. Please try again.', 'error');
     }
   };

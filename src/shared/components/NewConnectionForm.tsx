@@ -8,6 +8,7 @@ import { UserPlus, Mail, Heart } from 'lucide-react';
 import { createConnection } from '../api/connectionsAPI';
 import type { ConnectionRelationship } from '../types/connections';
 import { RELATIONSHIP_INFO } from '../types/connections';
+import { logger } from '../../services/logger';
 
 interface NewConnectionFormProps {
   onConnectionCreated: () => void;
@@ -40,7 +41,7 @@ const NewConnectionForm: React.FC<NewConnectionFormProps> = ({ onConnectionCreat
 
       onConnectionCreated();
     } catch (error: any) {
-      console.error('Error creating connection:', error);
+      logger.error('Error creating connection:', { error });
       alert(error.message || 'Failed to send invitation');
     } finally {
       setSubmitting(false);

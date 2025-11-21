@@ -9,6 +9,7 @@ import { X, Save, Lightbulb, AlertCircle } from 'lucide-react';
 import { formatCurrency } from '../../utils/currency';
 import type { Category, Transaction } from '../../types';
 import { calculateBudgetRecommendation, type BudgetRecommendation } from '../../utils/budgetRecommendations';
+import { logger } from '../../../services/logger';
 
 export interface BudgetBulkEditorProps {
   isOpen: boolean;
@@ -43,7 +44,7 @@ const BudgetBulkEditor: React.FC<BudgetBulkEditorProps> = ({
   // Initialize rows when modal opens
   useEffect(() => {
     if (isOpen && categories.length > 0) {
-      console.log('[BudgetBulkEditor] Initializing rows for', categories.length, 'categories');
+      logger.debug('[BudgetBulkEditor] Initializing rows for categories', { count: categories.length });
 
       const initialRows: CategoryBudgetRow[] = categories.map((category) => {
         const recommendation = calculateBudgetRecommendation(transactions, category.id, 3);
@@ -54,7 +55,7 @@ const BudgetBulkEditor: React.FC<BudgetBulkEditorProps> = ({
           ? currentLimit
           : (recommendation?.suggested || 0);
 
-        console.log('[BudgetBulkEditor]', category.name, ':', {
+        logger.debug('BudgetBulkEditor', `Category: ${category.name}`, {
           recommendation: recommendation?.suggested,
           currentLimit,
           initialValue,
@@ -125,7 +126,7 @@ const BudgetBulkEditor: React.FC<BudgetBulkEditorProps> = ({
 
     try {
       setSaving(true);
-      console.log('[BudgetBulkEditor] Saving', budgetsToSave.length, 'budgets');
+      logger.debug('[BudgetBulkEditor] Saving budgets', { count: budgetsToSave.length });
       await onSave(budgetsToSave);
       onClose();
     } catch (err) {

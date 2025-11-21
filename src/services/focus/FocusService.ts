@@ -1,3 +1,4 @@
+import { logger } from '../../services/logger';
 // @ts-nocheck
 /**
  * Focus Service
@@ -203,7 +204,7 @@ export class FocusService {
       await this.activateSystemFocusMode();
 
     } catch (error) {
-      console.warn('Some environment settings could not be applied:', error);
+      logger.warn('FocusService', 'Some environment settings could not be applied:', error);
     }
   }
 
@@ -215,7 +216,7 @@ export class FocusService {
       await this.stopAmbientSound();
       await this.deactivateSystemFocusMode();
     } catch (error) {
-      console.warn('Some environment settings could not be reset:', error);
+      logger.warn('FocusService', 'Some environment settings could not be reset:', error);
     }
   }
 
@@ -397,7 +398,7 @@ export class FocusService {
       try {
         callback(event);
       } catch (error) {
-        console.error('Error in focus event listener:', error);
+        logger.error('FocusService', 'Error in focus event listener:', error);
       }
     });
   }
@@ -453,52 +454,52 @@ export class FocusService {
 
   private async blockApplications(apps: string[]): Promise<void> {
     // Would use system APIs to block applications
-    console.log('Blocking applications:', apps);
+    logger.info('FocusService', 'Blocking applications:', apps);
   }
 
   private async unblockApplications(): Promise<void> {
     // Would restore application access
-    console.log('Unblocking applications');
+    logger.info('FocusService', 'Unblocking applications');
   }
 
   private async blockWebsites(websites: string[]): Promise<void> {
     // Would use browser extension or system-level blocking
-    console.log('Blocking websites:', websites);
+    logger.info('FocusService', 'Blocking websites:', websites);
   }
 
   private async unblockWebsites(): Promise<void> {
     // Would restore website access
-    console.log('Unblocking websites');
+    logger.info('FocusService', 'Unblocking websites');
   }
 
   private async configureNotifications(settings: any): Promise<void> {
     // Would configure system notification settings
-    console.log('Configuring notifications:', settings);
+    logger.info('FocusService', 'Configuring notifications:', settings);
   }
 
   private async restoreNotifications(): Promise<void> {
     // Would restore original notification settings
-    console.log('Restoring notifications');
+    logger.info('FocusService', 'Restoring notifications');
   }
 
   private async playAmbientSound(settings: any): Promise<void> {
     // Would start ambient sound playback
-    console.log('Playing ambient sound:', settings);
+    logger.info('FocusService', 'Playing ambient sound:', settings);
   }
 
   private async stopAmbientSound(): Promise<void> {
     // Would stop ambient sound playback
-    console.log('Stopping ambient sound');
+    logger.info('FocusService', 'Stopping ambient sound');
   }
 
   private async activateSystemFocusMode(): Promise<void> {
     // Would activate OS-level focus mode
-    console.log('Activating system focus mode');
+    logger.info('FocusService', 'Activating system focus mode');
   }
 
   private async deactivateSystemFocusMode(): Promise<void> {
     // Would deactivate OS-level focus mode
-    console.log('Deactivating system focus mode');
+    logger.info('FocusService', 'Deactivating system focus mode');
   }
 
   // ==================== Data Persistence ====================
@@ -585,7 +586,7 @@ export class FocusService {
 
   private setupBreakSchedule(schedule: any): void {
     // Would setup automated break scheduling
-    console.log('Setting up break schedule:', schedule);
+    logger.info('FocusService', 'Setting up break schedule:', schedule);
   }
 
   private setupVisibilityChangeDetection(): void {

@@ -8,6 +8,7 @@ import { Edit2, Save, X, Trash2 } from 'lucide-react';
 import type { Transaction, Category } from '../../types';
 import { formatCurrency } from '../../utils/currency';
 import { getFinanceAPI } from '../../data';
+import { logger } from '../../../services/logger';
 
 interface EditableTransactionRowProps {
   transaction: Transaction;
@@ -68,7 +69,7 @@ export const EditableTransactionRow: React.FC<EditableTransactionRowProps> = ({
       setIsEditing(false);
       onUpdate();
     } catch (error) {
-      console.error('Failed to update transaction:', error);
+      logger.error('Failed to update transaction:', { error });
       alert('Failed to update transaction');
     } finally {
       setIsSaving(false);
@@ -83,7 +84,7 @@ export const EditableTransactionRow: React.FC<EditableTransactionRowProps> = ({
       await api.deleteTransaction(transaction.id);
       onDelete();
     } catch (error) {
-      console.error('Failed to delete transaction:', error);
+      logger.error('Failed to delete transaction:', { error });
       alert('Failed to delete transaction');
     }
   };

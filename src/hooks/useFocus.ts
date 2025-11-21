@@ -6,6 +6,8 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { logger } from '../services/logger';
+
 import { focusService } from '../services/focus/FocusService';
 import type {
   FocusSession,
@@ -100,7 +102,7 @@ export function useFocusSession(): UseFocusSessionReturn {
       const session = await focusService.startSession(preset, task);
       setCurrentSession(session);
     } catch (error) {
-      console.error('Failed to start focus session:', error);
+      logger.error('UseFocus', 'Failed to start focus session:', error);
       throw error;
     }
   }, []);
@@ -109,7 +111,7 @@ export function useFocusSession(): UseFocusSessionReturn {
     try {
       await focusService.pauseSession();
     } catch (error) {
-      console.error('Failed to pause focus session:', error);
+      logger.error('UseFocus', 'Failed to pause focus session:', error);
       throw error;
     }
   }, []);
@@ -118,7 +120,7 @@ export function useFocusSession(): UseFocusSessionReturn {
     try {
       await focusService.resumeSession();
     } catch (error) {
-      console.error('Failed to resume focus session:', error);
+      logger.error('UseFocus', 'Failed to resume focus session:', error);
       throw error;
     }
   }, []);
@@ -130,7 +132,7 @@ export function useFocusSession(): UseFocusSessionReturn {
       setTimeRemaining(0);
       setProgress(0);
     } catch (error) {
-      console.error('Failed to end focus session:', error);
+      logger.error('UseFocus', 'Failed to end focus session:', error);
       throw error;
     }
   }, []);
@@ -139,7 +141,7 @@ export function useFocusSession(): UseFocusSessionReturn {
     try {
       await focusService.takeBreak();
     } catch (error) {
-      console.error('Failed to take break:', error);
+      logger.error('UseFocus', 'Failed to take break:', error);
       throw error;
     }
   }, []);
@@ -148,7 +150,7 @@ export function useFocusSession(): UseFocusSessionReturn {
     try {
       await focusService.endBreak();
     } catch (error) {
-      console.error('Failed to end break:', error);
+      logger.error('UseFocus', 'Failed to end break:', error);
       throw error;
     }
   }, []);
@@ -162,7 +164,7 @@ export function useFocusSession(): UseFocusSessionReturn {
         });
       }
     } catch (error) {
-      console.error('Failed to update environment:', error);
+      logger.error('UseFocus', 'Failed to update environment:', error);
       throw error;
     }
   }, [currentSession]);
@@ -216,9 +218,9 @@ export function useFocusAnalytics(period: 'day' | 'week' | 'month' | 'year' = 'w
     
     try {
       // Implementation would depend on your export service
-      console.log(`Exporting analytics data as ${format}`);
+      logger.debug('UseFocus', `Exporting analytics data as ${format}`);
     } catch (error) {
-      console.error('Failed to export data:', error);
+      logger.error('UseFocus', 'Failed to export data:', error);
       throw error;
     }
   }, [analytics]);

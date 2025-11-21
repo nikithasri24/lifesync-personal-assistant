@@ -142,12 +142,12 @@ export function createMealsCommand(): Command {
         const newMeal = await dataManager.addMealPlan(mealPlan);
 
         spinner.succeed(chalk.green(`Added "${mealName}" to ${mealType} on ${format(mealDate, 'MMM d, yyyy')}`));
-        console.log(chalk.gray(`  ${servings} servings for ${people} people`));
-        if (options.notes) console.log(chalk.gray(`  Notes: ${options.notes}`));
+        logger.info('Meals', chalk.gray(`  ${servings} servings for ${people} people`));
+        logger.info('Meals', chalk.gray(`  Notes: ${options.notes}`));
 
       } catch (error) {
         spinner.fail(chalk.red('Failed to add meal'));
-        console.error(error);
+        logger.error('Meals', error);
       }
     });
 
@@ -178,7 +178,7 @@ export function createMealsCommand(): Command {
         spinner.succeed(chalk.green(`Week of ${format(weekStart, 'MMM d')} - ${format(weekEnd, 'MMM d, yyyy')}`));
 
         if (weekMeals.length === 0) {
-          console.log(chalk.yellow('No meals planned for this week'));
+          logger.info('Meals', chalk.yellow('No meals planned for this week'));
           return;
         }
 
@@ -192,10 +192,10 @@ export function createMealsCommand(): Command {
             return format(mealDate, 'yyyy-MM-dd') === format(currentDay, 'yyyy-MM-dd');
           });
 
-          console.log(`\n${chalk.bold.blue(dayNames[i])} - ${format(currentDay, 'MMM d')}`);
+          logger.info('Meals', `\n${chalk.bold.blue(dayNames[i])} - ${format(currentDay, 'MMM d')}`);
           
           if (dayMeals.length === 0) {
-            console.log(chalk.gray('  No meals planned'));
+            logger.info('Meals', chalk.gray('  No meals planned'));
             continue;
           }
 
@@ -205,7 +205,7 @@ export function createMealsCommand(): Command {
             const typeMeals = dayMeals.filter(meal => meal.mealType === type);
             if (typeMeals.length === 0) return;
 
-            console.log(`  ${chalk.bold(type.charAt(0).toUpperCase() + type.slice(1))}:`);
+            logger.info('Meals', `  ${chalk.bold(type.charAt(0).toUpperCase() + type.slice(1))}:`);
             typeMeals.forEach(meal => {
               const mealName = meal.recipeId ? 
                 recipes.find(r => r.id === meal.recipeId)?.name || 'Unknown Recipe' :
@@ -215,16 +215,16 @@ export function createMealsCommand(): Command {
                                meal.status === 'prepped' ? '◔' :
                                meal.status === 'cooked' ? '◕' : '●';
               
-              console.log(`    ${statusIcon} ${chalk.white(mealName)}`);
-              console.log(`      ${chalk.gray(`${meal.servings} servings • ${meal.peopleCount} people`)}`);
-              if (meal.notes) console.log(`      ${chalk.gray(`Notes: ${meal.notes}`)}`);
+              logger.info('Meals', `    ${statusIcon} ${chalk.white(mealName)}`);
+              logger.info('Meals', `      ${chalk.gray(`${meal.servings} servings • ${meal.peopleCount} people`)}`);
+              logger.info('Meals', `      ${chalk.gray(`Notes: ${meal.notes}`)}`);
             });
           });
         }
 
       } catch (error) {
         spinner.fail(chalk.red('Failed to load meal plan'));
-        console.error(error);
+        logger.error('Meals', error);
       }
     });
 
@@ -285,7 +285,7 @@ export function createMealsCommand(): Command {
 
       } catch (error) {
         spinner.fail(chalk.red('Failed to update meal status'));
-        console.error(error);
+        logger.error('Meals', error);
       }
     });
 
@@ -338,7 +338,7 @@ export function createMealsCommand(): Command {
 
       } catch (error) {
         spinner.fail(chalk.red('Failed to remove meal'));
-        console.error(error);
+        logger.error('Meals', error);
       }
     });
 

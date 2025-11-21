@@ -4,6 +4,8 @@
  */
 
 import React from 'react';
+import { logger } from '../../services/logger';
+
 import { Button } from '../ui/Button';
 import { getFinanceAPI } from '../data';
 import { parseFinanceCSV, mapCategoryName } from '../utils/csvParser';
@@ -40,7 +42,7 @@ const ImportCSVButton: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => 
 
     for (const categoryName of requiredCategories) {
       if (!categoryMap.has(categoryName)) {
-        console.log(`Creating missing category: ${categoryName}`);
+        logger.debug('ImportCSVButton', `Creating missing category: ${categoryName}`);
 
         const { data, error } = await supabase
           .from('categories')
@@ -52,7 +54,7 @@ const ImportCSVButton: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => 
           .single();
 
         if (error) {
-          console.error(`Failed to create category ${categoryName}:`, error);
+          logger.error('ImportCSVButton', `Failed to create category ${categoryName}:`, error);
         } else if (data) {
           categoryMap.set(categoryName, data.id);
         }
@@ -122,10 +124,10 @@ const ImportCSVButton: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => 
         requiredCategories.add(mapCategoryName(txn.categoryName));
       });
 
-      console.log('📊 Import Summary:');
-      console.log(`- Files: ${fileNames.join(', ')}`);
-      console.log(`- Total transactions: ${stats.total}`);
-      console.log(`- Required categories: ${Array.from(requiredCategories).join(', ')}`);
+      logger.info('ImportCSVButton', '📊 Import Summary:');
+      logger.debug('ImportCSVButton', `- Files: ${fileNames.join(', ')}`);
+      logger.debug('ImportCSVButton', `- Total transactions: ${stats.total}`);
+      logger.debug('ImportCSVButton', `- Required categories: ${Array.from(requiredCategories).join(', ')}`);
 
       // Confirm import
       if (!confirm(`Import ${stats.total} transactions from ${files.length} file(s)?\n\nFiles: ${fileNames.join(', ')}`)) {
@@ -133,12 +135,12 @@ const ImportCSVButton: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => 
       }
 
       // Ensure all categories exist
-      console.log('🏷️  Ensuring categories exist...');
+      logger.info('ImportCSVButton', '🏷️  Ensuring categories exist...');
       const categoryMap = await ensureCategoriesExist(api, requiredCategories);
-      console.log('✓ Categories ready:', Array.from(categoryMap.entries()));
+      logger.info('ImportCSVButton', '✓ Categories ready:', Array.from(categoryMap.entries()));
 
       // Import transactions
-      console.log('💾 Starting import...');
+      logger.info('ImportCSVButton', '💾 Starting import...');
       for (const txn of allTransactions) {
         try {
           // Map category name
@@ -169,7 +171,7 @@ const ImportCSVButton: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => 
           setProgress(Math.round((stats.imported / stats.total) * 100));
 
           if (stats.imported % 10 === 0) {
-            console.log(`  Progress: ${stats.imported}/${stats.total}`);
+            logger.debug('ImportCSVButton', `  Progress: ${stats.imported}/${stats.total}`);
           }
         } catch (err) {
           stats.failed++;
@@ -178,18 +180,18 @@ const ImportCSVButton: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => 
             transaction: `${txn.description} ($${txn.amount})`,
             error: errorMsg
           });
-          console.error(`❌ Failed: ${txn.description}:`, errorMsg);
+          logger.error('ImportCSVButton', `❌ Failed: ${txn.description}:`, errorMsg);
         }
       }
 
-      console.log('✅ Import complete!');
-      console.log(`- Imported: ${stats.imported}`);
-      console.log(`- Failed: ${stats.failed}`);
+      logger.info('ImportCSVButton', '✅ Import complete!');
+      logger.debug('ImportCSVButton', `- Imported: ${stats.imported}`);
+      logger.debug('ImportCSVButton', `- Failed: ${stats.failed}`);
 
       if (stats.errors.length > 0) {
-        console.group('⚠️ Errors:');
-        stats.errors.forEach(e => console.error(`${e.transaction}: ${e.error}`));
-        console.groupEnd();
+        logger.group('⚠️ Errors:');
+        stats.errors.forEach(e => logger.error('ImportCSVButton', `${e.transaction}: ${e.error}`));
+        logger.groupEnd();
       }
 
       // Show results
@@ -205,7 +207,7 @@ const ImportCSVButton: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => 
       window.location.reload();
 
     } catch (error) {
-      console.error('💥 Import failed:', error);
+      logger.error('ImportCSVButton', '💥 Import failed:', error);
       const errorMsg = error instanceof Error ? error.message : String(error);
       alert(`Import failed: ${errorMsg}\n\nCheck console for details.`);
     } finally {

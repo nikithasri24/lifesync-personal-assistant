@@ -25,6 +25,7 @@ import type {
 } from '../types';
 import type { FinanceAPI } from './api';
 import { validateGoalInput, validateTransactionInput } from '../utils/validate';
+import { logger } from '../../services/logger';
 
 async function getUid(client: SupabaseClient): Promise<string> {
   const { data, error } = await client.auth.getUser();
@@ -272,8 +273,8 @@ export class SupabaseApi implements FinanceAPI {
       });
 
     if (error) {
-      console.error('Budget upsert error:', error);
-      console.error('Row data:', row);
+      logger.error('Budget upsert error:', { error });
+      logger.error('Row data:', { row });
       throw new Error(`Failed to save budget: ${error.message}`);
     }
   }
@@ -305,7 +306,7 @@ export class SupabaseApi implements FinanceAPI {
       .eq('month', monthDate);
 
     if (error) {
-      console.error('Budget delete error:', error);
+      logger.error('Budget delete error:', { error });
       throw new Error(`Failed to delete budget: ${error.message}`);
     }
   }
@@ -349,7 +350,7 @@ export class SupabaseApi implements FinanceAPI {
       });
 
     if (error) {
-      console.error('Budget template upsert error:', error);
+      logger.error('Budget template upsert error:', { error });
       throw new Error(`Failed to save budget template: ${error.message}`);
     }
   }
@@ -368,7 +369,7 @@ export class SupabaseApi implements FinanceAPI {
       .eq('category_id', categoryId);
 
     if (error) {
-      console.error('Budget template delete error:', error);
+      logger.error('Budget template delete error:', { error });
       throw new Error(`Failed to delete budget template: ${error.message}`);
     }
   }
@@ -396,7 +397,7 @@ export class SupabaseApi implements FinanceAPI {
     });
 
     if (error) {
-      console.error('Initialize budgets from templates error:', error);
+      logger.error('Initialize budgets from templates error:', { error });
       throw new Error(`Failed to initialize budgets: ${error.message}`);
     }
 

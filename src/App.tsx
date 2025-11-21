@@ -27,6 +27,7 @@ import { useAuth } from './hooks/useAuth';
 import { isSupabaseConfigured } from './lib/supabase';
 import { loadSFHChallenge } from './stores/seventyFiveHardActions';
 import { cleanup75HardDuplicates } from './utils/cleanup75HardDuplicates';
+import { logger } from 'services/logger';
 
 // Expose cleanup function globally for debugging
 if (typeof window !== 'undefined') {
@@ -52,7 +53,7 @@ function App() {
   useEffect(() => {
     // Only proceed if Supabase is configured
     if (!isSupabaseConfigured) {
-      console.warn('🔄 Supabase not configured. Please configure environment variables.');
+      logger.warn('App', '🔄 Supabase not configured. Please configure environment variables.');
       return;
     }
 
@@ -70,14 +71,14 @@ function App() {
     (async () => {
       try {
         await initializeData();
-        console.log('🔄 Initialized LifeSync data for Supabase user');
+        logger.debug('App', '🔄 Initialized LifeSync data for Supabase user');
 
         // Load active 75 Hard challenge (new architecture)
         // This will check for missed days and show failure prompt if needed
         await loadSFHChallenge();
-        console.log('✅ 75 Hard challenge loaded');
+        logger.debug('App', '✅ 75 Hard challenge loaded');
       } catch (error) {
-        console.error('Failed to initialize data or load 75 Hard challenge:', error);
+        logger.error('Failed to initialize data or load 75 Hard challenge:', { error });
       }
     })();
   }, [initializeData, user, authLoading]);

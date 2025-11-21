@@ -9,6 +9,7 @@ import { deleteConnection } from '../api/connectionsAPI';
 import type { ConnectionWithUser } from '../types/connections';
 import { RELATIONSHIP_INFO } from '../types/connections';
 import PermissionManager from './PermissionManager';
+import { logger } from '../../services/logger';
 
 interface ConnectionsListProps {
   connections: ConnectionWithUser[];
@@ -32,7 +33,7 @@ const ConnectionsList: React.FC<ConnectionsListProps> = ({
       await deleteConnection(connectionId);
       onConnectionDeleted();
     } catch (error) {
-      console.error('Error deleting connection:', error);
+      logger.error('Error deleting connection:', { error });
       alert('Failed to delete connection');
     } finally {
       setDeletingId(null);

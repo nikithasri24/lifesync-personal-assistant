@@ -5,6 +5,7 @@
  */
 
 import * as fs from 'fs';
+import { logger } from '../services/logger';
 
 interface ParsedTransaction {
   date: string;
@@ -27,7 +28,7 @@ function parseCSV(filePath: string, month: string): ParsedTransaction[] {
   const categoryRow = lines[categoryRowIndex];
 
   if (!categoryRow) {
-    console.error('Category row not found');
+    logger.error('GenerateFinanceSQL', 'Category row not found');
     return transactions;
   }
 
@@ -169,13 +170,13 @@ function main() {
   let allTransactions: ParsedTransaction[] = [];
 
   for (const file of files) {
-    console.log(`Processing ${file.path}...`);
+    logger.debug('GenerateFinanceSQL', `Processing ${file.path}...`);
     const transactions = parseCSV(file.path, file.month);
-    console.log(`  Parsed ${transactions.length} transactions`);
+    logger.debug('GenerateFinanceSQL', `  Parsed ${transactions.length} transactions`);
     allTransactions = allTransactions.concat(transactions);
   }
 
-  console.log(`\nTotal: ${allTransactions.length} transactions`);
+  logger.debug('GenerateFinanceSQL', `\nTotal: ${allTransactions.length} transactions`);
 
   const sql = generateSQL(allTransactions);
 
@@ -183,9 +184,9 @@ function main() {
   const outputPath = '/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/supabase/migrations/20250117_import_finance_data.sql';
   fs.writeFileSync(outputPath, sql);
 
-  console.log(`\n✓ SQL written to: ${outputPath}`);
-  console.log(`\nRun with:`);
-  console.log(`PGPASSWORD='AbNY4sCdEa6APPA' psql -h aws-0-us-west-1.pooler.supabase.com -p 6543 -d postgres -U postgres.rfwaiijodrowakcpayoa -f ${outputPath}`);
+  logger.debug('GenerateFinanceSQL', `\n✓ SQL written to: ${outputPath}`);
+  logger.debug('GenerateFinanceSQL', `\nRun with:`);
+  logger.debug('GenerateFinanceSQL', `PGPASSWORD='AbNY4sCdEa6APPA' psql -h aws-0-us-west-1.pooler.supabase.com -p 6543 -d postgres -U postgres.rfwaiijodrowakcpayoa -f ${outputPath}`);
 }
 
 main();

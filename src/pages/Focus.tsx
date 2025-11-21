@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { Play, Pause, RotateCcw } from 'lucide-react';
+import { logger } from '../services/logger';
 import {
   useActiveFocusSession,
   useCreateFocusSession,
@@ -62,7 +63,7 @@ const Focus: React.FC = () => {
         });
         sessionIdRef.current = newSession.id ?? null;
       } catch (error) {
-        console.error('Failed to create focus session:', error);
+        logger.error('Failed to create focus session:', { error });
       }
     } else {
       // Pausing the session
@@ -77,7 +78,7 @@ const Focus: React.FC = () => {
             },
           });
         } catch (error) {
-          console.error('Failed to pause focus session:', error);
+          logger.error('Failed to pause focus session:', { error });
         }
       }
     }
@@ -98,7 +99,7 @@ const Focus: React.FC = () => {
           },
         });
       } catch (error) {
-        console.error('Failed to cancel focus session:', error);
+        logger.error('Failed to cancel focus session:', { error });
       }
 
       sessionIdRef.current = null;

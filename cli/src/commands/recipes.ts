@@ -97,7 +97,7 @@ export function createRecipesCommand(): Command {
       }
 
       // Add ingredients
-      console.log(chalk.blue('\nAdd ingredients (press Enter with empty name to finish):'));
+      logger.info('Recipes', chalk.blue('\nAdd ingredients (press Enter with empty name to finish):'));
       const ingredients: Ingredient[] = [];
       let addingIngredients = true;
 
@@ -159,7 +159,7 @@ export function createRecipesCommand(): Command {
       }
 
       // Add instructions
-      console.log(chalk.blue('\nAdd cooking instructions (press Enter with empty instruction to finish):'));
+      logger.info('Recipes', chalk.blue('\nAdd cooking instructions (press Enter with empty instruction to finish):'));
       const instructions: string[] = [];
       let addingInstructions = true;
 
@@ -217,11 +217,11 @@ export function createRecipesCommand(): Command {
         const newRecipe = await dataManager.addRecipe(recipe);
 
         spinner.succeed(chalk.green(`Added recipe "${newRecipe.name}"`));
-        console.log(chalk.gray(`  ${newRecipe.cuisine} • ${newRecipe.difficulty} • ${newRecipe.prepTime + newRecipe.cookTime} min • ${newRecipe.servings} servings`));
+        logger.info('Recipes', chalk.gray(`  ${newRecipe.cuisine} • ${newRecipe.difficulty} • ${newRecipe.prepTime + newRecipe.cookTime} min • ${newRecipe.servings} servings`));
 
       } catch (error) {
         spinner.fail(chalk.red('Failed to add recipe'));
-        console.error(error);
+        logger.error('Recipes', error);
       }
     });
 
@@ -263,7 +263,7 @@ export function createRecipesCommand(): Command {
         spinner.succeed(chalk.green(`Found ${recipes.length} recipes`));
 
         if (recipes.length === 0) {
-          console.log(chalk.yellow('No recipes found'));
+          logger.info('Recipes', chalk.yellow('No recipes found'));
           return;
         }
 
@@ -275,23 +275,23 @@ export function createRecipesCommand(): Command {
         }, {} as Record<string, Recipe[]>);
 
         Object.entries(grouped).forEach(([cuisine, cuisineRecipes]) => {
-          console.log(`\n${chalk.bold.blue(cuisine.toUpperCase())}`);
+          logger.info('Recipes', `\n${chalk.bold.blue(cuisine.toUpperCase())}`);
           cuisineRecipes.forEach(recipe => {
             const difficultyColor = recipe.difficulty === 'easy' ? chalk.green :
                                    recipe.difficulty === 'medium' ? chalk.yellow : chalk.red;
             const totalTime = recipe.prepTime + recipe.cookTime;
             
-            console.log(`  📖 ${chalk.white(recipe.name)}`);
-            console.log(`    ${difficultyColor(recipe.difficulty)} • ${totalTime} min • ${recipe.servings} servings`);
-            if (recipe.description) console.log(`    ${chalk.gray(recipe.description)}`);
-            if (recipe.tags.length > 0) console.log(`    ${chalk.cyan(recipe.tags.join(', '))}`);
-            if (recipe.sourceUrl) console.log(`    ${chalk.blue(recipe.sourceUrl)}`);
+            logger.info('Recipes', `  📖 ${chalk.white(recipe.name)}`);
+            logger.info('Recipes', `    ${difficultyColor(recipe.difficulty)} • ${totalTime} min • ${recipe.servings} servings`);
+            logger.info('Recipes', `    ${chalk.gray(recipe.description)}`);
+            logger.info('Recipes', `    ${chalk.cyan(recipe.tags.join(', '))}`);
+            logger.info('Recipes', `    ${chalk.blue(recipe.sourceUrl)}`);
           });
         });
 
       } catch (error) {
         spinner.fail(chalk.red('Failed to load recipes'));
-        console.error(error);
+        logger.error('Recipes', error);
       }
     });
 
@@ -320,40 +320,40 @@ export function createRecipesCommand(): Command {
 
         spinner.succeed(chalk.green(`Recipe: ${recipe.name}`));
 
-        console.log(`\n${chalk.bold.blue(recipe.name)}`);
-        if (recipe.description) console.log(chalk.gray(recipe.description));
+        logger.info('Recipes', `\n${chalk.bold.blue(recipe.name)}`);
+        logger.info('Recipes', chalk.gray(recipe.description));
         
-        console.log(`\n${chalk.bold('Details:')}`);
-        console.log(`  Cuisine: ${recipe.cuisine}`);
-        console.log(`  Difficulty: ${recipe.difficulty}`);
-        console.log(`  Prep time: ${recipe.prepTime} minutes`);
-        console.log(`  Cook time: ${recipe.cookTime} minutes`);
-        console.log(`  Total time: ${recipe.prepTime + recipe.cookTime} minutes`);
-        console.log(`  Servings: ${recipe.servings}`);
+        logger.info('Recipes', `\n${chalk.bold('Details:')}`);
+        logger.info('Recipes', `  Cuisine: ${recipe.cuisine}`);
+        logger.info('Recipes', `  Difficulty: ${recipe.difficulty}`);
+        logger.info('Recipes', `  Prep time: ${recipe.prepTime} minutes`);
+        logger.info('Recipes', `  Cook time: ${recipe.cookTime} minutes`);
+        logger.info('Recipes', `  Total time: ${recipe.prepTime + recipe.cookTime} minutes`);
+        logger.info('Recipes', `  Servings: ${recipe.servings}`);
         
         if (recipe.tags.length > 0) {
-          console.log(`  Tags: ${chalk.cyan(recipe.tags.join(', '))}`);
+          logger.info('Recipes', `  Tags: ${chalk.cyan(recipe.tags.join(', '))}`);
         }
 
-        console.log(`\n${chalk.bold('Ingredients:')}`);
+        logger.info('Recipes', `\n${chalk.bold('Ingredients:')}`);
         recipe.ingredients.forEach((ingredient, index) => {
           const optional = ingredient.optional ? chalk.gray(' (optional)') : '';
-          console.log(`  ${index + 1}. ${ingredient.amount} ${ingredient.unit} ${ingredient.name}${optional}`);
+          logger.info('Recipes', `  ${index + 1}. ${ingredient.amount} ${ingredient.unit} ${ingredient.name}${optional}`);
         });
 
-        console.log(`\n${chalk.bold('Instructions:')}`);
+        logger.info('Recipes', `\n${chalk.bold('Instructions:')}`);
         recipe.instructions.forEach((instruction, index) => {
-          console.log(`  ${index + 1}. ${instruction}`);
+          logger.info('Recipes', `  ${index + 1}. ${instruction}`);
         });
 
         if (recipe.sourceUrl) {
-          console.log(`\n${chalk.bold('Source:')}`);
-          console.log(`  ${chalk.blue(recipe.sourceUrl)}`);
+          logger.info('Recipes', `\n${chalk.bold('Source:')}`);
+          logger.info('Recipes', `  ${chalk.blue(recipe.sourceUrl)}`);
         }
 
       } catch (error) {
         spinner.fail(chalk.red('Failed to load recipe'));
-        console.error(error);
+        logger.error('Recipes', error);
       }
     });
 
@@ -409,12 +409,12 @@ export function createRecipesCommand(): Command {
         const newRecipe = await dataManager.addRecipe(mockRecipe);
 
         spinner.succeed(chalk.green(`Imported recipe "${newRecipe.name}"`));
-        console.log(chalk.gray(`  ${newRecipe.cuisine} • ${newRecipe.difficulty} • ${newRecipe.prepTime + newRecipe.cookTime} min • ${newRecipe.servings} servings`));
-        console.log(chalk.blue(`  Source: ${url}`));
+        logger.info('Recipes', chalk.gray(`  ${newRecipe.cuisine} • ${newRecipe.difficulty} • ${newRecipe.prepTime + newRecipe.cookTime} min • ${newRecipe.servings} servings`));
+        logger.info('Recipes', chalk.blue(`  Source: ${url}`));
 
       } catch (error) {
         spinner.fail(chalk.red('Failed to import recipe'));
-        console.error(error);
+        logger.error('Recipes', error);
       }
     });
 
@@ -458,7 +458,7 @@ export function createRecipesCommand(): Command {
 
       } catch (error) {
         spinner.fail(chalk.red('Failed to remove recipe'));
-        console.error(error);
+        logger.error('Recipes', error);
       }
     });
 
