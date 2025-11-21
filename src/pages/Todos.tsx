@@ -55,32 +55,23 @@ import {
 } from 'lucide-react';
 import { format, isToday, isPast, addDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, isSameMonth, addWeeks, subWeeks, addMonths, subMonths } from 'date-fns';
 import { SkeletonCard } from '../components/LoadingSpinner';
-
-interface Task {
-  id: string;
-  title: string;
-  description?: string;
-  projectId?: string;
-  status: 'todo' | 'done';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  estimatedTime: number; // minutes
-  actualTime: number; // minutes from focus sessions
-  dueDate?: Date;
-  tags: string[];
-  createdAt: Date;
-  completedAt?: Date;
-  category: 'work' | 'personal' | 'learning' | 'creative' | 'health' | 'other';
-  parentId?: string; // For subtasks
-  subtasks?: Task[];
-}
-
-interface Project {
-  id: string;
-  name: string;
-  description?: string;
-  color: string;
-  status: 'active' | 'completed' | 'on_hold';
-}
+import type { Task, Project, Filters, PomodoroTimer, ViewType } from '../todos/types';
+import { THEMES, PRIORITY_FLAGS, DEFAULT_TASK_ESTIMATED_TIME, POMODORO_WORK_TIME, POMODORO_BREAK_TIME } from '../todos/constants';
+import { applyFilters } from '../todos/services/taskFilters';
+import {
+  isSFHTask,
+  getTodayTasks,
+  getUpcomingTasks,
+  getInboxTasks,
+  isOverdue,
+  getSubtasks,
+  getMainTasks,
+  parseQuickAdd,
+  formatTime
+} from '../todos/services/taskHelpers';
+import { TaskItem } from '../todos/components/TaskItem';
+import { KanbanView } from '../todos/components/KanbanView';
+import { MatrixView } from '../todos/components/MatrixView';
 
 export default function Todos() {
   // React Query hooks - automatic loading and caching
@@ -117,21 +108,6 @@ export default function Todos() {
   });
   const [currentTheme, setCurrentTheme] = useState('blue');
 
-  // Theme colors
-  const themes = {
-    blue: { primary: 'bg-blue-500', secondary: 'bg-blue-100' },
-    green: { primary: 'bg-green-500', secondary: 'bg-green-100' },
-    purple: { primary: 'bg-purple-500', secondary: 'bg-purple-100' },
-    pink: { primary: 'bg-pink-500', secondary: 'bg-pink-100' },
-    indigo: { primary: 'bg-indigo-500', secondary: 'bg-indigo-100' }
-  };
-
-  // Helper to identify 75 Hard tasks (should be managed from 75 Hard page, not Tasks tab)
-  const isSFHTask = (task: TaskData) => {
-    const tags = Array.isArray(task.tags) ? task.tags : [];
-    return tags.includes('sfh') || tags.includes('75hard');
-  };
-
   // Transform API tasks to local Task format, excluding 75 Hard tasks
   const tasks: Task[] = useMemo(() => {
     return apiTasks
@@ -166,75 +142,10 @@ export default function Todos() {
   }, [apiProjects]);
 
   // Helper functions
-  const getTodoistPriorityFlag = (priority: string) => {
-    switch (priority) {
-      case 'urgent': return (
-        <svg width="12" height="12" viewBox="0 0 12 12" className="text-red-500">
-          <path fill="currentColor" d="M2.5 1.5h7v9l-3.5-2-3.5 2v-9z"/>
-        </svg>
-      );
-      case 'high': return (
-        <svg width="12" height="12" viewBox="0 0 12 12" className="text-orange-500">
-          <path fill="currentColor" d="M2.5 1.5h7v9l-3.5-2-3.5 2v-9z"/>
-        </svg>
-      );
-      case 'medium': return (
-        <svg width="12" height="12" viewBox="0 0 12 12" className="text-blue-500">
-          <path fill="currentColor" d="M2.5 1.5h7v9l-3.5-2-3.5 2v-9z"/>
-        </svg>
-      );
-      default: return null;
-    }
-  };
-
-  const parseQuickAdd = (text: string) => {
-    let title = text;
-    let priority: TaskData['priority'] = 'medium';
-    let dueDate: Date | null = null;
-    let projectId: string | undefined;
-    let tags: string[] = [];
-
-    // Extract priority flags (p1, p2, p3, p4)
-    const priorityMatch = text.match(/p([1-4])/);
-    if (priorityMatch) {
-      const p = parseInt(priorityMatch[1]);
-      priority = p === 1 ? 'urgent' : p === 2 ? 'high' : p === 3 ? 'medium' : 'low';
-      title = title.replace(/p[1-4]/, '').trim();
-    }
-
-    // Extract project references (#project)
-    const projectMatch = text.match(/#(\w+)/);
-    if (projectMatch) {
-      const projectName = projectMatch[1].toLowerCase();
-      const project = projects.find(p => p.name.toLowerCase().includes(projectName));
-      if (project) projectId = project.id;
-      title = title.replace(/#\w+/, '').trim();
-    }
-
-    // Extract labels (@label)
-    const labelMatches = text.match(/@(\w+)/g);
-    if (labelMatches) {
-      tags = labelMatches.map(match => match.slice(1));
-      title = title.replace(/@\w+/g, '').trim();
-    }
-
-    // Extract dates (today, tomorrow, etc.)
-    if (text.includes('today')) {
-      dueDate = new Date();
-      title = title.replace(/today/, '').trim();
-    } else if (text.includes('tomorrow')) {
-      dueDate = new Date();
-      dueDate.setDate(dueDate.getDate() + 1);
-      title = title.replace(/tomorrow/, '').trim();
-    }
-
-    return { title, priority, dueDate, projectId, tags };
-  };
-
   const quickAddTask = async () => {
     if (!quickAddText.trim()) return;
 
-    const parsed = parseQuickAdd(quickAddText);
+    const parsed = parseQuickAdd(quickAddText, projects);
 
     createTaskMutation.mutate({
       title: parsed.title,
@@ -299,32 +210,12 @@ export default function Todos() {
     setEditTaskText('');
   };
 
-  const getTodayTasks = () => {
-    return tasks.filter(task =>
-      task.dueDate && isToday(task.dueDate) && task.status !== 'done'
-    );
-  };
-
-  const getUpcomingTasks = () => {
-    return tasks.filter(task =>
-      task.dueDate && task.dueDate > new Date() && task.status !== 'done'
-    ).sort((a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime());
-  };
-
-  const getInboxTasks = () => {
-    return tasks.filter(task => !task.projectId && task.status !== 'done');
-  };
-
-  const isOverdue = (date: Date, status: string) => {
-    return date < new Date() && status !== 'done';
-  };
-
   const startPomodoro = (taskId: string) => {
-    setPomodoroTimer({ taskId, timeLeft: 25 * 60, isActive: true, isBreak: false });
+    setPomodoroTimer({ taskId, timeLeft: POMODORO_WORK_TIME, isActive: true, isBreak: false });
   };
 
   const resetPomodoro = () => {
-    setPomodoroTimer({ taskId: null, timeLeft: 25 * 60, isActive: false, isBreak: false });
+    setPomodoroTimer({ taskId: null, timeLeft: POMODORO_WORK_TIME, isActive: false, isBreak: false });
   };
 
   React.useEffect(() => {
@@ -335,19 +226,13 @@ export default function Todos() {
       }, 1000);
     } else if (pomodoroTimer.isActive && pomodoroTimer.timeLeft === 0) {
       if (!pomodoroTimer.isBreak) {
-        setPomodoroTimer(prev => ({ ...prev, timeLeft: 5 * 60, isBreak: true }));
+        setPomodoroTimer(prev => ({ ...prev, timeLeft: POMODORO_BREAK_TIME, isBreak: true }));
       } else {
-        setPomodoroTimer({ taskId: null, timeLeft: 25 * 60, isActive: false, isBreak: false });
+        setPomodoroTimer({ taskId: null, timeLeft: POMODORO_WORK_TIME, isActive: false, isBreak: false });
       }
     }
     return () => clearInterval(interval);
   }, [pomodoroTimer.isActive, pomodoroTimer.timeLeft, pomodoroTimer.isBreak]);
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
 
   const toggleTaskExpansion = (taskId: string) => {
     setExpandedTasks(prev => {
@@ -385,57 +270,6 @@ export default function Todos() {
     });
   };
 
-  const getSubtasks = (parentId: string) => {
-    return tasks.filter(task => task.parentId === parentId);
-  };
-
-  const getMainTasks = (taskList: Task[]) => {
-    return taskList.filter(task => !task.parentId);
-  };
-
-  const applyFilters = (taskList: Task[]) => {
-    let filtered = taskList;
-
-    // Search filter
-    if (searchQuery.trim()) {
-      filtered = filtered.filter(task =>
-        task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        task.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        task.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
-      );
-    }
-
-    // Priority filter
-    if (filters.priority !== 'all') {
-      filtered = filtered.filter(task => task.priority === filters.priority);
-    }
-
-    // Status filter
-    if (filters.status !== 'all') {
-      filtered = filtered.filter(task => task.status === filters.status);
-    }
-
-    // Due date filter
-    if (filters.dueDate !== 'all') {
-      const now = new Date();
-      const startOfWeekDate = new Date(now.setDate(now.getDate() - now.getDay()));
-      const endOfWeekDate = new Date(now.setDate(startOfWeekDate.getDate() + 6));
-
-      filtered = filtered.filter(task => {
-        if (!task.dueDate && filters.dueDate === 'none') return true;
-        if (!task.dueDate) return false;
-
-        switch (filters.dueDate) {
-          case 'overdue': return isPast(task.dueDate) && task.status !== 'done';
-          case 'today': return isToday(task.dueDate);
-          case 'week': return task.dueDate >= startOfWeekDate && task.dueDate <= endOfWeekDate;
-          default: return true;
-        }
-      });
-    }
-
-    return filtered;
-  };
 
   // Show loading state
   if (tasksLoading || projectsLoading) {
@@ -548,7 +382,7 @@ export default function Todos() {
                 <Inbox className="w-4 h-4" />
                 <span>All</span>
                 <span className="ml-auto text-xs bg-gray-200 dark:bg-slate-600 px-2 py-0.5 rounded-full">
-                  {getInboxTasks().length}
+                  {getInboxTasks(tasks).length}
                 </span>
               </button>
 
@@ -563,7 +397,7 @@ export default function Todos() {
                 <Sun className="w-4 h-4" />
                 <span>Today</span>
                 <span className="ml-auto text-xs bg-gray-200 dark:bg-slate-600 px-2 py-0.5 rounded-full">
-                  {getTodayTasks().length}
+                  {getTodayTasks(tasks).length}
                 </span>
               </button>
 
@@ -578,7 +412,7 @@ export default function Todos() {
                 <ArrowRight className="w-4 h-4" />
                 <span>Next 7 days</span>
                 <span className="ml-auto text-xs bg-gray-200 dark:bg-slate-600 px-2 py-0.5 rounded-full">
-                  {getUpcomingTasks().length}
+                  {getUpcomingTasks(tasks).length}
                 </span>
               </button>
 
@@ -846,241 +680,39 @@ export default function Todos() {
           <div className="max-w-4xl mx-auto">
             {(() => {
               let tasksToShow = [];
-              if (currentView === 'today') tasksToShow = applyFilters(getTodayTasks());
-              else if (currentView === 'inbox') tasksToShow = applyFilters(getInboxTasks());
-              else if (currentView === 'upcoming') tasksToShow = applyFilters(getUpcomingTasks());
+              if (currentView === 'today') tasksToShow = applyFilters(getTodayTasks(tasks), filters, searchQuery);
+              else if (currentView === 'inbox') tasksToShow = applyFilters(getInboxTasks(tasks), filters, searchQuery);
+              else if (currentView === 'upcoming') tasksToShow = applyFilters(getUpcomingTasks(tasks), filters, searchQuery);
               else if (currentView === 'kanban') {
-                const nonSFHTasks = tasks.filter(t => {
-                  const originalTask = apiTasks.find(task => task.id === t.id);
-                  return originalTask ? !isSFHTask(originalTask) : true;
-                });
-
-                const kanbanColumns = [
-                  { id: 'todo', title: 'To Do', tasks: nonSFHTasks.filter(t => t.status === 'todo' && (selectedProject === 'all' || t.projectId === selectedProject)) },
-                  { id: 'done', title: 'Done', tasks: nonSFHTasks.filter(t => t.status === 'done' && (selectedProject === 'all' || t.projectId === selectedProject)) }
-                ];
-
                 return (
-                  <div className="p-6">
-                    <div className="grid grid-cols-2 gap-6 h-full">
-                      {kanbanColumns.map((column) => (
-                        <div key={column.id} className="bg-gray-50 dark:bg-slate-800 rounded-lg p-4">
-                          <div className="flex items-center justify-between mb-4">
-                            <h3 className="font-semibold text-gray-900 dark:text-white">{column.title}</h3>
-                            <span className="bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-gray-300 px-2 py-1 rounded-full text-xs font-medium">
-                              {column.tasks.length}
-                            </span>
-                          </div>
-                          <div className="space-y-3 max-h-96 overflow-y-auto">
-                            {column.tasks.map((task) => {
-                              const project = projects.find(p => p.id === task.projectId);
-                              return (
-                                <div
-                                  key={task.id}
-                                  className="bg-white dark:bg-slate-700 p-3 rounded-lg shadow-sm border border-gray-200 dark:border-slate-600 cursor-pointer hover:shadow-md transition-shadow"
-                                >
-                                  <div className="flex items-start space-x-3">
-                                    <button
-                                      onClick={() => toggleTaskStatus(task.id)}
-                                      disabled={updateTaskMutation.isPending}
-                                      className={`mt-0.5 w-4 h-4 rounded border-2 flex items-center justify-center transition-all disabled:opacity-50 ${
-                                        task.status === 'done'
-                                          ? 'bg-blue-500 border-blue-500 text-white'
-                                          : (() => {
-                                              switch (task.priority) {
-                                                case 'urgent': return 'border-red-400 hover:border-red-500';
-                                                case 'high': return 'border-orange-400 hover:border-orange-500';
-                                                case 'medium': return 'border-blue-400 hover:border-blue-500';
-                                                default: return 'border-gray-300 hover:border-gray-400';
-                                              }
-                                            })()
-                                      }`}
-                                    >
-                                      {task.status === 'done' && <CheckCircle2 size={10} />}
-                                    </button>
-                                    <div className="flex-1 min-w-0">
-                                      <div className="font-medium text-gray-900 dark:text-white text-sm mb-1">
-                                        {task.title}
-                                      </div>
-                                      {task.description && (
-                                        <div className="text-xs text-gray-600 dark:text-slate-400 mb-2">
-                                          {task.description}
-                                        </div>
-                                      )}
-                                      <div className="flex items-center space-x-2 text-xs">
-                                        {task.priority !== 'low' && (
-                                          <span className={`px-2 py-0.5 rounded-full font-medium ${
-                                            task.priority === 'urgent' ? 'bg-red-100 text-red-800' :
-                                            task.priority === 'high' ? 'bg-orange-100 text-orange-800' :
-                                            'bg-blue-100 text-blue-800'
-                                          }`}>
-                                            {task.priority}
-                                          </span>
-                                        )}
-                                        {task.dueDate && (
-                                          <span className={`flex items-center space-x-1 px-2 py-0.5 rounded ${
-                                            isToday(task.dueDate) ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
-                                          }`}>
-                                            <CalendarDays size={10} />
-                                            <span>{isToday(task.dueDate) ? 'Today' : format(task.dueDate, 'MMM d')}</span>
-                                          </span>
-                                        )}
-                                        {project && (
-                                          <span className="flex items-center space-x-1 px-2 py-0.5 bg-gray-100 dark:bg-slate-600 rounded">
-                                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: project.color }}></div>
-                                            <span className="text-gray-700 dark:text-gray-300">{project.name}</span>
-                                          </span>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                            {column.tasks.length === 0 && (
-                              <div className="text-center py-8 text-gray-400 dark:text-slate-500">
-                                <div className="text-3xl mb-2">📋</div>
-                                <p className="text-sm">No tasks in {column.title.toLowerCase()}</p>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  <KanbanView
+                    tasks={tasks}
+                    projects={projects}
+                    selectedProject={selectedProject}
+                    onToggleStatus={toggleTaskStatus}
+                    isUpdating={updateTaskMutation.isPending}
+                  />
                 );
               }
               else if (currentView === 'matrix') {
-                const getMatrixCategory = (task: Task) => {
-                  const isUrgent = task.priority === 'urgent' || (task.dueDate && isToday(task.dueDate)) || (task.dueDate && isPast(task.dueDate));
-                  const isImportant = task.priority === 'urgent' || task.priority === 'high';
-
-                  if (isUrgent && isImportant) return 'do';
-                  if (!isUrgent && isImportant) return 'schedule';
-                  if (isUrgent && !isImportant) return 'delegate';
-                  return 'eliminate';
-                };
-
-                const matrixTasks = tasks.filter(t => t.status !== 'done' && (selectedProject === 'all' || t.projectId === selectedProject));
-                const matrix = {
-                  do: { title: 'Do First', subtitle: 'Urgent & Important', color: 'bg-red-50 border-red-200', tasks: matrixTasks.filter(t => getMatrixCategory(t) === 'do') },
-                  schedule: { title: 'Schedule', subtitle: 'Important, Not Urgent', color: 'bg-blue-50 border-blue-200', tasks: matrixTasks.filter(t => getMatrixCategory(t) === 'schedule') },
-                  delegate: { title: 'Delegate', subtitle: 'Urgent, Not Important', color: 'bg-yellow-50 border-yellow-200', tasks: matrixTasks.filter(t => getMatrixCategory(t) === 'delegate') },
-                  eliminate: { title: 'Eliminate', subtitle: 'Neither Urgent nor Important', color: 'bg-gray-50 border-gray-200', tasks: matrixTasks.filter(t => getMatrixCategory(t) === 'eliminate') }
-                };
-
                 return (
-                  <div className="p-6">
-                    <div className="mb-6">
-                      <div className="bg-blue-50 dark:bg-slate-800 border border-blue-200 dark:border-slate-600 rounded-lg p-4">
-                        <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">Eisenhower Matrix</h3>
-                        <p className="text-blue-700 dark:text-blue-300 text-sm">
-                          Organize your tasks by urgency and importance to prioritize what matters most.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-6 h-96">
-                      {Object.entries(matrix).map(([key, quadrant]) => (
-                        <div key={key} className={`${quadrant.color} dark:bg-slate-800 dark:border-slate-600 border rounded-lg p-4 flex flex-col`}>
-                          <div className="mb-4">
-                            <h3 className="font-semibold text-gray-900 dark:text-white">{quadrant.title}</h3>
-                            <p className="text-sm text-gray-600 dark:text-slate-400">{quadrant.subtitle}</p>
-                            <span className="inline-block mt-2 bg-white dark:bg-slate-700 px-2 py-1 rounded-full text-xs font-medium text-gray-700 dark:text-gray-300">
-                              {quadrant.tasks.length} tasks
-                            </span>
-                          </div>
-
-                          <div className="flex-1 space-y-3 overflow-y-auto">
-                            {quadrant.tasks.map((task) => {
-                              const project = projects.find(p => p.id === task.projectId);
-                              return (
-                                <div key={task.id} className="bg-white dark:bg-slate-700 p-3 rounded-lg shadow-sm border border-gray-200 dark:border-slate-600">
-                                  <div className="flex items-start space-x-3">
-                                    <button
-                                      onClick={() => toggleTaskStatus(task.id)}
-                                      disabled={updateTaskMutation.isPending}
-                                      className={`mt-0.5 w-4 h-4 rounded border-2 flex items-center justify-center transition-all disabled:opacity-50 ${
-                                        task.status === 'done'
-                                          ? 'bg-blue-500 border-blue-500 text-white'
-                                          : (() => {
-                                              switch (task.priority) {
-                                                case 'urgent': return 'border-red-400 hover:border-red-500';
-                                                case 'high': return 'border-orange-400 hover:border-orange-500';
-                                                case 'medium': return 'border-blue-400 hover:border-blue-500';
-                                                default: return 'border-gray-300 hover:border-gray-400';
-                                              }
-                                            })()
-                                      }`}
-                                    >
-                                      {task.status === 'done' && <CheckCircle2 size={10} />}
-                                    </button>
-                                    <div className="flex-1 min-w-0">
-                                      <div className="font-medium text-gray-900 dark:text-white text-sm mb-1">
-                                        {task.title}
-                                      </div>
-                                      {task.description && (
-                                        <div className="text-xs text-gray-600 dark:text-slate-400 mb-2">
-                                          {task.description}
-                                        </div>
-                                      )}
-                                      <div className="flex items-center space-x-2 text-xs">
-                                        {task.priority !== 'low' && (
-                                          <span className={`px-2 py-0.5 rounded-full font-medium ${
-                                            task.priority === 'urgent' ? 'bg-red-100 text-red-800' :
-                                            task.priority === 'high' ? 'bg-orange-100 text-orange-800' :
-                                            'bg-blue-100 text-blue-800'
-                                          }`}>
-                                            {task.priority}
-                                          </span>
-                                        )}
-                                        {task.dueDate && (
-                                          <span className={`flex items-center space-x-1 px-2 py-0.5 rounded ${
-                                            isPast(task.dueDate) ? 'bg-red-100 text-red-800' :
-                                            isToday(task.dueDate) ? 'bg-orange-100 text-orange-800' :
-                                            'bg-gray-100 text-gray-600'
-                                          }`}>
-                                            <CalendarDays size={10} />
-                                            <span>
-                                              {isPast(task.dueDate) ? 'Overdue' :
-                                               isToday(task.dueDate) ? 'Today' :
-                                               format(task.dueDate, 'MMM d')}
-                                            </span>
-                                          </span>
-                                        )}
-                                        {project && (
-                                          <span className="flex items-center space-x-1 px-2 py-0.5 bg-gray-100 dark:bg-slate-600 rounded">
-                                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: project.color }}></div>
-                                            <span className="text-gray-700 dark:text-gray-300">{project.name}</span>
-                                          </span>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                            {quadrant.tasks.length === 0 && (
-                              <div className="text-center py-6 text-gray-400 dark:text-slate-500">
-                                <div className="text-2xl mb-2">🎆</div>
-                                <p className="text-sm">No tasks here</p>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  <MatrixView
+                    tasks={tasks}
+                    projects={projects}
+                    selectedProject={selectedProject}
+                    onToggleStatus={toggleTaskStatus}
+                    isUpdating={updateTaskMutation.isPending}
+                  />
                 );
               }
-              else if (selectedProject !== 'all') tasksToShow = applyFilters(tasks.filter(t => t.projectId === selectedProject && t.status !== 'done'));
+              else if (selectedProject !== 'all') tasksToShow = applyFilters(tasks.filter(t => t.projectId === selectedProject && t.status !== 'done'), filters, searchQuery);
 
               return (
                 <div className="py-4">
                   {getMainTasks(tasksToShow).map((task) => {
                     const project = projects.find(p => p.id === task.projectId);
                     const taskIsOverdue = task.dueDate && isOverdue(task.dueDate, task.status);
-                    const subtasks = getSubtasks(task.id);
+                    const subtasks = getSubtasks(tasks, task.id);
                     const isExpanded = expandedTasks.has(task.id);
 
                     return (
@@ -1143,7 +775,7 @@ export default function Todos() {
                             )}
 
                             {/* Priority flag */}
-                            {task.priority !== 'low' && getTodoistPriorityFlag(task.priority)}
+                            {task.priority !== 'low' && PRIORITY_FLAGS[task.priority]}
                           </div>
 
                           {/* Task metadata */}
