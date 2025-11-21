@@ -1,25 +1,6 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, lazy, Suspense } from 'react';
 import { useRealAppStore } from './stores/useRealAppStore';
 import Layout from './components/Layout';
-import Dashboard from './pages/Dashboard';
-import Calendar from './pages/Calendar';
-import Focus from './pages/Focus';
-import Habits from './pages/Habits';
-import Todos from './pages/Todos';
-import Notes from './pages/Notes';
-import Journal from './pages/Journal';
-import LifeGoals from './pages/LifeGoals';
-import ShoppingSmart from './pages/ShoppingSmart';
-import MealPlanning from './pages/MealPlanning';
-import ProjectTracking from './pages/ProjectTracking';
-import Shared from './pages/Shared';
-import Travel from './pages/Travel';
-import VisaPage from './travel/pages/VisaPage';
-import TripPlanner from './travel/components/TripPlanner';
-import Finances from './pages/Finances';
-import SeventyFiveHard from './pages/SeventyFiveHard/index';
-import Skincare from './pages/Skincare';
-import Assistant from './pages/Assistant';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import LoadingSpinner from './components/LoadingSpinner';
 import { AuthGate } from './components/AuthGate';
@@ -28,6 +9,27 @@ import { isSupabaseConfigured } from './lib/supabase';
 import { loadSFHChallenge } from './stores/seventyFiveHardActions';
 import { cleanup75HardDuplicates } from './utils/cleanup75HardDuplicates';
 import { logger } from 'services/logger';
+
+// Lazy load all page components for route-based code splitting
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Calendar = lazy(() => import('./pages/Calendar'));
+const Focus = lazy(() => import('./pages/Focus'));
+const Habits = lazy(() => import('./pages/Habits'));
+const Todos = lazy(() => import('./pages/Todos'));
+const Notes = lazy(() => import('./pages/Notes'));
+const Journal = lazy(() => import('./pages/Journal'));
+const LifeGoals = lazy(() => import('./pages/LifeGoals'));
+const ShoppingSmart = lazy(() => import('./pages/ShoppingSmart'));
+const MealPlanning = lazy(() => import('./pages/MealPlanning'));
+const ProjectTracking = lazy(() => import('./pages/ProjectTracking'));
+const Shared = lazy(() => import('./pages/Shared'));
+const Travel = lazy(() => import('./pages/Travel'));
+const VisaPage = lazy(() => import('./travel/pages/VisaPage'));
+const TripPlanner = lazy(() => import('./travel/components/TripPlanner'));
+const Finances = lazy(() => import('./pages/Finances'));
+const SeventyFiveHard = lazy(() => import('./pages/SeventyFiveHard/index'));
+const Skincare = lazy(() => import('./pages/Skincare'));
+const Assistant = lazy(() => import('./pages/Assistant'));
 
 // Expose cleanup function globally for debugging
 if (typeof window !== 'undefined') {
@@ -147,7 +149,16 @@ function App() {
   return (
     <AuthGate>
       <Layout>
-        {renderPage()}
+        <Suspense fallback={
+          <div className="min-h-screen bg-background flex items-center justify-center">
+            <div className="text-center">
+              <LoadingSpinner />
+              <p className="mt-4 text-muted">Loading page...</p>
+            </div>
+          </div>
+        }>
+          {renderPage()}
+        </Suspense>
       </Layout>
     </AuthGate>
   );
