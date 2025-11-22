@@ -1,15 +1,17 @@
 import { useState, useEffect, useRef, useCallback, startTransition } from 'react';
 import { logger } from '../services/logger';
 
-interface WebSocketMessage {
+type GenericPayload = Record<string, unknown>;
+
+interface WebSocketMessage<T extends GenericPayload = GenericPayload> {
   type: string;
-  payload: any;
+  payload: T;
   timestamp: Date;
 }
 
-interface UseWebSocketOptions {
+interface UseWebSocketOptions<T extends GenericPayload = GenericPayload> {
   url?: string;
-  onMessage?: (message: WebSocketMessage) => void;
+  onMessage?: (message: WebSocketMessage<T>) => void;
   onConnect?: () => void;
   onDisconnect?: () => void;
   onError?: (error: Event) => void;
@@ -18,15 +20,27 @@ interface UseWebSocketOptions {
   simulateConnection?: boolean;
 }
 
-interface WebSocketState {
+interface WebSocketState<T extends GenericPayload = GenericPayload> {
   isConnected: boolean;
   isConnecting: boolean;
   error: string | null;
-  lastMessage: WebSocketMessage | null;
+  lastMessage: WebSocketMessage<T> | null;
   connectionAttempts: number;
 }
 
-export function useWebSocket(options: UseWebSocketOptions = {}) {
+export function useWebSocket<T extends GenericPayload = GenericPayload>(
+  options: UseWebSocketOptions<T> = {}
+): {
+  isConnected: boolean;
+  isConnecting: boolean;
+  error: string | null;
+  lastMessage: WebSocketMessage<T> | null;
+  connectionAttempts: number;
+  connect: () => void;
+  disconnect: () => void;
+  sendMessage: (message: T) => boolean;
+  reconnect: () => void;
+} {
   const {
     url = 'wss://api.example.com/financial-data',
     onMessage,
@@ -256,7 +270,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     }, reconnectInterval);
   }, [state.connectionAttempts, maxReconnectAttempts, reconnectInterval, connect]);
 
-  const sendMessage = useCallback((message: any) => {
+  const sendMessage = useCallback((message: T) => {
     if (!state.isConnected) {
       logger.warn('WebSocket', 'WebSocket is not connected');
       return false;
@@ -313,14 +327,38 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 }
 
 // Hook for financial data specifically
-export function useFinancialDataWebSocket() {
-  const SIMULATE_WS = (import.meta as any).env?.VITE_SIMULATE_WS === 'true';
-  const [marketData, setMarketData] = useState<any[]>([]);
-  const [portfolioData, setPortfolioData] = useState<any>(null);
-  const [alerts, setAlerts] = useState<any[]>([]);
-  const [news, setNews] = useState<any[]>([]);
+interface FinancialDataPayload {
+  symbol?: string;
+  price?: number;
+  totalValue?: number;
+  title?: string;
+  type?: string;
+}
 
-  const handleMessage = useCallback((message: WebSocketMessage) => {
+export function useFinancialDataWebSocket(): {
+  marketData: FinancialDataPayload[];
+  portfolioData: FinancialDataPayload | null;
+  alerts: FinancialDataPayload[];
+  news: FinancialDataPayload[];
+  clearAlerts: () => void;
+  clearNews: () => void;
+  isConnected: boolean;
+  isConnecting: boolean;
+  error: string | null;
+  lastMessage: WebSocketMessage<FinancialDataPayload> | null;
+  connectionAttempts: number;
+  connect: () => void;
+  disconnect: () => void;
+  sendMessage: (message: FinancialDataPayload) => boolean;
+  reconnect: () => void;
+} {
+  const SIMULATE_WS = import.meta.env.VITE_SIMULATE_WS === 'true';
+  const [marketData, setMarketData] = useState<FinancialDataPayload[]>([]);
+  const [portfolioData, setPortfolioData] = useState<FinancialDataPayload | null>(null);
+  const [alerts, setAlerts] = useState<FinancialDataPayload[]>([]);
+  const [news, setNews] = useState<FinancialDataPayload[]>([]);
+
+  const handleMessage = useCallback((message: WebSocketMessage<FinancialDataPayload>) => {
     switch (message.type) {
       case 'price_update':
         setMarketData(prev => {
@@ -334,15 +372,15 @@ export function useFinancialDataWebSocket() {
           return updated;
         });
         break;
-      
+
       case 'portfolio_update':
         setPortfolioData(message.payload);
         break;
-      
+
       case 'news_update':
         setNews(prev => [message.payload, ...prev.slice(0, 9)]); // Keep last 10 news items
         break;
-      
+
       case 'alert_trigger':
         setAlerts(prev => [message.payload, ...prev.slice(0, 4)]); // Keep last 5 alerts
         break;

@@ -1,4 +1,4 @@
-// @ts-nocheck
+// TypeScript type checking is enabled for this file
 import { useState } from 'react';
 import {
   CreditCard,
@@ -77,7 +77,7 @@ interface StrategyComparison {
   monthlySavings?: number;
 }
 
-export default function DebtPayoffCalculator() {
+export default function DebtPayoffCalculator(): JSX.Element {
   const [debts, setDebts] = useState<DebtAccount[]>(MOCK_DEBTS);
   const [showAddDebt, setShowAddDebt] = useState(false);
   const [showCalculator, setShowCalculator] = useState(false);
@@ -171,18 +171,18 @@ export default function DebtPayoffCalculator() {
     };
   };
 
-  const getDebtTypeInfo = (type: string) => {
-    return DEBT_TYPES.find(t => t.value === type) || DEBT_TYPES[0];
+  const getDebtTypeInfo = (type: string): { value: string, label: string, icon: string, color: string } => {
+    return DEBT_TYPES.find(t => t.value === type) ?? DEBT_TYPES[0];
   };
 
-  const getCreditUtilization = (debt: DebtAccount) => {
+  const getCreditUtilization = (debt: DebtAccount): number => {
     if (debt.creditLimit && debt.creditLimit > 0) {
       return (debt.balance / debt.creditLimit) * 100;
     }
     return 0;
   };
 
-  const handleAddDebt = () => {
+  const handleAddDebt = (): void => {
     setEditingDebt(null);
     setDebtForm({
       type: 'credit_card',
@@ -195,34 +195,34 @@ export default function DebtPayoffCalculator() {
     setShowAddDebt(true);
   };
 
-  const handleSaveDebt = () => {
+  const handleSaveDebt = (): void => {
     if (!debtForm.balance || !debtForm.interestRate || !debtForm.minimumPayment) return;
 
     const debtData: DebtAccount = {
-      id: editingDebt?.id || Date.now().toString(),
-      accountId: editingDebt?.accountId || `acc-${Date.now()}`,
+      id: editingDebt?.id ?? Date.now().toString(),
+      accountId: editingDebt?.accountId ?? `acc-${Date.now()}`,
       type: debtForm.type,
       balance: parseFloat(debtForm.balance),
       interestRate: parseFloat(debtForm.interestRate),
       minimumPayment: parseFloat(debtForm.minimumPayment),
       dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
       creditLimit: debtForm.creditLimit ? parseFloat(debtForm.creditLimit) : undefined,
-      payoffStrategies: editingDebt?.payoffStrategies || []
+      payoffStrategies: editingDebt?.payoffStrategies ?? []
     };
 
-    if (editingDebt) {
-      setDebts(debts.map(d => d.id === editingDebt.id ? debtData : d));
-    } else {
-      setDebts([...debts, debtData]);
-    }
+    setDebts(prev =>
+      editingDebt
+        ? prev.map(d => d.id === editingDebt.id ? debtData : d)
+        : [...prev, debtData]
+    );
 
     setShowAddDebt(false);
     setEditingDebt(null);
   };
 
-  const handleDeleteDebt = (debtId: string) => {
-    if (confirm('Delete this debt account?')) {
-      setDebts(debts.filter(d => d.id !== debtId));
+  const handleDeleteDebt = (debtId: string): void => {
+    if (window.confirm('Delete this debt account?')) {
+      setDebts(prev => prev.filter(d => d.id !== debtId));
     }
   };
 

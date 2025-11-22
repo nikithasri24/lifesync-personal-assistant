@@ -52,14 +52,21 @@ export function useTaskEditing(
   subtaskState: SubtaskState,
   apiTasks: TaskData[],
   projects: Project[]
-) {
+): {
+  quickAddTask: () => Promise<void>;
+  startEditingTask: (task: Task) => void;
+  saveTaskEdit: (taskId: string) => Promise<void>;
+  cancelTaskEdit: () => void;
+  addSubtask: (parentId: string) => Promise<void>;
+  toggleTaskStatus: (taskId: string) => Promise<void>;
+} {
   const { createTaskMutation, updateTaskMutation } = mutations;
 
   /**
    * Quick add a new task with natural language parsing
    * Parses priority, due date, project, and tags from text
    */
-  const quickAddTask = async () => {
+  const quickAddTask = async (): Promise<void> => {
     if (!editingState.quickAddText.trim()) return;
 
     const parsed = parseQuickAdd(editingState.quickAddText, projects);
@@ -73,7 +80,7 @@ export function useTaskEditing(
         estimated_time: 25,
         actual_time: 0,
         due_date: parsed.dueDate ? parsed.dueDate.toISOString() : null,
-        project_id: parsed.projectId || null,
+        project_id: parsed.projectId ?? null,
         tags: parsed.tags,
         category: 'work',
       },
@@ -90,7 +97,7 @@ export function useTaskEditing(
    * Start editing a task
    * Opens edit mode with the task's current title
    */
-  const startEditingTask = (task: Task) => {
+  const startEditingTask = (task: Task): void => {
     editingState.openTaskEdit(task.id, task.title);
   };
 
@@ -98,7 +105,7 @@ export function useTaskEditing(
    * Save changes to an edited task
    * Parses updated text and merges with existing task data
    */
-  const saveTaskEdit = async (taskId: string) => {
+  const saveTaskEdit = async (taskId: string): Promise<void> => {
     if (editingState.editTaskText.trim()) {
       const parsed = parseQuickAdd(editingState.editTaskText, projects);
       const currentTask = apiTasks.find(t => t.id === taskId);
@@ -112,7 +119,7 @@ export function useTaskEditing(
             due_date: parsed.dueDate
               ? parsed.dueDate.toISOString()
               : currentTask.due_date,
-            project_id: parsed.projectId || currentTask.project_id,
+            project_id: parsed.projectId ?? currentTask.project_id,
             tags: parsed.tags.length > 0 ? parsed.tags : currentTask.tags,
           },
         });
@@ -124,7 +131,7 @@ export function useTaskEditing(
   /**
    * Cancel task editing without saving
    */
-  const cancelTaskEdit = () => {
+  const cancelTaskEdit = (): void => {
     editingState.closeTaskEdit();
   };
 
@@ -132,7 +139,7 @@ export function useTaskEditing(
    * Add a subtask to a parent task
    * Creates a new task with the parent_id set
    */
-  const addSubtask = async (parentId: string) => {
+  const addSubtask = async (parentId: string): Promise<void> => {
     const draft = subtaskState.getSubtaskDraft(parentId).trim();
     if (!draft) return;
 
@@ -163,7 +170,7 @@ export function useTaskEditing(
    * Toggle task completion status
    * Marks task as done/todo and updates completed_at timestamp
    */
-  const toggleTaskStatus = async (taskId: string) => {
+  const toggleTaskStatus = async (taskId: string): Promise<void> => {
     const task = apiTasks.find(t => t.id === taskId);
     if (task) {
       updateTaskMutation.mutate({

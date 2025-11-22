@@ -9,7 +9,9 @@
 import React, { useMemo } from 'react';
 import { useTasksQuery } from '../../../tasks/hooks/useTasksQuery';
 import { useProjectsQuery } from '../../../projects/hooks/useProjectsQuery';
-import type { TaskFocusIntegrationProps } from './types';
+import type { TaskFocusIntegrationProps, TaskView, ProjectView } from './types';
+import type { TodoItem } from '../../../types';
+import type { Project } from '../../../projects/hooks/useProjectsQuery';
 import { transformTaskToView, transformProjectToView, filterTasks, sortTasks } from './utils';
 import { useFocusAggregate, useTaskFocusState, useTaskFocusActions } from './hooks';
 import {
@@ -26,45 +28,70 @@ export const TaskFocusIntegration: React.FC<TaskFocusIntegrationProps> = ({
   activeFocusSession
 }) => {
   // Data queries
-  const { data: storeTasks = [] } = useTasksQuery();
-  const { data: storeProjects = [] } = useProjectsQuery();
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+  const tasksQueryResult = useTasksQuery();
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  const storeTasksData = tasksQueryResult.data as TodoItem[] | undefined;
+  const { data: storeProjectsData } = useProjectsQuery();
+
+  // Safely memoize the data with proper type guards
+  const storeTasks = useMemo<TodoItem[]>(() => {
+    return Array.isArray(storeTasksData) ? storeTasksData : [];
+  }, [storeTasksData]);
+
+  const storeProjects = useMemo<Project[]>(() => {
+    return Array.isArray(storeProjectsData) ? storeProjectsData : [];
+  }, [storeProjectsData]);
 
   // Custom hooks
   const focusAggregate = useFocusAggregate();
   const state = useTaskFocusState();
-  const actions = useTaskFocusActions({ onTaskComplete, storeTasks });
+  const actions = useTaskFocusActions({
+    onTaskComplete: onTaskComplete ?? ((): void => {}),
+    storeTasks
+  });
 
   // Transform store data to view models
-  const tasks = useMemo(() => {
-    return storeTasks.map((todo) => transformTaskToView(todo, focusAggregate));
+  const tasks = useMemo<TaskView[]>(() => {
+    return storeTasks.map((todo: TodoItem) => transformTaskToView(todo, focusAggregate));
   }, [storeTasks, focusAggregate]);
 
-  const projects = useMemo(() => {
-    return storeProjects.map((project) => transformProjectToView(project, tasks));
+  const projects = useMemo<ProjectView[]>(() => {
+    return storeProjects.map((project: Project) => transformProjectToView(project, tasks));
   }, [storeProjects, tasks]);
 
   // Filter and sort tasks
-  const filteredAndSortedTasks = useMemo(() => {
+  const filteredAndSortedTasks = useMemo<TaskView[]>(() => {
     const filtered = filterTasks(tasks, state.filter, state.selectedProject, state.searchQuery);
     return sortTasks(filtered, state.sortBy);
   }, [tasks, state.filter, state.selectedProject, state.searchQuery, state.sortBy]);
 
   // Event handlers
-  const handleCreateTask = async () => {
-    await actions.createTask(state.newTask);
-    state.resetNewTask();
-    state.setShowCreateTask(false);
+  const handleCreateTask = (): void => {
+    if (state.newTask) {
+      void actions.createTask(state.newTask).then(() => {
+        state.resetNewTask();
+        state.setShowCreateTask(false);
+      });
+    }
   };
 
-  const _handleCreateProject = async () => {
-    await actions.createProject(state.newProject);
-    state.resetNewProject();
-    state.setShowCreateProject(false);
+  const _handleCreateProject = (): void => {
+    if (state.newProject) {
+      void actions.createProject(state.newProject).then(() => {
+        state.resetNewProject();
+        state.setShowCreateProject(false);
+      });
+    }
   };
 
-  const handleViewProjectTasks = (projectId: string) => {
+  const handleViewProjectTasks = (projectId: string): void => {
     state.setSelectedProject(projectId);
     state.setActiveTab('tasks');
+  };
+
+  const handleToggleStatus = (taskId: string): void => {
+    void actions.toggleTaskStatus(taskId);
   };
 
   return (
@@ -95,7 +122,7 @@ export const TaskFocusIntegration: React.FC<TaskFocusIntegrationProps> = ({
           onProjectChange={state.setSelectedProject}
           sortBy={state.sortBy}
           onSortChange={state.setSortBy}
-          onToggleStatus={actions.toggleTaskStatus}
+          onToggleStatus={handleToggleStatus}
           onStartFocus={onStartFocusSession}
           onEditTask={state.setSelectedTask}
           onToggleSubtask={actions.toggleSubtask}
@@ -115,7 +142,7 @@ export const TaskFocusIntegration: React.FC<TaskFocusIntegrationProps> = ({
       {/* Create Task Modal */}
       <CreateTaskModal
         isOpen={state.showCreateTask}
-        onClose={() => state.setShowCreateTask(false)}
+        onClose={(): void => state.setShowCreateTask(false)}
         newTask={state.newTask}
         onTaskChange={state.setNewTask}
         onSubmit={handleCreateTask}

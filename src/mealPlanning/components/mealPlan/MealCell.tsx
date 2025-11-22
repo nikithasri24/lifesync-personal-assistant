@@ -6,7 +6,7 @@
 import React from 'react';
 import { ChefHat } from 'lucide-react';
 import { isSameDay } from 'date-fns';
-import type { PlannedMeal, Recipe, MealPlan } from '../../../types';
+import type { PlannedMeal, Recipe, MealPlanWeek } from '../../../types';
 import {
   useCreatePlannedMealMutation,
   useUpdatePlannedMealMutation,
@@ -21,7 +21,7 @@ export interface MealCellProps {
   dayMeals: PlannedMeal[];
   recipes: Recipe[];
   plannedMeals: PlannedMeal[];
-  activePlan: MealPlan | null;
+  activePlan: MealPlanWeek | null;
   isSelected: boolean;
   onClick: (e: React.MouseEvent) => void;
   children: React.ReactNode;
@@ -44,7 +44,7 @@ export const MealCell: React.FC<MealCellProps> = ({
   const hasContent = dayMeals.length > 0;
   const highlight = isSameDay(date, new Date());
 
-  const handleDrop = async (e: React.DragEvent) => {
+  const handleDrop = async (e: React.DragEvent): Promise<void> => {
     if (!activePlan) return;
 
     // Handle meal option drop
@@ -145,7 +145,9 @@ export const MealCell: React.FC<MealCellProps> = ({
       } ${hasContent ? 'bg-amber-50/30' : ''}`}
       onClick={onClick}
       onDragOver={(e) => e.preventDefault()}
-      onDrop={handleDrop}
+      onDrop={(e) => {
+        void handleDrop(e);
+      }}
     >
       {highlight && (
         <div className="absolute inset-y-0 left-0 w-1 bg-indigo-300" aria-hidden />

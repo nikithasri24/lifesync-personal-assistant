@@ -35,7 +35,8 @@ export async function getHabits(filters?: {
   const { data, error } = await query;
 
   if (error) throw error;
-  return data || [];
+  if (!data) throw new Error('Failed to retrieve habits');
+  return data as HabitData[];
 }
 
 /**
@@ -45,16 +46,16 @@ export async function getHabit(id: string): Promise<HabitData> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
-  const { data, error } = await supabase
+  const result = await supabase
     .from('habits')
     .select('*')
     .eq('id', id)
     .eq('user_id', user.id)
     .single();
 
-  if (error) throw error;
-  if (!data) throw new Error('Habit not found');
-  return data;
+  if (result.error) throw result.error;
+  if (!result.data) throw new Error('Habit not found');
+  return result.data as unknown as HabitData;
 }
 
 /**
@@ -64,7 +65,7 @@ export async function createHabit(habit: Omit<HabitData, 'id' | 'user_id' | 'cre
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
-  const { data, error } = await supabase
+  const result = await supabase
     .from('habits')
     .insert({
       user_id: user.id,
@@ -73,8 +74,9 @@ export async function createHabit(habit: Omit<HabitData, 'id' | 'user_id' | 'cre
     .select()
     .single();
 
-  if (error) throw error;
-  return data;
+  if (result.error) throw result.error;
+  if (!result.data) throw new Error('Failed to create habit');
+  return result.data as unknown as HabitData;
 }
 
 /**
@@ -84,7 +86,7 @@ export async function updateHabit(id: string, updates: Partial<HabitData>): Prom
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
-  const { data, error } = await supabase
+  const result = await supabase
     .from('habits')
     .update(updates)
     .eq('id', id)
@@ -92,8 +94,9 @@ export async function updateHabit(id: string, updates: Partial<HabitData>): Prom
     .select()
     .single();
 
-  if (error) throw error;
-  return data;
+  if (result.error) throw result.error;
+  if (!result.data) throw new Error('Habit not found or update failed');
+  return result.data as unknown as HabitData;
 }
 
 /**
@@ -128,14 +131,15 @@ export async function getHabitEntries(filters?: {
   if (!user) throw new Error('Not authenticated');
 
   // First get user's habits to filter entries
-  const { data: userHabits } = await supabase
+  const { data: userHabits, error: habitsError } = await supabase
     .from('habits')
     .select('id')
     .eq('user_id', user.id);
 
+  if (habitsError) throw habitsError;
   if (!userHabits || userHabits.length === 0) return [];
 
-  const habitIds = userHabits.map(h => h.id);
+  const habitIds = userHabits.map((h: { id: string }) => h.id);
 
   let query = supabase
     .from('habit_entries')
@@ -153,7 +157,8 @@ export async function getHabitEntries(filters?: {
   const { data, error } = await query;
 
   if (error) throw error;
-  return data || [];
+  if (!data) throw new Error('Failed to retrieve habit entries');
+  return data as HabitEntryData[];
 }
 
 /**
@@ -171,42 +176,45 @@ export async function createHabitEntry(entry: Omit<HabitEntryData, 'id' | 'creat
   if (!user) throw new Error('Not authenticated');
 
   // Verify the habit belongs to the user
-  const { data: habit } = await supabase
+  const habitResult = await supabase
     .from('habits')
     .select('id')
     .eq('id', entry.habit_id)
     .eq('user_id', user.id)
     .single();
 
-  if (!habit) throw new Error('Habit not found or access denied');
+  if (habitResult.error) throw habitResult.error;
+  if (!habitResult.data) throw new Error('Habit not found or access denied');
 
-  const { data, error } = await supabase
+  const result = await supabase
     .from('habit_entries')
     .insert(entry)
     .select()
     .single();
 
-  if (error) throw error;
+  if (result.error) throw result.error;
+  if (!result.data) throw new Error('Failed to create habit entry');
 
   // Update habit streak and progress
   await updateHabitStreakAndProgress(entry.habit_id);
 
-  return data;
+  return result.data as unknown as HabitEntryData;
 }
 
 /**
  * Update a habit entry
  */
 export async function updateHabitEntry(id: string, updates: Partial<HabitEntryData>): Promise<HabitEntryData> {
-  const { data, error } = await supabase
+  const result = await supabase
     .from('habit_entries')
     .update(updates)
     .eq('id', id)
     .select()
     .single();
 
-  if (error) throw error;
-  return data;
+  if (result.error) throw result.error;
+  if (!result.data) throw new Error('Habit entry not found or update failed');
+  return result.data as unknown as HabitEntryData;
 }
 
 /**
@@ -271,11 +279,13 @@ export async function deleteAllHabitEntries(habitId: string): Promise<void> {
  */
 async function updateHabitStreakAndProgress(habitId: string): Promise<void> {
   // Get all entries for this habit, ordered by date descending
-  const { data: entries } = await supabase
+  const { data: entries, error } = await supabase
     .from('habit_entries')
     .select('*')
     .eq('habit_id', habitId)
     .order('date', { ascending: false });
+
+  if (error) throw error;
 
   if (!entries || entries.length === 0) {
     // No entries, reset streak
@@ -297,7 +307,7 @@ async function updateHabitStreakAndProgress(habitId: string): Promise<void> {
   let lastDate: Date | null = null;
 
   for (const entry of entries) {
-    const entryDate = new Date(entry.date);
+    const entryDate = new Date((entry as { date: string }).date);
 
     if (!lastDate) {
       // First entry

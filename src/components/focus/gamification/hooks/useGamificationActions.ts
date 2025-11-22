@@ -7,29 +7,34 @@ interface UseGamificationActionsProps {
   closeCreateGoal: () => void;
 }
 
+interface UseGamificationActionsReturn {
+  handleCreateGoal: () => void;
+  handleJoinChallenge: (challengeId: string) => void;
+}
+
 export const useGamificationActions = ({
   onCreateGoal,
   onJoinChallenge,
   newGoal,
   closeCreateGoal
-}: UseGamificationActionsProps) => {
-  const handleCreateGoal = () => {
+}: UseGamificationActionsProps): UseGamificationActionsReturn => {
+  const handleCreateGoal = (): void => {
     if (newGoal.title && newGoal.target) {
       onCreateGoal({
         title: newGoal.title,
         description: newGoal.description,
-        type: newGoal.type as any,
+        type: newGoal.type ?? 'daily',
         target: newGoal.target,
         startDate: new Date(),
-        reward: newGoal.reward || 100,
+        reward: newGoal.reward ?? 100,
         streak: 0,
-        priority: newGoal.priority as any
+        priority: newGoal.priority ?? 'medium'
       });
       closeCreateGoal();
     }
   };
 
-  const handleJoinChallenge = (challengeId: string) => {
+  const handleJoinChallenge = (challengeId: string): void => {
     onJoinChallenge(challengeId);
   };
 

@@ -62,7 +62,20 @@ export interface ConversationState {
   error: string | null;
 }
 
-export function useConversationalVoice(userId: string) {
+export function useConversationalVoice(userId: string): {
+  isListening: boolean;
+  isSpeaking: boolean;
+  isThinking: boolean;
+  transcript: string;
+  error: string | null;
+  startListening: () => void;
+  stopListening: () => void;
+  stopSpeaking: () => void;
+  sendTextMessage: (text: string) => Promise<{ response: string } | undefined>;
+  getMessages: () => Array<unknown>;
+  clearHistory: () => void;
+  isSupported: boolean;
+} {
   const [state, setState] = useState<ConversationState>({
     isListening: false,
     isSpeaking: false,
@@ -193,7 +206,7 @@ export function useConversationalVoice(userId: string) {
     return () => {
       recognition.stop();
     };
-  }, [userId]);
+  }, [userId, speakText, startListening]);
 
   const startListening = useCallback(() => {
     if (!recognitionRef.current) {
@@ -217,9 +230,11 @@ export function useConversationalVoice(userId: string) {
       }));
 
       recognitionRef.current.start();
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Recognition might already be started
-      logger.info('UseConversationalVoice', '[Voice] Start error (might already be running):', error.message);
+      logger.info('UseConversationalVoice', '[Voice] Start error (might already be running):',
+        error instanceof Error ? error.message : 'An unknown error occurred'
+      );
     }
   }, []);
 
@@ -278,7 +293,7 @@ export function useConversationalVoice(userId: string) {
     setState(prev => ({ ...prev, isSpeaking: false }));
   }, []);
 
-  const sendTextMessage = useCallback(async (text: string) => {
+  const sendTextMessage = useCallback(async (text: string): Promise<{ response: string } | undefined> => {
     setState(prev => ({ ...prev, isThinking: true }));
 
     try {
@@ -287,18 +302,18 @@ export function useConversationalVoice(userId: string) {
       setState(prev => ({ ...prev, isThinking: false }));
 
       return result;
-    } catch (error: any) {
+    } catch (error: unknown) {
       setState(prev => ({
         ...prev,
         isThinking: false,
-        error: error.message
+        error: error instanceof Error ? error.message : 'An unknown error occurred'
       }));
       throw error;
     }
   }, []);
 
-  const getMessages = useCallback(() => {
-    return engineRef.current?.getHistory() || [];
+  const getMessages = useCallback((): Array<unknown> => {
+    return engineRef.current?.getHistory() ?? [];
   }, []);
 
   const clearHistory = useCallback(() => {

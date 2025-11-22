@@ -36,10 +36,10 @@ const GoalCheckins: React.FC<GoalCheckinsProps> = ({ goal }) => {
   const [nextActions, setNextActions] = useState('');
 
   useEffect(() => {
-    loadCheckins();
-  }, [goal.id]);
+    void loadCheckins();
+  }, [goal.id, loadCheckins]);
 
-  const loadCheckins = async () => {
+  const loadCheckins = async (): Promise<void> => {
     try {
       setLoading(true);
       const data = await getGoalCheckins(goal.id);
@@ -51,9 +51,9 @@ const GoalCheckins: React.FC<GoalCheckinsProps> = ({ goal }) => {
     }
   };
 
-  const handleSubmitCheckin = async () => {
+  const handleSubmitCheckin = async (): Promise<void> => {
     if (!progressUpdate.trim()) {
-      alert('Please add a progress update');
+      logger.warn('Progress update is required');
       return;
     }
 
@@ -82,7 +82,7 @@ const GoalCheckins: React.FC<GoalCheckinsProps> = ({ goal }) => {
       setShowForm(false);
     } catch (error) {
       logger.error('Error creating check-in:', { error });
-      alert('Failed to save check-in');
+      logger.warn('Failed to save check-in');
     } finally {
       setSubmitting(false);
     }

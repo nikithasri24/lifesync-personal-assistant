@@ -28,13 +28,13 @@ export function parseReceiptToItems(text: string): ParsedReceiptItem[] {
     .map(l => l.trim())
     .filter(Boolean);
 
-  const skip = /^(subtotal|sub\s*total|item\s*count|balance|tax|total|change|cash|visa|mastercard|amex|debit|credit|thank|thanks|store|merchant|date|time|auth|approval|card|aid|tvr|tac|entry|ref|inv|order|sales\s*tax)\b/i;
-  const trailPrice = /(?:\$\s*)?(\d{1,3}(?:[\.,]\d{3})*(?:[\.,]\d{2})|\d+(?:[\.,]\d{2}))/;
+  const skip = /^(subtotal|sub total|item count|balance|tax|total|change|cash|visa|mastercard|amex|debit|credit|thank|thanks|store|merchant|date|time|auth|approval|card|aid|tvr|tac|entry|ref|inv|order|sales tax)\b/i;
+  const trailPrice = /(?:\$\s*)?(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2})|\d+(?:[.,]\d{2}))/;
   const priceAtEnd = new RegExp(`${trailPrice.source}$`);
   const qtyPrefix = /^(\d+)\s*[x×]\s+/i;
   const qtySuffix = /\s*[x×]\s*(\d+)$/i;
-  const multiFor = /(\d+)\s*(?:for|\/@|\/|@)\s*\$?\s*(\d+(?:[\.,]\d{2})?)/i; // 2 for 5.00, 3/$10, 2@5.00
-  const sizeToken = /(\d+(?:[\.,]\d+)?\s*(?:oz|fl\s*oz|lb|lbs|g|kg|ml|l|ct|count|pack|pk|ea|btl|bottle|jar|can))\b/i;
+  const multiFor = /(\d+)\s*(?:for|/|@)\s*\$?\s*(\d+(?:[.,]\d{2})?)/i; // 2 for 5.00, 3/$10, 2@5.00
+  const sizeToken = /(\d+(?:[.,]\d+)?\s*(?:oz|fl oz|lb|lbs|g|kg|ml|l|ct|count|pack|pk|ea|btl|bottle|jar|can))\b/i;
 
   const items: ParsedReceiptItem[] = [];
 
@@ -149,13 +149,16 @@ export function categorizeName(name: string): ShoppingItem['category'] {
   return 'other';
 }
 
-export function calculateReceiptCategorySummary(items: ParsedReceiptItem[]) {
+export function calculateReceiptCategorySummary(items: ParsedReceiptItem[]): {
+  summary: Record<string, { count: number; qty: number; est: number }>,
+  estSubtotal: number
+} {
   const summary: Record<string, { count: number; qty: number; est: number }> = {};
   let estSubtotal = 0;
 
   for (const it of items) {
     const key = it.category;
-    if (!summary[key]) summary[key] = { count: 0, qty: 0, est: 0 };
+    summary[key] ??= { count: 0, qty: 0, est: 0 };
     summary[key].count += 1;
     summary[key].qty += it.quantity;
     if (typeof it.price === 'number') {

@@ -86,10 +86,15 @@ describe('dataManager', () => {
 
       downloadJSON(testData, filename);
 
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(global.URL.createObjectURL).toHaveBeenCalled();
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(document.createElement).toHaveBeenCalledWith('a');
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(document.body.appendChild).toHaveBeenCalled();
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(document.body.removeChild).toHaveBeenCalled();
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(global.URL.revokeObjectURL).toHaveBeenCalledWith('mock-url');
     });
 
@@ -104,16 +109,22 @@ describe('dataManager', () => {
 
       downloadCSV(testData, 'test.csv');
 
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(global.URL.createObjectURL).toHaveBeenCalled();
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(document.createElement).toHaveBeenCalledWith('a');
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(document.body.appendChild).toHaveBeenCalled();
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(document.body.removeChild).toHaveBeenCalled();
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(global.URL.revokeObjectURL).toHaveBeenCalledWith('mock-url');
     });
 
     it('should handle empty array', () => {
       downloadCSV([], 'test.csv');
 
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(global.URL.createObjectURL).not.toHaveBeenCalled();
     });
   });
@@ -224,10 +235,10 @@ describe('dataManager', () => {
       expect(backupKey).toBeDefined();
       expect(backupKey).toMatch(/^lifesync-backup-\d+$/);
 
-      const storedData = localStorage.getItem(backupKey!);
+      const storedData = localStorage.getItem(backupKey ?? '');
       expect(storedData).toBeDefined();
 
-      const parsedData = JSON.parse(storedData!);
+      const parsedData = JSON.parse(storedData ?? '{}');
       expect(parsedData.version).toBe('1.0.0');
       expect(parsedData.habits).toEqual(mockStoreState.habits);
     });

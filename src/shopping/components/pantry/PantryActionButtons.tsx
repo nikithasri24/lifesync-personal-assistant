@@ -2,7 +2,7 @@ import React from 'react';
 import { Plus, Receipt } from 'lucide-react';
 import { format } from 'date-fns';
 import { exportPantryToCsv, downloadCsv } from '../../utils/pantryUtils';
-import type { PantryItem } from '../../types';
+import type { PantryItem } from '../../../types';
 import type { PantryFilter, PantrySort } from '../../hooks/usePantryManagement';
 
 interface PantryActionButtonsProps {
@@ -27,11 +27,14 @@ export function PantryActionButtons({
   onAddExpired,
   onAddItem,
   onScanReceipt,
-}: PantryActionButtonsProps) {
-  const lowStockCount = pantryItems.filter(p => p.isLowStock).length;
-  const expiredCount = pantryItems.filter(p =>
-    p.expirationDate && p.expirationDate.getTime() < new Date().getTime()
-  ).length;
+}: PantryActionButtonsProps): React.JSX.Element {
+  const lowStockCount = pantryItems.filter((p): boolean => p.isLowStock === true).length;
+  const expiredCount = pantryItems.filter((p): boolean => {
+    if (!p.expirationDate) {
+      return false;
+    }
+    return p.expirationDate.getTime() < new Date().getTime();
+  }).length;
 
   return (
     <div className="flex items-center gap-2">
@@ -45,7 +48,9 @@ export function PantryActionButtons({
         type="button"
         className="px-3 py-1 rounded border border-gray-300 text-sm hover:bg-gray-50"
         title="Add all low-stock items to shopping list"
-        onClick={onAddLowStock}
+        onClick={() => {
+          void onAddLowStock();
+        }}
       >
         Add low-stock to Shopping
       </button>
@@ -54,7 +59,9 @@ export function PantryActionButtons({
         type="button"
         className="px-3 py-1 rounded border border-gray-300 text-sm hover:bg-gray-50"
         title="Move all expired items to shopping list"
-        onClick={onAddExpired}
+        onClick={() => {
+          void onAddExpired();
+        }}
       >
         Move expired to Shopping
       </button>

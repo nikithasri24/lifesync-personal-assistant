@@ -11,6 +11,14 @@ type ProfessionalWorldMapProps = {
   onCountryClick: (countryCode: string) => void;
 };
 
+type CountryData = {
+  country?: string;
+};
+
+type ClickEvent = {
+  target?: unknown;
+};
+
 const ProfessionalWorldMap: React.FC<ProfessionalWorldMapProps> = ({
   visitedCountries,
   onCountryClick,
@@ -40,7 +48,7 @@ const ProfessionalWorldMap: React.FC<ProfessionalWorldMapProps> = ({
     };
   });
 
-  const getCountryColor = (country: any, _countryValue: number) => {
+  const getCountryColor = (country: CountryData, _countryValue: number): string => {
     const code = country?.country?.toUpperCase();
     const status = code ? visitedCountries[code] : undefined;
 
@@ -58,7 +66,7 @@ const ProfessionalWorldMap: React.FC<ProfessionalWorldMapProps> = ({
     }
   };
 
-  const handleCountryClick = (event: any, countryCode: string) => {
+  const handleCountryClick = (_event: ClickEvent, countryCode: string): void => {
     const code = countryCode.toUpperCase();
     onCountryClick(code);
   };

@@ -62,7 +62,7 @@ export const MealItem: React.FC<MealItemProps> = ({
   recipes,
   onShowRecipeForm,
   onShowSimpleEdit,
-}) => {
+}: MealItemProps): React.ReactElement => {
   const { mealOptions } = useAppStore();
   const { data: mealPlans = [] } = useMealPlansQuery();
   const updatePlannedMealMutation = useUpdatePlannedMealMutation();
@@ -180,13 +180,13 @@ export const MealItem: React.FC<MealItemProps> = ({
     setSelectedIndex(0);
   }, [editValue]);
 
-  const startEdit = () => {
+  const startEdit = (): void => {
     setEditValue(displayName);
     setIsEditing(true);
     setShowList(true);
   };
 
-  const saveEdit = async (newValue?: string) => {
+  const saveEdit = async (newValue?: string): Promise<void> => {
     const trimmed = (newValue ?? editValue).trim();
     if (!trimmed) {
       cancelEdit();
@@ -227,13 +227,13 @@ export const MealItem: React.FC<MealItemProps> = ({
     setShowList(false);
   };
 
-  const cancelEdit = () => {
+  const cancelEdit = (): void => {
     setIsEditing(false);
     setShowList(false);
     setEditValue('');
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent): void => {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       setSelectedIndex((prev) => Math.min(prev + 1, matches.length - 1));
@@ -244,9 +244,9 @@ export const MealItem: React.FC<MealItemProps> = ({
       e.preventDefault();
       if (matches.length > 0) {
         const selected = matches[selectedIndex];
-        saveEdit(selected.name);
+        void saveEdit(selected.name);
       } else {
-        saveEdit();
+        void saveEdit();
       }
       setSelectedIndex(0);
     } else if (e.key === 'Escape') {
@@ -254,26 +254,28 @@ export const MealItem: React.FC<MealItemProps> = ({
     }
   };
 
-  const handleRecipeClick = (e: React.MouseEvent) => {
+  const handleRecipeClick = (e: React.MouseEvent): void => {
     e.stopPropagation();
     if (meal.recipeId && recipe) {
-      onShowSimpleEdit(recipe, async (updates) => {
-        await updateRecipeMutation.mutateAsync({ recipeId: recipe.id, updates });
+      onShowSimpleEdit(recipe, (updates): void => {
+        void updateRecipeMutation.mutateAsync({ recipeId: recipe.id, updates });
       });
     } else {
-      onShowRecipeForm(meal.customMeal ?? '', async (recipeData) => {
-        const newRecipe = await createRecipeMutation.mutateAsync(recipeData);
-        if (newRecipe?.id) {
-          await updatePlannedMealMutation.mutateAsync({
-            mealId: meal.id,
-            updates: { recipeId: newRecipe.id, customMeal: undefined }
-          });
-        }
+      onShowRecipeForm(meal.customMeal ?? '', (recipeData): void => {
+        void (async () => {
+          const newRecipe = await createRecipeMutation.mutateAsync(recipeData);
+          if (newRecipe?.id) {
+            await updatePlannedMealMutation.mutateAsync({
+              mealId: meal.id,
+              updates: { recipeId: newRecipe.id, customMeal: undefined }
+            });
+          }
+        })();
       });
     }
   };
 
-  const handleDelete = (e: React.MouseEvent) => {
+  const handleDelete = (e: React.MouseEvent): void => {
     e.stopPropagation();
     deletePlannedMealMutation.mutate(meal.id);
   };
@@ -309,7 +311,7 @@ export const MealItem: React.FC<MealItemProps> = ({
             value={editValue}
             onChange={(e) => { setEditValue(e.target.value); setShowList(true); }}
             onKeyDown={handleKeyDown}
-            onBlur={() => setTimeout(() => saveEdit(), 200)}
+            onBlur={() => setTimeout(() => { void saveEdit(); }, 200)}
             className="w-full bg-transparent border-none outline-none text-xs"
           />
           {showList && editValue.trim().length > 0 && inputRef.current && createPortal(
@@ -322,7 +324,7 @@ export const MealItem: React.FC<MealItemProps> = ({
                   type="button"
                   className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-slate-700 hover:bg-indigo-50 transition-colors first:rounded-t-lg last:rounded-b-lg"
                   onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => saveEdit(editValue.trim())}
+                  onClick={() => { void saveEdit(editValue.trim()); }}
                 >
                   <span className="flex h-6 w-6 items-center justify-center rounded-md bg-indigo-100 text-xs font-semibold text-indigo-700">+</span>
                   <div className="flex-1 min-w-0">
@@ -345,7 +347,7 @@ export const MealItem: React.FC<MealItemProps> = ({
                         }`}
                         onMouseDown={(e) => e.preventDefault()}
                         onMouseEnter={() => setSelectedIndex(idx)}
-                        onClick={() => saveEdit(r.name)}
+                        onClick={() => { void saveEdit(r.name); }}
                       >
                         <span className={`flex h-6 w-6 items-center justify-center rounded-md text-xs font-semibold ${
                           isRecipe ? 'bg-emerald-100 text-emerald-700' : isCustom ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700'
@@ -355,7 +357,7 @@ export const MealItem: React.FC<MealItemProps> = ({
                         <div className="flex-1 min-w-0">
                           <div className="truncate font-medium">{r.name}</div>
                           <div className="text-xs text-slate-500">
-                            {isRecipe ? 'Recipe' : isCustom ? `Used ${r.count || 1}x` : 'Meal option'}
+                            {isRecipe ? 'Recipe' : isCustom ? `Used ${r.count ?? 1}x` : 'Meal option'}
                           </div>
                         </div>
                       </button>

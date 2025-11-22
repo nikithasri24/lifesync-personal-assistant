@@ -7,16 +7,18 @@
 import { startOfDay, addDays, differenceInDays, isSameDay, format } from 'date-fns';
 import { logger } from '../../services/logger';
 import { ensureSupabase } from '../../lib/supabase';
-import { createInitialTaskCompletions as createTasks } from '../../types/seventyFiveHard';
+import { createInitialTaskCompletions as createTasks, type TaskCompletion, type ChallengeRow, type DailyCheckIn, type SeventyFiveHardChallenge } from '../../types/seventyFiveHard';
 import { getStore, setStore } from '../utils/storeHelpers';
-import { ensureTodaySFHCheckIn } from './checkInActions';
 import { loadSFHChallenge } from './challengeActions';
 
 /**
  * Check for missed yesterday
  */
-export async function checkForMissedSFHDay() {
-  const { sfhChallenge: challenge, sfhCheckIns: checkIns } = getStore();
+export async function checkForMissedSFHDay(): Promise<void> {
+  const { sfhChallenge, sfhCheckIns } = getStore();
+  const challenge: SeventyFiveHardChallenge | null = sfhChallenge;
+  const checkIns: readonly DailyCheckIn[] = sfhCheckIns;
+
   if (!challenge || challenge.status !== 'active') return;
 
   const today = startOfDay(new Date());
@@ -34,7 +36,7 @@ export async function checkForMissedSFHDay() {
     return;
   }
 
-  const yesterdayCheckIn = checkIns.find(c => isSameDay(c.date, yesterday));
+  const yesterdayCheckIn: DailyCheckIn | undefined = checkIns.find((c) => isSameDay(c.date, yesterday));
 
   let failureDetected = false;
 
@@ -42,7 +44,7 @@ export async function checkForMissedSFHDay() {
     logger.info('SeventyFiveHardActions', '[75Hard] No check-in for yesterday - failure detected');
     failureDetected = true;
   } else {
-    const allComplete = yesterdayCheckIn.taskCompletions.every(tc => tc.completed);
+    const allComplete: boolean = yesterdayCheckIn.taskCompletions.every((tc) => tc.completed);
     if (!allComplete) {
       logger.info('SeventyFiveHardActions', '[75Hard] Yesterday incomplete - failure detected');
       failureDetected = true;
@@ -53,16 +55,19 @@ export async function checkForMissedSFHDay() {
     logger.info('SeventyFiveHardActions', '[75Hard] Showing failure prompt');
     setStore({ sfhShowFailurePrompt: true, sfhFailureDate: yesterday });
   } else {
-    logger.info('SeventyFiveHardActions', '[75Hard] Yesterday complete - ensure today check-in');
-    await ensureTodaySFHCheckIn();
+    logger.info('SeventyFiveHardActions', '[75Hard] Yesterday complete - reloading challenge');
+    await loadSFHChallenge();
   }
 }
 
 /**
  * Handle failure response
  */
-export async function handleSFHFailureResponse(completed: boolean) {
-  const { sfhChallenge: challenge, sfhFailureDate: failureDate } = getStore();
+export async function handleSFHFailureResponse(completed: boolean): Promise<void> {
+  const { sfhChallenge, sfhFailureDate } = getStore();
+  const challenge: SeventyFiveHardChallenge | null = sfhChallenge;
+  const failureDate: Date | null = sfhFailureDate;
+
   if (!challenge || !failureDate) {
     logger.error('SeventyFiveHardActions', '[75Hard] handleSFHFailureResponse called without challenge or failure date');
     return;
@@ -78,7 +83,7 @@ export async function handleSFHFailureResponse(completed: boolean) {
     if (completed) {
       logger.info('SeventyFiveHardActions', '[75Hard] User confirmed yesterday complete - creating check-in');
 
-      const allTasksComplete = challenge.tasks.map(t => ({
+      const allTasksComplete: TaskCompletion[] = (challenge.tasks as readonly { id: string }[]).map((t) => ({
         taskId: t.id,
         completed: true,
         completedAt: failureDate.toISOString(),
@@ -104,7 +109,7 @@ export async function handleSFHFailureResponse(completed: boolean) {
 
       // Now create today's check-in
       const todayDayNumber = differenceInDays(today, challenge.startDate) + 1;
-      const taskCompletions = createTasks(challenge.tasks);
+      const taskCompletions: TaskCompletion[] = createTasks(challenge.tasks as readonly { id: string; title: string; description?: string; order: number }[]);
 
       const { error: todayError } = await supabase
         .from('sfh_daily_checkins')
@@ -139,7 +144,7 @@ export async function handleSFHFailureResponse(completed: boolean) {
       logger.info('SeventyFiveHardActions', '[75Hard] Deleted all check-ins');
 
       // Step 2: Update challenge start_date to today
-      const { data: updatedChallenge, error: updateError } = await supabase
+      const updateResult = await supabase
         .from('sfh_challenge')
         .update({
           start_date: format(today, 'yyyy-MM-dd'),
@@ -149,21 +154,22 @@ export async function handleSFHFailureResponse(completed: boolean) {
         .select()
         .single();
 
-      if (updateError) {
-        logger.error('SeventyFiveHardActions', '[75Hard] Failed to update challenge:', updateError);
-        throw updateError;
+      if (updateResult.error) {
+        logger.error('SeventyFiveHardActions', '[75Hard] Failed to update challenge:', updateResult.error);
+        throw updateResult.error;
       }
 
-      if (!updatedChallenge) {
+      if (!updateResult.data) {
         logger.error('SeventyFiveHardActions', '[75Hard] Update returned no data - possible RLS issue');
         throw new Error('Failed to verify challenge update');
       }
 
+      const typedUpdatedChallenge = updateResult.data as ChallengeRow;
       logger.info('SeventyFiveHardActions', '[75Hard] Updated challenge start_date to', format(today, 'yyyy-MM-dd'));
-      logger.info('SeventyFiveHardActions', '[75Hard] Verified updated challenge:', updatedChallenge.start_date, 'current_day:', updatedChallenge.current_day);
+      logger.info('SeventyFiveHardActions', '[75Hard] Verified updated challenge:', typedUpdatedChallenge.start_date, 'current_day:', typedUpdatedChallenge.current_day);
 
       // Step 3: Create today's check-in for the fresh start
-      const taskCompletions = createTasks(challenge.tasks);
+      const taskCompletions: TaskCompletion[] = createTasks(challenge.tasks as readonly { id: string; title: string; description?: string; order: number }[]);
       const { error: insertError } = await supabase
         .from('sfh_daily_checkins')
         .insert({
@@ -184,10 +190,13 @@ export async function handleSFHFailureResponse(completed: boolean) {
     // Load challenge once at the end
     logger.info('SeventyFiveHardActions', '[75Hard] Reloading challenge after handling failure response');
     await loadSFHChallenge();
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('SeventyFiveHardActions', '[75Hard] Error in handleSFHFailureResponse:', error);
     // Show error to user
-    getStore().showGlobalToast?.('Failed to process response. Please try again.', 'error');
+    const toast = getStore().showGlobalToast;
+    if (toast) {
+      toast('Failed to process response. Please try again.', 'error');
+    }
     // Reload challenge anyway to get current state
     await loadSFHChallenge();
   }

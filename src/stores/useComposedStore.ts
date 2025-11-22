@@ -61,7 +61,16 @@ export const useComposedStore = create<ComposedStore>()(
 );
 
 // Export individual slice selectors for better performance
-export const selectUI = (state: ComposedStore) => ({
+export const selectUI = (state: ComposedStore): Pick<
+  ComposedStore,
+  | 'activeView'
+  | 'sidebarCollapsed'
+  | 'weekStartsOn'
+  | 'setActiveView'
+  | 'toggleSidebar'
+  | 'setSidebarCollapsed'
+  | 'setWeekStartsOn'
+> => ({
   activeView: state.activeView,
   sidebarCollapsed: state.sidebarCollapsed,
   weekStartsOn: state.weekStartsOn,
@@ -71,7 +80,17 @@ export const selectUI = (state: ComposedStore) => ({
   setWeekStartsOn: state.setWeekStartsOn,
 });
 
-export const selectNotes = (state: ComposedStore) => ({
+export const selectNotes = (state: ComposedStore): Pick<
+  ComposedStore,
+  | 'notes'
+  | 'notesLoaded'
+  | 'notesLoading'
+  | 'loadNotes'
+  | 'addNote'
+  | 'updateNote'
+  | 'deleteNote'
+  | 'getNoteById'
+> => ({
   notes: state.notes,
   notesLoaded: state.notesLoaded,
   notesLoading: state.notesLoading,
@@ -82,7 +101,18 @@ export const selectNotes = (state: ComposedStore) => ({
   getNoteById: state.getNoteById,
 });
 
-export const selectJournal = (state: ComposedStore) => ({
+export const selectJournal = (state: ComposedStore): Pick<
+  ComposedStore,
+  | 'journalEntries'
+  | 'journalLoaded'
+  | 'journalLoading'
+  | 'loadJournal'
+  | 'addJournalEntry'
+  | 'updateJournalEntry'
+  | 'deleteJournalEntry'
+  | 'searchJournalEntries'
+  | 'getJournalEntryById'
+> => ({
   journalEntries: state.journalEntries,
   journalLoaded: state.journalLoaded,
   journalLoading: state.journalLoading,
@@ -94,7 +124,17 @@ export const selectJournal = (state: ComposedStore) => ({
   getJournalEntryById: state.getJournalEntryById,
 });
 
-export const selectGoals = (state: ComposedStore) => ({
+export const selectGoals = (state: ComposedStore): Pick<
+  ComposedStore,
+  | 'goals'
+  | 'goalsLoaded'
+  | 'goalsLoading'
+  | 'loadGoals'
+  | 'addGoal'
+  | 'updateGoal'
+  | 'deleteGoal'
+  | 'getGoalById'
+> => ({
   goals: state.goals,
   goalsLoaded: state.goalsLoaded,
   goalsLoading: state.goalsLoading,
@@ -102,11 +142,20 @@ export const selectGoals = (state: ComposedStore) => ({
   addGoal: state.addGoal,
   updateGoal: state.updateGoal,
   deleteGoal: state.deleteGoal,
-  searchGoals: state.searchGoals,
   getGoalById: state.getGoalById,
 });
 
-export const selectDreams = (state: ComposedStore) => ({
+export const selectDreams = (state: ComposedStore): Pick<
+  ComposedStore,
+  | 'dreams'
+  | 'dreamsLoaded'
+  | 'dreamsLoading'
+  | 'loadDreams'
+  | 'addDream'
+  | 'updateDream'
+  | 'deleteDream'
+  | 'getDreamById'
+> => ({
   dreams: state.dreams,
   dreamsLoaded: state.dreamsLoaded,
   dreamsLoading: state.dreamsLoading,

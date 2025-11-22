@@ -18,9 +18,7 @@ export enum LogLevel {
   ERROR = 'ERROR',
 }
 
-interface LogContext {
-  [key: string]: any;
-}
+type LogContext = Record<string, unknown>;
 
 class Logger {
   private serviceName: string = 'LifeSync';
@@ -38,7 +36,7 @@ class Logger {
    */
   debug(domain: string, message: string, context?: LogContext): void {
     if (isDev) {
-      console.log(this.format(LogLevel.DEBUG, domain, message), context || '');
+      console.log(this.format(LogLevel.DEBUG, domain, message), context ?? '');
     }
   }
 
@@ -47,7 +45,7 @@ class Logger {
    */
   info(domain: string, message: string, context?: LogContext): void {
     if (isDev) {
-      console.info(this.format(LogLevel.INFO, domain, message), context || '');
+      console.info(this.format(LogLevel.INFO, domain, message), context ?? '');
     }
   }
 
@@ -56,7 +54,7 @@ class Logger {
    */
   warn(domain: string, message: string, context?: LogContext): void {
     if (isDev) {
-      console.warn(this.format(LogLevel.WARN, domain, message), context || '');
+      console.warn(this.format(LogLevel.WARN, domain, message), context ?? '');
     } else {
       // In production: Send to error tracking service
       this.sendToErrorTracking(LogLevel.WARN, domain, message, context);
@@ -87,11 +85,11 @@ class Logger {
   /**
    * Log API requests - useful for debugging
    */
-  api(method: string, url: string, data?: any): void {
+  api(method: string, url: string, data?: unknown): void {
     if (isDev) {
       console.log(
         this.format(LogLevel.DEBUG, 'API', `${method} ${url}`),
-        data || ''
+        data ?? ''
       );
     }
   }
@@ -99,12 +97,12 @@ class Logger {
   /**
    * Log API responses
    */
-  apiResponse(method: string, url: string, status: number, data?: any): void {
+  apiResponse(method: string, url: string, status: number, data?: unknown): void {
     if (isDev) {
       const level = status >= 400 ? LogLevel.ERROR : LogLevel.DEBUG;
       console.log(
         this.format(level, 'API', `${method} ${url} - ${status}`),
-        data || ''
+        data ?? ''
       );
     }
   }
@@ -164,23 +162,23 @@ class Logger {
 export const logger = new Logger();
 
 // Export convenience functions
-export const logDebug = (domain: string, message: string, context?: LogContext) =>
+export const logDebug = (domain: string, message: string, context?: LogContext): void =>
   logger.debug(domain, message, context);
 
-export const logInfo = (domain: string, message: string, context?: LogContext) =>
+export const logInfo = (domain: string, message: string, context?: LogContext): void =>
   logger.info(domain, message, context);
 
-export const logWarn = (domain: string, message: string, context?: LogContext) =>
+export const logWarn = (domain: string, message: string, context?: LogContext): void =>
   logger.warn(domain, message, context);
 
-export const logError = (domain: string, error: Error | string, context?: LogContext) =>
+export const logError = (domain: string, error: Error | string, context?: LogContext): void =>
   logger.error(domain, error, context);
 
-export const logApi = (method: string, url: string, data?: any) =>
+export const logApi = (method: string, url: string, data?: unknown): void =>
   logger.api(method, url, data);
 
-export const logApiResponse = (method: string, url: string, status: number, data?: any) =>
+export const logApiResponse = (method: string, url: string, status: number, data?: unknown): void =>
   logger.apiResponse(method, url, status, data);
 
-export const logPerf = (domain: string, operation: string, durationMs: number) =>
+export const logPerf = (domain: string, operation: string, durationMs: number): void =>
   logger.perf(domain, operation, durationMs);

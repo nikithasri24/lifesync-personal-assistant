@@ -89,10 +89,10 @@ function buildProjectUpdatePayload(updates: ProjectUpdate): Partial<ProjectData>
 /**
  * Fetch all projects
  */
-export function useProjectsQuery() {
+export function useProjectsQuery(): ReturnType<typeof useQuery<Project[]>> {
   return useQuery({
     queryKey: projectsKeys.list(),
-    queryFn: async () => {
+    queryFn: async (): Promise<Project[]> => {
       const data = await apiClient.getProjects();
       return data.map(mapProjectDataToProject);
     },
@@ -103,12 +103,12 @@ export function useProjectsQuery() {
 /**
  * Fetch a single project by ID
  */
-export function useProjectQuery(projectId: string | undefined) {
+export function useProjectQuery(projectId: string | undefined): ReturnType<typeof useQuery<Project>> {
   const queryClient = useQueryClient();
 
   return useQuery({
-    queryKey: projectsKeys.detail(projectId!),
-    queryFn: async () => {
+    queryKey: projectsKeys.detail(projectId ?? ''),
+    queryFn: (): Project => {
       // Try to get from cache first
       const cachedProjects = queryClient.getQueryData<Project[]>(projectsKeys.list());
       if (cachedProjects) {
@@ -130,7 +130,7 @@ export function useProjectQuery(projectId: string | undefined) {
 /**
  * Create a new project
  */
-export function useCreateProjectMutation() {
+export function useCreateProjectMutation(): ReturnType<typeof useMutation<Project, Error, ProjectInput, { previousProjects?: Project[] }>> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -186,7 +186,7 @@ export function useCreateProjectMutation() {
 /**
  * Update an existing project
  */
-export function useUpdateProjectMutation() {
+export function useUpdateProjectMutation(): ReturnType<typeof useMutation<Project, Error, { projectId: string; updates: ProjectUpdate }, { previousProjects?: Project[] }>> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -237,7 +237,7 @@ export function useUpdateProjectMutation() {
 /**
  * Delete a project
  */
-export function useDeleteProjectMutation() {
+export function useDeleteProjectMutation(): ReturnType<typeof useMutation<string, Error, string, { previousProjects?: Project[] }>> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -272,7 +272,7 @@ export function useDeleteProjectMutation() {
     onSuccess: (projectId) => {
       logger.info('Project deleted successfully', { id: projectId });
       // Invalidate to ensure consistency
-      queryClient.invalidateQueries({ queryKey: projectsKeys.list() });
+      void queryClient.invalidateQueries({ queryKey: projectsKeys.list() });
     },
   });
 }
@@ -282,7 +282,7 @@ export function useDeleteProjectMutation() {
 /**
  * Get projects filtered by status
  */
-export function useProjectsByStatus(status?: Project['status']) {
+export function useProjectsByStatus(status?: Project['status']): ReturnType<typeof useProjectsQuery> & { data: Project[] } {
   const { data: projects = [], ...rest } = useProjectsQuery();
 
   const filtered = status
@@ -295,7 +295,7 @@ export function useProjectsByStatus(status?: Project['status']) {
 /**
  * Get project statistics
  */
-export function useProjectStats() {
+export function useProjectStats(): { data: { total: number; active: number; completed: number; onHold: number }; isLoading: boolean } {
   const { data: projects = [], isLoading } = useProjectsQuery();
 
   const stats = {

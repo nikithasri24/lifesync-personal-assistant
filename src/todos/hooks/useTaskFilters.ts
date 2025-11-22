@@ -3,11 +3,34 @@ import type { Filters, ViewType } from '../types';
 
 type CalendarView = 'month' | 'week' | 'day';
 
+interface UseTaskFiltersReturn {
+  currentView: ViewType;
+  setCurrentView: React.Dispatch<React.SetStateAction<ViewType>>;
+  calendarView: CalendarView;
+  setCalendarView: React.Dispatch<React.SetStateAction<CalendarView>>;
+  currentDate: Date;
+  setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
+  goToNextPeriod: () => void;
+  goToPreviousPeriod: () => void;
+  goToToday: () => void;
+  searchQuery: string;
+  setSearchQuery: React.Dispatch<React.SetStateAction<string>>;
+  clearSearch: () => void;
+  selectedProject: string;
+  setSelectedProject: React.Dispatch<React.SetStateAction<string>>;
+  filters: Filters;
+  setFilters: React.Dispatch<React.SetStateAction<Filters>>;
+  updateFilter: <K extends keyof Filters>(key: K, value: Filters[K]) => void;
+  resetFilters: () => void;
+  currentTheme: string;
+  setCurrentTheme: React.Dispatch<React.SetStateAction<string>>;
+}
+
 /**
  * Custom hook to manage task view and filter states
  * Handles view switching, calendar navigation, search, and filter criteria
  */
-export function useTaskFilters() {
+export function useTaskFilters(): UseTaskFiltersReturn {
   // View state
   const [currentView, setCurrentView] = useState<ViewType>('inbox');
   const [calendarView, setCalendarView] = useState<CalendarView>('month');
@@ -33,7 +56,7 @@ export function useTaskFilters() {
   /**
    * Reset all filters to default values
    */
-  const resetFilters = () => {
+  const resetFilters = (): void => {
     setFilters({
       priority: 'all',
       status: 'all',
@@ -45,7 +68,7 @@ export function useTaskFilters() {
   /**
    * Update a specific filter value
    */
-  const updateFilter = <K extends keyof Filters>(key: K, value: Filters[K]) => {
+  const updateFilter = <K extends keyof Filters>(key: K, value: Filters[K]): void => {
     setFilters(prev => ({
       ...prev,
       [key]: value,
@@ -55,14 +78,14 @@ export function useTaskFilters() {
   /**
    * Clear search query
    */
-  const clearSearch = () => {
+  const clearSearch = (): void => {
     setSearchQuery('');
   };
 
   /**
    * Navigate to next period in calendar
    */
-  const goToNextPeriod = () => {
+  const goToNextPeriod = (): void => {
     const newDate = new Date(currentDate);
     if (calendarView === 'month') {
       newDate.setMonth(newDate.getMonth() + 1);
@@ -77,7 +100,7 @@ export function useTaskFilters() {
   /**
    * Navigate to previous period in calendar
    */
-  const goToPreviousPeriod = () => {
+  const goToPreviousPeriod = (): void => {
     const newDate = new Date(currentDate);
     if (calendarView === 'month') {
       newDate.setMonth(newDate.getMonth() - 1);
@@ -92,7 +115,7 @@ export function useTaskFilters() {
   /**
    * Reset calendar to today
    */
-  const goToToday = () => {
+  const goToToday = (): void => {
     setCurrentDate(new Date());
   };
 

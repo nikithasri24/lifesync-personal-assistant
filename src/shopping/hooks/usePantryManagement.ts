@@ -4,15 +4,14 @@ import { differenceInCalendarDays } from 'date-fns';
 export type PantryFilter = 'all' | 'expired' | 'soon' | 'low';
 export type PantrySort = 'expiry' | 'name';
 
-interface PantryItem {
+export interface PantryItem {
   id: string;
   name: string;
   quantity: number;
   unit?: string;
-  expirationDate?: Date;
+  expirationDate?: Date | null;
   isLowStock?: boolean;
-  lowStockThreshold?: number;
-  [key: string]: any;
+  lowStockThreshold?: number | null;
 }
 
 export function usePantryManagement(pantryItems: PantryItem[]) {

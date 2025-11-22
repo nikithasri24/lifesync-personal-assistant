@@ -6,7 +6,7 @@ interface LoadingSpinnerProps {
   text?: string;
 }
 
-export default function LoadingSpinner({ size = 'md', className = '', text }: LoadingSpinnerProps) {
+export default function LoadingSpinner({ size = 'md', className = '', text }: LoadingSpinnerProps): JSX.Element {
   const sizeClasses = {
     sm: 'w-4 h-4',
     md: 'w-6 h-6',
@@ -28,7 +28,7 @@ export default function LoadingSpinner({ size = 'md', className = '', text }: Lo
 }
 
 // Loading Skeleton Components
-export function SkeletonCard({ className = '' }: { className?: string }) {
+export function SkeletonCard({ className = '' }: { className?: string }): JSX.Element {
   return (
     <div
       role="group"
@@ -50,7 +50,7 @@ export function SkeletonCard({ className = '' }: { className?: string }) {
   );
 }
 
-export function SkeletonTable({ rows = 5, columns = 4 }: { rows?: number; columns?: number }) {
+export function SkeletonTable({ rows = 5, columns = 4 }: { rows?: number; columns?: number }): JSX.Element {
   return (
     <div
       role="group"
@@ -79,7 +79,7 @@ export function SkeletonTable({ rows = 5, columns = 4 }: { rows?: number; column
   );
 }
 
-export function SkeletonChart({ className = '' }: { className?: string }) {
+export function SkeletonChart({ className = '' }: { className?: string }): JSX.Element {
   return (
     <div
       role="group"

@@ -80,8 +80,8 @@ function mapDbToGoal(row: GoalRow): Goal {
   return {
     id: row.id,
     title: row.title,
-    description: row.description || undefined,
-    category: row.category || undefined,
+    description: row.description ?? undefined,
+    category: row.category ?? undefined,
     targetDate: row.target_date ? new Date(row.target_date) : undefined,
     status: row.status as Goal['status'],
     progress: row.progress,
@@ -97,9 +97,9 @@ function mapDbToDream(row: DreamRow): Dream {
   return {
     id: row.id,
     title: row.title,
-    description: row.description || undefined,
-    category: row.category || undefined,
-    notes: row.notes || '',
+    description: row.description ?? undefined,
+    category: row.category ?? undefined,
+    notes: row.notes ?? '',
     createdAt: new Date(row.created_at),
     lastUpdated: new Date(row.last_updated),
   };
@@ -136,7 +136,7 @@ export async function getGoals(filters?: GoalFilters): Promise<Goal[]> {
   const { data, error } = await query;
   if (error) throw error;
 
-  return (data || []).map(mapDbToGoal);
+  return (data ?? []).map(mapDbToGoal);
 }
 
 /**
@@ -146,17 +146,17 @@ export async function getGoal(id: string): Promise<Goal> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
-  const { data, error } = await supabase
+  const result = await supabase
     .from('goals')
     .select('*')
     .eq('id', id)
     .eq('user_id', user.id)
     .single();
 
-  if (error) throw error;
-  if (!data) throw new Error('Goal not found');
+  if (result.error) throw result.error;
+  if (!result.data) throw new Error('Goal not found');
 
-  return mapDbToGoal(data);
+  return mapDbToGoal(result.data as GoalRow);
 }
 
 /**
@@ -166,25 +166,25 @@ export async function createGoal(input: CreateGoalInput): Promise<Goal> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
-  const { data, error } = await supabase
+  const result = await supabase
     .from('goals')
     .insert({
       user_id: user.id,
       title: input.title,
-      description: input.description || null,
-      category: input.category || null,
+      description: input.description ?? null,
+      category: input.category ?? null,
       target_date: input.targetDate ? input.targetDate.toISOString().split('T')[0] : null,
-      status: input.status || 'active',
+      status: input.status ?? 'active',
       progress: input.progress ?? 0,
-      priority: input.priority || 'medium',
+      priority: input.priority ?? 'medium',
     })
     .select()
     .single();
 
-  if (error) throw error;
-  if (!data) throw new Error('Failed to create goal');
+  if (result.error) throw result.error;
+  if (!result.data) throw new Error('Failed to create goal');
 
-  return mapDbToGoal(data);
+  return mapDbToGoal(result.data as GoalRow);
 }
 
 /**
@@ -197,8 +197,8 @@ export async function updateGoal(id: string, input: UpdateGoalInput): Promise<Go
   const updateData: Partial<GoalRow> = {};
 
   if (input.title !== undefined) updateData.title = input.title;
-  if (input.description !== undefined) updateData.description = input.description || null;
-  if (input.category !== undefined) updateData.category = input.category || null;
+  if (input.description !== undefined) updateData.description = input.description ?? null;
+  if (input.category !== undefined) updateData.category = input.category ?? null;
   if (input.targetDate !== undefined) {
     updateData.target_date = input.targetDate ? input.targetDate.toISOString().split('T')[0] : null;
   }
@@ -206,7 +206,7 @@ export async function updateGoal(id: string, input: UpdateGoalInput): Promise<Go
   if (input.progress !== undefined) updateData.progress = input.progress;
   if (input.priority !== undefined) updateData.priority = input.priority;
 
-  const { data, error } = await supabase
+  const result = await supabase
     .from('goals')
     .update(updateData)
     .eq('id', id)
@@ -214,10 +214,10 @@ export async function updateGoal(id: string, input: UpdateGoalInput): Promise<Go
     .select()
     .single();
 
-  if (error) throw error;
-  if (!data) throw new Error('Goal not found or update failed');
+  if (result.error) throw result.error;
+  if (!result.data) throw new Error('Goal not found or update failed');
 
-  return mapDbToGoal(data);
+  return mapDbToGoal(result.data as GoalRow);
 }
 
 /**
@@ -253,7 +253,7 @@ export async function getDreams(): Promise<Dream[]> {
 
   if (error) throw error;
 
-  return (data || []).map(mapDbToDream);
+  return (data ?? []).map(mapDbToDream);
 }
 
 /**
@@ -263,17 +263,17 @@ export async function getDream(id: string): Promise<Dream> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
-  const { data, error } = await supabase
+  const result = await supabase
     .from('dreams')
     .select('*')
     .eq('id', id)
     .eq('user_id', user.id)
     .single();
 
-  if (error) throw error;
-  if (!data) throw new Error('Dream not found');
+  if (result.error) throw result.error;
+  if (!result.data) throw new Error('Dream not found');
 
-  return mapDbToDream(data);
+  return mapDbToDream(result.data as DreamRow);
 }
 
 /**
@@ -283,22 +283,22 @@ export async function createDream(input: CreateDreamInput): Promise<Dream> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
-  const { data, error } = await supabase
+  const result = await supabase
     .from('dreams')
     .insert({
       user_id: user.id,
       title: input.title,
-      description: input.description || null,
-      category: input.category || null,
-      notes: input.notes || null,
+      description: input.description ?? null,
+      category: input.category ?? null,
+      notes: input.notes ?? null,
     })
     .select()
     .single();
 
-  if (error) throw error;
-  if (!data) throw new Error('Failed to create dream');
+  if (result.error) throw result.error;
+  if (!result.data) throw new Error('Failed to create dream');
 
-  return mapDbToDream(data);
+  return mapDbToDream(result.data as DreamRow);
 }
 
 /**
@@ -311,11 +311,11 @@ export async function updateDream(id: string, input: UpdateDreamInput): Promise<
   const updateData: Partial<DreamRow> = {};
 
   if (input.title !== undefined) updateData.title = input.title;
-  if (input.description !== undefined) updateData.description = input.description || null;
-  if (input.category !== undefined) updateData.category = input.category || null;
-  if (input.notes !== undefined) updateData.notes = input.notes || null;
+  if (input.description !== undefined) updateData.description = input.description ?? null;
+  if (input.category !== undefined) updateData.category = input.category ?? null;
+  if (input.notes !== undefined) updateData.notes = input.notes ?? null;
 
-  const { data, error } = await supabase
+  const result = await supabase
     .from('dreams')
     .update(updateData)
     .eq('id', id)
@@ -323,10 +323,10 @@ export async function updateDream(id: string, input: UpdateDreamInput): Promise<
     .select()
     .single();
 
-  if (error) throw error;
-  if (!data) throw new Error('Dream not found or update failed');
+  if (result.error) throw result.error;
+  if (!result.data) throw new Error('Dream not found or update failed');
 
-  return mapDbToDream(data);
+  return mapDbToDream(result.data as DreamRow);
 }
 
 /**

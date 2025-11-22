@@ -31,6 +31,11 @@ interface OllamaResponse {
   done: boolean;
 }
 
+interface ParsedFunctionCall {
+  function?: string;
+  arguments?: Record<string, unknown>;
+}
+
 export class OllamaProvider implements LLMProvider {
   private baseUrl: string;
   private model: string;
@@ -75,7 +80,7 @@ export class OllamaProvider implements LLMProvider {
         throw new Error(`Ollama API error: ${response.statusText}`);
       }
 
-      const data: OllamaResponse = await response.json();
+      const data = await response.json() as OllamaResponse;
 
       // Try to parse function call from response
       const functionCall = this.extractFunctionCall(data.message.content);
@@ -132,11 +137,11 @@ export class OllamaProvider implements LLMProvider {
 
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
+        buffer = lines.pop() ?? '';
 
         for (const line of lines) {
           if (line.trim()) {
-            const data: OllamaResponse = JSON.parse(line);
+            const data = JSON.parse(line) as OllamaResponse;
 
             if (data.message?.content) {
               yield {
@@ -180,9 +185,9 @@ export class OllamaProvider implements LLMProvider {
    * Build prompt that instructs model to output function calls in JSON format
    */
   private buildFunctionsPrompt(functions: ChatOptions['functions']): string {
-    const functionsDesc = functions!.map(fn =>
+    const functionsDesc = functions?.map(fn =>
       `${fn.name}: ${fn.description}\nParameters: ${JSON.stringify(fn.parameters)}`
-    ).join('\n\n');
+    ).join('\n\n') ?? '';
 
     return `You are a helpful assistant with access to functions. When you need to call a function, output ONLY a JSON object in this exact format:
 {
@@ -208,7 +213,7 @@ If you're just responding (not calling a function), output normal text.`;
         return undefined;
       }
 
-      const parsed = JSON.parse(jsonMatch[0]);
+      const parsed = JSON.parse(jsonMatch[0]) as ParsedFunctionCall;
 
       if (parsed.function && parsed.arguments) {
         return {

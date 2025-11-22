@@ -106,6 +106,7 @@ describe('connectionsAPI', () => {
 
         const result = await getUserConnections();
 
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(supabase.rpc).toHaveBeenCalledWith('get_connections_with_users');
         expect(result).toHaveLength(1);
         expect(result[0].id).toBe('conn-1');
@@ -231,6 +232,7 @@ describe('connectionsAPI', () => {
 
         const result = await getPendingInvitations();
 
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(supabase.rpc).toHaveBeenCalledWith('get_invitations_with_connections');
         expect(result.sent).toHaveLength(1);
         expect(result.received).toHaveLength(1);
@@ -317,6 +319,7 @@ describe('connectionsAPI', () => {
           proposedPermissions: { travel: 'view' },
         });
 
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(supabase.rpc).toHaveBeenCalledWith('lookup_user_by_email', {
           user_email: 'other@example.com',
         });
@@ -513,6 +516,7 @@ describe('connectionsAPI', () => {
 
         await rejectConnection('conn-1');
 
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(supabase.from).toHaveBeenCalledWith('profile_connections');
         expect(mockDelete).toHaveBeenCalled();
         expect(mockEq1).toHaveBeenCalledWith('id', 'conn-1');
@@ -628,6 +632,7 @@ describe('connectionsAPI', () => {
 
         await deleteConnection('conn-1');
 
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(supabase.from).toHaveBeenCalledWith('profile_connections');
         expect(mockDelete).toHaveBeenCalled();
         expect(mockEq).toHaveBeenCalledWith('id', 'conn-1');
@@ -665,6 +670,7 @@ describe('connectionsAPI', () => {
 
         const result = await getConnectionPermissions('conn-1');
 
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(supabase.from).toHaveBeenCalledWith('module_permissions');
         expect(mockQuery.eq).toHaveBeenCalledWith('connection_id', 'conn-1');
         expect(result.myPermissions).toHaveLength(1);
@@ -711,6 +717,7 @@ describe('connectionsAPI', () => {
           settings: { showHistory: true },
         });
 
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(supabase.from).toHaveBeenCalledWith('module_permissions');
         expect(mockQuery.upsert).toHaveBeenCalledWith({
           connection_id: 'conn-1',
@@ -787,6 +794,7 @@ describe('connectionsAPI', () => {
 
         await deleteModulePermission('conn-1', 'travel');
 
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(supabase.from).toHaveBeenCalledWith('module_permissions');
         expect(mockDelete).toHaveBeenCalled();
         expect(mockEq1).toHaveBeenCalledWith('connection_id', 'conn-1');

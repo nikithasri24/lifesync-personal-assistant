@@ -4,15 +4,23 @@ import type { Store, ShoppingItem } from '../types';
 import type { Coordinates } from '../services/locationService';
 import { calculateDistance } from '../utils/storeUtils';
 
-export function useStoreSuggestions(stores: Store[]) {
+interface StoreWithDistance extends Store {
+  actualDistance: number;
+}
+
+export function useStoreSuggestions(stores: Store[]): {
+  userLocation: Coordinates | null;
+  getUserLocation: () => Promise<void>;
+  findNearbyStoresForItem: (item: ShoppingItem) => StoreWithDistance[];
+} {
   const [userLocation, setUserLocation] = useState<Coordinates | null>(null);
 
   /**
    * Get the user's current location using the browser's Geolocation API
    */
-  const getUserLocation = async () => {
+  const getUserLocation = async (): Promise<void> => {
     if (!navigator.geolocation) {
-      alert('Geolocation is not supported by this browser.');
+      logger.error('useStoreSuggestions', 'Geolocation is not supported by this browser.');
       return;
     }
 
@@ -27,7 +35,7 @@ export function useStoreSuggestions(stores: Store[]) {
       });
     } catch (error) {
       logger.error('useStoreSuggestions', 'Error getting location:', error);
-      alert('Unable to get your location. Please enable location services.');
+      logger.error('useStoreSuggestions', 'Unable to get your location. Please enable location services.');
     }
   };
 
@@ -36,9 +44,9 @@ export function useStoreSuggestions(stores: Store[]) {
    * @param item - The shopping item to find stores for
    * @returns Array of stores with actual distances calculated
    */
-  const findNearbyStoresForItem = (item: ShoppingItem) => {
+  const findNearbyStoresForItem = (item: ShoppingItem): StoreWithDistance[] => {
     if (!userLocation) {
-      getUserLocation();
+      void getUserLocation();
       return [];
     }
 
@@ -46,7 +54,7 @@ export function useStoreSuggestions(stores: Store[]) {
       ...store,
       actualDistance: store.coordinates
         ? calculateDistance(userLocation.lat, userLocation.lng, store.coordinates.lat, store.coordinates.lng)
-        : store.distance || 999
+        : store.distance ?? 999
     }));
 
     // Filter and sort by relevance and distance
@@ -55,7 +63,7 @@ export function useStoreSuggestions(stores: Store[]) {
         store.bestFor.includes(item.category) ||
         store.avgPrices[item.name] ||
         store.specialties.some(specialty =>
-          (item.nutritionInfo?.organic && specialty === 'organic') ||
+          ((item.nutritionInfo?.organic ?? false) && specialty === 'organic') ||
           (item.category === 'produce' && specialty === 'organic')
         )
       )

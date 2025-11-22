@@ -16,11 +16,7 @@ export {
 // Daily check-in management
 export {
   loadSFHCheckInsRange,
-  ensureTodaySFHCheckIn,
-  toggleSFHTask,
-  uploadSFHPhoto,
-  updateSFHCheckInNotes,
-  updateSFHCheckInWeight,
+  syncSingleTodoCompletion,
 } from './checkInActions';
 
 // Failure detection and handling
@@ -40,3 +36,11 @@ export {
 export {
   create75HardJournalEntry,
 } from './journalActions';
+
+// Re-export check-in management functions
+export {
+  toggleSFHTask,
+  uploadSFHPhoto,
+  updateSFHCheckInNotes,
+  updateSFHCheckInWeight,
+} from './checkInActions';

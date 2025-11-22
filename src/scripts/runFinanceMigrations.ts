@@ -9,10 +9,10 @@ import { logger } from '../services/logger';
 import * as fs from 'fs';
 import * as path from 'path';
 
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL || '';
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? '';
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.VITE_SUPABASE_ANON_KEY ?? '';
 
-async function runMigration(sqlFilePath: string) {
+async function runMigration(sqlFilePath: string): Promise<boolean> {
   logger.debug('RunFinanceMigrations', `\n📄 Reading migration: ${path.basename(sqlFilePath)}`);
 
   const sql = fs.readFileSync(sqlFilePath, 'utf-8');
@@ -32,7 +32,7 @@ async function runMigration(sqlFilePath: string) {
 
     logger.debug('RunFinanceMigrations', `✅ Migration completed successfully!`);
     return true;
-  } catch (_error: any) {
+  } catch (_error: unknown) {
     // If RPC doesn't exist, try using the SQL editor endpoint directly
     logger.debug('RunFinanceMigrations', `⚠️  RPC method not available, trying direct execution...`);
 
@@ -54,14 +54,15 @@ async function runMigration(sqlFilePath: string) {
 
       logger.debug('RunFinanceMigrations', `✅ Migration completed successfully!`);
       return true;
-    } catch (fetchError: any) {
-      logger.error('RunFinanceMigrations', `❌ Migration failed:`, fetchError.message);
+    } catch (fetchError: unknown) {
+      const errorMessage = fetchError instanceof Error ? fetchError.message : 'Unknown error';
+      logger.error('RunFinanceMigrations', `❌ Migration failed:`, { error: errorMessage });
       return false;
     }
   }
 }
 
-async function main() {
+async function main(): Promise<void> {
   logger.info('RunFinanceMigrations', '🔧 Finance Database Migration Runner\n');
   logger.debug('RunFinanceMigrations', `📍 Supabase URL: ${SUPABASE_URL}`);
   logger.debug('RunFinanceMigrations', `🔑 Using API key: ${SUPABASE_SERVICE_KEY.substring(0, 20)}...`);
@@ -101,7 +102,8 @@ async function main() {
   logger.info('RunFinanceMigrations', '   3. Try auto-categorization!');
 }
 
-main().catch(error => {
-  logger.error('RunFinanceMigrations', 'Fatal error:', error);
+main().catch((error: unknown) => {
+  const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+  logger.error('RunFinanceMigrations', 'Fatal error:', { error: errorMessage });
   process.exit(1);
 });

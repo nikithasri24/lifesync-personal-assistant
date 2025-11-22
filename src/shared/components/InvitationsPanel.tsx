@@ -25,21 +25,23 @@ const InvitationsPanel: React.FC<InvitationsPanelProps> = ({
 }) => {
   const [processingId, setProcessingId] = useState<string | null>(null);
 
-  const handleAccept = async (connectionId: string) => {
+  const handleAccept = async (connectionId: string): Promise<void> => {
     try {
       setProcessingId(connectionId);
       await acceptConnection({ connectionId });
       onInvitationAccepted();
     } catch (error) {
       logger.error('Error accepting invitation:', { error });
-      alert('Failed to accept invitation');
+      // eslint-disable-next-line no-alert
+      window.alert('Failed to accept invitation');
     } finally {
       setProcessingId(null);
     }
   };
 
-  const handleReject = async (connectionId: string) => {
-    if (!confirm('Are you sure you want to reject this invitation?')) return;
+  const handleReject = async (connectionId: string): Promise<void> => {
+    // eslint-disable-next-line no-alert
+    if (!window.confirm('Are you sure you want to reject this invitation?')) return;
 
     try {
       setProcessingId(connectionId);
@@ -47,7 +49,8 @@ const InvitationsPanel: React.FC<InvitationsPanelProps> = ({
       onInvitationRejected();
     } catch (error) {
       logger.error('Error rejecting invitation:', { error });
-      alert('Failed to reject invitation');
+      // eslint-disable-next-line no-alert
+      window.alert('Failed to reject invitation');
     } finally {
       setProcessingId(null);
     }
@@ -83,7 +86,7 @@ const InvitationsPanel: React.FC<InvitationsPanelProps> = ({
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <h4 className="font-semibold text-slate-900">
-                          {inv.fromUser.fullName || inv.fromUser.email}
+                          {inv.fromUser.fullName ?? inv.fromUser.email}
                         </h4>
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium bg-${relationshipInfo.color}-100 text-${relationshipInfo.color}-700`}>
                           {relationshipInfo.label}
@@ -102,7 +105,7 @@ const InvitationsPanel: React.FC<InvitationsPanelProps> = ({
 
                     <div className="flex gap-2">
                       <button
-                        onClick={() => handleAccept(inv.connection.id)}
+                        onClick={() => void handleAccept(inv.connection.id)}
                         disabled={isProcessing}
                         className="p-2 rounded-lg bg-green-50 hover:bg-green-100 transition-colors disabled:opacity-50"
                         title="Accept"
@@ -110,7 +113,7 @@ const InvitationsPanel: React.FC<InvitationsPanelProps> = ({
                         <Check className="h-5 w-5 text-green-600" />
                       </button>
                       <button
-                        onClick={() => handleReject(inv.connection.id)}
+                        onClick={() => void handleReject(inv.connection.id)}
                         disabled={isProcessing}
                         className="p-2 rounded-lg bg-red-50 hover:bg-red-100 transition-colors disabled:opacity-50"
                         title="Reject"
@@ -153,7 +156,7 @@ const InvitationsPanel: React.FC<InvitationsPanelProps> = ({
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <h4 className="font-semibold text-slate-900">
-                          {inv.fromUser.fullName || inv.fromUser.email}
+                          {inv.fromUser.fullName ?? inv.fromUser.email}
                         </h4>
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium bg-${relationshipInfo.color}-100 text-${relationshipInfo.color}-700`}>
                           {relationshipInfo.label}

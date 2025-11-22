@@ -26,9 +26,9 @@ import { logger } from '../../services/logger';
 const TransactionsPageEnhanced: React.FC = () => {
   const [rows, setRows] = React.useState<Transaction[]>([]);
   const [next, setNext] = React.useState<string | undefined>();
-  const [loading, setLoading] = React.useState(false);
-  const [showAutoCategorize, setShowAutoCategorize] = React.useState(false);
-  const [showQuickAdd, setShowQuickAdd] = React.useState(false);
+  const [loading, setLoading] = React.useState<boolean>(false);
+  const [showAutoCategorize, setShowAutoCategorize] = React.useState<boolean>(false);
+  const [showQuickAdd, setShowQuickAdd] = React.useState<boolean>(false);
   const [userId, setUserId] = React.useState<string | null>(null);
   const [categories, setCategories] = React.useState<Map<string, string>>(new Map());
   const filters = useFinanceFilters();
@@ -37,12 +37,12 @@ const TransactionsPageEnhanced: React.FC = () => {
   React.useEffect(() => {
     let cancelled = false;
 
-    async function getUserIdAndCategories() {
+    const getUserIdAndCategories = async (): Promise<void> => {
       try {
         const { createClient } = await import('@supabase/supabase-js');
         const supabase = createClient(
-          import.meta.env.VITE_SUPABASE_URL,
-          import.meta.env.VITE_SUPABASE_ANON_KEY
+          String(import.meta.env.VITE_SUPABASE_URL),
+          String(import.meta.env.VITE_SUPABASE_ANON_KEY)
         );
         const { data } = await supabase.auth.getUser();
 
@@ -66,16 +66,16 @@ const TransactionsPageEnhanced: React.FC = () => {
       } catch (error) {
         logger.error('Failed to get user ID or categories:', { error });
       }
-    }
+    };
 
-    getUserIdAndCategories();
+    void getUserIdAndCategories();
 
     return () => {
       cancelled = true;
     };
   }, []);
 
-  const load = async (cursor?: string) => {
+  const load = React.useCallback(async (cursor?: string): Promise<void> => {
     setLoading(true);
     try {
       const api = await getFinanceAPI();
@@ -98,23 +98,27 @@ const TransactionsPageEnhanced: React.FC = () => {
       });
 
       logger.debug('TransactionsPageEnhanced', `Loaded ${items.length} transactions from database`);
-      setRows(cursor ? (r) => [...r, ...items] : items);
+      setRows(prevRows => cursor ? [...prevRows, ...items] : items);
       setNext(nextCursor);
     } catch (error) {
       logger.error('Failed to load transactions:', { error });
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters]);
 
   React.useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters.text, filters.fromISO, filters.toISO, filters.type]);
+    const loadData = async (): Promise<void> => {
+      await load();
+    };
+    loadData().catch((error: unknown) => {
+      logger.error('Failed to load data:', { error });
+    });
+  }, [filters.text, filters.fromISO, filters.toISO, filters.type, load]);
 
   const handleAutoCategorize = async (
     results: Map<string, { categoryId: string; confidence: number; ruleId: string | null }>
-  ) => {
+  ): Promise<void> => {
     try {
       const api = await getFinanceAPI();
 
@@ -127,11 +131,13 @@ const TransactionsPageEnhanced: React.FC = () => {
             categoryId: result.categoryId,
             confidence: result.confidence,
             ruleId: result.ruleId,
-            merchantName: txn?.merchantName || null,
+            merchantName: txn?.merchantName ?? null,
           };
         });
 
-        await (api as any).bulkCategorizeTransactions(updates);
+        if ('bulkCategorizeTransactions' in api) {
+          await (api as { bulkCategorizeTransactions: (updates: Array<{ id: string; categoryId: string; confidence: number; ruleId: string | null; merchantName: string | null }>) => Promise<void> }).bulkCategorizeTransactions(updates);
+        }
       } else {
         // Fallback: update one by one using upsertTransaction
         for (const [id, result] of results.entries()) {
@@ -149,11 +155,13 @@ const TransactionsPageEnhanced: React.FC = () => {
       await load();
     } catch (error) {
       logger.error('Failed to apply categorizations:', { error });
-      alert('Failed to apply categorizations. Please try again.');
+      // eslint-disable-next-line no-alert
+      alert(`Failed to apply categorizations. Error: ${String(error)}`);
     }
   };
 
-  const handleClearAll = async () => {
+  const handleClearAll = React.useCallback(async (): Promise<void> => {
+    // eslint-disable-next-line no-alert
     if (!confirm('⚠️ This will delete ALL transactions. Are you sure?')) {
       return;
     }
@@ -167,23 +175,40 @@ const TransactionsPageEnhanced: React.FC = () => {
         await api.deleteTransaction(txn.id);
       }
 
+      // eslint-disable-next-line no-alert
       alert('✓ All transactions cleared!');
       await load(); // Reload
     } catch (error) {
       logger.error('Failed to clear transactions:', { error });
-      alert(`Failed to clear transactions: ${error}`);
+      // eslint-disable-next-line no-alert
+      alert(`Failed to clear transactions: ${String(error)}`);
     } finally {
       setLoading(false);
     }
-  };
+  }, [rows, load]);
 
-  const total = rows.reduce((s, t) => s + (t.type === 'credit' ? t.amount : -t.amount), 0);
-  const uncategorizedCount = rows.filter(r => !r.categoryId).length;
+  const total: number = rows.reduce((sum, transaction) =>
+    sum + (transaction.type === 'credit' ? transaction.amount : -transaction.amount),
+    0
+  );
+  const uncategorizedCount: number = rows.filter(row => !row.categoryId).length;
+
+  // Define callbacks before conditional rendering
+  const handleCloseQuickAdd = React.useCallback(() => setShowQuickAdd(false), []);
+  const handleQuickAddSuccess = React.useCallback(() => {
+    void load();
+  }, [load]);
+  const handleCloseAutoCategorize = React.useCallback(() => setShowAutoCategorize(false), []);
 
   return (
     <div className="space-y-4">
       <Card title="Filters">
-        <FiltersBar onApply={() => load()} onReset={() => filters.reset()} />
+        <FiltersBar
+          onApply={React.useCallback(() => {
+            void load();
+          }, [load])}
+          onReset={React.useCallback(() => filters.reset(), [filters])}
+        />
       </Card>
 
       <Card
@@ -196,7 +221,9 @@ const TransactionsPageEnhanced: React.FC = () => {
             >
               + Add Transaction
             </Button>
-            <ImportCSVButton onSuccess={() => load()} />
+            <ImportCSVButton onSuccess={() => {
+              void load();
+            }} />
             {uncategorizedCount > 0 && userId && (
               <Button
                 variant="outline"
@@ -216,7 +243,9 @@ const TransactionsPageEnhanced: React.FC = () => {
             {rows.length > 0 && (
               <Button
                 variant="ghost"
-                onClick={handleClearAll}
+                onClick={() => {
+                  void handleClearAll();
+                }}
                 disabled={loading}
                 className="text-rose-600 hover:bg-rose-50"
               >
@@ -263,7 +292,7 @@ const TransactionsPageEnhanced: React.FC = () => {
               render: (r) => (
                 <div className="flex items-center gap-2">
                   <span className={r.categoryId ? '' : 'text-slate-400 italic'}>
-                    {r.categoryId ? categories.get(r.categoryId) || 'Categorized' : 'Uncategorized'}
+                    {r.categoryId ? categories.get(r.categoryId) ?? 'Categorized' : 'Uncategorized'}
                   </span>
                   {r.confidenceScore !== undefined && r.confidenceScore !== null && (
                     <ConfidenceIndicator score={r.confidenceScore} />
@@ -287,7 +316,9 @@ const TransactionsPageEnhanced: React.FC = () => {
 
         <div className="mt-3 flex justify-center">
           {next && (
-            <Button onClick={() => load(next)} disabled={loading}>
+            <Button onClick={() => {
+              void load(next);
+            }} disabled={loading}>
               {loading ? 'Loading…' : 'Load more'}
             </Button>
           )}
@@ -297,8 +328,8 @@ const TransactionsPageEnhanced: React.FC = () => {
       {/* Quick Add Modal */}
       {showQuickAdd && (
         <QuickAddTransaction
-          onClose={() => setShowQuickAdd(false)}
-          onSuccess={() => load()}
+          onClose={handleCloseQuickAdd}
+          onSuccess={handleQuickAddSuccess}
         />
       )}
 
@@ -313,7 +344,7 @@ const TransactionsPageEnhanced: React.FC = () => {
             categoryId: r.categoryId
           }))}
           userId={userId}
-          onClose={() => setShowAutoCategorize(false)}
+          onClose={handleCloseAutoCategorize}
           onApply={handleAutoCategorize}
         />
       )}

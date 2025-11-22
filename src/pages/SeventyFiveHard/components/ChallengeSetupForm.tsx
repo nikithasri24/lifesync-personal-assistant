@@ -18,14 +18,14 @@ interface ChallengeSetupFormProps {
   onCancel: () => void;
 }
 
-export default function ChallengeSetupForm({ onSubmit, onCancel }: ChallengeSetupFormProps) {
+export default function ChallengeSetupForm({ onSubmit, onCancel }: ChallengeSetupFormProps): React.JSX.Element {
   const [tasks, setTasks] = useState<Omit<Task, 'id'>[]>(
     DEFAULT_TASKS.map((t, i) => ({ ...t, order: i + 1 }))
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleAddTask = () => {
+  const handleAddTask = (): void => {
     if (tasks.length >= 20) {
       setError('Maximum 20 tasks allowed');
       return;
@@ -42,7 +42,7 @@ export default function ChallengeSetupForm({ onSubmit, onCancel }: ChallengeSetu
     setError(null);
   };
 
-  const handleRemoveTask = (index: number) => {
+  const handleRemoveTask = (index: number): void => {
     if (tasks.length <= 1) {
       setError('At least one task is required');
       return;
@@ -54,14 +54,14 @@ export default function ChallengeSetupForm({ onSubmit, onCancel }: ChallengeSetu
     setError(null);
   };
 
-  const handleUpdateTask = (index: number, field: 'title' | 'description', value: string) => {
+  const handleUpdateTask = (index: number, field: 'title' | 'description', value: string): void => {
     const updated = [...tasks];
     updated[index] = { ...updated[index], [field]: value };
     setTasks(updated);
     setError(null);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
 
     // Validate
@@ -108,7 +108,7 @@ export default function ChallengeSetupForm({ onSubmit, onCancel }: ChallengeSetu
 
         {/* Scrollable content */}
         <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }} className="p-6">
-          <form onSubmit={handleSubmit} id="challenge-form" className="space-y-4">
+          <form onSubmit={(e) => { void handleSubmit(e); }} id="challenge-form" className="space-y-4">
             {/* Tasks */}
             <div className="space-y-3 mb-4">
               {tasks.map((task, index) => (

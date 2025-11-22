@@ -11,6 +11,7 @@ import { createSyncCommand } from './commands/sync.js';
 import { createTasksCommand } from './commands/tasks.js';
 import { ensureConfigExists } from './config.js';
 import { dataManager } from './data.js';
+import { logger } from './utils/logger.js';
 
 const program = new Command();
 
@@ -115,20 +116,20 @@ program
   .option('-s, --shopping', 'Add shopping item instead')
   .option('-m, --meal', 'Add meal instead')
   .option('-r, --recipe', 'Add recipe instead')
-  .action(async (item, options) => {
+  .action((item, options) => {
     if (options.shopping) {
       const shoppingCmd = createShoppingCommand();
-      await shoppingCmd.parse(['add', ...(item ? [item] : [])], { from: 'user' });
+      shoppingCmd.parse(['add', ...(item ? [item] : [])], { from: 'user' });
     } else if (options.meal) {
       const mealsCmd = createMealsCommand();
-      await mealsCmd.parse(['add', ...(item ? [item] : [])], { from: 'user' });
+      mealsCmd.parse(['add', ...(item ? [item] : [])], { from: 'user' });
     } else if (options.recipe) {
       const recipesCmd = createRecipesCommand();
-      await recipesCmd.parse(['add', ...(item ? [item] : [])], { from: 'user' });
+      recipesCmd.parse(['add', ...(item ? [item] : [])], { from: 'user' });
     } else {
       // Default to tasks
       const tasksCmd = createTasksCommand();
-      await tasksCmd.parse(['add', ...(item ? [item] : [])], { from: 'user' });
+      tasksCmd.parse(['add', ...(item ? [item] : [])], { from: 'user' });
     }
   });
 
@@ -140,20 +141,20 @@ program
   .option('-s, --shopping', 'List shopping items instead')
   .option('-m, --meals', 'List meals instead')
   .option('-r, --recipes', 'List recipes instead')
-  .action(async (options) => {
+  .action((options) => {
     if (options.shopping) {
       const shoppingCmd = createShoppingCommand();
-      await shoppingCmd.parse(['list'], { from: 'user' });
+      shoppingCmd.parse(['list'], { from: 'user' });
     } else if (options.meals) {
       const mealsCmd = createMealsCommand();
-      await mealsCmd.parse(['week'], { from: 'user' });
+      mealsCmd.parse(['week'], { from: 'user' });
     } else if (options.recipes) {
       const recipesCmd = createRecipesCommand();
-      await recipesCmd.parse(['list'], { from: 'user' });
+      recipesCmd.parse(['list'], { from: 'user' });
     } else {
       // Default to tasks
       const tasksCmd = createTasksCommand();
-      await tasksCmd.parse(['list'], { from: 'user' });
+      tasksCmd.parse(['list'], { from: 'user' });
     }
   });
 
@@ -175,7 +176,7 @@ program
       ]);
 
       const pendingItems = shoppingItems.filter(item => !item.purchased);
-      const totalCost = pendingItems.reduce((sum, item) => sum + (item.estimatedPrice || 0), 0);
+      const totalCost = pendingItems.reduce((sum, item) => sum + (item.estimatedPrice ?? 0), 0);
       const thisWeekMeals = mealPlans.filter(meal => {
         const mealDate = new Date(meal.date);
         const now = new Date();
@@ -245,7 +246,7 @@ program
         logger.info('Index', chalk.bold('\n📅 This Week:'));
         thisWeekMeals.slice(0, 3).forEach(meal => {
           const date = new Date(meal.date).toLocaleDateString('en-US', { weekday: 'short' });
-          const mealName = meal.customMeal || 'Recipe';
+          const mealName = meal.customMeal ?? 'Recipe';
           logger.info('Index', `  • ${date} ${meal.mealType}: ${mealName}`);
         });
       }

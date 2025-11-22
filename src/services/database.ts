@@ -28,38 +28,38 @@ export class DatabaseService {
       throw error
     }
 
-    return data || []
+    return (data ?? []) as Task[]
   }
 
   async createTask(task: Omit<Task, 'id' | 'created_at'>): Promise<Task> {
-    const { data, error } = await this.client
+    const result = await this.client
       .from('tasks')
       .insert([task])
       .select()
       .single()
 
-    if (error) {
-      logger.error('DatabaseService', error, { operation: 'createTask' })
-      throw error
+    if (result.error) {
+      logger.error('DatabaseService', result.error, { operation: 'createTask' })
+      throw result.error
     }
 
-    return data
+    return result.data as Task
   }
 
   async updateTask(id: string, updates: Partial<Task>): Promise<Task> {
-    const { data, error } = await this.client
+    const result = await this.client
       .from('tasks')
       .update(updates)
       .eq('id', id)
       .select()
       .single()
 
-    if (error) {
-      logger.error('DatabaseService', error, { operation: 'updateTask', taskId: id })
-      throw error
+    if (result.error) {
+      logger.error('DatabaseService', result.error, { operation: 'updateTask', taskId: id })
+      throw result.error
     }
 
-    return data
+    return result.data as Task
   }
 
   async deleteTask(id: string): Promise<void> {
@@ -75,19 +75,23 @@ export class DatabaseService {
   }
 
   async restoreTask(id: string): Promise<Task> {
-    const { data, error } = await this.client
+    const result = await this.client
       .from('tasks')
       .update({ deleted: false, deleted_at: null })
       .eq('id', id)
       .select()
       .single()
 
-    if (error) {
-      logger.error('DatabaseService', error, { operation: 'restoreTask', taskId: id })
-      throw error
+    if (result.error) {
+      logger.error('DatabaseService', result.error, { operation: 'restoreTask', taskId: id })
+      throw result.error
     }
 
-    return data
+    if (!result.data) {
+      throw new Error('No data returned after restoring task')
+    }
+
+    return result.data as Task
   }
 
   async permanentlyDeleteTask(id: string): Promise<void> {
@@ -115,38 +119,38 @@ export class DatabaseService {
       throw error
     }
 
-    return data || []
+    return (data ?? []) as Task[]
   }
 
   async createProject(project: Omit<Project, 'id' | 'created_at'>): Promise<Project> {
-    const { data, error } = await this.client
+    const result = await this.client
       .from('projects')
       .insert([project])
       .select()
       .single()
 
-    if (error) {
-      logger.error('DatabaseService', error, { operation: 'createProject' })
-      throw error
+    if (result.error) {
+      logger.error('DatabaseService', result.error, { operation: 'createProject' })
+      throw result.error
     }
 
-    return data
+    return result.data as Project
   }
 
   async updateProject(id: string, updates: Partial<Project>): Promise<Project> {
-    const { data, error } = await this.client
+    const result = await this.client
       .from('projects')
       .update(updates)
       .eq('id', id)
       .select()
       .single()
 
-    if (error) {
-      logger.error('DatabaseService', error, { operation: 'updateProject', projectId: id })
-      throw error
+    if (result.error) {
+      logger.error('DatabaseService', result.error, { operation: 'updateProject', projectId: id })
+      throw result.error
     }
 
-    return data
+    return result.data as Project
   }
 
   async deleteProject(id: string): Promise<void> {
@@ -164,7 +168,7 @@ export class DatabaseService {
   // Real-time Subscriptions
   subscribeToTasks(
     userId: string,
-    onTaskChange: (payload: any) => void
+    onTaskChange: (payload: { eventType: string; new: Task; old?: Task }) => void
   ): void {
     this.taskSubscription = this.client
       .channel('tasks')
@@ -176,14 +180,14 @@ export class DatabaseService {
           table: 'tasks',
           filter: `user_id=eq.${userId}`
         },
-        onTaskChange
+        onTaskChange as (payload: { eventType: string; new: unknown; old?: unknown }) => void
       )
       .subscribe()
   }
 
   subscribeToProjects(
     userId: string,
-    onProjectChange: (payload: any) => void
+    onProjectChange: (payload: { eventType: string; new: Project; old?: Project }) => void
   ): void {
     this.projectSubscription = this.client
       .channel('projects')
@@ -195,7 +199,7 @@ export class DatabaseService {
           table: 'projects',
           filter: `user_id=eq.${userId}`
         },
-        onProjectChange
+        onProjectChange as (payload: { eventType: string; new: unknown; old?: unknown }) => void
       )
       .subscribe()
   }
@@ -203,14 +207,14 @@ export class DatabaseService {
   // Cleanup subscriptions
   unsubscribeFromTasks(): void {
     if (this.taskSubscription) {
-      this.client.removeChannel(this.taskSubscription)
+      void this.client.removeChannel(this.taskSubscription)
       this.taskSubscription = null
     }
   }
 
   unsubscribeFromProjects(): void {
     if (this.projectSubscription) {
-      this.client.removeChannel(this.projectSubscription)
+      void this.client.removeChannel(this.projectSubscription)
       this.projectSubscription = null
     }
   }
@@ -244,7 +248,7 @@ export class DatabaseService {
       throw error
     }
 
-    return data || []
+    return (data ?? []) as Task[]
   }
 
   async getTasksByStatus(userId: string, status: string): Promise<Task[]> {
@@ -261,7 +265,7 @@ export class DatabaseService {
       throw error
     }
 
-    return data || []
+    return (data ?? []) as Task[]
   }
 
   async getTasksDueToday(userId: string): Promise<Task[]> {
@@ -284,7 +288,7 @@ export class DatabaseService {
       throw error
     }
 
-    return data || []
+    return (data ?? []) as Task[]
   }
 
   async searchTasks(userId: string, query: string): Promise<Task[]> {
@@ -301,7 +305,7 @@ export class DatabaseService {
       throw error
     }
 
-    return data || []
+    return (data ?? []) as Task[]
   }
 }
 

@@ -45,10 +45,10 @@ export interface NoteFilters {
 function mapDbToNote(row: NoteRow): Note {
   return {
     id: row.id,
-    title: row.title || '',
+    title: row.title ?? '',
     content: row.content,
-    tags: row.tags || [],
-    category: row.category || undefined,
+    tags: row.tags ?? [],
+    category: row.category ?? undefined,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
   };
@@ -99,52 +99,55 @@ export async function getNotes(filters?: NoteFilters): Promise<Note[]> {
  * Get a single note by ID
  */
 export async function getNote(id: string): Promise<Note> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: authData } = await supabase.auth.getUser();
+  const user = authData.user;
   if (!user) throw new Error('Not authenticated');
 
-  const { data, error } = await supabase
+  const result = await supabase
     .from('notes')
     .select('*')
     .eq('id', id)
     .eq('user_id', user.id)
     .single();
 
-  if (error) throw error;
-  if (!data) throw new Error('Note not found');
+  if (result.error) throw result.error;
+  if (!result.data) throw new Error('Note not found');
 
-  return mapDbToNote(data);
+  return mapDbToNote(result.data as NoteRow);
 }
 
 /**
  * Create a new note
  */
 export async function createNote(input: CreateNoteInput): Promise<Note> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: authData } = await supabase.auth.getUser();
+  const user = authData.user;
   if (!user) throw new Error('Not authenticated');
 
-  const { data, error } = await supabase
+  const result = await supabase
     .from('notes')
     .insert({
       user_id: user.id,
-      title: input.title || null,
+      title: input.title ?? null,
       content: input.content,
-      tags: input.tags || [],
-      category: input.category || null,
+      tags: input.tags ?? [],
+      category: input.category ?? null,
     })
     .select()
     .single();
 
-  if (error) throw error;
-  if (!data) throw new Error('Failed to create note');
+  if (result.error) throw result.error;
+  if (!result.data) throw new Error('Failed to create note');
 
-  return mapDbToNote(data);
+  return mapDbToNote(result.data as NoteRow);
 }
 
 /**
  * Update an existing note
  */
 export async function updateNote(id: string, input: UpdateNoteInput): Promise<Note> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: authData } = await supabase.auth.getUser();
+  const user = authData.user;
   if (!user) throw new Error('Not authenticated');
 
   const updateData: Partial<NoteRow> = {};
@@ -154,7 +157,7 @@ export async function updateNote(id: string, input: UpdateNoteInput): Promise<No
   if (input.tags !== undefined) updateData.tags = input.tags;
   if (input.category !== undefined) updateData.category = input.category || null;
 
-  const { data, error } = await supabase
+  const result = await supabase
     .from('notes')
     .update(updateData)
     .eq('id', id)
@@ -162,10 +165,10 @@ export async function updateNote(id: string, input: UpdateNoteInput): Promise<No
     .select()
     .single();
 
-  if (error) throw error;
-  if (!data) throw new Error('Note not found or update failed');
+  if (result.error) throw result.error;
+  if (!result.data) throw new Error('Note not found or update failed');
 
-  return mapDbToNote(data);
+  return mapDbToNote(result.data as NoteRow);
 }
 
 /**
@@ -199,7 +202,8 @@ export async function getNoteTags(): Promise<string[]> {
   if (error) throw error;
 
   // Flatten and deduplicate tags
-  const allTags = (data || []).flatMap((row) => row.tags || []);
+  const typedData = (data ?? []) as Array<{ tags: string[] | null }>;
+  const allTags = typedData.flatMap((row) => row.tags ?? []);
   return Array.from(new Set(allTags)).sort();
 }
 
@@ -218,7 +222,8 @@ export async function getNoteCategories(): Promise<string[]> {
 
   if (error) throw error;
 
-  const categories = (data || [])
+  const typedData = (data ?? []) as Array<{ category: string | null }>;
+  const categories = typedData
     .map((row) => row.category)
     .filter((cat): cat is string => cat !== null);
 

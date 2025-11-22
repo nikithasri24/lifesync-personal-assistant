@@ -8,7 +8,7 @@ import { useAuth } from '../hooks/useAuth';
 import type { ConversationMessage } from '../services/conversationEngine';
 import { logger } from '../services/logger';
 
-export default function Assistant() {
+export default function Assistant(): JSX.Element {
   const { user } = useAuth();
   const {
     isListening,
@@ -23,7 +23,7 @@ export default function Assistant() {
     getMessages,
     clearHistory,
     isSupported
-  } = useConversationalVoice(user?.id || 'demo-user');
+  } = useConversationalVoice(user?.id ?? 'demo-user');
 
   const [textInput, setTextInput] = useState('');
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
@@ -43,7 +43,7 @@ export default function Assistant() {
     return () => clearInterval(interval);
   }, [getMessages]);
 
-  const handleTextSubmit = async (e?: React.FormEvent) => {
+  const handleTextSubmit = async (e?: React.FormEvent): Promise<void> => {
     e?.preventDefault();
 
     if (!textInput.trim()) return;
@@ -58,7 +58,7 @@ export default function Assistant() {
     }
   };
 
-  const handleVoiceToggle = () => {
+  const handleVoiceToggle = (): void => {
     if (isListening) {
       stopListening();
     } else {
@@ -66,7 +66,8 @@ export default function Assistant() {
     }
   };
 
-  const handleClearHistory = () => {
+  const handleClearHistory = (): void => {
+    // eslint-disable-next-line no-alert
     if (window.confirm('Clear conversation history?')) {
       clearHistory();
       setMessages([]);
@@ -146,7 +147,9 @@ export default function Assistant() {
                     key={i}
                     onClick={() => {
                       setTextInput(suggestion.text);
-                      setTimeout(() => handleTextSubmit(), 100);
+                      setTimeout(() => {
+                        void handleTextSubmit();
+                      }, 100);
                     }}
                     className="p-4 text-left bg-white hover:bg-slate-50 rounded-xl border border-slate-200 transition shadow-sm hover:shadow"
                   >
@@ -239,7 +242,9 @@ export default function Assistant() {
       {/* Input Area - Fixed at Bottom */}
       <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t border-slate-200 p-4 safe-bottom">
         <form
-          onSubmit={handleTextSubmit}
+          onSubmit={(e) => {
+            void handleTextSubmit(e);
+          }}
           className="max-w-4xl mx-auto flex gap-2 items-end"
         >
           {/* Text Input */}
@@ -250,7 +255,7 @@ export default function Assistant() {
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
-                  handleTextSubmit();
+                  void handleTextSubmit();
                 }
               }}
               placeholder="Type a message or tap the mic..."

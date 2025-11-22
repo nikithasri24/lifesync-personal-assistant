@@ -1,10 +1,5 @@
-/**
- * Trip Planner Component
- * Plan multi-country trips and calculate visa requirements
- */
-
 import React from 'react';
-import { Plus, Trash2, Map, Calendar, DollarSign, Clock, Globe } from 'lucide-react';
+import { Plus, Map, Calendar } from 'lucide-react';
 import {
   getUserTrips,
   getTripById,
@@ -20,8 +15,6 @@ import { getAdditionalAccessFromVisas } from '../data/visaBasedAccess';
 import { getAvailablePassportCountries } from '../data/visaRequirements';
 import {
   calculateTripSummary,
-  getVisaRequirementColor,
-  getVisaRequirementLabel,
   estimateVisaCost,
   estimateProcessingTime,
   calculateTripDuration,
@@ -30,6 +23,14 @@ import {
 import type { Trip, TripWithDestinations } from '../types/trip';
 import type { UserPassport, UserVisa } from '../types/visa';
 import { logger } from '../../services/logger';
+import { useToast } from '../../hooks/useToast';
+import Toast from '../../components/Toast';
+import ConfirmDialog from './ConfirmDialog';
+import TripListItem from './TripListItem';
+import DestinationItem from './DestinationItem';
+import TripSummaryStats from './TripSummaryStats';
+import NewTripForm from './NewTripForm';
+import AddDestinationForm from './AddDestinationForm';
 
 const TripPlanner: React.FC = () => {
   const [trips, setTrips] = React.useState<Trip[]>([]);
@@ -49,11 +50,21 @@ const TripPlanner: React.FC = () => {
   const [showAddDestination, setShowAddDestination] = React.useState(false);
   const [newDestCountry, setNewDestCountry] = React.useState('');
 
+  // Confirmation dialog state
+  const [confirmDialog, setConfirmDialog] = React.useState<{
+    show: boolean;
+    message: string;
+    onConfirm: () => void;
+  }>({ show: false, message: '', onConfirm: () => void 0 });
+
+  // Toast notifications
+  const { toast, showToast, dismissToast } = useToast();
+
   const availableCountries = React.useMemo(() => getAvailablePassportCountries(), []);
 
   // Load data on mount
   React.useEffect(() => {
-    const loadData = async () => {
+    const loadData = async (): Promise<void> => {
       try {
         setLoading(true);
         const [tripsData, passportData, visasData] = await Promise.all([
@@ -65,27 +76,27 @@ const TripPlanner: React.FC = () => {
         setPassport(passportData);
         setUserVisas(visasData);
       } catch (error) {
-        logger.error('Error loading trip planner data:', { error });
+        void logger.error('Error loading trip planner data:', { error });
       } finally {
         setLoading(false);
       }
     };
-    loadData();
+    void loadData();
   }, []);
 
   // Load selected trip details
-  const loadTripDetails = async (tripId: string) => {
+  const loadTripDetails = async (tripId: string): Promise<void> => {
     try {
       const trip = await getTripById(tripId);
       setSelectedTrip(trip);
     } catch (error) {
-      logger.error('Error loading trip details:', { error });
+      void logger.error('Error loading trip details:', { error });
     }
   };
 
   // Create new trip
-  const handleCreateTrip = async () => {
-    if (!newTripName.trim()) return;
+  const handleCreateTrip = async (): Promise<Trip | undefined> => {
+    if (!newTripName.trim()) return undefined;
 
     try {
       const trip = await createTrip({
@@ -104,33 +115,44 @@ const TripPlanner: React.FC = () => {
 
       // Load the new trip
       await loadTripDetails(trip.id);
+
+      return trip;
     } catch (error) {
-      logger.error('Error creating trip:', { error });
-      alert('Failed to create trip. Please try again.');
+      void logger.error('Error creating trip:', { error });
+      showToast('Failed to create trip. Please try again.', 'error');
+      return undefined;
     }
   };
 
   // Delete trip
-  const handleDeleteTrip = async (tripId: string) => {
-    if (!confirm('Are you sure you want to delete this trip?')) return;
-
-    try {
-      await deleteTrip(tripId);
-      setTrips(prev => prev.filter(t => t.id !== tripId));
-      if (selectedTrip?.id === tripId) {
-        setSelectedTrip(null);
-      }
-    } catch (error) {
-      logger.error('Error deleting trip:', { error });
-      alert('Failed to delete trip. Please try again.');
-    }
+  const handleDeleteTrip = (tripId: string): void => {
+    setConfirmDialog({
+      show: true,
+      message: 'Are you sure you want to delete this trip?',
+      onConfirm: () => {
+        void (async () => {
+          try {
+            await deleteTrip(tripId);
+            setTrips(prev => prev.filter(t => t.id !== tripId));
+            if (selectedTrip?.id === tripId) {
+              setSelectedTrip(null);
+            }
+            setConfirmDialog({ show: false, message: '', onConfirm: () => void 0 });
+          } catch (error) {
+            void logger.error('Error deleting trip:', { error });
+            showToast('Failed to delete trip. Please try again.', 'error');
+            setConfirmDialog({ show: false, message: '', onConfirm: () => void 0 });
+          }
+        })();
+      },
+    });
   };
 
   // Add destination to trip
-  const handleAddDestination = async () => {
+  const handleAddDestination = async (): Promise<void> => {
     if (!selectedTrip || !newDestCountry) return;
     if (!passport) {
-      alert('Please add your passport first in the Visa Calculator page.');
+      showToast('Please add your passport first in the Visa Calculator page.', 'error');
       return;
     }
 
@@ -149,7 +171,7 @@ const TripPlanner: React.FC = () => {
       const visaReq = getVisaRequirement(passport.countryName, newDestCountry);
 
       if (!visaReq) {
-        alert('No visa data available for this country.');
+        showToast('No visa data available for this country.', 'error');
         return;
       }
 
@@ -186,21 +208,21 @@ const TripPlanner: React.FC = () => {
       setNewDestCountry('');
       setShowAddDestination(false);
     } catch (error) {
-      logger.error('Error adding destination:', { error });
-      alert('Failed to add destination. Please try again.');
+      void logger.error('Error adding destination:', { error });
+      showToast('Failed to add destination. Please try again.', 'error');
     }
   };
 
   // Remove destination
-  const handleRemoveDestination = async (destId: string) => {
+  const handleRemoveDestination = async (destId: string): Promise<void> => {
     if (!selectedTrip) return;
 
     try {
       await removeDestination(destId);
       await loadTripDetails(selectedTrip.id);
     } catch (error) {
-      logger.error('Error removing destination:', { error });
-      alert('Failed to remove destination. Please try again.');
+      void logger.error('Error removing destination:', { error });
+      showToast('Failed to remove destination. Please try again.', 'error');
     }
   };
 
@@ -268,53 +290,18 @@ const TripPlanner: React.FC = () => {
 
             {/* New trip form */}
             {showNewTripForm && (
-              <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                <input
-                  type="text"
-                  placeholder="Trip name"
-                  value={newTripName}
-                  onChange={(e) => setNewTripName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mb-2"
-                />
-                <textarea
-                  placeholder="Description (optional)"
-                  value={newTripDescription}
-                  onChange={(e) => setNewTripDescription(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mb-2"
-                  rows={2}
-                />
-                <div className="grid grid-cols-2 gap-2 mb-2">
-                  <input
-                    type="date"
-                    placeholder="Start date"
-                    value={newTripStartDate}
-                    onChange={(e) => setNewTripStartDate(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                  />
-                  <input
-                    type="date"
-                    placeholder="End date"
-                    value={newTripEndDate}
-                    onChange={(e) => setNewTripEndDate(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleCreateTrip}
-                    disabled={!newTripName.trim()}
-                    className="flex-1 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium disabled:bg-gray-300"
-                  >
-                    Create
-                  </button>
-                  <button
-                    onClick={() => setShowNewTripForm(false)}
-                    className="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
+              <NewTripForm
+                tripName={newTripName}
+                description={newTripDescription}
+                startDate={newTripStartDate}
+                endDate={newTripEndDate}
+                onTripNameChange={setNewTripName}
+                onDescriptionChange={setNewTripDescription}
+                onStartDateChange={setNewTripStartDate}
+                onEndDateChange={setNewTripEndDate}
+                onCreate={() => void handleCreateTrip()}
+                onCancel={() => setShowNewTripForm(false)}
+              />
             )}
 
             {/* Trips list */}
@@ -325,41 +312,16 @@ const TripPlanner: React.FC = () => {
                 </p>
               ) : (
                 trips.map(trip => (
-                  <div
+                  <TripListItem
                     key={trip.id}
-                    onClick={() => loadTripDetails(trip.id)}
-                    className={`p-3 rounded-lg border cursor-pointer transition-colors ${
-                      selectedTrip?.id === trip.id
-                        ? 'bg-blue-50 border-blue-300'
-                        : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="font-medium text-gray-900 text-sm">{trip.name}</div>
-                        {trip.description && (
-                          <div className="text-xs text-gray-600 mt-1 line-clamp-2">
-                            {trip.description}
-                          </div>
-                        )}
-                        {trip.startDate && (
-                          <div className="text-xs text-gray-500 mt-1">
-                            {new Date(trip.startDate).toLocaleDateString()}
-                            {trip.endDate && ` - ${new Date(trip.endDate).toLocaleDateString()}`}
-                          </div>
-                        )}
-                      </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteTrip(trip.id);
-                        }}
-                        className="text-red-600 hover:text-red-800 ml-2"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
+                    trip={trip}
+                    isSelected={selectedTrip?.id === trip.id}
+                    onSelect={() => void loadTripDetails(trip.id)}
+                    onDelete={(e) => {
+                      e.stopPropagation();
+                      handleDeleteTrip(trip.id);
+                    }}
+                  />
                 ))
               )}
             </div>
@@ -416,56 +378,7 @@ const TripPlanner: React.FC = () => {
 
                 {/* Trip Summary Stats */}
                 {tripSummary && selectedTrip.destinations.length > 0 && (
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="bg-blue-50 rounded-lg p-3">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Globe className="w-4 h-4 text-blue-600" />
-                        <span className="text-xs text-blue-600 font-medium">Countries</span>
-                      </div>
-                      <div className="text-2xl font-bold text-blue-700">{tripSummary.totalCountries}</div>
-                    </div>
-                    <div className="bg-green-50 rounded-lg p-3">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Globe className="w-4 h-4 text-green-600" />
-                        <span className="text-xs text-green-600 font-medium">Visa Free</span>
-                      </div>
-                      <div className="text-2xl font-bold text-green-700">{tripSummary.visaFreeCount}</div>
-                    </div>
-                    <div className="bg-orange-50 rounded-lg p-3">
-                      <div className="flex items-center gap-2 mb-1">
-                        <DollarSign className="w-4 h-4 text-orange-600" />
-                        <span className="text-xs text-orange-600 font-medium">Est. Cost</span>
-                      </div>
-                      <div className="text-2xl font-bold text-orange-700">
-                        ${tripSummary.totalEstimatedCost}
-                      </div>
-                    </div>
-                    <div className="bg-purple-50 rounded-lg p-3">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Clock className="w-4 h-4 text-purple-600" />
-                        <span className="text-xs text-purple-600 font-medium">Processing</span>
-                      </div>
-                      <div className="text-2xl font-bold text-purple-700">
-                        {tripSummary.totalProcessingDays}d
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Schengen Optimization Notice */}
-                {tripSummary && tripSummary.canUseSchengenVisa && (
-                  <div className="mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                    <div className="flex items-start gap-2">
-                      <span className="text-lg">💡</span>
-                      <div>
-                        <h4 className="font-semibold text-purple-900 text-sm">Schengen Visa Optimization</h4>
-                        <p className="text-sm text-purple-700 mt-1">
-                          You're visiting {tripSummary.schengenCountries.length} Schengen countries.
-                          You only need ONE Schengen visa for: {tripSummary.schengenCountries.join(', ')}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+                  <TripSummaryStats summary={tripSummary} />
                 )}
               </div>
 
@@ -485,36 +398,16 @@ const TripPlanner: React.FC = () => {
 
                 {/* Add destination form */}
                 {showAddDestination && (
-                  <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                    <select
-                      value={newDestCountry}
-                      onChange={(e) => setNewDestCountry(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mb-2"
-                    >
-                      <option value="">-- Select country --</option>
-                      {availableCountries.map(country => (
-                        <option key={country} value={country}>{country}</option>
-                      ))}
-                    </select>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={handleAddDestination}
-                        disabled={!newDestCountry}
-                        className="flex-1 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium disabled:bg-gray-300"
-                      >
-                        Add Destination
-                      </button>
-                      <button
-                        onClick={() => {
-                          setShowAddDestination(false);
-                          setNewDestCountry('');
-                        }}
-                        className="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
+                  <AddDestinationForm
+                    selectedCountry={newDestCountry}
+                    availableCountries={availableCountries}
+                    onCountryChange={setNewDestCountry}
+                    onAdd={() => void handleAddDestination()}
+                    onCancel={() => {
+                      setShowAddDestination(false);
+                      setNewDestCountry('');
+                    }}
+                  />
                 )}
 
                 {/* Destinations */}
@@ -525,49 +418,12 @@ const TripPlanner: React.FC = () => {
                 ) : (
                   <div className="space-y-3">
                     {selectedTrip.destinations.map((dest, index) => (
-                      <div key={dest.id} className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                        <div className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-sm">
-                          {index + 1}
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <div className="font-semibold text-gray-900">{dest.countryName}</div>
-                              {dest.visaRequirement && (
-                                <div className="mt-2 space-y-1">
-                                  <span className={`inline-block px-2 py-1 rounded text-xs font-medium border ${
-                                    getVisaRequirementColor(dest.visaRequirement.visaType)
-                                  }`}>
-                                    {getVisaRequirementLabel(dest.visaRequirement.visaType)}
-                                  </span>
-                                  {dest.visaRequirement.accessVia !== 'passport' && (
-                                    <div className="text-xs text-purple-700 font-medium">
-                                      ✨ Via {dest.visaRequirement.accessVia}
-                                    </div>
-                                  )}
-                                  <div className="flex items-center gap-4 text-xs text-gray-600 mt-1">
-                                    {dest.visaRequirement.daysAllowed && (
-                                      <span>📅 {dest.visaRequirement.daysAllowed} days</span>
-                                    )}
-                                    {dest.visaRequirement.estimatedCost ? (
-                                      <span>💰 ${dest.visaRequirement.estimatedCost}</span>
-                                    ) : null}
-                                    {dest.visaRequirement.processingDays ? (
-                                      <span>⏱️ {dest.visaRequirement.processingDays} days</span>
-                                    ) : null}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                            <button
-                              onClick={() => handleRemoveDestination(dest.id)}
-                              className="text-red-600 hover:text-red-800"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
+                      <DestinationItem
+                        key={dest.id}
+                        destination={dest}
+                        index={index}
+                        onRemove={() => void handleRemoveDestination(dest.id)}
+                      />
                     ))}
                   </div>
                 )}
@@ -576,6 +432,17 @@ const TripPlanner: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Toast Notifications */}
+      <Toast toast={toast} onDismiss={dismissToast} />
+
+      {/* Confirmation Dialog */}
+      <ConfirmDialog
+        show={confirmDialog.show}
+        message={confirmDialog.message}
+        onConfirm={() => void confirmDialog.onConfirm()}
+        onCancel={() => setConfirmDialog({ show: false, message: '', onConfirm: () => void 0 })}
+      />
     </div>
   );
 };

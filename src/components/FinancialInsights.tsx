@@ -1,5 +1,4 @@
-// @ts-nocheck
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { apiClient } from '../services/apiClient';
 import { logger } from '../services/logger';
 import {
@@ -41,18 +40,14 @@ interface FinancialHealth {
 
 // Financial insights and health data will be generated from real transaction data
 
-export default function FinancialInsights() {
+export default function FinancialInsights(): React.ReactElement {
   const [insights, setInsights] = useState<Insight[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [_showDismissed, _setShowDismissed] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [_showDismissed, _setShowDismissed] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
   const [financialHealth, setFinancialHealth] = useState<FinancialHealth | null>(null);
 
-  useEffect(() => {
-    loadFinancialData();
-  }, []);
-
-  const loadFinancialData = async () => {
+  const loadFinancialData = React.useCallback(async (): Promise<void> => {
     try {
       setLoading(true);
       // Load financial transactions and accounts to generate insights
@@ -68,15 +63,22 @@ export default function FinancialInsights() {
       // Calculate financial health from real data
       const health = calculateFinancialHealth(transactions, accounts);
       setFinancialHealth(health);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to load financial data:', { error });
       // Fallback to empty state - no mock data
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const generateInsightsFromData = (transactions: any[], _accounts: any[]): Insight[] => {
+  useEffect(() => {
+    void loadFinancialData();
+  }, [loadFinancialData]);
+
+  const generateInsightsFromData = (
+    transactions: Array<{amount: number}>,
+    _accounts: Array<{currentBalance: number}>
+  ): Insight[] => {
     const insights: Insight[] = [];
 
     // Example: Check for high spending in categories
@@ -97,7 +99,10 @@ export default function FinancialInsights() {
     return insights;
   };
 
-  const calculateFinancialHealth = (transactions: any[], accounts: any[]): FinancialHealth => {
+  const calculateFinancialHealth = (
+    transactions: Array<{amount: number}>,
+    accounts: Array<{currentBalance: number}>
+  ): FinancialHealth => {
     // Calculate real financial health metrics from data
     return {
       score: accounts.length > 0 ? 60 : 0, // Basic score based on setup
@@ -110,7 +115,7 @@ export default function FinancialInsights() {
     };
   };
 
-  const getInsightIcon = (type: string) => {
+  const getInsightIcon = (type: string): React.ReactNode => {
     switch (type) {
       case 'opportunity': return TrendingUp;
       case 'alert': return AlertTriangle;
@@ -120,7 +125,7 @@ export default function FinancialInsights() {
     }
   };
 
-  const getInsightColor = (type: string, impact: string) => {
+  const getInsightColor = (type: string, impact: string): string => {
     if (type === 'alert') return 'border-red-200 bg-red-50';
     if (type === 'achievement') return 'border-green-200 bg-green-50';
     if (type === 'opportunity' && impact === 'high') return 'border-blue-200 bg-blue-50';
@@ -128,7 +133,7 @@ export default function FinancialInsights() {
     return 'border-gray-200 bg-gray-50';
   };
 
-  const getInsightTextColor = (type: string) => {
+  const getInsightTextColor = (type: string): string => {
     switch (type) {
       case 'alert': return 'text-red-600';
       case 'achievement': return 'text-green-600';
@@ -138,30 +143,30 @@ export default function FinancialInsights() {
     }
   };
 
-  const dismissInsight = (insightId: string) => {
+  const dismissInsight = (insightId: string): void => {
     setInsights(insights.filter(i => i.id !== insightId));
   };
 
-  const getHealthScoreColor = (score: number) => {
+  const getHealthScoreColor = (score: number): string => {
     if (score >= 80) return 'text-green-600';
     if (score >= 60) return 'text-yellow-600';
     return 'text-red-600';
   };
 
-  const getHealthScoreDescription = (score: number) => {
+  const getHealthScoreDescription = (score: number): string => {
     if (score >= 80) return 'Excellent financial health';
     if (score >= 60) return 'Good financial health';
     if (score >= 40) return 'Fair financial health';
     return 'Needs improvement';
   };
 
-  const filteredInsights = selectedCategory === 'all' 
-    ? insights 
+  const filteredInsights = selectedCategory === 'all'
+    ? insights
     : insights.filter(insight => insight.category === selectedCategory);
 
   const totalPotentialSavings = insights
-    .filter(insight => insight.potentialSavings)
-    .reduce((sum, insight) => sum + (insight.potentialSavings || 0), 0);
+    .filter(insight => insight.potentialSavings !== undefined)
+    .reduce((sum, insight) => sum + (insight.potentialSavings ?? 0), 0);
 
   const actionableInsights = insights.filter(insight => insight.actionable);
 
@@ -201,8 +206,8 @@ export default function FinancialInsights() {
             <p className="text-sm text-gray-600">Based on your spending patterns, savings, and debt</p>
           </div>
           <div className="text-right">
-            <div className={`text-4xl font-bold ${getHealthScoreColor(financialHealth?.score || 0)}`}>
-              {financialHealth?.score || 0}
+            <div className={`text-4xl font-bold ${getHealthScoreColor(financialHealth?.score ?? 0)}`}>
+              {financialHealth?.score ?? 0}
             </div>
             <div className="text-sm text-gray-500">out of 100</div>
           </div>
@@ -211,37 +216,37 @@ export default function FinancialInsights() {
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-gray-700">Overall Health</span>
-            <span className={`text-sm font-semibold ${getHealthScoreColor(financialHealth?.score || 0)}`}>
-              {getHealthScoreDescription(financialHealth?.score || 0)}
+            <span className={`text-sm font-semibold ${getHealthScoreColor(financialHealth?.score ?? 0)}`}>
+              {getHealthScoreDescription(financialHealth?.score ?? 0)}
             </span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-3">
-            <div 
+            <div
               className={`h-3 rounded-full transition-all duration-1000 ${
-                (financialHealth?.score || 0) >= 80 ? 'bg-green-500' :
-                (financialHealth?.score || 0) >= 60 ? 'bg-yellow-500' :
+                (financialHealth?.score ?? 0) >= 80 ? 'bg-green-500' :
+                (financialHealth?.score ?? 0) >= 60 ? 'bg-yellow-500' :
                 'bg-red-500'
               }`}
-              style={{ width: `${financialHealth?.score || 0}%` }}
+              style={{ width: `${financialHealth?.score ?? 0}%` }}
             />
           </div>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="text-center p-3 bg-blue-50 rounded-lg">
-            <div className="text-lg font-bold text-blue-600">{financialHealth?.factors.savingsRate || 0}%</div>
+            <div className="text-lg font-bold text-blue-600">{financialHealth?.factors.savingsRate ?? 0}%</div>
             <div className="text-xs text-gray-600">Savings Rate</div>
           </div>
           <div className="text-center p-3 bg-green-50 rounded-lg">
-            <div className="text-lg font-bold text-green-600">{financialHealth?.factors.debtToIncome || 0}%</div>
+            <div className="text-lg font-bold text-green-600">{financialHealth?.factors.debtToIncome ?? 0}%</div>
             <div className="text-xs text-gray-600">Debt to Income</div>
           </div>
           <div className="text-center p-3 bg-purple-50 rounded-lg">
-            <div className="text-lg font-bold text-purple-600">{financialHealth?.factors.emergencyFund || 0}</div>
+            <div className="text-lg font-bold text-purple-600">{financialHealth?.factors.emergencyFund ?? 0}</div>
             <div className="text-xs text-gray-600">Months Emergency Fund</div>
           </div>
           <div className="text-center p-3 bg-orange-50 rounded-lg">
-            <div className="text-lg font-bold text-orange-600">{financialHealth?.factors.budgetAdherence || 0}%</div>
+            <div className="text-lg font-bold text-orange-600">{financialHealth?.factors.budgetAdherence ?? 0}%</div>
             <div className="text-xs text-gray-600">Budget Adherence</div>
           </div>
         </div>

@@ -10,10 +10,12 @@
  * This replaces the old complex implementation with 8 simple methods.
  */
 
+/* eslint-disable max-lines */
 import type { StateCreator } from 'zustand';
 import { logger } from '../services/logger';
 
 import { startOfDay, addDays, differenceInDays, isSameDay } from 'date-fns';
+import { format } from 'date-fns';  // Added explicit format import
 import { ensureSupabase } from '../lib/supabase';
 import type {
   SeventyFiveHardChallenge,
@@ -26,8 +28,6 @@ import type {
 import {
   mapRowToChallenge,
   mapRowToCheckIn,
-  _mapChallengeToInsert,
-  _mapCheckInToInsert,
   generateId,
   createInitialTaskCompletions,
   validateTasks,
@@ -121,7 +121,7 @@ export const createSeventyFiveHardStore: StateCreator<
 
       // Create tasks with IDs
       const tasksWithIds: Task[] = tasks.map((t, index) => ({
-        ...t,
+        ...(t as Task),
         id: generateId(),
         order: index + 1
       }));
@@ -131,7 +131,7 @@ export const createSeventyFiveHardStore: StateCreator<
       // Create challenge
       const challengeData = {
         user_id: user.id,
-        start_date: formatDate(today, 'yyyy-MM-dd'),
+        start_date: format(today, 'yyyy-MM-dd'),
         current_day: 1,
         status: 'active' as const,
         tasks: tasksWithIds,
@@ -141,7 +141,7 @@ export const createSeventyFiveHardStore: StateCreator<
         .from('sfh_challenge')
         .insert(challengeData)
         .select()
-        .single();
+        .single() as { data: ChallengeRow | null; error: Error | null };
 
       if (challengeError) {
         logger.error('SeventyFiveHardStore', '[75Hard] Error creating challenge:', challengeError);
@@ -153,7 +153,7 @@ export const createSeventyFiveHardStore: StateCreator<
 
       const checkInData = {
         challenge_id: newChallenge.id,
-        date: formatDate(today, 'yyyy-MM-dd'),
+        date: format(today, 'yyyy-MM-dd'),
         day_number: 1,
         task_completions: taskCompletions,
       };
@@ -205,7 +205,7 @@ export const createSeventyFiveHardStore: StateCreator<
         .select('*')
         .eq('user_id', user.id)
         .eq('status', 'active')
-        .maybeSingle();
+        .maybeSingle() as { data: ChallengeRow | null; error: Error | null };
 
       if (challengeError) {
         logger.error('SeventyFiveHardStore', '[75Hard] Error loading challenge:', challengeError);
@@ -219,7 +219,7 @@ export const createSeventyFiveHardStore: StateCreator<
       }
 
       // Map database row to type
-      const challenge = mapRowToChallenge(challengeRow as ChallengeRow);
+      const challenge = mapRowToChallenge(challengeRow);
 
       // Load all check-ins
       const { data: checkInRows, error: checkInsError } = await supabase
@@ -320,7 +320,7 @@ export const createSeventyFiveHardStore: StateCreator<
         .from('sfh_daily_checkins')
         .upsert({
           challenge_id: challenge.id,
-          date: formatDate(failureDate, 'yyyy-MM-dd'),
+          date: format(failureDate, 'yyyy-MM-dd'),
           day_number: dayNumber,
           task_completions: allTasksComplete,
         });
@@ -360,7 +360,7 @@ export const createSeventyFiveHardStore: StateCreator<
         .from('sfh_daily_checkins')
         .upsert({
           challenge_id: challenge.id,
-          date: formatDate(today, 'yyyy-MM-dd'),
+          date: format(today, 'yyyy-MM-dd'),
           day_number: dayNumber,
           task_completions: taskCompletions,
         }, {
@@ -660,7 +660,7 @@ export const createSeventyFiveHardStore: StateCreator<
     await supabase
       .from('sfh_challenge')
       .update({
-        start_date: formatDate(today, 'yyyy-MM-dd'),
+        start_date: format(today, 'yyyy-MM-dd'),
         current_day: 1,
         updated_at: new Date().toISOString(),
       })
@@ -674,11 +674,11 @@ export const createSeventyFiveHardStore: StateCreator<
 
     if (allCheckIns) {
       const incompleteIds = allCheckIns
-        .filter(c => {
+        .filter((c: { id: string; task_completions: unknown }) => {
           const completions = c.task_completions as TaskCompletion[];
           return !completions.every(tc => tc.completed);
         })
-        .map(c => c.id);
+        .map((c: { id: string; task_completions: unknown }) => c.id);
 
       if (incompleteIds.length > 0) {
         await supabase
@@ -759,7 +759,7 @@ export const createSeventyFiveHardStore: StateCreator<
       const { error: deleteChallengeError } = await supabase
         .from('sfh_challenge')
         .delete()
-        .eq('id', challenge.id);
+        .eq('id', challenge.id) as { error: Error | null };
 
       if (deleteChallengeError) {
         logger.error('SeventyFiveHardStore', '[75Hard] Failed to delete challenge:', deleteChallengeError);
@@ -782,7 +782,10 @@ export const createSeventyFiveHardStore: StateCreator<
       return { success: true };
     } catch (error) {
       logger.error('SeventyFiveHardStore', '[75Hard] Error in deleteChallenge:', error);
-      return { success: false, error: 'Failed to delete challenge. Please try again.' };
+      const errorMessage = error instanceof Error
+        ? error.message
+        : 'Failed to delete challenge. Please try again.';
+      return { success: false, error: errorMessage };
     }
   },
 });

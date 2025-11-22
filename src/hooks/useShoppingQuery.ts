@@ -21,7 +21,7 @@ export const shoppingKeys = {
 
 // ==================== Shopping Lists ====================
 
-export function useShoppingLists() {
+export function useShoppingLists(): ReturnType<typeof useQuery> {
   return useQuery({
     queryKey: shoppingKeys.lists(),
     queryFn: getShoppingLists,
@@ -29,7 +29,7 @@ export function useShoppingLists() {
   });
 }
 
-export function useCreateShoppingList() {
+export function useCreateShoppingList(): ReturnType<typeof useMutation> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -53,7 +53,7 @@ export function useCreateShoppingList() {
 
 // ==================== Shopping Items ====================
 
-export function useShoppingItems(listId: string | null) {
+export function useShoppingItems(listId: string | null): ReturnType<typeof useQuery> {
   return useQuery({
     queryKey: listId ? shoppingKeys.items(listId) : ['shopping-items-null'],
     queryFn: () => {
@@ -65,7 +65,7 @@ export function useShoppingItems(listId: string | null) {
   });
 }
 
-export function useCreateShoppingItem() {
+export function useCreateShoppingItem(): ReturnType<typeof useMutation> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -124,7 +124,7 @@ export function useCreateShoppingItem() {
   });
 }
 
-export function useUpdateShoppingItem() {
+export function useUpdateShoppingItem(): ReturnType<typeof useMutation> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -191,7 +191,7 @@ export function useUpdateShoppingItem() {
   });
 }
 
-export function useDeleteShoppingItem() {
+export function useDeleteShoppingItem(): ReturnType<typeof useMutation> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -248,7 +248,7 @@ export function useDeleteShoppingItem() {
 
 // ==================== Toggle Purchase Status ====================
 
-export function useToggleShoppingItem() {
+export function useToggleShoppingItem(): ReturnType<typeof useMutation> {
   const updateMutation = useUpdateShoppingItem();
 
   return useMutation({
@@ -267,14 +267,19 @@ export function useToggleShoppingItem() {
  * Hook to get or create the active shopping list
  * Returns the first active list, or creates one if none exists
  */
-export function useActiveShoppingList() {
+export function useActiveShoppingList(): {
+  activeList: ShoppingListData | undefined;
+  activeListId: string | null;
+  isLoading: boolean;
+  ensureActiveList: () => Promise<ShoppingListData>;
+} {
   const { data: lists, isLoading } = useShoppingLists();
   const createList = useCreateShoppingList();
 
   // Get first active list or first list
   const activeList = lists?.find((list) => list.status === 'active') || lists?.[0];
 
-  const ensureActiveList = async () => {
+  const ensureActiveList = async (): Promise<ShoppingListData> => {
     if (activeList) return activeList;
 
     // Create new list if none exists

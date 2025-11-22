@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useAppStore } from '../../../stores/useAppStore';
 
-export function MealOptionsManager() {
+type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
+
+export function MealOptionsManager(): React.JSX.Element {
   const { mealOptions, addMealOption, removeMealOption } = useAppStore();
   const [inputs, setInputs] = useState({ breakfast: '', lunch: '', dinner: '', snack: '' });
 
-  const sections: Array<{ key: keyof typeof mealOptions; label: string; color: string }> = [
+  const sections: Array<{ key: MealType; label: string; color: string }> = [
     { key: 'breakfast', label: 'Breakfast', color: 'text-amber-600' },
     { key: 'lunch', label: 'Lunch', color: 'text-emerald-600' },
     { key: 'dinner', label: 'Dinner', color: 'text-indigo-600' },
@@ -26,7 +28,7 @@ export function MealOptionsManager() {
                   e.preventDefault();
                   const v = inputs[key].trim();
                   if (v) {
-                    addMealOption(key as any, v);
+                    addMealOption(key, v);
                     setInputs((s) => ({ ...s, [key]: '' }));
                   }
                 }
@@ -39,7 +41,7 @@ export function MealOptionsManager() {
               onClick={() => {
                 const v = inputs[key].trim();
                 if (v) {
-                  addMealOption(key as any, v);
+                  addMealOption(key, v);
                   setInputs((s) => ({ ...s, [key]: '' }));
                 }
               }}
@@ -63,7 +65,7 @@ export function MealOptionsManager() {
                 <span>{name}</span>
                 <button
                   type="button"
-                  onClick={() => removeMealOption(key as any, name)}
+                  onClick={() => removeMealOption(key, name)}
                   className="text-slate-400 hover:text-rose-600"
                   title="Remove"
                 >

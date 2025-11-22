@@ -29,7 +29,7 @@ import { logger } from '@/services/logger';
 /**
  * Get all journal entries with optional filters
  */
-export function useJournalEntries(filters?: JournalEntryFilters) {
+export function useJournalEntries(filters?: JournalEntryFilters): ReturnType<typeof useQuery> {
   return useQuery({
     queryKey: queryKeys.journal.list(filters),
     queryFn: () => getJournalEntries(filters),
@@ -40,10 +40,13 @@ export function useJournalEntries(filters?: JournalEntryFilters) {
 /**
  * Get a single journal entry by ID
  */
-export function useJournalEntry(id: string | null) {
+export function useJournalEntry(id: string | null): ReturnType<typeof useQuery> {
   return useQuery({
-    queryKey: queryKeys.journal.detail(id!),
-    queryFn: () => getJournalEntry(id!),
+    queryKey: queryKeys.journal.detail(id ?? ''),
+    queryFn: () => {
+      if (!id) throw new Error('Journal entry ID is required');
+      return getJournalEntry(id);
+    },
     enabled: !!id,
     ...queryOptions.user,
   });
@@ -52,7 +55,7 @@ export function useJournalEntry(id: string | null) {
 /**
  * Get all available tags
  */
-export function useJournalTags() {
+export function useJournalTags(): ReturnType<typeof useQuery> {
   return useQuery({
     queryKey: [...queryKeys.journal.all, 'tags'] as const,
     queryFn: getJournalTags,
@@ -64,7 +67,7 @@ export function useJournalTags() {
 /**
  * Get mood statistics
  */
-export function useMoodStats(startDate?: Date, endDate?: Date) {
+export function useMoodStats(startDate?: Date, endDate?: Date): ReturnType<typeof useQuery> {
   return useQuery({
     queryKey: [...queryKeys.journal.all, 'mood-stats', { startDate, endDate }] as const,
     queryFn: () => getMoodStats(startDate, endDate),
@@ -80,7 +83,7 @@ export function useMoodStats(startDate?: Date, endDate?: Date) {
 /**
  * Create a new journal entry
  */
-export function useCreateJournalEntry() {
+export function useCreateJournalEntry(): ReturnType<typeof useMutation> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -92,7 +95,7 @@ export function useCreateJournalEntry() {
     onSuccess: (newEntry) => {
       logger.info('Journal entry created successfully', { id: newEntry.id, title: newEntry.title });
       // Invalidate all journal lists to refetch with new entry
-      queryClient.invalidateQueries({ queryKey: queryKeys.journal.lists() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.journal.lists() });
 
       // Optimistically add to cache
       queryClient.setQueryData<JournalEntry[]>(
@@ -111,7 +114,7 @@ export function useCreateJournalEntry() {
 /**
  * Update an existing journal entry
  */
-export function useUpdateJournalEntry() {
+export function useUpdateJournalEntry(): ReturnType<typeof useMutation> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -123,7 +126,7 @@ export function useUpdateJournalEntry() {
     onSuccess: (updatedEntry) => {
       logger.info('Journal entry updated successfully', { id: updatedEntry.id, title: updatedEntry.title });
       // Invalidate all journal lists
-      queryClient.invalidateQueries({ queryKey: queryKeys.journal.lists() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.journal.lists() });
 
       // Update the specific entry detail cache
       queryClient.setQueryData(
@@ -150,7 +153,7 @@ export function useUpdateJournalEntry() {
 /**
  * Delete a journal entry
  */
-export function useDeleteJournalEntry() {
+export function useDeleteJournalEntry(): ReturnType<typeof useMutation> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -162,10 +165,10 @@ export function useDeleteJournalEntry() {
     onSuccess: (_data, deletedId) => {
       logger.info('Journal entry deleted successfully', { id: deletedId });
       // Invalidate all journal lists
-      queryClient.invalidateQueries({ queryKey: queryKeys.journal.lists() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.journal.lists() });
 
       // Remove from cache
-      queryClient.removeQueries({ queryKey: queryKeys.journal.detail(deletedId) });
+      void queryClient.removeQueries({ queryKey: queryKeys.journal.detail(deletedId) });
 
       // Optimistically remove from list caches
       queryClient.setQueryData<JournalEntry[]>(

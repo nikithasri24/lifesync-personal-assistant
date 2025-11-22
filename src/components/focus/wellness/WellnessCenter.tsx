@@ -94,8 +94,14 @@ interface BreathingExercise {
   icon: string;
 }
 
+interface FocusSessionType {
+  id?: string;
+  duration: number;
+  // Add other required properties
+}
+
 interface Props {
-  activeFocusSession?: any;
+  activeFocusSession?: FocusSessionType;
   onWellnessEvent: (event: Omit<WellnessEvent, 'id' | 'timestamp'>) => void;
   _onUpdateSettings: (settings: Partial<WellnessSettings>) => void;
 }
@@ -193,7 +199,7 @@ export const WellnessCenter: React.FC<Props> = ({
 
   // Generate mock data
   useEffect(() => {
-    const generateMockData = () => {
+    const generateMockData = (): void => {
       const events: WellnessEvent[] = [];
       const metrics: HealthMetrics[] = [];
       
@@ -263,7 +269,7 @@ export const WellnessCenter: React.FC<Props> = ({
 
     if (!activeFocusSession) return;
 
-    const scheduleReminder = (type: string, interval: number) => {
+    const scheduleReminder = (type: string, interval: number): void => {
       const timeout = setTimeout(() => {
         showWellnessReminder(type);
       }, interval * 60 * 1000);
@@ -288,7 +294,7 @@ export const WellnessCenter: React.FC<Props> = ({
     };
   }, [activeFocusSession, settings]);
 
-  const showWellnessReminder = (type: string) => {
+  const showWellnessReminder = (type: string): void => {
     const messages = {
       eye_strain: {
         title: 'Eye Care Reminder 👁️',
@@ -317,7 +323,7 @@ export const WellnessCenter: React.FC<Props> = ({
     logger.debug('WellnessCenter', `Wellness reminder: ${reminder.title} - ${reminder.message}`);
   };
 
-  const startBreathingExercise = (exercise: BreathingExercise) => {
+  const startBreathingExercise = (exercise: BreathingExercise): void => {
     setActiveBreathingExercise(exercise);
     setBreathingTimer(0);
     setBreathingPhase(0);
@@ -338,7 +344,7 @@ export const WellnessCenter: React.FC<Props> = ({
     }, 1000);
   };
 
-  const stopBreathingExercise = () => {
+  const stopBreathingExercise = (): void => {
     setIsBreathing(false);
     setActiveBreathingExercise(null);
     if (breathingIntervalRef.current) {
@@ -353,7 +359,7 @@ export const WellnessCenter: React.FC<Props> = ({
     });
   };
 
-  const logMoodAndEnergy = () => {
+  const logMoodAndEnergy = (): void => {
     onWellnessEvent({
       type: 'mood',
       completed: true,
@@ -369,7 +375,7 @@ export const WellnessCenter: React.FC<Props> = ({
     setShowMoodLogger(false);
   };
 
-  const addWaterIntake = () => {
+  const addWaterIntake = (): void => {
     setTodayWater(prev => prev + 1);
     onWellnessEvent({
       type: 'hydration',
@@ -378,39 +384,39 @@ export const WellnessCenter: React.FC<Props> = ({
     });
   };
 
-  const completeEyeStrainExercise = () => {
+  const completeEyeStrainExercise = (): void => {
     onWellnessEvent({
       type: 'eye_strain',
       completed: true
     });
   };
 
-  const getTodayMetrics = () => {
+  const getTodayMetrics = (): HealthMetrics | undefined => {
     const today = startOfDay(new Date());
     return healthMetrics.find(m => startOfDay(m.date).getTime() === today.getTime());
   };
 
-  const getTodayEvents = () => {
+  const getTodayEvents = (): WellnessEvent[] => {
     const today = new Date();
     return wellnessEvents.filter(event => 
       startOfDay(event.timestamp).getTime() === startOfDay(today).getTime()
     );
   };
 
-  const getWellnessScore = () => {
+  const getWellnessScore = (): number => {
     const todayEvents = getTodayEvents();
     const completed = todayEvents.filter(e => e.completed).length;
     const total = todayEvents.length;
     return total > 0 ? Math.round((completed / total) * 100) : 0;
   };
 
-  const getMoodIcon = (mood: number) => {
+  const getMoodIcon = (mood: number): JSX.Element => {
     if (mood <= 2) return <Frown className="w-6 h-6 text-red-500" />;
     if (mood <= 3) return <Meh className="w-6 h-6 text-yellow-500" />;
     return <Smile className="w-6 h-6 text-green-500" />;
   };
 
-  const getCurrentBreathingPhase = () => {
+  const getCurrentBreathingPhase = (): { phase: 'inhale' | 'hold' | 'exhale' | 'rest', duration: number } | null => {
     if (!activeBreathingExercise) return null;
     return activeBreathingExercise.pattern[breathingPhase % activeBreathingExercise.pattern.length];
   };
@@ -455,7 +461,12 @@ export const WellnessCenter: React.FC<Props> = ({
         ].map((tab) => (
           <button
             key={tab.key}
-            onClick={() => setActiveTab(tab.key as any)}
+            onClick={() => {
+              const validKey = ['dashboard', 'reminders', 'breathing', 'tracking', 'analytics'].includes(tab.key);
+              if (validKey) {
+                setActiveTab(tab.key as 'dashboard' | 'reminders' | 'breathing' | 'tracking' | 'analytics');
+              }
+            }}
             className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
               activeTab === tab.key
                 ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'

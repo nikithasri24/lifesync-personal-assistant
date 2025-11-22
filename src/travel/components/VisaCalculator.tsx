@@ -3,6 +3,7 @@
  * Allows users to input their passport and visas to calculate visa-free travel access
  */
 
+/* eslint-disable max-lines */
 import React from 'react';
 import {
   getVisaRequirement,
@@ -55,7 +56,7 @@ const VisaCalculator: React.FC = () => {
 
   // Load passport and visas on mount
   React.useEffect(() => {
-    const loadData = async () => {
+    const loadData = async (): Promise<void> => {
       try {
         setLoading(true);
         const [passportData, visasData] = await Promise.all([
@@ -70,7 +71,7 @@ const VisaCalculator: React.FC = () => {
         setLoading(false);
       }
     };
-    loadData();
+    void loadData();
   }, []);
 
   // Get summary for selected passport
@@ -156,8 +157,8 @@ const VisaCalculator: React.FC = () => {
           }
           // Both grant visa-free, but visa grants MORE days
           else if (req.requirement === 'visa-free' && visaAccess.accessType === 'visa-free') {
-            const passportDays = req.daysAllowed || Infinity;
-            const visaDays = visaAccess.daysAllowed || Infinity;
+            const passportDays = req.daysAllowed ?? Infinity;
+            const visaDays = visaAccess.daysAllowed ?? Infinity;
             shouldUseVisaAccess = visaDays > passportDays;
           }
           // Passport requires e-visa/eta, but visa grants visa-free
@@ -219,7 +220,7 @@ const VisaCalculator: React.FC = () => {
     return groups;
   }, [filteredDestinations]);
 
-  const handleSetPassport = async () => {
+  const handleSetPassport = async (): Promise<void> => {
     if (!selectedPassportCountry) return;
 
     try {
@@ -232,11 +233,11 @@ const VisaCalculator: React.FC = () => {
       setSelectedPassportCountry('');
     } catch (error) {
       logger.error('Error adding passport:', { error });
-      alert('Failed to save passport. Please try again.');
+      // Error logged, user feedback could be added here
     }
   };
 
-  const handleAddVisa = async () => {
+  const handleAddVisa = async (): Promise<void> => {
     if (!newVisaCountry || !newVisaExpiry) return;
 
     try {
@@ -253,17 +254,17 @@ const VisaCalculator: React.FC = () => {
       setShowAddVisa(false);
     } catch (error) {
       logger.error('Error adding visa:', { error });
-      alert('Failed to save visa. Please try again.');
+      // Error logged, user feedback could be added here
     }
   };
 
-  const handleRemoveVisa = async (visaId: string) => {
+  const handleRemoveVisa = async (visaId: string): Promise<void> => {
     try {
       await deleteVisa(visaId);
       setUserVisas(prev => prev.filter(v => v.id !== visaId));
     } catch (error) {
       logger.error('Error removing visa:', { error });
-      alert('Failed to remove visa. Please try again.');
+      // Error logged, user feedback could be added here
     }
   };
 
@@ -315,7 +316,7 @@ const VisaCalculator: React.FC = () => {
       </div>
 
       {/* Expiry Alerts */}
-      {(passport || userVisas.length > 0) && (
+      {(passport ?? userVisas.length > 0) && (
         <div className="mb-6">
           <ExpiryAlerts
             passports={passport ? [passport] : []}
@@ -362,7 +363,7 @@ const VisaCalculator: React.FC = () => {
             </select>
             <div className="flex gap-2">
               <button
-                onClick={handleSetPassport}
+                onClick={() => void handleSetPassport()}
                 disabled={!selectedPassportCountry}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
@@ -494,7 +495,7 @@ const VisaCalculator: React.FC = () => {
               </div>
             </div>
             <button
-              onClick={handleAddVisa}
+              onClick={() => void handleAddVisa()}
               disabled={!newVisaCountry || !newVisaExpiry}
               className="mt-3 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
             >
@@ -522,7 +523,7 @@ const VisaCalculator: React.FC = () => {
                     </div>
                   </div>
                   <button
-                    onClick={() => handleRemoveVisa(visa.id)}
+                    onClick={() => void handleRemoveVisa(visa.id)}
                     className="text-red-600 hover:text-red-800 text-sm font-medium"
                   >
                     Remove

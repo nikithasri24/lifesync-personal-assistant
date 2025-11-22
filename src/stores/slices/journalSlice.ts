@@ -5,10 +5,11 @@
  */
 
 import { type StateCreator } from 'zustand';
+import type { JournalEntry } from '@/types';
 import type {
-  JournalEntry,
-  JournalEntryInput,
-  JournalFilters,
+  CreateJournalEntryInput,
+  UpdateJournalEntryInput,
+  JournalEntryFilters,
 } from '@/api/journalAPI';
 import { logger } from '@/services/logger';
 
@@ -20,13 +21,13 @@ export interface JournalSlice {
 
   // Actions
   loadJournal: () => Promise<void>;
-  addJournalEntry: (input: JournalEntryInput) => Promise<JournalEntry>;
+  addJournalEntry: (input: CreateJournalEntryInput) => Promise<JournalEntry>;
   updateJournalEntry: (
     id: string,
-    updates: Partial<JournalEntryInput>
+    updates: UpdateJournalEntryInput
   ) => Promise<JournalEntry>;
   deleteJournalEntry: (id: string) => Promise<void>;
-  searchJournalEntries: (filters: JournalFilters) => Promise<JournalEntry[]>;
+  searchJournalEntries: (filters: JournalEntryFilters) => Promise<JournalEntry[]>;
   getJournalEntryById: (id: string) => JournalEntry | undefined;
 }
 
@@ -100,8 +101,9 @@ export const createJournalSlice: StateCreator<
 
   searchJournalEntries: async (filters) => {
     try {
-      const { searchJournalEntries } = await import('@/api/journalAPI');
-      return await searchJournalEntries(filters);
+      const { getJournalEntries } = await import('@/api/journalAPI');
+      const entries = await getJournalEntries(filters);
+      return entries;
     } catch (error) {
       logger.error('Journal', error as Error, { context: 'searchJournalEntries' });
       throw error;

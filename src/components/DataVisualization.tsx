@@ -52,25 +52,25 @@ interface MetricCardProps {
   value: string | number;
   change?: number;
   changeLabel?: string;
-  icon?: React.ComponentType<any>;
-  color?: string;
+  icon?: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  color?: 'blue' | 'green' | 'red' | 'yellow' | 'purple' | 'gray';
   animated?: boolean;
   className?: string;
 }
 
 // Line Chart Component
-export function LineChart({ 
-  data, 
-  height = 200, 
-  color = '#3B82F6', 
-  showGrid = true, 
+export function LineChart({
+  data,
+  height = 200,
+  color = '#3B82F6',
+  showGrid = true,
   animated = true,
-  className = '' 
-}: LineChartProps) {
+  className = ''
+}: LineChartProps): React.ReactElement | null {
   const svgRef = useRef<SVGSVGElement>(null);
-  const [animationProgress, setAnimationProgress] = useState(0);
+  const [animationProgress, setAnimationProgress] = useState<number>(0);
 
-  useEffect(() => {
+  useEffect((): void => {
     if (animated) {
       setAnimationProgress(0);
       const timer = setTimeout(() => setAnimationProgress(1), 100);
@@ -175,17 +175,17 @@ export function LineChart({
 }
 
 // Bar Chart Component
-export function BarChart({ 
-  data, 
-  height = 200, 
-  horizontal = false, 
-  showValues = true, 
+export function BarChart({
+  data,
+  height = 200,
+  horizontal = false,
+  showValues = true,
   animated = true,
-  className = '' 
-}: BarChartProps) {
-  const [animationProgress, setAnimationProgress] = useState(0);
+  className = ''
+}: BarChartProps): React.ReactElement | null {
+  const [animationProgress, setAnimationProgress] = useState<number>(0);
 
-  useEffect(() => {
+  useEffect((): void => {
     if (animated) {
       setAnimationProgress(0);
       const timer = setTimeout(() => setAnimationProgress(1), 100);
@@ -215,7 +215,7 @@ export function BarChart({
               <div
                 className={`${horizontal ? 'h-8' : 'w-full'} rounded transition-all duration-700 ease-out`}
                 style={{
-                  backgroundColor: item.color || '#3B82F6',
+                  backgroundColor: item.color ?? '#3B82F6',
                   [horizontal ? 'width' : 'height']: `${animatedPercentage}%`,
                   transitionDelay: `${index * 100}ms`
                 }}
@@ -255,15 +255,15 @@ export function BarChart({
 }
 
 // Donut Chart Component
-export function DonutChart({ 
-  data, 
-  size = 200, 
-  thickness = 20, 
-  showLegend = true, 
+export function DonutChart({
+  data,
+  size = 200,
+  thickness = 20,
+  showLegend = true,
   animated = true,
-  className = '' 
-}: DonutChartProps) {
-  const [animationProgress, setAnimationProgress] = useState(0);
+  className = ''
+}: DonutChartProps): React.ReactElement | null {
+  const [animationProgress, setAnimationProgress] = useState<number>(0);
 
   useEffect(() => {
     if (animated) {
@@ -314,7 +314,7 @@ export function DonutChart({
                 cy={size / 2}
                 r={radius}
                 fill="none"
-                stroke={item.color || `hsl(${index * 45}, 70%, 60%)`}
+                stroke={item.color ?? `hsl(${index * 45}, 70%, 60%)`}
                 strokeWidth={thickness}
                 strokeDasharray={strokeDasharray}
                 strokeDashoffset={strokeDashoffset}
@@ -352,7 +352,7 @@ export function DonutChart({
             >
               <div 
                 className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: item.color || `hsl(${index * 45}, 70%, 60%)` }}
+                style={{ backgroundColor: item.color ?? `hsl(${index * 45}, 70%, 60%)` }}
               />
               <span className="text-sm text-gray-700">{item.label}</span>
               <span className="text-sm font-medium text-gray-900">
@@ -367,18 +367,18 @@ export function DonutChart({
 }
 
 // Progress Ring Component
-export function ProgressRing({ 
-  value, 
-  max, 
-  size = 120, 
-  thickness = 8, 
+export function ProgressRing({
+  value,
+  max,
+  size = 120,
+  thickness = 8,
   color = '#3B82F6',
   backgroundColor = '#E5E7EB',
-  showValue = true, 
+  showValue = true,
   animated = true,
-  className = '' 
-}: ProgressRingProps) {
-  const [animationProgress, setAnimationProgress] = useState(0);
+  className = ''
+}: ProgressRingProps): React.ReactElement {
+  const [animationProgress, setAnimationProgress] = useState<number>(0);
 
   useEffect(() => {
     if (animated) {
@@ -443,17 +443,17 @@ export function ProgressRing({
 }
 
 // Metric Card Component
-export function MetricCard({ 
-  title, 
-  value, 
-  change, 
+export function MetricCard({
+  title,
+  value,
+  change,
   changeLabel = 'vs last period',
   icon: Icon,
   color = 'blue',
   animated = true,
-  className = '' 
-}: MetricCardProps) {
-  const [isVisible, setIsVisible] = useState(false);
+  className = ''
+}: MetricCardProps): React.ReactElement {
+  const [isVisible, setIsVisible] = useState<boolean>(false);
 
   useEffect(() => {
     if (animated) {
@@ -473,10 +473,14 @@ export function MetricCard({
     gray: 'bg-gray-50 text-gray-600 border-gray-200'
   };
 
+  const safeColor = (Object.keys(colorClasses) as Array<keyof typeof colorClasses>).includes(color)
+    ? color
+    : 'blue';
+
   return (
-    <div 
+    <div
       className={`p-4 rounded-xl border-2 transition-all duration-500 ${
-        colorClasses[color as keyof typeof colorClasses] || colorClasses.blue
+        colorClasses[safeColor]
       } ${isVisible ? 'opacity-100 transform scale-100' : 'opacity-0 transform scale-95'} ${className}`}
     >
       <div className="flex items-start justify-between">
@@ -512,7 +516,13 @@ export function MetricCard({
 }
 
 // Dashboard Grid Component
-export function DashboardGrid({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+export function DashboardGrid({
+  children,
+  className = ''
+}: {
+  children: React.ReactNode;
+  className?: string;
+}): React.ReactElement {
   return (
     <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 ${className}`}>
       {children}
@@ -521,19 +531,19 @@ export function DashboardGrid({ children, className = '' }: { children: React.Re
 }
 
 // Chart Container Component
-export function ChartContainer({ 
-  title, 
-  subtitle, 
-  children, 
+export function ChartContainer({
+  title,
+  subtitle,
+  children,
   actions,
-  className = '' 
-}: { 
-  title: string; 
-  subtitle?: string; 
-  children: React.ReactNode; 
+  className = ''
+}: {
+  title: string;
+  subtitle?: string;
+  children: React.ReactNode;
   actions?: React.ReactNode;
   className?: string;
-}) {
+}): React.ReactElement {
   return (
     <div className={`bg-white rounded-xl shadow-lg border border-gray-200 p-6 ${className}`}>
       <div className="flex items-start justify-between mb-4">

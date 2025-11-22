@@ -5,7 +5,8 @@
  */
 
 import { type StateCreator } from 'zustand';
-import type { Note, NoteInput } from '@/api/notesAPI';
+import type { Note } from '@/types';
+import type { CreateNoteInput, UpdateNoteInput } from '@/api/notesAPI';
 import { logger } from '@/services/logger';
 
 export interface NotesSlice {
@@ -16,8 +17,8 @@ export interface NotesSlice {
 
   // Actions
   loadNotes: () => Promise<void>;
-  addNote: (input: NoteInput) => Promise<Note>;
-  updateNote: (id: string, updates: Partial<NoteInput>) => Promise<Note>;
+  addNote: (input: CreateNoteInput) => Promise<Note>;
+  updateNote: (id: string, updates: UpdateNoteInput) => Promise<Note>;
   deleteNote: (id: string) => Promise<void>;
   getNoteById: (id: string) => Note | undefined;
 }

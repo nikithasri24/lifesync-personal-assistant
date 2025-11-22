@@ -5,6 +5,7 @@
 
 import fs from 'fs';
 import type { VisaRequirement } from '../types/visa';
+import { logger } from '../../services/logger';
 
 interface ProcessedVisaData {
   [passportCountry: string]: {

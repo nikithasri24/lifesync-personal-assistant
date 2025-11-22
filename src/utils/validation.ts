@@ -5,7 +5,7 @@ export interface ValidationRule {
   min?: number;
   max?: number;
   pattern?: RegExp;
-  custom?: (value: any) => string | null;
+  custom?: (value: unknown) => string | null;
 }
 
 export interface ValidationResult {
@@ -13,7 +13,7 @@ export interface ValidationResult {
   errors: Record<string, string>;
 }
 
-export function validateField(value: any, rules: ValidationRule): string | null {
+export function validateField(value: unknown, rules: ValidationRule): string | null {
   // Required validation
   if (rules.required && (!value || (typeof value === 'string' && value.trim() === ''))) {
     return 'This field is required';
@@ -60,7 +60,7 @@ export function validateField(value: any, rules: ValidationRule): string | null 
   return null;
 }
 
-export function validateForm(data: Record<string, any>, rules: Record<string, ValidationRule>): ValidationResult {
+export function validateForm(data: Record<string, unknown>, rules: Record<string, ValidationRule>): ValidationResult {
   const errors: Record<string, string> = {};
 
   for (const [field, fieldRules] of Object.entries(rules)) {
@@ -79,9 +79,10 @@ export function validateForm(data: Record<string, any>, rules: Record<string, Va
 // Predefined validation rules
 export const validationRules = {
   email: {
-    pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-    custom: (value: string) => {
-      if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+    pattern: /^[^@]+@[^@]+\.[^@]+$/,
+    custom: (value: unknown): string | null => {
+      if (typeof value === 'string' && value &&
+          !/^[^@]+@[^@]+\.[^@]+$/.test(value)) {
         return 'Please enter a valid email address';
       }
       return null;
@@ -90,7 +91,7 @@ export const validationRules = {
   
   currency: {
     pattern: /^\d+(\.\d{1,2})?$/,
-    custom: (value: string | number) => {
+    custom: (value: string | number): string | null => {
       const num = typeof value === 'string' ? parseFloat(value) : value;
       if (isNaN(num) || num < 0) {
         return 'Please enter a valid amount';
@@ -100,8 +101,8 @@ export const validationRules = {
   },
 
   phone: {
-    pattern: /^\+?[\d\s\-\(\)]+$/,
-    custom: (value: string) => {
+    pattern: /^\+?[\d\s\-()]+$/,
+    custom: (value: string): string | null => {
       if (value && value.replace(/\D/g, '').length < 10) {
         return 'Please enter a valid phone number';
       }
@@ -111,7 +112,7 @@ export const validationRules = {
 
   password: {
     min: 8,
-    custom: (value: string) => {
+    custom: (value: string): string | null => {
       if (value && value.length < 8) {
         return 'Password must be at least 8 characters';
       }
@@ -126,8 +127,8 @@ export const validationRules = {
 // Form field component helper
 export interface FormFieldProps {
   label: string;
-  value: any;
-  onChange: (value: any) => void;
+  value: unknown;
+  onChange: (value: unknown) => void;
   error?: string;
   required?: boolean;
   type?: string;
@@ -135,11 +136,11 @@ export interface FormFieldProps {
   className?: string;
 }
 
-export function getFieldClassName(error?: string, baseClassName = '') {
+export function getFieldClassName(error?: string, baseClassName = ''): string {
   const base = baseClassName || 'w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-colors';
-  const errorClass = error 
-    ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
+  const errorClass = error
+    ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
     : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500';
-  
+
   return `${base} ${errorClass}`;
 }

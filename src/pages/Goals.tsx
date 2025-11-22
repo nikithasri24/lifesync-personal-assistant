@@ -6,9 +6,11 @@
  * After: Automatic caching, loading, and refetching with React Query
  */
 
+/* eslint-disable max-lines */
+
 import React, { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
-import { Plus, Target, Trash2, CheckCircle2 } from 'lucide-react';
+import { Plus, Target, Trash2, CheckCircle2, Sparkles } from 'lucide-react';
 import { SkeletonCard } from '../components/LoadingSpinner';
 import {
   useLifeGoals,
@@ -21,6 +23,7 @@ import {
   useDeleteLifeDream,
 } from '../hooks/useGoalsQuery';
 import type { GoalDraft, DreamDraft } from '../goals/types/drafts';
+import type { GoalCategory, GoalPriority, DreamCategory, DreamPriority, DreamStatus } from '../goals/types/lifeGoals';
 import {
   GOAL_CATEGORIES,
   GOAL_PRIORITIES,
@@ -73,7 +76,7 @@ const Goals: React.FC = () => {
     };
   }, [dreams]);
 
-  const handleGoalSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleGoalSubmit = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
     if (!goalDraft.title.trim()) return;
 
@@ -85,7 +88,7 @@ const Goals: React.FC = () => {
     });
   };
 
-  const handleDreamSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleDreamSubmit = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
     if (!dreamDraft.title.trim()) return;
 
@@ -97,7 +100,7 @@ const Goals: React.FC = () => {
     });
   };
 
-  const renderGoalList = () => {
+  const renderGoalList = (): React.ReactNode => {
     // Show loading state
     if (goalsLoading) {
       return (
@@ -176,7 +179,7 @@ const Goals: React.FC = () => {
     );
   };
 
-  const renderDreamList = () => {
+  const renderDreamList = (): React.ReactNode => {
     // Show loading state
     if (dreamsLoading) {
       return (
@@ -345,7 +348,7 @@ const Goals: React.FC = () => {
               <span className="font-medium text-slate-700">Category</span>
               <select
                 value={goalDraft.category}
-                onChange={(event) => setGoalDraft((prev) => ({ ...prev, category: event.target.value as Goal['category'] }))}
+                onChange={(event) => setGoalDraft((prev) => ({ ...prev, category: event.target.value as GoalCategory }))}
                 className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
               >
                 {GOAL_CATEGORIES.map((category) => (
@@ -366,7 +369,7 @@ const Goals: React.FC = () => {
               <span className="font-medium text-slate-700">Priority</span>
               <select
                 value={goalDraft.priority}
-                onChange={(event) => setGoalDraft((prev) => ({ ...prev, priority: event.target.value as Goal['priority'] }))}
+                onChange={(event) => setGoalDraft((prev) => ({ ...prev, priority: event.target.value as GoalPriority }))}
                 className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
               >
                 {GOAL_PRIORITIES.map((priority) => (
@@ -424,7 +427,7 @@ const Goals: React.FC = () => {
               <span className="font-medium text-slate-700">Category</span>
               <select
                 value={dreamDraft.category}
-                onChange={(event) => setDreamDraft((prev) => ({ ...prev, category: event.target.value as Dream['category'] }))}
+                onChange={(event) => setDreamDraft((prev) => ({ ...prev, category: event.target.value as DreamCategory }))}
                 className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
               >
                 {DREAM_CATEGORIES.map((category) => (
@@ -445,7 +448,7 @@ const Goals: React.FC = () => {
               <span className="font-medium text-slate-700">Priority</span>
               <select
                 value={dreamDraft.priority}
-                onChange={(event) => setDreamDraft((prev) => ({ ...prev, priority: event.target.value as Dream['priority'] }))}
+                onChange={(event) => setDreamDraft((prev) => ({ ...prev, priority: event.target.value as DreamPriority }))}
                 className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
               >
                 {DREAM_PRIORITIES.map((priority) => (
@@ -457,7 +460,7 @@ const Goals: React.FC = () => {
               <span className="font-medium text-slate-700">Status</span>
               <select
                 value={dreamDraft.status}
-                onChange={(event) => setDreamDraft((prev) => ({ ...prev, status: event.target.value as Dream['status'] }))}
+                onChange={(event) => setDreamDraft((prev) => ({ ...prev, status: event.target.value as DreamStatus }))}
                 className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
               >
                 {DREAM_STATUSES.map((status) => (

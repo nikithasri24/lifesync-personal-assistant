@@ -6,7 +6,14 @@ import { POMODORO_WORK_TIME, POMODORO_BREAK_TIME } from '../constants';
  * Custom hook to manage Pomodoro timer state and logic
  * Handles work sessions, break sessions, and automatic countdown
  */
-export function usePomodoro() {
+export function usePomodoro(): {
+  pomodoroTimer: PomodoroTimer;
+  startPomodoro: (taskId: string) => void;
+  pausePomodoro: () => void;
+  resumePomodoro: () => void;
+  togglePomodoro: () => void;
+  resetPomodoro: () => void;
+} {
   const [pomodoroTimer, setPomodoroTimer] = useState<PomodoroTimer>({
     taskId: null,
     timeLeft: POMODORO_WORK_TIME,
@@ -17,7 +24,7 @@ export function usePomodoro() {
   /**
    * Start a Pomodoro session for a specific task
    */
-  const startPomodoro = (taskId: string) => {
+  const startPomodoro = (taskId: string): void => {
     setPomodoroTimer({
       taskId,
       timeLeft: POMODORO_WORK_TIME,
@@ -29,7 +36,7 @@ export function usePomodoro() {
   /**
    * Pause the current Pomodoro timer
    */
-  const pausePomodoro = () => {
+  const pausePomodoro = (): void => {
     setPomodoroTimer(prev => ({
       ...prev,
       isActive: false,
@@ -39,7 +46,7 @@ export function usePomodoro() {
   /**
    * Resume the paused Pomodoro timer
    */
-  const resumePomodoro = () => {
+  const resumePomodoro = (): void => {
     setPomodoroTimer(prev => ({
       ...prev,
       isActive: true,
@@ -49,7 +56,7 @@ export function usePomodoro() {
   /**
    * Toggle between pause and resume
    */
-  const togglePomodoro = () => {
+  const togglePomodoro = (): void => {
     setPomodoroTimer(prev => ({
       ...prev,
       isActive: !prev.isActive,
@@ -59,7 +66,7 @@ export function usePomodoro() {
   /**
    * Reset the Pomodoro timer completely
    */
-  const resetPomodoro = () => {
+  const resetPomodoro = (): void => {
     setPomodoroTimer({
       taskId: null,
       timeLeft: POMODORO_WORK_TIME,

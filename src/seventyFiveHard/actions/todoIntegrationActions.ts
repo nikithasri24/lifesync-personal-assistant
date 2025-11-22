@@ -6,7 +6,7 @@
 
 import { startOfDay, isSameDay } from 'date-fns';
 import { logger } from '../../services/logger';
-import type { Task } from '../../types/seventyFiveHard';
+import type { Task, SeventyFiveHardChallenge, DailyCheckIn, TaskCompletion } from '../../types/seventyFiveHard';
 import type { Task as FocusTask } from '../../types/focusEnhanced';
 import { getStore } from '../utils/storeHelpers';
 import { measurePerformance } from '../utils/performanceHelpers';
@@ -306,14 +306,17 @@ export async function ensure75HardTodosForToday(): Promise<void> {
     try {
       logger.info('SeventyFiveHardActions', '[75Hard→Todo] ▶️  Starting execution...');
 
-      const { sfhChallenge: challenge, sfhCheckIns: checkIns } = getStore();
+      const store = getStore();
+      const challenge = store.sfhChallenge as SeventyFiveHardChallenge | null;
+      const checkIns = store.sfhCheckIns as DailyCheckIn[];
+
       if (!challenge || challenge.status !== 'active') {
         logger.info('SeventyFiveHardActions', '[75Hard→Todo] No active challenge, skipping todo sync');
         return;
       }
 
       const today = startOfDay(new Date());
-      const todayCheckIn = checkIns.find(c => isSameDay(c.date, today));
+      const todayCheckIn = checkIns.find((c: DailyCheckIn) => isSameDay(c.date, today));
 
       if (!todayCheckIn) {
         logger.info('SeventyFiveHardActions', '[75Hard→Todo] No check-in for today, skipping todo sync');
@@ -324,12 +327,12 @@ export async function ensure75HardTodosForToday(): Promise<void> {
 
       // Create completion map for O(1) lookups
       const completionMap = new Map<string, boolean>();
-      todayCheckIn.taskCompletions.forEach(tc => {
+      todayCheckIn.taskCompletions.forEach((tc: TaskCompletion) => {
         completionMap.set(tc.taskId, tc.completed);
       });
 
       // Create/update todos in parallel for better performance
-      const todoPromises = challenge.tasks.map(task => {
+      const todoPromises = challenge.tasks.map((task: Task) => {
         const isCompleted = completionMap.get(task.id) ?? false;
         return createOrUpdateTodoFromSFHTask(
           challenge.id,
@@ -368,12 +371,15 @@ export async function syncTodoCompletionToSFH(todoId: string): Promise<void> {
   if (!todo) return;
 
   const meta = parseSFHTodoTags(todo.tags);
-  if (!meta.isSFHTodo || !meta.taskId) return;
+  if (!meta.isSFHTodo) return;
 
-  logger.info('SeventyFiveHardActions', '[Todo→75Hard] Syncing completion to 75 Hard task:', meta.taskId);
+  const { taskId } = meta;
+  if (!taskId) return;
+
+  logger.info('SeventyFiveHardActions', '[Todo→75Hard] Syncing completion to 75 Hard task:', taskId);
 
   // Toggle the 75 Hard task
-  await toggleSFHTask(meta.taskId);
+  await toggleSFHTask(taskId);
 }
 
 /**

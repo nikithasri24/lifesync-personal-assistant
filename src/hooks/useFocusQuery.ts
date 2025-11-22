@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, type UseQueryResult, type UseMutationResult } from '@tanstack/react-query';
 import {
   getFocusSessions,
   createFocusSession,
@@ -17,7 +17,7 @@ export const focusKeys = {
 
 // ==================== Focus Sessions ====================
 
-export function useFocusSessions() {
+export function useFocusSessions(): UseQueryResult<FocusSessionData[], Error> {
   return useQuery({
     queryKey: focusKeys.sessions(),
     queryFn: getFocusSessions,
@@ -25,29 +25,38 @@ export function useFocusSessions() {
   });
 }
 
-export function useCreateFocusSession() {
+export function useCreateFocusSession(): UseMutationResult<
+  FocusSessionData,
+  Error,
+  Omit<FocusSessionData, 'id' | 'created_at' | 'updated_at'>
+> {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (session: Omit<FocusSessionData, 'id' | 'created_at' | 'updated_at'>) => {
-      logger.debug('Creating focus session', { type: session.session_type, duration: session.planned_duration });
+      logger.debug('Creating focus session', { type: session.preset, duration: session.duration });
       const result = await createFocusSession(session);
       return result;
     },
     onSuccess: (newSession) => {
-      logger.info('Focus session created successfully', { id: newSession.id, type: newSession.session_type });
+      logger.info('Focus session created successfully', { id: newSession.id ?? 'unknown', type: newSession.preset });
       queryClient.setQueryData<FocusSessionData[]>(focusKeys.sessions(), (old) => {
         if (!old) return [newSession];
         return [...old, newSession];
       });
     },
     onError: (error: Error, session) => {
-      logger.error('Failed to create focus session', { error: error.message, type: session.session_type });
+      logger.error('Failed to create focus session', { error: error.message, type: session.preset });
     },
   });
 }
 
-export function useUpdateFocusSession() {
+export function useUpdateFocusSession(): UseMutationResult<
+  FocusSessionData,
+  Error,
+  { id: string; updates: Partial<FocusSessionData> },
+  { previousSessions: FocusSessionData[] | undefined }
+> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -86,7 +95,7 @@ export function useUpdateFocusSession() {
       }
     },
     onSuccess: (updatedSession, { id }) => {
-      logger.info('Focus session updated successfully', { id, status: updatedSession.status });
+      logger.info('Focus session updated successfully', { id, status: updatedSession.status ?? 'unknown' });
       // Update with server response
       queryClient.setQueryData<FocusSessionData[]>(focusKeys.sessions(), (old) => {
         if (!old) return old;
@@ -101,7 +110,10 @@ export function useUpdateFocusSession() {
 /**
  * Hook to get the currently active focus session (if any)
  */
-export function useActiveFocusSession() {
+export function useActiveFocusSession(): {
+  activeSession: FocusSessionData | undefined;
+  isLoading: boolean;
+} {
   const { data: sessions, isLoading } = useFocusSessions();
 
   const activeSession = sessions?.find(

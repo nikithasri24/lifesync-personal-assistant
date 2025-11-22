@@ -1,10 +1,10 @@
 import React from 'react';
 import { format, differenceInCalendarDays } from 'date-fns';
-import type { PantryItem } from '../../types';
+import type { PantryItem } from '../../hooks/usePantryManagement';
 
 interface PantryTableRowProps {
   item: PantryItem;
-  isEditing: boolean;
+  isEditing?: boolean;
   editData: {
     qty: string;
     unit: string;
@@ -23,7 +23,7 @@ interface PantryTableRowProps {
 
 export function PantryTableRow({
   item,
-  isEditing,
+  isEditing = false,
   editData,
   onEditChange,
   onSaveEdit,
@@ -32,16 +32,22 @@ export function PantryTableRow({
   onReplenish,
   onAddToShopping,
   onDelete,
-}: PantryTableRowProps) {
+}: PantryTableRowProps): React.JSX.Element {
   const now = new Date();
-  const daysUntilExpiry = item.expirationDate ? differenceInCalendarDays(item.expirationDate, now) : null;
+  const daysUntilExpiry = item.expirationDate && item.expirationDate instanceof Date
+    ? differenceInCalendarDays(item.expirationDate, now)
+    : item.expirationDate
+    ? differenceInCalendarDays(new Date(item.expirationDate), now)
+    : null;
 
   // Determine status color
-  let statusColor = 'text-gray-900';
-  if (daysUntilExpiry !== null) {
-    if (daysUntilExpiry < 0) statusColor = 'text-red-600';
-    else if (daysUntilExpiry <= 7) statusColor = 'text-amber-600';
-  }
+  const statusColor = daysUntilExpiry !== null
+    ? (daysUntilExpiry < 0
+      ? 'text-red-600'
+      : (daysUntilExpiry <= 7
+        ? 'text-amber-600'
+        : 'text-gray-900'))
+    : 'text-gray-900';
 
   return (
     <tr className="border-b hover:bg-gray-50">
@@ -56,19 +62,19 @@ export function PantryTableRow({
             <input
               type="number"
               value={editData.qty}
-              onChange={(e) => onEditChange({ qty: e.target.value })}
+              onChange={(e): void => onEditChange({ qty: e.target.value })}
               className="w-16 rounded border border-gray-300 px-1 py-0.5 text-sm"
             />
             <input
               value={editData.unit}
-              onChange={(e) => onEditChange({ unit: e.target.value })}
+              onChange={(e): void => onEditChange({ unit: e.target.value })}
               className="w-16 rounded border border-gray-300 px-1 py-0.5 text-sm"
               placeholder="unit"
             />
           </div>
         ) : (
           <span>
-            {item.quantity} {item.unit || ''}
+            {item.quantity} {item.unit ?? ''}
           </span>
         )}
       </td>
@@ -78,7 +84,7 @@ export function PantryTableRow({
           <input
             type="date"
             value={editData.exp}
-            onChange={(e) => onEditChange({ exp: e.target.value })}
+            onChange={(e): void => onEditChange({ exp: e.target.value })}
             className="w-32 rounded border border-gray-300 px-1 py-0.5 text-sm"
           />
         ) : item.expirationDate ? (
@@ -95,8 +101,6 @@ export function PantryTableRow({
         )}
       </td>
 
-      <td className="px-3 py-2 text-sm text-gray-600">{item.location || '—'}</td>
-
       <td className="px-3 py-2">
         {isEditing ? (
           <div className="flex flex-col gap-1">
@@ -104,7 +108,7 @@ export function PantryTableRow({
               <input
                 type="checkbox"
                 checked={editData.low}
-                onChange={(e) => onEditChange({ low: e.target.checked })}
+                onChange={(e): void => onEditChange({ low: e.target.checked })}
                 className="mr-1"
               />
               Low stock
@@ -112,7 +116,7 @@ export function PantryTableRow({
             <input
               type="number"
               value={editData.threshold}
-              onChange={(e) => onEditChange({ threshold: e.target.value })}
+              onChange={(e): void => onEditChange({ threshold: e.target.value })}
               placeholder="Threshold"
               className="w-20 rounded border border-gray-300 px-1 py-0.5 text-xs"
             />
@@ -123,7 +127,7 @@ export function PantryTableRow({
               <>
                 <button
                   className="px-2 py-1 text-xs rounded bg-blue-600 text-white hover:bg-blue-500"
-                  onClick={() => onSaveEdit(item.id)}
+                  onClick={(): void => onSaveEdit(item.id)}
                 >
                   Save
                 </button>
@@ -157,7 +161,7 @@ export function PantryTableRow({
                 </button>
                 <button
                   className="px-2 py-1 text-xs rounded border border-red-300 text-red-600 hover:bg-red-50"
-                  onClick={() => onDelete(item.id)}
+                  onClick={(): void => onDelete(item.id)}
                 >
                   Delete
                 </button>

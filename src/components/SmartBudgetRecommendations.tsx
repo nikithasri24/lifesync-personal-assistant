@@ -1,4 +1,4 @@
-// @ts-nocheck
+// TypeScript type checking is enabled for this file
 import React, { useState, useEffect } from 'react';
 import {
   Target,
@@ -58,7 +58,7 @@ interface SmartBudgetPlan {
   warnings: string[];
 }
 
-export default function SmartBudgetRecommendations() {
+export default function SmartBudgetRecommendations(): React.ReactElement {
   const [budgetPlan, setBudgetPlan] = useState<SmartBudgetPlan | null>(null);
   const [_transactions, setTransactions] = useState<FinancialTransactionData[]>([]);
   const [_accounts, setAccounts] = useState<FinancialAccountData[]>([]);
@@ -68,11 +68,11 @@ export default function SmartBudgetRecommendations() {
   const [_customBudgets, setCustomBudgets] = useState<{ [category: string]: number }>({});
   const [_editingBudget, _setEditingBudget] = useState<string | null>(null);
 
-  useEffect(() => {
+  useEffect((): void => { void loadFinancialData();
     loadFinancialData();
   }, []);
 
-  const loadFinancialData = async () => {
+  const loadFinancialData = async (): Promise<void> => {
     try {
       setLoading(true);
       const [transactionData, accountData] = await Promise.all([
@@ -154,9 +154,9 @@ export default function SmartBudgetRecommendations() {
 
     transactions.filter(t => t.type === 'expense').forEach(transaction => {
       const suggestions = expenseCategorizationEngine.categorizeTransaction(transaction);
-      const category = suggestions[0]?.categoryId || 'other';
+      const category = suggestions[0]?.categoryId ?? 'other';
 
-      categorySpending[category] = (categorySpending[category] || 0) + Math.abs(transaction.amount);
+      categorySpending[category] = (categorySpending[category] ?? 0) + Math.abs(transaction.amount);
     });
 
     // Convert to monthly averages
@@ -226,8 +226,8 @@ export default function SmartBudgetRecommendations() {
         savings,
         reason: generateRecommendationReason(status, categoryId, percentageOfIncome),
         priority,
-        icon: rule?.icon || '📊',
-        color: rule?.color || '#6366F1'
+        icon: rule?.icon ?? '📊',
+        color: rule?.color ?? '#6366F1'
       });
     });
 
@@ -448,7 +448,7 @@ export default function SmartBudgetRecommendations() {
     }));
   };
 
-  const applyBudgetStrategy = (strategyId: string) => {
+  const applyBudgetStrategy = (strategyId: string): void => {
     const strategy = budgetPlan?.strategies.find(s => s.id === strategyId);
     if (strategy && budgetPlan) {
       const newCustomBudgets: { [category: string]: number } = {};
@@ -463,7 +463,7 @@ export default function SmartBudgetRecommendations() {
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string): string => {
     switch (status) {
       case 'over': return 'text-red-600 bg-red-50 border-red-200';
       case 'under': return 'text-blue-600 bg-blue-50 border-blue-200';
@@ -472,7 +472,7 @@ export default function SmartBudgetRecommendations() {
     }
   };
 
-  const getPriorityIcon = (priority: string) => {
+  const getPriorityIcon = (priority: string): React.ReactElement => {
     switch (priority) {
       case 'high': return <AlertTriangle className="w-4 h-4 text-red-500" />;
       case 'medium': return <Info className="w-4 h-4 text-yellow-500" />;

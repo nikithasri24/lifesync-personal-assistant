@@ -8,6 +8,19 @@
 import { QueryClient } from '@tanstack/react-query';
 
 /**
+ * Type for filters used in query keys
+ */
+type QueryFilters = Record<string, unknown> | undefined;
+
+/**
+ * Type for infinite query page data
+ */
+interface PageData {
+  hasMore?: boolean;
+  [key: string]: unknown;
+}
+
+/**
  * Create Query Client with sensible defaults
  */
 export const queryClient = new QueryClient({
@@ -56,7 +69,7 @@ export const queryKeys = {
   notes: {
     all: ['notes'] as const,
     lists: () => [...queryKeys.notes.all, 'list'] as const,
-    list: (filters?: any) => [...queryKeys.notes.lists(), filters] as const,
+    list: (filters?: QueryFilters) => [...queryKeys.notes.lists(), filters] as const,
     details: () => [...queryKeys.notes.all, 'detail'] as const,
     detail: (id: string) => [...queryKeys.notes.details(), id] as const,
   },
@@ -65,7 +78,7 @@ export const queryKeys = {
   journal: {
     all: ['journal'] as const,
     lists: () => [...queryKeys.journal.all, 'list'] as const,
-    list: (filters?: any) => [...queryKeys.journal.lists(), filters] as const,
+    list: (filters?: QueryFilters) => [...queryKeys.journal.lists(), filters] as const,
     details: () => [...queryKeys.journal.all, 'detail'] as const,
     detail: (id: string) => [...queryKeys.journal.details(), id] as const,
   },
@@ -74,7 +87,7 @@ export const queryKeys = {
   goals: {
     all: ['goals'] as const,
     lists: () => [...queryKeys.goals.all, 'list'] as const,
-    list: (filters?: any) => [...queryKeys.goals.lists(), filters] as const,
+    list: (filters?: QueryFilters) => [...queryKeys.goals.lists(), filters] as const,
     details: () => [...queryKeys.goals.all, 'detail'] as const,
     detail: (id: string) => [...queryKeys.goals.details(), id] as const,
   },
@@ -83,7 +96,7 @@ export const queryKeys = {
   dreams: {
     all: ['dreams'] as const,
     lists: () => [...queryKeys.dreams.all, 'list'] as const,
-    list: (filters?: any) => [...queryKeys.dreams.lists(), filters] as const,
+    list: (filters?: QueryFilters) => [...queryKeys.dreams.lists(), filters] as const,
     details: () => [...queryKeys.dreams.all, 'detail'] as const,
     detail: (id: string) => [...queryKeys.dreams.details(), id] as const,
   },
@@ -92,7 +105,7 @@ export const queryKeys = {
   tasks: {
     all: ['tasks'] as const,
     lists: () => [...queryKeys.tasks.all, 'list'] as const,
-    list: (filters?: any) => [...queryKeys.tasks.lists(), filters] as const,
+    list: (filters?: QueryFilters) => [...queryKeys.tasks.lists(), filters] as const,
     details: () => [...queryKeys.tasks.all, 'detail'] as const,
     detail: (id: string) => [...queryKeys.tasks.details(), id] as const,
   },
@@ -101,7 +114,7 @@ export const queryKeys = {
   habits: {
     all: ['habits'] as const,
     lists: () => [...queryKeys.habits.all, 'list'] as const,
-    list: (filters?: any) => [...queryKeys.habits.lists(), filters] as const,
+    list: (filters?: QueryFilters) => [...queryKeys.habits.lists(), filters] as const,
     details: () => [...queryKeys.habits.all, 'detail'] as const,
     detail: (id: string) => [...queryKeys.habits.details(), id] as const,
   },
@@ -140,7 +153,7 @@ export const queryOptions = {
   // Infinite query defaults
   infinite: {
     initialPageParam: 0,
-    getNextPageParam: (lastPage: any, allPages: any[]) => {
+    getNextPageParam: (lastPage: PageData, allPages: PageData[]): number | undefined => {
       return lastPage.hasMore ? allPages.length : undefined;
     },
   },

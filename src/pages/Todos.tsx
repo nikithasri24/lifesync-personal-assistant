@@ -25,6 +25,7 @@ import {
   useDeleteTask,
 } from '../hooks/useTasksQuery';
 import { SkeletonCard } from '../components/LoadingSpinner';
+import type { TaskData } from '../services/types';
 
 // Import all custom hooks
 import {
@@ -55,7 +56,7 @@ import {
   getInboxTasks,
 } from '../todos/services/taskHelpers';
 
-export default function Todos() {
+export default function Todos(): React.ReactElement {
   // ============================================================================
   // React Query Hooks - Server State Management
   // ============================================================================
@@ -64,7 +65,7 @@ export default function Todos() {
 
   const createTaskMutation = useCreateTask();
   const updateTaskMutation = useUpdateTask();
-  const _deleteTaskMutation = useDeleteTask();
+  const _deleteTaskMutation = useDeleteTask(); // TODO: Implement delete functionality
 
   // Enhanced API health monitoring
   const apiHealth = useApiHealth(15000); // Check every 15 seconds
@@ -95,11 +96,15 @@ export default function Todos() {
   const editing = useTaskEditing(
     {
       createTaskMutation: {
-        mutate: (data: any, options?: any) => createTaskMutation.mutate(data, options),
+        mutate: (data: Partial<TaskData>, options?: { onSuccess?: () => void }) => {
+          void createTaskMutation.mutate(data, options);
+        },
         isPending: createTaskMutation.isPending
       },
       updateTaskMutation: {
-        mutate: (data: any) => updateTaskMutation.mutate(data),
+        mutate: (data: { id: string; updates: Partial<TaskData> }) => {
+          void updateTaskMutation.mutate(data);
+        },
         isPending: updateTaskMutation.isPending
       }
     },
@@ -191,8 +196,8 @@ export default function Todos() {
     <div className="h-screen bg-gray-50 dark:bg-slate-900 flex">
       {/* Sidebar Navigation */}
       <Sidebar
-        currentView={filters.currentView as any}
-        onViewChange={(view) => filters.setCurrentView(view as any)}
+        currentView={filters.currentView}
+        onViewChange={filters.setCurrentView}
         projects={projects}
         tasks={tasks}
         selectedProject={filters.selectedProject}
@@ -202,7 +207,7 @@ export default function Todos() {
         showQuickAdd={modals.showQuickAdd}
         quickAddText={modals.quickAddText}
         onQuickAddChange={modals.setQuickAddText}
-        onQuickAddSubmit={editing.quickAddTask}
+        onQuickAddSubmit={() => void editing.quickAddTask()}
         onQuickAddCancel={modals.closeQuickAdd}
         createTaskMutation={{
           isPending: createTaskMutation.isPending,
@@ -214,7 +219,7 @@ export default function Todos() {
       <div className="flex-1 flex flex-col">
         {/* Header */}
         <Header
-          currentView={filters.currentView as any}
+          currentView={filters.currentView}
           selectedProject={filters.selectedProject}
           projects={projects}
           searchQuery={filters.searchQuery}
@@ -240,7 +245,7 @@ export default function Todos() {
                 tasks={tasks}
                 projects={projects}
                 selectedProject={filters.selectedProject}
-                onToggleStatus={editing.toggleTaskStatus}
+                onToggleStatus={(taskId: string) => void editing.toggleTaskStatus(taskId)}
                 isUpdating={updateTaskMutation.isPending}
               />
             ) : filters.currentView === 'matrix' ? (
@@ -248,7 +253,7 @@ export default function Todos() {
                 tasks={tasks}
                 projects={projects}
                 selectedProject={filters.selectedProject}
-                onToggleStatus={editing.toggleTaskStatus}
+                onToggleStatus={(taskId: string) => void editing.toggleTaskStatus(taskId)}
                 isUpdating={updateTaskMutation.isPending}
               />
             ) : (
@@ -258,9 +263,9 @@ export default function Todos() {
                 editingTask={modals.editingTask}
                 editTaskText={modals.editTaskText}
                 onEditChange={modals.setEditTaskText}
-                onToggleStatus={editing.toggleTaskStatus}
+                onToggleStatus={(taskId: string) => void editing.toggleTaskStatus(taskId)}
                 onStartEdit={editing.startEditingTask}
-                onSaveEdit={editing.saveTaskEdit}
+                onSaveEdit={(taskId: string) => void editing.saveTaskEdit(taskId)}
                 onCancelEdit={editing.cancelTaskEdit}
                 expandedTasks={expansion.expandedTasks}
                 onToggleExpansion={expansion.toggleTaskExpansion}
@@ -268,7 +273,7 @@ export default function Todos() {
                 activeSubtaskForm={modals.activeSubtaskForm}
                 subtaskDrafts={expansion.subtaskDrafts}
                 onSubtaskDraftChange={expansion.setSubtaskDraft}
-                onAddSubtask={editing.addSubtask}
+                onAddSubtask={(parentId: string) => void editing.addSubtask(parentId)}
                 onStartSubtaskForm={modals.openSubtaskForm}
                 onCancelSubtaskForm={modals.closeSubtaskForm}
                 pomodoroTimer={pomodoro.pomodoroTimer}
@@ -283,9 +288,9 @@ export default function Todos() {
                 showQuickAdd={modals.showQuickAdd}
                 quickAddText={modals.quickAddText}
                 onQuickAddChange={modals.setQuickAddText}
-                onQuickAddSubmit={editing.quickAddTask}
+                onQuickAddSubmit={() => void editing.quickAddTask()}
                 onQuickAddCancel={modals.closeQuickAdd}
-                currentView={filters.currentView as any}
+                currentView={filters.currentView}
               />
             )}
           </div>

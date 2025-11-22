@@ -27,7 +27,7 @@ import { checkForMissedSFHDay } from './failureActions';
 /**
  * Start a new 75 Hard challenge
  */
-export async function startSFHChallenge(tasks: Omit<Task, 'id'>[]) {
+export async function startSFHChallenge(tasks: Omit<Task, 'id'>[]): Promise<{ success: boolean; error?: string }> {
   try {
     logger.info('SeventyFiveHardActions', '[75Hard] Starting new challenge...');
 
@@ -75,7 +75,7 @@ export async function startSFHChallenge(tasks: Omit<Task, 'id'>[]) {
       .from('sfh_challenge')
       .insert(challengeData)
       .select()
-      .single();
+      .single() as { data: ChallengeRow | null; error: unknown };
 
     if (challengeError) {
       logger.error('SeventyFiveHardActions', '[75Hard] Error creating challenge:', challengeError);
@@ -118,7 +118,7 @@ export async function startSFHChallenge(tasks: Omit<Task, 'id'>[]) {
  * OPTIMIZATION: Only loads recent 7 days of check-ins for fast startup.
  * Older check-ins can be loaded on-demand via loadSFHCheckInsRange().
  */
-export async function loadSFHChallenge() {
+export async function loadSFHChallenge(): Promise<void> {
   return measurePerformance('loadSFHChallenge', async () => {
     try {
       logger.info('SeventyFiveHardActions', '[75Hard] Loading challenge...');
@@ -132,12 +132,14 @@ export async function loadSFHChallenge() {
       }
 
       // Load challenge
-      const { data: challengeRow, error: challengeError } = await supabase
+      const result = await supabase
         .from('sfh_challenge')
         .select('*')
         .eq('user_id', user.id)
         .eq('status', 'active')
         .maybeSingle();
+      const challengeRow = result.data as ChallengeRow | null;
+      const challengeError = result.error;
 
       if (challengeError) {
         logger.error('SeventyFiveHardActions', '[75Hard] Error loading challenge:', challengeError);
@@ -150,7 +152,8 @@ export async function loadSFHChallenge() {
         return;
       }
 
-      const challenge = mapRow(challengeRow as ChallengeRow);
+      if (challengeRow === null) return;
+      const challenge = mapRow(challengeRow);
 
       // OPTIMIZATION: Only load recent 7 days of check-ins (not all 75!)
       // This reduces initial load from ~500ms to ~100ms
@@ -169,7 +172,7 @@ export async function loadSFHChallenge() {
         return;
       }
 
-      const checkIns = (checkInRows || []).map((row: CheckInRow) => mapCheckIn(row));
+      const checkIns = (checkInRows || []).map((row) => mapCheckIn(row as CheckInRow));
 
       logger.info('SeventyFiveHardActions', '[75Hard] ✅ Loaded challenge:', challenge.id, 'with', checkIns.length, 'recent check-ins (7-day window)');
 
@@ -195,7 +198,7 @@ export async function loadSFHChallenge() {
 /**
  * Reset challenge to day 1
  */
-export async function resetSFHChallenge() {
+export async function resetSFHChallenge(): Promise<void> {
   const { sfhChallenge: challenge } = getStore();
   if (!challenge) {
     logger.error('SeventyFiveHardActions', '[75Hard] resetSFHChallenge called without challenge');
@@ -222,7 +225,7 @@ export async function resetSFHChallenge() {
     logger.info('SeventyFiveHardActions', '[75Hard] Deleted all check-ins for fresh start');
 
     // Step 2: Update challenge
-    const { data: updatedChallenge, error: updateError } = await supabase
+    const result = await supabase
       .from('sfh_challenge')
       .update({
         start_date: format(today, 'yyyy-MM-dd'),
@@ -231,6 +234,8 @@ export async function resetSFHChallenge() {
       .eq('id', challenge.id)
       .select()
       .single();
+    const updatedChallenge = result.data as ChallengeRow | null;
+    const updateError = result.error;
 
     if (updateError) {
       logger.error('SeventyFiveHardActions', '[75Hard] Failed to update challenge during reset:', updateError);
@@ -274,7 +279,7 @@ export async function resetSFHChallenge() {
 /**
  * Mark challenge as complete
  */
-export async function completeSFHChallenge() {
+export async function completeSFHChallenge(): Promise<void> {
   const { sfhChallenge: challenge } = getStore();
   if (!challenge) return;
 
@@ -303,7 +308,7 @@ export async function completeSFHChallenge() {
  * Delete challenge completely
  * Removes the challenge and all associated check-ins from the database
  */
-export async function deleteSFHChallenge() {
+export async function deleteSFHChallenge(): Promise<{ success: boolean; error?: string }> {
   const { sfhChallenge: challenge } = getStore();
   if (!challenge) {
     logger.error('SeventyFiveHardActions', '[75Hard] deleteSFHChallenge called without challenge');

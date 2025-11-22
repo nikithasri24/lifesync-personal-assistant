@@ -56,20 +56,24 @@ export const useTasks = (): UseTasksReturn => {
   }, [])
 
   // Handle real-time task updates
-  const handleTaskChange = useCallback((payload: any) => {
+  const handleTaskChange = useCallback((payload: {
+    eventType: 'INSERT' | 'UPDATE' | 'DELETE';
+    new: Task;
+    old: Task
+  }) => {
     const { eventType, new: newRecord, old: oldRecord } = payload
 
     switch (eventType) {
       case 'INSERT':
         setTasks(prev => [newRecord, ...prev])
         break
-      
+
       case 'UPDATE':
-        setTasks(prev => prev.map(task => 
+        setTasks(prev => prev.map(task =>
           task.id === newRecord.id ? newRecord : task
         ))
         break
-      
+
       case 'DELETE':
         setTasks(prev => prev.filter(task => task.id !== oldRecord.id))
         break
@@ -77,20 +81,24 @@ export const useTasks = (): UseTasksReturn => {
   }, [])
 
   // Handle real-time project updates
-  const handleProjectChange = useCallback((payload: any) => {
+  const handleProjectChange = useCallback((payload: {
+    eventType: 'INSERT' | 'UPDATE' | 'DELETE';
+    new: Project;
+    old: Project
+  }) => {
     const { eventType, new: newRecord, old: oldRecord } = payload
 
     switch (eventType) {
       case 'INSERT':
         setProjects(prev => [newRecord, ...prev])
         break
-      
+
       case 'UPDATE':
-        setProjects(prev => prev.map(project => 
+        setProjects(prev => prev.map(project =>
           project.id === newRecord.id ? newRecord : project
         ))
         break
-      
+
       case 'DELETE':
         setProjects(prev => prev.filter(project => project.id !== oldRecord.id))
         break
@@ -99,20 +107,21 @@ export const useTasks = (): UseTasksReturn => {
 
   // Setup real-time subscriptions
   useEffect(() => {
-    loadData()
+    void loadData(); // Explicitly mark as void to silence no-floating-promises
 
     // Subscribe to real-time updates
-    db.subscribeToTasks(TEMP_USER_ID, handleTaskChange)
-    db.subscribeToProjects(TEMP_USER_ID, handleProjectChange)
+    const taskUnsub = db.subscribeToTasks(TEMP_USER_ID, handleTaskChange);
+    const projectUnsub = db.subscribeToProjects(TEMP_USER_ID, handleProjectChange);
 
     // Cleanup on unmount
     return () => {
-      db.unsubscribeAll()
+      taskUnsub();
+      projectUnsub();
     }
   }, [loadData, handleTaskChange, handleProjectChange])
 
   // Task operations
-  const createTask = async (taskData: Omit<Task, 'id' | 'created_at' | 'user_id'>) => {
+  const createTask = async (taskData: Omit<Task, 'id' | 'created_at' | 'user_id'>): Promise<void> => {
     try {
       await db.createTask({
         ...taskData,
@@ -124,7 +133,7 @@ export const useTasks = (): UseTasksReturn => {
     }
   }
 
-  const updateTask = async (id: string, updates: Partial<Task>) => {
+  const updateTask = async (id: string, updates: Partial<Task>): Promise<void> => {
     try {
       await db.updateTask(id, updates)
     } catch (err) {
@@ -133,7 +142,7 @@ export const useTasks = (): UseTasksReturn => {
     }
   }
 
-  const deleteTask = async (id: string) => {
+  const deleteTask = async (id: string): Promise<void> => {
     try {
       await db.deleteTask(id)
     } catch (err) {
@@ -142,7 +151,7 @@ export const useTasks = (): UseTasksReturn => {
     }
   }
 
-  const restoreTask = async (id: string) => {
+  const restoreTask = async (id: string): Promise<void> => {
     try {
       await db.restoreTask(id)
     } catch (err) {
@@ -151,7 +160,7 @@ export const useTasks = (): UseTasksReturn => {
     }
   }
 
-  const permanentlyDeleteTask = async (id: string) => {
+  const permanentlyDeleteTask = async (id: string): Promise<void> => {
     try {
       await db.permanentlyDeleteTask(id)
     } catch (err) {
@@ -161,7 +170,7 @@ export const useTasks = (): UseTasksReturn => {
   }
 
   // Project operations
-  const createProject = async (projectData: Omit<Project, 'id' | 'created_at' | 'user_id'>) => {
+  const createProject = async (projectData: Omit<Project, 'id' | 'created_at' | 'user_id'>): Promise<void> => {
     try {
       await db.createProject({
         ...projectData,
@@ -173,7 +182,7 @@ export const useTasks = (): UseTasksReturn => {
     }
   }
 
-  const updateProject = async (id: string, updates: Partial<Project>) => {
+  const updateProject = async (id: string, updates: Partial<Project>): Promise<void> => {
     try {
       await db.updateProject(id, updates)
     } catch (err) {
@@ -182,7 +191,7 @@ export const useTasks = (): UseTasksReturn => {
     }
   }
 
-  const deleteProject = async (id: string) => {
+  const deleteProject = async (id: string): Promise<void> => {
     try {
       await db.deleteProject(id)
     } catch (err) {
@@ -191,7 +200,7 @@ export const useTasks = (): UseTasksReturn => {
     }
   }
 
-  const refreshData = async () => {
+  const refreshData = async (): Promise<void> => {
     await loadData()
   }
 

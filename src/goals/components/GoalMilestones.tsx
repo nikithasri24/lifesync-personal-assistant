@@ -26,7 +26,7 @@ const GoalMilestones: React.FC<GoalMilestonesProps> = ({ goal, milestones, onMil
     ? Math.round((completedCount / milestones.length) * 100)
     : goal.progress;
 
-  const handleToggleComplete = async (milestone: LifeGoalMilestone) => {
+  const handleToggleComplete = async (milestone: LifeGoalMilestone): Promise<void> => {
     try {
       const updated = await updateMilestone(milestone.id, {
         isCompleted: !milestone.isCompleted,
@@ -47,11 +47,12 @@ const GoalMilestones: React.FC<GoalMilestonesProps> = ({ goal, milestones, onMil
       onMilestonesUpdated(updatedGoal, updatedMilestones);
     } catch (error) {
       logger.error('Error updating milestone:', { error });
+      // eslint-disable-next-line no-alert
       alert('Failed to update milestone');
     }
   };
 
-  const handleAddMilestone = async () => {
+  const handleAddMilestone = async (): Promise<void> => {
     if (!newMilestoneTitle.trim()) return;
 
     try {
@@ -72,11 +73,13 @@ const GoalMilestones: React.FC<GoalMilestonesProps> = ({ goal, milestones, onMil
       setShowAddForm(false);
     } catch (error) {
       logger.error('Error adding milestone:', { error });
+      // eslint-disable-next-line no-alert
       alert('Failed to add milestone');
     }
   };
 
-  const handleDeleteMilestone = async (milestoneId: string) => {
+  const handleDeleteMilestone = async (milestoneId: string): Promise<void> => {
+    // eslint-disable-next-line no-alert
     if (!confirm('Delete this milestone?')) return;
 
     try {
@@ -97,6 +100,7 @@ const GoalMilestones: React.FC<GoalMilestonesProps> = ({ goal, milestones, onMil
       }
     } catch (error) {
       logger.error('Error deleting milestone:', { error });
+      // eslint-disable-next-line no-alert
       alert('Failed to delete milestone');
     }
   };
@@ -151,7 +155,7 @@ const GoalMilestones: React.FC<GoalMilestonesProps> = ({ goal, milestones, onMil
           />
           <div className="flex gap-2">
             <button
-              onClick={handleAddMilestone}
+              onClick={() => { void handleAddMilestone(); }}
               disabled={!newMilestoneTitle.trim()}
               className="px-3 py-1.5 bg-indigo-600 text-white text-xs rounded hover:bg-indigo-700 disabled:bg-slate-300"
             >
@@ -187,7 +191,7 @@ const GoalMilestones: React.FC<GoalMilestonesProps> = ({ goal, milestones, onMil
               }`}
             >
               <button
-                onClick={() => handleToggleComplete(milestone)}
+                onClick={() => { void handleToggleComplete(milestone); }}
                 className="flex-shrink-0 mt-0.5"
               >
                 {milestone.isCompleted ? (
@@ -223,7 +227,7 @@ const GoalMilestones: React.FC<GoalMilestonesProps> = ({ goal, milestones, onMil
                     </div>
                   </div>
                   <button
-                    onClick={() => handleDeleteMilestone(milestone.id)}
+                    onClick={() => { void handleDeleteMilestone(milestone.id); }}
                     className="p-1 text-slate-400 hover:text-red-600 transition-colors"
                   >
                     <Trash2 className="h-3.5 w-3.5" />

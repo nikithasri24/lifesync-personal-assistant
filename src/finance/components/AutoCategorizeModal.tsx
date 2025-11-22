@@ -43,7 +43,7 @@ export const AutoCategorizeModal: React.FC<AutoCategorizeModalProps> = ({
   React.useEffect(() => {
     let cancelled = false;
 
-    async function categorize() {
+    async function categorize(): Promise<void> {
       if (cancelled) return;
 
       setLoading(true);
@@ -53,8 +53,8 @@ export const AutoCategorizeModal: React.FC<AutoCategorizeModalProps> = ({
         // Get Supabase client
         const { createClient } = await import('@supabase/supabase-js');
         const supabase = createClient(
-          import.meta.env.VITE_SUPABASE_URL,
-          import.meta.env.VITE_SUPABASE_ANON_KEY
+          import.meta.env.VITE_SUPABASE_URL as string,
+          import.meta.env.VITE_SUPABASE_ANON_KEY as string
         );
 
         const engine = new CategorizationEngine(userId, supabase);
@@ -89,14 +89,14 @@ export const AutoCategorizeModal: React.FC<AutoCategorizeModalProps> = ({
       }
     }
 
-    categorize();
+    void categorize();
 
     return () => {
       cancelled = true;
     };
-  }, [userId]);
+  }, [uncategorizedTxns, userId]);
 
-  const handleApply = async () => {
+  const handleApply = async (): Promise<void> => {
     setLoading(true);
     setStep('applying');
 
@@ -123,7 +123,7 @@ export const AutoCategorizeModal: React.FC<AutoCategorizeModalProps> = ({
     }
   };
 
-  const toggleSelection = (txnId: string) => {
+  const toggleSelection = (txnId: string): void => {
     const newSelected = new Set(selectedIds);
     if (newSelected.has(txnId)) {
       newSelected.delete(txnId);
@@ -133,7 +133,7 @@ export const AutoCategorizeModal: React.FC<AutoCategorizeModalProps> = ({
     setSelectedIds(newSelected);
   };
 
-  const selectAll = () => {
+  const selectAll = (): void => {
     const all = new Set<string>();
     results.forEach((result, txnId) => {
       if (result.categoryId) {
@@ -143,7 +143,7 @@ export const AutoCategorizeModal: React.FC<AutoCategorizeModalProps> = ({
     setSelectedIds(all);
   };
 
-  const deselectAll = () => {
+  const deselectAll = (): void => {
     setSelectedIds(new Set());
   };
 
@@ -310,7 +310,7 @@ export const AutoCategorizeModal: React.FC<AutoCategorizeModalProps> = ({
             Cancel
           </Button>
           <Button
-            onClick={handleApply}
+            onClick={() => { void handleApply(); }}
             disabled={loading || selectedIds.size === 0 || step !== 'review'}
           >
             Apply {selectedIds.size} Categorization{selectedIds.size !== 1 ? 's' : ''}

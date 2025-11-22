@@ -45,25 +45,25 @@ const EnhancedWorldMap: React.FC<EnhancedWorldMapProps> = ({
 
   // Fetch world map data
   React.useEffect(() => {
-    const fetchMapData = async () => {
+    const fetchMapData = async (): Promise<void> => {
       try {
         setLoading(true);
         // Using Natural Earth low-resolution data from CDN
         const response = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json');
-        const _topology = await response.json();
+        await response.json();
 
         // Convert TopoJSON to GeoJSON features
         // For now, using a comprehensive static dataset
         setCountries(getComprehensiveCountries());
         setLoading(false);
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error('Error loading map data:', { error });
         setCountries(getComprehensiveCountries());
         setLoading(false);
       }
     };
 
-    fetchMapData();
+    void fetchMapData();
   }, []);
 
   const projection = geoMercator()
@@ -95,27 +95,27 @@ const EnhancedWorldMap: React.FC<EnhancedWorldMapProps> = ({
     }
   };
 
-  const handleZoomIn = () => {
+  const handleZoomIn = (): void => {
     setZoom(prev => Math.min(prev * 1.5, 10));
   };
 
-  const handleZoomOut = () => {
+  const handleZoomOut = (): void => {
     setZoom(prev => Math.max(prev / 1.5, 1));
   };
 
-  const handleReset = () => {
+  const handleReset = (): void => {
     setZoom(1);
     setPan({ x: 0, y: 0 });
   };
 
-  const handleMouseDown = (e: React.MouseEvent) => {
+  const handleMouseDown = (e: React.MouseEvent): void => {
     if (e.button === 0) {
       setIsDragging(true);
       setDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
     }
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
+  const handleMouseMove = (e: React.MouseEvent): void => {
     if (isDragging) {
       setPan({
         x: e.clientX - dragStart.x,
@@ -124,11 +124,11 @@ const EnhancedWorldMap: React.FC<EnhancedWorldMapProps> = ({
     }
   };
 
-  const handleMouseUp = () => {
+  const handleMouseUp = (): void => {
     setIsDragging(false);
   };
 
-  const handleCountryMouseMove = (e: React.MouseEvent, countryName: string) => {
+  const handleCountryMouseMove = (e: React.MouseEvent, countryName: string): void => {
     const svg = svgRef.current;
     if (svg) {
       const rect = svg.getBoundingClientRect();
@@ -219,7 +219,7 @@ const EnhancedWorldMap: React.FC<EnhancedWorldMapProps> = ({
               const path = pathGenerator({
                 type: 'LineString',
                 coordinates: [[lon, -90], [lon, 90]],
-              } as any);
+              } as GeoJSON.LineString);
               return path ? <path key={`lon-${i}`} d={path} /> : null;
             })}
             {Array.from({ length: 19 }).map((_, i) => {
@@ -227,7 +227,7 @@ const EnhancedWorldMap: React.FC<EnhancedWorldMapProps> = ({
               const path = pathGenerator({
                 type: 'LineString',
                 coordinates: Array.from({ length: 361 }, (_, j) => [-180 + j, lat]),
-              } as any);
+              } as GeoJSON.LineString);
               return path ? <path key={`lat-${i}`} d={path} /> : null;
             })}
           </g>
@@ -237,7 +237,7 @@ const EnhancedWorldMap: React.FC<EnhancedWorldMapProps> = ({
             {countries.map((country) => {
               const countryCode = country.properties.iso_a2;
               const isHovered = hoveredCountry === countryCode;
-              const path = pathGenerator(country as any);
+              const path = pathGenerator(country as GeoJSON.Feature);
 
               if (!path) return null;
 

@@ -11,7 +11,30 @@ export interface SimpleEditModal {
   onSave: (updates: Partial<Recipe>) => void;
 }
 
-export function useMealFormModals() {
+export function useMealFormModals(): {
+  recipeFormModal: RecipeFormModal | null;
+  simpleEditModal: SimpleEditModal | null;
+  editingRecipeId: string | null;
+  viewingRecipeId: string | null;
+  openRecipeForm: (initialName: string, onSave: (recipe: Recipe) => void) => void;
+  closeRecipeForm: () => void;
+  openSimpleEdit: (recipe: Recipe, onSave: (updates: Partial<Recipe>) => void) => void;
+  closeSimpleEdit: () => void;
+  openRecipeEdit: (recipeId: string) => void;
+  closeRecipeEdit: () => void;
+  openRecipeView: (recipeId: string) => void;
+  closeRecipeView: () => void;
+  showVideoImport: boolean;
+  setShowVideoImport: React.Dispatch<React.SetStateAction<boolean>>;
+  showUrlImport: boolean;
+  setShowUrlImport: React.Dispatch<React.SetStateAction<boolean>>;
+  showTextImport: boolean;
+  setShowTextImport: React.Dispatch<React.SetStateAction<boolean>>;
+  showGroceryList: boolean;
+  setShowGroceryList: React.Dispatch<React.SetStateAction<boolean>>;
+  showCopyWeek: boolean;
+  setShowCopyWeek: React.Dispatch<React.SetStateAction<boolean>>;
+} {
   // Recipe form modals
   const [recipeFormModal, setRecipeFormModal] = useState<RecipeFormModal | null>(null);
   const [simpleEditModal, setSimpleEditModal] = useState<SimpleEditModal | null>(null);
@@ -27,35 +50,35 @@ export function useMealFormModals() {
   const [showGroceryList, setShowGroceryList] = useState(false);
   const [showCopyWeek, setShowCopyWeek] = useState(false);
 
-  const openRecipeForm = (initialName: string, onSave: (recipe: Recipe) => void) => {
+  const openRecipeForm = (initialName: string, onSave: (recipe: Recipe) => void): void => {
     setRecipeFormModal({ initialName, onSave });
   };
 
-  const closeRecipeForm = () => {
+  const closeRecipeForm = (): void => {
     setRecipeFormModal(null);
   };
 
-  const openSimpleEdit = (recipe: Recipe, onSave: (updates: Partial<Recipe>) => void) => {
+  const openSimpleEdit = (recipe: Recipe, onSave: (updates: Partial<Recipe>) => void): void => {
     setSimpleEditModal({ recipe, onSave });
   };
 
-  const closeSimpleEdit = () => {
+  const closeSimpleEdit = (): void => {
     setSimpleEditModal(null);
   };
 
-  const openRecipeEdit = (recipeId: string) => {
+  const openRecipeEdit = (recipeId: string): void => {
     setEditingRecipeId(recipeId);
   };
 
-  const closeRecipeEdit = () => {
+  const closeRecipeEdit = (): void => {
     setEditingRecipeId(null);
   };
 
-  const openRecipeView = (recipeId: string) => {
+  const openRecipeView = (recipeId: string): void => {
     setViewingRecipeId(recipeId);
   };
 
-  const closeRecipeView = () => {
+  const closeRecipeView = (): void => {
     setViewingRecipeId(null);
   };
 

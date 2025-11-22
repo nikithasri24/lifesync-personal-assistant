@@ -4,7 +4,7 @@
  * Functions for transforming API data to local application format
  */
 
-import type { TaskData } from '../../services/types';
+import type { TaskData, ProjectData } from '../../services/types';
 import type { Task, Project } from '../types';
 import { isSFHTask } from '../services/taskHelpers';
 
@@ -17,7 +17,7 @@ import { isSFHTask } from '../services/taskHelpers';
  */
 export function transformApiTasks(apiTasks: TaskData[]): Task[] {
   return apiTasks
-    .filter(task => !isSFHTask({ tags: task.tags || undefined }))
+    .filter(task => !isSFHTask({ tags: task.tags ?? undefined }))
     .map(task => {
       // Ensure status is valid
       const status: 'todo' | 'done' = task.status === 'done' ? 'done' : 'todo';
@@ -37,21 +37,29 @@ export function transformApiTasks(apiTasks: TaskData[]): Task[] {
           ? task.category
           : 'other';
 
+      // Validate required fields
+      if (!task.id) {
+        throw new Error('Task ID is required');
+      }
+      if (!task.created_at) {
+        throw new Error('Task created_at is required');
+      }
+
       return {
-        id: task.id!,
+        id: task.id,
         title: task.title,
-        description: task.description || undefined,
+        description: task.description ?? undefined,
         priority,
         status,
-        estimatedTime: task.estimated_time || 30,
-        actualTime: task.actual_time || 0,
+        estimatedTime: task.estimated_time ?? 30,
+        actualTime: task.actual_time ?? 0,
         dueDate: task.due_date ? new Date(task.due_date) : undefined,
-        projectId: task.project_id || undefined,
-        tags: task.tags || [],
+        projectId: task.project_id ?? undefined,
+        tags: task.tags ?? [],
         category,
-        createdAt: new Date(task.created_at!),
+        createdAt: new Date(task.created_at),
         completedAt: task.completed_at ? new Date(task.completed_at) : undefined,
-        parentId: task.parent_id || undefined
+        parentId: task.parent_id ?? undefined
       };
     });
 }
@@ -62,14 +70,27 @@ export function transformApiTasks(apiTasks: TaskData[]): Task[] {
  * @param apiProjects - Projects from the API
  * @returns Transformed projects in local format
  */
-export function transformApiProjects(apiProjects: any[]): Project[] {
-  return apiProjects.map(project => ({
-    id: project.id!,
-    name: project.name,
-    description: project.description || undefined,
-    color: project.color || '#3b82f6',
-    status: project.status
-  }));
+export function transformApiProjects(apiProjects: ProjectData[]): Project[] {
+  return apiProjects.map(project => {
+    // Validate required fields
+    if (!project.id) {
+      throw new Error('Project ID is required');
+    }
+
+    // Ensure status is valid
+    const status: 'active' | 'completed' | 'on_hold' =
+      project.status === 'active' || project.status === 'completed' || project.status === 'on_hold'
+        ? project.status
+        : 'active';
+
+    return {
+      id: project.id,
+      name: project.name,
+      description: project.description ?? undefined,
+      color: project.color ?? '#3b82f6',
+      status
+    };
+  });
 }
 
 /**
@@ -81,16 +102,16 @@ export function transformApiProjects(apiProjects: any[]): Project[] {
 export function transformTaskToApi(task: Partial<Task>): Partial<TaskData> {
   return {
     title: task.title,
-    description: task.description || '',
+    description: task.description ?? '',
     priority: task.priority,
     status: task.status,
     estimated_time: task.estimatedTime,
     actual_time: task.actualTime,
     due_date: task.dueDate ? task.dueDate.toISOString() : null,
-    project_id: task.projectId || null,
-    tags: task.tags || [],
+    project_id: task.projectId ?? null,
+    tags: task.tags ?? [],
     category: task.category,
-    parent_id: task.parentId || null,
+    parent_id: task.parentId ?? null,
     completed_at: task.completedAt ? task.completedAt.toISOString() : null
   };
 }

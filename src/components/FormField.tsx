@@ -12,12 +12,12 @@ export function FormField({
   type = 'text',
   placeholder,
   className = ''
-}: FormFieldProps) {
+}: FormFieldProps): JSX.Element {
   const generatedId = useId()
   const inputId = `${generatedId}-input`
   const errorId = `${inputId}-error`
   const isControlled = value !== undefined && value !== null
-  const [internalValue, setInternalValue] = useState(() => (value ?? '') as string)
+  const [internalValue, setInternalValue] = useState<string>(() => (value ?? '') as string)
 
   useEffect(() => {
     if (isControlled) {
@@ -25,7 +25,7 @@ export function FormField({
     }
   }, [isControlled, value])
 
-  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (event: ChangeEvent<HTMLInputElement>): void => {
     const nextValue = event.target.value
     setInternalValue(nextValue)
     onChange(nextValue)
@@ -42,7 +42,7 @@ export function FormField({
         <input
           type={type}
           id={inputId}
-          value={isControlled ? (value ?? '') : internalValue}
+          value={isControlled ? (value ?? '') as string : internalValue}
           onChange={handleChange}
           placeholder={placeholder}
           className={getFieldClassName(error)}
@@ -78,19 +78,19 @@ export function SelectField({
   className = ''
 }: {
   label: string;
-  value: any;
-  onChange: (value: any) => void;
-  options: { value: any; label: string }[];
+  value: string | number;
+  onChange: (value: string | number) => void;
+  options: { value: string | number; label: string }[];
   error?: string;
   required?: boolean;
   placeholder?: string;
   className?: string;
-}) {
+}): JSX.Element {
   const generatedId = useId()
   const selectId = `${generatedId}-select`
   const errorId = `${selectId}-error`
   const isControlled = value !== undefined && value !== null
-  const [internalValue, setInternalValue] = useState(() => (value ?? '') as string)
+  const [internalValue, setInternalValue] = useState<string>(() => (value ?? '') as string)
 
   useEffect(() => {
     if (isControlled) {
@@ -98,7 +98,7 @@ export function SelectField({
     }
   }, [isControlled, value])
 
-  const handleChange = (event: ChangeEvent<HTMLSelectElement>) => {
+  const handleChange = (event: ChangeEvent<HTMLSelectElement>): void => {
     const nextValue = event.target.value
     setInternalValue(nextValue)
     onChange(nextValue)
@@ -114,7 +114,7 @@ export function SelectField({
       <div className="relative">
         <select
           id={selectId}
-          value={isControlled ? (value ?? '') : internalValue}
+          value={isControlled ? (value ?? '') as string : internalValue}
           onChange={handleChange}
           className={getFieldClassName(error)}
           aria-invalid={!!error}
@@ -156,19 +156,19 @@ export function TextAreaField({
   className = ''
 }: {
   label: string;
-  value: any;
-  onChange: (value: any) => void;
+  value: string | number;
+  onChange: (value: string | number) => void;
   error?: string;
   required?: boolean;
   placeholder?: string;
   rows?: number;
   className?: string;
-}) {
+}): JSX.Element {
   const generatedId = useId()
   const textAreaId = `${generatedId}-textarea`
   const errorId = `${textAreaId}-error`
   const isControlled = value !== undefined && value !== null
-  const [internalValue, setInternalValue] = useState(() => (value ?? '') as string)
+  const [internalValue, setInternalValue] = useState<string>(() => (value ?? '') as string)
 
   useEffect(() => {
     if (isControlled) {
@@ -176,7 +176,7 @@ export function TextAreaField({
     }
   }, [isControlled, value])
 
-  const handleChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
+  const handleChange = (event: ChangeEvent<HTMLTextAreaElement>): void => {
     const nextValue = event.target.value
     setInternalValue(nextValue)
     onChange(nextValue)
@@ -192,7 +192,7 @@ export function TextAreaField({
       <div className="relative">
         <textarea
           id={textAreaId}
-          value={isControlled ? (value ?? '') : internalValue}
+          value={isControlled ? (value ?? '') as string : internalValue}
           onChange={handleChange}
           placeholder={placeholder}
           rows={rows}

@@ -20,7 +20,8 @@
       "Bash(npm test:*)",
       "Bash(pkill:*)",
       "Bash(find:*)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(npm run build:*)"
     ],
     "deny": [],
     "ask": []

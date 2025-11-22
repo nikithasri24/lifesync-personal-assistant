@@ -13,7 +13,7 @@ type SVGWorldMapProps = {
 };
 
 interface CountryGeo {
-  id: string;
+  code: string;
   name: string;
   path: string;
 }
@@ -46,7 +46,7 @@ const SVGWorldMap: React.FC<SVGWorldMapProps> = ({ visitedCountries, onCountryCl
     }
   };
 
-  const handleMouseMove = (e: React.MouseEvent, countryName: string) => {
+  const handleMouseMove = (e: React.MouseEvent, countryName: string): void => {
     const svg = e.currentTarget.closest('svg');
     if (svg) {
       const rect = svg.getBoundingClientRect();
@@ -60,11 +60,11 @@ const SVGWorldMap: React.FC<SVGWorldMapProps> = ({ visitedCountries, onCountryCl
 
   // Fetch real world map data
   React.useEffect(() => {
-    const fetchMapData = async () => {
+    const fetchMapData = async (): Promise<void> => {
       try {
         // Using Natural Earth low-resolution world map data
         const response = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json');
-        const _topology = await response.json();
+        const _topology: unknown = await response.json();
 
         // Convert TopoJSON to GeoJSON and generate SVG paths
         // For now, we'll use a simplified static dataset
@@ -78,7 +78,7 @@ const SVGWorldMap: React.FC<SVGWorldMapProps> = ({ visitedCountries, onCountryCl
       }
     };
 
-    fetchMapData();
+    void fetchMapData();
   }, []);
 
   // Improved static country paths with more realistic shapes

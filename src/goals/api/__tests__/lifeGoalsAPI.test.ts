@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { supabase } from '../../../lib/supabase';
 import {
@@ -30,6 +31,19 @@ vi.mock('../../../lib/supabase', () => ({
     from: vi.fn(),
   },
 }));
+
+// Type definition for mocked methods
+type MockFn = ReturnType<typeof vi.fn>;
+type MockQuery = {
+  select: MockFn;
+  eq: MockFn;
+  order: MockFn;
+  insert: MockFn;
+  update: MockFn;
+  single: MockFn;
+  limit: MockFn;
+  delete: MockFn;
+};
 
 describe('lifeGoalsAPI', () => {
   const mockUser = { id: 'test-user-life-goals-123' };
@@ -125,7 +139,7 @@ describe('lifeGoalsAPI', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (supabase.auth.getUser as any).mockResolvedValue({
+    (supabase.auth.getUser as MockFn).mockResolvedValue({
       data: { user: mockUser },
     });
   });
@@ -133,19 +147,26 @@ describe('lifeGoalsAPI', () => {
   describe('Life Goals', () => {
     describe('getUserLifeGoals', () => {
       it('should fetch all life goals for authenticated user', async () => {
-        const mockQuery = {
+        const mockQuery: MockQuery = {
           select: vi.fn().mockReturnThis(),
           eq: vi.fn().mockReturnThis(),
           order: vi.fn().mockResolvedValue({
             data: [mockLifeGoal],
             error: null,
           }),
+          // Add dummy implementations for other methods to satisfy type
+          insert: vi.fn(),
+          update: vi.fn(),
+          single: vi.fn(),
+          limit: vi.fn(),
+          delete: vi.fn(),
         };
 
-        (supabase.from as any).mockReturnValue(mockQuery);
+        (supabase.from as MockFn).mockReturnValue(mockQuery);
 
         const result = await getUserLifeGoals();
 
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(supabase.from).toHaveBeenCalledWith('life_goals');
         expect(mockQuery.select).toHaveBeenCalledWith('*');
         expect(mockQuery.eq).toHaveBeenCalledWith('user_id', mockUser.id);
@@ -157,7 +178,7 @@ describe('lifeGoalsAPI', () => {
       });
 
       it('should throw error when not authenticated', async () => {
-        (supabase.auth.getUser as any).mockResolvedValue({
+        (supabase.auth.getUser as MockFn).mockResolvedValue({
           data: { user: null },
         });
 
@@ -165,16 +186,22 @@ describe('lifeGoalsAPI', () => {
       });
 
       it('should handle empty results', async () => {
-        const mockQuery = {
+        const mockQuery: MockQuery = {
           select: vi.fn().mockReturnThis(),
           eq: vi.fn().mockReturnThis(),
           order: vi.fn().mockResolvedValue({
             data: [],
             error: null,
           }),
+          // Add dummy implementations for other methods to satisfy type
+          insert: vi.fn(),
+          update: vi.fn(),
+          single: vi.fn(),
+          limit: vi.fn(),
+          delete: vi.fn(),
         };
 
-        (supabase.from as any).mockReturnValue(mockQuery);
+        (supabase.from as MockFn).mockReturnValue(mockQuery);
 
         const result = await getUserLifeGoals();
         expect(result).toEqual([]);
@@ -207,12 +234,14 @@ describe('lifeGoalsAPI', () => {
 
         const result = await getLifeGoalById('goal-1');
 
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(supabase.from).toHaveBeenCalledWith('life_goals');
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(supabase.from).toHaveBeenCalledWith('life_goal_milestones');
         expect(result).not.toBeNull();
-        expect(result!.id).toBe('goal-1');
-        expect(result!.milestones).toHaveLength(1);
-        expect(result!.milestones[0].title).toBe('Run 5km non-stop');
+        expect(result?.id).toBe('goal-1');
+        expect(result?.milestones).toHaveLength(1);
+        expect(result?.milestones[0].title).toBe('Run 5km non-stop');
       });
 
       it('should return null when goal not found', async () => {
@@ -405,6 +434,7 @@ describe('lifeGoalsAPI', () => {
           targetDate: '2025-11-30',
         });
 
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(supabase.from).toHaveBeenCalledWith('life_goal_milestones');
         expect(mockQuery.insert).toHaveBeenCalledWith({
           goal_id: 'goal-1',
@@ -480,6 +510,7 @@ describe('lifeGoalsAPI', () => {
 
         await deleteMilestone('milestone-1');
 
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(supabase.from).toHaveBeenCalledWith('life_goal_milestones');
         expect(mockDelete).toHaveBeenCalled();
         expect(mockEq).toHaveBeenCalledWith('id', 'milestone-1');
@@ -510,6 +541,7 @@ describe('lifeGoalsAPI', () => {
           nextActions: 'Increase distance by 2km',
         });
 
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(supabase.from).toHaveBeenCalledWith('life_goal_checkins');
         expect(mockQuery.insert).toHaveBeenCalledWith({
           goal_id: 'goal-1',
@@ -539,6 +571,7 @@ describe('lifeGoalsAPI', () => {
 
         const result = await getGoalCheckins('goal-1');
 
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(supabase.from).toHaveBeenCalledWith('life_goal_checkins');
         expect(mockQuery.eq).toHaveBeenCalledWith('goal_id', 'goal-1');
         expect(mockQuery.order).toHaveBeenCalledWith('check_in_date', { ascending: false });
@@ -564,6 +597,7 @@ describe('lifeGoalsAPI', () => {
 
         const result = await recordStreak('goal-1', '2025-11-19', true, 'Morning run completed');
 
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(supabase.from).toHaveBeenCalledWith('life_goal_streak_history');
         expect(mockQuery.upsert).toHaveBeenCalledWith({
           goal_id: 'goal-1',
@@ -576,6 +610,8 @@ describe('lifeGoalsAPI', () => {
     });
 
     describe('getStreakHistory', () => {
+      const MAX_DEFAULT_LIMIT = 30;
+
       it('should fetch streak history with default limit', async () => {
         const mockQuery = {
           select: vi.fn().mockReturnThis(),
@@ -591,14 +627,16 @@ describe('lifeGoalsAPI', () => {
 
         const result = await getStreakHistory('goal-1');
 
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(supabase.from).toHaveBeenCalledWith('life_goal_streak_history');
         expect(mockQuery.eq).toHaveBeenCalledWith('goal_id', 'goal-1');
         expect(mockQuery.order).toHaveBeenCalledWith('date', { ascending: false });
-        expect(mockQuery.limit).toHaveBeenCalledWith(30);
+        expect(mockQuery.limit).toHaveBeenCalledWith(MAX_DEFAULT_LIMIT);
         expect(result).toHaveLength(1);
       });
 
       it('should fetch streak history with custom limit', async () => {
+        const customLimit = 50;
         const mockQuery = {
           select: vi.fn().mockReturnThis(),
           eq: vi.fn().mockReturnThis(),
@@ -611,9 +649,9 @@ describe('lifeGoalsAPI', () => {
 
         (supabase.from as any).mockReturnValue(mockQuery);
 
-        await getStreakHistory('goal-1', 50);
+        await getStreakHistory('goal-1', customLimit);
 
-        expect(mockQuery.limit).toHaveBeenCalledWith(50);
+        expect(mockQuery.limit).toHaveBeenCalledWith(customLimit);
       });
     });
   });
@@ -634,6 +672,7 @@ describe('lifeGoalsAPI', () => {
 
         const result = await getUserLifeDreams();
 
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(supabase.from).toHaveBeenCalledWith('life_dreams');
         expect(mockQuery.eq).toHaveBeenCalledWith('user_id', mockUser.id);
         expect(mockQuery.order).toHaveBeenCalledWith('created_at', { ascending: false });
@@ -793,6 +832,7 @@ describe('lifeGoalsAPI', () => {
 
         const result = await getGoalTemplates();
 
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(supabase.from).toHaveBeenCalledWith('life_goal_templates');
         expect(mockQuery.eq).toHaveBeenCalledWith('is_public', true);
         expect(mockQuery.order).toHaveBeenCalledWith('usage_count', { ascending: false });
@@ -862,8 +902,11 @@ describe('lifeGoalsAPI', () => {
 
         const result = await createGoalFromTemplate('template-1', 'My Custom 5K Goal');
 
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(supabase.from).toHaveBeenCalledWith('life_goal_templates');
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(supabase.from).toHaveBeenCalledWith('life_goals');
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(supabase.from).toHaveBeenCalledWith('life_goal_milestones');
 
         expect(mockGoalQuery.insert).toHaveBeenCalledWith(

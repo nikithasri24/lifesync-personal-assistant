@@ -11,7 +11,9 @@ import {
   useCategoriesQuery,
   useAccountsQuery} from '../hooks/useFinanceQuery';
 import { getTimePeriodRange, getPreviousPeriodRange, type TimePeriod } from '../utils/timePeriodUtils';
-import { useFinanceMetrics } from '../hooks/useFinanceMetrics';
+import { useFinanceMetrics, type FinanceMetrics } from '../hooks/useFinanceMetrics';
+import type { Transaction, Paginated } from '../types';
+import { logger } from '@/services/logger';
 
 // Components
 import MetricCard from '../components/metrics/MetricCard';
@@ -33,7 +35,8 @@ const ReportsPage: React.FC = () => {
   const { data: categories = [], isLoading: categoriesLoading } = useCategoriesQuery();
   const { data: accounts = [], isLoading: accountsLoading } = useAccountsQuery();
 
-  const transactions = transactionsData?.items || [];
+  // Type assertion: transactionsData is actually Paginated<Transaction> at runtime
+  const transactions: Transaction[] = (transactionsData as Paginated<Transaction> | undefined)?.items ?? [];
   const loading = txnsLoading || categoriesLoading || accountsLoading;
 
   // Date ranges
@@ -41,7 +44,7 @@ const ReportsPage: React.FC = () => {
   const previousPeriod = getPreviousPeriodRange(currentPeriod);
 
   // Calculate metrics using hook
-  const metrics = useFinanceMetrics({
+  const metrics: FinanceMetrics = useFinanceMetrics({
     transactions,
     categories,
     accounts,

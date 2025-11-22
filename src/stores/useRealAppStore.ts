@@ -10,6 +10,9 @@ import {
 } from '../services/apiClient'
 import type {
   UserStats,
+  SeventyFiveHardChallenge,
+  DailyCheckIn,
+  LegacySeventyFiveHardChallenge,
 } from '../types'
 
 type ViewKey =
@@ -45,8 +48,8 @@ export interface RealAppState {
 
   // ==================== 75 Hard (New Architecture) ====================
   // State
-  sfhChallenge: import('../types/seventyFiveHard').SeventyFiveHardChallenge | null
-  sfhCheckIns: import('../types/seventyFiveHard').DailyCheckIn[]
+  sfhChallenge: SeventyFiveHardChallenge | null
+  sfhCheckIns: DailyCheckIn[]
   sfhCheckInsLoadedRange: { from: Date | null; to: Date | null } | null  // Track loaded check-in date range for lazy loading
   sfhShowFailurePrompt: boolean
   sfhFailureDate: Date | null
@@ -56,11 +59,11 @@ export interface RealAppState {
   // Note: 75 Hard actions are in src/stores/seventyFiveHardActions.ts (standalone functions)
 
   // ==================== 75 Hard ====================
-  seventyFiveHardChallenges: import('../types').LegacySeventyFiveHardChallenge[]
+  seventyFiveHardChallenges: LegacySeventyFiveHardChallenge[]
   updateActiveChallengesDays: () => void
   resetSFHEnsuredDate: () => void
 
-  initializeData: () => Promise<void>
+  initializeData: () => void
   setActiveView: (view: ViewKey) => void
   setSidebarCollapsed: (collapsed: boolean) => void
   setWeekStartsOn: (ws: 0 | 1) => void
@@ -84,7 +87,7 @@ export interface RealAppState {
 
 }
 
-const _createId = () => {
+const _createId = (): string => {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     try {
       return crypto.randomUUID()
@@ -130,10 +133,15 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
   mealOptions: (() => {
     try {
       const raw = localStorage.getItem('lifesync:mealOptions')
-      const parsed = raw ? JSON.parse(raw) : null
+      const parsed = raw ? JSON.parse(raw) as { breakfast?: string[]; lunch?: string[]; dinner?: string[]; snack?: string[] } : null
       const empty = { breakfast: [], lunch: [], dinner: [], snack: [] as string[] }
       if (!parsed) return empty
-      return { ...empty, ...parsed }
+      return {
+        breakfast: parsed.breakfast ?? empty.breakfast,
+        lunch: parsed.lunch ?? empty.lunch,
+        dinner: parsed.dinner ?? empty.dinner,
+        snack: parsed.snack ?? empty.snack,
+      }
     } catch { return { breakfast: [], lunch: [], dinner: [], snack: [] } }
   })(),
   sidebarCollapsed: false,
@@ -152,7 +160,7 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
   sfhEnsuredForDate: null,
   seventyFiveHardChallenges: [],
 
-  initializeData: async () => {
+  initializeData: () => {
     if (!isSupabaseConfigured) {
       logger.warn('UseRealAppStore', '[LifeSync] Supabase not configured; store will operate in local-only mode.')
       set({
@@ -197,11 +205,19 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
 
   setActiveView: (view) => {
     set({ activeView: view })
-    try { localStorage.setItem('lifesync:activeView', view) } catch {}
+    try {
+      localStorage.setItem('lifesync:activeView', view)
+    } catch (error) {
+      logger.warn('Failed to save activeView to localStorage', error)
+    }
   },
   setWeekStartsOn: (ws: 0 | 1) => {
     set({ weekStartsOn: ws })
-    try { localStorage.setItem('lifesync:settings:weekStartsOn', String(ws)) } catch {}
+    try {
+      localStorage.setItem('lifesync:settings:weekStartsOn', String(ws))
+    } catch (error) {
+      logger.warn('Failed to save weekStartsOn to localStorage', error)
+    }
   },
   addMealOption: (mealType, name) => {
     set((state) => {
@@ -211,7 +227,11 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
       const list = new Set(next[mealType])
       list.add(cleaned)
       next[mealType] = Array.from(list)
-      try { localStorage.setItem('lifesync:mealOptions', JSON.stringify(next)) } catch {}
+      try {
+        localStorage.setItem('lifesync:mealOptions', JSON.stringify(next))
+      } catch (error) {
+        logger.warn('Failed to save mealOptions to localStorage', error)
+      }
       return { mealOptions: next }
     })
   },
@@ -219,7 +239,11 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
     set((state) => {
       const next = { ...state.mealOptions }
       next[mealType] = (next[mealType] || []).filter((n) => n !== name)
-      try { localStorage.setItem('lifesync:mealOptions', JSON.stringify(next)) } catch {}
+      try {
+        localStorage.setItem('lifesync:mealOptions', JSON.stringify(next))
+      } catch (error) {
+        logger.warn('Failed to save mealOptions to localStorage', error)
+      }
       return { mealOptions: next }
     })
   },
@@ -227,14 +251,22 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
 
   setShowSFHTasksInTasks: (show: boolean) => {
     set({ showSFHTasksInTasks: show })
-    try { localStorage.setItem('lifesync:settings:sfhShowInTasks', String(show)) } catch {}
+    try {
+      localStorage.setItem('lifesync:settings:sfhShowInTasks', String(show))
+    } catch (error) {
+      logger.warn('Failed to save sfhShowInTasks to localStorage', error)
+    }
   },
 
   showGlobalToast: (message, type = 'info') => set({ globalToast: { message, type } }),
   clearGlobalToast: () => set({ globalToast: null }),
   setSFHLastSynced: (d: Date) => {
     set({ sfhLastSynced: d })
-    try { localStorage.setItem('lifesync:75hard:lastSynced', d.toISOString()) } catch {}
+    try {
+      localStorage.setItem('lifesync:75hard:lastSynced', d.toISOString())
+    } catch (error) {
+      logger.warn('Failed to save 75hard lastSynced to localStorage', error)
+    }
   },
 
   updateActiveChallengesDays: () => {

@@ -32,7 +32,7 @@ interface Integration {
   connected: boolean;
   status: 'connected' | 'disconnected' | 'error' | 'pending';
   features: string[];
-  config?: Record<string, any>;
+  config?: Record<string, unknown>;
 }
 
 export const FocusIntegrations: React.FC = () => {
@@ -139,22 +139,22 @@ export const FocusIntegrations: React.FC = () => {
     setIsLoading(false);
   }, []);
 
-  const handleConnect = async (integrationId: string) => {
+  const handleConnect = async (integrationId: string): Promise<void> => {
     setConnectingTo(integrationId);
-    
+
     try {
       // Simulate connection process
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      setIntegrations(prev => prev.map(integration => 
-        integration.id === integrationId 
-          ? { ...integration, connected: true, status: 'connected' }
+
+      setIntegrations(prev => prev.map(integration =>
+        integration.id === integrationId
+          ? { ...integration, connected: true, status: 'connected' as const }
           : integration
       ));
     } catch (_error) {
-      setIntegrations(prev => prev.map(integration => 
-        integration.id === integrationId 
-          ? { ...integration, connected: false, status: 'error' }
+      setIntegrations(prev => prev.map(integration =>
+        integration.id === integrationId
+          ? { ...integration, connected: false, status: 'error' as const }
           : integration
       ));
     } finally {
@@ -162,23 +162,23 @@ export const FocusIntegrations: React.FC = () => {
     }
   };
 
-  const handleDisconnect = async (integrationId: string) => {
-    setIntegrations(prev => prev.map(integration => 
-      integration.id === integrationId 
-        ? { ...integration, connected: false, status: 'disconnected', enabled: false }
+  const handleDisconnect = (integrationId: string): void => {
+    setIntegrations(prev => prev.map(integration =>
+      integration.id === integrationId
+        ? { ...integration, connected: false, status: 'disconnected' as const, enabled: false }
         : integration
     ));
   };
 
-  const handleToggle = (integrationId: string) => {
-    setIntegrations(prev => prev.map(integration => 
-      integration.id === integrationId 
+  const handleToggle = (integrationId: string): void => {
+    setIntegrations(prev => prev.map(integration =>
+      integration.id === integrationId
         ? { ...integration, enabled: !integration.enabled }
         : integration
     ));
   };
 
-  const getStatusIcon = (status: string) => {
+  const getStatusIcon = (status: string): React.ReactNode => {
     switch (status) {
       case 'connected':
         return <CheckCircle className="w-5 h-5 text-green-500" />;
@@ -191,7 +191,7 @@ export const FocusIntegrations: React.FC = () => {
     }
   };
 
-  const getStatusText = (status: string) => {
+  const getStatusText = (status: string): string => {
     switch (status) {
       case 'connected':
         return 'Connected';
@@ -210,7 +210,7 @@ export const FocusIntegrations: React.FC = () => {
         <div className="animate-pulse">
           <div className="h-6 bg-slate-200 dark:bg-slate-700 rounded w-48 mb-6"></div>
           <div className="space-y-4">
-            {[...Array(4)].map((_, i) => (
+            {[...Array<undefined>(4)].map((_, i) => (
               <div key={i} className="h-24 bg-slate-200 dark:bg-slate-700 rounded"></div>
             ))}
           </div>
@@ -326,7 +326,7 @@ export const FocusIntegrations: React.FC = () => {
                 {integration.connected ? (
                   <>
                     <button
-                      onClick={() => handleDisconnect(integration.id)}
+                      onClick={() => { handleDisconnect(integration.id); }}
                       className="px-3 py-1 text-xs bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition-colors"
                     >
                       Disconnect
@@ -337,7 +337,7 @@ export const FocusIntegrations: React.FC = () => {
                   </>
                 ) : (
                   <button
-                    onClick={() => handleConnect(integration.id)}
+                    onClick={() => { void handleConnect(integration.id); }}
                     disabled={connectingTo === integration.id}
                     className="flex items-center space-x-1 px-3 py-1 text-xs bg-indigo-500 hover:bg-indigo-600 disabled:bg-indigo-300 text-white rounded-lg transition-colors"
                   >

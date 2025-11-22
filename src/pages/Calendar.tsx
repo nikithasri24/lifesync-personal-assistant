@@ -1,19 +1,20 @@
 import { useMemo } from 'react';
 import { format } from 'date-fns';
 import { CalendarDays, CheckCircle2 } from 'lucide-react';
-import { useTasksQuery } from '../hooks/useTasksQuery';
+import { useTasks } from '../hooks/useTasksQuery';
+import type { TaskData } from '../services/types';
 
 const Calendar: React.FC = () => {
-  const { data: tasks = [] } = useTasksQuery();
+  const { data: tasks = [] } = useTasks();
 
   const tasksByDate = useMemo(() => {
-    const grouped = new Map<string, typeof tasks>();
-    tasks.forEach((task) => {
-      if (!task.dueDate) return;
-      const key = format(task.dueDate, 'yyyy-MM-dd');
-      const existing = grouped.get(key) ?? [];
-      grouped.set(key, [...existing, task]);
-    });
+    const grouped = new Map<string, TaskData[]>();
+    tasks.filter((task): task is TaskData => !!task.dueDate)
+      .forEach((task: TaskData) => {
+        const key = format(task.dueDate instanceof Date ? task.dueDate : new Date(task.dueDate), 'yyyy-MM-dd');
+        const existing = grouped.get(key) ?? [];
+        grouped.set(key, [...existing, task]);
+      });
 
     return Array.from(grouped.entries())
       .sort(([a], [b]) => (a < b ? -1 : 1))

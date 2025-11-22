@@ -16,7 +16,7 @@
 
 import { startOfDay, isSameDay, isThisWeek } from 'date-fns';
 import type { RealAppState } from './useRealAppStore';
-import type { DailyCheckIn } from '../types/seventyFiveHard';
+import type { DailyCheckIn, TaskCompletion, SeventyFiveHardChallenge } from '../types/seventyFiveHard';
 
 // ==================== Today's Data Selectors ====================
 
@@ -26,7 +26,9 @@ import type { DailyCheckIn } from '../types/seventyFiveHard';
  */
 export const selectTodayCheckIn = (state: RealAppState): DailyCheckIn | null => {
   const today = startOfDay(new Date());
-  return state.sfhCheckIns.find(c => isSameDay(c.date, today)) || null;
+  const checkIns = state.sfhCheckIns as DailyCheckIn[];
+  const checkIn = checkIns.find((c: DailyCheckIn) => isSameDay(c.date, today));
+  return checkIn ?? null;
 };
 
 /**
@@ -40,10 +42,12 @@ export const selectTodayStats = (state: RealAppState): {
   completionPercentage: number;
 } | null => {
   const todayCheckIn = selectTodayCheckIn(state);
-  if (!todayCheckIn || !state.sfhChallenge) return null;
+  const challenge = state.sfhChallenge as SeventyFiveHardChallenge | null;
+  if (!todayCheckIn || !challenge) return null;
 
-  const completedCount = todayCheckIn.taskCompletions.filter(t => t.completed).length;
-  const totalCount = state.sfhChallenge.tasks.length;
+  const taskCompletions = todayCheckIn.taskCompletions;
+  const completedCount = taskCompletions.filter((t: TaskCompletion) => t.completed).length;
+  const totalCount = challenge.tasks.length;
   const allComplete = completedCount === totalCount;
   const completionPercentage = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
 
@@ -55,7 +59,7 @@ export const selectTodayStats = (state: RealAppState): {
  * Only causes re-render when day number changes
  */
 export const selectCurrentDay = (state: RealAppState): number | null => {
-  return state.sfhChallenge?.currentDay || null;
+  return state.sfhChallenge?.currentDay ?? null;
 };
 
 /**
@@ -63,7 +67,8 @@ export const selectCurrentDay = (state: RealAppState): number | null => {
  * Only causes re-render when status changes
  */
 export const selectChallengeStatus = (state: RealAppState): 'active' | 'completed' | null => {
-  return state.sfhChallenge?.status || null;
+  const challenge = state.sfhChallenge as SeventyFiveHardChallenge | null;
+  return challenge?.status ?? null;
 };
 
 // ==================== Progress Selectors ====================
@@ -73,7 +78,8 @@ export const selectChallengeStatus = (state: RealAppState): 'active' | 'complete
  * Only causes re-render when this week's check-ins change
  */
 export const selectWeekCheckIns = (state: RealAppState): DailyCheckIn[] => {
-  return state.sfhCheckIns.filter(c => isThisWeek(c.date, { weekStartsOn: 0 }));
+  const checkIns = state.sfhCheckIns as DailyCheckIn[];
+  return checkIns.filter((c: DailyCheckIn) => isThisWeek(c.date, { weekStartsOn: 0 }));
 };
 
 /**
@@ -88,8 +94,8 @@ export const selectWeekStats = (state: RealAppState): {
   const weekCheckIns = selectWeekCheckIns(state);
   if (!state.sfhChallenge) return null;
 
-  const daysCompleted = weekCheckIns.filter(c =>
-    c.taskCompletions.every(t => t.completed)
+  const daysCompleted = weekCheckIns.filter((c: DailyCheckIn) =>
+    c.taskCompletions.every((t) => t.completed)
   ).length;
   const totalDays = weekCheckIns.length;
   const completionRate = totalDays > 0 ? (daysCompleted / totalDays) * 100 : 0;
@@ -124,21 +130,21 @@ export const selectChallengeProgress = (state: RealAppState): {
  * Select specific task completion status
  * Only causes re-render when this specific task's status changes
  */
-export const selectTaskCompletion = (taskId: string) => (state: RealAppState): boolean => {
+export const selectTaskCompletion = (taskId: string): ((state: RealAppState) => boolean) => (state: RealAppState): boolean => {
   const todayCheckIn = selectTodayCheckIn(state);
   if (!todayCheckIn) return false;
 
-  const taskCompletion = todayCheckIn.taskCompletions.find(tc => tc.taskId === taskId);
-  return taskCompletion?.completed || false;
+  const taskCompletion = todayCheckIn.taskCompletions.find((tc) => tc.taskId === taskId);
+  return taskCompletion?.completed ?? false;
 };
 
 /**
  * Select all task completions for today
  * Only causes re-render when task completions array changes
  */
-export const selectTaskCompletions = (state: RealAppState) => {
+export const selectTaskCompletions = (state: RealAppState): TaskCompletion[] => {
   const todayCheckIn = selectTodayCheckIn(state);
-  return todayCheckIn?.taskCompletions || [];
+  return todayCheckIn?.taskCompletions ?? [];
 };
 
 // ==================== UI State Selectors ====================
@@ -211,7 +217,19 @@ export const selectDashboardWidget = (state: RealAppState): {
  * Select 75 Hard page data
  * Combines all data needed for the main 75 Hard page
  */
-export const selectPageData = (state: RealAppState) => ({
+export const selectPageData = (state: RealAppState): {
+  challenge: RealAppState['sfhChallenge'];
+  todayCheckIn: ReturnType<typeof selectTodayCheckIn>;
+  todayStats: ReturnType<typeof selectTodayStats>;
+  weekCheckIns: DailyCheckIn[];
+  progress: ReturnType<typeof selectChallengeProgress>;
+  uiState: {
+    showFailurePrompt: boolean;
+    failureDate: Date | null;
+    showDayCompleteMessage: boolean;
+    showCelebration: boolean;
+  };
+} => ({
   challenge: state.sfhChallenge,
   todayCheckIn: selectTodayCheckIn(state),
   todayStats: selectTodayStats(state),

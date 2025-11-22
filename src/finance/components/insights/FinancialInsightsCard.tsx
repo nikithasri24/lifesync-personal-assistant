@@ -79,11 +79,12 @@ export const FinancialInsightsCard: React.FC<FinancialInsightsCardProps> = ({
   // Debt calculations
   const monthlyDebtPayments = Math.abs(
     recentTransactions
-      .filter(t => t.amount < 0 && (
-        t.category?.toLowerCase().includes('loan') ||
-        t.category?.toLowerCase().includes('debt') ||
-        t.category?.toLowerCase().includes('mortgage')
-      ))
+      .filter(t =>
+        t.amount < 0 && t.category &&
+        ['loan', 'debt', 'mortgage'].some(type =>
+          t.category.toLowerCase().includes(type)
+        )
+      )
       .reduce((sum, t) => sum + t.amount, 0) / 3
   );
 
@@ -119,14 +120,14 @@ export const FinancialInsightsCard: React.FC<FinancialInsightsCardProps> = ({
   // Net worth growth (0-15 points) - simplified
   healthScore += netWorth.netWorth > 0 ? 15 : 0;
 
-  const getHealthColor = (score: number) => {
+  const getHealthColor = (score: number): string => {
     if (score >= 80) return 'text-green-600';
     if (score >= 60) return 'text-blue-600';
     if (score >= 40) return 'text-yellow-600';
     return 'text-red-600';
   };
 
-  const getHealthLabel = (score: number) => {
+  const getHealthLabel = (score: number): string => {
     if (score >= 80) return 'Excellent';
     if (score >= 60) return 'Good';
     if (score >= 40) return 'Fair';

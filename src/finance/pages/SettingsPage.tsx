@@ -5,7 +5,7 @@ import { getFinanceAPI } from '../data';
 
 const SettingsPage: React.FC = () => {
   const [json, setJson] = React.useState('');
-  const exportData = async () => {
+  const exportData = async (): Promise<void> => {
     const api = await getFinanceAPI();
     const [institutions, accounts, categories, { items: transactions }, budgets, networth, goals] = await Promise.all([
       api.listInstitutions(),
@@ -20,24 +20,26 @@ const SettingsPage: React.FC = () => {
     setJson(JSON.stringify(snapshot, null, 2));
   };
 
-  const importData = async () => {
+  const importData = async (): Promise<void> => {
     // For simplicity, only goals/transactions upsert path here
     try {
-      const data = JSON.parse(json);
+      const data: { goals?: unknown[], transactions?: unknown[] } = JSON.parse(json);
       const api = await getFinanceAPI();
+
       if (Array.isArray(data.goals)) {
         for (const g of data.goals) {
-          await api.upsertGoal({ ...g, id: undefined });
+          await api.upsertGoal({ ...g as object, id: undefined });
         }
       }
       if (Array.isArray(data.transactions)) {
         for (const t of data.transactions) {
-          await api.upsertTransaction({ ...t, id: undefined });
+          await api.upsertTransaction({ ...t as object, id: undefined });
         }
       }
-      alert('Import complete (limited to goals & transactions).');
-    } catch (e: any) {
-      alert('Invalid JSON: ' + e.message);
+
+      window.alert('Import complete (limited to goals & transactions).');
+    } catch (e: unknown) {
+      window.alert(`Invalid JSON: ${e instanceof Error ? e.message : 'Unknown error'}`);
     }
   };
 

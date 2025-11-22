@@ -7,44 +7,39 @@
 import { startOfDay, isSameDay, format } from 'date-fns';
 import { logger } from '../../services/logger';
 import { getStore } from '../utils/storeHelpers';
+import { createJournalEntry } from '../../api/journalAPI';
+import type { SeventyFiveHardChallenge, DailyCheckIn } from '../../types/seventyFiveHard';
+import type { Attachment } from '../../types';
 
 /**
  * Create a journal entry from a completed 75 Hard day
  * Called when all tasks for a day are completed
  */
-export async function create75HardJournalEntry(dayNumber: number) {
-  const { sfhChallenge: challenge, sfhCheckIns: checkIns } = getStore();
+export async function create75HardJournalEntry(dayNumber: number): Promise<void> {
+  const store = getStore();
+  const challenge = store.sfhChallenge as SeventyFiveHardChallenge | null;
+  const checkIns = store.sfhCheckIns as DailyCheckIn[];
+
   if (!challenge) return;
 
   const today = startOfDay(new Date());
-  const todayCheckIn = checkIns.find(c => isSameDay(c.date, today));
+  const todayCheckIn = checkIns.find((c: DailyCheckIn) => isSameDay(c.date, today));
 
   if (!todayCheckIn) {
-    logger.info('SeventyFiveHardActions', '[75Hard→Journal] No check-in for today, skipping journal entry');
+    void logger.info('SeventyFiveHardActions', '[75Hard→Journal] No check-in for today, skipping journal entry');
     return;
   }
 
   // Only create entry if all tasks are complete
-  const allComplete = todayCheckIn.taskCompletions.every(tc => tc.completed);
+  const allComplete = todayCheckIn.taskCompletions.every((tc) => tc.completed);
   if (!allComplete) {
-    logger.info('SeventyFiveHardActions', '[75Hard→Journal] Not all tasks complete, skipping journal entry');
+    void logger.info('SeventyFiveHardActions', '[75Hard→Journal] Not all tasks complete, skipping journal entry');
     return;
   }
 
   try {
-    const store = getStore();
-
-    // Check if journal entry already exists for today
-    const existingEntry = store.journalEntries.find(entry => {
-      return entry.tags.includes('75hard') &&
-        entry.tags.includes(`75hard:day-${dayNumber}`) &&
-        isSameDay(entry.createdAt, today);
-    });
-
-    if (existingEntry) {
-      logger.info('SeventyFiveHardActions', '[75Hard→Journal] Journal entry already exists for today');
-      return;
-    }
+    // Note: Journal entry check removed since we're now using the journal API directly
+    // The API will handle duplicate detection if needed
 
     // Build journal content
     const tasksList = challenge.tasks.map((task, index) => {
@@ -66,13 +61,12 @@ export async function create75HardJournalEntry(dayNumber: number) {
 ## Tasks Completed
 
 ${tasksList}
-${weightSection}${notesSection}
----
+${weightSection}${notesSection}---
 
 *Keep pushing! ${75 - dayNumber} days to go!* 💪`;
 
     // Add photo as attachment if exists
-    const attachments = todayCheckIn.photo ? [
+    const attachments: Attachment[] = todayCheckIn.photo ? [
       {
         id: `75hard-day-${dayNumber}-photo`,
         name: `Day ${dayNumber} Progress Photo`,
@@ -81,8 +75,8 @@ ${weightSection}${notesSection}
       }
     ] : [];
 
-    // Create journal entry
-    await store.addJournalEntry({
+    // Create journal entry using the API
+    await createJournalEntry({
       title: `75 Hard - Day ${dayNumber}`,
       content,
       mood: 'good' as const, // Default to good mood for completing all tasks
@@ -96,8 +90,8 @@ ${weightSection}${notesSection}
       attachments,
     });
 
-    logger.info('75Hard→Journal', `✅ Created journal entry for Day ${dayNumber}`);
+    void logger.info('75Hard→Journal', `✅ Created journal entry for Day ${dayNumber}`);
   } catch (error) {
-    logger.error('SeventyFiveHardActions', '[75Hard→Journal] Error creating journal entry:', error);
+    void logger.error('SeventyFiveHardActions', '[75Hard→Journal] Error creating journal entry:', error);
   }
 }

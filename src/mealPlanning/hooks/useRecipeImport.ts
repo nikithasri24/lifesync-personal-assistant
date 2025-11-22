@@ -3,7 +3,37 @@ import type { Recipe } from '../../types';
 import { fetchYoutubeRecipe } from '../services/parsers/youtubeParser';
 import { parseTextToRecipe } from '../services/parsers/textParser';
 
-export function useRecipeImport() {
+export function useRecipeImport(): {
+  importUrl: string;
+  setImportUrl: (value: string) => void;
+  isImporting: boolean;
+  setIsImporting: (value: boolean) => void;
+  importError: string | null;
+  setImportError: (value: string | null) => void;
+  importDraft: Omit<Recipe, 'id' | 'createdAt'> | null;
+  setImportDraft: (value: Omit<Recipe, 'id' | 'createdAt'> | null) => void;
+  clearUrlImport: () => void;
+  videoUrl: string;
+  setVideoUrl: (value: string) => void;
+  videoLang: string;
+  setVideoLang: (value: string) => void;
+  isVideoImporting: boolean;
+  videoImportError: string | null;
+  videoDraft: Omit<Recipe, 'id' | 'createdAt'> | null;
+  importFromVideo: () => Promise<void>;
+  clearVideoImport: () => void;
+  textInput: string;
+  setTextInput: (value: string) => void;
+  textTitle: string;
+  setTextTitle: (value: string) => void;
+  textImageUrl: string;
+  setTextImageUrl: (value: string) => void;
+  isTextParsing: boolean;
+  textError: string | null;
+  textDraft: Omit<Recipe, 'id' | 'createdAt'> | null;
+  parseFromText: () => void;
+  clearTextImport: () => void;
+} {
   // URL Import
   const [importUrl, setImportUrl] = useState('');
   const [isImporting, setIsImporting] = useState(false);
@@ -25,7 +55,7 @@ export function useRecipeImport() {
   const [textError, setTextError] = useState<string | null>(null);
   const [textDraft, setTextDraft] = useState<Omit<Recipe, 'id' | 'createdAt'> | null>(null);
 
-  const importFromVideo = async () => {
+  const importFromVideo = async (): Promise<void> => {
     if (!videoUrl.trim()) return;
     setIsVideoImporting(true);
     setVideoImportError(null);
@@ -41,7 +71,7 @@ export function useRecipeImport() {
     }
   };
 
-  const parseFromText = async () => {
+  const parseFromText = (): void => {
     if (!textInput.trim()) return;
     setIsTextParsing(true);
     setTextError(null);
@@ -56,7 +86,7 @@ export function useRecipeImport() {
     }
   };
 
-  const clearTextImport = () => {
+  const clearTextImport = (): void => {
     setTextInput('');
     setTextTitle('');
     setTextImageUrl('');
@@ -64,11 +94,11 @@ export function useRecipeImport() {
     setTextDraft(null);
   };
 
-  const clearVideoImport = () => {
+  const clearVideoImport = (): void => {
     setVideoDraft(null);
   };
 
-  const clearUrlImport = () => {
+  const clearUrlImport = (): void => {
     setImportDraft(null);
   };
 

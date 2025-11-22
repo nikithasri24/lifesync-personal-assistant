@@ -11,10 +11,10 @@ import { OllamaProvider } from './llm/ollama.provider';
 import { logger } from '../../services/logger';
 
 // Provider configuration from environment
-const LLM_PROVIDER = import.meta.env.VITE_LLM_PROVIDER || 'groq';
-const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY || import.meta.env.GROQ_API_KEY;
-const OLLAMA_BASE_URL = import.meta.env.VITE_OLLAMA_BASE_URL || 'http://localhost:11434';
-const OLLAMA_MODEL = import.meta.env.VITE_OLLAMA_MODEL || 'llama3.2';
+const LLM_PROVIDER = (import.meta.env.VITE_LLM_PROVIDER as string | undefined) ?? 'groq';
+const GROQ_API_KEY = (import.meta.env.VITE_GROQ_API_KEY as string | undefined) ?? (import.meta.env.GROQ_API_KEY as string | undefined);
+const OLLAMA_BASE_URL = (import.meta.env.VITE_OLLAMA_BASE_URL as string | undefined) ?? 'http://localhost:11434';
+const OLLAMA_MODEL = (import.meta.env.VITE_OLLAMA_MODEL as string | undefined) ?? 'llama3.2';
 
 /**
  * Create LLM provider with automatic fallback

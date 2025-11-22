@@ -9,7 +9,15 @@ import { ensureSupabase } from '../lib/supabase';
 import { logger } from '../services/logger';
 
 
-async function cleanup() {
+interface Todo {
+  id: string;
+  title: string;
+  tags: string[];
+  user_id: string;
+  created_at: string;
+}
+
+async function cleanup(): Promise<void> {
   logger.info('Cleanup75HardDuplicates', '🧹 Starting cleanup of duplicate 75 Hard tasks...');
 
   const supabase = ensureSupabase();
@@ -29,7 +37,7 @@ async function cleanup() {
     .select('*')
     .eq('user_id', user.id)
     .contains('tags', ['75hard'])
-    .order('created_at', { ascending: true });
+    .order('created_at', { ascending: true }) as { data: Todo[] | null; error: Error | null };
 
   if (error) {
     logger.error('Cleanup75HardDuplicates', '❌ Error fetching todos:', error);
@@ -44,15 +52,15 @@ async function cleanup() {
   logger.debug('Cleanup75HardDuplicates', `📊 Found ${todos.length} total 75 Hard todos`);
 
   // Group by unique combination of challenge + day + task
-  const uniqueMap = new Map<string, any>();
+  const uniqueMap = new Map<string, Todo>();
   const duplicates: string[] = [];
 
   for (const todo of todos) {
-    const tags = Array.isArray(todo.tags) ? todo.tags : [];
+    const tags: string[] = Array.isArray(todo.tags) ? todo.tags : [];
 
-    const challengeTag = tags.find((t: string) => t.startsWith('75hard:challenge-'));
-    const dayTag = tags.find((t: string) => t.startsWith('75hard:day-'));
-    const taskTag = tags.find((t: string) => t.startsWith('75hard:task-'));
+    const challengeTag = tags.find(t => t.startsWith('75hard:challenge-'));
+    const dayTag = tags.find(t => t.startsWith('75hard:day-'));
+    const taskTag = tags.find(t => t.startsWith('75hard:task-'));
 
     if (!challengeTag || !dayTag || !taskTag) {
       logger.warn('Cleanup75HardDuplicates', `⚠️  Todo ${todo.id} has incomplete tags, skipping`);
@@ -105,7 +113,7 @@ cleanup()
     logger.info('Cleanup75HardDuplicates', '\n🎉 All done!');
     process.exit(0);
   })
-  .catch((error) => {
+  .catch((error: unknown) => {
     logger.error('Cleanup75HardDuplicates', '\n❌ Cleanup failed:', error);
     process.exit(1);
   });

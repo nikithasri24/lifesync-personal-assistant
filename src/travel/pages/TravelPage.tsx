@@ -18,11 +18,7 @@ const TravelPage: React.FC = () => {
   const [visitedLocations, setVisitedLocations] = React.useState<VisitedLocation[]>([]);
 
   // Load data
-  React.useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+  const loadData = React.useCallback(async (): Promise<void> => {
     try {
       setLoading(true);
       const locations = await travelAPI.listVisitedLocations();
@@ -32,7 +28,11 @@ const TravelPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  React.useEffect(() => {
+    void loadData();
+  }, [loadData]);
 
   // Get visited countries map
   const visitedCountriesMap = React.useMemo(() => {
@@ -80,7 +80,7 @@ const TravelPage: React.FC = () => {
     return map;
   }, [visitedLocations]);
 
-  const handleCountryClick = async (countryCode: string) => {
+  const handleCountryClick = React.useCallback(async (countryCode: string): Promise<void> => {
     // Validate country code
     if (!countryCode || countryCode.length !== 2) {
       logger.error('Invalid country code:', { countryCode });
@@ -114,13 +114,14 @@ const TravelPage: React.FC = () => {
       }
     } catch (error) {
       logger.error('Error toggling country:', { error });
+      // eslint-disable-next-line no-alert
       alert('Failed to update country. Please try again.');
       // Reload data to sync with server on error
       await loadData();
     }
-  };
+  }, [visitedLocations, loadData]);
 
-  const handleStateClick = async (stateCode: string, countryCode: string) => {
+  const handleStateClick = React.useCallback(async (stateCode: string, countryCode: string): Promise<void> => {
     // Validate codes
     if (!stateCode || !countryCode) {
       logger.error('Invalid state or country code:', { stateCode, countryCode });
@@ -223,13 +224,14 @@ const TravelPage: React.FC = () => {
       }
     } catch (error) {
       logger.error('Error toggling state:', { error });
+      // eslint-disable-next-line no-alert
       alert('Failed to update state. Please try again.');
       // Reload data to sync with server on error
       await loadData();
     }
   };
 
-  const handleParkClick = async (parkId: string) => {
+  const handleParkClick = React.useCallback(async (parkId: string): Promise<void> => {
     // Find park details
     const park = nationalParks.find(p => p.id === parkId);
     if (!park) {
@@ -298,6 +300,7 @@ const TravelPage: React.FC = () => {
       }
     } catch (error) {
       logger.error('Error toggling park:', { error });
+      // eslint-disable-next-line no-alert
       alert('Failed to update park. Please try again.');
       // Reload data to sync with server on error
       await loadData();
@@ -374,6 +377,7 @@ const TravelPage: React.FC = () => {
       }
     } catch (error) {
       logger.error('Error toggling island:', { error });
+      // eslint-disable-next-line no-alert
       alert('Failed to update island. Please try again.');
       // Reload data to sync with server on error
       await loadData();

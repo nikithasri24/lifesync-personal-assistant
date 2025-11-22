@@ -8,7 +8,7 @@ import { useAuth } from './hooks/useAuth';
 import { isSupabaseConfigured } from './lib/supabase';
 import { loadSFHChallenge } from './seventyFiveHard/actions';
 import { cleanup75HardDuplicates } from './utils/cleanup75HardDuplicates';
-import { logger } from 'services/logger';
+import { logger } from './services/logger';
 
 // Lazy load all page components for route-based code splitting
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -33,10 +33,12 @@ const Assistant = lazy(() => import('./pages/Assistant'));
 
 // Expose cleanup function globally for debugging
 if (typeof window !== 'undefined') {
-  window.cleanup75HardDuplicates = cleanup75HardDuplicates;
+  window.cleanup75HardDuplicates = () => {
+    void cleanup75HardDuplicates();
+  };
 }
 
-function App() {
+function App(): React.ReactElement {
   const { activeView, loading, initializeData } = useRealAppStore();
   const { user, loading: authLoading } = useAuth();
   const initializedFor = useRef<string | null>(null);
@@ -70,7 +72,7 @@ function App() {
     initializedFor.current = user.id;
 
     // Initialize data and load 75 Hard challenge
-    (async () => {
+    void (async () => {
       try {
         await initializeData();
         logger.debug('App', '🔄 Initialized LifeSync data for Supabase user');
@@ -80,7 +82,7 @@ function App() {
         await loadSFHChallenge();
         logger.debug('App', '✅ 75 Hard challenge loaded');
       } catch (error) {
-        logger.error('Failed to initialize data or load 75 Hard challenge:', { error });
+        logger.error('App', 'Failed to initialize data or load 75 Hard challenge:', { error });
       }
     })();
   }, [initializeData, user, authLoading]);
@@ -97,7 +99,7 @@ function App() {
     );
   }
 
-  const renderPage = () => {
+  const renderPage = (): React.ReactElement => {
     switch (activeView) {
       case 'dashboard':
         return <Dashboard />;

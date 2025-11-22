@@ -25,10 +25,10 @@ const Shared: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabView>('connections');
 
   useEffect(() => {
-    loadData();
+    void loadData();
   }, []);
 
-  const loadData = async () => {
+  const loadData = async (): Promise<void> => {
     try {
       setLoading(true);
       const [connectionsData, invitationsData] = await Promise.all([
@@ -45,22 +45,22 @@ const Shared: React.FC = () => {
     }
   };
 
-  const handleConnectionCreated = () => {
-    loadData();
+  const handleConnectionCreated = (): void => {
+    void loadData();
     setActiveTab('invitations');
   };
 
-  const handleInvitationAccepted = () => {
-    loadData();
+  const handleInvitationAccepted = (): void => {
+    void loadData();
     setActiveTab('connections');
   };
 
-  const handleInvitationRejected = () => {
-    loadData();
+  const handleInvitationRejected = (): void => {
+    void loadData();
   };
 
-  const handleConnectionDeleted = () => {
-    loadData();
+  const handleConnectionDeleted = (): void => {
+    void loadData();
   };
 
   if (loading) {
