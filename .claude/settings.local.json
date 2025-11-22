@@ -2,7 +2,13 @@
   "permissions": {
     "allow": [
       "Bash(git checkout:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(npm run lint)",
+      "Bash(tee lint-output.txt)",
+      "Bash(cat:*)",
+      "Bash(npm run lint:*)",
+      "Bash(tee:*)"
     ],
     "deny": [],
     "ask": []

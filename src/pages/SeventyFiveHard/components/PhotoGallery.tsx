@@ -83,7 +83,7 @@ export default function PhotoGallery({ checkIns, onPhotoClick }: PhotoGalleryPro
           >
             {/* Photo Image */}
             <img
-              src={checkIn.photo!}
+              src={checkIn.photo}
               alt={`Progress photo from day ${checkIn.dayNumber}`}
               className="w-full h-full object-cover"
               loading="lazy"

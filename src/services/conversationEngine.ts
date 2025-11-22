@@ -236,7 +236,7 @@ async function executeFunction(name: string, args: any): Promise<any> {
 
         // Get or create category
         const categories = await financeApi.listCategories();
-        let category = categories.find(c =>
+        const category = categories.find(c =>
           c.name.toLowerCase() === args.category?.toLowerCase()
         );
 

@@ -3,7 +3,7 @@ import chalk from 'chalk';
 import ora from 'ora';
 import { dataManager } from './data.js';
 import { loadConfig } from './config.js';
-import { ShoppingItem, Recipe, MealPlan } from './types.js';
+import { type ShoppingItem, type Recipe, type MealPlan } from './types.js';
 
 export class WebAppSync {
   private config: any;

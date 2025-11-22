@@ -82,7 +82,7 @@ export function calculateTripSummary(trip: TripWithDestinations): TripSummary {
 
     trip.destinations.forEach(dest => {
       const req = dest.visaRequirement;
-      if (!req || !req.estimatedCost) return;
+      if (!req?.estimatedCost) return;
 
       if (isSchengenCountry(dest.countryName)) {
         if (!hasSchengenCost) {

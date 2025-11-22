@@ -221,7 +221,7 @@ export class ExpenseCategorizationEngine {
     // 2. Apply rule-based categorization
     for (const rule of CATEGORY_RULES) {
       let confidence = 0;
-      let reasons: string[] = [];
+      const reasons: string[] = [];
 
       // Check keywords
       const keywordMatches = rule.keywords.filter(keyword =>

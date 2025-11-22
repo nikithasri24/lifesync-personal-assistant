@@ -8,17 +8,17 @@ import { logger } from '../../services/logger';
  */
 
 import { 
-  FocusSession, 
-  FocusPreset, 
-  FocusAnalytics, 
-  FocusSettings,
-  FocusEvent,
-  FocusEventType,
+  type FocusSession, 
+  type FocusPreset, 
+  type FocusAnalytics, 
+  type FocusSettings,
+  type FocusEvent,
+  type FocusEventType,
   DistractionLevel,
-  ProductivityMetrics,
-  FocusEnvironment,
-  FocusDistraction,
-  FocusBreak
+  type ProductivityMetrics,
+  type FocusEnvironment,
+  type FocusDistraction,
+  type FocusBreak
 } from '../../types/focus';
 
 export class FocusService {

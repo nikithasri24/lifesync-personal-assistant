@@ -105,7 +105,7 @@ export const AutoCategorizeModal: React.FC<AutoCategorizeModalProps> = ({
 
       selectedIds.forEach(txnId => {
         const result = results.get(txnId);
-        if (result && result.categoryId) {
+        if (result?.categoryId) {
           toApply.set(txnId, {
             categoryId: result.categoryId,
             confidence: result.confidence,
@@ -221,7 +221,7 @@ export const AutoCategorizeModal: React.FC<AutoCategorizeModalProps> = ({
               <div className="space-y-2">
                 {uncategorizedTxns.map(txn => {
                   const result = results.get(txn.id);
-                  if (!result || !result.categoryId) return null;
+                  if (!result?.categoryId) return null;
 
                   const isSelected = selectedIds.has(txn.id);
 

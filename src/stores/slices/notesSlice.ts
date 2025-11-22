@@ -4,7 +4,7 @@
  * Manages notes state and operations
  */
 
-import { StateCreator } from 'zustand';
+import { type StateCreator } from 'zustand';
 import type { Note, NoteInput } from '@/api/notesAPI';
 import { logger } from '@/services/logger';
 

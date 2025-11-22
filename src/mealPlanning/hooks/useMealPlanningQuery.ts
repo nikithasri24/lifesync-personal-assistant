@@ -237,7 +237,7 @@ function mapRecipeDataToRecipe(data: RecipeData): Recipe {
     name: data.name,
     description: data.description ?? undefined,
     cuisine: data.cuisine ?? undefined,
-    difficulty: (data.difficulty as Recipe['difficulty']) ?? 'medium',
+    difficulty: (data.difficulty) ?? 'medium',
     prepTime: data.prep_time ?? undefined,
     cookTime: data.cook_time ?? undefined,
     servings: data.servings ?? 1,

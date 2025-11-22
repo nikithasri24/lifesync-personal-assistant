@@ -1,6 +1,6 @@
 import React from 'react';
 import { Plus } from 'lucide-react';
-import { Goal } from '../../types';
+import { type Goal } from '../../types';
 import { GoalCard } from '../cards';
 
 interface GoalsTabProps {

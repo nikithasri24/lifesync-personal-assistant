@@ -1,7 +1,7 @@
 import React from 'react';
 import { Flame, CheckCircle } from 'lucide-react';
 import { format } from 'date-fns';
-import { Goal } from '../../types';
+import { type Goal } from '../../types';
 import { getGoalProgress } from '../../utils';
 
 interface GoalCardProps {

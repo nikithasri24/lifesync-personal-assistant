@@ -71,13 +71,13 @@ export function RecipeEditModal({ recipe, onClose }: RecipeEditModalProps) {
           servings: Number.isFinite(Number(form.servings)) ? Number(form.servings) : recipe.servings,
           prepTime: Number.isFinite(Number(form.prepTime)) ? Number(form.prepTime) : recipe.prepTime,
           cookTime: Number.isFinite(Number(form.cookTime)) ? Number(form.cookTime) : recipe.cookTime,
-          difficulty: (form.difficulty as Recipe['difficulty']) || recipe.difficulty,
+          difficulty: (form.difficulty) || recipe.difficulty,
           tags: form.tags.split(',').map((t) => t.trim()).filter(Boolean),
           instructions: form.instructions.split(/\r?\n/).map((l) => l.trim()).filter(Boolean),
           ingredients: parsedIngredients,
         };
 
-        await updateRecipeMutation.mutateAsync({ recipeId: recipe.id!, updates });
+        await updateRecipeMutation.mutateAsync({ recipeId: recipe.id, updates });
       } catch (err) {
         logger.error('RecipeEditModal', 'Auto-save failed:', err);
         setError('Auto-save failed');

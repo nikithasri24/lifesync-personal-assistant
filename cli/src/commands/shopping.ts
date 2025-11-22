@@ -3,7 +3,7 @@ import inquirer from 'inquirer';
 import chalk from 'chalk';
 import ora from 'ora';
 import { dataManager } from '../data.js';
-import { ShoppingItem } from '../types.js';
+import { type ShoppingItem } from '../types.js';
 import { loadConfig } from '../config.js';
 
 export function createShoppingCommand(): Command {

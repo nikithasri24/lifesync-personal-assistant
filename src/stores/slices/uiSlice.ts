@@ -8,7 +8,7 @@
  * - Week starts on preference
  */
 
-import { StateCreator } from 'zustand';
+import { type StateCreator } from 'zustand';
 
 export type ViewKey =
   | 'dashboard'

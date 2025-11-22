@@ -111,7 +111,7 @@ export function useBarcodeScanner(
         }
       } catch {}
 
-      const detectorOpts = formats && formats.length ? { formats } : undefined;
+      const detectorOpts = formats?.length ? { formats } : undefined;
       const barcodeDetector = new window.BarcodeDetector(detectorOpts);
       barcodeDetectorRef.current = barcodeDetector;
 
@@ -138,7 +138,7 @@ export function useBarcodeScanner(
       // Start barcode detection loop
       const detectBarcodes = async () => {
         const video = videoRef.current;
-        if (!video || !video.videoWidth || !video.videoHeight) {
+        if (!video?.videoWidth || !video.videoHeight) {
           requestAnimationFrame(detectBarcodes);
           return;
         }

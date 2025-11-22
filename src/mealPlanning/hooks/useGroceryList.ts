@@ -51,7 +51,7 @@ export function useGroceryList(
     plannedMeals.forEach((meal) => {
       if (meal.recipeId) {
         const recipe = recipes.find((r) => r.id === meal.recipeId);
-        if (recipe && recipe.ingredients) {
+        if (recipe?.ingredients) {
           recipe.ingredients.forEach((ing) => {
             const key = ing.name.toLowerCase().trim();
             const existing = ingredientMap.get(key);

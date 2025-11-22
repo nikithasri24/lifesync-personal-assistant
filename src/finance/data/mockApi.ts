@@ -275,7 +275,7 @@ export class MockApi implements FinanceAPI {
     await sleep(randomLatency());
     // Mock: simulate syncing goal from linked account
     const goal = goals.find((g) => g.id === goalId);
-    if (!goal || !goal.linkedAccountId) return;
+    if (!goal?.linkedAccountId) return;
 
     const account = accounts.find((a) => a.id === goal.linkedAccountId);
     if (account) {

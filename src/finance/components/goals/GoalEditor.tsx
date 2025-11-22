@@ -84,11 +84,11 @@ export const GoalEditor: React.FC<GoalEditorProps> = ({
       setSaving(true);
       await onSave({
         id: form.id,
-        name: form.name!,
-        targetAmount: form.targetAmount!,
+        name: form.name,
+        targetAmount: form.targetAmount,
         currentAmount: form.currentAmount || 0,
         startingAmount: 0, // Always start from 0
-        dueDateISO: form.dueDateISO!,
+        dueDateISO: form.dueDateISO,
         type: form.type || 'savings',
         linkedAccountId: form.linkedAccountId,
         trackNetworth: form.trackNetworth,

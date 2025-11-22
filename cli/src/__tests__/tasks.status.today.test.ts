@@ -33,7 +33,7 @@ describe('cli tasks status & today', () => {
     expect(dm.updateTodoItem).toHaveBeenCalled()
     const [idArg, updates] = dm.updateTodoItem.mock.calls[0]
     expect(idArg).toBe('t1')
-    expect((updates as any).status).toBeDefined()
+    expect((updates).status).toBeDefined()
   })
 
   it("prints today's overview", async () => {

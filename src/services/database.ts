@@ -1,6 +1,6 @@
 import { ensureSupabase, isSupabaseConfigured } from '../lib/supabase'
 import type { Task, Project } from '../lib/supabase'
-import { RealtimeChannel, type SupabaseClient } from '@supabase/supabase-js'
+import { type RealtimeChannel, type SupabaseClient } from '@supabase/supabase-js'
 import { logger } from './logger'
 
 export class DatabaseService {

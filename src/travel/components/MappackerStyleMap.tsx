@@ -65,7 +65,7 @@ const MappackerStyleMap: React.FC<MappackerStyleMapProps> = ({
 
         const geoJsonData: any = await response.json();
 
-        if (!geoJsonData || !geoJsonData.features) {
+        if (!geoJsonData?.features) {
           throw new Error('Invalid GeoJSON data');
         }
 

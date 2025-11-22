@@ -87,7 +87,7 @@ const LeafletTravelMap: React.FC<LeafletTravelMapProps> = ({
 
         const geoJsonData: any = await response.json();
 
-        if (!geoJsonData || !geoJsonData.features) {
+        if (!geoJsonData?.features) {
           throw new Error('Invalid GeoJSON data');
         }
 

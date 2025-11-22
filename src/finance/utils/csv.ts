@@ -9,7 +9,7 @@ export function toCSV(rows: any[]): string {
   };
   const lines = [headers.join(',')];
   for (const r of rows) {
-    lines.push(headers.map((h) => escape((r as any)[h])).join(','));
+    lines.push(headers.map((h) => escape((r)[h])).join(','));
   }
   return lines.join('\n');
 }

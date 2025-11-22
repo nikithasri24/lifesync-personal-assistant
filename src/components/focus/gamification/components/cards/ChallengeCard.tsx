@@ -1,6 +1,6 @@
 import React from 'react';
 import { Users, Clock } from 'lucide-react';
-import { Challenge } from '../../types';
+import { type Challenge } from '../../types';
 import { formatTimeToNext } from '../../utils';
 
 interface ChallengeCardProps {

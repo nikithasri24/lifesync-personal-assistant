@@ -1,5 +1,5 @@
 import { startOfWeek, endOfWeek } from 'date-fns';
-import { Goal } from '../types';
+import { type Goal } from '../types';
 
 export const mockGoals: Goal[] = [
   {

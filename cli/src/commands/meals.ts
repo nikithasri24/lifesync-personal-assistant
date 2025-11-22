@@ -4,7 +4,7 @@ import chalk from 'chalk';
 import ora from 'ora';
 import { format, addDays, startOfWeek, endOfWeek, parseISO } from 'date-fns';
 import { dataManager } from '../data.js';
-import { MealPlan, Recipe } from '../types.js';
+import { type MealPlan, Recipe } from '../types.js';
 import { loadConfig } from '../config.js';
 
 export function createMealsCommand(): Command {

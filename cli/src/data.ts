@@ -1,6 +1,6 @@
 import fs from 'fs-extra';
 import path from 'path';
-import { ShoppingItem, Recipe, MealPlan, Store, TodoItem, TodoCategory } from './types.js';
+import { type ShoppingItem, type Recipe, type MealPlan, type Store, type TodoItem, type TodoCategory } from './types.js';
 import { loadConfig } from './config.js';
 
 export class DataManager {

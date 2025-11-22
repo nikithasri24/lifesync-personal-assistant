@@ -6,7 +6,7 @@ import tseslint from 'typescript-eslint'
 import { globalIgnores } from 'eslint/config'
 
 export default tseslint.config([
-  globalIgnores(['dist', '__mocks__']),
+  globalIgnores(['dist', '__mocks__', 'tests/**/*.ts', 'vitest.config.ts', 'playwright.config.ts']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
@@ -137,6 +137,15 @@ export default tseslint.config([
     rules: {
       'max-lines': 'off', // Data files can be large
       '@typescript-eslint/no-explicit-any': 'warn', // Warn instead of error
+    },
+  },
+  // ==========================================
+  // Exception: Logger Service (needs console)
+  // ==========================================
+  {
+    files: ['src/services/logger.ts'],
+    rules: {
+      'no-console': 'off', // Logger implementation needs console
     },
   },
 ])

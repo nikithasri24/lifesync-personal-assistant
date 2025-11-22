@@ -156,7 +156,7 @@ export function useMultiCellSelection(
     recipes.forEach((recipe) => {
       const score = scoreMatch(recipe.name, q);
       if (score > 0) {
-        candidates.push({ id: recipe.id!, name: recipe.name, score, type: 'recipe' });
+        candidates.push({ id: recipe.id, name: recipe.name, score, type: 'recipe' });
       }
     });
 

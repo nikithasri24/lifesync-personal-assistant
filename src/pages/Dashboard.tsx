@@ -231,7 +231,7 @@ export default function Dashboard() {
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
                   <button
-                    onClick={() => completeTask(task.id!)}
+                    onClick={() => completeTask(task.id)}
                     disabled={completingTask === task.id}
                     className={`flex items-center justify-center w-6 h-6 rounded border-2 transition-all duration-200 ${
                       completingTask === task.id
@@ -430,7 +430,7 @@ export default function Dashboard() {
               >
                 <div className="flex items-center space-x-4">
                   <button
-                    onClick={() => completeTask(task.id!)}
+                    onClick={() => completeTask(task.id)}
                     disabled={completingTask === task.id}
                     className={`flex items-center justify-center w-8 h-8 rounded-lg border-2 transition-all duration-200 ${
                       completingTask === task.id

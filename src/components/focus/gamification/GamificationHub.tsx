@@ -6,7 +6,7 @@
  */
 
 import React, { useState } from 'react';
-import { UserProfile, Goal, TabType } from './types';
+import { type UserProfile, type Goal, type TabType } from './types';
 import {
   GamificationHeader,
   GamificationTabs,

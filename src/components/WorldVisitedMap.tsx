@@ -26,11 +26,11 @@ const FitToData: React.FC<{ data: GeoJSON.FeatureCollection | null }> = ({ data 
     if (!data) return
     try {
       // Compute bounds and fit
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
+       
       const L = require('leaflet')
       const layer = L.geoJSON(data as any)
       const b = layer.getBounds()
-      if (b && b.isValid()) {
+      if (b?.isValid()) {
         map.fitBounds(b.pad(0.05))
       } else {
         map.setView([20, 0], 2)

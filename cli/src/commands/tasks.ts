@@ -4,7 +4,7 @@ import chalk from 'chalk';
 import ora from 'ora';
 import { format, parseISO, addDays } from 'date-fns';
 import { dataManager } from '../data.js';
-import { TodoItem } from '../types.js';
+import { type TodoItem } from '../types.js';
 import { loadConfig } from '../config.js';
 
 type Deps = {

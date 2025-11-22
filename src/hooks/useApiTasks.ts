@@ -249,7 +249,7 @@ export const useApiTasks = (): UseApiTasksReturn => {
         name: updates.name,
         description: updates.description ?? undefined,
         color: updates.color ?? undefined,
-        status: updates.status as StoreProject['status'] | undefined,
+        status: updates.status,
         icon: updates.icon ?? undefined,
       });
     } catch (err) {

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Plus, Flame } from 'lucide-react';
-import { Achievement, Goal } from '../../types';
+import { type Achievement, type Goal } from '../../types';
 import { getRarityColor, getRarityBorder, getGoalProgress } from '../../utils';
 
 interface OverviewTabProps {

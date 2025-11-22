@@ -196,7 +196,7 @@ describe('TaskFocusIntegration tasks tab', () => {
     const { user } = renderTasks()
 
     await screen.findByText('Design homepage mockups')
-    const filterSelect = screen.getByDisplayValue('All Tasks') as HTMLSelectElement
+    const filterSelect = screen.getByDisplayValue('All Tasks')
 
     await user.selectOptions(filterSelect, 'completed')
 
@@ -221,7 +221,7 @@ describe('TaskFocusIntegration tasks tab', () => {
     const { user } = renderTasks()
 
     await screen.findByText('Design homepage mockups')
-    const sortSelect = screen.getByDisplayValue('Sort by Priority') as HTMLSelectElement
+    const sortSelect = screen.getByDisplayValue('Sort by Priority')
 
     await user.selectOptions(sortSelect, 'dueDate')
 

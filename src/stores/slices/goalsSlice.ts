@@ -4,7 +4,7 @@
  * Manages goals and dreams state and operations
  */
 
-import { StateCreator } from 'zustand';
+import { type StateCreator } from 'zustand';
 import type {
   Goal,
   Dream,

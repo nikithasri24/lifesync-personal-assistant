@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Achievement, Goal, Challenge } from '../types';
+import { type Achievement, type Goal, type Challenge } from '../types';
 import { mockAchievements, mockGoals, mockChallenges } from '../fixtures';
 
 export const useGamificationState = () => {

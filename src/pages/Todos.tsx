@@ -95,11 +95,11 @@ export default function Todos() {
   const editing = useTaskEditing(
     {
       createTaskMutation: {
-        mutate: (data: any, options?: any) => createTaskMutation.mutate(data as any, options),
+        mutate: (data: any, options?: any) => createTaskMutation.mutate(data, options),
         isPending: createTaskMutation.isPending
       },
       updateTaskMutation: {
-        mutate: (data: any) => updateTaskMutation.mutate(data as any),
+        mutate: (data: any) => updateTaskMutation.mutate(data),
         isPending: updateTaskMutation.isPending
       }
     },

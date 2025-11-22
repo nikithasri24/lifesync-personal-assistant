@@ -1,5 +1,5 @@
 import { addDays } from 'date-fns';
-import { Challenge } from '../types';
+import { type Challenge } from '../types';
 
 export const mockChallenges: Challenge[] = [
   {

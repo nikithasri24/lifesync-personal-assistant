@@ -98,7 +98,7 @@ export function generateTypeScriptFile(data: ProcessedVisaData, outputPath: stri
   const countryCount = Object.keys(data).length;
   const totalEntries = Object.values(data).reduce((sum, destinations) => sum + Object.keys(destinations).length, 0);
 
-  let output = `/**
+  const output = `/**
  * Visa Requirements Database
  * Generated from passport-index-dataset
  *

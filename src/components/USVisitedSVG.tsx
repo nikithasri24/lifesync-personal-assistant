@@ -260,7 +260,7 @@ const USVisitedSVG: React.FC = () => {
       >
         <rect x="0" y="0" width={WIDTH} height={HEIGHT} fill="#F8FAFC" />
         <g transform={`translate(${pan.x},${pan.y}) scale(${scale})`}>
-          {(features as GeoFeature[]).map((f, idx) => {
+          {(features).map((f, idx) => {
             const props = f.properties || {}
             const code = getCode(props)
             const name = getName(props)

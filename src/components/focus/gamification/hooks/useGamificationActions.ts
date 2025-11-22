@@ -1,4 +1,4 @@
-import { Goal } from '../types';
+import { type Goal } from '../types';
 
 interface UseGamificationActionsProps {
   onCreateGoal: (goal: Omit<Goal, 'id' | 'currentProgress' | 'status'>) => void;

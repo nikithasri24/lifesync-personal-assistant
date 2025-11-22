@@ -6,7 +6,7 @@
  * After: Uses React Query hooks for automatic caching and updates
  */
 
-import { FormEvent, useState } from 'react';
+import { type FormEvent, useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { SkeletonCard } from '../components/LoadingSpinner';
 import { useNotes, useCreateNote, useDeleteNote } from '../hooks/useNotesQuery';

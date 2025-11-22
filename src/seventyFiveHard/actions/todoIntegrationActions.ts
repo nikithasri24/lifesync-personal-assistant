@@ -143,7 +143,7 @@ async function createOrUpdateTodoFromSFHTask(
     const todoData = {
       title: `🔥 ${task.title}`,
       description: task.description || `75 Hard - Day ${dayNumber}`,
-      status: (completed ? 'done' : 'todo') as 'done' | 'todo',
+      status: (completed ? 'done' : 'todo'),
       priority: 'high' as const,
       categoryId: 'health' as const,
       tags: [

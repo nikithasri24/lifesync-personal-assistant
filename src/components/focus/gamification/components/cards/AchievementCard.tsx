@@ -1,7 +1,7 @@
 import React from 'react';
 import { CheckCircle } from 'lucide-react';
 import { format } from 'date-fns';
-import { Achievement } from '../../types';
+import { type Achievement } from '../../types';
 import { getRarityColor, getRarityBorder } from '../../utils';
 
 interface AchievementCardProps {

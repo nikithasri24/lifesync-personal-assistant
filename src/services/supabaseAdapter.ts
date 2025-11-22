@@ -1000,7 +1000,7 @@ class SupabaseAdapter {
       .select()
       .single()
     if (error) throw new Error(error.message)
-    return data as any
+    return data
   }
 
   async updateSFHChallenge(id: string, updates: Partial<import('./types').SFHChallengeData>) {
@@ -1013,7 +1013,7 @@ class SupabaseAdapter {
       .select()
       .single()
     if (error) throw new Error(error.message)
-    return data as any
+    return data
   }
 
   async deleteSFHChallenge(id: string): Promise<void> {
@@ -1034,7 +1034,7 @@ class SupabaseAdapter {
       .select()
       .single()
     if (error) throw new Error(error.message)
-    return data as any
+    return data
   }
 
   async updateSFHEntry(id: string, updates: Partial<import('./types').SFHEntryData>) {
@@ -1046,7 +1046,7 @@ class SupabaseAdapter {
       .select()
       .single()
     if (error) throw new Error(error.message)
-    return data as any
+    return data
   }
 
   async deleteSFHEntriesForChallenge(challengeId: string): Promise<void> {

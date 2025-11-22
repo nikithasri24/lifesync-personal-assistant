@@ -1,6 +1,6 @@
 import React from 'react';
 import { Trophy } from 'lucide-react';
-import { Achievement } from '../../types';
+import { type Achievement } from '../../types';
 import { AchievementCard } from '../cards';
 
 interface AchievementsTabProps {

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Crown, Flame, Star } from 'lucide-react';
-import { UserProfile } from '../../types';
+import { type UserProfile } from '../../types';
 
 interface GamificationHeaderProps {
   userProfile: UserProfile;

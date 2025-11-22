@@ -26,7 +26,7 @@ export const StackedBarChart: React.FC<StackedBarProps> = ({ data, xKey, stackKe
 
   // Custom tooltip formatter
   const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
+    if (active && payload?.length) {
       return (
         <div className="rounded-lg border border-slate-200 bg-white p-3 shadow-lg">
           <p className="mb-2 font-semibold text-slate-900">{label}</p>

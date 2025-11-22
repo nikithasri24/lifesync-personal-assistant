@@ -433,7 +433,7 @@ const LeafletTravelMapV2: React.FC<LeafletTravelMapV2Props> = ({
                 position={[park.lat, park.lon]}
                 icon={createParkIcon(isVisited)}
                 eventHandlers={{
-                  click: () => onParkClick && onParkClick(park.id),
+                  click: () => onParkClick?.(park.id),
                 }}
               >
                 <Tooltip direction="top" offset={[0, -10]} opacity={1}>
@@ -503,7 +503,7 @@ const LeafletTravelMapV2: React.FC<LeafletTravelMapV2Props> = ({
                 position={[island.lat, island.lon]}
                 icon={createIslandIcon(isVisited)}
                 eventHandlers={{
-                  click: () => onIslandClick && onIslandClick(island.id),
+                  click: () => onIslandClick?.(island.id),
                 }}
               >
                 <Tooltip direction="top" offset={[0, -10]} opacity={1}>

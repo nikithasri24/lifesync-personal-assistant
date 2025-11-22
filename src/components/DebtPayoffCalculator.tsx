@@ -128,7 +128,7 @@ export default function DebtPayoffCalculator() {
     const totalExtraPayment = extraPayment;
     const totalAvailable = totalMinimums + totalExtraPayment;
 
-    let sortedDebts = [...debts];
+    const sortedDebts = [...debts];
     
     if (strategy === 'snowball') {
       // Pay smallest balance first

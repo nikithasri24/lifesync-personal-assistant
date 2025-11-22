@@ -3,7 +3,7 @@ import inquirer from 'inquirer';
 import chalk from 'chalk';
 import ora from 'ora';
 import { dataManager } from '../data.js';
-import { Recipe, Ingredient } from '../types.js';
+import { type Recipe, type Ingredient } from '../types.js';
 
 export function createRecipesCommand(): Command {
   const recipes = new Command('recipes')

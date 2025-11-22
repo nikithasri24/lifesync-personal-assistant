@@ -1168,9 +1168,9 @@ function SavedRecipesSection({
             <RecipeCard
               key={r.id}
               recipe={r}
-              onView={() => onViewRecipe(r.id!)}
-              onEdit={() => onEditRecipe(r.id!)}
-              onDelete={() => onDeleteRecipe(r.id!)}
+              onView={() => onViewRecipe(r.id)}
+              onEdit={() => onEditRecipe(r.id)}
+              onDelete={() => onDeleteRecipe(r.id)}
             />
           ))}
         </ul>

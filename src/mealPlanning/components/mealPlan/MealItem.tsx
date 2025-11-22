@@ -145,7 +145,7 @@ export const MealItem: React.FC<MealItemProps> = ({
     recipes.forEach(recipe => {
       const score = scoreMatch(recipe.name, q);
       if (score > 0) {
-        candidates.push({ id: recipe.id!, name: recipe.name, score, type: 'recipe' });
+        candidates.push({ id: recipe.id, name: recipe.name, score, type: 'recipe' });
       }
     });
 
@@ -258,7 +258,7 @@ export const MealItem: React.FC<MealItemProps> = ({
     e.stopPropagation();
     if (meal.recipeId && recipe) {
       onShowSimpleEdit(recipe, async (updates) => {
-        await updateRecipeMutation.mutateAsync({ recipeId: recipe.id!, updates });
+        await updateRecipeMutation.mutateAsync({ recipeId: recipe.id, updates });
       });
     } else {
       onShowRecipeForm(meal.customMeal ?? '', async (recipeData) => {

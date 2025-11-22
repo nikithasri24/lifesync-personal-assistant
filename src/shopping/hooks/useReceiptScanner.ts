@@ -66,7 +66,7 @@ export function useReceiptScanner() {
 
   const captureImage = () => {
     const video = receiptVideoRef.current;
-    if (!video || !video.videoWidth) return;
+    if (!video?.videoWidth) return;
 
     const canvas = document.createElement('canvas');
     canvas.width = video.videoWidth;

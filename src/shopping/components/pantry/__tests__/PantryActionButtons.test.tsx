@@ -89,7 +89,7 @@ describe('PantryActionButtons', () => {
   it('calls onFilterChange when filter dropdown changes', () => {
     render(<PantryActionButtons {...defaultProps} />);
 
-    const filterSelect = screen.getByTitle('Filter') as HTMLSelectElement;
+    const filterSelect = screen.getByTitle('Filter');
     fireEvent.change(filterSelect, { target: { value: 'low' } });
 
     expect(defaultProps.onFilterChange).toHaveBeenCalledWith('low');
@@ -98,7 +98,7 @@ describe('PantryActionButtons', () => {
   it('calls onSortChange when sort dropdown changes', () => {
     render(<PantryActionButtons {...defaultProps} />);
 
-    const sortSelect = screen.getByTitle('Sort') as HTMLSelectElement;
+    const sortSelect = screen.getByTitle('Sort');
     fireEvent.change(sortSelect, { target: { value: 'name' } });
 
     expect(defaultProps.onSortChange).toHaveBeenCalledWith('name');
@@ -125,7 +125,7 @@ describe('PantryActionButtons', () => {
   it('renders all filter options', () => {
     render(<PantryActionButtons {...defaultProps} />);
 
-    const filterSelect = screen.getByTitle('Filter') as HTMLSelectElement;
+    const filterSelect = screen.getByTitle('Filter');
     const options = Array.from(filterSelect.options).map((opt) => opt.value);
 
     expect(options).toEqual(['all', 'soon', 'expired', 'low']);
@@ -134,7 +134,7 @@ describe('PantryActionButtons', () => {
   it('renders all sort options', () => {
     render(<PantryActionButtons {...defaultProps} />);
 
-    const sortSelect = screen.getByTitle('Sort') as HTMLSelectElement;
+    const sortSelect = screen.getByTitle('Sort');
     const options = Array.from(sortSelect.options).map((opt) => opt.value);
 
     expect(options).toEqual(['expiry', 'name']);
@@ -171,14 +171,14 @@ describe('PantryActionButtons', () => {
   it('has correct selected value for filter dropdown', () => {
     render(<PantryActionButtons {...defaultProps} pantryFilter="low" />);
 
-    const filterSelect = screen.getByTitle('Filter') as HTMLSelectElement;
+    const filterSelect = screen.getByTitle('Filter');
     expect(filterSelect.value).toBe('low');
   });
 
   it('has correct selected value for sort dropdown', () => {
     render(<PantryActionButtons {...defaultProps} pantrySort="name" />);
 
-    const sortSelect = screen.getByTitle('Sort') as HTMLSelectElement;
+    const sortSelect = screen.getByTitle('Sort');
     expect(sortSelect.value).toBe('name');
   });
 });

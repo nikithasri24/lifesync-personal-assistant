@@ -1,6 +1,6 @@
 import React from 'react';
 import { BarChart3, Trophy, Target, Sword, Users } from 'lucide-react';
-import { TabType } from '../../types';
+import { type TabType } from '../../types';
 
 interface GamificationTabsProps {
   activeTab: TabType;

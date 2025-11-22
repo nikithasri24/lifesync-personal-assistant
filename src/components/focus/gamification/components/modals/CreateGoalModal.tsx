@@ -1,5 +1,5 @@
 import React from 'react';
-import { Goal } from '../../types';
+import { type Goal } from '../../types';
 
 interface CreateGoalModalProps {
   isOpen: boolean;

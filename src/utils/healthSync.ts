@@ -14,9 +14,7 @@ export class HealthKitIntegration {
   private checkSupport(): boolean {
     // Check if we're on iOS Safari or a native app with HealthKit
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    const hasHealthKit = window.webkit !== undefined && 
-                        window.webkit?.messageHandlers !== undefined &&
-                        window.webkit?.messageHandlers?.health !== undefined;
+    const hasHealthKit = window.webkit?.messageHandlers?.health !== undefined;
     
     // Also check for PWA capabilities
     const isPWA = window.matchMedia('(display-mode: standalone)').matches;
@@ -313,7 +311,7 @@ To sync with Apple Health:
     let currentCycle: Partial<PeriodCycle> | null = null;
 
     for (const sample of samples) {
-      if (!currentCycle || this.isNewCycle(currentCycle.startDate!, sample.startDate)) {
+      if (!currentCycle || this.isNewCycle(currentCycle.startDate, sample.startDate)) {
         // Start new cycle
         if (currentCycle) {
           cycles.push(this.completeCycle(currentCycle));

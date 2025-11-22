@@ -17,7 +17,7 @@ export const createDraft = (): HabitDraft => ({
 export const toHabitDraft = (habit: HabitData): HabitDraft => ({
   name: habit.name,
   description: habit.description || '',
-  frequency: (habit.frequency || 'daily') as 'daily' | 'weekly' | 'monthly',
+  frequency: (habit.frequency || 'daily'),
   category: habit.category || 'general',
   color: habit.color || '#22c55e',
   targetValue: String(habit.target_value || 1),

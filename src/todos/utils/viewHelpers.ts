@@ -49,7 +49,7 @@ export function getViewTitle(view: ViewType, project?: Project): string {
  * @returns The description string for the view
  */
 export function getViewDescription(view: ViewType, project?: Project, currentDate?: Date): string {
-  if (project && project.description) {
+  if (project?.description) {
     return project.description;
   }
 

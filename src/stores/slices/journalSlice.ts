@@ -4,7 +4,7 @@
  * Manages journal entries state and operations
  */
 
-import { StateCreator } from 'zustand';
+import { type StateCreator } from 'zustand';
 import type {
   JournalEntry,
   JournalEntryInput,

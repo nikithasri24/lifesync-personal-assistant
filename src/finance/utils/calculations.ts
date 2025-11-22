@@ -817,8 +817,8 @@ export function calculateFICATax(
   const ssWageBase = 168600; // 2025 SS wage base
   const additionalMedicareThreshold = 200000;
 
-  let socialSecurity = Math.min(income, ssWageBase) * (selfEmployed ? 0.124 : 0.062);
-  let medicare = income * (selfEmployed ? 0.029 : 0.0145);
+  const socialSecurity = Math.min(income, ssWageBase) * (selfEmployed ? 0.124 : 0.062);
+  const medicare = income * (selfEmployed ? 0.029 : 0.0145);
   let additionalMedicare = 0;
 
   if (income > additionalMedicareThreshold) {

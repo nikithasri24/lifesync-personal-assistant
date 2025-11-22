@@ -219,7 +219,7 @@ export async function handleUtterance(text: string, ctx?: IntentContext): Promis
     if (!found) return { reply: 'I could not find a transaction to update.', context: { ...ctx, pendingSetType: undefined } }
     const isCredit = /(credit|income|incoming|refund)/.test(t); const isDebit = /(debit|expense|outgoing|charge|purchase)/.test(t)
     if (!isCredit && !isDebit) return { reply: 'Should I set it to debit or credit?', context: { ...ctx } }
-    const newType = (isCredit ? 'credit' : 'debit') as 'credit' | 'debit'
+    const newType = (isCredit ? 'credit' : 'debit')
     await api.upsertTransaction({ id: found.id, accountId: found.accountId, amount: found.amount, categoryId: found.categoryId, dateISO: found.dateISO, description: found.description, type: newType })
     return { reply: `Set the transaction type to ${newType}.`, context: { ...ctx, pendingSetType: undefined }, toast: { message: 'Transaction type updated', type: 'success' } }
   }
@@ -383,14 +383,14 @@ export async function handleUtterance(text: string, ctx?: IntentContext): Promis
     }
     const isCredit = /(credit|income|refund)/.test(t); const isDebit = /(debit|expense|charge|purchase)/.test(t)
     if (!isCredit && !isDebit) return { reply: 'Should I set it to debit or credit?', context: { ...ctx, pendingSetType: { txnId: found.id } } }
-    const newType = (isCredit ? 'credit' : 'debit') as 'credit' | 'debit'
+    const newType = (isCredit ? 'credit' : 'debit')
     await api.upsertTransaction({ id: found.id, accountId: found.accountId, amount: found.amount, categoryId: found.categoryId, dateISO: found.dateISO, description: found.description, type: newType })
     return { reply: `Set the transaction type to ${newType}.`, toast: { message: 'Transaction type updated', type: 'success' } }
   }
 
   // Undo last transaction (confirm)
   if (/^(undo|revert|delete) (the )?(last )?(transaction|entry)/.test(t)) {
-    const api = await getFinanceAPI(); let snap = ctx?.lastTxnSnapshot
+    const api = await getFinanceAPI(); const snap = ctx?.lastTxnSnapshot
     if (!snap) { const { items } = await api.listTransactions({ limit: 50 }); const found = items.find(i => /voice entry/i.test(i.description)); if (found) return { reply: `Do you want me to delete the last voice transaction of ${formatCurrency(found.amount)}?`, context: { ...ctx, pendingDelete: { id: found.id, amount: found.amount } } } }
     if (!snap) return { reply: 'I could not find a recent voice transaction to undo.' }
     const inverseType = snap.type === 'debit' ? 'credit' : 'debit'
