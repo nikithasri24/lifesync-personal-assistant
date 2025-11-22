@@ -3,43 +3,62 @@
  * Create task, create project, toggle task status, etc.
  */
 
-import { useCreateTaskMutation, useUpdateTaskMutation, useToggleTaskMutation } from '../../../../tasks/hooks/useTasksQuery';
-import { useCreateProjectMutation } from '../../../../projects/hooks/useProjectsQuery';
+import type { UseMutationResult } from '@tanstack/react-query';
+import { useCreateTask, useUpdateTask } from '../../../../hooks/useTasksQuery';
+import { useCreateProject } from '../../../../hooks/useTasksQuery';
 import type { TodoItem } from '../../../../types';
-import type { Project as StoreProject } from '../../../../projects/hooks/useProjectsQuery';
 import type { TaskView, ProjectView } from '../types';
 import { mapCategoryViewToId } from '../utils';
 import { logger } from '../../../../services/logger';
+import type { TaskData, ProjectData } from '../../../../services/types';
 
 interface UseTaskFocusActionsParams {
   onTaskComplete: (taskId: string) => void;
   storeTasks: TodoItem[];
 }
 
-export const useTaskFocusActions = ({ onTaskComplete, storeTasks }: UseTaskFocusActionsParams) => {
-  const createTaskMutation = useCreateTaskMutation();
-  const updateTaskMutation = useUpdateTaskMutation();
-  const toggleTaskMutation = useToggleTaskMutation();
-  const createProjectMutation = useCreateProjectMutation();
+interface UseTaskFocusActionsReturn {
+  createTask: (newTask: Partial<TaskView>) => Promise<void>;
+  createProject: (newProject: Partial<ProjectView>) => Promise<void>;
+  toggleTaskStatus: (taskId: string) => Promise<void>;
+  addSubtask: (taskId: string, subtaskTitle: string) => void;
+  toggleSubtask: (taskId: string, subtaskId: string) => void;
+}
+
+export const useTaskFocusActions = ({ onTaskComplete, storeTasks }: UseTaskFocusActionsParams): UseTaskFocusActionsReturn => {
+  const createTaskMutation: UseMutationResult<TaskData, Error, Omit<TaskData, 'id' | 'created_at' | 'updated_at'>, unknown> = useCreateTask();
+  const updateTaskMutation: UseMutationResult<TaskData, Error, { id: string; updates: Partial<TaskData> }, unknown> = useUpdateTask();
+  const createProjectMutation: UseMutationResult<ProjectData, Error, Omit<ProjectData, 'id' | 'created_at' | 'updated_at'>, unknown> = useCreateProject();
 
   // Wrapper functions to maintain API compatibility
-  const addTodo = async (task: Parameters<typeof createTaskMutation.mutateAsync>[0]) => {
+  const addTodo = async (task: Omit<TaskData, 'id' | 'created_at' | 'updated_at'>): Promise<TaskData> => {
     return await createTaskMutation.mutateAsync(task);
   };
 
-  const _updateTodo = async (id: string, updates: Parameters<typeof updateTaskMutation.mutateAsync>[0]['updates']) => {
-    await updateTaskMutation.mutateAsync({ taskId: id, updates });
+  const _updateTodo = async (id: string, updates: Partial<TaskData>): Promise<void> => {
+    await updateTaskMutation.mutateAsync({ id, updates });
   };
 
-  const toggleTodo = async (id: string) => {
-    await toggleTaskMutation.mutateAsync(id);
+  const toggleTodo = async (id: string): Promise<void> => {
+    const task = storeTasks.find(t => t.id === id);
+    if (!task) return;
+
+    const newStatus: TaskData['status'] = task.status === 'done' ? 'todo' : 'done';
+    await updateTaskMutation.mutateAsync({
+      id,
+      updates: {
+        status: newStatus,
+        completed: newStatus === 'done',
+        completed_at: newStatus === 'done' ? new Date().toISOString() : undefined
+      }
+    });
   };
 
-  const addProject = async (project: Parameters<typeof createProjectMutation.mutateAsync>[0]) => {
+  const addProject = async (project: Omit<ProjectData, 'id' | 'created_at' | 'updated_at'>): Promise<ProjectData> => {
     return await createProjectMutation.mutateAsync(project);
   };
 
-  const createTask = async (newTask: Partial<TaskView>) => {
+  const createTask = async (newTask: Partial<TaskView>): Promise<void> => {
     if (!newTask.title) {
       return;
     }
@@ -50,25 +69,25 @@ export const useTaskFocusActions = ({ onTaskComplete, storeTasks }: UseTaskFocus
         description: newTask.description,
         status: 'todo',
         priority: newTask.priority ?? 'medium',
-        categoryId: mapCategoryViewToId(newTask.category),
-        dueDate: newTask.dueDate,
+        category: mapCategoryViewToId(newTask.category),
+        due_date: newTask.dueDate,
         tags: newTask.tags ?? [],
         notes: newTask.notes,
-        projectId: newTask.projectId || undefined,
-        estimatedTime: newTask.estimatedTime ?? 0,
-        actualTime: 0,
+        project_id: newTask.projectId ?? undefined,
+        estimated_time: newTask.estimatedTime ?? 0,
+        actual_time: 0,
         completed: false,
         archived: false,
         starred: false,
         subtasks: [],
-      } as Omit<TodoItem, 'id' | 'createdAt' | 'updatedAt'>);
+      } as Omit<TaskData, 'id' | 'created_at' | 'updated_at'>);
     } catch (error) {
       logger.error('Error creating task:', { error });
       throw error;
     }
   };
 
-  const createProject = async (newProject: Partial<ProjectView>) => {
+  const createProject = async (newProject: Partial<ProjectView>): Promise<void> => {
     if (!newProject.name) {
       return;
     }
@@ -77,17 +96,17 @@ export const useTaskFocusActions = ({ onTaskComplete, storeTasks }: UseTaskFocus
       await addProject({
         name: newProject.name,
         description: newProject.description,
-        color: newProject.color || '#6366f1',
-        status: (newProject.status as ProjectView['status']) || 'active',
-        icon: newProject.icon || '📁',
-      } as Omit<StoreProject, 'id' | 'createdAt' | 'updatedAt'>);
+        color: newProject.color ?? '#6366f1',
+        status: (newProject.status as ProjectView['status']) ?? 'active',
+        icon: newProject.icon ?? '📁',
+      } as Omit<ProjectData, 'id' | 'created_at' | 'updated_at'>);
     } catch (error) {
       logger.error('Error creating project:', { error });
       throw error;
     }
   };
 
-  const toggleTaskStatus = async (taskId: string) => {
+  const toggleTaskStatus = async (taskId: string): Promise<void> => {
     const storeTask = storeTasks.find(task => task.id === taskId);
     if (!storeTask) {
       return;
@@ -106,11 +125,11 @@ export const useTaskFocusActions = ({ onTaskComplete, storeTasks }: UseTaskFocus
     }
   };
 
-  const addSubtask = (taskId: string, subtaskTitle: string) => {
+  const addSubtask = (taskId: string, subtaskTitle: string): void => {
     logger.warn('Subtask creation is not yet integrated with the backend', { taskId, subtaskTitle });
   };
 
-  const toggleSubtask = (taskId: string, subtaskId: string) => {
+  const toggleSubtask = (taskId: string, subtaskId: string): void => {
     logger.warn('Subtask updates are not yet integrated with the backend', { taskId, subtaskId });
   };
 

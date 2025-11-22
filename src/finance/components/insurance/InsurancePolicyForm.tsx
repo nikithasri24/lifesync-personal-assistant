@@ -22,33 +22,33 @@ export const InsurancePolicyForm: React.FC<InsurancePolicyFormProps> = ({
   logger.debug('InsurancePolicyForm rendered', { policy, showingForm: true });
 
   const [formData, setFormData] = React.useState<InsurancePolicyInput>({
-    policyName: policy?.policyName || '',
-    policyNumber: policy?.policyNumber || '',
-    provider: policy?.provider || '',
-    type: policy?.type || 'auto',
-    status: policy?.status || 'active',
-    coverageAmount: policy?.coverageAmount || undefined,
-    deductible: policy?.deductible || undefined,
-    premiumAmount: policy?.premiumAmount || 0,
-    premiumFrequency: policy?.premiumFrequency || 'monthly',
-    startDate: policy?.startDate || new Date().toISOString().split('T')[0],
-    endDate: policy?.endDate || undefined,
-    renewalDate: policy?.renewalDate || undefined,
-    nextPaymentDate: policy?.nextPaymentDate || undefined,
-    agentName: policy?.agentName || '',
-    agentPhone: policy?.agentPhone || '',
-    agentEmail: policy?.agentEmail || '',
-    notes: policy?.notes || '',
-    autoRenew: policy?.autoRenew || false,
-    renewalReminderDays: policy?.renewalReminderDays || 30,
+    policyName: policy?.policyName ?? '',
+    policyNumber: policy?.policyNumber ?? '',
+    provider: policy?.provider ?? '',
+    type: policy?.type ?? 'auto',
+    status: policy?.status ?? 'active',
+    coverageAmount: policy?.coverageAmount ?? undefined,
+    deductible: policy?.deductible ?? undefined,
+    premiumAmount: policy?.premiumAmount ?? 0,
+    premiumFrequency: policy?.premiumFrequency ?? 'monthly',
+    startDate: policy?.startDate ?? new Date().toISOString().split('T')[0],
+    endDate: policy?.endDate ?? undefined,
+    renewalDate: policy?.renewalDate ?? undefined,
+    nextPaymentDate: policy?.nextPaymentDate ?? undefined,
+    agentName: policy?.agentName ?? '',
+    agentPhone: policy?.agentPhone ?? '',
+    agentEmail: policy?.agentEmail ?? '',
+    notes: policy?.notes ?? '',
+    autoRenew: policy?.autoRenew ?? false,
+    renewalReminderDays: policy?.renewalReminderDays ?? 30,
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent): void => {
     e.preventDefault();
     onSave(formData);
   };
 
-  const handleChange = (field: keyof InsurancePolicyInput, value: any) => {
+  const handleChange = (field: keyof InsurancePolicyInput, value: InsurancePolicyInput[keyof InsurancePolicyInput]): void => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -173,7 +173,7 @@ export const InsurancePolicyForm: React.FC<InsurancePolicyFormProps> = ({
                 <input
                   type="number"
                   step="0.01"
-                  value={formData.coverageAmount || ''}
+                  value={formData.coverageAmount ?? ''}
                   onChange={e => handleChange('coverageAmount', e.target.value ? parseFloat(e.target.value) : undefined)}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                   placeholder="300000"
@@ -187,7 +187,7 @@ export const InsurancePolicyForm: React.FC<InsurancePolicyFormProps> = ({
                 <input
                   type="number"
                   step="0.01"
-                  value={formData.deductible || ''}
+                  value={formData.deductible ?? ''}
                   onChange={e => handleChange('deductible', e.target.value ? parseFloat(e.target.value) : undefined)}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                   placeholder="1000"
@@ -263,7 +263,7 @@ export const InsurancePolicyForm: React.FC<InsurancePolicyFormProps> = ({
                 </label>
                 <input
                   type="date"
-                  value={formData.endDate || ''}
+                  value={formData.endDate ?? ''}
                   onChange={e => handleChange('endDate', e.target.value || undefined)}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                 />
@@ -275,7 +275,7 @@ export const InsurancePolicyForm: React.FC<InsurancePolicyFormProps> = ({
                 </label>
                 <input
                   type="date"
-                  value={formData.renewalDate || ''}
+                  value={formData.renewalDate ?? ''}
                   onChange={e => handleChange('renewalDate', e.target.value || undefined)}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                 />
@@ -287,7 +287,7 @@ export const InsurancePolicyForm: React.FC<InsurancePolicyFormProps> = ({
                 </label>
                 <input
                   type="date"
-                  value={formData.nextPaymentDate || ''}
+                  value={formData.nextPaymentDate ?? ''}
                   onChange={e => handleChange('nextPaymentDate', e.target.value || undefined)}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                 />

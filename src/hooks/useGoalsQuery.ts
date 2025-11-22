@@ -5,7 +5,7 @@
  * for goals and dreams CRUD operations.
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, type UseQueryResult, type UseMutationResult } from '@tanstack/react-query';
 import { queryKeys, queryOptions } from '@/lib/react-query';
 import {
   getUserLifeGoals,
@@ -17,12 +17,16 @@ import {
   createLifeDream,
   updateLifeDream,
   deleteLifeDream,
-  type _CreateLifeGoalInput,
-  type UpdateLifeGoalInput,
-  type _CreateLifeDreamInput,
-  type UpdateLifeDreamInput,
 } from '@/goals/api/lifeGoalsAPI';
-import type { LifeGoal, LifeGoalWithMilestones, LifeDream } from '@/goals/types/lifeGoals';
+import type {
+  LifeGoal,
+  LifeGoalWithMilestones,
+  LifeDream,
+  CreateLifeGoalInput,
+  UpdateLifeGoalInput,
+  CreateLifeDreamInput,
+  UpdateLifeDreamInput,
+} from '@/goals/types/lifeGoals';
 
 // =====================================================
 // GOALS QUERY HOOKS
@@ -31,7 +35,7 @@ import type { LifeGoal, LifeGoalWithMilestones, LifeDream } from '@/goals/types/
 /**
  * Get all life goals
  */
-export function useLifeGoals() {
+export function useLifeGoals(): UseQueryResult<LifeGoal[], Error> {
   return useQuery({
     queryKey: queryKeys.goals.lists(),
     queryFn: getUserLifeGoals,
@@ -42,10 +46,10 @@ export function useLifeGoals() {
 /**
  * Get a single life goal by ID with milestones
  */
-export function useLifeGoal(id: string | null) {
+export function useLifeGoal(id: string | null): UseQueryResult<LifeGoalWithMilestones, Error> {
   return useQuery({
-    queryKey: queryKeys.goals.detail(id!),
-    queryFn: () => getLifeGoalById(id!),
+    queryKey: queryKeys.goals.detail(id ?? ''),
+    queryFn: () => getLifeGoalById(id ?? ''),
     enabled: !!id,
     ...queryOptions.user,
   });
@@ -58,14 +62,14 @@ export function useLifeGoal(id: string | null) {
 /**
  * Create a new life goal
  */
-export function useCreateLifeGoal() {
+export function useCreateLifeGoal(): UseMutationResult<LifeGoal, Error, CreateLifeGoalInput, unknown> {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: createLifeGoal,
     onSuccess: (newGoal) => {
       // Invalidate all goals lists
-      queryClient.invalidateQueries({ queryKey: queryKeys.goals.lists() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.goals.lists() });
 
       // Optimistically add to cache
       queryClient.setQueryData<LifeGoal[]>(
@@ -81,15 +85,15 @@ export function useCreateLifeGoal() {
 /**
  * Update an existing life goal
  */
-export function useUpdateLifeGoal() {
+export function useUpdateLifeGoal(): UseMutationResult<LifeGoal, Error, { id: string; updates: UpdateLifeGoalInput }, unknown> {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: UpdateLifeGoalInput }) =>
-      updateLifeGoal(id, updates),
+    mutationFn: (params: { id: string; updates: UpdateLifeGoalInput }) =>
+      updateLifeGoal(params.id, params.updates),
     onSuccess: (updatedGoal) => {
       // Invalidate all goals lists
-      queryClient.invalidateQueries({ queryKey: queryKeys.goals.lists() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.goals.lists() });
 
       // Update the specific goal detail cache
       queryClient.setQueryData<LifeGoalWithMilestones>(
@@ -115,14 +119,14 @@ export function useUpdateLifeGoal() {
 /**
  * Delete a life goal
  */
-export function useDeleteLifeGoal() {
+export function useDeleteLifeGoal(): UseMutationResult<void, Error, string, unknown> {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: deleteLifeGoal,
     onSuccess: (_data, deletedId) => {
       // Invalidate all goals lists
-      queryClient.invalidateQueries({ queryKey: queryKeys.goals.lists() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.goals.lists() });
 
       // Remove from cache
       queryClient.removeQueries({ queryKey: queryKeys.goals.detail(deletedId) });
@@ -145,7 +149,7 @@ export function useDeleteLifeGoal() {
 /**
  * Get all life dreams
  */
-export function useLifeDreams() {
+export function useLifeDreams(): UseQueryResult<LifeDream[], Error> {
   return useQuery({
     queryKey: queryKeys.dreams.lists(),
     queryFn: getUserLifeDreams,
@@ -160,14 +164,14 @@ export function useLifeDreams() {
 /**
  * Create a new life dream
  */
-export function useCreateLifeDream() {
+export function useCreateLifeDream(): UseMutationResult<LifeDream, Error, CreateLifeDreamInput, unknown> {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: createLifeDream,
     onSuccess: (newDream) => {
       // Invalidate all dreams lists
-      queryClient.invalidateQueries({ queryKey: queryKeys.dreams.lists() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.dreams.lists() });
 
       // Optimistically add to cache
       queryClient.setQueryData<LifeDream[]>(
@@ -183,15 +187,15 @@ export function useCreateLifeDream() {
 /**
  * Update an existing life dream
  */
-export function useUpdateLifeDream() {
+export function useUpdateLifeDream(): UseMutationResult<LifeDream, Error, { id: string; updates: UpdateLifeDreamInput }, unknown> {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: UpdateLifeDreamInput }) =>
-      updateLifeDream(id, updates),
+    mutationFn: (params: { id: string; updates: UpdateLifeDreamInput }) =>
+      updateLifeDream(params.id, params.updates),
     onSuccess: (updatedDream) => {
       // Invalidate all dreams lists
-      queryClient.invalidateQueries({ queryKey: queryKeys.dreams.lists() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.dreams.lists() });
 
       // Update the specific dream detail cache
       queryClient.setQueryData(
@@ -215,14 +219,14 @@ export function useUpdateLifeDream() {
 /**
  * Delete a life dream
  */
-export function useDeleteLifeDream() {
+export function useDeleteLifeDream(): UseMutationResult<void, Error, string, unknown> {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: deleteLifeDream,
     onSuccess: (_data, deletedId) => {
       // Invalidate all dreams lists
-      queryClient.invalidateQueries({ queryKey: queryKeys.dreams.lists() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.dreams.lists() });
 
       // Remove from cache
       queryClient.removeQueries({ queryKey: queryKeys.dreams.detail(deletedId) });

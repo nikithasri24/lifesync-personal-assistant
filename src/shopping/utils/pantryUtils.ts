@@ -1,4 +1,5 @@
-import type { PantryItem, ShoppingItem } from '../types';
+import type { PantryItem } from '../../types';
+import type { ShoppingItem } from '../types';
 
 /**
  * Create a shopping item from a pantry item for replenishment
@@ -14,7 +15,7 @@ export function createShoppingItemFromPantry(
     name: pantryItem.name,
     quantity: quantityNeeded,
     unit: pantryItem.unit,
-    category: pantryItem.category,
+    category: pantryItem.category as ShoppingItem['category'],
     subcategory: undefined,
     priority: 'medium',
     purchased: false,
@@ -42,20 +43,20 @@ export function createShoppingItemFromPantry(
  */
 export function exportPantryToCsv(items: PantryItem[]): string {
   const headers = ['Name', 'Quantity', 'Unit', 'Category', 'Expiration', 'Location', 'Low Stock', 'Threshold'];
-  const rows = items.map(item => [
+  const rows: string[][] = items.map((item): string[] => [
     item.name,
-    item.quantity?.toString() || '0',
-    item.unit || '',
+    item.quantity?.toString() ?? '0',
+    item.unit ?? '',
     item.category,
     item.expirationDate ? item.expirationDate.toISOString().split('T')[0] : '',
-    item.location || '',
+    item.location ?? '',
     item.isLowStock ? 'Yes' : 'No',
-    item.lowStockThreshold?.toString() || ''
+    item.lowStockThreshold?.toString() ?? ''
   ]);
 
   const csvContent = [
     headers.join(','),
-    ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ...rows.map((row): string => row.map((cell): string => `"${cell}"`).join(','))
   ].join('\n');
 
   return csvContent;

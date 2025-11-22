@@ -67,7 +67,7 @@ const Habits: React.FC = () => {
         entry => entry.date === todayKey
       ).length;
 
-      const targetCount = habit.target_value || 1;
+      const targetCount = habit.target_value ?? 1;
       const hasReachedTarget = todayCompletions >= targetCount;
 
       return {
@@ -75,13 +75,13 @@ const Habits: React.FC = () => {
         todayCompletions,
         targetCount,
         hasReachedTarget,
-        currentStreak: habit.streak_count || 0,
-        totalCompletions: habit.current_progress || 0,
+        currentStreak: habit.streak_count ?? 0,
+        totalCompletions: habit.current_progress ?? 0,
       };
     });
   }, [apiHabits, apiEntries, todayKey]);
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
     if (!draft.name.trim()) return;
 
@@ -112,7 +112,7 @@ const Habits: React.FC = () => {
     });
   };
 
-  const handleResetToday = async (habitId: string) => {
+  const handleResetToday = (habitId: string): void => {
     deleteEntriesForDateMutation.mutate(
       { habitId, date: todayKey },
       {
@@ -127,7 +127,7 @@ const Habits: React.FC = () => {
     );
   };
 
-  const handleResetHistory = async (habitId: string) => {
+  const handleResetHistory = (habitId: string): void => {
     deleteAllEntriesMutation.mutate(habitId, {
       onSuccess: () => {
         showToast('Streak and history reset', 'success');
@@ -139,19 +139,19 @@ const Habits: React.FC = () => {
     });
   };
 
-  const startEditing = (habitId: string) => {
+  const startEditing = (habitId: string): void => {
     const habit = apiHabits.find(h => h.id === habitId);
     if (!habit) return;
     setEditingHabitId(habitId);
     setEditDraft(toHabitDraft(habit));
   };
 
-  const cancelEditing = () => {
+  const cancelEditing = (): void => {
     setEditingHabitId(null);
     setEditDraft(null);
   };
 
-  const handleEditSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleEditSubmit = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
     if (!editingHabitId || !editDraft) return;
     if (!editDraft.name.trim()) return;
@@ -185,7 +185,7 @@ const Habits: React.FC = () => {
     );
   };
 
-  const handleCompleteHabit = async (habitId: string) => {
+  const handleCompleteHabit = (habitId: string): void => {
     createEntryMutation.mutate(
       {
         habit_id: habitId,
@@ -204,7 +204,7 @@ const Habits: React.FC = () => {
     );
   };
 
-  const handleDeleteHabit = async (habitId: string) => {
+  const handleDeleteHabit = (habitId: string): void => {
     deleteHabitMutation.mutate(habitId, {
       onSuccess: () => {
         showToast('Habit deleted', 'success');
@@ -277,33 +277,35 @@ const Habits: React.FC = () => {
             No habits yet. Add one above to start tracking.
           </div>
         ) : (
-          habitsWithStats.map(({ habit, todayCompletions, targetCount, hasReachedTarget, currentStreak, totalCompletions }) => (
-            <HabitCard
-              key={habit.id}
-              habit={habit}
-              todayCompletions={todayCompletions}
-              targetCount={targetCount}
-              hasReachedTarget={hasReachedTarget}
-              currentStreak={currentStreak}
-              totalCompletions={totalCompletions}
-              isEditing={editingHabitId === habit.id}
-              editDraft={editDraft}
-              isCompletingHabit={createEntryMutation.isPending}
-              isUpdating={updateHabitMutation.isPending}
-              hasUpdateError={updateHabitMutation.isError}
-              isResettingToday={deleteEntriesForDateMutation.isPending}
-              isResettingHistory={deleteAllEntriesMutation.isPending}
-              isDeleting={deleteHabitMutation.isPending}
-              onComplete={() => handleCompleteHabit(habit.id!)}
-              onStartEdit={() => startEditing(habit.id!)}
-              onCancelEdit={cancelEditing}
-              onEditDraftChange={setEditDraft}
-              onEditSubmit={handleEditSubmit}
-              onResetToday={() => handleResetToday(habit.id!)}
-              onResetHistory={() => handleResetHistory(habit.id!)}
-              onDelete={() => handleDeleteHabit(habit.id!)}
-            />
-          ))
+          habitsWithStats
+            .filter(({ habit }) => habit.id !== undefined)
+            .map(({ habit, todayCompletions, targetCount, hasReachedTarget, currentStreak, totalCompletions }) => (
+              <HabitCard
+                key={habit.id}
+                habit={habit}
+                todayCompletions={todayCompletions}
+                targetCount={targetCount}
+                hasReachedTarget={hasReachedTarget}
+                currentStreak={currentStreak}
+                totalCompletions={totalCompletions}
+                isEditing={editingHabitId === habit.id}
+                editDraft={editDraft}
+                isCompletingHabit={createEntryMutation.isPending}
+                isUpdating={updateHabitMutation.isPending}
+                hasUpdateError={updateHabitMutation.isError}
+                isResettingToday={deleteEntriesForDateMutation.isPending}
+                isResettingHistory={deleteAllEntriesMutation.isPending}
+                isDeleting={deleteHabitMutation.isPending}
+                onComplete={() => { handleCompleteHabit(habit.id as string); }}
+                onStartEdit={() => { startEditing(habit.id as string); }}
+                onCancelEdit={cancelEditing}
+                onEditDraftChange={setEditDraft}
+                onEditSubmit={handleEditSubmit}
+                onResetToday={() => { handleResetToday(habit.id as string); }}
+                onResetHistory={() => { handleResetHistory(habit.id as string); }}
+                onDelete={() => { handleDeleteHabit(habit.id as string); }}
+              />
+            ))
         )}
       </section>
     </div>
