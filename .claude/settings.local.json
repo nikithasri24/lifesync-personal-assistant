@@ -8,7 +8,8 @@
       "Bash(tee lint-output.txt)",
       "Bash(cat:*)",
       "Bash(npm run lint:*)",
-      "Bash(tee:*)"
+      "Bash(tee:*)",
+      "Bash(chmod:*)"
     ],
     "deny": [],
     "ask": []
