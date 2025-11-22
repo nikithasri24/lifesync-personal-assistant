@@ -5,7 +5,7 @@
  * session queuing, and advanced controls for power users.
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { logger } from '../../../services/logger';
 import {
   Play,
@@ -49,6 +49,13 @@ interface SessionTemplate {
   usageCount: number;
 }
 
+interface QueueItem {
+  type: 'focus' | 'break' | 'long-break';
+  duration: number;
+  name?: string;
+  preset?: string;
+}
+
 interface TimerState {
   currentSession: {
     type: 'focus' | 'break' | 'long-break';
@@ -62,16 +69,29 @@ interface TimerState {
   sessionIndex: number;
   cycleCount: number;
   template: SessionTemplate | null;
-  queue: Array<any>;
+  queue: Array<QueueItem>;
   startTime: Date | null;
   totalElapsed: number;
   autoStart: boolean;
   strictMode: boolean;
 }
 
+interface SessionCompleteData {
+  type: 'focus' | 'break' | 'long-break';
+  duration: number;
+  completedAt: Date;
+  template?: string;
+}
+
+interface BreakCompleteData {
+  type: 'focus' | 'break' | 'long-break';
+  duration: number;
+  completedAt: Date;
+}
+
 interface Props {
-  onSessionComplete: (session: any) => void;
-  onBreakComplete: (breakData: any) => void;
+  onSessionComplete: (session: SessionCompleteData) => void;
+  onBreakComplete: (breakData: BreakCompleteData) => void;
   onTemplateComplete: (template: SessionTemplate) => void;
   backgroundMusic: boolean;
   musicType: string;
@@ -210,30 +230,34 @@ export const AdvancedTimer: React.FC<Props> = ({
         clearInterval(intervalRef.current);
       }
     };
-  }, [timerState.isRunning, timerState.timeRemaining]);
+  }, [timerState.isRunning, timerState.timeRemaining, timerState.currentSession, handleSessionComplete]);
 
-  const playNotificationSound = () => {
+  const playNotificationSound = useCallback((): void => {
     if (!soundEnabled) return;
 
     try {
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      
+      // Type-safe way to access webkitAudioContext
+      const AudioContextConstructor = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!AudioContextConstructor) return;
+
+      const audioContext = new AudioContextConstructor();
+
       // Create completion chime
-      const playTone = (frequency: number, startTime: number, duration: number) => {
+      const playTone = (frequency: number, startTime: number, duration: number): void => {
         const osc = audioContext.createOscillator();
         const gain = audioContext.createGain();
-        
+
         osc.connect(gain);
         gain.connect(audioContext.destination);
-        
+
         osc.frequency.setValueAtTime(frequency, startTime);
         gain.gain.setValueAtTime(0.3, startTime);
         gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
-        
+
         osc.start(startTime);
         osc.stop(startTime + duration);
       };
-      
+
       const now = audioContext.currentTime;
       playTone(523.25, now, 0.2); // C5
       playTone(659.25, now + 0.2, 0.2); // E5
@@ -241,9 +265,9 @@ export const AdvancedTimer: React.FC<Props> = ({
     } catch (error) {
       logger.debug('Audio playback failed:', { error });
     }
-  };
+  }, [soundEnabled]);
 
-  const showNotification = (title: string, body: string) => {
+  const showNotification = useCallback((title: string, body: string): void => {
     if (!notificationsEnabled) return;
 
     if ('Notification' in window && Notification.permission === 'granted') {
@@ -252,16 +276,16 @@ export const AdvancedTimer: React.FC<Props> = ({
         icon: '🎯'
       });
     }
-  };
+  }, [notificationsEnabled]);
 
-  const handleSessionComplete = () => {
+  const handleSessionComplete = useCallback((): void => {
     const currentSession = timerState.currentSession;
     if (!currentSession) return;
 
     playNotificationSound();
 
     if (currentSession.type === 'focus') {
-      showNotification('Focus Session Complete! 🎉', `Great work on your ${currentSession.name || 'focus session'}!`);
+      showNotification('Focus Session Complete! 🎉', `Great work on your ${currentSession.name ?? 'focus session'}!`);
       onSessionComplete({
         type: currentSession.type,
         duration: currentSession.duration,
@@ -281,7 +305,7 @@ export const AdvancedTimer: React.FC<Props> = ({
     if (timerState.template && timerState.sessionIndex < timerState.template.sessions.length - 1) {
       const nextIndex = timerState.sessionIndex + 1;
       const nextSession = timerState.template.sessions[nextIndex];
-      
+
       setTimerState(prev => ({
         ...prev,
         currentSession: nextSession,
@@ -294,7 +318,7 @@ export const AdvancedTimer: React.FC<Props> = ({
       // Template complete
       onTemplateComplete(timerState.template);
       showNotification('Template Complete! 🏆', `You've completed the ${timerState.template.name} template!`);
-      
+
       setTimerState(prev => ({
         ...prev,
         currentSession: null,
@@ -314,11 +338,11 @@ export const AdvancedTimer: React.FC<Props> = ({
         startTime: null
       }));
     }
-  };
+  }, [timerState.currentSession, timerState.template, timerState.sessionIndex, playNotificationSound, showNotification, onSessionComplete, onBreakComplete, onTemplateComplete]);
 
-  const startTemplate = (template: SessionTemplate) => {
+  const startTemplate = (template: SessionTemplate): void => {
     const firstSession = template.sessions[0];
-    
+
     setTimerState(prev => ({
       ...prev,
       template,
@@ -332,14 +356,14 @@ export const AdvancedTimer: React.FC<Props> = ({
     }));
 
     // Update usage count
-    setTemplates(prev => prev.map(t => 
+    setTemplates(prev => prev.map(t =>
       t.id === template.id ? { ...t, usageCount: t.usageCount + 1 } : t
     ));
 
     setShowTemplates(false);
   };
 
-  const startSingleSession = (type: 'focus' | 'break', duration: number) => {
+  const startSingleSession = (type: 'focus' | 'break', duration: number): void => {
     setTimerState(prev => ({
       ...prev,
       currentSession: { type, duration, name: `${type} Session` },
@@ -353,7 +377,7 @@ export const AdvancedTimer: React.FC<Props> = ({
     }));
   };
 
-  const pauseSession = () => {
+  const pauseSession = (): void => {
     setTimerState(prev => ({
       ...prev,
       isRunning: false,
@@ -361,7 +385,7 @@ export const AdvancedTimer: React.FC<Props> = ({
     }));
   };
 
-  const resumeSession = () => {
+  const resumeSession = (): void => {
     setTimerState(prev => ({
       ...prev,
       isRunning: true,
@@ -369,7 +393,7 @@ export const AdvancedTimer: React.FC<Props> = ({
     }));
   };
 
-  const stopSession = () => {
+  const stopSession = (): void => {
     setTimerState(prev => ({
       ...prev,
       currentSession: null,
@@ -382,7 +406,7 @@ export const AdvancedTimer: React.FC<Props> = ({
     }));
   };
 
-  const skipToNext = () => {
+  const skipToNext = (): void => {
     if (timerState.template && timerState.sessionIndex < timerState.template.sessions.length - 1) {
       const nextIndex = timerState.sessionIndex + 1;
       const nextSession = timerState.template.sessions[nextIndex];
@@ -398,39 +422,39 @@ export const AdvancedTimer: React.FC<Props> = ({
     }
   };
 
-  const formatTime = (seconds: number) => {
+  const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const getProgress = () => {
+  const getProgress = (): number => {
     if (!timerState.currentSession) return 0;
     const totalSeconds = timerState.currentSession.duration * 60;
     const elapsed = totalSeconds - timerState.timeRemaining;
     return (elapsed / totalSeconds) * 100;
   };
 
-  const getTemplateProgress = () => {
+  const getTemplateProgress = (): number => {
     if (!timerState.template) return 0;
     return ((timerState.sessionIndex + 1) / timerState.template.sessions.length) * 100;
   };
 
-  const addSessionToTemplate = () => {
+  const addSessionToTemplate = (): void => {
     setNewTemplate(prev => ({
       ...prev,
-      sessions: [...(prev.sessions || []), { type: 'focus', duration: 25 }]
+      sessions: [...(prev.sessions ?? []), { type: 'focus', duration: 25 }]
     }));
   };
 
-  const removeSessionFromTemplate = (index: number) => {
+  const removeSessionFromTemplate = (index: number): void => {
     setNewTemplate(prev => ({
       ...prev,
-      sessions: prev.sessions?.filter((_, i) => i !== index) || []
+      sessions: prev.sessions?.filter((_, i) => i !== index) ?? []
     }));
   };
 
-  const saveTemplate = () => {
+  const saveTemplate = (): void => {
     if (newTemplate.name && newTemplate.sessions && newTemplate.sessions.length > 0) {
       const template: SessionTemplate = {
         id: `custom_${Date.now()}`,
@@ -448,7 +472,7 @@ export const AdvancedTimer: React.FC<Props> = ({
     }
   };
 
-  const deleteTemplate = (templateId: string) => {
+  const deleteTemplate = (templateId: string): void => {
     setTemplates(prev => prev.filter(t => t.id !== templateId));
   };
 
@@ -468,8 +492,8 @@ export const AdvancedTimer: React.FC<Props> = ({
                     <Coffee className="w-6 h-6 text-orange-500" />
                   )}
                   <h3 className="text-xl font-semibold text-slate-900 dark:text-white">
-                    {timerState.currentSession.name || 
-                     (timerState.currentSession.type === 'focus' ? 'Focus Session' : 
+                    {timerState.currentSession.name ??
+                     (timerState.currentSession.type === 'focus' ? 'Focus Session' :
                       timerState.currentSession.type === 'long-break' ? 'Long Break' : 'Break')}
                   </h3>
                 </div>
@@ -703,7 +727,7 @@ export const AdvancedTimer: React.FC<Props> = ({
                           <Coffee className="w-4 h-4 text-orange-400" />
                         )}
                         <span className="text-slate-900 dark:text-white">
-                          {session.name || `${session.type} (${session.duration}m)`}
+                          {session.name ?? `${session.type} (${session.duration}m)`}
                         </span>
                       </div>
                     ))}
@@ -735,7 +759,7 @@ export const AdvancedTimer: React.FC<Props> = ({
                 </label>
                 <input
                   type="text"
-                  value={newTemplate.name || ''}
+                  value={newTemplate.name ?? ''}
                   onChange={(e) => setNewTemplate({ ...newTemplate, name: e.target.value })}
                   className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
                   placeholder="My Custom Template"
@@ -747,7 +771,7 @@ export const AdvancedTimer: React.FC<Props> = ({
                   Description (optional)
                 </label>
                 <textarea
-                  value={newTemplate.description || ''}
+                  value={newTemplate.description ?? ''}
                   onChange={(e) => setNewTemplate({ ...newTemplate, description: e.target.value })}
                   className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
                   rows={2}
@@ -775,8 +799,9 @@ export const AdvancedTimer: React.FC<Props> = ({
                       <select
                         value={session.type}
                         onChange={(e) => {
-                          const updatedSessions = [...(newTemplate.sessions || [])];
-                          updatedSessions[index] = { ...session, type: e.target.value as any };
+                          const updatedSessions = [...(newTemplate.sessions ?? [])];
+                          const sessionType = e.target.value as 'focus' | 'break' | 'long-break';
+                          updatedSessions[index] = { ...session, type: sessionType };
                           setNewTemplate({ ...newTemplate, sessions: updatedSessions });
                         }}
                         className="px-3 py-1 border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm"
@@ -790,7 +815,7 @@ export const AdvancedTimer: React.FC<Props> = ({
                         type="number"
                         value={session.duration}
                         onChange={(e) => {
-                          const updatedSessions = [...(newTemplate.sessions || [])];
+                          const updatedSessions = [...(newTemplate.sessions ?? [])];
                           updatedSessions[index] = { ...session, duration: parseInt(e.target.value) || 0 };
                           setNewTemplate({ ...newTemplate, sessions: updatedSessions });
                         }}
@@ -798,20 +823,20 @@ export const AdvancedTimer: React.FC<Props> = ({
                         min="1"
                       />
                       <span className="text-sm text-slate-600 dark:text-slate-300">min</span>
-                      
+
                       <input
                         type="text"
-                        value={session.name || ''}
+                        value={session.name ?? ''}
                         onChange={(e) => {
-                          const updatedSessions = [...(newTemplate.sessions || [])];
+                          const updatedSessions = [...(newTemplate.sessions ?? [])];
                           updatedSessions[index] = { ...session, name: e.target.value };
                           setNewTemplate({ ...newTemplate, sessions: updatedSessions });
                         }}
                         className="flex-1 px-3 py-1 border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm"
                         placeholder="Session name (optional)"
                       />
-                      
-                      {(newTemplate.sessions?.length || 0) > 1 && (
+
+                      {(newTemplate.sessions?.length ?? 0) > 1 && (
                         <button
                           onClick={() => removeSessionFromTemplate(index)}
                           className="text-red-500 hover:text-red-700 dark:text-red-400"

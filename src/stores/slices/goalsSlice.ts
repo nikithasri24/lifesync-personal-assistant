@@ -6,39 +6,39 @@
 
 import { type StateCreator } from 'zustand';
 import type {
-  Goal,
-  Dream,
-  GoalInput,
-  DreamInput,
-  GoalFilters,
-} from '@/goals/api/lifeGoalsAPI';
+  LifeGoal,
+  LifeDream,
+  CreateLifeGoalInput,
+  UpdateLifeGoalInput,
+  CreateLifeDreamInput,
+  UpdateLifeDreamInput,
+} from '@/goals/types/lifeGoals';
 import { logger } from '@/services/logger';
 
 export interface GoalsSlice {
   // State - Goals
-  goals: Goal[];
+  goals: LifeGoal[];
   goalsLoaded: boolean;
   goalsLoading: boolean;
 
   // State - Dreams
-  dreams: Dream[];
+  dreams: LifeDream[];
   dreamsLoaded: boolean;
   dreamsLoading: boolean;
 
   // Actions - Goals
   loadGoals: () => Promise<void>;
-  addGoal: (input: GoalInput) => Promise<Goal>;
-  updateGoal: (id: string, updates: Partial<GoalInput>) => Promise<Goal>;
+  addGoal: (input: CreateLifeGoalInput) => Promise<LifeGoal>;
+  updateGoal: (id: string, updates: UpdateLifeGoalInput) => Promise<LifeGoal>;
   deleteGoal: (id: string) => Promise<void>;
-  searchGoals: (filters: GoalFilters) => Promise<Goal[]>;
-  getGoalById: (id: string) => Goal | undefined;
+  getGoalById: (id: string) => LifeGoal | undefined;
 
   // Actions - Dreams
   loadDreams: () => Promise<void>;
-  addDream: (input: DreamInput) => Promise<Dream>;
-  updateDream: (id: string, updates: Partial<DreamInput>) => Promise<Dream>;
+  addDream: (input: CreateLifeDreamInput) => Promise<LifeDream>;
+  updateDream: (id: string, updates: UpdateLifeDreamInput) => Promise<LifeDream>;
   deleteDream: (id: string) => Promise<void>;
-  getDreamById: (id: string) => Dream | undefined;
+  getDreamById: (id: string) => LifeDream | undefined;
 }
 
 export const createGoalsSlice: StateCreator<GoalsSlice, [], [], GoalsSlice> = (
@@ -56,13 +56,13 @@ export const createGoalsSlice: StateCreator<GoalsSlice, [], [], GoalsSlice> = (
   dreamsLoading: false,
 
   // Actions - Goals
-  loadGoals: async () => {
+  loadGoals: async (): Promise<void> => {
     if (get().goalsLoaded || get().goalsLoading) return;
 
     set({ goalsLoading: true });
     try {
-      const { getGoals } = await import('@/goals/api/lifeGoalsAPI');
-      const goals = await getGoals();
+      const { getUserLifeGoals } = await import('@/goals/api/lifeGoalsAPI');
+      const goals = await getUserLifeGoals();
       set({ goals, goalsLoaded: true, goalsLoading: false });
     } catch (error) {
       logger.error('Goals', error as Error, { context: 'loadGoals' });
@@ -71,10 +71,10 @@ export const createGoalsSlice: StateCreator<GoalsSlice, [], [], GoalsSlice> = (
     }
   },
 
-  addGoal: async (input) => {
+  addGoal: async (input: CreateLifeGoalInput): Promise<LifeGoal> => {
     try {
-      const { createGoal } = await import('@/goals/api/lifeGoalsAPI');
-      const goal = await createGoal(input);
+      const { createLifeGoal } = await import('@/goals/api/lifeGoalsAPI');
+      const goal = await createLifeGoal(input);
       set((state) => ({ goals: [...state.goals, goal] }));
       return goal;
     } catch (error) {
@@ -83,10 +83,10 @@ export const createGoalsSlice: StateCreator<GoalsSlice, [], [], GoalsSlice> = (
     }
   },
 
-  updateGoal: async (id, updates) => {
+  updateGoal: async (id: string, updates: UpdateLifeGoalInput): Promise<LifeGoal> => {
     try {
-      const { updateGoal } = await import('@/goals/api/lifeGoalsAPI');
-      const updatedGoal = await updateGoal(id, updates);
+      const { updateLifeGoal } = await import('@/goals/api/lifeGoalsAPI');
+      const updatedGoal = await updateLifeGoal(id, updates);
       set((state) => ({
         goals: state.goals.map((g) => (g.id === id ? updatedGoal : g)),
       }));
@@ -97,10 +97,10 @@ export const createGoalsSlice: StateCreator<GoalsSlice, [], [], GoalsSlice> = (
     }
   },
 
-  deleteGoal: async (id) => {
+  deleteGoal: async (id: string): Promise<void> => {
     try {
-      const { deleteGoal } = await import('@/goals/api/lifeGoalsAPI');
-      await deleteGoal(id);
+      const { deleteLifeGoal } = await import('@/goals/api/lifeGoalsAPI');
+      await deleteLifeGoal(id);
       set((state) => ({
         goals: state.goals.filter((g) => g.id !== id),
       }));
@@ -110,28 +110,18 @@ export const createGoalsSlice: StateCreator<GoalsSlice, [], [], GoalsSlice> = (
     }
   },
 
-  searchGoals: async (filters) => {
-    try {
-      const { searchGoals } = await import('@/goals/api/lifeGoalsAPI');
-      return await searchGoals(filters);
-    } catch (error) {
-      logger.error('Goals', error as Error, { context: 'searchGoals' });
-      throw error;
-    }
-  },
-
-  getGoalById: (id) => {
+  getGoalById: (id: string): LifeGoal | undefined => {
     return get().goals.find((g) => g.id === id);
   },
 
   // Actions - Dreams
-  loadDreams: async () => {
+  loadDreams: async (): Promise<void> => {
     if (get().dreamsLoaded || get().dreamsLoading) return;
 
     set({ dreamsLoading: true });
     try {
-      const { getDreams } = await import('@/goals/api/lifeGoalsAPI');
-      const dreams = await getDreams();
+      const { getUserLifeDreams } = await import('@/goals/api/lifeGoalsAPI');
+      const dreams = await getUserLifeDreams();
       set({ dreams, dreamsLoaded: true, dreamsLoading: false });
     } catch (error) {
       logger.error('Dreams', error as Error, { context: 'loadDreams' });
@@ -140,10 +130,10 @@ export const createGoalsSlice: StateCreator<GoalsSlice, [], [], GoalsSlice> = (
     }
   },
 
-  addDream: async (input) => {
+  addDream: async (input: CreateLifeDreamInput): Promise<LifeDream> => {
     try {
-      const { createDream } = await import('@/goals/api/lifeGoalsAPI');
-      const dream = await createDream(input);
+      const { createLifeDream } = await import('@/goals/api/lifeGoalsAPI');
+      const dream = await createLifeDream(input);
       set((state) => ({ dreams: [...state.dreams, dream] }));
       return dream;
     } catch (error) {
@@ -152,10 +142,10 @@ export const createGoalsSlice: StateCreator<GoalsSlice, [], [], GoalsSlice> = (
     }
   },
 
-  updateDream: async (id, updates) => {
+  updateDream: async (id: string, updates: UpdateLifeDreamInput): Promise<LifeDream> => {
     try {
-      const { updateDream } = await import('@/goals/api/lifeGoalsAPI');
-      const updatedDream = await updateDream(id, updates);
+      const { updateLifeDream } = await import('@/goals/api/lifeGoalsAPI');
+      const updatedDream = await updateLifeDream(id, updates);
       set((state) => ({
         dreams: state.dreams.map((d) => (d.id === id ? updatedDream : d)),
       }));
@@ -166,10 +156,10 @@ export const createGoalsSlice: StateCreator<GoalsSlice, [], [], GoalsSlice> = (
     }
   },
 
-  deleteDream: async (id) => {
+  deleteDream: async (id: string): Promise<void> => {
     try {
-      const { deleteDream } = await import('@/goals/api/lifeGoalsAPI');
-      await deleteDream(id);
+      const { deleteLifeDream } = await import('@/goals/api/lifeGoalsAPI');
+      await deleteLifeDream(id);
       set((state) => ({
         dreams: state.dreams.filter((d) => d.id !== id),
       }));
@@ -179,7 +169,7 @@ export const createGoalsSlice: StateCreator<GoalsSlice, [], [], GoalsSlice> = (
     }
   },
 
-  getDreamById: (id) => {
+  getDreamById: (id: string): LifeDream | undefined => {
     return get().dreams.find((d) => d.id === id);
   },
 });

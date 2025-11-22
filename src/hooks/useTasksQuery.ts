@@ -6,6 +6,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import type { UseQueryResult, UseMutationResult } from '@tanstack/react-query';
 import type { TaskData, ProjectData } from '../services/types';
 import { queryKeys, queryOptions } from '@/lib/react-query';
 import {
@@ -41,7 +42,7 @@ export interface TaskFilters {
 /**
  * Get all tasks with optional filters
  */
-export function useTasks(filters?: TaskFilters) {
+export function useTasks(filters?: TaskFilters): UseQueryResult<TaskData[], Error> {
   return useQuery({
     queryKey: queryKeys.tasks.list(filters),
     queryFn: () => getTasks(filters),
@@ -52,10 +53,10 @@ export function useTasks(filters?: TaskFilters) {
 /**
  * Get a single task by ID
  */
-export function useTask(id: string | null) {
+export function useTask(id: string | null): UseQueryResult<TaskData, Error> {
   return useQuery({
-    queryKey: queryKeys.tasks.detail(id!),
-    queryFn: () => getTask(id!),
+    queryKey: queryKeys.tasks.detail(id ?? ''),
+    queryFn: () => getTask(id ?? ''),
     enabled: !!id,
     ...queryOptions.user,
   });
@@ -68,7 +69,7 @@ export function useTask(id: string | null) {
 /**
  * Create a new task
  */
-export function useCreateTask() {
+export function useCreateTask(): UseMutationResult<TaskData, Error, Omit<TaskData, 'id' | 'created_at' | 'updated_at'>, unknown> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -81,7 +82,7 @@ export function useCreateTask() {
       logger.info('Task created successfully', { id: newTask.id, title: newTask.title });
 
       // Invalidate all task lists
-      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.lists() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.lists() });
 
       // Optimistically add to cache
       queryClient.setQueryData<TaskData[]>(
@@ -100,7 +101,7 @@ export function useCreateTask() {
 /**
  * Update an existing task
  */
-export function useUpdateTask() {
+export function useUpdateTask(): UseMutationResult<TaskData, Error, { id: string; updates: Partial<TaskData> }, unknown> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -109,18 +110,18 @@ export function useUpdateTask() {
       const result = await updateTask(id, updates);
       return result;
     },
-    onMutate: async ({ id, updates }) => {
+    onMutate: ({ id, updates }) => {
       logger.debug('Optimistic update: updating task', { id, updates });
     },
     onSuccess: (updatedTask) => {
       logger.info('Task updated successfully', { id: updatedTask.id, title: updatedTask.title });
 
       // Invalidate all task lists
-      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.lists() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.lists() });
 
       // Update the specific task detail cache
       queryClient.setQueryData(
-        queryKeys.tasks.detail(updatedTask.id!),
+        queryKeys.tasks.detail(updatedTask.id ?? ''),
         updatedTask
       );
 
@@ -143,7 +144,7 @@ export function useUpdateTask() {
 /**
  * Delete a task (soft delete)
  */
-export function useDeleteTask() {
+export function useDeleteTask(): UseMutationResult<TaskData, Error, string, unknown> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -156,7 +157,7 @@ export function useDeleteTask() {
       logger.info('Task deleted successfully', { id: deletedId });
 
       // Invalidate all task lists
-      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.lists() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.lists() });
 
       // Mark as deleted in cache (soft delete)
       queryClient.setQueryData<TaskData[]>(
@@ -179,7 +180,7 @@ export function useDeleteTask() {
 /**
  * Permanently delete a task
  */
-export function usePermanentlyDeleteTask() {
+export function usePermanentlyDeleteTask(): UseMutationResult<void, Error, string, unknown> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -192,7 +193,7 @@ export function usePermanentlyDeleteTask() {
       logger.info('Task permanently deleted', { id: deletedId });
 
       // Invalidate all task lists
-      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.lists() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.lists() });
 
       // Remove from cache
       queryClient.removeQueries({ queryKey: queryKeys.tasks.detail(deletedId) });
@@ -214,7 +215,7 @@ export function usePermanentlyDeleteTask() {
 /**
  * Restore a deleted task
  */
-export function useRestoreTask() {
+export function useRestoreTask(): UseMutationResult<TaskData, Error, string, unknown> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -227,7 +228,7 @@ export function useRestoreTask() {
       logger.info('Task restored successfully', { id: restoredTask.id, title: restoredTask.title });
 
       // Invalidate all task lists
-      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.lists() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.lists() });
 
       // Update in cache
       queryClient.setQueryData<TaskData[]>(
@@ -256,7 +257,7 @@ export interface ProjectFilters {
 /**
  * Get all projects with optional filters
  */
-export function useProjects(filters?: ProjectFilters) {
+export function useProjects(filters?: ProjectFilters): UseQueryResult<ProjectData[], Error> {
   return useQuery({
     queryKey: [...queryKeys.tasks.all, 'projects', filters] as const,
     queryFn: () => getProjects(filters),
@@ -267,10 +268,10 @@ export function useProjects(filters?: ProjectFilters) {
 /**
  * Get a single project by ID
  */
-export function useProject(id: string | null) {
+export function useProject(id: string | null): UseQueryResult<ProjectData, Error> {
   return useQuery({
     queryKey: [...queryKeys.tasks.all, 'projects', 'detail', id] as const,
-    queryFn: () => getProject(id!),
+    queryFn: () => getProject(id ?? ''),
     enabled: !!id,
     ...queryOptions.user,
   });
@@ -283,7 +284,7 @@ export function useProject(id: string | null) {
 /**
  * Create a new project
  */
-export function useCreateProject() {
+export function useCreateProject(): UseMutationResult<ProjectData, Error, Omit<ProjectData, 'id' | 'created_at' | 'updated_at'>, unknown> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -296,7 +297,7 @@ export function useCreateProject() {
       logger.info('Project created successfully', { id: newProject.id, name: newProject.name });
 
       // Invalidate all project queries
-      queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'projects'] });
+      void queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'projects'] });
 
       // Optimistically add to cache
       queryClient.setQueryData<ProjectData[]>(
@@ -315,7 +316,7 @@ export function useCreateProject() {
 /**
  * Update an existing project
  */
-export function useUpdateProject() {
+export function useUpdateProject(): UseMutationResult<ProjectData, Error, { id: string; updates: Partial<ProjectData> }, unknown> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -324,14 +325,14 @@ export function useUpdateProject() {
       const result = await updateProject(id, updates);
       return result;
     },
-    onMutate: async ({ id, updates }) => {
+    onMutate: ({ id, updates }) => {
       logger.debug('Optimistic update: updating project', { id, updates });
     },
     onSuccess: (updatedProject) => {
       logger.info('Project updated successfully', { id: updatedProject.id, name: updatedProject.name });
 
       // Invalidate all project queries
-      queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'projects'] });
+      void queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'projects'] });
 
       // Update the specific project detail cache
       queryClient.setQueryData(
@@ -358,7 +359,7 @@ export function useUpdateProject() {
 /**
  * Delete a project
  */
-export function useDeleteProject() {
+export function useDeleteProject(): UseMutationResult<void, Error, string, unknown> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -371,7 +372,7 @@ export function useDeleteProject() {
       logger.info('Project deleted successfully', { id: deletedId });
 
       // Invalidate all project queries
-      queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'projects'] });
+      void queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'projects'] });
 
       // Remove from cache
       queryClient.removeQueries({ queryKey: [...queryKeys.tasks.all, 'projects', 'detail', deletedId] });

@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import React, { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Plus, Target, Trash2, CheckCircle2, Sparkles, TrendingUp, Edit3, Lightbulb, Trophy } from 'lucide-react';
@@ -131,7 +132,7 @@ const LifeGoals: React.FC = () => {
     };
   }, [dreams]);
 
-  const handleGoalSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleGoalSubmit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
     if (!goalDraft.title.trim()) return;
 
@@ -151,11 +152,11 @@ const LifeGoals: React.FC = () => {
       setShowGoalForm(false);
     } catch (error) {
       logger.error('Error creating goal:', { error });
-      alert('Failed to create goal. Please try again.');
+      // Error is logged; user will see mutation error state
     }
   };
 
-  const handleDreamSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleDreamSubmit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
     if (!dreamDraft.title.trim()) return;
 
@@ -172,11 +173,11 @@ const LifeGoals: React.FC = () => {
       setShowDreamForm(false);
     } catch (error) {
       logger.error('Error creating dream:', { error });
-      alert('Failed to create dream. Please try again.');
+      // Error is logged; user will see mutation error state
     }
   };
 
-  const handleMarkGoalComplete = async (goalId: string) => {
+  const handleMarkGoalComplete = async (goalId: string): Promise<void> => {
     try {
       await updateGoalMutation.mutateAsync({
         goalId,
@@ -188,22 +189,23 @@ const LifeGoals: React.FC = () => {
       });
     } catch (error) {
       logger.error('Error updating goal:', { error });
-      alert('Failed to update goal. Please try again.');
+      // Error is logged; user will see mutation error state
     }
   };
 
-  const handleDeleteGoal = async (goalId: string) => {
-    if (!confirm('Are you sure you want to delete this goal?')) return;
+  const handleDeleteGoal = async (goalId: string): Promise<void> => {
+    // eslint-disable-next-line no-alert
+    if (!window.confirm('Are you sure you want to delete this goal?')) return;
 
     try {
       await deleteGoalMutation.mutateAsync(goalId);
     } catch (error) {
       logger.error('Error deleting goal:', { error });
-      alert('Failed to delete goal. Please try again.');
+      // Error is logged; user will see mutation error state
     }
   };
 
-  const handleMarkDreamAchieved = async (dreamId: string) => {
+  const handleMarkDreamAchieved = async (dreamId: string): Promise<void> => {
     try {
       await updateDreamMutation.mutateAsync({
         dreamId,
@@ -214,22 +216,23 @@ const LifeGoals: React.FC = () => {
       });
     } catch (error) {
       logger.error('Error updating dream:', { error });
-      alert('Failed to update dream. Please try again.');
+      // Error is logged; user will see mutation error state
     }
   };
 
-  const handleDeleteDream = async (dreamId: string) => {
-    if (!confirm('Are you sure you want to delete this dream?')) return;
+  const handleDeleteDream = async (dreamId: string): Promise<void> => {
+    // eslint-disable-next-line no-alert
+    if (!window.confirm('Are you sure you want to delete this dream?')) return;
 
     try {
       await deleteDreamMutation.mutateAsync(dreamId);
     } catch (error) {
       logger.error('Error deleting dream:', { error });
-      alert('Failed to delete dream. Please try again.');
+      // Error is logged; user will see mutation error state
     }
   };
 
-  const handleUpdateProgress = async (goalId: string) => {
+  const handleUpdateProgress = async (goalId: string): Promise<void> => {
     try {
       await updateGoalMutation.mutateAsync({
         goalId,
@@ -243,24 +246,24 @@ const LifeGoals: React.FC = () => {
       setProgressValue(0);
     } catch (error) {
       logger.error('Error updating progress:', { error });
-      alert('Failed to update progress. Please try again.');
+      // Error is logged; user will see mutation error state
     }
   };
 
-  const handleStartEditProgress = (goalId: string, currentProgress: number) => {
+  const handleStartEditProgress = (goalId: string, currentProgress: number): void => {
     setEditingProgress(goalId);
     setProgressValue(currentProgress);
   };
 
-  const handleGoalCreatedFromTemplate = (goal: LifeGoalWithMilestones) => {
+  const handleGoalCreatedFromTemplate = (goal: LifeGoalWithMilestones): void => {
     // React Query automatically updates the cache via mutation
     if (goal.milestones && goal.milestones.length > 0) {
-      setGoalMilestones(prev => ({ ...prev, [goal.id]: goal.milestones }));
+      setGoalMilestones(prev => ({ ...prev, [goal.id]: goal.milestones ?? [] }));
     }
     setShowTemplates(false);
   };
 
-  const handleExpandGoal = (goalId: string) => {
+  const handleExpandGoal = (goalId: string): void => {
     if (expandedGoalId === goalId) {
       setExpandedGoalId(null);
       return;
@@ -270,12 +273,12 @@ const LifeGoals: React.FC = () => {
     // Milestone loading is handled by child component GoalMilestones
   };
 
-  const handleMilestonesUpdated = (goal: LifeGoal, milestones: LifeGoalMilestone[]) => {
+  const handleMilestonesUpdated = (goal: LifeGoal, milestones: LifeGoalMilestone[]): void => {
     // React Query cache is automatically updated by mutations
     setGoalMilestones(prev => ({ ...prev, [goal.id]: milestones }));
   };
 
-  const renderGoalList = () => {
+  const renderGoalList = (): JSX.Element => {
     if (goals.length === 0) {
       return <EmptyState label="No goals yet. Start by creating one." icon={<Target className="h-6 w-6" />} />;
     }
@@ -284,7 +287,7 @@ const LifeGoals: React.FC = () => {
       <ul className="space-y-3">
         {goals.map((goal) => {
           const isExpanded = expandedGoalId === goal.id;
-          const milestonesForGoal = goalMilestones[goal.id] || [];
+          const milestonesForGoal = goalMilestones[goal.id] ?? [];
           const hasMilestones = milestonesForGoal.length > 0;
 
           return (
@@ -298,7 +301,9 @@ const LifeGoals: React.FC = () => {
                 {goal.status !== 'completed' && (
                   <button
                     type="button"
-                    onClick={() => handleMarkGoalComplete(goal.id)}
+                    onClick={() => {
+                      void handleMarkGoalComplete(goal.id);
+                    }}
                     className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-600 transition hover:bg-emerald-100"
                   >
                     <CheckCircle2 className="h-4 w-4" />
@@ -307,7 +312,9 @@ const LifeGoals: React.FC = () => {
                 )}
                 <button
                   type="button"
-                  onClick={() => handleDeleteGoal(goal.id)}
+                  onClick={() => {
+                    void handleDeleteGoal(goal.id);
+                  }}
                   className="rounded-full border border-slate-200 p-1 text-slate-500 transition hover:bg-slate-100"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -345,7 +352,9 @@ const LifeGoals: React.FC = () => {
                   />
                   <span className="text-sm font-medium text-slate-700 w-12">{progressValue}%</span>
                   <button
-                    onClick={() => handleUpdateProgress(goal.id)}
+                    onClick={() => {
+                      void handleUpdateProgress(goal.id);
+                    }}
                     className="px-3 py-1 bg-indigo-600 text-white text-xs rounded hover:bg-indigo-700"
                   >
                     Save
@@ -401,7 +410,9 @@ const LifeGoals: React.FC = () => {
                 {goal.streakEnabled && (
                   <GoalStreaks
                     goal={goal}
-                    onGoalUpdated={(updatedGoal) => setGoals(prev => prev.map(g => g.id === updatedGoal.id ? updatedGoal : g))}
+                    onGoalUpdated={() => {
+                      // React Query cache is automatically updated by mutations
+                    }}
                   />
                 )}
                 {/* Check-ins section */}
@@ -414,7 +425,7 @@ const LifeGoals: React.FC = () => {
     );
   };
 
-  const renderDreamList = () => {
+  const renderDreamList = (): JSX.Element => {
     if (dreams.length === 0) {
       return <EmptyState label="No dreams captured yet. Start with one aspiration." />;
     }
@@ -432,7 +443,9 @@ const LifeGoals: React.FC = () => {
                 {dream.status !== 'achieved' && (
                   <button
                     type="button"
-                    onClick={() => handleMarkDreamAchieved(dream.id)}
+                    onClick={() => {
+                      void handleMarkDreamAchieved(dream.id);
+                    }}
                     className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-600 transition hover:bg-indigo-100"
                   >
                     <Sparkles className="h-4 w-4" />
@@ -441,7 +454,9 @@ const LifeGoals: React.FC = () => {
                 )}
                 <button
                   type="button"
-                  onClick={() => handleDeleteDream(dream.id)}
+                  onClick={() => {
+                    void handleDeleteDream(dream.id);
+                  }}
                   className="rounded-full border border-slate-200 p-1 text-slate-500 transition hover:bg-slate-100"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -567,7 +582,9 @@ const LifeGoals: React.FC = () => {
       </section>
 
       {showGoalForm && (
-        <form onSubmit={handleGoalSubmit} className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        <form onSubmit={(e) => {
+          void handleGoalSubmit(e);
+        }} className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-900">Create a goal</h2>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <label className="flex flex-col gap-1 text-sm">
@@ -687,7 +704,9 @@ const LifeGoals: React.FC = () => {
       )}
 
       {showDreamForm && (
-        <form onSubmit={handleDreamSubmit} className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        <form onSubmit={(e) => {
+          void handleDreamSubmit(e);
+        }} className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-900">Capture a dream</h2>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <label className="flex flex-col gap-1 text-sm">

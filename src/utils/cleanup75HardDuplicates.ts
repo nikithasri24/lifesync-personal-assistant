@@ -7,16 +7,19 @@
 
 import { useAppStore } from '../stores/useAppStore';
 import { logger } from '../services/logger';
+import type { TodoItem } from '../types';
 
-export async function cleanup75HardDuplicates() {
+export async function cleanup75HardDuplicates(): Promise<void> {
   logger.debug('Utils', '🧹 Starting cleanup of duplicate 75 Hard tasks...');
 
-  const store = useAppStore.getState();
-  const todos = store.todos;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment -- Legacy store API compatibility
+  const store = useAppStore.getState() as any;
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- Legacy store API compatibility
+  const todos = store.todos as TodoItem[];
 
   // Filter for 75 Hard todos only
-  const sfhTodos = todos.filter(todo => {
-    const tags = Array.isArray(todo.tags) ? todo.tags : [];
+  const sfhTodos = todos.filter((todo: TodoItem) => {
+    const tags: string[] = Array.isArray(todo.tags) ? todo.tags : [];
     return tags.includes('75hard');
   });
 
@@ -28,15 +31,15 @@ export async function cleanup75HardDuplicates() {
   logger.debug('Utils', `📊 Found ${sfhTodos.length} total 75 Hard todos`);
 
   // Group by unique combination
-  const uniqueMap = new Map<string, any>();
+  const uniqueMap = new Map<string, TodoItem>();
   const duplicates: string[] = [];
 
   for (const todo of sfhTodos) {
-    const tags = Array.isArray(todo.tags) ? todo.tags : [];
+    const tags: string[] = Array.isArray(todo.tags) ? todo.tags : [];
 
-    const challengeTag = tags.find((t: string) => t.startsWith('75hard:challenge-'));
-    const dayTag = tags.find((t: string) => t.startsWith('75hard:day-'));
-    const taskTag = tags.find((t: string) => t.startsWith('75hard:task-'));
+    const challengeTag: string | undefined = tags.find((t: string) => t.startsWith('75hard:challenge-'));
+    const dayTag: string | undefined = tags.find((t: string) => t.startsWith('75hard:day-'));
+    const taskTag: string | undefined = tags.find((t: string) => t.startsWith('75hard:task-'));
 
     if (!challengeTag || !dayTag || !taskTag) {
       continue;
@@ -67,6 +70,7 @@ export async function cleanup75HardDuplicates() {
   logger.debug('Utils', `\n🗑️  Deleting ${duplicates.length} duplicates...`);
 
   for (const id of duplicates) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access -- Legacy store API compatibility
     await store.deleteTodo(id);
   }
 
@@ -77,5 +81,5 @@ export async function cleanup75HardDuplicates() {
 
 // Make it available globally
 if (typeof window !== 'undefined') {
-  window.cleanup75HardDuplicates = cleanup75HardDuplicates;
+  window.cleanup75HardDuplicates = () => void cleanup75HardDuplicates();
 }
