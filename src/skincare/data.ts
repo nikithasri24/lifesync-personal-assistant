@@ -21,33 +21,33 @@ import type {
 } from './types';
 
 // Helper function to convert snake_case to camelCase
-function toCamelCase<T>(obj: any): T {
-  if (!obj) return obj;
+function toCamelCase<T>(obj: unknown): T {
+  if (!obj) return obj as T;
   if (Array.isArray(obj)) {
-    return obj.map(toCamelCase) as any;
+    return obj.map(toCamelCase) as T;
   }
-  if (typeof obj !== 'object') return obj;
+  if (typeof obj !== 'object') return obj as T;
 
-  const camelObj: any = {};
-  for (const key in obj) {
-    const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
-    camelObj[camelKey] = toCamelCase(obj[key]);
+  const camelObj: Record<string, unknown> = {};
+  for (const key in obj as Record<string, unknown>) {
+    const camelKey = key.replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase());
+    camelObj[camelKey] = toCamelCase((obj as Record<string, unknown>)[key]);
   }
-  return camelObj;
+  return camelObj as T;
 }
 
 // Helper function to convert camelCase to snake_case
-function toSnakeCase(obj: any): any {
+function toSnakeCase(obj: unknown): unknown {
   if (!obj) return obj;
   if (Array.isArray(obj)) {
     return obj.map(toSnakeCase);
   }
   if (typeof obj !== 'object') return obj;
 
-  const snakeObj: any = {};
-  for (const key in obj) {
+  const snakeObj: Record<string, unknown> = {};
+  for (const key in obj as Record<string, unknown>) {
     const snakeKey = key.replace(/([A-Z])/g, '_$1').toLowerCase();
-    snakeObj[snakeKey] = toSnakeCase(obj[key]);
+    snakeObj[snakeKey] = toSnakeCase((obj as Record<string, unknown>)[key]);
   }
   return snakeObj;
 }
@@ -71,10 +71,10 @@ export const skincareAPI = {
       .from('skincare_products')
       .select('*')
       .eq('id', id)
-      .single();
+      .single() as { data: unknown; error: unknown };
 
-    if (error) throw error;
-    return toCamelCase(data);
+    if (error) throw error as Error;
+    return toCamelCase<SkincareProduct | null>(data);
   },
 
   async createProduct(product: SkincareProductInput): Promise<SkincareProduct> {
@@ -85,10 +85,10 @@ export const skincareAPI = {
       .from('skincare_products')
       .insert(toSnakeCase({ ...product, userId: userData.user.id }))
       .select()
-      .single();
+      .single() as { data: unknown; error: unknown };
 
-    if (error) throw error;
-    return toCamelCase(data);
+    if (error) throw error as Error;
+    return toCamelCase<SkincareProduct>(data);
   },
 
   async updateProduct(id: string, updates: Partial<SkincareProductInput>): Promise<SkincareProduct> {
@@ -97,10 +97,10 @@ export const skincareAPI = {
       .update(toSnakeCase(updates))
       .eq('id', id)
       .select()
-      .single();
+      .single() as { data: unknown; error: unknown };
 
-    if (error) throw error;
-    return toCamelCase(data);
+    if (error) throw error as Error;
+    return toCamelCase<SkincareProduct>(data);
   },
 
   async deleteProduct(id: string): Promise<void> {
@@ -130,10 +130,10 @@ export const skincareAPI = {
       .from('skincare_routines')
       .select('*')
       .eq('id', id)
-      .single();
+      .single() as { data: unknown; error: unknown };
 
-    if (error) throw error;
-    return toCamelCase(data);
+    if (error) throw error as Error;
+    return toCamelCase<SkincareRoutine | null>(data);
   },
 
   async createRoutine(routine: SkincareRoutineInput): Promise<SkincareRoutine> {
@@ -144,10 +144,10 @@ export const skincareAPI = {
       .from('skincare_routines')
       .insert(toSnakeCase({ ...routine, userId: userData.user.id }))
       .select()
-      .single();
+      .single() as { data: unknown; error: unknown };
 
-    if (error) throw error;
-    return toCamelCase(data);
+    if (error) throw error as Error;
+    return toCamelCase<SkincareRoutine>(data);
   },
 
   async updateRoutine(id: string, updates: Partial<SkincareRoutineInput>): Promise<SkincareRoutine> {
@@ -156,10 +156,10 @@ export const skincareAPI = {
       .update(toSnakeCase(updates))
       .eq('id', id)
       .select()
-      .single();
+      .single() as { data: unknown; error: unknown };
 
-    if (error) throw error;
-    return toCamelCase(data);
+    if (error) throw error as Error;
+    return toCamelCase<SkincareRoutine>(data);
   },
 
   async deleteRoutine(id: string): Promise<void> {
@@ -201,8 +201,8 @@ export const skincareAPI = {
 
     if (error) throw error;
     return {
-      items: toCamelCase(data || []),
-      total: count || 0,
+      items: toCamelCase(data ?? []),
+      total: count ?? 0,
     };
   },
 
@@ -211,10 +211,10 @@ export const skincareAPI = {
       .from('skincare_logs')
       .select('*')
       .eq('id', id)
-      .single();
+      .single() as { data: unknown; error: unknown };
 
-    if (error) throw error;
-    return toCamelCase(data);
+    if (error) throw error as Error;
+    return toCamelCase<SkincareLog | null>(data);
   },
 
   async getLogByDate(date: string, routineType: string): Promise<SkincareLog | null> {
@@ -227,10 +227,10 @@ export const skincareAPI = {
       .eq('user_id', userData.user.id)
       .eq('date', date)
       .eq('routine_type', routineType)
-      .maybeSingle();
+      .maybeSingle() as { data: unknown; error: unknown };
 
-    if (error) throw error;
-    return toCamelCase(data);
+    if (error) throw error as Error;
+    return toCamelCase<SkincareLog | null>(data);
   },
 
   async createLog(log: SkincareLogInput): Promise<SkincareLog> {
@@ -241,10 +241,10 @@ export const skincareAPI = {
       .from('skincare_logs')
       .insert(toSnakeCase({ ...log, userId: userData.user.id }))
       .select()
-      .single();
+      .single() as { data: unknown; error: unknown };
 
-    if (error) throw error;
-    return toCamelCase(data);
+    if (error) throw error as Error;
+    return toCamelCase<SkincareLog>(data);
   },
 
   async updateLog(id: string, updates: Partial<SkincareLogInput>): Promise<SkincareLog> {
@@ -253,10 +253,10 @@ export const skincareAPI = {
       .update(toSnakeCase(updates))
       .eq('id', id)
       .select()
-      .single();
+      .single() as { data: unknown; error: unknown };
 
-    if (error) throw error;
-    return toCamelCase(data);
+    if (error) throw error as Error;
+    return toCamelCase<SkincareLog>(data);
   },
 
   async deleteLog(id: string): Promise<void> {
@@ -298,8 +298,8 @@ export const skincareAPI = {
 
     if (error) throw error;
     return {
-      items: toCamelCase(data || []),
-      total: count || 0,
+      items: toCamelCase(data ?? []),
+      total: count ?? 0,
     };
   },
 
@@ -311,10 +311,10 @@ export const skincareAPI = {
       .from('skin_observations')
       .insert(toSnakeCase({ ...observation, userId: userData.user.id }))
       .select()
-      .single();
+      .single() as { data: unknown; error: unknown };
 
-    if (error) throw error;
-    return toCamelCase(data);
+    if (error) throw error as Error;
+    return toCamelCase<SkinObservation>(data);
   },
 
   async updateObservation(id: string, updates: Partial<SkinObservationInput>): Promise<SkinObservation> {
@@ -323,10 +323,10 @@ export const skincareAPI = {
       .update(toSnakeCase(updates))
       .eq('id', id)
       .select()
-      .single();
+      .single() as { data: unknown; error: unknown };
 
-    if (error) throw error;
-    return toCamelCase(data);
+    if (error) throw error as Error;
+    return toCamelCase<SkinObservation>(data);
   },
 
   async deleteObservation(id: string): Promise<void> {
@@ -348,10 +348,10 @@ export const skincareAPI = {
       .from('skincare_streaks')
       .select('*')
       .eq('user_id', userData.user.id)
-      .single();
+      .single() as { data: unknown; error: { code?: string } | null };
 
-    if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows returned
-    return toCamelCase(data);
+    if (error && error.code !== 'PGRST116') throw error as Error; // PGRST116 = no rows returned
+    return toCamelCase<SkincareStreak | null>(data);
   },
 
   async getRoutineSummaries(): Promise<RoutineSummary[]> {

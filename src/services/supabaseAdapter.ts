@@ -464,6 +464,26 @@ class SupabaseAdapter {
     return data as FinancialTransactionData
   }
 
+  async updateFinancialTransaction(
+    id: string,
+    updates: Partial<FinancialTransactionData>,
+  ): Promise<FinancialTransactionData> {
+    const userId = this.requireUserId()
+    const payload = this.sanitize(updates)
+
+    const { data, error } = await this.client
+      .from('financial_transactions')
+      .update(payload)
+      .eq('id', id)
+      .eq('user_id', userId)
+      .select()
+      .single()
+
+    if (error) throw new Error(error.message)
+    if (!data) throw new Error('Failed to update financial transaction')
+    return data as FinancialTransactionData
+  }
+
   // ===== Shopping =====
   async getShoppingLists(): Promise<ShoppingListData[]> {
     const userId = this.requireUserId()

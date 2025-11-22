@@ -288,6 +288,16 @@ class ApiClient {
     });
   }
 
+  async updateFinancialTransaction(id: string, updates: Partial<FinancialTransactionData>): Promise<FinancialTransactionData> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.updateFinancialTransaction(id, updates);
+    }
+    return this.request<FinancialTransactionData>(`/financial/transactions/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  }
+
   // ==================== SHOPPING OPERATIONS ====================
 
   async getShoppingLists(): Promise<ShoppingListData[]> {

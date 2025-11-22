@@ -33,7 +33,7 @@ export function useBarcodeScanner(
   const [barcodeResult, setBarcodeResult] = useState<string | null>(null);
   const [captureMessage, setCaptureMessage] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const barcodeDetectorRef = useRef<BarcodeDetector | null>(null);
+  const barcodeDetectorRef = useRef<{ detect: (image: ImageBitmapSource) => Promise<Array<{ rawValue: string }>> } | undefined>(undefined);
   const streamRef = useRef<MediaStream | null>(null);
 
   const lookupProduct = async (barcode: string): Promise<ProductInfo> => {
@@ -42,13 +42,19 @@ export function useBarcodeScanner(
         headers: { Accept: 'application/json' },
       });
       if (!resp.ok) throw new Error('lookup failed');
-      const data = await resp.json();
+      const data = (await resp.json()) as {
+        name?: string;
+        price?: number;
+        category?: string;
+        brand?: string;
+        image?: string;
+      };
       return {
-        name: data.name || `Product ${barcode.slice(-4)}`,
+        name: data.name ?? `Product ${barcode.slice(-4)}`,
         price: typeof data.price === 'number' ? data.price : undefined,
-        category: data.category || 'other',
-        brand: data.brand || undefined,
-        image: data.image || undefined,
+        category: data.category ?? 'other',
+        brand: data.brand ?? undefined,
+        image: data.image ?? undefined,
       };
     } catch {
       return { name: `Product ${barcode.slice(-4)}`, category: 'other' };
@@ -67,7 +73,9 @@ export function useBarcodeScanner(
     if (videoRef.current) {
       try {
         videoRef.current.pause();
-      } catch {}
+      } catch {
+        // Ignore pause errors
+      }
       videoRef.current.srcObject = null;
     }
   }, []);
@@ -79,7 +87,7 @@ export function useBarcodeScanner(
 
     try {
       if (!('BarcodeDetector' in window)) {
-        alert('Barcode scanning not supported on this device. Please enter barcode manually.');
+        logger.warn('useBarcodeScanner', 'Barcode scanning not supported on this device.');
         setIsScanning(false);
         return;
       }
@@ -109,10 +117,12 @@ export function useBarcodeScanner(
           const supportedSet = new Set(supported);
           formats = desired.filter((f) => supportedSet.has(f));
         }
-      } catch {}
+      } catch {
+        // Ignore getSupportedFormats errors
+      }
 
       const detectorOpts = formats?.length ? { formats } : undefined;
-      const barcodeDetector = new window.BarcodeDetector(detectorOpts);
+      const barcodeDetector = new window.BarcodeDetector(detectorOpts) as { detect: (image: ImageBitmapSource) => Promise<Array<{ rawValue: string }>> };
       barcodeDetectorRef.current = barcodeDetector;
 
       // Get camera stream
@@ -132,14 +142,18 @@ export function useBarcodeScanner(
         videoRef.current.srcObject = stream;
         try {
           await videoRef.current.play();
-        } catch {}
+        } catch {
+          // Ignore play errors
+        }
       }
 
       // Start barcode detection loop
-      const detectBarcodes = async () => {
+      const detectBarcodes = async (): Promise<void> => {
         const video = videoRef.current;
         if (!video?.videoWidth || !video.videoHeight) {
-          requestAnimationFrame(detectBarcodes);
+          requestAnimationFrame(() => {
+            void detectBarcodes();
+          });
           return;
         }
 
@@ -164,16 +178,20 @@ export function useBarcodeScanner(
         }
 
         if (isScanning) {
-          requestAnimationFrame(detectBarcodes);
+          requestAnimationFrame(() => {
+            void detectBarcodes();
+          });
         }
       };
 
       if (videoRef.current) {
-        videoRef.current.onloadedmetadata = () => detectBarcodes();
+        videoRef.current.onloadedmetadata = () => {
+          void detectBarcodes();
+        };
       }
     } catch (error) {
       logger.error('useBarcodeScanner', 'Camera access error:', error);
-      alert('Camera access denied. Please enable camera permissions to scan barcodes.');
+      logger.warn('useBarcodeScanner', 'Camera access denied. Please enable camera permissions to scan barcodes.');
       setIsScanning(false);
     }
   }, [isScanning, onProductFound, stopScanning]);
@@ -185,17 +203,20 @@ export function useBarcodeScanner(
       const video = videoRef.current;
       if (!detector || !video) return;
 
-      const result = await detector.detect(video);
+      const result: Array<{ rawValue: string }> = await detector.detect(video);
       if (Array.isArray(result) && result.length > 0) {
-        const code = result[0].rawValue;
-        setBarcodeResult(code);
+        const firstBarcode: { rawValue: string } | undefined = result[0];
+        if (firstBarcode && typeof firstBarcode.rawValue === 'string') {
+          const code: string = firstBarcode.rawValue;
+          setBarcodeResult(code);
 
-        const productInfo = await lookupProduct(code);
-        if (onProductFound) {
-          onProductFound(code, productInfo);
+          const productInfo = await lookupProduct(code);
+          if (onProductFound) {
+            onProductFound(code, productInfo);
+          }
+
+          stopScanning();
         }
-
-        stopScanning();
       } else {
         setCaptureMessage(
           'No barcode found. Try moving closer, centering, and tapping Capture again.'

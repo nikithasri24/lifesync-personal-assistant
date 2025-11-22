@@ -38,10 +38,10 @@ const SkincarePage: React.FC = () => {
 
   // Load data
   React.useEffect(() => {
-    loadData();
+    void loadData();
   }, []);
 
-  const loadData = async () => {
+  const loadData = async (): Promise<void> => {
     try {
       setLoading(true);
       const [productsData, routinesData, logsData] = await Promise.all([
@@ -77,11 +77,11 @@ const SkincarePage: React.FC = () => {
   const _getTodayCompletion = (routineType: 'AM' | 'PM'): boolean => {
     const today = new Date().toISOString().split('T')[0];
     const log = logs.find(l => l.date === today && l.routineType === routineType);
-    return log?.completed || false;
+    return log?.completed ?? false;
   };
 
   // Toggle routine completion
-  const handleToggleComplete = async (routineType: 'AM' | 'PM') => {
+  const handleToggleComplete = async (routineType: 'AM' | 'PM'): Promise<void> => {
     const today = new Date().toISOString().split('T')[0];
     const existingLog = logs.find(l => l.date === today && l.routineType === routineType);
 
@@ -102,7 +102,7 @@ const SkincarePage: React.FC = () => {
           routineType,
           completed: true,
           completedAt: new Date().toISOString(),
-          productsUsed: routine?.productIds || [],
+          productsUsed: routine?.productIds ?? [],
           skippedProducts: [],
         });
         setLogs([newLog, ...logs]);
@@ -112,7 +112,7 @@ const SkincarePage: React.FC = () => {
     }
   };
 
-  const handleDayClick = (date: string) => {
+  const handleDayClick = (date: string): void => {
     setSelectedDate(date);
   };
 
@@ -121,17 +121,17 @@ const SkincarePage: React.FC = () => {
   const selectedAMLog = selectedDateLogs.find(l => l.routineType === 'AM');
   const selectedPMLog = selectedDateLogs.find(l => l.routineType === 'PM');
 
-  const handleAddProduct = () => {
+  const handleAddProduct = (): void => {
     setEditingProduct(undefined);
     setShowProductModal(true);
   };
 
-  const handleEditProduct = (product: SkincareProduct) => {
+  const handleEditProduct = (product: SkincareProduct): void => {
     setEditingProduct(product);
     setShowProductModal(true);
   };
 
-  const handleSaveProduct = async (productData: SkincareProductInput) => {
+  const handleSaveProduct = async (productData: SkincareProductInput): Promise<void> => {
     try {
       if (editingProduct) {
         // Update existing product
@@ -146,11 +146,13 @@ const SkincarePage: React.FC = () => {
       setEditingProduct(undefined);
     } catch (error) {
       logger.error('Error saving product:', { error });
+      // eslint-disable-next-line no-alert
       alert('Failed to save product. Please try again.');
     }
   };
 
-  const handleDeleteProduct = async (id: string) => {
+  const handleDeleteProduct = async (id: string): Promise<void> => {
+    // eslint-disable-next-line no-alert
     if (!confirm('Are you sure you want to delete this product?')) return;
     try {
       await skincareAPI.deleteProduct(id);
@@ -160,7 +162,7 @@ const SkincarePage: React.FC = () => {
     }
   };
 
-  const handleCreateRoutine = async (routineType: 'AM' | 'PM') => {
+  const handleCreateRoutine = async (routineType: 'AM' | 'PM'): Promise<void> => {
     const name = routineType === 'AM' ? 'Morning Routine' : 'Evening Routine';
     try {
       const newRoutine = await skincareAPI.createRoutine({
@@ -172,16 +174,17 @@ const SkincarePage: React.FC = () => {
       setRoutines([...routines, newRoutine]);
     } catch (error) {
       logger.error('Error creating routine:', { error });
+      // eslint-disable-next-line no-alert
       alert('Failed to create routine. Please try again.');
     }
   };
 
-  const handleEditRoutine = (routine: SkincareRoutine) => {
+  const handleEditRoutine = (routine: SkincareRoutine): void => {
     setEditingRoutine(routine);
     setShowRoutineEditor(true);
   };
 
-  const handleSaveRoutine = async (routineData: Partial<SkincareRoutineInput>) => {
+  const handleSaveRoutine = async (routineData: Partial<SkincareRoutineInput>): Promise<void> => {
     if (!editingRoutine) return;
 
     try {
@@ -191,11 +194,13 @@ const SkincarePage: React.FC = () => {
       setEditingRoutine(undefined);
     } catch (error) {
       logger.error('Error saving routine:', { error });
+      // eslint-disable-next-line no-alert
       alert('Failed to save routine. Please try again.');
     }
   };
 
-  const handleDeleteRoutine = async (routine: SkincareRoutine) => {
+  const handleDeleteRoutine = async (routine: SkincareRoutine): Promise<void> => {
+    // eslint-disable-next-line no-alert
     if (!confirm(`Are you sure you want to delete ${routine.name}?`)) return;
     try {
       await skincareAPI.deleteRoutine(routine.id);
@@ -223,13 +228,13 @@ const SkincarePage: React.FC = () => {
     routine: SkincareRoutine | undefined,
     log: SkincareLog | undefined,
     type: 'AM' | 'PM'
-  ) => {
+  ): React.JSX.Element => {
     if (!routine) {
       return (
         <div className="text-center py-6">
           <p className="text-gray-500 text-sm mb-3">No {type} routine</p>
           <button
-            onClick={() => handleCreateRoutine(type)}
+            onClick={() => { void handleCreateRoutine(type); }}
             className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
           >
             <Plus className="h-4 w-4" />
@@ -240,7 +245,7 @@ const SkincarePage: React.FC = () => {
     }
 
     const routineProducts = getRoutineProducts(routine);
-    const isCompleted = log?.completed || false;
+    const isCompleted = log?.completed ?? false;
 
     return (
       <div className="space-y-2">
@@ -343,7 +348,7 @@ const SkincarePage: React.FC = () => {
                 <div className="flex items-center gap-2">
                   {amRoutine && (
                     <button
-                      onClick={() => handleEditRoutine(amRoutine)}
+                      onClick={() => { handleEditRoutine(amRoutine); }}
                       className="p-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
                       title="Edit routine"
                     >
@@ -351,7 +356,7 @@ const SkincarePage: React.FC = () => {
                     </button>
                   )}
                   <button
-                    onClick={() => handleToggleComplete('AM')}
+                    onClick={() => { void handleToggleComplete('AM'); }}
                     className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
                       selectedAMLog?.completed
                         ? 'bg-gray-900 text-white'
@@ -375,7 +380,7 @@ const SkincarePage: React.FC = () => {
                 <div className="flex items-center gap-2">
                   {pmRoutine && (
                     <button
-                      onClick={() => handleEditRoutine(pmRoutine)}
+                      onClick={() => { handleEditRoutine(pmRoutine); }}
                       className="p-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
                       title="Edit routine"
                     >
@@ -383,7 +388,7 @@ const SkincarePage: React.FC = () => {
                     </button>
                   )}
                   <button
-                    onClick={() => handleToggleComplete('PM')}
+                    onClick={() => { void handleToggleComplete('PM'); }}
                     className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
                       selectedPMLog?.completed
                         ? 'bg-gray-900 text-white'
@@ -403,7 +408,7 @@ const SkincarePage: React.FC = () => {
           products={products}
           onAddProduct={handleAddProduct}
           onEditProduct={handleEditProduct}
-          onDeleteProduct={handleDeleteProduct}
+          onDeleteProduct={(id) => { void handleDeleteProduct(id); }}
         />
       )}
 
@@ -411,7 +416,7 @@ const SkincarePage: React.FC = () => {
       {showProductModal && (
         <ProductFormModal
           product={editingProduct}
-          onSave={handleSaveProduct}
+          onSave={(productData) => { void handleSaveProduct(productData); }}
           onClose={() => {
             setShowProductModal(false);
             setEditingProduct(undefined);
@@ -424,8 +429,8 @@ const SkincarePage: React.FC = () => {
         <RoutineEditorModal
           routine={editingRoutine}
           allProducts={products}
-          onSave={handleSaveRoutine}
-          onDelete={() => handleDeleteRoutine(editingRoutine)}
+          onSave={(routineData) => { void handleSaveRoutine(routineData); }}
+          onDelete={() => { void handleDeleteRoutine(editingRoutine); }}
           onClose={() => {
             setShowRoutineEditor(false);
             setEditingRoutine(undefined);
