@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "typecheck": "tsc -b --pretty false",
-    "lint": "eslint .",
+    "lint": "eslint . --max-warnings 0",
+    "lint:fix": "eslint . --max-warnings 0 --fix",
     "preview": "vite preview",
     "test": "vitest",
     "test:ui": "vitest --ui",
@@ -15,7 +16,8 @@
     "test:coverage": "vitest --coverage",
     "cleanup:ports": "lsof -ti:3001,5173 | xargs kill -9 2>/dev/null || true",
     "version": "node scripts/version.js",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "validate": "npm run typecheck && npm run lint && npm test -- --run"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.7",
