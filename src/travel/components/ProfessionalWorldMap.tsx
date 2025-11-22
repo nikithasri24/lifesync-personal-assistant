@@ -40,7 +40,7 @@ const ProfessionalWorldMap: React.FC<ProfessionalWorldMapProps> = ({
     };
   });
 
-  const getCountryColor = (country: any, countryValue: number) => {
+  const getCountryColor = (country: any, _countryValue: number) => {
     const code = country?.country?.toUpperCase();
     const status = code ? visitedCountries[code] : undefined;
 

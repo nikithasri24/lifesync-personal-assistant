@@ -5,7 +5,6 @@ import SankeyChart from '../components/visualizations/SankeyChart';
 import { FinancialInsightsCard } from '../components/insights/FinancialInsightsCard';
 import { formatCurrency } from '../utils/currency';
 import { currentMonth, monthRange, toMonth } from '../utils/date';
-import { getTimePeriodRange } from '../utils/timePeriodUtils';
 import { useFinanceMetrics } from '../hooks/useFinanceMetrics';
 import {
   useTransactionsQuery,
@@ -13,7 +12,6 @@ import {
   useCategoriesQuery,
   useBudgetsQuery,
 } from '../hooks/useFinanceQuery';
-import type { Transaction } from '../types';
 
 const DashboardPage: React.FC = () => {
   const [month, setMonth] = React.useState(currentMonth());

@@ -8,25 +8,25 @@
 import { useEffect, useState } from 'react'
 import { apiClient } from '../../../services/apiClient'
 import {
-  BarChart3,
-  Calendar,
+  _BarChart3,
+  _Calendar,
   Clock,
   Target,
   TrendingUp,
-  TrendingDown,
-  Award,
+  _TrendingDown,
+  _Award,
   Zap,
-  Brain,
+  _Brain,
   Coffee,
   Eye,
   Heart,
   Download,
-  Filter,
-  ChevronRight,
-  Star,
+  _Filter,
+  _ChevronRight,
+  _Star,
   Flame,
-  Trophy,
-  Users,
+  _Trophy,
+  _Users,
   Activity,
   CheckCircle,
   AlertCircle,
@@ -467,7 +467,7 @@ export const FocusAnalyticsDashboard: React.FC<Props> = ({
         <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700">
           <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-6">Weekly Progress</h3>
           <div className="space-y-4">
-            {analyticsData.weeklyStats.map((day, index) => (
+            {analyticsData.weeklyStats.map((day, _index) => (
               <div key={day.day} className="flex items-center space-x-4">
                 <div className="w-8 text-sm font-medium text-slate-600 dark:text-slate-300">
                   {day.day}

@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { ChefHat } from 'lucide-react';
-import { isSameDay, format } from 'date-fns';
+import { isSameDay } from 'date-fns';
 import type { PlannedMeal, Recipe, MealPlan } from '../../../types';
 import {
   useCreatePlannedMealMutation,

@@ -44,7 +44,7 @@ function getSeverity(days: number): 'critical' | 'warning' | 'info' {
  */
 export function checkPassportExpiry(passports: UserPassport[]): ExpiryAlert[] {
   const alerts: ExpiryAlert[] = [];
-  const today = new Date();
+  const _today = new Date();
 
   passports.forEach(passport => {
     if (!passport.expiryDate) return;

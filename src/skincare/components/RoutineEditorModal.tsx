@@ -3,7 +3,7 @@
  */
 
 import React from 'react';
-import { X, Save, Trash2, GripVertical, Plus } from 'lucide-react';
+import { X, Save, Trash2, Plus } from 'lucide-react';
 import type { SkincareRoutine, SkincareRoutineInput, SkincareProduct } from '../types';
 
 type RoutineEditorModalProps = {

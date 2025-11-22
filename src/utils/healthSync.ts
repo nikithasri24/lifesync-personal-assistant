@@ -1,4 +1,4 @@
-import type { HealthKitData, HealthSyncStatus, PeriodCycle, PeriodSymptom } from '../types/index';
+import type { HealthKitData, HealthSyncStatus, PeriodCycle } from '../types/index';
 import { logger } from '../services/logger';
 
 // Enhanced Apple Health integration utilities
@@ -32,7 +32,7 @@ export class HealthKitIntegration {
       } else if ('HealthKit' in window) {
         this.healthStore = (window as any).HealthKit;
       }
-    } catch (error) {
+    } catch (_error) {
       logger.debug('Utils', 'HealthKit not available, using fallback methods');
     }
   }
@@ -98,7 +98,7 @@ To sync with Apple Health:
         throw new Error('HealthKit not supported');
       }
 
-      const syncStart = Date.now();
+      const _syncStart = Date.now();
       let recordsImported = 0;
 
       // Fetch menstrual flow data
@@ -293,7 +293,7 @@ To sync with Apple Health:
     };
   }
 
-  private async fetchHealthKitData(since?: Date): Promise<HealthKitData> {
+  private async fetchHealthKitData(_since?: Date): Promise<HealthKitData> {
     // Use the new live data method
     return await this.getLiveHealthData();
   }

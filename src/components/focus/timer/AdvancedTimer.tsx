@@ -11,28 +11,27 @@ import {
   Play,
   Pause,
   Square,
-  RotateCcw,
+  _RotateCcw,
   SkipForward,
   Timer,
   Coffee,
   Brain,
   Settings,
   Plus,
-  Edit,
+  _Edit,
   Trash2,
-  Save,
+  _Save,
   Clock,
-  Target,
-  Zap,
-  CheckCircle,
-  AlertCircle,
-  Volume2,
-  VolumeX,
-  Maximize2,
-  Minimize2,
-  Calendar,
-  Book,
-  Star
+  _Target,
+  _Zap,
+  _CheckCircle,
+  _AlertCircle,
+  _Volume2,
+  _VolumeX,
+  _Maximize2,
+  _Minimize2,
+  _Calendar,
+  _Book
 } from 'lucide-react';
 
 interface SessionTemplate {
@@ -84,8 +83,8 @@ export const AdvancedTimer: React.FC<Props> = ({
   onSessionComplete,
   onBreakComplete,
   onTemplateComplete,
-  backgroundMusic,
-  musicType,
+  _backgroundMusic,
+  _musicType,
   soundEnabled,
   notificationsEnabled
 }) => {
@@ -107,15 +106,15 @@ export const AdvancedTimer: React.FC<Props> = ({
   const [templates, setTemplates] = useState<SessionTemplate[]>([]);
   const [showTemplates, setShowTemplates] = useState(false);
   const [showCreateTemplate, setShowCreateTemplate] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [_showSettings, setShowSettings] = useState(false);
+  const [isFullscreen, _setIsFullscreen] = useState(false);
   const [newTemplate, setNewTemplate] = useState<Partial<SessionTemplate>>({
     name: '',
     sessions: [{ type: 'focus', duration: 25 }]
   });
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
+  const _audioContextRef = useRef<AudioContext | null>(null);
 
   // Load default templates
   useEffect(() => {

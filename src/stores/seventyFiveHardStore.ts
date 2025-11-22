@@ -26,8 +26,8 @@ import type {
 import {
   mapRowToChallenge,
   mapRowToCheckIn,
-  mapChallengeToInsert,
-  mapCheckInToInsert,
+  _mapChallengeToInsert,
+  _mapCheckInToInsert,
   generateId,
   createInitialTaskCompletions,
   validateTasks,
@@ -522,7 +522,7 @@ export const createSeventyFiveHardStore: StateCreator<
           img.onerror = () => reject(new Error('Failed to load image'));
           img.src = URL.createObjectURL(file);
         });
-      } catch (imgError) {
+      } catch (_imgError) {
         return {
           success: false,
           error: 'Invalid image file. Please upload a valid image.'
@@ -538,7 +538,7 @@ export const createSeventyFiveHardStore: StateCreator<
       const fileName = `${challenge.id}/${todayCheckIn.dayNumber}-${Date.now()}.${fileExt}`;
 
       // Upload to storage
-      const { data, error } = await supabase.storage
+      const { _data, error } = await supabase.storage
         .from('75hard-photos')
         .upload(fileName, file, {
           cacheControl: '3600',

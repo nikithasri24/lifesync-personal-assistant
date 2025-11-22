@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { Shield, AlertTriangle, DollarSign, ChevronRight } from 'lucide-react';
+import { Shield, AlertTriangle, ChevronRight } from 'lucide-react';
 import type { InsurancePolicy } from '../../types';
 import { formatCurrency } from '../../utils/currency';
 

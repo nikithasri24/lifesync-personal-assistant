@@ -275,7 +275,7 @@ export async function saveVisaRequirement(
   if (!user) throw new Error('Not authenticated');
 
   // Check if requirement already exists
-  const { data: existing, error: checkError } = await supabase
+  const { data: existing, error: _checkError } = await supabase
     .from('trip_visa_requirements')
     .select('id')
     .eq('trip_id', tripId)

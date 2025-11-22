@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { CreditCard, Calendar, AlertCircle, TrendingUp, DollarSign } from 'lucide-react';
+import { CreditCard, Calendar, TrendingUp, DollarSign } from 'lucide-react';
 import type { Account } from '../../types';
 import { formatCurrency } from '../../utils/currency';
 

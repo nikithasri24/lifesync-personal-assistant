@@ -10,7 +10,7 @@ import {
   X,
   CheckCircle,
   Circle,
-  Clock,
+  _Clock,
   Filter,
   ChevronDown,
   ChevronRight,
@@ -18,7 +18,6 @@ import {
 import { useProjectsQuery, useCreateProjectMutation, useUpdateProjectMutation, useDeleteProjectMutation } from '../projects/hooks/useProjectsQuery';
 import { useTasksQuery } from '../hooks/useTasksQuery';
 import type { Project } from '../projects/hooks/useProjectsQuery';
-import type { TodoItem } from '../types';
 import { logger } from '../services/logger';
 import type { ViewMode, StatusFilter, ProjectFormData } from '../projects/types';
 import {

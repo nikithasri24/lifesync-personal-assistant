@@ -9,39 +9,39 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Eye,
-  Coffee,
+  _Coffee,
   Heart,
   Activity,
-  Brain,
-  Moon,
-  Sun,
+  _Brain,
+  _Moon,
+  _Sun,
   Droplets,
   Wind,
   Smile,
   Frown,
   Meh,
-  Calendar,
-  Clock,
-  TrendingUp,
+  _Calendar,
+  _Clock,
+  _TrendingUp,
   AlertCircle,
   CheckCircle,
-  Play,
-  Pause,
-  RotateCcw,
+  _Play,
+  _Pause,
+  _RotateCcw,
   Settings,
   Bell,
   Target,
   BarChart3,
   Zap,
-  Shield,
-  Timer,
-  Award,
-  Plus,
-  ChevronRight,
-  Lightbulb,
+  _Shield,
+  _Timer,
+  _Award,
+  _Plus,
+  _ChevronRight,
+  _Lightbulb,
   Sparkles
 } from 'lucide-react';
-import { format, subDays, startOfDay, endOfDay } from 'date-fns';
+import { format, subDays, startOfDay } from 'date-fns';
 import { logger } from '../../../services/logger';
 
 interface WellnessEvent {
@@ -97,18 +97,18 @@ interface BreathingExercise {
 interface Props {
   activeFocusSession?: any;
   onWellnessEvent: (event: Omit<WellnessEvent, 'id' | 'timestamp'>) => void;
-  onUpdateSettings: (settings: Partial<WellnessSettings>) => void;
+  _onUpdateSettings: (settings: Partial<WellnessSettings>) => void;
 }
 
 export const WellnessCenter: React.FC<Props> = ({
   activeFocusSession,
   onWellnessEvent,
-  onUpdateSettings
+  _onUpdateSettings
 }) => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'reminders' | 'breathing' | 'tracking' | 'analytics'>('dashboard');
   const [wellnessEvents, setWellnessEvents] = useState<WellnessEvent[]>([]);
   const [healthMetrics, setHealthMetrics] = useState<HealthMetrics[]>([]);
-  const [settings, setSettings] = useState<WellnessSettings>({
+  const [settings, _setSettings] = useState<WellnessSettings>({
     eyeStrainReminders: true,
     eyeStrainInterval: 20,
     postureReminders: true,
@@ -127,12 +127,12 @@ export const WellnessCenter: React.FC<Props> = ({
   const [activeBreathingExercise, setActiveBreathingExercise] = useState<BreathingExercise | null>(null);
   const [breathingTimer, setBreathingTimer] = useState(0);
   const [breathingPhase, setBreathingPhase] = useState(0);
-  const [isBreathing, setIsBreathing] = useState(false);
+  const [_isBreathing, setIsBreathing] = useState(false);
   const [currentMood, setCurrentMood] = useState<number>(3);
   const [currentEnergy, setCurrentEnergy] = useState<number>(3);
   const [todayWater, setTodayWater] = useState(0);
   const [showMoodLogger, setShowMoodLogger] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
+  const [_showSettings, setShowSettings] = useState(false);
 
   const breathingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const reminderTimeouts = useRef<NodeJS.Timeout[]>([]);

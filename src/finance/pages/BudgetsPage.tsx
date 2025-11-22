@@ -10,7 +10,7 @@ import {
   useBudgetTemplatesQuery,
   useInitializeBudgetsMutation,
 } from '../hooks/useFinanceQuery';
-import type { Budget, Transaction, Category, BudgetTemplate } from '../types';
+import type { Budget } from '../types';
 import { MonthPicker } from '../components/MonthPicker';
 import BudgetCard from '../components/budgets/BudgetCard';
 import BudgetSummary, { type BudgetSummaryData } from '../components/budgets/BudgetSummary';

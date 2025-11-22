@@ -74,7 +74,7 @@ const SkincarePage: React.FC = () => {
   };
 
   // Check if today's routine is completed
-  const getTodayCompletion = (routineType: 'AM' | 'PM'): boolean => {
+  const _getTodayCompletion = (routineType: 'AM' | 'PM'): boolean => {
     const today = new Date().toISOString().split('T')[0];
     const log = logs.find(l => l.date === today && l.routineType === routineType);
     return log?.completed || false;

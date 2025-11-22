@@ -8,7 +8,7 @@ import {
   TrendingUp,
   Target,
   Calendar,
-  DollarSign,
+  _DollarSign,
   PiggyBank,
   Zap,
   Settings,

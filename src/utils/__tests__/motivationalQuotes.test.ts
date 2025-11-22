@@ -8,7 +8,7 @@ describe('motivationalQuotes', () => {
     });
 
     it('should have all quotes as non-empty strings', () => {
-      COMPLETION_QUOTES.forEach((quote, index) => {
+      COMPLETION_QUOTES.forEach((quote, _index) => {
         expect(quote).toBeTruthy();
         expect(typeof quote).toBe('string');
         expect(quote.length).toBeGreaterThan(0);

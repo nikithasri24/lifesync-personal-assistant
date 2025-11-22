@@ -24,7 +24,7 @@ async function runMigration(sqlFilePath: string) {
 
   try {
     // Execute the SQL
-    const { data, error } = await supabase.rpc('exec_sql', { sql_query: sql });
+    const { _data, error } = await supabase.rpc('exec_sql', { sql_query: sql });
 
     if (error) {
       throw error;
@@ -32,7 +32,7 @@ async function runMigration(sqlFilePath: string) {
 
     logger.debug('RunFinanceMigrations', `✅ Migration completed successfully!`);
     return true;
-  } catch (error: any) {
+  } catch (_error: any) {
     // If RPC doesn't exist, try using the SQL editor endpoint directly
     logger.debug('RunFinanceMigrations', `⚠️  RPC method not available, trying direct execution...`);
 

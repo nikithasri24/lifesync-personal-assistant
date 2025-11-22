@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { Award, TrendingUp, ChevronRight } from 'lucide-react';
+import { Award, ChevronRight } from 'lucide-react';
 import type { Account } from '../../types';
 import { formatCurrency } from '../../utils/currency';
 

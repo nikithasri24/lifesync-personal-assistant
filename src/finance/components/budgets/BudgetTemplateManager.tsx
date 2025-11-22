@@ -1,6 +1,6 @@
 import React from 'react';
 import { X, Save, Trash2, Settings } from 'lucide-react';
-import type { BudgetTemplate, Category } from '../../types';
+import type { Category } from '../../types';
 import { logger } from '../../../services/logger';
 
 interface BudgetTemplateManagerProps {

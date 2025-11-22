@@ -26,7 +26,7 @@ interface SubtaskFormProps {
  * SubtaskForm - Inline form for creating subtasks
  */
 export function SubtaskForm({
-  parentId,
+  _parentId,
   value,
   onChange,
   onSubmit,

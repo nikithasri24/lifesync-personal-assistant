@@ -11,11 +11,11 @@ type RealisticWorldMapProps = {
 };
 
 const RealisticWorldMap: React.FC<RealisticWorldMapProps> = ({ visitedCountries }) => {
-  const [mapUrl, setMapUrl] = React.useState<string>('');
+  const [_mapUrl, setMapUrl] = React.useState<string>('');
 
   React.useEffect(() => {
     // Generate map visualization URL based on visited countries
-    const visitedCodes = Object.keys(visitedCountries).join(',');
+    const _visitedCodes = Object.keys(visitedCountries).join(',');
 
     // Using amCharts map or similar service
     // For now, show instructions

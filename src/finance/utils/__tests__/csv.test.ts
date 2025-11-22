@@ -162,8 +162,8 @@ describe('csv utilities', () => {
 
   describe('downloadCSV', () => {
     let createElementSpy: any;
-    let appendChildSpy: any;
-    let removeChildSpy: any;
+    let _appendChildSpy: any;
+    let _removeChildSpy: any;
     let createObjectURLSpy: any;
     let revokeObjectURLSpy: any;
 

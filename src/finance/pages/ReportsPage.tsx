@@ -9,11 +9,9 @@ import React, { useState } from 'react';
 import {
   useTransactionsQuery,
   useCategoriesQuery,
-  useAccountsQuery,
-} from '../hooks/useFinanceQuery';
-import { getTimePeriodRange, getPreviousPeriodRange, type TimePeriod, type DateRange } from '../utils/timePeriodUtils';
+  useAccountsQuery} from '../hooks/useFinanceQuery';
+import { getTimePeriodRange, getPreviousPeriodRange, type TimePeriod } from '../utils/timePeriodUtils';
 import { useFinanceMetrics } from '../hooks/useFinanceMetrics';
-import type { Transaction, Category, Account } from '../types';
 
 // Components
 import MetricCard from '../components/metrics/MetricCard';
@@ -22,7 +20,7 @@ import TimePeriodFilter from '../components/filters/TimePeriodFilter';
 import CashFlowReport from '../components/reports/CashFlowReport';
 import SpendingReport from '../components/reports/SpendingReport';
 import IncomeReport from '../components/reports/IncomeReport';
-import { DollarSign, TrendingDown, TrendingUp, PiggyBank, Filter } from 'lucide-react';
+import { DollarSign, TrendingDown, TrendingUp, Filter } from 'lucide-react';
 
 type ReportTab = 'cash-flow' | 'spending' | 'income';
 
@@ -49,8 +47,7 @@ const ReportsPage: React.FC = () => {
     accounts,
     currentPeriod,
     previousPeriod,
-    topCategoriesLimit: 10,
-  });
+    topCategoriesLimit: 10});
 
   // Debug metrics
   React.useEffect(() => {
@@ -63,8 +60,7 @@ const ReportsPage: React.FC = () => {
         netCashFlow: metrics.summary.netCashFlow,
         savingsRate: metrics.savingsRate.savingsRate,
         transactionCount: metrics.summary.transactionCount,
-        categoryCount: metrics.categoryAggregates.length,
-      });
+        categoryCount: metrics.categoryAggregates.length});
     }
   }, [loading, transactions.length, metrics, timePeriod, currentPeriod]);
 

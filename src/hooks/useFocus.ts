@@ -13,8 +13,8 @@ import type {
   FocusSession,
   FocusPreset,
   FocusAnalytics,
-  FocusSettings,
-  ProductivityMetrics,
+  _FocusSettings,
+  _ProductivityMetrics,
   UseFocusSessionReturn,
   UseFocusAnalyticsReturn,
   FocusEvent,
@@ -59,7 +59,7 @@ export function useFocusSession(): UseFocusSessionReturn {
 
   // Listen to focus events
   useEffect(() => {
-    const handleFocusEvent = (event: FocusEvent) => {
+    const handleFocusEvent = (_event: FocusEvent) => {
       const session = focusService.getCurrentSession();
       setCurrentSession(session ? { ...session } : null);
       

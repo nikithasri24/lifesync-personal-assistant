@@ -27,7 +27,7 @@ describe('Habits persistence with Supabase configured', () => {
     await act(async () => {
       try {
         await result.current.initializeData()
-      } catch (e) {
+      } catch (_e) {
         // Not authenticated in test environment: skip
       }
     })

@@ -25,9 +25,8 @@ import {
   CheckCircle2,
   ImageIcon
 } from 'lucide-react';
-import { format } from 'date-fns';
 import {
-  areAllTasksComplete,
+  _areAllTasksComplete,
   calculateStats,
   type SeventyFiveHardChallenge,
   type DailyCheckIn

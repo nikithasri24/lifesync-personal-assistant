@@ -12,7 +12,6 @@ import { TaskRow } from './TaskRow';
 import { SubtaskRow } from './SubtaskRow';
 import { SubtaskForm } from './SubtaskForm';
 import { EmptyState } from './EmptyState';
-import { QuickAddForm } from './QuickAddForm';
 import { getMainTasks, getSubtasks } from '../services/taskHelpers';
 
 interface TaskListViewProps {

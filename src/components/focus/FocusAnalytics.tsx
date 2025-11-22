@@ -8,28 +8,27 @@
 import React, { useState } from 'react';
 import { 
   BarChart3, 
-  TrendingUp, 
+  _TrendingUp, 
   Clock, 
   Target, 
   Zap, 
-  Calendar,
-  Award,
+  _Calendar,
+  _Award,
   AlertTriangle,
   ChevronDown,
   ChevronUp,
-  Download,
-  Filter
+  Download
 } from 'lucide-react';
 import { useFocusAnalytics } from '../../hooks/useFocus';
 
 interface FocusAnalyticsProps {
   period?: 'day' | 'week' | 'month' | 'year';
-  showDetailed?: boolean;
+  _showDetailed?: boolean;
 }
 
 export const FocusAnalytics: React.FC<FocusAnalyticsProps> = ({ 
   period = 'week',
-  showDetailed = true 
+  _showDetailed = true 
 }) => {
   const { analytics, isLoading, error, refresh, exportData } = useFocusAnalytics(period);
   const [selectedPeriod, setSelectedPeriod] = useState(period);
@@ -55,7 +54,7 @@ export const FocusAnalytics: React.FC<FocusAnalyticsProps> = ({
     return 'text-red-600';
   };
 
-  const getScoreBackground = (score: number): string => {
+  const _getScoreBackground = (score: number): string => {
     if (score >= 80) return 'bg-green-100 border-green-200';
     if (score >= 60) return 'bg-yellow-100 border-yellow-200';
     return 'bg-red-100 border-red-200';

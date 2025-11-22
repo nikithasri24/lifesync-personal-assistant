@@ -6,7 +6,7 @@ const env = (typeof process !== 'undefined' ? process.env : {}) as Record<string
 const supabaseUrl = (env.VITE_SUPABASE_URL || (import.meta as any).env?.VITE_SUPABASE_URL) as string | undefined
 const supabaseAnonKey = (env.VITE_SUPABASE_ANON_KEY || (import.meta as any).env?.VITE_SUPABASE_ANON_KEY) as string | undefined
 
-const isVitest = typeof process !== 'undefined' && process.env?.VITEST === 'true'
+const _isVitest = typeof process !== 'undefined' && process.env?.VITEST === 'true'
 
 const isPlaceholder = (value?: string) => {
   if (!value) return true

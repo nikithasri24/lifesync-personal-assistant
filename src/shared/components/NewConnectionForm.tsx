@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { UserPlus, Mail, Heart } from 'lucide-react';
+import { UserPlus, Mail } from 'lucide-react';
 import { createConnection } from '../api/connectionsAPI';
 import type { ConnectionRelationship } from '../types/connections';
 import { RELATIONSHIP_INFO } from '../types/connections';

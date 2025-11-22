@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { CreditCard, TrendingDown, AlertTriangle, CheckCircle, Plus, Award } from 'lucide-react';
+import { CreditCard, TrendingDown, AlertTriangle, CheckCircle, Award } from 'lucide-react';
 import { useAccountsQuery, useUpdateAccountMutation } from '../hooks/useFinanceQuery';
 import type { Account } from '../types';
 import { formatCurrency } from '../utils/currency';
@@ -39,7 +39,7 @@ const CreditCardsPage: React.FC = () => {
     return util >= 70;
   });
 
-  const cardsWithDueDates = creditCards.filter(c => c.paymentDueDay).length;
+  const _cardsWithDueDates = creditCards.filter(c => c.paymentDueDay).length;
 
   // Get upcoming payments
   const getNextDueDate = (card: Account) => {

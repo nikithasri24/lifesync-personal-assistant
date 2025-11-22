@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react';
-import { X, Receipt } from 'lucide-react';
-import { format, differenceInCalendarDays } from 'date-fns';
+import { X } from 'lucide-react';
 import { useReceiptScanner } from '../../hooks/useReceiptScanner';
 import { calculateReceiptCategorySummary, type ParsedReceiptItem } from '../../services/receiptParser';
 import type { ShoppingItem } from '../../types';

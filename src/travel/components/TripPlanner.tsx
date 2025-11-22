@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { Plus, Trash2, Save, Map, Calendar, DollarSign, Clock, Globe } from 'lucide-react';
+import { Plus, Trash2, Map, Calendar, DollarSign, Clock, Globe } from 'lucide-react';
 import {
   getUserTrips,
   getTripById,

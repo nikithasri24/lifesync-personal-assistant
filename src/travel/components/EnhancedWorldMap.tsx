@@ -50,7 +50,7 @@ const EnhancedWorldMap: React.FC<EnhancedWorldMapProps> = ({
         setLoading(true);
         // Using Natural Earth low-resolution data from CDN
         const response = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json');
-        const topology = await response.json();
+        const _topology = await response.json();
 
         // Convert TopoJSON to GeoJSON features
         // For now, using a comprehensive static dataset

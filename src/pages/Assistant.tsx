@@ -2,7 +2,7 @@
 // Mobile-first design with voice and text input
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Mic, MicOff, Send, Sparkles, Trash2, Volume2, VolumeX } from 'lucide-react';
+import { Mic, MicOff, Send, Sparkles, Trash2, VolumeX } from 'lucide-react';
 import { useConversationalVoice } from '../hooks/useConversationalVoice';
 import { useAuth } from '../hooks/useAuth';
 import type { ConversationMessage } from '../services/conversationEngine';

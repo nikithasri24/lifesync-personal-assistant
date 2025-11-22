@@ -100,7 +100,7 @@ export function aggregateByCategory(
  */
 export function buildCategoryTree(
   aggregates: CategoryAggregate[],
-  categories: Category[]
+  _categories: Category[]
 ): CategoryTreeNode[] {
   const nodeMap = new Map<string, CategoryTreeNode>();
   const rootNodes: CategoryTreeNode[] = [];
@@ -157,7 +157,7 @@ export function getTopCategories(
  */
 export function groupByParentCategory(
   aggregates: CategoryAggregate[],
-  categories: Category[]
+  _categories: Category[]
 ): Map<string, CategoryAggregate[]> {
   const grouped = new Map<string, CategoryAggregate[]>();
 

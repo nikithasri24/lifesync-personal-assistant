@@ -56,7 +56,7 @@ export const TaskFocusIntegration: React.FC<TaskFocusIntegrationProps> = ({
     state.setShowCreateTask(false);
   };
 
-  const handleCreateProject = async () => {
+  const _handleCreateProject = async () => {
     await actions.createProject(state.newProject);
     state.resetNewProject();
     state.setShowCreateProject(false);

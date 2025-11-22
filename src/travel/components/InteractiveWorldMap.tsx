@@ -14,11 +14,11 @@ type InteractiveWorldMapProps = {
 
 const InteractiveWorldMap: React.FC<InteractiveWorldMapProps> = ({
   visitedCountries,
-  onCountryClick,
+  _onCountryClick,
 }) => {
-  const [hoveredCountry, setHoveredCountry] = React.useState<string | null>(null);
+  const [_hoveredCountry, _setHoveredCountry] = React.useState<string | null>(null);
 
-  const getCountryFill = (countryCode: string): string => {
+  const _getCountryFill = (countryCode: string): string => {
     const status = visitedCountries[countryCode];
     switch (status) {
       case 'visited':

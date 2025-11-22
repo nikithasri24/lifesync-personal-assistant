@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { User, Settings, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { User, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { deleteConnection } from '../api/connectionsAPI';
 import type { ConnectionWithUser } from '../types/connections';
 import { RELATIONSHIP_INFO } from '../types/connections';

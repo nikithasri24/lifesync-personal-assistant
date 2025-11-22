@@ -46,7 +46,7 @@ export default function SeventyFiveHard() {
     sfhCheckIns: checkIns,
     sfhShowFailurePrompt: showFailurePrompt,
     sfhFailureDate: failureDate,
-    sfhShowCelebration: showCelebration,
+    sfhShowCelebration: _showCelebration,
   } = useAppStore();
 
   // Load challenge on mount

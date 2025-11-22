@@ -27,7 +27,7 @@ export const useTaskFocusActions = ({ onTaskComplete, storeTasks }: UseTaskFocus
     return await createTaskMutation.mutateAsync(task);
   };
 
-  const updateTodo = async (id: string, updates: Parameters<typeof updateTaskMutation.mutateAsync>[0]['updates']) => {
+  const _updateTodo = async (id: string, updates: Parameters<typeof updateTaskMutation.mutateAsync>[0]['updates']) => {
     await updateTaskMutation.mutateAsync({ taskId: id, updates });
   };
 

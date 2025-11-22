@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { TrendingUp, TrendingDown, BarChart3, PieChart, Activity, Info } from 'lucide-react';
+import { TrendingUp, TrendingDown } from 'lucide-react';
 
 interface ChartDataPoint {
   label: string;

@@ -196,7 +196,7 @@ export const QuickAddTransaction: React.FC<QuickAddTransactionProps> = ({ onClos
                     type="radio"
                     value="debit"
                     checked={formData.type === 'debit'}
-                    onChange={(e) => setFormData({ ...formData, type: 'debit' })}
+                    onChange={(_e) => setFormData({ ...formData, type: 'debit' })}
                     className="mr-2"
                   />
                   Debit (Expense)
@@ -206,7 +206,7 @@ export const QuickAddTransaction: React.FC<QuickAddTransactionProps> = ({ onClos
                     type="radio"
                     value="credit"
                     checked={formData.type === 'credit'}
-                    onChange={(e) => setFormData({ ...formData, type: 'credit' })}
+                    onChange={(_e) => setFormData({ ...formData, type: 'credit' })}
                     className="mr-2"
                   />
                   Credit (Income)

@@ -9,7 +9,7 @@
 import React, { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { format } from 'date-fns';
-import { Plus, Trash2, NotebookPen, Edit2, X, Search, Filter, Tag as TagIcon } from 'lucide-react';
+import { Plus, Trash2, NotebookPen, Edit2, Search, Filter, Tag as TagIcon } from 'lucide-react';
 import type { JournalEntry, JournalMood } from '../types';
 import {
   useJournalEntries,

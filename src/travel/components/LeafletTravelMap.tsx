@@ -6,7 +6,7 @@
 import React from 'react';
 import { logger } from '../../services/logger';
 
-import { MapContainer, TileLayer, GeoJSON, useMap, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, GeoJSON, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { VisitStatus } from '../types';
@@ -246,7 +246,7 @@ const LeafletTravelMap: React.FC<LeafletTravelMapProps> = ({
           target.setStyle(getCountryStyle(countryCode, false));
         }
       },
-      click: (e: L.LeafletMouseEvent) => {
+      click: (_e: L.LeafletMouseEvent) => {
         // Only handle country clicks when zoomed out (not looking at states)
         logger.info('LeafletTravelMap', 'Country clicked, current zoom:', zoomRef.current);
         if (zoomRef.current < 5) {

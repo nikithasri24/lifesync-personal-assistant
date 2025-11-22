@@ -17,7 +17,6 @@ import { getStore, setStore } from '../utils/storeHelpers';
 import { measurePerformance } from '../utils/performanceHelpers';
 import { completeSFHChallenge } from './challengeActions';
 import { create75HardJournalEntry } from './journalActions';
-import { syncTodoCompletionToSFH } from './todoIntegrationActions';
 
 /**
  * Load check-ins for a specific date range (lazy loading)
@@ -367,7 +366,7 @@ export async function uploadSFHPhoto(file: File) {
         img.onerror = () => reject(new Error('Failed to load image'));
         img.src = URL.createObjectURL(file);
       });
-    } catch (imgError) {
+    } catch (_imgError) {
       return {
         success: false,
         error: 'Invalid image file. Please upload a valid image.'
@@ -381,7 +380,7 @@ export async function uploadSFHPhoto(file: File) {
     const fileExt = file.name.split('.').pop();
     const fileName = `${challenge.id}/${todayCheckIn.dayNumber}-${Date.now()}.${fileExt}`;
 
-    const { data, error } = await supabase.storage
+    const { _data, error } = await supabase.storage
       .from('75hard-photos')
       .upload(fileName, file, {
         cacheControl: '3600',

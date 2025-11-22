@@ -19,8 +19,8 @@ export interface CellWithMealsProps {
 }
 
 export const CellWithMeals: React.FC<CellWithMealsProps> = ({
-  dateKey,
-  mealType,
+  _dateKey,
+  _mealType,
   dayMeals,
   recipes,
   onShowRecipeForm,

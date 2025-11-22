@@ -17,9 +17,9 @@ import {
   createLifeDream,
   updateLifeDream,
   deleteLifeDream,
-  type CreateLifeGoalInput,
+  type _CreateLifeGoalInput,
   type UpdateLifeGoalInput,
-  type CreateLifeDreamInput,
+  type _CreateLifeDreamInput,
   type UpdateLifeDreamInput,
 } from '@/goals/api/lifeGoalsAPI';
 import type { LifeGoal, LifeGoalWithMilestones, LifeDream } from '@/goals/types/lifeGoals';

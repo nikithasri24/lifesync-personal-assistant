@@ -47,7 +47,7 @@ export const VoiceAssistant: React.FC<Props> = ({ open, onClose }) => {
           squelchUntilRef.current = Date.now() + 800
           start()
         }, 600)
-      } catch (e) {
+      } catch (_e) {
         setMessages((m) => [...m, { role: 'assistant', text: 'Sorry, something went wrong.' }])
         setState('idle')
         setTimeout(() => start(), 600)

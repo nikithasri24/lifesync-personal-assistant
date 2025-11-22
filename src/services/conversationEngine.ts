@@ -4,7 +4,7 @@
 import Groq from 'groq-sdk';
 import { apiClient } from './apiClient';
 import { getFinanceAPI } from '../finance/data';
-import { startOfMonth, startOfWeek, addDays, isSameDay, isThisMonth } from 'date-fns';
+import { startOfMonth, startOfWeek, addDays, isSameDay } from 'date-fns';
 import { logger } from './logger';
 
 const groq = new Groq({
@@ -312,7 +312,7 @@ async function executeFunction(name: string, args: any): Promise<any> {
         };
 
       case 'create_budget':
-        const budgetApi = await getFinanceAPI();
+        const _budgetApi = await getFinanceAPI();
         // This is a simplified version - you'll need to implement budget creation
         return {
           success: true,
@@ -326,7 +326,7 @@ async function executeFunction(name: string, args: any): Promise<any> {
         const today = new Date();
         const weekEnd = addDays(today, 7);
 
-        const thiWeekTasks = tasks.filter(t =>
+        const _thiWeekTasks = tasks.filter(t =>
           t.due_date &&
           new Date(t.due_date) >= today &&
           new Date(t.due_date) <= weekEnd
@@ -392,7 +392,7 @@ async function getUserContext(): Promise<string> {
     };
 
     return JSON.stringify(context, null, 2);
-  } catch (error) {
+  } catch (_error) {
     return '{}';
   }
 }

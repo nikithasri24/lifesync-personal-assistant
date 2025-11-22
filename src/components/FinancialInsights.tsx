@@ -5,21 +5,14 @@ import { logger } from '../services/logger';
 import {
   Brain,
   TrendingUp,
-  TrendingDown,
   AlertTriangle,
-  CheckCircle,
   Lightbulb,
   DollarSign,
   PieChart,
   Target,
   Zap,
   Award,
-  Bell,
-  ArrowUpRight,
-  ArrowDownRight,
-  Calendar,
   CreditCard,
-  Wallet,
   RefreshCw,
   Info
 } from 'lucide-react';
@@ -51,7 +44,7 @@ interface FinancialHealth {
 export default function FinancialInsights() {
   const [insights, setInsights] = useState<Insight[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [showDismissed, setShowDismissed] = useState(false);
+  const [_showDismissed, _setShowDismissed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [financialHealth, setFinancialHealth] = useState<FinancialHealth | null>(null);
 
@@ -83,7 +76,7 @@ export default function FinancialInsights() {
     }
   };
 
-  const generateInsightsFromData = (transactions: any[], accounts: any[]): Insight[] => {
+  const generateInsightsFromData = (transactions: any[], _accounts: any[]): Insight[] => {
     const insights: Insight[] = [];
 
     // Example: Check for high spending in categories

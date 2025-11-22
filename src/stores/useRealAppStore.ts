@@ -2,11 +2,11 @@ import { logger } from '../services/logger';
 import { create } from 'zustand'
 import { differenceInDays } from 'date-fns'
 import {
-  ensureSupabase,
+  _ensureSupabase,
   isSupabaseConfigured,
 } from '../lib/supabase'
 import {
-  apiClient,
+  _apiClient,
 } from '../services/apiClient'
 import type {
   UserStats,
@@ -84,7 +84,7 @@ export interface RealAppState {
 
 }
 
-const createId = () => {
+const _createId = () => {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     try {
       return crypto.randomUUID()
@@ -95,7 +95,7 @@ const createId = () => {
   return Math.random().toString(36).slice(2, 10)
 }
 
-const toDate = (value?: string | Date | null): Date | undefined => {
+const _toDate = (value?: string | Date | null): Date | undefined => {
   if (!value) return undefined
   if (value instanceof Date) return value
   const parsed = new Date(value)

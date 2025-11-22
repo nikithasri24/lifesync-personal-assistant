@@ -7,7 +7,7 @@
 import React, { useState, useEffect } from 'react';
 import { logger } from '../../../services/logger';
 
-import { X, Save, AlertCircle, DollarSign, TrendingUp, Lightbulb } from 'lucide-react';
+import { X, Save, AlertCircle, DollarSign, Lightbulb } from 'lucide-react';
 import { formatCurrency } from '../../utils/currency';
 import type { Budget, Category } from '../../types';
 import type { BudgetRecommendation } from '../../utils/budgetRecommendations';
@@ -116,7 +116,7 @@ const BudgetEditor: React.FC<BudgetEditorProps> = ({
     }
   };
 
-  const selectedCategory = categories.find((c) => c.id === categoryId);
+  const _selectedCategory = categories.find((c) => c.id === categoryId);
 
   // Format month display
   const monthDisplay = new Date(month + '-01').toLocaleDateString('en-US', {

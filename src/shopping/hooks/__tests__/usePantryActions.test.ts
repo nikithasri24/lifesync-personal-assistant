@@ -1,7 +1,7 @@
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { usePantryActions } from '../usePantryActions';
-import type { PantryItem, ShoppingItem } from '../../types';
+import type { PantryItem } from '../../types';
 
 describe('usePantryActions', () => {
   const mockPantryItems: PantryItem[] = [

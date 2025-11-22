@@ -5,12 +5,12 @@ import {
   CheckSquare,
   FolderOpen,
   BookOpen,
-  Heart,
+  _Heart,
   Menu,
   X,
   Calendar,
   Timer,
-  Smile,
+  _Smile,
   Trophy,
   Users,
   ChevronRight,
@@ -109,7 +109,7 @@ export default function Layout({ children }: LayoutProps) {
                 )}
                 
                 <ul className="space-y-1" style={{ listStyle: 'none' }}>
-                  {section.items.map((item, index) => (
+                  {section.items.map((item, _index) => (
                     <li key={item.name} style={{ listStyle: 'none' }}>
                       <button
                         onClick={() => setActiveView(item.view)}

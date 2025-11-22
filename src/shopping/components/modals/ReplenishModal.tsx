@@ -10,7 +10,7 @@ interface ReplenishModalProps {
 
 export function ReplenishModal({
   itemName,
-  currentQuantity,
+  _currentQuantity,
   suggestedTarget,
   onReplenish,
   onCancel

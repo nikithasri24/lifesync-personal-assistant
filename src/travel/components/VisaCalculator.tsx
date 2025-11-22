@@ -6,7 +6,7 @@
 import React from 'react';
 import {
   getVisaRequirement,
-  getAccessibleDestinations,
+  _getAccessibleDestinations,
   getVisaAccessSummary,
   getAvailablePassportCountries
 } from '../data/visaRequirements';
@@ -17,8 +17,7 @@ import {
   getUserVisas,
   addPassport,
   addVisa,
-  deleteVisa,
-  updatePassport
+  deleteVisa
 } from '../api/passportAPI';
 import type { VisaRequirement, UserPassport, UserVisa } from '../types/visa';
 import VisaMap from './VisaMap';
@@ -107,8 +106,7 @@ const VisaCalculator: React.FC = () => {
         activeVisasMap.set(visa.countryName, {
           daysAllowed: visa.maxStayDays,
           expiryDate: visa.expiryDate,
-          visaType: visa.visaType || 'visa',
-        });
+          visaType: visa.visaType || 'visa'});
       }
     });
 
@@ -123,8 +121,7 @@ const VisaCalculator: React.FC = () => {
         viaVisa: access.viaVisa,
         accessType: access.accessType,
         daysAllowed: access.daysAllowed,
-        conditions: access.conditions,
-      });
+        conditions: access.conditions});
     });
 
     // Get all countries and their requirements from passport
@@ -142,8 +139,7 @@ const VisaCalculator: React.FC = () => {
             requirement: 'visa-free',
             daysAllowed: activeVisa.daysAllowed,
             accessVia: 'visa',
-            visaCountry: `Valid ${activeVisa.visaType} until ${new Date(activeVisa.expiryDate).toLocaleDateString()}`,
-          });
+            visaCountry: `Valid ${activeVisa.visaType} until ${new Date(activeVisa.expiryDate).toLocaleDateString()}`});
           return; // Skip other checks for this country
         }
 
@@ -183,8 +179,7 @@ const VisaCalculator: React.FC = () => {
             requirement: visaAccess.accessType,
             daysAllowed: visaAccess.daysAllowed,
             accessVia: 'visa',
-            visaCountry: visaAccess.viaVisa,
-          });
+            visaCountry: visaAccess.viaVisa});
         } else {
           // Use passport-based access (better or equal)
           results.push({
@@ -192,8 +187,7 @@ const VisaCalculator: React.FC = () => {
             requirement: req.requirement,
             daysAllowed: req.daysAllowed,
             accessVia: 'passport',
-            visaCountry: undefined,
-          });
+            visaCountry: undefined});
         }
       }
     });
@@ -216,8 +210,7 @@ const VisaCalculator: React.FC = () => {
       'eta': [],
       'e-visa': [],
       'visa-required': [],
-      'no-admission': [],
-    };
+      'no-admission': []};
 
     filteredDestinations.forEach(dest => {
       groups[dest.requirement].push(dest);
@@ -233,8 +226,7 @@ const VisaCalculator: React.FC = () => {
       const newPassport = await addPassport({
         countryCode: selectedPassportCountry.substring(0, 2).toUpperCase(),
         countryName: selectedPassportCountry,
-        isPrimary: true,
-      });
+        isPrimary: true});
       setPassport(newPassport);
       setShowPassportSelector(false);
       setSelectedPassportCountry('');
@@ -252,8 +244,7 @@ const VisaCalculator: React.FC = () => {
         countryCode: newVisaCountry.substring(0, 2).toUpperCase(),
         countryName: newVisaCountry,
         expiryDate: newVisaExpiry,
-        multipleEntry: newVisaMultipleEntry,
-      });
+        multipleEntry: newVisaMultipleEntry});
 
       setUserVisas(prev => [...prev, newVisa]);
       setNewVisaCountry('');

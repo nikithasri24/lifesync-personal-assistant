@@ -3,7 +3,6 @@
  * Basic rendering tests to ensure components don't crash
  */
 
-import { render } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
@@ -32,7 +31,7 @@ vi.mock('../../../stores/useAppStore', () => ({
   }),
 }));
 
-const createWrapper = () => {
+const _createWrapper = () => {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false },

@@ -125,7 +125,7 @@ const SankeyChart: React.FC<SankeyChartProps> = ({
     // Layout parameters
     const padding = 40;
     const nodePadding = 20;
-    const nodeWidth = 20;
+    const _nodeWidth = 20;
     const levelCount = Math.max(...levels.values()) + 1;
     const levelWidth = (width - 2 * padding) / (levelCount + 1);
 
@@ -139,7 +139,7 @@ const SankeyChart: React.FC<SankeyChartProps> = ({
     // Position nodes
     for (let level = 0; level <= 2; level++) {
       const levelNodes = nodesByLevel.get(level) || [];
-      const totalLevelValue = levelNodes.reduce(
+      const _totalLevelValue = levelNodes.reduce(
         (sum, id) => sum + (nodeValues.get(id) || 0),
         0
       );

@@ -84,7 +84,7 @@ export const importData = async (file: File): Promise<ExportData> => {
         }
         
         resolve(data);
-      } catch (error) {
+      } catch (_error) {
         reject(new Error('Failed to parse import file'));
       }
     };

@@ -29,7 +29,7 @@ const saved = (() => {
   }
 })();
 
-const useFinanceFilters = create<State & Actions>((set, get) => ({
+const useFinanceFilters = create<State & Actions>((set, _get) => ({
   text: saved.text,
   fromISO: saved.fromISO,
   toISO: saved.toISO,

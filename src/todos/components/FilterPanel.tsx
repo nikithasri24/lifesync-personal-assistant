@@ -29,7 +29,7 @@ export function FilterPanel({
   onFilterChange,
   onClearFilters,
   isVisible,
-  onClose
+  _onClose
 }: FilterPanelProps) {
   if (!isVisible) {
     return null;

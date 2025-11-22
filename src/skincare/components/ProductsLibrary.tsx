@@ -3,7 +3,7 @@
  */
 
 import React from 'react';
-import { Plus, Search, Filter, Star, ShoppingBag, Calendar, AlertCircle } from 'lucide-react';
+import { Plus, Search, Star, ShoppingBag, Calendar, AlertCircle } from 'lucide-react';
 import type { SkincareProduct, ProductCategory } from '../types';
 
 type ProductsLibraryProps = {
@@ -17,7 +17,7 @@ const ProductsLibrary: React.FC<ProductsLibraryProps> = ({
   products,
   onAddProduct,
   onEditProduct,
-  onDeleteProduct,
+  _onDeleteProduct,
 }) => {
   const [searchQuery, setSearchQuery] = React.useState('');
   const [filterCategory, setFilterCategory] = React.useState<ProductCategory | 'all'>('all');
@@ -41,7 +41,7 @@ const ProductsLibrary: React.FC<ProductsLibraryProps> = ({
   });
 
   // Group by category
-  const productsByCategory = filteredProducts.reduce((acc, product) => {
+  const _productsByCategory = filteredProducts.reduce((acc, product) => {
     if (!acc[product.category]) {
       acc[product.category] = [];
     }

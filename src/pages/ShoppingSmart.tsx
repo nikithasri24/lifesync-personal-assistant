@@ -1,20 +1,15 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { logger } from '../services/logger';
 
 import { useAppStore } from '../stores/useAppStore';
 import type { ShoppingItem, Store as StoreType, ShoppingList } from '../shopping/types';
-import type { ViewType, ShoppingItemForm, PantryItemForm, PantryEditForm, PantryFilter, PantrySort } from '../shopping/types/forms';
-import { createEmptyItemForm, createEmptyPantryForm, createEmptyPantryEditForm } from '../shopping/types/forms';
-import { CATEGORY_ICONS, STORE_TYPES } from '../shopping/constants';
-import { parseReceiptToItems, parseReceiptMeta, calculateReceiptCategorySummary, type ParsedReceiptItem } from '../shopping/services/receiptParser';
-import { distributeItemsToStores as distributeItems, findBestStoreForItem, type DistributionStrategy } from '../shopping/services/storeDistribution';
-import { lookupProductByBarcode } from '../shopping/services/barcodeService';
+import { distributeItemsToStores as distributeItems, type DistributionStrategy } from '../shopping/services/storeDistribution';
 import { mapShoppingItemDataToModel, mapShoppingItemToCreateInput, mapShoppingItemToUpdateInput } from '../shopping/services/shoppingMappers';
 import { MOCK_STORES } from '../shopping/fixtures/mockStores';
 import { ShoppingHeader } from '../shopping/components/layout/ShoppingHeader';
 import { ViewTabs } from '../shopping/components/layout/ViewTabs';
-import { MasterListView, DistributeView, StoreListsView, PantryView } from '../shopping/components/views';
-import { AddItemModal, EditItemModal, BarcodeScannerModal, ReceiptScanningModal, AddPantryItemModal, ReplenishModal, StoreSuggestionsModal } from '../shopping/components/modals';
+import { MasterListView, DistributeView, StoreListsView } from '../shopping/components/views';
+import { AddItemModal, EditItemModal, BarcodeScannerModal, ReceiptScanningModal, AddPantryItemModal, StoreSuggestionsModal } from '../shopping/components/modals';
 import { PantryActionButtons } from '../shopping/components/pantry/PantryActionButtons';
 import { PantryTable } from '../shopping/components/pantry/PantryTable';
 import { useVoiceInput, useBarcodeScanner, useStoreSuggestions, usePantryManagement, useItemForm, useShoppingModals, usePantryActions } from '../shopping/hooks';
@@ -26,59 +21,55 @@ import {
   useCreateShoppingItem,
   useUpdateShoppingItem,
   useDeleteShoppingItem,
-  useToggleShoppingItem,
-} from '../hooks/useShoppingQuery';
+  useToggleShoppingItem} from '../hooks/useShoppingQuery';
 import {
   usePantryItemsQuery,
   useCreatePantryItemMutation,
   useUpdatePantryItemMutation,
-  useDeletePantryItemMutation,
-} from '../mealPlanning/hooks/useMealPlanningQuery';
+  useDeletePantryItemMutation} from '../mealPlanning/hooks/useMealPlanningQuery';
 import { 
-  Plus, 
-  ShoppingCart, 
-  Search,
-  Filter,
-  Check,
-  X,
-  Edit3,
-  Trash2,
-  Star,
-  MapPin,
-  DollarSign,
-  Clock,
-  Users,
-  Archive,
-  ShoppingBag,
-  TrendingUp,
-  Package,
-  Zap,
-  BarChart3,
-  Share2,
-  Copy,
-  ChevronDown,
-  ChevronRight,
-  Scan,
-  AlertCircle,
-  Heart,
-  Calendar,
-  ArrowRight,
-  Store,
-  Target,
-  Award,
-  Shuffle,
-  FileText,
-  Calculator,
-  Mic,
-  Camera,
-  Send,
-  Settings,
-  Globe,
-  Building,
-  Navigation,
-  Receipt,
-} from 'lucide-react';
-import { format, isToday, isThisWeek, isThisMonth, differenceInCalendarDays } from 'date-fns';
+  _Plus, 
+  _ShoppingCart, 
+  _Search,
+  _Filter,
+  _Check,
+  _X,
+  _Edit3,
+  _Trash2,
+  _Star,
+  _MapPin,
+  _DollarSign,
+  _Clock,
+  _Users,
+  _Archive,
+  _ShoppingBag,
+  _TrendingUp,
+  _Package,
+  _Zap,
+  _BarChart3,
+  _Share2,
+  _Copy,
+  _ChevronDown,
+  _ChevronRight,
+  _Scan,
+  _AlertCircle,
+  _Heart,
+  _Calendar,
+  _ArrowRight,
+  _Store,
+  _Target,
+  _Award,
+  _Shuffle,
+  _FileText,
+  _Calculator,
+  _Mic,
+  _Camera,
+  _Send,
+  _Settings,
+  _Globe,
+  _Building,
+  _Navigation,
+  _Receipt} from 'lucide-react';
 
 export default function ShoppingSmart() {
   // React Query hooks for shopping data
@@ -101,7 +92,7 @@ export default function ShoppingSmart() {
   const updatePantryItemMutation = useUpdatePantryItemMutation();
   const deletePantryItemMutation = useDeletePantryItemMutation();
 
-  const shoppingLoading = isLoadingList || isLoadingItems || pantryLoading;
+  const _shoppingLoading = isLoadingList || isLoadingItems || pantryLoading;
 
   // Get other store data that hasn't been migrated yet
   const { showGlobalToast, addFinancialTransaction, financialAccounts } = useAppStore();
@@ -120,15 +111,13 @@ export default function ShoppingSmart() {
     const listId = activeListId || (await ensureActiveList()).id || '';
     await createItemMutation.mutateAsync({
       listId,
-      item: mapShoppingItemToCreateInput(item),
-    });
+      item: mapShoppingItemToCreateInput(item)});
   };
 
   const updateShoppingItem = (itemId: string, updates: Partial<ShoppingItem>) => {
     return updateItemMutation.mutateAsync({
       itemId,
-      updates: mapShoppingItemToUpdateInput(updates),
-    });
+      updates: mapShoppingItemToUpdateInput(updates)});
   };
 
   const deleteShoppingItem = (itemId: string) => {
@@ -140,22 +129,21 @@ export default function ShoppingSmart() {
     if (!item) return Promise.resolve();
     return toggleItemMutation.mutateAsync({
       itemId,
-      currentStatus: item.purchased,
-    });
+      currentStatus: item.purchased});
   };
 
   // Sample stores with ratings and preferences
   const [stores] = useState<StoreType[]>(MOCK_STORES);
 
   // Use global shopping items as master list
-  const masterList = shoppingItems;
+  const _masterList = shoppingItems;
 
   // Store-specific lists (auto-generated from master list)
   const [storeLists, setStoreLists] = useState<ShoppingList[]>([]);
 
   const [activeView, setActiveView] = useState<'master' | 'stores' | 'distribute' | 'pantry'>('master');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedStores, setSelectedStores] = useState<string[]>([]);
+  const [searchQuery, _setSearchQuery] = useState('');
+  const [_selectedStores, _setSelectedStores] = useState<string[]>([]);
   const [distributionStrategy, setDistributionStrategy] = useState<DistributionStrategy>('mixed');
 
   // Form state management using consolidated hook
@@ -185,9 +173,8 @@ export default function ShoppingSmart() {
     setShowBarcodeScanner,
     barcodeResult,
     setBarcodeResult,
-    showStorePrefs,
-    setShowStorePrefs,
-  } = useShoppingModals();
+    _showStorePrefs,
+    setShowStorePrefs} = useShoppingModals();
 
   // Barcode scanning
   const {
@@ -196,8 +183,7 @@ export default function ShoppingSmart() {
     videoRef,
     startScanning,
     stopScanning,
-    captureNow,
-  } = useBarcodeScanner((barcode, productInfo) => {
+    captureNow} = useBarcodeScanner((barcode, productInfo) => {
     newItemForm.updateForm({
       name: productInfo.name,
       estimatedPrice: productInfo.price?.toString() || '',
@@ -225,8 +211,7 @@ export default function ShoppingSmart() {
     replenishId,
     startReplenish,
     cancelReplenish,
-    pantrySortedFiltered,
-  } = usePantryManagement(pantryItems);
+    pantrySortedFiltered} = usePantryManagement(pantryItems);
 
   // Pantry bulk actions using custom hook
   const { addLowStockToShopping, addExpiredToShopping } = usePantryActions(pantryItems, addShoppingItem);
@@ -360,7 +345,7 @@ export default function ShoppingSmart() {
 
   // Smart store recommendation algorithm
 
-  const filteredMasterItems = shoppingItems.filter(item =>
+  const _filteredMasterItems = shoppingItems.filter(item =>
     searchQuery === '' || item.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -540,10 +525,9 @@ export default function ShoppingSmart() {
               type: 'expense',
               description: `Groceries — ${merchant}`,
               date: new Date(),
-              categoryId: undefined,
-            });
+              categoryId: undefined});
             showGlobalToast?.('Logged groceries expense', 'success');
-          } catch (e) {
+          } catch (_e) {
             showGlobalToast?.('Failed to log expense', 'error');
           }
         }}

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 
 type GeoFeature = GeoJSON.Feature<GeoJSON.Geometry, Record<string, any>>
 

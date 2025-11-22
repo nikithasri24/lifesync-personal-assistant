@@ -10,11 +10,11 @@ import {
   useCreateLifeDreamMutation,
   useUpdateLifeDreamMutation,
   useDeleteLifeDreamMutation,
-  useLifeGoalQuery,
+  _useLifeGoalQuery,
 } from '../goals/hooks/useLifeGoalsQuery';
 import type {
   LifeGoal,
-  LifeDream,
+  _LifeDream,
   GoalCategory,
   GoalPriority,
   DreamCategory,

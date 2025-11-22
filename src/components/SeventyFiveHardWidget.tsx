@@ -19,9 +19,7 @@ import {
   Flame,
   CheckCircle2,
   Circle,
-  ChevronRight,
-  TrendingUp,
-  Calendar
+  ChevronRight
 } from 'lucide-react';
 import { useAppStore } from '../stores/useAppStore';
 import { toggleSFHTask } from '../seventyFiveHard/actions';

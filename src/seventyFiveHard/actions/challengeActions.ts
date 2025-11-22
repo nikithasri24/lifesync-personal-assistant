@@ -4,7 +4,7 @@
  * Handles challenge creation, loading, resetting, completion, and deletion
  */
 
-import { startOfDay, addDays, format, subDays } from 'date-fns';
+import { startOfDay, format, subDays } from 'date-fns';
 import { logger } from '../../services/logger';
 import { ensureSupabase } from '../../lib/supabase';
 import {
@@ -13,7 +13,7 @@ import {
   generateId as genId,
   createInitialTaskCompletions as createTasks,
   validateTasks as validate,
-  CHALLENGE_CONSTANTS as constants,
+  CHALLENGE_CONSTANTS as _constants,
 } from '../../types/seventyFiveHard';
 import type {
   Task,

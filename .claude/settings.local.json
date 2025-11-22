@@ -9,7 +9,11 @@
       "Bash(cat:*)",
       "Bash(npm run lint:*)",
       "Bash(tee:*)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "Bash(npx eslint src --ext .ts,.tsx --format json)",
+      "Bash(npx eslint:*)",
+      "Bash(python3:*)",
+      "Bash(awk:*)"
     ],
     "deny": [],
     "ask": []

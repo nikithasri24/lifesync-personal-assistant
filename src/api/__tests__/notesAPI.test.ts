@@ -219,7 +219,7 @@ describe('notesAPI', () => {
         content: 'Just content, no title',
       };
 
-      const result = await createNote(input);
+      const _result = await createNote(input);
 
       expect(mockQuery.insert).toHaveBeenCalledWith(
         expect.objectContaining({

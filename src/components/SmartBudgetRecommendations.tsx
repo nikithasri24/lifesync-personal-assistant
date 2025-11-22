@@ -7,21 +7,13 @@ import {
   TrendingDown,
   DollarSign,
   PieChart,
-  BarChart3,
   AlertTriangle,
   CheckCircle,
-  ArrowRight,
   RefreshCw,
-  Zap,
   Calculator,
   Award,
-  Settings,
   Eye,
   EyeOff,
-  Plus,
-  Edit,
-  Save,
-  X,
   Info
 } from 'lucide-react';
 import { apiClient } from '../services/apiClient';
@@ -68,13 +60,13 @@ interface SmartBudgetPlan {
 
 export default function SmartBudgetRecommendations() {
   const [budgetPlan, setBudgetPlan] = useState<SmartBudgetPlan | null>(null);
-  const [transactions, setTransactions] = useState<FinancialTransactionData[]>([]);
-  const [accounts, setAccounts] = useState<FinancialAccountData[]>([]);
+  const [_transactions, setTransactions] = useState<FinancialTransactionData[]>([]);
+  const [_accounts, setAccounts] = useState<FinancialAccountData[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedStrategy, setSelectedStrategy] = useState<string>('');
   const [showDetails, setShowDetails] = useState(true);
-  const [customBudgets, setCustomBudgets] = useState<{ [category: string]: number }>({});
-  const [editingBudget, setEditingBudget] = useState<string | null>(null);
+  const [_customBudgets, setCustomBudgets] = useState<{ [category: string]: number }>({});
+  const [_editingBudget, _setEditingBudget] = useState<string | null>(null);
 
   useEffect(() => {
     loadFinancialData();
@@ -327,7 +319,7 @@ export default function SmartBudgetRecommendations() {
 
   const generateZeroBasedAllocations = (categorySpending: { [category: string]: number }, income: number) => {
     const allocations: { [category: string]: number } = {};
-    const totalSpending = Object.values(categorySpending).reduce((sum, amount) => sum + amount, 0);
+    const _totalSpending = Object.values(categorySpending).reduce((sum, amount) => sum + amount, 0);
 
     Object.entries(categorySpending).forEach(([category, amount]) => {
       allocations[category] = (amount / income) * 0.75; // Reduce all categories by 25%
@@ -449,7 +441,7 @@ export default function SmartBudgetRecommendations() {
     return warnings;
   };
 
-  const handleCustomBudgetChange = (category: string, amount: number) => {
+  const _handleCustomBudgetChange = (category: string, amount: number) => {
     setCustomBudgets(prev => ({
       ...prev,
       [category]: amount

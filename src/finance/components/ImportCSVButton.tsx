@@ -18,7 +18,7 @@ interface ImportStats {
   errors: Array<{ transaction: string; error: string }>;
 }
 
-const ImportCSVButton: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => {
+const ImportCSVButton: React.FC<{ _onSuccess: () => void }> = ({ _onSuccess }) => {
   const [importing, setImporting] = React.useState(false);
   const [progress, setProgress] = React.useState(0);
   const fileInputRef = React.useRef<HTMLInputElement>(null);

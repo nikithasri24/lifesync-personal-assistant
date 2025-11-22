@@ -9,8 +9,8 @@ import type { PeriodCycle, HealthKitData } from '../../types/index';
 
 describe('HealthKitIntegration', () => {
   let healthKit: HealthKitIntegration;
-  let originalNavigator: any;
-  let originalWindow: any;
+  let _originalNavigator: any;
+  let _originalWindow: any;
 
   beforeEach(() => {
     // Store original values

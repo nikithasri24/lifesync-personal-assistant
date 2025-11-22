@@ -8,7 +8,7 @@
 
 import React from 'react';
 import { Plus, CheckSquare, Inbox, Sun, ArrowRight, Grid, Layers } from 'lucide-react';
-import type { Task, Project, ThemeName } from '../types';
+import type { Task, Project } from '../types';
 import { THEMES } from '../constants';
 import { QuickAddForm } from './QuickAddForm';
 import { getInboxTasks, getTodayTasks, getUpcomingTasks } from '../services/taskHelpers';

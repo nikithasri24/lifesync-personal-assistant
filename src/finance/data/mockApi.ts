@@ -265,7 +265,7 @@ export class MockApi implements FinanceAPI {
     if (idx >= 0) goals.splice(idx, 1);
   }
 
-  async getGoalProgressHistory(goalId: string): Promise<GoalProgressPoint[]> {
+  async getGoalProgressHistory(_goalId: string): Promise<GoalProgressPoint[]> {
     await sleep(randomLatency());
     // Mock: return empty array for now (in real app, this would come from database)
     return [];

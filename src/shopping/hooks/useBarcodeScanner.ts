@@ -159,7 +159,7 @@ export function useBarcodeScanner(
             stopScanning();
             return;
           }
-        } catch (error) {
+        } catch (_error) {
           // Some browsers intermittently throw while the frame is not ready
         }
 
@@ -201,7 +201,7 @@ export function useBarcodeScanner(
           'No barcode found. Try moving closer, centering, and tapping Capture again.'
         );
       }
-    } catch (e) {
+    } catch (_e) {
       setCaptureMessage('Capture failed. Please try again or enter manually.');
     }
   }, [onProductFound, stopScanning]);

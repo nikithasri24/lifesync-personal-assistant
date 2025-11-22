@@ -8,7 +8,7 @@ export async function fetchClippedRecipe(url: string): Promise<Omit<Recipe, 'id'
   let response: Response;
   try {
     response = await fetch(apiUrl, { headers: { Accept: 'application/json' } });
-  } catch (e) {
+  } catch (_e) {
     throw new Error('Unable to reach the recipe clipper service.');
   }
   if (!response.ok) throw new Error('Failed to clip recipe.');

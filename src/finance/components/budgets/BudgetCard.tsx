@@ -32,7 +32,7 @@ const BudgetCard: React.FC<BudgetCardProps> = ({
   const remaining = limit - spent;
   const percentage = limit > 0 ? (spent / limit) * 100 : 0;
   const status = getBudgetStatus(percentage);
-  const color = getBudgetColor(status);
+  const _color = getBudgetColor(status);
 
   // Calculate trend vs previous month
   const hasTrend = previousMonthSpent !== undefined && previousMonthSpent > 0;

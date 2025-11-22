@@ -5,18 +5,18 @@ import {
   Zap,
   CheckCircle,
   AlertTriangle,
-  Eye,
+  _Eye,
   EyeOff,
   RefreshCw,
-  Download,
+  _Download,
   Filter,
   Search,
   TrendingUp,
-  PieChart,
+  _PieChart,
   Calendar,
-  DollarSign,
-  Tag,
-  ArrowRight,
+  _DollarSign,
+  _Tag,
+  _ArrowRight,
   Lightbulb,
   Target
 } from 'lucide-react';
@@ -171,7 +171,7 @@ export default function SmartExpenseCategorizer() {
     return rule?.icon || '📊';
   };
 
-  const getCategoryColor = (categoryId: string) => {
+  const _getCategoryColor = (categoryId: string) => {
     const rules = expenseCategorizationEngine.getCategoryRules();
     const rule = rules.find(r => r.id === categoryId);
     return rule?.color || '#6366F1';

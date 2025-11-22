@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { addDays, startOfWeek, isSameWeek, format } from 'date-fns';
+import { addDays, startOfWeek, isSameWeek } from 'date-fns';
 import type { MealPlanWeek } from '../../types';
 
 export function useWeekNavigation(

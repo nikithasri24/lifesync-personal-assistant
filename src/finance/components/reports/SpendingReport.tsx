@@ -8,7 +8,7 @@ import React from 'react';
 import { Card } from '../Card';
 import { Progress } from '../Progress';
 import { formatCurrency } from '../../utils/currency';
-import type { Transaction, Category, Budget } from '../../types';
+import type { Transaction, Category } from '../../types';
 import type { DateRange } from '../../utils/timePeriodUtils';
 import type { FinanceMetrics } from '../../hooks/useFinanceMetrics';
 import { TrendingDown, AlertCircle } from 'lucide-react';
@@ -21,8 +21,8 @@ export interface SpendingReportProps {
 }
 
 const SpendingReport: React.FC<SpendingReportProps> = ({
-  transactions,
-  categories,
+  _transactions,
+  _categories,
   dateRange,
   metrics,
 }) => {

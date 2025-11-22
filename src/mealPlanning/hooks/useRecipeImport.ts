@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { logger } from '../../services/logger';
 import type { Recipe } from '../../types';
 import { fetchYoutubeRecipe } from '../services/parsers/youtubeParser';
 import { parseTextToRecipe } from '../services/parsers/textParser';

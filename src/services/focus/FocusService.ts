@@ -14,7 +14,7 @@ import {
   type FocusSettings,
   type FocusEvent,
   type FocusEventType,
-  DistractionLevel,
+  _DistractionLevel,
   type ProductivityMetrics,
   type FocusEnvironment,
   type FocusDistraction,
@@ -261,7 +261,7 @@ export class FocusService {
         });
       }
 
-    } catch (error) {
+    } catch (_error) {
       // Silent fail - distraction monitoring is optional
     }
   }
@@ -544,42 +544,42 @@ export class FocusService {
     this.settings = defaultSettings;
   }
 
-  private async getSessionsForPeriod(userId: string, period: string): Promise<FocusSession[]> {
+  private async getSessionsForPeriod(_userId: string, _period: string): Promise<FocusSession[]> {
     // Would query database for sessions in period
     return [];
   }
 
-  private async getFocusGoals(userId: string): Promise<any[]> {
+  private async getFocusGoals(_userId: string): Promise<any[]> {
     // Would load user goals from storage
     return [];
   }
 
-  private async getFocusAchievements(userId: string): Promise<any[]> {
+  private async getFocusAchievements(_userId: string): Promise<any[]> {
     // Would load user achievements from storage
     return [];
   }
 
-  private calculateTopDistractions(sessions: FocusSession[]): any[] {
+  private calculateTopDistractions(_sessions: FocusSession[]): any[] {
     // Would analyze distractions across sessions
     return [];
   }
 
-  private calculateProductiveTimes(sessions: FocusSession[]): any[] {
+  private calculateProductiveTimes(_sessions: FocusSession[]): any[] {
     // Would analyze productive time patterns
     return [];
   }
 
-  private calculateModeUsage(sessions: FocusSession[]): any {
+  private calculateModeUsage(_sessions: FocusSession[]): any {
     // Would calculate time spent in each focus mode
     return {};
   }
 
-  private calculateWeeklyTrend(sessions: FocusSession[]): any[] {
+  private calculateWeeklyTrend(_sessions: FocusSession[]): any[] {
     // Would calculate daily metrics for trend analysis
     return [];
   }
 
-  private async generateInsights(sessions: FocusSession[]): Promise<any[]> {
+  private async generateInsights(_sessions: FocusSession[]): Promise<any[]> {
     // Would generate AI-powered insights
     return [];
   }

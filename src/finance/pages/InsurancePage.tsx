@@ -11,7 +11,7 @@ import {
   TrendingUp,
   Calendar,
   DollarSign,
-  FileText,
+  _FileText,
 } from 'lucide-react';
 import type { InsurancePolicy, InsurancePolicyInput } from '../types';
 import { formatCurrency } from '../utils/currency';
@@ -22,7 +22,7 @@ import { logger } from '../../services/logger';
 const InsurancePage: React.FC = () => {
   const [policies, setPolicies] = React.useState<InsurancePolicy[]>([]);
   const [loading, setLoading] = React.useState(true);
-  const [selectedPolicyId, setSelectedPolicyId] = React.useState<string | null>(null);
+  const [_selectedPolicyId, _setSelectedPolicyId] = React.useState<string | null>(null);
   const [filterType, setFilterType] = React.useState<string>('all');
   const [showForm, setShowForm] = React.useState(false);
   const [editingPolicy, setEditingPolicy] = React.useState<InsurancePolicy | undefined>(undefined);

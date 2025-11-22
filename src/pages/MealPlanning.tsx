@@ -2,10 +2,10 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { logger } from '../services/logger';
 import { createPortal } from 'react-dom';
 import { addDays, format, isSameWeek, startOfWeek, isSameDay } from 'date-fns';
-import { CalendarDays, ChefHat, Loader2, Plus, Trash2, Save, Pencil, Heart, Youtube, Search, X } from 'lucide-react';
+import { CalendarDays, ChefHat, Loader2, Plus, Save, Heart, Youtube, Search, X } from 'lucide-react';
 import DatePickerPopover from '../components/DatePickerPopover';
 import { useAppStore } from '../stores/useAppStore';
-import type { MealPlanWeek, PlannedMeal, Recipe } from '../types';
+import type { PlannedMeal, Recipe } from '../types';
 import {
   useRecipesQuery,
   useMealPlansQuery,
@@ -29,7 +29,6 @@ import { useMultiCellSelection } from '../mealPlanning/hooks/useMultiCellSelecti
 import RecipeCard from '../mealPlanning/components/recipe/RecipeCard';
 import CellWithMeals from '../mealPlanning/components/mealPlan/CellWithMeals';
 import AddMealControl from '../mealPlanning/components/mealPlan/AddMealControl';
-import { MealOptionsManager } from '../mealPlanning/components/views/MealOptionsManager';
 
 // Import modals
 import { QuickRecipeModal } from '../mealPlanning/components/modals/QuickRecipeModal';
@@ -77,10 +76,10 @@ const cleanupOldDrafts = () => {
 
 const MealPlanning: React.FC = () => {
   // React Query hooks
-  const { data: recipes = [], isLoading: recipesLoading } = useRecipesQuery();
+  const { data: recipes = [], isLoading: _recipesLoading } = useRecipesQuery();
   const { data: mealPlans = [], isLoading: mealPlansLoading } = useMealPlansQuery();
   const createRecipeMutation = useCreateRecipeMutation();
-  const updateRecipeMutation = useUpdateRecipeMutation();
+  const _updateRecipeMutation = useUpdateRecipeMutation();
   const createPlannedMealMutation = useCreatePlannedMealMutation();
   const updatePlannedMealMutation = useUpdatePlannedMealMutation();
   const deleteRecipeMutation = useDeleteRecipeMutation();
@@ -111,8 +110,8 @@ const MealPlanning: React.FC = () => {
   const [copyTargetWeek, setCopyTargetWeek] = useState<Date>(addDays(weekNav.currentWeekStart, 7));
 
   // Recipe search/filter state
-  const [recipeSearchQuery, setRecipeSearchQuery] = useState('');
-  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [recipeSearchQuery, _setRecipeSearchQuery] = useState('');
+  const [showFavoritesOnly, _setShowFavoritesOnly] = useState(false);
 
   // Cleanup old drafts on mount
   useEffect(() => {
@@ -184,12 +183,12 @@ const MealPlanning: React.FC = () => {
     try {
       await createRecipeMutation.mutateAsync(recipeImport.importDraft);
       recipeImport.clearUrlImport();
-    } catch (e) {
+    } catch (_e) {
       recipeImport.setImportError('Failed to save recipe');
     }
   };
 
-  const saveImportedAsNote = async () => {
+  const _saveImportedAsNote = async () => {
     if (!recipeImport.importDraft) return;
     try {
       const title = recipeImport.importDraft.name || 'Imported Recipe';
@@ -220,7 +219,7 @@ const MealPlanning: React.FC = () => {
       const content = lines.join('\n');
       await addNote({ title, content, tags: ['recipe', 'imported'] });
       recipeImport.clearUrlImport();
-    } catch (e) {
+    } catch (_e) {
       recipeImport.setImportError('Failed to save as note');
     }
   };
@@ -409,9 +408,9 @@ const MealPlanning: React.FC = () => {
         recipes={filteredRecipes}
         allRecipesCount={recipes.length}
         showFavoritesOnly={showFavoritesOnly}
-        onToggleFavorites={() => setShowFavoritesOnly(!showFavoritesOnly)}
+        onToggleFavorites={() => _setShowFavoritesOnly(!showFavoritesOnly)}
         searchQuery={recipeSearchQuery}
-        onSearchChange={setRecipeSearchQuery}
+        onSearchChange={_setRecipeSearchQuery}
         onDeleteAll={deleteAllRecipesMutation.mutateAsync}
         onViewRecipe={modalState.openRecipeView}
         onEditRecipe={modalState.openRecipeEdit}
@@ -1000,7 +999,7 @@ function ImportSections({ recipeImport, createRecipe, handleImportRecipe, saveIm
                   image: recipeImport.textDraft.image || recipeImport.textImageUrl || undefined,
                 });
                 recipeImport.clearTextImport();
-              } catch (e) {
+              } catch (_e) {
                 recipeImport.setTextError?.('Failed to save recipe');
               }
             }}

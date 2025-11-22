@@ -157,7 +157,7 @@ class SupabaseAdapter {
     if (updateError) throw new Error(updateError.message)
 
     // Fetch the updated row afterwards
-    const { data: fetched, error: fetchError } = await this.client
+    const { data: _fetched, error: fetchError } = await this.client
       .from('tasks')
       .select('*')
       .eq('id', id)

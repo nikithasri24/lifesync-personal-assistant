@@ -310,7 +310,7 @@ export class ExpenseCategorizationEngine {
     const potentialBills: FinancialTransactionData[] = [];
 
     // Analyze for recurring patterns
-    merchantFrequency.forEach((merchantTransactions, merchant) => {
+    merchantFrequency.forEach((merchantTransactions, _merchant) => {
       if (merchantTransactions.length >= 3) {
         // Check for similar amounts
         const amounts = merchantTransactions.map(t => Math.abs(t.amount));
@@ -421,7 +421,7 @@ export class ExpenseCategorizationEngine {
     return rule.subcategories[0]; // Default to first subcategory
   }
 
-  private updateSpendingPattern(categoryId: string, transaction: FinancialTransactionData): void {
+  private updateSpendingPattern(_categoryId: string, _transaction: FinancialTransactionData): void {
     // Update user spending patterns for better future categorization
     // This would be implemented with more sophisticated pattern recognition
   }

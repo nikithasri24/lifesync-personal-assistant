@@ -8,17 +8,15 @@ import {
   Calculator,
   TrendingDown,
   Calendar,
-  DollarSign,
   Target,
   Award,
   AlertTriangle,
   CheckCircle,
   BarChart3,
   Zap,
-  X,
-  Save
+  X
 } from 'lucide-react';
-import type { DebtAccount, PayoffStrategy } from '../types/finance';
+import type { DebtAccount } from '../types/finance';
 
 const DEBT_TYPES = [
   { value: 'credit_card', label: 'Credit Card', icon: '💳', color: '#EF4444' },
@@ -126,7 +124,7 @@ export default function DebtPayoffCalculator() {
   const calculateDebtStrategy = (strategy: 'snowball' | 'avalanche' | 'custom'): StrategyComparison => {
     const totalMinimums = debts.reduce((sum, debt) => sum + debt.minimumPayment, 0);
     const totalExtraPayment = extraPayment;
-    const totalAvailable = totalMinimums + totalExtraPayment;
+    const _totalAvailable = totalMinimums + totalExtraPayment;
 
     const sortedDebts = [...debts];
     
@@ -143,7 +141,7 @@ export default function DebtPayoffCalculator() {
     let maxMonths = 0;
     let remainingExtra = totalExtraPayment;
     
-    const debtPayoffs = sortedDebts.map(debt => {
+    const _debtPayoffs = sortedDebts.map(debt => {
       let paymentAmount = debt.minimumPayment;
       
       // Apply extra payment to first debt in strategy order
@@ -238,7 +236,7 @@ export default function DebtPayoffCalculator() {
   const totalMinimumPayments = debts.reduce((sum, debt) => sum + debt.minimumPayment, 0);
   const weightedAverageRate = debts.length > 0 ? 
     debts.reduce((sum, debt) => sum + (debt.interestRate * debt.balance), 0) / totalDebt : 0;
-  const highestRateDebt = debts.reduce((highest, debt) => 
+  const _highestRateDebt = debts.reduce((highest, debt) => 
     debt.interestRate > highest.interestRate ? debt : highest, debts[0] || { interestRate: 0 });
 
   return (
@@ -694,7 +692,7 @@ export default function DebtPayoffCalculator() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {strategies.map((strategy, index) => (
+                {strategies.map((strategy, _index) => (
                   <div key={strategy.name} className="bg-gray-50 rounded-lg p-6">
                     <h4 className="font-semibold text-gray-900 mb-4">{strategy.name}</h4>
                     <div className="space-y-3">

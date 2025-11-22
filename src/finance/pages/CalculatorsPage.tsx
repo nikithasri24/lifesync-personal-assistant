@@ -5,10 +5,10 @@
 
 import React from 'react';
 import {
-  Calculator,
+  _Calculator,
   CreditCard,
   TrendingUp,
-  Home,
+  _Home,
   PiggyBank,
   Percent,
   DollarSign,

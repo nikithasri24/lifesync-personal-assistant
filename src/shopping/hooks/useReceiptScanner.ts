@@ -46,7 +46,7 @@ export function useReceiptScanner() {
         } catch {}
       }
       setReceiptCameraMsg(null);
-    } catch (e) {
+    } catch (_e) {
       setReceiptCameraMsg('Camera access failed. Use Upload, or open this site via https/localhost and allow camera permissions.');
       setReceiptCameraOn(false);
     }
@@ -167,7 +167,7 @@ export function useReceiptScanner() {
       setReceiptMeta(parseReceiptMeta(text));
       const items = parseReceiptToItems(text);
       setParsedReceipt(items);
-    } catch (e) {
+    } catch (_e) {
       alert('Server OCR failed. Please paste text manually or try again.');
     } finally {
       setReceiptOcrLoading(false);

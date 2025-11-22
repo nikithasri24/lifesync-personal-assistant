@@ -4,8 +4,8 @@
  */
 
 import React from 'react';
-import { Gift, TrendingUp, Target, Tag, Calendar, DollarSign, Award, Plane, Coffee } from 'lucide-react';
-import type { CardBenefit, CardCategoryBonus, WelcomeBonus, CardOffer, Account } from '../../types';
+import { Gift, TrendingUp, Target, Tag, Calendar, Award, Plane, Coffee } from 'lucide-react';
+import type { CardBenefit, CardCategoryBonus, WelcomeBonus, CardOffer } from '../../types';
 import { formatCurrency } from '../../utils/currency';
 
 interface CardBenefitsPanelProps {
@@ -18,7 +18,7 @@ interface CardBenefitsPanelProps {
 }
 
 export const CardBenefitsPanel: React.FC<CardBenefitsPanelProps> = ({
-  accountId,
+  _accountId,
   benefits,
   categoryBonuses,
   welcomeBonuses,

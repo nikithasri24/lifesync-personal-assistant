@@ -84,7 +84,7 @@ export default function DailyDetailsModal({
   /**
    * Get task definition from challenge by taskId
    */
-  const getTask = (taskId: string): Task | undefined => {
+  const _getTask = (taskId: string): Task | undefined => {
     return challenge.tasks.find(t => t.id === taskId);
   };
 

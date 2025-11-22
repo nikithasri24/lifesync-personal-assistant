@@ -15,7 +15,7 @@ import {
   Smartphone,
   Globe,
   Settings,
-  Check,
+  _Check,
   X,
   ExternalLink,
   RefreshCw,
@@ -151,7 +151,7 @@ export const FocusIntegrations: React.FC = () => {
           ? { ...integration, connected: true, status: 'connected' }
           : integration
       ));
-    } catch (error) {
+    } catch (_error) {
       setIntegrations(prev => prev.map(integration => 
         integration.id === integrationId 
           ? { ...integration, connected: false, status: 'error' }

@@ -370,7 +370,7 @@ describe('cleanup75HardDuplicates', () => {
       ];
 
       const deletePromises: Promise<void>[] = [];
-      mockDeleteTodo = vi.fn().mockImplementation((id: string) => {
+      mockDeleteTodo = vi.fn().mockImplementation((_id: string) => {
         const promise = new Promise<void>((resolve) => setTimeout(resolve, 10));
         deletePromises.push(promise);
         return promise;

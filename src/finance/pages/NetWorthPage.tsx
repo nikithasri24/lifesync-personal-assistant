@@ -9,7 +9,7 @@ import { Card } from '../components/Card';
 import { ChartLazy } from '../components/ChartLazy';
 import { formatCurrency } from '../utils/currency';
 import { useNetWorthQuery, useAccountsQuery } from '../hooks/useFinanceQuery';
-import type { Account, NetPoint } from '../types';
+import type { Account } from '../types';
 
 const NetWorthPage: React.FC = () => {
   // React Query hooks

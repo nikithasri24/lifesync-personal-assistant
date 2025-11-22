@@ -20,7 +20,7 @@ import {
 } from '../hooks/useFinanceQuery';
 import { formatCurrency } from '../utils/currency';
 import useFinanceFilters from '../store/useFinanceFilters';
-import type { Transaction, Category, Budget } from '../types';
+import type { Transaction, Budget } from '../types';
 
 type GroupedTransactions = {
   categoryId: string | null;

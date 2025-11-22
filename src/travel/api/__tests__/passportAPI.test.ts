@@ -12,7 +12,6 @@ import {
   updateVisa,
   deleteVisa,
 } from '../passportAPI';
-import type { UserPassport, UserVisa } from '../../types/visa';
 
 // Mock Supabase
 vi.mock('../../../lib/supabase', () => ({

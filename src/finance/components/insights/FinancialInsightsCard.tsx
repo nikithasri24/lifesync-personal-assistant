@@ -39,7 +39,7 @@ interface FinancialInsightsCardProps {
 export const FinancialInsightsCard: React.FC<FinancialInsightsCardProps> = ({
   transactions,
   accounts,
-  goals,
+  _goals,
   onClick,
   className = '',
 }) => {

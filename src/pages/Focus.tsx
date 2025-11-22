@@ -13,7 +13,7 @@ const Focus: React.FC = () => {
   const sessionIdRef = useRef<string | null>(null);
   const startTimeRef = useRef<Date | null>(null);
 
-  const { activeSession } = useActiveFocusSession();
+  const { _activeSession } = useActiveFocusSession();
   const createSession = useCreateFocusSession();
   const updateSession = useUpdateFocusSession();
 

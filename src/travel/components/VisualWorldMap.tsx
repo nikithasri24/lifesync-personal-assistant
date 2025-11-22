@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import { ZoomIn, ZoomOut, Maximize2, Search, X, MapPin, Calendar, Flag } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize2, Search, X } from 'lucide-react';
 import type { VisitStatus } from '../types';
 
 type VisualWorldMapProps = {
@@ -132,7 +132,7 @@ const VisualWorldMap: React.FC<VisualWorldMapProps> = ({
 
   const handleMouseUp = () => setIsDragging(false);
 
-  const handleCountryMouseMove = (e: React.MouseEvent, country: Country) => {
+  const handleCountryMouseMove = (e: React.MouseEvent, _country: Country) => {
     const svg = svgRef.current;
     if (svg) {
       const rect = svg.getBoundingClientRect();

@@ -22,7 +22,7 @@ const SVGWorldMap: React.FC<SVGWorldMapProps> = ({ visitedCountries, onCountryCl
   const [hoveredCountry, setHoveredCountry] = React.useState<string | null>(null);
   const [tooltip, setTooltip] = React.useState<{ x: number; y: number; name: string } | null>(null);
   const [countries, setCountries] = React.useState<CountryGeo[]>([]);
-  const [loading, setLoading] = React.useState(true);
+  const [_loading, setLoading] = React.useState(true);
 
   const getCountryFill = (countryCode: string, isHovered: boolean): string => {
     const status = visitedCountries[countryCode];
@@ -64,7 +64,7 @@ const SVGWorldMap: React.FC<SVGWorldMapProps> = ({ visitedCountries, onCountryCl
       try {
         // Using Natural Earth low-resolution world map data
         const response = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json');
-        const topology = await response.json();
+        const _topology = await response.json();
 
         // Convert TopoJSON to GeoJSON and generate SVG paths
         // For now, we'll use a simplified static dataset

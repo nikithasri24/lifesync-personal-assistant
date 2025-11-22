@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Users, Plus, UserPlus, Bell, Settings } from 'lucide-react';
+import { Users, UserPlus, Bell, Settings } from 'lucide-react';
 import {
   getUserConnections,
   getPendingInvitations,

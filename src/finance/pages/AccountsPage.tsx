@@ -6,7 +6,7 @@ import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { useAccountsQuery, useInstitutionsQuery, useUpsertTransactionMutation } from '../hooks/useFinanceQuery';
 import { formatCurrency } from '../utils/currency';
-import type { Account, AccountType, Institution } from '../types';
+import type { Account, AccountType } from '../types';
 
 const AccountsPage: React.FC = () => {
   const [open, setOpen] = React.useState(false);

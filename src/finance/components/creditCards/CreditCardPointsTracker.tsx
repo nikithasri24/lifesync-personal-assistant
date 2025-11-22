@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { TrendingUp, Award, CreditCard, Plus, Edit2 } from 'lucide-react';
+import { Award, CreditCard, Edit2 } from 'lucide-react';
 import type { Account, RewardsHistory } from '../../types';
 import { formatCurrency } from '../../utils/currency';
 
@@ -18,7 +18,7 @@ interface CreditCardPointsTrackerProps {
 
 export const CreditCardPointsTracker: React.FC<CreditCardPointsTrackerProps> = ({
   cards,
-  rewardsHistory = [],
+  _rewardsHistory = [],
   onUpdatePoints,
   className = '',
 }) => {

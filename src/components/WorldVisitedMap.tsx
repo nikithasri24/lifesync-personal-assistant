@@ -172,7 +172,7 @@ const WorldVisitedMap: React.FC = () => {
     const isVisited = code ? visitedByCode.get(code) : false
     const continent = (code ? continentByCode.get(code) : '') || ''
     const filteredOut = regionFilter !== 'all' && continent.toLowerCase() !== regionFilter
-    const showPlain = true // always draw light fill so map is visible even without tiles
+    const _showPlain = true // always draw light fill so map is visible even without tiles
     return {
       color: filteredOut ? '#CBD5E1' : '#111827',
       weight: filteredOut ? 0.5 : 1.0,

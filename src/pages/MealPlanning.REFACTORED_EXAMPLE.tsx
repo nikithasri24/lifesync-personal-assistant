@@ -11,9 +11,8 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { logger } from '../services/logger';
-import { createPortal } from 'react-dom';
-import { addDays, format, isSameWeek, startOfWeek, isSameDay } from 'date-fns';
-import { CalendarDays, ChefHat, Loader2, Plus, Save, Pencil } from 'lucide-react';
+import { addDays, isSameWeek, startOfWeek } from 'date-fns';
+import { CalendarDays, Loader2 } from 'lucide-react';
 
 // Date picker component
 import DatePickerPopover from '../components/DatePickerPopover';
@@ -22,15 +21,15 @@ import DatePickerPopover from '../components/DatePickerPopover';
 import { useAppStore } from '../stores/useAppStore';
 
 // Types
-import type { MealPlanWeek, PlannedMeal, Recipe } from '../types';
+import type { PlannedMeal } from '../types';
 
 // React Query hooks (existing)
 import {
   useRecipesQuery,
   useMealPlansQuery,
   useCreateRecipeMutation,
-  useUpdateRecipeMutation,
-  useDeleteRecipeMutation,
+  _useUpdateRecipeMutation,
+  _useDeleteRecipeMutation,
   useDeleteAllRecipesMutation,
   useCreateMealPlanMutation,
   useCreatePlannedMealMutation,
@@ -58,21 +57,13 @@ import {
 } from '../mealPlanning/components/modals';
 
 // ✨ NEW: View components (reduces ~400 lines)
-import { MealOptionsManager } from '../mealPlanning/components/views/MealOptionsManager';
 
 // ✨ NEW: Utility functions (reduces ~100 lines)
-import { toKey, ensureDate, parseLocalDateKey, fetchClippedRecipe, fetchRecipeFromGoogle } from '../mealPlanning/utils';
+import { toKey, ensureDate, fetchClippedRecipe } from '../mealPlanning/utils';
 
 // Existing modular components (already extracted)
-import RecipeCard from '../mealPlanning/components/recipe/RecipeCard';
-import MealItem from '../mealPlanning/components/mealPlan/MealItem';
-import MealCell from '../mealPlanning/components/mealPlan/MealCell';
-import CellWithMeals from '../mealPlanning/components/mealPlan/CellWithMeals';
-import AddMealControl from '../mealPlanning/components/mealPlan/AddMealControl';
 
 // Parser services (already extracted)
-import { fetchYoutubeRecipe, normalizeFractions as normalizeYoutubeFractions } from '../mealPlanning/services/parsers/youtubeParser';
-import { parseTextToRecipe, normalizeFractions as normalizeTextFractions } from '../mealPlanning/services/parsers/textParser';
 
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack'];
 
@@ -110,19 +101,19 @@ const MealPlanning: React.FC = () => {
   // ========================================
   // REACT QUERY HOOKS (Existing)
   // ========================================
-  const { data: recipes = [], isLoading: recipesLoading } = useRecipesQuery();
+  const { data: recipes = [], isLoading: _recipesLoading } = useRecipesQuery();
   const { data: mealPlans = [], isLoading: mealPlansLoading } = useMealPlansQuery();
   const createRecipeMutation = useCreateRecipeMutation();
   const createPlannedMealMutation = useCreatePlannedMealMutation();
-  const updatePlannedMealMutation = useUpdatePlannedMealMutation();
-  const deletePlannedMealMutation = useDeletePlannedMealMutation();
-  const deleteAllRecipesMutation = useDeleteAllRecipesMutation();
+  const _updatePlannedMealMutation = useUpdatePlannedMealMutation();
+  const _deletePlannedMealMutation = useDeletePlannedMealMutation();
+  const _deleteAllRecipesMutation = useDeleteAllRecipesMutation();
   const createMealPlanMutation = useCreateMealPlanMutation();
 
   // ========================================
   // GLOBAL STATE (Zustand)
   // ========================================
-  const { weekStartsOn, setWeekStartsOn, addNote, showGlobalToast } = useAppStore();
+  const { weekStartsOn, _setWeekStartsOn, _addNote, showGlobalToast } = useAppStore();
 
   // ========================================
   // ✨ NEW: CUSTOM HOOKS (Replaces ~900 lines)
@@ -157,8 +148,8 @@ const MealPlanning: React.FC = () => {
   // LOCAL STATE (Remaining)
   // ========================================
   const [copyTargetWeek, setCopyTargetWeek] = useState<Date>(addDays(weekNav.currentWeekStart, 7));
-  const [recipeSearchQuery, setRecipeSearchQuery] = useState('');
-  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [recipeSearchQuery, _setRecipeSearchQuery] = useState('');
+  const [showFavoritesOnly, _setShowFavoritesOnly] = useState(false);
 
   // ========================================
   // EFFECTS
@@ -171,7 +162,7 @@ const MealPlanning: React.FC = () => {
   // COMPUTED VALUES
   // ========================================
   const plannedMeals = weekNav.activePlan?.meals ?? [];
-  const mealsByDate: Record<string, PlannedMeal[]> = useMemo(() => {
+  const _mealsByDate: Record<string, PlannedMeal[]> = useMemo(() => {
     return plannedMeals.reduce<Record<string, PlannedMeal[]>>((acc, meal) => {
       const key = toKey(ensureDate(meal.date));
       if (!acc[key]) acc[key] = [];
@@ -180,7 +171,7 @@ const MealPlanning: React.FC = () => {
     }, {});
   }, [plannedMeals]);
 
-  const filteredRecipes = useMemo(() => {
+  const _filteredRecipes = useMemo(() => {
     let result = recipes;
     if (showFavoritesOnly) {
       result = result.filter((recipe) => recipe.isFavorite === true);
@@ -204,7 +195,7 @@ const MealPlanning: React.FC = () => {
   // EVENT HANDLERS
   // ========================================
 
-  const handleImportRecipe = async (e: React.FormEvent) => {
+  const _handleImportRecipe = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!recipeImport.importUrl.trim()) return;
 
@@ -222,12 +213,12 @@ const MealPlanning: React.FC = () => {
     }
   };
 
-  const saveImportedRecipe = async () => {
+  const _saveImportedRecipe = async () => {
     if (!recipeImport.importDraft) return;
     try {
       await createRecipeMutation.mutateAsync(recipeImport.importDraft);
       recipeImport.clearUrlImport();
-    } catch (e) {
+    } catch (_e) {
       recipeImport.setImportError('Failed to save recipe');
     }
   };

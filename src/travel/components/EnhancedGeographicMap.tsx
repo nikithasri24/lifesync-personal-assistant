@@ -507,7 +507,7 @@ const EnhancedGeographicMap: React.FC<EnhancedGeographicMapProps> = ({
                           />
                         </g>
                       );
-                    } catch (err) {
+                    } catch (_err) {
                       return null;
                     }
                   })}
@@ -556,7 +556,7 @@ const EnhancedGeographicMap: React.FC<EnhancedGeographicMapProps> = ({
                             {country.properties.name}
                           </text>
                         );
-                      } catch (err) {
+                      } catch (_err) {
                         return null;
                       }
                     })}
@@ -582,7 +582,7 @@ const EnhancedGeographicMap: React.FC<EnhancedGeographicMapProps> = ({
                             opacity="0.6"
                           />
                         );
-                      } catch (err) {
+                      } catch (_err) {
                         return null;
                       }
                     })}

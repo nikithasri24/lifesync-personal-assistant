@@ -6,7 +6,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { JournalEntry, JournalMood } from '../types';
+import type { JournalEntry } from '../types';
 import { queryKeys, queryOptions } from '@/lib/react-query';
 import {
   getJournalEntries,

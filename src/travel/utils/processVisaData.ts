@@ -4,14 +4,7 @@
  */
 
 import fs from 'fs';
-import path from 'path';
 import type { VisaRequirement } from '../types/visa';
-
-interface VisaEntry {
-  passport: string;
-  destination: string;
-  requirement: string;
-}
 
 interface ProcessedVisaData {
   [passportCountry: string]: {
@@ -178,8 +171,7 @@ export function getVisaAccessSummary(passportCountry: string): {
     eVisa: 0,
     visaRequired: 0,
     noAdmission: 0,
-    total: 0,
-  };
+    total: 0};
 
   Object.values(passportData).forEach(entry => {
     summary.total++;

@@ -10,9 +10,9 @@ import {
   ArrowRight,
   Grid,
   Layers,
-  CalendarDays,
+  _CalendarDays,
   List,
-  Filter,
+  _Filter,
   type LucideIcon
 } from 'lucide-react';
 import type { ViewType, Project } from '../types';

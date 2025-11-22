@@ -3,7 +3,7 @@
  * Replaces 'as any' assertions with proper validation
  */
 
-import { validateEnum, createEnumValidator } from '../../utils/validators';
+import { createEnumValidator } from '../../utils/validators';
 
 // Category types
 export const SHOPPING_CATEGORIES = [

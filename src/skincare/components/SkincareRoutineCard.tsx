@@ -3,8 +3,8 @@
  */
 
 import React from 'react';
-import { Sun, Moon, Plus, Edit, Trash2, Check } from 'lucide-react';
-import type { SkincareRoutine, SkincareProduct, RoutineType } from '../types';
+import { Sun, Moon, Edit, Trash2, Check } from 'lucide-react';
+import type { SkincareRoutine, SkincareProduct } from '../types';
 
 type SkincareRoutineCardProps = {
   routine: SkincareRoutine;
@@ -19,7 +19,7 @@ type SkincareRoutineCardProps = {
 const SkincareRoutineCard: React.FC<SkincareRoutineCardProps> = ({
   routine,
   products,
-  allProducts,
+  _allProducts,
   completed,
   onToggleComplete,
   onEdit,

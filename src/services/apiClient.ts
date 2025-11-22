@@ -18,7 +18,7 @@ import type {
   PlannedMealData,
   FocusSessionData,
   RecipeData,
-  RecipeIngredientData,
+  _RecipeIngredientData,
   AnalyticsData,
   SFHChallengeData,
   SFHEntryData,

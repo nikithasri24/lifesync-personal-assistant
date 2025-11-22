@@ -237,7 +237,7 @@ export async function handleUtterance(text: string, ctx?: IntentContext): Promis
     try {
       const plans = await apiClient.getMealPlans().catch(() => [])
       const today = new Date()
-      const todayISO = today.toISOString().slice(0,10)
+      const _todayISO = today.toISOString().slice(0,10)
       const todays = JSON.stringify(plans) // quick-and-dirty scan; structure varies by backend
       const mentioned = /breakfast\W+([^\n\"]{3,40})/i.exec(todays)
       if (mentioned && mentioned[1]) {

@@ -64,7 +64,7 @@ export default function Todos() {
 
   const createTaskMutation = useCreateTask();
   const updateTaskMutation = useUpdateTask();
-  const deleteTaskMutation = useDeleteTask();
+  const _deleteTaskMutation = useDeleteTask();
 
   // Enhanced API health monitoring
   const apiHealth = useApiHealth(15000); // Check every 15 seconds

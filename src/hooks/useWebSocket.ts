@@ -203,7 +203,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
           }));
           onError?.(error);
         };
-      } catch (error) {
+      } catch (_error) {
         setState(prev => ({
           ...prev,
           error: 'Failed to create WebSocket connection',

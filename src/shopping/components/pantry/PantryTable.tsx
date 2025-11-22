@@ -1,8 +1,7 @@
 import React from 'react';
 import { differenceInCalendarDays } from 'date-fns';
-import { PantryTableRow } from './PantryTableRow';
 import { ReplenishModal } from '../modals/ReplenishModal';
-import type { PantryItem, ShoppingItem } from '../../types';
+import type { PantryItem } from '../../types';
 
 interface PantryTableProps {
   items: PantryItem[];
