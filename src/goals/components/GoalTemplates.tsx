@@ -9,6 +9,26 @@ import { getGoalTemplates, createGoalFromTemplate } from '../api/lifeGoalsAPI';
 import type { LifeGoalWithMilestones } from '../types/lifeGoals';
 import { logger } from '../../services/logger';
 
+interface Milestone {
+  title: string;
+  description?: string;
+  estimatedDays?: number;
+}
+
+interface TemplateResponse {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  difficulty: string;
+  estimated_duration_days: number;
+  default_milestones?: Milestone[];
+  suggested_tags?: string[];
+  tips: string;
+  resources?: string[];
+  usage_count: number;
+}
+
 interface Template {
   id: string;
   name: string;
@@ -16,7 +36,7 @@ interface Template {
   category: string;
   difficulty: string;
   estimatedDurationDays: number;
-  defaultMilestones: any[];
+  defaultMilestones: Milestone[];
   suggestedTags: string[];
   tips: string;
   resources: string[];
@@ -35,7 +55,7 @@ const difficultyColors: Record<string, string> = {
   extreme: 'bg-red-100 text-red-800 border-red-300',
 };
 
-const categoryIcons: Record<string, any> = {
+const categoryIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   fitness: TrendingUp,
   health: Award,
   career: Target,
@@ -49,43 +69,45 @@ const GoalTemplates: React.FC<GoalTemplatesProps> = ({ onGoalCreated, onClose })
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [creating, setCreating] = useState(false);
   const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const loadTemplates = async () => {
+    const loadTemplates = async (): Promise<void> => {
       try {
         setLoading(true);
-        const data = await getGoalTemplates();
-        setTemplates(data.map((t: any) => ({
+        const data = await getGoalTemplates() as unknown as TemplateResponse[];
+        setTemplates(data.map((t: TemplateResponse) => ({
           id: t.id,
           name: t.name,
           description: t.description,
           category: t.category,
           difficulty: t.difficulty,
           estimatedDurationDays: t.estimated_duration_days,
-          defaultMilestones: t.default_milestones || [],
-          suggestedTags: t.suggested_tags || [],
+          defaultMilestones: t.default_milestones ?? [],
+          suggestedTags: t.suggested_tags ?? [],
           tips: t.tips,
-          resources: t.resources || [],
+          resources: t.resources ?? [],
           usageCount: t.usage_count,
         })));
-      } catch (error) {
-        logger.error('Error loading templates:', { error });
+      } catch (error: unknown) {
+        logger.error('Error loading templates:', { error: error instanceof Error ? error : String(error) });
       } finally {
         setLoading(false);
       }
     };
-    loadTemplates();
+    void loadTemplates();
   }, []);
 
-  const handleCreateFromTemplate = async (templateId: string) => {
+  const handleCreateFromTemplate = async (templateId: string): Promise<void> => {
     try {
       setCreating(true);
+      setError(null);
       const goal = await createGoalFromTemplate(templateId);
       onGoalCreated(goal);
       onClose();
-    } catch (error) {
-      logger.error('Error creating goal from template:', { error });
-      alert('Failed to create goal. Please try again.');
+    } catch (error: unknown) {
+      logger.error('Error creating goal from template:', { error: error instanceof Error ? error : String(error) });
+      setError('Failed to create goal. Please try again.');
     } finally {
       setCreating(false);
     }
@@ -256,17 +278,17 @@ const GoalTemplates: React.FC<GoalTemplatesProps> = ({ onGoalCreated, onClose })
                       Milestones ({selectedTemplate.defaultMilestones.length})
                     </h4>
                     <div className="space-y-2">
-                      {selectedTemplate.defaultMilestones.map((milestone: any, index: number) => (
+                      {selectedTemplate.defaultMilestones.map((milestone: Milestone, index: number) => (
                         <div key={index} className="flex gap-3 p-3 bg-slate-50 rounded-lg">
                           <div className="flex-shrink-0 w-6 h-6 bg-indigo-600 text-white rounded-full flex items-center justify-center text-xs font-bold">
                             {index + 1}
                           </div>
                           <div className="flex-1">
                             <p className="text-sm font-medium text-slate-900">{milestone.title}</p>
-                            {milestone.description && (
+                            {milestone.description !== undefined && (
                               <p className="text-xs text-slate-600 mt-1">{milestone.description}</p>
                             )}
-                            {milestone.estimatedDays && (
+                            {milestone.estimatedDays !== undefined && (
                               <p className="text-xs text-slate-500 mt-1">~{milestone.estimatedDays} days</p>
                             )}
                           </div>
@@ -324,20 +346,27 @@ const GoalTemplates: React.FC<GoalTemplatesProps> = ({ onGoalCreated, onClose })
                 )}
               </div>
 
-              <div className="p-6 border-t border-slate-200 bg-slate-50 flex gap-3">
-                <button
-                  onClick={() => handleCreateFromTemplate(selectedTemplate.id)}
-                  disabled={creating}
-                  className="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed"
-                >
-                  {creating ? 'Creating...' : 'Create Goal from Template'}
-                </button>
-                <button
-                  onClick={() => setSelectedTemplate(null)}
-                  className="px-6 py-3 bg-white border border-slate-300 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-colors"
-                >
-                  Cancel
-                </button>
+              <div className="p-6 border-t border-slate-200 bg-slate-50">
+                {error !== null && (
+                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                    {error}
+                  </div>
+                )}
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => void handleCreateFromTemplate(selectedTemplate.id)}
+                    disabled={creating}
+                    className="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed"
+                  >
+                    {creating ? 'Creating...' : 'Create Goal from Template'}
+                  </button>
+                  <button
+                    onClick={() => setSelectedTemplate(null)}
+                    className="px-6 py-3 bg-white border border-slate-300 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
             </div>
           </div>

@@ -1,7 +1,7 @@
 import React from 'react';
 import { differenceInCalendarDays } from 'date-fns';
 import { ReplenishModal } from '../modals/ReplenishModal';
-import type { PantryItem } from '../../types';
+import type { PantryItem } from '../../../types';
 
 interface PantryTableProps {
   items: PantryItem[];
@@ -39,7 +39,7 @@ export function PantryTable({
   onCancelReplenish,
   onAddToShopping,
   onDelete,
-}: PantryTableProps) {
+}: PantryTableProps): JSX.Element {
   if (items.length === 0) {
     return <p className="text-sm text-gray-500">No pantry items yet.</p>;
   }
@@ -102,7 +102,7 @@ export function PantryTable({
                       </div>
                     ) : (
                       <span>
-                        {item.quantity} {item.unit || ''}
+                        {item.quantity} {item.unit ?? ''}
                       </span>
                     )}
                   </td>
@@ -139,7 +139,7 @@ export function PantryTable({
                       </div>
                     ) : (
                       <span className={item.isLowStock ? 'text-amber-600' : 'text-gray-600'}>
-                        {item.isLowStock ? `Yes (${item.lowStockThreshold || '?'})` : 'No'}
+                        {item.isLowStock ? `Yes (${item.lowStockThreshold ?? '?'})` : 'No'}
                       </span>
                     )}
                   </td>
@@ -197,8 +197,8 @@ export function PantryTable({
                     <td colSpan={6} className="px-3 py-2 bg-gray-50">
                       <ReplenishModal
                         itemName={replenishItem.name}
-                        currentQuantity={replenishItem.quantity || 0}
-                        suggestedTarget={replenishItem.lowStockThreshold || Math.max(replenishItem.quantity || 0, 1)}
+                        currentQuantity={replenishItem.quantity ?? 0}
+                        suggestedTarget={replenishItem.lowStockThreshold ?? Math.max(replenishItem.quantity ?? 0, 1)}
                         onReplenish={onReplenish}
                         onCancel={onCancelReplenish}
                       />

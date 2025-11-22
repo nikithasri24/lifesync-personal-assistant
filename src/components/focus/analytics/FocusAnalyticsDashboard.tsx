@@ -1,11 +1,12 @@
 /**
  * Focus Analytics Dashboard
- * 
+ *
  * Comprehensive analytics and insights dashboard showing productivity metrics,
  * trends, achievements, goals progress, and personalized recommendations.
  */
 
-import { useEffect, useState } from 'react'
+/* eslint-disable max-lines */
+import { useCallback, useEffect, useState } from 'react'
 import { apiClient } from '../../../services/apiClient'
 import {
   _BarChart3,
@@ -35,6 +36,16 @@ import {
 import { eachDayOfInterval, endOfWeek, format, startOfWeek } from 'date-fns'
 import { useAppStore } from '../../../stores/useAppStore'
 import { logger } from '../../../services/logger';
+
+// Types for focus session data from API
+interface FocusSession {
+  start_time?: string;
+  startTime?: string;
+  actual_duration?: number;
+  duration?: number;
+  status?: string;
+  preset?: string;
+}
 
 type InsightType = 'positive' | 'suggestion' | 'warning'
 type InsightPriority = 'low' | 'medium' | 'high'
@@ -85,29 +96,8 @@ export const FocusAnalyticsDashboard: React.FC<Props> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [showInsights, setShowInsights] = useState(true);
 
-  // Mock data for demonstration
-  useEffect(() => {
-    const loadAnalytics = async () => {
-      setIsLoading(true);
-      
-      try {
-        // Load real focus session data from Supabase
-        const sessions = await apiClient.getFocusSessions();
-
-        // Generate analytics from real session data
-        const generated = generateAnalyticsFromSessions(sessions);
-        setAnalyticsData(generated);
-      } catch (error) {
-        logger.error('Failed to load focus analytics:', { error });
-        setAnalyticsData(defaultAnalytics());
-      }
-      setIsLoading(false);
-    };
-
-    loadAnalytics();
-  }, [period]);
-
-  const defaultAnalytics = (): AnalyticsData => ({
+  // Define defaultAnalytics as a useCallback to avoid re-creating on every render
+  const defaultAnalytics = useCallback((): AnalyticsData => ({
     totalSessions: 0,
     totalFocusTime: 0,
     averageSessionLength: 0,
@@ -118,7 +108,7 @@ export const FocusAnalyticsDashboard: React.FC<Props> = ({
     focusQuality: 0,
     weeklyStats: [],
     monthlyTrends: [],
-    hourlyHeatmap: Array.from({ length: 24 }, (_, hour) => ({ hour, value: 0 })),
+    hourlyHeatmap: Array.from({ length: 24 }, (_: unknown, hour: number) => ({ hour, value: 0 })),
     categoryBreakdown: [],
     achievements: [],
     insights: [],
@@ -134,16 +124,55 @@ export const FocusAnalyticsDashboard: React.FC<Props> = ({
       eyeStrainEvents: 0,
       hydrationReminders: 0,
     },
-  })
+  }), []);
 
-  const generateAnalyticsFromSessions = (sessions: any[]): AnalyticsData => {
+  const calculateStreaks = useCallback((sessions: FocusSession[]): { current: number; longest: number } => {
+    if (sessions.length === 0) {
+      return { current: 0, longest: 0 }
+    }
+
+    const uniqueDays = Array.from(
+      new Set(
+        sessions.map((session) =>
+          format(new Date(session.start_time ?? session.startTime ?? Date.now()), 'yyyy-MM-dd'),
+        ),
+      ),
+    )
+      .map((day) => new Date(day))
+      .sort((a, b) => a.getTime() - b.getTime())
+
+    let current = 1
+    let longest = 1
+
+    for (let i = 1; i < uniqueDays.length; i += 1) {
+      const prev = uniqueDays[i - 1]
+      const currentDay = uniqueDays[i]
+      const diff = (currentDay.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24)
+      if (diff === 1) {
+        current += 1
+        longest = Math.max(longest, current)
+      } else {
+        current = 1
+      }
+    }
+
+    const todayKey = format(new Date(), 'yyyy-MM-dd')
+    const lastKey = format(uniqueDays[uniqueDays.length - 1], 'yyyy-MM-dd')
+    if (todayKey !== lastKey) {
+      current = 0
+    }
+
+    return { current, longest }
+  }, []);
+
+  const generateAnalyticsFromSessions = useCallback((sessions: FocusSession[]): AnalyticsData => {
     if (sessions.length === 0) {
       return defaultAnalytics()
     }
 
     const sorted = [...sessions].sort((a, b) => new Date(a.start_time ?? a.startTime ?? 0).getTime() - new Date(b.start_time ?? b.startTime ?? 0).getTime())
     const totalSessions = sorted.length
-    const totalFocusTime = sorted.reduce((sum, session) => sum + (session.actual_duration ?? session.duration ?? 0), 0)
+    const totalFocusTime = sorted.reduce((sum: number, session) => sum + (session.actual_duration ?? session.duration ?? 0), 0)
     const averageSessionLength = totalSessions ? Math.round(totalFocusTime / totalSessions) : 0
 
     const completedSessions = sorted.filter((session) => session.status === 'completed').length
@@ -174,7 +203,7 @@ export const FocusAnalyticsDashboard: React.FC<Props> = ({
       }
     })
 
-    const hourlyHeatmap = Array.from({ length: 24 }, (_, hour) => ({ hour, value: 0 }))
+    const hourlyHeatmap = Array.from({ length: 24 }, (_: unknown, hour: number) => ({ hour, value: 0 }))
     sorted.forEach((session) => {
       const date = new Date(session.start_time ?? session.startTime ?? Date.now())
       const hour = date.getHours()
@@ -183,7 +212,7 @@ export const FocusAnalyticsDashboard: React.FC<Props> = ({
 
     const categoryMap = new Map<string, { time: number; sessions: number }>()
     sorted.forEach((session) => {
-      const category = (session.preset as string | undefined) ?? 'General'
+      const category = session.preset ?? 'General'
       const entry = categoryMap.get(category) ?? { time: 0, sessions: 0 }
       entry.time += session.actual_duration ?? session.duration ?? 0
       entry.sessions += 1
@@ -199,10 +228,10 @@ export const FocusAnalyticsDashboard: React.FC<Props> = ({
     const insights: AnalyticsData['insights'] = categoryBreakdown.length
       ? [
           {
-            type: 'positive',
+            type: 'positive' as const,
             title: 'Consistent Focus Detected',
             description: `You completed ${completionRate}% of your sessions this week.`,
-            priority: 'medium',
+            priority: 'medium' as const,
           },
         ]
       : []
@@ -213,7 +242,7 @@ export const FocusAnalyticsDashboard: React.FC<Props> = ({
         title: 'Weekly Sessions',
         progress: totalSessions,
         target: 25,
-        status: totalSessions >= 25 ? 'completed' : 'active',
+        status: totalSessions >= 25 ? ('completed' as const) : ('active' as const),
       },
     ]
 
@@ -257,54 +286,37 @@ export const FocusAnalyticsDashboard: React.FC<Props> = ({
       distractions,
       wellness,
     }
-  };
+  }, [calculateStreaks, defaultAnalytics]);
 
-  const calculateStreaks = (sessions: any[]) => {
-    if (sessions.length === 0) {
-      return { current: 0, longest: 0 }
-    }
+  // Mock data for demonstration
+  useEffect(() => {
+    const loadAnalytics = async (): Promise<void> => {
+      setIsLoading(true);
 
-    const uniqueDays = Array.from(
-      new Set(
-        sessions.map((session) =>
-          format(new Date(session.start_time ?? session.startTime ?? Date.now()), 'yyyy-MM-dd'),
-        ),
-      ),
-    )
-      .map((day) => new Date(day))
-      .sort((a, b) => a.getTime() - b.getTime())
+      try {
+        // Load real focus session data from Supabase
+        const sessions = await apiClient.getFocusSessions() as FocusSession[];
 
-    let current = 1
-    let longest = 1
-
-    for (let i = 1; i < uniqueDays.length; i += 1) {
-      const prev = uniqueDays[i - 1]
-      const currentDay = uniqueDays[i]
-      const diff = (currentDay.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24)
-      if (diff === 1) {
-        current += 1
-        longest = Math.max(longest, current)
-      } else {
-        current = 1
+        // Generate analytics from real session data
+        const generated = generateAnalyticsFromSessions(sessions);
+        setAnalyticsData(generated);
+      } catch (error) {
+        logger.error('Failed to load focus analytics:', { error });
+        setAnalyticsData(defaultAnalytics());
       }
-    }
+      setIsLoading(false);
+    };
 
-    const todayKey = format(new Date(), 'yyyy-MM-dd')
-    const lastKey = format(uniqueDays[uniqueDays.length - 1], 'yyyy-MM-dd')
-    if (todayKey !== lastKey) {
-      current = 0
-    }
+    void loadAnalytics();
+  }, [period, generateAnalyticsFromSessions, defaultAnalytics]);
 
-    return { current, longest }
-  }
-
-  const formatTime = (minutes: number) => {
+  const formatTime = (minutes: number): string => {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
     return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
   };
 
-  const getInsightIcon = (type: string) => {
+  const getInsightIcon = (type: string): JSX.Element => {
     switch (type) {
       case 'positive': return <TrendingUp className="w-5 h-5 text-green-500" />;
       case 'suggestion': return <Lightbulb className="w-5 h-5 text-blue-500" />;
@@ -313,7 +325,7 @@ export const FocusAnalyticsDashboard: React.FC<Props> = ({
     }
   };
 
-  const getGoalProgress = (progress: number, target: number) => {
+  const getGoalProgress = (progress: number, target: number): number => {
     return Math.min((progress / target) * 100, 100);
   };
 
@@ -323,12 +335,12 @@ export const FocusAnalyticsDashboard: React.FC<Props> = ({
         <div className="animate-pulse">
           <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-64 mb-6"></div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            {[...Array(4)].map((_, i) => (
+            {Array.from({ length: 4 }, (_: unknown, i: number) => (
               <div key={i} className="h-32 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
             ))}
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {[...Array(6)].map((_, i) => (
+            {Array.from({ length: 6 }, (_: unknown, i: number) => (
               <div key={i} className="h-64 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
             ))}
           </div>

@@ -19,7 +19,8 @@
       "Bash(jq:*)",
       "Bash(npm test:*)",
       "Bash(pkill:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(echo:*)"
     ],
     "deny": [],
     "ask": []

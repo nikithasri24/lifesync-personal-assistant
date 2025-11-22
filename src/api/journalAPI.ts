@@ -4,7 +4,7 @@
  */
 
 import { supabase } from '../lib/supabase';
-import type { JournalEntry, JournalMood } from '../types';
+import type { JournalEntry, JournalMood, Attachment } from '../types';
 
 // Database types (snake_case from Supabase)
 interface JournalEntryDB {
@@ -14,9 +14,9 @@ interface JournalEntryDB {
   content: string;
   mood: JournalMood;
   tags: string[];
-  weather: any;
+  weather: unknown;
   gratitude: string | null;
-  attachments: any[];
+  attachments: Attachment[];
   created_at: string;
   updated_at: string;
 }
@@ -27,9 +27,9 @@ export interface CreateJournalEntryInput {
   content: string;
   mood: JournalMood;
   tags?: string[];
-  weather?: any;
+  weather?: unknown;
   gratitude?: string;
-  attachments?: any[];
+  attachments?: Attachment[];
 }
 
 export interface UpdateJournalEntryInput {
@@ -37,9 +37,9 @@ export interface UpdateJournalEntryInput {
   content?: string;
   mood?: JournalMood;
   tags?: string[];
-  weather?: any;
+  weather?: unknown;
   gratitude?: string;
-  attachments?: any[];
+  attachments?: Attachment[];
 }
 
 export interface JournalEntryFilters {
@@ -55,18 +55,25 @@ export interface JournalEntryFilters {
 // =====================================================
 
 function mapDbToJournalEntry(data: JournalEntryDB): JournalEntry {
-  return {
+  const entry: JournalEntry = {
     id: data.id,
-    title: data.title || '',
+    title: data.title ?? '',
     content: data.content,
     mood: data.mood,
-    tags: data.tags || [],
-    attachments: data.attachments || [],
+    tags: data.tags ?? [],
+    attachments: data.attachments ?? [],
     createdAt: new Date(data.created_at),
-    // Add optional fields if needed
-    ...(data.weather && { weather: data.weather }),
-    ...(data.gratitude && { gratitude: data.gratitude }),
   };
+
+  // Add optional fields if needed
+  if (data.weather) {
+    entry.weather = data.weather;
+  }
+  if (data.gratitude) {
+    entry.gratitude = data.gratitude;
+  }
+
+  return entry;
 }
 
 // =====================================================
@@ -109,7 +116,7 @@ export async function getJournalEntries(filters?: JournalEntryFilters): Promise<
 
   if (error) throw error;
 
-  let entries = (data || []).map(mapDbToJournalEntry);
+  let entries = (data ?? []).map(mapDbToJournalEntry);
 
   // Client-side search filtering (for title and content)
   if (filters?.searchQuery) {
@@ -131,17 +138,17 @@ export async function getJournalEntry(id: string): Promise<JournalEntry> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
-  const { data, error } = await supabase
+  const result = await supabase
     .from('journal_entries')
     .select('*')
     .eq('id', id)
     .eq('user_id', user.id)
     .single();
 
-  if (error) throw error;
-  if (!data) throw new Error('Journal entry not found');
+  if (result.error) throw result.error;
+  if (!result.data) throw new Error('Journal entry not found');
 
-  return mapDbToJournalEntry(data);
+  return mapDbToJournalEntry(result.data as JournalEntryDB);
 }
 
 /**
@@ -151,23 +158,23 @@ export async function createJournalEntry(input: CreateJournalEntryInput): Promis
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
-  const { data, error } = await supabase
+  const result = await supabase
     .from('journal_entries')
     .insert({
       user_id: user.id,
-      title: input.title || null,
+      title: input.title ?? null,
       content: input.content,
       mood: input.mood,
-      tags: input.tags || [],
-      weather: input.weather || null,
-      gratitude: input.gratitude || null,
-      attachments: input.attachments || [],
+      tags: input.tags ?? [],
+      weather: input.weather ?? null,
+      gratitude: input.gratitude ?? null,
+      attachments: input.attachments ?? [],
     })
     .select()
     .single();
 
-  if (error) throw error;
-  return mapDbToJournalEntry(data);
+  if (result.error) throw result.error;
+  return mapDbToJournalEntry(result.data as JournalEntryDB);
 }
 
 /**
@@ -180,8 +187,16 @@ export async function updateJournalEntry(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
-  const updateData: any = {};
-  if (input.title !== undefined) updateData.title = input.title || null;
+  const updateData: Partial<{
+    title: string | null;
+    content: string;
+    mood: JournalMood;
+    tags: string[];
+    weather: unknown;
+    gratitude: string | null;
+    attachments: Attachment[];
+  }> = {};
+  if (input.title !== undefined) updateData.title = input.title ?? null;
   if (input.content !== undefined) updateData.content = input.content;
   if (input.mood !== undefined) updateData.mood = input.mood;
   if (input.tags !== undefined) updateData.tags = input.tags;
@@ -189,7 +204,7 @@ export async function updateJournalEntry(
   if (input.gratitude !== undefined) updateData.gratitude = input.gratitude;
   if (input.attachments !== undefined) updateData.attachments = input.attachments;
 
-  const { data, error } = await supabase
+  const result = await supabase
     .from('journal_entries')
     .update(updateData)
     .eq('id', id)
@@ -197,8 +212,8 @@ export async function updateJournalEntry(
     .select()
     .single();
 
-  if (error) throw error;
-  return mapDbToJournalEntry(data);
+  if (result.error) throw result.error;
+  return mapDbToJournalEntry(result.data as JournalEntryDB);
 }
 
 /**
@@ -232,7 +247,7 @@ export async function getJournalTags(): Promise<string[]> {
   if (error) throw error;
 
   // Flatten and deduplicate tags
-  const allTags = (data || []).flatMap((entry: any) => entry.tags || []);
+  const allTags = (data ?? []).flatMap((entry: { tags?: string[] }) => entry.tags ?? []);
   return Array.from(new Set(allTags)).sort();
 }
 
@@ -268,9 +283,9 @@ export async function getMoodStats(startDate?: Date, endDate?: Date): Promise<Re
     terrible: 0,
   };
 
-  (data || []).forEach((entry: any) => {
+  (data ?? []).forEach((entry: { mood: JournalMood }) => {
     if (entry.mood in stats) {
-      stats[entry.mood as JournalMood]++;
+      stats[entry.mood]++;
     }
   });
 

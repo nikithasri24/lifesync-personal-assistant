@@ -5,7 +5,7 @@
  * for habits tracking CRUD operations.
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
 import type { HabitData, HabitEntryData } from '../services/types';
 import { queryKeys, queryOptions } from '@/lib/react-query';
 import {
@@ -36,7 +36,7 @@ export interface HabitFilters {
 /**
  * Get all habits with optional filters
  */
-export function useHabits(filters?: HabitFilters) {
+export function useHabits(filters?: HabitFilters): UseQueryResult<HabitData[], Error> {
   return useQuery({
     queryKey: [...queryKeys.tasks.all, 'habits', filters] as const,
     queryFn: () => getHabits(filters),
@@ -47,10 +47,13 @@ export function useHabits(filters?: HabitFilters) {
 /**
  * Get a single habit by ID
  */
-export function useHabit(id: string | null) {
+export function useHabit(id: string | null): UseQueryResult<HabitData, Error> {
   return useQuery({
     queryKey: [...queryKeys.tasks.all, 'habits', 'detail', id] as const,
-    queryFn: () => getHabit(id!),
+    queryFn: () => {
+      if (!id) throw new Error('Habit ID is required');
+      return getHabit(id);
+    },
     enabled: !!id,
     ...queryOptions.user,
   });
@@ -63,7 +66,7 @@ export function useHabit(id: string | null) {
 /**
  * Create a new habit
  */
-export function useCreateHabit() {
+export function useCreateHabit(): UseMutationResult<HabitData, Error, Omit<HabitData, 'id' | 'created_at' | 'updated_at'>> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -76,7 +79,7 @@ export function useCreateHabit() {
       logger.info('Habit created successfully', { id: newHabit.id, name: newHabit.name });
 
       // Invalidate all habits lists
-      queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'habits'] });
+      void queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'habits'] });
 
       // Optimistically add to cache
       queryClient.setQueryData<HabitData[]>(
@@ -95,7 +98,7 @@ export function useCreateHabit() {
 /**
  * Update an existing habit
  */
-export function useUpdateHabit() {
+export function useUpdateHabit(): UseMutationResult<HabitData, Error, { id: string; updates: Partial<HabitData> }> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -104,14 +107,14 @@ export function useUpdateHabit() {
       const result = await updateHabit(id, updates);
       return result;
     },
-    onMutate: async ({ id, updates }) => {
+    onMutate: ({ id, updates }) => {
       logger.debug('Optimistic update: updating habit', { id, updates });
     },
     onSuccess: (updatedHabit) => {
       logger.info('Habit updated successfully', { id: updatedHabit.id, name: updatedHabit.name });
 
       // Invalidate all habits lists
-      queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'habits'] });
+      void queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'habits'] });
 
       // Update the specific habit detail cache
       queryClient.setQueryData(
@@ -138,7 +141,7 @@ export function useUpdateHabit() {
 /**
  * Delete a habit
  */
-export function useDeleteHabit() {
+export function useDeleteHabit(): UseMutationResult<void, Error, string> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -151,7 +154,7 @@ export function useDeleteHabit() {
       logger.info('Habit deleted successfully', { id: deletedId });
 
       // Invalidate all habits queries
-      queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'habits'] });
+      void queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'habits'] });
 
       // Remove from cache
       queryClient.removeQueries({ queryKey: [...queryKeys.tasks.all, 'habits', 'detail', deletedId] });
@@ -165,7 +168,7 @@ export function useDeleteHabit() {
       );
 
       // Also invalidate habit entries for this habit
-      queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'habitEntries'] });
+      void queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'habitEntries'] });
     },
     onError: (error: Error, id) => {
       logger.error('Failed to delete habit', { error: error.message, id });
@@ -186,7 +189,7 @@ export interface HabitEntryFilters {
 /**
  * Get habit entries with optional filters
  */
-export function useHabitEntries(filters?: HabitEntryFilters) {
+export function useHabitEntries(filters?: HabitEntryFilters): UseQueryResult<HabitEntryData[], Error> {
   return useQuery({
     queryKey: [...queryKeys.tasks.all, 'habitEntries', filters] as const,
     queryFn: () => getHabitEntries(filters),
@@ -197,10 +200,13 @@ export function useHabitEntries(filters?: HabitEntryFilters) {
 /**
  * Get entries for a specific habit
  */
-export function useHabitEntriesForHabit(habitId: string | null) {
+export function useHabitEntriesForHabit(habitId: string | null): UseQueryResult<HabitEntryData[], Error> {
   return useQuery({
     queryKey: [...queryKeys.tasks.all, 'habitEntries', 'habit', habitId] as const,
-    queryFn: () => getHabitEntriesForHabit(habitId!),
+    queryFn: () => {
+      if (!habitId) throw new Error('Habit ID is required');
+      return getHabitEntriesForHabit(habitId);
+    },
     enabled: !!habitId,
     ...queryOptions.user,
   });
@@ -213,7 +219,7 @@ export function useHabitEntriesForHabit(habitId: string | null) {
 /**
  * Create a habit entry (log completion)
  */
-export function useCreateHabitEntry() {
+export function useCreateHabitEntry(): UseMutationResult<HabitEntryData, Error, Omit<HabitEntryData, 'id' | 'created_at' | 'updated_at'>> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -226,15 +232,15 @@ export function useCreateHabitEntry() {
       logger.info('Habit entry created successfully', { id: newEntry.id, habitId: newEntry.habit_id });
 
       // Invalidate habit entries queries
-      queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'habitEntries'] });
+      void queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'habitEntries'] });
 
       // Invalidate the specific habit (to update streak/progress)
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: [...queryKeys.tasks.all, 'habits', 'detail', newEntry.habit_id]
       });
 
       // Invalidate all habits list (to show updated streak counts)
-      queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'habits'] });
+      void queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'habits'] });
 
       // Optimistically add to entries cache
       queryClient.setQueryData<HabitEntryData[]>(
@@ -253,7 +259,7 @@ export function useCreateHabitEntry() {
 /**
  * Update a habit entry
  */
-export function useUpdateHabitEntry() {
+export function useUpdateHabitEntry(): UseMutationResult<HabitEntryData, Error, { id: string; updates: Partial<HabitEntryData> }> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -266,7 +272,7 @@ export function useUpdateHabitEntry() {
       logger.info('Habit entry updated successfully', { id: updatedEntry.id, habitId: updatedEntry.habit_id });
 
       // Invalidate habit entries queries
-      queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'habitEntries'] });
+      void queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'habitEntries'] });
 
       // Optimistically update in cache
       queryClient.setQueryData<HabitEntryData[]>(
@@ -287,7 +293,7 @@ export function useUpdateHabitEntry() {
 /**
  * Delete a habit entry
  */
-export function useDeleteHabitEntry() {
+export function useDeleteHabitEntry(): UseMutationResult<void, Error, { id: string; habitId: string }> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -300,15 +306,15 @@ export function useDeleteHabitEntry() {
       logger.info('Habit entry deleted successfully', { id, habitId });
 
       // Invalidate habit entries queries
-      queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'habitEntries'] });
+      void queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'habitEntries'] });
 
       // Invalidate the specific habit (to update streak/progress)
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: [...queryKeys.tasks.all, 'habits', 'detail', habitId]
       });
 
       // Invalidate all habits list
-      queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'habits'] });
+      void queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'habits'] });
 
       // Optimistically remove from cache
       queryClient.setQueryData<HabitEntryData[]>(
@@ -327,7 +333,7 @@ export function useDeleteHabitEntry() {
 /**
  * Delete all entries for a specific date (reset today's progress)
  */
-export function useDeleteHabitEntriesForDate() {
+export function useDeleteHabitEntriesForDate(): UseMutationResult<void, Error, { habitId: string; date: string }> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -340,15 +346,15 @@ export function useDeleteHabitEntriesForDate() {
       logger.info('Habit entries deleted for date', { habitId, date });
 
       // Invalidate habit entries queries
-      queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'habitEntries'] });
+      void queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'habitEntries'] });
 
       // Invalidate the specific habit
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: [...queryKeys.tasks.all, 'habits', 'detail', habitId]
       });
 
       // Invalidate all habits list
-      queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'habits'] });
+      void queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'habits'] });
     },
     onError: (error: Error, { habitId, date }) => {
       logger.error('Failed to delete habit entries for date', { error: error.message, habitId, date });
@@ -359,7 +365,7 @@ export function useDeleteHabitEntriesForDate() {
 /**
  * Delete all entries for a habit (reset history)
  */
-export function useDeleteAllHabitEntries() {
+export function useDeleteAllHabitEntries(): UseMutationResult<void, Error, string> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -372,15 +378,15 @@ export function useDeleteAllHabitEntries() {
       logger.info('All habit entries deleted', { habitId });
 
       // Invalidate habit entries queries
-      queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'habitEntries'] });
+      void queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'habitEntries'] });
 
       // Invalidate the specific habit
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: [...queryKeys.tasks.all, 'habits', 'detail', habitId]
       });
 
       // Invalidate all habits list
-      queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'habits'] });
+      void queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'habits'] });
     },
     onError: (error: Error, habitId) => {
       logger.error('Failed to delete all habit entries', { error: error.message, habitId });

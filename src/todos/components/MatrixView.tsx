@@ -4,7 +4,7 @@
 import React from 'react';
 import { format, isToday, isPast } from 'date-fns';
 import { CheckCircle2, CalendarDays } from 'lucide-react';
-import type { Task, Project, EisenhowerMatrix } from '../types';
+import type { Task, Project, EisenhowerMatrix, MatrixQuadrant } from '../types';
 
 interface MatrixViewProps {
   tasks: Task[];
@@ -20,7 +20,7 @@ export function MatrixView({
   selectedProject,
   onToggleStatus,
   isUpdating
-}: MatrixViewProps) {
+}: MatrixViewProps): React.JSX.Element {
   // Build Eisenhower Matrix
   const filteredTasks = tasks.filter(
     t => selectedProject === 'all' || t.projectId === selectedProject
@@ -75,7 +75,7 @@ export function MatrixView({
     }
   };
 
-  const getPriorityStyles = (priority: string, status: string) => {
+  const getPriorityStyles = (priority: string, status: string): string => {
     if (status === 'done') {
       return 'bg-blue-500 border-blue-500 text-white';
     }
@@ -101,7 +101,7 @@ export function MatrixView({
       </div>
 
       <div className="grid grid-cols-2 gap-6 h-96">
-        {Object.entries(matrix).map(([key, quadrant]) => (
+        {(Object.entries(matrix) as [keyof EisenhowerMatrix, MatrixQuadrant][]).map(([key, quadrant]) => (
           <div
             key={key}
             className={`${quadrant.color} dark:bg-slate-800 dark:border-slate-600 border rounded-lg p-4 flex flex-col`}
@@ -151,7 +151,7 @@ export function MatrixView({
                                   : task.priority === 'high'
                                   ? 'bg-orange-100 text-orange-800'
                                   : 'bg-blue-100 text-blue-800'
-                              }`}
+              }`}
                             >
                               {task.priority}
                             </span>

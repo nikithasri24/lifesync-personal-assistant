@@ -3,7 +3,47 @@ import { logger } from '../../services/logger';
 import { parseReceiptToItems, parseReceiptMeta, type ParsedReceiptItem } from '../services/receiptParser';
 import '../../types/experimental-web-apis';
 
-export function useReceiptScanner() {
+interface UseReceiptScannerReturn {
+  receiptImageUrl: string | null;
+  receiptText: string;
+  receiptCameraOn: boolean;
+  receiptCameraMsg: string | null;
+  cropEnabled: boolean;
+  cropStart: {x:number;y:number} | null;
+  cropEnd: {x:number;y:number} | null;
+  isCropping: boolean;
+  receiptMeta: {
+    merchant?: string;
+    address?: string;
+    date?: string;
+    time?: string;
+    subtotal?: number;
+    tax?: number;
+    total?: number;
+    payment?: string;
+  };
+  receiptOcrLoading: boolean;
+  parsedReceipt: ParsedReceiptItem[];
+  receiptVideoRef: React.RefObject<HTMLVideoElement | null>;
+  receiptImgRef: React.RefObject<HTMLImageElement | null>;
+  setReceiptImageUrl: React.Dispatch<React.SetStateAction<string | null>>;
+  setReceiptText: React.Dispatch<React.SetStateAction<string>>;
+  setCropEnabled: React.Dispatch<React.SetStateAction<boolean>>;
+  setCropStart: React.Dispatch<React.SetStateAction<{x:number;y:number} | null>>;
+  setCropEnd: React.Dispatch<React.SetStateAction<{x:number;y:number} | null>>;
+  setIsCropping: React.Dispatch<React.SetStateAction<boolean>>;
+  setParsedReceipt: React.Dispatch<React.SetStateAction<ParsedReceiptItem[]>>;
+  startCamera: () => Promise<void>;
+  stopCamera: () => void;
+  captureImage: () => void;
+  extractTextOnDevice: () => Promise<void>;
+  extractTextViaServer: () => Promise<void>;
+  parseManualText: () => void;
+  cropImage: () => void;
+  reset: () => void;
+}
+
+export function useReceiptScanner(): UseReceiptScannerReturn {
   const [receiptImageUrl, setReceiptImageUrl] = useState<string | null>(null);
   const [receiptText, setReceiptText] = useState('');
   const receiptVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -31,7 +71,7 @@ export function useReceiptScanner() {
   const [receiptOcrLoading, setReceiptOcrLoading] = useState(false);
   const [parsedReceipt, setParsedReceipt] = useState<ParsedReceiptItem[]>([]);
 
-  const startCamera = async () => {
+  const startCamera = async (): Promise<void> => {
     setReceiptCameraOn(true);
     setReceiptCameraMsg('Starting camera… If it does not appear, ensure you are on https or localhost and camera permission is allowed.');
     try {
@@ -43,7 +83,9 @@ export function useReceiptScanner() {
         receiptVideoRef.current.srcObject = stream;
         try {
           await receiptVideoRef.current.play();
-        } catch {}
+        } catch {
+          // Ignore play errors
+        }
       }
       setReceiptCameraMsg(null);
     } catch (_e) {
@@ -52,10 +94,11 @@ export function useReceiptScanner() {
     }
   };
 
-  const stopCamera = () => {
-    const stream: any = receiptVideoRef.current?.srcObject;
+  const stopCamera = (): void => {
+    const stream = receiptVideoRef.current?.srcObject as MediaStream | null;
     if (stream) {
-      stream.getTracks?.().forEach((t: any) => t.stop());
+      const tracks = stream.getTracks();
+      tracks.forEach((t) => t.stop());
     }
     if (receiptVideoRef.current) {
       receiptVideoRef.current.srcObject = null;
@@ -64,7 +107,7 @@ export function useReceiptScanner() {
     setReceiptCameraMsg(null);
   };
 
-  const captureImage = () => {
+  const captureImage = (): void => {
     const video = receiptVideoRef.current;
     if (!video?.videoWidth) return;
 
@@ -79,7 +122,7 @@ export function useReceiptScanner() {
     setReceiptImageUrl(dataUrl);
   };
 
-  const extractTextOnDevice = async () => {
+  const extractTextOnDevice = async (): Promise<void> => {
     if (!receiptImageUrl) return;
 
     setParsedReceipt([]);
@@ -89,19 +132,25 @@ export function useReceiptScanner() {
       if ('TextDetector' in window) {
         const img = new Image();
         img.src = receiptImageUrl;
-        await new Promise(r => { img.onload = r });
+        await new Promise<void>((r) => { img.onload = () => r(); });
         const bitmap = await createImageBitmap(img);
+
+        interface TextDetectionResult {
+          boundingBox?: { x?: number; y?: number; top?: number; left?: number };
+          boundingClientRect?: { x?: number; y?: number; top?: number; left?: number };
+          rawValue?: string;
+        }
 
         // @ts-expect-error experimental API
         const td = new window.TextDetector();
-        const results = await td.detect(bitmap);
+        const results = await td.detect(bitmap) as TextDetectionResult[];
         let text = '';
 
         if (Array.isArray(results) && results.length) {
           // Group by y-position to reconstruct lines
-          const groups: Record<string, Array<any>> = {};
+          const groups: Record<string, TextDetectionResult[]> = {};
           for (const r of results) {
-            const box = (r.boundingBox || r.boundingClientRect || { y: 0, top: 0 });
+            const box = r.boundingBox ?? r.boundingClientRect ?? { y: 0, top: 0 };
             const y = Math.round((box.y ?? box.top ?? 0) / 10) * 10;
             const key = String(y);
             if (!groups[key]) groups[key] = [];
@@ -114,7 +163,7 @@ export function useReceiptScanner() {
               items: groups[k].sort((a,b) => (a.boundingBox?.x ?? a.boundingBox?.left ?? 0) - (b.boundingBox?.x ?? b.boundingBox?.left ?? 0))
             }))
             .sort((a,b) => a.y - b.y)
-            .map(g => g.items.map(it => String(it.rawValue || '').trim()).filter(Boolean).join(' '));
+            .map(g => g.items.map(it => String(it.rawValue ?? '').trim()).filter(Boolean).join(' '));
 
           text = lines.join('\n');
         }
@@ -124,15 +173,16 @@ export function useReceiptScanner() {
         const items = parseReceiptToItems(text);
         setParsedReceipt(items);
       } else {
-        alert('On-device text detection is not supported in this browser. Paste text below instead, or use Extract via server.');
+        const msg = 'On-device text detection is not supported in this browser. Paste text below instead, or use Extract via server.';
+        logger.warn('useReceiptScanner', msg);
       }
     } catch (e) {
-      logger.warn('useReceiptScanner', 'Text detection failed', e);
-      alert('Text detection failed. Paste text below instead, or use Extract via server.');
+      const msg = 'Text detection failed. Paste text below instead, or use Extract via server.';
+      logger.warn('useReceiptScanner', msg, e);
     }
   };
 
-  const extractTextViaServer = async () => {
+  const extractTextViaServer = async (): Promise<void> => {
     if (!receiptImageUrl) return;
 
     try {
@@ -145,7 +195,10 @@ export function useReceiptScanner() {
         const blob = await resp.blob();
         dataUrl = await new Promise<string>((resolve) => {
           const reader = new FileReader();
-          reader.onloadend = () => resolve(String(reader.result));
+          reader.onloadend = () => {
+            const result = reader.result;
+            resolve(typeof result === 'string' ? result : '');
+          };
           reader.readAsDataURL(blob);
         });
       }
@@ -157,30 +210,31 @@ export function useReceiptScanner() {
       });
 
       if (!resp.ok) {
-        const j = await resp.json().catch(() => ({}));
-        throw new Error(j.error || `HTTP ${resp.status}`);
+        const j = await resp.json().catch(() => ({})) as { error?: string };
+        throw new Error(j.error ?? `HTTP ${resp.status}`);
       }
 
-      const j = await resp.json();
-      const text = String(j.text || '');
+      const j = await resp.json() as { text?: string };
+      const text = String(j.text ?? '');
       setReceiptText(text);
       setReceiptMeta(parseReceiptMeta(text));
       const items = parseReceiptToItems(text);
       setParsedReceipt(items);
-    } catch (_e) {
-      alert('Server OCR failed. Please paste text manually or try again.');
+    } catch (e) {
+      const msg = 'Server OCR failed. Please paste text manually or try again.';
+      logger.error('useReceiptScanner', msg, e);
     } finally {
       setReceiptOcrLoading(false);
     }
   };
 
-  const parseManualText = () => {
+  const parseManualText = (): void => {
     setReceiptMeta(parseReceiptMeta(receiptText));
     const items = parseReceiptToItems(receiptText);
     setParsedReceipt(items);
   };
 
-  const cropImage = () => {
+  const cropImage = (): void => {
     if (!receiptImgRef.current || !cropStart || !cropEnd) return;
 
     const img = receiptImgRef.current;
@@ -204,7 +258,7 @@ export function useReceiptScanner() {
 
     const temp = new Image();
     temp.src = img.src;
-    temp.onload = () => {
+    temp.onload = (): void => {
       ctx.drawImage(temp, x, y, w, h, 0, 0, w, h);
       const url = canvas.toDataURL('image/jpeg', 0.95);
       setReceiptImageUrl(url);
@@ -214,7 +268,7 @@ export function useReceiptScanner() {
     };
   };
 
-  const reset = () => {
+  const reset = (): void => {
     setReceiptImageUrl(null);
     setReceiptText('');
     setParsedReceipt([]);

@@ -167,6 +167,15 @@ export default tseslint.config([
     },
   },
   // ==========================================
+  // Exception: React Query Hooks (Multiple Queries/Mutations)
+  // ==========================================
+  {
+    files: ['**/hooks/**/*Query.{ts,tsx}', '**/hooks/**/*Mutation.{ts,tsx}'],
+    rules: {
+      'max-lines': ['error', { max: 600, skipBlankLines: true, skipComments: true }], // Query/mutation hooks with many operations can be longer
+    },
+  },
+  // ==========================================
   // Exception: Logger Service (needs console)
   // ==========================================
   {

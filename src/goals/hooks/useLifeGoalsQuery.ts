@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, type UseQueryResult, type UseMutationResult } from '@tanstack/react-query';
 import {
   getUserLifeGoals,
   getUserLifeDreams,
@@ -29,6 +29,10 @@ import type {
   CreateMilestoneInput,
   CreateCheckinInput,
   LifeGoalWithMilestones,
+  Milestone,
+  GoalCheckin,
+  StreakRecord,
+  GoalTemplate,
 } from '../types/lifeGoals';
 import { logger } from '@/services/logger';
 
@@ -50,7 +54,7 @@ export const lifeGoalsKeys = {
 /**
  * Query all life goals for current user
  */
-export function useLifeGoalsQuery() {
+export function useLifeGoalsQuery(): UseQueryResult<LifeGoal[], Error> {
   return useQuery({
     queryKey: lifeGoalsKeys.goals(),
     queryFn: getUserLifeGoals,
@@ -61,7 +65,7 @@ export function useLifeGoalsQuery() {
 /**
  * Query single life goal with milestones
  */
-export function useLifeGoalQuery(goalId: string | null) {
+export function useLifeGoalQuery(goalId: string | null): UseQueryResult<LifeGoalWithMilestones, Error> {
   return useQuery({
     queryKey: goalId ? lifeGoalsKeys.goal(goalId) : ['lifeGoal-null'],
     queryFn: () => {
@@ -76,7 +80,7 @@ export function useLifeGoalQuery(goalId: string | null) {
 /**
  * Create a new life goal
  */
-export function useCreateLifeGoalMutation() {
+export function useCreateLifeGoalMutation(): UseMutationResult<LifeGoal, Error, CreateLifeGoalInput, { previousGoals?: LifeGoal[] }> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -101,21 +105,21 @@ export function useCreateLifeGoalMutation() {
         status: 'not-started',
         progress: 0,
         targetValue: input.targetValue,
-        currentValue: input.currentValue || 0,
+        currentValue: input.currentValue ?? 0,
         unit: input.unit,
         startDate: input.startDate,
         targetDate: input.targetDate,
         completedDate: null,
-        difficulty: input.difficulty || 'medium',
+        difficulty: input.difficulty ?? 'medium',
         xpReward: 100,
         streakDays: 0,
         longestStreak: 0,
         currentStreak: 0,
-        streakEnabled: input.streakEnabled || false,
-        streakFrequency: input.streakFrequency || 'daily',
+        streakEnabled: input.streakEnabled ?? false,
+        streakFrequency: input.streakFrequency ?? 'daily',
         streakTarget: input.streakTarget,
         lastStreakUpdate: null,
-        tags: input.tags || [],
+        tags: input.tags ?? [],
         isPublic: false,
         templateId: input.templateId,
         notes: null,
@@ -149,7 +153,7 @@ export function useCreateLifeGoalMutation() {
 /**
  * Update a life goal
  */
-export function useUpdateLifeGoalMutation() {
+export function useUpdateLifeGoalMutation(): UseMutationResult<LifeGoal, Error, { goalId: string; updates: UpdateLifeGoalInput }, { previousGoals?: LifeGoal[]; previousGoal?: LifeGoalWithMilestones }> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -213,7 +217,7 @@ export function useUpdateLifeGoalMutation() {
 /**
  * Delete a life goal
  */
-export function useDeleteLifeGoalMutation() {
+export function useDeleteLifeGoalMutation(): UseMutationResult<void, Error, string, { previousGoals?: LifeGoal[] }> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -252,7 +256,7 @@ export function useDeleteLifeGoalMutation() {
 /**
  * Query all life dreams for current user
  */
-export function useLifeDreamsQuery() {
+export function useLifeDreamsQuery(): UseQueryResult<LifeDream[], Error> {
   return useQuery({
     queryKey: lifeGoalsKeys.dreams(),
     queryFn: getUserLifeDreams,
@@ -263,7 +267,7 @@ export function useLifeDreamsQuery() {
 /**
  * Create a new life dream
  */
-export function useCreateLifeDreamMutation() {
+export function useCreateLifeDreamMutation(): UseMutationResult<LifeDream, Error, CreateLifeDreamInput, unknown> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -288,7 +292,7 @@ export function useCreateLifeDreamMutation() {
 /**
  * Update a life dream
  */
-export function useUpdateLifeDreamMutation() {
+export function useUpdateLifeDreamMutation(): UseMutationResult<LifeDream, Error, { dreamId: string; updates: UpdateLifeDreamInput }, unknown> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -313,7 +317,7 @@ export function useUpdateLifeDreamMutation() {
 /**
  * Delete a life dream
  */
-export function useDeleteLifeDreamMutation() {
+export function useDeleteLifeDreamMutation(): UseMutationResult<void, Error, string, unknown> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -337,7 +341,7 @@ export function useDeleteLifeDreamMutation() {
 
 // ==================== Milestones ====================
 
-export function useAddMilestoneMutation() {
+export function useAddMilestoneMutation(): UseMutationResult<Milestone, Error, CreateMilestoneInput, unknown> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -348,7 +352,7 @@ export function useAddMilestoneMutation() {
     },
     onSuccess: (milestone, { goalId }) => {
       logger.info('Milestone added successfully', { id: milestone.id, goalId, title: milestone.title });
-      queryClient.invalidateQueries({ queryKey: lifeGoalsKeys.goal(goalId) });
+      void queryClient.invalidateQueries({ queryKey: lifeGoalsKeys.goal(goalId) });
     },
     onError: (error: Error, input) => {
       logger.error('Failed to add milestone', { error: error.message, goalId: input.goalId });
@@ -356,7 +360,7 @@ export function useAddMilestoneMutation() {
   });
 }
 
-export function useUpdateMilestoneMutation() {
+export function useUpdateMilestoneMutation(): UseMutationResult<Milestone, Error, { milestoneId: string; goalId: string; updates: { isCompleted?: boolean; title?: string; description?: string; targetDate?: string } }, unknown> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -375,7 +379,7 @@ export function useUpdateMilestoneMutation() {
     },
     onSuccess: (milestone, { goalId }) => {
       logger.info('Milestone updated successfully', { id: milestone.id, goalId });
-      queryClient.invalidateQueries({ queryKey: lifeGoalsKeys.goal(goalId) });
+      void queryClient.invalidateQueries({ queryKey: lifeGoalsKeys.goal(goalId) });
     },
     onError: (error: Error, { milestoneId, goalId }) => {
       logger.error('Failed to update milestone', { error: error.message, milestoneId, goalId });
@@ -383,7 +387,7 @@ export function useUpdateMilestoneMutation() {
   });
 }
 
-export function useDeleteMilestoneMutation() {
+export function useDeleteMilestoneMutation(): UseMutationResult<void, Error, { milestoneId: string; goalId: string }, unknown> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -394,7 +398,7 @@ export function useDeleteMilestoneMutation() {
     },
     onSuccess: (_, { milestoneId, goalId }) => {
       logger.info('Milestone deleted successfully', { id: milestoneId, goalId });
-      queryClient.invalidateQueries({ queryKey: lifeGoalsKeys.goal(goalId) });
+      void queryClient.invalidateQueries({ queryKey: lifeGoalsKeys.goal(goalId) });
     },
     onError: (error: Error, { milestoneId, goalId }) => {
       logger.error('Failed to delete milestone', { error: error.message, milestoneId, goalId });
@@ -404,7 +408,7 @@ export function useDeleteMilestoneMutation() {
 
 // ==================== Check-ins ====================
 
-export function useGoalCheckinsQuery(goalId: string | null) {
+export function useGoalCheckinsQuery(goalId: string | null): UseQueryResult<GoalCheckin[], Error> {
   return useQuery({
     queryKey: goalId ? lifeGoalsKeys.checkins(goalId) : ['checkins-null'],
     queryFn: () => {
@@ -416,7 +420,7 @@ export function useGoalCheckinsQuery(goalId: string | null) {
   });
 }
 
-export function useCreateCheckinMutation() {
+export function useCreateCheckinMutation(): UseMutationResult<GoalCheckin, Error, CreateCheckinInput, unknown> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -427,7 +431,7 @@ export function useCreateCheckinMutation() {
     },
     onSuccess: (checkin, { goalId }) => {
       logger.info('Check-in created successfully', { id: checkin.id, goalId });
-      queryClient.invalidateQueries({ queryKey: lifeGoalsKeys.checkins(goalId) });
+      void queryClient.invalidateQueries({ queryKey: lifeGoalsKeys.checkins(goalId) });
     },
     onError: (error: Error, input) => {
       logger.error('Failed to create check-in', { error: error.message, goalId: input.goalId });
@@ -437,7 +441,7 @@ export function useCreateCheckinMutation() {
 
 // ==================== Streaks ====================
 
-export function useStreakHistoryQuery(goalId: string | null, limit = 30) {
+export function useStreakHistoryQuery(goalId: string | null, limit = 30): UseQueryResult<StreakRecord[], Error> {
   return useQuery({
     queryKey: goalId ? lifeGoalsKeys.streaks(goalId) : ['streaks-null'],
     queryFn: () => {
@@ -449,7 +453,7 @@ export function useStreakHistoryQuery(goalId: string | null, limit = 30) {
   });
 }
 
-export function useRecordStreakMutation() {
+export function useRecordStreakMutation(): UseMutationResult<StreakRecord, Error, { goalId: string; date: string; completed: boolean; notes?: string }, unknown> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -470,9 +474,9 @@ export function useRecordStreakMutation() {
     },
     onSuccess: (_, { goalId, date, completed }) => {
       logger.info('Streak recorded successfully', { goalId, date, completed });
-      queryClient.invalidateQueries({ queryKey: lifeGoalsKeys.streaks(goalId) });
-      queryClient.invalidateQueries({ queryKey: lifeGoalsKeys.goal(goalId) });
-      queryClient.invalidateQueries({ queryKey: lifeGoalsKeys.goals() });
+      void queryClient.invalidateQueries({ queryKey: lifeGoalsKeys.streaks(goalId) });
+      void queryClient.invalidateQueries({ queryKey: lifeGoalsKeys.goal(goalId) });
+      void queryClient.invalidateQueries({ queryKey: lifeGoalsKeys.goals() });
     },
     onError: (error: Error, { goalId, date }) => {
       logger.error('Failed to record streak', { error: error.message, goalId, date });
@@ -482,7 +486,7 @@ export function useRecordStreakMutation() {
 
 // ==================== Templates ====================
 
-export function useGoalTemplatesQuery() {
+export function useGoalTemplatesQuery(): UseQueryResult<GoalTemplate[], Error> {
   return useQuery({
     queryKey: lifeGoalsKeys.templates(),
     queryFn: getGoalTemplates,
@@ -490,7 +494,7 @@ export function useGoalTemplatesQuery() {
   });
 }
 
-export function useCreateGoalFromTemplateMutation() {
+export function useCreateGoalFromTemplateMutation(): UseMutationResult<LifeGoal, Error, { templateId: string; customTitle?: string }, unknown> {
   const queryClient = useQueryClient();
 
   return useMutation({
