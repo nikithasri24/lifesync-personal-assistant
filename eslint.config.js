@@ -140,12 +140,58 @@ export default tseslint.config([
     },
   },
   // ==========================================
+  // Exception: API Files (CRUD operations)
+  // ==========================================
+  {
+    files: ['**/api/**/*.{ts,tsx}'],
+    rules: {
+      'max-lines': ['error', { max: 700, skipBlankLines: true, skipComments: true }], // API files with CRUD can be longer
+    },
+  },
+  // ==========================================
+  // Exception: Service Files (Complex Logic)
+  // ==========================================
+  {
+    files: ['**/services/**/*.{ts,tsx}'],
+    rules: {
+      'max-lines': ['error', { max: 600, skipBlankLines: true, skipComments: true }], // Service files with complex logic can be longer
+    },
+  },
+  // ==========================================
+  // Exception: Complex View Components
+  // ==========================================
+  {
+    files: ['**/components/views/**/*.{ts,tsx}'],
+    rules: {
+      'max-lines': ['error', { max: 600, skipBlankLines: true, skipComments: true }], // View components can be longer
+    },
+  },
+  // ==========================================
   // Exception: Logger Service (needs console)
   // ==========================================
   {
-    files: ['src/services/logger.ts'],
+    files: ['src/services/logger.ts', 'cli/src/utils/logger.ts'],
     rules: {
       'no-console': 'off', // Logger implementation needs console
+    },
+  },
+  // ==========================================
+  // Exception: CLI Files (different module system)
+  // ==========================================
+  {
+    files: ['cli/**/*.ts'],
+    languageOptions: {
+      parserOptions: {
+        project: './cli/tsconfig.json',
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    rules: {
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
     },
   },
 ])

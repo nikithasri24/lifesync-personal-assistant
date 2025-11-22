@@ -17,6 +17,11 @@ interface VisaMapProps {
   userVisas: UserVisa[]; // Array of user visa objects with expiry dates
 }
 
+interface GeoJSONGeometry {
+  type: string;
+  coordinates: unknown;
+}
+
 interface CountryFeature {
   type: 'Feature';
   id: string;
@@ -25,7 +30,7 @@ interface CountryFeature {
     iso_a2: string;
     iso_a3: string;
   };
-  geometry: any;
+  geometry: GeoJSONGeometry;
 }
 
 const VisaMap: React.FC<VisaMapProps> = ({ passportCountry, userVisas }) => {
@@ -36,7 +41,7 @@ const VisaMap: React.FC<VisaMapProps> = ({ passportCountry, userVisas }) => {
 
   // Load countries data
   React.useEffect(() => {
-    const loadMapData = async () => {
+    const loadMapData = async (): Promise<void> => {
       try {
         setLoading(true);
         const response = await fetch(
@@ -47,20 +52,43 @@ const VisaMap: React.FC<VisaMapProps> = ({ passportCountry, userVisas }) => {
           throw new Error(`Failed to fetch map data: ${response.status}`);
         }
 
-        const geoJsonData: any = await response.json();
+        interface RawGeoJSONFeature {
+          id?: string;
+          properties?: {
+            NAME?: string;
+            name?: string;
+            ISO_A2?: string;
+            iso_a2?: string;
+            ISO_A3?: string;
+            iso_a3?: string;
+          };
+          geometry?: {
+            type?: string;
+            coordinates?: unknown;
+          };
+        }
+
+        interface RawGeoJSON {
+          features: RawGeoJSONFeature[];
+        }
+
+        const geoJsonData = await response.json() as RawGeoJSON;
 
         const countryFeatures = geoJsonData.features
-          .map((f: any) => ({
+          .map((f: RawGeoJSONFeature): CountryFeature => ({
             type: 'Feature' as const,
-            id: f.id || f.properties?.ISO_A2 || `country-${Math.random()}`,
+            id: f.id ?? f.properties?.ISO_A2 ?? `country-${Math.random()}`,
             properties: {
-              name: f.properties?.NAME || f.properties?.name || 'Unknown',
-              iso_a2: f.properties?.ISO_A2 || f.properties?.iso_a2 || '',
-              iso_a3: f.properties?.ISO_A3 || f.properties?.iso_a3 || '',
+              name: f.properties?.NAME ?? f.properties?.name ?? 'Unknown',
+              iso_a2: f.properties?.ISO_A2 ?? f.properties?.iso_a2 ?? '',
+              iso_a3: f.properties?.ISO_A3 ?? f.properties?.iso_a3 ?? '',
             },
-            geometry: f.geometry,
+            geometry: {
+              type: f.geometry?.type ?? 'Unknown',
+              coordinates: f.geometry?.coordinates ?? null,
+            },
           }))
-          .filter((f: any) => {
+          .filter((f: CountryFeature): boolean => {
             const hasValidCode = f.properties.iso_a2 && f.properties.iso_a2.length === 2 && f.properties.iso_a2 !== '-99';
             const hasValidGeometry = f.geometry && (f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon');
             return hasValidCode && hasValidGeometry;
@@ -77,7 +105,7 @@ const VisaMap: React.FC<VisaMapProps> = ({ passportCountry, userVisas }) => {
       }
     };
 
-    loadMapData();
+    void loadMapData();
   }, []);
 
   // Normalize country names to match visa data
@@ -112,17 +140,16 @@ const VisaMap: React.FC<VisaMapProps> = ({ passportCountry, userVisas }) => {
 
     // Check if user has a valid visa for this specific country
     const today = new Date();
-    const activeVisaForCountry = userVisas.find(visa => {
-      const expiryDate = new Date(visa.expiryDate);
-      return visa.countryName === normalizedName && expiryDate > today;
-    });
+    const activeVisaForCountry = userVisas.find(visa =>
+      visa.countryName === normalizedName && new Date(visa.expiryDate) > today
+    );
 
     // If user has a valid visa for this country, show it as visa-free (accessible)
     if (activeVisaForCountry) {
       return {
         requirement: 'visa-free',
         daysAllowed: activeVisaForCountry.maxStayDays,
-        viaVisa: `Valid ${activeVisaForCountry.visaType || 'visa'} until ${new Date(activeVisaForCountry.expiryDate).toLocaleDateString()}`,
+        viaVisa: `Valid ${activeVisaForCountry.visaType ?? 'visa'} until ${new Date(activeVisaForCountry.expiryDate).toLocaleDateString()}`,
       };
     }
 
@@ -133,68 +160,40 @@ const VisaMap: React.FC<VisaMapProps> = ({ passportCountry, userVisas }) => {
 
     // Determine which access to use (visa if better than passport)
     if (visaAccess) {
-      // Passport requires visa, but visa-holder gets visa-free/visa-on-arrival
-      if (passportReq.requirement === 'visa-required' || passportReq.requirement === 'no-admission') {
-        return {
-          requirement: visaAccess.accessType,
-          daysAllowed: visaAccess.daysAllowed,
-          viaVisa: visaAccess.viaVisa,
-        };
-      }
-      // Both grant visa-free, but visa grants MORE days
-      else if (passportReq.requirement === 'visa-free' && visaAccess.accessType === 'visa-free') {
-        const passportDays = passportReq.daysAllowed || Infinity;
-        const visaDays = visaAccess.daysAllowed || Infinity;
-        if (visaDays > passportDays) {
-          return {
-            requirement: visaAccess.accessType,
-            daysAllowed: visaAccess.daysAllowed,
-            viaVisa: visaAccess.viaVisa,
-          };
-        }
-      }
-      // Passport requires e-visa/eta, but visa grants visa-free
-      else if (passportReq.requirement === 'e-visa' || passportReq.requirement === 'eta') {
-        if (visaAccess.accessType === 'visa-free' || visaAccess.accessType === 'visa-on-arrival') {
-          return {
-            requirement: visaAccess.accessType,
-            daysAllowed: visaAccess.daysAllowed,
-            viaVisa: visaAccess.viaVisa,
-          };
-        }
-      }
-      // Passport grants visa-on-arrival, but visa grants visa-free
-      else if (passportReq.requirement === 'visa-on-arrival' && visaAccess.accessType === 'visa-free') {
-        return {
-          requirement: visaAccess.accessType,
-          daysAllowed: visaAccess.daysAllowed,
-          viaVisa: visaAccess.viaVisa,
-        };
+      const shouldUseVisaAccess =
+        passportReq.requirement === 'visa-required' || passportReq.requirement === 'no-admission' ||
+        (passportReq.requirement === 'visa-free' && visaAccess.accessType === 'visa-free' &&
+          (visaAccess.daysAllowed ?? Infinity) > (passportReq.daysAllowed ?? Infinity)) ||
+        ((passportReq.requirement === 'e-visa' || passportReq.requirement === 'eta') &&
+          (visaAccess.accessType === 'visa-free' || visaAccess.accessType === 'visa-on-arrival')) ||
+        (passportReq.requirement === 'visa-on-arrival' && visaAccess.accessType === 'visa-free');
+
+      if (shouldUseVisaAccess) {
+        return { requirement: visaAccess.accessType, daysAllowed: visaAccess.daysAllowed, viaVisa: visaAccess.viaVisa };
       }
     }
 
     // Use passport-based access
-    return {
-      requirement: passportReq.requirement,
-      daysAllowed: passportReq.daysAllowed,
-    };
+    return { requirement: passportReq.requirement, daysAllowed: passportReq.daysAllowed };
   }, [passportCountry, userVisas]);
 
+  // Visa requirement metadata
+  const visaTypes = React.useMemo(() => [
+    { type: 'visa-free' as const, label: 'Visa Free', color: '#10B981', bgColor: 'bg-green-600' },
+    { type: 'visa-on-arrival' as const, label: 'Visa on Arrival', color: '#3B82F6', bgColor: 'bg-blue-600' },
+    { type: 'eta' as const, label: 'ETA Required', color: '#06B6D4', bgColor: 'bg-cyan-600' },
+    { type: 'e-visa' as const, label: 'E-Visa', color: '#F59E0B', bgColor: 'bg-yellow-600' },
+    { type: 'visa-required' as const, label: 'Visa Required', color: '#F97316', bgColor: 'bg-orange-600' },
+    { type: 'no-admission' as const, label: 'No Admission', color: '#EF4444', bgColor: 'bg-red-600' },
+  ], []);
+
   // Get color for visa requirement
-  const getColor = (requirement: VisaRequirement): string => {
-    switch (requirement) {
-      case 'visa-free': return '#10B981'; // Green
-      case 'visa-on-arrival': return '#3B82F6'; // Blue
-      case 'eta': return '#06B6D4'; // Cyan
-      case 'e-visa': return '#F59E0B'; // Yellow
-      case 'visa-required': return '#F97316'; // Orange
-      case 'no-admission': return '#EF4444'; // Red
-      default: return '#9CA3AF'; // Gray
-    }
-  };
+  const getColor = React.useCallback((requirement: VisaRequirement): string => {
+    return visaTypes.find(v => v.type === requirement)?.color ?? '#9CA3AF';
+  }, [visaTypes]);
 
   // Country style function
-  const getCountryStyle = (countryName: string): L.PathOptions => {
+  const getCountryStyle = React.useCallback((countryName: string): L.PathOptions => {
     const access = getCountryAccess(countryName);
 
     if (!access) {
@@ -224,44 +223,33 @@ const VisaMap: React.FC<VisaMapProps> = ({ passportCountry, userVisas }) => {
       color: '#FFFFFF',
       weight: 0.8,
     };
-  };
+  }, [getCountryAccess, filterType, getColor]);
 
   // Country layer setup
-  const onEachCountry = React.useCallback((feature: any, layer: L.Layer) => {
+  const onEachCountry = React.useCallback((feature: CountryFeature, layer: L.Layer): void => {
     const countryName = feature.properties.name;
     const access = getCountryAccess(countryName);
-
     if (!access) return;
-
-    const requirementLabels: Record<VisaRequirement, string> = {
-      'visa-free': 'Visa Free',
-      'visa-on-arrival': 'Visa on Arrival',
-      'eta': 'ETA Required',
-      'e-visa': 'E-Visa',
-      'visa-required': 'Visa Required',
-      'no-admission': 'No Admission',
-    };
 
     if (layer instanceof L.Path) {
       layer.setStyle(getCountryStyle(countryName));
     }
 
+    const visaLabel = visaTypes.find(v => v.type === access.requirement)?.label ?? 'Unknown';
+    const color = getColor(access.requirement);
     const daysText = access.daysAllowed ? `<div style="font-size: 13px; color: #4B5563; margin-top: 4px;">📅 ${access.daysAllowed} days allowed</div>` : '';
     const viaText = access.viaVisa ? `<div style="font-size: 13px; color: #7C3AED; font-weight: 600; margin-top: 6px; padding: 6px 8px; background-color: #F3E8FF; border-radius: 4px;">✨ ${access.viaVisa}</div>` : '';
 
     layer.bindPopup(`
       <div style="padding: 12px; min-width: 200px;">
         <h3 style="font-size: 16px; font-weight: 700; color: #111827; margin: 0 0 8px 0;">${countryName}</h3>
-        <div style="display: inline-block; padding: 4px 10px; background-color: ${getColor(access.requirement)}15; border-radius: 6px; border: 2px solid ${getColor(access.requirement)};">
-          <span style="color: ${getColor(access.requirement)}; font-weight: 700; font-size: 14px;">
-            ${requirementLabels[access.requirement]}
-          </span>
+        <div style="display: inline-block; padding: 4px 10px; background-color: ${color}15; border-radius: 6px; border: 2px solid ${color};">
+          <span style="color: ${color}; font-weight: 700; font-size: 14px;">${visaLabel}</span>
         </div>
-        ${daysText}
-        ${viaText}
+        ${daysText}${viaText}
       </div>
     `);
-  }, [getCountryAccess, filterType]);
+  }, [getCountryAccess, getCountryStyle, getColor, visaTypes]);
 
   // Calculate statistics
   const stats = React.useMemo(() => {
@@ -323,63 +311,22 @@ const VisaMap: React.FC<VisaMapProps> = ({ passportCountry, userVisas }) => {
           <button
             onClick={() => setFilterType('all')}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              filterType === 'all'
-                ? 'bg-gray-700 text-white'
-                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+              filterType === 'all' ? 'bg-gray-700 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
             }`}
           >
             All Countries
           </button>
-          <button
-            onClick={() => setFilterType('visa-free')}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              filterType === 'visa-free'
-                ? 'bg-green-600 text-white'
-                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-            }`}
-          >
-            Visa Free ({stats['visa-free']})
-          </button>
-          <button
-            onClick={() => setFilterType('visa-on-arrival')}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              filterType === 'visa-on-arrival'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-            }`}
-          >
-            Visa on Arrival ({stats['visa-on-arrival']})
-          </button>
-          <button
-            onClick={() => setFilterType('eta')}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              filterType === 'eta'
-                ? 'bg-cyan-600 text-white'
-                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-            }`}
-          >
-            ETA ({stats['eta']})
-          </button>
-          <button
-            onClick={() => setFilterType('e-visa')}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              filterType === 'e-visa'
-                ? 'bg-yellow-600 text-white'
-                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-            }`}
-          >
-            E-Visa ({stats['e-visa']})
-          </button>
-          <button
-            onClick={() => setFilterType('visa-required')}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              filterType === 'visa-required'
-                ? 'bg-orange-600 text-white'
-                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-            }`}
-          >
-            Visa Required ({stats['visa-required']})
-          </button>
+          {visaTypes.map(({ type, label, bgColor }) => (
+            <button
+              key={type}
+              onClick={() => setFilterType(type)}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                filterType === type ? `${bgColor} text-white` : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              {label} ({stats[type]})
+            </button>
+          ))}
         </div>
       </div>
 
@@ -407,7 +354,7 @@ const VisaMap: React.FC<VisaMapProps> = ({ passportCountry, userVisas }) => {
               features: countries,
             }}
             onEachFeature={onEachCountry}
-            key={`visa-map-${passportCountry}-${userVisas.join(',')}-${filterType}`}
+            key={`visa-map-${passportCountry}-${userVisas.map(v => v.countryName).join(',')}-${filterType}`}
           />
         </MapContainer>
       </div>
@@ -416,48 +363,15 @@ const VisaMap: React.FC<VisaMapProps> = ({ passportCountry, userVisas }) => {
       <div className="border-t border-gray-200 p-4">
         <h4 className="text-sm font-semibold text-gray-700 mb-3">Legend</h4>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded" style={{ backgroundColor: '#10B981' }}></div>
-            <div>
-              <div className="text-xs font-medium text-gray-900">Visa Free</div>
-              <div className="text-xs text-gray-600">{stats['visa-free']}</div>
+          {visaTypes.map(({ type, label, color }) => (
+            <div key={type} className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded" style={{ backgroundColor: color }}></div>
+              <div>
+                <div className="text-xs font-medium text-gray-900">{label}</div>
+                <div className="text-xs text-gray-600">{stats[type]}</div>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded" style={{ backgroundColor: '#3B82F6' }}></div>
-            <div>
-              <div className="text-xs font-medium text-gray-900">Visa on Arrival</div>
-              <div className="text-xs text-gray-600">{stats['visa-on-arrival']}</div>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded" style={{ backgroundColor: '#06B6D4' }}></div>
-            <div>
-              <div className="text-xs font-medium text-gray-900">ETA Required</div>
-              <div className="text-xs text-gray-600">{stats['eta']}</div>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded" style={{ backgroundColor: '#F59E0B' }}></div>
-            <div>
-              <div className="text-xs font-medium text-gray-900">E-Visa</div>
-              <div className="text-xs text-gray-600">{stats['e-visa']}</div>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded" style={{ backgroundColor: '#F97316' }}></div>
-            <div>
-              <div className="text-xs font-medium text-gray-900">Visa Required</div>
-              <div className="text-xs text-gray-600">{stats['visa-required']}</div>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded" style={{ backgroundColor: '#EF4444' }}></div>
-            <div>
-              <div className="text-xs font-medium text-gray-900">No Admission</div>
-              <div className="text-xs text-gray-600">{stats['no-admission']}</div>
-            </div>
-          </div>
+          ))}
         </div>
         <p className="text-xs text-gray-500 mt-3">
           Click on any country to see detailed visa requirements. Countries with visa-based access are highlighted.

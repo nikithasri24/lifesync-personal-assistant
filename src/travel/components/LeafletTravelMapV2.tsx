@@ -4,62 +4,21 @@
  */
 
 import React from 'react';
-import { MapContainer, TileLayer, GeoJSON, useMapEvents, Marker, Tooltip } from 'react-leaflet';
+import { MapContainer, TileLayer, GeoJSON, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { VisitStatus } from '../types';
-import { nationalParks } from '../data/nationalParks';
-import { islands } from '../data/islands';
 import { logger } from '../../services/logger';
+import { MapMarkers } from './MapMarkers';
+import { MapLegend } from './MapLegend';
 
 // Fix Leaflet default marker icon issue
-delete (L.Icon.Default.prototype as any)._getIconUrl;
+delete (L.Icon.Default.prototype as unknown as { _getIconUrl: unknown })._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
-
-// Custom icons for national parks and islands
-const createParkIcon = (visited: boolean) => {
-  return L.divIcon({
-    className: 'custom-park-icon',
-    html: `<div style="
-      background-color: ${visited ? '#10B981' : '#6B7280'};
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      border: 2px solid white;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
-    ">🌲</div>`,
-    iconSize: [24, 24],
-    iconAnchor: [12, 12],
-  });
-};
-
-const createIslandIcon = (visited: boolean) => {
-  return L.divIcon({
-    className: 'custom-island-icon',
-    html: `<div style="
-      background-color: ${visited ? '#3B82F6' : '#9CA3AF'};
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      border: 2px solid white;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
-    ">🏝️</div>`,
-    iconSize: [24, 24],
-    iconAnchor: [12, 12],
-  });
-};
 
 type LeafletTravelMapV2Props = {
   visitedCountries: Record<string, VisitStatus>;
@@ -80,11 +39,25 @@ interface CountryFeature {
     iso_a2: string;
     iso_a3: string;
   };
-  geometry: any;
+  geometry: GeoJSON.Geometry;
+}
+
+interface StateFeature {
+  type: 'Feature';
+  id: string;
+  properties: {
+    name?: string;
+    NAME?: string;
+    iso_3166_2?: string;
+    code_hasc?: string;
+    iso_a2?: string;
+    adm0_a3?: string;
+  };
+  geometry: GeoJSON.Geometry;
 }
 
 // Component to track zoom level
-function ZoomTracker({ onZoomChange }: { onZoomChange: (zoom: number) => void }) {
+function ZoomTracker({ onZoomChange }: { onZoomChange: (zoom: number) => void }): null {
   const map = useMapEvents({
     zoomend: () => {
       onZoomChange(map.getZoom());
@@ -93,7 +66,7 @@ function ZoomTracker({ onZoomChange }: { onZoomChange: (zoom: number) => void })
 
   React.useEffect(() => {
     onZoomChange(map.getZoom());
-  }, []);
+  }, [map, onZoomChange]);
 
   return null;
 }
@@ -109,7 +82,7 @@ const LeafletTravelMapV2: React.FC<LeafletTravelMapV2Props> = ({
   onIslandClick,
 }) => {
   const [countries, setCountries] = React.useState<CountryFeature[]>([]);
-  const [states, setStates] = React.useState<any[]>([]);
+  const [states, setStates] = React.useState<StateFeature[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [currentZoom, setCurrentZoom] = React.useState(2);
@@ -122,7 +95,7 @@ const LeafletTravelMapV2: React.FC<LeafletTravelMapV2Props> = ({
 
   // Load countries data
   React.useEffect(() => {
-    const loadMapData = async () => {
+    const loadMapData = async (): Promise<void> => {
       try {
         setLoading(true);
         const response = await fetch(
@@ -133,20 +106,31 @@ const LeafletTravelMapV2: React.FC<LeafletTravelMapV2Props> = ({
           throw new Error(`Failed to fetch map data: ${response.status}`);
         }
 
-        const geoJsonData: any = await response.json();
+        const geoJsonData = await response.json() as { features: Array<{
+          id?: string;
+          properties?: {
+            NAME?: string;
+            name?: string;
+            ISO_A2?: string;
+            iso_a2?: string;
+            ISO_A3?: string;
+            iso_a3?: string;
+          };
+          geometry?: GeoJSON.Geometry;
+        }> };
 
         const countryFeatures = geoJsonData.features
-          .map((f: any) => ({
+          .map((f) => ({
             type: 'Feature' as const,
-            id: f.id || f.properties?.ISO_A2 || `country-${Math.random()}`,
+            id: f.id ?? f.properties?.ISO_A2 ?? `country-${Math.random()}`,
             properties: {
-              name: f.properties?.NAME || f.properties?.name || 'Unknown',
-              iso_a2: f.properties?.ISO_A2 || f.properties?.iso_a2 || '',
-              iso_a3: f.properties?.ISO_A3 || f.properties?.iso_a3 || '',
+              name: f.properties?.NAME ?? f.properties?.name ?? 'Unknown',
+              iso_a2: f.properties?.ISO_A2 ?? f.properties?.iso_a2 ?? '',
+              iso_a3: f.properties?.ISO_A3 ?? f.properties?.iso_a3 ?? '',
             },
-            geometry: f.geometry,
+            geometry: f.geometry ?? { type: 'Polygon', coordinates: [] } as GeoJSON.Geometry,
           }))
-          .filter((f: any) => {
+          .filter((f): f is CountryFeature => {
             const hasValidCode = f.properties.iso_a2 && f.properties.iso_a2.length === 2 && f.properties.iso_a2 !== '-99';
             const hasValidGeometry = f.geometry && (f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon');
             return hasValidCode && hasValidGeometry;
@@ -163,7 +147,7 @@ const LeafletTravelMapV2: React.FC<LeafletTravelMapV2Props> = ({
       }
     };
 
-    loadMapData();
+    void loadMapData();
   }, []);
 
   // Load state/province boundaries when zoomed in OR when checkbox is unchecked
@@ -174,26 +158,26 @@ const LeafletTravelMapV2: React.FC<LeafletTravelMapV2Props> = ({
       return; // Don't load if not needed or already loaded
     }
 
-    const loadStateData = async () => {
+    const loadStateData = async (): Promise<void> => {
       try {
         const response = await fetch(
           'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_admin_1_states_provinces.geojson'
         );
 
         if (response.ok) {
-          const data = await response.json();
-          setStates(data.features || []);
+          const data = await response.json() as { features?: StateFeature[] };
+          setStates(data.features ?? []);
         }
       } catch (err) {
         logger.error('Error loading state boundaries:', { err });
       }
     };
 
-    loadStateData();
+    void loadStateData();
   }, [currentZoom, showStatesAsCountries, states.length]);
 
   // Country style function
-  const getCountryStyle = (countryCode: string): L.PathOptions => {
+  const getCountryStyle = React.useCallback((countryCode: string): L.PathOptions => {
     const hasVisitedCountry = visitedCountries[countryCode];
 
     // Check if any states from this country are visited (only if mode enabled)
@@ -209,7 +193,7 @@ const LeafletTravelMapV2: React.FC<LeafletTravelMapV2Props> = ({
       color: '#D4D2C5',
       weight: 1,
     };
-  };
+  }, [visitedCountries, visitedStates, showStatesAsCountries]);
 
   // State style function
   const getStateStyle = (stateCode: string): L.PathOptions => {
@@ -225,7 +209,7 @@ const LeafletTravelMapV2: React.FC<LeafletTravelMapV2Props> = ({
   };
 
   // Country layer setup
-  const onEachCountry = React.useCallback((feature: any, layer: L.Layer) => {
+  const onEachCountry = React.useCallback((feature: CountryFeature, layer: L.Layer): void => {
     const countryCode = feature.properties.iso_a2;
     const countryName = feature.properties.name;
 
@@ -250,13 +234,13 @@ const LeafletTravelMapV2: React.FC<LeafletTravelMapV2Props> = ({
         }
       },
     });
-  }, [visitedCountries, visitedStates, showStatesAsCountries, currentZoom, onCountryClick]);
+  }, [visitedCountries, getCountryStyle, currentZoom, onCountryClick]);
 
   // State layer setup
-  const onEachState = (feature: any, layer: L.Layer) => {
-    const stateName = feature.properties.name || feature.properties.NAME;
-    const stateCode = feature.properties.iso_3166_2 || feature.properties.code_hasc;
-    const countryCode = feature.properties.iso_a2 || feature.properties.adm0_a3;
+  const onEachState = (feature: StateFeature, layer: L.Layer): void => {
+    const stateName = feature.properties.name ?? feature.properties.NAME;
+    const stateCode = feature.properties.iso_3166_2 ?? feature.properties.code_hasc;
+    const countryCode = feature.properties.iso_a2 ?? feature.properties.adm0_a3;
 
     if (!stateCode) return;
 
@@ -265,12 +249,12 @@ const LeafletTravelMapV2: React.FC<LeafletTravelMapV2Props> = ({
 
       // Make state layer interactive with higher priority
       layer.options.interactive = true;
-      (layer as any).bringToFront();
+      (layer as L.Path & { bringToFront: () => void }).bringToFront();
     }
 
     layer.bindPopup(`
       <div class="p-2">
-        <h3 class="font-semibold text-gray-900">${stateName}</h3>
+        <h3 class="font-semibold text-gray-900">${stateName ?? 'Unknown'}</h3>
         <p class="text-sm text-gray-600">
           ${visitedStates[stateCode] ? `✓ ${visitedStates[stateCode]}` : 'Click to mark as visited'}
         </p>
@@ -280,7 +264,7 @@ const LeafletTravelMapV2: React.FC<LeafletTravelMapV2Props> = ({
     layer.on({
       click: (e: L.LeafletMouseEvent) => {
         L.DomEvent.stopPropagation(e);
-        if (onStateClick && currentZoom >= 5) {
+        if (onStateClick && currentZoom >= 5 && countryCode) {
           onStateClick(stateCode, countryCode);
         }
       },
@@ -424,208 +408,22 @@ const LeafletTravelMapV2: React.FC<LeafletTravelMapV2Props> = ({
             />
           )}
 
-          {/* National Parks markers */}
-          {showNationalParks && nationalParks.map(park => {
-            const isVisited = !!visitedParks[park.id];
-            return (
-              <Marker
-                key={park.id}
-                position={[park.lat, park.lon]}
-                icon={createParkIcon(isVisited)}
-                eventHandlers={{
-                  click: () => onParkClick?.(park.id),
-                }}
-              >
-                <Tooltip direction="top" offset={[0, -10]} opacity={1}>
-                  <div style={{ padding: '8px', minWidth: '250px', maxWidth: '300px' }}>
-                    <h3 style={{
-                      fontWeight: 'bold',
-                      color: '#111827',
-                      fontSize: '15px',
-                      marginBottom: '6px',
-                      lineHeight: '1.3'
-                    }}>
-                      {park.name}
-                    </h3>
-                    {park.established && (
-                      <p style={{
-                        fontSize: '13px',
-                        color: '#374151',
-                        fontWeight: '500',
-                        margin: '3px 0'
-                      }}>
-                        Est. {park.established}
-                      </p>
-                    )}
-                    {park.unesco && (
-                      <p style={{
-                        fontSize: '12px',
-                        color: '#1d4ed8',
-                        fontWeight: 'bold',
-                        margin: '4px 0'
-                      }}>
-                        UNESCO World Heritage Site
-                      </p>
-                    )}
-                    {park.description && (
-                      <p style={{
-                        fontSize: '13px',
-                        color: '#1f2937',
-                        marginTop: '6px',
-                        lineHeight: '1.4'
-                      }}>
-                        {park.description}
-                      </p>
-                    )}
-                    <p style={{
-                      fontSize: '13px',
-                      marginTop: '8px',
-                      fontWeight: '600'
-                    }}>
-                      {isVisited ? (
-                        <span style={{ color: '#15803d' }}>✓ Visited</span>
-                      ) : (
-                        <span style={{ color: '#6b7280' }}>Click to mark as visited</span>
-                      )}
-                    </p>
-                  </div>
-                </Tooltip>
-              </Marker>
-            );
-          })}
-
-          {/* Islands markers */}
-          {showIslands && islands.map(island => {
-            const isVisited = !!visitedIslands[island.id];
-            return (
-              <Marker
-                key={island.id}
-                position={[island.lat, island.lon]}
-                icon={createIslandIcon(isVisited)}
-                eventHandlers={{
-                  click: () => onIslandClick?.(island.id),
-                }}
-              >
-                <Tooltip direction="top" offset={[0, -10]} opacity={1}>
-                  <div style={{ padding: '8px', minWidth: '250px', maxWidth: '300px' }}>
-                    <h3 style={{
-                      fontWeight: 'bold',
-                      color: '#111827',
-                      fontSize: '15px',
-                      marginBottom: '6px',
-                      lineHeight: '1.3'
-                    }}>
-                      {island.name}
-                    </h3>
-                    {island.islandGroup && (
-                      <p style={{
-                        fontSize: '13px',
-                        color: '#374151',
-                        fontWeight: '500',
-                        margin: '3px 0'
-                      }}>
-                        {island.islandGroup}
-                      </p>
-                    )}
-                    {island.description && (
-                      <p style={{
-                        fontSize: '13px',
-                        color: '#1f2937',
-                        marginTop: '6px',
-                        lineHeight: '1.4'
-                      }}>
-                        {island.description}
-                      </p>
-                    )}
-                    <p style={{
-                      fontSize: '13px',
-                      marginTop: '8px',
-                      fontWeight: '600'
-                    }}>
-                      {isVisited ? (
-                        <span style={{ color: '#1d4ed8' }}>✓ Visited</span>
-                      ) : (
-                        <span style={{ color: '#6b7280' }}>Click to mark as visited</span>
-                      )}
-                    </p>
-                  </div>
-                </Tooltip>
-              </Marker>
-            );
-          })}
+          <MapMarkers
+            showNationalParks={showNationalParks}
+            showIslands={showIslands}
+            visitedParks={visitedParks}
+            visitedIslands={visitedIslands}
+            onParkClick={onParkClick}
+            onIslandClick={onIslandClick}
+          />
         </MapContainer>
       </div>
 
-      {/* Legend */}
-      <div className="fixed bottom-4 right-4 bg-white rounded-lg border border-gray-200 p-4 shadow-lg">
-        <h4 className="text-sm font-semibold text-gray-700 mb-2">Legend</h4>
-        <div className="space-y-2">
-          {currentZoom < 5 ? (
-            <>
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded border border-gray-300 bg-green-300"></div>
-                <span className="text-xs text-gray-700 font-medium">Visited Country</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded border border-gray-300 bg-white"></div>
-                <span className="text-xs text-gray-700 font-medium">Not Visited</span>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded border border-gray-300 bg-emerald-400"></div>
-                <span className="text-xs text-gray-700 font-medium">Visited State</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded border border-gray-300 bg-white"></div>
-                <span className="text-xs text-gray-700 font-medium">Not Visited</span>
-              </div>
-            </>
-          )}
-
-          {/* Park and Island markers */}
-          {(showNationalParks || showIslands) && (
-            <div className="border-t border-gray-200 mt-2 pt-2">
-              {showNationalParks && (
-                <>
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full border-2 border-white bg-green-600 flex items-center justify-center text-xs shadow">
-                      🌲
-                    </div>
-                    <span className="text-xs text-gray-700 font-medium">Visited Park</span>
-                  </div>
-                  <div className="flex items-center gap-2 mt-1">
-                    <div className="w-6 h-6 rounded-full border-2 border-white bg-gray-500 flex items-center justify-center text-xs shadow">
-                      🌲
-                    </div>
-                    <span className="text-xs text-gray-700 font-medium">Not Visited Park</span>
-                  </div>
-                </>
-              )}
-              {showIslands && (
-                <>
-                  <div className="flex items-center gap-2 mt-1">
-                    <div className="w-6 h-6 rounded-full border-2 border-white bg-blue-600 flex items-center justify-center text-xs shadow">
-                      🏝️
-                    </div>
-                    <span className="text-xs text-gray-700 font-medium">Visited Island</span>
-                  </div>
-                  <div className="flex items-center gap-2 mt-1">
-                    <div className="w-6 h-6 rounded-full border-2 border-white bg-gray-400 flex items-center justify-center text-xs shadow">
-                      🏝️
-                    </div>
-                    <span className="text-xs text-gray-700 font-medium">Not Visited Island</span>
-                  </div>
-                </>
-              )}
-            </div>
-          )}
-        </div>
-        <p className="text-xs text-gray-500 mt-3">
-          {currentZoom < 5 ? 'Zoom in (5+) to see & click states' : 'Click states to mark as visited'}
-        </p>
-      </div>
+      <MapLegend
+        currentZoom={currentZoom}
+        showNationalParks={showNationalParks}
+        showIslands={showIslands}
+      />
     </div>
   );
 };

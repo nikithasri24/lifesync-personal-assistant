@@ -6,6 +6,55 @@
 import type { Recipe } from '../../../types';
 import { logger } from '../../../services/logger';
 
+// TypeScript interfaces for API responses
+interface YouTubeThumbnail {
+  url?: string;
+  width?: number;
+  height?: number;
+}
+
+interface YouTubeThumbnails {
+  default?: YouTubeThumbnail;
+  medium?: YouTubeThumbnail;
+  high?: YouTubeThumbnail;
+}
+
+interface YouTubeSnippet {
+  title?: string;
+  description?: string;
+  channelTitle?: string;
+  thumbnails?: YouTubeThumbnails;
+}
+
+interface YouTubeVideoData {
+  items?: Array<{
+    snippet?: YouTubeSnippet;
+  }>;
+}
+
+interface TranscriptEntry {
+  start: number;
+  dur: number;
+  text: string;
+}
+
+interface TranscriptResponse {
+  transcript?: TranscriptEntry[];
+}
+
+interface AIExtractionResponse {
+  name?: string;
+  description?: string;
+  ingredients?: Array<{ name: string }>;
+  instructions?: string[];
+  prepTime?: number;
+  cookTime?: number;
+  servings?: number;
+  difficulty?: 'easy' | 'medium' | 'hard';
+  tags?: string[];
+  cuisine?: string;
+}
+
 /**
  * Extract YouTube video ID from various URL formats
  */
@@ -30,7 +79,7 @@ export function extractYoutubeId(url: string): string | null {
 export function parseTimecodeToSeconds(text: string): number | null {
   const bracket = text.match(/\[(\d{1,2}):(\d{2})(?::(\d{2}))?\]/);
   const plain = text.match(/(?<!\d)(\d{1,2}):(\d{2})(?::(\d{2}))?(?!\d)/);
-  const match = bracket || plain;
+  const match = bracket ?? plain;
   if (!match) return null;
   const h = match[3] ? Number(match[1]) : 0;
   const m = match[3] ? Number(match[2]) : Number(match[1]);
@@ -65,7 +114,7 @@ export function extractFlowFromDescription(description: string): { titles: strin
 /**
  * Parse description text into ingredients and instructions
  */
-export function parseDescriptionToLists(description: string) {
+export function parseDescriptionToLists(description: string): { ingredients: string[]; instructions: string[] } {
   const lines = description
     .split(/\r?\n/)
     .map((line) => line.trim())
@@ -112,7 +161,7 @@ export function normalizeFractions(text: string): string {
 /**
  * Parse transcript into ingredients and instructions
  */
-export function parseTranscriptToLists(transcript: Array<{ start: number; dur: number; text: string }>) {
+export function parseTranscriptToLists(transcript: Array<{ start: number; dur: number; text: string }>): { ingredients: Array<{ name: string }>; instructions: string[] } {
   const fillers = /\b(uh|um|erm|like|okay|ok|so|you know|i mean)\b/gi;
   const cleaned = transcript
     .map(t => normalizeFractions(t.text.replace(/\n/g, ' ')))
@@ -127,7 +176,7 @@ export function parseTranscriptToLists(transcript: Array<{ start: number; dur: n
     'i'
   );
   const ingredientsLex = /(salt|pepper|oil|olive oil|flour|sugar|egg|eggs|onion|garlic|butter|milk|water|tomato|tomatoes|cheese|chicken|beef|pork|rice|pasta|noodles|cilantro|coriander|cumin|turmeric|ginger|chili|chilli|carrot|potato|yogurt|cream|basil|oregano|thyme|paprika|vinegar|soy sauce|sauce)/i;
-  const likelyIngredient = (s: string) => unitRe.test(s) || ingredientsLex.test(s);
+  const likelyIngredient = (s: string): boolean => unitRe.test(s) || ingredientsLex.test(s);
   const cookingVerb = /(add|mix|stir|whisk|heat|cook|bake|boil|simmer|fry|saute|sauté|blend|combine|pour|serve|marinate|season|preheat|chop|dice|slice|grate|peel|toast|roast|grill|stir-fry|reduce|simmer|fold)/i;
 
   const ingredientCandidates = sentences.filter(s => likelyIngredient(s));
@@ -161,7 +210,8 @@ export function parseTranscriptToLists(transcript: Array<{ start: number; dur: n
 export async function fetchYoutubeRecipe(url: string, lang: string = 'en'): Promise<Omit<Recipe, 'id' | 'createdAt'>> {
   const videoId = extractYoutubeId(url);
   if (!videoId) throw new Error('Unable to extract YouTube video ID.');
-  const proxyBaseUrl = import.meta.env.VITE_YOUTUBE_SNIPPET_PROXY_URL?.trim() || '/api/youtube/snippet';
+  const envProxyUrl = import.meta.env.VITE_YOUTUBE_SNIPPET_PROXY_URL as string | undefined;
+  const proxyBaseUrl = (envProxyUrl?.trim() ?? '') || '/api/youtube/snippet';
   const apiUrl = `${proxyBaseUrl}${proxyBaseUrl.includes('?') ? '&' : '?'}videoId=${encodeURIComponent(videoId)}`;
 
   const [snippetResp, transcriptResp] = await Promise.all([
@@ -169,16 +219,16 @@ export async function fetchYoutubeRecipe(url: string, lang: string = 'en'): Prom
     fetch(`/api/youtube/transcript?videoId=${encodeURIComponent(videoId)}&lang=${encodeURIComponent(lang)}`, { headers: { Accept: 'application/json' } })
   ]);
   if (!snippetResp.ok) throw new Error('Failed to fetch video metadata.');
-  const data = await snippetResp.json();
+  const data = (await snippetResp.json()) as YouTubeVideoData;
   const snippet = data?.items?.[0]?.snippet;
   if (!snippet) throw new Error('Video metadata not available.');
 
   // Get transcript data
   let transcriptText = '';
   if (transcriptResp.ok) {
-    const tr = await transcriptResp.json();
+    const tr = (await transcriptResp.json()) as TranscriptResponse;
     const transcript = Array.isArray(tr.transcript) ? tr.transcript : [];
-    transcriptText = transcript.map((t: any) => t.text).join(' ');
+    transcriptText = transcript.map((t: TranscriptEntry) => t.text).join(' ');
   }
 
   // Try AI-powered extraction first
@@ -187,38 +237,52 @@ export async function fetchYoutubeRecipe(url: string, lang: string = 'en'): Prom
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        title: snippet.title,
+        title: snippet.title ?? '',
         transcript: transcriptText,
-        description: snippet.description
+        description: snippet.description ?? ''
       })
     });
 
     if (aiResp.ok) {
-      const aiData = await aiResp.json();
+      const aiData = (await aiResp.json()) as AIExtractionResponse;
       // Merge AI results with video metadata
+      const recipeName: string = aiData.name ?? snippet.title ?? 'YouTube Recipe';
+      const recipeDescription: string = aiData.description ?? snippet.description?.split('\n')[0] ?? '';
+      const recipeIngredients: Array<{ name: string }> = aiData.ingredients ?? [];
+      const recipeInstructions: string[] = aiData.instructions ?? [];
+      const recipePrepTime: number | undefined = aiData.prepTime;
+      const recipeCookTime: number | undefined = aiData.cookTime;
+      const recipeServings: number | undefined = aiData.servings;
+      const recipeDifficulty: 'easy' | 'medium' | 'hard' | undefined = aiData.difficulty;
+      const recipeTags: string[] = [...(aiData.tags ?? []), 'video', 'youtube', 'ai-extracted'];
+      const recipeImage: string | undefined = snippet.thumbnails?.medium?.url ?? snippet.thumbnails?.default?.url ?? undefined;
+      const recipeCuisine: string = aiData.cuisine ?? 'other';
+      const recipeAuthorName: string | undefined = snippet.channelTitle;
+      const recipeVideoThumbnail: string | undefined = snippet.thumbnails?.high?.url ?? snippet.thumbnails?.medium?.url;
+
       return {
-        name: aiData.name || snippet.title || 'YouTube Recipe',
-        description: aiData.description || snippet.description?.split('\n')[0] || '',
-        ingredients: aiData.ingredients || [],
-        instructions: aiData.instructions || [],
-        prepTime: aiData.prepTime,
-        cookTime: aiData.cookTime,
-        servings: aiData.servings,
-        difficulty: aiData.difficulty,
-        tags: [...(aiData.tags || []), 'video', 'youtube', 'ai-extracted'],
+        name: recipeName,
+        description: recipeDescription,
+        ingredients: recipeIngredients,
+        instructions: recipeInstructions,
+        prepTime: recipePrepTime,
+        cookTime: recipeCookTime,
+        servings: recipeServings,
+        difficulty: recipeDifficulty,
+        tags: recipeTags,
         rating: undefined,
         notes: undefined,
-        image: snippet.thumbnails?.medium?.url ?? snippet.thumbnails?.default?.url ?? undefined,
+        image: recipeImage,
         isFavorite: false,
         calories: undefined,
-        cuisine: aiData.cuisine || 'other',
+        cuisine: recipeCuisine,
         dietaryRestrictions: [],
         nutritionInfo: undefined,
         flowChart: undefined,
         sourceType: 'video',
         sourceUrl: url,
-        authorName: snippet.channelTitle,
-        videoThumbnail: snippet.thumbnails?.high?.url ?? snippet.thumbnails?.medium?.url,
+        authorName: recipeAuthorName,
+        videoThumbnail: recipeVideoThumbnail,
       };
     }
   } catch (aiError) {
@@ -229,7 +293,7 @@ export async function fetchYoutubeRecipe(url: string, lang: string = 'en'): Prom
   let ingredients: { name: string }[] = [];
   let instructions: string[] = [];
   if (transcriptResp.ok) {
-    const tr = await transcriptResp.json();
+    const tr = (await transcriptResp.json()) as TranscriptResponse;
     const parsed = parseTranscriptToLists(Array.isArray(tr.transcript) ? tr.transcript : []);
     ingredients = parsed.ingredients;
     instructions = parsed.instructions;
@@ -245,9 +309,16 @@ export async function fetchYoutubeRecipe(url: string, lang: string = 'en'): Prom
 
   const prepTime = Math.max(10, Math.min(30, ingredients.length * 2));
   const cookTime = Math.max(15, Math.min(45, instructions.length * 3));
+
+  const fallbackName: string = snippet.title ?? 'YouTube Recipe';
+  const fallbackDescription: string = snippet.description?.split('\n')[0] ?? '';
+  const fallbackImage: string | undefined = snippet.thumbnails?.medium?.url ?? snippet.thumbnails?.default?.url ?? undefined;
+  const fallbackAuthorName: string | undefined = snippet.channelTitle;
+  const fallbackVideoThumbnail: string | undefined = snippet.thumbnails?.high?.url ?? snippet.thumbnails?.medium?.url;
+
   return {
-    name: snippet.title ?? 'YouTube Recipe',
-    description: snippet.description?.split('\n')[0] ?? '',
+    name: fallbackName,
+    description: fallbackDescription,
     ingredients,
     instructions,
     prepTime,
@@ -257,7 +328,7 @@ export async function fetchYoutubeRecipe(url: string, lang: string = 'en'): Prom
     tags: ['video', 'youtube'],
     rating: undefined,
     notes: undefined,
-    image: snippet.thumbnails?.medium?.url ?? snippet.thumbnails?.default?.url ?? undefined,
+    image: fallbackImage,
     isFavorite: false,
     calories: undefined,
     cuisine: 'other',
@@ -266,7 +337,7 @@ export async function fetchYoutubeRecipe(url: string, lang: string = 'en'): Prom
     flowChart: undefined,
     sourceType: 'video',
     sourceUrl: url,
-    authorName: snippet.channelTitle,
-    videoThumbnail: snippet.thumbnails?.high?.url ?? snippet.thumbnails?.medium?.url,
+    authorName: fallbackAuthorName,
+    videoThumbnail: fallbackVideoThumbnail,
   };
 }

@@ -2,7 +2,7 @@
  * Test script to verify visa requirements data
  */
 
-import { logger } from '../../../services/logger';
+import { logger } from '../../services/logger';
 import {
   getVisaRequirement,
   getAccessibleDestinations,
@@ -42,7 +42,7 @@ logger.debug('Utils', `   - No admission: ${inSummary.noAdmission}\n`);
 // Test 4: Specific visa requirements
 logger.debug('Utils', '4. Specific Visa Requirements:');
 const usToFrance = getVisaRequirement('United States', 'France');
-logger.debug('Utils', `   US → France: ${usToFrance?.requirement} (${usToFrance?.daysAllowed || 'unlimited'} days)`);
+logger.debug('Utils', `   US → France: ${usToFrance?.requirement} (${usToFrance?.daysAllowed ?? 'unlimited'} days)`);
 
 const usToChina = getVisaRequirement('United States', 'China');
 logger.debug('Utils', `   US → China: ${usToChina?.requirement}`);
@@ -51,7 +51,7 @@ const indiaToUS = getVisaRequirement('India', 'United States');
 logger.debug('Utils', `   India → US: ${indiaToUS?.requirement}`);
 
 const indiaToNepal = getVisaRequirement('India', 'Nepal');
-logger.debug('Utils', `   India → Nepal: ${indiaToNepal?.requirement} (${indiaToNepal?.daysAllowed || 'unlimited'} days)\n`);
+logger.debug('Utils', `   India → Nepal: ${indiaToNepal?.requirement} (${indiaToNepal?.daysAllowed ?? 'unlimited'} days)\n`);
 
 // Test 5: Easy access destinations
 logger.debug('Utils', '5. Visa-free + Visa-on-arrival destinations (US passport):');

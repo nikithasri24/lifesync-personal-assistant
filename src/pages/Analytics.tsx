@@ -8,33 +8,64 @@ import {
   Flame
 } from 'lucide-react';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, subDays, isToday, isSameDay } from 'date-fns';
-import { useHabitsQuery } from '../hooks/useHabitsQuery';
-import { useTasksQuery } from '../hooks/useTasksQuery';
-import { useJournalQuery } from '../hooks/useJournalQuery';
+import { useHabits, useHabitEntries } from '../hooks/useHabitsQuery';
+import { useTasks } from '../hooks/useTasksQuery';
+import { useJournalEntries } from '../hooks/useJournalQuery';
+import type { HabitData, HabitEntryData, TaskData } from '../services/types';
 
-export default function Analytics() {
-  const { data: habits = [] } = useHabitsQuery();
-  const { data: tasks = [] } = useTasksQuery();
-  const { data: journalEntries = [] } = useJournalQuery();
+interface Todo extends TaskData {
+  completed: boolean;
+}
+
+interface HabitWithEntries extends HabitData {
+  entries: HabitEntryData[];
+}
+
+interface HabitStat extends HabitWithEntries {
+  streak: number;
+  totalCompletions: number;
+  thisWeekCompletions: number;
+}
+
+interface DayProductivity {
+  date: Date;
+  todos: number;
+  habits: number;
+  journal: number;
+  total: number;
+}
+
+export default function Analytics(): JSX.Element {
+  const { data: habits = [] } = useHabits();
+  const { data: habitEntries = [] } = useHabitEntries();
+  const { data: tasks = [] } = useTasks();
+  const { data: journalEntries = [] } = useJournalEntries() as { data: Array<{ created_at?: string; mood?: string; id?: string }> };
+
+  // Combine habits with their entries
+  const habitsWithEntries: HabitWithEntries[] = habits.map((habit): HabitWithEntries => ({
+    ...habit,
+    entries: habitEntries.filter((entry): boolean => entry.habit_id === habit.id),
+  }));
 
   // Map tasks to todos format for backward compatibility
-  const todos = tasks.map((task) => ({
+  const todos: Todo[] = tasks.map((task): Todo => ({
     ...task,
     completed: task.status === 'done',
   }));
 
   // Calculate habit streaks
-  const calculateStreak = (habit: any) => {
+  const calculateStreak = (habit: HabitWithEntries): number => {
     const today = new Date();
     let streak = 0;
     let currentDate = today;
 
     while (true) {
-      const dayCompletions = habit.completions.filter((completion: any) => 
-        isSameDay(new Date(completion.completedAt), currentDate)
+      const dayEntries = habit.entries.filter((entry): boolean =>
+        entry.date ? isSameDay(new Date(entry.date), currentDate) : false
       );
-      
-      if (dayCompletions.length >= habit.targetCount) {
+
+      const targetValue = habit.target_value ?? 1;
+      if (dayEntries.length >= targetValue) {
         streak++;
         currentDate = subDays(currentDate, 1);
       } else if (isToday(currentDate)) {
@@ -44,16 +75,17 @@ export default function Analytics() {
         break;
       }
     }
-    
+
     return streak;
   };
 
   // Get habit statistics
-  const habitStats = habits.map(habit => {
+  const habitStats: HabitStat[] = habitsWithEntries.map((habit): HabitStat => {
     const streak = calculateStreak(habit);
-    const totalCompletions = habit.completions.length;
-    const thisWeekCompletions = habit.completions.filter(completion => {
-      const date = new Date(completion.completedAt);
+    const totalCompletions = habit.entries.length;
+    const thisWeekCompletions = habit.entries.filter((entry): boolean => {
+      if (!entry.date) return false;
+      const date = new Date(entry.date);
       const weekStart = startOfWeek(new Date());
       const weekEnd = endOfWeek(new Date());
       return date >= weekStart && date <= weekEnd;
@@ -73,22 +105,21 @@ export default function Analytics() {
     end: endOfWeek(new Date())
   });
 
-  const weeklyProductivity = thisWeek.map(day => {
-    const dayTodos = todos.filter(todo => 
-      todo.completed && 
-      isSameDay(new Date(todo.updatedAt), day)
-    );
-    
-    const dayHabits = habits.reduce((total, habit) => {
-      const dayCompletions = habit.completions.filter(completion =>
-        isSameDay(new Date(completion.completedAt), day)
-      );
-      return total + dayCompletions.length;
-    }, 0);
+  const weeklyProductivity: DayProductivity[] = thisWeek.map((day): DayProductivity => {
+    const dayTodos = todos.filter((todo): boolean => {
+      if (!todo.completed || !todo.updated_at) return false;
+      return isSameDay(new Date(todo.updated_at), day);
+    });
 
-    const dayJournal = journalEntries.filter(entry =>
-      isSameDay(new Date(entry.createdAt), day)
-    ).length;
+    const dayHabits = habitEntries.filter((entry): boolean => {
+      if (!entry.date) return false;
+      return isSameDay(new Date(entry.date), day);
+    }).length;
+
+    const dayJournal = journalEntries.filter((entry): boolean => {
+      if (!entry.created_at) return false;
+      return isSameDay(new Date(entry.created_at), day);
+    }).length;
 
     return {
       date: day,
@@ -99,20 +130,30 @@ export default function Analytics() {
     };
   });
 
-  const totalProductivityScore = weeklyProductivity.reduce((sum, day) => sum + day.total, 0);
+  const totalProductivityScore = weeklyProductivity.reduce((sum: number, day): number => sum + day.total, 0);
   const avgDailyScore = Math.round(totalProductivityScore / 7);
 
   // Get best performing habit
-  const bestHabit = habitStats.reduce((best, current) => 
+  const defaultHabit: HabitStat = habitStats[0] ?? {
+    id: '',
+    name: 'None',
+    color: '',
+    icon: '',
+    entries: [],
+    streak: 0,
+    totalCompletions: 0,
+    thisWeekCompletions: 0
+  };
+  const bestHabit = habitStats.reduce((best: HabitStat, current): HabitStat =>
     current.streak > best.streak ? current : best
-  , habitStats[0] || { streak: 0, name: 'None' });
+  , defaultHabit);
 
   // Calculate completion rates
-  const completedTodos = todos.filter(todo => todo.completed).length;
+  const completedTodos = todos.filter((todo): boolean => todo.completed).length;
   const todoCompletionRate = todos.length > 0 ? Math.round((completedTodos / todos.length) * 100) : 0;
 
-  const overallHabitRate = habits.length > 0 
-    ? Math.round(habitStats.reduce((sum, habit) => sum + (habit.thisWeekCompletions / 7), 0) / habits.length * 100)
+  const overallHabitRate = habitsWithEntries.length > 0
+    ? Math.round(habitStats.reduce((sum: number, habit): number => sum + (habit.thisWeekCompletions / 7), 0) / habitsWithEntries.length * 100)
     : 0;
 
   return (
@@ -142,8 +183,8 @@ export default function Analytics() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Best Streak</p>
-              <p className="text-3xl font-bold text-orange-600">{bestHabit?.streak || 0}</p>
-              <p className="text-xs text-gray-500 truncate">{bestHabit?.name || 'No habits'}</p>
+              <p className="text-3xl font-bold text-orange-600">{bestHabit?.streak ?? 0}</p>
+              <p className="text-xs text-gray-500 truncate">{bestHabit?.name ?? 'No habits'}</p>
             </div>
             <div className="bg-orange-500 p-3 rounded-lg">
               <Flame className="text-white" size={24} />
@@ -185,7 +226,7 @@ export default function Analytics() {
           Weekly Productivity
         </h3>
         <div className="space-y-4">
-          {weeklyProductivity.map((day, index) => (
+          {weeklyProductivity.map((day, index): JSX.Element => (
             <div key={index} className="flex items-center space-x-4">
               <div className="w-16 text-sm text-gray-600 flex-shrink-0">
                 {format(day.date, 'EEE')}
@@ -232,11 +273,11 @@ export default function Analytics() {
               <p className="text-gray-500 text-center py-4">No habits to track</p>
             ) : (
               habitStats
-                .sort((a, b) => b.streak - a.streak)
-                .map((habit) => (
+                .sort((a, b): number => b.streak - a.streak)
+                .map((habit): JSX.Element => (
                   <div key={habit.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div className="flex items-center space-x-3">
-                      <div 
+                      <div
                         className="w-3 h-3 rounded-full"
                         style={{ backgroundColor: habit.color }}
                       />
@@ -279,8 +320,8 @@ export default function Analytics() {
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-blue-800">Average Time</span>
                 <span className="text-lg font-bold text-blue-600">
-                  {todos.length > 0 
-                    ? Math.round(todos.reduce((sum, todo) => sum + (todo.estimatedTime || 30), 0) / todos.length)
+                  {todos.length > 0
+                    ? Math.round(todos.reduce((sum: number, todo): number => sum + (todo.estimated_time ?? 30), 0) / todos.length)
                     : 0}m
                 </span>
               </div>
@@ -291,7 +332,7 @@ export default function Analytics() {
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-purple-800">High Priority</span>
                 <span className="text-lg font-bold text-purple-600">
-                  {todos.filter(todo => todo.priority === 'high' || todo.priority === 'urgent').length}
+                  {todos.filter((todo): boolean => (todo.priority === 'high' || todo.priority === 'urgent')).length}
                 </span>
               </div>
               <p className="text-xs text-purple-600">Tasks need attention</p>
@@ -305,11 +346,11 @@ export default function Analytics() {
         <div className="card">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Mood Trends</h3>
           <div className="grid grid-cols-5 gap-4">
-            {['excellent', 'good', 'neutral', 'bad', 'terrible'].map(mood => {
-              const count = journalEntries.filter(entry => entry.mood === mood).length;
+            {(['excellent', 'good', 'neutral', 'bad', 'terrible'] as const).map((mood): JSX.Element => {
+              const count = journalEntries.filter((entry): boolean => entry.mood === mood).length;
               const percentage = journalEntries.length > 0 ? (count / journalEntries.length) * 100 : 0;
-              
-              const moodEmojis = {
+
+              const moodEmojis: Record<typeof mood, string> = {
                 excellent: '😄',
                 good: '😊',
                 neutral: '😐',
@@ -319,11 +360,11 @@ export default function Analytics() {
 
               return (
                 <div key={mood} className="text-center">
-                  <div className="text-2xl mb-2">{moodEmojis[mood as keyof typeof moodEmojis]}</div>
+                  <div className="text-2xl mb-2">{moodEmojis[mood]}</div>
                   <div className="text-sm font-medium text-gray-900 capitalize">{mood}</div>
                   <div className="text-lg font-bold text-gray-600">{count}</div>
                   <div className="w-full bg-gray-200 rounded-full h-1 mt-1">
-                    <div 
+                    <div
                       className="bg-blue-600 h-1 rounded-full"
                       style={{ width: `${percentage}%` }}
                     />

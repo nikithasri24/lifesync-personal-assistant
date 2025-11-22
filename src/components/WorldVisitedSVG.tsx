@@ -1,12 +1,13 @@
+/* eslint-disable max-lines */
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 
-type GeoFeature = GeoJSON.Feature<GeoJSON.Geometry, Record<string, any>>
+type GeoFeature = GeoJSON.Feature<GeoJSON.Geometry, Record<string, unknown>>
 
 const WIDTH = 1000
 const HEIGHT = 560
 
 // Very simple equirectangular projection
-const project = (lon: number, lat: number) => {
+const project = (lon: number, lat: number): [number, number] => {
   const x = ((lon + 180) / 360) * WIDTH
   const y = ((90 - lat) / 180) * HEIGHT
   return [x, y]
@@ -67,13 +68,13 @@ const WorldVisitedSVG: React.FC = () => {
     } catch { return new Set() }
   })
 
-  const persistVisited = (next: Set<string>) => {
-    try { localStorage.setItem('lifesync:travel:visitedCountries', JSON.stringify(Array.from(next))) } catch {}
+  const persistVisited = (next: Set<string>): void => {
+    try { localStorage.setItem('lifesync:travel:visitedCountries', JSON.stringify(Array.from(next))) } catch { /* empty */ }
   }
 
   useEffect(() => {
     let cancelled = false
-    const load = async () => {
+    const load = async (): Promise<void> => {
       try {
         const res = await fetch('/world-countries.geo.json', { cache: 'no-store' })
         if (!res.ok) throw new Error(String(res.status))
@@ -83,7 +84,7 @@ const WorldVisitedSVG: React.FC = () => {
         if (!cancelled) setData(MINIMAL_WORLD)
       }
     }
-    load()
+    void load()
     return () => { cancelled = true }
   }, [])
 
@@ -91,25 +92,41 @@ const WorldVisitedSVG: React.FC = () => {
     const map = new Map<string, string>()
     // Try to get continent info from the features if present; else leave blank
     try {
-      for (const f of (data?.features as GeoFeature[] | undefined) || []) {
-        const props = f.properties || {}
-        const code = String((props.iso_a2 || props.ISO_A2 || props.cca2 || '')).toUpperCase()
-        const region = (props.region || props.continent || '').toString()
-        if (code) map.set(code, region)
+      for (const f of (data?.features as GeoFeature[] | undefined) ?? []) {
+        const props = f.properties ?? {}
+        const iso_a2 = typeof props.iso_a2 === 'string' ? props.iso_a2 : ''
+        const ISO_A2 = typeof props.ISO_A2 === 'string' ? props.ISO_A2 : ''
+        const cca2 = typeof props.cca2 === 'string' ? props.cca2 : ''
+        const code = (iso_a2 || ISO_A2 || cca2).toUpperCase()
+        const region = typeof props.region === 'string' ? props.region : ''
+        const continent = typeof props.continent === 'string' ? props.continent : ''
+        const regionStr = region || continent
+        if (code) map.set(code, regionStr)
       }
-    } catch {}
+    } catch { /* empty */ }
     return map
   }, [data])
 
-  const features = (data?.features as GeoFeature[] | undefined) || []
+  const features = (data?.features as GeoFeature[] | undefined) ?? []
 
-  const getCode = (props: Record<string, any>): string =>
-    String((props.iso_a2 || props.ISO_A2 || props.cca2 || '')).toUpperCase()
+  const getCode = (props: Record<string, unknown>): string => {
+    const iso_a2 = typeof props.iso_a2 === 'string' ? props.iso_a2 : ''
+    const ISO_A2 = typeof props.ISO_A2 === 'string' ? props.ISO_A2 : ''
+    const cca2 = typeof props.cca2 === 'string' ? props.cca2 : ''
+    return (iso_a2 || ISO_A2 || cca2).toUpperCase()
+  }
 
-  const getName = (props: Record<string, any>): string =>
-    String(props.name || props.ADMIN || props.admin || props.country || props.sovereignt || props.formal_en || '').trim() || 'Unknown'
+  const getName = (props: Record<string, unknown>): string => {
+    const name = typeof props.name === 'string' ? props.name : ''
+    const ADMIN = typeof props.ADMIN === 'string' ? props.ADMIN : ''
+    const admin = typeof props.admin === 'string' ? props.admin : ''
+    const country = typeof props.country === 'string' ? props.country : ''
+    const sovereignt = typeof props.sovereignt === 'string' ? props.sovereignt : ''
+    const formal_en = typeof props.formal_en === 'string' ? props.formal_en : ''
+    return (name || ADMIN || admin || country || sovereignt || formal_en).trim() || 'Unknown'
+  }
 
-  const handleToggle = (code: string) => {
+  const handleToggle = (code: string): void => {
     if (!code) return
     const next = new Set(visitedCodes)
     if (next.has(code)) next.delete(code)
@@ -126,14 +143,14 @@ const WorldVisitedSVG: React.FC = () => {
   const [countryMeta, setCountryMeta] = useState<Record<string, { notes?: string; photos?: string[] }>>(() => {
     try {
       const raw = localStorage.getItem('lifesync:travel:countryMeta')
-      return raw ? JSON.parse(raw) : {}
+      return raw ? (JSON.parse(raw) as Record<string, { notes?: string; photos?: string[] }>) : {}
     } catch { return {} }
   })
-  const saveCountryMeta = (next: typeof countryMeta) => {
+  const saveCountryMeta = (next: typeof countryMeta): void => {
     setCountryMeta(next)
-    try { localStorage.setItem('lifesync:travel:countryMeta', JSON.stringify(next)) } catch {}
+    try { localStorage.setItem('lifesync:travel:countryMeta', JSON.stringify(next)) } catch { /* empty */ }
   }
-  const getPointer = (evt: React.MouseEvent) => {
+  const getPointer = (evt: React.MouseEvent): { x: number; y: number } => {
     const el = containerRef.current
     if (!el) return { x: 0, y: 0 }
     const rect = el.getBoundingClientRect()
@@ -149,9 +166,9 @@ const WorldVisitedSVG: React.FC = () => {
   const [lastTs, setLastTs] = useState<number | null>(null)
   const [inertiaId, setInertiaId] = useState<number | null>(null)
 
-  const clampScale = (v: number) => Math.max(0.5, Math.min(6, v))
+  const clampScale = (v: number): number => Math.max(0.5, Math.min(6, v))
 
-  const clampPan = (p: { x: number; y: number }, s: number) => {
+  const clampPan = (p: { x: number; y: number }, s: number): { x: number; y: number } => {
     const minX = Math.min(0, WIDTH - WIDTH * s)
     const maxX = Math.max(0, WIDTH - WIDTH * s)
     const minY = Math.min(0, HEIGHT - HEIGHT * s)
@@ -162,17 +179,18 @@ const WorldVisitedSVG: React.FC = () => {
     }
   }
 
-  const toSvgPoint = (evt: React.MouseEvent<SVGSVGElement, MouseEvent>) => {
+  const toSvgPoint = (evt: React.MouseEvent<SVGSVGElement, MouseEvent>): { x: number; y: number } => {
     const svg = evt.currentTarget
     const rect = svg.getBoundingClientRect()
     return { x: evt.clientX - rect.left, y: evt.clientY - rect.top }
   }
 
-  const handleWheel = (evt: React.WheelEvent<SVGSVGElement>) => {
+  const handleWheel = (evt: React.WheelEvent<SVGSVGElement>): void => {
     evt.preventDefault()
     const delta = -evt.deltaY
     const factor = delta > 0 ? 1.1 : 0.9
-    const svgPt = { x: (evt.nativeEvent as any).offsetX ?? 0, y: (evt.nativeEvent as any).offsetY ?? 0 }
+    const nativeEvent = evt.nativeEvent as MouseEvent
+    const svgPt = { x: nativeEvent.offsetX ?? 0, y: nativeEvent.offsetY ?? 0 }
     const newScale = clampScale(scale * factor)
     const k = newScale / scale
     const newPanUnclamped = {
@@ -183,7 +201,7 @@ const WorldVisitedSVG: React.FC = () => {
     setPan(clampPan(newPanUnclamped, newScale))
   }
 
-  const onMouseDown = (evt: React.MouseEvent<SVGSVGElement>) => {
+  const onMouseDown = (evt: React.MouseEvent<SVGSVGElement>): void => {
     setPanning(true)
     setLastPt(toSvgPoint(evt))
     setVel({ x: 0, y: 0 })
@@ -193,7 +211,7 @@ const WorldVisitedSVG: React.FC = () => {
       setInertiaId(null)
     }
   }
-  const onMouseMove = (evt: React.MouseEvent<SVGSVGElement>) => {
+  const onMouseMove = (evt: React.MouseEvent<SVGSVGElement>): void => {
     if (!panning || !lastPt) return
     const pt = toSvgPoint(evt)
     const dx = pt.x - lastPt.x
@@ -206,14 +224,14 @@ const WorldVisitedSVG: React.FC = () => {
     setPan((p) => clampPan({ x: p.x + dx, y: p.y + dy }, scale))
     setLastPt(pt)
   }
-  const endPan = () => {
+  const endPan = (): void => {
     setPanning(false)
     setLastPt(null)
     setLastTs(null)
     // start inertia
     const friction = 0.95
     const minSpeed = 0.02
-    const step = () => {
+    const step = (): void => {
       setPan((p) => {
         const next = clampPan({ x: p.x + vel.x * 16, y: p.y + vel.y * 16 }, scale)
         return next
@@ -234,7 +252,7 @@ const WorldVisitedSVG: React.FC = () => {
     }
   }
 
-  const zoomBy = (mult: number) => {
+  const zoomBy = (mult: number): void => {
     const svgPt = { x: WIDTH / 2, y: HEIGHT / 2 }
     const newScale = clampScale(scale * mult)
     const k = newScale / scale
@@ -246,7 +264,7 @@ const WorldVisitedSVG: React.FC = () => {
     setPan(clampPan(newPanUnclamped, newScale))
   }
 
-  const resetView = () => {
+  const resetView = (): void => {
     setScale(1)
     setPan({ x: 0, y: 0 })
     if (inertiaId) {
@@ -256,7 +274,7 @@ const WorldVisitedSVG: React.FC = () => {
   }
 
   // Export visited as JSON
-  const exportJSON = () => {
+  const exportJSON = (): void => {
     try {
       const arr = Array.from(visitedCodes)
       const blob = new Blob([JSON.stringify({ visited: arr }, null, 2)], { type: 'application/json' })
@@ -268,11 +286,11 @@ const WorldVisitedSVG: React.FC = () => {
       a.click()
       a.remove()
       URL.revokeObjectURL(url)
-    } catch {}
+    } catch { /* empty */ }
   }
 
   // Export map as PNG
-  const exportPNG = async () => {
+  const exportPNG = async (): Promise<void> => {
     try {
       const svg = svgRef.current
       if (!svg) return
@@ -305,7 +323,7 @@ const WorldVisitedSVG: React.FC = () => {
       document.body.appendChild(a)
       a.click()
       a.remove()
-    } catch {}
+    } catch { /* empty */ }
   }
 
   return (
@@ -316,7 +334,7 @@ const WorldVisitedSVG: React.FC = () => {
           <label className="text-gray-600">Region:</label>
           <select
             value={regionFilter}
-            onChange={(e) => setRegionFilter(e.target.value as any)}
+            onChange={(e) => setRegionFilter(e.target.value as 'all' | 'africa' | 'asia' | 'europe' | 'north america' | 'south america' | 'oceania' | 'antarctica')}
             className="text-gray-800 border border-gray-300 rounded px-2 py-1 focus:outline-none"
           >
             <option value="all">All</option>
@@ -365,10 +383,10 @@ const WorldVisitedSVG: React.FC = () => {
         <rect x="0" y="0" width={WIDTH} height={HEIGHT} fill="#F8FAFC" />
         <g transform={`translate(${pan.x},${pan.y}) scale(${scale})`}>
         {features.map((f, idx) => {
-          const props = f.properties || {}
+          const props = f.properties ?? {}
           const code = getCode(props)
           const name = getName(props)
-          const region = (continentByCode.get(code) || '').toLowerCase()
+          const region = (continentByCode.get(code) ?? '').toLowerCase()
           const filtered = regionFilter !== 'all' && region !== regionFilter
           const visited = code ? visitedCodes.has(code) : false
           const d = f.geometry ? buildPath(f.geometry) : ''
@@ -410,25 +428,27 @@ const WorldVisitedSVG: React.FC = () => {
       {/* Export / Import / Stats */}
       <div className="absolute z-[1000] bottom-3 left-3 bg-white/90 backdrop-blur rounded-xl border border-gray-200 shadow flex items-center overflow-hidden">
         <button className="px-3 py-2 text-xs hover:bg-gray-50 border-r" onClick={exportJSON}>Export JSON</button>
-        <button className="px-3 py-2 text-xs hover:bg-gray-50 border-r" onClick={exportPNG}>Export PNG</button>
+        <button className="px-3 py-2 text-xs hover:bg-gray-50 border-r" onClick={() => { void exportPNG() }}>Export PNG</button>
         <label className="px-3 py-2 text-xs cursor-pointer hover:bg-gray-50 border-r">
           Import JSON
-          <input type="file" accept="application/json" className="hidden" onChange={async (e) => {
+          <input type="file" accept="application/json" className="hidden" onChange={(e) => {
             const file = e.target.files?.[0]
             if (!file) return
-            try {
-              const text = await file.text()
-              const json = JSON.parse(text)
-              if (Array.isArray(json.visited)) {
-                const s = new Set((json.visited as string[]).map((c) => c.toUpperCase()))
-                setVisitedCodes(s)
-                persistVisited(s)
-              }
-              if (json.meta && typeof json.meta === 'object') {
-                saveCountryMeta(json.meta)
-              }
-            } catch {}
-            e.currentTarget.value = ''
+            void (async (): Promise<void> => {
+              try {
+                const text = await file.text()
+                const json = JSON.parse(text) as { visited?: unknown; meta?: unknown }
+                if (Array.isArray(json.visited)) {
+                  const s = new Set((json.visited as string[]).map((c) => c.toUpperCase()))
+                  setVisitedCodes(s)
+                  persistVisited(s)
+                }
+                if (json.meta && typeof json.meta === 'object') {
+                  saveCountryMeta(json.meta as Record<string, { notes?: string; photos?: string[] }>)
+                }
+              } catch { /* empty */ }
+              e.currentTarget.value = ''
+            })()
           }} />
         </label>
         <div className="px-3 py-2 text-[11px] text-gray-700">
@@ -480,7 +500,7 @@ const WorldVisitedSVG: React.FC = () => {
               <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
               <textarea
                 className="w-full h-28 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={countryMeta[selected.code]?.notes || ''}
+                value={countryMeta[selected.code]?.notes ?? ''}
                 onChange={(e) => {
                   const next = { ...countryMeta, [selected.code]: { ...countryMeta[selected.code], notes: e.target.value } }
                   saveCountryMeta(next)
@@ -493,7 +513,7 @@ const WorldVisitedSVG: React.FC = () => {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Photo URLs</label>
               <PhotoList
-                items={countryMeta[selected.code]?.photos || []}
+                items={countryMeta[selected.code]?.photos ?? []}
                 onChange={(list) => {
                   const next = { ...countryMeta, [selected.code]: { ...countryMeta[selected.code], photos: list } }
                   saveCountryMeta(next)
@@ -513,15 +533,15 @@ const WorldVisitedSVG: React.FC = () => {
 export default WorldVisitedSVG
 
 // Small controlled list editor for photo URLs
-function PhotoList({ items, onChange }: { items: string[]; onChange: (next: string[]) => void }) {
+function PhotoList({ items, onChange }: { items: string[]; onChange: (next: string[]) => void }): JSX.Element {
   const [value, setValue] = useState('')
-  const add = () => {
+  const add = (): void => {
     const v = value.trim()
     if (!v) return
-    onChange([...(items || []), v])
+    onChange([...(items ?? []), v])
     setValue('')
   }
-  const remove = (idx: number) => {
+  const remove = (idx: number): void => {
     const next = [...items]
     next.splice(idx, 1)
     onChange(next)
@@ -539,7 +559,7 @@ function PhotoList({ items, onChange }: { items: string[]; onChange: (next: stri
         <button className="px-2 py-1 text-xs rounded bg-blue-600 text-white hover:bg-blue-700" onClick={add}>Add</button>
       </div>
       <ul className="space-y-1">
-        {(items || []).map((url, idx) => (
+        {(items ?? []).map((url, idx) => (
           <li key={idx} className="flex items-center justify-between text-xs text-gray-700 bg-gray-50 border border-gray-200 rounded px-2 py-1">
             <a href={url} target="_blank" rel="noreferrer" className="truncate max-w-[220px] hover:underline">{url}</a>
             <button className="text-red-600 hover:text-red-700 ml-2" onClick={() => remove(idx)}>Remove</button>

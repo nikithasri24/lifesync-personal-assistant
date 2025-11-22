@@ -1,63 +1,19 @@
 import React, { useEffect, useRef, useState } from 'react'
+import {
+  WIDTH,
+  HEIGHT,
+  DEFAULT_BOUNDS,
+  MINIMAL_US,
+  REGION_BY_CODE,
+  buildPath,
+  getCode,
+  getName,
+  clampScale,
+  clampPan,
+} from './USVisitedSVG.constants'
+import PhotoList from './PhotoList'
 
-type GeoFeature = GeoJSON.Feature<GeoJSON.Geometry, Record<string, any>>
-
-const WIDTH = 1000
-const HEIGHT = 560
-
-// Default bounds that include Alaska/Hawaii/CONUS reasonably
-const DEFAULT_BOUNDS = { minLon: -179.9, maxLon: -66.0, minLat: 18.0, maxLat: 72.0 }
-
-const project = (lon: number, lat: number, b = DEFAULT_BOUNDS) => {
-  const x = ((lon - b.minLon) / (b.maxLon - b.minLon)) * WIDTH
-  const y = ((b.maxLat - lat) / (b.maxLat - b.minLat)) * HEIGHT
-  return [x, y]
-}
-
-const buildPath = (geom: GeoJSON.Geometry, b?: typeof DEFAULT_BOUNDS): string => {
-  const parts: string[] = []
-  if (geom.type === 'Polygon') {
-    const coords = geom.coordinates as number[][][]
-    for (const ring of coords) {
-      let first = true
-      for (const [lon, lat] of ring) {
-        const [x, y] = project(lon, lat, b)
-        parts.push(first ? `M ${x} ${y}` : `L ${x} ${y}`)
-        first = false
-      }
-      parts.push('Z')
-    }
-  } else if (geom.type === 'MultiPolygon') {
-    const polys = geom.coordinates as number[][][][]
-    for (const poly of polys) {
-      for (const ring of poly) {
-        let first = true
-        for (const [lon, lat] of ring) {
-          const [x, y] = project(lon, lat, b)
-          parts.push(first ? `M ${x} ${y}` : `L ${x} ${y}`)
-          first = false
-        }
-        parts.push('Z')
-      }
-    }
-  }
-  return parts.join(' ')
-}
-
-const MINIMAL_US: GeoJSON.FeatureCollection = {
-  type: 'FeatureCollection',
-  features: [
-    {
-      type: 'Feature',
-      properties: { name: 'United States' },
-      geometry: {
-        type: 'Polygon',
-        coordinates: [[[-125, 24], [-125, 50], [-66, 50], [-66, 24], [-125, 24]]],
-      },
-    },
-  ],
-}
-
+type GeoFeature = GeoJSON.Feature<GeoJSON.Geometry, Record<string, unknown>>
 const USVisitedSVG: React.FC = () => {
   const [data, setData] = useState<GeoJSON.FeatureCollection | null>(null)
   const [regionFilter, setRegionFilter] = useState<'all' | 'northeast' | 'midwest' | 'south' | 'west'>('all')
@@ -69,15 +25,13 @@ const USVisitedSVG: React.FC = () => {
       return new Set(arr.map((c) => c.toUpperCase()))
     } catch { return new Set() }
   })
-  const persistVisited = (next: Set<string>) => {
-    try { localStorage.setItem('lifesync:travel:visitedUSStates', JSON.stringify(Array.from(next))) } catch {}
+  const persistVisited = (next: Set<string>): void => {
+    try { localStorage.setItem('lifesync:travel:visitedUSStates', JSON.stringify(Array.from(next))) } catch { /* Silently fail */ }
   }
-
   const [fallbackUsed, setFallbackUsed] = useState(false)
-
   useEffect(() => {
     let cancelled = false
-    const load = async () => {
+    const load = async (): Promise<void> => {
       try {
         const res = await fetch('/us-states.geo.json', { cache: 'no-store' })
         if (!res.ok) throw new Error(String(res.status))
@@ -89,52 +43,32 @@ const USVisitedSVG: React.FC = () => {
           let minLon = Infinity, maxLon = -Infinity, minLat = Infinity, maxLat = -Infinity
           for (const f of (json.features as GeoFeature[])) {
             const g = f.geometry
-            const each = (coords: any) => {
-              if (typeof coords[0] === 'number') {
+            const each = (coords: unknown): void => {
+              if (Array.isArray(coords) && typeof coords[0] === 'number') {
                 const [lon, lat] = coords as [number, number]
                 minLon = Math.min(minLon, lon); maxLon = Math.max(maxLon, lon)
                 minLat = Math.min(minLat, lat); maxLat = Math.max(maxLat, lat)
                 return
               }
-              for (const c of coords) each(c)
+              if (Array.isArray(coords)) {
+                for (const c of coords) each(c)
+              }
             }
-            if (g) each((g as any).coordinates)
+            if (g && 'coordinates' in g) each(g.coordinates)
           }
           if (isFinite(minLon) && isFinite(maxLon) && isFinite(minLat) && isFinite(maxLat)) {
             setBounds({ minLon, maxLon, minLat, maxLat })
           }
-        } catch {}
+        } catch { /* Silently fail */ }
       } catch {
         if (!cancelled) { setData(MINIMAL_US); setFallbackUsed(true) }
       }
     }
-    load()
+    void load()
     return () => { cancelled = true }
   }, [])
-
-  const features = (data?.features as GeoFeature[] | undefined) || []
-
-  const getCode = (props: Record<string, any>): string =>
-    String((props.postal || props.STUSPS || props.code || props.abbrev || '').toUpperCase())
-  const getName = (props: Record<string, any>): string =>
-    String(props.name || props.NAME || props.state || '').trim() || 'Unknown'
-
-  const REGION_BY_CODE: Record<string, 'northeast' | 'midwest' | 'south' | 'west'> = {
-    // Northeast
-    CT: 'northeast', ME: 'northeast', MA: 'northeast', NH: 'northeast', RI: 'northeast', VT: 'northeast',
-    NJ: 'northeast', NY: 'northeast', PA: 'northeast', DC: 'south', DE: 'south',
-    // Midwest
-    IL: 'midwest', IN: 'midwest', MI: 'midwest', OH: 'midwest', WI: 'midwest',
-    IA: 'midwest', KS: 'midwest', MN: 'midwest', MO: 'midwest', NE: 'midwest', ND: 'midwest', SD: 'midwest',
-    // South
-    FL: 'south', GA: 'south', MD: 'south', NC: 'south', SC: 'south', VA: 'south', WV: 'south',
-    AL: 'south', KY: 'south', MS: 'south', TN: 'south', AR: 'south', LA: 'south', OK: 'south', TX: 'south',
-    // West
-    AZ: 'west', CO: 'west', ID: 'west', MT: 'west', NV: 'west', NM: 'west', UT: 'west', WY: 'west',
-    AK: 'west', CA: 'west', HI: 'west', OR: 'west', WA: 'west'
-  }
-
-  const handleToggle = (code: string) => {
+  const features = (data?.features as GeoFeature[] | undefined) ?? []
+  const handleToggle = (code: string): void => {
     if (!code) return
     const next = new Set(visitedCodes)
     if (next.has(code)) next.delete(code)
@@ -142,7 +76,6 @@ const USVisitedSVG: React.FC = () => {
     setVisitedCodes(next)
     persistVisited(next)
   }
-
   // Pan/zoom similar to world SVG
   const containerRef = useRef<HTMLDivElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
@@ -153,42 +86,30 @@ const USVisitedSVG: React.FC = () => {
   const [vel, setVel] = useState({ x: 0, y: 0 })
   const [lastTs, setLastTs] = useState<number | null>(null)
   const [inertiaId, setInertiaId] = useState<number | null>(null)
-
-  const clampScale = (v: number) => Math.max(0.5, Math.min(8, v))
-  const clampPan = (p: { x: number; y: number }, s: number) => {
-    const minX = Math.min(0, WIDTH - WIDTH * s)
-    const maxX = Math.max(0, WIDTH - WIDTH * s)
-    const minY = Math.min(0, HEIGHT - HEIGHT * s)
-    const maxY = Math.max(0, HEIGHT - HEIGHT * s)
-    return {
-      x: Math.max(minX, Math.min(maxX, p.x)),
-      y: Math.max(minY, Math.min(maxY, p.y)),
-    }
-  }
-
-  const toSvgPoint = (evt: React.MouseEvent<SVGSVGElement, MouseEvent>) => {
+  const toSvgPoint = (evt: React.MouseEvent<SVGSVGElement, MouseEvent>): { x: number; y: number } => {
     const svg = evt.currentTarget
     const rect = svg.getBoundingClientRect()
     return { x: evt.clientX - rect.left, y: evt.clientY - rect.top }
   }
-  const handleWheel = (evt: React.WheelEvent<SVGSVGElement>) => {
+  const handleWheel = (evt: React.WheelEvent<SVGSVGElement>): void => {
     evt.preventDefault()
     const factor = evt.deltaY < 0 ? 1.1 : 0.9
-    const svgPt = { x: (evt.nativeEvent as any).offsetX ?? 0, y: (evt.nativeEvent as any).offsetY ?? 0 }
+    const nativeEvent = evt.nativeEvent as MouseEvent & { offsetX?: number; offsetY?: number }
+    const svgPt = { x: nativeEvent.offsetX ?? 0, y: nativeEvent.offsetY ?? 0 }
     const newScale = clampScale(scale * factor)
     const k = newScale / scale
     const newPanUnclamped = { x: svgPt.x - (svgPt.x - pan.x) * k, y: svgPt.y - (svgPt.y - pan.y) * k }
     setScale(newScale)
     setPan(clampPan(newPanUnclamped, newScale))
   }
-  const onMouseDown = (evt: React.MouseEvent<SVGSVGElement>) => {
+  const onMouseDown = (evt: React.MouseEvent<SVGSVGElement>): void => {
     setPanning(true)
     setLastPt(toSvgPoint(evt))
     setVel({ x: 0, y: 0 })
     setLastTs(performance.now())
     if (inertiaId) { cancelAnimationFrame(inertiaId); setInertiaId(null) }
   }
-  const onMouseMove = (evt: React.MouseEvent<SVGSVGElement>) => {
+  const onMouseMove = (evt: React.MouseEvent<SVGSVGElement>): void => {
     if (!panning || !lastPt) return
     const pt = toSvgPoint(evt)
     const dx = pt.x - lastPt.x
@@ -200,10 +121,10 @@ const USVisitedSVG: React.FC = () => {
     setPan((p) => clampPan({ x: p.x + dx, y: p.y + dy }, scale))
     setLastPt(pt)
   }
-  const endPan = () => {
+  const endPan = (): void => {
     setPanning(false); setLastPt(null); setLastTs(null)
     const friction = 0.95, minSpeed = 0.02
-    const step = () => {
+    const step = (): void => {
       setPan((p) => clampPan({ x: p.x + vel.x * 16, y: p.y + vel.y * 16 }, scale))
       setVel((v) => ({ x: v.x * friction, y: v.y * friction }))
       if (Math.hypot(vel.x, vel.y) > minSpeed) {
@@ -212,7 +133,7 @@ const USVisitedSVG: React.FC = () => {
     }
     if (Math.hypot(vel.x, vel.y) > minSpeed) { const id = requestAnimationFrame(step); setInertiaId(id) }
   }
-  const zoomBy = (mult: number) => {
+  const zoomBy = (mult: number): void => {
     const svgPt = { x: WIDTH / 2, y: HEIGHT / 2 }
     const newScale = clampScale(scale * mult)
     const k = newScale / scale
@@ -220,28 +141,26 @@ const USVisitedSVG: React.FC = () => {
     setScale(newScale)
     setPan(clampPan(newPanUnclamped, newScale))
   }
-  const resetView = () => { setScale(1); setPan({ x: 0, y: 0 }); if (inertiaId) { cancelAnimationFrame(inertiaId); setInertiaId(null) } }
-
+  const resetView = (): void => { setScale(1); setPan({ x: 0, y: 0 }); if (inertiaId) { cancelAnimationFrame(inertiaId); setInertiaId(null) } }
   // Hover + side panel
   const [hover, setHover] = useState<{ name: string; x: number; y: number } | null>(null)
   const [selected, setSelected] = useState<{ code: string; name: string } | null>(null)
   const [stateMeta, setStateMeta] = useState<Record<string, { notes?: string; photos?: string[] }>>(() => {
     try {
       const raw = localStorage.getItem('lifesync:travel:usStateMeta')
-      return raw ? JSON.parse(raw) : {}
+      return raw ? JSON.parse(raw) as Record<string, { notes?: string; photos?: string[] }> : {}
     } catch { return {} }
   })
-  const saveStateMeta = (next: typeof stateMeta) => {
+  const saveStateMeta = (next: typeof stateMeta): void => {
     setStateMeta(next)
-    try { localStorage.setItem('lifesync:travel:usStateMeta', JSON.stringify(next)) } catch {}
+    try { localStorage.setItem('lifesync:travel:usStateMeta', JSON.stringify(next)) } catch { /* Silently fail */ }
   }
-  const getPointer = (evt: React.MouseEvent) => {
+  const getPointer = (evt: React.MouseEvent): { x: number; y: number } => {
     const el = containerRef.current
     if (!el) return { x: 0, y: 0 }
     const rect = el.getBoundingClientRect()
     return { x: evt.clientX - rect.left, y: evt.clientY - rect.top }
   }
-
   return (
     <div ref={containerRef} className="relative w-full" style={{ height: HEIGHT }}>
       <svg
@@ -294,7 +213,7 @@ const USVisitedSVG: React.FC = () => {
         <label className="text-gray-600">Region:</label>
         <select
           value={regionFilter}
-          onChange={(e) => setRegionFilter(e.target.value as any)}
+          onChange={(e) => setRegionFilter(e.target.value as 'all' | 'northeast' | 'midwest' | 'south' | 'west')}
           className="text-gray-800 border border-gray-300 rounded px-2 py-1 focus:outline-none"
         >
           <option value="all">All</option>
@@ -352,60 +271,64 @@ const USVisitedSVG: React.FC = () => {
               a.click()
               a.remove()
               URL.revokeObjectURL(url)
-            } catch {}
+            } catch { /* Silently fail */ }
           }}
         >Export JSON</button>
         <button
           className="px-3 py-2 text-xs hover:bg-gray-50 border-r"
-          onClick={async () => {
-            try {
-              const svg = svgRef.current
-              if (!svg) return
-              const clone = svg.cloneNode(true) as SVGSVGElement
-              clone.setAttribute('width', String(WIDTH))
-              clone.setAttribute('height', String(HEIGHT))
-              const serializer = new XMLSerializer()
-              const svgStr = serializer.serializeToString(clone)
-              const svgBlob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' })
-              const url = URL.createObjectURL(svgBlob)
-              const img = new Image()
-              await new Promise<void>((resolve, reject) => { img.onload = () => resolve(); img.onerror = reject; img.src = url })
-              const canvas = document.createElement('canvas')
-              canvas.width = WIDTH
-              canvas.height = HEIGHT
-              const ctx = canvas.getContext('2d')
-              if (!ctx) return
-              ctx.fillStyle = '#F8FAFC'; ctx.fillRect(0, 0, WIDTH, HEIGHT)
-              ctx.drawImage(img, 0, 0)
-              URL.revokeObjectURL(url)
-              const pngUrl = canvas.toDataURL('image/png')
-              const a = document.createElement('a')
-              a.href = pngUrl
-              a.download = 'us-map.png'
-              document.body.appendChild(a)
-              a.click()
-              a.remove()
-            } catch {}
+          onClick={() => {
+            void (async (): Promise<void> => {
+              try {
+                const svg = svgRef.current
+                if (!svg) return
+                const clone = svg.cloneNode(true) as SVGSVGElement
+                clone.setAttribute('width', String(WIDTH))
+                clone.setAttribute('height', String(HEIGHT))
+                const serializer = new XMLSerializer()
+                const svgStr = serializer.serializeToString(clone)
+                const svgBlob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' })
+                const url = URL.createObjectURL(svgBlob)
+                const img = new Image()
+                await new Promise<void>((resolve, reject) => { img.onload = () => resolve(); img.onerror = reject; img.src = url })
+                const canvas = document.createElement('canvas')
+                canvas.width = WIDTH
+                canvas.height = HEIGHT
+                const ctx = canvas.getContext('2d')
+                if (!ctx) return
+                ctx.fillStyle = '#F8FAFC'; ctx.fillRect(0, 0, WIDTH, HEIGHT)
+                ctx.drawImage(img, 0, 0)
+                URL.revokeObjectURL(url)
+                const pngUrl = canvas.toDataURL('image/png')
+                const a = document.createElement('a')
+                a.href = pngUrl
+                a.download = 'us-map.png'
+                document.body.appendChild(a)
+                a.click()
+                a.remove()
+              } catch { /* Silently fail */ }
+            })()
           }}
         >Export PNG</button>
         <label className="px-3 py-2 text-xs cursor-pointer hover:bg-gray-50 border-r">
           Import JSON
-          <input type="file" accept="application/json" className="hidden" onChange={async (e) => {
-            const file = e.target.files?.[0]
-            if (!file) return
-            try {
-              const text = await file.text()
-              const json = JSON.parse(text)
-              if (Array.isArray(json.visited)) {
-                const s = new Set((json.visited as string[]).map((c) => c.toUpperCase()))
-                setVisitedCodes(s)
-                persistVisited(s)
-              }
-              if (json.meta && typeof json.meta === 'object') {
-                saveStateMeta(json.meta)
-              }
-            } catch {}
-            e.currentTarget.value = ''
+          <input type="file" accept="application/json" className="hidden" onChange={(e) => {
+            void (async (): Promise<void> => {
+              const file = e.target.files?.[0]
+              if (!file) return
+              try {
+                const text = await file.text()
+                const json = JSON.parse(text) as { visited?: unknown; meta?: unknown }
+                if (Array.isArray(json.visited)) {
+                  const s = new Set((json.visited as string[]).map((c) => c.toUpperCase()))
+                  setVisitedCodes(s)
+                  persistVisited(s)
+                }
+                if (json.meta && typeof json.meta === 'object') {
+                  saveStateMeta(json.meta as Record<string, { notes?: string; photos?: string[] }>)
+                }
+              } catch { /* Silently fail */ }
+              e.currentTarget.value = ''
+            })()
           }} />
         </label>
         <div className="px-3 py-2 text-[11px] text-gray-700 dark:text-gray-300">
@@ -446,7 +369,7 @@ const USVisitedSVG: React.FC = () => {
               <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
               <textarea
                 className="w-full h-28 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={stateMeta[selected.code]?.notes || ''}
+                value={stateMeta[selected.code]?.notes ?? ''}
                 onChange={(e) => {
                   const next = { ...stateMeta, [selected.code]: { ...stateMeta[selected.code], notes: e.target.value } }
                   saveStateMeta(next)
@@ -456,7 +379,7 @@ const USVisitedSVG: React.FC = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Photo URLs</label>
-              <PhotoList items={stateMeta[selected.code]?.photos || []} onChange={(list) => { const next = { ...stateMeta, [selected.code]: { ...stateMeta[selected.code], photos: list } }; saveStateMeta(next) }} />
+              <PhotoList items={stateMeta[selected.code]?.photos ?? []} onChange={(list) => { const next = { ...stateMeta, [selected.code]: { ...stateMeta[selected.code], photos: list } }; saveStateMeta(next) }} />
             </div>
           </div>
           <div className="px-4 py-3 border-t border-gray-200 flex items-center justify-end">
@@ -469,25 +392,3 @@ const USVisitedSVG: React.FC = () => {
 }
 
 export default USVisitedSVG
-
-function PhotoList({ items, onChange }: { items: string[]; onChange: (next: string[]) => void }) {
-  const [value, setValue] = useState('')
-  const add = () => { const v = value.trim(); if (!v) return; onChange([...(items || []), v]); setValue('') }
-  const remove = (idx: number) => { const next = [...items]; next.splice(idx, 1); onChange(next) }
-  return (
-    <div>
-      <div className="flex items-center space-x-2 mb-2">
-        <input className="flex-1 border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="https://..." value={value} onChange={(e) => setValue(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); add() } }} />
-        <button className="px-2 py-1 text-xs rounded bg-blue-600 text-white hover:bg-blue-700" onClick={add}>Add</button>
-      </div>
-      <ul className="space-y-1">
-        {(items || []).map((url, idx) => (
-          <li key={idx} className="flex items-center justify-between text-xs text-gray-700 bg-gray-50 border border-gray-200 rounded px-2 py-1">
-            <a href={url} target="_blank" rel="noreferrer" className="truncate max-w-[220px] hover:underline">{url}</a>
-            <button className="text-red-600 hover:text-red-700 ml-2" onClick={() => remove(idx)}>Remove</button>
-          </li>
-        ))}
-      </ul>
-    </div>
-  )
-}

@@ -20,14 +20,37 @@ interface CountryProperties {
   iso_a3: string;
 }
 
+interface GeoJSONGeometry {
+  type: string;
+  coordinates: unknown;
+}
+
 interface CountryFeature {
   type: 'Feature';
   id: string;
   properties: CountryProperties;
-  geometry: {
-    type: string;
-    coordinates: any;
+  geometry: GeoJSONGeometry;
+}
+
+interface RawGeoJSONFeature {
+  id?: string;
+  properties?: {
+    ISO_A2?: string;
+    iso_a2?: string;
+    ISO_A3?: string;
+    iso_a3?: string;
+    NAME?: string;
+    name?: string;
+    ADMIN?: string;
   };
+  geometry?: {
+    type?: string;
+    coordinates?: unknown;
+  };
+}
+
+interface RawGeoJSONData {
+  features?: RawGeoJSONFeature[];
 }
 
 const MappackerStyleMap: React.FC<MappackerStyleMapProps> = ({
@@ -53,7 +76,7 @@ const MappackerStyleMap: React.FC<MappackerStyleMapProps> = ({
 
   // Load real world map data
   React.useEffect(() => {
-    const loadMapData = async () => {
+    const loadMapData = async (): Promise<void> => {
       try {
         setLoading(true);
         // Use Natural Earth data with full country properties
@@ -63,48 +86,48 @@ const MappackerStyleMap: React.FC<MappackerStyleMapProps> = ({
           throw new Error(`Failed to fetch map data: ${response.status}`);
         }
 
-        const geoJsonData: any = await response.json();
+        const geoJsonData = await response.json() as RawGeoJSONData;
 
         if (!geoJsonData?.features) {
           throw new Error('Invalid GeoJSON data');
         }
 
         // Debug: Check what properties are available
-        logger.info('MappackerStyleMap', 'Sample feature properties:', geoJsonData.features[0]?.properties);
+        logger.info('MappackerStyleMap', 'Sample feature properties:', geoJsonData.features[0]?.properties ?? null);
 
         // Convert and filter features
         const countryFeatures = geoJsonData.features
-          .map((f: any) => {
+          .map((f: RawGeoJSONFeature): CountryFeature => {
             // Natural Earth GeoJSON uses ISO_A2 and NAME
-            const iso_a2 = f.properties?.ISO_A2 || f.properties?.iso_a2 || '';
-            const iso_a3 = f.properties?.ISO_A3 || f.properties?.iso_a3 || '';
-            const name = f.properties?.NAME || f.properties?.name || f.properties?.ADMIN || 'Unknown';
+            const iso_a2 = f.properties?.ISO_A2 ?? f.properties?.iso_a2 ?? '';
+            const iso_a3 = f.properties?.ISO_A3 ?? f.properties?.iso_a3 ?? '';
+            const name = f.properties?.NAME ?? f.properties?.name ?? f.properties?.ADMIN ?? 'Unknown';
 
             return {
               type: 'Feature' as const,
-              id: f.id || iso_a2 || `country-${Math.random()}`,
+              id: f.id ?? iso_a2 ?? `country-${Math.random()}`,
               properties: {
                 name: name,
                 iso_a2: iso_a2,
                 iso_a3: iso_a3,
               },
-              geometry: f.geometry,
+              geometry: f.geometry ?? { type: 'Polygon', coordinates: [] },
             };
           })
-          .filter((f) => {
+          .filter((f): boolean => {
             // Only include countries with:
             // 1. Valid 2-letter ISO code (not -99 or empty)
             // 2. Valid geometry
-            const hasValidCode = f.properties.iso_a2 &&
+            const hasValidCode = Boolean(f.properties.iso_a2) &&
                                  f.properties.iso_a2.length === 2 &&
                                  f.properties.iso_a2 !== '-99';
-            const hasValidGeometry = f.geometry &&
+            const hasValidGeometry = Boolean(f.geometry) &&
                                     (f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon');
             return hasValidCode && hasValidGeometry;
           });
 
         logger.debug('MappackerStyleMap', `Loaded ${countryFeatures.length} valid countries from ${geoJsonData.features.length} total features`);
-        logger.info('MappackerStyleMap', 'First 3 countries:', countryFeatures.slice(0, 3).map(c => ({
+        logger.info('MappackerStyleMap', 'First 3 countries:', countryFeatures.slice(0, 3).map((c): { name: string; code: string; id: string } => ({
           name: c.properties.name,
           code: c.properties.iso_a2,
           id: c.id
@@ -114,7 +137,7 @@ const MappackerStyleMap: React.FC<MappackerStyleMapProps> = ({
           throw new Error('No valid countries found in map data');
         }
 
-        setCountries(countryFeatures.sort((a, b) =>
+        setCountries(countryFeatures.sort((a, b): number =>
           a.properties.name.localeCompare(b.properties.name)
         ));
         setError(null);
@@ -127,7 +150,7 @@ const MappackerStyleMap: React.FC<MappackerStyleMapProps> = ({
       }
     };
 
-    loadMapData();
+    void loadMapData();
   }, []);
 
   const getCountryFill = (countryCode: string, isHovered: boolean): string => {
@@ -146,7 +169,7 @@ const MappackerStyleMap: React.FC<MappackerStyleMapProps> = ({
   React.useEffect(() => {
     if (countries.length > 0) {
       logger.debug('MappackerStyleMap', `Rendering map with ${countries.length} countries`);
-      logger.info('MappackerStyleMap', 'First 3 countries:', countries.slice(0, 3).map(c => ({ name: c.properties.name, code: c.properties.iso_a2 })));
+      logger.info('MappackerStyleMap', 'First 3 countries:', countries.slice(0, 3).map((c): { name: string; code: string } => ({ name: c.properties.name, code: c.properties.iso_a2 })));
     }
   }, [countries]);
 
@@ -169,7 +192,7 @@ const MappackerStyleMap: React.FC<MappackerStyleMapProps> = ({
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Failed to Load Map</h3>
           <p className="text-gray-600 mb-4">{error}</p>
           <button
-            onClick={() => window.location.reload()}
+            onClick={(): void => window.location.reload()}
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
           >
             Reload Page
@@ -200,7 +223,7 @@ const MappackerStyleMap: React.FC<MappackerStyleMapProps> = ({
               {visitedCount} {visitedCount === 1 ? 'country' : 'countries'} visited
             </div>
             <button
-              onClick={() => setShowList(!showList)}
+              onClick={(): void => setShowList(!showList)}
               className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
             >
               {showList ? 'Hide List' : 'Show List'}
@@ -226,7 +249,7 @@ const MappackerStyleMap: React.FC<MappackerStyleMapProps> = ({
 
                 {/* Countries */}
                 <g>
-                  {countries.map((country, idx) => {
+                  {countries.map((country, idx): React.JSX.Element | null => {
                     const countryCode = country.properties.iso_a2;
                     const isHovered = hoveredCountry === countryCode;
 
@@ -246,9 +269,9 @@ const MappackerStyleMap: React.FC<MappackerStyleMapProps> = ({
                           stroke="#FFFFFF"
                           strokeWidth={1}
                           className="cursor-pointer transition-colors duration-150"
-                          onClick={() => onCountryClick(countryCode)}
-                          onMouseEnter={() => setHoveredCountry(countryCode)}
-                          onMouseLeave={() => setHoveredCountry(null)}
+                          onClick={(): void => onCountryClick(countryCode)}
+                          onMouseEnter={(): void => setHoveredCountry(countryCode)}
+                          onMouseLeave={(): void => setHoveredCountry(null)}
                         />
                       );
                     } catch (err) {
@@ -260,14 +283,14 @@ const MappackerStyleMap: React.FC<MappackerStyleMapProps> = ({
               </svg>
 
               {/* Hover info */}
-              {hoveredCountry && (
+              {hoveredCountry !== null && (
                 <div className="mt-4 text-center">
                   <div className="inline-block bg-gray-100 rounded px-4 py-2">
                     <p className="text-lg font-medium text-gray-900">
-                      {countries.find(c => c.properties.iso_a2 === hoveredCountry)?.properties.name}
+                      {countries.find((c): boolean => c.properties.iso_a2 === hoveredCountry)?.properties.name}
                     </p>
                     <p className="text-sm text-gray-600">
-                      {visitedCountries[hoveredCountry]
+                      {visitedCountries[hoveredCountry] !== undefined
                         ? `✓ ${visitedCountries[hoveredCountry].charAt(0).toUpperCase() + visitedCountries[hoveredCountry].slice(1)}`
                         : 'Click to mark as visited'
                       }
@@ -284,21 +307,21 @@ const MappackerStyleMap: React.FC<MappackerStyleMapProps> = ({
               <div className="bg-white rounded-lg border border-gray-200 p-4 sticky top-6 max-h-[calc(100vh-8rem)] overflow-y-auto">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Countries</h3>
                 <div className="space-y-1">
-                  {countries.map((country, idx) => {
+                  {countries.map((country, idx): React.JSX.Element => {
                     const countryCode = country.properties.iso_a2;
-                    const isVisited = !!visitedCountries[countryCode];
+                    const isVisited = Boolean(visitedCountries[countryCode]);
 
                     return (
                       <label
                         key={`${country.id}-${idx}`}
                         className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer transition-colors"
-                        onMouseEnter={() => setHoveredCountry(countryCode)}
-                        onMouseLeave={() => setHoveredCountry(null)}
+                        onMouseEnter={(): void => setHoveredCountry(countryCode)}
+                        onMouseLeave={(): void => setHoveredCountry(null)}
                       >
                         <input
                           type="checkbox"
                           checked={isVisited}
-                          onChange={() => onCountryClick(countryCode)}
+                          onChange={(): void => onCountryClick(countryCode)}
                           className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
                         />
                         <span className="text-sm text-gray-700">

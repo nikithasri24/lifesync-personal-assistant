@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /**
  * LeafletTravelMap - Full-featured interactive map using OpenStreetMap tiles
  * Shows cities, states, roads, and all geographic details with zoom levels
@@ -12,7 +13,7 @@ import 'leaflet/dist/leaflet.css';
 import type { VisitStatus } from '../types';
 
 // Component to track zoom level
-function ZoomTracker({ onZoomChange }: { onZoomChange: (zoom: number) => void }) {
+function ZoomTracker({ onZoomChange }: { onZoomChange: (zoom: number) => void }): null {
   const map = useMapEvents({
     zoomend: () => {
       onZoomChange(map.getZoom());
@@ -22,6 +23,7 @@ function ZoomTracker({ onZoomChange }: { onZoomChange: (zoom: number) => void })
 }
 
 // Fix Leaflet default marker icon issue
+// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
@@ -44,7 +46,37 @@ interface CountryFeature {
     iso_a2: string;
     iso_a3: string;
   };
-  geometry: any;
+  geometry: unknown;
+}
+
+interface StateFeature {
+  type: 'Feature';
+  id?: string;
+  properties: {
+    name?: string;
+    NAME?: string;
+    iso_3166_2?: string;
+    code_hasc?: string;
+    iso_a2?: string;
+    adm0_a3?: string;
+  };
+  geometry: unknown;
+}
+
+interface GeoJSONData {
+  features?: Array<{
+    id?: string;
+    properties?: {
+      ISO_A2?: string;
+      iso_a2?: string;
+      ISO_A3?: string;
+      iso_a3?: string;
+      NAME?: string;
+      name?: string;
+      ADMIN?: string;
+    };
+    geometry?: unknown;
+  }>;
 }
 
 const LeafletTravelMap: React.FC<LeafletTravelMapProps> = ({
@@ -54,7 +86,7 @@ const LeafletTravelMap: React.FC<LeafletTravelMapProps> = ({
   onStateClick,
 }) => {
   const [countries, setCountries] = React.useState<CountryFeature[]>([]);
-  const [states, setStates] = React.useState<any[]>([]);
+  const [states, setStates] = React.useState<StateFeature[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [loadingStates, setLoadingStates] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -65,6 +97,7 @@ const LeafletTravelMap: React.FC<LeafletTravelMapProps> = ({
   React.useEffect(() => {
     logger.info('LeafletTravelMap', '🗺️ LeafletTravelMap mounted');
     logger.info('LeafletTravelMap', 'Visited states:', visitedStates);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Update zoom ref when zoom changes
@@ -74,7 +107,7 @@ const LeafletTravelMap: React.FC<LeafletTravelMapProps> = ({
 
   // Load countries data
   React.useEffect(() => {
-    const loadMapData = async () => {
+    const loadMapData = async (): Promise<void> => {
       try {
         setLoading(true);
         const response = await fetch(
@@ -85,21 +118,21 @@ const LeafletTravelMap: React.FC<LeafletTravelMapProps> = ({
           throw new Error(`Failed to fetch map data: ${response.status}`);
         }
 
-        const geoJsonData: any = await response.json();
+        const geoJsonData = await response.json() as GeoJSONData;
 
         if (!geoJsonData?.features) {
           throw new Error('Invalid GeoJSON data');
         }
 
         const countryFeatures = geoJsonData.features
-          .map((f: any) => {
-            const iso_a2 = f.properties?.ISO_A2 || f.properties?.iso_a2 || '';
-            const iso_a3 = f.properties?.ISO_A3 || f.properties?.iso_a3 || '';
-            const name = f.properties?.NAME || f.properties?.name || f.properties?.ADMIN || 'Unknown';
+          .map((f) => {
+            const iso_a2 = f.properties?.ISO_A2 ?? f.properties?.iso_a2 ?? '';
+            const iso_a3 = f.properties?.ISO_A3 ?? f.properties?.iso_a3 ?? '';
+            const name = f.properties?.NAME ?? f.properties?.name ?? f.properties?.ADMIN ?? 'Unknown';
 
             return {
               type: 'Feature' as const,
-              id: f.id || iso_a2 || `country-${Math.random()}`,
+              id: f.id ?? iso_a2 ?? `country-${Math.random()}`,
               properties: {
                 name: name,
                 iso_a2: iso_a2,
@@ -108,11 +141,12 @@ const LeafletTravelMap: React.FC<LeafletTravelMapProps> = ({
               geometry: f.geometry,
             };
           })
-          .filter((f: any) => {
+          .filter((f): f is CountryFeature => {
             const hasValidCode =
               f.properties.iso_a2 && f.properties.iso_a2.length === 2 && f.properties.iso_a2 !== '-99';
             const hasValidGeometry =
-              f.geometry && (f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon');
+              f.geometry && (typeof f.geometry === 'object' && f.geometry !== null &&
+                ('type' in f.geometry && (f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon')));
             return hasValidCode && hasValidGeometry;
           });
 
@@ -127,12 +161,12 @@ const LeafletTravelMap: React.FC<LeafletTravelMapProps> = ({
       }
     };
 
-    loadMapData();
+    void loadMapData();
   }, []);
 
   // Load state/province boundaries
   React.useEffect(() => {
-    const loadStateData = async () => {
+    const loadStateData = async (): Promise<void> => {
       if (loadingStates || states.length > 0) {
         logger.info('LeafletTravelMap', 'Skipping state load:', { loadingStates, statesCount: states.length });
         return;
@@ -146,9 +180,9 @@ const LeafletTravelMap: React.FC<LeafletTravelMapProps> = ({
         );
 
         if (response.ok) {
-          const data = await response.json();
-          setStates(data.features || []);
-          logger.debug('LeafletTravelMap', `✅ Loaded ${data.features?.length || 0} state/province boundaries`);
+          const data = await response.json() as { features?: StateFeature[] };
+          setStates(data.features ?? []);
+          logger.debug('LeafletTravelMap', `✅ Loaded ${data.features?.length ?? 0} state/province boundaries`);
           if (data.features && data.features.length > 0) {
             logger.info('LeafletTravelMap', 'Sample state:', data.features[0].properties);
           }
@@ -166,13 +200,13 @@ const LeafletTravelMap: React.FC<LeafletTravelMapProps> = ({
     logger.info('LeafletTravelMap', 'Current zoom level:', currentZoom);
     if (currentZoom >= 5) {
       logger.info('LeafletTravelMap', 'Zoom level >= 5, loading states...');
-      loadStateData();
+      void loadStateData();
     } else {
       logger.info('LeafletTravelMap', 'Zoom level < 5, not loading states yet');
     }
   }, [currentZoom, loadingStates, states.length]);
 
-  const getCountryStyle = (countryCode: string, isHovered: boolean = false) => {
+  const getCountryStyle = (countryCode: string, isHovered: boolean = false): L.PathOptions => {
     const hasVisited = visitedCountries[countryCode];
 
     if (isHovered) {
@@ -192,7 +226,7 @@ const LeafletTravelMap: React.FC<LeafletTravelMapProps> = ({
     };
   };
 
-  const getStateStyle = (stateCode: string, isHovered: boolean = false) => {
+  const getStateStyle = (stateCode: string, isHovered: boolean = false): L.PathOptions => {
     const hasVisited = visitedStates[stateCode];
 
     if (isHovered) {
@@ -213,9 +247,9 @@ const LeafletTravelMap: React.FC<LeafletTravelMapProps> = ({
     };
   };
 
-  const onEachCountry = (feature: any, layer: L.Layer) => {
-    const countryCode = feature.properties.iso_a2;
-    const countryName = feature.properties.name;
+  const onEachCountry = (feature: GeoJSON.Feature, layer: L.Layer): void => {
+    const countryCode = (feature.properties as { iso_a2: string }).iso_a2;
+    const countryName = (feature.properties as { name: string }).name;
 
     // Style the country
     if (layer instanceof L.Path) {
@@ -235,13 +269,13 @@ const LeafletTravelMap: React.FC<LeafletTravelMapProps> = ({
     // Event handlers
     layer.on({
       mouseover: (e: L.LeafletMouseEvent) => {
-        const target = e.target;
+        const target = e.target as L.Layer;
         if (target instanceof L.Path) {
           target.setStyle(getCountryStyle(countryCode, true));
         }
       },
       mouseout: (e: L.LeafletMouseEvent) => {
-        const target = e.target;
+        const target = e.target as L.Layer;
         if (target instanceof L.Path) {
           target.setStyle(getCountryStyle(countryCode, false));
         }
@@ -259,10 +293,19 @@ const LeafletTravelMap: React.FC<LeafletTravelMapProps> = ({
     });
   };
 
-  const onEachState = (feature: any, layer: L.Layer) => {
-    const stateName = feature.properties.name || feature.properties.NAME;
-    const stateCode = feature.properties.iso_3166_2 || feature.properties.code_hasc;
-    const countryCode = feature.properties.iso_a2 || feature.properties.adm0_a3;
+  const onEachState = (feature: GeoJSON.Feature, layer: L.Layer): void => {
+    const props = feature.properties as {
+      name?: string;
+      NAME?: string;
+      iso_3166_2?: string;
+      code_hasc?: string;
+      iso_a2?: string;
+      adm0_a3?: string;
+    };
+
+    const stateName = props.name ?? props.NAME;
+    const stateCode = props.iso_3166_2 ?? props.code_hasc;
+    const countryCode = props.iso_a2 ?? props.adm0_a3;
 
     if (!stateCode) {
       logger.info('LeafletTravelMap', 'State without code:', feature.properties);
@@ -279,7 +322,7 @@ const LeafletTravelMap: React.FC<LeafletTravelMapProps> = ({
     // Bind popup
     layer.bindPopup(`
       <div class="p-2">
-        <h3 class="font-semibold text-gray-900">${stateName}</h3>
+        <h3 class="font-semibold text-gray-900">${stateName ?? 'Unknown'}</h3>
         <p class="text-sm text-gray-600">
           ${visitedStates[stateCode] ? `✓ ${visitedStates[stateCode]}` : 'Click to mark as visited'}
         </p>
@@ -289,13 +332,13 @@ const LeafletTravelMap: React.FC<LeafletTravelMapProps> = ({
     // Event handlers
     layer.on({
       mouseover: (e: L.LeafletMouseEvent) => {
-        const target = e.target;
+        const target = e.target as L.Layer;
         if (target instanceof L.Path) {
           target.setStyle(getStateStyle(stateCode, true));
         }
       },
       mouseout: (e: L.LeafletMouseEvent) => {
-        const target = e.target;
+        const target = e.target as L.Layer;
         if (target instanceof L.Path) {
           target.setStyle(getStateStyle(stateCode, false));
         }
@@ -303,7 +346,7 @@ const LeafletTravelMap: React.FC<LeafletTravelMapProps> = ({
       click: (e: L.LeafletMouseEvent) => {
         L.DomEvent.stopPropagation(e);
         logger.info('LeafletTravelMap', '🎯 State clicked:', { stateName, stateCode, countryCode });
-        if (onStateClick) {
+        if (onStateClick && countryCode) {
           logger.info('LeafletTravelMap', 'Calling onStateClick...');
           onStateClick(stateCode, countryCode);
         } else {

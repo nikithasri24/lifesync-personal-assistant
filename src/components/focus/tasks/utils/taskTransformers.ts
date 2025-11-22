@@ -13,7 +13,7 @@ export const transformTaskToView = (
   focusAggregate: Map<string, { duration: number; sessions: string[] }>
 ): TaskView => {
   const aggregate = focusAggregate.get(todo.id);
-  const subtasks: SubTask[] = (todo.subtasks || []).map((sub) => ({
+  const subtasks: SubTask[] = (todo.subtasks ?? []).map((sub) => ({
     id: sub.id,
     title: sub.title,
     completed: sub.completed ?? sub.status === 'done',
@@ -47,8 +47,8 @@ export const transformProjectToView = (
   tasks: TaskView[]
 ): ProjectView => {
   const associatedTasks = tasks.filter(task => task.projectId === project.id);
-  const totalEstimatedMinutes = associatedTasks.reduce((sum, task) => sum + (task.estimatedTime || 0), 0);
-  const totalActualMinutes = associatedTasks.reduce((sum, task) => sum + (task.actualTime || 0), 0);
+  const totalEstimatedMinutes = associatedTasks.reduce((sum, task) => sum + (task.estimatedTime ?? 0), 0);
+  const totalActualMinutes = associatedTasks.reduce((sum, task) => sum + (task.actualTime ?? 0), 0);
   const completedTasks = associatedTasks.filter(task => task.status === 'completed').length;
   const progress = associatedTasks.length > 0 ? (completedTasks / associatedTasks.length) * 100 : 0;
 
@@ -56,15 +56,15 @@ export const transformProjectToView = (
     id: project.id,
     name: project.name,
     description: project.description,
-    color: project.color || '#6366f1',
-    status: project.status === 'on_hold' ? 'on-hold' : (project.status as ProjectView['status']) || 'active',
+    color: project.color ?? '#6366f1',
+    status: project.status === 'on_hold' ? 'on-hold' : (project.status as ProjectView['status']) ?? 'active',
     startDate: undefined,
     endDate: undefined,
     estimatedHours: Math.round((totalEstimatedMinutes / 60) * 10) / 10,
     actualHours: Math.round((totalActualMinutes / 60) * 10) / 10,
     tasks: associatedTasks.map(task => task.id),
     progress,
-    icon: (project as any).icon ?? '📁',
+    icon: project.icon ?? '📁',
     category: undefined
   };
 };
@@ -75,16 +75,19 @@ export const buildFocusAggregate = (
   const map = new Map<string, { duration: number; sessions: string[] }>();
 
   storeFocusSessions.forEach((session: StoreFocusSession) => {
-    if (!session.todoId && !session.taskId) {
+    // Type guard to check for taskId property
+    const sessionWithTaskId = session as StoreFocusSession & { taskId?: string };
+
+    if (!session.todoId && !sessionWithTaskId.taskId) {
       return;
     }
-    const taskId = session.todoId || (session as any).taskId;
+    const taskId: string | undefined = session.todoId ?? sessionWithTaskId.taskId;
     if (!taskId) {
       return;
     }
 
-    const entry = map.get(taskId) || { duration: 0, sessions: [] };
-    const sessionDuration = session.actualDuration ?? session.duration ?? 0;
+    const entry: { duration: number; sessions: string[] } = map.get(taskId) ?? { duration: 0, sessions: [] };
+    const sessionDuration: number = session.actualDuration ?? session.duration ?? 0;
     entry.duration += sessionDuration;
     entry.sessions.push(session.id);
     map.set(taskId, entry);

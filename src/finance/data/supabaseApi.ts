@@ -27,6 +27,244 @@ import type { FinanceAPI } from './api';
 import { validateGoalInput, validateTransactionInput } from '../utils/validate';
 import { logger } from '../../services/logger';
 
+// Database row type definitions
+interface InstitutionRow {
+  id: string;
+  name: string;
+  logo_url: string | null;
+}
+
+interface AccountRow {
+  id: string;
+  name: string;
+  type: string;
+  balance: string | number;
+  liability: boolean;
+  last_updated: string;
+  institution_id: string | null;
+  credit_limit: string | number | null;
+  apr: string | number | null;
+  payment_due_day: number | null;
+  minimum_payment: string | number | null;
+  statement_balance: string | number | null;
+  statement_date: string | null;
+  annual_fee: string | number | null;
+  annual_fee_due_date: string | null;
+  rewards_balance: string | number | null;
+  rewards_type: string | null;
+  base_rewards_rate: string | number | null;
+}
+
+interface TransactionRow {
+  id: string;
+  account_id: string;
+  date: string;
+  description: string;
+  category_id: string | null;
+  amount: string | number;
+  type: string;
+  notes: string | null;
+  merchant_name: string | null;
+  confidence_score: string | number | null;
+  suggested_category_id: string | null;
+  categorization_rule_id: string | null;
+}
+
+interface BudgetRow {
+  id: string;
+  category_id: string;
+  month: string;
+  limit_amount: string | number;
+}
+
+interface BudgetTemplateRow {
+  id: string;
+  category_id: string;
+  default_amount: string | number;
+}
+
+interface CategoryRow {
+  id: string;
+  name: string;
+  parent_id: string | null;
+  icon: string | null;
+  color: string | null;
+}
+
+interface NetWorthRow {
+  month: string;
+  assets: string | number;
+  liabilities: string | number;
+}
+
+interface GoalRow {
+  id: string;
+  name: string;
+  target_amount: string | number;
+  current_amount: string | number;
+  starting_amount: string | number | null;
+  due_date: string;
+  type: string;
+  linked_category_id: string | null;
+  linked_account_id: string | null;
+  track_networth: boolean | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+interface GoalProgressRow {
+  recorded_at: string;
+  amount: string | number;
+  note: string | null;
+}
+
+interface CardBenefitRow {
+  id: string;
+  account_id: string;
+  benefit_type: string;
+  name: string;
+  description: string | null;
+  value: string | number | null;
+  frequency: string | null;
+  used_amount: string | number;
+  reset_date: string | null;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+interface CardCategoryBonusRow {
+  id: string;
+  account_id: string;
+  category: string;
+  rewards_rate: string | number;
+  is_rotating: boolean;
+  start_date: string | null;
+  end_date: string | null;
+  created_at: string;
+}
+
+interface WelcomeBonusRow {
+  id: string;
+  account_id: string;
+  bonus_amount: string | number;
+  required_spend: string | number;
+  current_spend: string | number;
+  deadline: string;
+  completed: boolean;
+  completed_date: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface CardOfferRow {
+  id: string;
+  account_id: string;
+  merchant: string;
+  offer_type: string;
+  offer_amount: string | number;
+  required_spend: string | number | null;
+  expiration_date: string | null;
+  activated: boolean;
+  activated_date: string | null;
+  redeemed: boolean;
+  redeemed_date: string | null;
+  created_at: string;
+}
+
+interface TransactionUpdateRow {
+  user_id: string;
+  account_id: string;
+  date: string;
+  description: string;
+  category_id: string | null;
+  amount: number;
+  type: string;
+  notes: string | null;
+  merchant_name: string;
+  id?: string;
+}
+
+interface BudgetUpdateRow {
+  user_id: string;
+  category_id: string;
+  month: string;
+  limit_amount: number;
+}
+
+interface BudgetTemplateUpdateRow {
+  user_id: string;
+  category_id: string;
+  default_amount: number;
+  id?: string;
+}
+
+interface GoalUpdateRow {
+  user_id: string;
+  name: string;
+  target_amount: number;
+  current_amount: number;
+  starting_amount: number;
+  due_date: string;
+  type: string;
+  linked_category_id: string | null;
+  linked_account_id: string | null;
+  track_networth: boolean;
+  id?: string;
+}
+
+interface CardBenefitUpdateRow {
+  user_id: string;
+  account_id: string;
+  benefit_type: string;
+  name: string;
+  description: string | undefined;
+  value: number | undefined;
+  frequency: string | undefined;
+  used_amount: number | undefined;
+  reset_date: string | undefined;
+  active: boolean | undefined;
+  id?: string;
+}
+
+interface CardCategoryBonusUpdateRow {
+  user_id: string;
+  account_id: string;
+  category: string;
+  rewards_rate: number;
+  is_rotating: boolean;
+  start_date: string | undefined;
+  end_date: string | undefined;
+  id?: string;
+}
+
+interface WelcomeBonusUpdateRow {
+  user_id: string;
+  account_id: string;
+  bonus_amount: number;
+  required_spend: number;
+  current_spend: number;
+  deadline: string;
+  completed: boolean;
+  completed_date: string | undefined;
+  id?: string;
+}
+
+interface CardOfferUpdateRow {
+  user_id: string;
+  account_id: string;
+  merchant: string;
+  offer_type: string;
+  offer_amount: number;
+  required_spend: number | undefined;
+  expiration_date: string | undefined;
+  activated: boolean;
+  activated_date: string | undefined;
+  redeemed: boolean;
+  redeemed_date: string | undefined;
+  id?: string;
+}
+
 async function getUid(client: SupabaseClient): Promise<string> {
   const { data, error } = await client.auth.getUser();
   if (error) throw error;
@@ -49,7 +287,7 @@ export class SupabaseApi implements FinanceAPI {
       .select('id,name,logo_url')
       .eq('user_id', uid);
     if (error) throw error;
-    return (data ?? []).map((r: any) => ({ id: r.id, name: r.name, logoUrl: r.logo_url ?? undefined }));
+    return (data ?? []).map((r: InstitutionRow) => ({ id: r.id, name: r.name, logoUrl: r.logo_url ?? undefined }));
   }
 
   async updateAccount(accountId: string, updates: Partial<Account>): Promise<void> {
@@ -75,7 +313,7 @@ export class SupabaseApi implements FinanceAPI {
       .select('id,name,type,balance,liability,last_updated,institution_id,credit_limit,apr,payment_due_day,minimum_payment,statement_balance,statement_date,annual_fee,annual_fee_due_date,rewards_balance,rewards_type,base_rewards_rate')
       .eq('user_id', uid);
     if (error) throw error;
-    return (data ?? []).map((r: any) => ({
+    return (data ?? []).map((r: AccountRow) => ({
       id: r.id,
       name: r.name,
       type: r.type,
@@ -110,7 +348,7 @@ export class SupabaseApi implements FinanceAPI {
     if (params.cursor) q = q.lt('id', params.cursor); // simple keyset; assumes uuid sort by date desc not ideal
     const { data, error } = await q;
     if (error) throw error;
-    const items = (data ?? []).map((r: any) => ({
+    const items = (data ?? []).map((r: TransactionRow) => ({
       id: r.id,
       accountId: r.account_id,
       dateISO: new Date(r.date).toISOString(),
@@ -135,8 +373,7 @@ export class SupabaseApi implements FinanceAPI {
     // Extract merchant name from description
     const merchantName = this.extractMerchantName(txn.description);
 
-    const row: any = {
-      id: txn.id,
+    const row: TransactionUpdateRow = {
       user_id: uid,
       account_id: txn.accountId,
       date: txn.dateISO,
@@ -147,6 +384,9 @@ export class SupabaseApi implements FinanceAPI {
       notes: txn.notes ?? null,
       merchant_name: merchantName,
     };
+    if (txn.id) {
+      row.id = txn.id;
+    }
     const { error } = await this.client.from('transactions').upsert(row).select('id').single();
     if (error) throw error;
   }
@@ -218,7 +458,7 @@ export class SupabaseApi implements FinanceAPI {
       .eq('month', monthDate);
 
     if (error) throw error;
-    return (data ?? []).map((r: any) => ({
+    return (data ?? []).map((r: BudgetRow) => ({
       id: r.id,
       categoryId: r.category_id,
       month: r.month,
@@ -258,7 +498,7 @@ export class SupabaseApi implements FinanceAPI {
      *
      * UNIQUE constraint on (user_id, category_id, month)
      */
-    const row: any = {
+    const row: BudgetUpdateRow = {
       user_id: uid,
       category_id: budget.categoryId,
       month: monthDate,
@@ -318,7 +558,7 @@ export class SupabaseApi implements FinanceAPI {
       .select('id,category_id,default_amount')
       .eq('user_id', uid);
     if (error) throw error;
-    return (data ?? []).map((r: any) => ({
+    return (data ?? []).map((r: BudgetTemplateRow) => ({
       id: r.id,
       categoryId: r.category_id,
       defaultAmount: Number(r.default_amount),
@@ -336,12 +576,15 @@ export class SupabaseApi implements FinanceAPI {
       throw new Error('Default amount must be a positive number');
     }
 
-    const row: any = {
-      id: template.id,
+    const row: BudgetTemplateUpdateRow = {
       user_id: uid,
       category_id: template.categoryId,
       default_amount: template.defaultAmount,
     };
+
+    if (template.id) {
+      row.id = template.id;
+    }
 
     const { error } = await this.client
       .from('budget_templates')
@@ -391,17 +634,17 @@ export class SupabaseApi implements FinanceAPI {
     }
 
     // Call the database function to initialize budgets from templates
-    const { data, error } = await this.client.rpc('initialize_budgets_from_templates', {
+    const result = await this.client.rpc('initialize_budgets_from_templates', {
       p_user_id: uid,
       p_month: monthDate,
     });
 
-    if (error) {
-      logger.error('Initialize budgets from templates error:', { error });
-      throw new Error(`Failed to initialize budgets: ${error.message}`);
+    if (result.error) {
+      logger.error('Initialize budgets from templates error:', { error: result.error });
+      throw new Error(`Failed to initialize budgets: ${result.error.message}`);
     }
 
-    return Number(data ?? 0);
+    return Number(result.data ?? 0);
   }
 
   async listCategories(): Promise<Category[]> {
@@ -411,7 +654,7 @@ export class SupabaseApi implements FinanceAPI {
       .select('id,name,parent_id,icon,color')
       .eq('user_id', uid);
     if (error) throw error;
-    return (data ?? []).map((r: any) => ({ id: r.id, name: r.name, parentId: r.parent_id ?? undefined, icon: r.icon ?? undefined, color: r.color ?? undefined }));
+    return (data ?? []).map((r: CategoryRow) => ({ id: r.id, name: r.name, parentId: r.parent_id ?? undefined, icon: r.icon ?? undefined, color: r.color ?? undefined }));
   }
 
   async listNetWorth(): Promise<NetPoint[]> {
@@ -422,7 +665,7 @@ export class SupabaseApi implements FinanceAPI {
       .eq('user_id', uid)
       .order('month', { ascending: true });
     if (error) throw error;
-    return (data ?? []).map((r: any) => ({ month: r.month, assets: Number(r.assets), liabilities: Number(r.liabilities) }));
+    return (data ?? []).map((r: NetWorthRow) => ({ month: r.month, assets: Number(r.assets), liabilities: Number(r.liabilities) }));
   }
 
   async listGoals(): Promise<Goal[]> {
@@ -432,7 +675,7 @@ export class SupabaseApi implements FinanceAPI {
       .select('id,name,target_amount,current_amount,starting_amount,due_date,type,linked_category_id,linked_account_id,track_networth,created_at,updated_at')
       .eq('user_id', uid);
     if (error) throw error;
-    return (data ?? []).map((r: any) => ({
+    return (data ?? []).map((r: GoalRow) => ({
       id: r.id,
       name: r.name,
       targetAmount: Number(r.target_amount),
@@ -451,8 +694,7 @@ export class SupabaseApi implements FinanceAPI {
   async upsertGoal(goal: GoalInput): Promise<void> {
     goal = await validateGoalInput(goal);
     const uid = await getUid(this.client);
-    const row: any = {
-      id: goal.id,
+    const row: GoalUpdateRow = {
       user_id: uid,
       name: goal.name,
       target_amount: goal.targetAmount,
@@ -464,6 +706,9 @@ export class SupabaseApi implements FinanceAPI {
       linked_account_id: goal.linkedAccountId ?? null,
       track_networth: goal.trackNetworth ?? false,
     };
+    if (goal.id) {
+      row.id = goal.id;
+    }
     const { error } = await this.client.from('goals').upsert(row).select('id').single();
     if (error) throw error;
   }
@@ -487,7 +732,7 @@ export class SupabaseApi implements FinanceAPI {
       .eq('user_id', uid)
       .order('recorded_at', { ascending: true });
     if (error) throw error;
-    return (data ?? []).map((r: any) => ({
+    return (data ?? []).map((r: GoalProgressRow) => ({
       dateISO: new Date(r.recorded_at).toISOString(),
       amount: Number(r.amount),
       note: r.note ?? undefined,
@@ -511,7 +756,7 @@ export class SupabaseApi implements FinanceAPI {
       .eq('account_id', accountId)
       .order('created_at', { ascending: false });
     if (error) throw error;
-    return (data ?? []).map((r: any) => ({
+    return (data ?? []).map((r: CardBenefitRow) => ({
       id: r.id,
       accountId: r.account_id,
       benefitType: r.benefit_type,
@@ -529,7 +774,7 @@ export class SupabaseApi implements FinanceAPI {
 
   async upsertCardBenefit(accountId: string, benefit: CardBenefitInput): Promise<void> {
     const uid = await getUid(this.client);
-    const row: any = {
+    const row: CardBenefitUpdateRow = {
       user_id: uid,
       account_id: accountId,
       benefit_type: benefit.benefitType,
@@ -541,7 +786,9 @@ export class SupabaseApi implements FinanceAPI {
       reset_date: benefit.resetDate,
       active: benefit.active,
     };
-    if (benefit.id) row.id = benefit.id;
+    if (benefit.id) {
+      row.id = benefit.id;
+    }
 
     const { error } = await this.client.from('card_benefits').upsert(row);
     if (error) throw error;
@@ -566,7 +813,7 @@ export class SupabaseApi implements FinanceAPI {
       .eq('account_id', accountId)
       .order('rewards_rate', { ascending: false });
     if (error) throw error;
-    return (data ?? []).map((r: any) => ({
+    return (data ?? []).map((r: CardCategoryBonusRow) => ({
       id: r.id,
       accountId: r.account_id,
       category: r.category,
@@ -580,7 +827,7 @@ export class SupabaseApi implements FinanceAPI {
 
   async upsertCategoryBonus(accountId: string, bonus: CardCategoryBonusInput): Promise<void> {
     const uid = await getUid(this.client);
-    const row: any = {
+    const row: CardCategoryBonusUpdateRow = {
       user_id: uid,
       account_id: accountId,
       category: bonus.category,
@@ -589,7 +836,9 @@ export class SupabaseApi implements FinanceAPI {
       start_date: bonus.startDate,
       end_date: bonus.endDate,
     };
-    if (bonus.id) row.id = bonus.id;
+    if (bonus.id) {
+      row.id = bonus.id;
+    }
 
     const { error } = await this.client.from('card_category_bonuses').upsert(row);
     if (error) throw error;
@@ -604,7 +853,7 @@ export class SupabaseApi implements FinanceAPI {
       .eq('account_id', accountId)
       .order('deadline', { ascending: true });
     if (error) throw error;
-    return (data ?? []).map((r: any) => ({
+    return (data ?? []).map((r: WelcomeBonusRow) => ({
       id: r.id,
       accountId: r.account_id,
       bonusAmount: Number(r.bonus_amount),
@@ -620,7 +869,7 @@ export class SupabaseApi implements FinanceAPI {
 
   async upsertWelcomeBonus(accountId: string, bonus: WelcomeBonusInput): Promise<void> {
     const uid = await getUid(this.client);
-    const row: any = {
+    const row: WelcomeBonusUpdateRow = {
       user_id: uid,
       account_id: accountId,
       bonus_amount: bonus.bonusAmount,
@@ -630,7 +879,9 @@ export class SupabaseApi implements FinanceAPI {
       completed: bonus.completed,
       completed_date: bonus.completedDate,
     };
-    if (bonus.id) row.id = bonus.id;
+    if (bonus.id) {
+      row.id = bonus.id;
+    }
 
     const { error } = await this.client.from('card_welcome_bonuses').upsert(row);
     if (error) throw error;
@@ -645,7 +896,7 @@ export class SupabaseApi implements FinanceAPI {
       .eq('account_id', accountId)
       .order('created_at', { ascending: false });
     if (error) throw error;
-    return (data ?? []).map((r: any) => ({
+    return (data ?? []).map((r: CardOfferRow) => ({
       id: r.id,
       accountId: r.account_id,
       merchant: r.merchant,
@@ -663,7 +914,7 @@ export class SupabaseApi implements FinanceAPI {
 
   async upsertCardOffer(accountId: string, offer: CardOfferInput): Promise<void> {
     const uid = await getUid(this.client);
-    const row: any = {
+    const row: CardOfferUpdateRow = {
       user_id: uid,
       account_id: accountId,
       merchant: offer.merchant,
@@ -676,7 +927,9 @@ export class SupabaseApi implements FinanceAPI {
       redeemed: offer.redeemed,
       redeemed_date: offer.redeemedDate,
     };
-    if (offer.id) row.id = offer.id;
+    if (offer.id) {
+      row.id = offer.id;
+    }
 
     const { error } = await this.client.from('card_offers').upsert(row);
     if (error) throw error;

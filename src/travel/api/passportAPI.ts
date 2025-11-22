@@ -5,13 +5,113 @@
 import { supabase } from '../../lib/supabase';
 import type { UserPassport, UserVisa } from '../types/visa';
 
+// Database row types (snake_case as stored in Supabase)
+interface UserPassportRow {
+  id: string;
+  user_id: string;
+  country_code: string;
+  country_name: string;
+  passport_number: string | null;
+  issue_date: string | null;
+  expiry_date: string | null;
+  is_primary: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+interface UserVisaRow {
+  id: string;
+  user_id: string;
+  country_code: string;
+  country_name: string;
+  visa_type: string;
+  issue_date: string | null;
+  expiry_date: string;
+  multiple_entry: boolean;
+  max_stay_days: number | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// Type guard functions
+function isUserPassportRow(data: unknown): data is UserPassportRow {
+  if (!data || typeof data !== 'object') return false;
+  const row = data as Record<string, unknown>;
+  return (
+    typeof row.id === 'string' &&
+    typeof row.user_id === 'string' &&
+    typeof row.country_code === 'string' &&
+    typeof row.country_name === 'string' &&
+    (row.passport_number === null || typeof row.passport_number === 'string') &&
+    (row.issue_date === null || typeof row.issue_date === 'string') &&
+    (row.expiry_date === null || typeof row.expiry_date === 'string') &&
+    typeof row.is_primary === 'boolean' &&
+    typeof row.created_at === 'string' &&
+    typeof row.updated_at === 'string'
+  );
+}
+
+function isUserVisaRow(data: unknown): data is UserVisaRow {
+  if (!data || typeof data !== 'object') return false;
+  const row = data as Record<string, unknown>;
+  return (
+    typeof row.id === 'string' &&
+    typeof row.user_id === 'string' &&
+    typeof row.country_code === 'string' &&
+    typeof row.country_name === 'string' &&
+    typeof row.visa_type === 'string' &&
+    (row.issue_date === null || typeof row.issue_date === 'string') &&
+    typeof row.expiry_date === 'string' &&
+    typeof row.multiple_entry === 'boolean' &&
+    (row.max_stay_days === null || typeof row.max_stay_days === 'number') &&
+    (row.notes === null || typeof row.notes === 'string') &&
+    typeof row.created_at === 'string' &&
+    typeof row.updated_at === 'string'
+  );
+}
+
+// Conversion functions
+function passportRowToUserPassport(row: UserPassportRow): UserPassport {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    countryCode: row.country_code,
+    countryName: row.country_name,
+    passportNumber: row.passport_number ?? undefined,
+    issueDate: row.issue_date ?? undefined,
+    expiryDate: row.expiry_date ?? undefined,
+    isPrimary: row.is_primary,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function visaRowToUserVisa(row: UserVisaRow): UserVisa {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    countryCode: row.country_code,
+    countryName: row.country_name,
+    visaType: row.visa_type,
+    issueDate: row.issue_date ?? undefined,
+    expiryDate: row.expiry_date,
+    multipleEntry: row.multiple_entry,
+    maxStayDays: row.max_stay_days ?? undefined,
+    notes: row.notes ?? undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
 // ========== PASSPORTS ==========
 
 /**
  * Get all passports for the current user
  */
 export async function getUserPassports(): Promise<UserPassport[]> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: authData } = await supabase.auth.getUser();
+  const { user } = authData;
   if (!user) throw new Error('Not authenticated');
 
   const { data, error } = await supabase
@@ -23,53 +123,35 @@ export async function getUserPassports(): Promise<UserPassport[]> {
 
   if (error) throw error;
 
-  return (data || []).map(p => ({
-    id: p.id,
-    userId: p.user_id,
-    countryCode: p.country_code,
-    countryName: p.country_name,
-    passportNumber: p.passport_number,
-    issueDate: p.issue_date,
-    expiryDate: p.expiry_date,
-    isPrimary: p.is_primary,
-    createdAt: p.created_at,
-    updatedAt: p.updated_at,
-  }));
+  const rows = data ?? [];
+  return rows
+    .filter((row): row is UserPassportRow => isUserPassportRow(row))
+    .map(passportRowToUserPassport);
 }
 
 /**
  * Get primary passport for the current user
  */
 export async function getPrimaryPassport(): Promise<UserPassport | null> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: authData } = await supabase.auth.getUser();
+  const { user } = authData;
   if (!user) throw new Error('Not authenticated');
 
-  const { data, error } = await supabase
+  const result = await supabase
     .from('user_passports')
     .select('*')
     .eq('user_id', user.id)
     .eq('is_primary', true)
     .single();
 
-  if (error) {
-    if (error.code === 'PGRST116') return null; // No rows returned
-    throw error;
+  if (result.error) {
+    if (result.error.code === 'PGRST116') return null; // No rows returned
+    throw result.error;
   }
 
-  if (!data) return null;
+  if (!result.data || !isUserPassportRow(result.data)) return null;
 
-  return {
-    id: data.id,
-    userId: data.user_id,
-    countryCode: data.country_code,
-    countryName: data.country_name,
-    passportNumber: data.passport_number,
-    issueDate: data.issue_date,
-    expiryDate: data.expiry_date,
-    isPrimary: data.is_primary,
-    createdAt: data.created_at,
-    updatedAt: data.updated_at,
-  };
+  return passportRowToUserPassport(result.data);
 }
 
 /**
@@ -83,7 +165,8 @@ export async function addPassport(passport: {
   expiryDate?: string;
   isPrimary: boolean;
 }): Promise<UserPassport> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: authData } = await supabase.auth.getUser();
+  const { user } = authData;
   if (!user) throw new Error('Not authenticated');
 
   // If setting as primary, unset other primary passports first
@@ -95,34 +178,26 @@ export async function addPassport(passport: {
       .eq('is_primary', true);
   }
 
-  const { data, error } = await supabase
+  const result = await supabase
     .from('user_passports')
     .insert({
       user_id: user.id,
       country_code: passport.countryCode,
       country_name: passport.countryName,
-      passport_number: passport.passportNumber,
-      issue_date: passport.issueDate,
-      expiry_date: passport.expiryDate,
+      passport_number: passport.passportNumber ?? null,
+      issue_date: passport.issueDate ?? null,
+      expiry_date: passport.expiryDate ?? null,
       is_primary: passport.isPrimary,
     })
     .select()
     .single();
 
-  if (error) throw error;
+  if (result.error) throw result.error;
+  if (!result.data || !isUserPassportRow(result.data)) {
+    throw new Error('Invalid passport data returned from database');
+  }
 
-  return {
-    id: data.id,
-    userId: data.user_id,
-    countryCode: data.country_code,
-    countryName: data.country_name,
-    passportNumber: data.passport_number,
-    issueDate: data.issue_date,
-    expiryDate: data.expiry_date,
-    isPrimary: data.is_primary,
-    createdAt: data.created_at,
-    updatedAt: data.updated_at,
-  };
+  return passportRowToUserPassport(result.data);
 }
 
 /**
@@ -132,7 +207,8 @@ export async function updatePassport(
   passportId: string,
   updates: Partial<Omit<UserPassport, 'id' | 'userId' | 'createdAt' | 'updatedAt'>>
 ): Promise<UserPassport> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: authData } = await supabase.auth.getUser();
+  const { user } = authData;
   if (!user) throw new Error('Not authenticated');
 
   // If setting as primary, unset other primary passports first
@@ -145,15 +221,15 @@ export async function updatePassport(
       .neq('id', passportId);
   }
 
-  const dbUpdates: any = {};
+  const dbUpdates: Partial<Omit<UserPassportRow, 'id' | 'user_id' | 'created_at' | 'updated_at'>> = {};
   if (updates.countryCode !== undefined) dbUpdates.country_code = updates.countryCode;
   if (updates.countryName !== undefined) dbUpdates.country_name = updates.countryName;
-  if (updates.passportNumber !== undefined) dbUpdates.passport_number = updates.passportNumber;
-  if (updates.issueDate !== undefined) dbUpdates.issue_date = updates.issueDate;
-  if (updates.expiryDate !== undefined) dbUpdates.expiry_date = updates.expiryDate;
+  if (updates.passportNumber !== undefined) dbUpdates.passport_number = updates.passportNumber ?? null;
+  if (updates.issueDate !== undefined) dbUpdates.issue_date = updates.issueDate ?? null;
+  if (updates.expiryDate !== undefined) dbUpdates.expiry_date = updates.expiryDate ?? null;
   if (updates.isPrimary !== undefined) dbUpdates.is_primary = updates.isPrimary;
 
-  const { data, error } = await supabase
+  const result = await supabase
     .from('user_passports')
     .update(dbUpdates)
     .eq('id', passportId)
@@ -161,27 +237,20 @@ export async function updatePassport(
     .select()
     .single();
 
-  if (error) throw error;
+  if (result.error) throw result.error;
+  if (!result.data || !isUserPassportRow(result.data)) {
+    throw new Error('Invalid passport data returned from database');
+  }
 
-  return {
-    id: data.id,
-    userId: data.user_id,
-    countryCode: data.country_code,
-    countryName: data.country_name,
-    passportNumber: data.passport_number,
-    issueDate: data.issue_date,
-    expiryDate: data.expiry_date,
-    isPrimary: data.is_primary,
-    createdAt: data.created_at,
-    updatedAt: data.updated_at,
-  };
+  return passportRowToUserPassport(result.data);
 }
 
 /**
  * Delete a passport
  */
 export async function deletePassport(passportId: string): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: authData } = await supabase.auth.getUser();
+  const { user } = authData;
   if (!user) throw new Error('Not authenticated');
 
   const { error } = await supabase
@@ -199,7 +268,8 @@ export async function deletePassport(passportId: string): Promise<void> {
  * Get all visas for the current user
  */
 export async function getUserVisas(): Promise<UserVisa[]> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: authData } = await supabase.auth.getUser();
+  const { user } = authData;
   if (!user) throw new Error('Not authenticated');
 
   const { data, error } = await supabase
@@ -210,27 +280,18 @@ export async function getUserVisas(): Promise<UserVisa[]> {
 
   if (error) throw error;
 
-  return (data || []).map(v => ({
-    id: v.id,
-    userId: v.user_id,
-    countryCode: v.country_code,
-    countryName: v.country_name,
-    visaType: v.visa_type,
-    issueDate: v.issue_date,
-    expiryDate: v.expiry_date,
-    multipleEntry: v.multiple_entry,
-    maxStayDays: v.max_stay_days,
-    notes: v.notes,
-    createdAt: v.created_at,
-    updatedAt: v.updated_at,
-  }));
+  const rows = data ?? [];
+  return rows
+    .filter((row): row is UserVisaRow => isUserVisaRow(row))
+    .map(visaRowToUserVisa);
 }
 
 /**
  * Get active (non-expired) visas for the current user
  */
 export async function getActiveVisas(): Promise<UserVisa[]> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: authData } = await supabase.auth.getUser();
+  const { user } = authData;
   if (!user) throw new Error('Not authenticated');
 
   const today = new Date().toISOString().split('T')[0];
@@ -244,20 +305,10 @@ export async function getActiveVisas(): Promise<UserVisa[]> {
 
   if (error) throw error;
 
-  return (data || []).map(v => ({
-    id: v.id,
-    userId: v.user_id,
-    countryCode: v.country_code,
-    countryName: v.country_name,
-    visaType: v.visa_type,
-    issueDate: v.issue_date,
-    expiryDate: v.expiry_date,
-    multipleEntry: v.multiple_entry,
-    maxStayDays: v.max_stay_days,
-    notes: v.notes,
-    createdAt: v.created_at,
-    updatedAt: v.updated_at,
-  }));
+  const rows = data ?? [];
+  return rows
+    .filter((row): row is UserVisaRow => isUserVisaRow(row))
+    .map(visaRowToUserVisa);
 }
 
 /**
@@ -273,41 +324,32 @@ export async function addVisa(visa: {
   maxStayDays?: number;
   notes?: string;
 }): Promise<UserVisa> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: authData } = await supabase.auth.getUser();
+  const { user } = authData;
   if (!user) throw new Error('Not authenticated');
 
-  const { data, error } = await supabase
+  const result = await supabase
     .from('user_visas')
     .insert({
       user_id: user.id,
       country_code: visa.countryCode,
       country_name: visa.countryName,
-      visa_type: visa.visaType,
-      issue_date: visa.issueDate,
+      visa_type: visa.visaType ?? '',
+      issue_date: visa.issueDate ?? null,
       expiry_date: visa.expiryDate,
       multiple_entry: visa.multipleEntry,
-      max_stay_days: visa.maxStayDays,
-      notes: visa.notes,
+      max_stay_days: visa.maxStayDays ?? null,
+      notes: visa.notes ?? null,
     })
     .select()
     .single();
 
-  if (error) throw error;
+  if (result.error) throw result.error;
+  if (!result.data || !isUserVisaRow(result.data)) {
+    throw new Error('Invalid visa data returned from database');
+  }
 
-  return {
-    id: data.id,
-    userId: data.user_id,
-    countryCode: data.country_code,
-    countryName: data.country_name,
-    visaType: data.visa_type,
-    issueDate: data.issue_date,
-    expiryDate: data.expiry_date,
-    multipleEntry: data.multiple_entry,
-    maxStayDays: data.max_stay_days,
-    notes: data.notes,
-    createdAt: data.created_at,
-    updatedAt: data.updated_at,
-  };
+  return visaRowToUserVisa(result.data);
 }
 
 /**
@@ -317,20 +359,21 @@ export async function updateVisa(
   visaId: string,
   updates: Partial<Omit<UserVisa, 'id' | 'userId' | 'createdAt' | 'updatedAt'>>
 ): Promise<UserVisa> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: authData } = await supabase.auth.getUser();
+  const { user } = authData;
   if (!user) throw new Error('Not authenticated');
 
-  const dbUpdates: any = {};
+  const dbUpdates: Partial<Omit<UserVisaRow, 'id' | 'user_id' | 'created_at' | 'updated_at'>> = {};
   if (updates.countryCode !== undefined) dbUpdates.country_code = updates.countryCode;
   if (updates.countryName !== undefined) dbUpdates.country_name = updates.countryName;
   if (updates.visaType !== undefined) dbUpdates.visa_type = updates.visaType;
-  if (updates.issueDate !== undefined) dbUpdates.issue_date = updates.issueDate;
+  if (updates.issueDate !== undefined) dbUpdates.issue_date = updates.issueDate ?? null;
   if (updates.expiryDate !== undefined) dbUpdates.expiry_date = updates.expiryDate;
   if (updates.multipleEntry !== undefined) dbUpdates.multiple_entry = updates.multipleEntry;
-  if (updates.maxStayDays !== undefined) dbUpdates.max_stay_days = updates.maxStayDays;
-  if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
+  if (updates.maxStayDays !== undefined) dbUpdates.max_stay_days = updates.maxStayDays ?? null;
+  if (updates.notes !== undefined) dbUpdates.notes = updates.notes ?? null;
 
-  const { data, error } = await supabase
+  const result = await supabase
     .from('user_visas')
     .update(dbUpdates)
     .eq('id', visaId)
@@ -338,29 +381,20 @@ export async function updateVisa(
     .select()
     .single();
 
-  if (error) throw error;
+  if (result.error) throw result.error;
+  if (!result.data || !isUserVisaRow(result.data)) {
+    throw new Error('Invalid visa data returned from database');
+  }
 
-  return {
-    id: data.id,
-    userId: data.user_id,
-    countryCode: data.country_code,
-    countryName: data.country_name,
-    visaType: data.visa_type,
-    issueDate: data.issue_date,
-    expiryDate: data.expiry_date,
-    multipleEntry: data.multiple_entry,
-    maxStayDays: data.max_stay_days,
-    notes: data.notes,
-    createdAt: data.created_at,
-    updatedAt: data.updated_at,
-  };
+  return visaRowToUserVisa(result.data);
 }
 
 /**
  * Delete a visa
  */
 export async function deleteVisa(visaId: string): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: authData } = await supabase.auth.getUser();
+  const { user } = authData;
   if (!user) throw new Error('Not authenticated');
 
   const { error } = await supabase

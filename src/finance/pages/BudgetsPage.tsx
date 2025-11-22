@@ -9,8 +9,11 @@ import {
   useCategoriesQuery,
   useBudgetTemplatesQuery,
   useInitializeBudgetsMutation,
+  useUpsertBudgetMutation,
+  useUpsertBudgetTemplateMutation,
+  useDeleteBudgetTemplateMutation,
 } from '../hooks/useFinanceQuery';
-import type { Budget } from '../types';
+import type { Budget, Transaction, Paginated } from '../types';
 import { MonthPicker } from '../components/MonthPicker';
 import BudgetCard from '../components/budgets/BudgetCard';
 import BudgetSummary, { type BudgetSummaryData } from '../components/budgets/BudgetSummary';
@@ -18,7 +21,7 @@ import BudgetEditor from '../components/budgets/BudgetEditor';
 import BudgetBulkEditor from '../components/budgets/BudgetBulkEditor';
 import BudgetTemplateManager from '../components/budgets/BudgetTemplateManager';
 import { getBudgetStatus } from '../components/budgets/BudgetProgressBar';
-import { calculateBudgetRecommendation } from '../utils/budgetRecommendations';
+import { calculateBudgetRecommendation, type BudgetRecommendation } from '../utils/budgetRecommendations';
 
 const BudgetsPage: React.FC = () => {
   const [month, setMonth] = React.useState(currentMonth());
@@ -34,38 +37,39 @@ const BudgetsPage: React.FC = () => {
   const { data: categories = [], isLoading: categoriesLoading } = useCategoriesQuery();
   const { data: templates = [], isLoading: templatesLoading } = useBudgetTemplatesQuery();
   const initializeBudgetsMutation = useInitializeBudgetsMutation();
+  const upsertBudgetMutation = useUpsertBudgetMutation();
+  const upsertBudgetTemplateMutation = useUpsertBudgetTemplateMutation();
+  const deleteBudgetTemplateMutation = useDeleteBudgetTemplateMutation();
 
-  const txns = transactionsData?.items || [];
+  const txns = React.useMemo<Transaction[]>(() => (transactionsData as Paginated<Transaction> | undefined)?.items ?? [], [transactionsData]);
   const budgets = budgetsData;
   const loading = txnsLoading || budgetsLoading || categoriesLoading || templatesLoading;
 
   // Calculate months from transactions
-  const months = React.useMemo(() => {
-    return Array.from(new Set(txns.map((t) => t.dateISO.slice(0, 7)))).sort().reverse();
+  const months = React.useMemo((): string[] => {
+    return Array.from(new Set(txns.map((t): string => t.dateISO.slice(0, 7)))).sort().reverse();
   }, [txns]);
 
   // Auto-initialize budgets from templates if this month has no budgets
   React.useEffect(() => {
     if (!budgetsLoading && budgets.length === 0 && !initializeBudgetsMutation.isPending) {
       logger.info('BudgetsPage', '[BudgetsPage] No budgets found for', month, '- initializing from templates');
-      initializeBudgetsMutation.mutate(month, {
-        onSuccess: (initialized) => {
-          if (initialized > 0) {
-            logger.info('BudgetsPage', '[BudgetsPage] Initialized', initialized, 'budgets from templates');
-          } else {
-            logger.info('BudgetsPage', '[BudgetsPage] No templates found to initialize budgets');
-          }
-        },
-        onError: (error) => {
-          logger.error('BudgetsPage', '[BudgetsPage] Failed to initialize budgets:', error);
-        },
+      void initializeBudgetsMutation.mutateAsync(month).then((initialized: unknown) => {
+        const count = initialized as number;
+        if (count > 0) {
+          logger.info('BudgetsPage', '[BudgetsPage] Initialized', count, 'budgets from templates');
+        } else {
+          logger.info('BudgetsPage', '[BudgetsPage] No templates found to initialize budgets');
+        }
+      }).catch((error: unknown) => {
+        logger.error('BudgetsPage', '[BudgetsPage] Failed to initialize budgets:', error);
       });
     }
   }, [budgets.length, budgetsLoading, month, initializeBudgetsMutation]);
 
   // Calculate current month transactions
   const { from, to } = monthRange(month);
-  const monthTxns = txns.filter((t) => t.dateISO >= from && t.dateISO <= to && t.type === 'debit');
+  const monthTxns = txns.filter((t): boolean => t.dateISO >= from && t.dateISO <= to && t.type === 'debit');
 
   // Calculate previous month for trend analysis
   const getPreviousMonth = (monthStr: string): string => {
@@ -77,20 +81,20 @@ const BudgetsPage: React.FC = () => {
   const previousMonth = getPreviousMonth(month);
   const { from: prevFrom, to: prevTo } = monthRange(previousMonth);
   const prevMonthTxns = txns.filter(
-    (t) => t.dateISO >= prevFrom && t.dateISO <= prevTo && t.type === 'debit'
+    (t): boolean => t.dateISO >= prevFrom && t.dateISO <= prevTo && t.type === 'debit'
   );
 
   // Calculate budget data for each category
   const budgetData = budgets.map((b) => {
     const spent = monthTxns
-      .filter((t) => t.categoryId === b.categoryId)
-      .reduce((s, t) => s + t.amount, 0);
+      .filter((t): boolean => t.categoryId === b.categoryId)
+      .reduce((s, t): number => s + t.amount, 0);
 
     const previousMonthSpent = prevMonthTxns
-      .filter((t) => t.categoryId === b.categoryId)
-      .reduce((s, t) => s + t.amount, 0);
+      .filter((t): boolean => t.categoryId === b.categoryId)
+      .reduce((s, t): number => s + t.amount, 0);
 
-    const categoryName = categories.find((c) => c.id === b.categoryId)?.name ?? 'Unknown';
+    const categoryName = categories.find((c): boolean => c.id === b.categoryId)?.name ?? 'Unknown';
     const percentage = b.limit > 0 ? (spent / b.limit) * 100 : 0;
     const status = getBudgetStatus(percentage);
 
@@ -105,16 +109,16 @@ const BudgetsPage: React.FC = () => {
 
   // Calculate summary statistics
   const summaryData: BudgetSummaryData = {
-    totalBudget: budgets.reduce((sum, b) => sum + b.limit, 0),
-    totalSpent: budgetData.reduce((sum, d) => sum + d.spent, 0),
+    totalBudget: budgets.reduce((sum, b): number => sum + b.limit, 0),
+    totalSpent: budgetData.reduce((sum, d): number => sum + d.spent, 0),
     categoriesCount: budgets.length,
-    overBudgetCount: budgetData.filter((d) => d.status === 'over').length,
-    warningCount: budgetData.filter((d) => d.status === 'warning').length,
-    okCount: budgetData.filter((d) => d.status === 'safe').length,
+    overBudgetCount: budgetData.filter((d): boolean => d.status === 'over').length,
+    warningCount: budgetData.filter((d): boolean => d.status === 'warning').length,
+    okCount: budgetData.filter((d): boolean => d.status === 'safe').length,
   };
 
   // Sort budgets: over -> warning -> safe, then by name
-  const sortedBudgetData = [...budgetData].sort((a, b) => {
+  const sortedBudgetData = [...budgetData].sort((a, b): number => {
     const statusOrder = { over: 0, warning: 1, safe: 2 };
     const statusDiff = statusOrder[a.status] - statusOrder[b.status];
     if (statusDiff !== 0) return statusDiff;
@@ -122,8 +126,8 @@ const BudgetsPage: React.FC = () => {
   });
 
   // Calculate budget recommendation for selected category
-  const categoryIdForRecommendation = editingBudget?.categoryId || selectedCategoryId;
-  const budgetRecommendation = React.useMemo(() => {
+  const categoryIdForRecommendation = editingBudget?.categoryId ?? selectedCategoryId;
+  const budgetRecommendation = React.useMemo((): BudgetRecommendation | null => {
     if (!categoryIdForRecommendation) {
       logger.info('BudgetsPage', '[BudgetsPage] No category selected for recommendation');
       return null;
@@ -134,49 +138,42 @@ const BudgetsPage: React.FC = () => {
   }, [txns, categoryIdForRecommendation]);
 
   // Handlers
-  const handleCreateBudget = () => {
+  const handleCreateBudget = (): void => {
     logger.info('BudgetsPage', '[BudgetsPage] Opening bulk budget editor');
     setBulkEditorOpen(true);
   };
 
-  const handleEditBudget = (budget: Budget) => {
+  const handleEditBudget = (budget: Budget): void => {
     setEditingBudget(budget);
     setSelectedCategoryId(budget.categoryId);
     setEditorOpen(true);
   };
 
-  const handleSaveBudget = async (data: { categoryId: string; month: string; limit: number }) => {
-    const api = await getFinanceAPI();
-    await api.upsertBudget(data);
-    await loadData(); // Reload data after save
+  const handleSaveBudget = async (data: { categoryId: string; month: string; limit: number }): Promise<void> => {
+    await upsertBudgetMutation.mutateAsync(data);
   };
 
-  const handleSaveBulkBudgets = async (budgets: Array<{ categoryId: string; month: string; limit: number }>) => {
-    const api = await getFinanceAPI();
+  const handleSaveBulkBudgets = async (budgets: Array<{ categoryId: string; month: string; limit: number }>): Promise<void> => {
     logger.info('BudgetsPage', '[BudgetsPage] Saving', budgets.length, 'budgets');
     // Save all budgets
     for (const budget of budgets) {
-      await api.upsertBudget(budget);
+      await upsertBudgetMutation.mutateAsync(budget);
     }
-    await loadData(); // Reload data after save
   };
 
-  const handleSaveTemplates = async (templates: Array<{ categoryId: string; defaultAmount: number }>) => {
-    const api = await getFinanceAPI();
+  const handleSaveTemplates = async (templates: Array<{ categoryId: string; defaultAmount: number }>): Promise<void> => {
     logger.info('BudgetsPage', '[BudgetsPage] Saving', templates.length, 'templates');
     // Save all templates
     for (const template of templates) {
-      await api.upsertBudgetTemplate(template);
+      await upsertBudgetTemplateMutation.mutateAsync(template);
     }
-    await loadData(); // Reload data after save
   };
 
-  const handleDeleteTemplate = async (categoryId: string) => {
-    const api = await getFinanceAPI();
-    await api.deleteBudgetTemplate(categoryId);
+  const handleDeleteTemplate = async (categoryId: string): Promise<void> => {
+    await deleteBudgetTemplateMutation.mutateAsync(categoryId);
   };
 
-  const handleCloseEditor = () => {
+  const handleCloseEditor = (): void => {
     setEditorOpen(false);
     setEditingBudget(undefined);
   };
@@ -205,7 +202,7 @@ const BudgetsPage: React.FC = () => {
         <div className="flex flex-wrap items-center gap-3">
           <MonthPicker value={month} onChange={setMonth} months={months} />
           <button
-            onClick={() => setTemplateManagerOpen(true)}
+            onClick={(): void => setTemplateManagerOpen(true)}
             className="inline-flex items-center gap-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/30 px-4 py-2 text-sm font-semibold text-white shadow-lg backdrop-blur-sm transition-all hover:scale-105"
             title="Manage budget templates that auto-apply to new months"
           >
@@ -241,7 +238,7 @@ const BudgetsPage: React.FC = () => {
             </p>
             <div className="flex gap-3 justify-center">
               <button
-                onClick={() => setTemplateManagerOpen(true)}
+                onClick={(): void => setTemplateManagerOpen(true)}
                 className="inline-flex items-center gap-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/30 px-5 py-3 text-sm font-semibold text-white shadow-lg backdrop-blur-sm transition-all hover:scale-105"
               >
                 <Settings className="h-5 w-5" />
@@ -262,16 +259,19 @@ const BudgetsPage: React.FC = () => {
       {/* Budget Cards */}
       {budgets.length > 0 && (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 mb-6">
-          {sortedBudgetData.map((data) => (
-            <BudgetCard
-              key={data.budget.id}
-              budget={data.budget}
-              spent={data.spent}
-              categoryName={data.categoryName}
-              previousMonthSpent={data.previousMonthSpent}
-              onEdit={() => handleEditBudget(data.budget)}
-            />
-          ))}
+          {sortedBudgetData.map((data) => {
+            const budgetForCallback = data.budget;
+            return (
+              <BudgetCard
+                key={data.budget.id}
+                budget={data.budget}
+                spent={data.spent}
+                categoryName={data.categoryName}
+                previousMonthSpent={data.previousMonthSpent}
+                onEdit={(): void => handleEditBudget(budgetForCallback)}
+              />
+            );
+          })}
         </div>
       )}
 
@@ -287,15 +287,15 @@ const BudgetsPage: React.FC = () => {
         previousMonthSpent={
           editingBudget
             ? prevMonthTxns
-                .filter((t) => t.categoryId === editingBudget.categoryId)
-                .reduce((s, t) => s + t.amount, 0)
+                .filter((t): boolean => t.categoryId === editingBudget.categoryId)
+                .reduce((s, t): number => s + t.amount, 0)
             : undefined
         }
         recommendation={budgetRecommendation}
         onCategoryChange={setSelectedCategoryId}
         categoryName={
           editingBudget
-            ? categories.find((c) => c.id === editingBudget.categoryId)?.name
+            ? categories.find((c): boolean => c.id === editingBudget.categoryId)?.name
             : undefined
         }
       />
@@ -303,22 +303,22 @@ const BudgetsPage: React.FC = () => {
       {/* Bulk Budget Editor Modal (for creating budgets for all categories) */}
       <BudgetBulkEditor
         isOpen={bulkEditorOpen}
-        onClose={() => setBulkEditorOpen(false)}
+        onClose={(): void => setBulkEditorOpen(false)}
         onSave={handleSaveBulkBudgets}
         categories={categories}
         transactions={txns}
         month={month}
-        existingBudgets={new Map(budgets.map(b => [b.categoryId, b.limit]))}
+        existingBudgets={new Map(budgets.map((b): [string, number] => [b.categoryId, b.limit]))}
       />
 
       {/* Budget Template Manager Modal */}
       <BudgetTemplateManager
         isOpen={templateManagerOpen}
-        onClose={() => setTemplateManagerOpen(false)}
+        onClose={(): void => setTemplateManagerOpen(false)}
         onSave={handleSaveTemplates}
         onDelete={handleDeleteTemplate}
         categories={categories}
-        existingTemplates={new Map(templates.map(t => [t.categoryId, t.defaultAmount]))}
+        existingTemplates={new Map(templates.map((t): [string, number] => [t.categoryId, t.defaultAmount]))}
       />
     </>
   );

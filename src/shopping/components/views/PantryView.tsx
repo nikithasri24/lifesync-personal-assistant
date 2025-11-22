@@ -6,7 +6,7 @@
 import React, { useState, useMemo } from 'react';
 import { Plus, Receipt } from 'lucide-react';
 import { format, differenceInCalendarDays } from 'date-fns';
-import type { PantryItem } from '../../../mealPlanning/types';
+import type { PantryItem } from '../../../types';
 import type { ShoppingItem } from '../../types';
 
 interface PantryViewProps {
@@ -19,6 +19,23 @@ interface PantryViewProps {
   onShowToast: (message: string, type: 'success' | 'info' | 'error') => void;
 }
 
+type PantryFilterType = 'all' | 'expired' | 'soon' | 'low';
+type PantrySortType = 'expiry' | 'name';
+
+function validatePantryFilter(value: string): PantryFilterType {
+  if (value === 'all' || value === 'expired' || value === 'soon' || value === 'low') {
+    return value;
+  }
+  return 'all';
+}
+
+function validatePantrySort(value: string): PantrySortType {
+  if (value === 'expiry' || value === 'name') {
+    return value;
+  }
+  return 'expiry';
+}
+
 export function PantryView({
   pantryItems,
   onAddItem,
@@ -27,9 +44,9 @@ export function PantryView({
   onUpdateItem,
   onDeleteItem,
   onShowToast,
-}: PantryViewProps) {
-  const [pantryFilter, setPantryFilter] = useState<'all' | 'expired' | 'soon' | 'low'>('all');
-  const [pantrySort, setPantrySort] = useState<'expiry' | 'name'>('expiry');
+}: PantryViewProps): JSX.Element {
+  const [pantryFilter, setPantryFilter] = useState<PantryFilterType>('all');
+  const [pantrySort, setPantrySort] = useState<PantrySortType>('expiry');
   const [editingPantryId, setEditingPantryId] = useState<string | null>(null);
   const [editPantry, setEditPantry] = useState<{
     qty: string;
@@ -41,34 +58,34 @@ export function PantryView({
   const [replenishId, setReplenishId] = useState<string | null>(null);
   const [replenishTarget, setReplenishTarget] = useState<string>('');
 
-  const pantrySortedFiltered = useMemo(() => {
-    let items = [...pantryItems];
+  const pantrySortedFiltered = useMemo((): PantryItem[] => {
+    let items: PantryItem[] = [...pantryItems];
     const now = new Date();
     if (pantryFilter === 'expired')
-      items = items.filter((p) => p.expirationDate && p.expirationDate.getTime() < now.getTime());
+      items = items.filter((p: PantryItem): boolean => p.expirationDate !== undefined && p.expirationDate.getTime() < now.getTime());
     if (pantryFilter === 'soon')
       items = items.filter(
-        (p) =>
-          p.expirationDate &&
+        (p: PantryItem): boolean =>
+          p.expirationDate !== undefined &&
           differenceInCalendarDays(p.expirationDate, now) <= 7 &&
           differenceInCalendarDays(p.expirationDate, now) >= 0
       );
-    if (pantryFilter === 'low') items = items.filter((p) => p.isLowStock);
+    if (pantryFilter === 'low') items = items.filter((p: PantryItem): boolean => p.isLowStock === true);
     if (pantrySort === 'expiry')
-      items.sort((a, b) => {
-        const ax = a.expirationDate ? a.expirationDate.getTime() : Infinity;
-        const bx = b.expirationDate ? b.expirationDate.getTime() : Infinity;
+      items.sort((a: PantryItem, b: PantryItem): number => {
+        const ax = a.expirationDate !== undefined ? a.expirationDate.getTime() : Infinity;
+        const bx = b.expirationDate !== undefined ? b.expirationDate.getTime() : Infinity;
         return ax - bx;
       });
-    if (pantrySort === 'name') items.sort((a, b) => a.name.localeCompare(b.name));
+    if (pantrySort === 'name') items.sort((a: PantryItem, b: PantryItem): number => a.name.localeCompare(b.name));
     return items;
   }, [pantryItems, pantryFilter, pantrySort]);
 
-  const handleAddLowStockToShopping = async () => {
-    const lows = pantryItems.filter((p) => p.isLowStock && (p.lowStockThreshold ?? 0) > 0);
+  const handleAddLowStockToShopping = async (): Promise<void> => {
+    const lows: PantryItem[] = pantryItems.filter((p: PantryItem): boolean => p.isLowStock === true && (p.lowStockThreshold ?? 0) > 0);
     for (const p of lows) {
-      const target = p.lowStockThreshold ?? 0;
-      const need = Math.max(0, target - (p.quantity || 0)) || 1;
+      const target: number = p.lowStockThreshold ?? 0;
+      const need: number = Math.max(0, target - (p.quantity ?? 0)) || 1;
       await onAddToShopping({
         name: p.name,
         quantity: need,
@@ -96,13 +113,13 @@ export function PantryView({
     onShowToast(`Added ${lows.length} low-stock items to shopping`, 'success');
   };
 
-  const handleMoveExpiredToShopping = async () => {
+  const handleMoveExpiredToShopping = async (): Promise<void> => {
     const now = new Date();
-    const expired = pantryItems.filter(
-      (p) => p.expirationDate && p.expirationDate.getTime() < now.getTime()
+    const expired: PantryItem[] = pantryItems.filter(
+      (p: PantryItem): boolean => p.expirationDate !== undefined && p.expirationDate.getTime() < now.getTime()
     );
     for (const p of expired) {
-      const qty = p.quantity && p.quantity > 0 ? p.quantity : 1;
+      const qty: number = p.quantity !== undefined && p.quantity > 0 ? p.quantity : 1;
       await onAddToShopping({
         name: p.name,
         quantity: qty,
@@ -130,8 +147,8 @@ export function PantryView({
     onShowToast(`Moved ${expired.length} expired items to shopping`, 'info');
   };
 
-  const handleExportCSV = () => {
-    const headers = [
+  const handleExportCSV = (): void => {
+    const headers: string[] = [
       'Name',
       'Quantity',
       'Unit',
@@ -141,18 +158,18 @@ export function PantryView({
       'Threshold',
       'Location',
     ];
-    const rows = pantryItems.map((p) => [
+    const rows: string[][] = pantryItems.map((p: PantryItem): string[] => [
       p.name,
       String(p.quantity ?? ''),
       p.unit ?? '',
       p.category,
-      p.expirationDate ? format(p.expirationDate, 'yyyy-MM-dd') : '',
-      p.isLowStock ? 'yes' : 'no',
+      p.expirationDate !== undefined ? format(p.expirationDate, 'yyyy-MM-dd') : '',
+      p.isLowStock === true ? 'yes' : 'no',
       p.lowStockThreshold != null ? String(p.lowStockThreshold) : '',
       p.location ?? '',
     ]);
-    const csv = [headers, ...rows]
-      .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(','))
+    const csv: string = [headers, ...rows]
+      .map((r: string[]): string => r.map((v: string): string => `"${String(v).replace(/"/g, '""')}"`).join(','))
       .join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -163,27 +180,27 @@ export function PantryView({
     URL.revokeObjectURL(url);
   };
 
-  const handleSaveEdit = async (p: PantryItem) => {
-    const qty = Number(editPantry.qty) || 0;
-    const exp = editPantry.exp ? new Date(editPantry.exp) : undefined;
+  const handleSaveEdit = async (p: PantryItem): Promise<void> => {
+    const qty: number = Number(editPantry.qty) || 0;
+    const exp: Date | undefined = editPantry.exp !== '' ? new Date(editPantry.exp) : undefined;
     await onUpdateItem(p.id, {
       quantity: qty,
-      unit: editPantry.unit || undefined,
+      unit: editPantry.unit !== '' ? editPantry.unit : undefined,
       expirationDate: exp,
       isLowStock: editPantry.low,
-      lowStockThreshold: editPantry.threshold ? Number(editPantry.threshold) : undefined,
+      lowStockThreshold: editPantry.threshold !== '' ? Number(editPantry.threshold) : undefined,
     });
     setEditingPantryId(null);
   };
 
-  const handleReplenish = async () => {
-    const p = pantryItems.find((x) => x.id === replenishId);
-    if (!p) {
+  const handleReplenish = async (): Promise<void> => {
+    const p: PantryItem | undefined = pantryItems.find((x: PantryItem): boolean => x.id === replenishId);
+    if (p === undefined) {
       setReplenishId(null);
       return;
     }
-    const target = Number(replenishTarget) || 0;
-    const need = Math.max(0, target - (p.quantity || 0));
+    const target: number = Number(replenishTarget) || 0;
+    const need: number = Math.max(0, target - (p.quantity ?? 0));
     if (need <= 0) {
       onShowToast('Already at or above target', 'info');
       setReplenishId(null);
@@ -212,7 +229,7 @@ export function PantryView({
       assignedStore: undefined,
       bestStores: [],
     });
-    onShowToast(`Added ${need} ${p.unit || ''} of ${p.name} to shopping`, 'success');
+    onShowToast(`Added ${need} ${p.unit ?? ''} of ${p.name} to shopping`, 'success');
     setReplenishId(null);
   };
 
@@ -223,11 +240,11 @@ export function PantryView({
         <div className="flex items-center gap-2">
           {/* Summary */}
           <span className="text-xs text-gray-600 hidden md:inline">
-            {pantryItems.filter((p) => p.isLowStock).length} low-stock •{' '}
+            {pantryItems.filter((p: PantryItem): boolean => p.isLowStock === true).length} low-stock •{' '}
             {
               pantryItems.filter(
-                (p) =>
-                  p.expirationDate &&
+                (p: PantryItem): boolean =>
+                  p.expirationDate !== undefined &&
                   differenceInCalendarDays(p.expirationDate, new Date()) < 0
               ).length
             }{' '}
@@ -238,7 +255,9 @@ export function PantryView({
             type="button"
             className="px-3 py-1 rounded border border-gray-300 text-sm hover:bg-gray-50"
             title="Add all low-stock items to shopping list"
-            onClick={handleAddLowStockToShopping}
+            onClick={(): void => {
+              void handleAddLowStockToShopping();
+            }}
           >
             Add low-stock to Shopping
           </button>
@@ -246,7 +265,9 @@ export function PantryView({
             type="button"
             className="px-3 py-1 rounded border border-gray-300 text-sm hover:bg-gray-50"
             title="Move all expired items to shopping list"
-            onClick={handleMoveExpiredToShopping}
+            onClick={(): void => {
+              void handleMoveExpiredToShopping();
+            }}
           >
             Move expired to Shopping
           </button>
@@ -262,7 +283,7 @@ export function PantryView({
           {/* Simple filters */}
           <select
             className="rounded border border-gray-300 px-2 py-1 text-sm"
-            onChange={(e) => setPantryFilter(validatePantryFilter(e.target.value))}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>): void => setPantryFilter(validatePantryFilter(e.target.value))}
             defaultValue="all"
             title="Filter"
           >
@@ -273,7 +294,7 @@ export function PantryView({
           </select>
           <select
             className="rounded border border-gray-300 px-2 py-1 text-sm"
-            onChange={(e) => setPantrySort(validatePantrySort(e.target.value))}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>): void => setPantrySort(validatePantrySort(e.target.value))}
             defaultValue="expiry"
             title="Sort"
           >
@@ -314,8 +335,8 @@ export function PantryView({
               </tr>
             </thead>
             <tbody>
-              {pantrySortedFiltered.map((p) => {
-                const days = p.expirationDate
+              {pantrySortedFiltered.map((p: PantryItem): JSX.Element => {
+                const days: number | null = p.expirationDate !== undefined
                   ? differenceInCalendarDays(p.expirationDate, new Date())
                   : null;
                 let status = '—';
@@ -342,14 +363,14 @@ export function PantryView({
                             type="number"
                             min={0}
                             value={editPantry.qty}
-                            onChange={(e) =>
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>): void =>
                               setEditPantry((s) => ({ ...s, qty: e.target.value }))
                             }
                             className="w-20 rounded border border-gray-300 px-2 py-1"
                           />
                           <input
                             value={editPantry.unit}
-                            onChange={(e) =>
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>): void =>
                               setEditPantry((s) => ({ ...s, unit: e.target.value }))
                             }
                             className="w-20 rounded border border-gray-300 px-2 py-1"
@@ -357,7 +378,7 @@ export function PantryView({
                         </div>
                       ) : (
                         <>
-                          {p.quantity} {p.unit || ''}
+                          {p.quantity} {p.unit ?? ''}
                         </>
                       )}
                     </td>
@@ -366,13 +387,13 @@ export function PantryView({
                         <input
                           type="date"
                           value={editPantry.exp}
-                          onChange={(e) =>
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>): void =>
                             setEditPantry((s) => ({ ...s, exp: e.target.value }))
                           }
                           className="rounded border border-gray-300 px-2 py-1"
                         />
                       ) : (
-                        <>{p.expirationDate ? format(p.expirationDate, 'MMM d, yyyy') : '—'}</>
+                        <>{p.expirationDate !== undefined ? format(p.expirationDate, 'MMM d, yyyy') : '—'}</>
                       )}
                     </td>
                     <td className="py-2 px-3">
@@ -385,7 +406,7 @@ export function PantryView({
                             <input
                               type="checkbox"
                               checked={editPantry.low}
-                              onChange={(e) =>
+                              onChange={(e: React.ChangeEvent<HTMLInputElement>): void =>
                                 setEditPantry((s) => ({ ...s, low: e.target.checked }))
                               }
                             />{' '}
@@ -396,7 +417,7 @@ export function PantryView({
                             min={0}
                             placeholder="Threshold"
                             value={editPantry.threshold}
-                            onChange={(e) =>
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>): void =>
                               setEditPantry((s) => ({ ...s, threshold: e.target.value }))
                             }
                             className="w-24 rounded border border-gray-300 px-2 py-1"
@@ -404,9 +425,9 @@ export function PantryView({
                         </div>
                       ) : (
                         <span
-                          className={`text-xs ${p.isLowStock ? 'text-amber-700' : 'text-gray-500'}`}
+                          className={`text-xs ${p.isLowStock === true ? 'text-amber-700' : 'text-gray-500'}`}
                         >
-                          {p.isLowStock ? `Low (≤ ${p.lowStockThreshold ?? '—'})` : 'OK'}
+                          {p.isLowStock === true ? `Low (≤ ${p.lowStockThreshold ?? '—'})` : 'OK'}
                         </span>
                       )}
                     </td>
@@ -415,13 +436,15 @@ export function PantryView({
                         <>
                           <button
                             className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50"
-                            onClick={() => handleSaveEdit(p)}
+                            onClick={(): void => {
+                              void handleSaveEdit(p);
+                            }}
                           >
                             Save
                           </button>
                           <button
                             className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50"
-                            onClick={() => setEditingPantryId(null)}
+                            onClick={(): void => setEditingPantryId(null)}
                           >
                             Cancel
                           </button>
@@ -430,16 +453,16 @@ export function PantryView({
                         <>
                           <button
                             className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50"
-                            onClick={() => {
+                            onClick={(): void => {
                               setEditingPantryId(p.id);
                               setEditPantry({
                                 qty: String(p.quantity),
-                                unit: p.unit || '',
-                                exp: p.expirationDate
+                                unit: p.unit ?? '',
+                                exp: p.expirationDate !== undefined
                                   ? format(p.expirationDate, 'yyyy-MM-dd')
                                   : '',
-                                low: !!p.isLowStock,
-                                threshold: p.lowStockThreshold
+                                low: p.isLowStock === true,
+                                threshold: p.lowStockThreshold !== undefined
                                   ? String(p.lowStockThreshold)
                                   : '',
                               });
@@ -450,12 +473,12 @@ export function PantryView({
                           <button
                             className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50"
                             title="Replenish to target quantity"
-                            onClick={() => {
+                            onClick={(): void => {
                               setReplenishId(p.id);
                               setReplenishTarget(
-                                p.lowStockThreshold
+                                p.lowStockThreshold !== undefined
                                   ? String(p.lowStockThreshold)
-                                  : String(Math.max(p.quantity, 1))
+                                  : String(Math.max(p.quantity ?? 0, 1))
                               );
                             }}
                           >
@@ -463,41 +486,45 @@ export function PantryView({
                           </button>
                           <button
                             className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50"
-                            onClick={async () => {
-                              await onAddToShopping({
-                                name: p.name,
-                                quantity:
-                                  p.lowStockThreshold && p.quantity < p.lowStockThreshold
-                                    ? p.lowStockThreshold - p.quantity
-                                    : p.quantity || 1,
-                                unit: p.unit,
-                                category: p.category,
-                                subcategory: undefined,
-                                priority: 'medium',
-                                purchased: false,
-                                price: undefined,
-                                estimatedPrice: undefined,
-                                aisle: undefined,
-                                brand: undefined,
-                                size: undefined,
-                                notes: p.notes,
-                                imageUrl: undefined,
-                                nutritionInfo: undefined,
-                                tags: ['from:pantry'],
-                                addedBy: undefined,
-                                purchasedAt: undefined,
-                                purchasedBy: undefined,
-                                assignedStore: undefined,
-                                bestStores: [],
-                              });
-                              onShowToast(`Added ${p.name} to shopping`, 'success');
+                            onClick={(): void => {
+                              void (async (): Promise<void> => {
+                                await onAddToShopping({
+                                  name: p.name,
+                                  quantity:
+                                    p.lowStockThreshold !== undefined && p.quantity !== undefined && p.quantity < p.lowStockThreshold
+                                      ? p.lowStockThreshold - p.quantity
+                                      : p.quantity ?? 1,
+                                  unit: p.unit,
+                                  category: p.category,
+                                  subcategory: undefined,
+                                  priority: 'medium',
+                                  purchased: false,
+                                  price: undefined,
+                                  estimatedPrice: undefined,
+                                  aisle: undefined,
+                                  brand: undefined,
+                                  size: undefined,
+                                  notes: p.notes,
+                                  imageUrl: undefined,
+                                  nutritionInfo: undefined,
+                                  tags: ['from:pantry'],
+                                  addedBy: undefined,
+                                  purchasedAt: undefined,
+                                  purchasedBy: undefined,
+                                  assignedStore: undefined,
+                                  bestStores: [],
+                                });
+                                onShowToast(`Added ${p.name} to shopping`, 'success');
+                              })();
                             }}
                           >
                             Add to Shopping
                           </button>
                           <button
                             className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50"
-                            onClick={() => onDeleteItem(p.id)}
+                            onClick={(): void => {
+                              void onDeleteItem(p.id);
+                            }}
                           >
                             Delete
                           </button>
@@ -512,25 +539,27 @@ export function PantryView({
         </div>
       )}
 
-      {replenishId && (
+      {replenishId !== null && (
         <div className="mt-3 flex items-center gap-2 text-sm">
           <span className="text-gray-700">Replenish to target quantity:</span>
           <input
             type="number"
             min={0}
             value={replenishTarget}
-            onChange={(e) => setReplenishTarget(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>): void => setReplenishTarget(e.target.value)}
             className="w-28 rounded border border-gray-300 px-2 py-1"
           />
           <button
             className="px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-500"
-            onClick={handleReplenish}
+            onClick={(): void => {
+              void handleReplenish();
+            }}
           >
             Go
           </button>
           <button
             className="px-3 py-1 rounded border border-gray-300 hover:bg-gray-50"
-            onClick={() => setReplenishId(null)}
+            onClick={(): void => setReplenishId(null)}
           >
             Cancel
           </button>

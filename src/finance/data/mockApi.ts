@@ -6,6 +6,7 @@ import type {
   Category,
   Goal,
   GoalInput,
+  GoalProgressPoint,
   Institution,
   NetPoint,
   Paginated,
@@ -17,22 +18,22 @@ import type { FinanceAPI } from './api';
 import { validateGoalInput, validateTransactionInput } from '../utils/validate';
 
 // Lazy import JSON to keep tree-shake friendly
-const institutions: Institution[] = (await import('./seed/institutions.json')).default as any;
-const accounts: Account[] = (await import('./seed/accounts.json')).default as any;
-const categories: Category[] = (await import('./seed/categories.json')).default as any;
-const transactions: Transaction[] = (await import('./seed/transactions.json')).default as any;
-const budgets: Budget[] = (await import('./seed/budgets.json')).default as any;
-const networth: NetPoint[] = (await import('./seed/networth.json')).default as any;
-const goals: Goal[] = (await import('./seed/goals.json')).default as any;
+const institutions: Institution[] = (await import('./seed/institutions.json')).default as Institution[];
+const accounts: Account[] = (await import('./seed/accounts.json')).default as Account[];
+const categories: Category[] = (await import('./seed/categories.json')).default as Category[];
+const transactions: Transaction[] = (await import('./seed/transactions.json')).default as Transaction[];
+const budgets: Budget[] = (await import('./seed/budgets.json')).default as Budget[];
+const networth: NetPoint[] = (await import('./seed/networth.json')).default as NetPoint[];
+const goals: Goal[] = (await import('./seed/goals.json')).default as Goal[];
 
 // Budget templates (in-memory for mock)
 const budgetTemplates: BudgetTemplate[] = [];
 
-function sleep(ms: number) {
+function sleep(ms: number): Promise<void> {
   return new Promise((res) => setTimeout(res, ms));
 }
 
-function randomLatency() {
+function randomLatency(): number {
   return 150 + Math.floor(Math.random() * 150);
 }
 
@@ -86,26 +87,28 @@ export class MockApi implements FinanceAPI {
       start = idx >= 0 ? idx + 1 : 0;
     }
     const items = list.slice(start, start + limit);
-    const nextCursor = items.length + start < list.length ? items[items.length - 1]?.id : undefined;
+    const nextCursor = items.length + start < list.length ? items[items.length - 1]?.id ?? undefined : undefined;
     return { items, nextCursor };
   }
 
   async upsertTransaction(txn: TransactionInput): Promise<void> {
-    txn = await validateTransactionInput(txn);
+    const validatedTxn = await validateTransactionInput(txn);
     await sleep(randomLatency());
-    if (txn.id) {
-      const idx = transactions.findIndex((t) => t.id === txn.id);
-      if (idx >= 0) (transactions as any)[idx] = { ...(transactions as any)[idx], ...txn };
+    if (validatedTxn.id) {
+      const idx = transactions.findIndex((t) => t.id === validatedTxn.id);
+      if (idx >= 0) {
+        transactions[idx] = { ...transactions[idx], ...validatedTxn } as Transaction;
+      }
       return;
     }
     const id = `mock_${Math.random().toString(36).slice(2)}`;
-    (transactions as any).push({ ...txn, id });
+    transactions.push({ ...validatedTxn, id } as Transaction);
   }
 
   async deleteTransaction(id: string): Promise<void> {
     await sleep(randomLatency());
     const idx = transactions.findIndex((t) => t.id === id);
-    if (idx >= 0) (transactions as any).splice(idx, 1);
+    if (idx >= 0) transactions.splice(idx, 1);
   }
 
   async listBudgets(monthISO: string): Promise<Budget[]> {
@@ -126,14 +129,14 @@ export class MockApi implements FinanceAPI {
 
     if (idx >= 0) {
       // Update existing
-      (budgets as any)[idx] = {
-        ...(budgets as any)[idx],
+      budgets[idx] = {
+        ...budgets[idx],
         limit: budget.limit,
       };
     } else {
       // Create new
       const id = `mock_budget_${Math.random().toString(36).slice(2)}`;
-      (budgets as any).push({
+      budgets.push({
         id,
         categoryId: budget.categoryId,
         month: monthDate,
@@ -153,7 +156,7 @@ export class MockApi implements FinanceAPI {
     );
 
     if (idx >= 0) {
-      (budgets as any).splice(idx, 1);
+      budgets.splice(idx, 1);
     }
   }
 
@@ -170,14 +173,14 @@ export class MockApi implements FinanceAPI {
 
     if (idx >= 0) {
       // Update existing
-      (budgetTemplates as any)[idx] = {
-        ...(budgetTemplates as any)[idx],
+      budgetTemplates[idx] = {
+        ...budgetTemplates[idx],
         defaultAmount: template.defaultAmount,
       };
     } else {
       // Create new
-      const id = template.id || `mock_template_${Math.random().toString(36).slice(2)}`;
-      (budgetTemplates as any).push({
+      const id = template.id ?? `mock_template_${Math.random().toString(36).slice(2)}`;
+      budgetTemplates.push({
         id,
         categoryId: template.categoryId,
         defaultAmount: template.defaultAmount,
@@ -190,7 +193,7 @@ export class MockApi implements FinanceAPI {
 
     const idx = budgetTemplates.findIndex((t) => t.categoryId === categoryId);
     if (idx >= 0) {
-      (budgetTemplates as any).splice(idx, 1);
+      budgetTemplates.splice(idx, 1);
     }
   }
 
@@ -210,7 +213,7 @@ export class MockApi implements FinanceAPI {
       if (!exists) {
         // Create budget from template
         const id = `mock_budget_${Math.random().toString(36).slice(2)}`;
-        (budgets as any).push({
+        budgets.push({
           id,
           categoryId: template.categoryId,
           month: monthDate,
@@ -239,24 +242,54 @@ export class MockApi implements FinanceAPI {
   }
 
   async upsertGoal(goal: GoalInput): Promise<void> {
-    goal = await validateGoalInput(goal);
+    const validatedGoal = await validateGoalInput(goal);
     await sleep(randomLatency());
-    if (goal.id) {
-      const idx = goals.findIndex((g) => g.id === goal.id);
-      if (idx >= 0) (goals as any)[idx] = { ...(goals as any)[idx], ...goal, updatedAtISO: new Date().toISOString() };
+    if (validatedGoal.id) {
+      const idx = goals.findIndex((g) => g.id === validatedGoal.id);
+      if (idx >= 0) {
+        goals[idx] = { ...goals[idx], ...validatedGoal, updatedAtISO: new Date().toISOString() } as Goal;
+      }
       return;
     }
     const id = `mock_goal_${Math.random().toString(36).slice(2)}`;
     const now = new Date().toISOString();
-    (goals as any).push({
-      ...goal,
+
+    // Extract and type-check optional fields to avoid unsafe assignments
+    let startingAmount = 0;
+    if (typeof validatedGoal.startingAmount === 'number') {
+      startingAmount = validatedGoal.startingAmount as number;
+    }
+
+    let linkedCategoryId: string | undefined;
+    if (typeof validatedGoal.linkedCategoryId === 'string') {
+      linkedCategoryId = validatedGoal.linkedCategoryId;
+    }
+
+    let linkedAccountId: string | undefined;
+    if (typeof validatedGoal.linkedAccountId === 'string') {
+      linkedAccountId = validatedGoal.linkedAccountId as string;
+    }
+
+    let trackNetworth: boolean | undefined = false;
+    if (typeof validatedGoal.trackNetworth === 'boolean') {
+      trackNetworth = validatedGoal.trackNetworth as boolean;
+    }
+
+    const newGoal: Goal = {
       id,
-      startingAmount: goal.startingAmount ?? 0,
-      currentAmount: goal.currentAmount ?? 0,
-      trackNetworth: goal.trackNetworth ?? false,
+      name: validatedGoal.name,
+      targetAmount: validatedGoal.targetAmount,
+      currentAmount: typeof validatedGoal.currentAmount === 'number' ? validatedGoal.currentAmount : 0,
+      startingAmount,
+      dueDateISO: validatedGoal.dueDateISO,
+      type: validatedGoal.type,
+      linkedCategoryId,
+      linkedAccountId,
+      trackNetworth,
       createdAtISO: now,
       updatedAtISO: now,
-    });
+    };
+    goals.push(newGoal);
   }
 
   async deleteGoal(goalId: string): Promise<void> {
@@ -279,8 +312,14 @@ export class MockApi implements FinanceAPI {
 
     const account = accounts.find((a) => a.id === goal.linkedAccountId);
     if (account) {
-      (goal as any).currentAmount = account.balance;
-      (goal as any).updatedAtISO = new Date().toISOString();
+      const goalIndex = goals.findIndex((g) => g.id === goalId);
+      if (goalIndex >= 0) {
+        goals[goalIndex] = {
+          ...goals[goalIndex],
+          currentAmount: account.balance,
+          updatedAtISO: new Date().toISOString(),
+        };
+      }
     }
   }
 }

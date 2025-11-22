@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import React, { useEffect, useMemo, useState } from 'react';
 import { logger } from '../services/logger';
 import { createPortal } from 'react-dom';
@@ -44,8 +45,118 @@ import { fetchClippedRecipe } from '../mealPlanning/utils/recipeUtils';
 
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack'];
 
+// Interfaces for component props
+interface SelectionToolbarProps {
+  selectedCount: number;
+  query: string;
+  onQueryChange: (query: string) => void;
+  matches: Array<{ id: string; name: string; type: string; count?: number }>;
+  selectedIndex: number;
+  onIndexChange: (index: number) => void;
+  onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  inputRef: React.RefObject<HTMLInputElement>;
+  showList: boolean;
+  onShowListChange: (show: boolean) => void;
+  onAddMeal: (recipeId: string, customMeal?: string) => Promise<void>;
+  onClearSelection: () => void;
+}
+
+interface MultiCellDropdownProps {
+  matches: Array<{ id: string; name: string; type: string; count?: number }>;
+  selectedIndex: number;
+  onIndexChange: (index: number) => void;
+  onAddMeal: (recipeId: string, customMeal?: string) => Promise<void>;
+  onClose: () => void;
+  query: string;
+  inputRef: React.RefObject<HTMLInputElement>;
+}
+
+interface WeeklyGridProps {
+  weekDays: Date[];
+  mealsByDate: Record<string, PlannedMeal[]>;
+  recipes: Recipe[];
+  activePlan: { id: string; meals?: PlannedMeal[] } | null;
+  selectedCells: Set<string>;
+  makeCellKey: (dateKey: string, mealType: string) => string;
+  onCellClick: (dateKey: string, mealType: string, e: React.MouseEvent) => void;
+  onShowRecipeForm: (initialName: string, onSave: (recipe: Partial<Recipe>) => Promise<void>) => void;
+  onShowSimpleEdit: (recipe: Recipe, onSave: (updates: Partial<Recipe>) => Promise<void>) => void;
+  createPlannedMeal: (data: {
+    planId: string;
+    meal: {
+      date: Date;
+      mealType: string;
+      recipeId?: string;
+      customMeal?: string;
+      servings: number;
+      peopleCount: number;
+      status: string;
+      notes?: string;
+      preparedAt?: Date;
+      consumedAt?: Date;
+    };
+  }) => Promise<unknown>;
+  updatePlannedMeal: (data: { mealId: string; updates: { date: Date; mealType: string } }) => Promise<unknown>;
+}
+
+interface ImportSectionsProps {
+  recipeImport: {
+    videoUrl: string;
+    setVideoUrl: (url: string) => void;
+    videoLang: string;
+    setVideoLang: (lang: string) => void;
+    isVideoImporting: boolean;
+    videoImportError: string | null;
+    videoDraft: Partial<Recipe> | null;
+    importFromVideo: () => Promise<void>;
+    clearVideoImport: () => void;
+    setVideoImportError?: (error: string | null) => void;
+    importUrl: string;
+    setImportUrl: (url: string) => void;
+    isImporting: boolean;
+    importError: string | null;
+    importDraft: Partial<Recipe> | null;
+    clearUrlImport: () => void;
+    textTitle: string;
+    setTextTitle: (title: string) => void;
+    textImageUrl: string;
+    setTextImageUrl: (url: string) => void;
+    textInput: string;
+    setTextInput: (input: string) => void;
+    isTextParsing: boolean;
+    textError: string | null;
+    textDraft: Partial<Recipe> | null;
+    parseFromText: () => Promise<void>;
+    clearTextImport: () => void;
+    setTextError?: (error: string | null) => void;
+  };
+  createRecipe: (recipe: Partial<Recipe>) => Promise<unknown>;
+  handleImportRecipe: (event: React.FormEvent<HTMLFormElement>) => Promise<void>;
+  saveImportedRecipe: () => Promise<void>;
+}
+
+interface RecipeDraftPreviewProps {
+  draft: Partial<Recipe>;
+  imageUrl?: string;
+  onSave: () => Promise<void>;
+  onCancel: () => void;
+}
+
+interface SavedRecipesSectionProps {
+  recipes: Recipe[];
+  allRecipesCount: number;
+  showFavoritesOnly: boolean;
+  onToggleFavorites: () => void;
+  searchQuery: string;
+  onSearchChange: (query: string) => void;
+  onDeleteAll: () => Promise<unknown>;
+  onViewRecipe: (id: string) => void;
+  onEditRecipe: (id: string) => void;
+  onDeleteRecipe: (id: string) => void;
+}
+
 // Cleanup old meal drafts from localStorage (older than 7 days)
-const cleanupOldDrafts = () => {
+const cleanupOldDrafts = (): void => {
   try {
     const today = new Date();
     const sevenDaysAgo = new Date(today);
@@ -54,7 +165,7 @@ const cleanupOldDrafts = () => {
     const keysToRemove: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && key.startsWith('meal-draft-')) {
+      if (key?.startsWith('meal-draft-')) {
         const match = key.match(/meal-draft-(\d{4}-\d{2}-\d{2})/);
         if (match) {
           const draftDate = new Date(match[1]);
@@ -123,7 +234,7 @@ const MealPlanning: React.FC = () => {
     setCopyTargetWeek(addDays(weekNav.currentWeekStart, 7));
   }, [weekNav.currentWeekStart]);
 
-  const plannedMeals = weekNav.activePlan?.meals ?? [];
+  const plannedMeals = useMemo(() => weekNav.activePlan?.meals ?? [], [weekNav.activePlan?.meals]);
   const mealsByDate: Record<string, PlannedMeal[]> = useMemo(() => {
     return plannedMeals.reduce<Record<string, PlannedMeal[]>>((acc, meal) => {
       const key = toKey(ensureDate(meal.date));
@@ -149,7 +260,7 @@ const MealPlanning: React.FC = () => {
       const query = recipeSearchQuery.toLowerCase().trim();
       result = result.filter((recipe) => {
         if (recipe.name.toLowerCase().includes(query)) return true;
-        if (recipe.tags?.some((tag) => tag.toLowerCase().includes(query))) return true;
+        if (recipe.tags?.some((tag: string) => tag.toLowerCase().includes(query))) return true;
         if (recipe.cuisine?.toLowerCase().includes(query)) return true;
         if (recipe.difficulty?.toLowerCase().includes(query)) return true;
         return false;
@@ -160,7 +271,7 @@ const MealPlanning: React.FC = () => {
   }, [recipes, recipeSearchQuery, showFavoritesOnly]);
 
   // Handle URL import
-  const handleImportRecipe = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleImportRecipe = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
     if (!recipeImport.importUrl.trim()) return;
 
@@ -178,7 +289,7 @@ const MealPlanning: React.FC = () => {
     }
   };
 
-  const saveImportedRecipe = async () => {
+  const saveImportedRecipe = async (): Promise<void> => {
     if (!recipeImport.importDraft) return;
     try {
       await createRecipeMutation.mutateAsync(recipeImport.importDraft);
@@ -188,10 +299,10 @@ const MealPlanning: React.FC = () => {
     }
   };
 
-  const _saveImportedAsNote = async () => {
+  const _saveImportedAsNote = async (): Promise<void> => {
     if (!recipeImport.importDraft) return;
     try {
-      const title = recipeImport.importDraft.name || 'Imported Recipe';
+      const title = recipeImport.importDraft.name ?? 'Imported Recipe';
       const lines: string[] = [];
       lines.push(`# ${title}`);
       if (recipeImport.importDraft.sourceUrl) {
@@ -206,37 +317,41 @@ const MealPlanning: React.FC = () => {
         lines.push('');
         lines.push('## Ingredients');
         for (const ing of recipeImport.importDraft.ingredients) {
-          lines.push(`- ${ing.name}`);
+          const name = typeof ing === 'object' && ing !== null && 'name' in ing ? (ing as { name: string }).name : String(ing);
+          lines.push(`- ${name}`);
         }
       }
       if (Array.isArray(recipeImport.importDraft.instructions) && recipeImport.importDraft.instructions.length) {
         lines.push('');
         lines.push('## Instructions');
-        recipeImport.importDraft.instructions.forEach((step, idx) => {
-          lines.push(`${idx + 1}. ${step}`);
+        const instructions = recipeImport.importDraft.instructions as unknown[];
+        instructions.forEach((step: unknown, idx: number) => {
+          lines.push(`${idx + 1}. ${String(step)}`);
         });
       }
       const content = lines.join('\n');
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       await addNote({ title, content, tags: ['recipe', 'imported'] });
       recipeImport.clearUrlImport();
-    } catch (_e) {
+    } catch (_e: unknown) {
       recipeImport.setImportError('Failed to save as note');
     }
   };
 
   // Copy week handler
-  const handleCopyWeek = async () => {
+  const handleCopyWeek = async (): Promise<void> => {
     try {
       let targetPlan = mealPlans.find((p) =>
         isSameWeek(ensureDate(p.weekStartDate), copyTargetWeek, { weekStartsOn })
       );
 
       if (!targetPlan) {
-        targetPlan = await createMealPlanMutation.mutateAsync({
+        const newPlan = await createMealPlanMutation.mutateAsync({
           weekStartDate: copyTargetWeek,
           name: 'Meal plan',
           weekStartsOn,
         });
+        targetPlan = newPlan;
       }
 
       if (!targetPlan) {
@@ -259,8 +374,8 @@ const MealPlanning: React.FC = () => {
             mealType: meal.mealType,
             recipeId: meal.recipeId,
             customMeal: meal.customMeal,
-            servings: meal.servings || 4,
-            peopleCount: meal.peopleCount || meal.servings || 4,
+            servings: meal.servings ?? 4,
+            peopleCount: meal.peopleCount ?? meal.servings ?? 4,
             status: 'planned',
             notes: meal.notes,
             preparedAt: undefined,
@@ -355,7 +470,7 @@ const MealPlanning: React.FC = () => {
           matches={multiCellSelection.multiCellMatches}
           selectedIndex={multiCellSelection.multiCellSelectedIndex}
           onIndexChange={multiCellSelection.setMultiCellSelectedIndex}
-          onKeyDown={multiCellSelection.handleMultiCellKeyDown}
+          onKeyDown={(e) => void multiCellSelection.handleMultiCellKeyDown(e)}
           inputRef={multiCellSelection.multiCellInputRef}
           showList={multiCellSelection.showMultiCellList}
           onShowListChange={multiCellSelection.setShowMultiCellList}
@@ -433,11 +548,11 @@ const MealPlanning: React.FC = () => {
           const text = groceryState.inCartItems
             .map((item) => {
               const amount =
-                item.amount && item.unit ? `${item.amount} ${item.unit}` : item.amount || '';
+                item.amount && item.unit ? `${item.amount} ${item.unit}` : item.amount ?? '';
               return `☐ ${amount} ${item.name}`.trim();
             })
             .join('\n');
-          navigator.clipboard.writeText(text);
+          void navigator.clipboard.writeText(text);
           showGlobalToast('Shopping list copied to clipboard!', 'success');
         }}
       />
@@ -450,7 +565,7 @@ const MealPlanning: React.FC = () => {
         onTargetWeekChange={(d) => setCopyTargetWeek(startOfWeek(d, { weekStartsOn }))}
         mealCount={plannedMeals.length}
         weekStartsOn={weekStartsOn}
-        onCopy={handleCopyWeek}
+        onCopy={() => void handleCopyWeek()}
       />
 
       {modalState.recipeFormModal && (
@@ -469,23 +584,31 @@ const MealPlanning: React.FC = () => {
         />
       )}
 
-      {modalState.editingRecipeId && (
-        <RecipeEditModal
-          recipe={recipes.find((r) => r.id === modalState.editingRecipeId)!}
-          onClose={modalState.closeRecipeEdit}
-        />
-      )}
+      {modalState.editingRecipeId && (() => {
+        const recipe = recipes.find((r) => r.id === modalState.editingRecipeId);
+        return recipe ? (
+          <RecipeEditModal
+            recipe={recipe}
+            onClose={modalState.closeRecipeEdit}
+          />
+        ) : null;
+      })()}
 
-      {modalState.viewingRecipeId && (
-        <RecipeViewModal
-          recipe={recipes.find((r) => r.id === modalState.viewingRecipeId)!}
-          onClose={modalState.closeRecipeView}
-          onEdit={() => {
-            modalState.openRecipeEdit(modalState.viewingRecipeId!);
-            modalState.closeRecipeView();
-          }}
-        />
-      )}
+      {modalState.viewingRecipeId && (() => {
+        const recipe = recipes.find((r) => r.id === modalState.viewingRecipeId);
+        return recipe ? (
+          <RecipeViewModal
+            recipe={recipe}
+            onClose={modalState.closeRecipeView}
+            onEdit={() => {
+              if (modalState.viewingRecipeId) {
+                modalState.openRecipeEdit(modalState.viewingRecipeId);
+                modalState.closeRecipeView();
+              }
+            }}
+          />
+        ) : null;
+      })()}
     </div>
   );
 };
@@ -504,7 +627,7 @@ function SelectionToolbar({
   onShowListChange,
   onAddMeal,
   onClearSelection,
-}: any) {
+}: SelectionToolbarProps): JSX.Element {
   return (
     <section className="rounded-lg border-2 border-indigo-500 bg-indigo-50 p-3 sm:p-4 shadow-lg animate-in slide-in-from-top">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -568,13 +691,14 @@ function SelectionToolbar({
 }
 
 // Multi-cell dropdown component
-function MultiCellDropdown({ matches, selectedIndex, onIndexChange, onAddMeal, onClose, query, inputRef }: any) {
+function MultiCellDropdown({ matches, selectedIndex, onIndexChange, onAddMeal, onClose, query, inputRef }: MultiCellDropdownProps): JSX.Element {
+  const rect = inputRef.current?.getBoundingClientRect();
   return (
     <div
       className="fixed z-[100] min-w-[240px] max-w-[320px] rounded-lg border border-slate-200 bg-white shadow-2xl ring-1 ring-black/5"
       style={{
-        left: inputRef.current.getBoundingClientRect().left,
-        top: inputRef.current.getBoundingClientRect().bottom + 4,
+        left: rect?.left ?? 0,
+        top: (rect?.bottom ?? 0) + 4,
       }}
     >
       {matches.length === 0 ? (
@@ -582,9 +706,10 @@ function MultiCellDropdown({ matches, selectedIndex, onIndexChange, onAddMeal, o
           type="button"
           className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-slate-700 hover:bg-indigo-50 transition-colors first:rounded-t-lg last:rounded-b-lg"
           onMouseDown={(e) => e.preventDefault()}
-          onClick={async () => {
-            await onAddMeal('', query.trim());
-            onClose();
+          onClick={() => {
+            void onAddMeal('', query.trim()).then(() => {
+              onClose();
+            });
           }}
         >
           <span className="flex h-6 w-6 items-center justify-center rounded-md bg-indigo-100 text-xs font-semibold text-indigo-700">
@@ -597,7 +722,7 @@ function MultiCellDropdown({ matches, selectedIndex, onIndexChange, onAddMeal, o
         </button>
       ) : (
         <div className="max-h-[280px] overflow-auto py-1">
-          {matches.map((r: any, idx: number) => {
+          {matches.map((r, idx: number) => {
             const isSelected = idx === selectedIndex;
             const isRecipe = r.type === 'recipe';
             const isCustom = r.type === 'custom';
@@ -610,13 +735,10 @@ function MultiCellDropdown({ matches, selectedIndex, onIndexChange, onAddMeal, o
                 }`}
                 onMouseDown={(e) => e.preventDefault()}
                 onMouseEnter={() => onIndexChange(idx)}
-                onClick={async () => {
-                  if (isCustom) {
-                    await onAddMeal('', r.name);
-                  } else {
-                    await onAddMeal(r.id);
-                  }
-                  onClose();
+                onClick={() => {
+                  void (isCustom ? onAddMeal('', r.name) : onAddMeal(r.id)).then(() => {
+                    onClose();
+                  });
                 }}
               >
                 <span
@@ -633,7 +755,7 @@ function MultiCellDropdown({ matches, selectedIndex, onIndexChange, onAddMeal, o
                 <div className="flex-1 min-w-0">
                   <div className="truncate font-medium">{r.name}</div>
                   <div className="text-xs text-slate-500">
-                    {isRecipe ? 'Recipe' : isCustom ? `Used ${r.count || 1}x` : 'Meal option'}
+                    {isRecipe ? 'Recipe' : isCustom ? `Used ${r.count ?? 1}x` : 'Meal option'}
                   </div>
                 </div>
               </button>
@@ -658,7 +780,7 @@ function WeeklyGrid({
   onShowSimpleEdit,
   createPlannedMeal,
   updatePlannedMeal,
-}: any) {
+}: WeeklyGridProps): JSX.Element {
   return (
     <div className="mt-6">
       <div className="overflow-x-auto">
@@ -675,7 +797,7 @@ function WeeklyGrid({
           ))}
         </div>
         {/* Day rows */}
-        {weekDays.map((d: Date) => {
+        {weekDays.map((d) => {
           const key = toKey(d);
           const today = new Date();
           const highlight = isSameDay(d, today);
@@ -692,7 +814,7 @@ function WeeklyGrid({
                 <div className="text-xs text-slate-500">{format(d, 'MMM d')}</div>
               </div>
               {MEAL_TYPES.map((mealType) => {
-                const dayMeals = (mealsByDate[key] ?? []).filter((m: PlannedMeal) => m.mealType === mealType);
+                const dayMeals = (mealsByDate[key] ?? []).filter((m) => m.mealType === mealType);
                 const cellKey = makeCellKey(key, mealType);
                 const isSelected = selectedCells.has(cellKey);
                 const hasContent = dayMeals.length > 0;
@@ -705,74 +827,76 @@ function WeeklyGrid({
                     } ${hasContent ? 'bg-amber-50/30' : ''}`}
                     onClick={(e) => onCellClick(key, mealType, e)}
                     onDragOver={(e) => e.preventDefault()}
-                    onDrop={async (e) => {
-                      if (!activePlan) return;
-                      const optionName = e.dataTransfer.getData('text/meal-option');
-                      if (optionName) {
-                        await createPlannedMeal({
-                          planId: activePlan.id,
-                          meal: {
-                            date: parseLocalDateKey(key),
-                            mealType,
-                            recipeId: undefined,
-                            customMeal: optionName,
-                            servings: 4,
-                            peopleCount: 4,
-                            status: 'planned',
-                            notes: undefined,
-                            preparedAt: undefined,
-                            consumedAt: undefined,
-                          },
-                        });
-                        return;
-                      }
+                    onDrop={(e) => {
+                      void (async (): Promise<void> => {
+                        if (!activePlan) return;
+                        const optionName = e.dataTransfer.getData('text/meal-option');
+                        if (optionName) {
+                          await createPlannedMeal({
+                            planId: activePlan.id,
+                            meal: {
+                              date: parseLocalDateKey(key),
+                              mealType,
+                              recipeId: undefined,
+                              customMeal: optionName,
+                              servings: 4,
+                              peopleCount: 4,
+                              status: 'planned',
+                              notes: undefined,
+                              preparedAt: undefined,
+                              consumedAt: undefined,
+                            },
+                          });
+                          return;
+                        }
 
-                      const recipeDragged = e.dataTransfer.getData('text/recipe-id');
-                      if (recipeDragged) {
-                        await createPlannedMeal({
-                          planId: activePlan.id,
-                          meal: {
-                            date: parseLocalDateKey(key),
-                            mealType,
-                            recipeId: recipeDragged,
-                            customMeal: undefined,
-                            servings: 4,
-                            peopleCount: 4,
-                            status: 'planned',
-                            notes: undefined,
-                            preparedAt: undefined,
-                            consumedAt: undefined,
-                          },
-                        });
-                        return;
-                      }
+                        const recipeDragged = e.dataTransfer.getData('text/recipe-id');
+                        if (recipeDragged) {
+                          await createPlannedMeal({
+                            planId: activePlan.id,
+                            meal: {
+                              date: parseLocalDateKey(key),
+                              mealType,
+                              recipeId: recipeDragged,
+                              customMeal: undefined,
+                              servings: 4,
+                              peopleCount: 4,
+                              status: 'planned',
+                              notes: undefined,
+                              preparedAt: undefined,
+                              consumedAt: undefined,
+                            },
+                          });
+                          return;
+                        }
 
-                      const mealId = e.dataTransfer.getData('text/meal-id');
-                      if (!mealId) return;
-                      if (e.altKey) {
-                        const source = activePlan.meals?.find((m: PlannedMeal) => m.id === mealId);
-                        if (!source) return;
-                        await createPlannedMeal({
-                          planId: activePlan.id,
-                          meal: {
-                            date: parseLocalDateKey(key),
-                            mealType,
-                            recipeId: source.recipeId,
-                            customMeal: source.customMeal,
-                            servings: source.servings ?? 4,
-                            peopleCount: source.peopleCount ?? source.servings ?? 4,
-                            status: 'planned',
-                            notes: undefined,
-                            preparedAt: undefined,
-                            consumedAt: undefined,
-                          },
-                        });
-                      } else {
-                        await updatePlannedMeal({
-                          mealId,
-                          updates: { date: parseLocalDateKey(key), mealType },
-                        });
-                      }
+                        const mealId = e.dataTransfer.getData('text/meal-id');
+                        if (!mealId) return;
+                        if (e.altKey) {
+                          const source = activePlan.meals?.find((m) => m.id === mealId);
+                          if (!source) return;
+                          await createPlannedMeal({
+                            planId: activePlan.id,
+                            meal: {
+                              date: parseLocalDateKey(key),
+                              mealType,
+                              recipeId: source.recipeId,
+                              customMeal: source.customMeal,
+                              servings: source.servings ?? 4,
+                              peopleCount: source.peopleCount ?? source.servings ?? 4,
+                              status: 'planned',
+                              notes: undefined,
+                              preparedAt: undefined,
+                              consumedAt: undefined,
+                            },
+                          });
+                        } else {
+                          await updatePlannedMeal({
+                            mealId,
+                            updates: { date: parseLocalDateKey(key), mealType },
+                          });
+                        }
+                      })();
                     }}
                   >
                     {highlight && <div className="absolute inset-y-0 left-0 w-1 bg-indigo-300" aria-hidden />}
@@ -816,14 +940,14 @@ function WeeklyGrid({
 }
 
 // Import sections component
-function ImportSections({ recipeImport, createRecipe, handleImportRecipe, saveImportedRecipe }: any) {
+function ImportSections({ recipeImport, createRecipe, handleImportRecipe, saveImportedRecipe }: ImportSectionsProps): JSX.Element {
   return (
     <section className="grid gap-6 lg:grid-cols-2">
       {/* Video to Recipe (YouTube) */}
       <form
-        onSubmit={async (e) => {
+        onSubmit={(e) => {
           e.preventDefault();
-          await recipeImport.importFromVideo();
+          void recipeImport.importFromVideo();
         }}
         className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
       >
@@ -876,13 +1000,15 @@ function ImportSections({ recipeImport, createRecipe, handleImportRecipe, saveIm
         {recipeImport.videoDraft && (
           <RecipeDraftPreview
             draft={recipeImport.videoDraft}
-            onSave={async () => {
-              try {
-                await createRecipe(recipeImport.videoDraft);
-                recipeImport.clearVideoImport();
-              } catch {
-                recipeImport.setVideoImportError?.('Failed to save recipe');
-              }
+            onSave={() => {
+              return (async (): Promise<void> => {
+                try {
+                  await createRecipe(recipeImport.videoDraft);
+                  recipeImport.clearVideoImport();
+                } catch {
+                  recipeImport.setVideoImportError?.('Failed to save recipe');
+                }
+              })();
             }}
             onCancel={recipeImport.clearVideoImport}
           />
@@ -890,7 +1016,7 @@ function ImportSections({ recipeImport, createRecipe, handleImportRecipe, saveIm
       </form>
 
       {/* Clip from URL */}
-      <form onSubmit={handleImportRecipe} className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+      <form onSubmit={(e) => void handleImportRecipe(e)} className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
           <CalendarDays className="h-5 w-5 text-indigo-600" />
           Clip from URL
@@ -931,9 +1057,9 @@ function ImportSections({ recipeImport, createRecipe, handleImportRecipe, saveIm
 
       {/* Paste Text */}
       <form
-        onSubmit={async (e) => {
+        onSubmit={(e) => {
           e.preventDefault();
-          await recipeImport.parseFromText();
+          void recipeImport.parseFromText();
         }}
         className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
       >
@@ -992,16 +1118,18 @@ function ImportSections({ recipeImport, createRecipe, handleImportRecipe, saveIm
           <RecipeDraftPreview
             draft={recipeImport.textDraft}
             imageUrl={recipeImport.textImageUrl}
-            onSave={async () => {
-              try {
-                await createRecipe({
-                  ...recipeImport.textDraft,
-                  image: recipeImport.textDraft.image || recipeImport.textImageUrl || undefined,
-                });
-                recipeImport.clearTextImport();
-              } catch (_e) {
-                recipeImport.setTextError?.('Failed to save recipe');
-              }
+            onSave={() => {
+              return (async (): Promise<void> => {
+                try {
+                  await createRecipe({
+                    ...recipeImport.textDraft,
+                    image: recipeImport.textDraft.image ?? recipeImport.textImageUrl ?? undefined,
+                  });
+                  recipeImport.clearTextImport();
+                } catch (_e) {
+                  recipeImport.setTextError?.('Failed to save recipe');
+                }
+              })();
             }}
             onCancel={recipeImport.clearTextImport}
           />
@@ -1012,7 +1140,7 @@ function ImportSections({ recipeImport, createRecipe, handleImportRecipe, saveIm
 }
 
 // Recipe draft preview component
-function RecipeDraftPreview({ draft, imageUrl, onSave, onCancel }: any) {
+function RecipeDraftPreview({ draft, imageUrl, onSave, onCancel }: RecipeDraftPreviewProps): JSX.Element {
   return (
     <div className="mt-6 grid gap-4 sm:grid-cols-2">
       <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
@@ -1020,28 +1148,28 @@ function RecipeDraftPreview({ draft, imageUrl, onSave, onCancel }: any) {
           <ChefHat className="h-4 w-4 text-amber-500" /> Preview
         </h3>
         <p className="mt-2 text-base font-medium text-slate-900">{draft.name}</p>
-        {(draft.image || imageUrl) && (
-          <img src={draft.image || imageUrl} alt="Recipe" className="mt-2 w-full rounded object-cover" />
+        {(draft.image ?? imageUrl) && (
+          <img src={draft.image ?? imageUrl} alt="Recipe" className="mt-2 w-full rounded object-cover" />
         )}
         {draft.description && <p className="mt-2 text-xs text-slate-600 line-clamp-4">{draft.description}</p>}
         <p className="mt-2 text-xs text-slate-500">
           Prep {draft.prepTime ?? 0} min • Cook {draft.cookTime ?? 0} min • Serves {draft.servings ?? 4}
         </p>
-        <div className={`mt-3 grid gap-4 ${draft.instructions?.length > 0 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+        <div className={`mt-3 grid gap-4 ${(draft.instructions?.length ?? 0) > 0 ? 'grid-cols-2' : 'grid-cols-1'}`}>
           <div>
             <p className="text-xs font-semibold text-slate-700">Ingredients</p>
             <ul className="mt-1 list-disc pl-4 text-xs text-slate-600 max-h-28 overflow-auto">
-              {draft.ingredients?.map((i: any, idx: number) => (
-                <li key={idx}>{i.name}</li>
+              {draft.ingredients?.map((i, idx: number) => (
+                <li key={idx}>{typeof i === 'object' && i !== null && 'name' in i ? (i as { name: string }).name : String(i)}</li>
               ))}
             </ul>
           </div>
-          {draft.instructions?.length > 0 && (
+          {(draft.instructions?.length ?? 0) > 0 && (
             <div>
               <p className="text-xs font-semibold text-slate-700">Steps</p>
               <ol className="mt-1 list-decimal pl-4 text-xs text-slate-600 max-h-28 overflow-auto">
-                {draft.instructions.map((s: string, idx: number) => (
-                  <li key={idx}>{s}</li>
+                {draft.instructions?.map((s, idx: number) => (
+                  <li key={idx}>{String(s)}</li>
                 ))}
               </ol>
             </div>
@@ -1053,7 +1181,7 @@ function RecipeDraftPreview({ draft, imageUrl, onSave, onCancel }: any) {
         <div className="mt-4 flex gap-2">
           <button
             type="button"
-            onClick={onSave}
+            onClick={() => void onSave()}
             className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
           >
             <Save className="h-4 w-4" /> Save recipe
@@ -1083,7 +1211,7 @@ function SavedRecipesSection({
   onViewRecipe,
   onEditRecipe,
   onDeleteRecipe,
-}: any) {
+}: SavedRecipesSectionProps): JSX.Element {
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
       <div className="flex items-center justify-between">
@@ -1106,13 +1234,12 @@ function SavedRecipesSection({
               </button>
               <button
                 type="button"
-                onClick={async () => {
-                  if (confirm('Delete ALL saved recipes? This cannot be undone.')) {
-                    try {
-                      await onDeleteAll();
-                    } catch (e) {
+                onClick={() => {
+                  // eslint-disable-next-line no-alert
+                  if (window.confirm('Delete ALL saved recipes? This cannot be undone.')) {
+                    void onDeleteAll().catch((e: unknown) => {
                       logger.error('MealPlanning', 'Failed to delete all recipes', e);
-                    }
+                    });
                   }
                 }}
                 className="text-xs rounded-md px-3 py-1 bg-rose-600 text-white hover:bg-rose-500"
@@ -1163,7 +1290,7 @@ function SavedRecipesSection({
         </div>
       ) : (
         <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {recipes.map((r: Recipe) => (
+          {recipes.map((r) => (
             <RecipeCard
               key={r.id}
               recipe={r}

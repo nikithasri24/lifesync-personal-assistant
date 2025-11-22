@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import {
   CheckSquare,
   Target,
@@ -17,27 +18,66 @@ import { useHabitsQuery, useCompleteHabitMutation } from '../hooks/useHabitsQuer
 import { useNotesQuery } from '../hooks/useNotesQuery';
 import { useJournalQuery } from '../hooks/useJournalQuery';
 import { logger } from '../services/logger';
+import type { Task } from '../lib/supabase';
+import type { Habit, Note, JournalEntry } from '../types';
 
-export default function Dashboard() {
+interface TasksQueryResult {
+  data: Task[];
+  isLoading: boolean;
+}
+
+interface HabitsQueryResult {
+  data: Habit[];
+}
+
+interface NotesQueryResult {
+  data: Note[];
+}
+
+interface JournalQueryResult {
+  data: JournalEntry[];
+}
+
+interface ToggleTaskMutation {
+  mutateAsync: (args: { taskId: string; currentStatus: string }) => Promise<void>;
+}
+
+interface CompleteHabitMutation {
+  mutateAsync: (habitId: string) => Promise<void>;
+}
+
+export default function Dashboard(): JSX.Element {
   const { setActiveView } = useAppStore();
 
   // React Query hooks for all data sources
-  const { data: tasks = [], isLoading: tasksLoading } = useTasksQuery();
-  const { data: habits = [] } = useHabitsQuery();
-  const { data: notes = [] } = useNotesQuery();
-  const { data: journalEntries = [] } = useJournalQuery();
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+  const tasksQuery = useTasksQuery();
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+  const habitsQuery = useHabitsQuery();
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+  const notesQuery = useNotesQuery();
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+  const journalQuery = useJournalQuery();
 
-  const toggleTaskMutation = useToggleTaskMutation();
-  const completeHabitMutation = useCompleteHabitMutation();
+  const tasks: Task[] = (tasksQuery as TasksQueryResult).data ?? [];
+  const tasksLoading: boolean = (tasksQuery as TasksQueryResult).isLoading ?? false;
+  const habits: Habit[] = (habitsQuery as HabitsQueryResult).data ?? [];
+  const notes: Note[] = (notesQuery as NotesQueryResult).data ?? [];
+  const journalEntries: JournalEntry[] = (journalQuery as JournalQueryResult).data ?? [];
+
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+  const toggleTaskMutation = useToggleTaskMutation() as ToggleTaskMutation;
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+  const completeHabitMutation = useCompleteHabitMutation() as CompleteHabitMutation;
 
   const [isLoading, setIsLoading] = useState(true);
   const [completingTask, setCompletingTask] = useState<string | null>(null);
   const { toast, showToast, dismissToast } = useToast();
 
-  const completeTask = async (taskId: string) => {
+  const completeTask = async (taskId: string): Promise<void> => {
     try {
       setCompletingTask(taskId);
-      const task = tasks.find((t) => t.id === taskId);
+      const task = tasks.find((t: Task) => t.id === taskId);
       if (!task) return;
       await toggleTaskMutation.mutateAsync({ taskId, currentStatus: task.status });
     } catch (error) {
@@ -47,7 +87,7 @@ export default function Dashboard() {
     }
   };
 
-  const completeHabitSafely = async (habitId: string) => {
+  const completeHabitSafely = async (habitId: string): Promise<void> => {
     try {
       await completeHabitMutation.mutateAsync(habitId);
     } catch (error) {
@@ -66,29 +106,29 @@ export default function Dashboard() {
   // No need to call it again here to avoid race condition and duplicate task creation
 
   // Helper to identify 75 Hard tasks (both old 'sfh' tag and new '75hard' tag)
-  const isSFH = (t: any) => {
+  const isSFH = (t: Task): boolean => {
     const tags = Array.isArray(t.tags) ? t.tags : [];
-    return tags.includes('sfh') || tags.includes('75hard');
+    return tags.includes('sfh') ?? tags.includes('75hard');
   };
 
-  const todayTodosAll = tasks.filter(task =>
+  const todayTodosAll = tasks.filter((task: Task): boolean =>
     task.status !== 'done' && !task.deleted &&
-    task.dueDate &&
-    isToday(task.dueDate)
+    !!task.due_date &&
+    isToday(new Date(task.due_date))
   );
   // Exclude 75 Hard from Dashboard metrics and list to focus on actual tasks
-  const todayTodos = todayTodosAll.filter(t => !isSFH(t));
+  const todayTodos = todayTodosAll.filter((t: Task): boolean => !isSFH(t));
 
-  const upcomingTodos = tasks.filter(task => 
-    task.status !== 'done' && !task.deleted && 
-    task.dueDate && 
-    task.dueDate > new Date() &&
-    task.dueDate <= addDays(new Date(), 7)
-  ).filter(t => !isSFH(t));
+  const upcomingTodos = tasks.filter((task: Task): boolean =>
+    task.status !== 'done' && !task.deleted &&
+    !!task.due_date &&
+    new Date(task.due_date) > new Date() &&
+    new Date(task.due_date) <= addDays(new Date(), 7)
+  ).filter((t: Task): boolean => !isSFH(t));
 
-  const todayHabits = habits.filter(habit => {
+  const todayHabits = habits.filter((habit: Habit): boolean => {
     const today = new Date();
-    const todayCompletions = habit.completions.filter((completion) =>
+    const todayCompletions = habit.completions.filter((completion: { completedAt: Date }): boolean =>
       isSameDay(completion.completedAt, today)
     );
     const targetForToday = Math.max(1, habit.targetCount);
@@ -96,10 +136,10 @@ export default function Dashboard() {
   });
 
   const recentNotes = notes
-    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+    .sort((a: Note, b: Note): number => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
     .slice(0, 5);
 
-  const thisWeekJournalEntries = journalEntries.filter(entry => {
+  const thisWeekJournalEntries = journalEntries.filter((entry: JournalEntry): boolean => {
     const entryDate = new Date(entry.createdAt);
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
@@ -107,44 +147,50 @@ export default function Dashboard() {
   });
 
   // Dashboard completion stats - exclude 75 Hard tasks since they're managed separately
-  const completedTodosThisWeek = tasks.filter(task => {
+  const completedTodosThisWeek = tasks.filter((task: Task): boolean => {
     if (task.status !== 'done' || task.deleted) return false;
     if (isSFH(task)) return false; // Exclude 75 Hard tasks from completion stats
-    const completedDate = task.completedAt || task.updatedAt || task.createdAt;
+    const completedDate = task.completed_at ? new Date(task.completed_at) : (task.created_at ? new Date(task.created_at) : null);
     if (!completedDate) return false;
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
     return completedDate >= weekAgo;
   });
 
-  const statsCards = [
+  const statsCards: Array<{
+    title: string;
+    value: number | string;
+    icon: typeof CheckSquare;
+    color: string;
+    onClick: () => void;
+  }> = [
     {
       title: 'Today\'s Tasks',
       value: todayTodos.length,
       icon: CheckSquare,
       color: 'bg-blue-500',
-      onClick: () => setActiveView('todos')
+      onClick: (): void => setActiveView('todos')
     },
     {
       title: 'Pending Habits',
       value: todayHabits.length,
       icon: Target,
       color: 'bg-green-500',
-      onClick: () => setActiveView('habits')
+      onClick: (): void => setActiveView('habits')
     },
     {
       title: 'Total Notes',
       value: notes.length,
       icon: FileText,
       color: 'bg-purple-500',
-      onClick: () => setActiveView('notes')
+      onClick: (): void => setActiveView('notes')
     },
     {
       title: 'Week\'s Progress',
       value: `${completedTodosThisWeek.length} tasks`,
       icon: TrendingUp,
       color: 'bg-orange-500',
-      onClick: () => setActiveView('todos')
+      onClick: (): void => setActiveView('todos')
     }
   ];
 
@@ -224,14 +270,14 @@ export default function Dashboard() {
                 <p className="text-muted">No tasks for today!</p>
               </div>
             ) : (
-              todayTodos.slice(0, 5).map((task, index) => (
-                <div 
-                  key={task.id} 
+              todayTodos.slice(0, 5).map((task: Task, index: number) => (
+                <div
+                  key={task.id}
                   className="group flex items-center space-x-4 p-4 bg-tertiary rounded-xl hover:shadow-md transition-all duration-200 hover:-translate-y-1"
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
                   <button
-                    onClick={() => completeTask(task.id)}
+                    onClick={(): void => { void completeTask(task.id); }}
                     disabled={completingTask === task.id}
                     className={`flex items-center justify-center w-6 h-6 rounded border-2 transition-all duration-200 ${
                       completingTask === task.id
@@ -248,9 +294,9 @@ export default function Dashboard() {
                   </button>
                   <div className="flex-1">
                     <p className="text-sm font-medium text-primary">{task.title}</p>
-                    {task.dueDate && (
+                    {task.due_date && (
                       <p className="text-xs text-secondary mt-1">
-                        Due: {format(task.dueDate, 'MMM dd')}
+                        Due: {format(new Date(task.due_date), 'MMM dd')}
                       </p>
                     )}
                   </div>
@@ -260,7 +306,7 @@ export default function Dashboard() {
                     task.priority === 'medium' ? 'bg-warning-light text-warning' :
                     'bg-tertiary text-secondary'
                   }`}>
-                    {task.priority || 'low'}
+                    {task.priority ?? 'low'}
                   </span>
                 </div>
               ))
@@ -286,21 +332,21 @@ export default function Dashboard() {
                 <p className="text-muted">All habits completed!</p>
               </div>
             ) : (
-              todayHabits.slice(0, 5).map((habit, index) => {
-                const todayCompletions = habit.completions.filter((completion) =>
+              todayHabits.slice(0, 5).map((habit: Habit, index: number) => {
+                const todayCompletions = habit.completions.filter((completion: { completedAt: Date }): boolean =>
                   isSameDay(completion.completedAt, new Date())
                 ).length;
                 const targetForToday = Math.max(1, habit.targetCount);
                 const reachedTodayTarget = todayCompletions >= targetForToday;
 
                 return (
-                  <div 
-                    key={habit.id} 
+                  <div
+                    key={habit.id}
                     className="group flex items-center justify-between p-4 bg-tertiary rounded-xl hover:shadow-md transition-all duration-200 hover:-translate-y-1"
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
                     <div className="flex items-center space-x-4">
-                      <div 
+                      <div
                         className="w-4 h-4 rounded-full shadow-sm"
                         style={{ backgroundColor: habit.color }}
                       />
@@ -323,7 +369,7 @@ export default function Dashboard() {
                       </div>
                     </div>
                     <button
-                      onClick={() => completeHabitSafely(habit.id)}
+                      onClick={(): void => { void completeHabitSafely(habit.id); }}
                       disabled={reachedTodayTarget}
                       className={`btn-primary text-xs px-4 py-2 hover:shadow-lg transform transition-all duration-200 ${reachedTodayTarget ? 'cursor-not-allowed opacity-60 hover:shadow-none hover:scale-100' : 'hover:scale-105'}`}
                     >
@@ -354,9 +400,9 @@ export default function Dashboard() {
                 <p className="text-muted">No notes yet. Start writing!</p>
               </div>
             ) : (
-              recentNotes.map((note, index) => (
-                <div 
-                  key={note.id} 
+              recentNotes.map((note: Note, index: number) => (
+                <div
+                  key={note.id}
                   className="group p-4 bg-tertiary rounded-xl hover:shadow-md transition-all duration-200 hover:-translate-y-1"
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
@@ -367,7 +413,7 @@ export default function Dashboard() {
                     {format(new Date(note.updatedAt), 'MMM dd, yyyy')}
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {note.tags.slice(0, 3).map((tag) => (
+                    {note.tags.slice(0, 3).map((tag: string) => (
                       <span
                         key={tag}
                         className="px-3 py-1 bg-accent-soft text-accent rounded-full text-xs font-medium"
@@ -422,15 +468,15 @@ export default function Dashboard() {
         <div className="card animate-fade-in">
           <h3 className="text-xl font-semibold text-primary font-display mb-6">Upcoming Deadlines</h3>
           <div className="space-y-4">
-            {upcomingTodos.slice(0, 3).map((task, index) => (
-              <div 
-                key={task.id} 
+            {upcomingTodos.slice(0, 3).map((task: Task, index: number) => (
+              <div
+                key={task.id}
                 className="group flex items-center justify-between p-4 bg-warning-light border border-warning rounded-xl hover:shadow-lg transition-all duration-200 hover:-translate-y-1"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
                 <div className="flex items-center space-x-4">
                   <button
-                    onClick={() => completeTask(task.id)}
+                    onClick={(): void => { void completeTask(task.id); }}
                     disabled={completingTask === task.id}
                     className={`flex items-center justify-center w-8 h-8 rounded-lg border-2 transition-all duration-200 ${
                       completingTask === task.id
@@ -450,7 +496,7 @@ export default function Dashboard() {
                       {task.title}
                     </p>
                     <p className="text-xs text-secondary mt-1">
-                      Due: {task.dueDate && format(task.dueDate, 'MMM dd, yyyy')}
+                      Due: {task.due_date && format(new Date(task.due_date), 'MMM dd, yyyy')}
                     </p>
                   </div>
                 </div>
@@ -459,7 +505,7 @@ export default function Dashboard() {
                   task.priority === 'high' ? 'bg-warning text-white' :
                   'bg-warning text-white'
                 }`}>
-                  {task.priority || 'low'}
+                  {task.priority ?? 'low'}
                 </span>
               </div>
             ))}

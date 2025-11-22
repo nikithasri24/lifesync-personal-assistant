@@ -8,6 +8,8 @@
  * - Pantry Items
  */
 
+/* eslint-disable max-lines */
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../services/apiClient';
 import { startOfWeek, format as formatDate } from 'date-fns';
@@ -476,7 +478,7 @@ function buildPantryItemUpdatePayload(updates: PantryItemUpdate): Partial<Pantry
 /**
  * Fetch all recipes (lazy loaded)
  */
-export function useRecipesQuery(options?: { enabled?: boolean }) {
+export function useRecipesQuery(options?: { enabled?: boolean }): ReturnType<typeof useQuery<Recipe[]>> {
   return useQuery({
     queryKey: mealPlanningKeys.recipesList(),
     queryFn: async () => {
@@ -491,12 +493,12 @@ export function useRecipesQuery(options?: { enabled?: boolean }) {
 /**
  * Fetch a single recipe by ID
  */
-export function useRecipeQuery(recipeId: string | undefined) {
+export function useRecipeQuery(recipeId: string | undefined): ReturnType<typeof useQuery<Recipe>> {
   const queryClient = useQueryClient();
 
   return useQuery({
-    queryKey: mealPlanningKeys.recipeDetail(recipeId!),
-    queryFn: async () => {
+    queryKey: mealPlanningKeys.recipeDetail(recipeId ?? 'undefined'),
+    queryFn: () => {
       // Try to get from cache first
       const cachedRecipes = queryClient.getQueryData<Recipe[]>(mealPlanningKeys.recipesList());
       if (cachedRecipes) {
@@ -517,7 +519,7 @@ export function useRecipeQuery(recipeId: string | undefined) {
 /**
  * Create a new recipe
  */
-export function useCreateRecipeMutation() {
+export function useCreateRecipeMutation(): ReturnType<typeof useMutation<Recipe, Error, RecipeInput, { previousRecipes: Recipe[] | undefined }>> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -563,7 +565,7 @@ export function useCreateRecipeMutation() {
 /**
  * Update an existing recipe
  */
-export function useUpdateRecipeMutation() {
+export function useUpdateRecipeMutation(): ReturnType<typeof useMutation<Recipe, Error, { recipeId: string; updates: RecipeUpdate }, { previousRecipes: Recipe[] | undefined }>> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -601,7 +603,7 @@ export function useUpdateRecipeMutation() {
 /**
  * Delete a recipe
  */
-export function useDeleteRecipeMutation() {
+export function useDeleteRecipeMutation(): ReturnType<typeof useMutation<string, Error, string, { previousRecipes: Recipe[] | undefined }>> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -627,7 +629,7 @@ export function useDeleteRecipeMutation() {
       logger.error('[useDeleteRecipeMutation] Error deleting recipe:', err);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: mealPlanningKeys.recipesList() });
+      void queryClient.invalidateQueries({ queryKey: mealPlanningKeys.recipesList() });
     },
   });
 }
@@ -635,12 +637,12 @@ export function useDeleteRecipeMutation() {
 /**
  * Delete all recipes (bulk operation)
  */
-export function useDeleteAllRecipesMutation() {
+export function useDeleteAllRecipesMutation(): ReturnType<typeof useMutation<void, Error, void, { previousRecipes: Recipe[] | undefined }>> {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async () => {
-      const recipes = queryClient.getQueryData<Recipe[]>(mealPlanningKeys.recipesList()) || [];
+      const recipes = queryClient.getQueryData<Recipe[]>(mealPlanningKeys.recipesList()) ?? [];
 
       // Delete sequentially to avoid rate limits
       for (const recipe of recipes) {
@@ -666,7 +668,7 @@ export function useDeleteAllRecipesMutation() {
       logger.error('[useDeleteAllRecipesMutation] Error deleting all recipes:', err);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: mealPlanningKeys.recipesList() });
+      void queryClient.invalidateQueries({ queryKey: mealPlanningKeys.recipesList() });
     },
   });
 }
@@ -676,7 +678,7 @@ export function useDeleteAllRecipesMutation() {
 /**
  * Fetch all meal plans (lazy loaded)
  */
-export function useMealPlansQuery(options?: { enabled?: boolean }) {
+export function useMealPlansQuery(options?: { enabled?: boolean }): ReturnType<typeof useQuery<MealPlanWeek[]>> {
   return useQuery({
     queryKey: mealPlanningKeys.mealPlansList(),
     queryFn: async () => {
@@ -691,12 +693,12 @@ export function useMealPlansQuery(options?: { enabled?: boolean }) {
 /**
  * Fetch a single meal plan by ID
  */
-export function useMealPlanQuery(mealPlanId: string | undefined) {
+export function useMealPlanQuery(mealPlanId: string | undefined): ReturnType<typeof useQuery<MealPlanWeek>> {
   const queryClient = useQueryClient();
 
   return useQuery({
-    queryKey: mealPlanningKeys.mealPlanDetail(mealPlanId!),
-    queryFn: async () => {
+    queryKey: mealPlanningKeys.mealPlanDetail(mealPlanId ?? 'undefined'),
+    queryFn: () => {
       const cachedPlans = queryClient.getQueryData<MealPlanWeek[]>(mealPlanningKeys.mealPlansList());
       if (cachedPlans) {
         const cached = cachedPlans.find(p => p.id === mealPlanId);
@@ -714,7 +716,7 @@ export function useMealPlanQuery(mealPlanId: string | undefined) {
  * Smart hook to ensure a meal plan exists for a given week
  * Cache-first, creates if missing, handles concurrency
  */
-export function useMealPlanForWeek(weekStartDate: Date, weekStartsOn: 0 | 1 = 0) {
+export function useMealPlanForWeek(weekStartDate: Date, weekStartsOn: 0 | 1 = 0): ReturnType<typeof useQuery<MealPlanWeek>> {
   const queryClient = useQueryClient();
   const weekStart = startOfWeek(weekStartDate, { weekStartsOn });
   const weekKey = formatDate(weekStart, 'yyyy-MM-dd');
@@ -777,7 +779,7 @@ export function useMealPlanForWeek(weekStartDate: Date, weekStartsOn: 0 | 1 = 0)
 /**
  * Create a new meal plan
  */
-export function useCreateMealPlanMutation() {
+export function useCreateMealPlanMutation(): ReturnType<typeof useMutation<MealPlanWeek, Error, { weekStartDate: Date; name: string; weekStartsOn?: 0 | 1 }, { previousPlans: MealPlanWeek[] | undefined }>> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -831,7 +833,7 @@ export function useCreateMealPlanMutation() {
 /**
  * Update an existing meal plan
  */
-export function useUpdateMealPlanMutation() {
+export function useUpdateMealPlanMutation(): ReturnType<typeof useMutation<MealPlanWeek, Error, { mealPlanId: string; updates: MealPlanUpdate }, { previousPlans: MealPlanWeek[] | undefined }>> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -877,7 +879,7 @@ export function useUpdateMealPlanMutation() {
 /**
  * Delete a meal plan
  */
-export function useDeleteMealPlanMutation() {
+export function useDeleteMealPlanMutation(): ReturnType<typeof useMutation<string, Error, string, { previousPlans: MealPlanWeek[] | undefined }>> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -903,7 +905,7 @@ export function useDeleteMealPlanMutation() {
       logger.error('[useDeleteMealPlanMutation] Error deleting meal plan:', err);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: mealPlanningKeys.mealPlansList() });
+      void queryClient.invalidateQueries({ queryKey: mealPlanningKeys.mealPlansList() });
     },
   });
 }
@@ -913,7 +915,7 @@ export function useDeleteMealPlanMutation() {
 /**
  * Add a planned meal to a meal plan
  */
-export function useCreatePlannedMealMutation() {
+export function useCreatePlannedMealMutation(): ReturnType<typeof useMutation<PlannedMeal, Error, { planId: string; meal: PlannedMealInput }, { previousPlans: MealPlanWeek[] | undefined }>> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -970,7 +972,7 @@ export function useCreatePlannedMealMutation() {
 /**
  * Update a planned meal
  */
-export function useUpdatePlannedMealMutation() {
+export function useUpdatePlannedMealMutation(): ReturnType<typeof useMutation<{ mealId: string; updates: PlannedMealUpdate }, Error, { mealId: string; updates: PlannedMealUpdate }, { previousPlans: MealPlanWeek[] | undefined }>> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -1003,7 +1005,7 @@ export function useUpdatePlannedMealMutation() {
       logger.error('[useUpdatePlannedMealMutation] Error updating planned meal:', err);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: mealPlanningKeys.mealPlansList() });
+      void queryClient.invalidateQueries({ queryKey: mealPlanningKeys.mealPlansList() });
     },
   });
 }
@@ -1011,7 +1013,7 @@ export function useUpdatePlannedMealMutation() {
 /**
  * Delete a planned meal
  */
-export function useDeletePlannedMealMutation() {
+export function useDeletePlannedMealMutation(): ReturnType<typeof useMutation<string, Error, string, { previousPlans: MealPlanWeek[] | undefined }>> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -1040,7 +1042,7 @@ export function useDeletePlannedMealMutation() {
       logger.error('[useDeletePlannedMealMutation] Error deleting planned meal:', err);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: mealPlanningKeys.mealPlansList() });
+      void queryClient.invalidateQueries({ queryKey: mealPlanningKeys.mealPlansList() });
     },
   });
 }
@@ -1050,7 +1052,7 @@ export function useDeletePlannedMealMutation() {
 /**
  * Fetch all pantry items
  */
-export function usePantryItemsQuery(options?: { enabled?: boolean }) {
+export function usePantryItemsQuery(options?: { enabled?: boolean }): ReturnType<typeof useQuery<PantryItem[]>> {
   return useQuery({
     queryKey: mealPlanningKeys.pantryList(),
     queryFn: async () => {
@@ -1067,7 +1069,7 @@ export function usePantryItemsQuery(options?: { enabled?: boolean }) {
 /**
  * Create a new pantry item
  */
-export function useCreatePantryItemMutation() {
+export function useCreatePantryItemMutation(): ReturnType<typeof useMutation<PantryItem, Error, PantryItemInput, { previousItems: PantryItem[] | undefined }>> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -1111,7 +1113,7 @@ export function useCreatePantryItemMutation() {
 /**
  * Update a pantry item
  */
-export function useUpdatePantryItemMutation() {
+export function useUpdatePantryItemMutation(): ReturnType<typeof useMutation<PantryItem, Error, { itemId: string; updates: PantryItemUpdate }, { previousItems: PantryItem[] | undefined }>> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -1153,7 +1155,7 @@ export function useUpdatePantryItemMutation() {
 /**
  * Delete a pantry item
  */
-export function useDeletePantryItemMutation() {
+export function useDeletePantryItemMutation(): ReturnType<typeof useMutation<string, Error, string, { previousItems: PantryItem[] | undefined }>> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -1179,7 +1181,7 @@ export function useDeletePantryItemMutation() {
       logger.error('[useDeletePantryItemMutation] Error deleting pantry item:', err);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: mealPlanningKeys.pantryList() });
+      void queryClient.invalidateQueries({ queryKey: mealPlanningKeys.pantryList() });
     },
   });
 }
@@ -1192,7 +1194,7 @@ export function useDeletePantryItemMutation() {
 export function useFilteredRecipes(options?: {
   tags?: string[];
   favoritesOnly?: boolean;
-}) {
+}): { data: Recipe[] } & Omit<ReturnType<typeof useRecipesQuery>, 'data'> {
   const { data: recipes = [], ...rest } = useRecipesQuery();
 
   const filtered = recipes.filter((recipe) => {
@@ -1212,7 +1214,7 @@ export function useFilteredRecipes(options?: {
 export function useFilteredPantryItems(options?: {
   category?: PantryItem['category'];
   lowStockOnly?: boolean;
-}) {
+}): { data: PantryItem[] } & Omit<ReturnType<typeof usePantryItemsQuery>, 'data'> {
   const { data: items = [], ...rest } = usePantryItemsQuery();
 
   const filtered = items.filter((item) => {

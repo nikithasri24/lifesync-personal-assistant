@@ -7,9 +7,19 @@
 import { startOfDay, isSameDay } from 'date-fns';
 import { logger } from '../../services/logger';
 import type { Task } from '../../types/seventyFiveHard';
+import type { Task as FocusTask } from '../../types/focusEnhanced';
 import { getStore } from '../utils/storeHelpers';
 import { measurePerformance } from '../utils/performanceHelpers';
 import { toggleSFHTask } from './checkInActions';
+
+// Type augmentation for store methods that aren't in RealAppState interface
+// These methods exist at runtime but aren't typed in the interface
+interface TodoStoreMethods {
+  todos: FocusTask[];
+  addTodo: (todo: Partial<FocusTask>) => Promise<FocusTask>;
+  updateTodo: (id: string, updates: Partial<FocusTask>) => Promise<void>;
+  deleteTodo: (id: string) => Promise<void>;
+}
 
 /**
  * Tag constants for identifying 75 Hard todos
@@ -69,7 +79,7 @@ function getTodoCacheKey(challengeId: string, dayNumber: number, taskId: string)
 }
 
 // Helper to clean expired cache entries
-function cleanExpiredCacheEntries() {
+function cleanExpiredCacheEntries(): void {
   const now = Date.now();
   const expiredKeys: string[] = [];
 
@@ -111,19 +121,20 @@ async function createOrUpdateTodoFromSFHTask(
     if (cachedEntry) {
       logger.info('75Hard→Todo', `💾 Found in cache (id: ${cachedEntry.todoId.slice(0, 8)}) - skipping duplicate creation`);
       // Update completion status if needed
-      const updateStore = getStore();
+      const updateStore = getStore() as typeof getStore & TodoStoreMethods;
       const existingInStore = updateStore.todos.find(t => t.id === cachedEntry.todoId);
-      if (existingInStore && existingInStore.completed !== completed) {
-        await updateStore.updateTodo(cachedEntry.todoId, { completed });
+      if (existingInStore?.completedAt !== undefined && existingInStore.status !== (completed ? 'completed' : 'todo')) {
+        await updateStore.updateTodo(cachedEntry.todoId, { status: completed ? 'completed' : 'todo' });
         logger.info('75Hard→Todo', `✅ Updated completion status for "${task.title}"`);
       }
       return cachedEntry.todoId;
     }
 
     // GUARD 2: Check store state (in case cache was cleared but todo exists)
-    const freshStore = getStore();
+    const freshStore = getStore() as ReturnType<typeof getStore> & TodoStoreMethods;
     const existingTodo = freshStore.todos.find(t => {
-      if (t.deleted) return false; // Skip deleted todos
+      // Note: FocusTask doesn't have a 'deleted' property, checking status instead
+      if (t.status === 'cancelled') return false;
 
       const meta = parseSFHTodoTags(t.tags);
       const matches = meta.isSFHTodo &&
@@ -140,12 +151,11 @@ async function createOrUpdateTodoFromSFHTask(
       logger.info('75Hard→Todo', `✗ No existing todo found`);
     }
 
-    const todoData = {
+    const todoData: Partial<FocusTask> = {
       title: `🔥 ${task.title}`,
-      description: task.description || `75 Hard - Day ${dayNumber}`,
-      status: (completed ? 'done' : 'todo'),
+      description: task.description ?? `75 Hard - Day ${dayNumber}`,
+      status: (completed ? 'completed' : 'todo') as const,
       priority: 'high' as const,
-      categoryId: 'health' as const,
       tags: [
         TODO_TAGS.MARKER,         // '75hard' - main marker
         TODO_TAGS.challenge(challengeId),  // '75hard:challenge-{id}'
@@ -153,19 +163,17 @@ async function createOrUpdateTodoFromSFHTask(
         TODO_TAGS.task(task.id),           // '75hard:task-{id}'
       ],
       dueDate: today,
-      completed,
       completedAt: completed ? new Date() : undefined,
-      notes: `Part of 75 Hard Challenge (Day ${dayNumber}/75)`,
     };
 
     if (existingTodo) {
       // Found in store - update and add to cache
       logger.info('75Hard→Todo', `✓ Found in store (id: ${existingTodo.id.slice(0, 8)})`);
 
-      const updateStore = getStore();
+      const updateStore = getStore() as ReturnType<typeof getStore> & TodoStoreMethods;
       await updateStore.updateTodo(existingTodo.id, {
         ...todoData,
-        completedAt: completed ? (existingTodo.completedAt || new Date()) : undefined,
+        completedAt: completed ? (existingTodo.completedAt ?? new Date()) : undefined,
       });
 
       // Add to cache to prevent future duplicates
@@ -183,7 +191,7 @@ async function createOrUpdateTodoFromSFHTask(
       // Create new todo and immediately add to cache
       logger.info('75Hard→Todo', `✗ Not found - creating new todo`);
 
-      const createStore = getStore();
+      const createStore = getStore() as ReturnType<typeof getStore> & TodoStoreMethods;
       const newTodo = await createStore.addTodo(todoData);
 
       // CRITICAL: Add to cache IMMEDIATELY to prevent duplicate creation
@@ -207,27 +215,28 @@ async function createOrUpdateTodoFromSFHTask(
 /**
  * Delete todos from previous days to keep the list clean
  */
-async function cleanupOldSFHTodos(challengeId: string, currentDay: number) {
-  const store = getStore();
+async function cleanupOldSFHTodos(challengeId: string, currentDay: number): Promise<void> {
+  const store = getStore() as ReturnType<typeof getStore> & TodoStoreMethods;
   const today = startOfDay(new Date());
 
   logger.info('75Hard→Todo', `🧹 Cleanup: current day=${currentDay}, today=${today.toISOString()}`);
 
   // Filter todos that need deletion first, then delete in parallel
   const todosToDelete = store.todos.filter(todo => {
-    if (todo.deleted) return false;
+    // Note: FocusTask uses 'cancelled' status, not a 'deleted' flag
+    if (todo.status === 'cancelled') return false;
 
     const meta = parseSFHTodoTags(todo.tags);
     if (!meta.isSFHTodo || meta.challengeId !== challengeId) return false;
 
     // Delete if from previous day OR if due date is before today
-    const isPreviousDay = meta.dayNumber && meta.dayNumber < currentDay;
-    const isOldDueDate = todo.dueDate && todo.dueDate < today;
+    const isPreviousDay = meta.dayNumber !== undefined && meta.dayNumber < currentDay;
+    const isOldDueDate = todo.dueDate !== undefined && todo.dueDate < today;
 
-    const shouldDelete = isPreviousDay || isOldDueDate;
+    const shouldDelete = isPreviousDay ?? isOldDueDate;
 
     if (shouldDelete) {
-      logger.info('75Hard→Todo', `Will delete: "${todo.title}", day=${meta.dayNumber}, dueDate=${todo.dueDate?.toISOString()}, isPreviousDay=${isPreviousDay}, isOldDueDate=${isOldDueDate}`);
+      logger.info('75Hard→Todo', `Will delete: "${todo.title}", day=${meta.dayNumber ?? 'N/A'}, dueDate=${todo.dueDate?.toISOString() ?? 'N/A'}, isPreviousDay=${isPreviousDay}, isOldDueDate=${isOldDueDate}`);
     }
 
     return shouldDelete;
@@ -240,10 +249,10 @@ async function cleanupOldSFHTodos(challengeId: string, currentDay: number) {
     await Promise.all(
       todosToDelete.map(todo => {
         const meta = parseSFHTodoTags(todo.tags);
-        logger.info('75Hard→Todo', `❌ Deleting old todo for Day ${meta.dayNumber}: "${todo.title}"`);
+        logger.info('75Hard→Todo', `❌ Deleting old todo for Day ${meta.dayNumber ?? 'N/A'}: "${todo.title}"`);
 
         // Also remove from cache
-        if (meta.challengeId && meta.dayNumber && meta.taskId) {
+        if (meta.challengeId && meta.dayNumber !== undefined && meta.taskId) {
           const cacheKey = getTodoCacheKey(meta.challengeId, meta.dayNumber, meta.taskId);
           if (todoCreationCache.has(cacheKey)) {
             todoCreationCache.delete(cacheKey);
@@ -267,7 +276,7 @@ async function cleanupOldSFHTodos(challengeId: string, currentDay: number) {
  * CRITICAL: Protected against concurrent execution to prevent duplicate task creation.
  * Uses promise guard + time-based debouncing + in-memory cache.
  */
-export async function ensure75HardTodosForToday() {
+export async function ensure75HardTodosForToday(): Promise<void> {
   ensureCallCount++;
   logger.info('75Hard→Todo', `🔍 ensure75HardTodosForToday() called (call #${ensureCallCount})`);
 
@@ -321,7 +330,7 @@ export async function ensure75HardTodosForToday() {
 
       // Create/update todos in parallel for better performance
       const todoPromises = challenge.tasks.map(task => {
-        const isCompleted = completionMap.get(task.id) || false;
+        const isCompleted = completionMap.get(task.id) ?? false;
         return createOrUpdateTodoFromSFHTask(
           challenge.id,
           task,
@@ -353,8 +362,8 @@ export async function ensure75HardTodosForToday() {
  * Sync todo completion to 75 Hard task
  * Called when user checks off a 75 Hard todo
  */
-export async function syncTodoCompletionToSFH(todoId: string) {
-  const store = getStore();
+export async function syncTodoCompletionToSFH(todoId: string): Promise<void> {
+  const store = getStore() as ReturnType<typeof getStore> & TodoStoreMethods;
   const todo = store.todos.find(t => t.id === todoId);
   if (!todo) return;
 

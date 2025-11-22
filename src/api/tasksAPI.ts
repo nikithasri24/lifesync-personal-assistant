@@ -45,7 +45,7 @@ export async function getTasks(filters?: {
   const { data, error } = await query;
 
   if (error) throw error;
-  return data || [];
+  return (data ?? []) as TaskData[];
 }
 
 /**
@@ -55,16 +55,16 @@ export async function getTask(id: string): Promise<TaskData> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
-  const { data, error } = await supabase
+  const response = await supabase
     .from('tasks')
     .select('*')
     .eq('id', id)
     .eq('user_id', user.id)
     .single();
 
-  if (error) throw error;
-  if (!data) throw new Error('Task not found');
-  return data;
+  if (response.error) throw response.error;
+  if (!response.data) throw new Error('Task not found');
+  return response.data as TaskData;
 }
 
 /**
@@ -74,7 +74,7 @@ export async function createTask(task: Omit<TaskData, 'id' | 'user_id' | 'create
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
-  const { data, error } = await supabase
+  const response = await supabase
     .from('tasks')
     .insert({
       user_id: user.id,
@@ -83,8 +83,8 @@ export async function createTask(task: Omit<TaskData, 'id' | 'user_id' | 'create
     .select()
     .single();
 
-  if (error) throw error;
-  return data;
+  if (response.error) throw response.error;
+  return response.data as TaskData;
 }
 
 /**
@@ -94,7 +94,7 @@ export async function updateTask(id: string, updates: Partial<TaskData>): Promis
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
-  const { data, error } = await supabase
+  const response = await supabase
     .from('tasks')
     .update(updates)
     .eq('id', id)
@@ -102,8 +102,8 @@ export async function updateTask(id: string, updates: Partial<TaskData>): Promis
     .select()
     .single();
 
-  if (error) throw error;
-  return data;
+  if (response.error) throw response.error;
+  return response.data as TaskData;
 }
 
 /**
@@ -171,7 +171,7 @@ export async function getProjects(filters?: {
   const { data, error } = await query;
 
   if (error) throw error;
-  return data || [];
+  return (data ?? []) as ProjectData[];
 }
 
 /**
@@ -181,16 +181,16 @@ export async function getProject(id: string): Promise<ProjectData> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
-  const { data, error } = await supabase
+  const response = await supabase
     .from('projects')
     .select('*')
     .eq('id', id)
     .eq('user_id', user.id)
     .single();
 
-  if (error) throw error;
-  if (!data) throw new Error('Project not found');
-  return data;
+  if (response.error) throw response.error;
+  if (!response.data) throw new Error('Project not found');
+  return response.data as ProjectData;
 }
 
 /**
@@ -200,7 +200,7 @@ export async function createProject(project: Omit<ProjectData, 'id' | 'user_id' 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
-  const { data, error } = await supabase
+  const response = await supabase
     .from('projects')
     .insert({
       user_id: user.id,
@@ -209,8 +209,8 @@ export async function createProject(project: Omit<ProjectData, 'id' | 'user_id' 
     .select()
     .single();
 
-  if (error) throw error;
-  return data;
+  if (response.error) throw response.error;
+  return response.data as ProjectData;
 }
 
 /**
@@ -220,7 +220,7 @@ export async function updateProject(id: string, updates: Partial<ProjectData>): 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
-  const { data, error } = await supabase
+  const response = await supabase
     .from('projects')
     .update(updates)
     .eq('id', id)
@@ -228,8 +228,8 @@ export async function updateProject(id: string, updates: Partial<ProjectData>): 
     .select()
     .single();
 
-  if (error) throw error;
-  return data;
+  if (response.error) throw response.error;
+  return response.data as ProjectData;
 }
 
 /**

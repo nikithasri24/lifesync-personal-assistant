@@ -13,7 +13,13 @@
       "Bash(npx eslint src --ext .ts,.tsx --format json)",
       "Bash(npx eslint:*)",
       "Bash(python3:*)",
-      "Bash(awk:*)"
+      "Bash(awk:*)",
+      "Bash(npx tsc:*)",
+      "Bash(timeout:*)",
+      "Bash(jq:*)",
+      "Bash(npm test:*)",
+      "Bash(pkill:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []

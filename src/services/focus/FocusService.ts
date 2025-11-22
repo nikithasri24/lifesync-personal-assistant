@@ -1,24 +1,30 @@
 import { logger } from '../../services/logger';
-// @ts-nocheck
 /**
  * Focus Service
- * 
+ *
  * Core service for managing focus sessions, analytics, and integrations.
  * Handles session lifecycle, distraction tracking, and productivity metrics.
  */
 
-import { 
-  type FocusSession, 
-  type FocusPreset, 
-  type FocusAnalytics, 
+import {
+  type FocusSession,
+  type FocusPreset,
+  type FocusAnalytics,
   type FocusSettings,
   type FocusEvent,
   type FocusEventType,
-  _DistractionLevel,
   type ProductivityMetrics,
   type FocusEnvironment,
   type FocusDistraction,
-  type FocusBreak
+  type FocusBreak,
+  type DistractionSummary,
+  type TimeSlot,
+  type DailyMetrics,
+  type FocusGoal,
+  type FocusAchievement,
+  type FocusInsight,
+  type BreakSchedule,
+  type FocusMode
 } from '../../types/focus';
 
 export class FocusService {
@@ -30,7 +36,7 @@ export class FocusService {
   private settings: FocusSettings | null = null;
 
   constructor() {
-    this.loadSettings();
+    void this.loadSettings();
     this.setupDistractionMonitoring();
     this.setupVisibilityChangeDetection();
   }
@@ -44,7 +50,7 @@ export class FocusService {
 
     const session: FocusSession = {
       id: this.generateId(),
-      userId: await this.getCurrentUserId(),
+      userId: this.getCurrentUserId(),
       mode: preset.mode,
       status: 'active',
       startTime: new Date(),
@@ -71,11 +77,11 @@ export class FocusService {
     this.currentSession = session;
     this.startSessionTimer(preset.duration);
     this.setupBreakSchedule(preset.breakSchedule);
-    this.applyFocusEnvironment(session.environment);
-    
+    void this.applyFocusEnvironment(session.environment);
+
     await this.saveSession(session);
     this.emitEvent('session_started', { sessionId: session.id });
-    
+
     return session;
   }
 
@@ -124,10 +130,10 @@ export class FocusService {
     
     // Calculate final productivity metrics
     session.productivity = this.calculateProductivityMetrics(session);
-    
+
     this.clearTimers();
-    this.resetFocusEnvironment();
-    
+    void this.resetFocusEnvironment();
+
     await this.saveSession(session);
     this.emitEvent(completed ? 'session_completed' : 'session_cancelled', { 
       sessionId: session.id,
@@ -226,7 +232,7 @@ export class FocusService {
     // Monitor app switches, notifications, etc.
     this.distractionMonitor = setInterval(() => {
       if (this.currentSession && this.currentSession.status === 'active') {
-        this.checkForDistractions();
+        void this.checkForDistractions();
       }
     }, 5000); // Check every 5 seconds
   }
@@ -296,17 +302,17 @@ export class FocusService {
   // ==================== Analytics & Insights ====================
 
   async getAnalytics(period: 'day' | 'week' | 'month' | 'year' = 'week'): Promise<FocusAnalytics> {
-    const userId = await this.getCurrentUserId();
+    const userId = this.getCurrentUserId();
     const sessions = await this.getSessionsForPeriod(userId, period);
-    
+
     return {
       userId,
       period,
       totalSessions: sessions.length,
-      totalFocusTime: sessions.reduce((sum, s) => sum + (s.actualDuration || 0), 0),
-      averageSessionLength: sessions.length > 0 ? 
-        sessions.reduce((sum, s) => sum + (s.actualDuration || 0), 0) / sessions.length : 0,
-      completionRate: sessions.length > 0 ? 
+      totalFocusTime: sessions.reduce((sum, s) => sum + (s.actualDuration ?? 0), 0),
+      averageSessionLength: sessions.length > 0 ?
+        sessions.reduce((sum, s) => sum + (s.actualDuration ?? 0), 0) / sessions.length : 0,
+      completionRate: sessions.length > 0 ?
         (sessions.filter(s => s.status === 'completed').length / sessions.length) * 100 : 0,
       averageProductivityScore: sessions.length > 0 ?
         sessions.reduce((sum, s) => sum + s.productivity.focusScore, 0) / sessions.length : 0,
@@ -344,18 +350,18 @@ export class FocusService {
 
   private startSessionTimer(durationMinutes: number): void {
     this.clearTimers();
-    
-    this.sessionTimer = setTimeout(async () => {
+
+    this.sessionTimer = setTimeout(() => {
       if (this.currentSession) {
-        await this.endSession(true);
+        void this.endSession(true);
       }
     }, durationMinutes * 60000);
   }
 
   private startBreakTimer(durationMinutes: number): void {
-    this.breakTimer = setTimeout(async () => {
+    this.breakTimer = setTimeout(() => {
       if (this.currentSession && this.currentSession.status === 'break') {
-        await this.endBreak();
+        void this.endBreak();
       }
     }, durationMinutes * 60000);
   }
@@ -386,10 +392,10 @@ export class FocusService {
     this.eventListeners.delete(id);
   }
 
-  private emitEvent(type: FocusEventType, data: Record<string, any> = {}): void {
+  private emitEvent(type: FocusEventType, data: Record<string, string | number | boolean | Date> = {}): void {
     const event: FocusEvent = {
       type,
-      userId: this.getCurrentUserId().toString(),
+      userId: 'user_current',
       timestamp: new Date(),
       data
     };
@@ -434,7 +440,7 @@ export class FocusService {
     return `focus_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 
-  private async getCurrentUserId(): Promise<string> {
+  private getCurrentUserId(): string {
     // Would integrate with your auth system
     return 'user_current';
   }
@@ -442,75 +448,86 @@ export class FocusService {
   // ==================== Placeholder Integration Methods ====================
   // These would be implemented with actual system integrations
 
-  private async getActiveApplication(): Promise<string | null> {
+  private getActiveApplication(): Promise<string | null> {
     // Would use native APIs to detect active application
-    return null;
+    return Promise.resolve(null);
   }
 
-  private async getActiveWebsite(): Promise<string | null> {
+  private getActiveWebsite(): Promise<string | null> {
     // Would use browser extension or system APIs
-    return null;
+    return Promise.resolve(null);
   }
 
-  private async blockApplications(apps: string[]): Promise<void> {
+  private blockApplications(apps: string[]): Promise<void> {
     // Would use system APIs to block applications
     logger.info('FocusService', 'Blocking applications:', apps);
+    return Promise.resolve();
   }
 
-  private async unblockApplications(): Promise<void> {
+  private unblockApplications(): Promise<void> {
     // Would restore application access
     logger.info('FocusService', 'Unblocking applications');
+    return Promise.resolve();
   }
 
-  private async blockWebsites(websites: string[]): Promise<void> {
+  private blockWebsites(websites: string[]): Promise<void> {
     // Would use browser extension or system-level blocking
     logger.info('FocusService', 'Blocking websites:', websites);
+    return Promise.resolve();
   }
 
-  private async unblockWebsites(): Promise<void> {
+  private unblockWebsites(): Promise<void> {
     // Would restore website access
     logger.info('FocusService', 'Unblocking websites');
+    return Promise.resolve();
   }
 
-  private async configureNotifications(settings: any): Promise<void> {
+  private configureNotifications(settings: FocusEnvironment['notifications']): Promise<void> {
     // Would configure system notification settings
     logger.info('FocusService', 'Configuring notifications:', settings);
+    return Promise.resolve();
   }
 
-  private async restoreNotifications(): Promise<void> {
+  private restoreNotifications(): Promise<void> {
     // Would restore original notification settings
     logger.info('FocusService', 'Restoring notifications');
+    return Promise.resolve();
   }
 
-  private async playAmbientSound(settings: any): Promise<void> {
+  private playAmbientSound(settings: FocusEnvironment['ambientSound']): Promise<void> {
     // Would start ambient sound playback
     logger.info('FocusService', 'Playing ambient sound:', settings);
+    return Promise.resolve();
   }
 
-  private async stopAmbientSound(): Promise<void> {
+  private stopAmbientSound(): Promise<void> {
     // Would stop ambient sound playback
     logger.info('FocusService', 'Stopping ambient sound');
+    return Promise.resolve();
   }
 
-  private async activateSystemFocusMode(): Promise<void> {
+  private activateSystemFocusMode(): Promise<void> {
     // Would activate OS-level focus mode
     logger.info('FocusService', 'Activating system focus mode');
+    return Promise.resolve();
   }
 
-  private async deactivateSystemFocusMode(): Promise<void> {
+  private deactivateSystemFocusMode(): Promise<void> {
     // Would deactivate OS-level focus mode
     logger.info('FocusService', 'Deactivating system focus mode');
+    return Promise.resolve();
   }
 
   // ==================== Data Persistence ====================
   // These would integrate with your data storage system
 
-  private async saveSession(session: FocusSession): Promise<void> {
+  private saveSession(session: FocusSession): Promise<void> {
     // Would save to database/storage
     localStorage.setItem(`focus_session_${session.id}`, JSON.stringify(session));
+    return Promise.resolve();
   }
 
-  private async loadSettings(): Promise<void> {
+  private loadSettings(): Promise<void> {
     // Would load user settings from storage
     const defaultSettings: FocusSettings = {
       userId: 'user_current',
@@ -542,49 +559,50 @@ export class FocusService {
     };
 
     this.settings = defaultSettings;
+    return Promise.resolve();
   }
 
-  private async getSessionsForPeriod(_userId: string, _period: string): Promise<FocusSession[]> {
+  private getSessionsForPeriod(_userId: string, _period: string): Promise<FocusSession[]> {
     // Would query database for sessions in period
-    return [];
+    return Promise.resolve([]);
   }
 
-  private async getFocusGoals(_userId: string): Promise<any[]> {
+  private getFocusGoals(_userId: string): Promise<FocusGoal[]> {
     // Would load user goals from storage
-    return [];
+    return Promise.resolve([]);
   }
 
-  private async getFocusAchievements(_userId: string): Promise<any[]> {
+  private getFocusAchievements(_userId: string): Promise<FocusAchievement[]> {
     // Would load user achievements from storage
-    return [];
+    return Promise.resolve([]);
   }
 
-  private calculateTopDistractions(_sessions: FocusSession[]): any[] {
+  private calculateTopDistractions(_sessions: FocusSession[]): DistractionSummary[] {
     // Would analyze distractions across sessions
     return [];
   }
 
-  private calculateProductiveTimes(_sessions: FocusSession[]): any[] {
+  private calculateProductiveTimes(_sessions: FocusSession[]): TimeSlot[] {
     // Would analyze productive time patterns
     return [];
   }
 
-  private calculateModeUsage(_sessions: FocusSession[]): any {
+  private calculateModeUsage(_sessions: FocusSession[]): Record<FocusMode, number> {
     // Would calculate time spent in each focus mode
-    return {};
+    return {} as Record<FocusMode, number>;
   }
 
-  private calculateWeeklyTrend(_sessions: FocusSession[]): any[] {
+  private calculateWeeklyTrend(_sessions: FocusSession[]): DailyMetrics[] {
     // Would calculate daily metrics for trend analysis
     return [];
   }
 
-  private async generateInsights(_sessions: FocusSession[]): Promise<any[]> {
+  private generateInsights(_sessions: FocusSession[]): Promise<FocusInsight[]> {
     // Would generate AI-powered insights
-    return [];
+    return Promise.resolve([]);
   }
 
-  private setupBreakSchedule(schedule: any): void {
+  private setupBreakSchedule(schedule: BreakSchedule): void {
     // Would setup automated break scheduling
     logger.info('FocusService', 'Setting up break schedule:', schedule);
   }
@@ -593,7 +611,7 @@ export class FocusService {
     // Detect when user switches away from the app
     document.addEventListener('visibilitychange', () => {
       if (document.hidden && this.currentSession?.status === 'active') {
-        this.recordDistraction({
+        void this.recordDistraction({
           type: 'app_switch',
           source: 'Unknown',
           duration: 1,

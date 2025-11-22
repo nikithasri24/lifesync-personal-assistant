@@ -16,6 +16,8 @@ import type {
   FocusSessionData,
   RecipeData,
   AnalyticsData,
+  SFHChallengeData,
+  SFHEntryData,
 } from './types'
 
 class SupabaseAdapter {
@@ -27,9 +29,7 @@ class SupabaseAdapter {
   }
 
   private get client(): SupabaseClient {
-    if (!this.clientCache) {
-      this.clientCache = ensureSupabase()
-    }
+    this.clientCache ??= ensureSupabase()
     return this.clientCache
   }
 
@@ -46,7 +46,7 @@ class SupabaseAdapter {
     return Object.fromEntries(entries) as T
   }
 
-  private async assertShoppingListOwnership(listId: string, userId: string) {
+  private async assertShoppingListOwnership(listId: string, userId: string): Promise<void> {
     const { data, error } = await this.client
       .from('shopping_lists')
       .select('id')
@@ -60,7 +60,7 @@ class SupabaseAdapter {
     }
   }
 
-  private async assertShoppingItemOwnership(itemId: string, userId: string) {
+  private async assertShoppingItemOwnership(itemId: string, userId: string): Promise<string> {
     const { data, error } = await this.client
       .from('shopping_items')
       .select('id, shopping_list_id')
@@ -72,11 +72,11 @@ class SupabaseAdapter {
       throw new Error('Shopping item not found for current user')
     }
 
-    await this.assertShoppingListOwnership(data.shopping_list_id, userId)
-    return data.shopping_list_id
+    await this.assertShoppingListOwnership(String(data.shopping_list_id), userId)
+    return String(data.shopping_list_id)
   }
 
-  private async assertMealPlanOwnership(planId: string, userId: string) {
+  private async assertMealPlanOwnership(planId: string, userId: string): Promise<void> {
     const { data, error } = await this.client
       .from('meal_plans')
       .select('id')
@@ -90,7 +90,7 @@ class SupabaseAdapter {
     }
   }
 
-  private async assertPlannedMealOwnership(mealId: string, userId: string) {
+  private async assertPlannedMealOwnership(mealId: string, userId: string): Promise<string> {
     const { data, error } = await this.client
       .from('planned_meals')
       .select('id, meal_plan_id')
@@ -102,8 +102,8 @@ class SupabaseAdapter {
       throw new Error('Planned meal not found for current user')
     }
 
-    await this.assertMealPlanOwnership(data.meal_plan_id, userId)
-    return data.meal_plan_id
+    await this.assertMealPlanOwnership(String(data.meal_plan_id), userId)
+    return String(data.meal_plan_id)
   }
 
   // ===== Tasks =====
@@ -119,7 +119,7 @@ class SupabaseAdapter {
       .order('created_at', { ascending: false })
 
     if (error) throw new Error(error.message)
-    return data ?? []
+    return (data ?? []) as TaskData[]
   }
 
   async createTask(task: Omit<TaskData, 'id' | 'created_at' | 'updated_at'>): Promise<TaskData> {
@@ -127,8 +127,8 @@ class SupabaseAdapter {
     const payload = this.sanitize({
       ...task,
       user_id: userId,
-      status: task.status || 'todo',
-      priority: task.priority || 'medium',
+      status: task.status ?? 'todo',
+      priority: task.priority ?? 'medium',
       deleted: false,
     })
 
@@ -139,14 +139,16 @@ class SupabaseAdapter {
       .single()
 
     if (error) throw new Error(error.message)
-    logger.debug('createTask created task', { taskId: data?.id })
-    return data as TaskData
+    if (!data) throw new Error('Failed to create task')
+    const taskData = data as TaskData
+    logger.debug('createTask created task', { taskId: taskData.id })
+    return taskData
   }
 
   async updateTask(id: string, updates: Partial<TaskData>): Promise<TaskData> {
     const userId = this.requireUserId()
     const payload = this.sanitize(updates)
-    
+
     // Important: do NOT request representation on UPDATE to avoid 406 from PostgREST
     const { error: updateError } = await this.client
       .from('tasks')
@@ -157,7 +159,7 @@ class SupabaseAdapter {
     if (updateError) throw new Error(updateError.message)
 
     // Fetch the updated row afterwards
-    const { data: _fetched, error: fetchError } = await this.client
+    const { error: fetchError } = await this.client
       .from('tasks')
       .select('*')
       .eq('id', id)
@@ -180,6 +182,7 @@ class SupabaseAdapter {
       .single()
 
     if (error) throw new Error(error.message)
+    if (!data) throw new Error('Failed to delete task')
     return data as TaskData
   }
 
@@ -194,6 +197,7 @@ class SupabaseAdapter {
       .single()
 
     if (error) throw new Error(error.message)
+    if (!data) throw new Error('Failed to restore task')
     return data as TaskData
   }
 
@@ -242,7 +246,7 @@ class SupabaseAdapter {
       .order('created_at', { ascending: false })
 
     if (error) throw new Error(error.message)
-    return data ?? []
+    return (data ?? []) as ProjectData[]
   }
 
   async createProject(project: Omit<ProjectData, 'id' | 'created_at' | 'updated_at'>): Promise<ProjectData> {
@@ -250,9 +254,9 @@ class SupabaseAdapter {
     const payload = this.sanitize({
       ...project,
       user_id: userId,
-      status: project.status || 'active',
-      color: project.color || '#6366f1',
-      icon: project.icon || '📁',
+      status: project.status ?? 'active',
+      color: project.color ?? '#6366f1',
+      icon: project.icon ?? '📁',
     })
 
     const { data, error } = await this.client
@@ -262,6 +266,7 @@ class SupabaseAdapter {
       .single()
 
     if (error) throw new Error(error.message)
+    if (!data) throw new Error('Failed to create project')
     return data as ProjectData
   }
 
@@ -278,6 +283,7 @@ class SupabaseAdapter {
       .single()
 
     if (error) throw new Error(error.message)
+    if (!data) throw new Error('Failed to update project')
     return data as ProjectData
   }
 
@@ -302,7 +308,7 @@ class SupabaseAdapter {
       .order('created_at', { ascending: false })
 
     if (error) throw new Error(error.message)
-    return data ?? []
+    return (data ?? []) as HabitData[]
   }
 
   async createHabit(habit: Omit<HabitData, 'id' | 'created_at' | 'updated_at'>): Promise<HabitData> {
@@ -310,8 +316,8 @@ class SupabaseAdapter {
     const payload = this.sanitize({
       ...habit,
       user_id: userId,
-      frequency: habit.frequency || 'daily',
-      goal_mode: habit.goal_mode || 'daily-target',
+      frequency: habit.frequency ?? 'daily',
+      goal_mode: habit.goal_mode ?? 'daily-target',
       streak_count: 0,
       best_streak: 0,
       current_progress: habit.current_progress ?? 0,
@@ -324,6 +330,7 @@ class SupabaseAdapter {
       .single()
 
     if (error) throw new Error(error.message)
+    if (!data) throw new Error('Failed to create habit')
     return data as HabitData
   }
 
@@ -337,13 +344,14 @@ class SupabaseAdapter {
     const { data, error } = await this.client
       .rpc('upsert_habit_entry', {
         p_habit_id: habitId,
-        p_date: entry.date as any, // ensure date string YYYY-MM-DD
+        p_date: String(entry.date), // ensure date string YYYY-MM-DD
         p_value: value,
         p_notes: entry.notes ?? null,
       })
       .single()
 
     if (error) throw new Error(error.message)
+    if (!data) throw new Error('Failed to add habit entry')
     return data as HabitEntryData
   }
 
@@ -360,6 +368,7 @@ class SupabaseAdapter {
       .single()
 
     if (error) throw new Error(error.message)
+    if (!data) throw new Error('Failed to update habit')
     return data as HabitData
   }
 
@@ -432,7 +441,7 @@ class SupabaseAdapter {
       .order('date', { ascending: false })
 
     if (error) throw new Error(error.message)
-    return data ?? []
+    return (data ?? []) as FinancialTransactionData[]
   }
 
   async createFinancialTransaction(
@@ -451,6 +460,7 @@ class SupabaseAdapter {
       .single()
 
     if (error) throw new Error(error.message)
+    if (!data) throw new Error('Failed to create financial transaction')
     return data as FinancialTransactionData
   }
 
@@ -464,7 +474,7 @@ class SupabaseAdapter {
       .order('created_at', { ascending: false })
 
     if (error) throw new Error(error.message)
-    return data ?? []
+    return (data ?? []) as ShoppingListData[]
   }
 
   async createShoppingList(
@@ -474,7 +484,7 @@ class SupabaseAdapter {
     const payload = this.sanitize({
       ...list,
       user_id: userId,
-      status: list.status || 'active',
+      status: list.status ?? 'active',
     })
 
     const { data, error } = await this.client
@@ -484,6 +494,7 @@ class SupabaseAdapter {
       .single()
 
     if (error) throw new Error(error.message)
+    if (!data) throw new Error('Failed to create shopping list')
     return data as ShoppingListData
   }
 
@@ -498,7 +509,7 @@ class SupabaseAdapter {
       .order('created_at', { ascending: true })
 
     if (error) throw new Error(error.message)
-    return data ?? []
+    return (data ?? []) as ShoppingItemData[]
   }
 
   async addShoppingItem(
@@ -520,6 +531,7 @@ class SupabaseAdapter {
       .single()
 
     if (error) throw new Error(error.message)
+    if (!data) throw new Error('Failed to add shopping item')
     return data as ShoppingItemData
   }
 
@@ -539,6 +551,7 @@ class SupabaseAdapter {
       .single()
 
     if (error) throw new Error(error.message)
+    if (!data) throw new Error('Failed to update shopping item')
     return data as ShoppingItemData
   }
 
@@ -554,6 +567,7 @@ class SupabaseAdapter {
       .single()
 
     if (error) throw new Error(error.message)
+    if (!data) throw new Error('Failed to delete shopping item')
     return data as ShoppingItemData
   }
 
@@ -567,7 +581,7 @@ class SupabaseAdapter {
       .order('created_at', { ascending: false })
 
     if (error) throw new Error(error.message)
-    return data ?? []
+    return (data ?? []) as PantryItemData[]
   }
 
   async createPantryItem(
@@ -586,6 +600,7 @@ class SupabaseAdapter {
       .single()
 
     if (error) throw new Error(error.message)
+    if (!data) throw new Error('Failed to create pantry item')
     return data as PantryItemData
   }
 
@@ -605,6 +620,7 @@ class SupabaseAdapter {
       .single()
 
     if (error) throw new Error(error.message)
+    if (!data) throw new Error('Failed to update pantry item')
     return data as PantryItemData
   }
 
@@ -619,6 +635,7 @@ class SupabaseAdapter {
       .single()
 
     if (error) throw new Error(error.message)
+    if (!data) throw new Error('Failed to delete pantry item')
     return data as PantryItemData
   }
 
@@ -632,7 +649,7 @@ class SupabaseAdapter {
       .order('week_start_date', { ascending: false })
 
     if (error) throw new Error(error.message)
-    return data ?? []
+    return (data ?? []) as MealPlanData[]
   }
 
   async createMealPlan(
@@ -684,6 +701,7 @@ class SupabaseAdapter {
       .single()
 
     if (error) throw new Error(error.message)
+    if (!data) throw new Error('Failed to update meal plan')
     return data as MealPlanData
   }
 
@@ -714,6 +732,7 @@ class SupabaseAdapter {
       .single()
 
     if (error) throw new Error(error.message)
+    if (!data) throw new Error('Failed to create planned meal')
     return data as PlannedMealData
   }
 
@@ -733,6 +752,7 @@ class SupabaseAdapter {
       .single()
 
     if (error) throw new Error(error.message)
+    if (!data) throw new Error('Failed to update planned meal')
     return data as PlannedMealData
   }
 
@@ -758,7 +778,7 @@ class SupabaseAdapter {
       .order('start_time', { ascending: false })
 
     if (error) throw new Error(error.message)
-    return data ?? []
+    return (data ?? []) as FocusSessionData[]
   }
 
   async createFocusSession(
@@ -768,8 +788,8 @@ class SupabaseAdapter {
     const payload = this.sanitize({
       ...session,
       user_id: userId,
-      status: session.status || 'active',
-      start_time: session.start_time || new Date().toISOString(),
+      status: session.status ?? 'active',
+      start_time: session.start_time ?? new Date().toISOString(),
     })
 
     const { data, error } = await this.client
@@ -779,6 +799,7 @@ class SupabaseAdapter {
       .single()
 
     if (error) throw new Error(error.message)
+    if (!data) throw new Error('Failed to create focus session')
     return data as FocusSessionData
   }
 
@@ -795,6 +816,7 @@ class SupabaseAdapter {
       .single()
 
     if (error) throw new Error(error.message)
+    if (!data) throw new Error('Failed to update focus session')
     return data as FocusSessionData
   }
 
@@ -808,13 +830,15 @@ class SupabaseAdapter {
       .order('created_at', { ascending: false })
 
     if (error) throw new Error(error.message)
-    return data ?? []
+    return (data ?? []) as RecipeData[]
   }
 
   async createRecipe(recipe: Omit<RecipeData, 'id' | 'created_at' | 'updated_at'>): Promise<RecipeData> {
     const userId = this.requireUserId()
     // To avoid noisy console 400s from supabase-js, insert a minimal row first
-    const safeName = String((recipe as any).name || 'Untitled').slice(0, 255)
+    const recipeAny = recipe as Record<string, unknown>
+    const nameValue = recipeAny.name
+    const safeName = (typeof nameValue === 'string' ? nameValue : 'Untitled').slice(0, 255)
     const ultra = this.sanitize({ user_id: userId, name: safeName })
     const insertRes = await this.client
       .from('recipes')
@@ -823,28 +847,41 @@ class SupabaseAdapter {
       .single()
 
     if (insertRes.error) throw new Error(insertRes.error.message)
+    if (!insertRes.data) throw new Error('Failed to create recipe')
 
     const created = insertRes.data as RecipeData
 
     // Best-effort patch with additional fields, but don't error if schema doesn't have them
     const patch: Partial<RecipeData> = this.sanitize({
-      description: (recipe as any).description ?? undefined,
-      difficulty: recipe.difficulty || undefined,
-      servings: recipe.servings || undefined,
-      prep_time: (recipe as any).prep_time ?? undefined,
-      cook_time: (recipe as any).cook_time ?? undefined,
-      instructions: (recipe as any).instructions ?? undefined,
-      ingredients: (recipe as any).ingredients ?? undefined,
-      tags: Array.isArray((recipe as any).tags) ? (recipe as any).tags : undefined,
-      source_url: (recipe as any).source_url ? String((recipe as any).source_url).slice(0, 255) : undefined,
-      video_thumbnail: (recipe as any).video_thumbnail ? String((recipe as any).video_thumbnail).slice(0, 255) : undefined,
+      description:
+        recipeAny.description !== undefined && typeof recipeAny.description === 'string'
+          ? recipeAny.description
+          : undefined,
+      difficulty: recipe.difficulty ?? undefined,
+      servings: recipe.servings ?? undefined,
+      prep_time: recipeAny.prep_time !== undefined ? Number(recipeAny.prep_time) : undefined,
+      cook_time: recipeAny.cook_time !== undefined ? Number(recipeAny.cook_time) : undefined,
+      instructions:
+        recipeAny.instructions !== undefined && typeof recipeAny.instructions === 'string'
+          ? recipeAny.instructions
+          : undefined,
+      ingredients: recipeAny.ingredients !== undefined ? (recipeAny.ingredients as string[]) : undefined,
+      tags: Array.isArray(recipeAny.tags) ? (recipeAny.tags as string[]) : undefined,
+      source_url:
+        recipeAny.source_url && typeof recipeAny.source_url === 'string'
+          ? recipeAny.source_url.slice(0, 255)
+          : undefined,
+      video_thumbnail:
+        recipeAny.video_thumbnail && typeof recipeAny.video_thumbnail === 'string'
+          ? recipeAny.video_thumbnail.slice(0, 255)
+          : undefined,
     })
 
     if (Object.keys(patch).length > 0) {
       const updRes = await this.client
         .from('recipes')
         .update(patch)
-        .eq('id', created.id!)
+        .eq('id', created.id)
         .eq('user_id', userId)
         .select()
         .single()
@@ -878,6 +915,7 @@ class SupabaseAdapter {
       .single()
 
     if (error) throw new Error(error.message)
+    if (!data) throw new Error('Failed to update recipe')
     return data as RecipeData
   }
 
@@ -921,14 +959,17 @@ class SupabaseAdapter {
     if (focusSummary.error) throw new Error(focusSummary.error.message)
     if (financeSummary.error) throw new Error(financeSummary.error.message)
 
-    const focusData = focusSummary.data ?? []
-    const totalFocusMinutes = focusData.reduce((acc, session) => acc + (session.actual_duration ?? session.duration ?? 0), 0)
+    const focusData = (focusSummary.data ?? []) as Array<{ duration?: number; actual_duration?: number }>
+    const totalFocusMinutes = focusData.reduce(
+      (acc, session) => acc + (session.actual_duration ?? session.duration ?? 0),
+      0
+    )
 
-    const financeData = financeSummary.data ?? []
+    const financeData = (financeSummary.data ?? []) as Array<{ amount?: number | string; type?: string }>
     const totalTransactions = financeData.length
     const totalExpenses = financeData
       .filter((txn) => txn.type === 'expense')
-      .reduce((acc, txn) => acc + Number(txn.amount || 0), 0)
+      .reduce((acc, txn) => acc + Number(txn.amount ?? 0), 0)
 
     return {
       tasks: {
@@ -943,7 +984,7 @@ class SupabaseAdapter {
         total_expenses: totalExpenses.toFixed(2),
       },
       focus: {
-        total: String(focusSummary.count ?? focusData.length ?? 0),
+        total: String(focusSummary.count ?? focusData.length),
         total_focus_time: String(totalFocusMinutes),
       },
     }
@@ -968,7 +1009,7 @@ class SupabaseAdapter {
   }
 
   // ===== 75 HARD (JSON-backed) =====
-  async getSFHChallenges(): Promise<import('./types').SFHChallengeData[]> {
+  async getSFHChallenges(): Promise<SFHChallengeData[]> {
     const userId = this.requireUserId()
     const { data, error } = await this.client
       .from('sfh_challenge')
@@ -976,10 +1017,10 @@ class SupabaseAdapter {
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
     if (error) throw new Error(error.message)
-    return (data ?? []) as any
+    return (data ?? []) as SFHChallengeData[]
   }
 
-  async getSFHEntries(challengeIds: string[]): Promise<import('./types').SFHEntryData[]> {
+  async getSFHEntries(challengeIds: string[]): Promise<SFHEntryData[]> {
     if (challengeIds.length === 0) return []
     // Fetch entries for the specified challenges (RLS will ensure user can only access their own)
     const { data, error } = await this.client
@@ -988,10 +1029,10 @@ class SupabaseAdapter {
       .in('challenge_id', challengeIds)
       .order('date', { ascending: true })
     if (error) throw new Error(error.message)
-    return (data ?? []) as any
+    return (data ?? []) as SFHEntryData[]
   }
 
-  async createSFHChallenge(challenge: Omit<import('./types').SFHChallengeData, 'id' | 'created_at' | 'user_id'>) {
+  async createSFHChallenge(challenge: Omit<SFHChallengeData, 'id' | 'created_at' | 'user_id'>): Promise<SFHChallengeData> {
     const userId = this.requireUserId()
     const payload = { ...challenge, user_id: userId }
     const { data, error } = await this.client
@@ -1000,10 +1041,11 @@ class SupabaseAdapter {
       .select()
       .single()
     if (error) throw new Error(error.message)
-    return data
+    if (!data) throw new Error('Failed to create SFH challenge')
+    return data as SFHChallengeData
   }
 
-  async updateSFHChallenge(id: string, updates: Partial<import('./types').SFHChallengeData>) {
+  async updateSFHChallenge(id: string, updates: Partial<SFHChallengeData>): Promise<SFHChallengeData> {
     const userId = this.requireUserId()
     const { data, error } = await this.client
       .from('sfh_challenge')
@@ -1013,7 +1055,8 @@ class SupabaseAdapter {
       .select()
       .single()
     if (error) throw new Error(error.message)
-    return data
+    if (!data) throw new Error('Failed to update SFH challenge')
+    return data as SFHChallengeData
   }
 
   async deleteSFHChallenge(id: string): Promise<void> {
@@ -1026,7 +1069,7 @@ class SupabaseAdapter {
     if (error) throw new Error(error.message)
   }
 
-  async createSFHEntry(entry: Omit<import('./types').SFHEntryData, 'id' | 'created_at' | 'user_id'>) {
+  async createSFHEntry(entry: Omit<SFHEntryData, 'id' | 'created_at' | 'user_id'>): Promise<SFHEntryData> {
     // No need to add user_id - it's inferred through challenge_id and RLS
     const { data, error } = await this.client
       .from('sfh_daily_checkins')
@@ -1034,10 +1077,11 @@ class SupabaseAdapter {
       .select()
       .single()
     if (error) throw new Error(error.message)
-    return data
+    if (!data) throw new Error('Failed to create SFH entry')
+    return data as SFHEntryData
   }
 
-  async updateSFHEntry(id: string, updates: Partial<import('./types').SFHEntryData>) {
+  async updateSFHEntry(id: string, updates: Partial<SFHEntryData>): Promise<SFHEntryData> {
     // RLS ensures user can only update their own entries
     const { data, error } = await this.client
       .from('sfh_daily_checkins')
@@ -1046,7 +1090,8 @@ class SupabaseAdapter {
       .select()
       .single()
     if (error) throw new Error(error.message)
-    return data
+    if (!data) throw new Error('Failed to update SFH entry')
+    return data as SFHEntryData
   }
 
   async deleteSFHEntriesForChallenge(challengeId: string): Promise<void> {

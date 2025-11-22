@@ -22,6 +22,67 @@ import type {
 } from '../types/connections';
 
 // =====================================================
+// DATABASE RESPONSE TYPES
+// =====================================================
+
+interface DbUser {
+  id: string;
+  email: string;
+  full_name: string | null;
+  avatar_url: string | null;
+}
+
+interface DbConnection {
+  id: string;
+  requester_id: string;
+  receiver_id: string;
+  relationship: string;
+  status: string;
+  requester_label: string | null;
+  receiver_label: string | null;
+  notes: string | null;
+  created_at: string;
+  accepted_at: string | null;
+  updated_at: string;
+  requester_user?: DbUser;
+  receiver_user?: DbUser;
+}
+
+interface DbConnectionWithUsers extends DbConnection {
+  requester_user: DbUser;
+  receiver_user: DbUser;
+}
+
+interface DbPermission {
+  id: string;
+  connection_id: string;
+  module: string;
+  permission_level: string;
+  user_id: string;
+  settings: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+interface DbInvitation {
+  id: string;
+  connection_id: string;
+  message: string | null;
+  proposed_permissions: Record<string, unknown>;
+  created_at: string;
+  expires_at: string | null;
+}
+
+interface DbInvitationWithConnection extends DbInvitation {
+  connection: DbConnectionWithUsers | null;
+}
+
+interface DbUserLookup {
+  user_id: string;
+  email: string;
+}
+
+// =====================================================
 // CONNECTIONS
 // =====================================================
 
@@ -32,17 +93,19 @@ export async function getUserConnections(): Promise<ConnectionWithUser[]> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
-  const { data, error } = await supabase
-    .rpc('get_connections_with_users');
+  const response = await supabase.rpc('get_connections_with_users');
 
-  if (error) throw error;
+  if (response.error) throw response.error;
+
+  // Type assertion for the RPC response
+  const connections = (response.data ?? []) as DbConnectionWithUsers[];
 
   // Filter for active connections and sort by created_at
-  const activeConnections = (data || [])
-    .filter((conn: any) => conn.status === 'active')
-    .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  const activeConnections = connections
+    .filter((conn) => conn.status === 'active')
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-  return activeConnections.map((conn: any) => {
+  return activeConnections.map((conn) => {
     const isRequester = conn.requester_id === user.id;
     const otherUser = isRequester ? conn.receiver_user : conn.requester_user;
 
@@ -51,11 +114,11 @@ export async function getUserConnections(): Promise<ConnectionWithUser[]> {
       otherUser: {
         id: otherUser.id,
         email: otherUser.email,
-        fullName: otherUser.full_name,
-        avatarUrl: otherUser.avatar_url,
+        fullName: otherUser.full_name ?? '',
+        avatarUrl: otherUser.avatar_url ?? null,
       },
-      myLabel: isRequester ? conn.requester_label : conn.receiver_label,
-      theirLabel: isRequester ? conn.receiver_label : conn.requester_label,
+      myLabel: isRequester ? (conn.requester_label ?? null) : (conn.receiver_label ?? null),
+      theirLabel: isRequester ? (conn.receiver_label ?? null) : (conn.requester_label ?? null),
     };
   });
 }
@@ -70,15 +133,17 @@ export async function getPendingInvitations(): Promise<{
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
-  const { data, error } = await supabase
-    .rpc('get_invitations_with_connections');
+  const response = await supabase.rpc('get_invitations_with_connections');
 
-  if (error) throw error;
+  if (response.error) throw response.error;
+
+  // Type assertion for the RPC response
+  const invitations = (response.data ?? []) as DbInvitationWithConnection[];
 
   const sent: PendingInvitation[] = [];
   const received: PendingInvitation[] = [];
 
-  (data || []).forEach((inv: any) => {
+  invitations.forEach((inv) => {
     if (!inv.connection) return;
 
     const isRequester = inv.connection.requester_id === user.id;
@@ -90,8 +155,8 @@ export async function getPendingInvitations(): Promise<{
       fromUser: {
         id: fromUser.id,
         email: fromUser.email,
-        fullName: fromUser.full_name,
-        avatarUrl: fromUser.avatar_url,
+        fullName: fromUser.full_name ?? '',
+        avatarUrl: fromUser.avatar_url ?? null,
       },
     };
 
@@ -113,25 +178,28 @@ export async function createConnection(input: CreateConnectionInput): Promise<Pr
   if (!user) throw new Error('Not authenticated');
 
   // Find receiver by email using RPC function
-  const { data: receiverData, error: receiverError } = await supabase
+  const receiverResponse = await supabase
     .rpc('lookup_user_by_email', { user_email: input.receiverEmail })
     .single();
 
-  if (receiverError || !receiverData) {
+  if (receiverResponse.error ?? !receiverResponse.data) {
     throw new Error('User not found with that email');
   }
 
+  // Type assertion for the RPC response
+  const receiver = receiverResponse.data as DbUserLookup;
+
   // Check if trying to connect to yourself
-  if (receiverData.user_id === user.id) {
+  if (receiver.user_id === user.id) {
     throw new Error('You cannot connect with yourself');
   }
 
   // Create connection
-  const { data: connectionData, error: connectionError } = await supabase
+  const connectionResponse = await supabase
     .from('profile_connections')
     .insert({
       requester_id: user.id,
-      receiver_id: receiverData.user_id,
+      receiver_id: receiver.user_id,
       relationship: input.relationship,
       requester_label: input.label,
       status: 'pending',
@@ -139,25 +207,31 @@ export async function createConnection(input: CreateConnectionInput): Promise<Pr
     .select()
     .single();
 
-  if (connectionError) throw connectionError;
+  if (connectionResponse.error) throw connectionResponse.error;
+  if (!connectionResponse.data) throw new Error('Failed to create connection');
+
+  // Type assertion for the database response
+  const connection = connectionResponse.data as DbConnection;
 
   // Create invitation
   const { error: invitationError } = await supabase
     .from('connection_invitations')
     .insert({
-      connection_id: connectionData.id,
+      connection_id: connection.id,
       message: input.message,
-      proposed_permissions: input.proposedPermissions || {},
+      proposed_permissions: input.proposedPermissions ?? {},
     });
 
   if (invitationError) throw invitationError;
 
   // Send email notification to receiver
   try {
+    const userEmail = user.email ?? '';
+    const fullName = user.user_metadata?.full_name as string | undefined;
     await sendInvitationEmail({
-      to: receiverData.email,
-      fromEmail: user.email!,
-      fromName: user.user_metadata?.full_name,
+      to: receiver.email,
+      fromEmail: userEmail,
+      fromName: fullName,
       relationship: input.relationship,
       message: input.message,
     });
@@ -166,7 +240,7 @@ export async function createConnection(input: CreateConnectionInput): Promise<Pr
     // Don't fail the invitation if email fails
   }
 
-  return mapDbToConnection(connectionData);
+  return mapDbToConnection(connection);
 }
 
 /**
@@ -177,7 +251,7 @@ export async function acceptConnection(input: AcceptConnectionInput): Promise<Pr
   if (!user) throw new Error('Not authenticated');
 
   // Update connection status
-  const { data, error } = await supabase
+  const response = await supabase
     .from('profile_connections')
     .update({
       status: 'active',
@@ -189,7 +263,11 @@ export async function acceptConnection(input: AcceptConnectionInput): Promise<Pr
     .select()
     .single();
 
-  if (error) throw error;
+  if (response.error) throw response.error;
+  if (!response.data) throw new Error('Failed to accept connection');
+
+  // Type assertion for the database response
+  const connection = response.data as DbConnection;
 
   // Set initial permissions if provided
   if (input.permissions) {
@@ -210,7 +288,7 @@ export async function acceptConnection(input: AcceptConnectionInput): Promise<Pr
     .delete()
     .eq('connection_id', input.connectionId);
 
-  return mapDbToConnection(data);
+  return mapDbToConnection(connection);
 }
 
 /**
@@ -248,24 +326,34 @@ export async function updateConnection(
 
   if (!conn) throw new Error('Connection not found');
 
-  const isRequester = conn.requester_id === user.id;
+  // Type assertion for the partial connection response
+  const partialConn = conn as Pick<DbConnection, 'requester_id' | 'receiver_id'>;
+  const isRequester = partialConn.requester_id === user.id;
 
-  const updateData: any = {};
+  const updateData: Partial<Pick<DbConnection, 'relationship' | 'notes' | 'requester_label' | 'receiver_label'>> = {};
   if (input.relationship) updateData.relationship = input.relationship;
   if (input.notes !== undefined) updateData.notes = input.notes;
   if (input.label !== undefined) {
-    updateData[isRequester ? 'requester_label' : 'receiver_label'] = input.label;
+    if (isRequester) {
+      updateData.requester_label = input.label;
+    } else {
+      updateData.receiver_label = input.label;
+    }
   }
 
-  const { data, error } = await supabase
+  const response = await supabase
     .from('profile_connections')
     .update(updateData)
     .eq('id', connectionId)
     .select()
     .single();
 
-  if (error) throw error;
-  return mapDbToConnection(data);
+  if (response.error) throw response.error;
+  if (!response.data) throw new Error('Failed to update connection');
+
+  // Type assertion for the database response
+  const connection = response.data as DbConnection;
+  return mapDbToConnection(connection);
 }
 
 /**
@@ -296,19 +384,22 @@ export async function getConnectionPermissions(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
-  const { data, error } = await supabase
+  const response = await supabase
     .from('module_permissions')
     .select('*')
     .eq('connection_id', connectionId);
 
-  if (error) throw error;
+  if (response.error) throw response.error;
 
-  const myPermissions = (data || [])
-    .filter((p: any) => p.user_id === user.id)
+  // Type assertion for the database response
+  const permissions = (response.data ?? []) as DbPermission[];
+
+  const myPermissions = permissions
+    .filter((p) => p.user_id === user.id)
     .map(mapDbToPermission);
 
-  const theirPermissions = (data || [])
-    .filter((p: any) => p.user_id !== user.id)
+  const theirPermissions = permissions
+    .filter((p) => p.user_id !== user.id)
     .map(mapDbToPermission);
 
   return { myPermissions, theirPermissions };
@@ -321,25 +412,29 @@ export async function setModulePermission(input: {
   connectionId: string;
   module: ShareableModule;
   permissionLevel: ModulePermissionLevel;
-  settings?: Record<string, any>;
+  settings?: Record<string, unknown>;
 }): Promise<ModulePermission> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
-  const { data, error } = await supabase
+  const response = await supabase
     .from('module_permissions')
     .upsert({
       connection_id: input.connectionId,
       module: input.module,
       permission_level: input.permissionLevel,
       user_id: user.id,
-      settings: input.settings || {},
+      settings: input.settings ?? {},
     })
     .select()
     .single();
 
-  if (error) throw error;
-  return mapDbToPermission(data);
+  if (response.error) throw response.error;
+  if (!response.data) throw new Error('Failed to set module permission');
+
+  // Type assertion for the database response
+  const permission = response.data as DbPermission;
+  return mapDbToPermission(permission);
 }
 
 /**
@@ -386,43 +481,43 @@ export async function deleteModulePermission(
 // MAPPER FUNCTIONS
 // =====================================================
 
-function mapDbToConnection(data: any): ProfileConnection {
+function mapDbToConnection(data: DbConnection): ProfileConnection {
   return {
     id: data.id,
     requesterId: data.requester_id,
     receiverId: data.receiver_id,
     relationship: data.relationship,
     status: data.status,
-    requesterLabel: data.requester_label,
-    receiverLabel: data.receiver_label,
-    notes: data.notes,
+    requesterLabel: data.requester_label ?? null,
+    receiverLabel: data.receiver_label ?? null,
+    notes: data.notes ?? null,
     createdAt: data.created_at,
-    acceptedAt: data.accepted_at,
+    acceptedAt: data.accepted_at ?? null,
     updatedAt: data.updated_at,
   };
 }
 
-function mapDbToPermission(data: any): ModulePermission {
+function mapDbToPermission(data: DbPermission): ModulePermission {
   return {
     id: data.id,
     connectionId: data.connection_id,
     module: data.module,
     permissionLevel: data.permission_level,
     userId: data.user_id,
-    settings: data.settings || {},
+    settings: data.settings ?? {},
     createdAt: data.created_at,
     updatedAt: data.updated_at,
   };
 }
 
-function mapDbToInvitation(data: any): ConnectionInvitation {
+function mapDbToInvitation(data: DbInvitation): ConnectionInvitation {
   return {
     id: data.id,
     connectionId: data.connection_id,
-    message: data.message,
-    proposedPermissions: data.proposed_permissions || {},
+    message: data.message ?? null,
+    proposedPermissions: data.proposed_permissions ?? {},
     createdAt: data.created_at,
-    expiresAt: data.expires_at,
+    expiresAt: data.expires_at ?? null,
   };
 }
 
@@ -442,7 +537,7 @@ async function sendInvitationEmail(params: {
 }): Promise<void> {
   const invitationUrl = `${window.location.origin}/#/shared`; // Deep link to invitations
 
-  const { data, error } = await supabase.functions.invoke('send-invitation-email', {
+  const response = await supabase.functions.invoke('send-invitation-email', {
     body: {
       to: params.to,
       fromEmail: params.fromEmail,
@@ -453,6 +548,5 @@ async function sendInvitationEmail(params: {
     },
   });
 
-  if (error) throw error;
-  return data;
+  if (response.error) throw response.error;
 }

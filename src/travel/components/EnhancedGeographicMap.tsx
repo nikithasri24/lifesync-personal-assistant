@@ -27,7 +27,7 @@ interface CountryFeature {
   properties: CountryProperties;
   geometry: {
     type: string;
-    coordinates: any;
+    coordinates: unknown;
   };
 }
 
@@ -46,7 +46,7 @@ const EnhancedGeographicMap: React.FC<EnhancedGeographicMapProps> = ({
   onCountryClick,
 }) => {
   const [countries, setCountries] = React.useState<CountryFeature[]>([]);
-  const [statesData, setStatesData] = React.useState<any[]>([]);
+  const [statesData, setStatesData] = React.useState<Array<{ geometry: unknown; properties?: Record<string, unknown> }>>([]);
   const [loading, setLoading] = React.useState(true);
   const [loadingStates, setLoadingStates] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -80,7 +80,7 @@ const EnhancedGeographicMap: React.FC<EnhancedGeographicMapProps> = ({
 
   // Load countries data
   React.useEffect(() => {
-    const loadMapData = async () => {
+    const loadMapData = async (): Promise<void> => {
       try {
         setLoading(true);
         const response = await fetch('https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson');
@@ -89,21 +89,21 @@ const EnhancedGeographicMap: React.FC<EnhancedGeographicMapProps> = ({
           throw new Error(`Failed to fetch map data: ${response.status}`);
         }
 
-        const geoJsonData: any = await response.json();
+        const geoJsonData: { features?: Array<{ id?: string; properties?: Record<string, unknown>; geometry?: unknown }> } = await response.json() as { features?: Array<{ id?: string; properties?: Record<string, unknown>; geometry?: unknown }> };
 
         if (!geoJsonData?.features) {
           throw new Error('Invalid GeoJSON data');
         }
 
         const countryFeatures = geoJsonData.features
-          .map((f: any) => {
-            const iso_a2 = f.properties?.ISO_A2 || f.properties?.iso_a2 || '';
-            const iso_a3 = f.properties?.ISO_A3 || f.properties?.iso_a3 || '';
-            const name = f.properties?.NAME || f.properties?.name || f.properties?.ADMIN || 'Unknown';
+          .map((f: { id?: string; properties?: Record<string, unknown>; geometry?: unknown }) => {
+            const iso_a2 = (f.properties?.ISO_A2 ?? f.properties?.iso_a2 ?? '') as string;
+            const iso_a3 = (f.properties?.ISO_A3 ?? f.properties?.iso_a3 ?? '') as string;
+            const name = (f.properties?.NAME ?? f.properties?.name ?? f.properties?.ADMIN ?? 'Unknown') as string;
 
             return {
               type: 'Feature' as const,
-              id: f.id || iso_a2 || `country-${Math.random()}`,
+              id: f.id ?? iso_a2 ?? `country-${Math.random()}`,
               properties: {
                 name: name,
                 iso_a2: iso_a2,
@@ -112,14 +112,15 @@ const EnhancedGeographicMap: React.FC<EnhancedGeographicMapProps> = ({
               geometry: f.geometry,
             };
           })
-          .filter((f: any) => {
+          .filter((f: { properties: { iso_a2: string }; geometry?: unknown }) => {
             const hasValidCode = f.properties.iso_a2 &&
                                  f.properties.iso_a2.length === 2 &&
                                  f.properties.iso_a2 !== '-99';
-            const hasValidGeometry = f.geometry &&
-                                    (f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon');
+            const geometryObj = f.geometry as { type?: string } | undefined;
+            const hasValidGeometry = geometryObj &&
+                                    (geometryObj.type === 'Polygon' || geometryObj.type === 'MultiPolygon');
             return hasValidCode && hasValidGeometry;
-          });
+          }) as CountryFeature[];
 
         setCountries(countryFeatures.sort((a, b) =>
           a.properties.name.localeCompare(b.properties.name)
@@ -134,12 +135,12 @@ const EnhancedGeographicMap: React.FC<EnhancedGeographicMapProps> = ({
       }
     };
 
-    loadMapData();
+    void loadMapData();
   }, []);
 
   // Load US states and province boundaries
   React.useEffect(() => {
-    const loadStateBoundaries = async () => {
+    const loadStateBoundaries = async (): Promise<void> => {
       if (!layers.showStates || statesData.length > 0 || loadingStates) return;
 
       try {
@@ -148,9 +149,9 @@ const EnhancedGeographicMap: React.FC<EnhancedGeographicMapProps> = ({
         const response = await fetch('https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_1_states_provinces.geojson');
 
         if (response.ok) {
-          const data = await response.json();
-          setStatesData(data.features || []);
-          logger.debug('EnhancedGeographicMap', `Loaded ${data.features?.length || 0} state/province boundaries`);
+          const data = await response.json() as { features?: Array<{ geometry: unknown; properties?: Record<string, unknown> }> };
+          setStatesData(data.features ?? []);
+          logger.debug('EnhancedGeographicMap', `Loaded ${data.features?.length ?? 0} state/province boundaries`);
         }
       } catch (err) {
         logger.error('Error loading state boundaries:', { err });
@@ -159,30 +160,30 @@ const EnhancedGeographicMap: React.FC<EnhancedGeographicMapProps> = ({
       }
     };
 
-    loadStateBoundaries();
-  }, [layers.showStates]);
+    void loadStateBoundaries();
+  }, [layers.showStates, statesData.length, loadingStates]);
 
-  const toggleLayer = (layer: keyof LayerToggles) => {
+  const toggleLayer = (layer: keyof LayerToggles): void => {
     setLayers(prev => ({ ...prev, [layer]: !prev[layer] }));
   };
 
   // Zoom controls
-  const handleZoomIn = () => setZoom(prev => Math.min(prev * 1.5, 8));
-  const handleZoomOut = () => setZoom(prev => Math.max(prev / 1.5, 1));
-  const handleReset = () => {
+  const handleZoomIn = React.useCallback((): void => setZoom(prev => Math.min(prev * 1.5, 8)), []);
+  const handleZoomOut = React.useCallback((): void => setZoom(prev => Math.max(prev / 1.5, 1)), []);
+  const handleReset = React.useCallback((): void => {
     setZoom(1);
     setPan({ x: 0, y: 0 });
-  };
+  }, []);
 
   // Pan controls
-  const handleMouseDown = (e: React.MouseEvent) => {
+  const handleMouseDown = (e: React.MouseEvent): void => {
     if (e.button === 0 && (e.target as HTMLElement).tagName === 'rect') {
       setIsDragging(true);
       setDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
     }
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
+  const handleMouseMove = (e: React.MouseEvent): void => {
     if (isDragging) {
       setPan({
         x: e.clientX - dragStart.x,
@@ -191,11 +192,11 @@ const EnhancedGeographicMap: React.FC<EnhancedGeographicMapProps> = ({
     }
   };
 
-  const handleMouseUp = () => setIsDragging(false);
+  const handleMouseUp = (): void => setIsDragging(false);
 
   // Keyboard shortcuts for zoom
   React.useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
+    const handleKeyPress = (e: KeyboardEvent): void => {
       if (e.key === '=' || e.key === '+') {
         handleZoomIn();
       } else if (e.key === '-' || e.key === '_') {
@@ -206,11 +207,11 @@ const EnhancedGeographicMap: React.FC<EnhancedGeographicMapProps> = ({
     };
 
     window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, []);
+    return (): void => window.removeEventListener('keydown', handleKeyPress);
+  }, [handleZoomIn, handleZoomOut, handleReset]);
 
   // Mouse wheel zoom handler with zoom to cursor position
-  const handleWheel = (e: React.WheelEvent<SVGSVGElement>) => {
+  const handleWheel = (e: React.WheelEvent<SVGSVGElement>): void => {
     e.preventDefault();
     e.stopPropagation();
 
@@ -255,7 +256,7 @@ const EnhancedGeographicMap: React.FC<EnhancedGeographicMapProps> = ({
   // Project lat/lon to screen coordinates
   const project = (lat: number, lon: number): [number, number] | null => {
     const coords = projection([lon, lat]);
-    return coords || null;
+    return coords ?? null;
   };
 
   const visitedCount = Object.keys(visitedCountries).length;
@@ -382,7 +383,7 @@ const EnhancedGeographicMap: React.FC<EnhancedGeographicMapProps> = ({
                         className="w-4 h-4 text-blue-600 rounded"
                       />
                       <Mountain className="h-4 w-4 text-amber-800" />
-                      <span className="text-sm font-medium">Mountains ({worldMountains.reduce((sum, r) => sum + (r.peaks?.length || 0), 0)} peaks)</span>
+                      <span className="text-sm font-medium">Mountains ({worldMountains.reduce((sum, r) => sum + (r.peaks?.length ?? 0), 0)} peaks)</span>
                     </label>
                     <label className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded">
                       <input
@@ -480,7 +481,7 @@ const EnhancedGeographicMap: React.FC<EnhancedGeographicMapProps> = ({
                     const isHovered = hoveredCountry === countryCode;
 
                     try {
-                      const path = pathGenerator(country.geometry);
+                      const path = pathGenerator(country.geometry as Parameters<typeof pathGenerator>[0]);
                       if (!path) return null;
 
                       return (
@@ -492,9 +493,9 @@ const EnhancedGeographicMap: React.FC<EnhancedGeographicMapProps> = ({
                             stroke="#E5E3D8"
                             strokeWidth={0.5}
                             className="cursor-pointer transition-colors duration-200"
-                            onClick={() => onCountryClick(countryCode)}
-                            onMouseEnter={() => setHoveredCountry(countryCode)}
-                            onMouseLeave={() => setHoveredCountry(null)}
+                            onClick={(): void => onCountryClick(countryCode)}
+                            onMouseEnter={(): void => setHoveredCountry(countryCode)}
+                            onMouseLeave={(): void => setHoveredCountry(null)}
                           />
                           {/* Country border - thicker for visual clarity */}
                           <path
@@ -519,14 +520,14 @@ const EnhancedGeographicMap: React.FC<EnhancedGeographicMapProps> = ({
                     {countries.map((country, idx) => {
                       try {
                         // Calculate centroid of the country for label placement
-                        const bounds = pathGenerator.bounds(country.geometry);
+                        const bounds = pathGenerator.bounds(country.geometry as Parameters<typeof pathGenerator.bounds>[0]);
                         if (!bounds || bounds[0][0] === Infinity) return null;
 
                         const centerX = (bounds[0][0] + bounds[1][0]) / 2;
                         const centerY = (bounds[0][1] + bounds[1][1]) / 2;
 
                         // Calculate area to determine font size
-                        const area = pathGenerator.area(country.geometry);
+                        const area = pathGenerator.area(country.geometry as Parameters<typeof pathGenerator.area>[0]);
                         const isLarge = area > 5000;
                         const isMedium = area > 1000;
                         const isSmall = area > 200;
@@ -568,7 +569,7 @@ const EnhancedGeographicMap: React.FC<EnhancedGeographicMapProps> = ({
                   <g className="states">
                     {statesData.map((state, idx) => {
                       try {
-                        const path = pathGenerator(state.geometry);
+                        const path = pathGenerator(state.geometry as Parameters<typeof pathGenerator>[0]);
                         if (!path) return null;
 
                         return (
@@ -744,7 +745,7 @@ const EnhancedGeographicMap: React.FC<EnhancedGeographicMapProps> = ({
                 {layers.showMountains && (
                   <g className="mountains">
                     {worldMountains.flatMap((range, rangeIdx) =>
-                      range.peaks?.map((peak: any, peakIdx: number) => {
+                      range.peaks?.map((peak: { lat: number; lon: number; elevation: number; name: string }, peakIdx: number) => {
                         const coords = project(peak.lat, peak.lon);
                         if (!coords) return null;
 
@@ -836,7 +837,7 @@ const EnhancedGeographicMap: React.FC<EnhancedGeographicMapProps> = ({
                       {countries.find(c => c.properties.iso_a2 === hoveredCountry)?.properties.name}
                     </p>
                     <p className="text-sm text-gray-600">
-                      {visitedCountries[hoveredCountry]
+                      {visitedCountries[hoveredCountry] !== undefined && visitedCountries[hoveredCountry] !== null
                         ? `✓ ${visitedCountries[hoveredCountry].charAt(0).toUpperCase() + visitedCountries[hoveredCountry].slice(1)}`
                         : 'Click to mark as visited'
                       }
@@ -861,13 +862,13 @@ const EnhancedGeographicMap: React.FC<EnhancedGeographicMapProps> = ({
                       <label
                         key={`${country.id}-${idx}`}
                         className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer transition-colors"
-                        onMouseEnter={() => setHoveredCountry(countryCode)}
-                        onMouseLeave={() => setHoveredCountry(null)}
+                        onMouseEnter={(): void => setHoveredCountry(countryCode)}
+                        onMouseLeave={(): void => setHoveredCountry(null)}
                       >
                         <input
                           type="checkbox"
                           checked={isVisited}
-                          onChange={() => onCountryClick(countryCode)}
+                          onChange={(): void => onCountryClick(countryCode)}
                           className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
                         />
                         <span className="text-sm text-gray-700">
@@ -908,7 +909,7 @@ const EnhancedGeographicMap: React.FC<EnhancedGeographicMapProps> = ({
             {layers.showMountains && (
               <div className="flex items-center gap-2">
                 <Mountain className="h-5 w-5 text-amber-800" />
-                <span className="text-xs text-gray-700 font-medium">{worldMountains.reduce((s, r) => s + (r.peaks?.length || 0), 0)} Peaks</span>
+                <span className="text-xs text-gray-700 font-medium">{worldMountains.reduce((s, r) => s + (r.peaks?.length ?? 0), 0)} Peaks</span>
               </div>
             )}
             {layers.showLakes && (
@@ -943,7 +944,7 @@ const EnhancedGeographicMap: React.FC<EnhancedGeographicMapProps> = ({
             <div className="text-xs text-cyan-600 font-medium">Major Rivers</div>
           </div>
           <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-lg p-3 text-center">
-            <div className="text-2xl font-bold text-amber-700">{worldMountains.reduce((s, r) => s + (r.peaks?.length || 0), 0)}</div>
+            <div className="text-2xl font-bold text-amber-700">{worldMountains.reduce((s, r) => s + (r.peaks?.length ?? 0), 0)}</div>
             <div className="text-xs text-amber-600 font-medium">Mountain Peaks</div>
           </div>
           <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-3 text-center">

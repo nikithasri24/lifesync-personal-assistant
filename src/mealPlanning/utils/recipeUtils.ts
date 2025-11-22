@@ -1,9 +1,41 @@
 import { logger } from '../../services/logger';
 import type { Recipe } from '../../types';
 
+// Type guard for checking if value is a string
+function isString(value: unknown): value is string {
+  return typeof value === 'string';
+}
+
+// Type guard for checking if value is an array of strings
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every(item => typeof item === 'string');
+}
+
+// Type guard for checking if value is an array of ingredient objects
+function isIngredientArray(value: unknown): value is Array<{ name: string }> {
+  return Array.isArray(value) && value.every(
+    (item: unknown) => typeof item === 'object' && item !== null && 'name' in item && typeof (item as { name: unknown }).name === 'string'
+  );
+}
+
+// Interface for recipe data from API
+interface RecipeApiResponse {
+  name?: unknown;
+  description?: unknown;
+  ingredients?: unknown;
+  instructions?: unknown;
+  prepTime?: unknown;
+  cookTime?: unknown;
+  servings?: unknown;
+  tags?: unknown;
+  image?: unknown;
+  authorName?: unknown;
+}
+
 // Generic clipper: fetch via server-side endpoint that parses JSON-LD/OG tags
 export async function fetchClippedRecipe(url: string): Promise<Omit<Recipe, 'id' | 'createdAt'>> {
-  const clipperBase = import.meta.env.VITE_RECIPE_CLIPPER_URL?.trim() || '/api/clip/recipe';
+  const envUrl: unknown = import.meta.env.VITE_RECIPE_CLIPPER_URL;
+  const clipperBase: string = (isString(envUrl) ? envUrl.trim() : null) ?? '/api/clip/recipe';
   const apiUrl = `${clipperBase}${clipperBase.includes('?') ? '&' : '?'}url=${encodeURIComponent(url)}`;
   let response: Response;
   try {
@@ -12,26 +44,40 @@ export async function fetchClippedRecipe(url: string): Promise<Omit<Recipe, 'id'
     throw new Error('Unable to reach the recipe clipper service.');
   }
   if (!response.ok) throw new Error('Failed to clip recipe.');
-  const data = await response.json();
-  const ingredients = Array.isArray(data.ingredients) && data.ingredients.length
-    ? data.ingredients
+  const data: unknown = await response.json();
+  const apiData = data as RecipeApiResponse;
+
+  const ingredients = isIngredientArray(apiData.ingredients) && apiData.ingredients.length > 0
+    ? apiData.ingredients
     : [{ name: 'Ingredient 1' }, { name: 'Ingredient 2' }];
-  const instructions: string[] = Array.isArray(data.instructions) && data.instructions.length
-    ? data.instructions
+  const instructions: string[] = isStringArray(apiData.instructions) && apiData.instructions.length > 0
+    ? apiData.instructions
     : ['Follow the steps on the source page.'];
+
+  const name = isString(apiData.name) ? apiData.name : null;
+  const description = isString(apiData.description) ? apiData.description : null;
+  const image = isString(apiData.image) ? apiData.image : null;
+  const authorName = isString(apiData.authorName) ? apiData.authorName : null;
+
+  const prepTime = Number.isFinite(Number(apiData.prepTime)) ? Number(apiData.prepTime) : 10;
+  const cookTime = Number.isFinite(Number(apiData.cookTime)) ? Number(apiData.cookTime) : 20;
+  const servings = Number.isFinite(Number(apiData.servings)) ? Number(apiData.servings) : 2;
+
+  const tags = isStringArray(apiData.tags) ? apiData.tags : ['clipped'];
+
   return {
-    name: data.name || 'Clipped Recipe',
-    description: data.description || '',
+    name: name ?? 'Clipped Recipe',
+    description: description ?? '',
     ingredients,
     instructions,
-    prepTime: Number.isFinite(Number(data.prepTime)) ? Number(data.prepTime) : 10,
-    cookTime: Number.isFinite(Number(data.cookTime)) ? Number(data.cookTime) : 20,
-    servings: Number.isFinite(Number(data.servings)) ? Number(data.servings) : 2,
+    prepTime,
+    cookTime,
+    servings,
     difficulty: 'medium',
-    tags: Array.isArray(data.tags) ? data.tags : ['clipped'],
+    tags,
     rating: undefined,
     notes: undefined,
-    image: data.image || undefined,
+    image: image ?? undefined,
     isFavorite: false,
     calories: undefined,
     cuisine: 'other',
@@ -40,7 +86,7 @@ export async function fetchClippedRecipe(url: string): Promise<Omit<Recipe, 'id'
     flowChart: undefined,
     sourceType: 'manual',
     sourceUrl: url,
-    authorName: data.authorName || undefined,
+    authorName: authorName ?? undefined,
     videoThumbnail: undefined,
   };
 }
@@ -83,27 +129,39 @@ export async function fetchRecipeFromGoogle(mealName: string): Promise<Omit<Reci
       return scaffold(mealName);
     }
 
-    const data = await response.json();
-    const ingredients = Array.isArray(data.ingredients) && data.ingredients.length
-      ? data.ingredients
+    const data: unknown = await response.json();
+    const apiData = data as RecipeApiResponse;
+
+    const ingredients = isIngredientArray(apiData.ingredients) && apiData.ingredients.length > 0
+      ? apiData.ingredients
       : [{ name: 'Add ingredients...' }];
-    const instructions: string[] = Array.isArray(data.instructions) && data.instructions.length
-      ? data.instructions
+    const instructions: string[] = isStringArray(apiData.instructions) && apiData.instructions.length > 0
+      ? apiData.instructions
       : ['Add instructions...'];
 
+    const name = isString(apiData.name) ? apiData.name : null;
+    const description = isString(apiData.description) ? apiData.description : null;
+    const image = isString(apiData.image) ? apiData.image : null;
+
+    const prepTime = Number.isFinite(Number(apiData.prepTime)) ? Number(apiData.prepTime) : undefined;
+    const cookTime = Number.isFinite(Number(apiData.cookTime)) ? Number(apiData.cookTime) : undefined;
+    const servings = Number.isFinite(Number(apiData.servings)) ? Number(apiData.servings) : 4;
+
+    const tags = isStringArray(apiData.tags) ? apiData.tags : ['auto-fetched'];
+
     return {
-      name: data.name || mealName,
-      description: data.description || '',
+      name: name ?? mealName,
+      description: description ?? '',
       ingredients,
       instructions,
-      prepTime: Number.isFinite(Number(data.prepTime)) ? Number(data.prepTime) : undefined,
-      cookTime: Number.isFinite(Number(data.cookTime)) ? Number(data.cookTime) : undefined,
-      servings: Number.isFinite(Number(data.servings)) ? Number(data.servings) : 4,
+      prepTime,
+      cookTime,
+      servings,
       difficulty: 'medium',
-      tags: Array.isArray(data.tags) ? data.tags : ['auto-fetched'],
+      tags,
       rating: undefined,
       notes: undefined,
-      image: data.image || undefined,
+      image: image ?? undefined,
       isFavorite: false,
       calories: undefined,
       cuisine: 'other',

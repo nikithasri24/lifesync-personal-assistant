@@ -1,13 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react'
+import PhotoList from './PhotoList'
+import { usePanZoom } from './usePanZoom'
 
-type GeoFeature = GeoJSON.Feature<GeoJSON.Geometry, Record<string, any>>
+type GeoFeature = GeoJSON.Feature<GeoJSON.Geometry, Record<string, unknown>>
 
 const WIDTH = 1000
 const HEIGHT = 560
 
 const DEFAULT_BOUNDS = { minLon: -141.0, maxLon: -52.0, minLat: 41.0, maxLat: 84.0 }
 
-const project = (lon: number, lat: number, b = DEFAULT_BOUNDS) => {
+const project = (lon: number, lat: number, b = DEFAULT_BOUNDS): [number, number] => {
   const x = ((lon - b.minLon) / (b.maxLon - b.minLon)) * WIDTH
   const y = ((b.maxLat - lat) / (b.maxLat - b.minLat)) * HEIGHT
   return [x, y]
@@ -78,13 +80,26 @@ const CanadaVisitedSVG: React.FC = () => {
   const [bounds, setBounds] = useState(DEFAULT_BOUNDS)
   const [fallbackUsed, setFallbackUsed] = useState(false)
   const [visited, setVisited] = useState<Set<string>>(() => {
-    try { const raw = localStorage.getItem('lifesync:travel:visitedCA'); return new Set((raw ? JSON.parse(raw) : []).map((c: string) => c.toUpperCase())) } catch { return new Set() }
+    try {
+      const raw = localStorage.getItem('lifesync:travel:visitedCA')
+      const parsed: unknown = raw ? JSON.parse(raw) : []
+      const arr = Array.isArray(parsed) ? parsed : []
+      return new Set(arr.map((c: unknown) => String(c).toUpperCase()))
+    } catch {
+      return new Set()
+    }
   })
-  const saveVisited = (s: Set<string>) => { try { localStorage.setItem('lifesync:travel:visitedCA', JSON.stringify(Array.from(s))) } catch {} }
+  const saveVisited = (s: Set<string>): void => {
+    try {
+      localStorage.setItem('lifesync:travel:visitedCA', JSON.stringify(Array.from(s)))
+    } catch {
+      // Ignore storage errors
+    }
+  }
 
   useEffect(() => {
     let cancelled = false
-    const load = async () => {
+    const load = async (): Promise<void> => {
       try {
         const res = await fetch('/canada-provinces.geo.json', { cache: 'no-store' })
         if (!res.ok) throw new Error(String(res.status))
@@ -93,57 +108,86 @@ const CanadaVisitedSVG: React.FC = () => {
         try {
           let minLon = Infinity, maxLon = -Infinity, minLat = Infinity, maxLat = -Infinity
           for (const f of (json.features as GeoFeature[])) {
-            const each = (coords: any) => { if (typeof coords[0] === 'number') { const [lon, lat] = coords as [number, number]; minLon = Math.min(minLon, lon); maxLon = Math.max(maxLon, lon); minLat = Math.min(minLat, lat); maxLat = Math.max(maxLat, lat); return } for (const c of coords) each(c) }
-            const g = f.geometry; if (g) each((g as any).coordinates)
+            const each = (coords: unknown): void => {
+              if (Array.isArray(coords) && typeof coords[0] === 'number') {
+                const [lon, lat] = coords as [number, number]
+                minLon = Math.min(minLon, lon)
+                maxLon = Math.max(maxLon, lon)
+                minLat = Math.min(minLat, lat)
+                maxLat = Math.max(maxLat, lat)
+                return
+              }
+              if (Array.isArray(coords)) {
+                for (const c of coords) each(c)
+              }
+            }
+            const g = f.geometry
+            if (g && 'coordinates' in g) {
+              each(g.coordinates)
+            }
           }
-          if (isFinite(minLon) && isFinite(maxLon) && isFinite(minLat) && isFinite(maxLat)) setBounds({ minLon, maxLon, minLat, maxLat })
-        } catch {}
+          if (isFinite(minLon) && isFinite(maxLon) && isFinite(minLat) && isFinite(maxLat)) {
+            setBounds({ minLon, maxLon, minLat, maxLat })
+          }
+        } catch {
+          // Ignore bounds calculation errors
+        }
       } catch {
         if (!cancelled) { setData(MINIMAL_CA); setFallbackUsed(true) }
       }
     }
-    load(); return () => { cancelled = true }
+    void load()
+    return () => { cancelled = true }
   }, [])
 
   // Pan/zoom
   const containerRef = useRef<HTMLDivElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
-  const [scale, setScale] = useState(1)
-  const [pan, setPan] = useState({ x: 0, y: 0 })
-  const [panning, setPanning] = useState(false)
-  const [lastPt, setLastPt] = useState<{ x: number; y: number } | null>(null)
-  const [vel, setVel] = useState({ x: 0, y: 0 })
-  const [lastTs, setLastTs] = useState<number | null>(null)
-  const [inertiaId, setInertiaId] = useState<number | null>(null)
-  const clampScale = (v: number) => Math.max(0.5, Math.min(8, v))
-  const clampPan = (p: { x: number; y: number }, s: number) => {
-    const minX = Math.min(0, WIDTH - WIDTH * s), maxX = Math.max(0, WIDTH - WIDTH * s)
-    const minY = Math.min(0, HEIGHT - HEIGHT * s), maxY = Math.max(0, HEIGHT - HEIGHT * s)
-    return { x: Math.max(minX, Math.min(maxX, p.x)), y: Math.max(minY, Math.min(maxY, p.y)) }
-  }
-  const toSvgPoint = (evt: React.MouseEvent<SVGSVGElement, MouseEvent>) => { const svg = evt.currentTarget; const r = svg.getBoundingClientRect(); return { x: evt.clientX - r.left, y: evt.clientY - r.top } }
-  const handleWheel = (evt: React.WheelEvent<SVGSVGElement>) => { evt.preventDefault(); const f = evt.deltaY < 0 ? 1.1 : 0.9; const p0 = { x: (evt.nativeEvent as any).offsetX ?? 0, y: (evt.nativeEvent as any).offsetY ?? 0 }; const ns = clampScale(scale * f); const k = ns / scale; const np = { x: p0.x - (p0.x - pan.x) * k, y: p0.y - (p0.y - pan.y) * k }; setScale(ns); setPan(clampPan(np, ns)) }
-  const onMouseDown = (e: React.MouseEvent<SVGSVGElement>) => { setPanning(true); setLastPt(toSvgPoint(e)); setVel({ x: 0, y: 0 }); setLastTs(performance.now()); if (inertiaId) { cancelAnimationFrame(inertiaId); setInertiaId(null) } }
-  const onMouseMove = (e: React.MouseEvent<SVGSVGElement>) => { if (!panning || !lastPt) return; const pt = toSvgPoint(e); const dx = pt.x - lastPt.x, dy = pt.y - lastPt.y; const now = performance.now(); const dt = lastTs ? Math.max(16, now - lastTs) : 16; setLastTs(now); setVel({ x: dx / dt, y: dy / dt }); setPan((p) => clampPan({ x: p.x + dx, y: p.y + dy }, scale)); setLastPt(pt) }
-  const endPan = () => { setPanning(false); setLastPt(null); setLastTs(null); const friction = 0.95, minSpeed = 0.02; const step = () => { setPan((p) => clampPan({ x: p.x + vel.x * 16, y: p.y + vel.y * 16 }, scale)); setVel((v) => ({ x: v.x * friction, y: v.y * friction })); if (Math.hypot(vel.x, vel.y) > minSpeed) { const id = requestAnimationFrame(step); setInertiaId(id) } else { if (inertiaId) cancelAnimationFrame(inertiaId); setInertiaId(null) } }; if (Math.hypot(vel.x, vel.y) > minSpeed) { const id = requestAnimationFrame(step); setInertiaId(id) } }
-  const zoomBy = (m: number) => { const p0 = { x: WIDTH / 2, y: HEIGHT / 2 }; const ns = clampScale(scale * m); const k = ns / scale; const np = { x: p0.x - (p0.x - pan.x) * k, y: p0.y - (p0.y - pan.y) * k }; setScale(ns); setPan(clampPan(np, ns)) }
-  const resetView = () => { setScale(1); setPan({ x: 0, y: 0 }); if (inertiaId) { cancelAnimationFrame(inertiaId); setInertiaId(null) } }
+  const { scale, pan, panning, handleWheel, onMouseDown, onMouseMove, endPan, zoomBy, resetView } = usePanZoom({ width: WIDTH, height: HEIGHT })
 
   const [hover, setHover] = useState<{ name: string; x: number; y: number } | null>(null)
   const [selected, setSelected] = useState<{ code: string; name: string } | null>(null)
-  const [meta, setMeta] = useState<Record<string, { notes?: string; photos?: string[] }>>(() => { try { const raw = localStorage.getItem('lifesync:travel:caMeta'); return raw ? JSON.parse(raw) : {} } catch { return {} } })
-  const saveMeta = (next: typeof meta) => { setMeta(next); try { localStorage.setItem('lifesync:travel:caMeta', JSON.stringify(next)) } catch {} }
-  const getPointer = (evt: React.MouseEvent) => { const el = containerRef.current; if (!el) return { x: 0, y: 0 }; const r = el.getBoundingClientRect(); return { x: evt.clientX - r.left, y: evt.clientY - r.top } }
-
-  const codeOf = (props: Record<string, any>) => {
-    const c = (props.postal || props.code || props.abbrev || props.PROV_CODE || props.STUSPS || '').toString().toUpperCase()
-    if (c && c.length <= 3) return c
-    const name = (props.name || props.NAME || props.province || props.prov_name || '').toString().toLowerCase()
-    return NAME_TO_CODE[name] || name.toUpperCase().slice(0, 2)
+  const [meta, setMeta] = useState<Record<string, { notes?: string; photos?: string[] }>>(() => {
+    try {
+      const raw = localStorage.getItem('lifesync:travel:caMeta')
+      const parsed: unknown = raw ? JSON.parse(raw) : {}
+      if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+        return parsed as Record<string, { notes?: string; photos?: string[] }>
+      }
+      return {}
+    } catch {
+      return {}
+    }
+  })
+  const saveMeta = (next: typeof meta): void => {
+    setMeta(next)
+    try {
+      localStorage.setItem('lifesync:travel:caMeta', JSON.stringify(next))
+    } catch {
+      // Ignore storage errors
+    }
   }
-  const nameOf = (props: Record<string, any>) => (props.name || props.NAME || props.province || props.prov_name || 'Unknown') as string
+  const getPointer = (evt: React.MouseEvent): { x: number; y: number } => {
+    const el = containerRef.current
+    if (!el) return { x: 0, y: 0 }
+    const r = el.getBoundingClientRect()
+    return { x: evt.clientX - r.left, y: evt.clientY - r.top }
+  }
 
-  const features = (data?.features as GeoFeature[] | undefined) || []
+  const codeOf = (props: Record<string, unknown>): string => {
+    const rawCode = props.postal ?? props.code ?? props.abbrev ?? props.PROV_CODE ?? props.STUSPS ?? ''
+    const c = (typeof rawCode === 'string' || typeof rawCode === 'number') ? String(rawCode).toUpperCase() : ''
+    if (c && c.length <= 3) return c
+    const rawName = props.name ?? props.NAME ?? props.province ?? props.prov_name ?? ''
+    const name = (typeof rawName === 'string' || typeof rawName === 'number') ? String(rawName).toLowerCase() : ''
+    return NAME_TO_CODE[name] ?? name.toUpperCase().slice(0, 2)
+  }
+  const nameOf = (props: Record<string, unknown>): string => {
+    const rawName = props.name ?? props.NAME ?? props.province ?? props.prov_name ?? 'Unknown'
+    return (typeof rawName === 'string' || typeof rawName === 'number') ? String(rawName) : 'Unknown'
+  }
+
+  const features = (data?.features as GeoFeature[] | undefined) ?? []
 
   return (
     <div ref={containerRef} className="relative w-full" style={{ height: HEIGHT }}>
@@ -164,7 +208,7 @@ const CanadaVisitedSVG: React.FC = () => {
         <rect x="0" y="0" width={WIDTH} height={HEIGHT} fill="#F8FAFC" />
         <g transform={`translate(${pan.x},${pan.y}) scale(${scale})`}>
           {features.map((f, idx) => {
-            const props = f.properties || {}
+            const props = f.properties ?? {}
             const code = codeOf(props)
             const name = nameOf(props)
             const d = f.geometry ? buildPath(f.geometry, bounds) : ''
@@ -219,23 +263,82 @@ const CanadaVisitedSVG: React.FC = () => {
       {/* Export / Import / Stats */}
       <div className="absolute z-[1000] bottom-3 left-3 bg-white/90 dark:bg-gray-900/90 backdrop-blur rounded-xl border border-gray-200 dark:border-gray-700 shadow flex items-center overflow-hidden">
         <button className="px-3 py-2 text-xs hover:bg-gray-50 border-r" onClick={() => {
-          try { const arr = Array.from(visited); const blob = new Blob([JSON.stringify({ visited: arr, meta }, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'visited-canada.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url) } catch {}
+          try {
+            const arr = Array.from(visited)
+            const blob = new Blob([JSON.stringify({ visited: arr, meta }, null, 2)], { type: 'application/json' })
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = 'visited-canada.json'
+            document.body.appendChild(a)
+            a.click()
+            a.remove()
+            URL.revokeObjectURL(url)
+          } catch {
+            // Ignore export errors
+          }
         }}>Export JSON</button>
-        <button className="px-3 py-2 text-xs hover:bg-gray-50 border-r" onClick={async () => {
-          try { const svg = svgRef.current; if (!svg) return; const clone = svg.cloneNode(true) as SVGSVGElement; clone.setAttribute('width', String(WIDTH)); clone.setAttribute('height', String(HEIGHT)); const ser = new XMLSerializer(); const str = ser.serializeToString(clone); const blob = new Blob([str], { type: 'image/svg+xml;charset=utf-8' }); const url = URL.createObjectURL(blob); const img = new Image(); await new Promise<void>((res, rej) => { img.onload = () => res(); img.onerror = rej; img.src = url }); const canvas = document.createElement('canvas'); canvas.width = WIDTH; canvas.height = HEIGHT; const ctx = canvas.getContext('2d'); if (!ctx) return; ctx.fillStyle = '#F8FAFC'; ctx.fillRect(0, 0, WIDTH, HEIGHT); ctx.drawImage(img, 0, 0); URL.revokeObjectURL(url); const pngUrl = canvas.toDataURL('image/png'); const a = document.createElement('a'); a.href = pngUrl; a.download = 'canada-map.png'; document.body.appendChild(a); a.click(); a.remove() } catch {}
+        <button className="px-3 py-2 text-xs hover:bg-gray-50 border-r" onClick={() => {
+          void (async () => {
+            try {
+              const svg = svgRef.current
+              if (!svg) return
+              const clone = svg.cloneNode(true) as SVGSVGElement
+              clone.setAttribute('width', String(WIDTH))
+              clone.setAttribute('height', String(HEIGHT))
+              const ser = new XMLSerializer()
+              const str = ser.serializeToString(clone)
+              const blob = new Blob([str], { type: 'image/svg+xml;charset=utf-8' })
+              const url = URL.createObjectURL(blob)
+              const img = new Image()
+              await new Promise<void>((res, rej) => {
+                img.onload = () => res()
+                img.onerror = rej
+                img.src = url
+              })
+              const canvas = document.createElement('canvas')
+              canvas.width = WIDTH
+              canvas.height = HEIGHT
+              const ctx = canvas.getContext('2d')
+              if (!ctx) return
+              ctx.fillStyle = '#F8FAFC'
+              ctx.fillRect(0, 0, WIDTH, HEIGHT)
+              ctx.drawImage(img, 0, 0)
+              URL.revokeObjectURL(url)
+              const pngUrl = canvas.toDataURL('image/png')
+              const a = document.createElement('a')
+              a.href = pngUrl
+              a.download = 'canada-map.png'
+              document.body.appendChild(a)
+              a.click()
+              a.remove()
+            } catch {
+              // Ignore export errors
+            }
+          })()
         }}>Export PNG</button>
         <label className="px-3 py-2 text-xs cursor-pointer hover:bg-gray-50 border-r">
           Import JSON
-          <input type="file" accept="application/json" className="hidden" onChange={async (e) => {
-            const file = e.target.files?.[0]
-            if (!file) return
-            try {
-              const text = await file.text()
-              const json = JSON.parse(text)
-              if (Array.isArray(json.visited)) { const s = new Set((json.visited as string[]).map((c) => c.toUpperCase())); setVisited(s); saveVisited(s) }
-              if (json.meta && typeof json.meta === 'object') { saveMeta(json.meta) }
-            } catch {}
-            e.currentTarget.value = ''
+          <input type="file" accept="application/json" className="hidden" onChange={(e) => {
+            void (async () => {
+              const file = e.target.files?.[0]
+              if (!file) return
+              try {
+                const text = await file.text()
+                const json = JSON.parse(text) as { visited?: unknown; meta?: unknown }
+                if (Array.isArray(json.visited)) {
+                  const s = new Set((json.visited as unknown[]).map((c) => String(c).toUpperCase()))
+                  setVisited(s)
+                  saveVisited(s)
+                }
+                if (json.meta && typeof json.meta === 'object') {
+                  saveMeta(json.meta as Record<string, { notes?: string; photos?: string[] }>)
+                }
+              } catch {
+                // Ignore import errors
+              }
+              e.currentTarget.value = ''
+            })()
           }} />
         </label>
         <div className="px-3 py-2 text-[11px] text-gray-700 dark:text-gray-300">
@@ -261,8 +364,8 @@ const CanadaVisitedSVG: React.FC = () => {
           </div>
           <div className="p-4 space-y-4 overflow-auto">
             <div className="flex items-center justify-between"><span className="text-sm text-gray-700">Visited</span><button className={`px-3 py-1.5 text-xs rounded ${visited.has(selected.code) ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-700'}`} onClick={() => { const next = new Set(visited); if (visited.has(selected.code)) next.delete(selected.code); else next.add(selected.code); setVisited(next); saveVisited(next) }}>{visited.has(selected.code) ? 'Yes' : 'No'}</button></div>
-            <div><label className="block text-sm font-medium text-gray-700 mb-1">Notes</label><textarea className="w-full h-28 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value={meta[selected.code]?.notes || ''} onChange={(e) => { const next = { ...meta, [selected.code]: { ...meta[selected.code], notes: e.target.value } }; saveMeta(next) }} placeholder="Memories, places, dates…" /></div>
-            <div><label className="block text-sm font-medium text-gray-700 mb-1">Photo URLs</label><PhotoList items={meta[selected.code]?.photos || []} onChange={(list) => { const next = { ...meta, [selected.code]: { ...meta[selected.code], photos: list } }; saveMeta(next) }} /></div>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">Notes</label><textarea className="w-full h-28 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value={meta[selected.code]?.notes ?? ''} onChange={(e) => { const next = { ...meta, [selected.code]: { ...meta[selected.code], notes: e.target.value } }; saveMeta(next) }} placeholder="Memories, places, dates…" /></div>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">Photo URLs</label><PhotoList items={meta[selected.code]?.photos ?? []} onChange={(list) => { const next = { ...meta, [selected.code]: { ...meta[selected.code], photos: list } }; saveMeta(next) }} /></div>
           </div>
           <div className="px-4 py-3 border-t border-gray-200 flex items-center justify-end"><button className="px-3 py-2 text-sm rounded border border-gray-300 hover:bg-gray-50" onClick={() => setSelected(null)}>Close</button></div>
         </div>
@@ -276,25 +379,3 @@ const CanadaVisitedSVG: React.FC = () => {
 }
 
 export default CanadaVisitedSVG
-
-function PhotoList({ items, onChange }: { items: string[]; onChange: (next: string[]) => void }) {
-  const [value, setValue] = useState('')
-  const add = () => { const v = value.trim(); if (!v) return; onChange([...(items || []), v]); setValue('') }
-  const remove = (idx: number) => { const next = [...items]; next.splice(idx, 1); onChange(next) }
-  return (
-    <div>
-      <div className="flex items-center space-x-2 mb-2">
-        <input className="flex-1 border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="https://..." value={value} onChange={(e) => setValue(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); add() } }} />
-        <button className="px-2 py-1 text-xs rounded bg-blue-600 text-white hover:bg-blue-700" onClick={add}>Add</button>
-      </div>
-      <ul className="space-y-1">
-        {(items || []).map((url, idx) => (
-          <li key={idx} className="flex items-center justify-between text-xs text-gray-700 bg-gray-50 border border-gray-200 rounded px-2 py-1">
-            <a href={url} target="_blank" rel="noreferrer" className="truncate max-w-[220px] hover:underline">{url}</a>
-            <button className="text-red-600 hover:text-red-700 ml-2" onClick={() => remove(idx)}>Remove</button>
-          </li>
-        ))}
-      </ul>
-    </div>
-  )
-}

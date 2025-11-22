@@ -471,3 +471,60 @@ export interface NationalPark {
   photos?: string[];
   notes?: string;
 }
+
+// ==================== Health & Period Tracking Types ====================
+
+export interface HealthKitSample {
+  startDate: Date;
+  endDate: Date;
+  value: number;
+}
+
+export interface HealthKitFlowData {
+  samples: HealthKitSample[];
+}
+
+export interface HealthKitData {
+  menstrualFlow?: HealthKitFlowData;
+  symptoms?: { samples: unknown[] };
+  ovulation?: unknown;
+  basalBodyTemperature?: { samples: unknown[] };
+}
+
+export interface HealthSyncStatus {
+  lastSync: Date;
+  status: 'success' | 'error';
+  recordsImported: number;
+  errors: string[];
+}
+
+export interface PeriodCycle {
+  id: string;
+  startDate: Date;
+  endDate?: Date;
+  flow: 'light' | 'medium' | 'heavy';
+  symptoms: string[];
+  source: 'apple-health' | 'manual';
+  synced: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface HealthKitMessageHandler {
+  postMessage: (message: unknown) => Promise<unknown>;
+}
+
+interface WebKitMessageHandlers {
+  health?: HealthKitMessageHandler;
+}
+
+interface WebKit {
+  messageHandlers?: WebKitMessageHandlers;
+}
+
+declare global {
+  interface Window {
+    webkit?: WebKit;
+    HealthKit?: unknown;
+  }
+}
