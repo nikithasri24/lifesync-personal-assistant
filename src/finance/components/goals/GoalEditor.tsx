@@ -5,12 +5,12 @@
 
 import React from 'react';
 import {
-  _X,
-  _Save,
+  X,
+  Save,
   Trash2,
-  _Target,
-  _TrendingUp,
-  _DollarSign
+  Target,
+  TrendingUp,
+  DollarSign
 } from 'lucide-react';
 import type { Goal, Account, GoalInput } from '../../types';
 

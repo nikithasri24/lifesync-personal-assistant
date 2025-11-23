@@ -15,7 +15,7 @@ import {
 } from '../goals/hooks/useLifeGoalsQuery';
 import type {
   LifeGoal,
-  _LifeDream,
+  LifeDream,
   GoalCategory,
   GoalPriority,
   DreamCategory,

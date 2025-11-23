@@ -11,7 +11,7 @@ import {
   TrendingUp,
   Calendar,
   DollarSign,
-  _FileText,
+  FileText,
 } from 'lucide-react';
 import type { InsurancePolicy, InsurancePolicyInput } from '../types';
 import { formatCurrency } from '../utils/currency';

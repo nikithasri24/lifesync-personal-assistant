@@ -15,7 +15,7 @@ import {
   Smartphone,
   Globe,
   Settings,
-  _Check,
+  Check,
   X,
   ExternalLink,
   RefreshCw,

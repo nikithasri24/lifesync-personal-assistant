@@ -8,12 +8,12 @@
 import React, { useState } from 'react';
 import { 
   BarChart3, 
-  _TrendingUp, 
+  TrendingUp, 
   Clock, 
   Target, 
   Zap, 
-  _Calendar,
-  _Award,
+  Calendar,
+  Award,
   AlertTriangle,
   ChevronDown,
   ChevronUp,
