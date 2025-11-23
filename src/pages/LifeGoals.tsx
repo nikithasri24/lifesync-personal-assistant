@@ -11,7 +11,7 @@ import {
   useCreateLifeDreamMutation,
   useUpdateLifeDreamMutation,
   useDeleteLifeDreamMutation,
-  _useLifeGoalQuery,
+  useLifeGoalQuery,
 } from '../goals/hooks/useLifeGoalsQuery';
 import type {
   LifeGoal,
