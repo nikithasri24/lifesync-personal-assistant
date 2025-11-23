@@ -636,15 +636,25 @@ You: "Awesome goal! When are you planning to go? I'll help create a savings plan
       return { response: textResponse };
 
     } catch (error: unknown) {
-      // Log detailed error information
+      // Log detailed error information - GROQ SDK errors have special structure
       if (error instanceof Error) {
         logger.error('[ConversationEngine] Error:', {
           message: error.message,
           stack: error.stack,
-          name: error.name
+          name: error.name,
+          error: JSON.stringify(error, null, 2)
+        });
+      } else if (typeof error === 'object' && error !== null) {
+        // Try to extract GROQ API error details
+        const errObj = error as Record<string, unknown>;
+        logger.error('[ConversationEngine] API Error:', {
+          status: errObj.status,
+          message: errObj.message,
+          error: JSON.stringify(error, null, 2),
+          fullError: error
         });
       } else {
-        logger.error('[ConversationEngine] Error:', { error });
+        logger.error('[ConversationEngine] Unknown Error:', { error });
       }
 
       // Fallback response
