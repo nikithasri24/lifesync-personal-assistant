@@ -66,7 +66,7 @@ interface FunctionResult {
 }
 
 const groq = new Groq({
-  apiKey: import.meta.env.GROQ_API_KEY as string,
+  apiKey: ((import.meta.env.VITE_GROQ_API_KEY as string | undefined) ?? (import.meta.env.GROQ_API_KEY as string | undefined)) ?? '',
   dangerouslyAllowBrowser: true // OK for demo; use server proxy in production
 });
 
