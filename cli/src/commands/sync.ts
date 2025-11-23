@@ -140,7 +140,7 @@ export function createSyncCommand(): Command {
       ]);
 
       if (answers.enableAutoSync) {
-        const syncOptions = await inquirer.prompt([
+        await inquirer.prompt([
           {
             type: 'list',
             name: 'frequency',

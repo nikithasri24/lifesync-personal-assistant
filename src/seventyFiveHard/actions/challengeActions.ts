@@ -19,6 +19,7 @@ import type {
   Task,
   ChallengeRow,
   CheckInRow,
+  SeventyFiveHardChallenge,
 } from '../../types/seventyFiveHard';
 import { getStore, setStore } from '../utils/storeHelpers';
 import { measurePerformance } from '../utils/performanceHelpers';
@@ -199,7 +200,8 @@ export async function loadSFHChallenge(): Promise<void> {
  * Reset challenge to day 1
  */
 export async function resetSFHChallenge(): Promise<void> {
-  const { sfhChallenge: challenge } = getStore();
+  const store = getStore();
+  const challenge: SeventyFiveHardChallenge | null = store.sfhChallenge;
   if (!challenge) {
     logger.error('SeventyFiveHardActions', '[75Hard] resetSFHChallenge called without challenge');
     return;
@@ -280,7 +282,8 @@ export async function resetSFHChallenge(): Promise<void> {
  * Mark challenge as complete
  */
 export async function completeSFHChallenge(): Promise<void> {
-  const { sfhChallenge: challenge } = getStore();
+  const store = getStore();
+  const challenge: SeventyFiveHardChallenge | null = store.sfhChallenge;
   if (!challenge) return;
 
   logger.info('SeventyFiveHardActions', '[75Hard] 🎉 Completing challenge...');
@@ -309,7 +312,8 @@ export async function completeSFHChallenge(): Promise<void> {
  * Removes the challenge and all associated check-ins from the database
  */
 export async function deleteSFHChallenge(): Promise<{ success: boolean; error?: string }> {
-  const { sfhChallenge: challenge } = getStore();
+  const store = getStore();
+  const challenge: SeventyFiveHardChallenge | null = store.sfhChallenge;
   if (!challenge) {
     logger.error('SeventyFiveHardActions', '[75Hard] deleteSFHChallenge called without challenge');
     return { success: false, error: 'No active challenge to delete' };

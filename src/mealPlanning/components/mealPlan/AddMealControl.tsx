@@ -90,7 +90,7 @@ export const AddMealControl: React.FC<AddMealControlProps> = ({
   // Load persisted draft from localStorage
   const [query, setQuery] = useState(() => {
     const saved = getMealDraft(dateKey, mealType);
-    return saved || '';
+    return saved ?? '';
   });
 
   const [showInput, setShowInput] = useState(showByDefault);
@@ -218,7 +218,7 @@ export const AddMealControl: React.FC<AddMealControlProps> = ({
       .slice(0, 12);
   }, [query, recipes, mealOptions, mealType, historicalMeals]);
 
-  const add = async (recipeId?: string, customMeal?: string) => {
+  const add = async (recipeId?: string, customMeal?: string): Promise<void> => {
     try {
       const weekStart = startOfWeek(parseLocalDateKey(dateKey), { weekStartsOn });
 
@@ -226,13 +226,11 @@ export const AddMealControl: React.FC<AddMealControlProps> = ({
       let plan = mealPlans.find(p => isSameWeek(ensureDate(p.weekStartDate), weekStart));
 
       // If no plan exists, create one via mutation
-      if (!plan) {
-        plan = await createMealPlanMutation.mutateAsync({
-          weekStartDate: weekStart,
-          name: 'Meal plan',
-          weekStartsOn
-        });
-      }
+      plan ??= await createMealPlanMutation.mutateAsync({
+        weekStartDate: weekStart,
+        name: 'Meal plan',
+        weekStartsOn
+      });
 
       // Auto-link to existing recipe if one exists with the same name
       let finalRecipeId = recipeId;
@@ -302,7 +300,7 @@ export const AddMealControl: React.FC<AddMealControlProps> = ({
   };
 
   // Enrich a custom meal by linking an existing recipe or auto-fetching one
-  const enrichAndAdd = async (name: string) => {
+  const enrichAndAdd = async (name: string): Promise<void> => {
     const trimmed = name.trim();
     if (!trimmed) return;
     try {
@@ -331,7 +329,7 @@ export const AddMealControl: React.FC<AddMealControlProps> = ({
     }
   };
 
-  const onKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const onKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>): Promise<void> => {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       setSelectedIndex((prev) => Math.min(prev + 1, matches.length - 1));
@@ -391,7 +389,7 @@ export const AddMealControl: React.FC<AddMealControlProps> = ({
         onChange={(e) => { setQuery(e.target.value); setShowList(true); }}
         onFocus={() => setShowList(true)}
         onBlur={() => setTimeout(() => setShowList(false), 200)}
-        onKeyDown={onKeyDown}
+        onKeyDown={(e) => void onKeyDown(e)}
         placeholder="Type to add…"
         className="w-full rounded-md border border-dashed border-slate-300 bg-white px-3 py-2 text-sm shadow-sm hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
         autoFocus
@@ -411,7 +409,7 @@ export const AddMealControl: React.FC<AddMealControlProps> = ({
               type="button"
               className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-slate-700 hover:bg-indigo-50 transition-colors first:rounded-t-lg last:rounded-b-lg"
               onMouseDown={(e) => e.preventDefault()}
-              onClick={() => enrichAndAdd(query.trim())}
+              onClick={() => void enrichAndAdd(query.trim())}
             >
               <span className="flex h-6 w-6 items-center justify-center rounded-md bg-indigo-100 text-xs font-semibold text-indigo-700">+</span>
               <div className="flex-1 min-w-0">
@@ -439,9 +437,9 @@ export const AddMealControl: React.FC<AddMealControlProps> = ({
                     onMouseEnter={() => setSelectedIndex(idx)}
                     onClick={() => {
                       if (isCustom || isOption) {
-                        add(undefined, r.name);
+                        void add(undefined, r.name);
                       } else {
-                        add(r.id);
+                        void add(r.id);
                       }
                     }}
                   >
@@ -453,7 +451,7 @@ export const AddMealControl: React.FC<AddMealControlProps> = ({
                     <div className="flex-1 min-w-0">
                       <div className="truncate font-medium">{r.name}</div>
                       <div className="text-xs text-slate-500">
-                        {isRecipe ? 'Recipe' : isCustom ? `Used ${r.count || 1}x` : 'Meal option'}
+                        {isRecipe ? 'Recipe' : isCustom ? `Used ${r.count ?? 1}x` : 'Meal option'}
                       </div>
                     </div>
                   </button>

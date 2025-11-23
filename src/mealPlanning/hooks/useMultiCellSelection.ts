@@ -4,13 +4,51 @@ import type { Recipe, MealPlanWeek } from '../../types';
 
 export type CellKey = string; // format: "yyyy-MM-dd:mealType"
 
+interface CreatePlannedMealParams {
+  planId: string;
+  meal: {
+    date: Date;
+    mealType: string;
+    recipeId?: string;
+    customMeal?: string;
+    servings: number;
+    peopleCount: number;
+    status: string;
+    notes?: string;
+    preparedAt?: Date;
+    consumedAt?: Date;
+  };
+}
+
 export function useMultiCellSelection(
   recipes: Recipe[],
   mealPlans: MealPlanWeek[],
   activePlan: MealPlanWeek | null,
-  createPlannedMeal: (params: any) => Promise<void>,
+  createPlannedMeal: (params: CreatePlannedMealParams) => Promise<void>,
   showToast?: (message: string, type: 'success' | 'error' | 'info') => void
-) {
+): {
+  selectedCells: Set<CellKey>;
+  isSelectionMode: boolean;
+  multiCellQuery: string;
+  setMultiCellQuery: (query: string) => void;
+  showMultiCellList: boolean;
+  setShowMultiCellList: (show: boolean) => void;
+  multiCellSelectedIndex: number;
+  setMultiCellSelectedIndex: (index: number | ((prev: number) => number)) => void;
+  multiCellInputRef: React.RefObject<HTMLInputElement | null>;
+  multiCellMatches: Array<{
+    id: string;
+    name: string;
+    score: number;
+    type: 'custom' | 'option' | 'recipe';
+    count?: number;
+  }>;
+  makeCellKey: (dateKey: string, mealType: string) => CellKey;
+  handleCellClick: (dateKey: string, mealType: string, event: React.MouseEvent) => void;
+  clearSelection: () => void;
+  addMealToSelectedCells: (recipeId: string, customMeal?: string) => Promise<void>;
+  handleMultiCellKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => Promise<void>;
+} {
   const [selectedCells, setSelectedCells] = useState<Set<CellKey>>(new Set());
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [multiCellQuery, setMultiCellQuery] = useState('');
@@ -20,7 +58,7 @@ export function useMultiCellSelection(
 
   const makeCellKey = (dateKey: string, mealType: string): CellKey => `${dateKey}:${mealType}`;
 
-  const handleCellClick = (dateKey: string, mealType: string, event: React.MouseEvent) => {
+  const handleCellClick = (dateKey: string, mealType: string, event: React.MouseEvent): void => {
     const cellKey = makeCellKey(dateKey, mealType);
 
     if (event.metaKey || event.ctrlKey) {
@@ -40,7 +78,7 @@ export function useMultiCellSelection(
     }
   };
 
-  const clearSelection = () => {
+  const clearSelection = (): void => {
     setSelectedCells(new Set());
     setIsSelectionMode(false);
   };
@@ -50,7 +88,7 @@ export function useMultiCellSelection(
     return new Date(y, (m || 1) - 1, d || 1, 0, 0, 0, 0);
   };
 
-  const addMealToSelectedCells = async (recipeId: string, customMeal?: string) => {
+  const addMealToSelectedCells = async (recipeId: string, customMeal?: string): Promise<void> => {
     if (!activePlan || selectedCells.size === 0) return;
 
     try {
@@ -61,8 +99,8 @@ export function useMultiCellSelection(
           meal: {
             date: parseLocalDateKey(dateKey),
             mealType,
-            recipeId: recipeId || undefined,
-            customMeal: customMeal || undefined,
+            recipeId: recipeId ?? undefined,
+            customMeal: customMeal ?? undefined,
             servings: 4,
             peopleCount: 4,
             status: 'planned',
@@ -178,7 +216,7 @@ export function useMultiCellSelection(
       .slice(0, 12);
   }, [multiCellQuery, recipes, mealPlans]);
 
-  const handleMultiCellKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleMultiCellKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>): Promise<void> => {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       setMultiCellSelectedIndex((prev) => Math.min(prev + 1, multiCellMatches.length - 1));

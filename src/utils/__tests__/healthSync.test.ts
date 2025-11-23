@@ -9,29 +9,29 @@ import type { PeriodCycle, HealthKitData } from '../../types/index';
 
 describe('HealthKitIntegration', () => {
   let healthKit: HealthKitIntegration;
-  let _originalNavigator: any;
-  let _originalWindow: any;
+  let _originalNavigator: Navigator;
+  let _originalWindow: Window;
 
-  beforeEach(() => {
+  beforeEach((): void => {
     // Store original values
-    originalNavigator = { ...navigator };
-    originalWindow = { ...window };
+    _originalNavigator = { ...navigator };
+    _originalWindow = { ...window };
 
     // Mock localStorage
     vi.spyOn(Storage.prototype, 'getItem').mockReturnValue(null);
-    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {});
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation((): void => {});
 
     // Mock console methods
-    vi.spyOn(console, 'log').mockImplementation(() => {});
-    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(console, 'log').mockImplementation((): void => {});
+    vi.spyOn(console, 'error').mockImplementation((): void => {});
 
     // Mock window.alert
-    vi.spyOn(window, 'alert').mockImplementation(() => {});
+    vi.spyOn(window, 'alert').mockImplementation((): void => {});
 
-    // Mock window.matchMedia
+    // Mock window.matchMedia with type-safe implementation
     Object.defineProperty(window, 'matchMedia', {
       writable: true,
-      value: vi.fn().mockImplementation((query) => ({
+      value: vi.fn().mockImplementation((query: string): MediaQueryList => ({
         matches: false,
         media: query,
         onchange: null,
@@ -46,17 +46,17 @@ describe('HealthKitIntegration', () => {
     healthKit = new HealthKitIntegration();
   });
 
-  afterEach(() => {
+  afterEach((): void => {
     vi.restoreAllMocks();
   });
 
   describe('Support Detection', () => {
-    it('should detect non-iOS devices as unsupported', () => {
+    it('should detect non-iOS devices as unsupported', (): void => {
       // Default navigator.userAgent in vitest is not iOS
       expect(healthKit['isSupported']).toBe(false);
     });
 
-    it('should detect iOS devices', () => {
+    it('should detect iOS devices', (): void => {
       // Mock iOS user agent
       Object.defineProperty(navigator, 'userAgent', {
         value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X)',
@@ -70,37 +70,41 @@ describe('HealthKitIntegration', () => {
   });
 
   describe('requestPermissions', () => {
-    it('should show iOS instructions when not supported', async () => {
+    it('should show iOS instructions when not supported', async (): Promise<void> => {
       const result = await healthKit.requestPermissions();
 
       expect(result).toBe(false);
       expect(window.alert).toHaveBeenCalled();
     });
 
-    it('should return false when requestPermission is not available', async () => {
+    it('should return false when requestPermission is not available', async (): Promise<void> => {
       healthKit['isSupported'] = true;
       const result = await healthKit.requestPermissions();
 
       expect(result).toBe(false);
     });
 
-    it('should request permissions when API is available', async () => {
+    it('should request permissions when API is available', async (): Promise<void> => {
       healthKit['isSupported'] = true;
-      (window as any).requestPermission = vi.fn().mockResolvedValue('granted');
+      // Type-safe mock that matches the window interface
+      const windowWithPermission = window as Window & {
+        requestPermission?: (type: string, options?: object) => Promise<string>
+      };
+      windowWithPermission.requestPermission = vi.fn().mockResolvedValue('granted');
 
       const result = await healthKit.requestPermissions();
 
       expect(result).toBe(true);
-      expect((window as any).requestPermission).toHaveBeenCalledWith('health', {
+      expect(windowWithPermission.requestPermission).toHaveBeenCalledWith('health', {
         read: expect.arrayContaining(['menstrualFlow', 'symptoms']),
       });
 
-      delete (window as any).requestPermission;
+      delete windowWithPermission.requestPermission;
     });
   });
 
   describe('syncPeriodData', () => {
-    it('should throw error when not supported', async () => {
+    it('should throw error when not supported', async (): Promise<void> => {
       const result = await healthKit.syncPeriodData();
 
       expect(result.status).toBe('error');
@@ -108,7 +112,7 @@ describe('HealthKitIntegration', () => {
       expect(result.recordsImported).toBe(0);
     });
 
-    it('should sync data successfully when supported', async () => {
+    it('should sync data successfully when supported', async (): Promise<void> => {
       healthKit['isSupported'] = true;
       const mockHealthData: HealthKitData = {
         menstrualFlow: {
@@ -127,7 +131,10 @@ describe('HealthKitIntegration', () => {
         },
       };
 
-      vi.spyOn(healthKit as any, 'fetchHealthKitData').mockResolvedValue(mockHealthData);
+      vi.spyOn(
+        healthKit as unknown as { fetchHealthKitData(): Promise<HealthKitData> },
+        'fetchHealthKitData' as keyof HealthKitIntegration
+      ).mockResolvedValue(mockHealthData);
 
       const result = await healthKit.syncPeriodData(new Date('2025-01-01'));
 
@@ -138,7 +145,7 @@ describe('HealthKitIntegration', () => {
   });
 
   describe('getLiveHealthData', () => {
-    it('should return fallback data when healthStore is not available', async () => {
+    it('should return fallback data when healthStore is not available', async (): Promise<void> => {
       const result = await healthKit.getLiveHealthData();
 
       // When healthStore is not available, it uses fallback which returns mock data
@@ -146,12 +153,12 @@ describe('HealthKitIntegration', () => {
       expect(typeof result).toBe('object');
     });
 
-    it('should query all health data types when healthStore is available', async () => {
+    it('should query all health data types when healthStore is available', async (): Promise<void> => {
       const mockHealthStore = {
         postMessage: vi.fn().mockResolvedValue({ samples: [] }),
       };
 
-      healthKit['healthStore'] = mockHealthStore;
+      (healthKit as unknown as { healthStore: unknown })['healthStore'] = mockHealthStore;
 
       const result = await healthKit.getLiveHealthData();
 
@@ -159,8 +166,11 @@ describe('HealthKitIntegration', () => {
       expect(mockHealthStore.postMessage).toHaveBeenCalled();
     });
 
-    it('should use fallback when direct queries fail', async () => {
-      vi.spyOn(healthKit as any, 'fallbackHealthQuery').mockResolvedValue({
+    it('should use fallback when direct queries fail', async (): Promise<void> => {
+      vi.spyOn(
+        healthKit as unknown as { fallbackHealthQuery(): Promise<HealthKitData> },
+        'fallbackHealthQuery' as keyof HealthKitIntegration
+      ).mockResolvedValue({
         menstrualFlow: { samples: [] },
       });
 
@@ -171,13 +181,13 @@ describe('HealthKitIntegration', () => {
   });
 
   describe('convertHealthKitToPeriodCycles', () => {
-    it('should return empty array when no menstrual flow data', () => {
+    it('should return empty array when no menstrual flow data', (): void => {
       const result = healthKit.convertHealthKitToPeriodCycles({});
 
       expect(result).toEqual([]);
     });
 
-    it('should convert single period to cycle', () => {
+    it('should convert single period to cycle', (): void => {
       const healthData: HealthKitData = {
         menstrualFlow: {
           samples: [
@@ -203,7 +213,7 @@ describe('HealthKitIntegration', () => {
       expect(result[0].synced).toBe(true);
     });
 
-    it('should create separate cycles when gap > 7 days', () => {
+    it('should create separate cycles when gap > 7 days', (): void => {
       const healthData: HealthKitData = {
         menstrualFlow: {
           samples: [
@@ -228,7 +238,7 @@ describe('HealthKitIntegration', () => {
       expect(result[1].startDate).toEqual(new Date('2025-01-15'));
     });
 
-    it('should convert HealthKit flow values correctly', () => {
+    it('should convert HealthKit flow values correctly', (): void => {
       const healthData: HealthKitData = {
         menstrualFlow: {
           samples: [
@@ -253,7 +263,7 @@ describe('HealthKitIntegration', () => {
       expect(result[1].flow).toBe('heavy');
     });
 
-    it('should update flow to heaviest in same cycle', () => {
+    it('should update flow to heaviest in same cycle', (): void => {
       const healthData: HealthKitData = {
         menstrualFlow: {
           samples: [
@@ -284,21 +294,21 @@ describe('HealthKitIntegration', () => {
   });
 
   describe('generateMockHealthData', () => {
-    it('should generate realistic mock data', () => {
-      const mockData = healthKit['generateMockHealthData']();
+    it('should generate realistic mock data', (): void => {
+      const mockData = (healthKit as unknown as { generateMockHealthData(): HealthKitData })['generateMockHealthData']();
 
       expect(mockData.menstrualFlow).toBeDefined();
-      expect(mockData.menstrualFlow!.samples.length).toBeGreaterThan(0);
+      expect(mockData.menstrualFlow?.samples.length).toBeGreaterThan(0);
       expect(mockData.symptoms).toBeDefined();
       expect(mockData.basalBodyTemperature).toBeDefined();
     });
 
-    it('should generate 3 cycles of data', () => {
-      const mockData = healthKit['generateMockHealthData']();
+    it('should generate 3 cycles of data', (): void => {
+      const mockData = (healthKit as unknown as { generateMockHealthData(): HealthKitData })['generateMockHealthData']();
 
       // Should have samples from 3 cycles (each 4-6 days)
-      expect(mockData.menstrualFlow!.samples.length).toBeGreaterThanOrEqual(12);
-      expect(mockData.menstrualFlow!.samples.length).toBeLessThanOrEqual(18);
+      expect(mockData.menstrualFlow?.samples.length ?? 0).toBeGreaterThanOrEqual(12);
+      expect(mockData.menstrualFlow?.samples.length ?? 0).toBeLessThanOrEqual(18);
     });
   });
 });
@@ -306,13 +316,13 @@ describe('HealthKitIntegration', () => {
 describe('WebHealthIntegration', () => {
   let webHealth: WebHealthIntegration;
 
-  beforeEach(() => {
+  beforeEach((): void => {
     webHealth = new WebHealthIntegration();
   });
 
   describe('isSupported', () => {
-    it('should check for navigator and permissions API', async () => {
-      const result = await webHealth.isSupported();
+    it('should check for navigator and permissions API', (): void => {
+      const result = webHealth.isSupported();
 
       // In vitest environment, navigator exists but may not have full permissions API
       expect(typeof result).toBe('boolean');
@@ -320,16 +330,16 @@ describe('WebHealthIntegration', () => {
   });
 
   describe('requestPermissions', () => {
-    it('should return boolean based on support', async () => {
-      const result = await webHealth.requestPermissions();
+    it('should return boolean based on support', (): void => {
+      const result = webHealth.requestPermissions();
 
       expect(typeof result).toBe('boolean');
     });
   });
 
   describe('syncData', () => {
-    it('should return error status for unsupported Web Health API', async () => {
-      const result = await webHealth.syncData();
+    it('should return error status for unsupported Web Health API', (): void => {
+      const result = webHealth.syncData();
 
       expect(result.status).toBe('error');
       expect(result.recordsImported).toBe(0);
@@ -339,11 +349,11 @@ describe('WebHealthIntegration', () => {
 });
 
 describe('getHealthIntegration', () => {
-  beforeEach(() => {
+  beforeEach((): void => {
     // Mock matchMedia globally for this describe block
     Object.defineProperty(window, 'matchMedia', {
       writable: true,
-      value: vi.fn().mockImplementation((query) => ({
+      value: vi.fn().mockImplementation((query: string): MediaQueryList => ({
         matches: false,
         media: query,
         onchange: null,
@@ -356,7 +366,7 @@ describe('getHealthIntegration', () => {
     });
   });
 
-  it('should return HealthKitIntegration or WebHealthIntegration', () => {
+  it('should return HealthKitIntegration or WebHealthIntegration', (): void => {
     const integration = getHealthIntegration();
 
     expect(integration).toBeDefined();
@@ -365,7 +375,7 @@ describe('getHealthIntegration', () => {
     ).toBe(true);
   });
 
-  it('should return WebHealthIntegration when HealthKit is not supported', () => {
+  it('should return WebHealthIntegration when HealthKit is not supported', (): void => {
     const integration = getHealthIntegration();
 
     // In test environment, HealthKit is not supported
@@ -375,7 +385,7 @@ describe('getHealthIntegration', () => {
 
 describe('PeriodPredictor', () => {
   describe('calculateAverageCycleLength', () => {
-    it('should return default 28 days for less than 2 cycles', () => {
+    it('should return default 28 days for less than 2 cycles', (): void => {
       const result = PeriodPredictor.calculateAverageCycleLength([]);
       expect(result).toBe(28);
 
@@ -394,7 +404,7 @@ describe('PeriodPredictor', () => {
       expect(PeriodPredictor.calculateAverageCycleLength(oneCycle)).toBe(28);
     });
 
-    it('should calculate average cycle length from multiple cycles', () => {
+    it('should calculate average cycle length from multiple cycles', (): void => {
       const cycles: PeriodCycle[] = [
         {
           id: '1',
@@ -432,7 +442,7 @@ describe('PeriodPredictor', () => {
       expect(result).toBe(29); // Average of 28 and 29
     });
 
-    it('should ignore unrealistic cycle lengths', () => {
+    it('should ignore unrealistic cycle lengths', (): void => {
       const cycles: PeriodCycle[] = [
         {
           id: '1',
@@ -472,12 +482,12 @@ describe('PeriodPredictor', () => {
   });
 
   describe('calculateAveragePeriodLength', () => {
-    it('should return default 5 days when no valid cycles', () => {
+    it('should return default 5 days when no valid cycles', (): void => {
       const result = PeriodPredictor.calculateAveragePeriodLength([]);
       expect(result).toBe(5);
     });
 
-    it('should calculate average period length', () => {
+    it('should calculate average period length', (): void => {
       const cycles: PeriodCycle[] = [
         {
           id: '1',
@@ -507,7 +517,7 @@ describe('PeriodPredictor', () => {
       expect(result).toBe(6); // Average of 5 and 6, rounded
     });
 
-    it('should ignore cycles without end date', () => {
+    it('should ignore cycles without end date', (): void => {
       const cycles: PeriodCycle[] = [
         {
           id: '1',
@@ -539,12 +549,12 @@ describe('PeriodPredictor', () => {
   });
 
   describe('predictNextPeriod', () => {
-    it('should return null for empty cycles', () => {
+    it('should return null for empty cycles', (): void => {
       const result = PeriodPredictor.predictNextPeriod([]);
       expect(result).toBeNull();
     });
 
-    it('should predict next period based on average cycle length', () => {
+    it('should predict next period based on average cycle length', (): void => {
       const cycles: PeriodCycle[] = [
         {
           id: '1',
@@ -575,10 +585,10 @@ describe('PeriodPredictor', () => {
 
       // Should be approximately 28 days after Jan 29
       const expected = new Date('2025-02-26');
-      expect(result!.toDateString()).toBe(expected.toDateString());
+      expect(result?.toDateString()).toBe(expected.toDateString());
     });
 
-    it('should use most recent cycle for prediction', () => {
+    it('should use most recent cycle for prediction', (): void => {
       const cycles: PeriodCycle[] = [
         {
           id: '1',
@@ -616,9 +626,9 @@ describe('PeriodPredictor', () => {
 
       // Should be based on Feb 1 (most recent)
       expect(result).toBeDefined();
-      const daysDiff = Math.floor(
-        (result!.getTime() - new Date('2025-02-01').getTime()) / (1000 * 60 * 60 * 24)
-      );
+      const daysDiff = result ? Math.floor(
+        (result.getTime() - new Date('2025-02-01').getTime()) / (1000 * 60 * 60 * 24)
+      ) : 0;
       expect(daysDiff).toBeGreaterThanOrEqual(28);
       expect(daysDiff).toBeLessThanOrEqual(32);
     });

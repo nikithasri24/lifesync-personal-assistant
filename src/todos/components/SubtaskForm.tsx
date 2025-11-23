@@ -32,8 +32,8 @@ export function SubtaskForm({
   onSubmit,
   onCancel,
   isLoading
-}: SubtaskFormProps) {
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+}: SubtaskFormProps): React.ReactElement {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>): void => {
     if (e.key === 'Enter') {
       onSubmit();
     }

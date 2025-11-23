@@ -47,7 +47,9 @@ useFinanceFilters.subscribe((state) => {
   try {
     const { text, fromISO, toISO, type, month } = state;
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ text, fromISO, toISO, type, month }));
-  } catch {}
+  } catch {
+    // Ignore localStorage errors
+  }
 });
 
 export default useFinanceFilters;

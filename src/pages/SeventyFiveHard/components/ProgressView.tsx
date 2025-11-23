@@ -47,7 +47,7 @@ interface ProgressViewProps {
  * Main Progress View Component
  * Orchestrates the display of all progress tracking features
  */
-export default function ProgressView({ challenge, checkIns }: ProgressViewProps) {
+export default function ProgressView({ challenge, checkIns }: ProgressViewProps): React.JSX.Element {
   // ==================== State Management ====================
 
   const [selectedCheckIn, setSelectedCheckIn] = useState<DailyCheckIn | null>(null);
@@ -74,8 +74,10 @@ export default function ProgressView({ challenge, checkIns }: ProgressViewProps)
       .filter(ci => ci.weight !== undefined && ci.weight !== null)
       .sort((a, b) => a.date.getTime() - b.date.getTime());
 
-    const weightChange = weightsData.length >= 2
-      ? weightsData[weightsData.length - 1].weight! - weightsData[0].weight!
+    const weightChange = weightsData.length >= 2 &&
+      weightsData[weightsData.length - 1].weight !== undefined &&
+      weightsData[0].weight !== undefined
+      ? weightsData[weightsData.length - 1].weight - weightsData[0].weight
       : null;
 
     const hasWeightData = weightsData.length > 0;

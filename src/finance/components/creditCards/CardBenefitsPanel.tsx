@@ -35,7 +35,7 @@ export const CardBenefitsPanel: React.FC<CardBenefitsPanelProps> = ({
   }, {} as Record<string, CardBenefit[]>);
 
   // Get benefit type icon and label
-  const getBenefitTypeConfig = (type: string) => {
+  const getBenefitTypeConfig = (type: string): { icon: React.ComponentType<{ className?: string }>; label: string; color: string } => {
     switch (type) {
       case 'travel_credit':
         return { icon: Plane, label: 'Travel Credits', color: 'text-blue-600' };
@@ -51,7 +51,7 @@ export const CardBenefitsPanel: React.FC<CardBenefitsPanelProps> = ({
   };
 
   // Calculate welcome bonus progress
-  const getWelcomeBonusProgress = (bonus: WelcomeBonus) => {
+  const getWelcomeBonusProgress = (bonus: WelcomeBonus): { progress: number; remaining: number; daysRemaining: number; isUrgent: boolean; isCompleted: boolean } => {
     const progress = (bonus.currentSpend / bonus.requiredSpend) * 100;
     const remaining = bonus.requiredSpend - bonus.currentSpend;
     const daysRemaining = Math.ceil((new Date(bonus.deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
@@ -66,7 +66,7 @@ export const CardBenefitsPanel: React.FC<CardBenefitsPanelProps> = ({
   };
 
   // Calculate benefit usage progress
-  const getBenefitProgress = (benefit: CardBenefit) => {
+  const getBenefitProgress = (benefit: CardBenefit): { progress: number; remaining: number; isFullyUsed: boolean } | null => {
     if (!benefit.value) return null;
     const progress = (benefit.usedAmount / benefit.value) * 100;
     return {

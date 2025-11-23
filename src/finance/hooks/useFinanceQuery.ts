@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 import { useQuery, useMutation, useQueryClient, type UseQueryOptions, type UseQueryResult, type UseMutationResult } from '@tanstack/react-query';
 import { getFinanceAPI } from '../data';
 import type {

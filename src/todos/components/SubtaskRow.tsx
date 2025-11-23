@@ -28,8 +28,8 @@ export function SubtaskRow({
   onToggleStatus,
   onStartEdit,
   isUpdating
-}: SubtaskRowProps) {
-  const getPriorityBorderClass = (priority: Task['priority'], status: Task['status']) => {
+}: SubtaskRowProps): React.ReactElement {
+  const getPriorityBorderClass = (priority: Task['priority'], status: Task['status']): string => {
     if (status === 'done') {
       return 'bg-blue-500 border-blue-500 text-white';
     }

@@ -13,7 +13,7 @@ interface StatusBadgeProps {
   withIcon?: boolean;
 }
 
-export function StatusBadge({ status, withIcon = false }: StatusBadgeProps) {
+export function StatusBadge({ status, withIcon = false }: StatusBadgeProps): React.JSX.Element {
   const config = STATUS_CONFIG[status];
 
   const icon = withIcon ? getStatusIcon(status) : null;
@@ -26,7 +26,7 @@ export function StatusBadge({ status, withIcon = false }: StatusBadgeProps) {
   );
 }
 
-function getStatusIcon(status: Project['status']) {
+function getStatusIcon(status: Project['status']): React.JSX.Element | undefined {
   switch (status) {
     case 'active':
       return <Circle className="h-3 w-3" />;

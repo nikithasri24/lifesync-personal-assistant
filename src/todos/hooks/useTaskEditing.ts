@@ -53,12 +53,12 @@ export function useTaskEditing(
   apiTasks: TaskData[],
   projects: Project[]
 ): {
-  quickAddTask: () => Promise<void>;
+  quickAddTask: () => void;
   startEditingTask: (task: Task) => void;
-  saveTaskEdit: (taskId: string) => Promise<void>;
+  saveTaskEdit: (taskId: string) => void;
   cancelTaskEdit: () => void;
-  addSubtask: (parentId: string) => Promise<void>;
-  toggleTaskStatus: (taskId: string) => Promise<void>;
+  addSubtask: (parentId: string) => void;
+  toggleTaskStatus: (taskId: string) => void;
 } {
   const { createTaskMutation, updateTaskMutation } = mutations;
 
@@ -66,7 +66,7 @@ export function useTaskEditing(
    * Quick add a new task with natural language parsing
    * Parses priority, due date, project, and tags from text
    */
-  const quickAddTask = async (): Promise<void> => {
+  const quickAddTask = (): void => {
     if (!editingState.quickAddText.trim()) return;
 
     const parsed = parseQuickAdd(editingState.quickAddText, projects);
@@ -105,7 +105,7 @@ export function useTaskEditing(
    * Save changes to an edited task
    * Parses updated text and merges with existing task data
    */
-  const saveTaskEdit = async (taskId: string): Promise<void> => {
+  const saveTaskEdit = (taskId: string): void => {
     if (editingState.editTaskText.trim()) {
       const parsed = parseQuickAdd(editingState.editTaskText, projects);
       const currentTask = apiTasks.find(t => t.id === taskId);
@@ -139,7 +139,7 @@ export function useTaskEditing(
    * Add a subtask to a parent task
    * Creates a new task with the parent_id set
    */
-  const addSubtask = async (parentId: string): Promise<void> => {
+  const addSubtask = (parentId: string): void => {
     const draft = subtaskState.getSubtaskDraft(parentId).trim();
     if (!draft) return;
 
@@ -170,7 +170,7 @@ export function useTaskEditing(
    * Toggle task completion status
    * Marks task as done/todo and updates completed_at timestamp
    */
-  const toggleTaskStatus = async (taskId: string): Promise<void> => {
+  const toggleTaskStatus = (taskId: string): void => {
     const task = apiTasks.find(t => t.id === taskId);
     if (task) {
       updateTaskMutation.mutate({

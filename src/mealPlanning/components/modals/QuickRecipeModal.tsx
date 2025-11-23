@@ -9,16 +9,16 @@ interface QuickRecipeModalProps {
   onClose: () => void;
 }
 
-export function QuickRecipeModal({ initialName, onSave, onClose }: QuickRecipeModalProps) {
-  const [name, setName] = useState(initialName);
-  const [ingredientsText, setIngredientsText] = useState('');
-  const [instructionsText, setInstructionsText] = useState('');
-  const [saving, setSaving] = useState(false);
+export function QuickRecipeModal({ initialName, onSave, onClose }: QuickRecipeModalProps): React.JSX.Element {
+  const [name, setName] = useState<string>(initialName);
+  const [ingredientsText, setIngredientsText] = useState<string>('');
+  const [instructionsText, setInstructionsText] = useState<string>('');
+  const [saving, setSaving] = useState<boolean>(false);
 
-  useEffect(() => {
+  useEffect((): (() => void) => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    const onKey = (e: KeyboardEvent) => {
+    const onKey = (e: KeyboardEvent): void => {
       if (e.key === 'Escape') onClose();
     };
     window.addEventListener('keydown', onKey);
@@ -28,7 +28,7 @@ export function QuickRecipeModal({ initialName, onSave, onClose }: QuickRecipeMo
     };
   }, [onClose]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     setSaving(true);
 
@@ -37,7 +37,7 @@ export function QuickRecipeModal({ initialName, onSave, onClose }: QuickRecipeMo
       .map((line) => line.trim())
       .filter((line) => line.length > 0);
 
-    const ingredients = ingredientLines.map((line) => {
+    const ingredients = ingredientLines.map((line): { amount?: string; unit?: string; name: string } => {
       const match = line.match(/^(\d+(?:\.\d+)?)\s+(\w+)\s+(.+)$/);
       if (match) {
         return { amount: match[1], unit: match[2], name: match[3] };
@@ -70,13 +70,20 @@ export function QuickRecipeModal({ initialName, onSave, onClose }: QuickRecipeMo
       notes: undefined,
     };
 
-    await onSave(recipeData);
-    setSaving(false);
+    try {
+      const saveResult = onSave(recipeData);
+      // Check if onSave returns a Promise
+      if (saveResult instanceof Promise) {
+        await saveResult;
+      }
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <ModalShell title="Recipe" subtitle={`Quick recipe for "${initialName}"`} onClose={onClose} maxWidthClass="max-w-lg">
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={(e) => void handleSubmit(e)}>
         <div className="space-y-3">
           <div>
             <label className="block text-xs font-medium text-slate-700 mb-1">Recipe Name</label>

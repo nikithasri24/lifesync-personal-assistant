@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Smart Expense Categorization Engine
  *
@@ -204,7 +203,7 @@ export class ExpenseCategorizationEngine {
    */
   categorizeTransaction(transaction: FinancialTransactionData): CategorySuggestion[] {
     const suggestions: CategorySuggestion[] = [];
-    const merchant = transaction.payee?.toLowerCase() || transaction.description?.toLowerCase() || '';
+    const merchant = transaction.payee?.toLowerCase() ?? transaction.description?.toLowerCase() ?? '';
     const amount = Math.abs(transaction.amount);
 
     // 1. Check historical categorization
@@ -281,7 +280,7 @@ export class ExpenseCategorizationEngine {
     transaction: FinancialTransactionData,
     selectedCategoryId: string
   ): void {
-    const merchant = transaction.payee?.toLowerCase() || transaction.description?.toLowerCase() || '';
+    const merchant = transaction.payee?.toLowerCase() ?? transaction.description?.toLowerCase() ?? '';
 
     // Store merchant -> category mapping
     if (merchant) {
@@ -300,17 +299,17 @@ export class ExpenseCategorizationEngine {
 
     // Group transactions by merchant
     transactions.forEach(transaction => {
-      const merchant = transaction.payee?.toLowerCase() || transaction.description?.toLowerCase() || '';
-      if (!merchantFrequency.has(merchant)) {
-        merchantFrequency.set(merchant, []);
+      const merchant = (transaction.payee?.toLowerCase() ?? transaction.description?.toLowerCase() ?? '').trim();
+      if (merchant) {
+        const existingTransactions = merchantFrequency.get(merchant) ?? [];
+        merchantFrequency.set(merchant, [...existingTransactions, transaction]);
       }
-      merchantFrequency.get(merchant)!.push(transaction);
     });
 
     const potentialBills: FinancialTransactionData[] = [];
 
     // Analyze for recurring patterns
-    merchantFrequency.forEach((merchantTransactions, _merchant) => {
+    merchantFrequency.forEach((merchantTransactions) => {
       if (merchantTransactions.length >= 3) {
         // Check for similar amounts
         const amounts = merchantTransactions.map(t => Math.abs(t.amount));
@@ -318,14 +317,16 @@ export class ExpenseCategorizationEngine {
         const amountVariance = amounts.every(amt => Math.abs(amt - avgAmount) / avgAmount < 0.15);
 
         // Check for regular timing (monthly, weekly, etc.)
-        const dates = merchantTransactions.map(t => new Date(t.date)).sort();
-        const intervals = [];
+        const dates = merchantTransactions.map(t => new Date(t.date)).sort((a, b) => a.getTime() - b.getTime());
+        const intervals: number[] = [];
         for (let i = 1; i < dates.length; i++) {
           const daysDiff = (dates[i].getTime() - dates[i-1].getTime()) / (1000 * 60 * 60 * 24);
           intervals.push(daysDiff);
         }
 
-        const avgInterval = intervals.reduce((sum, interval) => sum + interval, 0) / intervals.length;
+        const avgInterval = intervals.length > 0
+          ? intervals.reduce((sum, interval) => sum + interval, 0) / intervals.length
+          : 0;
         const regularInterval = intervals.every(interval => Math.abs(interval - avgInterval) < 7);
 
         if (amountVariance && regularInterval) {
@@ -333,7 +334,7 @@ export class ExpenseCategorizationEngine {
           const latestTransaction = merchantTransactions[merchantTransactions.length - 1];
           potentialBills.push({
             ...latestTransaction,
-            tags: [...(latestTransaction.tags || []), 'potential_bill', 'recurring']
+            tags: [...new Set([...(latestTransaction.tags ?? []), 'potential_bill', 'recurring'])]
           });
         }
       }
@@ -353,20 +354,29 @@ export class ExpenseCategorizationEngine {
     const anomalies: { transaction: FinancialTransactionData; reason: string }[] = [];
 
     // Category spending analysis
-    const categorySpending = new Map<string, { total: number; count: number; transactions: FinancialTransactionData[] }>();
+    const categorySpending = new Map<string, {
+      total: number;
+      count: number;
+      transactions: FinancialTransactionData[]
+    }>();
 
     transactions.forEach(transaction => {
       const suggestions = this.categorizeTransaction(transaction);
-      const category = suggestions[0]?.categoryId || 'uncategorized';
+      const category = suggestions[0]?.categoryId ?? 'uncategorized';
 
-      if (!categorySpending.has(category)) {
-        categorySpending.set(category, { total: 0, count: 0, transactions: [] });
-      }
+      const existingCategoryData = categorySpending.get(category) ?? {
+        total: 0,
+        count: 0,
+        transactions: []
+      };
 
-      const categoryData = categorySpending.get(category)!;
-      categoryData.total += Math.abs(transaction.amount);
-      categoryData.count += 1;
-      categoryData.transactions.push(transaction);
+      const updatedCategoryData = {
+        total: existingCategoryData.total + Math.abs(transaction.amount),
+        count: existingCategoryData.count + 1,
+        transactions: [...existingCategoryData.transactions, transaction]
+      };
+
+      categorySpending.set(category, updatedCategoryData);
     });
 
     // Generate insights
@@ -374,21 +384,26 @@ export class ExpenseCategorizationEngine {
       .sort((a, b) => b[1].total - a[1].total);
 
     if (sortedCategories.length > 0) {
-      const topCategory = sortedCategories[0];
-      insights.push(`Your highest spending category is ${this.getCategoryName(topCategory[0])} at $${topCategory[1].total.toFixed(2)}`);
+      const [topCategoryId, topCategoryData] = sortedCategories[0];
+      insights.push(
+        `Your highest spending category is ${this.getCategoryName(topCategoryId)} at $${topCategoryData.total.toFixed(2)}`
+      );
     }
 
     // Detect anomalies (unusually large transactions)
     categorySpending.forEach((data, category) => {
+      if (data.transactions.length === 0) return;
+
       const amounts = data.transactions.map(t => Math.abs(t.amount));
       const avgAmount = amounts.reduce((sum, amt) => sum + amt, 0) / amounts.length;
       const threshold = avgAmount * 2.5;
 
       data.transactions.forEach(transaction => {
-        if (Math.abs(transaction.amount) > threshold) {
+        const transactionAmount = Math.abs(transaction.amount);
+        if (transactionAmount > threshold) {
           anomalies.push({
             transaction,
-            reason: `Unusually large ${this.getCategoryName(category)} expense (${Math.abs(transaction.amount).toFixed(2)} vs avg ${avgAmount.toFixed(2)})`
+            reason: `Unusually large ${this.getCategoryName(category)} expense (${transactionAmount.toFixed(2)} vs avg ${avgAmount.toFixed(2)})`
           });
         }
       });
@@ -399,11 +414,11 @@ export class ExpenseCategorizationEngine {
 
   private getCategoryName(categoryId: string): string {
     const rule = CATEGORY_RULES.find(r => r.id === categoryId);
-    return rule?.name || categoryId;
+    return rule?.name ?? categoryId;
   }
 
   private suggestSubcategory(rule: CategoryRule, merchant: string, amount: number): string | undefined {
-    if (!rule.subcategories) return undefined;
+    if (!rule.subcategories || rule.subcategories.length === 0) return undefined;
 
     // Simple subcategory logic - can be enhanced with more sophisticated rules
     if (rule.id === 'groceries') {
@@ -418,12 +433,13 @@ export class ExpenseCategorizationEngine {
       if (merchant.includes('delivery') || merchant.includes('doordash')) return 'delivery';
     }
 
-    return rule.subcategories[0]; // Default to first subcategory
+    return rule.subcategories[0] ?? undefined; // Null-coalescing to ensure undefined if no subcategories
   }
 
   private updateSpendingPattern(_categoryId: string, _transaction: FinancialTransactionData): void {
     // Update user spending patterns for better future categorization
     // This would be implemented with more sophisticated pattern recognition
+    // TODO: Implement actual spending pattern learning mechanism
   }
 
   /**

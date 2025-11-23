@@ -7,7 +7,7 @@
 import { startOfDay, addDays, differenceInDays, isSameDay, format } from 'date-fns';
 import { logger } from '../../services/logger';
 import { ensureSupabase } from '../../lib/supabase';
-import { createInitialTaskCompletions as createTasks, type TaskCompletion, type ChallengeRow, type DailyCheckIn, type SeventyFiveHardChallenge } from '../../types/seventyFiveHard';
+import { createInitialTaskCompletions as createTasks, type TaskCompletion, type ChallengeRow, type DailyCheckIn } from '../../types/seventyFiveHard';
 import { getStore, setStore } from '../utils/storeHelpers';
 import { loadSFHChallenge } from './challengeActions';
 
@@ -15,9 +15,9 @@ import { loadSFHChallenge } from './challengeActions';
  * Check for missed yesterday
  */
 export async function checkForMissedSFHDay(): Promise<void> {
-  const { sfhChallenge, sfhCheckIns } = getStore();
-  const challenge: SeventyFiveHardChallenge | null = sfhChallenge;
-  const checkIns: readonly DailyCheckIn[] = sfhCheckIns;
+  const store = getStore();
+  const challenge = store.sfhChallenge;
+  const checkIns: readonly DailyCheckIn[] = store.sfhCheckIns;
 
   if (!challenge || challenge.status !== 'active') return;
 
@@ -64,9 +64,9 @@ export async function checkForMissedSFHDay(): Promise<void> {
  * Handle failure response
  */
 export async function handleSFHFailureResponse(completed: boolean): Promise<void> {
-  const { sfhChallenge, sfhFailureDate } = getStore();
-  const challenge: SeventyFiveHardChallenge | null = sfhChallenge;
-  const failureDate: Date | null = sfhFailureDate;
+  const store = getStore();
+  const challenge = store.sfhChallenge;
+  const failureDate = store.sfhFailureDate;
 
   if (!challenge || !failureDate) {
     logger.error('SeventyFiveHardActions', '[75Hard] handleSFHFailureResponse called without challenge or failure date');

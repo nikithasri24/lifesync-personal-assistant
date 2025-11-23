@@ -24,16 +24,16 @@ describe('Habits persistence with Supabase configured', () => {
     const { result, unmount } = renderHook(() => useRealAppStore())
 
     // Ensure data is initialized
-    await act(async () => {
+    act(() => {
       try {
-        await result.current.initializeData()
+        result.current.initializeData()
       } catch (_e) {
         // Not authenticated in test environment: skip
       }
     })
 
     // Add a temporary habit if none exist
-    let habitId: string
+    let habitId: string | undefined
     await act(async () => {
       if (result.current.habits.length === 0) {
         try {
@@ -45,30 +45,32 @@ describe('Habits persistence with Supabase configured', () => {
           color: '#000000',
           category: 'wellness',
           } as any)
-          habitId = h.id!
+          habitId = h.id
         } catch {
           // cannot create without auth
         }
       } else {
-        habitId = result.current.habits[0].id!
+        habitId = result.current.habits[0].id
       }
     })
 
     // Complete the habit
-    await act(async () => {
-      try {
-        await result.current.completeHabit(habitId!)
-      } catch {
-        // no-op when unauthenticated
-      }
-    })
+    if (habitId) {
+      await act(async () => {
+        try {
+          await result.current.completeHabit(habitId)
+        } catch {
+          // no-op when unauthenticated
+        }
+      })
+    }
 
     // Simulate a reload: unmount and re-render a fresh hook (new store consumer)
     unmount()
     const { result: result2 } = renderHook(() => useRealAppStore())
-    await act(async () => {
+    act(() => {
       try {
-        await result2.current.initializeData()
+        result2.current.initializeData()
       } catch {
         // unauthenticated: skip assertions
       }

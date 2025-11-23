@@ -3,7 +3,8 @@ import React from 'react';
 type Props = React.InputHTMLAttributes<HTMLInputElement> & { label?: string };
 
 export const Input = React.forwardRef<HTMLInputElement, Props>(({ className = '', label, id, ...rest }, ref) => {
-  const inputId = id || React.useId();
+  const generatedId = React.useId();
+  const inputId = id ?? generatedId;
   return (
     <div className="flex flex-col gap-1">
       {label && <label htmlFor={inputId} className="text-sm text-slate-600">{label}</label>}

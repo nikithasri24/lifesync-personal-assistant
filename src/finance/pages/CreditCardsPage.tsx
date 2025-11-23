@@ -28,7 +28,7 @@ const CreditCardsPage: React.FC = () => {
 
   // Calculate summary metrics
   const totalBalance = creditCards.reduce((sum, card) => sum + Math.abs(card.balance), 0);
-  const totalCreditLimit = creditCards.reduce((sum, card) => sum + (card.creditLimit || 0), 0);
+  const totalCreditLimit = creditCards.reduce((sum, card) => sum + (card.creditLimit ?? 0), 0);
   const totalAvailable = totalCreditLimit - totalBalance;
   const overallUtilization = totalCreditLimit > 0 ? (totalBalance / totalCreditLimit) * 100 : 0;
 
@@ -42,7 +42,7 @@ const CreditCardsPage: React.FC = () => {
   const _cardsWithDueDates = creditCards.filter(c => c.paymentDueDay).length;
 
   // Get upcoming payments
-  const getNextDueDate = (card: Account) => {
+  const getNextDueDate = (card: Account): Date | null => {
     if (!card.paymentDueDay) return null;
     const today = new Date();
     const dueDate = new Date(today.getFullYear(), today.getMonth(), card.paymentDueDay);
@@ -54,11 +54,15 @@ const CreditCardsPage: React.FC = () => {
 
   const upcomingPayments = creditCards
     .filter(c => c.paymentDueDay && c.minimumPayment)
-    .map(c => ({
-      card: c,
-      dueDate: getNextDueDate(c)!,
-      amount: c.minimumPayment!
-    }))
+    .map(c => {
+      const dueDate = getNextDueDate(c);
+      return dueDate ? {
+        card: c,
+        dueDate: dueDate,
+        amount: c.minimumPayment ?? 0
+      } : null;
+    })
+    .filter((payment): payment is NonNullable<typeof payment> => payment !== null)
     .sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime())
     .slice(0, 3);
 
@@ -66,7 +70,7 @@ const CreditCardsPage: React.FC = () => {
   const hasRewardsCards = creditCards.some(c => c.rewardsType && c.rewardsBalance !== undefined);
 
   // Handle updating rewards balance
-  const handleUpdatePoints = async (accountId: string, newBalance: number) => {
+  const handleUpdatePoints = async (accountId: string, newBalance: number): Promise<void> => {
     try {
       await updateAccountMutation.mutateAsync({
         accountId,
@@ -152,7 +156,9 @@ const CreditCardsPage: React.FC = () => {
       {showPointsTracker && hasRewardsCards && (
         <CreditCardPointsTracker
           cards={creditCards}
-          onUpdatePoints={handleUpdatePoints}
+          onUpdatePoints={(accountId: string, newBalance: number) => {
+            void handleUpdatePoints(accountId, newBalance);
+          }}
         />
       )}
 

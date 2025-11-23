@@ -42,7 +42,7 @@ const NetWorthPage: React.FC = () => {
   const currentNet = totalAssets - totalLiabilities;
 
   // Group accounts by type
-  const groupByType = (accts: Account[]) => {
+  const groupByType = (accts: Account[]): Record<string, Account[]> => {
     const groups: Record<string, Account[]> = {};
     accts.forEach(a => {
       if (!groups[a.type]) groups[a.type] = [];

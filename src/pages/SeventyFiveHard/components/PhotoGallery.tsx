@@ -29,7 +29,7 @@ interface PhotoGalleryProps {
  * Photo Gallery Component
  * Displays check-ins with photos in a responsive grid
  */
-export default function PhotoGallery({ checkIns, onPhotoClick }: PhotoGalleryProps) {
+export default function PhotoGallery({ checkIns, onPhotoClick }: PhotoGalleryProps): React.JSX.Element {
   // ==================== Data Processing ====================
 
   /**

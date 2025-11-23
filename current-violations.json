@@ -1,0 +1,82 @@
+[
+  {
+    "file": "/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/components/DebtPayoffCalculator.tsx",
+    "violations": 3
+  },
+  {
+    "file": "/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/finance/components/ChartLazy.tsx",
+    "violations": 3
+  },
+  {
+    "file": "/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/finance/pages/ProjectionsPage.tsx",
+    "violations": 3
+  },
+  {
+    "file": "/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/hooks/useWebSocket.ts",
+    "violations": 3
+  },
+  {
+    "file": "/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/todos/components/SubtaskForm.tsx",
+    "violations": 3
+  },
+  {
+    "file": "/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/todos/components/SubtaskRow.tsx",
+    "violations": 3
+  },
+  {
+    "file": "/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/travel/components/ExpiryAlerts.tsx",
+    "violations": 3
+  },
+  {
+    "file": "/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/travel/utils/findMissingCountries.ts",
+    "violations": 3
+  },
+  {
+    "file": "/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/types/focusEnhanced.ts",
+    "violations": 3
+  },
+  {
+    "file": "/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/types/index.ts",
+    "violations": 3
+  },
+  {
+    "file": "/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/utils/quickAdd.ts",
+    "violations": 3
+  },
+  {
+    "file": "/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/voice/time.ts",
+    "violations": 3
+  },
+  {
+    "file": "/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/api/__tests__/goalsAPI.test.ts",
+    "violations": 2
+  },
+  {
+    "file": "/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/components/Layout.tsx",
+    "violations": 2
+  },
+  {
+    "file": "/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/components/Logo.tsx",
+    "violations": 2
+  },
+  {
+    "file": "/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/components/NikeLogo.tsx",
+    "violations": 2
+  },
+  {
+    "file": "/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/components/PremiumLogo.tsx",
+    "violations": 2
+  },
+  {
+    "file": "/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/components/focus/gamification/hooks/useGamificationState.ts",
+    "violations": 2
+  },
+  {
+    "file": "/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/components/focus/tasks/__tests__/TaskFocusIntegration.test.tsx",
+    "violations": 2
+  },
+  {
+    "file": "/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/components/focus/tasks/components/TaskCard.tsx",
+    "violations": 2
+  }
+]

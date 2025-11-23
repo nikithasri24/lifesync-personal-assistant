@@ -10,7 +10,7 @@ interface ProjectStatsProps {
   stats: ProjectStats;
 }
 
-export function ProjectStats({ stats }: ProjectStatsProps) {
+export function ProjectStats({ stats }: ProjectStatsProps): React.JSX.Element {
   const completionPercentage = stats.totalTasks > 0
     ? Math.round((stats.completedTasks / stats.totalTasks) * 100)
     : 0;

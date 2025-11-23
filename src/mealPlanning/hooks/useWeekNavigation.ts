@@ -5,21 +5,32 @@ import type { MealPlanWeek } from '../../types';
 export function useWeekNavigation(
   weekStartsOn: 0 | 1 | 2 | 3 | 4 | 5 | 6,
   mealPlans: MealPlanWeek[]
-) {
-  const [currentWeekStart, setCurrentWeekStart] = useState(() =>
+): {
+  currentWeekStart: Date;
+  setCurrentWeekStart: React.Dispatch<React.SetStateAction<Date>>;
+  activePlan: MealPlanWeek | null;
+  activePlanId: string | null;
+  weekDays: Date[];
+  isEnsuringPlan: boolean;
+  goToPreviousWeek: () => void;
+  goToNextWeek: () => void;
+  goToThisWeek: () => void;
+  goToWeek: (date: Date) => void;
+} {
+  const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() =>
     startOfWeek(new Date(), { weekStartsOn })
   );
   const [activePlanId, setActivePlanId] = useState<string | null>(null);
-  const [isEnsuringPlan, setIsEnsuringPlan] = useState(false);
+  const [isEnsuringPlan, setIsEnsuringPlan] = useState<boolean>(false);
 
   // Re-align current week when weekStartsOn changes
   useEffect(() => {
-    setCurrentWeekStart((prev) => startOfWeek(prev, { weekStartsOn }));
+    setCurrentWeekStart((prev: Date) => startOfWeek(prev, { weekStartsOn }));
   }, [weekStartsOn]);
 
   // Find existing plan for current week
   useEffect(() => {
-    const existingPlan = mealPlans.find((plan) =>
+    const existingPlan: MealPlanWeek | undefined = mealPlans.find((plan: MealPlanWeek) =>
       isSameWeek(
         plan.weekStartDate instanceof Date ? plan.weekStartDate : new Date(plan.weekStartDate),
         currentWeekStart,
@@ -35,14 +46,14 @@ export function useWeekNavigation(
     setIsEnsuringPlan(false);
   }, [currentWeekStart, mealPlans, weekStartsOn]);
 
-  const activePlan = useMemo(() => {
+  const activePlan: MealPlanWeek | null = useMemo(() => {
     if (activePlanId) {
-      const plan = mealPlans.find((item) => item.id === activePlanId);
+      const plan: MealPlanWeek | undefined = mealPlans.find((item: MealPlanWeek) => item.id === activePlanId);
       if (plan) return plan;
     }
 
     return (
-      mealPlans.find((plan) =>
+      mealPlans.find((plan: MealPlanWeek) =>
         isSameWeek(
           plan.weekStartDate instanceof Date ? plan.weekStartDate : new Date(plan.weekStartDate),
           currentWeekStart,
@@ -52,24 +63,24 @@ export function useWeekNavigation(
     );
   }, [activePlanId, mealPlans, currentWeekStart, weekStartsOn]);
 
-  const weekDays = useMemo(
-    () => Array.from({ length: 7 }, (_, index) => addDays(currentWeekStart, index)),
+  const weekDays: Date[] = useMemo(
+    () => Array.from({ length: 7 }, (_, index: number) => addDays(currentWeekStart, index)),
     [currentWeekStart]
   );
 
-  const goToPreviousWeek = () => {
-    setCurrentWeekStart((date) => addDays(date, -7));
+  const goToPreviousWeek = (): void => {
+    setCurrentWeekStart((date: Date) => addDays(date, -7));
   };
 
-  const goToNextWeek = () => {
-    setCurrentWeekStart((date) => addDays(date, 7));
+  const goToNextWeek = (): void => {
+    setCurrentWeekStart((date: Date) => addDays(date, 7));
   };
 
-  const goToThisWeek = () => {
+  const goToThisWeek = (): void => {
     setCurrentWeekStart(startOfWeek(new Date(), { weekStartsOn }));
   };
 
-  const goToWeek = (date: Date) => {
+  const goToWeek = (date: Date): void => {
     setCurrentWeekStart(startOfWeek(date, { weekStartsOn }));
   };
 

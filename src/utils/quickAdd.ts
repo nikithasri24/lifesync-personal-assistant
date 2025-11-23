@@ -20,7 +20,7 @@ export interface SubtaskQuickAddResult {
   tags: string[]
 }
 
-const normalizeWhitespace = (s: string) => s.replace(/\s{2,}/g, ' ').trim()
+const normalizeWhitespace = (s: string): string => s.replace(/\s{2,}/g, ' ').trim()
 
 // Parse main Quick Add text
 export function parseQuickAdd(text: string, projects: ProjectRef[]): TaskQuickAddResult {
@@ -77,7 +77,7 @@ export function parseQuickAdd(text: string, projects: ProjectRef[]): TaskQuickAd
   }
 
   // Remaining #tokens become tags (skip #project:...)
-  const hashTokens = title.match(/#([\w-:"']+)/g) || []
+  const hashTokens = title.match(/#([\w-:"']+)/g) ?? []
   for (const token of hashTokens) {
     if (/^#project:/i.test(token)) {
       title = title.replace(new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), '').trim()
@@ -89,7 +89,7 @@ export function parseQuickAdd(text: string, projects: ProjectRef[]): TaskQuickAd
   }
 
   // @tags (non-date) also become tags
-  const atTokens = title.match(/@([\w-]+)/g) || []
+  const atTokens = title.match(/@([\w-]+)/g) ?? []
   for (const token of atTokens) {
     const t = token.slice(1)
     if (t.toLowerCase() !== 'today' && t.toLowerCase() !== 'tomorrow') tagSet.add(t)

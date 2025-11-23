@@ -18,7 +18,7 @@ interface CompletedViewProps {
   checkIns: DailyCheckIn[];
 }
 
-export default function CompletedView({ challenge, checkIns }: CompletedViewProps) {
+export default function CompletedView({ challenge, checkIns }: CompletedViewProps): React.JSX.Element {
   const stats = calculateStats(challenge, checkIns);
   const duration = challenge.completedAt
     ? differenceInDays(challenge.completedAt, challenge.startDate) + 1

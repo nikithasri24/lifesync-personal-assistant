@@ -257,7 +257,7 @@ export class MockApi implements FinanceAPI {
     // Extract and type-check optional fields to avoid unsafe assignments
     let startingAmount = 0;
     if (typeof validatedGoal.startingAmount === 'number') {
-      startingAmount = validatedGoal.startingAmount as number;
+      startingAmount = validatedGoal.startingAmount;
     }
 
     let linkedCategoryId: string | undefined;
@@ -267,12 +267,12 @@ export class MockApi implements FinanceAPI {
 
     let linkedAccountId: string | undefined;
     if (typeof validatedGoal.linkedAccountId === 'string') {
-      linkedAccountId = validatedGoal.linkedAccountId as string;
+      linkedAccountId = validatedGoal.linkedAccountId;
     }
 
     let trackNetworth: boolean | undefined = false;
     if (typeof validatedGoal.trackNetworth === 'boolean') {
-      trackNetworth = validatedGoal.trackNetworth as boolean;
+      trackNetworth = validatedGoal.trackNetworth;
     }
 
     const newGoal: Goal = {

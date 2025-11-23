@@ -9,11 +9,11 @@ interface RecipeViewModalProps {
   onEdit: () => void;
 }
 
-export function RecipeViewModal({ recipe, onClose, onEdit }: RecipeViewModalProps) {
+export function RecipeViewModal({ recipe, onClose, onEdit }: RecipeViewModalProps): React.JSX.Element {
   const [servingsView, setServingsView] = useState<number>(recipe.servings || 1);
   const factor = Math.max(0.25, (servingsView || 1) / Math.max(1, recipe.servings || 1));
 
-  const scaleNumber = (n: number) => {
+  const scaleNumber = (n: number): string => {
     const val = n * factor;
     return Math.abs(val - Math.round(val)) < 0.05 ? String(Math.round(val)) : String(Math.round(val * 10) / 10);
   };
@@ -72,7 +72,7 @@ export function RecipeViewModal({ recipe, onClose, onEdit }: RecipeViewModalProp
       'foil',
       'tongs',
     ];
-    const text = `${(recipe.instructions || []).join(' ')} ${recipe.description || ''}`.toLowerCase();
+    const text = `${(recipe.instructions ?? []).join(' ')} ${recipe.description ?? ''}`.toLowerCase();
     const found: string[] = [];
     for (const t of tools) {
       if (text.includes(t) && !found.includes(t)) found.push(t);

@@ -12,7 +12,7 @@ interface QueryProviderProps {
   children: React.ReactNode;
 }
 
-export function QueryProvider({ children }: QueryProviderProps) {
+export function QueryProvider({ children }: QueryProviderProps): React.JSX.Element {
   return (
     <QueryClientProvider client={queryClient}>
       {children}

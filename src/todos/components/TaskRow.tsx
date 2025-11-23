@@ -76,10 +76,10 @@ export function TaskRow({
   isUpdating,
   isExpanded,
   hasSubtasks
-}: TaskRowProps) {
+}: TaskRowProps): React.ReactElement {
   const taskIsOverdue = task.dueDate && isOverdue(task.dueDate, task.status);
 
-  const getPriorityBorderClass = () => {
+  const getPriorityBorderClass = (): string => {
     if (task.status === 'done') {
       return 'bg-blue-500 border-blue-500 text-white';
     }
@@ -96,7 +96,7 @@ export function TaskRow({
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>): void => {
     if (e.key === 'Enter') {
       onSaveEdit(task.id);
     }
@@ -161,7 +161,7 @@ export function TaskRow({
         </div>
 
         {/* Task metadata */}
-        {(task.description || task.dueDate || project || task.tags.length > 0) && (
+        {(task.description ?? false) || (task.dueDate ?? false) || (project ?? false) || (task.tags.length > 0) && (
           <div className="flex items-center space-x-4 text-xs text-gray-500 dark:text-slate-400 ml-2">
             {task.description && (
               <span className="truncate max-w-xs text-gray-600 dark:text-slate-400">
@@ -184,7 +184,10 @@ export function TaskRow({
 
             {project && (
               <span className="flex items-center space-x-1.5 px-2 py-1 bg-gray-100 dark:bg-slate-700 rounded">
-                <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: project.color }}></div>
+                <div
+                  className="w-2.5 h-2.5 rounded-full"
+                  style={{ backgroundColor: project.color ?? 'defaultColor' }}
+                ></div>
                 <span className="text-gray-700 dark:text-gray-300 font-medium">{project.name}</span>
               </span>
             )}

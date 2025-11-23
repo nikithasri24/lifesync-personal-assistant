@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, type ReactElement } from 'react';
 import { Loader2 } from 'lucide-react';
 import { logger } from '../../../services/logger';
-import type { Recipe } from '../../../types';
+import type { Recipe, Ingredient } from '../../../types';
 import { useUpdateRecipeMutation } from '../../hooks/useMealPlanningQuery';
 
 interface RecipeEditModalProps {
@@ -9,19 +9,29 @@ interface RecipeEditModalProps {
   onClose: () => void;
 }
 
-export function RecipeEditModal({ recipe, onClose }: RecipeEditModalProps) {
+export function RecipeEditModal({ recipe, onClose }: RecipeEditModalProps): ReactElement {
   const updateRecipeMutation = useUpdateRecipeMutation();
-  const [saving, setSaving] = useState(false);
+  const [saving, setSaving] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const [form, setForm] = useState({
-    name: recipe.name || '',
-    description: recipe.description || '',
+  const [form, setForm] = useState<{
+    name: string;
+    description: string;
+    servings: string;
+    prepTime: string;
+    cookTime: string;
+    difficulty: 'easy' | 'medium' | 'hard';
+    tags: string;
+    instructions: string;
+    ingredients: string;
+  }>({
+    name: recipe.name ?? '',
+    description: recipe.description ?? '',
     servings: String(recipe.servings ?? 1),
     prepTime: String(recipe.prepTime ?? 0),
     cookTime: String(recipe.cookTime ?? 0),
-    difficulty: recipe.difficulty || 'medium',
+    difficulty: recipe.difficulty ?? 'medium',
     tags: (recipe.tags || []).join(', '),
     instructions: (recipe.instructions || []).join('\n'),
     ingredients: (recipe.ingredients || [])
@@ -34,7 +44,7 @@ export function RecipeEditModal({ recipe, onClose }: RecipeEditModalProps) {
 
   // Handle Escape key
   useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
+    const handleEscape = (e: KeyboardEvent): void => {
       if (e.key === 'Escape') onClose();
     };
     window.addEventListener('keydown', handleEscape);
@@ -47,43 +57,45 @@ export function RecipeEditModal({ recipe, onClose }: RecipeEditModalProps) {
       clearTimeout(autoSaveTimerRef.current);
     }
 
-    autoSaveTimerRef.current = setTimeout(async () => {
-      try {
-        setSaving(true);
-        setError(null);
+    autoSaveTimerRef.current = setTimeout(() => {
+      void (async () => {
+        try {
+          setSaving(true);
+          setError(null);
 
-        const ingredientLines = form.ingredients
-          .split(/\r?\n/)
-          .map((line) => line.trim())
-          .filter(Boolean);
+          const ingredientLines = form.ingredients
+            .split(/\r?\n/)
+            .map((line) => line.trim())
+            .filter(Boolean);
 
-        const parsedIngredients = ingredientLines.map((line) => {
-          const match1 = line.match(/^(\d+(?:\.\d+)?)\s+(\w+)\s+(.+)$/);
-          if (match1) return { amount: match1[1], unit: match1[2], name: match1[3] };
-          const match2 = line.match(/^(\d+(?:\.\d+)?)\s+(.+)$/);
-          if (match2) return { amount: match2[1], unit: undefined, name: match2[2] };
-          return { amount: undefined, unit: undefined, name: line };
-        });
+          const parsedIngredients: Ingredient[] = ingredientLines.map((line) => {
+            const match1 = line.match(/^(\d+(?:\.\d+)?)\s+(\w+)\s+(.+)$/);
+            if (match1) return { amount: Number(match1[1]), unit: match1[2], name: match1[3] };
+            const match2 = line.match(/^(\d+(?:\.\d+)?)\s+(.+)$/);
+            if (match2) return { amount: Number(match2[1]), unit: undefined, name: match2[2] };
+            return { amount: undefined, unit: undefined, name: line };
+          });
 
-        const updates: Partial<Recipe> = {
-          name: form.name.trim() || 'Untitled',
-          description: form.description.trim(),
-          servings: Number.isFinite(Number(form.servings)) ? Number(form.servings) : recipe.servings,
-          prepTime: Number.isFinite(Number(form.prepTime)) ? Number(form.prepTime) : recipe.prepTime,
-          cookTime: Number.isFinite(Number(form.cookTime)) ? Number(form.cookTime) : recipe.cookTime,
-          difficulty: (form.difficulty) || recipe.difficulty,
-          tags: form.tags.split(',').map((t) => t.trim()).filter(Boolean),
-          instructions: form.instructions.split(/\r?\n/).map((l) => l.trim()).filter(Boolean),
-          ingredients: parsedIngredients,
-        };
+          const updates: Partial<Recipe> = {
+            name: form.name.trim() || 'Untitled',
+            description: form.description.trim(),
+            servings: Number.isFinite(Number(form.servings)) ? Number(form.servings) : recipe.servings,
+            prepTime: Number.isFinite(Number(form.prepTime)) ? Number(form.prepTime) : recipe.prepTime,
+            cookTime: Number.isFinite(Number(form.cookTime)) ? Number(form.cookTime) : recipe.cookTime,
+            difficulty: (form.difficulty) || recipe.difficulty,
+            tags: form.tags.split(',').map((t) => t.trim()).filter(Boolean),
+            instructions: form.instructions.split(/\r?\n/).map((l) => l.trim()).filter(Boolean),
+            ingredients: parsedIngredients,
+          };
 
-        await updateRecipeMutation.mutateAsync({ recipeId: recipe.id, updates });
-      } catch (err) {
-        logger.error('RecipeEditModal', 'Auto-save failed:', err);
-        setError('Auto-save failed');
-      } finally {
-        setSaving(false);
-      }
+          await updateRecipeMutation.mutateAsync({ recipeId: recipe.id, updates });
+        } catch (err) {
+          logger.error('RecipeEditModal', 'Auto-save failed:', err);
+          setError('Auto-save failed');
+        } finally {
+          setSaving(false);
+        }
+      })();
     }, 2000);
 
     return () => {
@@ -91,7 +103,7 @@ export function RecipeEditModal({ recipe, onClose }: RecipeEditModalProps) {
         clearTimeout(autoSaveTimerRef.current);
       }
     };
-  }, [form, recipe.id, updateRecipeMutation]);
+  }, [form, recipe.id, recipe.servings, recipe.prepTime, recipe.cookTime, recipe.difficulty, updateRecipeMutation]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" onClick={onClose}>
@@ -135,7 +147,7 @@ export function RecipeEditModal({ recipe, onClose }: RecipeEditModalProps) {
                 <span className="font-medium text-slate-700">Name</span>
                 <input
                   value={form.name}
-                  onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((s) => ({ ...s, name: e.target.value }))}
                   className="rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-indigo-500 focus:outline-none"
                 />
               </label>
@@ -143,7 +155,7 @@ export function RecipeEditModal({ recipe, onClose }: RecipeEditModalProps) {
                 <span className="font-medium text-slate-700">Difficulty</span>
                 <select
                   value={form.difficulty}
-                  onChange={(e) => setForm((s) => ({ ...s, difficulty: e.target.value as 'easy' | 'medium' | 'hard' }))}
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm((s) => ({ ...s, difficulty: e.target.value as 'easy' | 'medium' | 'hard' }))}
                   className="rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-indigo-500 focus:outline-none"
                 >
                   <option value="easy">easy</option>
@@ -157,7 +169,7 @@ export function RecipeEditModal({ recipe, onClose }: RecipeEditModalProps) {
               <textarea
                 rows={2}
                 value={form.description}
-                onChange={(e) => setForm((s) => ({ ...s, description: e.target.value }))}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setForm((s) => ({ ...s, description: e.target.value }))}
                 className="rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-indigo-500 focus:outline-none"
               />
             </label>
@@ -168,7 +180,7 @@ export function RecipeEditModal({ recipe, onClose }: RecipeEditModalProps) {
                   type="number"
                   min={1}
                   value={form.servings}
-                  onChange={(e) => setForm((s) => ({ ...s, servings: e.target.value }))}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((s) => ({ ...s, servings: e.target.value }))}
                   className="rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-indigo-500 focus:outline-none"
                 />
               </label>
@@ -178,7 +190,7 @@ export function RecipeEditModal({ recipe, onClose }: RecipeEditModalProps) {
                   type="number"
                   min={0}
                   value={form.prepTime}
-                  onChange={(e) => setForm((s) => ({ ...s, prepTime: e.target.value }))}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((s) => ({ ...s, prepTime: e.target.value }))}
                   className="rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-indigo-500 focus:outline-none"
                 />
               </label>
@@ -188,7 +200,7 @@ export function RecipeEditModal({ recipe, onClose }: RecipeEditModalProps) {
                   type="number"
                   min={0}
                   value={form.cookTime}
-                  onChange={(e) => setForm((s) => ({ ...s, cookTime: e.target.value }))}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((s) => ({ ...s, cookTime: e.target.value }))}
                   className="rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-indigo-500 focus:outline-none"
                 />
               </label>
@@ -197,7 +209,7 @@ export function RecipeEditModal({ recipe, onClose }: RecipeEditModalProps) {
               <span className="font-medium text-slate-700">Tags (comma separated)</span>
               <input
                 value={form.tags}
-                onChange={(e) => setForm((s) => ({ ...s, tags: e.target.value }))}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((s) => ({ ...s, tags: e.target.value }))}
                 className="rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-indigo-500 focus:outline-none"
                 placeholder="e.g. meal:breakfast, quick, vegetarian"
               />
@@ -207,7 +219,7 @@ export function RecipeEditModal({ recipe, onClose }: RecipeEditModalProps) {
               <textarea
                 rows={6}
                 value={form.ingredients}
-                onChange={(e) => setForm((s) => ({ ...s, ingredients: e.target.value }))}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setForm((s) => ({ ...s, ingredients: e.target.value }))}
                 className="rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-indigo-500 focus:outline-none"
                 placeholder="2 cups flour&#10;1 tsp salt&#10;3 eggs"
               />
@@ -217,7 +229,7 @@ export function RecipeEditModal({ recipe, onClose }: RecipeEditModalProps) {
               <textarea
                 rows={6}
                 value={form.instructions}
-                onChange={(e) => setForm((s) => ({ ...s, instructions: e.target.value }))}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setForm((s) => ({ ...s, instructions: e.target.value }))}
                 className="rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-indigo-500 focus:outline-none"
               />
             </label>

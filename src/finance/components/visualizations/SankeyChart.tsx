@@ -41,7 +41,14 @@ interface ProcessedLink {
 }
 
 // Color palette for different node types
-const COLORS = {
+interface ColorConfig {
+  income: string;
+  expenses: string;
+  savings: string;
+  categories: Record<string, string>;
+}
+
+const COLORS: ColorConfig = {
   income: '#3b82f6',      // Blue
   expenses: '#ef4444',    // Red
   savings: '#10b981',     // Green
@@ -83,11 +90,11 @@ const SankeyChart: React.FC<SankeyChartProps> = ({
       // Sum values for each node
       nodeValues.set(
         link.source,
-        (nodeValues.get(link.source) || 0) + link.value
+        (nodeValues.get(link.source) ?? 0) + link.value
       );
       nodeValues.set(
         link.target,
-        (nodeValues.get(link.target) || 0) + link.value
+        (nodeValues.get(link.target) ?? 0) + link.value
       );
     }
 
@@ -95,12 +102,12 @@ const SankeyChart: React.FC<SankeyChartProps> = ({
     const levels = new Map<string, number>();
 
     // Special nodes
-    const isIncomeSource = (id: string) => {
+    const isIncomeSource = (id: string): boolean => {
       return data.some(d => d.source === id && d.target === 'Total Income');
     };
-    const isTotalIncome = (id: string) => id === 'Total Income';
-    const isSavings = (id: string) => id === 'Savings';
-    const isExpenseCategory = (id: string) => {
+    const isTotalIncome = (id: string): boolean => id === 'Total Income';
+    const isSavings = (id: string): boolean => id === 'Savings';
+    const isExpenseCategory = (id: string): boolean => {
       return data.some(d => d.source === 'Total Income' && d.target === id) && !isSavings(id);
     };
 
@@ -118,7 +125,7 @@ const SankeyChart: React.FC<SankeyChartProps> = ({
     // Group nodes by level
     const nodesByLevel = new Map<number, string[]>();
     for (const [id, level] of levels) {
-      const existing = nodesByLevel.get(level) || [];
+      const existing = nodesByLevel.get(level) ?? [];
       nodesByLevel.set(level, [...existing, id]);
     }
 
@@ -138,9 +145,9 @@ const SankeyChart: React.FC<SankeyChartProps> = ({
 
     // Position nodes
     for (let level = 0; level <= 2; level++) {
-      const levelNodes = nodesByLevel.get(level) || [];
+      const levelNodes = nodesByLevel.get(level) ?? [];
       const _totalLevelValue = levelNodes.reduce(
-        (sum, id) => sum + (nodeValues.get(id) || 0),
+        (sum, id) => sum + (nodeValues.get(id) ?? 0),
         0
       );
 
@@ -148,7 +155,7 @@ const SankeyChart: React.FC<SankeyChartProps> = ({
       const levelX = padding + level * levelWidth;
 
       for (const id of levelNodes) {
-        const value = nodeValues.get(id) || 0;
+        const value = nodeValues.get(id) ?? 0;
         const nodeHeight = (value / totalValue) * availableHeight * 0.8;
 
         // Determine color
@@ -158,7 +165,7 @@ const SankeyChart: React.FC<SankeyChartProps> = ({
         } else if (isSavings(id)) {
           color = COLORS.savings;
         } else if (isExpenseCategory(id)) {
-          color = (COLORS.categories as any)[id] || COLORS.categories.default;
+          color = COLORS.categories[id] ?? COLORS.categories.default;
         }
 
         const node: ProcessedNode = {
@@ -190,8 +197,8 @@ const SankeyChart: React.FC<SankeyChartProps> = ({
 
       const linkHeight = (link.value / sourceNode.value) * sourceNode.height;
 
-      const sourceOffset = linkOffsets.get(link.source) || 0;
-      const targetOffset = linkOffsets.get(link.target) || 0;
+      const sourceOffset = linkOffsets.get(link.source) ?? 0;
+      const targetOffset = linkOffsets.get(link.target) ?? 0;
 
       processedLinks.push({
         source: sourceNode,

@@ -32,17 +32,17 @@ export const GoalProgressChart: React.FC<GoalProgressChartProps> = ({
   const maxAmount = Math.max(targetAmount, ...allPoints.map(p => p.amount));
 
   // Scale functions
-  const scaleY = (amount: number) => {
+  const scaleY = (amount: number): number => {
     const ratio = amount / maxAmount;
     return padding.top + chartHeight - (ratio * chartHeight);
   };
 
-  const scaleX = (index: number, totalPoints: number) => {
+  const scaleX = (index: number, totalPoints: number): number => {
     return padding.left + (index / Math.max(1, totalPoints - 1)) * chartWidth;
   };
 
   // Generate path string for SVG
-  const generatePath = (points: GoalProgressPoint[]) => {
+  const generatePath = (points: GoalProgressPoint[]): string => {
     if (points.length === 0) return '';
     return points.map((p, i) => {
       const x = scaleX(i, points.length);
@@ -55,7 +55,7 @@ export const GoalProgressChart: React.FC<GoalProgressChartProps> = ({
   const actualPathString = actualPath.length > 0 ? generatePath(actualPath) : '';
 
   // Format date for display
-  const formatDate = (dateISO: string) => {
+  const formatDate = (dateISO: string): string => {
     return new Date(dateISO).toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
   };
 

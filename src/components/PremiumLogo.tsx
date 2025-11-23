@@ -3,7 +3,7 @@ interface PremiumLogoProps {
   className?: string;
 }
 
-export default function PremiumLogo({ collapsed = false, className = '' }: PremiumLogoProps) {
+export default function PremiumLogo({ collapsed = false, className = '' }: PremiumLogoProps): JSX.Element {
   if (collapsed) {
     return (
       <div className={`flex items-center justify-center ${className}`}>

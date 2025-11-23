@@ -14,10 +14,10 @@ interface DeleteChallengeModalProps {
   currentDay: number;
 }
 
-export default function DeleteChallengeModal({ onConfirm, onCancel, currentDay }: DeleteChallengeModalProps) {
+export default function DeleteChallengeModal({ onConfirm, onCancel, currentDay }: DeleteChallengeModalProps): JSX.Element {
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const handleConfirm = async () => {
+  const handleConfirm = async (): Promise<void> => {
     setIsDeleting(true);
     try {
       await onConfirm();
@@ -76,7 +76,7 @@ export default function DeleteChallengeModal({ onConfirm, onCancel, currentDay }
           </button>
 
           <button
-            onClick={handleConfirm}
+            onClick={() => void handleConfirm()}
             disabled={isDeleting}
             className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >

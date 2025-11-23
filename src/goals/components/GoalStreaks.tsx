@@ -3,7 +3,7 @@
  * Daily check-ins, streak tracking, and calendar visualization
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Calendar, Flame, CheckCircle2, XCircle, TrendingUp, Award } from 'lucide-react';
 import { recordStreak, getStreakHistory, updateLifeGoal } from '../api/lifeGoalsAPI';
 import type { LifeGoal, LifeGoalStreakEntry } from '../types/lifeGoals';
@@ -24,38 +24,35 @@ const GoalStreaks: React.FC<GoalStreaksProps> = ({ goal, onGoalUpdated }) => {
   const todayEntry = streakHistory.find(entry => entry.date === today);
   const hasCheckedInToday = todayEntry?.completed ?? false;
 
-  useEffect(() => {
-    loadStreakHistory();
-  }, [goal.id]);
-
-  const loadStreakHistory = async () => {
+  const loadStreakHistory = useCallback(async (): Promise<void> => {
     try {
       setLoading(true);
-      const history = await getStreakHistory(goal.id, 90); // Last 90 days
+      const history = await getStreakHistory(goal.id, 90);
       setStreakHistory(history);
     } catch (error) {
       logger.error('Error loading streak history:', { error });
     } finally {
       setLoading(false);
     }
-  };
+  }, [goal.id]);
 
-  const handleCheckIn = async (completed: boolean) => {
+  useEffect(() => {
+    void loadStreakHistory();
+  }, [loadStreakHistory]);
+
+  const handleCheckIn = async (completed: boolean): Promise<void> => {
     try {
       setCheckingIn(true);
 
-      // Record streak entry
       const entry = await recordStreak(goal.id, today, completed, todayNote || undefined);
 
-      // Calculate new streak
       const sortedHistory = [...streakHistory, entry].sort((a, b) =>
         new Date(b.date).getTime() - new Date(a.date).getTime()
       );
 
       const newCurrentStreak = calculateCurrentStreak(sortedHistory);
-      const newLongestStreak = Math.max(goal.longestStreak || 0, newCurrentStreak);
+      const newLongestStreak = Math.max(goal.longestStreak ?? 0, newCurrentStreak);
 
-      // Update goal with new streak values
       const updatedGoal = await updateLifeGoal(goal.id, {
         currentStreak: newCurrentStreak,
         longestStreak: newLongestStreak,
@@ -66,7 +63,6 @@ const GoalStreaks: React.FC<GoalStreaksProps> = ({ goal, onGoalUpdated }) => {
       setTodayNote('');
     } catch (error) {
       logger.error('Error checking in:', { error });
-      alert('Failed to record check-in');
     } finally {
       setCheckingIn(false);
     }
@@ -99,8 +95,7 @@ const GoalStreaks: React.FC<GoalStreaksProps> = ({ goal, onGoalUpdated }) => {
     return streak;
   };
 
-  const renderCalendar = () => {
-    // Get last 42 days (6 weeks) for calendar grid
+  const renderCalendar = (): React.ReactElement => {
     const days: Date[] = [];
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - 41);
@@ -211,7 +206,7 @@ const GoalStreaks: React.FC<GoalStreaksProps> = ({ goal, onGoalUpdated }) => {
               disabled={checkingIn}
             />
             <button
-              onClick={() => handleCheckIn(true)}
+              onClick={() => void handleCheckIn(true)}
               disabled={checkingIn}
               className="px-3 py-2 bg-green-600 text-white rounded text-sm font-medium hover:bg-green-700 disabled:bg-slate-300 flex items-center gap-1"
             >
@@ -219,7 +214,7 @@ const GoalStreaks: React.FC<GoalStreaksProps> = ({ goal, onGoalUpdated }) => {
               Check In
             </button>
             <button
-              onClick={() => handleCheckIn(false)}
+              onClick={() => void handleCheckIn(false)}
               disabled={checkingIn}
               className="px-3 py-2 bg-red-100 text-red-700 rounded text-sm font-medium hover:bg-red-200 disabled:bg-slate-300 flex items-center gap-1"
             >

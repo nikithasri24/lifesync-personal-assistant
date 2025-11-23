@@ -1,3 +1,4 @@
+import type React from 'react';
 import { useState, useMemo } from 'react';
 import { differenceInCalendarDays } from 'date-fns';
 
@@ -14,7 +15,33 @@ export interface PantryItem {
   lowStockThreshold?: number | null;
 }
 
-export function usePantryManagement(pantryItems: PantryItem[]) {
+export function usePantryManagement(pantryItems: PantryItem[]): {
+  pantryFilter: PantryFilter;
+  setPantryFilter: React.Dispatch<React.SetStateAction<PantryFilter>>;
+  pantrySort: PantrySort;
+  setPantrySort: React.Dispatch<React.SetStateAction<PantrySort>>;
+  editingPantryId: string | null;
+  editPantry: {
+    qty: string;
+    unit: string;
+    exp: string;
+    low: boolean;
+    threshold: string;
+  };
+  setEditPantry: React.Dispatch<React.SetStateAction<{
+    qty: string;
+    unit: string;
+    exp: string;
+    low: boolean;
+    threshold: string;
+  }>>;
+  startEditingPantry: (item: PantryItem) => void;
+  cancelEditing: () => void;
+  replenishId: string | null;
+  startReplenish: (itemId: string) => void;
+  cancelReplenish: () => void;
+  pantrySortedFiltered: PantryItem[];
+} {
   const [pantryFilter, setPantryFilter] = useState<PantryFilter>('all');
   const [pantrySort, setPantrySort] = useState<PantrySort>('expiry');
   const [editingPantryId, setEditingPantryId] = useState<string | null>(null);
@@ -30,7 +57,7 @@ export function usePantryManagement(pantryItems: PantryItem[]) {
   /**
    * Get filtered and sorted pantry items based on current filter and sort settings
    */
-  const pantrySortedFiltered = useMemo(() => {
+  const pantrySortedFiltered = useMemo((): PantryItem[] => {
     let items = [...pantryItems];
     const now = new Date();
 
@@ -67,11 +94,11 @@ export function usePantryManagement(pantryItems: PantryItem[]) {
   /**
    * Start editing a pantry item
    */
-  const startEditingPantry = (item: PantryItem) => {
+  const startEditingPantry = (item: PantryItem): void => {
     setEditingPantryId(item.id);
     setEditPantry({
       qty: String(item.quantity),
-      unit: item.unit || '',
+      unit: item.unit ?? '',
       exp: item.expirationDate ? item.expirationDate.toISOString().split('T')[0] : '',
       low: !!item.isLowStock,
       threshold: item.lowStockThreshold ? String(item.lowStockThreshold) : ''
@@ -81,21 +108,21 @@ export function usePantryManagement(pantryItems: PantryItem[]) {
   /**
    * Cancel editing
    */
-  const cancelEditing = () => {
+  const cancelEditing = (): void => {
     setEditingPantryId(null);
   };
 
   /**
    * Start replenishing a pantry item
    */
-  const startReplenish = (itemId: string) => {
+  const startReplenish = (itemId: string): void => {
     setReplenishId(itemId);
   };
 
   /**
    * Cancel replenish
    */
-  const cancelReplenish = () => {
+  const cancelReplenish = (): void => {
     setReplenishId(null);
   };
 

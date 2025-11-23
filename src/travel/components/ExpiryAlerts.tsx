@@ -27,7 +27,7 @@ const ExpiryAlerts: React.FC<ExpiryAlertsProps> = ({ passports, visas, onDismiss
   const primaryPassport = passports.find(p => p.isPrimary);
   const travelRestriction = primaryPassport ? getUpcomingTravelRestrictions(primaryPassport) : null;
 
-  const handleDismiss = (alertId: string) => {
+  const handleDismiss = (alertId: string): void => {
     setDismissedAlerts(prev => new Set(prev).add(alertId));
     onDismiss?.(alertId);
   };
@@ -36,7 +36,13 @@ const ExpiryAlerts: React.FC<ExpiryAlertsProps> = ({ passports, visas, onDismiss
     return null;
   }
 
-  const getSeverityStyles = (severity: ExpiryAlert['severity']) => {
+  const getSeverityStyles = (severity: ExpiryAlert['severity']): {
+    bg: string;
+    border: string;
+    icon: string;
+    text: string;
+    action: string;
+  } => {
     switch (severity) {
       case 'critical':
         return {
@@ -65,7 +71,7 @@ const ExpiryAlerts: React.FC<ExpiryAlertsProps> = ({ passports, visas, onDismiss
     }
   };
 
-  const getSeverityIcon = (severity: ExpiryAlert['severity']) => {
+  const getSeverityIcon = (severity: ExpiryAlert['severity']): React.ComponentType<{ className?: string }> => {
     switch (severity) {
       case 'critical':
         return AlertTriangle;

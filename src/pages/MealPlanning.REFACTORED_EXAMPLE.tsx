@@ -68,7 +68,7 @@ import { toKey, ensureDate, fetchClippedRecipe } from '../mealPlanning/utils';
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack'];
 
 // Cleanup old meal drafts from localStorage
-const cleanupOldDrafts = () => {
+const cleanupOldDrafts = (): void => {
   try {
     const today = new Date();
     const sevenDaysAgo = new Date(today);
@@ -77,7 +77,7 @@ const cleanupOldDrafts = () => {
     const keysToRemove: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && key.startsWith('meal-draft-')) {
+      if (key?.startsWith('meal-draft-')) {
         const match = key.match(/meal-draft-(\d{4}-\d{2}-\d{2})/);
         if (match) {
           const draftDate = new Date(match[1]);
@@ -161,7 +161,7 @@ const MealPlanning: React.FC = () => {
   // ========================================
   // COMPUTED VALUES
   // ========================================
-  const plannedMeals = weekNav.activePlan?.meals ?? [];
+  const plannedMeals = useMemo(() => weekNav.activePlan?.meals ?? [], [weekNav.activePlan]);
   const _mealsByDate: Record<string, PlannedMeal[]> = useMemo(() => {
     return plannedMeals.reduce<Record<string, PlannedMeal[]>>((acc, meal) => {
       const key = toKey(ensureDate(meal.date));
@@ -181,8 +181,8 @@ const MealPlanning: React.FC = () => {
       result = result.filter(
         (recipe) =>
           recipe.name.toLowerCase().includes(query) ||
-          recipe.tags?.some((tag) => tag.toLowerCase().includes(query)) ||
-          recipe.cuisine?.toLowerCase().includes(query) ||
+          recipe.tags?.some((tag) => tag.toLowerCase().includes(query)) ??
+          recipe.cuisine?.toLowerCase().includes(query) ??
           recipe.difficulty?.toLowerCase().includes(query)
       );
     }
@@ -195,7 +195,7 @@ const MealPlanning: React.FC = () => {
   // EVENT HANDLERS
   // ========================================
 
-  const _handleImportRecipe = async (e: React.FormEvent) => {
+  const _handleImportRecipe = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     if (!recipeImport.importUrl.trim()) return;
 
@@ -213,7 +213,7 @@ const MealPlanning: React.FC = () => {
     }
   };
 
-  const _saveImportedRecipe = async () => {
+  const _saveImportedRecipe = async (): Promise<void> => {
     if (!recipeImport.importDraft) return;
     try {
       await createRecipeMutation.mutateAsync(recipeImport.importDraft);
@@ -223,19 +223,17 @@ const MealPlanning: React.FC = () => {
     }
   };
 
-  const handleCopyWeek = async () => {
+  const handleCopyWeek = async (): Promise<void> => {
     try {
       let targetPlan = mealPlans.find((p) =>
         isSameWeek(ensureDate(p.weekStartDate), copyTargetWeek, { weekStartsOn })
       );
 
-      if (!targetPlan) {
-        targetPlan = await createMealPlanMutation.mutateAsync({
-          weekStartDate: copyTargetWeek,
-          name: 'Meal plan',
-          weekStartsOn,
-        });
-      }
+      targetPlan ??= await createMealPlanMutation.mutateAsync({
+        weekStartDate: copyTargetWeek,
+        name: 'Meal plan',
+        weekStartsOn,
+      });
 
       if (!targetPlan) {
         showGlobalToast?.('Failed to create target week plan', 'error');
@@ -277,14 +275,14 @@ const MealPlanning: React.FC = () => {
     }
   };
 
-  const handleCopyCartList = () => {
+  const handleCopyCartList = (): void => {
     const text = grocery.inCartItems
       .map((item) => {
-        const amount = item.amount && item.unit ? `${item.amount} ${item.unit}` : item.amount || '';
+        const amount = item.amount && item.unit ? `${item.amount} ${item.unit}` : item.amount ?? '';
         return `☐ ${amount} ${item.name}`.trim();
       })
       .join('\n');
-    navigator.clipboard.writeText(text);
+    void navigator.clipboard.writeText(text);
     showGlobalToast?.('Shopping list copied to clipboard!', 'success');
   };
 
@@ -476,7 +474,7 @@ const MealPlanning: React.FC = () => {
       {/* Recipe Edit Modal */}
       {modals.editingRecipeId && recipes.find((r) => r.id === modals.editingRecipeId) && (
         <RecipeEditModal
-          recipe={recipes.find((r) => r.id === modals.editingRecipeId)!}
+          recipe={recipes.find((r) => r.id === modals.editingRecipeId) as PlannedMeal}
           onClose={modals.closeRecipeEdit}
         />
       )}
@@ -484,10 +482,10 @@ const MealPlanning: React.FC = () => {
       {/* Recipe View Modal */}
       {modals.viewingRecipeId && recipes.find((r) => r.id === modals.viewingRecipeId) && (
         <RecipeViewModal
-          recipe={recipes.find((r) => r.id === modals.viewingRecipeId)!}
+          recipe={recipes.find((r) => r.id === modals.viewingRecipeId) as PlannedMeal}
           onClose={modals.closeRecipeView}
           onEdit={() => {
-            modals.openRecipeEdit(modals.viewingRecipeId!);
+            modals.openRecipeEdit(modals.viewingRecipeId as string);
             modals.closeRecipeView();
           }}
         />

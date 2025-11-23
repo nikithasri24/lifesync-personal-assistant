@@ -6,10 +6,10 @@ export function parseTimeWindow(text: string): { fromISO?: string; toISO?: strin
   const end = new Date(now)
   const start = new Date(now)
 
-  const toISO = (d: Date) => d.toISOString()
+  const toISO = (d: Date): string => d.toISOString()
 
-  const setToStartOfDay = (d: Date) => { d.setUTCHours(0,0,0,0); return d }
-  const setToEndOfDay = (d: Date) => { d.setUTCHours(23,59,59,999); return d }
+  const setToStartOfDay = (d: Date): Date => { d.setUTCHours(0,0,0,0); return d }
+  const setToEndOfDay = (d: Date): Date => { d.setUTCHours(23,59,59,999); return d }
 
   if (t.includes('today')) {
     return { fromISO: toISO(setToStartOfDay(start)), toISO: toISO(setToEndOfDay(end)) }

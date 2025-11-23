@@ -1,6 +1,6 @@
 import { format } from 'date-fns';
 
-export const toKey = (date: Date) => format(date, 'yyyy-MM-dd');
+export const toKey = (date: Date): string => format(date, 'yyyy-MM-dd');
 
 export const ensureDate = (value: Date | string): Date =>
   value instanceof Date ? value : new Date(value);

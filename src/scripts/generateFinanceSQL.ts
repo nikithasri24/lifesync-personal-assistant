@@ -160,7 +160,7 @@ SELECT COUNT(*) as imported_count FROM transactions WHERE user_id = auth.uid();
 /**
  * Main
  */
-function main() {
+function main(): void {
   const files = [
     { path: '/Users/sri.nikitha/Downloads/Finance Planning - Jul 2025.csv', month: '2025-07-15' },
     { path: '/Users/sri.nikitha/Downloads/Finance Planning - Aug 2025.csv', month: '2025-08-15' },

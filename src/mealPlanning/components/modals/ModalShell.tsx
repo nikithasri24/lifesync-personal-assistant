@@ -17,7 +17,7 @@ export function ModalShell({
   maxWidthClass = 'max-w-2xl',
   headerRight,
   children,
-}: ModalShellProps) {
+}: ModalShellProps): React.ReactPortal {
   return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"

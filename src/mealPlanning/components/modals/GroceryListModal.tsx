@@ -30,7 +30,7 @@ export function GroceryListModal({
   updateItemStatus,
   getStatusColor,
   onCopyCart,
-}: GroceryListModalProps) {
+}: GroceryListModalProps): React.ReactElement | null {
   if (!isOpen) return null;
 
   return (
@@ -189,7 +189,7 @@ interface ItemSectionProps {
   actions: (item: GroceryItem) => React.ReactNode;
 }
 
-function ItemSection({ title, items, getStatusColor, titleColor = 'text-slate-700', actions }: ItemSectionProps) {
+function ItemSection({ title, items, getStatusColor, titleColor = 'text-slate-700', actions }: ItemSectionProps): React.ReactElement {
   return (
     <div className="mb-4">
       <h3 className={`text-sm font-semibold ${titleColor} mb-2 sticky top-0 bg-white py-2`}>{title}</h3>

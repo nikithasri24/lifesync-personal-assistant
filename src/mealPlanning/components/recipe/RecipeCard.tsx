@@ -35,7 +35,7 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
 
   const favicon = domain ? `https://www.google.com/s2/favicons?sz=64&domain=${encodeURIComponent(domain)}` : '';
 
-  const toggleFavorite = async (e: React.MouseEvent) => {
+  const toggleFavorite = async (e: React.MouseEvent): Promise<void> => {
     e.stopPropagation();
     if (!recipe.id) return;
     try {
@@ -48,12 +48,12 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
     }
   };
 
-  const handleEdit = (e: React.MouseEvent) => {
+  const handleEdit = (e: React.MouseEvent): void => {
     e.stopPropagation();
     onEdit();
   };
 
-  const handleDelete = (e: React.MouseEvent) => {
+  const handleDelete = (e: React.MouseEvent): void => {
     e.stopPropagation();
     onDelete();
   };
@@ -123,7 +123,7 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
         <div className="absolute right-2 top-2 flex gap-2 z-10">
           <button
             type="button"
-            onClick={toggleFavorite}
+            onClick={(e) => { void toggleFavorite(e); }}
             className={`rounded-md p-1.5 shadow-lg border transition ${
               recipe.isFavorite
                 ? 'bg-pink-500 text-white hover:bg-pink-600 border-pink-500'

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, DollarSign, Scan, Heart, Store, AlertCircle, Navigation, Edit3, Trash2 } from 'lucide-react';
+import { Check, DollarSign, Scan, Heart, Store as StoreIcon, AlertCircle, Navigation, Edit3, Trash2 } from 'lucide-react';
 import type { ShoppingItem, Store } from '../../types';
 import { CATEGORY_ICONS } from '../../constants';
 
@@ -19,8 +19,10 @@ export function MasterItemCard({
   onEdit,
   onDelete,
   onFindStores
-}: MasterItemCardProps) {
-  const bestStore = stores.find(s => s.id === item.bestStores?.[0]);
+}: MasterItemCardProps): React.ReactElement {
+  const bestStore: Store | null = item.bestStores && item.bestStores.length > 0
+    ? (stores.find((s): s is Store => s.id === item.bestStores?.[0]) ?? null)
+    : null;
 
   return (
     <div className={`
@@ -76,12 +78,12 @@ export function MasterItemCard({
                   {item.assignedStore ? (
                     <>
                       <Heart size={12} className="mr-1" />
-                      Preferred: {bestStore.name}
+                      Preferred: {bestStore?.name ?? 'Unknown Store'}
                     </>
                   ) : (
                     <>
-                      <Store size={12} className="mr-1" />
-                      AI Rec: {bestStore.name}
+                      <StoreIcon size={12} className="mr-1" />
+                      AI Rec: {bestStore?.name ?? 'Unknown Store'}
                     </>
                   )}
                 </span>

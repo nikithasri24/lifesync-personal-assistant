@@ -1,9 +1,5 @@
 /* eslint-disable no-console */
 /* eslint-disable max-lines */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
 import { Command } from 'commander';
 import inquirer from 'inquirer';
 import chalk from 'chalk';

@@ -10,7 +10,7 @@ import useResponsiveMap from '../hooks/useResponsiveMap';
 const nationalParks = nationalParksData as Park[];
 
 // Custom tree icon for markers
-const createTreeIcon = (size: number = 24) => {
+const createTreeIcon = (size: number = 24): L.DivIcon => {
   return L.divIcon({
     html: `
       <div class="flex items-center justify-center w-${size / 4} h-${size / 4} bg-green-600 rounded-full border-2 border-white shadow-lg">
@@ -158,11 +158,11 @@ const NationalParksMap: React.FC = () => {
     park.state.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleMarkerClick = (park: Park) => {
+  const handleMarkerClick = (park: Park): void => {
     setSelectedPark(park);
   };
 
-  const flyToPark = (park: Park) => {
+  const flyToPark = (park: Park): void => {
     if (mapRef.current) {
       mapRef.current.flyTo(park.coordinates, isMobile ? 6 : 8, {
         animate: true,

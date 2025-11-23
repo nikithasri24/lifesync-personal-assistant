@@ -42,7 +42,7 @@ export const selectTodayStats = (state: RealAppState): {
   completionPercentage: number;
 } | null => {
   const todayCheckIn = selectTodayCheckIn(state);
-  const challenge = state.sfhChallenge as SeventyFiveHardChallenge | null;
+  const challenge = state.sfhChallenge;
   if (!todayCheckIn || !challenge) return null;
 
   const taskCompletions = todayCheckIn.taskCompletions;
@@ -59,7 +59,8 @@ export const selectTodayStats = (state: RealAppState): {
  * Only causes re-render when day number changes
  */
 export const selectCurrentDay = (state: RealAppState): number | null => {
-  return state.sfhChallenge?.currentDay ?? null;
+  const challenge = state.sfhChallenge;
+  return challenge?.currentDay ?? null;
 };
 
 /**
@@ -67,7 +68,7 @@ export const selectCurrentDay = (state: RealAppState): number | null => {
  * Only causes re-render when status changes
  */
 export const selectChallengeStatus = (state: RealAppState): 'active' | 'completed' | null => {
-  const challenge = state.sfhChallenge as SeventyFiveHardChallenge | null;
+  const challenge = state.sfhChallenge;
   return challenge?.status ?? null;
 };
 
@@ -184,7 +185,8 @@ export const selectCelebrationState = (state: RealAppState): boolean => {
  * Only causes re-render when challenge existence changes
  */
 export const selectHasActiveChallenge = (state: RealAppState): boolean => {
-  return state.sfhChallenge !== null && state.sfhChallenge.status === 'active';
+  const challenge = state.sfhChallenge;
+  return challenge !== null && challenge.status === 'active';
 };
 
 /**
@@ -218,7 +220,7 @@ export const selectDashboardWidget = (state: RealAppState): {
  * Combines all data needed for the main 75 Hard page
  */
 export const selectPageData = (state: RealAppState): {
-  challenge: RealAppState['sfhChallenge'];
+  challenge: SeventyFiveHardChallenge | null;
   todayCheckIn: ReturnType<typeof selectTodayCheckIn>;
   todayStats: ReturnType<typeof selectTodayStats>;
   weekCheckIns: DailyCheckIn[];

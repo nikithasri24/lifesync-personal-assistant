@@ -57,7 +57,7 @@ export function getProjectMetrics(
   projectId: string,
   projectMetrics: ProjectMetrics[]
 ): ProjectMetrics {
-  return projectMetrics.find((m) => m.projectId === projectId) || {
+  return projectMetrics.find((m) => m.projectId === projectId) ?? {
     projectId,
     totalTasks: 0,
     completedTasks: 0,
@@ -85,9 +85,9 @@ export function createEmptyFormData(): ProjectFormData {
 export function projectToFormData(project: Project): ProjectFormData {
   return {
     name: project.name,
-    description: project.description || '',
-    color: project.color || '#6366f1',
-    icon: project.icon || '📁',
+    description: project.description ?? '',
+    color: project.color ?? '#6366f1',
+    icon: project.icon ?? '📁',
     status: project.status,
   };
 }

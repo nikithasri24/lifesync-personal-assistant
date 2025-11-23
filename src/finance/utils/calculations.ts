@@ -41,8 +41,8 @@ export function calculateNetWorth(accounts: Array<{
   let longTermDebt = 0;
 
   accounts.forEach(account => {
-    const balance = account.currentBalance || 0;
-    const type = (account.accountType || '').toLowerCase();
+    const balance = account.currentBalance ?? 0;
+    const type = (account.accountType ?? '').toLowerCase();
 
     // Assets
     if (['checking', 'savings', 'cash'].includes(type)) {
@@ -377,7 +377,7 @@ export function calculate4PercentRule(portfolioValue: number): {
   const annualWithdrawal = portfolioValue * 0.04;
   const monthlyWithdrawal = annualWithdrawal / 12;
 
-  const requiredForExpenses = (annualExpenses: number) => {
+  const requiredForExpenses = (annualExpenses: number): number => {
     return annualExpenses / 0.04;
   };
 
@@ -688,10 +688,10 @@ export function calculateCreditUtilization(
   let totalLimit = 0;
 
   accounts.forEach(account => {
-    const type = (account.accountType || '').toLowerCase();
+    const type = (account.accountType ?? '').toLowerCase();
     if (type === 'credit_card' || type === 'credit') {
-      totalBalance += Math.abs(account.currentBalance || 0);
-      totalLimit += account.creditLimit || 0;
+      totalBalance += Math.abs(account.currentBalance ?? 0);
+      totalLimit += account.creditLimit ?? 0;
     }
   });
 
@@ -896,7 +896,7 @@ export function projectNetWorth(
     const pessimisticMonthlyRate = pessimisticRate / 12 / 100;
 
     // Calculate future value for each scenario
-    const calculateFV = (rate: number) => {
+    const calculateFV = (rate: number): number => {
       let balance = currentNetWorth;
       for (let m = 0; m < months; m++) {
         balance = balance * (1 + rate) + monthlySavings;

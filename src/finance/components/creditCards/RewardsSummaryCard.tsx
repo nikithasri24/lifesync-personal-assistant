@@ -31,8 +31,8 @@ export const RewardsSummaryCard: React.FC<RewardsSummaryCardProps> = ({
 
   // Group and calculate totals by type
   const totals = rewardsCards.reduce((acc, card) => {
-    const type = card.rewardsType!;
-    const balance = card.rewardsBalance || 0;
+    const type = card.rewardsType as string;
+    const balance = card.rewardsBalance ?? 0;
 
     if (!acc[type]) {
       acc[type] = { total: 0, count: 0 };
@@ -56,7 +56,7 @@ export const RewardsSummaryCard: React.FC<RewardsSummaryCardProps> = ({
     return sum;
   }, 0);
 
-  const getRewardIcon = (type: string) => {
+  const getRewardIcon = (type: string): string => {
     switch (type) {
       case 'points':
         return '🌟';
@@ -69,7 +69,7 @@ export const RewardsSummaryCard: React.FC<RewardsSummaryCardProps> = ({
     }
   };
 
-  const formatRewardValue = (type: string, value: number) => {
+  const formatRewardValue = (type: string, value: number): string => {
     if (type === 'cashback') {
       return formatCurrency(value);
     }

@@ -45,7 +45,7 @@ const geoJsonCountries = [
   'French Polynesia', 'Somaliland', 'Northern Cyprus'
 ];
 
-async function findMissingCountries() {
+function findMissingCountries(): void {
   const availableCountries = getAvailablePassportCountries();
 
   logger.info('FindMissingCountries', 'Countries in GeoJSON map but NOT in visa dataset:\n');
@@ -91,4 +91,4 @@ async function findMissingCountries() {
   logger.info('FindMissingCountries', 'Missing from visa dataset:', missingCountries.length);
 }
 
-findMissingCountries();
+void findMissingCountries();

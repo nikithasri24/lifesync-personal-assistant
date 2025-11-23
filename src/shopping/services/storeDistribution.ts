@@ -29,20 +29,20 @@ export function distributeItemsToStores(options: DistributeItemsOptions): Shoppi
   unpurchasedItems.forEach(item => {
     // If user has a preferred store, assign it there
     if (item.assignedStore) {
-      const storeItemsList = storeItems.get(item.assignedStore) || [];
+      const storeItemsList = storeItems.get(item.assignedStore) ?? [];
       storeItemsList.push({ ...item, assignedStore: item.assignedStore });
       storeItems.set(item.assignedStore, storeItemsList);
-      storeScores.set(item.assignedStore, (storeScores.get(item.assignedStore) || 0) + 1);
+      storeScores.set(item.assignedStore, (storeScores.get(item.assignedStore) ?? 0) + 1);
       return;
     }
 
     // Otherwise, find best store based on strategy
     const bestStoreId = findBestStoreForItem(item, stores, strategy);
     if (bestStoreId) {
-      const storeItemsList = storeItems.get(bestStoreId) || [];
+      const storeItemsList = storeItems.get(bestStoreId) ?? [];
       storeItemsList.push({ ...item, assignedStore: bestStoreId });
       storeItems.set(bestStoreId, storeItemsList);
-      storeScores.set(bestStoreId, (storeScores.get(bestStoreId) || 0) + 1);
+      storeScores.set(bestStoreId, (storeScores.get(bestStoreId) ?? 0) + 1);
     }
   });
 
@@ -55,7 +55,7 @@ export function distributeItemsToStores(options: DistributeItemsOptions): Shoppi
     const store = stores.find(s => s.id === storeId);
     if (!store) return;
 
-    const totalCost = items.reduce((sum, item) => sum + (item.estimatedPrice || 0), 0);
+    const totalCost = items.reduce((sum, item) => sum + (item.estimatedPrice ?? 0), 0);
 
     storeLists.push({
       id: `store-${storeId}`,
@@ -74,7 +74,7 @@ export function distributeItemsToStores(options: DistributeItemsOptions): Shoppi
   // Sort by strategy
   storeLists.sort((a, b) => {
     if (strategy === 'price') {
-      return (a.totalEstimatedCost || 0) - (b.totalEstimatedCost || 0); // Cheapest first
+      return (a.totalEstimatedCost ?? 0) - (b.totalEstimatedCost ?? 0); // Cheapest first
     }
     return b.items.length - a.items.length; // Most items first
   });
@@ -94,7 +94,7 @@ export function findBestStoreForItem(
     let score = 0;
 
     switch (strategy) {
-      case 'price':
+      case 'price': {
         // Prioritize stores with good price ratings and known low prices for this item
         score = store.preferences.priceRating * 2;
         if (store.avgPrices[item.name]) {
@@ -104,8 +104,9 @@ export function findBestStoreForItem(
           score += 2;
         }
         break;
+      }
 
-      case 'quality':
+      case 'quality': {
         // Prioritize quality and specialty matches
         score = store.preferences.qualityRating * 2;
         if (item.nutritionInfo?.organic && store.specialties.includes('organic')) {
@@ -115,21 +116,23 @@ export function findBestStoreForItem(
           score += 3;
         }
         break;
+      }
 
-      case 'convenience':
+      case 'convenience': {
         // Prioritize nearby stores
-        score = Math.max(0, 6 - (store.distance || 5)); // Closer = higher score
+        score = Math.max(0, 6 - (store.distance ?? 5)); // Closer = higher score
         if (store.bestFor.includes(item.category)) {
           score += 2;
         }
         break;
+      }
 
       case 'mixed':
-      default:
+      default: {
         // Balanced approach
         const priceScore = store.preferences.priceRating * 0.3;
         const qualityScore = store.preferences.qualityRating * 0.25;
-        const convenienceScore = Math.max(0, 6 - (store.distance || 5)) * 0.2;
+        const convenienceScore = Math.max(0, 6 - (store.distance ?? 5)) * 0.2;
 
         let specialtyScore = 0;
         if (item.bestStores?.includes(store.id)) {
@@ -143,6 +146,7 @@ export function findBestStoreForItem(
 
         score = priceScore + qualityScore + convenienceScore + specialtyScore;
         break;
+      }
     }
 
     // Bonus for user's favorite stores

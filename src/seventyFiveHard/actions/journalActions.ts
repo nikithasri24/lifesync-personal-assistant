@@ -17,8 +17,8 @@ import type { Attachment } from '../../types';
  */
 export async function create75HardJournalEntry(dayNumber: number): Promise<void> {
   const store = getStore();
-  const challenge = store.sfhChallenge as SeventyFiveHardChallenge | null;
-  const checkIns = store.sfhCheckIns as DailyCheckIn[];
+  const challenge = store.sfhChallenge;
+  const checkIns = store.sfhCheckIns;
 
   if (!challenge) return;
 

@@ -18,7 +18,7 @@ interface AddPantryItemModalProps {
   }) => Promise<void>;
 }
 
-export function AddPantryItemModal({ isOpen, onClose, onSave }: AddPantryItemModalProps) {
+export function AddPantryItemModal({ isOpen, onClose, onSave }: AddPantryItemModalProps): React.JSX.Element | null {
   const [pantryForm, setPantryForm] = useState({
     name: '',
     quantity: '1',
@@ -29,7 +29,7 @@ export function AddPantryItemModal({ isOpen, onClose, onSave }: AddPantryItemMod
   const [pantryFormLocation, setPantryFormLocation] = useState('');
   const [pantryFormThreshold, setPantryFormThreshold] = useState('');
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (): Promise<void> => {
     const qty = Number(pantryForm.quantity) || 0;
     const exp = pantryForm.expiration ? new Date(pantryForm.expiration) : undefined;
     const threshold = pantryFormThreshold ? Number(pantryFormThreshold) : undefined;
@@ -142,7 +142,7 @@ export function AddPantryItemModal({ isOpen, onClose, onSave }: AddPantryItemMod
           </button>
           <button
             className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-500"
-            onClick={handleSubmit}
+            onClick={() => { void handleSubmit(); }}
           >
             Save
           </button>

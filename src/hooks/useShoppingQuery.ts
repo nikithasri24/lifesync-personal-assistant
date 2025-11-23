@@ -276,14 +276,17 @@ export function useActiveShoppingList(): {
   const { data: lists, isLoading } = useShoppingLists();
   const createList = useCreateShoppingList();
 
-  // Get first active list or first list
-  const activeList = lists?.find((list) => list.status === 'active') || lists?.[0];
+  const typedLists = lists as ShoppingListData[] | undefined;
+
+  const activeList: ShoppingListData | undefined =
+    typedLists?.find((list: ShoppingListData) => list.status === 'active') ?? typedLists?.[0];
 
   const ensureActiveList = async (): Promise<ShoppingListData> => {
-    if (activeList) return activeList;
+    if (activeList) {
+      return activeList;
+    }
 
-    // Create new list if none exists
-    return await createList.mutateAsync({
+    return createList.mutateAsync({
       name: 'Shopping List',
       status: 'active',
     });

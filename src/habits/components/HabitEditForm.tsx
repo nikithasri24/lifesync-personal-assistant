@@ -25,7 +25,7 @@ export function HabitEditForm({
   onDraftChange,
   onSubmit,
   onCancel,
-}: HabitEditFormProps) {
+}: HabitEditFormProps): JSX.Element {
   return (
     <form onSubmit={onSubmit} className="mt-4 grid gap-3 border-t border-slate-200 pt-4 sm:grid-cols-2">
       <label className="flex flex-col gap-1 text-sm sm:col-span-2">

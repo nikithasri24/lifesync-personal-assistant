@@ -28,9 +28,13 @@ export function EmptyState({
   icon,
   title,
   description
-}: EmptyStateProps) {
+}: EmptyStateProps): React.ReactElement {
   // Default content based on view type
-  const getDefaultContent = () => {
+  const getDefaultContent = (): {
+    icon: React.ReactNode;
+    title: string;
+    description: string;
+  } => {
     switch (currentView) {
       case 'today':
         return {
@@ -60,9 +64,9 @@ export function EmptyState({
   };
 
   const defaultContent = getDefaultContent();
-  const displayIcon = icon || defaultContent.icon;
-  const displayTitle = title || defaultContent.title;
-  const displayDescription = description || defaultContent.description;
+  const displayIcon = icon ?? defaultContent.icon;
+  const displayTitle = title ?? defaultContent.title;
+  const displayDescription = description ?? defaultContent.description;
 
   return (
     <div className="text-center py-16 px-6">

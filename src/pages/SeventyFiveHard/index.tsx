@@ -42,13 +42,12 @@ export default function SeventyFiveHard(): React.ReactElement {
   const [activeTab, setActiveTab] = useState<'today' | 'progress'>('today');
 
   // Get state from store
-  const {
-    sfhChallenge: challenge,
-    sfhCheckIns: checkIns,
-    sfhShowFailurePrompt: showFailurePrompt,
-    sfhFailureDate: failureDate,
-    sfhShowCelebration: _showCelebration,
-  } = useAppStore();
+  const store = useAppStore();
+  const challenge = store.sfhChallenge;
+  const checkIns = store.sfhCheckIns as DailyCheckInType[];
+  const showFailurePrompt: boolean = store.sfhShowFailurePrompt;
+  const failureDate: Date | null = store.sfhFailureDate;
+  const _showCelebration: boolean = store.sfhShowCelebration;
 
   // Load challenge on mount
   useEffect(() => {
@@ -69,7 +68,7 @@ export default function SeventyFiveHard(): React.ReactElement {
   // Memoize today's check-in lookup (more efficient than manual comparison)
   const todayCheckIn = useMemo<DailyCheckInType | null>(() => {
     const today = startOfDay(new Date());
-    const result = checkIns.find((item: DailyCheckInType) => isSameDay(new Date(item.date), today)) as DailyCheckInType | undefined;
+    const result = checkIns.find((item) => isSameDay(new Date(item.date), today));
     return result ?? null;
   }, [checkIns]);
 

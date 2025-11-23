@@ -19,6 +19,21 @@ import { format } from 'date-fns';
 import { LineChart } from '../../../components/DataVisualization';
 import type { DailyCheckIn } from '../../../types/seventyFiveHard';
 
+type WeightDataPoint = {
+  x: string;
+  y: number;
+  fullDate: string;
+}
+
+type WeightStats = {
+  startWeight: number;
+  currentWeight: number;
+  change: number;
+  changePercentage: number;
+  dataPoints: number;
+  trend: 'up' | 'down' | 'neutral';
+} | null;
+
 interface WeightChartProps {
   checkIns: DailyCheckIn[];
 }
@@ -27,20 +42,20 @@ interface WeightChartProps {
  * Weight Chart Component
  * Visualizes weight tracking data with trend analysis
  */
-export default function WeightChart({ checkIns }: WeightChartProps) {
+export default function WeightChart({ checkIns }: WeightChartProps): React.ReactElement | null {
   // ==================== Data Processing ====================
 
   /**
    * Process and sort weight data for chart visualization
    * Filters out check-ins without weight and sorts chronologically
    */
-  const weightData = useMemo(() => {
+  const weightData = useMemo((): WeightDataPoint[] => {
     return checkIns
-      .filter(ci => ci.weight !== undefined && ci.weight !== null)
+      .filter((ci): ci is DailyCheckIn & { weight: number } => ci.weight !== undefined && ci.weight !== null)
       .sort((a, b) => a.date.getTime() - b.date.getTime())
-      .map(ci => ({
+      .map((ci) => ({
         x: format(ci.date, 'MMM d'),
-        y: ci.weight!,
+        y: ci.weight,
         fullDate: format(ci.date, 'MMMM d, yyyy')
       }));
   }, [checkIns]);
@@ -48,7 +63,7 @@ export default function WeightChart({ checkIns }: WeightChartProps) {
   /**
    * Calculate weight change statistics
    */
-  const stats = useMemo(() => {
+  const stats = useMemo((): WeightStats => {
     if (weightData.length === 0) {
       return null;
     }
@@ -95,7 +110,7 @@ export default function WeightChart({ checkIns }: WeightChartProps) {
             Weight Trend
           </h3>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            {stats!.dataPoints} {stats!.dataPoints === 1 ? 'measurement' : 'measurements'} tracked
+            {stats?.dataPoints ?? 0} {(stats?.dataPoints ?? 0) === 1 ? 'measurement' : 'measurements'} tracked
           </p>
         </div>
         <Scale className="w-8 h-8 text-purple-600" />
@@ -112,7 +127,7 @@ export default function WeightChart({ checkIns }: WeightChartProps) {
             </p>
           </div>
           <p className="text-2xl font-bold text-gray-900 dark:text-white">
-            {stats!.startWeight.toFixed(1)}
+            {stats?.startWeight.toFixed(1) ?? ''}
             <span className="text-sm font-normal text-gray-600 dark:text-gray-400 ml-1">kg</span>
           </p>
         </div>
@@ -126,7 +141,7 @@ export default function WeightChart({ checkIns }: WeightChartProps) {
             </p>
           </div>
           <p className="text-2xl font-bold text-gray-900 dark:text-white">
-            {stats!.currentWeight.toFixed(1)}
+            {stats?.currentWeight.toFixed(1) ?? ''}
             <span className="text-sm font-normal text-gray-600 dark:text-gray-400 ml-1">kg</span>
           </p>
         </div>
@@ -134,23 +149,23 @@ export default function WeightChart({ checkIns }: WeightChartProps) {
         {/* Weight Change */}
         <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
           <div className="flex items-center gap-2 mb-1">
-            {stats!.trend === 'down' && <TrendingDown className="w-4 h-4 text-green-600" />}
-            {stats!.trend === 'up' && <TrendingUp className="w-4 h-4 text-red-600" />}
-            {stats!.trend === 'neutral' && <Minus className="w-4 h-4 text-gray-600" />}
+            {stats?.trend === 'down' && <TrendingDown className="w-4 h-4 text-green-600" />}
+            {stats?.trend === 'up' && <TrendingUp className="w-4 h-4 text-red-600" />}
+            {stats?.trend === 'neutral' && <Minus className="w-4 h-4 text-gray-600" />}
             <p className="text-xs font-medium text-gray-600 dark:text-gray-400">
               Change
             </p>
           </div>
           <p className={`text-2xl font-bold ${
-            stats!.trend === 'down' ? 'text-green-600' :
-            stats!.trend === 'up' ? 'text-red-600' :
+            stats?.trend === 'down' ? 'text-green-600' :
+            stats?.trend === 'up' ? 'text-red-600' :
             'text-gray-600'
           }`}>
-            {stats!.change > 0 ? '+' : ''}{stats!.change.toFixed(1)}
+            {stats && (stats.change > 0 ? '+' : '')}{stats?.change.toFixed(1) ?? ''}
             <span className="text-sm font-normal text-gray-600 dark:text-gray-400 ml-1">kg</span>
           </p>
           <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-            {stats!.changePercentage > 0 ? '+' : ''}{stats!.changePercentage.toFixed(1)}%
+            {stats && (stats.changePercentage > 0 ? '+' : '')}{stats?.changePercentage.toFixed(1) ?? ''}%
           </p>
         </div>
       </div>
@@ -158,7 +173,7 @@ export default function WeightChart({ checkIns }: WeightChartProps) {
       {/* Line Chart */}
       <div className="mt-6">
         <LineChart
-          data={weightData.map(d => ({ x: d.x, y: d.y }))}
+          data={weightData.map((d) => ({ x: d.x, y: d.y }))}
           height={250}
           color="#9333EA"
           showGrid={true}
@@ -169,10 +184,10 @@ export default function WeightChart({ checkIns }: WeightChartProps) {
       {/* X-axis labels */}
       <div className="flex justify-between mt-2 px-2">
         <span className="text-xs text-gray-600 dark:text-gray-400">
-          {weightData[0].fullDate}
+          {weightData.length > 0 ? weightData[0].fullDate : ''}
         </span>
         <span className="text-xs text-gray-600 dark:text-gray-400">
-          {weightData[weightData.length - 1].fullDate}
+          {weightData.length > 0 ? weightData[weightData.length - 1].fullDate : ''}
         </span>
       </div>
     </div>

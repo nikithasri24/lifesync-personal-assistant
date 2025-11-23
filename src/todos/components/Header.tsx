@@ -71,15 +71,15 @@ export function Header({
   apiHealth,
   tasksLoading,
   tasks = []
-}: HeaderProps) {
+}: HeaderProps): React.ReactElement {
   // Get view title and description
-  const getViewInfo = () => {
+  const getViewInfo = (): { icon: React.ReactNode; title: string; description: string } => {
     if (selectedProject !== 'all' && projects.find(p => p.id === selectedProject)) {
       const project = projects.find(p => p.id === selectedProject);
       return {
         icon: <div className="w-6 h-6 rounded-full" style={{ backgroundColor: project?.color }}></div>,
-        title: project?.name || '',
-        description: project?.description || ''
+        title: project?.name ?? '',
+        description: project?.description ?? ''
       };
     }
 
@@ -144,7 +144,7 @@ export function Header({
           {/* API Status Indicator */}
           <div
             className="flex items-center space-x-2"
-            title={`Last checked: ${apiHealth.lastChecked?.toLocaleTimeString() || 'Never'}`}
+            title={`Last checked: ${apiHealth.lastChecked?.toLocaleTimeString() ?? 'Never'}`}
           >
             <div className={`w-2 h-2 rounded-full ${
               !apiHealth.isOnline ? 'bg-red-500' : tasksLoading ? 'bg-yellow-500' : 'bg-green-500'
@@ -204,7 +204,7 @@ export function Header({
                 <div className="text-xs text-gray-600 dark:text-gray-400">
                   {pomodoroTimer.isBreak
                     ? 'Break time'
-                    : tasks.find(t => t.id === pomodoroTimer.taskId)?.title || 'Focus session'}
+                    : tasks.find(t => t.id === pomodoroTimer.taskId)?.title ?? 'Focus session'}
                 </div>
               </div>
               <div className="flex space-x-1">

@@ -14,7 +14,7 @@ interface EmptyStateProps {
   onStart: () => void;
 }
 
-export default function EmptyState({ onStart }: EmptyStateProps) {
+export default function EmptyState({ onStart }: EmptyStateProps): React.JSX.Element {
   return (
     <div className="max-w-3xl mx-auto">
       {/* Hero */}

@@ -6,7 +6,7 @@ export function useMemoizedCalculation<T>(
   calculateFn: () => T,
   dependencies: React.DependencyList
 ): T {
-  return useMemo(calculateFn, dependencies);
+  return useMemo(() => calculateFn(), dependencies);
 }
 
 // Debounced callback hook

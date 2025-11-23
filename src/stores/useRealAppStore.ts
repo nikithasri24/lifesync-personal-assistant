@@ -10,10 +10,16 @@ import {
 } from '../services/apiClient'
 import type {
   UserStats,
-  SeventyFiveHardChallenge,
   DailyCheckIn,
-  LegacySeventyFiveHardChallenge,
 } from '../types'
+import type { SeventyFiveHardChallenge } from '../types/seventyFiveHard'
+
+interface LegacySeventyFiveHardChallenge {
+  id: string
+  startDate: Date
+  currentDay: number
+  isActive: boolean
+}
 
 type ViewKey =
   | 'dashboard'
@@ -274,7 +280,7 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
     const today = new Date()
     let updated = false
 
-    const updatedChallenges = state.seventyFiveHardChallenges.map(challenge => {
+    const updatedChallenges = state.seventyFiveHardChallenges.map((challenge: LegacySeventyFiveHardChallenge) => {
       if (!challenge.isActive) return challenge
 
       // Calculate the actual current day based on elapsed time

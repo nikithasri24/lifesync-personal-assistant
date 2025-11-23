@@ -14,10 +14,10 @@ export function ReplenishModal({
   suggestedTarget,
   onReplenish,
   onCancel
-}: ReplenishModalProps) {
+}: ReplenishModalProps): React.JSX.Element {
   const [targetQuantity, setTargetQuantity] = useState(String(suggestedTarget));
 
-  const handleReplenish = async () => {
+  const handleReplenish = async (): Promise<void> => {
     await onReplenish(Number(targetQuantity) || 0);
   };
 
@@ -33,7 +33,7 @@ export function ReplenishModal({
       />
       <button
         className="px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-500"
-        onClick={handleReplenish}
+        onClick={() => void handleReplenish()}
       >
         Go
       </button>

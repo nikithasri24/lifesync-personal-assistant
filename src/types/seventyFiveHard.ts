@@ -289,7 +289,7 @@ export const mapRowToChallenge = (row: ChallengeRow): SeventyFiveHardChallenge =
 /**
  * Map Challenge to database insert object
  */
-export const mapChallengeToInsert = (challenge: Partial<SeventyFiveHardChallenge>) => {
+export const mapChallengeToInsert = (challenge: Partial<SeventyFiveHardChallenge>): Omit<ChallengeRow, 'id' | 'created_at' | 'updated_at'> => {
   return {
     user_id: challenge.userId,
     start_date: challenge.startDate?.toISOString().split('T')[0],
@@ -326,7 +326,7 @@ export const mapRowToCheckIn = (row: CheckInRow): DailyCheckIn => {
 /**
  * Map CheckIn to database insert object
  */
-export const mapCheckInToInsert = (checkIn: Partial<DailyCheckIn>) => {
+export const mapCheckInToInsert = (checkIn: Partial<DailyCheckIn>): Omit<CheckInRow, 'id' | 'created_at' | 'updated_at'> => {
   return {
     challenge_id: checkIn.challengeId,
     date: checkIn.date?.toISOString().split('T')[0],

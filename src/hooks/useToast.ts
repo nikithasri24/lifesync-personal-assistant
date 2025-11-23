@@ -7,7 +7,11 @@ export interface ToastState {
   type?: ToastKind;
 }
 
-export const useToast = (duration = 4000) => {
+export const useToast = (duration = 4000): {
+  toast: ToastState | null;
+  showToast: (message: string, type?: ToastKind) => void;
+  dismissToast: () => void;
+} => {
   const [toast, setToast] = useState<ToastState | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 

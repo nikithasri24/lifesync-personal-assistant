@@ -18,7 +18,7 @@ export type ProjectMetrics = {
   totalTasks: number;
   completedTasks: number;
   progress: number;
-  tasks: any[]; // TodoItem[]
+  tasks: unknown[]; // TodoItem[]
 };
 
 export type ProjectStats = {

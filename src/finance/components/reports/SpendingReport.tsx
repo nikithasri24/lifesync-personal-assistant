@@ -64,7 +64,7 @@ const SpendingReport: React.FC<SpendingReportProps> = ({
         <div className="rounded-lg border border-white/20 bg-white/10 p-4">
           <div className="text-sm font-semibold text-primary">Top Category</div>
           <div className="mt-2 text-lg font-bold text-primary">
-            {metrics.categoryStats.topCategory?.categoryName || 'N/A'}
+            {metrics.categoryStats.topCategory?.categoryName ?? 'N/A'}
           </div>
           <div className="mt-1 text-sm font-medium text-primary opacity-70">
             {metrics.categoryStats.topCategory

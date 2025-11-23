@@ -17,7 +17,7 @@ export const useResponsiveMap = (): ResponsiveMapConfig => {
   });
 
   useEffect(() => {
-    const handleResize = () => {
+    const handleResize = (): void => {
       setScreenSize({
         width: window.innerWidth,
         height: window.innerHeight,

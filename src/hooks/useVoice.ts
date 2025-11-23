@@ -23,7 +23,7 @@ type Options = {
 
 export function useVoice(initialLang = 'en-US', options?: Options): UseVoice {
   const recRef = useRef<ISpeechRecognition | null>(null);
-  const [supported] = useState<boolean>(() => !!(window.SpeechRecognition || window.webkitSpeechRecognition));
+  const [supported] = useState<boolean>(() => !!(window.SpeechRecognition ?? window.webkitSpeechRecognition));
   const [listening, setListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [lang, setLang] = useState(initialLang);
@@ -31,7 +31,7 @@ export function useVoice(initialLang = 'en-US', options?: Options): UseVoice {
 
   useEffect(() => {
     if (!supported) return;
-    const Ctor = (window.SpeechRecognition || window.webkitSpeechRecognition) as new () => ISpeechRecognition;
+    const Ctor = (window.SpeechRecognition ?? window.webkitSpeechRecognition) as new () => ISpeechRecognition;
     const rec: ISpeechRecognition = new Ctor();
     rec.continuous = true;
     rec.interimResults = true;
@@ -54,7 +54,7 @@ export function useVoice(initialLang = 'en-US', options?: Options): UseVoice {
     };
     rec.onerror = (e: Event) => {
       const error = e as { error?: string };
-      setError(error.error || 'speech_error');
+      setError(error.error ?? 'speech_error');
     };
     rec.onend = () => setListening(false);
     recRef.current = rec;
@@ -84,7 +84,12 @@ export function useVoice(initialLang = 'en-US', options?: Options): UseVoice {
 
   const stop = useCallback((): void => {
     if (!recRef.current) return;
-    try { recRef.current.stop(); } catch {}
+    try {
+      recRef.current.stop();
+    } catch (e: unknown) {
+      // Ignore any errors during stop
+      void e;
+    }
     setListening(false);
   }, []);
 
@@ -95,7 +100,7 @@ export function useVoice(initialLang = 'en-US', options?: Options): UseVoice {
     return new Promise<void>((resolve) => {
       if (!('speechSynthesis' in window)) return resolve();
       const u = new SpeechSynthesisUtterance(text);
-      u.lang = opts?.lang || lang;
+      u.lang = opts?.lang ?? lang;
       u.rate = opts?.rate ?? 1;
       u.pitch = opts?.pitch ?? 1;
       u.onend = () => resolve();

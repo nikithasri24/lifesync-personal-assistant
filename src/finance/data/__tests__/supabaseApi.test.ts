@@ -2,8 +2,15 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { SupabaseApi } from '../supabaseApi';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-// Mock Supabase client
-const createMockClient = () => ({
+interface MockClient {
+  auth: {
+    getUser: ReturnType<typeof vi.fn>;
+  };
+  from: ReturnType<typeof vi.fn>;
+  rpc: ReturnType<typeof vi.fn>;
+}
+
+const createMockClient = (): MockClient => ({
   auth: {
     getUser: vi.fn(),
   },
@@ -12,7 +19,7 @@ const createMockClient = () => ({
 });
 
 describe('SupabaseApi', () => {
-  let mockClient: any;
+  let mockClient: MockClient;
   let api: SupabaseApi;
   const mockUserId = 'test-user-finance-123';
 

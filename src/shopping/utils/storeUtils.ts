@@ -39,7 +39,7 @@ export function calculateStoreScore(store: Store, category: string): number {
   score += store.preferences.qualityRating * 0.4;
 
   // Distance penalty (closer is better)
-  score -= (store.distance || 5) * 0.2;
+  score -= (store.distance ?? 5) * 0.2;
 
   // Specialty bonus
   if (store.specialties.length > 0) score += 0.5;

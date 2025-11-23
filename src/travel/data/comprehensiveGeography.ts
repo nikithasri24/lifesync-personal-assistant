@@ -7,7 +7,7 @@ export interface GeographicFeature {
   name: string;
   type: 'river' | 'mountain' | 'lake' | 'desert' | 'ocean' | 'sea' | 'bay' | 'island';
   coordinates: Array<{ lat: number; lon: number }>;
-  metadata?: any;
+  metadata?: unknown;
 }
 
 // ============================================================================

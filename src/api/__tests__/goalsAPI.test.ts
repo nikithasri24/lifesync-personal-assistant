@@ -78,6 +78,7 @@ describe('goalsAPI', () => {
 
         const result = await getGoals();
 
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(supabase.from).toHaveBeenCalledWith('goals');
         expect(mockQuery.eq).toHaveBeenCalledWith('user_id', mockUser.id);
         expect(mockQuery.order).toHaveBeenCalledWith('created_at', { ascending: false });
@@ -318,6 +319,7 @@ describe('goalsAPI', () => {
 
         const result = await getDreams();
 
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(supabase.from).toHaveBeenCalledWith('dreams');
         expect(mockQuery.eq).toHaveBeenCalledWith('user_id', mockUser.id);
         expect(mockQuery.order).toHaveBeenCalledWith('created_at', { ascending: false });

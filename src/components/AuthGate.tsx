@@ -6,7 +6,7 @@ interface AuthGateProps {
   children: ReactNode
 }
 
-export function AuthGate({ children }: AuthGateProps) {
+export function AuthGate({ children }: AuthGateProps): JSX.Element {
   const { user, loading, error, signIn, signUp, clearError, isConfigured } = useAuth()
   const [mode, setMode] = useState<'signin' | 'signup'>('signin')
   const [email, setEmail] = useState('')
@@ -18,7 +18,7 @@ export function AuthGate({ children }: AuthGateProps) {
     return <>{children}</>
   }
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault()
     setWorking(true)
     try {
@@ -48,7 +48,7 @@ export function AuthGate({ children }: AuthGateProps) {
           </p>
         </div>
 
-        <form className="space-y-4" onSubmit={handleSubmit}>
+        <form className="space-y-4" onSubmit={(e) => void handleSubmit(e)}>
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground" htmlFor="email">Email</label>
             <input

@@ -13,7 +13,7 @@ interface StoreListsViewProps {
   stores: Store[];
 }
 
-export function StoreListsView({ storeLists, stores }: StoreListsViewProps) {
+export function StoreListsView({ storeLists, stores }: StoreListsViewProps): JSX.Element {
   if (storeLists.length === 0) {
     return (
       <div className="p-4">
@@ -31,13 +31,18 @@ export function StoreListsView({ storeLists, stores }: StoreListsViewProps) {
   return (
     <div className="p-4">
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {storeLists.map(list => (
-          <StoreListCard
-            key={list.id}
-            list={list}
-            store={stores.find(s => s.id === list.storeId)!}
-          />
-        ))}
+        {storeLists.map(list => {
+          const store = stores.find(s => s.id === list.storeId);
+          if (!store) return null;
+
+          return (
+            <StoreListCard
+              key={list.id}
+              list={list}
+              store={store}
+            />
+          );
+        })}
       </div>
     </div>
   );

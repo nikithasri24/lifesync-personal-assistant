@@ -21,13 +21,13 @@ export class ErrorBoundary extends React.Component<Props, State> {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
     logger.error('ErrorBoundary caught an error:', { error, errorInfo });
   }
 
-  render() {
+  render(): React.ReactNode {
     if (this.state.hasError) {
-      return this.props.fallback || (
+      return this.props.fallback ?? (
         <div className="p-8 bg-red-50 border border-red-200 rounded-lg">
           <h2 className="text-xl font-bold text-red-800 mb-4">Something went wrong</h2>
           <details className="text-red-700">

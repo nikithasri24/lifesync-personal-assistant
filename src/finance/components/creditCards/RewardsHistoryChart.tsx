@@ -22,7 +22,7 @@ export const RewardsHistoryChart: React.FC<RewardsHistoryChartProps> = ({
   const [timeRange, setTimeRange] = React.useState<'30d' | '90d' | '1y' | 'all'>('90d');
 
   // Filter history based on time range
-  const getFilteredHistory = () => {
+  const getFilteredHistory = (): RewardsHistory[] => {
     const now = new Date();
     const cutoffDate = new Date();
 
@@ -53,14 +53,14 @@ export const RewardsHistoryChart: React.FC<RewardsHistoryChartProps> = ({
     ? filteredHistory[filteredHistory.length - 1].balance
     : 0;
 
-  const formatValue = (value: number) => {
+  const formatValue = (value: number): string => {
     if (rewardsType === 'cashback') {
       return formatCurrency(value);
     }
     return value.toLocaleString();
   };
 
-  const getRewardLabel = () => {
+  const getRewardLabel = (): string => {
     switch (rewardsType) {
       case 'points':
         return 'Points';
@@ -160,7 +160,7 @@ export const RewardsHistoryChart: React.FC<RewardsHistoryChartProps> = ({
                       <TrendingDown className="h-4 w-4 text-rose-600" />
                     )}
                     <p className="text-sm font-medium text-primary">
-                      {entry.description || (entry.pointsEarned > 0 ? 'Earned' : 'Redeemed')}
+                      {entry.description ?? (entry.pointsEarned > 0 ? 'Earned' : 'Redeemed')}
                     </p>
                   </div>
                   <div className="flex items-center gap-3 text-xs text-primary opacity-60">

@@ -52,7 +52,7 @@ export default function DailyDetailsModal({
   onNavigate,
   canNavigatePrev = false,
   canNavigateNext = false
-}: DailyDetailsModalProps) {
+}: DailyDetailsModalProps): JSX.Element {
   // ==================== Keyboard Navigation ====================
 
   /**
@@ -93,7 +93,7 @@ export default function DailyDetailsModal({
    */
   const isTaskCompleted = (taskId: string): boolean => {
     const completion = checkIn.taskCompletions.find(tc => tc.taskId === taskId);
-    return completion?.completed || false;
+    return completion?.completed ?? false;
   };
 
   // ==================== Render ====================

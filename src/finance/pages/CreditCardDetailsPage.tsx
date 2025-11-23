@@ -25,40 +25,40 @@ export const CreditCardDetailsPage: React.FC<CreditCardDetailsPageProps> = ({ ac
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadData();
-  }, [accountId]);
+    const loadData = async (): Promise<void> => {
+      try {
+        setLoading(true);
 
-  const loadData = async () => {
-    try {
-      setLoading(true);
+        const api = await getFinanceAPI();
 
-      const api = await getFinanceAPI();
+        // Load card details
+        const accounts = await api.listAccounts();
+        const foundCard = accounts.find((a) => a.id === accountId);
+        if (foundCard) {
+          setCard(foundCard);
+        }
 
-      // Load card details
-      const accounts = await api.listAccounts();
-      const foundCard = accounts.find((a) => a.id === accountId);
-      if (foundCard) {
-        setCard(foundCard);
+        // Load benefits data
+        const [benefitsData, bonusesData, welcomeData, offersData] = await Promise.all([
+          api.listCardBenefits(accountId),
+          api.listCategoryBonuses(accountId),
+          api.listWelcomeBonuses(accountId),
+          api.listCardOffers(accountId),
+        ]);
+
+        setBenefits(benefitsData);
+        setCategoryBonuses(bonusesData);
+        setWelcomeBonuses(welcomeData);
+        setOffers(offersData);
+      } catch (error) {
+        logger.error('Failed to load card details:', { error });
+      } finally {
+        setLoading(false);
       }
+    };
 
-      // Load benefits data
-      const [benefitsData, bonusesData, welcomeData, offersData] = await Promise.all([
-        api.listCardBenefits(accountId),
-        api.listCategoryBonuses(accountId),
-        api.listWelcomeBonuses(accountId),
-        api.listCardOffers(accountId),
-      ]);
-
-      setBenefits(benefitsData);
-      setCategoryBonuses(bonusesData);
-      setWelcomeBonuses(welcomeData);
-      setOffers(offersData);
-    } catch (error) {
-      logger.error('Failed to load card details:', { error });
-    } finally {
-      setLoading(false);
-    }
-  };
+    void loadData();
+  }, [accountId]);
 
   if (loading) {
     return (

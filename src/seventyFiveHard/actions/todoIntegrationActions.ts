@@ -307,8 +307,8 @@ export async function ensure75HardTodosForToday(): Promise<void> {
       logger.info('SeventyFiveHardActions', '[75Hard→Todo] ▶️  Starting execution...');
 
       const store = getStore();
-      const challenge = store.sfhChallenge as SeventyFiveHardChallenge | null;
-      const checkIns = store.sfhCheckIns as DailyCheckIn[];
+      const challenge = store.sfhChallenge;
+      const checkIns = store.sfhCheckIns;
 
       if (!challenge || challenge.status !== 'active') {
         logger.info('SeventyFiveHardActions', '[75Hard→Todo] No active challenge, skipping todo sync');

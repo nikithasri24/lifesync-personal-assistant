@@ -22,7 +22,7 @@ export function StoreSuggestionsModal({
   onClose,
   onGetLocation,
   onAssignStore
-}: StoreSuggestionsModalProps) {
+}: StoreSuggestionsModalProps): React.ReactNode {
   if (!isOpen || !item) return null;
 
   return (
@@ -87,10 +87,10 @@ export function StoreSuggestionsModal({
                         <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
                           <span className="flex items-center space-x-1">
                             <Navigation size={12} />
-                            <span>{(store as any).actualDistance?.toFixed(1) || store.distance} mi</span>
+                            <span>{(store.actualDistance ?? store.distance)?.toFixed(1)} mi</span>
                           </span>
 
-                          {store.avgPrices[item.name] && (
+                          {store.avgPrices?.[item.name] && (
                             <span className="flex items-center space-x-1 text-green-600 font-medium">
                               <DollarSign size={12} />
                               <span>{store.avgPrices[item.name].toFixed(2)}</span>
@@ -102,7 +102,7 @@ export function StoreSuggestionsModal({
                               <Star
                                 key={i}
                                 size={10}
-                                className={i < store.preferences.overallRating ? 'text-yellow-400 fill-current' : 'text-gray-300'}
+                                className={i < (store.preferences?.overallRating ?? 0) ? 'text-yellow-400 fill-current' : 'text-gray-300'}
                               />
                             ))}
                           </div>
@@ -111,18 +111,18 @@ export function StoreSuggestionsModal({
                         <div className="flex items-center space-x-3 mt-2">
                           {store.hasDelivery && (
                             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                              🚚 Delivery
+                              <span className="mr-1">Delivery</span>
                               {store.deliveryFee && <span className="ml-1">${store.deliveryFee}</span>}
                             </span>
                           )}
                           {store.hasPickup && (
                             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                              📦 Pickup
+                              <span>Pickup</span>
                             </span>
                           )}
                           {store.favorite && (
                             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                              ❤️ Favorite
+                              <span>Favorite</span>
                             </span>
                           )}
                         </div>

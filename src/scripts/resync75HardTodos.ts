@@ -6,7 +6,7 @@
 import { ensure75HardTodosForToday } from '../seventyFiveHard/actions';
 import { logger } from '../services/logger';
 
-async function resync() {
+async function resync(): Promise<void> {
   logger.debug('Resync75HardTodos', 'Re-syncing 75 Hard todos...');
 
   try {
@@ -18,4 +18,4 @@ async function resync() {
 }
 
 // Run the resync
-resync();
+void resync();

@@ -63,6 +63,7 @@ export function useWebSocket<T extends GenericPayload = GenericPayload>(
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const simulationIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const attemptReconnectRef = useRef<(() => void) | null>(null);
 
   // Simulate market data for demo purposes
   const simulateMarketData = useCallback(() => {
@@ -189,10 +190,10 @@ export function useWebSocket<T extends GenericPayload = GenericPayload>(
 
         wsRef.current.onmessage = (event) => {
           // Defer heavy work off the message event loop tick
-          const raw = event.data;
+          const raw: string = event.data as string;
           setTimeout(() => {
             try {
-              const message: WebSocketMessage = typeof raw === 'string' ? JSON.parse(raw) : raw;
+              const message: WebSocketMessage<T> = typeof raw === 'string' ? JSON.parse(raw) as WebSocketMessage<T> : raw as WebSocketMessage<T>;
               startTransition(() => {
                 setState(prev => ({ ...prev, lastMessage: message }));
                 onMessage?.(message);
@@ -206,7 +207,7 @@ export function useWebSocket<T extends GenericPayload = GenericPayload>(
         wsRef.current.onclose = () => {
           setState(prev => ({ ...prev, isConnected: false, isConnecting: false }));
           onDisconnect?.();
-          attemptReconnect();
+          attemptReconnectRef.current?.();
         };
 
         wsRef.current.onerror = (error) => {
@@ -269,6 +270,8 @@ export function useWebSocket<T extends GenericPayload = GenericPayload>(
       connect();
     }, reconnectInterval);
   }, [state.connectionAttempts, maxReconnectAttempts, reconnectInterval, connect]);
+
+  attemptReconnectRef.current = attemptReconnect;
 
   const sendMessage = useCallback((message: T) => {
     if (!state.isConnected) {

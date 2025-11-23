@@ -18,7 +18,7 @@ export function parseMarkdownTable(rows: string[]): Array<{ name: string; amount
     const block: string[] = [];
     while (i < rows.length && /^\|.*\|$/.test(rows[i])) { block.push(rows[i]); i++; }
     if (block.length < 2) continue;
-    const cells = (r: string) => r.split('|').slice(1, -1).map(c => c.trim());
+    const cells = (r: string): string[] => r.split('|').slice(1, -1).map(c => c.trim());
     const header = cells(block[0]);
     const sep = block[1];
     if (!/^-/.test(sep.replace(/\|/g, '').trim())) {
@@ -119,7 +119,7 @@ export function parseTextToRecipe(text: string, title?: string): Omit<Recipe, 'i
   // Final normalization + ingredient structuring
   const unitList = ['cup','cups','tsp','tbsp','teaspoon','tablespoon','g','gram','grams','kg','ml','l','liter','liters','ounce','ounces','oz','lb','pound','pounds','clove','cloves','slice','slices','pinch','dash','stick','sticks','can','cans','package','packages','bunch','bunches','head','heads','piece','pieces','quart','pint','sprig','sprigs'];
   const unitRe = new RegExp(`^((?:\\d+(?:[\\s-]\\d/\\d)?|\\d+/\\d+|\\d+(?:\\.\\d+)?)(?:\\s*x)?)?\\s*(?:(${unitList.join('|')}))?\\s*(.*)$`, 'i');
-  const cleanBullet = (s: string) => s.replace(/^[-*•]\s*/, '').trim();
+  const cleanBullet = (s: string): string => s.replace(/^[-*•]\s*/, '').trim();
 
   const lineIngs = ingredients
     .filter(l => !/^\|/.test(l)) // skip table rows, already parsed
@@ -170,7 +170,7 @@ export function parseTextToRecipe(text: string, title?: string): Omit<Recipe, 'i
   }
 
   return {
-    name: title || (lines[0] || 'Pasted Recipe'),
+    name: title ?? (lines[0] ?? 'Pasted Recipe'),
     description,
     ingredients: ingOut,
     instructions: stepsOut,

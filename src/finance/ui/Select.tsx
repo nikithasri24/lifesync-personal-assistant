@@ -9,7 +9,8 @@ type Props = React.SelectHTMLAttributes<HTMLSelectElement> & {
 
 export const Select = React.forwardRef<HTMLSelectElement, Props>(
   ({ label, options, className = '', children, id, ...rest }, ref) => {
-    const selectId = id || React.useId();
+    const generatedId = React.useId();
+    const selectId = id ?? generatedId;
     return (
       <div className="flex flex-col gap-1">
         {label && <label htmlFor={selectId} className="text-sm text-slate-600">{label}</label>}

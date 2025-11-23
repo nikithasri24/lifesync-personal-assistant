@@ -58,7 +58,7 @@ export function HabitCard({
   onResetToday,
   onResetHistory,
   onDelete,
-}: HabitCardProps) {
+}: HabitCardProps): JSX.Element {
   return (
     <article className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -75,7 +75,7 @@ export function HabitCard({
               </span>
             )}
           </div>
-          <p className="text-xs text-slate-500">{habit.category || 'general'} • {habit.frequency || 'daily'}</p>
+          <p className="text-xs text-slate-500">{habit.category ?? 'general'} • {habit.frequency ?? 'daily'}</p>
         </div>
         <div className="flex items-center gap-2">
           <button

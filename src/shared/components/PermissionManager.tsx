@@ -3,7 +3,7 @@
  * Manage granular permissions for each module in a connection
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Shield, Lock, Eye, Users, Sparkles } from 'lucide-react';
 import {
   getConnectionPermissions,
@@ -25,30 +25,30 @@ interface PermissionManagerProps {
 const PermissionManager: React.FC<PermissionManagerProps> = ({ connection }) => {
   const [myPermissions, setMyPermissions] = useState<ModulePermission[]>([]);
   const [theirPermissions, setTheirPermissions] = useState<ModulePermission[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
   const [updating, setUpdating] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadPermissions();
-  }, [connection.id]);
-
-  const loadPermissions = async () => {
+  const loadPermissions = useCallback(async (): Promise<void> => {
     try {
       setLoading(true);
       const { myPermissions: mine, theirPermissions: theirs } = await getConnectionPermissions(connection.id);
       setMyPermissions(mine);
       setTheirPermissions(theirs);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error loading permissions:', { error });
     } finally {
       setLoading(false);
     }
-  };
+  }, [connection.id]);
+
+  useEffect(() => {
+    void loadPermissions();
+  }, [loadPermissions]);
 
   const handlePermissionChange = async (
     module: ShareableModule,
     level: ModulePermissionLevel
-  ) => {
+  ): Promise<void> => {
     try {
       setUpdating(module);
       await setModulePermission({
@@ -57,9 +57,9 @@ const PermissionManager: React.FC<PermissionManagerProps> = ({ connection }) => 
         permissionLevel: level,
       });
       await loadPermissions();
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error updating permission:', { error });
-      alert('Failed to update permission');
+      void logger.error('Failed to update permission');
     } finally {
       setUpdating(null);
     }
@@ -67,15 +67,15 @@ const PermissionManager: React.FC<PermissionManagerProps> = ({ connection }) => 
 
   const getMyPermissionLevel = (module: ShareableModule): ModulePermissionLevel => {
     const permission = myPermissions.find(p => p.module === module);
-    return permission?.permissionLevel || 'none';
+    return permission?.permissionLevel ?? 'none';
   };
 
   const getTheirPermissionLevel = (module: ShareableModule): ModulePermissionLevel => {
     const permission = theirPermissions.find(p => p.module === module);
-    return permission?.permissionLevel || 'none';
+    return permission?.permissionLevel ?? 'none';
   };
 
-  const getLevelIcon = (level: ModulePermissionLevel) => {
+  const getLevelIcon = (level: ModulePermissionLevel): React.ReactNode => {
     switch (level) {
       case 'none':
         return <Lock className="h-4 w-4" />;
@@ -85,6 +85,8 @@ const PermissionManager: React.FC<PermissionManagerProps> = ({ connection }) => 
         return <Users className="h-4 w-4" />;
       case 'merged':
         return <Sparkles className="h-4 w-4" />;
+      default:
+        return <Lock className="h-4 w-4" />; // Exhaustive check
     }
   };
 
@@ -96,7 +98,7 @@ const PermissionManager: React.FC<PermissionManagerProps> = ({ connection }) => 
     );
   }
 
-  const displayName = connection.myLabel || connection.otherUser.fullName || connection.otherUser.email;
+  const displayName = connection.myLabel ?? connection.otherUser.fullName ?? connection.otherUser.email;
 
   return (
     <div className="space-y-4">
@@ -143,13 +145,14 @@ const PermissionManager: React.FC<PermissionManagerProps> = ({ connection }) => 
                       return (
                         <button
                           key={level}
-                          onClick={() => handlePermissionChange(config.module, level)}
+                          onClick={() => void handlePermissionChange(config.module, level)}
                           disabled={isUpdating}
-                          className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-all ${
-                            isSelected
+                          className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-all
+                            ${isSelected
                               ? `bg-${levelInfo.color}-50 border-2 border-${levelInfo.color}-300 text-${levelInfo.color}-900`
                               : 'bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100'
-                          } ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            }
+                            ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                           <div className={isSelected ? `text-${levelInfo.color}-600` : 'text-slate-400'}>
                             {getLevelIcon(level)}

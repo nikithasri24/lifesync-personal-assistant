@@ -8,7 +8,7 @@ export interface Coordinates {
 
 export async function getUserLocation(): Promise<Coordinates | null> {
   if (!navigator.geolocation) {
-    alert('Geolocation is not supported by this browser.');
+    logger.error('LocationService', 'Geolocation is not supported by this browser.');
     return null;
   }
 
@@ -22,8 +22,7 @@ export async function getUserLocation(): Promise<Coordinates | null> {
       lng: position.coords.longitude
     };
   } catch (error) {
-    logger.error('LocationService', 'Error getting location:', error);
-    alert('Unable to get your location. Please enable location services.');
+    logger.error('LocationService', 'Unable to get your location. Please enable location services.', error);
     return null;
   }
 }
@@ -53,7 +52,7 @@ export function findNearbyStoresForItem(
     ...store,
     actualDistance: store.coordinates
       ? calculateDistance(userLocation.lat, userLocation.lng, store.coordinates.lat, store.coordinates.lng)
-      : store.distance || 999
+      : store.distance ?? 999
   }));
 
   // Filter and sort by relevance and distance
@@ -62,7 +61,7 @@ export function findNearbyStoresForItem(
       store.bestFor.includes(item.category) ||
       store.avgPrices[item.name] ||
       store.specialties.some(specialty =>
-        (item.nutritionInfo?.organic && specialty === 'organic') ||
+        ((item.nutritionInfo?.organic ?? false) && specialty === 'organic') ||
         (item.category === 'produce' && specialty === 'organic')
       )
     )

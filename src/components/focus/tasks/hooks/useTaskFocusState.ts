@@ -6,7 +6,30 @@
 import { useState } from 'react';
 import type { TaskView, ProjectView, FilterType, SortByType, TabType } from '../types';
 
-export const useTaskFocusState = () => {
+export const useTaskFocusState = (): {
+  activeTab: TabType;
+  setActiveTab: React.Dispatch<React.SetStateAction<TabType>>;
+  filter: FilterType;
+  setFilter: React.Dispatch<React.SetStateAction<FilterType>>;
+  selectedProject: string;
+  setSelectedProject: React.Dispatch<React.SetStateAction<string>>;
+  searchQuery: string;
+  setSearchQuery: React.Dispatch<React.SetStateAction<string>>;
+  sortBy: SortByType;
+  setSortBy: React.Dispatch<React.SetStateAction<SortByType>>;
+  showCreateTask: boolean;
+  setShowCreateTask: React.Dispatch<React.SetStateAction<boolean>>;
+  showCreateProject: boolean;
+  setShowCreateProject: React.Dispatch<React.SetStateAction<boolean>>;
+  selectedTask: TaskView | null;
+  setSelectedTask: React.Dispatch<React.SetStateAction<TaskView | null>>;
+  newTask: Partial<TaskView>;
+  setNewTask: React.Dispatch<React.SetStateAction<Partial<TaskView>>>;
+  resetNewTask: () => void;
+  newProject: Partial<ProjectView>;
+  setNewProject: React.Dispatch<React.SetStateAction<Partial<ProjectView>>>;
+  resetNewProject: () => void;
+} => {
   // Tab navigation
   const [activeTab, setActiveTab] = useState<TabType>('tasks');
 
@@ -42,7 +65,7 @@ export const useTaskFocusState = () => {
     status: 'active'
   });
 
-  const resetNewTask = () => {
+  const resetNewTask = (): void => {
     setNewTask({
       title: '',
       priority: 'medium',
@@ -55,7 +78,7 @@ export const useTaskFocusState = () => {
     });
   };
 
-  const resetNewProject = () => {
+  const resetNewProject = (): void => {
     setNewProject({
       name: '',
       color: '#6366f1',

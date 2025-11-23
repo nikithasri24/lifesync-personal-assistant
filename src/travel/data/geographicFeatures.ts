@@ -20,7 +20,7 @@ export interface StateProvince {
   name: string;
   country: string;
   capital?: string;
-  boundaries: any; // GeoJSON geometry
+  boundaries: unknown; // GeoJSON geometry
 }
 
 // Major mountain ranges

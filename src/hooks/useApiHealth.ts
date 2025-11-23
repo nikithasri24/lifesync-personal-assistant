@@ -1,5 +1,9 @@
 import { useState, useEffect } from 'react';
 
+interface ImportMetaEnv {
+  readonly VITE_API_BASE_URL?: string;
+}
+
 interface ApiHealthStatus {
   isOnline: boolean;
   lastChecked: Date | null;
@@ -7,7 +11,14 @@ interface ApiHealthStatus {
   responseTime: number | null;
 }
 
-export const useApiHealth = (intervalMs: number = 30000) => {
+export const useApiHealth = (intervalMs: number = 30000): {
+  isOnline: boolean;
+  lastChecked: Date | null;
+  error: string | null;
+  responseTime: number | null;
+  checkHealth: () => Promise<void>;
+  statusText: string;
+} => {
   const [status, setStatus] = useState<ApiHealthStatus>({
     isOnline: false,
     lastChecked: null,
@@ -15,11 +26,11 @@ export const useApiHealth = (intervalMs: number = 30000) => {
     responseTime: null
   });
 
-  const checkHealth = async () => {
+  const checkHealth = async (): Promise<void> => {
     const startTime = Date.now();
-    
+
     try {
-      const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
+      const apiUrl: string = (import.meta.env as ImportMetaEnv).VITE_API_BASE_URL ?? 'http://localhost:3001/api';
       const response = await fetch(`${apiUrl}/health`, {
         method: 'GET',
         headers: {
@@ -29,7 +40,7 @@ export const useApiHealth = (intervalMs: number = 30000) => {
       });
 
       const responseTime = Date.now() - startTime;
-      
+
       if (response.ok) {
         setStatus({
           isOnline: true,
@@ -40,10 +51,10 @@ export const useApiHealth = (intervalMs: number = 30000) => {
       } else {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-    } catch (err) {
+    } catch (err: unknown) {
       const responseTime = Date.now() - startTime;
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      
+
       setStatus({
         isOnline: false,
         lastChecked: new Date(),
@@ -55,10 +66,10 @@ export const useApiHealth = (intervalMs: number = 30000) => {
 
   useEffect(() => {
     // Check immediately on mount
-    checkHealth();
+    void checkHealth();
 
     // Set up periodic health checks
-    const interval = setInterval(checkHealth, intervalMs);
+    const interval = setInterval(() => void checkHealth(), intervalMs);
 
     // Cleanup on unmount
     return () => clearInterval(interval);
@@ -67,9 +78,9 @@ export const useApiHealth = (intervalMs: number = 30000) => {
   return {
     ...status,
     checkHealth, // Allow manual health checks
-    statusText: status.isOnline 
-      ? `API Online (${status.responseTime}ms)` 
-      : status.error 
+    statusText: status.isOnline
+      ? `API Online (${status.responseTime ?? 0}ms)`
+      : status.error
         ? `API Offline: ${status.error}`
         : 'API Status Unknown'
   };

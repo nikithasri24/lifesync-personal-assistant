@@ -66,7 +66,7 @@ export function cleanupOldDrafts(daysOld: number = DRAFT_EXPIRY_DAYS): void {
     const keysToRemove: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && key.startsWith(DRAFT_PREFIX)) {
+      if (key?.startsWith(DRAFT_PREFIX)) {
         // Extract date from key: "meal-draft-2025-01-14-breakfast"
         const match = key.match(/meal-draft-(\d{4}-\d{2}-\d{2})/);
         if (match) {
@@ -95,7 +95,7 @@ export function getAllDraftKeys(): string[] {
     const keys: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && key.startsWith(DRAFT_PREFIX)) {
+      if (key?.startsWith(DRAFT_PREFIX)) {
         keys.push(key);
       }
     }

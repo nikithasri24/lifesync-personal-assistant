@@ -3,7 +3,6 @@
 
 export { AuthGate } from './AuthGate';
 export { CanadaVisitedSVG } from './CanadaVisitedSVG';
-export { DataVisualization } from './DataVisualization';
 export { DatePickerPopover } from './DatePickerPopover';
 export { DebtPayoffCalculator } from './DebtPayoffCalculator';
 export { ErrorBoundary } from './ErrorBoundary';

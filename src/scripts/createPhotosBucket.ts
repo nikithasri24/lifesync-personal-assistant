@@ -6,12 +6,12 @@
 import { createClient } from '@supabase/supabase-js';
 import { logger } from '../services/logger';
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://rfwaiijodrowakcpayoa.supabase.co';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJmd2FpaWpvZHJvd2FrY3BheW9hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxNDA0OTMsImV4cCI6MjA3MzcxNjQ5M30.NovyRrFV9k6iVK8FWpakCmxAzRCsUFmrxOtHIeepfqs';
+const supabaseUrl = process.env.VITE_SUPABASE_URL ?? 'https://rfwaiijodrowakcpayoa.supabase.co';
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.VITE_SUPABASE_ANON_KEY ?? 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJmd2FpaWpvZHJvd2FrY3BheW9hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxNDA0OTMsImV4cCI6MjA3MzcxNjQ5M30.NovyRrFV9k6iVK8FWpakCmxAzRCsUFmrxOtHIeepfqs';
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-async function createBucket() {
+async function createBucket(): Promise<void> {
   logger.debug('CreatePhotosBucket', 'Creating 75hard-photos bucket...');
 
   // Check if bucket exists
@@ -44,4 +44,4 @@ async function createBucket() {
   logger.debug('✅ Bucket created successfully!', { data });
 }
 
-createBucket().catch((error) => logger.error('PhotosBucket', error));
+createBucket().catch((error: unknown) => logger.error('PhotosBucket', error));

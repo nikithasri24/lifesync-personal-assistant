@@ -48,7 +48,7 @@ const Focus: React.FC = () => {
   const minutesDisplay = String(Math.floor(seconds / 60)).padStart(2, '0');
   const secondsDisplay = String(seconds % 60).padStart(2, '0');
 
-  const handlePlayPause = async () => {
+  const handlePlayPause = async (): Promise<void> => {
     if (!active) {
       // Starting a new session
       setActive(true);
@@ -84,7 +84,7 @@ const Focus: React.FC = () => {
     }
   };
 
-  const handleReset = async () => {
+  const handleReset = async (): Promise<void> => {
     setActive(false);
     setSeconds(25 * 60);
 
@@ -123,7 +123,7 @@ const Focus: React.FC = () => {
         <div className="flex gap-3">
           <button
             type="button"
-            onClick={handlePlayPause}
+            onClick={() => void handlePlayPause()}
             className="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500"
           >
             {active ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
@@ -131,7 +131,7 @@ const Focus: React.FC = () => {
           </button>
           <button
             type="button"
-            onClick={handleReset}
+            onClick={() => void handleReset()}
             className="inline-flex items-center gap-2 rounded-full border border-indigo-200 px-4 py-2 text-sm font-medium text-indigo-600 transition hover:bg-white"
           >
             <RotateCcw className="h-4 w-4" />

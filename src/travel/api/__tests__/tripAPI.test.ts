@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import type { Mock } from 'vitest';
 import { supabase } from '../../../lib/supabase';
 import {
   getUserTrips,
@@ -22,17 +23,17 @@ vi.mock('../../../lib/supabase', () => ({
 }));
 
 describe('tripAPI', () => {
-  const mockUser = { id: 'test-user-123' };
+  const mockUser: { id: string } = { id: 'test-user-123' };
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (supabase.auth.getUser as any).mockResolvedValue({
+    (supabase.auth.getUser as Mock).mockResolvedValue({
       data: { user: mockUser },
     });
   });
 
   describe('getUserTrips', () => {
-    it('should fetch all trips for authenticated user', async () => {
+    it('should fetch all trips for authenticated user', async (): Promise<void> => {
       const mockTrips = [
         {
           id: 'trip-1',
@@ -55,19 +56,19 @@ describe('tripAPI', () => {
         }),
       };
 
-      (supabase.from as any).mockReturnValue(mockQuery);
+      (supabase.from as Mock).mockReturnValue(mockQuery);
 
       const result = await getUserTrips();
 
-      expect(supabase.from).toHaveBeenCalledWith('trips');
-      expect(mockQuery.eq).toHaveBeenCalledWith('user_id', mockUser.id);
+      expect(supabase.from.bind(supabase)).toHaveBeenCalledWith('trips');
+      expect(mockQuery.eq.bind(mockQuery)).toHaveBeenCalledWith('user_id', mockUser.id);
       expect(mockQuery.order).toHaveBeenCalledWith('created_at', { ascending: false });
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe('trip-1');
       expect(result[0].name).toBe('Europe Trip');
     });
 
-    it('should return empty array when no trips found', async () => {
+    it('should return empty array when no trips found', async (): Promise<void> => {
       const mockQuery = {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
@@ -77,22 +78,22 @@ describe('tripAPI', () => {
         }),
       };
 
-      (supabase.from as any).mockReturnValue(mockQuery);
+      (supabase.from as Mock).mockReturnValue(mockQuery);
 
       const result = await getUserTrips();
 
       expect(result).toEqual([]);
     });
 
-    it('should throw error when not authenticated', async () => {
-      (supabase.auth.getUser as any).mockResolvedValue({
+    it('should throw error when not authenticated', async (): Promise<void> => {
+      (supabase.auth.getUser as Mock).mockResolvedValue({
         data: { user: null },
       });
 
       await expect(getUserTrips()).rejects.toThrow('Not authenticated');
     });
 
-    it('should throw error when database query fails', async () => {
+    it('should throw error when database query fails', async (): Promise<void> => {
       const mockQuery = {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
@@ -102,14 +103,14 @@ describe('tripAPI', () => {
         }),
       };
 
-      (supabase.from as any).mockReturnValue(mockQuery);
+      (supabase.from as Mock).mockReturnValue(mockQuery);
 
       await expect(getUserTrips()).rejects.toThrow();
     });
   });
 
   describe('getTripById', () => {
-    it('should fetch trip with all destinations and visa requirements', async () => {
+    it('should fetch trip with all destinations and visa requirements', async (): Promise<void> => {
       const mockTrip = {
         id: 'trip-1',
         user_id: 'test-user-123',
@@ -177,7 +178,7 @@ describe('tripAPI', () => {
         }),
       };
 
-      (supabase.from as any)
+      (supabase.from as Mock)
         .mockReturnValueOnce(mockTripQuery)
         .mockReturnValueOnce(mockDestQuery)
         .mockReturnValueOnce(mockVisaQuery);
@@ -185,14 +186,22 @@ describe('tripAPI', () => {
       const result = await getTripById('trip-1');
 
       expect(result).not.toBeNull();
-      expect(result!.id).toBe('trip-1');
-      expect(result!.destinations).toHaveLength(1);
-      expect(result!.destinations[0].countryCode).toBe('FR');
-      expect(result!.destinations[0].visaRequirement).toBeDefined();
-      expect(result!.destinations[0].visaRequirement!.visaType).toBe('visa-free');
+      if (result) {
+        expect(result.id).toBe('trip-1');
+        expect(result.destinations).toHaveLength(1);
+        expect(result.destinations[0].countryCode).toBe('FR');
+        expect(result.destinations[0].visaRequirement).toBeDefined();
+        if (result.destinations[0].visaRequirement) {
+          expect(result.destinations[0].visaRequirement.visaType).toBe('visa-free');
+        } else {
+          fail('Visa requirement should be defined');
+        }
+      } else {
+        fail('Trip should not be null');
+      }
     });
 
-    it('should return null when trip not found', async () => {
+    it('should return null when trip not found', async (): Promise<void> => {
       const mockQuery = {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
@@ -202,15 +211,15 @@ describe('tripAPI', () => {
         }),
       };
 
-      (supabase.from as any).mockReturnValue(mockQuery);
+      (supabase.from as Mock).mockReturnValue(mockQuery);
 
       const result = await getTripById('nonexistent');
 
       expect(result).toBeNull();
     });
 
-    it('should throw error when not authenticated', async () => {
-      (supabase.auth.getUser as any).mockResolvedValue({
+    it('should throw error when not authenticated', async (): Promise<void> => {
+      (supabase.auth.getUser as Mock).mockResolvedValue({
         data: { user: null },
       });
 
@@ -219,7 +228,7 @@ describe('tripAPI', () => {
   });
 
   describe('createTrip', () => {
-    it('should create a new trip', async () => {
+    it('should create a new trip', async (): Promise<void> => {
       const mockInsertedTrip = {
         id: 'trip-new',
         user_id: 'test-user-123',
@@ -240,7 +249,7 @@ describe('tripAPI', () => {
         }),
       };
 
-      (supabase.from as any).mockReturnValue(mockQuery);
+      (supabase.from as Mock).mockReturnValue(mockQuery);
 
       const newTrip = {
         name: 'Asia Trip',
@@ -251,8 +260,8 @@ describe('tripAPI', () => {
 
       const result = await createTrip(newTrip);
 
-      expect(supabase.from).toHaveBeenCalledWith('trips');
-      expect(mockQuery.insert).toHaveBeenCalledWith(
+      expect(supabase.from.bind(supabase)).toHaveBeenCalledWith('trips');
+      expect(mockQuery.insert.bind(mockQuery)).toHaveBeenCalledWith(
         expect.objectContaining({
           user_id: mockUser.id,
           name: 'Asia Trip',
@@ -264,8 +273,8 @@ describe('tripAPI', () => {
       expect(result.name).toBe('Asia Trip');
     });
 
-    it('should throw error when not authenticated', async () => {
-      (supabase.auth.getUser as any).mockResolvedValue({
+    it('should throw error when not authenticated', async (): Promise<void> => {
+      (supabase.auth.getUser as Mock).mockResolvedValue({
         data: { user: null },
       });
 
@@ -274,7 +283,7 @@ describe('tripAPI', () => {
       ).rejects.toThrow('Not authenticated');
     });
 
-    it('should throw error when insert fails', async () => {
+    it('should throw error when insert fails', async (): Promise<void> => {
       const mockQuery = {
         insert: vi.fn().mockReturnThis(),
         select: vi.fn().mockReturnThis(),
@@ -284,7 +293,7 @@ describe('tripAPI', () => {
         }),
       };
 
-      (supabase.from as any).mockReturnValue(mockQuery);
+      (supabase.from as Mock).mockReturnValue(mockQuery);
 
       await expect(
         createTrip({ name: 'Test', startDate: '2025-01-01', endDate: '2025-01-10' })
@@ -293,7 +302,7 @@ describe('tripAPI', () => {
   });
 
   describe('updateTrip', () => {
-    it('should update an existing trip', async () => {
+    it('should update an existing trip', async (): Promise<void> => {
       const mockUpdatedTrip = {
         id: 'trip-1',
         user_id: 'test-user-123',
@@ -315,7 +324,7 @@ describe('tripAPI', () => {
         }),
       };
 
-      (supabase.from as any).mockReturnValue(mockQuery);
+      (supabase.from as Mock).mockReturnValue(mockQuery);
 
       const updates = {
         name: 'Updated Trip Name',
@@ -325,13 +334,13 @@ describe('tripAPI', () => {
       const result = await updateTrip('trip-1', updates);
 
       expect(mockQuery.update).toHaveBeenCalled();
-      expect(mockQuery.eq).toHaveBeenCalledWith('id', 'trip-1');
-      expect(mockQuery.eq).toHaveBeenCalledWith('user_id', mockUser.id);
+      expect(mockQuery.eq.bind(mockQuery)).toHaveBeenCalledWith('id', 'trip-1');
+      expect(mockQuery.eq.bind(mockQuery)).toHaveBeenCalledWith('user_id', mockUser.id);
       expect(result.name).toBe('Updated Trip Name');
     });
 
-    it('should throw error when not authenticated', async () => {
-      (supabase.auth.getUser as any).mockResolvedValue({
+    it('should throw error when not authenticated', async (): Promise<void> => {
+      (supabase.auth.getUser as Mock).mockResolvedValue({
         data: { user: null },
       });
 
@@ -342,7 +351,7 @@ describe('tripAPI', () => {
   });
 
   describe('deleteTrip', () => {
-    it('should delete a trip', async () => {
+    it('should delete a trip', async (): Promise<void> => {
       const mockDelete = vi.fn().mockReturnThis();
       const mockEq1 = vi.fn().mockReturnThis();
       const mockEq2 = vi.fn().mockResolvedValue({ error: null });
@@ -354,25 +363,25 @@ describe('tripAPI', () => {
       mockDelete.mockReturnValue({ eq: mockEq1 });
       mockEq1.mockReturnValue({ eq: mockEq2 });
 
-      (supabase.from as any).mockReturnValue(mockQuery);
+      (supabase.from as Mock).mockReturnValue(mockQuery);
 
       await deleteTrip('trip-1');
 
-      expect(supabase.from).toHaveBeenCalledWith('trips');
-      expect(mockDelete).toHaveBeenCalled();
+      expect(supabase.from.bind(supabase)).toHaveBeenCalledWith('trips');
+      expect(mockDelete.bind(this)).toHaveBeenCalled();
       expect(mockEq1).toHaveBeenCalledWith('id', 'trip-1');
       expect(mockEq2).toHaveBeenCalledWith('user_id', mockUser.id);
     });
 
-    it('should throw error when not authenticated', async () => {
-      (supabase.auth.getUser as any).mockResolvedValue({
+    it('should throw error when not authenticated', async (): Promise<void> => {
+      (supabase.auth.getUser as Mock).mockResolvedValue({
         data: { user: null },
       });
 
       await expect(deleteTrip('trip-1')).rejects.toThrow('Not authenticated');
     });
 
-    it('should throw error when deletion fails', async () => {
+    it('should throw error when deletion fails', async (): Promise<void> => {
       const mockDelete = vi.fn().mockReturnThis();
       const mockEq1 = vi.fn().mockReturnThis();
       const mockEq2 = vi.fn().mockResolvedValue({
@@ -386,14 +395,14 @@ describe('tripAPI', () => {
       mockDelete.mockReturnValue({ eq: mockEq1 });
       mockEq1.mockReturnValue({ eq: mockEq2 });
 
-      (supabase.from as any).mockReturnValue(mockQuery);
+      (supabase.from as Mock).mockReturnValue(mockQuery);
 
       await expect(deleteTrip('trip-1')).rejects.toThrow();
     });
   });
 
   describe('addDestination', () => {
-    it('should add a destination to a trip', async () => {
+    it('should add a destination to a trip', async (): Promise<void> => {
       const mockDestination = {
         id: 'dest-new',
         trip_id: 'trip-1',
@@ -416,7 +425,7 @@ describe('tripAPI', () => {
         }),
       };
 
-      (supabase.from as any).mockReturnValue(mockQuery);
+      (supabase.from as Mock).mockReturnValue(mockQuery);
 
       const newDestination = {
         tripId: 'trip-1',
@@ -431,8 +440,8 @@ describe('tripAPI', () => {
 
       const result = await addDestination(newDestination);
 
-      expect(supabase.from).toHaveBeenCalledWith('trip_destinations');
-      expect(mockQuery.insert).toHaveBeenCalledWith(
+      expect(supabase.from.bind(supabase)).toHaveBeenCalledWith('trip_destinations');
+      expect(mockQuery.insert.bind(mockQuery)).toHaveBeenCalledWith(
         expect.objectContaining({
           trip_id: 'trip-1',
           country_code: 'IT',
@@ -442,8 +451,8 @@ describe('tripAPI', () => {
       expect(result.countryCode).toBe('IT');
     });
 
-    it('should throw error when not authenticated', async () => {
-      (supabase.auth.getUser as any).mockResolvedValue({
+    it('should throw error when not authenticated', async (): Promise<void> => {
+      (supabase.auth.getUser as Mock).mockResolvedValue({
         data: { user: null },
       });
 
@@ -459,23 +468,23 @@ describe('tripAPI', () => {
   });
 
   describe('removeDestination', () => {
-    it('should remove a destination from a trip', async () => {
+    it('should remove a destination from a trip', async (): Promise<void> => {
       const mockQuery = {
         delete: vi.fn().mockReturnThis(),
         eq: vi.fn().mockResolvedValue({ error: null }),
       };
 
-      (supabase.from as any).mockReturnValue(mockQuery);
+      (supabase.from as Mock).mockReturnValue(mockQuery);
 
       await removeDestination('dest-1');
 
-      expect(supabase.from).toHaveBeenCalledWith('trip_destinations');
-      expect(mockQuery.delete).toHaveBeenCalled();
-      expect(mockQuery.eq).toHaveBeenCalledWith('id', 'dest-1');
+      expect(supabase.from.bind(supabase)).toHaveBeenCalledWith('trip_destinations');
+      expect(mockQuery.delete.bind(mockQuery)).toHaveBeenCalled();
+      expect(mockQuery.eq.bind(mockQuery)).toHaveBeenCalledWith('id', 'dest-1');
     });
 
-    it('should throw error when not authenticated', async () => {
-      (supabase.auth.getUser as any).mockResolvedValue({
+    it('should throw error when not authenticated', async (): Promise<void> => {
+      (supabase.auth.getUser as Mock).mockResolvedValue({
         data: { user: null },
       });
 
@@ -484,7 +493,7 @@ describe('tripAPI', () => {
   });
 
   describe('saveVisaRequirement', () => {
-    it('should create new visa requirement', async () => {
+    it('should create new visa requirement', async (): Promise<void> => {
       const mockVisaReq = {
         id: 'visa-new',
         trip_id: 'trip-1',
@@ -516,7 +525,7 @@ describe('tripAPI', () => {
         }),
       };
 
-      (supabase.from as any)
+      (supabase.from as Mock)
         .mockReturnValueOnce(mockCheckQuery)
         .mockReturnValueOnce(mockInsertQuery);
 
@@ -532,7 +541,7 @@ describe('tripAPI', () => {
       expect(result.daysAllowed).toBe(30);
     });
 
-    it('should update existing visa requirement', async () => {
+    it('should update existing visa requirement', async (): Promise<void> => {
       const existingReq = { id: 'visa-existing' };
       const mockUpdatedReq = {
         id: 'visa-existing',
@@ -566,7 +575,7 @@ describe('tripAPI', () => {
         }),
       };
 
-      (supabase.from as any)
+      (supabase.from as Mock)
         .mockReturnValueOnce(mockCheckQuery)
         .mockReturnValueOnce(mockUpdateQuery);
 
@@ -580,8 +589,8 @@ describe('tripAPI', () => {
       expect(result.daysAllowed).toBe(60);
     });
 
-    it('should throw error when not authenticated', async () => {
-      (supabase.auth.getUser as any).mockResolvedValue({
+    it('should throw error when not authenticated', async (): Promise<void> => {
+      (supabase.auth.getUser as Mock).mockResolvedValue({
         data: { user: null },
       });
 

@@ -23,7 +23,7 @@ export function CopyWeekModal({
   mealCount,
   weekStartsOn,
   onCopy,
-}: CopyWeekModalProps) {
+}: CopyWeekModalProps): React.JSX.Element | null {
   if (!isOpen) return null;
 
   return (
@@ -63,7 +63,7 @@ export function CopyWeekModal({
           <button
             type="button"
             disabled={mealCount === 0}
-            onClick={onCopy}
+            onClick={() => void onCopy()}
             className="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
           >
             Copy {mealCount} Meal{mealCount !== 1 ? 's' : ''}

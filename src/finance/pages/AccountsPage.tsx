@@ -24,11 +24,11 @@ const AccountsPage: React.FC = () => {
     return acc;
   }, {});
 
-  const onSave = async () => {
+  const onSave = async (): Promise<void> => {
     const now = new Date().toISOString();
     await upsertTransactionMutation.mutateAsync({
       // creating a zero-dollar transaction as a mock write demonstration if mock mode
-      accountId: form.id || 'manual',
+      accountId: form.id ?? 'manual',
       amount: 0,
       categoryId: undefined,
       dateISO: now,
@@ -38,7 +38,7 @@ const AccountsPage: React.FC = () => {
     setOpen(false);
   };
 
-  const instName = (id?: string) => insts.find((i) => i.id === id)?.name ?? 'Manual Accounts';
+  const instName = (id?: string): string => insts.find((i) => i.id === id)?.name ?? 'Manual Accounts';
 
   return (
     <div className="space-y-4">
@@ -80,7 +80,7 @@ const AccountsPage: React.FC = () => {
             <Button variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={onSave}>Save</Button>
+            <Button onClick={() => void onSave()}>Save</Button>
           </div>
         </div>
       </Dialog>

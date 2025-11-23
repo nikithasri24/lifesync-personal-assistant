@@ -1,6 +1,5 @@
 // Conversational AI Engine using Groq (FREE)
 // ChatGPT-style conversation with function calling for your life management app
-/* eslint-disable max-lines */
 
 import Groq from 'groq-sdk';
 import { apiClient } from './apiClient';

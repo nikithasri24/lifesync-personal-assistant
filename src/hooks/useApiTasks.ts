@@ -298,7 +298,7 @@ export const useApiTasks = (): UseApiTasksReturn => {
     setRefreshing(true);
     setError(null);
     try {
-      await useAppStore.getState().initializeData();
+      useAppStore.getState().initializeData();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       setError(message);

@@ -22,7 +22,7 @@ const Notes: React.FC = () => {
   const [content, setContent] = useState('');
   const [tags, setTags] = useState('');
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
     if (!title.trim() && !content.trim()) return;
 
@@ -44,7 +44,7 @@ const Notes: React.FC = () => {
     );
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = (id: string): void => {
     deleteMutation.mutate(id);
   };
 
@@ -55,7 +55,7 @@ const Notes: React.FC = () => {
         <header className="flex flex-col gap-2">
           <h1 className="text-2xl font-semibold text-slate-900">Notes</h1>
           <p className="text-sm text-red-600">
-            Error loading notes: {error.message}
+            Error loading notes: {error instanceof Error ? error.message : 'Unknown error'}
           </p>
         </header>
         <div className="rounded-lg border border-red-200 bg-red-50 p-4">
@@ -167,7 +167,7 @@ const Notes: React.FC = () => {
                   {note.title}
                 </p>
                 <p className="text-xs text-slate-500">
-                  Last updated {new Date(note.updated_at).toLocaleString()}
+                  Last updated {new Date(note.updatedAt).toLocaleString()}
                 </p>
                 <p className="mt-2 whitespace-pre-line text-sm text-slate-700">
                   {note.content}

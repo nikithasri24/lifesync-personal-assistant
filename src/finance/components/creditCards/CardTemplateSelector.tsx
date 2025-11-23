@@ -32,7 +32,7 @@ export const CardTemplateSelector: React.FC<CardTemplateSelectorProps> = ({
     );
   });
 
-  const getIssuerColor = (issuer: string) => {
+  const getIssuerColor = (issuer: string): string => {
     switch (issuer) {
       case 'amex':
         return 'bg-blue-100 text-blue-700 border-blue-200';
@@ -49,7 +49,7 @@ export const CardTemplateSelector: React.FC<CardTemplateSelectorProps> = ({
     }
   };
 
-  const getIssuerName = (issuer: string) => {
+  const getIssuerName = (issuer: string): string => {
     return issuer.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   };
 
@@ -110,7 +110,7 @@ export const CardTemplateSelector: React.FC<CardTemplateSelectorProps> = ({
                 key={template.id}
                 onClick={() => {
                   // Need to import full template
-                  import('../../utils/creditCardTemplates').then((module) => {
+                  void import('../../utils/creditCardTemplates').then((module) => {
                     const fullTemplate = module.getCardTemplateById(template.id);
                     if (fullTemplate) {
                       onSelect(fullTemplate);

@@ -34,7 +34,7 @@ export const InsuranceCard: React.FC<InsuranceCardProps> = ({
   className = '',
 }) => {
   // Get icon for policy type
-  const getTypeIcon = (type: string) => {
+  const getTypeIcon = (type: string): React.ComponentType<{ className?: string }> => {
     switch (type) {
       case 'auto':
         return Car;
@@ -58,7 +58,13 @@ export const InsuranceCard: React.FC<InsuranceCardProps> = ({
   const TypeIcon = getTypeIcon(policy.type);
 
   // Get status configuration
-  const getStatusConfig = () => {
+  const getStatusConfig = (): {
+    color: string;
+    bgColor: string;
+    borderColor: string;
+    icon: React.ComponentType<{ className?: string }>;
+    label: string;
+  } => {
     switch (policy.status) {
       case 'active':
         return {
@@ -99,7 +105,7 @@ export const InsuranceCard: React.FC<InsuranceCardProps> = ({
   const StatusIcon = statusConfig.icon;
 
   // Calculate days until renewal
-  const getDaysUntilRenewal = () => {
+  const getDaysUntilRenewal = (): number | null => {
     if (!policy.renewalDate) return null;
     const now = new Date();
     const renewal = new Date(policy.renewalDate);
@@ -111,7 +117,7 @@ export const InsuranceCard: React.FC<InsuranceCardProps> = ({
   const isRenewalSoon = daysUntilRenewal !== null && daysUntilRenewal <= policy.renewalReminderDays;
 
   // Calculate annual cost
-  const getAnnualCost = () => {
+  const getAnnualCost = (): number => {
     switch (policy.premiumFrequency) {
       case 'monthly':
         return policy.premiumAmount * 12;
@@ -229,7 +235,7 @@ export const InsuranceCard: React.FC<InsuranceCardProps> = ({
               <span className="text-xs font-medium text-primary opacity-70">Claims</span>
             </div>
             <span className="text-xs font-semibold text-primary">
-              {policy.claimCount} ({formatCurrency(policy.totalClaimsPaid || 0)} paid)
+              {policy.claimCount} ({formatCurrency(policy.totalClaimsPaid ?? 0)} paid)
             </span>
           </div>
         )}

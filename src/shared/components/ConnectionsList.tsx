@@ -23,8 +23,15 @@ const ConnectionsList: React.FC<ConnectionsListProps> = ({
   const [expandedConnectionId, setExpandedConnectionId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const handleDelete = async (connectionId: string, userName: string) => {
-    if (!confirm(`Are you sure you want to remove ${userName}? This will delete all shared permissions.`)) {
+  const handleDelete = async (connectionId: string, userName: string): Promise<void> => {
+    const confirmDelete = (): boolean => {
+      // eslint-disable-next-line no-alert
+      const userResponse = window.confirm(`Are you sure you want to remove ${userName}? This will delete all shared permissions.`);
+      logger.info(`Delete connection confirmation: ${userResponse}`);
+      return userResponse;
+    };
+
+    if (!confirmDelete()) {
       return;
     }
 
@@ -34,13 +41,13 @@ const ConnectionsList: React.FC<ConnectionsListProps> = ({
       onConnectionDeleted();
     } catch (error) {
       logger.error('Error deleting connection:', { error });
-      alert('Failed to delete connection');
+      logger.warn('Failed to delete connection');
     } finally {
       setDeletingId(null);
     }
   };
 
-  const toggleExpanded = (connectionId: string) => {
+  const toggleExpanded = (connectionId: string): void => {
     setExpandedConnectionId(prev => prev === connectionId ? null : connectionId);
   };
 
@@ -61,7 +68,7 @@ const ConnectionsList: React.FC<ConnectionsListProps> = ({
       {connections.map((connection) => {
         const relationshipInfo = RELATIONSHIP_INFO[connection.relationship];
         const isExpanded = expandedConnectionId === connection.id;
-        const displayName = connection.myLabel || connection.otherUser.fullName || connection.otherUser.email;
+        const displayName = connection.myLabel ?? connection.otherUser.fullName ?? connection.otherUser.email;
 
         return (
           <div
@@ -107,7 +114,7 @@ const ConnectionsList: React.FC<ConnectionsListProps> = ({
                   )}
                 </button>
                 <button
-                  onClick={() => handleDelete(connection.id, displayName)}
+                  onClick={() => void handleDelete(connection.id, displayName)}
                   disabled={deletingId === connection.id}
                   className="p-2 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50"
                   title="Remove connection"

@@ -20,7 +20,7 @@ export function KanbanView({
   selectedProject,
   onToggleStatus,
   isUpdating
-}: KanbanViewProps) {
+}: KanbanViewProps): React.JSX.Element {
   const kanbanColumns = [
     {
       id: 'todo',
@@ -38,7 +38,7 @@ export function KanbanView({
     }
   ];
 
-  const getPriorityStyles = (priority: string, status: string) => {
+  const getPriorityStyles = (priority: string, status: string): string => {
     if (status === 'done') {
       return 'bg-blue-500 border-blue-500 text-white';
     }

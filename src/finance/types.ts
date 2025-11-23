@@ -278,7 +278,7 @@ export type InsurancePolicy = {
   agentPhone?: string;
   agentEmail?: string;
   notes?: string;
-  documents?: any[]; // JSONB array
+  documents?: unknown[]; // JSONB array
   autoRenew: boolean;
   renewalReminderDays: number;
   createdAt: string;

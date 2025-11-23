@@ -24,7 +24,7 @@ logger.debug('Utils', '3. Additional access for Indian passport holder with US H
 const combinedAccess = getAdditionalAccessFromVisas(['United States']);
 logger.debug('Utils', `   Bonus countries: ${combinedAccess.length}`);
 combinedAccess.forEach(access => {
-  logger.debug('Utils', `   - ${access.country}: ${access.accessType} (${access.daysAllowed || 'unlimited'} days) via ${access.viaVisa}`);
+  logger.debug('Utils', `   - ${access.country}: ${access.accessType} (${access.daysAllowed ?? 'unlimited'} days) via ${access.viaVisa}`);
 });
 logger.debug('Utils', '');
 

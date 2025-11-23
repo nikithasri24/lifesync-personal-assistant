@@ -18,7 +18,8 @@ interface CreditCardPointsTrackerProps {
 
 export const CreditCardPointsTracker: React.FC<CreditCardPointsTrackerProps> = ({
   cards,
-  _rewardsHistory = [],
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  rewardsHistory = [],
   onUpdatePoints,
   className = '',
 }) => {
@@ -31,59 +32,61 @@ export const CreditCardPointsTracker: React.FC<CreditCardPointsTrackerProps> = (
   );
 
   // Group cards by reward type
-  const cardsByType = rewardsCards.reduce((acc, card) => {
-    const type = card.rewardsType || 'points';
+  const cardsByType = rewardsCards.reduce<Record<string, Account[]>>((acc, card) => {
+    const type = card.rewardsType ?? 'points';
     if (!acc[type]) {
       acc[type] = [];
     }
     acc[type].push(card);
     return acc;
-  }, {} as Record<string, Account[]>);
+  }, {});
 
   // Calculate totals by type
   const totalsByType = Object.entries(cardsByType).map(([type, typeCards]) => ({
     type,
-    total: typeCards.reduce((sum, card) => sum + (card.rewardsBalance || 0), 0),
+    total: typeCards.reduce((sum, card) => sum + (card.rewardsBalance ?? 0), 0),
     cardCount: typeCards.length,
     cards: typeCards,
   }));
 
   // Calculate total rewards value (estimate)
-  const estimateTotalValue = () => {
+  const estimateTotalValue = (): number => {
     return totalsByType.reduce((sum, { type, total }) => {
-      if (type === 'cashback') {
-        return sum + total;
-      } else if (type === 'points') {
-        // Estimate 1 point = $0.01
-        return sum + (total * 0.01);
-      } else if (type === 'miles') {
-        // Estimate 1 mile = $0.015
-        return sum + (total * 0.015);
+      switch (type) {
+        case 'cashback':
+          return sum + total;
+        case 'points':
+          // Estimate 1 point = $0.01
+          return sum + (total * 0.01);
+        case 'miles':
+          // Estimate 1 mile = $0.015
+          return sum + (total * 0.015);
+        default:
+          return sum;
       }
-      return sum;
     }, 0);
   };
 
-  const handleStartEdit = (card: Account) => {
+  const handleStartEdit = (card: Account): void => {
     setEditingCardId(card.id);
-    setEditValue((card.rewardsBalance || 0).toString());
+    setEditValue((card.rewardsBalance ?? 0).toString());
   };
 
-  const handleSaveEdit = (card: Account) => {
+  const handleSaveEdit = (card: Account): void => {
     const newBalance = parseFloat(editValue);
-    if (!isNaN(newBalance) && onUpdatePoints) {
+    if (!Number.isNaN(newBalance) && onUpdatePoints) {
       onUpdatePoints(card.id, newBalance);
     }
     setEditingCardId(null);
     setEditValue('');
   };
 
-  const handleCancelEdit = () => {
+  const handleCancelEdit = (): void => {
     setEditingCardId(null);
     setEditValue('');
   };
 
-  const getRewardTypeLabel = (type: string) => {
+  const getRewardTypeLabel = (type: string): { singular: string; plural: string; icon: string } => {
     switch (type) {
       case 'points':
         return { singular: 'Point', plural: 'Points', icon: '🌟' };
@@ -96,7 +99,7 @@ export const CreditCardPointsTracker: React.FC<CreditCardPointsTrackerProps> = (
     }
   };
 
-  const getRewardTypeColor = (type: string) => {
+  const getRewardTypeColor = (type: string): string => {
     switch (type) {
       case 'points':
         return 'text-blue-600 bg-blue-50 border-blue-200';
@@ -249,8 +252,8 @@ export const CreditCardPointsTracker: React.FC<CreditCardPointsTrackerProps> = (
                       <div className="mb-2">
                         <p className="text-3xl font-bold">
                           {type === 'cashback'
-                            ? formatCurrency(card.rewardsBalance || 0)
-                            : (card.rewardsBalance || 0).toLocaleString()}
+                            ? formatCurrency(card.rewardsBalance ?? 0)
+                            : (card.rewardsBalance ?? 0).toLocaleString()}
                         </p>
                         <p className="text-xs opacity-70">{label.plural}</p>
                       </div>
@@ -261,7 +264,7 @@ export const CreditCardPointsTracker: React.FC<CreditCardPointsTrackerProps> = (
                             Est. value:{' '}
                             <span className="font-semibold">
                               {formatCurrency(
-                                (card.rewardsBalance || 0) * (type === 'miles' ? 0.015 : 0.01)
+                                (card.rewardsBalance ?? 0) * (type === 'miles' ? 0.015 : 0.01)
                               )}
                             </span>
                           </p>

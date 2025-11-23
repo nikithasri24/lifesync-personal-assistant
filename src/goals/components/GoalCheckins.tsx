@@ -3,7 +3,7 @@
  * Regular accountability check-ins with mood, blockers, wins, and next actions
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { MessageSquare, Smile, Frown, Meh, TrendingUp, AlertCircle, Lightbulb, Plus, Calendar } from 'lucide-react';
 import { createCheckin, getGoalCheckins } from '../api/lifeGoalsAPI';
 import type { LifeGoal, LifeGoalCheckin } from '../types/lifeGoals';
@@ -13,7 +13,17 @@ interface GoalCheckinsProps {
   goal: LifeGoal;
 }
 
-const moodIcons = {
+type MoodKey = 'great' | 'good' | 'okay' | 'struggling' | 'stuck';
+
+interface MoodIconData {
+  icon: typeof Smile;
+  label: string;
+  color: string;
+  bg: string;
+  border: string;
+}
+
+const moodIcons: Record<MoodKey, MoodIconData> = {
   great: { icon: Smile, label: 'Great', color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-300' },
   good: { icon: Smile, label: 'Good', color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-300' },
   okay: { icon: Meh, label: 'Okay', color: 'text-yellow-600', bg: 'bg-yellow-50', border: 'border-yellow-300' },
@@ -30,16 +40,12 @@ const GoalCheckins: React.FC<GoalCheckinsProps> = ({ goal }) => {
   // Check-in form state
   const [progressUpdate, setProgressUpdate] = useState('');
   const [notes, setNotes] = useState('');
-  const [mood, setMood] = useState<'great' | 'good' | 'okay' | 'struggling' | 'stuck'>('okay');
+  const [mood, setMood] = useState<MoodKey>('okay');
   const [blockers, setBlockers] = useState('');
   const [wins, setWins] = useState('');
   const [nextActions, setNextActions] = useState('');
 
-  useEffect(() => {
-    void loadCheckins();
-  }, [goal.id, loadCheckins]);
-
-  const loadCheckins = async (): Promise<void> => {
+  const loadCheckins = useCallback(async (): Promise<void> => {
     try {
       setLoading(true);
       const data = await getGoalCheckins(goal.id);
@@ -49,7 +55,11 @@ const GoalCheckins: React.FC<GoalCheckinsProps> = ({ goal }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [goal.id]);
+
+  useEffect(() => {
+    void loadCheckins();
+  }, [goal.id, loadCheckins]);
 
   const handleSubmitCheckin = async (): Promise<void> => {
     if (!progressUpdate.trim()) {
@@ -215,7 +225,7 @@ const GoalCheckins: React.FC<GoalCheckinsProps> = ({ goal }) => {
 
           <div className="flex gap-2 pt-2">
             <button
-              onClick={handleSubmitCheckin}
+              onClick={() => void handleSubmitCheckin()}
               disabled={submitting || !progressUpdate.trim()}
               className="px-4 py-2 bg-indigo-600 text-white text-sm rounded font-medium hover:bg-indigo-700 disabled:bg-slate-300"
             >
@@ -247,7 +257,8 @@ const GoalCheckins: React.FC<GoalCheckinsProps> = ({ goal }) => {
       ) : (
         <div className="space-y-3">
           {checkins.map((checkin) => {
-            const moodData = moodIcons[checkin.mood];
+            const moodKey = checkin.mood as MoodKey;
+            const moodData = moodIcons[moodKey];
             const MoodIcon = moodData.icon;
 
             return (

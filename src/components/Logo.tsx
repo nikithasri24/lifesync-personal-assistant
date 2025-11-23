@@ -3,7 +3,7 @@ interface LogoProps {
   className?: string;
 }
 
-export default function Logo({ collapsed = false, className = '' }: LogoProps) {
+export default function Logo({ collapsed = false, className = '' }: LogoProps): JSX.Element {
   if (collapsed) {
     return (
       <div className={`flex items-center justify-center ${className}`}>

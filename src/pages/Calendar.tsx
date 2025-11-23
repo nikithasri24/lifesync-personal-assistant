@@ -11,7 +11,10 @@ const Calendar: React.FC = () => {
     const grouped = new Map<string, TaskData[]>();
     tasks.filter((task): task is TaskData => !!task.dueDate)
       .forEach((task: TaskData) => {
-        const key = format(task.dueDate instanceof Date ? task.dueDate : new Date(task.dueDate), 'yyyy-MM-dd');
+        const dueDate = task.dueDate as Date | string | undefined;
+        if (!dueDate) return;
+        const dateValue: Date = dueDate instanceof Date ? dueDate : new Date(dueDate);
+        const key = format(dateValue, 'yyyy-MM-dd');
         const existing = grouped.get(key) ?? [];
         grouped.set(key, [...existing, task]);
       });

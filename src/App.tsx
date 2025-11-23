@@ -72,7 +72,7 @@ function App(): React.ReactElement {
     initializedFor.current = user.id;
 
     // Initialize data and load 75 Hard challenge
-    void (async () => {
+    void (async (): Promise<void> => {
       try {
         await initializeData();
         logger.debug('App', '🔄 Initialized LifeSync data for Supabase user');

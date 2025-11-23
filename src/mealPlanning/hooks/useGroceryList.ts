@@ -17,7 +17,15 @@ export function useGroceryList(
   plannedMeals: PlannedMeal[],
   recipes: Recipe[],
   weekKey: string
-) {
+): {
+  groceryList: GroceryItem[];
+  neededItems: GroceryItem[];
+  atHomeItems: GroceryItem[];
+  inCartItems: GroceryItem[];
+  purchasedItems: GroceryItem[];
+  updateItemStatus: (itemId: string, status: GroceryItemStatus) => void;
+  getStatusColor: (status: GroceryItemStatus) => string;
+} {
   const groceryStorageKey = `grocery-statuses-${weekKey}`;
 
   // Load grocery item statuses from localStorage
@@ -25,7 +33,7 @@ export function useGroceryList(
     try {
       const stored = localStorage.getItem(groceryStorageKey);
       if (stored) {
-        const parsed = JSON.parse(stored);
+        const parsed = JSON.parse(stored) as Record<string, GroceryItemStatus>;
         return new Map(Object.entries(parsed));
       }
     } catch (error) {
@@ -78,14 +86,14 @@ export function useGroceryList(
       return {
         id: itemKey,
         ...item,
-        status: groceryItemStatuses.get(itemKey) || 'needed',
+        status: groceryItemStatuses.get(itemKey) ?? 'needed',
       };
     });
 
     return items.sort((a, b) => a.name.localeCompare(b.name));
   }, [plannedMeals, recipes, groceryItemStatuses]);
 
-  const updateItemStatus = (itemId: string, status: GroceryItemStatus) => {
+  const updateItemStatus = (itemId: string, status: GroceryItemStatus): void => {
     setGroceryItemStatuses((prev) => {
       const next = new Map(prev);
       next.set(itemId, status);
@@ -93,7 +101,7 @@ export function useGroceryList(
     });
   };
 
-  const getStatusColor = (status: GroceryItemStatus) => {
+  const getStatusColor = (status: GroceryItemStatus): string => {
     switch (status) {
       case 'at_home':
         return 'bg-green-100 text-green-800 border-green-300';

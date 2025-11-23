@@ -34,18 +34,18 @@ const InsurancePage: React.FC = () => {
     setPolicies([]);
   }, []);
 
-  const handleAddPolicy = () => {
+  const handleAddPolicy = (): void => {
     logger.debug('Insurance', 'Add Policy button clicked');
     setEditingPolicy(undefined);
     setShowForm(true);
   };
 
-  const handleEditPolicy = (policy: InsurancePolicy) => {
+  const handleEditPolicy = (policy: InsurancePolicy): void => {
     setEditingPolicy(policy);
     setShowForm(true);
   };
 
-  const handleSavePolicy = (policyInput: InsurancePolicyInput) => {
+  const handleSavePolicy = (policyInput: InsurancePolicyInput): void => {
     // TODO: Save to API
     if (editingPolicy) {
       // Update existing policy
@@ -75,7 +75,7 @@ const InsurancePage: React.FC = () => {
     setEditingPolicy(undefined);
   };
 
-  const handleCancelForm = () => {
+  const handleCancelForm = (): void => {
     setShowForm(false);
     setEditingPolicy(undefined);
   };
@@ -96,7 +96,7 @@ const InsurancePage: React.FC = () => {
 
   const totalCoverage = activePolicies
     .filter(p => p.coverageAmount)
-    .reduce((sum, p) => sum + (p.coverageAmount || 0), 0);
+    .reduce((sum, p) => sum + (p.coverageAmount ?? 0), 0);
 
   // Get upcoming renewals (next 60 days)
   const upcomingRenewals = activePolicies
@@ -107,7 +107,11 @@ const InsurancePage: React.FC = () => {
       );
       return daysUntil > 0 && daysUntil <= 60;
     })
-    .sort((a, b) => new Date(a.renewalDate!).getTime() - new Date(b.renewalDate!).getTime())
+    .sort((a, b) => {
+      const aRenewalDate = a.renewalDate ? new Date(a.renewalDate).getTime() : Infinity;
+      const bRenewalDate = b.renewalDate ? new Date(b.renewalDate).getTime() : Infinity;
+      return aRenewalDate - bRenewalDate;
+    })
     .slice(0, 3);
 
   // Get policies requiring attention
@@ -264,9 +268,12 @@ const InsurancePage: React.FC = () => {
           </div>
           <div className="space-y-3">
             {upcomingRenewals.map(policy => {
-              const daysUntil = Math.ceil(
-                (new Date(policy.renewalDate!).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
-              );
+              const renewalDate = policy.renewalDate ? new Date(policy.renewalDate) : null;
+              const daysUntil = renewalDate
+                ? Math.ceil(
+                    (renewalDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+                  )
+                : 0;
               const isUrgent = daysUntil <= 14;
 
               return (
@@ -285,14 +292,18 @@ const InsurancePage: React.FC = () => {
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className={`text-sm font-semibold ${
-                      isUrgent ? 'text-amber-700' : 'text-blue-700'
-                    }`}>
-                      {new Date(policy.renewalDate!).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                    </p>
-                    <p className="text-xs text-primary opacity-60">
-                      {daysUntil} {daysUntil === 1 ? 'day' : 'days'}
-                    </p>
+                    {renewalDate && (
+                      <>
+                        <p className={`text-sm font-semibold ${
+                          isUrgent ? 'text-amber-700' : 'text-blue-700'
+                        }`}>
+                          {renewalDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        </p>
+                        <p className="text-xs text-primary opacity-60">
+                          {daysUntil} {daysUntil === 1 ? 'day' : 'days'}
+                        </p>
+                      </>
+                    )}
                   </div>
                 </div>
               );

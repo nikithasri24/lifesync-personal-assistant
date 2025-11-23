@@ -17,6 +17,7 @@ import {
   Info,
 } from 'lucide-react';
 import type { Transaction, Account, Goal } from '../../types';
+// Unused import removed
 import {
   calculateSavingsRate,
   calculateNetWorth,
@@ -39,7 +40,7 @@ interface FinancialInsightsCardProps {
 export const FinancialInsightsCard: React.FC<FinancialInsightsCardProps> = ({
   transactions,
   accounts,
-  _goals,
+  goals: _goals = [], // Use underscore to indicate unused variable
   onClick,
   className = '',
 }) => {
@@ -68,10 +69,10 @@ export const FinancialInsightsCard: React.FC<FinancialInsightsCardProps> = ({
 
   // Emergency fund calculation
   const emergencyAccounts = accounts.filter(
-    a => a.accountType === 'savings' || a.accountType === 'checking'
+    a => a.type === 'savings' || a.type === 'checking'
   );
   const emergencyFundBalance = emergencyAccounts.reduce(
-    (sum, a) => sum + a.currentBalance,
+    (sum, a) => sum + a.balance,
     0
   );
   const emergencyFund = calculateEmergencyFund(emergencyFundBalance, monthlyExpenses);
@@ -79,13 +80,15 @@ export const FinancialInsightsCard: React.FC<FinancialInsightsCardProps> = ({
   // Debt calculations
   const monthlyDebtPayments = Math.abs(
     recentTransactions
-      .filter(t =>
-        t.amount < 0 && t.category &&
-        ['loan', 'debt', 'mortgage'].some(type =>
-          t.category.toLowerCase().includes(type)
-        )
-      )
-      .reduce((sum, t) => sum + t.amount, 0) / 3
+      .filter((t): t is Transaction & { category: string } => {
+        if (t.amount >= 0 || t.category == null) return false;
+        // Type assertion is safe here because we've already checked for null above
+        const category = t.category as string;
+        const lowercaseCategory = category.toLowerCase();
+        const debtTypes = ['loan', 'debt', 'mortgage'] as const;
+        return debtTypes.some(type => lowercaseCategory.includes(type));
+      })
+      .reduce((sum: number, t: Transaction & { category: string }) => sum + t.amount, 0) / 3
   );
 
   const dti = calculateDebtToIncome(monthlyDebtPayments, monthlyIncome);
@@ -120,19 +123,19 @@ export const FinancialInsightsCard: React.FC<FinancialInsightsCardProps> = ({
   // Net worth growth (0-15 points) - simplified
   healthScore += netWorth.netWorth > 0 ? 15 : 0;
 
-  const getHealthColor = (score: number): string => {
+  const getHealthColor = React.useCallback((score: number): string => {
     if (score >= 80) return 'text-green-600';
     if (score >= 60) return 'text-blue-600';
     if (score >= 40) return 'text-yellow-600';
     return 'text-red-600';
-  };
+  }, []);
 
-  const getHealthLabel = (score: number): string => {
+  const getHealthLabel = React.useCallback((score: number): string => {
     if (score >= 80) return 'Excellent';
     if (score >= 60) return 'Good';
     if (score >= 40) return 'Fair';
     return 'Needs Attention';
-  };
+  }, []);
 
   return (
     <div

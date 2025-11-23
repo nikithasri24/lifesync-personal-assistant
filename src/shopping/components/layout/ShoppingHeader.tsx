@@ -26,7 +26,7 @@ export function ShoppingHeader({
   onScanBarcode,
   onVoiceAdd,
   onAddItem,
-}: ShoppingHeaderProps) {
+}: ShoppingHeaderProps): React.JSX.Element {
   return (
     <div className="bg-white rounded-xl p-6 shadow-sm border">
       <div className="flex items-center justify-between mb-4">

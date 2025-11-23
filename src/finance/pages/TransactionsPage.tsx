@@ -15,7 +15,7 @@ const TransactionsPage: React.FC = () => {
   const [loading, setLoading] = React.useState(false);
   const filters = useFinanceFilters();
 
-  const load = async (cursor?: string) => {
+  const load = async (cursor?: string): Promise<void> => {
     setLoading(true);
     const api = await getFinanceAPI();
     const { items, nextCursor } = await api.listTransactions({
@@ -32,7 +32,7 @@ const TransactionsPage: React.FC = () => {
   };
 
   React.useEffect(() => {
-    load();
+    void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.text, filters.fromISO, filters.toISO, filters.type]);
 
@@ -41,7 +41,7 @@ const TransactionsPage: React.FC = () => {
   return (
     <div className="space-y-4">
       <Card title="Filters">
-        <FiltersBar onApply={() => load()} onReset={() => filters.reset()} />
+        <FiltersBar onApply={() => void load()} onReset={() => filters.reset()} />
       </Card>
 
       <Card title="Transactions" actions={<Button variant="outline" onClick={() => downloadCSV('transactions.csv', toCSV(rows))}>Export CSV</Button>}>
@@ -57,7 +57,7 @@ const TransactionsPage: React.FC = () => {
         />
         <div className="mt-3 flex justify-center">
           {next && (
-            <Button onClick={() => load(next)} disabled={loading}>
+            <Button onClick={() => void load(next)} disabled={loading}>
               {loading ? 'Loading…' : 'Load more'}
             </Button>
           )}

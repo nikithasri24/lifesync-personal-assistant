@@ -20,7 +20,7 @@ export function createConfigCommand(): Command {
         logger.info('Config', `  API URL: ${chalk.green(currentConfig.apiUrl)}`);
         logger.info('Config', `  Data Path: ${chalk.green(currentConfig.dataPath)}`);
         logger.info('Config', `  Username: ${chalk.green(currentConfig.username)}`);
-        logger.info('Config', `  Default Store: ${chalk.green(currentConfig.defaultStore || 'Not set')}`);
+        logger.info('Config', `  Default Store: ${chalk.green(currentConfig.defaultStore ?? 'Not set')}`);
         logger.info('Config', `  Default Meal Type: ${chalk.green(currentConfig.defaultMealType)}`);
         logger.info('Config', `  Default Category: ${chalk.green(currentConfig.defaultCategory)}`);
         

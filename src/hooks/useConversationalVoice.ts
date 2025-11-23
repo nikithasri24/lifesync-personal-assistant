@@ -95,7 +95,7 @@ export function useConversationalVoice(userId: string): {
 
   // Initialize speech recognition
   useEffect(() => {
-    const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const SpeechRecognitionAPI = window.SpeechRecognition ?? window.webkitSpeechRecognition;
 
     if (!SpeechRecognitionAPI) {
       setState(prev => ({
@@ -110,12 +110,12 @@ export function useConversationalVoice(userId: string): {
     recognition.interimResults = true;
     recognition.lang = 'en-US';
 
-    recognition.onresult = async (event: SpeechRecognitionEvent) => {
+    recognition.onresult = (event: SpeechRecognitionEvent): void => {
       let interimTranscript = '';
       let finalTranscript = '';
 
       for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript;
+        const transcript = event.results[i]?.[0]?.transcript ?? '';
         if (event.results[i].isFinal) {
           finalTranscript += transcript + ' ';
         } else {
@@ -143,37 +143,39 @@ export function useConversationalVoice(userId: string): {
         recognition.stop();
 
         // Send to conversation engine
-        try {
-          const result = await engineRef.current?.chat(userMessage);
+        void (async () => {
+          try {
+            const result = await engineRef.current?.chat(userMessage);
 
-          if (result) {
+            if (result) {
+              setState(prev => ({
+                ...prev,
+                isThinking: false,
+                isSpeaking: true
+              }));
+
+              // Speak response
+              await speakText(result.response);
+
+              setState(prev => ({
+                ...prev,
+                isSpeaking: false
+              }));
+
+              // Restart listening after a brief pause
+              setTimeout(() => {
+                startListening();
+              }, 500);
+            }
+          } catch (error: unknown) {
+            logger.error('UseConversationalVoice', '[Voice] Error:', error);
             setState(prev => ({
               ...prev,
               isThinking: false,
-              isSpeaking: true
+              error: error instanceof Error ? error.message : 'An unknown error occurred'
             }));
-
-            // Speak response
-            await speakText(result.response);
-
-            setState(prev => ({
-              ...prev,
-              isSpeaking: false
-            }));
-
-            // Restart listening after a brief pause
-            setTimeout(() => {
-              startListening();
-            }, 500);
           }
-        } catch (error: any) {
-          logger.error('UseConversationalVoice', '[Voice] Error:', error);
-          setState(prev => ({
-            ...prev,
-            isThinking: false,
-            error: error.message
-          }));
-        }
+        })();
       }
     };
 
@@ -206,9 +208,9 @@ export function useConversationalVoice(userId: string): {
     return () => {
       recognition.stop();
     };
-  }, [userId, speakText, startListening]);
+  }, [userId, speakText, startListening, engineRef]);
 
-  const startListening = useCallback(() => {
+  const startListening = useCallback((): void => {
     if (!recognitionRef.current) {
       setState(prev => ({
         ...prev,
@@ -238,7 +240,7 @@ export function useConversationalVoice(userId: string): {
     }
   }, []);
 
-  const stopListening = useCallback(() => {
+  const stopListening = useCallback((): void => {
     if (recognitionRef.current) {
       recognitionRef.current.stop();
     }
@@ -328,6 +330,6 @@ export function useConversationalVoice(userId: string): {
     sendTextMessage,
     getMessages,
     clearHistory,
-    isSupported: !!(window.SpeechRecognition || window.webkitSpeechRecognition)
+    isSupported: !!(window.SpeechRecognition ?? window.webkitSpeechRecognition)
   };
 }

@@ -17,7 +17,7 @@ export interface RecipeImportState {
 
 export interface RecipeImportActions {
   importFromVideo: (url: string, lang?: string) => Promise<void>;
-  importFromText: (text: string, title?: string) => Promise<void>;
+  importFromText: (text: string, title?: string) => void;
   importFromUrl: (url: string) => Promise<void>;
   clearDraft: () => void;
   clearError: () => void;
@@ -57,7 +57,7 @@ export function useRecipeImport(): UseRecipeImportReturn {
   /**
    * Import recipe from pasted text
    */
-  const importFromText = async (text: string, title?: string): Promise<void> => {
+  const importFromText = (text: string, title?: string): void => {
     try {
       setIsImporting(true);
       setError(null);
@@ -92,7 +92,7 @@ export function useRecipeImport(): UseRecipeImportReturn {
         throw new Error('Failed to fetch recipe from URL');
       }
 
-      const recipe = await response.json();
+      const recipe = await response.json() as Omit<Recipe, 'id' | 'createdAt'>;
       setDraft(recipe);
 
       logger.info('RecipeImport', 'Successfully imported recipe from URL:', { url });

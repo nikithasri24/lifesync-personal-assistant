@@ -12,7 +12,7 @@ import { getPriorityColor, getStatusColor, getCategoryIcon, getTaskProgress } fr
 interface TaskCardProps {
   task: TaskView;
   project?: ProjectView;
-  activeFocusSession?: any;
+  activeFocusSession?: unknown;
   onToggleStatus: (taskId: string) => void;
   onStartFocus: (taskId: string, estimatedTime: number) => void;
   onEdit: (task: TaskView) => void;
@@ -153,7 +153,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 
         <div className="flex items-center space-x-2 ml-4">
           <button
-            onClick={() => onStartFocus(task.id, task.estimatedTime || 25)}
+            onClick={() => onStartFocus(task.id, task.estimatedTime ?? 25)}
             disabled={!!activeFocusSession}
             className="flex items-center space-x-1 px-3 py-1 bg-indigo-500 hover:bg-indigo-600 disabled:bg-gray-400 text-white rounded-lg text-sm transition-colors"
           >

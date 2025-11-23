@@ -170,7 +170,7 @@ export function groupByMonth<T extends { dateISO: string }>(
 
   for (const item of items) {
     const month = item.dateISO.slice(0, 7); // YYYY-MM
-    const existing = groups.get(month) || [];
+    const existing = groups.get(month) ?? [];
     groups.set(month, [...existing, item]);
   }
 

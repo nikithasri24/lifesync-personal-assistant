@@ -16,17 +16,17 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
   product,
   onSave,
   onClose,
-}) => {
+}): JSX.Element => {
   const [formData, setFormData] = React.useState<SkincareProductInput>({
-    name: product?.name || '',
-    brand: product?.brand || '',
-    category: product?.category || 'other',
-    productType: product?.productType || '',
-    usageTime: product?.usageTime || ['AM'],
+    name: product?.name ?? '',
+    brand: product?.brand ?? '',
+    category: product?.category ?? 'other',
+    productType: product?.productType ?? '',
+    usageTime: product?.usageTime ?? ['AM'],
     currentlyUsing: product?.currentlyUsing ?? true,
-    notes: product?.notes || '',
+    notes: product?.notes ?? '',
     price: product?.price,
-    size: product?.size || '',
+    size: product?.size ?? '',
     rating: product?.rating,
   });
 
@@ -44,23 +44,23 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
     { value: 'other', label: 'Other' },
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent): void => {
     e.preventDefault();
     if (!formData.name.trim()) {
-      alert('Product name is required');
+      console.error('Product name is required');
       return;
     }
     onSave(formData);
   };
 
-  const handleUsageTimeChange = (time: UsageTime) => {
+  const handleUsageTimeChange = (time: UsageTime): void => {
     const current = formData.usageTime;
     if (current.includes(time)) {
       // Remove if already selected (but keep at least one)
       if (current.length > 1) {
         setFormData({
           ...formData,
-          usageTime: current.filter(t => t !== time),
+          usageTime: current.filter((t: UsageTime) => t !== time),
         });
       }
     } else {
@@ -189,8 +189,12 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
               <input
                 type="number"
                 step="0.01"
-                value={formData.price || ''}
-                onChange={e => setFormData({ ...formData, price: e.target.value ? parseFloat(e.target.value) : undefined })}
+                value={formData.price ?? ''}
+                onChange={e => {
+                  const value = e.target.value;
+                  const numericValue = value ? Number(value) : undefined;
+                  setFormData({ ...formData, price: numericValue });
+                }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="19.99"
               />
@@ -202,7 +206,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
               </label>
               <input
                 type="text"
-                value={formData.size}
+                value={formData.size ?? ''}
                 onChange={e => setFormData({ ...formData, size: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="e.g., 50ml, 1oz"
@@ -222,7 +226,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
                   type="button"
                   onClick={() => setFormData({ ...formData, rating: star })}
                   className={`text-2xl transition-colors ${
-                    formData.rating && star <= formData.rating
+                    (formData.rating !== undefined && star <= formData.rating)
                       ? 'text-yellow-500'
                       : 'text-gray-300 hover:text-yellow-400'
                   }`}
@@ -230,7 +234,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
                   ★
                 </button>
               ))}
-              {formData.rating && (
+              {formData.rating !== undefined && (
                 <button
                   type="button"
                   onClick={() => setFormData({ ...formData, rating: undefined })}

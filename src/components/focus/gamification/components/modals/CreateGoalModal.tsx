@@ -15,7 +15,7 @@ export const CreateGoalModal: React.FC<CreateGoalModalProps> = ({
   onUpdateGoal,
   onClose,
   onCreate
-}) => {
+}): React.ReactElement | null => {
   if (!isOpen) return null;
 
   return (
@@ -30,7 +30,7 @@ export const CreateGoalModal: React.FC<CreateGoalModalProps> = ({
             </label>
             <input
               type="text"
-              value={newGoal.title || ''}
+              value={newGoal.title ?? ''}
               onChange={(e) => onUpdateGoal({ title: e.target.value })}
               className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
               placeholder="Enter goal title"
@@ -42,8 +42,8 @@ export const CreateGoalModal: React.FC<CreateGoalModalProps> = ({
               Type
             </label>
             <select
-              value={newGoal.type}
-              onChange={(e) => onUpdateGoal({ type: e.target.value as any })}
+              value={newGoal.type ?? 'daily'}
+              onChange={(e) => onUpdateGoal({ type: e.target.value as Goal['type'] })}
               className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
             >
               <option value="daily">Daily</option>
@@ -60,9 +60,12 @@ export const CreateGoalModal: React.FC<CreateGoalModalProps> = ({
               </label>
               <input
                 type="number"
-                value={newGoal.target?.value || ''}
+                value={newGoal.target?.value ?? ''}
                 onChange={(e) => onUpdateGoal({
-                  target: { ...newGoal.target!, value: parseInt(e.target.value) || 0 }
+                  target: {
+                    ...newGoal.target ?? {},
+                    value: parseInt(e.target.value) || 0
+                  }
                 })}
                 className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
                 placeholder="120"
@@ -74,9 +77,12 @@ export const CreateGoalModal: React.FC<CreateGoalModalProps> = ({
                 Unit
               </label>
               <select
-                value={newGoal.target?.unit || 'minutes'}
+                value={newGoal.target?.unit ?? 'minutes'}
                 onChange={(e) => onUpdateGoal({
-                  target: { ...newGoal.target!, unit: e.target.value }
+                  target: {
+                    ...newGoal.target ?? {},
+                    unit: e.target.value
+                  }
                 })}
                 className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
               >

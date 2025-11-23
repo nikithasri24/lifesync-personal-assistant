@@ -8,13 +8,13 @@ interface StoreListCardProps {
   store: Store;
 }
 
-export function StoreListCard({ list, store }: StoreListCardProps) {
+export function StoreListCard({ list, store }: StoreListCardProps): JSX.Element {
   return (
     <div className="bg-white rounded-lg border shadow-sm">
       <div className="p-4 border-b" style={{ backgroundColor: `${store.color}10` }}>
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <span className="text-2xl">{STORE_TYPES.find(t => t.value === store.type)?.icon || '🏪'}</span>
+            <span className="text-2xl">{STORE_TYPES.find(t => t.value === store.type)?.icon ?? '🏪'}</span>
             <div>
               <h3 className="font-semibold text-gray-900">{store.name}</h3>
               <p className="text-sm text-gray-600">{list.description}</p>

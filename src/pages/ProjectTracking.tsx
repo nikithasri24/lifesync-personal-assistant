@@ -7,20 +7,22 @@ import {
   List,
   Edit2,
   Trash2,
-  X,
   CheckCircle,
   Circle,
-  _Clock,
   Filter,
   ChevronDown,
   ChevronRight,
 } from 'lucide-react';
 import { useProjectTracking } from './hooks/useProjectTracking';
-import type { ProjectFormData } from '../projects/types';
+import type { StatusFilter } from '../projects/types';
 import { ProjectStats } from '../projects/components/ProjectStats';
 import { StatusBadge } from '../projects/components/StatusBadge';
+import type { Project } from '../projects/hooks/useProjectsQuery';
+import type { TodoItem } from '../types';
+import { ProjectFormModal, DeleteConfirmModal } from './components/ProjectModals';
 
 const ProjectTracking: React.FC = () => {
+  const hookResult = useProjectTracking();
   const {
     loading,
     viewMode,
@@ -46,21 +48,25 @@ const ProjectTracking: React.FC = () => {
     handleDeleteProject,
     openEditModal,
     closeModal
-  } = useProjectTracking();
+  } = hookResult;
 
-  // Type guard to ensure safe access to project properties
-  const safeProjectAccess = (project: any) => {
+  const safeProjectAccess = (project: Project): {
+    id: string;
+    name: string;
+    icon: string;
+    status: 'active' | 'completed' | 'on_hold';
+    description: string;
+    color: string;
+  } => {
     return {
-      id: project?.id ?? '',
-      name: project?.name ?? '',
-      icon: project?.icon ?? '',
-      status: project?.status ?? 'active',
-      description: project?.description ?? '',
-      color: project?.color ?? '#000000'
+      id: project.id,
+      name: project.name,
+      icon: project.icon,
+      status: project.status,
+      description: project.description ?? '',
+      color: project.color
     };
-
-
-
+  };
 
 
 
@@ -267,27 +273,26 @@ const ProjectTracking: React.FC = () => {
                     </button>
                   )}
 
-                  {/* Task List */}
                   {isExpanded && metrics.tasks.length > 0 && (
                     <div className="mt-2 space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-900/50">
-                      {metrics.tasks.map((task) => (
+                      {metrics.tasks.map((task: TodoItem) => (
                         <div
-                          key={task?.id ?? ''}
+                          key={task.id}
                           className="flex items-start gap-2 text-sm"
                         >
-                          {task?.completed ? (
+                          {task.completed ? (
                             <CheckCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-500" />
                           ) : (
                             <Circle className="mt-0.5 h-4 w-4 flex-shrink-0 text-slate-400" />
                           )}
                           <span
                             className={`flex-1 ${
-                              task?.completed
+                              task.completed
                                 ? 'text-slate-500 line-through dark:text-slate-500'
                                 : 'text-slate-900 dark:text-white'
                             }`}
                           >
-                            {task?.title ?? ''}
+                            {task.title}
                           </span>
                         </div>
                       ))}
@@ -300,140 +305,21 @@ const ProjectTracking: React.FC = () => {
         </div>
       )}
 
-      {/* Create/Edit Modal */}
-      {(showCreateModal || editingProject) && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-lg rounded-lg border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-700 dark:bg-slate-800">
-            <div className="mb-6 flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
-                {editingProject ? 'Edit Project' : 'Create Project'}
-              </h2>
-              <button
-                onClick={closeModal}
-                className="rounded p-1 text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
+      <ProjectFormModal
+        showCreateModal={showCreateModal}
+        editingProject={editingProject}
+        formData={formData}
+        setFormData={setFormData}
+        closeModal={closeModal}
+        handleCreateProject={handleCreateProject}
+        handleUpdateProject={handleUpdateProject}
+      />
 
-            <div className="space-y-4">
-              {/* Name */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Project Name *
-                </label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Enter project name"
-                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder-slate-500"
-                />
-              </div>
-
-              {/* Description */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Description
-                </label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Enter project description"
-                  rows={3}
-                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder-slate-500"
-                />
-              </div>
-
-              {/* Icon and Color */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Icon
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.icon}
-                    onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
-                    placeholder="📁"
-                    className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-2xl text-center focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-slate-600 dark:bg-slate-700"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Color
-                  </label>
-                  <input
-                    type="color"
-                    value={formData.color}
-                    onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                    className="mt-1 h-[42px] w-full rounded-lg border border-slate-300 bg-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-slate-600 dark:bg-slate-700"
-                  />
-                </div>
-              </div>
-
-              {/* Status */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Status
-                </label>
-                <select
-                  value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value as ProjectFormData['status'] })}
-                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
-                >
-                  <option value="active">Active</option>
-                  <option value="on_hold">On Hold</option>
-                  <option value="completed">Completed</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                onClick={closeModal}
-                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => void (editingProject ? handleUpdateProject() : handleCreateProject())}
-                disabled={!formData.name.trim()}
-                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {editingProject ? 'Update Project' : 'Create Project'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Delete Confirmation */}
-      {deleteConfirmId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-lg border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-700 dark:bg-slate-800">
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Delete Project</h3>
-            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-              Are you sure you want to delete this project? This action cannot be undone.
-            </p>
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                onClick={() => setDeleteConfirmId(null)}
-                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => void handleDeleteProject(deleteConfirmId)}
-                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <DeleteConfirmModal
+        deleteConfirmId={deleteConfirmId}
+        setDeleteConfirmId={setDeleteConfirmId}
+        handleDeleteProject={handleDeleteProject}
+      />
     </div>
   );
 };

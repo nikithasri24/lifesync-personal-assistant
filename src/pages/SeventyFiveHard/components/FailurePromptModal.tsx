@@ -7,7 +7,7 @@
  * - NO: Resets challenge to day 1
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { AlertTriangle, CheckCircle2, RotateCcw } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -17,10 +17,10 @@ interface FailurePromptModalProps {
   onNo: () => Promise<void>;
 }
 
-export default function FailurePromptModal({ date, onYes, onNo }: FailurePromptModalProps) {
-  const [isProcessing, setIsProcessing] = React.useState(false);
+export default function FailurePromptModal({ date, onYes, onNo }: FailurePromptModalProps): React.JSX.Element {
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
 
-  const handleYes = async () => {
+  const handleYes = async (): Promise<void> => {
     setIsProcessing(true);
     try {
       await onYes();
@@ -29,7 +29,7 @@ export default function FailurePromptModal({ date, onYes, onNo }: FailurePromptM
     }
   };
 
-  const handleNo = async () => {
+  const handleNo = async (): Promise<void> => {
     setIsProcessing(true);
     try {
       await onNo();
@@ -85,7 +85,7 @@ export default function FailurePromptModal({ date, onYes, onNo }: FailurePromptM
         {/* Actions */}
         <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row gap-3">
           <button
-            onClick={handleNo}
+            onClick={() => { void handleNo(); }}
             disabled={isProcessing}
             className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -94,7 +94,7 @@ export default function FailurePromptModal({ date, onYes, onNo }: FailurePromptM
           </button>
 
           <button
-            onClick={handleYes}
+            onClick={() => { void handleYes(); }}
             disabled={isProcessing}
             className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >

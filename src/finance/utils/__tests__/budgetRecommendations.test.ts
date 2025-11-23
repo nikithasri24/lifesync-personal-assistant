@@ -47,12 +47,12 @@ describe('budgetRecommendations', () => {
       const result = calculateBudgetRecommendation(transactions, 'cat-groceries', 3);
 
       expect(result).toBeTruthy();
-      expect(result!.average).toBe(500);
-      expect(result!.suggested).toBe(550); // 500 * 1.1
-      expect(result!.min).toBe(480);
-      expect(result!.max).toBe(520);
-      expect(result!.monthsAnalyzed).toBe(3);
-      expect(result!.confidence).toBe('high');
+      expect(result?.average).toBe(500);
+      expect(result?.suggested).toBe(550); // 500 * 1.1
+      expect(result?.min).toBe(480);
+      expect(result?.max).toBe(520);
+      expect(result?.monthsAnalyzed).toBe(3);
+      expect(result?.confidence).toBe('high');
     });
 
     it('should return null when no transactions for category', () => {
@@ -73,8 +73,8 @@ describe('budgetRecommendations', () => {
 
       const result = calculateBudgetRecommendation(transactions, 'cat-groceries', 3);
 
-      expect(result!.average).toBe(500);
-      expect(result!.monthsAnalyzed).toBe(1);
+      expect(result?.average).toBe(500);
+      expect(result?.monthsAnalyzed).toBe(1);
     });
 
     it('should only analyze specified number of months', () => {
@@ -86,7 +86,7 @@ describe('budgetRecommendations', () => {
 
       const result = calculateBudgetRecommendation(transactions, 'cat-groceries', 2);
 
-      expect(result!.monthsAnalyzed).toBe(2);
+      expect(result?.monthsAnalyzed).toBe(2);
     });
 
     it('should return null when no spending in analyzed period', () => {
@@ -108,7 +108,7 @@ describe('budgetRecommendations', () => {
 
       const result = calculateBudgetRecommendation(transactions, 'cat-groceries', 3);
 
-      expect(result!.confidence).toBe('medium');
+      expect(result?.confidence).toBe('medium');
     });
 
     it('should calculate low confidence for high variation', () => {
@@ -120,7 +120,7 @@ describe('budgetRecommendations', () => {
 
       const result = calculateBudgetRecommendation(transactions, 'cat-groceries', 3);
 
-      expect(result!.confidence).toBe('low');
+      expect(result?.confidence).toBe('low');
     });
 
     it('should calculate low confidence with limited data', () => {
@@ -130,8 +130,8 @@ describe('budgetRecommendations', () => {
 
       const result = calculateBudgetRecommendation(transactions, 'cat-groceries', 3);
 
-      expect(result!.confidence).toBe('low');
-      expect(result!.monthsAnalyzed).toBe(1);
+      expect(result?.confidence).toBe('low');
+      expect(result?.monthsAnalyzed).toBe(1);
     });
 
     it('should handle multiple transactions in same month', () => {
@@ -143,8 +143,8 @@ describe('budgetRecommendations', () => {
 
       const result = calculateBudgetRecommendation(transactions, 'cat-groceries', 3);
 
-      expect(result!.average).toBe(600); // All summed for November
-      expect(result!.monthsAnalyzed).toBe(1);
+      expect(result?.average).toBe(600); // All summed for November
+      expect(result?.monthsAnalyzed).toBe(1);
     });
 
     it('should skip months with zero spending', () => {
@@ -156,7 +156,7 @@ describe('budgetRecommendations', () => {
 
       const result = calculateBudgetRecommendation(transactions, 'cat-groceries', 3);
 
-      expect(result!.monthsAnalyzed).toBe(2); // Only counts months with spending
+      expect(result?.monthsAnalyzed).toBe(2); // Only counts months with spending
     });
 
     it('should round suggested amount up', () => {
@@ -166,7 +166,7 @@ describe('budgetRecommendations', () => {
 
       const result = calculateBudgetRecommendation(transactions, 'cat-groceries', 3);
 
-      expect(result!.suggested).toBe(367); // Math.ceil(333 * 1.1)
+      expect(result?.suggested).toBe(367); // Math.ceil(333 * 1.1)
     });
 
     it('should use default of 3 months when not specified', () => {
@@ -179,7 +179,7 @@ describe('budgetRecommendations', () => {
 
       const result = calculateBudgetRecommendation(transactions, 'cat-groceries');
 
-      expect(result!.monthsAnalyzed).toBe(3);
+      expect(result?.monthsAnalyzed).toBe(3);
     });
   });
 

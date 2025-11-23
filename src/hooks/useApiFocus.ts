@@ -75,7 +75,7 @@ export function useApiFocus(): {
     try {
       const response = await fetch(`${API_BASE_URL}/focus/profile`);
       if (!response.ok) throw new Error('Failed to fetch user profile');
-      const data: UserProfile = await response.json();
+      const data = await response.json() as UserProfile;
       setUserProfile(data);
     } catch (err) {
       logger.error('Error fetching user profile:', { err });
@@ -94,7 +94,7 @@ export function useApiFocus(): {
         body: JSON.stringify(updates),
       });
       if (!response.ok) throw new Error('Failed to update user profile');
-      const data: UserProfile = await response.json();
+      const data = await response.json() as UserProfile;
       setUserProfile(data);
       return data;
     } catch (err) {
@@ -108,7 +108,7 @@ export function useApiFocus(): {
     try {
       const response = await fetch(`${API_BASE_URL}/focus/achievements`);
       if (!response.ok) throw new Error('Failed to fetch achievements');
-      const data: Achievement[] = await response.json();
+      const data = await response.json() as Achievement[];
       setAchievements(data);
     } catch (err) {
       logger.error('Error fetching achievements:', { err });
@@ -121,7 +121,7 @@ export function useApiFocus(): {
     try {
       const response = await fetch(`${API_BASE_URL}/focus/analytics`);
       if (!response.ok) throw new Error('Failed to fetch analytics');
-      const data: AnalyticsData = await response.json();
+      const data = await response.json() as AnalyticsData;
       setAnalyticsData(data);
     } catch (err) {
       logger.error('Error fetching analytics:', { err });
@@ -134,7 +134,7 @@ export function useApiFocus(): {
     try {
       const response = await fetch(`${API_BASE_URL}/focus/sessions`);
       if (!response.ok) throw new Error('Failed to fetch focus sessions');
-      const data: FocusSession[] = await response.json();
+      const data = await response.json() as FocusSession[];
       setFocusSessions(data);
     } catch (err) {
       logger.error('Error fetching focus sessions:', { err });
@@ -155,7 +155,7 @@ export function useApiFocus(): {
         body: JSON.stringify(sessionData),
       });
       if (!response.ok) throw new Error('Failed to create focus session');
-      const data: FocusSession = await response.json();
+      const data = await response.json() as FocusSession;
       setFocusSessions(prev => [data, ...prev]);
       return data;
     } catch (err) {
@@ -178,7 +178,7 @@ export function useApiFocus(): {
         body: JSON.stringify(updates),
       });
       if (!response.ok) throw new Error('Failed to update focus session');
-      const data: FocusSession = await response.json();
+      const data = await response.json() as FocusSession;
       setFocusSessions(prev => prev.map(session =>
         session.id === sessionId ? data : session
       ));

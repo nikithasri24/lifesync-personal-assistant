@@ -20,7 +20,7 @@ import BudgetSummary, { type BudgetSummaryData } from '../components/budgets/Bud
 import BudgetEditor from '../components/budgets/BudgetEditor';
 import BudgetBulkEditor from '../components/budgets/BudgetBulkEditor';
 import BudgetTemplateManager from '../components/budgets/BudgetTemplateManager';
-import { getBudgetStatus } from '../components/budgets/BudgetProgressBar';
+import { getBudgetStatus, type BudgetStatus } from '../components/budgets/BudgetProgressBar';
 import { calculateBudgetRecommendation, type BudgetRecommendation } from '../utils/budgetRecommendations';
 
 const BudgetsPage: React.FC = () => {
@@ -96,7 +96,7 @@ const BudgetsPage: React.FC = () => {
 
     const categoryName = categories.find((c): boolean => c.id === b.categoryId)?.name ?? 'Unknown';
     const percentage = b.limit > 0 ? (spent / b.limit) * 100 : 0;
-    const status = getBudgetStatus(percentage);
+    const status: BudgetStatus = getBudgetStatus(percentage);
 
     return {
       budget: b,
@@ -119,7 +119,7 @@ const BudgetsPage: React.FC = () => {
 
   // Sort budgets: over -> warning -> safe, then by name
   const sortedBudgetData = [...budgetData].sort((a, b): number => {
-    const statusOrder = { over: 0, warning: 1, safe: 2 };
+    const statusOrder: Record<'safe' | 'warning' | 'over', number> = { over: 0, warning: 1, safe: 2 };
     const statusDiff = statusOrder[a.status] - statusOrder[b.status];
     if (statusDiff !== 0) return statusDiff;
     return a.categoryName.localeCompare(b.categoryName);

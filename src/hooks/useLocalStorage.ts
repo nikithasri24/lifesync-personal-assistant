@@ -11,7 +11,7 @@ export function useLocalStorage<T>(
   const [storedValue, setStoredValue] = useState<T>(() => {
     try {
       const item = window.localStorage.getItem(key);
-      return item ? JSON.parse(item) : initialValue;
+      return item ? (JSON.parse(item) as T) : initialValue;
     } catch (error) {
       logger.warn('LocalStorage', `Error reading localStorage key "${key}":`, { error });
       return initialValue;
@@ -45,10 +45,10 @@ export function useLocalStorage<T>(
 
   // Listen for changes to localStorage from other tabs/windows
   useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
+    const handleStorageChange = (e: StorageEvent): void => {
       if (e.key === key && e.newValue !== null) {
         try {
-          setStoredValue(JSON.parse(e.newValue));
+          setStoredValue(JSON.parse(e.newValue) as T);
         } catch (error) {
           logger.warn('LocalStorage', `Error parsing localStorage value for key "${key}":`, { error });
         }
@@ -70,7 +70,7 @@ export function useSessionStorage<T>(
   const [storedValue, setStoredValue] = useState<T>(() => {
     try {
       const item = window.sessionStorage.getItem(key);
-      return item ? JSON.parse(item) : initialValue;
+      return item ? (JSON.parse(item) as T) : initialValue;
     } catch (error) {
       logger.warn('LocalStorage', `Error reading sessionStorage key "${key}":`, { error });
       return initialValue;

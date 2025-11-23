@@ -63,11 +63,11 @@ const ProductsLibrary: React.FC<ProductsLibraryProps> = ({
     'other',
   ];
 
-  const formatCategory = (cat: string) => {
+  const formatCategory = (cat: string): string => {
     return cat.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
 
-  const isExpiringSoon = (expiryDate?: string) => {
+  const isExpiringSoon = (expiryDate?: string): boolean => {
     if (!expiryDate) return false;
     const expiry = new Date(expiryDate);
     const now = new Date();
@@ -75,7 +75,7 @@ const ProductsLibrary: React.FC<ProductsLibraryProps> = ({
     return daysUntilExpiry >= 0 && daysUntilExpiry <= 30;
   };
 
-  const isExpired = (expiryDate?: string) => {
+  const isExpired = (expiryDate?: string): boolean => {
     if (!expiryDate) return false;
     const expiry = new Date(expiryDate);
     const now = new Date();
@@ -214,7 +214,7 @@ const ProductsLibrary: React.FC<ProductsLibraryProps> = ({
                     <Star
                       key={i}
                       className={`h-4 w-4 ${
-                        i < product.rating!
+                        i < (product.rating ?? 0)
                           ? 'text-yellow-500 fill-yellow-500'
                           : 'text-gray-300'
                       }`}

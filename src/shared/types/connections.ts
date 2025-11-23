@@ -70,7 +70,7 @@ export interface ModulePermission {
   module: ShareableModule;
   permissionLevel: ModulePermissionLevel;
   userId: string;  // Who is granting this permission
-  settings: Record<string, any>;  // Module-specific settings
+  settings: Record<string, unknown>;  // Module-specific settings
   createdAt: string;
   updatedAt: string;
 }
@@ -136,7 +136,7 @@ export interface UpdateConnectionInput {
 export interface UpdatePermissionInput {
   module: ShareableModule;
   permissionLevel: ModulePermissionLevel;
-  settings?: Record<string, any>;
+  settings?: Record<string, unknown>;
 }
 
 export interface AcceptConnectionInput {

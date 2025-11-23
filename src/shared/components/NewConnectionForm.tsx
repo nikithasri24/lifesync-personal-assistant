@@ -9,6 +9,7 @@ import { createConnection } from '../api/connectionsAPI';
 import type { ConnectionRelationship } from '../types/connections';
 import { RELATIONSHIP_INFO } from '../types/connections';
 import { logger } from '../../services/logger';
+import { useToast } from '../../hooks/useToast';
 
 interface NewConnectionFormProps {
   onConnectionCreated: () => void;
@@ -20,8 +21,9 @@ const NewConnectionForm: React.FC<NewConnectionFormProps> = ({ onConnectionCreat
   const [label, setLabel] = useState('');
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const { showToast } = useToast();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     if (!email.trim()) return;
 
@@ -40,9 +42,11 @@ const NewConnectionForm: React.FC<NewConnectionFormProps> = ({ onConnectionCreat
       setMessage('');
 
       onConnectionCreated();
-    } catch (error: any) {
-      logger.error('Error creating connection:', { error });
-      alert(error.message || 'Failed to send invitation');
+      showToast('Invitation sent successfully', 'success');
+    } catch (err: unknown) {
+      logger.error('Error creating connection:', { error: err });
+      const errorMessage = err instanceof Error ? err.message : 'Failed to send invitation';
+      showToast(errorMessage, 'error');
     } finally {
       setSubmitting(false);
     }
@@ -55,7 +59,7 @@ const NewConnectionForm: React.FC<NewConnectionFormProps> = ({ onConnectionCreat
         <h3 className="text-lg font-semibold text-slate-900">Invite New Connection</h3>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-1">
             Email Address *

@@ -49,29 +49,39 @@ const GoalsPage: React.FC = () => {
 
   const loading = goalsLoading || accountsLoading;
 
-  const handleCreateGoal = () => {
+  const sortedGoals = React.useMemo<Goal[]>(() => {
+    return [...goals].sort((a, b) => {
+      const aComplete = a.currentAmount >= a.targetAmount;
+      const bComplete = b.currentAmount >= b.targetAmount;
+      if (aComplete !== bComplete) return aComplete ? 1 : -1;
+
+      return new Date(a.dueDateISO).getTime() - new Date(b.dueDateISO).getTime();
+    });
+  }, [goals]);
+
+  const handleCreateGoal = (): void => {
     setEditingGoal(undefined);
     setEditorOpen(true);
   };
 
-  const handleEditGoal = (goal: Goal) => {
+  const handleEditGoal = (goal: Goal): void => {
     setEditingGoal(goal);
     setEditorOpen(true);
   };
 
-  const handleSaveGoal = async (goal: GoalInput) => {
+  const handleSaveGoal = async (goal: GoalInput): Promise<void> => {
     await upsertGoalMutation.mutateAsync(goal);
     setEditorOpen(false);
     setEditingGoal(undefined);
   };
 
-  const handleDeleteGoal = async (goalId: string) => {
+  const handleDeleteGoal = async (goalId: string): Promise<void> => {
     await deleteGoalMutation.mutateAsync(goalId);
     setEditorOpen(false);
     setEditingGoal(undefined);
   };
 
-  const handleCloseEditor = () => {
+  const handleCloseEditor = (): void => {
     setEditorOpen(false);
     setEditingGoal(undefined);
   };
@@ -86,19 +96,6 @@ const GoalsPage: React.FC = () => {
       </div>
     );
   }
-
-  // Sort goals by status and due date
-  const sortedGoals = React.useMemo(() => {
-    return [...goals].sort((a, b) => {
-      // First by completion (incomplete first)
-      const aComplete = a.currentAmount >= a.targetAmount;
-      const bComplete = b.currentAmount >= b.targetAmount;
-      if (aComplete !== bComplete) return aComplete ? 1 : -1;
-
-      // Then by due date (soonest first)
-      return new Date(a.dueDateISO).getTime() - new Date(b.dueDateISO).getTime();
-    });
-  }, [goals]);
 
   return (
     <>

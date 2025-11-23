@@ -33,7 +33,21 @@ export function mapShoppingItemDataToModel(items: ShoppingItemData[]): ShoppingI
 /**
  * Map UI ShoppingItem to API create input
  */
-export function mapShoppingItemToCreateInput(item: Omit<ShoppingItem, 'id' | 'createdAt' | 'updatedAt'>) {
+export function mapShoppingItemToCreateInput(item: Omit<ShoppingItem, 'id' | 'createdAt' | 'updatedAt'>): {
+  name: string;
+  quantity: number;
+  unit: string | null;
+  category: string | null;
+  subcategory: string | null;
+  priority: string;
+  estimated_price: number | null;
+  actual_price: number | null;
+  tags: string[];
+  assigned_store: string | null;
+  best_stores: string[];
+  notes: string | null;
+  is_purchased: boolean;
+} {
   return {
     name: item.name,
     quantity: item.quantity,
@@ -54,7 +68,21 @@ export function mapShoppingItemToCreateInput(item: Omit<ShoppingItem, 'id' | 'cr
 /**
  * Map UI ShoppingItem updates to API update input
  */
-export function mapShoppingItemToUpdateInput(updates: Partial<ShoppingItem>) {
+export function mapShoppingItemToUpdateInput(updates: Partial<ShoppingItem>): {
+  name?: string;
+  quantity?: number;
+  unit?: string;
+  category?: string;
+  subcategory?: string;
+  priority?: string;
+  estimated_price?: number;
+  actual_price?: number;
+  tags?: string[];
+  assigned_store?: string;
+  best_stores?: string[];
+  notes?: string;
+  is_purchased?: boolean;
+} {
   return {
     name: updates.name,
     quantity: updates.quantity,

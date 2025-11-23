@@ -46,18 +46,18 @@ const SkincareCalendar: React.FC<SkincareCalendarProps> = ({
   // Create a map of logs by date for quick lookup
   const logsByDate = new Map<string, { am: boolean; pm: boolean }>();
   logs.forEach(log => {
-    const existing = logsByDate.get(log.date) || { am: false, pm: false };
+    const existing = logsByDate.get(log.date) ?? { am: false, pm: false };
     if (log.routineType === 'AM') existing.am = log.completed;
     if (log.routineType === 'PM') existing.pm = log.completed;
     logsByDate.set(log.date, existing);
   });
 
-  const handlePrevMonth = () => {
+  const handlePrevMonth = (): void => {
     const newDate = new Date(year, month - 1, 1);
     onMonthChange(newDate);
   };
 
-  const handleNextMonth = () => {
+  const handleNextMonth = (): void => {
     const newDate = new Date(year, month + 1, 1);
     onMonthChange(newDate);
   };

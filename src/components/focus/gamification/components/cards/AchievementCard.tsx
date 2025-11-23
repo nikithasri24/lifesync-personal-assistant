@@ -10,7 +10,7 @@ interface AchievementCardProps {
 
 export const AchievementCard: React.FC<AchievementCardProps> = ({ achievement }) => {
   const isUnlocked = !!achievement.unlockedAt;
-  const progress = achievement.progress || 0;
+  const progress = achievement.progress ?? 0;
 
   return (
     <div

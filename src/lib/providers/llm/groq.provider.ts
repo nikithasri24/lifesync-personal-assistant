@@ -66,7 +66,7 @@ export class GroqProvider implements LLMProvider {
       }
 
       return {
-        content: choice.message.content || '',
+        content: choice.message.content ?? '',
         functionCall,
         usage: response.usage ? {
           promptTokens: response.usage.prompt_tokens,

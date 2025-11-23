@@ -8,6 +8,7 @@ import React from 'react';
 import { Button } from '../ui/Button';
 import { getFinanceAPI } from '../data';
 import { logger } from '../../services/logger';
+import { useToast } from '../../hooks/useToast';
 
 interface QuickAddTransactionProps {
   onClose: () => void;
@@ -17,6 +18,7 @@ interface QuickAddTransactionProps {
 export const QuickAddTransaction: React.FC<QuickAddTransactionProps> = ({ onClose, onSuccess }) => {
   const [loading, setLoading] = React.useState(false);
   const [accounts, setAccounts] = React.useState<Array<{ id: string; name: string }>>([]);
+  const { showToast } = useToast();
   const [formData, setFormData] = React.useState({
     accountId: '',
     description: '',
@@ -28,7 +30,7 @@ export const QuickAddTransaction: React.FC<QuickAddTransactionProps> = ({ onClos
 
   // Load accounts
   React.useEffect(() => {
-    async function loadAccounts() {
+    async function loadAccounts(): Promise<void> {
       try {
         const api = await getFinanceAPI();
         const accts = await api.listAccounts();
@@ -40,10 +42,10 @@ export const QuickAddTransaction: React.FC<QuickAddTransactionProps> = ({ onClos
         logger.error('Failed to load accounts:', { error });
       }
     }
-    loadAccounts();
+    void loadAccounts();
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     setLoading(true);
 
@@ -60,15 +62,15 @@ export const QuickAddTransaction: React.FC<QuickAddTransactionProps> = ({ onClos
 
       onSuccess();
       onClose();
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to add transaction:', { error });
-      alert('Failed to add transaction. Check console for details.');
+      showToast('Failed to add transaction. Check console for details.', 'error');
     } finally {
       setLoading(false);
     }
   };
 
-  const presetTransactions = [
+  const presetTransactions: Array<{ description: string; amount: string }> = [
     { description: 'STARBUCKS #1234', amount: '5.75' },
     { description: 'NETFLIX.COM', amount: '15.49' },
     { description: 'WHOLE FOODS', amount: '127.50' },
@@ -81,13 +83,13 @@ export const QuickAddTransaction: React.FC<QuickAddTransactionProps> = ({ onClos
     { description: 'CVS PHARMACY', amount: '28.75' },
   ];
 
-  const fillPreset = (preset: { description: string; amount: string }) => {
+  const fillPreset = React.useCallback((preset: { description: string; amount: string }): void => {
     setFormData(prev => ({
       ...prev,
       description: preset.description,
       amount: preset.amount
     }));
-  };
+  }, []);
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -100,7 +102,7 @@ export const QuickAddTransaction: React.FC<QuickAddTransactionProps> = ({ onClos
 
         {/* Content */}
         <div className="p-6">
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={(e) => { void handleSubmit(e); }} className="space-y-4">
             {/* Account */}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -127,9 +129,9 @@ export const QuickAddTransaction: React.FC<QuickAddTransactionProps> = ({ onClos
                 Quick Presets (click to fill)
               </label>
               <div className="flex flex-wrap gap-2">
-                {presetTransactions.map((preset, idx) => (
+                {presetTransactions.map((preset) => (
                   <button
-                    key={idx}
+                    key={preset.description}
                     type="button"
                     onClick={() => fillPreset(preset)}
                     className="text-xs px-3 py-1 bg-slate-100 hover:bg-slate-200 rounded-full border border-slate-300 transition-colors"
@@ -235,7 +237,7 @@ export const QuickAddTransaction: React.FC<QuickAddTransactionProps> = ({ onClos
           <Button variant="ghost" onClick={onClose} disabled={loading}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={loading || !formData.accountId}>
+          <Button onClick={(e) => { void handleSubmit(e); }} disabled={loading || !formData.accountId}>
             {loading ? 'Adding...' : 'Add Transaction'}
           </Button>
         </div>

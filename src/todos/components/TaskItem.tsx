@@ -53,10 +53,10 @@ export function TaskItem({
   onAddSubtask,
   onStartPomodoro,
   isUpdating
-}: TaskItemProps) {
+}: TaskItemProps): JSX.Element {
   const taskIsOverdue = task.dueDate && isOverdue(task.dueDate, task.status);
 
-  const getPriorityStyles = (priority: string) => {
+  const getPriorityStyles = (priority: string): string => {
     switch (priority) {
       case 'urgent': return 'border-red-400 hover:border-red-500 hover:bg-red-50 dark:hover:bg-red-900/20';
       case 'high': return 'border-orange-400 hover:border-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20';
@@ -99,8 +99,8 @@ export function TaskItem({
               <input
                 type="text"
                 value={editText}
-                onChange={(e) => onEditTextChange(e.target.value)}
-                onKeyDown={(e) => {
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => onEditTextChange(e.target.value)}
+                onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
                   if (e.key === 'Enter') onSaveEdit();
                   if (e.key === 'Escape') onCancelEdit();
                 }}
@@ -127,7 +127,7 @@ export function TaskItem({
           </div>
 
           {/* Task metadata */}
-          {(task.description || task.dueDate || project || task.tags.length > 0) && (
+          {(task.description ?? task.dueDate ?? project ?? task.tags.length > 0) && (
             <div className="flex items-center space-x-4 text-xs text-gray-500 dark:text-slate-400 ml-2">
               {task.description && (
                 <span className="truncate max-w-xs text-gray-600 dark:text-slate-400">
@@ -162,9 +162,9 @@ export function TaskItem({
                 </span>
               )}
 
-              {task.tags.map((tag, index) => (
+              {task.tags.map((tag) => (
                 <span
-                  key={index}
+                  key={`tag-${tag}`}
                   className="inline-flex items-center px-2 py-1 rounded bg-blue-50 dark:bg-slate-700 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-slate-600 transition-colors"
                 >
                   <span className="text-blue-500 mr-1 text-xs">#</span>

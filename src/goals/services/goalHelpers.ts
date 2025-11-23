@@ -4,6 +4,7 @@
 
 import { addDays } from 'date-fns';
 import type { GoalDraft, DreamDraft } from '../types/drafts';
+import type { CreateLifeGoalInput, CreateLifeDreamInput } from '../types/lifeGoals';
 
 /**
  * Create an empty goal draft with default values
@@ -32,7 +33,7 @@ export const createDreamDraft = (): DreamDraft => ({
 /**
  * Map goal draft to API create input
  */
-export const mapGoalDraftToCreateInput = (draft: GoalDraft) => {
+export const mapGoalDraftToCreateInput = (draft: GoalDraft): CreateLifeGoalInput => {
   const targetDate = draft.targetDate ? new Date(draft.targetDate) : addDays(new Date(), 30);
   return {
     title: draft.title.trim(),
@@ -51,7 +52,7 @@ export const mapGoalDraftToCreateInput = (draft: GoalDraft) => {
 /**
  * Map dream draft to API create input
  */
-export const mapDreamDraftToCreateInput = (draft: DreamDraft) => {
+export const mapDreamDraftToCreateInput = (draft: DreamDraft): CreateLifeDreamInput => {
   const estimatedCost = draft.estimatedCost.trim();
   return {
     title: draft.title.trim(),

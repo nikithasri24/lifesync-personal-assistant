@@ -11,7 +11,7 @@ interface DatePickerPopoverProps {
 
 const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
 
-export default function DatePickerPopover({ value, onChange, weekStartsOn = 0 }: DatePickerPopoverProps) {
+export default function DatePickerPopover({ value, onChange, weekStartsOn = 0 }: DatePickerPopoverProps): JSX.Element {
   const [month, setMonth] = useState<Date>(startOfMonth(value))
   const [selected, setSelected] = useState<Date>(value)
 
@@ -30,7 +30,7 @@ export default function DatePickerPopover({ value, onChange, weekStartsOn = 0 }:
     return [...DAY_LABELS.slice(weekStartsOn), ...DAY_LABELS.slice(0, weekStartsOn)]
   }, [weekStartsOn])
 
-  const handleToday = () => {
+  const handleToday = (): void => {
     const today = new Date()
     setSelected(today)
     setMonth(startOfMonth(today))

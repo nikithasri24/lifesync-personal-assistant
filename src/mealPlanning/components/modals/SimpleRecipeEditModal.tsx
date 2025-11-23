@@ -9,7 +9,7 @@ interface SimpleRecipeEditModalProps {
   onClose: () => void;
 }
 
-export function SimpleRecipeEditModal({ recipe, onSave, onClose }: SimpleRecipeEditModalProps) {
+export function SimpleRecipeEditModal({ recipe, onSave, onClose }: SimpleRecipeEditModalProps): JSX.Element {
   const [name, setName] = useState(recipe.name || '');
   const [ingredientsText, setIngredientsText] = useState(
     (recipe.ingredients || [])
@@ -19,7 +19,7 @@ export function SimpleRecipeEditModal({ recipe, onSave, onClose }: SimpleRecipeE
   const [instructionsText, setInstructionsText] = useState((recipe.instructions || []).join('\n'));
   const [saving, setSaving] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     setSaving(true);
 
@@ -52,7 +52,7 @@ export function SimpleRecipeEditModal({ recipe, onSave, onClose }: SimpleRecipeE
 
   return (
     <ModalShell title="Recipe" subtitle={recipe.name} onClose={onClose} maxWidthClass="max-w-lg">
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={(e) => void handleSubmit(e)}>
         <div className="space-y-3">
           <div>
             <label className="block text-xs font-medium text-slate-700 mb-1">Recipe Name</label>

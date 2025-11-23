@@ -59,7 +59,7 @@ describe('journalAPI', () => {
 
       const result = await getJournalEntries();
 
-      expect(supabase.from).toHaveBeenCalledWith('journal_entries');
+      expect(vi.mocked(supabase.from)).toHaveBeenCalledWith('journal_entries');
       expect(mockQuery.eq).toHaveBeenCalledWith('user_id', mockUser.id);
       expect(mockQuery.order).toHaveBeenCalledWith('created_at', { ascending: false });
       expect(result).toHaveLength(1);

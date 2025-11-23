@@ -3,7 +3,7 @@
 // The real implementation lives in `apiClient.ts` which supports Supabase + REST.
 
 // Keep the environment reference so tooling can verify configuration.
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
+const API_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:3001/api';
 void API_BASE;
 
 export { apiClient } from './apiClient';

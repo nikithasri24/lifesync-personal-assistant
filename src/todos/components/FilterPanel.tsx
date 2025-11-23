@@ -30,20 +30,20 @@ export function FilterPanel({
   onClearFilters,
   isVisible,
   _onClose
-}: FilterPanelProps) {
+}: FilterPanelProps): React.JSX.Element | null {
   if (!isVisible) {
     return null;
   }
 
-  const handlePriorityChange = (priority: string) => {
+  const handlePriorityChange = (priority: string): void => {
     onFilterChange({ ...filters, priority });
   };
 
-  const handleStatusChange = (status: string) => {
+  const handleStatusChange = (status: string): void => {
     onFilterChange({ ...filters, status });
   };
 
-  const handleDueDateChange = (dueDate: string) => {
+  const handleDueDateChange = (dueDate: string): void => {
     onFilterChange({ ...filters, dueDate });
   };
 

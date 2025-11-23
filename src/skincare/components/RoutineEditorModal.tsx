@@ -24,7 +24,7 @@ const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
   const [name, setName] = React.useState(routine.name);
   const [isActive, setIsActive] = React.useState(routine.isActive);
   const [productIds, setProductIds] = React.useState<string[]>(routine.productIds);
-  const [notes, setNotes] = React.useState(routine.notes || '');
+  const [notes, setNotes] = React.useState(routine.notes ?? '');
   const [showAddProducts, setShowAddProducts] = React.useState(false);
 
   // Filter products by routine type
@@ -46,7 +46,7 @@ const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
     .map(id => allProducts.find(p => p.id === id))
     .filter(Boolean) as SkincareProduct[];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent): void => {
     e.preventDefault();
     onSave({
       name,
@@ -56,15 +56,15 @@ const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
     });
   };
 
-  const handleAddProduct = (productId: string) => {
+  const handleAddProduct = (productId: string): void => {
     setProductIds([...productIds, productId]);
   };
 
-  const handleRemoveProduct = (productId: string) => {
+  const handleRemoveProduct = (productId: string): void => {
     setProductIds(productIds.filter(id => id !== productId));
   };
 
-  const handleMoveProduct = (index: number, direction: 'up' | 'down') => {
+  const handleMoveProduct = (index: number, direction: 'up' | 'down'): void => {
     const newProductIds = [...productIds];
     const newIndex = direction === 'up' ? index - 1 : index + 1;
 

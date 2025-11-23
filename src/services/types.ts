@@ -232,7 +232,7 @@ export interface FocusSessionData {
   mood_after?: string;
   productivity_score?: number;
   notes?: string;
-  environment_data?: any;
+  environment_data?: unknown;
   created_at?: string;
   updated_at?: string;
 }

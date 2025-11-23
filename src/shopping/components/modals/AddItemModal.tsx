@@ -30,7 +30,7 @@ export function AddItemModal({
   onSubmit,
   onFormChange,
   onBarcodeChange,
-}: AddItemModalProps) {
+}: AddItemModalProps): React.JSX.Element | null {
   if (!isOpen) return null;
 
   return (
@@ -179,7 +179,7 @@ export function AddItemModal({
               </label>
               <input
                 type="text"
-                value={barcodeResult || ''}
+                value={barcodeResult ?? ''}
                 onChange={(e) => onBarcodeChange(e.target.value)}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Scan or enter manually"

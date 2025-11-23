@@ -34,9 +34,9 @@ export const FocusAnalytics: React.FC<FocusAnalyticsProps> = ({
   const [selectedPeriod, setSelectedPeriod] = useState(period);
   const [expandedSections, setExpandedSections] = useState<string[]>(['overview']);
 
-  const toggleSection = (section: string) => {
-    setExpandedSections(prev => 
-      prev.includes(section) 
+  const toggleSection = (section: string): void => {
+    setExpandedSections(prev =>
+      prev.includes(section)
         ? prev.filter(s => s !== section)
         : [...prev, section]
     );
@@ -54,11 +54,7 @@ export const FocusAnalytics: React.FC<FocusAnalyticsProps> = ({
     return 'text-red-600';
   };
 
-  const _getScoreBackground = (score: number): string => {
-    if (score >= 80) return 'bg-green-100 border-green-200';
-    if (score >= 60) return 'bg-yellow-100 border-yellow-200';
-    return 'bg-red-100 border-red-200';
-  };
+  // Removing unused function to reduce code complexity
 
   if (isLoading) {
     return (
@@ -69,7 +65,7 @@ export const FocusAnalytics: React.FC<FocusAnalyticsProps> = ({
             <div className="h-6 bg-slate-200 dark:bg-slate-700 rounded w-24"></div>
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            {[...Array(4)].map((_, i) => (
+            {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="h-24 bg-slate-200 dark:bg-slate-700 rounded"></div>
             ))}
           </div>
@@ -89,7 +85,7 @@ export const FocusAnalytics: React.FC<FocusAnalyticsProps> = ({
           </h3>
           <p className="text-slate-600 dark:text-slate-300 mb-4">{error}</p>
           <button
-            onClick={refresh}
+            onClick={() => void refresh()}
             className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg transition-colors"
           >
             Try Again
@@ -127,7 +123,7 @@ export const FocusAnalytics: React.FC<FocusAnalyticsProps> = ({
             <div className="flex items-center space-x-2">
               <select
                 value={selectedPeriod}
-                onChange={(e) => setSelectedPeriod(e.target.value as any)}
+                onChange={(e) => setSelectedPeriod(e.target.value as 'day' | 'week' | 'month' | 'year')}
                 className="px-3 py-1 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm"
               >
                 <option value="day">Today</option>
@@ -136,7 +132,7 @@ export const FocusAnalytics: React.FC<FocusAnalyticsProps> = ({
                 <option value="year">This Year</option>
               </select>
               <button
-                onClick={refresh}
+                onClick={() => void refresh()}
                 className="p-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors"
                 title="Refresh Data"
               >
@@ -147,7 +143,7 @@ export const FocusAnalytics: React.FC<FocusAnalyticsProps> = ({
 
           <div className="flex items-center space-x-2">
             <button
-              onClick={() => exportData('csv')}
+              onClick={() => void exportData('csv')}
               className="flex items-center space-x-2 px-3 py-2 text-sm bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-lg transition-colors"
             >
               <Download className="w-4 h-4" />

@@ -2,13 +2,13 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { logger } from '../services/logger'
 
 // Prefer process.env when available (tests/scripts), fallback to Vite's import.meta.env
-const env = (typeof process !== 'undefined' ? process.env : {}) as Record<string, string | undefined>
-const supabaseUrl = (env.VITE_SUPABASE_URL || (import.meta as any).env?.VITE_SUPABASE_URL) as string | undefined
-const supabaseAnonKey = (env.VITE_SUPABASE_ANON_KEY || (import.meta as any).env?.VITE_SUPABASE_ANON_KEY) as string | undefined
+const env = typeof process !== 'undefined' ? process.env : {}
+const supabaseUrl = env.VITE_SUPABASE_URL ?? (import.meta.env as Record<string, unknown>)?.VITE_SUPABASE_URL as string | undefined
+const supabaseAnonKey = env.VITE_SUPABASE_ANON_KEY ?? (import.meta.env as Record<string, unknown>)?.VITE_SUPABASE_ANON_KEY as string | undefined
 
 const _isVitest = typeof process !== 'undefined' && process.env?.VITEST === 'true'
 
-const isPlaceholder = (value?: string) => {
+const isPlaceholder = (value?: string): boolean => {
   if (!value) return true
   const trimmed = value.trim()
   if (!trimmed) return true

@@ -1,10 +1,10 @@
 import fs from 'fs-extra';
 import path from 'path';
-import { type ShoppingItem, type Recipe, type MealPlan, type Store, type TodoItem, type TodoCategory } from './types.js';
+import { type ShoppingItem, type Recipe, type MealPlan, type Store, type TodoItem, type TodoCategory, type CliConfig } from './types.js';
 import { loadConfig } from './config.js';
 
 export class DataManager {
-  private config: any;
+  private config: CliConfig | null;
   private dataPath: string;
 
   constructor() {
@@ -12,7 +12,7 @@ export class DataManager {
     this.dataPath = '';
   }
 
-  async init() {
+  async init(): Promise<void> {
     this.config = await loadConfig();
     this.dataPath = this.config.dataPath;
     await fs.ensureDir(this.dataPath);
