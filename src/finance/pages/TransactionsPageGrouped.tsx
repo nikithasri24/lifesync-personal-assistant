@@ -152,10 +152,12 @@ const TransactionsPageGrouped: React.FC = () => {
     return collapsedGroups.has(key);
   };
 
-  const grandTotal = transactions.reduce(
-    (sum, txn) => sum + (txn.type === 'credit' ? txn.amount : -txn.amount),
-    0
-  );
+  const grandTotal = Array.isArray(transactions)
+    ? transactions.reduce(
+        (sum, txn) => sum + (txn.type === 'credit' ? txn.amount : -txn.amount),
+        0
+      )
+    : 0;
 
   // Calculate budget summary metrics
   const budgetSummary = React.useMemo(() => {
@@ -297,7 +299,7 @@ const TransactionsPageGrouped: React.FC = () => {
       >
         <div className="mb-4 flex justify-between items-center">
           <div className="text-sm text-primary opacity-70">
-            {transactions.length} transaction{transactions.length !== 1 ? 's' : ''} in{' '}
+            {Array.isArray(transactions) ? transactions.length : 0} transaction{(Array.isArray(transactions) ? transactions.length : 0) !== 1 ? 's' : ''} in{' '}
             {groupedTransactions.length} categor{groupedTransactions.length !== 1 ? 'ies' : 'y'}
           </div>
           <div className="text-sm font-semibold text-primary">
