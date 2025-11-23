@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { logger } from '../../services/logger';
 import { parseReceiptToItems, parseReceiptMeta, type ParsedReceiptItem } from '../services/receiptParser';
-import '../../types/experimental-web-apis';
+import '../../types/experimental-web-apis.d.ts';
 
 interface UseReceiptScannerReturn {
   receiptImageUrl: string | null;

@@ -5,7 +5,7 @@
 
 import { useState, useCallback } from 'react';
 import { logger } from '../../services/logger';
-import '../../types/experimental-web-apis';
+import '../../types/experimental-web-apis.d.ts';
 
 interface UseVoiceInputReturn {
   isListening: boolean;
