@@ -217,6 +217,29 @@ textarea::placeholder {
   background: var(--text-tertiary);
 }
 
+/* Sidebar specific scrollbar - more visible */
+aside nav::-webkit-scrollbar {
+  width: 10px;
+}
+
+aside nav::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: var(--radius-full);
+  margin: 4px 0;
+}
+
+aside nav::-webkit-scrollbar-thumb {
+  background: var(--accent-primary);
+  background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+  border-radius: var(--radius-full);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+aside nav::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-secondary);
+}
+
 /* Premium Typography Scale */
 .text-xs { font-size: 0.75rem; line-height: 1.5; font-weight: 500; letter-spacing: 0.025em; }
 .text-sm { font-size: 0.875rem; line-height: 1.6; font-weight: 500; }
@@ -1028,6 +1051,7 @@ textarea::placeholder {
 .focus\:border-primary-500:focus { border-color: var(--accent-primary); }
 .focus\:border-blue-500:focus { border-color: var(--accent-primary); }
 .focus\:ring-primary-500:focus { box-shadow: 0 0 0 2px var(--accent-primary); }
+
 
 /* Print styles */
 @media print {
