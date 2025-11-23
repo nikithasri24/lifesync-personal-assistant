@@ -240,12 +240,12 @@ export default function Assistant(): JSX.Element {
       )}
 
       {/* Input Area - Fixed at Bottom */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t border-slate-200 p-4 safe-bottom">
+      <div className="fixed bottom-0 left-0 right-0 bg-primary/95 backdrop-blur-xl border-t border-primary/10 p-4 sm:p-6 safe-bottom shadow-xl">
         <form
           onSubmit={(e) => {
             void handleTextSubmit(e);
           }}
-          className="max-w-4xl mx-auto flex gap-2 items-end"
+          className="max-w-4xl mx-auto flex gap-3 items-end"
         >
           {/* Text Input */}
           <div className="flex-1 relative">
@@ -259,11 +259,12 @@ export default function Assistant(): JSX.Element {
                 }
               }}
               placeholder="Type a message or tap the mic..."
-              className="w-full px-4 py-3 pr-12 rounded-2xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none"
+              className="w-full px-5 py-4 pr-14 rounded-2xl border-2 border-primary/20 bg-white text-primary placeholder-tertiary focus:outline-none focus:ring-2 focus:ring-accent-primary focus:border-accent-primary resize-none transition-all duration-200 shadow-sm"
               rows={1}
               style={{
-                minHeight: '48px',
-                maxHeight: '120px'
+                minHeight: '56px',
+                maxHeight: '140px',
+                fontSize: '16px'
               }}
             />
 
@@ -271,7 +272,8 @@ export default function Assistant(): JSX.Element {
             {textInput.trim() && (
               <button
                 type="submit"
-                className="absolute right-2 bottom-2 p-2 bg-gradient-to-br from-orange-500 to-pink-500 text-white rounded-xl hover:shadow-lg transition"
+                className="absolute right-3 bottom-3 p-2.5 bg-accent-gradient text-white rounded-xl hover:shadow-lg hover:scale-105 active:scale-95 transition-all duration-200"
+                aria-label="Send message"
               >
                 <Send className="h-5 w-5" />
               </button>
@@ -284,7 +286,8 @@ export default function Assistant(): JSX.Element {
               <button
                 type="button"
                 onClick={stopSpeaking}
-                className="p-4 bg-slate-200 text-slate-700 rounded-2xl hover:bg-slate-300 transition"
+                className="p-4 bg-tertiary/50 text-secondary rounded-2xl hover:bg-tertiary hover:scale-105 active:scale-95 transition-all duration-200 shadow-sm"
+                aria-label="Stop speaking"
               >
                 <VolumeX className="h-6 w-6" />
               </button>
@@ -293,11 +296,12 @@ export default function Assistant(): JSX.Element {
             <button
               type="button"
               onClick={handleVoiceToggle}
-              className={`p-4 rounded-2xl transition-all ${
+              className={`p-4 rounded-2xl transition-all duration-200 shadow-sm ${
                 isListening
-                  ? 'bg-red-500 text-white animate-pulse shadow-lg shadow-red-500/50'
-                  : 'bg-gradient-to-br from-orange-500 to-pink-500 text-white hover:shadow-lg'
+                  ? 'bg-error text-white animate-pulse shadow-lg shadow-error/30'
+                  : 'bg-accent-gradient text-white hover:shadow-lg hover:scale-105 active:scale-95'
               }`}
+              aria-label={isListening ? 'Stop listening' : 'Start listening'}
             >
               {isListening ? (
                 <MicOff className="h-6 w-6" />
