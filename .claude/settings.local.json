@@ -37,7 +37,14 @@
       "Bash(wc:*)",
       "Bash(for:*)",
       "Bash(done)",
-      "Bash(npm run type-check:*)"
+      "Bash(npm run type-check:*)",
+      "Bash(npm run:*)",
+      "Bash(npm install cors express pg dotenv node-fetch)",
+      "Bash(npm install:*)",
+      "Bash(curl:*)",
+      "Bash(npm start)",
+      "Bash(git reset:*)",
+      "Bash(.env.local)"
     ],
     "deny": [],
     "ask": []

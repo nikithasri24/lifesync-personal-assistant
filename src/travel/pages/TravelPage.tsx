@@ -229,7 +229,7 @@ const TravelPage: React.FC = () => {
       // Reload data to sync with server on error
       await loadData();
     }
-  };
+  }, [visitedLocations, getParksByState, getIslandsByState, loadData]);
 
   const handleParkClick = React.useCallback(async (parkId: string): Promise<void> => {
     // Find park details
@@ -305,7 +305,7 @@ const TravelPage: React.FC = () => {
       // Reload data to sync with server on error
       await loadData();
     }
-  };
+  }, [nationalParks, visitedLocations, getParksByState, loadData]);
 
   const handleIslandClick = async (islandId: string) => {
     // Find island details

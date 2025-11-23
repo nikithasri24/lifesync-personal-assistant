@@ -67,7 +67,7 @@ export function Sidebar({
   createTaskMutation
 }: SidebarProps) {
   return (
-    <div className="w-72 bg-white dark:bg-slate-800 border-r border-gray-200 dark:border-slate-700 flex flex-col shadow-sm">
+    <div className="w-72 bg-white dark:bg-slate-800 border-r border-gray-200 dark:border-slate-700 flex flex-col shadow-sm min-h-0 overflow-hidden">
       {/* Sidebar Header */}
       <div className="p-4 border-b border-gray-100 dark:border-slate-700">
         <div className="flex items-center space-x-3">
@@ -79,7 +79,7 @@ export function Sidebar({
       </div>
 
       {/* Quick Add */}
-      <div className="p-4">
+      <div className="p-4 flex-shrink-0">
         {showQuickAdd ? (
           <QuickAddForm
             value={quickAddText}
@@ -105,7 +105,7 @@ export function Sidebar({
       </div>
 
       {/* Smart Lists */}
-      <div className="flex-1 px-4 pb-4 overflow-y-auto">
+      <div className="flex-1 px-4 pb-4 overflow-y-auto min-h-0">
         <div className="mb-4">
           <h3 className="text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-2 px-3">
             Smart Lists

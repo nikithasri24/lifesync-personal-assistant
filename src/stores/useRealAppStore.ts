@@ -2,11 +2,11 @@ import { logger } from '../services/logger';
 import { create } from 'zustand'
 import { differenceInDays } from 'date-fns'
 import {
-  _ensureSupabase,
+  ensureSupabase,
   isSupabaseConfigured,
 } from '../lib/supabase'
 import {
-  _apiClient,
+  apiClient,
 } from '../services/apiClient'
 import type {
   UserStats,

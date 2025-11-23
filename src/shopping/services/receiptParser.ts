@@ -33,7 +33,7 @@ export function parseReceiptToItems(text: string): ParsedReceiptItem[] {
   const priceAtEnd = new RegExp(`${trailPrice.source}$`);
   const qtyPrefix = /^(\d+)\s*[x×]\s+/i;
   const qtySuffix = /\s*[x×]\s*(\d+)$/i;
-  const multiFor = /(\d+)\s*(?:for|/|@)\s*\$?\s*(\d+(?:[.,]\d{2})?)/i; // 2 for 5.00, 3/$10, 2@5.00
+  const multiFor = /(\d+)\s*(?:for|\/|@)\s*\$?\s*(\d+(?:[.,]\d{2})?)/i; // 2 for 5.00, 3/$10, 2@5.00
   const sizeToken = /(\d+(?:[.,]\d+)?\s*(?:oz|fl oz|lb|lbs|g|kg|ml|l|ct|count|pack|pk|ea|btl|bottle|jar|can))\b/i;
 
   const items: ParsedReceiptItem[] = [];

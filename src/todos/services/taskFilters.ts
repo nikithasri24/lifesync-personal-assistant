@@ -11,8 +11,7 @@ export function applyFilters(taskList: Task[], filters: Filters, searchQuery: st
   if (searchQuery.trim()) {
     filtered = filtered.filter(task =>
       task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      task.description?.toLowerCase().includes(searchQuery.toLowerCase()) ??
-      false ||
+      (task.description?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false) ||
       task.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
     );
   }

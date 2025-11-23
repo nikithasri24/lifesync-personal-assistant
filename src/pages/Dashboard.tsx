@@ -13,10 +13,10 @@ import { useState, useEffect } from 'react';
 import { Toast } from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import SeventyFiveHardWidget from '../components/SeventyFiveHardWidget';
-import { useTasksQuery, useToggleTaskMutation } from '../hooks/useTasksQuery';
-import { useHabitsQuery, useCompleteHabitMutation } from '../hooks/useHabitsQuery';
-import { useNotesQuery } from '../hooks/useNotesQuery';
-import { useJournalQuery } from '../hooks/useJournalQuery';
+import { useTasks, useUpdateTask } from '../hooks/useTasksQuery';
+import { useHabits, useCreateHabitEntry } from '../hooks/useHabitsQuery';
+import { useNotes } from '../hooks/useNotesQuery';
+import { useJournalEntries } from '../hooks/useJournalQuery';
 import { logger } from '../services/logger';
 import type { Task } from '../lib/supabase';
 import type { Habit, Note, JournalEntry } from '../types';
@@ -51,13 +51,13 @@ export default function Dashboard(): JSX.Element {
 
   // React Query hooks for all data sources
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
-  const tasksQuery = useTasksQuery();
+  const tasksQuery = useTasks();
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
-  const habitsQuery = useHabitsQuery();
+  const habitsQuery = useHabits();
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
-  const notesQuery = useNotesQuery();
+  const notesQuery = useNotes();
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
-  const journalQuery = useJournalQuery();
+  const journalQuery = useJournalEntries();
 
   const tasks: Task[] = (tasksQuery as TasksQueryResult).data ?? [];
   const tasksLoading: boolean = (tasksQuery as TasksQueryResult).isLoading ?? false;
@@ -66,9 +66,9 @@ export default function Dashboard(): JSX.Element {
   const journalEntries: JournalEntry[] = (journalQuery as JournalQueryResult).data ?? [];
 
   // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-  const toggleTaskMutation = useToggleTaskMutation() as ToggleTaskMutation;
+  const updateTaskMutation = useUpdateTask();
   // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-  const completeHabitMutation = useCompleteHabitMutation() as CompleteHabitMutation;
+  const createHabitEntryMutation = useCreateHabitEntry();
 
   const [isLoading, setIsLoading] = useState(true);
   const [completingTask, setCompletingTask] = useState<string | null>(null);
@@ -79,7 +79,8 @@ export default function Dashboard(): JSX.Element {
       setCompletingTask(taskId);
       const task = tasks.find((t: Task) => t.id === taskId);
       if (!task) return;
-      await toggleTaskMutation.mutateAsync({ taskId, currentStatus: task.status });
+      const newStatus = task.status === 'done' ? 'todo' : 'done';
+      await updateTaskMutation.mutateAsync({ id: taskId, updates: { status: newStatus } });
     } catch (error) {
       logger.error('Failed to complete task:', { error });
     } finally {
@@ -89,7 +90,13 @@ export default function Dashboard(): JSX.Element {
 
   const completeHabitSafely = async (habitId: string): Promise<void> => {
     try {
-      await completeHabitMutation.mutateAsync(habitId);
+      const today = format(new Date(), 'yyyy-MM-dd');
+      await createHabitEntryMutation.mutateAsync({
+        habit_id: habitId,
+        date: today,
+        value: 1,
+        user_id: '' // This will be set by the API based on auth context
+      });
     } catch (error) {
       logger.error('[Dashboard] Failed to complete habit', { error });
       showToast('Unable to record that habit completion. Please try again.', 'error');
@@ -126,14 +133,9 @@ export default function Dashboard(): JSX.Element {
     new Date(task.due_date) <= addDays(new Date(), 7)
   ).filter((t: Task): boolean => !isSFH(t));
 
-  const todayHabits = habits.filter((habit: Habit): boolean => {
-    const today = new Date();
-    const todayCompletions = habit.completions.filter((completion: { completedAt: Date }): boolean =>
-      isSameDay(completion.completedAt, today)
-    );
-    const targetForToday = Math.max(1, habit.targetCount);
-    return todayCompletions.length < targetForToday;
-  });
+  // Note: With React Query, habit entries are fetched separately
+  // For dashboard, we'll just show all active habits
+  const todayHabits = habits.slice(0, 5);
 
   const recentNotes = notes
     .sort((a: Note, b: Note): number => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
@@ -332,14 +334,7 @@ export default function Dashboard(): JSX.Element {
                 <p className="text-muted">All habits completed!</p>
               </div>
             ) : (
-              todayHabits.slice(0, 5).map((habit: Habit, index: number) => {
-                const todayCompletions = habit.completions.filter((completion: { completedAt: Date }): boolean =>
-                  isSameDay(completion.completedAt, new Date())
-                ).length;
-                const targetForToday = Math.max(1, habit.targetCount);
-                const reachedTodayTarget = todayCompletions >= targetForToday;
-
-                return (
+              todayHabits.slice(0, 5).map((habit: Habit, index: number) => (
                   <div
                     key={habit.id}
                     className="group flex items-center justify-between p-4 bg-tertiary rounded-xl hover:shadow-md transition-all duration-200 hover:-translate-y-1"
@@ -353,31 +348,23 @@ export default function Dashboard(): JSX.Element {
                       <div>
                         <div className="flex items-center gap-2">
                           <p className="text-sm font-medium text-primary">{habit.name}</p>
-                          {reachedTodayTarget ? (
-                            <span className="rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-semibold text-green-600 border border-green-200">
-                              Completed today{targetForToday > 1 ? ` (${todayCompletions}/${targetForToday})` : ''}
-                            </span>
-                          ) : (
-                            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600 border border-slate-200">
-                              Today {todayCompletions}/{targetForToday}
-                            </span>
-                          )}
+                          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600 border border-slate-200">
+                            Streak: {habit.streak || 0}
+                          </span>
                         </div>
                         <p className="text-xs text-secondary mt-1">
-                          {todayCompletions}/{targetForToday} completed
+                          {habit.description || 'Track your progress'}
                         </p>
                       </div>
                     </div>
                     <button
                       onClick={(): void => { void completeHabitSafely(habit.id); }}
-                      disabled={reachedTodayTarget}
-                      className={`btn-primary text-xs px-4 py-2 hover:shadow-lg transform transition-all duration-200 ${reachedTodayTarget ? 'cursor-not-allowed opacity-60 hover:shadow-none hover:scale-100' : 'hover:scale-105'}`}
+                      className="btn-primary text-xs px-4 py-2 hover:shadow-lg transform transition-all duration-200 hover:scale-105"
                     >
-                      {reachedTodayTarget ? 'Completed' : 'Complete'}
+                      Complete
                     </button>
                   </div>
-                );
-              })
+                ))
             )}
           </div>
         </div>

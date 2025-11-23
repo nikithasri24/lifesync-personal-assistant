@@ -26,7 +26,7 @@ import {
   ImageIcon
 } from 'lucide-react';
 import {
-  _areAllTasksComplete,
+  areAllTasksComplete,
   calculateStats,
   type SeventyFiveHardChallenge,
   type DailyCheckIn
