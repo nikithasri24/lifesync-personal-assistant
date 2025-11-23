@@ -78,6 +78,11 @@ const TransactionsPageGrouped: React.FC = () => {
   const groupedTransactions: GroupedTransactions[] = React.useMemo(() => {
     const groups = new Map<string | null, Transaction[]>();
 
+    // Ensure transactions is an array before iterating
+    if (!Array.isArray(transactions)) {
+      return [];
+    }
+
     transactions.forEach((txn) => {
       const key = txn.categoryId ?? null;
       if (!groups.has(key)) {

@@ -7,7 +7,7 @@
 import React from 'react';
 import {
   getVisaRequirement,
-  _getAccessibleDestinations,
+  getAccessibleDestinations,
   getVisaAccessSummary,
   getAvailablePassportCountries
 } from '../data/visaRequirements';

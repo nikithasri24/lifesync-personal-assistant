@@ -31,7 +31,9 @@ const ImportCSVButton: React.FC<{ _onSuccess: () => void }> = ({ _onSuccess }) =
     const categoryMap = new Map<string, string>();
 
     // Map existing categories
-    categories.forEach(cat => categoryMap.set(cat.name, cat.id));
+    if (Array.isArray(categories)) {
+      categories.forEach(cat => categoryMap.set(cat.name, cat.id));
+    }
 
     // Create missing categories
     const { createClient } = await import('@supabase/supabase-js');
