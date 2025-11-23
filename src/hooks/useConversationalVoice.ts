@@ -208,7 +208,7 @@ export function useConversationalVoice(userId: string): {
     return () => {
       recognition.stop();
     };
-  }, [userId, speakText, startListening, engineRef]);
+  }, [userId, engineRef]); // speakText and startListening are stable callbacks, don't need to be in deps
 
   const startListening = useCallback((): void => {
     if (!recognitionRef.current) {
