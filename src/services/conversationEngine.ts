@@ -636,7 +636,16 @@ You: "Awesome goal! When are you planning to go? I'll help create a savings plan
       return { response: textResponse };
 
     } catch (error: unknown) {
-      logger.error('[ConversationEngine] Error:', { error });
+      // Log detailed error information
+      if (error instanceof Error) {
+        logger.error('[ConversationEngine] Error:', {
+          message: error.message,
+          stack: error.stack,
+          name: error.name
+        });
+      } else {
+        logger.error('[ConversationEngine] Error:', { error });
+      }
 
       // Fallback response
       const fallback = "Sorry, I'm having trouble connecting right now. Please try again.";
