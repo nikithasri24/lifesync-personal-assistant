@@ -81,7 +81,7 @@ export default function Dashboard(): JSX.Element {
   const [completingTask, setCompletingTask] = useState<string | null>(null);
   const [completingHabit, setCompletingHabit] = useState<string | null>(null);
   const [completedHabits, setCompletedHabits] = useState<Set<string>>(new Set());
-  const { toast, showToast, dismissToast } = useToast();
+  const { toast, showToast, showError, dismissToast } = useToast();
 
   const completeTask = async (taskId: string): Promise<void> => {
     try {
@@ -92,6 +92,7 @@ export default function Dashboard(): JSX.Element {
       await updateTaskMutation.mutateAsync({ id: taskId, updates: { status: newStatus } });
     } catch (error) {
       logger.error('Failed to complete task:', { error });
+      showError(error, () => void completeTask(taskId));
     } finally {
       setCompletingTask(null);
     }
@@ -124,7 +125,7 @@ export default function Dashboard(): JSX.Element {
       }, 2000);
     } catch (error) {
       logger.error('[Dashboard] Failed to complete habit', { error });
-      showToast('Unable to record that habit completion. Please try again.', 'error');
+      showError(error, () => void completeHabitSafely(habitId));
     } finally {
       setCompletingHabit(null);
     }
