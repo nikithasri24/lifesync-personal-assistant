@@ -119,44 +119,46 @@ export default function Assistant(): JSX.Element {
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 pb-32">
-        <div className="max-w-4xl mx-auto space-y-4">
+      <div className="flex-1 overflow-y-auto p-4">
+        <div className="max-w-4xl mx-auto space-y-4 h-full">
           {messages.length === 0 && !isThinking && (
-            <div className="text-center mt-20 space-y-6">
-              <div className="inline-block p-4 bg-gradient-to-br from-orange-500 to-pink-500 rounded-full">
-                <Sparkles className="h-12 w-12 text-white" />
-              </div>
+            <div className="flex flex-col items-center justify-center h-full min-h-[calc(100vh-16rem)]">
+              <div className="text-center space-y-6 max-w-3xl w-full px-4">
+                <div className="inline-block p-4 bg-gradient-to-br from-orange-500 to-pink-500 rounded-full">
+                  <Sparkles className="h-12 w-12 text-white" />
+                </div>
 
-              <div>
-                <h2 className="text-2xl font-bold text-slate-900 mb-2">
-                  How can I help you today?
-                </h2>
-                <p className="text-slate-600">
-                  Talk to me naturally - I can manage your life
-                </p>
-              </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-slate-900 mb-2">
+                    How can I help you today?
+                  </h2>
+                  <p className="text-slate-600">
+                    Talk to me naturally - I can manage your life
+                  </p>
+                </div>
 
-              <div className="grid sm:grid-cols-2 gap-3 max-w-2xl mx-auto mt-8">
-                {[
-                  { text: "I spent $45 at Whole Foods", icon: "💰" },
-                  { text: "I want to save $10k for Japan", icon: "✈️" },
-                  { text: "What's my week look like?", icon: "📅" },
-                  { text: "Remind me to call mom tomorrow", icon: "✅" }
-                ].map((suggestion, i) => (
-                  <button
-                    key={i}
-                    onClick={() => {
-                      setTextInput(suggestion.text);
-                      setTimeout(() => {
-                        void handleTextSubmit();
-                      }, 100);
-                    }}
-                    className="p-4 text-left bg-white hover:bg-slate-50 rounded-xl border border-slate-200 transition shadow-sm hover:shadow"
-                  >
-                    <span className="text-2xl mb-2 block">{suggestion.icon}</span>
-                    <span className="text-sm text-slate-700">{suggestion.text}</span>
-                  </button>
-                ))}
+                <div className="grid sm:grid-cols-2 gap-3 max-w-2xl mx-auto mt-8">
+                  {[
+                    { text: "I spent $45 at Whole Foods", icon: "💰" },
+                    { text: "I want to save $10k for Japan", icon: "✈️" },
+                    { text: "What's my week look like?", icon: "📅" },
+                    { text: "Remind me to call mom tomorrow", icon: "✅" }
+                  ].map((suggestion, i) => (
+                    <button
+                      key={i}
+                      onClick={() => {
+                        setTextInput(suggestion.text);
+                        setTimeout(() => {
+                          void handleTextSubmit();
+                        }, 100);
+                      }}
+                      className="p-4 text-left bg-white hover:bg-slate-50 rounded-xl border border-slate-200 transition shadow-sm hover:shadow"
+                    >
+                      <span className="text-2xl mb-2 block">{suggestion.icon}</span>
+                      <span className="text-sm text-slate-700">{suggestion.text}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           )}

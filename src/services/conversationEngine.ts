@@ -216,7 +216,8 @@ const FUNCTION_DEFINITIONS = [
       description: 'Get overview of tasks, events, and commitments for the week',
       parameters: {
         type: 'object',
-        properties: {}
+        properties: {},
+        required: []
       }
     }
   },
