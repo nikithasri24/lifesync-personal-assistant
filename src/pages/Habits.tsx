@@ -279,33 +279,39 @@ const Habits: React.FC = () => {
         ) : (
           habitsWithStats
             .filter(({ habit }) => habit.id !== undefined)
-            .map(({ habit, todayCompletions, targetCount, hasReachedTarget, currentStreak, totalCompletions }) => (
-              <HabitCard
-                key={habit.id}
-                habit={habit}
-                todayCompletions={todayCompletions}
-                targetCount={targetCount}
-                hasReachedTarget={hasReachedTarget}
-                currentStreak={currentStreak}
-                totalCompletions={totalCompletions}
-                isEditing={editingHabitId === habit.id}
-                editDraft={editDraft}
-                isCompletingHabit={createEntryMutation.isPending}
-                isUpdating={updateHabitMutation.isPending}
-                hasUpdateError={updateHabitMutation.isError}
-                isResettingToday={deleteEntriesForDateMutation.isPending}
-                isResettingHistory={deleteAllEntriesMutation.isPending}
-                isDeleting={deleteHabitMutation.isPending}
-                onComplete={() => { handleCompleteHabit(habit.id as string); }}
-                onStartEdit={() => { startEditing(habit.id as string); }}
-                onCancelEdit={cancelEditing}
-                onEditDraftChange={setEditDraft}
-                onEditSubmit={handleEditSubmit}
-                onResetToday={() => { handleResetToday(habit.id as string); }}
-                onResetHistory={() => { handleResetHistory(habit.id as string); }}
-                onDelete={() => { handleDeleteHabit(habit.id as string); }}
-              />
-            ))
+            .map(({ habit, todayCompletions, targetCount, hasReachedTarget, currentStreak, totalCompletions }) => {
+              // Filter entries for this specific habit
+              const habitSpecificEntries = apiEntries.filter(entry => entry.habit_id === habit.id);
+
+              return (
+                <HabitCard
+                  key={habit.id}
+                  habit={habit}
+                  habitEntries={habitSpecificEntries}
+                  todayCompletions={todayCompletions}
+                  targetCount={targetCount}
+                  hasReachedTarget={hasReachedTarget}
+                  currentStreak={currentStreak}
+                  totalCompletions={totalCompletions}
+                  isEditing={editingHabitId === habit.id}
+                  editDraft={editDraft}
+                  isCompletingHabit={createEntryMutation.isPending}
+                  isUpdating={updateHabitMutation.isPending}
+                  hasUpdateError={updateHabitMutation.isError}
+                  isResettingToday={deleteEntriesForDateMutation.isPending}
+                  isResettingHistory={deleteAllEntriesMutation.isPending}
+                  isDeleting={deleteHabitMutation.isPending}
+                  onComplete={() => { handleCompleteHabit(habit.id as string); }}
+                  onStartEdit={() => { startEditing(habit.id as string); }}
+                  onCancelEdit={cancelEditing}
+                  onEditDraftChange={setEditDraft}
+                  onEditSubmit={handleEditSubmit}
+                  onResetToday={() => { handleResetToday(habit.id as string); }}
+                  onResetHistory={() => { handleResetHistory(habit.id as string); }}
+                  onDelete={() => { handleDeleteHabit(habit.id as string); }}
+                />
+              );
+            })
         )}
       </section>
     </div>

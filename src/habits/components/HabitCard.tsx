@@ -3,15 +3,17 @@
  * Displays an individual habit with actions and optional edit form
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import type { FormEvent } from 'react';
-import { CheckCircle2, Pencil, RefreshCcw, Trash2, X } from 'lucide-react';
-import type { HabitData } from '../../services/types';
+import { CheckCircle2, Pencil, RefreshCcw, Trash2, X, ChevronDown, ChevronUp, BarChart3 } from 'lucide-react';
+import type { HabitData, HabitEntryData } from '../../services/types';
 import type { HabitDraft } from '../types';
 import { HabitEditForm } from './HabitEditForm';
+import { HabitStreakCalendar } from '../../components/HabitStreakCalendar';
 
 interface HabitCardProps {
   habit: HabitData;
+  habitEntries: HabitEntryData[];
   todayCompletions: number;
   targetCount: number;
   hasReachedTarget: boolean;
@@ -37,6 +39,7 @@ interface HabitCardProps {
 
 export function HabitCard({
   habit,
+  habitEntries,
   todayCompletions,
   targetCount,
   hasReachedTarget,
@@ -59,6 +62,8 @@ export function HabitCard({
   onResetHistory,
   onDelete,
 }: HabitCardProps): JSX.Element {
+  const [showStreakVisualization, setShowStreakVisualization] = useState(false);
+
   return (
     <article className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -148,11 +153,36 @@ export function HabitCard({
         </div>
       </div>
       {habit.description && <p className="text-sm text-slate-600">{habit.description}</p>}
-      <div className="flex flex-wrap gap-3 text-xs text-slate-500">
-        <span>Target: {targetCount} per {habit.frequency === 'daily' ? 'day' : habit.frequency === 'weekly' ? 'week' : 'month'}</span>
-        <span>Progress: {totalCompletions}</span>
-        <span>Streak: {currentStreak}</span>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-3 text-xs text-slate-500">
+          <span>Target: {targetCount} per {habit.frequency === 'daily' ? 'day' : habit.frequency === 'weekly' ? 'week' : 'month'}</span>
+          <span>Progress: {totalCompletions}</span>
+          <span>Streak: {currentStreak}</span>
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowStreakVisualization(!showStreakVisualization)}
+          className="inline-flex items-center gap-1 text-xs text-slate-600 hover:text-slate-900 transition"
+        >
+          <BarChart3 className="h-4 w-4" />
+          {showStreakVisualization ? 'Hide' : 'Show'} Activity
+          {showStreakVisualization ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+        </button>
       </div>
+
+      {showStreakVisualization && (
+        <div className="mt-4">
+          <HabitStreakCalendar
+            entries={habitEntries}
+            habitColor={habit.color || '#10b981'}
+            habitName={habit.name}
+            currentStreak={currentStreak}
+            bestStreak={habit.best_streak || currentStreak}
+            targetCount={targetCount}
+          />
+        </div>
+      )}
+
       {isEditing && editDraft && (
         <HabitEditForm
           editDraft={editDraft}
