@@ -5,7 +5,10 @@ import {
   FileText,
   BookOpen,
   TrendingUp,
-  CheckCircle2
+  CheckCircle2,
+  Plus,
+  Sparkles,
+  Zap
 } from 'lucide-react';
 import { useAppStore } from '../stores/useAppStore';
 import { format, isToday, isSameDay, addDays } from 'date-fns';
@@ -309,9 +312,21 @@ export default function Dashboard(): JSX.Element {
           </div>
           <div className="space-y-3">
             {todayTodos.length === 0 ? (
-              <div className="text-center py-8">
-                <div className="text-4xl mb-3">🎉</div>
-                <p className="text-muted">No tasks for today!</p>
+              <div className="text-center py-12 px-4">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 mb-4">
+                  <CheckSquare className="w-8 h-8 text-blue-600" />
+                </div>
+                <h4 className="text-lg font-semibold text-primary mb-2">No tasks for today</h4>
+                <p className="text-sm text-secondary mb-4 max-w-xs mx-auto">
+                  You're all caught up! Create a task or enjoy your free time.
+                </p>
+                <button
+                  onClick={() => setActiveView('todos')}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all duration-200 hover:scale-105"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Your First Task
+                </button>
               </div>
             ) : (
               todayTodos.slice(0, 5).map((task: Task, index: number) => (
@@ -371,10 +386,35 @@ export default function Dashboard(): JSX.Element {
           </div>
           <div className="space-y-3">
             {todayHabits.length === 0 ? (
-              <div className="text-center py-8">
-                <div className="text-4xl mb-3">✨</div>
-                <p className="text-muted">All habits completed!</p>
-              </div>
+              habits.length === 0 ? (
+                <div className="text-center py-12 px-4">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-green-100 to-emerald-100 mb-4">
+                    <Zap className="w-8 h-8 text-green-600" />
+                  </div>
+                  <h4 className="text-lg font-semibold text-primary mb-2">Build better habits</h4>
+                  <p className="text-sm text-secondary mb-4 max-w-xs mx-auto">
+                    Track daily habits like exercise, reading, or meditation to build a better you.
+                  </p>
+                  <button
+                    onClick={() => setActiveView('habits')}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:shadow-lg transition-all duration-200 hover:scale-105"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Create Your First Habit
+                  </button>
+                </div>
+              ) : (
+                <div className="text-center py-12 px-4">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-yellow-100 to-orange-100 mb-4 animate-bounce">
+                    <Sparkles className="w-8 h-8 text-yellow-600" />
+                  </div>
+                  <h4 className="text-lg font-semibold text-primary mb-2">All habits completed! 🎉</h4>
+                  <p className="text-sm text-secondary mb-2 max-w-xs mx-auto">
+                    Great job! You've completed all your habits for today.
+                  </p>
+                  <p className="text-xs text-muted">Keep the streak going tomorrow!</p>
+                </div>
+              )
             ) : (
               todayHabits.map((habit, index: number) => {
                 const isJustCompleted = completedHabits.has(habit.id);
@@ -468,9 +508,21 @@ export default function Dashboard(): JSX.Element {
           </div>
           <div className="space-y-3">
             {recentNotes.length === 0 ? (
-              <div className="text-center py-8">
-                <div className="text-4xl mb-3">✍️</div>
-                <p className="text-muted">No notes yet. Start writing!</p>
+              <div className="text-center py-12 px-4">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-amber-100 to-orange-100 mb-4">
+                  <FileText className="w-8 h-8 text-amber-600" />
+                </div>
+                <h4 className="text-lg font-semibold text-primary mb-2">Capture your thoughts</h4>
+                <p className="text-sm text-secondary mb-4 max-w-xs mx-auto">
+                  Jot down ideas, reminders, or anything you want to remember.
+                </p>
+                <button
+                  onClick={() => setActiveView('notes')}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-lg hover:shadow-lg transition-all duration-200 hover:scale-105"
+                >
+                  <Plus className="w-4 h-4" />
+                  Write Your First Note
+                </button>
               </div>
             ) : (
               recentNotes.map((note: Note, index: number) => (
