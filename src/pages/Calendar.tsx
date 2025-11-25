@@ -139,6 +139,8 @@ const Calendar: React.FC = () => {
   const goToNextWeek = () => setCurrentDate(addWeeks(currentDate, 1));
   const goToPreviousMonth = () => setCurrentDate(prev => addWeeks(prev, -4));
   const goToNextMonth = () => setCurrentDate(prev => addWeeks(prev, 4));
+  const goToPreviousDay = () => setCurrentDate(prev => addDays(prev, -1));
+  const goToNextDay = () => setCurrentDate(prev => addDays(prev, 1));
   const goToToday = () => setCurrentDate(new Date());
   const goToPreviousMonthMini = () => setMiniCalendarDate(prev => addWeeks(prev, -4));
   const goToNextMonthMini = () => setMiniCalendarDate(prev => addWeeks(prev, 4));
@@ -286,13 +288,13 @@ const Calendar: React.FC = () => {
 
             <div className="flex items-center gap-2">
               <button
-                onClick={view === 'week' ? goToPreviousWeek : goToPreviousMonth}
+                onClick={view === 'week' ? goToPreviousWeek : view === 'month' ? goToPreviousMonth : goToPreviousDay}
                 className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
               >
                 <ChevronLeft className="w-5 h-5 text-slate-600 dark:text-slate-400" />
               </button>
               <button
-                onClick={view === 'week' ? goToNextWeek : goToNextMonth}
+                onClick={view === 'week' ? goToNextWeek : view === 'month' ? goToNextMonth : goToNextDay}
                 className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
               >
                 <ChevronRight className="w-5 h-5 text-slate-600 dark:text-slate-400" />
@@ -300,13 +302,23 @@ const Calendar: React.FC = () => {
             </div>
 
             <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
-              {format(view === 'week' ? weekDays[0].date : currentDate, 'MMMM yyyy')}
+              {view === 'day' ? format(currentDate, 'EEEE, MMMM d, yyyy') : format(view === 'week' ? weekDays[0].date : currentDate, 'MMMM yyyy')}
             </h2>
           </div>
 
           <div className="flex items-center gap-3">
             {/* View selector */}
             <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
+              <button
+                onClick={() => setView('day')}
+                className={`px-3 py-1.5 text-sm font-medium rounded transition-colors ${
+                  view === 'day'
+                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+                }`}
+              >
+                Day
+              </button>
               <button
                 onClick={() => setView('week')}
                 className={`px-3 py-1.5 text-sm font-medium rounded transition-colors ${
@@ -549,6 +561,157 @@ const Calendar: React.FC = () => {
                         <button className="text-xs text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 px-1.5 font-medium">
                           +{allEvents.length - 4} more
                         </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+        )}
+
+        {/* Day View */}
+        {view === 'day' && (
+        <div className="flex-1 overflow-auto">
+          <div className="min-w-max">
+            {/* Day header */}
+            <div className="sticky top-0 z-10 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
+              <div className="flex">
+                {/* Time column header */}
+                <div className="w-20 border-r border-slate-200 dark:border-slate-700 flex-shrink-0" />
+
+                {/* Single day header */}
+                <div className="flex-1 min-w-[600px] text-center py-3">
+                  <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+                    {format(currentDate, 'EEEE').toUpperCase()}
+                  </div>
+                  <div
+                    className={`
+                      text-2xl font-semibold mx-auto w-12 h-12 flex items-center justify-center rounded-full
+                      ${isToday(currentDate) ? 'bg-blue-500 text-white' : 'text-slate-900 dark:text-slate-100'}
+                    `}
+                  >
+                    {format(currentDate, 'd')}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Time slots and events */}
+            <div className="relative">
+              {timeSlots.map((slot, slotIndex) => {
+                const events = getEventsForDay(currentDate);
+                const hasEvents = events.tasks.length > 0 || events.habits.length > 0 || events.journalEntries.length > 0;
+
+                return (
+                  <div key={slot.hour} className="flex">
+                    {/* Time label */}
+                    <div className="w-20 border-r border-slate-200 dark:border-slate-700 flex-shrink-0 px-2 py-2">
+                      <span className="text-xs text-slate-500 dark:text-slate-400">
+                        {slot.label}
+                      </span>
+                    </div>
+
+                    {/* Day column */}
+                    <div
+                      className={`
+                        flex-1 min-w-[600px] min-h-[60px] border-b border-slate-200 dark:border-slate-700 p-3
+                        ${isToday(currentDate) ? 'bg-blue-50/30 dark:bg-blue-900/10' : ''}
+                      `}
+                    >
+                      {/* Show events in the 9 AM slot */}
+                      {slot.hour === 9 && hasEvents && (
+                        <div className="space-y-2">
+                          {/* Tasks */}
+                          {events.tasks.map((task) => (
+                            <div
+                              key={task.id}
+                              className={`
+                                flex items-start gap-3 p-3 rounded-lg border-l-4
+                                ${task.status === 'done'
+                                  ? 'bg-green-50 dark:bg-green-900/20 border-green-500'
+                                  : 'bg-blue-50 dark:bg-blue-900/20 border-blue-500'
+                                }
+                              `}
+                            >
+                              <div className="flex-1">
+                                <h4 className={`font-semibold text-sm ${
+                                  task.status === 'done'
+                                    ? 'text-green-700 dark:text-green-300 line-through'
+                                    : 'text-blue-700 dark:text-blue-300'
+                                }`}>
+                                  {task.title}
+                                </h4>
+                                {task.description && (
+                                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                                    {task.description}
+                                  </p>
+                                )}
+                                <div className="flex items-center gap-2 mt-2">
+                                  <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                    task.priority === 'urgent' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' :
+                                    task.priority === 'high' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300' :
+                                    task.priority === 'medium' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' :
+                                    'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                                  }`}>
+                                    {task.priority || 'low'}
+                                  </span>
+                                  {task.status === 'done' && (
+                                    <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+
+                          {/* Habits */}
+                          {events.habits.map((habit) => (
+                            <div
+                              key={habit.id}
+                              className="flex items-center gap-3 p-3 rounded-lg border-l-4 border-green-500 bg-green-50 dark:bg-green-900/20"
+                            >
+                              <div
+                                className="w-4 h-4 rounded-full flex-shrink-0"
+                                style={{ backgroundColor: habit.color }}
+                              />
+                              <div className="flex-1">
+                                <h4 className="font-semibold text-sm text-green-700 dark:text-green-300">
+                                  {habit.name}
+                                </h4>
+                                {habit.description && (
+                                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                                    {habit.description}
+                                  </p>
+                                )}
+                              </div>
+                              <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0" />
+                            </div>
+                          ))}
+
+                          {/* Journal entries */}
+                          {events.journalEntries.map((entry) => (
+                            <div
+                              key={entry.id}
+                              className="flex items-start gap-3 p-3 rounded-lg border-l-4 border-purple-500 bg-purple-50 dark:bg-purple-900/20"
+                            >
+                              <BookOpen className="w-5 h-5 text-purple-600 dark:text-purple-400 flex-shrink-0 mt-0.5" />
+                              <div className="flex-1">
+                                <h4 className="font-semibold text-sm text-purple-700 dark:text-purple-300 mb-1">
+                                  Journal Entry
+                                </h4>
+                                <p className="text-xs text-slate-700 dark:text-slate-300 line-clamp-3">
+                                  {entry.content}
+                                </p>
+                                {entry.mood && (
+                                  <span className="inline-block mt-2 text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded-full">
+                                    Mood: {entry.mood}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       )}
                     </div>
                   </div>
