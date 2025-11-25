@@ -4,7 +4,8 @@ import {
   Target,
   FileText,
   BookOpen,
-  TrendingUp
+  TrendingUp,
+  CheckCircle2
 } from 'lucide-react';
 import { useAppStore } from '../stores/useAppStore';
 import { format, isToday, isSameDay, addDays } from 'date-fns';
@@ -75,6 +76,8 @@ export default function Dashboard(): JSX.Element {
 
   const [isLoading, setIsLoading] = useState(true);
   const [completingTask, setCompletingTask] = useState<string | null>(null);
+  const [completingHabit, setCompletingHabit] = useState<string | null>(null);
+  const [completedHabits, setCompletedHabits] = useState<Set<string>>(new Set());
   const { toast, showToast, dismissToast } = useToast();
 
   const completeTask = async (taskId: string): Promise<void> => {
@@ -93,6 +96,7 @@ export default function Dashboard(): JSX.Element {
 
   const completeHabitSafely = async (habitId: string): Promise<void> => {
     try {
+      setCompletingHabit(habitId);
       logger.debug('[Dashboard] Complete button clicked', { habitId });
       const today = format(new Date(), 'yyyy-MM-dd');
       await createHabitEntryMutation.mutateAsync({
@@ -100,10 +104,26 @@ export default function Dashboard(): JSX.Element {
         date: today,
         value: 1,
       });
-      showToast('Habit completed!', 'success');
+
+      // Add to completed set for animation
+      setCompletedHabits(prev => new Set(prev).add(habitId));
+
+      // Show success message
+      showToast('Habit completed! 🎉', 'success');
+
+      // Remove from completed set after animation
+      setTimeout(() => {
+        setCompletedHabits(prev => {
+          const next = new Set(prev);
+          next.delete(habitId);
+          return next;
+        });
+      }, 2000);
     } catch (error) {
       logger.error('[Dashboard] Failed to complete habit', { error });
       showToast('Unable to record that habit completion. Please try again.', 'error');
+    } finally {
+      setCompletingHabit(null);
     }
   };
 
@@ -137,18 +157,26 @@ export default function Dashboard(): JSX.Element {
     new Date(task.due_date) <= addDays(new Date(), 7)
   ).filter((t: Task): boolean => !isSFH(t));
 
-  // Filter habits to show only incomplete ones for today (sync with Habits page logic)
+  // Calculate habit progress for today
   const todayKey = format(new Date(), 'yyyy-MM-dd');
-  const todayHabits = habits
-    .filter((habit: Habit) => {
-      // Count today's completions for this habit
-      const todayCompletions = habitEntries.filter(
-        entry => entry.habit_id === habit.id && entry.date === todayKey
-      ).length;
-      const targetCount = habit.targetValue ?? 1;
-      // Only show habits that haven't reached their target yet
-      return todayCompletions < targetCount;
-    })
+  const habitsWithProgress = habits.map((habit: Habit) => {
+    const todayCompletions = habitEntries.filter(
+      entry => entry.habit_id === habit.id && entry.date === todayKey
+    ).length;
+    const targetCount = habit.targetCount ?? 1;
+    const isComplete = todayCompletions >= targetCount;
+
+    return {
+      ...habit,
+      todayCompletions,
+      targetCount,
+      isComplete
+    };
+  });
+
+  // Show incomplete habits first, then limit to 5
+  const todayHabits = habitsWithProgress
+    .filter(h => !h.isComplete)
     .slice(0, 5);
 
   const recentNotes = notes
@@ -348,22 +376,46 @@ export default function Dashboard(): JSX.Element {
                 <p className="text-muted">All habits completed!</p>
               </div>
             ) : (
-              todayHabits.slice(0, 5).map((habit: Habit, index: number) => (
+              todayHabits.map((habit, index: number) => {
+                const isJustCompleted = completedHabits.has(habit.id);
+                const isProcessing = completingHabit === habit.id;
+
+                return (
                   <div
                     key={habit.id}
-                    className="group flex items-center justify-between p-4 bg-tertiary rounded-xl hover:shadow-md transition-all duration-200 hover:-translate-y-1"
+                    className={`group flex items-center justify-between p-4 bg-tertiary rounded-xl transition-all duration-300 ${
+                      isJustCompleted
+                        ? 'animate-celebrate bg-green-50 border-2 border-green-400 shadow-lg'
+                        : 'hover:shadow-md hover:-translate-y-1'
+                    }`}
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
-                    <div className="flex items-center space-x-4">
-                      <div
-                        className="w-4 h-4 rounded-full shadow-sm"
-                        style={{ backgroundColor: habit.color }}
-                      />
-                      <div>
-                        <div className="flex items-center gap-2">
+                    <div className="flex items-center space-x-4 flex-1">
+                      {/* Color indicator with completion checkmark */}
+                      <div className="relative">
+                        <div
+                          className="w-4 h-4 rounded-full shadow-sm transition-all duration-200"
+                          style={{ backgroundColor: habit.color }}
+                        />
+                        {isJustCompleted && (
+                          <div className="absolute -top-1 -right-1 bg-green-500 rounded-full p-0.5 animate-checkmark-pop">
+                            <CheckCircle2 className="w-3 h-3 text-white" />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <p className="text-sm font-medium text-primary">{habit.name}</p>
+
+                          {/* Progress indicator */}
+                          <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-medium text-blue-700 border border-blue-200">
+                            {habit.todayCompletions}/{habit.targetCount} today
+                          </span>
+
+                          {/* Streak badge */}
                           <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600 border border-slate-200">
-                            Streak: {habit.streak || 0}
+                            🔥 {habit.streak || 0}
                           </span>
                         </div>
                         <p className="text-xs text-secondary mt-1">
@@ -371,14 +423,34 @@ export default function Dashboard(): JSX.Element {
                         </p>
                       </div>
                     </div>
+
+                    {/* Complete button with loading state */}
                     <button
                       onClick={(): void => { void completeHabitSafely(habit.id); }}
-                      className="btn-primary text-xs px-4 py-2 hover:shadow-lg transform transition-all duration-200 hover:scale-105"
+                      disabled={isProcessing || isJustCompleted}
+                      className={`btn-primary text-xs px-4 py-2 transform transition-all duration-200 ${
+                        isProcessing
+                          ? 'opacity-50 cursor-wait'
+                          : isJustCompleted
+                          ? 'bg-green-500 hover:bg-green-600'
+                          : 'hover:shadow-lg hover:scale-105'
+                      }`}
                     >
-                      Complete
+                      {isProcessing ? (
+                        <span className="flex items-center gap-1">
+                          <span className="animate-spin">⏳</span> Saving...
+                        </span>
+                      ) : isJustCompleted ? (
+                        <span className="flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" /> Done!
+                        </span>
+                      ) : (
+                        'Complete'
+                      )}
                     </button>
                   </div>
-                ))
+                );
+              })
             )}
           </div>
         </div>
