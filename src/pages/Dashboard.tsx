@@ -16,6 +16,7 @@ import { SkeletonCard } from '../components/LoadingSpinner';
 import { useState, useEffect } from 'react';
 import { Toast } from '../components/Toast';
 import { useToast } from '../hooks/useToast';
+import { LoadingButton } from '../components/LoadingButton';
 import SeventyFiveHardWidget from '../components/SeventyFiveHardWidget';
 import { useTasks, useUpdateTask } from '../hooks/useTasksQuery';
 import { useHabits, useCreateHabitEntry, useHabitEntries } from '../hooks/useHabitsQuery';
@@ -321,13 +322,15 @@ export default function Dashboard(): JSX.Element {
                 <p className="text-sm text-secondary mb-4 max-w-xs mx-auto">
                   You're all caught up! Create a task or enjoy your free time.
                 </p>
-                <button
+                <LoadingButton
                   onClick={() => setActiveView('todos')}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all duration-200 hover:scale-105"
+                  variant="primary"
+                  size="md"
+                  className="bg-gradient-to-r from-blue-500 to-purple-600 hover:shadow-lg hover:scale-105"
                 >
                   <Plus className="w-4 h-4" />
                   Add Your First Task
-                </button>
+                </LoadingButton>
               </div>
             ) : (
               todayTodos.slice(0, 5).map((task: Task, index: number) => (
@@ -396,13 +399,15 @@ export default function Dashboard(): JSX.Element {
                   <p className="text-sm text-secondary mb-4 max-w-xs mx-auto">
                     Track daily habits like exercise, reading, or meditation to build a better you.
                   </p>
-                  <button
+                  <LoadingButton
                     onClick={() => setActiveView('habits')}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:shadow-lg transition-all duration-200 hover:scale-105"
+                    variant="success"
+                    size="md"
+                    className="bg-gradient-to-r from-green-500 to-emerald-600 hover:shadow-lg hover:scale-105"
                   >
                     <Plus className="w-4 h-4" />
                     Create Your First Habit
-                  </button>
+                  </LoadingButton>
                 </div>
               ) : (
                 <div className="text-center py-12 px-4">
@@ -517,13 +522,15 @@ export default function Dashboard(): JSX.Element {
                 <p className="text-sm text-secondary mb-4 max-w-xs mx-auto">
                   Jot down ideas, reminders, or anything you want to remember.
                 </p>
-                <button
+                <LoadingButton
                   onClick={() => setActiveView('notes')}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-lg hover:shadow-lg transition-all duration-200 hover:scale-105"
+                  variant="primary"
+                  size="md"
+                  className="bg-gradient-to-r from-amber-500 to-orange-600 hover:shadow-lg hover:scale-105"
                 >
                   <Plus className="w-4 h-4" />
                   Write Your First Note
-                </button>
+                </LoadingButton>
               </div>
             ) : (
               recentNotes.map((note: Note, index: number) => (
