@@ -27,6 +27,7 @@ type ViewKey =
   | 'focus'
   | 'habits'
   | 'todos'
+  | 'scheduler'
   | 'notes'
   | 'projects'
   | 'journal'

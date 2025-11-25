@@ -21,7 +21,8 @@ import {
   Sparkles,
   Plane,
   Map,
-  MessageCircle
+  MessageCircle,
+  LayoutGrid
 } from 'lucide-react';
 import { useAppStore } from '../stores/useAppStore';
 import Toast from './Toast';
@@ -35,6 +36,7 @@ const navigation = [
   { name: 'AI Assistant', icon: MessageCircle, view: 'assistant' as const, section: 'main' },
   { name: 'Calendar', icon: Calendar, view: 'calendar' as const, section: 'main' },
   { name: 'Tasks', icon: CheckSquare, view: 'todos' as const, section: 'main' },
+  { name: 'Task Scheduler', icon: LayoutGrid, view: 'scheduler' as const, section: 'main' },
   { name: 'Focus', icon: Timer, view: 'focus' as const, section: 'main' },
   { name: 'Habits', icon: Target, view: 'habits' as const, section: 'productivity' },
   { name: 'Notes', icon: FileText, view: 'notes' as const, section: 'productivity' },

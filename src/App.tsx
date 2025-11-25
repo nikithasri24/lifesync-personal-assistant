@@ -30,6 +30,7 @@ const Finances = lazy(() => import('./pages/Finances'));
 const SeventyFiveHard = lazy(() => import('./pages/SeventyFiveHard/index'));
 const Skincare = lazy(() => import('./pages/Skincare'));
 const Assistant = lazy(() => import('./pages/Assistant'));
+const TaskScheduler = lazy(() => import('./pages/TaskScheduler'));
 
 // Expose cleanup function globally for debugging
 if (typeof window !== 'undefined') {
@@ -143,6 +144,8 @@ function App(): React.ReactElement {
         return <Skincare />;
       case 'assistant':
         return <Assistant />;
+      case 'scheduler':
+        return <TaskScheduler />;
       default:
         return <Dashboard />;
     }
