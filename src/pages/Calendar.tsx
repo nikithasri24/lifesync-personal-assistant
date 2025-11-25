@@ -112,12 +112,36 @@ const Calendar: React.FC = () => {
     return days;
   }, [miniCalendarDate, currentDate]);
 
+  // Generate month view days
+  const monthGridDays = useMemo(() => {
+    const monthStart = startOfMonth(currentDate);
+    const monthEnd = endOfMonth(currentDate);
+    const calendarStart = startOfWeek(monthStart, { weekStartsOn: 0 });
+    const calendarEnd = addDays(calendarStart, 41); // 6 weeks
+
+    const days = [];
+    let day = calendarStart;
+
+    while (day <= calendarEnd) {
+      days.push({
+        date: day,
+        isCurrentMonth: isSameMonth(day, currentDate),
+        isToday: isToday(day),
+      });
+      day = addDays(day, 1);
+    }
+
+    return days;
+  }, [currentDate]);
+
   // Navigation
   const goToPreviousWeek = () => setCurrentDate(subWeeks(currentDate, 1));
   const goToNextWeek = () => setCurrentDate(addWeeks(currentDate, 1));
+  const goToPreviousMonth = () => setCurrentDate(prev => addWeeks(prev, -4));
+  const goToNextMonth = () => setCurrentDate(prev => addWeeks(prev, 4));
   const goToToday = () => setCurrentDate(new Date());
-  const goToPreviousMonth = () => setMiniCalendarDate(prev => addWeeks(prev, -4));
-  const goToNextMonth = () => setMiniCalendarDate(prev => addWeeks(prev, 4));
+  const goToPreviousMonthMini = () => setMiniCalendarDate(prev => addWeeks(prev, -4));
+  const goToNextMonthMini = () => setMiniCalendarDate(prev => addWeeks(prev, 4));
 
   // Get events for a specific day
   const getEventsForDay = (date: Date) => {
@@ -172,13 +196,13 @@ const Calendar: React.FC = () => {
             </h3>
             <div className="flex gap-1">
               <button
-                onClick={goToPreviousMonth}
+                onClick={goToPreviousMonthMini}
                 className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded"
               >
                 <ChevronLeft className="w-4 h-4 text-slate-600 dark:text-slate-400" />
               </button>
               <button
-                onClick={goToNextMonth}
+                onClick={goToNextMonthMini}
                 className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded"
               >
                 <ChevronRight className="w-4 h-4 text-slate-600 dark:text-slate-400" />
@@ -262,13 +286,13 @@ const Calendar: React.FC = () => {
 
             <div className="flex items-center gap-2">
               <button
-                onClick={goToPreviousWeek}
+                onClick={view === 'week' ? goToPreviousWeek : goToPreviousMonth}
                 className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
               >
                 <ChevronLeft className="w-5 h-5 text-slate-600 dark:text-slate-400" />
               </button>
               <button
-                onClick={goToNextWeek}
+                onClick={view === 'week' ? goToNextWeek : goToNextMonth}
                 className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
               >
                 <ChevronRight className="w-5 h-5 text-slate-600 dark:text-slate-400" />
@@ -276,7 +300,7 @@ const Calendar: React.FC = () => {
             </div>
 
             <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
-              {format(weekDays[0].date, 'MMMM yyyy')}
+              {format(view === 'week' ? weekDays[0].date : currentDate, 'MMMM yyyy')}
             </h2>
           </div>
 
@@ -308,6 +332,7 @@ const Calendar: React.FC = () => {
         </div>
 
         {/* Week View */}
+        {view === 'week' && (
         <div className="flex-1 overflow-auto">
           <div className="min-w-max">
             {/* Day headers */}
@@ -412,6 +437,112 @@ const Calendar: React.FC = () => {
             </div>
           </div>
         </div>
+        )}
+
+        {/* Month View */}
+        {view === 'month' && (
+        <div className="flex-1 overflow-auto p-6">
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+            {/* Day headers */}
+            <div className="grid grid-cols-7 gap-0 bg-slate-50 dark:bg-slate-700 border-b border-slate-200 dark:border-slate-600">
+              {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((day) => (
+                <div
+                  key={day}
+                  className="p-3 text-center text-sm font-semibold text-slate-700 dark:text-slate-300 border-r border-slate-200 dark:border-slate-600 last:border-r-0"
+                >
+                  {day}
+                </div>
+              ))}
+            </div>
+
+            {/* Month grid */}
+            <div className="grid grid-cols-7 gap-0">
+              {monthGridDays.map((dayData, index) => {
+                const events = getEventsForDay(dayData.date);
+                const hasEvents = events.tasks.length > 0 || events.habits.length > 0 || events.journalEntries.length > 0;
+
+                return (
+                  <div
+                    key={index}
+                    className={`
+                      min-h-[120px] border-r border-b border-slate-200 dark:border-slate-600 p-2 cursor-pointer transition-all duration-200
+                      ${!dayData.isCurrentMonth ? 'bg-slate-50 dark:bg-slate-900 text-slate-400 dark:text-slate-600' : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100'}
+                      ${dayData.isToday ? 'ring-2 ring-blue-500 ring-inset' : ''}
+                      hover:bg-slate-50 dark:hover:bg-slate-700
+                    `}
+                  >
+                    {/* Date number */}
+                    <div className="flex items-center justify-between mb-1">
+                      <span className={`
+                        text-sm font-medium
+                        ${dayData.isToday ? 'bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs' : ''}
+                      `}>
+                        {format(dayData.date, 'd')}
+                      </span>
+
+                      {/* Activity indicators */}
+                      {hasEvents && (
+                        <div className="flex gap-1">
+                          {events.tasks.length > 0 && (
+                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500" title={`${events.tasks.length} tasks`} />
+                          )}
+                          {events.habits.length > 0 && (
+                            <div className="w-1.5 h-1.5 rounded-full bg-green-500" title={`${events.habits.length} habits`} />
+                          )}
+                          {events.journalEntries.length > 0 && (
+                            <div className="w-1.5 h-1.5 rounded-full bg-purple-500" title="Journal entry" />
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Event list */}
+                    <div className="space-y-1">
+                      {/* Tasks */}
+                      {events.tasks.slice(0, 3).map((task) => (
+                        <div
+                          key={task.id}
+                          className={`
+                            text-xs px-1.5 py-0.5 rounded truncate
+                            ${task.status === 'done'
+                              ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 line-through'
+                              : 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
+                            }
+                          `}
+                          title={task.title}
+                        >
+                          {task.title}
+                        </div>
+                      ))}
+
+                      {/* Habits indicator */}
+                      {events.habits.length > 0 && events.tasks.length < 3 && (
+                        <div className="text-xs px-1.5 py-0.5 rounded truncate bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300">
+                          ✓ {events.habits.length} habit{events.habits.length > 1 ? 's' : ''}
+                        </div>
+                      )}
+
+                      {/* Journal indicator */}
+                      {events.journalEntries.length > 0 && (events.tasks.length + (events.habits.length > 0 ? 1 : 0)) < 3 && (
+                        <div className="text-xs px-1.5 py-0.5 rounded truncate bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300">
+                          📝 Journal
+                        </div>
+                      )}
+
+                      {/* More indicator */}
+                      {events.tasks.length > 3 && (
+                        <div className="text-xs text-slate-500 dark:text-slate-400 px-1.5">
+                          +{events.tasks.length - 3} more
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+        )}
       </div>
     </div>
   );
