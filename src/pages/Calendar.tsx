@@ -127,11 +127,11 @@ const Calendar: React.FC = () => {
       <div
         onClick={() => setSelectedDate(date)}
         className={`
-          min-h-[120px] border border-slate-200 p-2 cursor-pointer transition-all duration-200
-          ${!isCurrentMonth ? 'bg-slate-50 text-slate-400' : 'bg-white text-slate-900'}
+          min-h-[100px] sm:min-h-[120px] border-r border-b border-slate-200 dark:border-slate-600 p-2 cursor-pointer transition-all duration-200
+          ${!isCurrentMonth ? 'bg-slate-50 dark:bg-slate-900 text-slate-400 dark:text-slate-600' : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100'}
           ${isDayToday ? 'ring-2 ring-blue-500 ring-inset' : ''}
-          ${selectedDate && isSameDay(selectedDate, date) ? 'bg-blue-50' : ''}
-          hover:bg-slate-50
+          ${selectedDate && isSameDay(selectedDate, date) ? 'bg-blue-50 dark:bg-blue-900/30' : ''}
+          hover:bg-slate-50 dark:hover:bg-slate-700
         `}
       >
         {/* Date number */}
@@ -191,14 +191,14 @@ const Calendar: React.FC = () => {
     const { tasks: dayTasks, habits: dayHabits, journalEntries: dayJournalEntries } = dayData;
 
     return (
-      <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 p-6">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-semibold text-slate-900">
+          <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
             {format(date, 'EEEE, MMMM d, yyyy')}
           </h3>
           <button
             onClick={() => setSelectedDate(null)}
-            className="text-slate-400 hover:text-slate-600 transition-colors"
+            className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors text-2xl leading-none"
           >
             ×
           </button>
@@ -207,11 +207,11 @@ const Calendar: React.FC = () => {
         {/* Tasks Section */}
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-3">
-            <CheckCircle2 className="w-5 h-5 text-blue-600" />
-            <h4 className="font-semibold text-slate-900">Tasks ({dayTasks.length})</h4>
+            <CheckCircle2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            <h4 className="font-semibold text-slate-900 dark:text-slate-100">Tasks ({dayTasks.length})</h4>
           </div>
           {dayTasks.length === 0 ? (
-            <p className="text-sm text-slate-500 pl-7">No tasks scheduled</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400 pl-7">No tasks scheduled</p>
           ) : (
             <div className="space-y-2 pl-7">
               {dayTasks.map(task => (
@@ -219,19 +219,19 @@ const Calendar: React.FC = () => {
                   key={task.id}
                   className={`
                     flex items-start justify-between p-3 rounded-lg border
-                    ${task.status === 'done' ? 'bg-green-50 border-green-200' : 'bg-slate-50 border-slate-200'}
+                    ${task.status === 'done' ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' : 'bg-slate-50 dark:bg-slate-700 border-slate-200 dark:border-slate-600'}
                   `}
                 >
                   <div className="flex-1">
-                    <p className={`text-sm font-medium ${task.status === 'done' ? 'line-through text-slate-500' : 'text-slate-900'}`}>
+                    <p className={`text-sm font-medium ${task.status === 'done' ? 'line-through text-slate-500 dark:text-slate-400' : 'text-slate-900 dark:text-slate-100'}`}>
                       {task.title}
                     </p>
                     {task.description && (
-                      <p className="text-xs text-slate-500 mt-1">{task.description}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{task.description}</p>
                     )}
                   </div>
                   {task.status === 'done' && (
-                    <CheckCircle2 className="w-4 h-4 text-green-600 ml-2 flex-shrink-0" />
+                    <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400 ml-2 flex-shrink-0" />
                   )}
                 </div>
               ))}
@@ -242,13 +242,13 @@ const Calendar: React.FC = () => {
         {/* Habits Section */}
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-3">
-            <Target className="w-5 h-5 text-green-600" />
-            <h4 className="font-semibold text-slate-900">
+            <Target className="w-5 h-5 text-green-600 dark:text-green-400" />
+            <h4 className="font-semibold text-slate-900 dark:text-slate-100">
               Habits ({dayHabits.filter(h => h.completed).length}/{dayHabits.length})
             </h4>
           </div>
           {dayHabits.length === 0 ? (
-            <p className="text-sm text-slate-500 pl-7">No habits tracked</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400 pl-7">No habits tracked</p>
           ) : (
             <div className="space-y-2 pl-7">
               {dayHabits.map(({ habit, completed }) => (
@@ -256,18 +256,18 @@ const Calendar: React.FC = () => {
                   key={habit.id}
                   className={`
                     flex items-center gap-3 p-3 rounded-lg border
-                    ${completed ? 'bg-green-50 border-green-200' : 'bg-slate-50 border-slate-200'}
+                    ${completed ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' : 'bg-slate-50 dark:bg-slate-700 border-slate-200 dark:border-slate-600'}
                   `}
                 >
                   <div
                     className="w-3 h-3 rounded-full flex-shrink-0"
                     style={{ backgroundColor: habit.color }}
                   />
-                  <span className={`text-sm font-medium flex-1 ${completed ? 'text-slate-900' : 'text-slate-500'}`}>
+                  <span className={`text-sm font-medium flex-1 ${completed ? 'text-slate-900 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400'}`}>
                     {habit.name}
                   </span>
                   {completed && (
-                    <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />
+                    <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0" />
                   )}
                 </div>
               ))}
@@ -278,21 +278,21 @@ const Calendar: React.FC = () => {
         {/* Journal Section */}
         <div>
           <div className="flex items-center gap-2 mb-3">
-            <BookOpen className="w-5 h-5 text-purple-600" />
-            <h4 className="font-semibold text-slate-900">Journal ({dayJournalEntries.length})</h4>
+            <BookOpen className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+            <h4 className="font-semibold text-slate-900 dark:text-slate-100">Journal ({dayJournalEntries.length})</h4>
           </div>
           {dayJournalEntries.length === 0 ? (
-            <p className="text-sm text-slate-500 pl-7">No journal entries</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400 pl-7">No journal entries</p>
           ) : (
             <div className="space-y-3 pl-7">
               {dayJournalEntries.map(entry => (
                 <div
                   key={entry.id}
-                  className="p-3 rounded-lg bg-purple-50 border border-purple-200"
+                  className="p-3 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800"
                 >
-                  <p className="text-sm text-slate-700 line-clamp-3">{entry.content}</p>
+                  <p className="text-sm text-slate-700 dark:text-slate-300 line-clamp-3">{entry.content}</p>
                   {entry.mood && (
-                    <span className="inline-block mt-2 text-xs text-purple-600 font-medium">
+                    <span className="inline-block mt-2 text-xs text-purple-600 dark:text-purple-400 font-medium">
                       Mood: {entry.mood}
                     </span>
                   )}
@@ -326,14 +326,14 @@ const Calendar: React.FC = () => {
       {/* Header */}
       <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Calendar</h1>
-          <p className="text-sm text-slate-600">View your tasks, habits, and journal entries</p>
+          <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Calendar</h1>
+          <p className="text-sm text-slate-600 dark:text-slate-400">View your tasks, habits, and journal entries</p>
         </div>
 
         <div className="flex items-center gap-3">
           <button
             onClick={goToToday}
-            className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+            className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
           >
             Today
           </button>
@@ -341,31 +341,31 @@ const Calendar: React.FC = () => {
       </header>
 
       {/* Calendar Controls */}
-      <div className="flex items-center justify-between bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-4">
         <div className="flex items-center gap-4">
           <button
             onClick={goToPreviousMonth}
-            className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
             aria-label="Previous month"
           >
-            <ChevronLeft className="w-5 h-5 text-slate-600" />
+            <ChevronLeft className="w-5 h-5 text-slate-600 dark:text-slate-400" />
           </button>
 
-          <h2 className="text-xl font-semibold text-slate-900 min-w-[200px] text-center">
+          <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100 min-w-[200px] text-center">
             {format(currentDate, 'MMMM yyyy')}
           </h2>
 
           <button
             onClick={goToNextMonth}
-            className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
             aria-label="Next month"
           >
-            <ChevronRight className="w-5 h-5 text-slate-600" />
+            <ChevronRight className="w-5 h-5 text-slate-600 dark:text-slate-400" />
           </button>
         </div>
 
         {/* Legend */}
-        <div className="flex items-center gap-4 text-xs text-slate-600">
+        <div className="flex items-center gap-4 text-xs text-slate-600 dark:text-slate-400">
           <div className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full bg-blue-500" />
             <span>Tasks</span>
@@ -381,16 +381,16 @@ const Calendar: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex gap-6">
+      <div className="flex flex-col lg:flex-row gap-6">
         {/* Calendar Grid */}
-        <div className="flex-1">
-          <div className="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
+        <div className="flex-1 min-w-0">
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
             {/* Week day headers */}
-            <div className="grid grid-cols-7 bg-slate-50 border-b border-slate-200">
+            <div className="grid grid-cols-7 gap-0 bg-slate-50 dark:bg-slate-700 border-b border-slate-200 dark:border-slate-600">
               {weekDays.map(day => (
                 <div
                   key={day}
-                  className="p-3 text-center text-sm font-semibold text-slate-700"
+                  className="p-3 text-center text-sm font-semibold text-slate-700 dark:text-slate-300 border-r border-slate-200 dark:border-slate-600 last:border-r-0"
                 >
                   {day}
                 </div>
@@ -398,7 +398,7 @@ const Calendar: React.FC = () => {
             </div>
 
             {/* Calendar days */}
-            <div className="grid grid-cols-7">
+            <div className="grid grid-cols-7 gap-0">
               {calendarDays.map((dayData, index) => (
                 <DayCell key={index} dayData={dayData} />
               ))}
@@ -408,7 +408,7 @@ const Calendar: React.FC = () => {
 
         {/* Selected date panel */}
         {selectedDate && (
-          <div className="w-96">
+          <div className="w-full lg:w-96 flex-shrink-0">
             <SelectedDatePanel date={selectedDate} />
           </div>
         )}
