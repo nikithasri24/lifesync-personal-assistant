@@ -14,7 +14,7 @@ import { Toast } from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import SeventyFiveHardWidget from '../components/SeventyFiveHardWidget';
 import { useTasks, useUpdateTask } from '../hooks/useTasksQuery';
-import { useHabits, useCreateHabitEntry } from '../hooks/useHabitsQuery';
+import { useHabits, useCreateHabitEntry, useHabitEntries } from '../hooks/useHabitsQuery';
 import { useNotes } from '../hooks/useNotesQuery';
 import { useJournalEntries } from '../hooks/useJournalQuery';
 import { logger } from '../services/logger';
@@ -53,7 +53,9 @@ export default function Dashboard(): JSX.Element {
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
   const tasksQuery = useTasks();
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
-  const habitsQuery = useHabits();
+  const habitsQuery = useHabits({ isActive: true }); // Only show active habits like the Habits page
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+  const habitEntriesQuery = useHabitEntries(); // Load habit entries to show completion status
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
   const notesQuery = useNotes();
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
@@ -62,6 +64,7 @@ export default function Dashboard(): JSX.Element {
   const tasks: Task[] = (tasksQuery as TasksQueryResult).data ?? [];
   const tasksLoading: boolean = (tasksQuery as TasksQueryResult).isLoading ?? false;
   const habits: Habit[] = (habitsQuery as HabitsQueryResult).data ?? [];
+  const habitEntries = (habitEntriesQuery as { data: Array<{ habit_id: string; date: string; value?: number }> }).data ?? [];
   const notes: Note[] = (notesQuery as NotesQueryResult).data ?? [];
   const journalEntries: JournalEntry[] = (journalQuery as JournalQueryResult).data ?? [];
 
@@ -90,13 +93,14 @@ export default function Dashboard(): JSX.Element {
 
   const completeHabitSafely = async (habitId: string): Promise<void> => {
     try {
+      logger.debug('[Dashboard] Complete button clicked', { habitId });
       const today = format(new Date(), 'yyyy-MM-dd');
       await createHabitEntryMutation.mutateAsync({
         habit_id: habitId,
         date: today,
         value: 1,
-        user_id: '' // This will be set by the API based on auth context
       });
+      showToast('Habit completed!', 'success');
     } catch (error) {
       logger.error('[Dashboard] Failed to complete habit', { error });
       showToast('Unable to record that habit completion. Please try again.', 'error');
@@ -133,9 +137,19 @@ export default function Dashboard(): JSX.Element {
     new Date(task.due_date) <= addDays(new Date(), 7)
   ).filter((t: Task): boolean => !isSFH(t));
 
-  // Note: With React Query, habit entries are fetched separately
-  // For dashboard, we'll just show all active habits
-  const todayHabits = habits.slice(0, 5);
+  // Filter habits to show only incomplete ones for today (sync with Habits page logic)
+  const todayKey = format(new Date(), 'yyyy-MM-dd');
+  const todayHabits = habits
+    .filter((habit: Habit) => {
+      // Count today's completions for this habit
+      const todayCompletions = habitEntries.filter(
+        entry => entry.habit_id === habit.id && entry.date === todayKey
+      ).length;
+      const targetCount = habit.targetValue ?? 1;
+      // Only show habits that haven't reached their target yet
+      return todayCompletions < targetCount;
+    })
+    .slice(0, 5);
 
   const recentNotes = notes
     .sort((a: Note, b: Note): number => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())

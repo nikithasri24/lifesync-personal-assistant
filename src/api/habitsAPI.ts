@@ -186,9 +186,13 @@ export async function createHabitEntry(entry: Omit<HabitEntryData, 'id' | 'creat
   if (habitResult.error) throw habitResult.error;
   if (!habitResult.data) throw new Error('Habit not found or access denied');
 
+  // Use upsert to handle duplicate entries (same habit_id and date)
   const result = await supabase
     .from('habit_entries')
-    .insert(entry)
+    .upsert(entry, {
+      onConflict: 'habit_id,date',
+      ignoreDuplicates: false
+    })
     .select()
     .single();
 
