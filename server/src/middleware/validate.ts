@@ -1,4 +1,3 @@
-import type { RequestHandler } from 'express';
 import type { AnyZodObject, ZodEffects } from 'zod';
 import { HttpError } from '../shared/httpError.js';
 
@@ -10,7 +9,7 @@ interface ValidateOptions {
   params?: AnyZodObject | ZodEffects<any>;
 }
 
-export const validate = (options: ValidateOptions): RequestHandler => async (req, _res, next) => {
+export const validate = (options: ValidateOptions) => async (req: any, _res: any, next: any) => {
   try {
     if (options.body) {
       req.body = await parse(options.body, req.body);

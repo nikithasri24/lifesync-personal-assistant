@@ -6,7 +6,7 @@ This document captures the gaps between the current work-in-progress state of Li
 
 - **Frontend**: Vite + React + TypeScript single-page app. UI covers dashboard, tasks, habits, journal, finances, shopping, travel, meal planning, etc. Many sections rely on in-memory or mock data.
 - **State management**: Zustand `useRealAppStore` ties the UI to an API layer. When the API is unavailable the UI quietly falls back to an empty app state.
-- **APIs**: `src/services/apiClient.ts` targets a custom Express server (`api-server*.js`). The server expects Postgres/SQLite, but multi-user logic is incomplete (hard-coded user IDs, no auth). Not all frontend features have matching API endpoints.
+- **APIs**: `src/services/apiClient.ts` targets the TypeScript Express server under `server/src/**` for privileged utilities and selected domains; most CRUD goes direct to Supabase via the client adapter.
 - **Supabase integration**: Exists but unused. `src/lib/supabase.ts` and `src/services/database.ts` implement real-time CRUD for tasks/projects with placeholder env vars and a hard-coded `TEMP_USER_ID`.
 - **Persistence**: Local storage only. Backend services exist but are not wired up or hosted. No authentication or sharing yet.
 
@@ -98,8 +98,8 @@ Fallbacks if Supabase ever outgrows requirements: deploy PocketBase (binary alre
    - Add environment variables in Pages dashboard.
    - Build command: `npm install && npm run build` (fits into free limits).
 
-3. **Optional Express API**
-   - If you need server-side cron jobs or data shaping, deploy `api-server.js` to Render (free web service). Point it to Supabase using the `pg` connection string. Render sleeps after inactivity but restarts on request.
+3. **Optional Express API (TS Server)**
+   - If you need server-side cron jobs or data shaping, deploy the TypeScript Express API under `server/src/**` (build to `server/dist`) to Render/Fly/Heroku. Point it to your Postgres using the connection string. Free tiers may sleep after inactivity but restart on request.
 
 4. **DNS / Custom domain**
    - Cloudflare Pages includes free TLS; map `assistant.yourdomain.com` if desired.

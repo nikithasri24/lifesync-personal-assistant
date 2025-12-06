@@ -10,9 +10,9 @@ lsof -ti:5173 | xargs kill -9 2>/dev/null || true
 # Wait for cleanup
 sleep 2
 
-# Start API with monitoring in background
-echo "🔧 Starting API Server with monitoring..."
-./start-api-with-monitor.sh &
+# Start API (TS server) in background
+echo "🔧 Starting API Server (TS)..."
+npm run api:start &
 API_PID=$!
 
 # Wait for API to start

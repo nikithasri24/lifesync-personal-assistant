@@ -731,16 +731,22 @@ const mapPlannedMealDataToPlannedMeal = (meal: PlannedMealData): PlannedMeal => 
   }
 }
 
-const mapMealPlanDataToMealPlanWeek = (plan: MealPlanData): MealPlanWeek => ({
-  id: plan.id ?? createId(),
-  name: plan.name,
-  weekStartDate: toDate(plan.week_start_date) ?? new Date(),
-  mealColumns: normaliseMealColumns(plan.meal_columns),
-  meals: (plan.planned_meals ?? []).map(mapPlannedMealDataToPlannedMeal),
-  notes: plan.notes ?? undefined,
-  createdAt: toDate(plan.created_at) ?? new Date(),
-  updatedAt: toDate(plan.updated_at) ?? new Date(),
-})
+const mapMealPlanDataToMealPlanWeek = (plan: MealPlanData): MealPlanWeek => {
+  const wsd = plan.week_start_date
+  const weekStart = wsd && wsd.length === 10
+    ? new Date(Number(wsd.slice(0, 4)), Number(wsd.slice(5, 7)) - 1, Number(wsd.slice(8, 10)))
+    : toDate(wsd)
+  return {
+    id: plan.id ?? createId(),
+    name: plan.name,
+    weekStartDate: weekStart ?? new Date(),
+    mealColumns: normaliseMealColumns(plan.meal_columns),
+    meals: (plan.planned_meals ?? []).map(mapPlannedMealDataToPlannedMeal),
+    notes: plan.notes ?? undefined,
+    createdAt: toDate(plan.created_at) ?? new Date(),
+    updatedAt: toDate(plan.updated_at) ?? new Date(),
+  }
+}
 
 const buildMealPlanInsertPayload = (
   weekStartDate: Date,
@@ -748,7 +754,8 @@ const buildMealPlanInsertPayload = (
 ): Omit<MealPlanData, 'id' | 'created_at' | 'updated_at'> =>
   sanitize({
     name,
-    week_start_date: weekStartDate.toISOString(),
+    // Store date-only to avoid timezone/week boundary bugs
+    week_start_date: formatDate(weekStartDate, 'yyyy-MM-dd'),
     meal_columns: serializeMealColumns(DEFAULT_MEAL_COLUMNS),
   })
 
@@ -781,7 +788,13 @@ const mapRecipeDataToRecipe = (recipe: RecipeData): Recipe => ({
   id: recipe.id ?? createId(),
   name: recipe.name,
   description: recipe.description ?? '',
-  ingredients: [],
+  ingredients: Array.isArray(recipe.ingredients)
+    ? recipe.ingredients.map((ing) => ({
+        name: ing.name,
+        amount: ing.amount ?? undefined,
+        unit: ing.unit ?? undefined,
+      }))
+    : [],
   instructions: recipe.instructions
     ? recipe.instructions
         .split('\n')
@@ -821,13 +834,20 @@ const buildRecipeInsertPayload = (
     servings: recipe.servings ?? 1,
     calories_per_serving: recipe.calories ?? null,
     instructions: recipe.instructions.join('\n'),
+    ingredients: Array.isArray(recipe.ingredients) && recipe.ingredients.length > 0
+      ? recipe.ingredients.map((ing) => ({
+          name: ing.name,
+          amount: ing.amount ?? undefined,
+          unit: ing.unit ?? undefined,
+        }))
+      : null,
     tags: recipe.tags ?? [],
     dietary_restrictions: recipe.dietaryRestrictions ?? [],
     nutrition_info: recipe.nutritionInfo ?? null,
     source_type: recipe.sourceType ?? null,
     source_url: recipe.sourceUrl ?? null,
     author_name: recipe.authorName ?? null,
-  video_thumbnail: recipe.videoThumbnail ?? null,
+    video_thumbnail: recipe.videoThumbnail ?? null,
   })
 
 const buildRecipeUpdatePayload = (
@@ -843,6 +863,13 @@ const buildRecipeUpdatePayload = (
     servings: updates.servings ?? undefined,
     calories_per_serving: updates.calories ?? undefined,
     instructions: updates.instructions ? updates.instructions.join('\n') : undefined,
+    ingredients: updates.ingredients
+      ? updates.ingredients.map((ing) => ({
+          name: ing.name,
+          amount: ing.amount ?? undefined,
+          unit: ing.unit ?? undefined,
+        }))
+      : undefined,
     tags: updates.tags ?? undefined,
     dietary_restrictions: updates.dietaryRestrictions ?? undefined,
     nutrition_info: updates.nutritionInfo ?? undefined,
@@ -1007,6 +1034,9 @@ const sameWeek = (a: Date, b: Date, weekStartsOn: number) => {
   return weekA === weekB
 }
 
+// Lock to prevent concurrent creation of meal plans for the same week
+const creationLocks = new Map<string, Promise<MealPlanWeek>>()
+
 export const useRealAppStore = create<RealAppState>((set, get) => ({
   loading: false,
   tasksLoading: false,
@@ -1154,6 +1184,9 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
         apiClient.getSFHChallenges().catch(() => []),
       ])
 
+      // Show UI immediately after main data loads
+      set({ loading: false })
+
       // (Travel features removed)
 
       let habitEntries: HabitEntryData[] = []
@@ -1294,7 +1327,6 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
             try { localStorage.setItem('lifesync:75hard:synced', JSON.stringify(Array.from(synced))) } catch {}
             if (didSync) {
               get().setSFHLastSynced?.(new Date())
-              get().showGlobalToast?.('Synced 75 Hard to cloud', 'success')
             }
           }
         }
@@ -1357,7 +1389,6 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
         financialTransactions: transactionsRaw ?? [],
         financesLoading: false,
         userStats,
-        loading: false,
         seventyFiveHardChallenges: sfhChallenges,
       })
     } catch (error) {
@@ -2001,9 +2032,14 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
   loadRecipes: async () => {
     if (!isSupabaseConfigured) return
     set({ recipesLoading: true })
-    const recipesRaw = await apiClient.getRecipes()
-    const recipes = recipesRaw.map(mapRecipeDataToRecipe)
-    set({ recipes, recipesLoading: false })
+    try {
+      const recipesRaw = await apiClient.getRecipes()
+      const recipes = recipesRaw.map(mapRecipeDataToRecipe)
+      set({ recipes, recipesLoading: false })
+    } catch (e) {
+      console.warn('[Store] loadRecipes failed; showing empty list', e)
+      set({ recipes: [], recipesLoading: false })
+    }
   },
 
   addRecipe: async (recipeInput) => {
@@ -2066,42 +2102,92 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
   loadMealPlans: async () => {
     if (!isSupabaseConfigured) return
     set({ mealPlansLoading: true })
-    const mealPlansRaw = await apiClient.getMealPlans()
-    const mealPlans = mealPlansRaw.map(mapMealPlanDataToMealPlanWeek)
-    set({ mealPlans, mealPlansLoading: false })
+    try {
+      const mealPlansRaw = await apiClient.getMealPlans()
+      const mealPlans = mealPlansRaw.map(mapMealPlanDataToMealPlanWeek)
+      set({ mealPlans, mealPlansLoading: false })
+    } catch (e) {
+      console.warn('[Store] loadMealPlans failed; starting with none', e)
+      set({ mealPlans: [], mealPlansLoading: false })
+    }
   },
 
   ensureMealPlanForWeek: async (weekStartDate) => {
     const ws = get().weekStartsOn
-    const existing = get().mealPlans.find((plan) =>
-      sameWeek(plan.weekStartDate, weekStartDate, ws),
-    )
-    if (existing) {
-      return existing
+    const weekKey = startOfWeek(weekStartDate, { weekStartsOn: ws }).toISOString()
+
+    // Check if there's already a creation in progress for this week
+    const ongoing = creationLocks.get(weekKey)
+    if (ongoing) {
+      return await ongoing
     }
 
-    if (!isSupabaseConfigured) {
-      const plan: MealPlanWeek = {
-        id: createId(),
-        name: 'Meal plan',
-        weekStartDate: startOfWeek(weekStartDate, { weekStartsOn: ws }),
-        mealColumns: DEFAULT_MEAL_COLUMNS,
-        meals: [],
-        createdAt: new Date(),
-        updatedAt: new Date(),
+    // Create promise and store in lock map IMMEDIATELY
+    const creationPromise = (async () => {
+      try {
+        // Check existing plans in store first
+        const existing = get().mealPlans.find((plan) =>
+          sameWeek(plan.weekStartDate, weekStartDate, ws),
+        )
+        if (existing) {
+          return existing
+        }
+
+        if (!isSupabaseConfigured) {
+          const plan: MealPlanWeek = {
+            id: createId(),
+            name: 'Meal plan',
+            weekStartDate: startOfWeek(weekStartDate, { weekStartsOn: ws }),
+            mealColumns: DEFAULT_MEAL_COLUMNS,
+            meals: [],
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          }
+          set((state) => ({ mealPlans: [...state.mealPlans, plan] }))
+          return plan
+        }
+
+        // Database will handle duplicates with unique constraint
+        // If plan exists, upsert will return the existing one
+        const payload = buildMealPlanInsertPayload(
+          startOfWeek(weekStartDate, { weekStartsOn: ws }),
+          'Meal plan',
+        )
+        try {
+          const created = await apiClient.createMealPlan(payload)
+          const plan = mapMealPlanDataToMealPlanWeek(created)
+
+          // Check if already in store (another thread might have added it)
+          const alreadyInStore = get().mealPlans.find(p => p.id === plan.id)
+          if (!alreadyInStore) {
+            set((state) => ({ mealPlans: [...state.mealPlans, plan] }))
+          }
+
+          return plan
+        } catch (e) {
+          console.warn('[MealPlans] Cloud create failed; falling back to local-only plan', e)
+          const localPlan: MealPlanWeek = {
+            id: createId(),
+            name: 'Meal plan',
+            weekStartDate: startOfWeek(weekStartDate, { weekStartsOn: ws }),
+            mealColumns: DEFAULT_MEAL_COLUMNS,
+            meals: [],
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          }
+          set((state) => ({ mealPlans: [...state.mealPlans, localPlan] }))
+          // Surface a gentle notice once
+          try { get().showGlobalToast?.('Working locally — sign in to sync meals', 'info') } catch {}
+          return localPlan
+        }
+      } finally {
+        // Remove lock after creation completes
+        creationLocks.delete(weekKey)
       }
-      set((state) => ({ mealPlans: [...state.mealPlans, plan] }))
-      return plan
-    }
+    })()
 
-    const payload = buildMealPlanInsertPayload(
-      startOfWeek(weekStartDate, { weekStartsOn: ws }),
-      'Meal plan',
-    )
-    const created = await apiClient.createMealPlan(payload)
-    const plan = mapMealPlanDataToMealPlanWeek(created)
-    set((state) => ({ mealPlans: [...state.mealPlans, plan] }))
-    return plan
+    creationLocks.set(weekKey, creationPromise)
+    return await creationPromise
   },
 
   addPlannedMeal: async (planId, mealInput) => {
@@ -2121,18 +2207,42 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
       }))
       return meal
     }
-
-    const payload = buildPlannedMealInsertPayload(planId, mealInput)
-    const created = await apiClient.createPlannedMeal(payload)
-    const meal = mapPlannedMealDataToPlannedMeal(created)
+    // Optimistic local add; try cloud, fall back gracefully
+    const optimistic: PlannedMeal = {
+      ...mealInput,
+      id: createId(),
+      mealPlanId: planId,
+      createdAt: new Date(),
+    }
     set((state) => ({
       mealPlans: state.mealPlans.map((plan) =>
         plan.id === planId
-          ? { ...plan, meals: [...plan.meals, meal], updatedAt: new Date() }
+          ? { ...plan, meals: [...plan.meals, optimistic], updatedAt: new Date() }
           : plan,
       ),
     }))
-    return meal
+    try {
+      const payload = buildPlannedMealInsertPayload(planId, mealInput)
+      const created = await apiClient.createPlannedMeal(payload)
+      const persisted = mapPlannedMealDataToPlannedMeal(created)
+      // Replace optimistic with persisted (id may differ)
+      set((state) => ({
+        mealPlans: state.mealPlans.map((plan) =>
+          plan.id === planId
+            ? {
+                ...plan,
+                meals: plan.meals.map((m) => (m.id === optimistic.id ? persisted : m)),
+                updatedAt: new Date(),
+              }
+            : plan,
+        ),
+      }))
+      return persisted
+    } catch (e) {
+      console.warn('[PlannedMeals] Cloud create failed; keeping local-only meal', e)
+      try { get().showGlobalToast?.('Added meal locally — sign in to sync', 'info') } catch {}
+      return optimistic
+    }
   },
 
   updatePlannedMeal: async (mealId, updates) => {
@@ -2141,7 +2251,8 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
     if (!plan) return
     if (isSupabaseConfigured) {
       await apiClient.updatePlannedMeal(mealId, sanitize({
-        date: updates.date ? updates.date.toISOString() : undefined,
+        // Keep date-only format to avoid timezone issues
+        date: updates.date ? formatDate(updates.date, 'yyyy-MM-dd') : undefined,
         meal_type: updates.mealType,
         recipe_id: updates.recipeId,
         custom_meal: updates.customMeal,

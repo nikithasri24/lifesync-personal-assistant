@@ -1,7 +1,7 @@
 import { pool } from '../../db/pool.js';
 import { env } from '../../config/env.js';
 
-const DEFAULT_USER_ID = env.DEFAULT_USER_ID ?? '00000000-0000-0000-0000-000000000000';
+const DEV_DEFAULT_USER_ID = env.DEFAULT_USER_ID ?? '00000000-0000-0000-0000-000000000000';
 
 export interface CreateProjectInput {
   name: string;
@@ -13,24 +13,24 @@ export interface CreateProjectInput {
 
 export type UpdateProjectInput = Partial<CreateProjectInput>;
 
-export async function listProjects() {
+export async function listProjects(userId?: string | null) {
   const result = await pool.query(
     `SELECT *
      FROM projects
      WHERE user_id = $1
      ORDER BY created_at DESC`,
-    [DEFAULT_USER_ID]
+    [userId ?? DEV_DEFAULT_USER_ID]
   );
   return result.rows;
 }
 
-export async function createProject(input: CreateProjectInput) {
+export async function createProject(userId: string | null | undefined, input: CreateProjectInput) {
   const result = await pool.query(
     `INSERT INTO projects (user_id, name, description, color, status, icon)
      VALUES ($1, $2, $3, COALESCE($4, '#6366f1'), COALESCE($5, 'active'), COALESCE($6, '📁'))
      RETURNING *`,
     [
-      DEFAULT_USER_ID,
+      userId ?? DEV_DEFAULT_USER_ID,
       input.name,
       input.description ?? null,
       input.color,

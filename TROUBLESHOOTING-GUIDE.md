@@ -197,7 +197,7 @@ curl -s http://10.247.209.223:3001/api/focus/achievements | grep -q "achievement
 curl -s http://10.247.209.223:3001/api/focus/analytics | grep -q "totalSessions" && echo "✅ Analytics OK" || echo "❌ Analytics missing"
 ```
 
-**Solution:** The Focus endpoints must be implemented in `start-with-db.js`:
+**Solution:** Implement Focus endpoints in the TS server (`server/src/**`) if REST focus is required, or switch the client to Supabase-backed focus features:
 - `/api/focus/profile` - User profile (level, XP, streak)
 - `/api/focus/achievements` - Achievement system
 - `/api/focus/analytics` - Session analytics

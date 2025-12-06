@@ -1,7 +1,7 @@
 import { pool } from '../../db/pool.js';
 import { env } from '../../config/env.js';
 
-const DEFAULT_USER_ID = env.DEFAULT_USER_ID ?? '00000000-0000-0000-0000-000000000000';
+const DEV_DEFAULT_USER_ID = env.DEFAULT_USER_ID ?? '00000000-0000-0000-0000-000000000000';
 
 export interface CreateTaskInput {
   title: string;
@@ -24,19 +24,19 @@ export type UpdateTaskInput = Partial<CreateTaskInput> & {
   deleted_at?: string | null;
 };
 
-export async function listTasks() {
+export async function listTasks(userId?: string | null) {
   const result = await pool.query(
     `SELECT t.*, p.name as project_name, p.color as project_color, p.icon as project_icon
      FROM tasks t
      LEFT JOIN projects p ON t.project_id = p.id
      WHERE t.deleted = false AND t.user_id = $1
      ORDER BY t.created_at DESC`,
-    [DEFAULT_USER_ID]
+    [userId ?? DEV_DEFAULT_USER_ID]
   );
   return result.rows;
 }
 
-export async function createTask(input: CreateTaskInput) {
+export async function createTask(userId: string | null | undefined, input: CreateTaskInput) {
   const result = await pool.query(
     `INSERT INTO tasks (
        user_id,
@@ -60,7 +60,7 @@ export async function createTask(input: CreateTaskInput) {
      )
      RETURNING *`,
     [
-      DEFAULT_USER_ID,
+      userId ?? DEV_DEFAULT_USER_ID,
       input.title,
       input.description ?? null,
       input.project_id ?? null,

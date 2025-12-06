@@ -25,11 +25,12 @@ else
   echo "  ❌ Frontend server not responding"
 fi
 
-echo -e "\n4. Database:"
-if docker exec lifesync-postgres psql -U postgres -d lifesync -c "SELECT NOW();" > /dev/null 2>&1; then
-  echo "  ✅ Database responding"
+echo -e "\n4. API Capabilities (proxy for DB reachability):"
+CAPS_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://10.247.209.223:3001/api/capabilities)
+if [ "$CAPS_CODE" = "200" ]; then
+  echo "  ✅ API capabilities responding (DB likely reachable)"
 else
-  echo "  ❌ Database not responding"
+  echo "  ⚠️  Could not fetch /api/capabilities (HTTP $CAPS_CODE). Check API logs/DB."
 fi
 
 echo -e "\n5. Processes:"

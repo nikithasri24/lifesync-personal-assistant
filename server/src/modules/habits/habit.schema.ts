@@ -30,5 +30,8 @@ export const habitIdParams = z.object({
   id: z.string().uuid()
 });
 
+export const updateHabitBody = createHabitBody.partial()
+
 export type CreateHabitBody = z.infer<typeof createHabitBody>;
 export type CreateHabitEntryBody = z.infer<typeof createHabitEntryBody>;
+export type UpdateHabitBody = z.infer<typeof updateHabitBody>;

@@ -277,6 +277,7 @@ export interface RecipeData {
   servings?: number;
   calories_per_serving?: number;
   instructions?: string;
+  ingredients?: Array<{ name: string; amount?: string; unit?: string }> | null;
   tags?: string[];
   is_favorite?: boolean;
   dietary_restrictions?: string[];

@@ -1,7 +1,7 @@
 import { pool } from '../../db/pool.js';
 import { env } from '../../config/env.js';
 
-const DEFAULT_USER_ID = env.DEFAULT_USER_ID ?? '00000000-0000-0000-0000-000000000000';
+const DEV_DEFAULT_USER_ID = env.DEFAULT_USER_ID ?? '00000000-0000-0000-0000-000000000000';
 
 export interface CreateHabitInput {
   name: string;
@@ -22,7 +22,7 @@ export interface HabitEntryInput {
   mood?: string;
 }
 
-export async function listHabits() {
+export async function listHabits(userId?: string | null) {
   const result = await pool.query(
     `SELECT h.*, COUNT(he.id) AS total_entries, MAX(he.date) AS last_entry_date
      FROM habits h
@@ -30,13 +30,13 @@ export async function listHabits() {
      WHERE h.is_active = true AND ($1::uuid IS NULL OR h.user_id = $1)
      GROUP BY h.id
      ORDER BY h.created_at DESC`,
-    [env.DEFAULT_USER_ID ?? null]
+    [userId ?? DEV_DEFAULT_USER_ID]
   );
 
   return result.rows;
 }
 
-export async function createHabit(input: CreateHabitInput) {
+export async function createHabit(userId: string | null | undefined, input: CreateHabitInput) {
   const result = await pool.query(
     `INSERT INTO habits (
        user_id,
@@ -61,7 +61,7 @@ export async function createHabit(input: CreateHabitInput) {
      )
      RETURNING *`,
     [
-      env.DEFAULT_USER_ID ?? null,
+      userId ?? DEV_DEFAULT_USER_ID,
       input.name,
       input.description ?? null,
       input.category,
@@ -87,4 +87,33 @@ export async function upsertHabitEntry(input: HabitEntryInput) {
   );
 
   return result.rows[0];
+}
+
+export async function updateHabit(id: string, updates: Partial<CreateHabitInput>) {
+  const entries = Object.entries(updates).filter(([, v]) => v !== undefined)
+  if (entries.length === 0) {
+    const existing = await pool.query('SELECT * FROM habits WHERE id = $1', [id])
+    return existing.rows[0] ?? null
+  }
+
+  const setFragments: string[] = []
+  const values: unknown[] = [id]
+  entries.forEach(([key, value], index) => {
+    setFragments.push(`${key} = $${index + 2}`)
+    values.push(value)
+  })
+
+  const result = await pool.query(
+    `UPDATE habits
+     SET ${setFragments.join(', ')}, updated_at = NOW()
+     WHERE id = $1
+     RETURNING *`,
+    values
+  )
+  return result.rows[0] ?? null
+}
+
+export async function deleteHabit(id: string) {
+  const result = await pool.query('DELETE FROM habits WHERE id = $1 RETURNING *', [id])
+  return result.rows[0] ?? null
 }

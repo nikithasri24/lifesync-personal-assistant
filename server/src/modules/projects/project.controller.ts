@@ -9,14 +9,14 @@ import {
 } from './project.repository.js';
 import type { CreateProjectBody, UpdateProjectBody } from './project.schema.js';
 
-export const getProjects: RequestHandler = asyncHandler(async (_req, res) => {
-  const projects = await listProjects();
+export const getProjects: RequestHandler = asyncHandler(async (req, res) => {
+  const projects = await listProjects((req as any).userId);
   res.json(projects);
 });
 
 export const postProject: RequestHandler = asyncHandler(async (req, res) => {
   const body = req.body as CreateProjectBody;
-  const project = await createProject(body);
+  const project = await createProject((req as any).userId, body);
   res.status(201).json(project);
 });
 

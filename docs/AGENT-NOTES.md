@@ -3,7 +3,7 @@
 This file summarizes the work completed on the LifeSync Tasks tab, infra hardening, and testing harness, so future changes can proceed seamlessly without re-explaining context.
 
 ## Infra & Security Hardening
-- Consolidated API routes into `server.js` (deleted `api-server.js`).
+- Consolidated API routes into the TypeScript Express server (`server/src/**`).
 - CORS restricted via `CORS_ORIGINS`; DB-guard returns 503 when `SKIP_DB=1`.
 - External fetches (YouTube/OCR/OpenFoodFacts) now have timeouts.
 - OCR endpoint only accepts server-side `OCR_SPACE_API_KEY`.
@@ -78,4 +78,3 @@ All E2E tests are wired into CI:
 ## Notes
 - Quick-Add tokens: `#project:Name` or `#project:"Name With Spaces"`, `#tags`, `@today|@tomorrow|@YYYY-MM-DD`, `!urgent|!high|!medium|!low|!1..4`.
 - Tasks UI uses shared parsers from `src/utils/quickAdd.ts`.
-
