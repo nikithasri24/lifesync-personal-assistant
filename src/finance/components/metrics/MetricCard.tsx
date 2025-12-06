@@ -93,7 +93,7 @@ const MetricCard: React.FC<MetricCardProps> = ({
   }, [colorScheme, value]);
 
   // Trend color classes
-  const trendColorClass = React.useMemo(() => {
+  const _trendColorClass = React.useMemo(() => {
     if (trendDirection === 'up') return 'text-emerald-600';
     if (trendDirection === 'down') return 'text-rose-600';
     return 'text-slate-500';

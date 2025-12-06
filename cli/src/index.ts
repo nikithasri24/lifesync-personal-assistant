@@ -11,6 +11,7 @@ import { createSyncCommand } from './commands/sync.js';
 import { createTasksCommand } from './commands/tasks.js';
 import { ensureConfigExists } from './config.js';
 import { dataManager } from './data.js';
+import { logger } from './utils/logger.js';
 
 const program = new Command();
 
@@ -115,20 +116,20 @@ program
   .option('-s, --shopping', 'Add shopping item instead')
   .option('-m, --meal', 'Add meal instead')
   .option('-r, --recipe', 'Add recipe instead')
-  .action(async (item, options) => {
+  .action((item, options) => {
     if (options.shopping) {
       const shoppingCmd = createShoppingCommand();
-      await shoppingCmd.parse(['add', ...(item ? [item] : [])], { from: 'user' });
+      shoppingCmd.parse(['add', ...(item ? [item] : [])], { from: 'user' });
     } else if (options.meal) {
       const mealsCmd = createMealsCommand();
-      await mealsCmd.parse(['add', ...(item ? [item] : [])], { from: 'user' });
+      mealsCmd.parse(['add', ...(item ? [item] : [])], { from: 'user' });
     } else if (options.recipe) {
       const recipesCmd = createRecipesCommand();
-      await recipesCmd.parse(['add', ...(item ? [item] : [])], { from: 'user' });
+      recipesCmd.parse(['add', ...(item ? [item] : [])], { from: 'user' });
     } else {
       // Default to tasks
       const tasksCmd = createTasksCommand();
-      await tasksCmd.parse(['add', ...(item ? [item] : [])], { from: 'user' });
+      tasksCmd.parse(['add', ...(item ? [item] : [])], { from: 'user' });
     }
   });
 
@@ -140,20 +141,20 @@ program
   .option('-s, --shopping', 'List shopping items instead')
   .option('-m, --meals', 'List meals instead')
   .option('-r, --recipes', 'List recipes instead')
-  .action(async (options) => {
+  .action((options) => {
     if (options.shopping) {
       const shoppingCmd = createShoppingCommand();
-      await shoppingCmd.parse(['list'], { from: 'user' });
+      shoppingCmd.parse(['list'], { from: 'user' });
     } else if (options.meals) {
       const mealsCmd = createMealsCommand();
-      await mealsCmd.parse(['week'], { from: 'user' });
+      mealsCmd.parse(['week'], { from: 'user' });
     } else if (options.recipes) {
       const recipesCmd = createRecipesCommand();
-      await recipesCmd.parse(['list'], { from: 'user' });
+      recipesCmd.parse(['list'], { from: 'user' });
     } else {
       // Default to tasks
       const tasksCmd = createTasksCommand();
-      await tasksCmd.parse(['list'], { from: 'user' });
+      tasksCmd.parse(['list'], { from: 'user' });
     }
   });
 
@@ -175,7 +176,7 @@ program
       ]);
 
       const pendingItems = shoppingItems.filter(item => !item.purchased);
-      const totalCost = pendingItems.reduce((sum, item) => sum + (item.estimatedPrice || 0), 0);
+      const totalCost = pendingItems.reduce((sum, item) => sum + (item.estimatedPrice ?? 0), 0);
       const thisWeekMeals = mealPlans.filter(meal => {
         const mealDate = new Date(meal.date);
         const now = new Date();
@@ -199,60 +200,60 @@ program
 
       spinner.succeed('Overview loaded');
 
-      console.log(chalk.bold.blue('\n📊 LifeSync Overview'));
-      console.log(chalk.bold('\n✅ Tasks:'));
-      console.log(`  • ${pendingTasks.length} pending tasks`);
-      console.log(`  • ${todaysTasks.length} due today`);
+      logger.info('Index', chalk.bold.blue('\n📊 LifeSync Overview'));
+      logger.info('Index', chalk.bold('\n✅ Tasks:'));
+      logger.info('Index', `  • ${pendingTasks.length} pending tasks`);
+      logger.info('Index', `  • ${todaysTasks.length} due today`);
       if (overdueTasks.length > 0) {
-        console.log(`  • ${chalk.red(overdueTasks.length + ' overdue')}`);
+        logger.info('Index', `  • ${chalk.red(overdueTasks.length + ' overdue')}`);
       }
       
-      console.log(chalk.bold('\n🛒 Shopping:'));
-      console.log(`  • ${pendingItems.length} items pending`);
-      console.log(`  • $${totalCost.toFixed(2)} estimated cost`);
+      logger.info('Index', chalk.bold('\n🛒 Shopping:'));
+      logger.info('Index', `  • ${pendingItems.length} items pending`);
+      logger.info('Index', `  • $${totalCost.toFixed(2)} estimated cost`);
       
-      console.log(chalk.bold('\n🍽️ Meals:'));
-      console.log(`  • ${thisWeekMeals.length} meals planned this week`);
-      console.log(`  • ${mealPlans.length} total meals in history`);
+      logger.info('Index', chalk.bold('\n🍽️ Meals:'));
+      logger.info('Index', `  • ${thisWeekMeals.length} meals planned this week`);
+      logger.info('Index', `  • ${mealPlans.length} total meals in history`);
       
-      console.log(chalk.bold('\n📖 Recipes:'));
-      console.log(`  • ${recipes.length} recipes saved`);
+      logger.info('Index', chalk.bold('\n📖 Recipes:'));
+      logger.info('Index', `  • ${recipes.length} recipes saved`);
       
       if (overdueTasks.length > 0) {
-        console.log(chalk.bold.red('\n⚠️ Overdue Tasks:'));
+        logger.info('Index', chalk.bold.red('\n⚠️ Overdue Tasks:'));
         overdueTasks.slice(0, 3).forEach(task => {
-          console.log(`  • ${chalk.red(task.title)}`);
+          logger.info('Index', `  • ${chalk.red(task.title)}`);
         });
       }
 
       if (todaysTasks.length > 0) {
-        console.log(chalk.bold('\n📅 Due Today:'));
+        logger.info('Index', chalk.bold('\n📅 Due Today:'));
         todaysTasks.slice(0, 3).forEach(task => {
           const statusIcon = task.status === 'currently-working' ? '🔄' : '○';
-          console.log(`  ${statusIcon} ${task.title}`);
+          logger.info('Index', `  ${statusIcon} ${task.title}`);
         });
       }
 
       if (pendingItems.length > 0) {
-        console.log(chalk.bold('\n🔥 Priority Items:'));
+        logger.info('Index', chalk.bold('\n🔥 Priority Items:'));
         const highPriority = pendingItems.filter(item => item.priority === 'high').slice(0, 3);
         highPriority.forEach(item => {
-          console.log(`  • ${chalk.red('HIGH')} ${item.name} (${item.quantity} ${item.unit})`);
+          logger.info('Index', `  • ${chalk.red('HIGH')} ${item.name} (${item.quantity} ${item.unit})`);
         });
       }
 
       if (thisWeekMeals.length > 0) {
-        console.log(chalk.bold('\n📅 This Week:'));
+        logger.info('Index', chalk.bold('\n📅 This Week:'));
         thisWeekMeals.slice(0, 3).forEach(meal => {
           const date = new Date(meal.date).toLocaleDateString('en-US', { weekday: 'short' });
-          const mealName = meal.customMeal || 'Recipe';
-          console.log(`  • ${date} ${meal.mealType}: ${mealName}`);
+          const mealName = meal.customMeal ?? 'Recipe';
+          logger.info('Index', `  • ${date} ${meal.mealType}: ${mealName}`);
         });
       }
 
     } catch (error) {
       spinner.fail('Failed to load overview');
-      console.error(error);
+      logger.error('Index', error);
     }
   });
 

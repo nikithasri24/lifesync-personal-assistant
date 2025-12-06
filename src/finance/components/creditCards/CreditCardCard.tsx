@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { CreditCard, Calendar, AlertCircle, TrendingUp, DollarSign } from 'lucide-react';
+import { CreditCard, Calendar, TrendingUp, DollarSign } from 'lucide-react';
 import type { Account } from '../../types';
 import { formatCurrency } from '../../utils/currency';
 
@@ -22,7 +22,7 @@ export const CreditCardCard: React.FC<CreditCardCardProps> = ({ card, className 
   const availableCredit = card.creditLimit ? card.creditLimit - Math.abs(card.balance) : 0;
 
   // Calculate next due date
-  const getNextDueDate = () => {
+  const getNextDueDate = (): Date | null => {
     if (!card.paymentDueDay) return null;
     const today = new Date();
     const dueDate = new Date(today.getFullYear(), today.getMonth(), card.paymentDueDay);
@@ -41,7 +41,15 @@ export const CreditCardCard: React.FC<CreditCardCardProps> = ({ card, className 
     : null;
 
   // Status-based styling
-  const getUtilizationStatus = () => {
+  const getUtilizationStatus = (): {
+    status: string;
+    borderColor: string;
+    bgColor: string;
+    textColor: string;
+    barColor: string;
+    icon: string;
+    message: string;
+  } => {
     if (utilization >= 90) return {
       status: 'critical',
       borderColor: 'border-rose-500/30',
@@ -83,7 +91,11 @@ export const CreditCardCard: React.FC<CreditCardCardProps> = ({ card, className 
   const statusConfig = getUtilizationStatus();
 
   // Due date warning
-  const getDueDateStatus = () => {
+  const getDueDateStatus = (): {
+    color: string;
+    icon: string;
+    message: string;
+  } | null => {
     if (!daysUntilDue) return null;
     if (daysUntilDue <= 3) return {
       color: 'text-rose-600',
@@ -225,7 +237,7 @@ export const CreditCardCard: React.FC<CreditCardCardProps> = ({ card, className 
               <span className="text-xs font-medium text-primary opacity-70">Next Due Date</span>
             </div>
             <div className="text-right">
-              <p className={`text-sm font-semibold ${dueDateStatus?.color || 'text-primary'}`}>
+              <p className={`text-sm font-semibold ${dueDateStatus?.color ?? 'text-primary'}`}>
                 {nextDueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
               </p>
               {daysUntilDue !== null && (

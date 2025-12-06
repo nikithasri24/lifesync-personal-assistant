@@ -1,5 +1,6 @@
 import '@testing-library/jest-dom'
 import { toHaveNoViolations } from 'jest-axe'
+import { vi } from 'vitest'
 
 /**
  * Enhanced test setup for LifeSync component tests
@@ -8,6 +9,28 @@ import { toHaveNoViolations } from 'jest-axe'
 
 // Extend Jest matchers to include accessibility testing
 expect.extend(toHaveNoViolations)
+
+// Mock logger globally to avoid "logger is not defined" errors
+vi.mock('../services/logger', () => ({
+  logger: {
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    api: vi.fn(),
+    apiResponse: vi.fn(),
+    perf: vi.fn(),
+    group: vi.fn(),
+    groupEnd: vi.fn(),
+  },
+  logDebug: vi.fn(),
+  logInfo: vi.fn(),
+  logWarn: vi.fn(),
+  logError: vi.fn(),
+  logApi: vi.fn(),
+  logApiResponse: vi.fn(),
+  logPerf: vi.fn(),
+}))
 
 // Force-disable Supabase integration for unit tests to avoid auth requirements
 if (typeof process !== 'undefined') {

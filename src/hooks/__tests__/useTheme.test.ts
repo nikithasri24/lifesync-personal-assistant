@@ -300,10 +300,10 @@ describe('useTheme', () => {
   describe('Edge Cases', () => {
     it('handles localStorage being unavailable', () => {
       // Mock localStorage to throw
-      const originalSetItem = localStorage.setItem
+      const originalSetItem = localStorage.setItem;
       localStorage.setItem = vi.fn().mockImplementation(() => {
-        throw new Error('localStorage unavailable')
-      })
+        throw new Error('localStorage unavailable');
+      });
       
       const { result } = renderHook(() => useTheme())
       

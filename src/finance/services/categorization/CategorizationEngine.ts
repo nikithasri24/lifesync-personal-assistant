@@ -23,6 +23,47 @@ import {
 // Types
 // ============================================================================
 
+// Database row types for Supabase responses
+interface CategorizationRuleRow {
+  id: string;
+  user_id: string;
+  merchant_pattern: string;
+  description_keywords: string[] | null;
+  amount_min: number | null;
+  amount_max: number | null;
+  category_id: string;
+  confidence: number;
+  priority: number;
+  rule_type: 'user_created' | 'system' | 'learned';
+  usage_count: number;
+  success_count: number;
+  failure_count: number;
+  last_used_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface MerchantDatabaseRow {
+  id: string;
+  merchant_name: string;
+  aliases: string[] | null;
+  default_category_name: string;
+  default_subcategory: string | null;
+  merchant_type: string | null;
+  confidence: number;
+}
+
+interface CategoryRow {
+  id: string;
+  name: string;
+}
+
+interface TransactionRow {
+  merchant_name: string | null;
+  category_id: string | null;
+  amount: number;
+}
+
 export interface CategorizationRule {
   id: string;
   userId: string;
@@ -172,7 +213,7 @@ export class CategorizationEngine {
 
     if (existingRules && existingRules.length > 0) {
       // Update existing rule
-      const rule = existingRules[0];
+      const rule = existingRules[0] as CategorizationRuleRow;
       await this.supabase
         .from('categorization_rules')
         .update({
@@ -212,7 +253,7 @@ export class CategorizationEngine {
       user_id: this.userId,
       merchant_pattern: rule.merchantPattern,
       category_id: rule.categoryId,
-      description_keywords: rule.descriptionKeywords || [],
+      description_keywords: rule.descriptionKeywords ?? [],
       amount_min: rule.amountMin,
       amount_max: rule.amountMax,
       confidence: 1.0,
@@ -271,7 +312,7 @@ export class CategorizationEngine {
         const category = await this.getCategoryById(rule.categoryId);
         return {
           categoryId: rule.categoryId,
-          categoryName: category?.name || null,
+          categoryName: category?.name ?? null,
           confidence: rule.confidence,
           merchantName,
           ruleId: rule.id,
@@ -306,7 +347,7 @@ export class CategorizationEngine {
         score = Math.max(score, aliasScore);
       }
 
-      if (score > (bestMatch?.score || 0.6)) {
+      if (score > (bestMatch?.score ?? 0.6)) {
         bestMatch = { merchant, score };
       }
     }
@@ -363,14 +404,15 @@ export class CategorizationEngine {
     const matches: Array<{ categoryId: string; similarity: number; amount: number }> = [];
 
     for (const txn of similarTxns) {
-      if (!txn.merchant_name || !txn.category_id) continue;
+      const typedTxn = txn as TransactionRow;
+      if (!typedTxn.merchant_name || !typedTxn.category_id) continue;
 
-      const matchScore = similarity(merchantName, txn.merchant_name);
+      const matchScore = similarity(merchantName, typedTxn.merchant_name);
       if (matchScore >= 0.75) {
         matches.push({
-          categoryId: txn.category_id,
+          categoryId: typedTxn.category_id,
           similarity: matchScore,
-          amount: txn.amount
+          amount: typedTxn.amount
         });
       }
     }
@@ -383,7 +425,7 @@ export class CategorizationEngine {
     const categoryCounts = new Map<string, { count: number; totalSimilarity: number }>();
 
     for (const match of matches) {
-      const existing = categoryCounts.get(match.categoryId) || { count: 0, totalSimilarity: 0 };
+      const existing = categoryCounts.get(match.categoryId) ?? { count: 0, totalSimilarity: 0 };
       categoryCounts.set(match.categoryId, {
         count: existing.count + 1,
         totalSimilarity: existing.totalSimilarity + match.similarity
@@ -417,7 +459,7 @@ export class CategorizationEngine {
 
     return {
       categoryId: bestCategory.id,
-      categoryName: category?.name || null,
+      categoryName: category?.name ?? null,
       confidence,
       merchantName,
       ruleId: null,
@@ -483,13 +525,13 @@ export class CategorizationEngine {
       .eq('user_id', this.userId)
       .order('priority', { ascending: false });
 
-    this.userRulesCache = (data || []).map((row: any) => ({
+    this.userRulesCache = (data ?? []).map((row: CategorizationRuleRow) => ({
       id: row.id,
       userId: row.user_id,
       merchantPattern: row.merchant_pattern,
-      descriptionKeywords: row.description_keywords || [],
-      amountMin: row.amount_min,
-      amountMax: row.amount_max,
+      descriptionKeywords: row.description_keywords ?? [],
+      amountMin: row.amount_min ?? undefined,
+      amountMax: row.amount_max ?? undefined,
       categoryId: row.category_id,
       confidence: row.confidence,
       priority: row.priority,
@@ -502,7 +544,7 @@ export class CategorizationEngine {
       updatedAt: new Date(row.updated_at)
     }));
 
-    return this.userRulesCache || [];
+    return this.userRulesCache ?? [];
   }
 
   private async loadMerchantDatabase(): Promise<Map<string, MerchantData>> {
@@ -517,15 +559,16 @@ export class CategorizationEngine {
 
     this.merchantDbCache = new Map();
 
-    for (const row of data || []) {
-      this.merchantDbCache.set(row.id, {
-        id: row.id,
-        merchantName: row.merchant_name,
-        aliases: row.aliases || [],
-        defaultCategoryName: row.default_category_name,
-        defaultSubcategory: row.default_subcategory,
-        merchantType: row.merchant_type,
-        confidence: row.confidence
+    for (const row of data ?? []) {
+      const typedRow = row as MerchantDatabaseRow;
+      this.merchantDbCache.set(typedRow.id, {
+        id: typedRow.id,
+        merchantName: typedRow.merchant_name,
+        aliases: typedRow.aliases ?? [],
+        defaultCategoryName: typedRow.default_category_name,
+        defaultSubcategory: typedRow.default_subcategory ?? undefined,
+        merchantType: typedRow.merchant_type ?? undefined,
+        confidence: typedRow.confidence
       });
     }
 
@@ -544,9 +587,10 @@ export class CategorizationEngine {
 
     this.categoryCache = new Map();
 
-    for (const row of data || []) {
-      this.categoryCache.set(row.id, { id: row.id, name: row.name });
-      this.categoryCache.set(row.name.toLowerCase(), { id: row.id, name: row.name });
+    for (const row of data ?? []) {
+      const typedRow = row as CategoryRow;
+      this.categoryCache.set(typedRow.id, { id: typedRow.id, name: typedRow.name });
+      this.categoryCache.set(typedRow.name.toLowerCase(), { id: typedRow.id, name: typedRow.name });
     }
 
     return this.categoryCache;
@@ -554,12 +598,12 @@ export class CategorizationEngine {
 
   private async getCategoryById(categoryId: string): Promise<{ id: string; name: string } | null> {
     const categories = await this.loadCategories();
-    return categories.get(categoryId) || null;
+    return categories.get(categoryId) ?? null;
   }
 
   private async getCategoryByName(name: string): Promise<{ id: string; name: string } | null> {
     const categories = await this.loadCategories();
-    return categories.get(name.toLowerCase()) || null;
+    return categories.get(name.toLowerCase()) ?? null;
   }
 
   /**

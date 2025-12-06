@@ -4,6 +4,8 @@
  */
 
 import React from 'react';
+import { logger } from '../../services/logger';
+
 import { Button } from '../ui/Button';
 import { getFinanceAPI } from '../data';
 import { parseFinanceCSV, mapCategoryName } from '../utils/csvParser';
@@ -16,23 +18,28 @@ interface ImportStats {
   errors: Array<{ transaction: string; error: string }>;
 }
 
-const ImportCSVButton: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => {
-  const [importing, setImporting] = React.useState(false);
-  const [progress, setProgress] = React.useState(0);
+const ImportCSVButton: React.FC<{ _onSuccess: () => void }> = ({ _onSuccess }) => {
+  const [importing, setImporting] = React.useState<boolean>(false);
+  const [progress, setProgress] = React.useState<number>(0);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  const ensureCategoriesExist = async (api: any, requiredCategories: Set<string>): Promise<Map<string, string>> => {
+  const ensureCategoriesExist = async (
+    api: { listCategories: () => Promise<Array<{ name: string; id: string }>> },
+    requiredCategories: Set<string>
+  ): Promise<Map<string, string>> => {
     const categories = await api.listCategories();
     const categoryMap = new Map<string, string>();
 
     // Map existing categories
-    categories.forEach((cat: any) => categoryMap.set(cat.name, cat.id));
+    if (Array.isArray(categories)) {
+      categories.forEach(cat => categoryMap.set(cat.name, cat.id));
+    }
 
     // Create missing categories
     const { createClient } = await import('@supabase/supabase-js');
     const supabase = createClient(
-      import.meta.env.VITE_SUPABASE_URL,
-      import.meta.env.VITE_SUPABASE_ANON_KEY
+      import.meta.env.VITE_SUPABASE_URL as string,
+      import.meta.env.VITE_SUPABASE_ANON_KEY as string
     );
 
     const { data: userData } = await supabase.auth.getUser();
@@ -40,7 +47,7 @@ const ImportCSVButton: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => 
 
     for (const categoryName of requiredCategories) {
       if (!categoryMap.has(categoryName)) {
-        console.log(`Creating missing category: ${categoryName}`);
+        logger.debug('ImportCSVButton', `Creating missing category: ${categoryName}`);
 
         const { data, error } = await supabase
           .from('categories')
@@ -52,9 +59,9 @@ const ImportCSVButton: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => 
           .single();
 
         if (error) {
-          console.error(`Failed to create category ${categoryName}:`, error);
+          logger.error('ImportCSVButton', `Failed to create category ${categoryName}:`, error);
         } else if (data) {
-          categoryMap.set(categoryName, data.id);
+          categoryMap.set(categoryName, data.id as string);
         }
       }
     }
@@ -62,7 +69,7 @@ const ImportCSVButton: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => 
     return categoryMap;
   };
 
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
@@ -110,7 +117,8 @@ const ImportCSVButton: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => 
       }
 
       if (allTransactions.length === 0) {
-        alert('No transactions found in the selected files.');
+        // eslint-disable-next-line no-alert
+        window.alert('No transactions found in the selected files.');
         return;
       }
 
@@ -122,23 +130,24 @@ const ImportCSVButton: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => 
         requiredCategories.add(mapCategoryName(txn.categoryName));
       });
 
-      console.log('📊 Import Summary:');
-      console.log(`- Files: ${fileNames.join(', ')}`);
-      console.log(`- Total transactions: ${stats.total}`);
-      console.log(`- Required categories: ${Array.from(requiredCategories).join(', ')}`);
+      logger.info('ImportCSVButton', 'Import Summary:');
+      logger.debug('ImportCSVButton', `- Files: ${fileNames.join(', ')}`);
+      logger.debug('ImportCSVButton', `- Total transactions: ${stats.total}`);
+      logger.debug('ImportCSVButton', `- Required categories: ${Array.from(requiredCategories).join(', ')}`);
 
       // Confirm import
-      if (!confirm(`Import ${stats.total} transactions from ${files.length} file(s)?\n\nFiles: ${fileNames.join(', ')}`)) {
+      // eslint-disable-next-line no-alert
+      if (!window.confirm(`Import ${stats.total} transactions from ${files.length} file(s)?\n\nFiles: ${fileNames.join(', ')}`)) {
         return;
       }
 
       // Ensure all categories exist
-      console.log('🏷️  Ensuring categories exist...');
+      logger.info('ImportCSVButton', 'Ensuring categories exist...');
       const categoryMap = await ensureCategoriesExist(api, requiredCategories);
-      console.log('✓ Categories ready:', Array.from(categoryMap.entries()));
+      logger.info('ImportCSVButton', 'Categories ready:', Array.from(categoryMap.entries()));
 
       // Import transactions
-      console.log('💾 Starting import...');
+      logger.info('ImportCSVButton', 'Starting import...');
       for (const txn of allTransactions) {
         try {
           // Map category name
@@ -169,7 +178,7 @@ const ImportCSVButton: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => 
           setProgress(Math.round((stats.imported / stats.total) * 100));
 
           if (stats.imported % 10 === 0) {
-            console.log(`  Progress: ${stats.imported}/${stats.total}`);
+            logger.debug('ImportCSVButton', `  Progress: ${stats.imported}/${stats.total}`);
           }
         } catch (err) {
           stats.failed++;
@@ -178,36 +187,38 @@ const ImportCSVButton: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => 
             transaction: `${txn.description} ($${txn.amount})`,
             error: errorMsg
           });
-          console.error(`❌ Failed: ${txn.description}:`, errorMsg);
+          logger.error('ImportCSVButton', `Failed: ${txn.description}:`, errorMsg);
         }
       }
 
-      console.log('✅ Import complete!');
-      console.log(`- Imported: ${stats.imported}`);
-      console.log(`- Failed: ${stats.failed}`);
+      logger.info('ImportCSVButton', 'Import complete!');
+      logger.debug('ImportCSVButton', `- Imported: ${stats.imported}`);
+      logger.debug('ImportCSVButton', `- Failed: ${stats.failed}`);
 
       if (stats.errors.length > 0) {
-        console.group('⚠️ Errors:');
-        stats.errors.forEach(e => console.error(`${e.transaction}: ${e.error}`));
-        console.groupEnd();
+        logger.group('Errors:');
+        stats.errors.forEach(e => logger.error('ImportCSVButton', `${e.transaction}: ${e.error}`));
+        logger.groupEnd();
       }
 
       // Show results
-      let message = `✅ Successfully imported ${stats.imported} of ${stats.total} transactions!`;
+      let message = `Successfully imported ${stats.imported} of ${stats.total} transactions!`;
       if (stats.failed > 0) {
-        message += `\n\n⚠️ ${stats.failed} failed (check console for details)`;
+        message += `\n\n${stats.failed} failed (check console for details)`;
       }
       message += '\n\nPage will refresh to show new transactions...';
 
-      alert(message);
+      // eslint-disable-next-line no-alert
+      window.alert(message);
 
       // Force full page reload
       window.location.reload();
 
     } catch (error) {
-      console.error('💥 Import failed:', error);
+      logger.error('ImportCSVButton', 'Import failed:', error);
       const errorMsg = error instanceof Error ? error.message : String(error);
-      alert(`Import failed: ${errorMsg}\n\nCheck console for details.`);
+      // eslint-disable-next-line no-alert
+      window.alert(`Import failed: ${errorMsg}\n\nCheck console for details.`);
     } finally {
       setImporting(false);
       setProgress(0);
@@ -217,6 +228,10 @@ const ImportCSVButton: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => 
     }
   };
 
+  const handleClick = React.useCallback((): void => {
+    fileInputRef.current?.click();
+  }, []);
+
   return (
     <>
       <input
@@ -224,15 +239,15 @@ const ImportCSVButton: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => 
         type="file"
         accept=".csv"
         multiple
-        onChange={handleFileSelect}
+        onChange={(e): void => { void handleFileSelect(e); }}
         style={{ display: 'none' }}
       />
       <Button
         variant="outline"
-        onClick={() => fileInputRef.current?.click()}
+        onClick={handleClick}
         disabled={importing}
       >
-        {importing ? `Importing... ${progress}%` : '📥 Import CSV Files'}
+        {importing ? `Importing... ${progress}%` : 'Import CSV Files'}
       </Button>
     </>
   );

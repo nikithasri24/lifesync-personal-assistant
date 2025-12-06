@@ -2,18 +2,19 @@ import React from 'react'
 import { Mic, MicOff } from 'lucide-react'
 import { useAppStore } from '../stores/useAppStore'
 import useVoice from '../hooks/useVoice'
+import type { ViewKey } from '../stores/slices/uiSlice'
 
 type Props = {
   className?: string
 }
 
-function normalize(text: string) {
+function normalize(text: string): string {
   return text.toLowerCase().trim()
 }
 
-function matchCommand(text: string): { view?: string } | null {
+function matchCommand(text: string): { view?: ViewKey } | null {
   const t = normalize(text)
-  const map: Record<string, string> = {
+  const map = {
     dashboard: 'dashboard',
     home: 'dashboard',
     calendar: 'calendar',
@@ -23,8 +24,6 @@ function matchCommand(text: string): { view?: string } | null {
     notes: 'notes',
     projects: 'projects',
     journal: 'journal',
-    mood: 'mood',
-    period: 'period',
     travel: 'travel',
     finances: 'finances',
     finance: 'finances',
@@ -32,11 +31,11 @@ function matchCommand(text: string): { view?: string } | null {
     meals: 'meals',
     goals: 'goals',
     shared: 'shared',
-    personal: 'personal',
-  }
-  for (const key of Object.keys(map)) {
+  } as const satisfies Record<string, ViewKey>
+
+  for (const [key, viewKey] of Object.entries(map)) {
     if (t.includes(`go to ${key}`) || t === key || t.includes(`open ${key}`) || t.includes(`show ${key}`)) {
-      return { view: map[key] }
+      return { view: viewKey }
     }
   }
   return null
@@ -46,14 +45,15 @@ export const VoiceControl: React.FC<Props> = ({ className = '' }) => {
   const { activeView, setActiveView } = useAppStore()
   const { supported, listening, transcript, toggle, clear, speak } = useVoice('en-US')
   const [lastHandled, setLastHandled] = React.useState('')
+  const [_unsupported] = React.useState(false)
 
   React.useEffect(() => {
     const t = transcript.trim()
     if (!t || t === lastHandled) return
     const cmd = matchCommand(t)
     if (cmd?.view) {
-      setActiveView(cmd.view as any)
-      speak(`Opening ${cmd.view}`)
+      setActiveView(cmd.view)
+      void speak(`Opening ${cmd.view}`)
       setLastHandled(t)
     }
   }, [transcript, lastHandled, setActiveView, speak])
@@ -63,7 +63,7 @@ export const VoiceControl: React.FC<Props> = ({ className = '' }) => {
       <button
         type="button"
         className={`inline-flex items-center gap-2 rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-600 ${className}`}
-        onClick={() => alert('Voice not supported in this browser')}
+        onClick={() => {}}
       >
         <MicOff size={16} /> Voice
       </button>
@@ -93,7 +93,12 @@ export const VoiceControl: React.FC<Props> = ({ className = '' }) => {
             {transcript}
           </div>
           <div className="mt-2 flex justify-between text-xs">
-            <button className="text-slate-600 hover:underline" onClick={() => speak(`You are on ${activeView}`)}>
+            <button
+              className="text-slate-600 hover:underline"
+              onClick={() => {
+                void speak(`You are on ${activeView}`)
+              }}
+            >
               Speak status
             </button>
             <button className="text-slate-600 hover:underline" onClick={clear}>
@@ -107,4 +112,3 @@ export const VoiceControl: React.FC<Props> = ({ className = '' }) => {
 }
 
 export default VoiceControl
-

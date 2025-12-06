@@ -70,14 +70,14 @@ const errorConfig = {
   }
 };
 
-export default function ErrorState({ 
-  type = 'generic', 
-  title, 
-  message, 
-  onRetry, 
+export default function ErrorState({
+  type = 'generic',
+  title,
+  message,
+  onRetry,
   retryText = 'Try Again',
-  className = '' 
-}: ErrorStateProps) {
+  className = ''
+}: ErrorStateProps): React.JSX.Element {
   const config = errorConfig[type];
   const Icon = config.icon;
 
@@ -88,11 +88,11 @@ export default function ErrorState({
       </div>
       
       <h3 className="text-lg font-semibold text-gray-900 mb-2">
-        {title || config.title}
+        {title ?? config.title}
       </h3>
-      
+
       <p className="text-gray-600 mb-6 max-w-sm">
-        {message || config.message}
+        {message ?? config.message}
       </p>
       
       {onRetry && (
@@ -109,29 +109,29 @@ export default function ErrorState({
 }
 
 // Specialized Error Components
-export function NetworkError({ onRetry, className = '' }: { onRetry?: () => void; className?: string }) {
+export function NetworkError({ onRetry, className = '' }: { onRetry?: () => void; className?: string }): React.JSX.Element {
   return (
-    <ErrorState 
-      type="network" 
-      onRetry={onRetry} 
+    <ErrorState
+      type="network"
+      onRetry={onRetry}
       className={className}
     />
   );
 }
 
-export function NotFoundError({ resource = 'resource', className = '' }: { resource?: string; className?: string }) {
+export function NotFoundError({ resource = 'resource', className = '' }: { resource?: string; className?: string }): React.JSX.Element {
   return (
-    <ErrorState 
-      type="notFound" 
+    <ErrorState
+      type="notFound"
       message={`The ${resource} you're looking for doesn't exist or has been moved.`}
       className={className}
     />
   );
 }
 
-export function PermissionError({ className = '' }: { className?: string }) {
+export function PermissionError({ className = '' }: { className?: string }): React.JSX.Element {
   return (
-    <ErrorState 
+    <ErrorState
       type="permission"
       className={className}
     />
@@ -139,7 +139,7 @@ export function PermissionError({ className = '' }: { className?: string }) {
 }
 
 // Empty State Component
-export function EmptyState({ 
+export function EmptyState({
   icon: Icon = Frown,
   title = 'No data found',
   message = 'There\'s nothing here yet.',
@@ -147,13 +147,13 @@ export function EmptyState({
   actionText = 'Get Started',
   className = ''
 }: {
-  icon?: React.ComponentType<any>;
+  icon?: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   title?: string;
   message?: string;
   action?: () => void;
   actionText?: string;
   className?: string;
-}) {
+}): React.JSX.Element {
   return (
     <div className={`flex flex-col items-center justify-center p-12 text-center ${className}`}>
       <div className="p-4 rounded-full bg-gray-100 mb-4">

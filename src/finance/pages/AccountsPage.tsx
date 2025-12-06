@@ -4,29 +4,18 @@ import { Button } from '../ui/Button';
 import { Dialog } from '../ui/Dialog';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
-import { getFinanceAPI } from '../data';
+import { useAccountsQuery, useInstitutionsQuery, useUpsertTransactionMutation } from '../hooks/useFinanceQuery';
 import { formatCurrency } from '../utils/currency';
-import type { Account, AccountType, Institution } from '../types';
+import type { Account, AccountType } from '../types';
 
 const AccountsPage: React.FC = () => {
-  const [accts, setAccts] = React.useState<Account[]>([]);
-  const [insts, setInsts] = React.useState<Institution[]>([]);
   const [open, setOpen] = React.useState(false);
   const [form, setForm] = React.useState<Partial<Account>>({ type: 'checking', balance: 0 });
 
-  React.useEffect(() => {
-    let mounted = true;
-    (async () => {
-      const api = await getFinanceAPI();
-      const [a, i] = await Promise.all([api.listAccounts(), api.listInstitutions()]);
-      if (!mounted) return;
-      setAccts(a);
-      setInsts(i);
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, []);
+  // React Query hooks
+  const { data: accts = [] } = useAccountsQuery();
+  const { data: insts = [] } = useInstitutionsQuery();
+  const upsertTransactionMutation = useUpsertTransactionMutation();
 
   const grouped = accts.reduce<Record<string, Account[]>>((acc, a) => {
     const key = a.institutionId ?? 'manual';
@@ -35,12 +24,11 @@ const AccountsPage: React.FC = () => {
     return acc;
   }, {});
 
-  const onSave = async () => {
-    const api = await getFinanceAPI();
+  const onSave = async (): Promise<void> => {
     const now = new Date().toISOString();
-    await api.upsertTransaction({
+    await upsertTransactionMutation.mutateAsync({
       // creating a zero-dollar transaction as a mock write demonstration if mock mode
-      accountId: form.id || 'manual',
+      accountId: form.id ?? 'manual',
       amount: 0,
       categoryId: undefined,
       dateISO: now,
@@ -50,7 +38,7 @@ const AccountsPage: React.FC = () => {
     setOpen(false);
   };
 
-  const instName = (id?: string) => insts.find((i) => i.id === id)?.name ?? 'Manual Accounts';
+  const instName = (id?: string): string => insts.find((i) => i.id === id)?.name ?? 'Manual Accounts';
 
   return (
     <div className="space-y-4">
@@ -92,7 +80,7 @@ const AccountsPage: React.FC = () => {
             <Button variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={onSave}>Save</Button>
+            <Button onClick={() => void onSave()}>Save</Button>
           </div>
         </div>
       </Dialog>

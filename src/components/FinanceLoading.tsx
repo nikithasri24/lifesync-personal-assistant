@@ -1,6 +1,6 @@
 import { SkeletonCard, SkeletonTable, SkeletonChart } from './LoadingSpinner';
 
-export function FinanceOverviewLoading() {
+export function FinanceOverviewLoading(): JSX.Element {
   return (
     <div className="space-y-6">
       {/* Header skeleton */}
@@ -32,7 +32,7 @@ export function FinanceOverviewLoading() {
   );
 }
 
-export function FinanceTransactionsLoading() {
+export function FinanceTransactionsLoading(): JSX.Element {
   return (
     <div className="space-y-6">
       {/* Search and filters skeleton */}
@@ -44,7 +44,7 @@ export function FinanceTransactionsLoading() {
   );
 }
 
-export function FinanceChartsLoading() {
+export function FinanceChartsLoading(): JSX.Element {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -60,7 +60,7 @@ export function FinanceChartsLoading() {
   );
 }
 
-export function FinancePortfolioLoading() {
+export function FinancePortfolioLoading(): JSX.Element {
   return (
     <div className="space-y-6">
       {/* Portfolio summary */}

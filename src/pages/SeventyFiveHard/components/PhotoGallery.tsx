@@ -29,7 +29,7 @@ interface PhotoGalleryProps {
  * Photo Gallery Component
  * Displays check-ins with photos in a responsive grid
  */
-export default function PhotoGallery({ checkIns, onPhotoClick }: PhotoGalleryProps) {
+export default function PhotoGallery({ checkIns, onPhotoClick }: PhotoGalleryProps): React.JSX.Element {
   // ==================== Data Processing ====================
 
   /**
@@ -83,7 +83,7 @@ export default function PhotoGallery({ checkIns, onPhotoClick }: PhotoGalleryPro
           >
             {/* Photo Image */}
             <img
-              src={checkIn.photo!}
+              src={checkIn.photo}
               alt={`Progress photo from day ${checkIn.dayNumber}`}
               className="w-full h-full object-cover"
               loading="lazy"

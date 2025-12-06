@@ -8,8 +8,16 @@
 import React from 'react';
 import { Edit2, TrendingUp, TrendingDown, AlertCircle } from 'lucide-react';
 import { formatCurrency } from '../../utils/currency';
-import BudgetProgressBar, { getBudgetStatus, getBudgetColor } from './BudgetProgressBar';
+import BudgetProgressBar from './BudgetProgressBar';
 import type { Budget } from '../../types';
+
+type BudgetStatus = 'safe' | 'warning' | 'over';
+
+const getBudgetStatus = (percentage: number): BudgetStatus => {
+  if (percentage >= 100) return 'over';
+  if (percentage >= 80) return 'warning';
+  return 'safe';
+};
 
 export interface BudgetCardProps {
   budget: Budget;
@@ -31,8 +39,7 @@ const BudgetCard: React.FC<BudgetCardProps> = ({
   const { limit } = budget;
   const remaining = limit - spent;
   const percentage = limit > 0 ? (spent / limit) * 100 : 0;
-  const status = getBudgetStatus(percentage);
-  const color = getBudgetColor(status);
+  const status: BudgetStatus = getBudgetStatus(percentage);
 
   // Calculate trend vs previous month
   const hasTrend = previousMonthSpent !== undefined && previousMonthSpent > 0;
@@ -42,7 +49,12 @@ const BudgetCard: React.FC<BudgetCardProps> = ({
   const isIncreasing = trendPercentage > 0;
 
   // Status-based styling
-  const statusConfig = {
+  const statusConfig: Record<BudgetStatus, {
+    borderColor: string;
+    bgColor: string;
+    textColor: string;
+    icon: string;
+  }> = {
     safe: {
       borderColor: 'border-emerald-500/30',
       bgColor: 'bg-emerald-500/10',

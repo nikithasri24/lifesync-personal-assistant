@@ -12,7 +12,7 @@ describe('useLocalStorage', () => {
     const { result } = renderHook(() => useLocalStorage('key1', 123))
     expect(result.current[0]).toBe(123)
     act(() => result.current[1](456))
-    expect(JSON.parse(localStorage.getItem('key1') || '0')).toBe(456)
+    expect(JSON.parse(localStorage.getItem('key1') ?? '0')).toBe(456)
     expect(result.current[0]).toBe(456)
   })
 
@@ -40,7 +40,7 @@ describe('useSessionStorage', () => {
     const { result } = renderHook(() => useSessionStorage('skey', { x: 1 }))
     expect(result.current[0]).toEqual({ x: 1 })
     act(() => result.current[1]({ x: 2 }))
-    expect(JSON.parse(sessionStorage.getItem('skey') || '{}')).toEqual({ x: 2 })
+    expect(JSON.parse(sessionStorage.getItem('skey') ?? '{}')).toEqual({ x: 2 })
   })
 })
 

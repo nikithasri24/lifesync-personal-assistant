@@ -4,8 +4,9 @@ import chalk from 'chalk';
 import ora from 'ora';
 import { format, addDays, startOfWeek, endOfWeek, parseISO } from 'date-fns';
 import { dataManager } from '../data.js';
-import { MealPlan, Recipe } from '../types.js';
+import { type MealPlan } from '../types.js';
 import { loadConfig } from '../config.js';
+import { logger } from '../utils/logger.js';
 
 export function createMealsCommand(): Command {
   const meals = new Command('meals')
@@ -13,7 +14,7 @@ export function createMealsCommand(): Command {
     .description('Manage meal planning');
 
   // Add meal to plan
-  meals
+  const addCommand = meals
     .command('add')
     .alias('a')
     .description('Add meal to weekly plan')
@@ -22,23 +23,30 @@ export function createMealsCommand(): Command {
     .option('-t, --type <string>', 'Meal type (breakfast, lunch, dinner, snack)')
     .option('-s, --servings <number>', 'Number of servings', '4')
     .option('-p, --people <number>', 'Number of people', '4')
-    .option('-n, --notes <string>', 'Notes')
-    .action(async (meal, options) => {
+    .option('-n, --notes <string>', 'Notes');
+
+  addCommand.action(async (meal: string | undefined, options: {
+    date: string;
+    type?: string;
+    servings: string;
+    people: string;
+    notes?: string;
+  }) => {
       await dataManager.init();
       const config = await loadConfig();
 
       let mealName = meal;
       let mealDate = parseDate(options.date);
-      let mealType = options.type || config.defaultMealType || 'dinner';
-      let servings = parseInt(options.servings) || 4;
-      let people = parseInt(options.people) || 4;
+      let mealType = options.type ?? config.defaultMealType ?? 'dinner';
+      let servings = parseInt(options.servings, 10) || 4;
+      let people = parseInt(options.people, 10) || 4;
 
       // Interactive mode if no meal provided
       if (!mealName) {
         const recipes = await dataManager.getRecipes();
         const recipeChoices = recipes.map(r => ({ name: `${r.name} (${r.cuisine})`, value: r.name }));
-        
-        const answers = await inquirer.prompt([
+
+        const answers = await inquirer.prompt<{ mealOption: 'custom' | 'recipe' }>([
           {
             type: 'list',
             name: 'mealOption',
@@ -51,7 +59,7 @@ export function createMealsCommand(): Command {
         ]);
 
         if (answers.mealOption === 'recipe' && recipes.length > 0) {
-          const recipeAnswer = await inquirer.prompt([
+          const recipeAnswer = await inquirer.prompt<{ recipe: string }>([
             {
               type: 'list',
               name: 'recipe',
@@ -69,24 +77,30 @@ export function createMealsCommand(): Command {
         }
 
         if (!mealName || answers.mealOption === 'custom') {
-          const customAnswer = await inquirer.prompt([
+          const customAnswer = await inquirer.prompt<{ customMeal: string }>([
             {
               type: 'input',
               name: 'customMeal',
               message: 'Enter meal name:',
-              validate: (input) => input.trim() !== '' || 'Meal name is required'
+              validate: (input: string) => input.trim() !== '' || 'Meal name is required'
             }
           ]);
           mealName = customAnswer.customMeal;
         }
 
-        const detailAnswers = await inquirer.prompt([
+        const detailAnswers = await inquirer.prompt<{
+          date: Date;
+          type: string;
+          servings: number;
+          people: number;
+          notes: string;
+        }>([
           {
             type: 'input',
             name: 'date',
             message: 'Date (YYYY-MM-DD or day name):',
             default: options.date,
-            filter: parseDate
+            filter: (input: string) => parseDate(input)
           },
           {
             type: 'list',
@@ -121,12 +135,17 @@ export function createMealsCommand(): Command {
         options.notes = detailAnswers.notes;
       }
 
+      if (!mealName) {
+        logger.error('Meals', 'Meal name is required');
+        return;
+      }
+
       const spinner = ora('Adding meal to plan...').start();
 
       try {
         // Check if it's a recipe
         const recipes = await dataManager.getRecipes();
-        const recipe = recipes.find(r => r.name.toLowerCase() === mealName.toLowerCase());
+        const recipe = recipes.find(r => r.name.toLowerCase() === mealName?.toLowerCase());
 
         const mealPlan: Omit<MealPlan, 'id'> = {
           date: mealDate,
@@ -139,25 +158,28 @@ export function createMealsCommand(): Command {
           status: 'planned'
         };
 
-        const newMeal = await dataManager.addMealPlan(mealPlan);
+        await dataManager.addMealPlan(mealPlan);
 
         spinner.succeed(chalk.green(`Added "${mealName}" to ${mealType} on ${format(mealDate, 'MMM d, yyyy')}`));
-        console.log(chalk.gray(`  ${servings} servings for ${people} people`));
-        if (options.notes) console.log(chalk.gray(`  Notes: ${options.notes}`));
+        logger.info('Meals', chalk.gray(`  ${servings} servings for ${people} people`));
+        if (options.notes) {
+          logger.info('Meals', chalk.gray(`  Notes: ${options.notes}`));
+        }
 
       } catch (error) {
         spinner.fail(chalk.red('Failed to add meal'));
-        console.error(error);
+        logger.error('Meals', error);
       }
     });
 
   // List weekly meal plan
-  meals
+  const weekCommand = meals
     .command('week')
     .alias('w')
     .description('Show weekly meal plan')
-    .option('-d, --date <date>', 'Week containing this date', format(new Date(), 'yyyy-MM-dd'))
-    .action(async (options) => {
+    .option('-d, --date <date>', 'Week containing this date', format(new Date(), 'yyyy-MM-dd'));
+
+  weekCommand.action(async (options: { date: string }) => {
       await dataManager.init();
 
       const spinner = ora('Loading meal plan...').start();
@@ -178,7 +200,7 @@ export function createMealsCommand(): Command {
         spinner.succeed(chalk.green(`Week of ${format(weekStart, 'MMM d')} - ${format(weekEnd, 'MMM d, yyyy')}`));
 
         if (weekMeals.length === 0) {
-          console.log(chalk.yellow('No meals planned for this week'));
+          logger.info('Meals', chalk.yellow('No meals planned for this week'));
           return;
         }
 
@@ -192,10 +214,10 @@ export function createMealsCommand(): Command {
             return format(mealDate, 'yyyy-MM-dd') === format(currentDay, 'yyyy-MM-dd');
           });
 
-          console.log(`\n${chalk.bold.blue(dayNames[i])} - ${format(currentDay, 'MMM d')}`);
+          logger.info('Meals', `\n${chalk.bold.blue(dayNames[i])} - ${format(currentDay, 'MMM d')}`);
           
           if (dayMeals.length === 0) {
-            console.log(chalk.gray('  No meals planned'));
+            logger.info('Meals', chalk.gray('  No meals planned'));
             continue;
           }
 
@@ -205,37 +227,40 @@ export function createMealsCommand(): Command {
             const typeMeals = dayMeals.filter(meal => meal.mealType === type);
             if (typeMeals.length === 0) return;
 
-            console.log(`  ${chalk.bold(type.charAt(0).toUpperCase() + type.slice(1))}:`);
+            logger.info('Meals', `  ${chalk.bold(type.charAt(0).toUpperCase() + type.slice(1))}:`);
             typeMeals.forEach(meal => {
-              const mealName = meal.recipeId ? 
-                recipes.find(r => r.id === meal.recipeId)?.name || 'Unknown Recipe' :
-                meal.customMeal || 'Unknown Meal';
-              
+              const mealName = meal.recipeId ?
+                recipes.find(r => r.id === meal.recipeId)?.name ?? 'Unknown Recipe' :
+                meal.customMeal ?? 'Unknown Meal';
+
               const statusIcon = meal.status === 'planned' ? '○' :
                                meal.status === 'prepped' ? '◔' :
                                meal.status === 'cooked' ? '◕' : '●';
-              
-              console.log(`    ${statusIcon} ${chalk.white(mealName)}`);
-              console.log(`      ${chalk.gray(`${meal.servings} servings • ${meal.peopleCount} people`)}`);
-              if (meal.notes) console.log(`      ${chalk.gray(`Notes: ${meal.notes}`)}`);
+
+              logger.info('Meals', `    ${statusIcon} ${chalk.white(mealName)}`);
+              logger.info('Meals', `      ${chalk.gray(`${meal.servings} servings • ${meal.peopleCount ?? 0} people`)}`);
+              if (meal.notes) {
+                logger.info('Meals', `      ${chalk.gray(`Notes: ${meal.notes}`)}`);
+              }
             });
           });
         }
 
       } catch (error) {
         spinner.fail(chalk.red('Failed to load meal plan'));
-        console.error(error);
+        logger.error('Meals', error);
       }
     });
 
   // Update meal status
-  meals
+  const statusCommand = meals
     .command('status')
     .alias('s')
     .description('Update meal status')
     .argument('<query>', 'Meal name or ID')
-    .option('-s, --status <status>', 'Status (planned, prepped, cooked, eaten)')
-    .action(async (query, options) => {
+    .option('-s, --status <status>', 'Status (planned, prepped, cooked, eaten)');
+
+  statusCommand.action(async (query: string, options: { status?: string }) => {
       await dataManager.init();
 
       const spinner = ora('Updating meal status...').start();
@@ -243,10 +268,10 @@ export function createMealsCommand(): Command {
       try {
         const meals = await dataManager.getMealPlans();
         const recipes = await dataManager.getRecipes();
-        
+
         const meal = meals.find(m => {
           if (m.id === query) return true;
-          const mealName = m.recipeId ? 
+          const mealName = m.recipeId ?
             recipes.find(r => r.id === m.recipeId)?.name :
             m.customMeal;
           return mealName?.toLowerCase().includes(query.toLowerCase());
@@ -259,7 +284,7 @@ export function createMealsCommand(): Command {
 
         let status = options.status;
         if (!status) {
-          const answer = await inquirer.prompt([
+          const answer = await inquirer.prompt<{ status: 'planned' | 'prepped' | 'cooked' | 'eaten' }>([
             {
               type: 'list',
               name: 'status',
@@ -275,27 +300,28 @@ export function createMealsCommand(): Command {
           status = answer.status;
         }
 
-        await dataManager.updateMealPlan(meal.id, { status });
+        await dataManager.updateMealPlan(meal.id, { status: status as 'planned' | 'prepped' | 'cooked' | 'eaten' });
 
-        const mealName = meal.recipeId ? 
+        const mealName = meal.recipeId ?
           recipes.find(r => r.id === meal.recipeId)?.name :
           meal.customMeal;
 
-        spinner.succeed(chalk.green(`Updated "${mealName}" status to ${status}`));
+        spinner.succeed(chalk.green(`Updated "${mealName ?? 'meal'}" status to ${status}`));
 
       } catch (error) {
         spinner.fail(chalk.red('Failed to update meal status'));
-        console.error(error);
+        logger.error('Meals', error);
       }
     });
 
   // Remove meal
-  meals
+  const removeCommand = meals
     .command('remove')
     .alias('rm')
     .description('Remove meal from plan')
-    .argument('<query>', 'Meal name or ID')
-    .action(async (query) => {
+    .argument('<query>', 'Meal name or ID');
+
+  removeCommand.action(async (query: string) => {
       await dataManager.init();
 
       const spinner = ora('Removing meal...').start();
@@ -303,10 +329,10 @@ export function createMealsCommand(): Command {
       try {
         const meals = await dataManager.getMealPlans();
         const recipes = await dataManager.getRecipes();
-        
+
         const meal = meals.find(m => {
           if (m.id === query) return true;
-          const mealName = m.recipeId ? 
+          const mealName = m.recipeId ?
             recipes.find(r => r.id === m.recipeId)?.name :
             m.customMeal;
           return mealName?.toLowerCase().includes(query.toLowerCase());
@@ -317,14 +343,14 @@ export function createMealsCommand(): Command {
           return;
         }
 
-        const mealName = meal.recipeId ? 
+        const mealName = meal.recipeId ?
           recipes.find(r => r.id === meal.recipeId)?.name :
           meal.customMeal;
 
-        const confirmed = await inquirer.prompt([{
+        const confirmed = await inquirer.prompt<{ confirm: boolean }>([{
           type: 'confirm',
           name: 'confirm',
-          message: `Remove "${mealName}" from meal plan?`,
+          message: `Remove "${mealName ?? 'this meal'}" from meal plan?`,
           default: false
         }]);
 
@@ -334,11 +360,11 @@ export function createMealsCommand(): Command {
         }
 
         await dataManager.deleteMealPlan(meal.id);
-        spinner.succeed(chalk.green(`Removed "${mealName}" from meal plan`));
+        spinner.succeed(chalk.green(`Removed "${mealName ?? 'meal'}" from meal plan`));
 
       } catch (error) {
         spinner.fail(chalk.red('Failed to remove meal'));
-        console.error(error);
+        logger.error('Meals', error);
       }
     });
 

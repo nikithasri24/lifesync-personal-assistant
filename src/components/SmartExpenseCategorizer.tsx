@@ -1,28 +1,9 @@
-// @ts-nocheck
-import React, { useState, useEffect } from 'react';
-import {
-  Brain,
-  Zap,
-  CheckCircle,
-  AlertTriangle,
-  Eye,
-  EyeOff,
-  RefreshCw,
-  Download,
-  Filter,
-  Search,
-  TrendingUp,
-  PieChart,
-  Calendar,
-  DollarSign,
-  Tag,
-  ArrowRight,
-  Lightbulb,
-  Target
-} from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Brain, Zap, CheckCircle, AlertTriangle, EyeOff, RefreshCw, Filter, Search, TrendingUp, Calendar, Lightbulb, Target } from 'lucide-react';
 import { apiClient } from '../services/apiClient';
 import { expenseCategorizationEngine, type CategorySuggestion } from '../services/expenseCategorizationEngine';
 import type { FinancialTransactionData } from '../services/types';
+import { logger } from '../services/logger';
 
 interface TransactionCategorization {
   transaction: FinancialTransactionData;
@@ -31,7 +12,9 @@ interface TransactionCategorization {
   isConfirmed: boolean;
 }
 
-export default function SmartExpenseCategorizer() {
+interface Anomaly { transaction: FinancialTransactionData; reason: string; }
+
+export default function SmartExpenseCategorizer(): React.JSX.Element {
   const [transactions, setTransactions] = useState<FinancialTransactionData[]>([]);
   const [categorizations, setCategorizations] = useState<TransactionCategorization[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,108 +22,70 @@ export default function SmartExpenseCategorizer() {
   const [filter, setFilter] = useState<'all' | 'uncategorized' | 'needs_review'>('uncategorized');
   const [searchTerm, setSearchTerm] = useState('');
   const [showInsights, setShowInsights] = useState(true);
-  const [insights, setInsights] = useState<{ insights: string[]; anomalies: any[] }>({ insights: [], anomalies: [] });
+  const [insights, setInsights] = useState<{ insights: string[]; anomalies: Anomaly[] }>({ insights: [], anomalies: [] });
   const [potentialBills, setPotentialBills] = useState<FinancialTransactionData[]>([]);
 
-  useEffect(() => {
-    loadTransactions();
-  }, []);
-
-  const loadTransactions = async () => {
-    try {
-      setLoading(true);
-      const data = await apiClient.getFinancialTransactions();
-
-      // Filter recent transactions (last 3 months)
-      const threeMonthsAgo = new Date();
-      threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-
-      const recentTransactions = data.filter(t =>
-        new Date(t.date) >= threeMonthsAgo && t.type === 'expense'
-      );
-
-      setTransactions(recentTransactions);
-      processCategorizations(recentTransactions);
-    } catch (error) {
-      console.error('Failed to load transactions:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const processCategorizations = async (transactionData: FinancialTransactionData[]) => {
+  const processCategorizations = useCallback((transactionData: FinancialTransactionData[]): void => {
     setProcessing(true);
-
     try {
-      // Bulk categorize all transactions
       const results = expenseCategorizationEngine.bulkCategorize(transactionData);
-
       const categorizations: TransactionCategorization[] = transactionData.map(transaction => ({
         transaction,
-        suggestions: results.get(transaction.id) || [],
+        suggestions: results.get(transaction.id) ?? [],
         selectedCategory: transaction.category_id,
         isConfirmed: !!transaction.category_id
       }));
-
       setCategorizations(categorizations);
-
-      // Generate insights
-      const spendingInsights = expenseCategorizationEngine.generateSpendingInsights(transactionData);
-      setInsights(spendingInsights);
-
-      // Detect potential bills
-      const bills = expenseCategorizationEngine.detectPotentialBills(transactionData);
-      setPotentialBills(bills);
-
+      setInsights(expenseCategorizationEngine.generateSpendingInsights(transactionData));
+      setPotentialBills(expenseCategorizationEngine.detectPotentialBills(transactionData));
     } catch (error) {
-      console.error('Failed to process categorizations:', error);
+      logger.error('Failed to process categorizations:', { error: error instanceof Error ? error.message : String(error) });
     } finally {
       setProcessing(false);
     }
-  };
+  }, []);
 
-  const handleCategorySelection = async (transactionId: string, categoryId: string) => {
+  const loadTransactions = useCallback(async (): Promise<void> => {
     try {
-      // Update transaction in database
-      await apiClient.updateFinancialTransaction(transactionId, {
-        category_id: categoryId
-      });
-
-      // Update local state
-      setCategorizations(prev => prev.map(cat =>
-        cat.transaction.id === transactionId
-          ? { ...cat, selectedCategory: categoryId, isConfirmed: true }
-          : cat
-      ));
-
-      // Learn from user selection
-      const transaction = categorizations.find(c => c.transaction.id === transactionId)?.transaction;
-      if (transaction) {
-        expenseCategorizationEngine.learnFromUserCategorization(transaction, categoryId);
-      }
-
+      setLoading(true);
+      const data = await apiClient.getFinancialTransactions();
+      const threeMonthsAgo = new Date();
+      threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+      const recentTransactions = data.filter(t => new Date(t.date) >= threeMonthsAgo && t.type === 'expense');
+      setTransactions(recentTransactions);
+      processCategorizations(recentTransactions);
     } catch (error) {
-      console.error('Failed to update transaction category:', error);
+      logger.error('Failed to load transactions:', { error: error instanceof Error ? error.message : String(error) });
+    } finally {
+      setLoading(false);
+    }
+  }, [processCategorizations]);
+
+  useEffect(() => {
+    void loadTransactions();
+  }, [loadTransactions]);
+
+  const handleCategorySelection = async (transactionId: string, categoryId: string): Promise<void> => {
+    try {
+      await apiClient.updateFinancialTransaction(transactionId, { category_id: categoryId });
+      setCategorizations(prev => prev.map(cat => cat.transaction.id === transactionId ? { ...cat, selectedCategory: categoryId, isConfirmed: true } : cat));
+      const transaction = categorizations.find(c => c.transaction.id === transactionId)?.transaction;
+      if (transaction) expenseCategorizationEngine.learnFromUserCategorization(transaction, categoryId);
+    } catch (error) {
+      logger.error('Failed to update transaction category:', { error: error instanceof Error ? error.message : String(error) });
     }
   };
 
-  const handleBulkCategorize = async () => {
+  const handleBulkCategorize = async (): Promise<void> => {
     setProcessing(true);
-
     try {
-      const updates = categorizations
-        .filter(cat => !cat.isConfirmed && cat.suggestions.length > 0)
-        .map(async (cat) => {
-          const bestSuggestion = cat.suggestions[0];
-          if (bestSuggestion.confidence > 0.7) {
-            await handleCategorySelection(cat.transaction.id, bestSuggestion.categoryId);
-          }
-        });
-
+      const updates = categorizations.filter(cat => !cat.isConfirmed && cat.suggestions.length > 0).map(async (cat) => {
+        const bestSuggestion = cat.suggestions[0];
+        if (bestSuggestion.confidence > 0.7) await handleCategorySelection(cat.transaction.id, bestSuggestion.categoryId);
+      });
       await Promise.all(updates);
-
     } catch (error) {
-      console.error('Failed to bulk categorize:', error);
+      logger.error('Failed to bulk categorize:', { error: error instanceof Error ? error.message : String(error) });
     } finally {
       setProcessing(false);
     }
@@ -148,32 +93,18 @@ export default function SmartExpenseCategorizer() {
 
   const filteredCategorizations = categorizations.filter(cat => {
     const transaction = cat.transaction;
-    const matchesSearch = searchTerm === '' ||
-      transaction.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      transaction.payee?.toLowerCase().includes(searchTerm.toLowerCase());
-
+    const matchesSearch = searchTerm === '' || (transaction.description?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) || (transaction.payee?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false);
     if (!matchesSearch) return false;
-
     switch (filter) {
-      case 'uncategorized':
-        return !cat.isConfirmed;
-      case 'needs_review':
-        return cat.suggestions.length > 0 && cat.suggestions[0].confidence < 0.7;
-      default:
-        return true;
+      case 'uncategorized': return !cat.isConfirmed;
+      case 'needs_review': return cat.suggestions.length > 0 && cat.suggestions[0].confidence < 0.7;
+      default: return true;
     }
   });
 
-  const getCategoryIcon = (categoryId: string) => {
+  const getCategoryIcon = (categoryId: string): string => {
     const rules = expenseCategorizationEngine.getCategoryRules();
-    const rule = rules.find(r => r.id === categoryId);
-    return rule?.icon || '📊';
-  };
-
-  const getCategoryColor = (categoryId: string) => {
-    const rules = expenseCategorizationEngine.getCategoryRules();
-    const rule = rules.find(r => r.id === categoryId);
-    return rule?.color || '#6366F1';
+    return rules.find(r => r.id === categoryId)?.icon ?? '📊';
   };
 
   if (loading) {
@@ -200,7 +131,7 @@ export default function SmartExpenseCategorizer() {
         </div>
         <div className="flex items-center gap-3">
           <button
-            onClick={handleBulkCategorize}
+            onClick={() => { void handleBulkCategorize(); }}
             disabled={processing}
             className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
           >
@@ -208,7 +139,7 @@ export default function SmartExpenseCategorizer() {
             {processing ? 'Processing...' : 'Auto-Categorize'}
           </button>
           <button
-            onClick={() => processCategorizations(transactions)}
+            onClick={() => { processCategorizations(transactions); }}
             disabled={processing}
             className="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
           >
@@ -258,9 +189,9 @@ export default function SmartExpenseCategorizer() {
                   Unusual Expenses
                 </h5>
                 <div className="space-y-2 text-sm">
-                  {insights.anomalies.slice(0, 3).map((anomaly, index) => (
+                  {insights.anomalies.slice(0, 3).map((anomaly: Anomaly, index) => (
                     <div key={index} className="text-orange-800">
-                      <div className="font-medium">${Math.abs(anomaly.transaction.amount).toFixed(2)} - {anomaly.transaction.payee}</div>
+                      <div className="font-medium">${Math.abs(Number(anomaly.transaction.amount)).toFixed(2)} - {anomaly.transaction.payee}</div>
                       <div className="text-xs text-orange-600">{anomaly.reason}</div>
                     </div>
                   ))}
@@ -288,25 +219,14 @@ export default function SmartExpenseCategorizer() {
         </div>
       )}
 
-      {/* Filters and Search */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-          <input
-            type="text"
-            placeholder="Search transactions..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
+          <input type="text" placeholder="Search transactions..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
         </div>
         <div className="flex items-center gap-2">
           <Filter className="w-4 h-4 text-gray-500" />
-          <select
-            value={filter}
-            onChange={(e) => setFilter(e.target.value as any)}
-            className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
+          <select value={filter} onChange={(e) => setFilter(e.target.value as 'all' | 'uncategorized' | 'needs_review')} className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
             <option value="all">All Transactions</option>
             <option value="uncategorized">Uncategorized</option>
             <option value="needs_review">Needs Review</option>
@@ -337,7 +257,7 @@ export default function SmartExpenseCategorizer() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <h4 className="font-medium text-gray-900">
-                          {transaction.payee || transaction.description}
+                          {transaction.payee ?? transaction.description}
                         </h4>
                         {cat.isConfirmed && (
                           <CheckCircle className="w-4 h-4 text-green-600" />
@@ -357,7 +277,7 @@ export default function SmartExpenseCategorizer() {
                         <div className="text-center">
                           <div className="text-xs text-gray-500 mb-1">AI Suggestion</div>
                           <button
-                            onClick={() => handleCategorySelection(transaction.id, bestSuggestion.categoryId)}
+                            onClick={() => { void handleCategorySelection(transaction.id, bestSuggestion.categoryId); }}
                             className="flex items-center gap-2 px-3 py-2 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 transition-colors"
                           >
                             <span>{getCategoryIcon(bestSuggestion.categoryId)}</span>
@@ -389,7 +309,7 @@ export default function SmartExpenseCategorizer() {
                         {cat.suggestions.slice(1, 4).map((suggestion, index) => (
                           <button
                             key={index}
-                            onClick={() => handleCategorySelection(transaction.id, suggestion.categoryId)}
+                            onClick={() => { void handleCategorySelection(transaction.id, suggestion.categoryId); }}
                             className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
                           >
                             {getCategoryIcon(suggestion.categoryId)} {suggestion.categoryName}
@@ -410,15 +330,8 @@ export default function SmartExpenseCategorizer() {
         {filteredCategorizations.length === 0 && (
           <div className="text-center py-12">
             <Target className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              {filter === 'uncategorized' ? 'All transactions categorized!' : 'No transactions found'}
-            </h3>
-            <p className="text-gray-600">
-              {filter === 'uncategorized'
-                ? 'Great job! Your transactions are properly categorized.'
-                : 'Try adjusting your search or filter criteria.'
-              }
-            </p>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">{filter === 'uncategorized' ? 'All transactions categorized!' : 'No transactions found'}</h3>
+            <p className="text-gray-600">{filter === 'uncategorized' ? 'Great job! Your transactions are properly categorized.' : 'Try adjusting your search or filter criteria.'}</p>
           </div>
         )}
       </div>

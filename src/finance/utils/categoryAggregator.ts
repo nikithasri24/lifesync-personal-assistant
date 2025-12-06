@@ -51,14 +51,14 @@ export function aggregateByCategory(
   }>();
 
   for (const txn of filteredTxns) {
-    const catId = txn.categoryId || 'uncategorized';
+    const catId = txn.categoryId ?? 'uncategorized';
 
     // Skip uncategorized if not included
     if (catId === 'uncategorized' && !includeUncategorized) {
       continue;
     }
 
-    const existing = categoryMap.get(catId) || { amount: 0, count: 0, transactions: [] };
+    const existing = categoryMap.get(catId) ?? { amount: 0, count: 0, transactions: [] };
     categoryMap.set(catId, {
       amount: existing.amount + txn.amount,
       count: existing.count + 1,
@@ -80,7 +80,7 @@ export function aggregateByCategory(
 
     results.push({
       categoryId: catId,
-      categoryName: category?.name || 'Uncategorized',
+      categoryName: category?.name ?? 'Uncategorized',
       parentId: category?.parentId,
       parentName: parent?.name,
       totalAmount: data.amount,
@@ -100,7 +100,7 @@ export function aggregateByCategory(
  */
 export function buildCategoryTree(
   aggregates: CategoryAggregate[],
-  categories: Category[]
+  _categories: Category[]
 ): CategoryTreeNode[] {
   const nodeMap = new Map<string, CategoryTreeNode>();
   const rootNodes: CategoryTreeNode[] = [];
@@ -118,9 +118,11 @@ export function buildCategoryTree(
   for (const node of nodeMap.values()) {
     if (node.parentId && nodeMap.has(node.parentId)) {
       // Has parent - add to parent's children
-      const parent = nodeMap.get(node.parentId)!;
-      parent.children.push(node);
-      node.level = parent.level + 1;
+      const parent = nodeMap.get(node.parentId);
+      if (parent) {
+        parent.children.push(node);
+        node.level = parent.level + 1;
+      }
     } else {
       // Root node
       rootNodes.push(node);
@@ -128,7 +130,7 @@ export function buildCategoryTree(
   }
 
   // Sort children by amount
-  const sortChildren = (nodes: CategoryTreeNode[]) => {
+  const sortChildren = (nodes: CategoryTreeNode[]): void => {
     nodes.sort((a, b) => b.totalAmount - a.totalAmount);
     for (const node of nodes) {
       sortChildren(node.children);
@@ -157,13 +159,13 @@ export function getTopCategories(
  */
 export function groupByParentCategory(
   aggregates: CategoryAggregate[],
-  categories: Category[]
+  _categories: Category[]
 ): Map<string, CategoryAggregate[]> {
   const grouped = new Map<string, CategoryAggregate[]>();
 
   for (const agg of aggregates) {
-    const parentKey = agg.parentId || 'root';
-    const existing = grouped.get(parentKey) || [];
+    const parentKey = agg.parentId ?? 'root';
+    const existing = grouped.get(parentKey) ?? [];
     grouped.set(parentKey, [...existing, agg]);
   }
 
@@ -235,7 +237,7 @@ export function compareCategorySpending(
 
   // Compare each category
   for (const current of currentPeriod) {
-    const previousAmount = previousMap.get(current.categoryId) || 0;
+    const previousAmount = previousMap.get(current.categoryId) ?? 0;
     const change = current.totalAmount - previousAmount;
     const changePercent = previousAmount > 0
       ? (change / previousAmount) * 100

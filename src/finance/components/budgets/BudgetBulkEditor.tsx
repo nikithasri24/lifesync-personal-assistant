@@ -9,6 +9,7 @@ import { X, Save, Lightbulb, AlertCircle } from 'lucide-react';
 import { formatCurrency } from '../../utils/currency';
 import type { Category, Transaction } from '../../types';
 import { calculateBudgetRecommendation, type BudgetRecommendation } from '../../utils/budgetRecommendations';
+import { logger } from '../../../services/logger';
 
 export interface BudgetBulkEditorProps {
   isOpen: boolean;
@@ -43,18 +44,18 @@ const BudgetBulkEditor: React.FC<BudgetBulkEditorProps> = ({
   // Initialize rows when modal opens
   useEffect(() => {
     if (isOpen && categories.length > 0) {
-      console.log('[BudgetBulkEditor] Initializing rows for', categories.length, 'categories');
+      logger.debug('[BudgetBulkEditor] Initializing rows for categories', { count: categories.length });
 
       const initialRows: CategoryBudgetRow[] = categories.map((category) => {
         const recommendation = calculateBudgetRecommendation(transactions, category.id, 3);
-        const currentLimit = existingBudgets.get(category.id) || 0;
+        const currentLimit = existingBudgets.get(category.id) ?? 0;
 
         // Pre-fill with recommendation if no existing budget, otherwise use existing
         const initialValue = currentLimit > 0
           ? currentLimit
-          : (recommendation?.suggested || 0);
+          : (recommendation?.suggested ?? 0);
 
-        console.log('[BudgetBulkEditor]', category.name, ':', {
+        logger.debug('BudgetBulkEditor', `Category: ${category.name}`, {
           recommendation: recommendation?.suggested,
           currentLimit,
           initialValue,
@@ -75,7 +76,7 @@ const BudgetBulkEditor: React.FC<BudgetBulkEditorProps> = ({
 
   if (!isOpen) return null;
 
-  const handleLimitChange = (categoryId: string, value: string) => {
+  const handleLimitChange = (categoryId: string, value: string): void => {
     setRows((prev) =>
       prev.map((row) =>
         row.category.id === categoryId ? { ...row, userLimit: value } : row
@@ -83,7 +84,7 @@ const BudgetBulkEditor: React.FC<BudgetBulkEditorProps> = ({
     );
   };
 
-  const handleUseRecommendation = (categoryId: string) => {
+  const handleUseRecommendation = (categoryId: string): void => {
     setRows((prev) =>
       prev.map((row) => {
         if (row.category.id === categoryId && row.recommendation) {
@@ -94,7 +95,7 @@ const BudgetBulkEditor: React.FC<BudgetBulkEditorProps> = ({
     );
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     setError('');
 
@@ -125,7 +126,7 @@ const BudgetBulkEditor: React.FC<BudgetBulkEditorProps> = ({
 
     try {
       setSaving(true);
-      console.log('[BudgetBulkEditor] Saving', budgetsToSave.length, 'budgets');
+      logger.debug('[BudgetBulkEditor] Saving budgets', { count: budgetsToSave.length });
       await onSave(budgetsToSave);
       onClose();
     } catch (err) {
@@ -135,7 +136,7 @@ const BudgetBulkEditor: React.FC<BudgetBulkEditorProps> = ({
     }
   };
 
-  const handleBackdropClick = (e: React.MouseEvent) => {
+  const handleBackdropClick = (e: React.MouseEvent): void => {
     if (e.target === e.currentTarget) {
       onClose();
     }
@@ -174,7 +175,10 @@ const BudgetBulkEditor: React.FC<BudgetBulkEditorProps> = ({
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+        <form onSubmit={(e) => {
+          e.preventDefault();
+          void handleSubmit(e);
+        }} className="flex flex-col flex-1 min-h-0">
           {/* Table */}
           <div className="flex-1 overflow-y-auto px-6 py-4">
             <table className="w-full">

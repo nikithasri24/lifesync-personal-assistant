@@ -52,7 +52,7 @@ export default function DailyDetailsModal({
   onNavigate,
   canNavigatePrev = false,
   canNavigateNext = false
-}: DailyDetailsModalProps) {
+}: DailyDetailsModalProps): JSX.Element {
   // ==================== Keyboard Navigation ====================
 
   /**
@@ -84,7 +84,7 @@ export default function DailyDetailsModal({
   /**
    * Get task definition from challenge by taskId
    */
-  const getTask = (taskId: string): Task | undefined => {
+  const _getTask = (taskId: string): Task | undefined => {
     return challenge.tasks.find(t => t.id === taskId);
   };
 
@@ -93,7 +93,7 @@ export default function DailyDetailsModal({
    */
   const isTaskCompleted = (taskId: string): boolean => {
     const completion = checkIn.taskCompletions.find(tc => tc.taskId === taskId);
-    return completion?.completed || false;
+    return completion?.completed ?? false;
   };
 
   // ==================== Render ====================

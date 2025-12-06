@@ -1,46 +1,98 @@
+/* eslint-disable no-console */
+/* eslint-disable max-lines */
 import { Command } from 'commander';
 import inquirer from 'inquirer';
 import chalk from 'chalk';
-import ora from 'ora';
+import ora, { type Ora } from 'ora';
 import { dataManager } from '../data.js';
-import { Recipe, Ingredient } from '../types.js';
+import { type Recipe, type Ingredient } from '../types.js';
+
+interface RecipeAddOptions {
+  cuisine?: string;
+  difficulty?: string;
+  prep?: string;
+  cook?: string;
+  servings?: string;
+  url?: string;
+  description?: string;
+}
+
+interface RecipeListOptions {
+  cuisine?: string;
+  difficulty?: string;
+  tag?: string;
+  quick?: boolean;
+}
+
+interface BasicAnswers {
+  name: string;
+  description?: string;
+  cuisine: string;
+  difficulty: string;
+  prepTime: number;
+  cookTime: number;
+  servings: number;
+  url?: string;
+}
+
+interface IngredientNameAnswer {
+  name: string;
+}
+
+interface IngredientDetailAnswers {
+  amount: number;
+  unit: string;
+  category: string;
+  optional: boolean;
+}
+
+interface InstructionAnswer {
+  instruction: string;
+}
+
+interface TagsAnswer {
+  tags: string[];
+}
+
+interface ConfirmAnswer {
+  confirm: boolean;
+}
 
 export function createRecipesCommand(): Command {
-  const recipes = new Command('recipes')
-    .alias('recipe')
-    .description('Manage recipes');
+  const recipes = new Command('recipes');
+  recipes.alias('recipe');
+  recipes.description('Manage recipes');
 
   // Add recipe
-  recipes
-    .command('add')
-    .alias('a')
-    .description('Add new recipe')
-    .argument('[name]', 'Recipe name')
-    .option('-c, --cuisine <string>', 'Cuisine type')
-    .option('-d, --difficulty <string>', 'Difficulty (easy, medium, hard)', 'medium')
-    .option('--prep <number>', 'Prep time in minutes', '15')
-    .option('--cook <number>', 'Cook time in minutes', '30')
-    .option('-s, --servings <number>', 'Number of servings', '4')
-    .option('--url <string>', 'Source URL')
-    .option('--description <string>', 'Recipe description')
-    .action(async (name, options) => {
+  const addCommand = recipes.command('add') as Command;
+  addCommand.alias('a');
+  addCommand.description('Add new recipe');
+  addCommand.argument('[name]', 'Recipe name');
+  addCommand.option('-c, --cuisine <string>', 'Cuisine type');
+  addCommand.option('-d, --difficulty <string>', 'Difficulty (easy, medium, hard)', 'medium');
+  addCommand.option('--prep <number>', 'Prep time in minutes', '15');
+  addCommand.option('--cook <number>', 'Cook time in minutes', '30');
+  addCommand.option('-s, --servings <number>', 'Number of servings', '4');
+  addCommand.option('--url <string>', 'Source URL');
+  addCommand.option('--description <string>', 'Recipe description');
+  addCommand.action(async (name: string | undefined, options: RecipeAddOptions) => {
       await dataManager.init();
 
       let recipeName = name;
       let cuisine = options.cuisine;
-      let difficulty = options.difficulty || 'medium';
-      let prepTime = parseInt(options.prep) || 15;
-      let cookTime = parseInt(options.cook) || 30;
-      let servings = parseInt(options.servings) || 4;
+      let difficulty = options.difficulty ?? 'medium';
+      let prepTime = parseInt(options.prep ?? '15') || 15;
+      let cookTime = parseInt(options.cook ?? '30') || 30;
+      let servings = parseInt(options.servings ?? '4') || 4;
 
       // Interactive mode if no name provided
       if (!recipeName) {
-        const basicAnswers = await inquirer.prompt([
+        const basicAnswers = await inquirer.prompt<BasicAnswers>([
           {
             type: 'input',
             name: 'name',
             message: 'Recipe name:',
-            validate: (input) => input.trim() !== '' || 'Recipe name is required'
+            validate: (input: string) => input.trim() !== '' || 'Recipe name is required'
           },
           {
             type: 'input',
@@ -97,17 +149,17 @@ export function createRecipesCommand(): Command {
       }
 
       // Add ingredients
-      console.log(chalk.blue('\nAdd ingredients (press Enter with empty name to finish):'));
+      console.info(chalk.blue('\nAdd ingredients (press Enter with empty name to finish):'));
       const ingredients: Ingredient[] = [];
       let addingIngredients = true;
 
       while (addingIngredients) {
-        const ingredientAnswers = await inquirer.prompt([
+        const ingredientAnswers = await inquirer.prompt<IngredientNameAnswer>([
           {
             type: 'input',
             name: 'name',
             message: `Ingredient ${ingredients.length + 1} name:`,
-            validate: (input) => {
+            validate: (input: string) => {
               if (input.trim() === '' && ingredients.length === 0) {
                 return 'At least one ingredient is required';
               }
@@ -121,7 +173,7 @@ export function createRecipesCommand(): Command {
           continue;
         }
 
-        const detailAnswers = await inquirer.prompt([
+        const detailAnswers = await inquirer.prompt<IngredientDetailAnswers>([
           {
             type: 'number',
             name: 'amount',
@@ -159,17 +211,17 @@ export function createRecipesCommand(): Command {
       }
 
       // Add instructions
-      console.log(chalk.blue('\nAdd cooking instructions (press Enter with empty instruction to finish):'));
+      console.info(chalk.blue('\nAdd cooking instructions (press Enter with empty instruction to finish):'));
       const instructions: string[] = [];
       let addingInstructions = true;
 
       while (addingInstructions) {
-        const instructionAnswer = await inquirer.prompt([
+        const instructionAnswer = await inquirer.prompt<InstructionAnswer>([
           {
             type: 'input',
             name: 'instruction',
             message: `Step ${instructions.length + 1}:`,
-            validate: (input) => {
+            validate: (input: string) => {
               if (input.trim() === '' && instructions.length === 0) {
                 return 'At least one instruction is required';
               }
@@ -186,16 +238,16 @@ export function createRecipesCommand(): Command {
       }
 
       // Add tags
-      const tagsAnswer = await inquirer.prompt([
+      const tagsAnswer = await inquirer.prompt<TagsAnswer>([
         {
           type: 'input',
           name: 'tags',
           message: 'Tags (comma-separated, optional):',
-          filter: (input) => input ? input.split(',').map((tag: string) => tag.trim()) : []
+          filter: (input: string) => input ? input.split(',').map((tag: string) => tag.trim()) : []
         }
       ]);
 
-      const spinner = ora('Saving recipe...').start();
+      const spinner = ora('Saving recipe...').start() as Ora;
 
       try {
         const recipe: Omit<Recipe, 'id' | 'createdAt'> = {
@@ -217,7 +269,7 @@ export function createRecipesCommand(): Command {
         const newRecipe = await dataManager.addRecipe(recipe);
 
         spinner.succeed(chalk.green(`Added recipe "${newRecipe.name}"`));
-        console.log(chalk.gray(`  ${newRecipe.cuisine} • ${newRecipe.difficulty} • ${newRecipe.prepTime + newRecipe.cookTime} min • ${newRecipe.servings} servings`));
+        console.info(chalk.gray(`  ${newRecipe.cuisine} • ${newRecipe.difficulty} • ${newRecipe.prepTime + newRecipe.cookTime} min • ${newRecipe.servings} servings`));
 
       } catch (error) {
         spinner.fail(chalk.red('Failed to add recipe'));
@@ -226,18 +278,17 @@ export function createRecipesCommand(): Command {
     });
 
   // List recipes
-  recipes
-    .command('list')
-    .alias('ls')
-    .description('List recipes')
-    .option('-c, --cuisine <string>', 'Filter by cuisine')
-    .option('-d, --difficulty <string>', 'Filter by difficulty')
-    .option('-t, --tag <string>', 'Filter by tag')
-    .option('--quick', 'Show only quick recipes (< 30 min total)')
-    .action(async (options) => {
+  const listCommand = recipes.command('list') as Command;
+  listCommand.alias('ls');
+  listCommand.description('List recipes');
+  listCommand.option('-c, --cuisine <string>', 'Filter by cuisine');
+  listCommand.option('-d, --difficulty <string>', 'Filter by difficulty');
+  listCommand.option('-t, --tag <string>', 'Filter by tag');
+  listCommand.option('--quick', 'Show only quick recipes (< 30 min total)');
+  listCommand.action(async (options: RecipeListOptions) => {
       await dataManager.init();
 
-      const spinner = ora('Loading recipes...').start();
+      const spinner = ora('Loading recipes...').start() as Ora;
 
       try {
         let recipes = await dataManager.getRecipes();
@@ -251,8 +302,9 @@ export function createRecipesCommand(): Command {
         }
 
         if (options.tag) {
-          recipes = recipes.filter(recipe => 
-            recipe.tags.some(tag => tag.toLowerCase().includes(options.tag.toLowerCase()))
+          const tagFilter = options.tag.toLowerCase();
+          recipes = recipes.filter(recipe =>
+            recipe.tags.some(tag => tag.toLowerCase().includes(tagFilter))
           );
         }
 
@@ -263,7 +315,7 @@ export function createRecipesCommand(): Command {
         spinner.succeed(chalk.green(`Found ${recipes.length} recipes`));
 
         if (recipes.length === 0) {
-          console.log(chalk.yellow('No recipes found'));
+          console.info(chalk.yellow('No recipes found'));
           return;
         }
 
@@ -275,17 +327,17 @@ export function createRecipesCommand(): Command {
         }, {} as Record<string, Recipe[]>);
 
         Object.entries(grouped).forEach(([cuisine, cuisineRecipes]) => {
-          console.log(`\n${chalk.bold.blue(cuisine.toUpperCase())}`);
+          console.info(`\n${chalk.bold.blue(cuisine.toUpperCase())}`);
           cuisineRecipes.forEach(recipe => {
             const difficultyColor = recipe.difficulty === 'easy' ? chalk.green :
                                    recipe.difficulty === 'medium' ? chalk.yellow : chalk.red;
             const totalTime = recipe.prepTime + recipe.cookTime;
-            
-            console.log(`  📖 ${chalk.white(recipe.name)}`);
-            console.log(`    ${difficultyColor(recipe.difficulty)} • ${totalTime} min • ${recipe.servings} servings`);
-            if (recipe.description) console.log(`    ${chalk.gray(recipe.description)}`);
-            if (recipe.tags.length > 0) console.log(`    ${chalk.cyan(recipe.tags.join(', '))}`);
-            if (recipe.sourceUrl) console.log(`    ${chalk.blue(recipe.sourceUrl)}`);
+
+            console.info(`  📖 ${chalk.white(recipe.name)}`);
+            console.info(`    ${difficultyColor(recipe.difficulty)} • ${totalTime} min • ${recipe.servings} servings`);
+            console.info(`    ${chalk.gray(recipe.description ?? '')}`);
+            console.info(`    ${chalk.cyan(recipe.tags.join(', '))}`);
+            console.info(`    ${chalk.blue(recipe.sourceUrl ?? '')}`);
           });
         });
 
@@ -296,20 +348,19 @@ export function createRecipesCommand(): Command {
     });
 
   // Show recipe details
-  recipes
-    .command('show')
-    .alias('view')
-    .description('Show recipe details')
-    .argument('<query>', 'Recipe name or ID')
-    .action(async (query) => {
+  const showCommand = recipes.command('show') as Command;
+  showCommand.alias('view');
+  showCommand.description('Show recipe details');
+  showCommand.argument('<query>', 'Recipe name or ID');
+  showCommand.action(async (query: string) => {
       await dataManager.init();
 
-      const spinner = ora('Loading recipe...').start();
+      const spinner = ora('Loading recipe...').start() as Ora;
 
       try {
         const recipes = await dataManager.getRecipes();
-        const recipe = recipes.find(r => 
-          r.id === query || 
+        const recipe = recipes.find(r =>
+          r.id === query ||
           r.name.toLowerCase().includes(query.toLowerCase())
         );
 
@@ -320,35 +371,35 @@ export function createRecipesCommand(): Command {
 
         spinner.succeed(chalk.green(`Recipe: ${recipe.name}`));
 
-        console.log(`\n${chalk.bold.blue(recipe.name)}`);
-        if (recipe.description) console.log(chalk.gray(recipe.description));
-        
-        console.log(`\n${chalk.bold('Details:')}`);
-        console.log(`  Cuisine: ${recipe.cuisine}`);
-        console.log(`  Difficulty: ${recipe.difficulty}`);
-        console.log(`  Prep time: ${recipe.prepTime} minutes`);
-        console.log(`  Cook time: ${recipe.cookTime} minutes`);
-        console.log(`  Total time: ${recipe.prepTime + recipe.cookTime} minutes`);
-        console.log(`  Servings: ${recipe.servings}`);
-        
+        console.info(`\n${chalk.bold.blue(recipe.name)}`);
+        console.info(chalk.gray(recipe.description ?? ''));
+
+        console.info(`\n${chalk.bold('Details:')}`);
+        console.info(`  Cuisine: ${recipe.cuisine}`);
+        console.info(`  Difficulty: ${recipe.difficulty}`);
+        console.info(`  Prep time: ${recipe.prepTime} minutes`);
+        console.info(`  Cook time: ${recipe.cookTime} minutes`);
+        console.info(`  Total time: ${recipe.prepTime + recipe.cookTime} minutes`);
+        console.info(`  Servings: ${recipe.servings}`);
+
         if (recipe.tags.length > 0) {
-          console.log(`  Tags: ${chalk.cyan(recipe.tags.join(', '))}`);
+          console.info(`  Tags: ${chalk.cyan(recipe.tags.join(', '))}`);
         }
 
-        console.log(`\n${chalk.bold('Ingredients:')}`);
+        console.info(`\n${chalk.bold('Ingredients:')}`);
         recipe.ingredients.forEach((ingredient, index) => {
           const optional = ingredient.optional ? chalk.gray(' (optional)') : '';
-          console.log(`  ${index + 1}. ${ingredient.amount} ${ingredient.unit} ${ingredient.name}${optional}`);
+          console.info(`  ${index + 1}. ${ingredient.amount} ${ingredient.unit} ${ingredient.name}${optional}`);
         });
 
-        console.log(`\n${chalk.bold('Instructions:')}`);
+        console.info(`\n${chalk.bold('Instructions:')}`);
         recipe.instructions.forEach((instruction, index) => {
-          console.log(`  ${index + 1}. ${instruction}`);
+          console.info(`  ${index + 1}. ${instruction}`);
         });
 
         if (recipe.sourceUrl) {
-          console.log(`\n${chalk.bold('Source:')}`);
-          console.log(`  ${chalk.blue(recipe.sourceUrl)}`);
+          console.info(`\n${chalk.bold('Source:')}`);
+          console.info(`  ${chalk.blue(recipe.sourceUrl)}`);
         }
 
       } catch (error) {
@@ -358,15 +409,14 @@ export function createRecipesCommand(): Command {
     });
 
   // Import recipe from URL
-  recipes
-    .command('import')
-    .alias('i')
-    .description('Import recipe from URL')
-    .argument('<url>', 'YouTube or other recipe URL')
-    .action(async (url) => {
+  const importCommand = recipes.command('import') as Command;
+  importCommand.alias('i');
+  importCommand.description('Import recipe from URL');
+  importCommand.argument('<url>', 'YouTube or other recipe URL');
+  importCommand.action(async (url: string) => {
       await dataManager.init();
 
-      const spinner = ora('Importing recipe from URL...').start();
+      const spinner = ora('Importing recipe from URL...').start() as Ora;
 
       try {
         // Mock implementation - in a real app, this would call an API
@@ -379,7 +429,7 @@ export function createRecipesCommand(): Command {
         // Mock recipe data
         const isYoutube = url.includes('youtube.com') || url.includes('youtu.be');
         const isInstagram = url.includes('instagram.com');
-        
+
         const mockRecipe: Omit<Recipe, 'id' | 'createdAt'> = {
           name: `Imported ${isYoutube ? 'YouTube' : isInstagram ? 'Instagram' : 'Web'} Recipe`,
           description: 'Delicious recipe imported from the web',
@@ -409,8 +459,8 @@ export function createRecipesCommand(): Command {
         const newRecipe = await dataManager.addRecipe(mockRecipe);
 
         spinner.succeed(chalk.green(`Imported recipe "${newRecipe.name}"`));
-        console.log(chalk.gray(`  ${newRecipe.cuisine} • ${newRecipe.difficulty} • ${newRecipe.prepTime + newRecipe.cookTime} min • ${newRecipe.servings} servings`));
-        console.log(chalk.blue(`  Source: ${url}`));
+        console.info(chalk.gray(`  ${newRecipe.cuisine} • ${newRecipe.difficulty} • ${newRecipe.prepTime + newRecipe.cookTime} min • ${newRecipe.servings} servings`));
+        console.info(chalk.blue(`  Source: ${url}`));
 
       } catch (error) {
         spinner.fail(chalk.red('Failed to import recipe'));
@@ -419,20 +469,19 @@ export function createRecipesCommand(): Command {
     });
 
   // Remove recipe
-  recipes
-    .command('remove')
-    .alias('rm')
-    .description('Remove recipe')
-    .argument('<query>', 'Recipe name or ID')
-    .action(async (query) => {
+  const removeCommand = recipes.command('remove') as Command;
+  removeCommand.alias('rm');
+  removeCommand.description('Remove recipe');
+  removeCommand.argument('<query>', 'Recipe name or ID');
+  removeCommand.action(async (query: string) => {
       await dataManager.init();
 
-      const spinner = ora('Removing recipe...').start();
+      const spinner = ora('Removing recipe...').start() as Ora;
 
       try {
         const recipes = await dataManager.getRecipes();
-        const recipe = recipes.find(r => 
-          r.id === query || 
+        const recipe = recipes.find(r =>
+          r.id === query ||
           r.name.toLowerCase().includes(query.toLowerCase())
         );
 
@@ -441,7 +490,7 @@ export function createRecipesCommand(): Command {
           return;
         }
 
-        const confirmed = await inquirer.prompt([{
+        const confirmed = await inquirer.prompt<ConfirmAnswer>([{
           type: 'confirm',
           name: 'confirm',
           message: `Remove recipe "${recipe.name}"?`,

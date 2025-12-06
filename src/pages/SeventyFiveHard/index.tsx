@@ -21,9 +21,10 @@ import {
   updateSFHCheckInWeight,
   handleSFHFailureResponse,
   deleteSFHChallenge,
-  ensureSFHTodosForToday,
-} from '../../stores/seventyFiveHardActions';
+  ensure75HardTodosForToday,
+} from '../../seventyFiveHard/actions';
 import { isSameDay, startOfDay } from 'date-fns';
+import type { Task, DailyCheckIn as DailyCheckInType } from '../../types/seventyFiveHard';
 
 // Import components
 import EmptyState from './components/EmptyState';
@@ -33,39 +34,42 @@ import ProgressView from './components/ProgressView';
 import FailurePromptModal from './components/FailurePromptModal';
 import CompletedView from './components/CompletedView';
 import DeleteChallengeModal from './components/DeleteChallengeModal';
+import { logger } from '../../services/logger';
 
-export default function SeventyFiveHard() {
-  const [showSetupForm, setShowSetupForm] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
+export default function SeventyFiveHard(): React.ReactElement {
+  const [showSetupForm, setShowSetupForm] = useState<boolean>(false);
+  const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<'today' | 'progress'>('today');
 
   // Get state from store
-  const {
-    sfhChallenge: challenge,
-    sfhCheckIns: checkIns,
-    sfhShowFailurePrompt: showFailurePrompt,
-    sfhFailureDate: failureDate,
-    sfhShowCelebration: showCelebration,
-  } = useAppStore();
+  const store = useAppStore();
+  const challenge = store.sfhChallenge;
+  const checkIns = store.sfhCheckIns as DailyCheckInType[];
+  const showFailurePrompt: boolean = store.sfhShowFailurePrompt;
+  const failureDate: Date | null = store.sfhFailureDate;
+  const _showCelebration: boolean = store.sfhShowCelebration;
 
   // Load challenge on mount
   useEffect(() => {
-    loadSFHChallenge();
+    void loadSFHChallenge();
   }, []);
 
   // OPTIMIZATION: Lazy load todos when 75 Hard page loads
   // This defers ~750ms of work from app startup to when user actually needs it
   useEffect(() => {
     if (challenge && challenge.status === 'active') {
-      console.log('[75Hard] Page loaded - ensuring todos for today (lazy loading)');
-      ensureSFHTodosForToday();
+      logger.debug('index', '[75Hard] Page loaded - ensuring todos for today (lazy loading)');
+      void ensure75HardTodosForToday().catch((err: unknown) => {
+        logger.error('index', '[75Hard] Failed to ensure todos for today', { error: err });
+      });
     }
   }, [challenge]);
 
   // Memoize today's check-in lookup (more efficient than manual comparison)
-  const todayCheckIn = useMemo(() => {
+  const todayCheckIn = useMemo<DailyCheckInType | null>(() => {
     const today = startOfDay(new Date());
-    return checkIns.find(c => isSameDay(c.date, today)) || null;
+    const result = checkIns.find((item) => isSameDay(new Date(item.date), today));
+    return result ?? null;
   }, [checkIns]);
 
   // ==================== Handlers ====================
@@ -74,13 +78,17 @@ export default function SeventyFiveHard() {
     setShowSetupForm(true);
   }, []);
 
-  const handleSubmitChallenge = useCallback(async (tasks: Omit<import('../../types/seventyFiveHard').Task, 'id'>[]) => {
-    const result = await startSFHChallenge(tasks);
-    if (result.success) {
-      setShowSetupForm(false);
-    } else {
-      // Error is already logged, could show toast here
-      alert(result.error || 'Failed to start challenge');
+  const handleSubmitChallenge = useCallback(async (tasks: Omit<Task, 'id'>[]) => {
+    try {
+      const result = await startSFHChallenge(tasks);
+      if (result.success) {
+        setShowSetupForm(false);
+      } else {
+        // Error is already logged, could show toast here
+        logger.error('SeventyFiveHard', 'Failed to start challenge', { error: result.error ?? 'Failed to start challenge' });
+      }
+    } catch (error: unknown) {
+      logger.error('SeventyFiveHard', 'Failed to submit challenge', { error });
     }
   }, []);
 
@@ -89,27 +97,51 @@ export default function SeventyFiveHard() {
   }, []);
 
   const handleToggleTask = useCallback(async (taskId: string) => {
-    await toggleSFHTask(taskId);
+    try {
+      await toggleSFHTask(taskId);
+    } catch (error: unknown) {
+      logger.error('SeventyFiveHard', 'Failed to toggle task', { error });
+    }
   }, []);
 
   const handleUploadPhoto = useCallback(async (file: File) => {
-    await uploadSFHPhoto(file);
+    try {
+      await uploadSFHPhoto(file);
+    } catch (error: unknown) {
+      logger.error('SeventyFiveHard', 'Failed to upload photo', { error });
+    }
   }, []);
 
   const handleUpdateNotes = useCallback(async (notes: string) => {
-    await updateSFHCheckInNotes(notes);
+    try {
+      await updateSFHCheckInNotes(notes);
+    } catch (error: unknown) {
+      logger.error('SeventyFiveHard', 'Failed to update notes', { error });
+    }
   }, []);
 
   const handleUpdateWeight = useCallback(async (weight: number) => {
-    await updateSFHCheckInWeight(weight);
+    try {
+      await updateSFHCheckInWeight(weight);
+    } catch (error: unknown) {
+      logger.error('SeventyFiveHard', 'Failed to update weight', { error });
+    }
   }, []);
 
   const handleFailureYes = useCallback(async () => {
-    await handleSFHFailureResponse(true);
+    try {
+      await handleSFHFailureResponse(true);
+    } catch (error: unknown) {
+      logger.error('SeventyFiveHard', 'Failed to handle "yes" failure response', { error });
+    }
   }, []);
 
   const handleFailureNo = useCallback(async () => {
-    await handleSFHFailureResponse(false);
+    try {
+      await handleSFHFailureResponse(false);
+    } catch (error: unknown) {
+      logger.error('SeventyFiveHard', 'Failed to handle "no" failure response', { error });
+    }
   }, []);
 
   const handleDeleteChallenge = useCallback(() => {
@@ -117,11 +149,15 @@ export default function SeventyFiveHard() {
   }, []);
 
   const handleConfirmDelete = useCallback(async () => {
-    const result = await deleteSFHChallenge();
-    if (result.success) {
-      setShowDeleteModal(false);
-    } else {
-      alert(result.error || 'Failed to delete challenge');
+    try {
+      const result = await deleteSFHChallenge();
+      if (result.success) {
+        setShowDeleteModal(false);
+      } else {
+        logger.error('SeventyFiveHard', 'Failed to delete challenge', { error: result.error ?? 'Failed to delete challenge' });
+      }
+    } catch (error: unknown) {
+      logger.error('SeventyFiveHard', 'Failed to delete challenge', { error });
     }
   }, []);
 
@@ -218,7 +254,7 @@ export default function SeventyFiveHard() {
       {activeTab === 'today' ? (
         <DailyCheckIn
           challenge={challenge}
-          checkIn={todayCheckIn || null}
+          checkIn={todayCheckIn}
           onToggleTask={handleToggleTask}
           onUploadPhoto={handleUploadPhoto}
           onUpdateNotes={handleUpdateNotes}

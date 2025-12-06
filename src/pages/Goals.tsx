@@ -1,133 +1,56 @@
+/**
+ * Goals and Dreams Page
+ *
+ * Migrated to use React Query for server state management
+ * Before: Manual loading with useEffect and Zustand store
+ * After: Automatic caching, loading, and refetching with React Query
+ */
+
+/* eslint-disable max-lines */
+
 import React, { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
-import { addDays } from 'date-fns';
 import { Plus, Target, Trash2, CheckCircle2, Sparkles } from 'lucide-react';
-import { useAppStore } from '../stores/useAppStore';
-import type { Dream, Goal } from '../types';
-
-const GOAL_CATEGORIES: Goal['category'][] = ['personal', 'health', 'career', 'financial', 'fitness'];
-const GOAL_PRIORITIES: Goal['priority'][] = ['low', 'medium', 'high', 'critical'];
-
-const DREAM_CATEGORIES: Dream['category'][] = ['travel', 'experiences', 'possessions', 'achievements', 'relationships', 'lifestyle'];
-const DREAM_PRIORITIES: Dream['priority'][] = ['someday', 'within-5-years', 'within-10-years', 'lifetime'];
-const DREAM_STATUSES: Dream['status'][] = ['dreaming', 'planning', 'in-progress', 'achieved', 'no-longer-interested'];
-
-type GoalDraft = {
-  title: string;
-  description: string;
-  category: Goal['category'];
-  priority: Goal['priority'];
-  targetDate: string;
-};
-
-type DreamDraft = {
-  title: string;
-  description: string;
-  category: Dream['category'];
-  priority: Dream['priority'];
-  status: Dream['status'];
-  estimatedCost: string;
-  estimatedTimeframe: string;
-};
-
-const createGoalDraft = (): GoalDraft => ({
-  title: '',
-  description: '',
-  category: 'personal',
-  priority: 'medium',
-  targetDate: addDays(new Date(), 30).toISOString().slice(0, 10),
-});
-
-const createDreamDraft = (): DreamDraft => ({
-  title: '',
-  description: '',
-  category: 'travel',
-  priority: 'someday',
-  status: 'dreaming',
-  estimatedCost: '',
-  estimatedTimeframe: '',
-});
-
-const mapGoalDraftToGoal = (draft: GoalDraft): Omit<Goal, 'id' | 'createdAt'> => {
-  const now = new Date();
-  const targetDate = draft.targetDate ? new Date(draft.targetDate) : addDays(now, 30);
-  return {
-    title: draft.title.trim(),
-    description: draft.description.trim(),
-    category: draft.category,
-    priority: draft.priority,
-    status: 'not-started',
-    progress: 0,
-    targetValue: undefined,
-    currentValue: undefined,
-    unit: undefined,
-    startDate: now,
-    targetDate,
-    completedDate: undefined,
-    milestones: [],
-    tags: [],
-    isPublic: false,
-    difficulty: 'medium',
-    xpReward: 100,
-    streakDays: 0,
-    lastUpdated: now,
-    notes: '',
-    attachments: [],
-    subGoals: [],
-    streakEnabled: false,
-    streakFrequency: 'daily',
-    streakTarget: undefined,
-    streakHistory: [],
-    lastStreakUpdate: undefined,
-    longestStreak: 0,
-    currentStreak: 0,
-  };
-};
-
-const mapDreamDraftToDream = (draft: DreamDraft): Omit<Dream, 'id' | 'createdAt'> => {
-  const now = new Date();
-  const estimatedCost = draft.estimatedCost.trim();
-  return {
-    title: draft.title.trim(),
-    description: draft.description.trim(),
-    category: draft.category,
-    priority: draft.priority,
-    status: draft.status,
-    estimatedCost: estimatedCost ? Number(estimatedCost) : undefined,
-    estimatedTimeframe: draft.estimatedTimeframe.trim() || undefined,
-    requiredResources: [],
-    inspirationSources: [],
-    tags: [],
-    isPublic: false,
-    lastUpdated: now,
-    achievedAt: undefined,
-    notes: '',
-    attachments: [],
-    relatedGoals: [],
-    visualBoard: [],
-  };
-};
-
-const EmptyState: React.FC<{ label: string; icon?: React.ReactNode }> = ({ label, icon }) => (
-  <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-slate-300 bg-white p-12 text-center text-slate-500">
-    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-50 text-indigo-500">
-      {icon ?? <Sparkles className="h-6 w-6" />}
-    </div>
-    <p className="text-sm font-medium">{label}</p>
-  </div>
-);
+import { SkeletonCard } from '../components/LoadingSpinner';
+import {
+  useLifeGoals,
+  useCreateLifeGoal,
+  useUpdateLifeGoal,
+  useDeleteLifeGoal,
+  useLifeDreams,
+  useCreateLifeDream,
+  useUpdateLifeDream,
+  useDeleteLifeDream,
+} from '../hooks/useGoalsQuery';
+import type { GoalDraft, DreamDraft } from '../goals/types/drafts';
+import type { GoalCategory, GoalPriority, DreamCategory, DreamPriority, DreamStatus } from '../goals/types/lifeGoals';
+import {
+  GOAL_CATEGORIES,
+  GOAL_PRIORITIES,
+  DREAM_CATEGORIES,
+  DREAM_PRIORITIES,
+  DREAM_STATUSES,
+} from '../goals/constants';
+import {
+  createGoalDraft,
+  createDreamDraft,
+  mapGoalDraftToCreateInput,
+  mapDreamDraftToCreateInput,
+} from '../goals/services/goalHelpers';
+import { EmptyState } from '../goals/components/EmptyState';
 
 const Goals: React.FC = () => {
-  const {
-    goals,
-    dreams,
-    addGoal,
-    updateGoal,
-    deleteGoal,
-    addDream,
-    updateDream,
-    deleteDream,
-  } = useAppStore();
+  // React Query hooks - automatic loading and caching
+  const { data: goals = [], isLoading: goalsLoading, error: goalsError } = useLifeGoals();
+  const { data: dreams = [], isLoading: dreamsLoading, error: dreamsError } = useLifeDreams();
+
+  const createGoalMutation = useCreateLifeGoal();
+  const updateGoalMutation = useUpdateLifeGoal();
+  const deleteGoalMutation = useDeleteLifeGoal();
+
+  const createDreamMutation = useCreateLifeDream();
+  const updateDreamMutation = useUpdateLifeDream();
+  const deleteDreamMutation = useDeleteLifeDream();
 
   const [activeTab, setActiveTab] = useState<'goals' | 'dreams'>('goals');
   const [goalDraft, setGoalDraft] = useState<GoalDraft>(createGoalDraft);
@@ -153,23 +76,53 @@ const Goals: React.FC = () => {
     };
   }, [dreams]);
 
-  const handleGoalSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleGoalSubmit = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
     if (!goalDraft.title.trim()) return;
-    addGoal(mapGoalDraftToGoal(goalDraft));
-    setGoalDraft(createGoalDraft());
-    setShowGoalForm(false);
+
+    createGoalMutation.mutate(mapGoalDraftToCreateInput(goalDraft), {
+      onSuccess: () => {
+        setGoalDraft(createGoalDraft());
+        setShowGoalForm(false);
+      },
+    });
   };
 
-  const handleDreamSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleDreamSubmit = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
     if (!dreamDraft.title.trim()) return;
-    addDream(mapDreamDraftToDream(dreamDraft));
-    setDreamDraft(createDreamDraft());
-    setShowDreamForm(false);
+
+    createDreamMutation.mutate(mapDreamDraftToCreateInput(dreamDraft), {
+      onSuccess: () => {
+        setDreamDraft(createDreamDraft());
+        setShowDreamForm(false);
+      },
+    });
   };
 
-  const renderGoalList = () => {
+  const renderGoalList = (): React.ReactNode => {
+    // Show loading state
+    if (goalsLoading) {
+      return (
+        <div className="space-y-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <SkeletonCard key={i} className="h-32" />
+          ))}
+        </div>
+      );
+    }
+
+    // Show error state
+    if (goalsError) {
+      return (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+          <p className="text-sm text-red-700">
+            Error loading goals. Please try refreshing the page.
+          </p>
+        </div>
+      );
+    }
+
     if (goals.length === 0) {
       return <EmptyState label="No goals yet. Start by creating one." icon={<Target className="h-6 w-6" />} />;
     }
@@ -186,21 +139,25 @@ const Goals: React.FC = () => {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => updateGoal(goal.id, {
-                    status: 'completed',
-                    progress: 100,
-                    completedDate: new Date(),
-                    lastUpdated: new Date(),
+                  onClick={() => updateGoalMutation.mutate({
+                    id: goal.id,
+                    updates: {
+                      status: 'completed',
+                      progress: 100,
+                      completedDate: new Date().toISOString(),
+                    },
                   })}
-                  className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-600 transition hover:bg-emerald-100"
+                  disabled={updateGoalMutation.isPending}
+                  className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-600 transition hover:bg-emerald-100 disabled:opacity-50"
                 >
                   <CheckCircle2 className="h-4 w-4" />
                   Mark complete
                 </button>
                 <button
                   type="button"
-                  onClick={() => deleteGoal(goal.id)}
-                  className="rounded-full border border-slate-200 p-1 text-slate-500 transition hover:bg-slate-100"
+                  onClick={() => deleteGoalMutation.mutate(goal.id)}
+                  disabled={deleteGoalMutation.isPending}
+                  className="rounded-full border border-slate-200 p-1 text-slate-500 transition hover:bg-slate-100 disabled:opacity-50"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
@@ -213,7 +170,7 @@ const Goals: React.FC = () => {
               <span>Status: {goal.status}</span>
               <span>Progress: {goal.progress}%</span>
               {goal.targetDate && (
-                <span>Target date: {goal.targetDate.toLocaleDateString()}</span>
+                <span>Target date: {new Date(goal.targetDate).toLocaleDateString()}</span>
               )}
             </div>
           </li>
@@ -222,7 +179,29 @@ const Goals: React.FC = () => {
     );
   };
 
-  const renderDreamList = () => {
+  const renderDreamList = (): React.ReactNode => {
+    // Show loading state
+    if (dreamsLoading) {
+      return (
+        <div className="space-y-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <SkeletonCard key={i} className="h-32" />
+          ))}
+        </div>
+      );
+    }
+
+    // Show error state
+    if (dreamsError) {
+      return (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+          <p className="text-sm text-red-700">
+            Error loading dreams. Please try refreshing the page.
+          </p>
+        </div>
+      );
+    }
+
     if (dreams.length === 0) {
       return <EmptyState label="No dreams captured yet. Start with one aspiration." />;
     }
@@ -239,20 +218,24 @@ const Goals: React.FC = () => {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => updateDream(dream.id, {
-                    status: 'achieved',
-                    achievedAt: new Date(),
-                    lastUpdated: new Date(),
+                  onClick={() => updateDreamMutation.mutate({
+                    id: dream.id,
+                    updates: {
+                      status: 'achieved',
+                      achievedAt: new Date().toISOString(),
+                    },
                   })}
-                  className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-600 transition hover:bg-indigo-100"
+                  disabled={updateDreamMutation.isPending}
+                  className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-600 transition hover:bg-indigo-100 disabled:opacity-50"
                 >
                   <Sparkles className="h-4 w-4" />
                   Mark achieved
                 </button>
                 <button
                   type="button"
-                  onClick={() => deleteDream(dream.id)}
-                  className="rounded-full border border-slate-200 p-1 text-slate-500 transition hover:bg-slate-100"
+                  onClick={() => deleteDreamMutation.mutate(dream.id)}
+                  disabled={deleteDreamMutation.isPending}
+                  className="rounded-full border border-slate-200 p-1 text-slate-500 transition hover:bg-slate-100 disabled:opacity-50"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
@@ -365,7 +348,7 @@ const Goals: React.FC = () => {
               <span className="font-medium text-slate-700">Category</span>
               <select
                 value={goalDraft.category}
-                onChange={(event) => setGoalDraft((prev) => ({ ...prev, category: event.target.value as Goal['category'] }))}
+                onChange={(event) => setGoalDraft((prev) => ({ ...prev, category: event.target.value as GoalCategory }))}
                 className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
               >
                 {GOAL_CATEGORIES.map((category) => (
@@ -386,7 +369,7 @@ const Goals: React.FC = () => {
               <span className="font-medium text-slate-700">Priority</span>
               <select
                 value={goalDraft.priority}
-                onChange={(event) => setGoalDraft((prev) => ({ ...prev, priority: event.target.value as Goal['priority'] }))}
+                onChange={(event) => setGoalDraft((prev) => ({ ...prev, priority: event.target.value as GoalPriority }))}
                 className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
               >
                 {GOAL_PRIORITIES.map((priority) => (
@@ -444,7 +427,7 @@ const Goals: React.FC = () => {
               <span className="font-medium text-slate-700">Category</span>
               <select
                 value={dreamDraft.category}
-                onChange={(event) => setDreamDraft((prev) => ({ ...prev, category: event.target.value as Dream['category'] }))}
+                onChange={(event) => setDreamDraft((prev) => ({ ...prev, category: event.target.value as DreamCategory }))}
                 className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
               >
                 {DREAM_CATEGORIES.map((category) => (
@@ -465,7 +448,7 @@ const Goals: React.FC = () => {
               <span className="font-medium text-slate-700">Priority</span>
               <select
                 value={dreamDraft.priority}
-                onChange={(event) => setDreamDraft((prev) => ({ ...prev, priority: event.target.value as Dream['priority'] }))}
+                onChange={(event) => setDreamDraft((prev) => ({ ...prev, priority: event.target.value as DreamPriority }))}
                 className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
               >
                 {DREAM_PRIORITIES.map((priority) => (
@@ -477,7 +460,7 @@ const Goals: React.FC = () => {
               <span className="font-medium text-slate-700">Status</span>
               <select
                 value={dreamDraft.status}
-                onChange={(event) => setDreamDraft((prev) => ({ ...prev, status: event.target.value as Dream['status'] }))}
+                onChange={(event) => setDreamDraft((prev) => ({ ...prev, status: event.target.value as DreamStatus }))}
                 className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
               >
                 {DREAM_STATUSES.map((status) => (

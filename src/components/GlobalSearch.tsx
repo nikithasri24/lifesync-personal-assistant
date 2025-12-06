@@ -1,7 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Search, X, FileText, Target, CheckSquare, BookOpen, Heart } from 'lucide-react';
 import { useAppStore } from '../stores/useAppStore';
 import { format } from 'date-fns';
+import { useHabits } from '../hooks/useHabitsQuery';
+import { useTasks } from '../hooks/useTasksQuery';
+import { useNotes } from '../hooks/useNotesQuery';
+import { useJournalEntries } from '../hooks/useJournalQuery';
+import { useRecipesQuery } from '../mealPlanning/hooks/useMealPlanningQuery';
+import { useActiveShoppingList, useShoppingItems } from '../hooks/useShoppingQuery';
+import type { HabitData, ShoppingItemData, ShoppingListData } from '../services/types';
+import type { TodoItem, Note, JournalEntry, Recipe, Ingredient } from '../types';
 
 interface SearchResult {
   id: string;
@@ -18,18 +26,28 @@ interface GlobalSearchProps {
   onClose: () => void;
 }
 
-export default function GlobalSearch({ onClose }: GlobalSearchProps) {
+export default function GlobalSearch({ onClose }: GlobalSearchProps): JSX.Element {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
-  const { 
-    habits, 
-    todos, 
-    notes, 
-    journalEntries, 
-    recipes, 
-    shoppingItems,
-    setActiveView 
-  } = useAppStore();
+  const { setActiveView } = useAppStore();
+
+  // Use React Query hooks for data
+  const { data: habitsData } = useHabits();
+  const { data: todosData } = useTasks();
+  const { data: notesData } = useNotes();
+  const { data: journalData } = useJournalEntries();
+  const { data: recipesData } = useRecipesQuery();
+  const { activeList } = useActiveShoppingList();
+  const activeListId: string | null = (activeList as ShoppingListData)?.id ?? null;
+  const { data: shoppingData } = useShoppingItems(activeListId);
+
+  // Extract data with proper typing and default values using useMemo
+  const habits: HabitData[] = useMemo(() => habitsData ?? [], [habitsData]);
+  const todos: TodoItem[] = useMemo(() => todosData ?? [], [todosData]);
+  const notes: Note[] = useMemo(() => notesData ?? [], [notesData]);
+  const journalEntries: JournalEntry[] = useMemo(() => journalData ?? [], [journalData]);
+  const recipes: Recipe[] = useMemo(() => recipesData ?? [], [recipesData]);
+  const shoppingItems: ShoppingItemData[] = useMemo(() => shoppingData ?? [], [shoppingData]);
 
   useEffect(() => {
     if (query.length < 2) {
@@ -41,20 +59,26 @@ export default function GlobalSearch({ onClose }: GlobalSearchProps) {
     const lowercaseQuery = query.toLowerCase();
 
     // Search habits
-    habits.forEach(habit => {
+    habits.forEach((habit: HabitData): void => {
+      const habitId = habit.id ?? '';
+      const habitName = habit.name ?? '';
+      const habitDescription = habit.description ?? '';
+      const habitCategory = habit.category ?? '';
+      const habitCreatedAt = habit.created_at ? new Date(habit.created_at) : undefined;
+
       if (
-        habit.name.toLowerCase().includes(lowercaseQuery) ||
-        habit.description?.toLowerCase().includes(lowercaseQuery)
+        habitName.toLowerCase().includes(lowercaseQuery) ||
+        habitDescription.toLowerCase().includes(lowercaseQuery)
       ) {
         searchResults.push({
-          id: habit.id,
+          id: habitId,
           type: 'habit',
-          title: habit.name,
-          content: habit.description || '',
-          category: habit.categoryId,
-          date: habit.createdAt,
+          title: habitName,
+          content: habitDescription,
+          category: habitCategory,
+          date: habitCreatedAt,
           icon: Target,
-          onClick: () => {
+          onClick: (): void => {
             setActiveView('habits');
             onClose();
           }
@@ -63,21 +87,21 @@ export default function GlobalSearch({ onClose }: GlobalSearchProps) {
     });
 
     // Search todos
-    todos.forEach(todo => {
+    todos.forEach((todo: TodoItem): void => {
       if (
         todo.title.toLowerCase().includes(lowercaseQuery) ||
-        todo.description?.toLowerCase().includes(lowercaseQuery) ||
-        todo.tags.some(tag => tag.toLowerCase().includes(lowercaseQuery))
+        (todo.description ?? '').toLowerCase().includes(lowercaseQuery) ||
+        todo.tags.some((tag: string): boolean => tag.toLowerCase().includes(lowercaseQuery))
       ) {
         searchResults.push({
           id: todo.id,
           type: 'todo',
           title: todo.title,
-          content: todo.description || '',
+          content: todo.description ?? '',
           category: todo.priority,
           date: todo.createdAt,
           icon: CheckSquare,
-          onClick: () => {
+          onClick: (): void => {
             setActiveView('todos');
             onClose();
           }
@@ -86,11 +110,11 @@ export default function GlobalSearch({ onClose }: GlobalSearchProps) {
     });
 
     // Search notes
-    notes.forEach(note => {
+    notes.forEach((note: Note): void => {
       if (
         note.title.toLowerCase().includes(lowercaseQuery) ||
         note.content.toLowerCase().includes(lowercaseQuery) ||
-        note.tags.some(tag => tag.toLowerCase().includes(lowercaseQuery))
+        note.tags.some((tag: string): boolean => tag.toLowerCase().includes(lowercaseQuery))
       ) {
         searchResults.push({
           id: note.id,
@@ -100,7 +124,7 @@ export default function GlobalSearch({ onClose }: GlobalSearchProps) {
           category: note.tags[0],
           date: note.updatedAt,
           icon: FileText,
-          onClick: () => {
+          onClick: (): void => {
             setActiveView('notes');
             onClose();
           }
@@ -109,11 +133,11 @@ export default function GlobalSearch({ onClose }: GlobalSearchProps) {
     });
 
     // Search journal entries
-    journalEntries.forEach(entry => {
+    journalEntries.forEach((entry: JournalEntry): void => {
       if (
         entry.title.toLowerCase().includes(lowercaseQuery) ||
         entry.content.toLowerCase().includes(lowercaseQuery) ||
-        entry.tags.some(tag => tag.toLowerCase().includes(lowercaseQuery))
+        entry.tags.some((tag: string): boolean => tag.toLowerCase().includes(lowercaseQuery))
       ) {
         searchResults.push({
           id: entry.id,
@@ -123,7 +147,7 @@ export default function GlobalSearch({ onClose }: GlobalSearchProps) {
           category: entry.mood,
           date: entry.createdAt,
           icon: BookOpen,
-          onClick: () => {
+          onClick: (): void => {
             setActiveView('journal');
             onClose();
           }
@@ -132,21 +156,21 @@ export default function GlobalSearch({ onClose }: GlobalSearchProps) {
     });
 
     // Search recipes
-    recipes.forEach(recipe => {
+    recipes.forEach((recipe: Recipe): void => {
       if (
         recipe.name.toLowerCase().includes(lowercaseQuery) ||
-        recipe.description?.toLowerCase().includes(lowercaseQuery) ||
-        recipe.ingredients.some(ing => ing.name.toLowerCase().includes(lowercaseQuery))
+        (recipe.description ?? '').toLowerCase().includes(lowercaseQuery) ||
+        recipe.ingredients.some((ing: Ingredient): boolean => ing.name.toLowerCase().includes(lowercaseQuery))
       ) {
         searchResults.push({
           id: recipe.id,
           type: 'recipe',
           title: recipe.name,
-          content: recipe.description || `${recipe.ingredients.length} ingredients`,
+          content: recipe.description ?? `${recipe.ingredients.length} ingredients`,
           category: recipe.difficulty,
-          date: recipe.createdAt,
+          date: undefined, // Recipe type doesn't have createdAt in types
           icon: Heart,
-          onClick: () => {
+          onClick: (): void => {
             setActiveView('personal');
             onClose();
           }
@@ -155,17 +179,21 @@ export default function GlobalSearch({ onClose }: GlobalSearchProps) {
     });
 
     // Search shopping items
-    shoppingItems.forEach(item => {
-      if (item.name.toLowerCase().includes(lowercaseQuery)) {
+    shoppingItems.forEach((item: ShoppingItemData): void => {
+      const itemId = item.id ?? '';
+      const itemName = item.name;
+      const itemCreatedAt = item.created_at ? new Date(item.created_at) : undefined;
+
+      if (itemName.toLowerCase().includes(lowercaseQuery)) {
         searchResults.push({
-          id: item.id,
+          id: itemId,
           type: 'shopping',
-          title: item.name,
+          title: itemName,
           content: item.quantity ? `${item.quantity} ${item.unit ?? ''}`.trim() : item.unit ?? '',
           category: item.category,
-          date: item.createdAt,
+          date: itemCreatedAt,
           icon: Heart,
-          onClick: () => {
+          onClick: (): void => {
             setActiveView('personal');
             onClose();
           }
@@ -174,21 +202,21 @@ export default function GlobalSearch({ onClose }: GlobalSearchProps) {
     });
 
     // Sort by relevance and date
-    searchResults.sort((a, b) => {
+    searchResults.sort((a, b): number => {
       const aRelevance = a.title.toLowerCase().indexOf(lowercaseQuery);
       const bRelevance = b.title.toLowerCase().indexOf(lowercaseQuery);
-      
+
       if (aRelevance !== bRelevance) {
         return aRelevance - bRelevance;
       }
-      
-      return new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime();
+
+      return new Date(b.date ?? 0).getTime() - new Date(a.date ?? 0).getTime();
     });
 
     setResults(searchResults.slice(0, 20)); // Limit to 20 results
   }, [query, habits, todos, notes, journalEntries, recipes, shoppingItems, setActiveView, onClose]);
 
-  const getTypeLabel = (type: string) => {
+  const getTypeLabel = (type: string): string => {
     const labels = {
       habit: 'Habit',
       todo: 'Task',
@@ -197,10 +225,10 @@ export default function GlobalSearch({ onClose }: GlobalSearchProps) {
       recipe: 'Recipe',
       shopping: 'Shopping'
     };
-    return labels[type as keyof typeof labels] || type;
+    return labels[type as keyof typeof labels] ?? type;
   };
 
-  const getCategoryColor = (type: string, category?: string) => {
+  const getCategoryColor = (type: string, category?: string): string => {
     if (type === 'todo') {
       const colors = {
         low: 'bg-gray-100 text-gray-800',
@@ -208,7 +236,7 @@ export default function GlobalSearch({ onClose }: GlobalSearchProps) {
         high: 'bg-orange-100 text-orange-800',
         urgent: 'bg-red-100 text-red-800'
       };
-      return colors[category as keyof typeof colors] || 'bg-gray-100 text-gray-800';
+      return colors[category as keyof typeof colors] ?? 'bg-gray-100 text-gray-800';
     }
     return 'bg-blue-100 text-blue-800';
   };

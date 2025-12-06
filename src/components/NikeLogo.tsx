@@ -3,7 +3,7 @@ interface NikeLogoProps {
   className?: string;
 }
 
-export default function NikeLogo({ collapsed = false, className = '' }: NikeLogoProps) {
+export default function NikeLogo({ collapsed = false, className = '' }: NikeLogoProps): JSX.Element {
   if (collapsed) {
     return (
       <div className={`flex items-center justify-center ${className}`}>

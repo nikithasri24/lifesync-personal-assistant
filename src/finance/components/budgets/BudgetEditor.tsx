@@ -5,7 +5,9 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { X, Save, AlertCircle, DollarSign, TrendingUp, Lightbulb } from 'lucide-react';
+import { logger } from '../../../services/logger';
+
+import { X, Save, AlertCircle, DollarSign, Lightbulb } from 'lucide-react';
 import { formatCurrency } from '../../utils/currency';
 import type { Budget, Category } from '../../types';
 import type { BudgetRecommendation } from '../../utils/budgetRecommendations';
@@ -37,36 +39,40 @@ const BudgetEditor: React.FC<BudgetEditorProps> = ({
   onCategoryChange,
   initialCategoryId,
 }) => {
-  const [categoryId, setCategoryId] = useState(existingBudget?.categoryId || initialCategoryId || '');
-  const [limit, setLimit] = useState(existingBudget?.limit?.toString() || '');
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
+  const [categoryId, setCategoryId] = useState<string>(
+    existingBudget?.categoryId ?? initialCategoryId ?? ''
+  );
+  const [limit, setLimit] = useState<string>(
+    existingBudget?.limit?.toString() ?? ''
+  );
+  const [saving, setSaving] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
 
-  const isEditing = !!existingBudget;
+  const isEditing = Boolean(existingBudget);
 
   // Reset form when modal opens/closes or budget changes
   useEffect(() => {
     if (isOpen) {
-      console.log('[BudgetEditor] Modal opened with:', {
+      logger.info('BudgetEditor', '[BudgetEditor] Modal opened with:', {
         existingBudget,
         recommendation,
         categoriesCount: categories.length,
         initialCategoryId,
       });
 
-      const selectedCategory = existingBudget?.categoryId || initialCategoryId || '';
-      console.log('[BudgetEditor] Setting category to:', selectedCategory);
+      const selectedCategory = existingBudget?.categoryId ?? initialCategoryId ?? '';
+      logger.info('BudgetEditor', '[BudgetEditor] Setting category to:', selectedCategory);
       setCategoryId(selectedCategory);
 
       // Pre-fill with recommendation for new budgets, or existing limit for edits
       if (existingBudget) {
-        console.log('[BudgetEditor] Editing existing budget, setting limit to:', existingBudget.limit);
-        setLimit(existingBudget.limit?.toString() || '');
+        logger.info('BudgetEditor', '[BudgetEditor] Editing existing budget, setting limit to:', existingBudget.limit);
+        setLimit(existingBudget.limit?.toString() ?? '');
       } else if (recommendation?.suggested) {
-        console.log('[BudgetEditor] Pre-filling with recommendation:', recommendation.suggested);
+        logger.info('BudgetEditor', '[BudgetEditor] Pre-filling with recommendation:', recommendation.suggested);
         setLimit(recommendation.suggested.toString());
       } else {
-        console.log('[BudgetEditor] No recommendation available, leaving limit empty');
+        logger.info('BudgetEditor', '[BudgetEditor] No recommendation available, leaving limit empty');
         setLimit('');
       }
 
@@ -77,7 +83,7 @@ const BudgetEditor: React.FC<BudgetEditorProps> = ({
   // Don't render if not open
   if (!isOpen) return null;
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     setError('');
 
@@ -101,23 +107,23 @@ const BudgetEditor: React.FC<BudgetEditorProps> = ({
         limit: limitNum,
       });
       onClose();
-    } catch (err) {
+    } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to save budget');
     } finally {
       setSaving(false);
     }
   };
 
-  const handleBackdropClick = (e: React.MouseEvent) => {
+  const handleBackdropClick = (e: React.MouseEvent): void => {
     if (e.target === e.currentTarget) {
       onClose();
     }
   };
 
-  const selectedCategory = categories.find((c) => c.id === categoryId);
+  const _selectedCategory = categories.find((c) => c.id === categoryId);
 
   // Format month display
-  const monthDisplay = new Date(month + '-01').toLocaleDateString('en-US', {
+  const monthDisplay = new Date(`${month}-01`).toLocaleDateString('en-US', {
     month: 'long',
     year: 'numeric',
   });
@@ -146,7 +152,7 @@ const BudgetEditor: React.FC<BudgetEditorProps> = ({
         </div>
 
         {/* Form - Scrollable */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto min-h-0 px-6 py-5 space-y-5">
+        <form onSubmit={(e) => { void handleSubmit(e); }} className="flex-1 overflow-y-auto min-h-0 px-6 py-5 space-y-5">
           {/* Category Selector */}
           <div>
             <label htmlFor="category" className="block text-sm font-medium text-slate-700 mb-2">
@@ -157,10 +163,10 @@ const BudgetEditor: React.FC<BudgetEditorProps> = ({
               value={categoryId}
               onChange={(e) => {
                 const newCategoryId = e.target.value;
-                console.log('[BudgetEditor] Category changed to:', newCategoryId);
+                logger.info('BudgetEditor', '[BudgetEditor] Category changed to:', newCategoryId);
                 setCategoryId(newCategoryId);
                 if (onCategoryChange) {
-                  console.log('[BudgetEditor] Calling onCategoryChange callback');
+                  logger.info('BudgetEditor', '[BudgetEditor] Calling onCategoryChange callback');
                   onCategoryChange(newCategoryId);
                 }
               }}

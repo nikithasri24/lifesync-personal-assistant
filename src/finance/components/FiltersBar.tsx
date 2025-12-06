@@ -3,6 +3,7 @@ import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Button } from '../ui/Button';
 import useFinanceFilters from '../store/useFinanceFilters';
+import type { TxnType } from '../types';
 
 export const FiltersBar: React.FC<{ onApply?: () => void; onReset?: () => void }> = ({ onApply, onReset }) => {
   const {
@@ -30,7 +31,7 @@ export const FiltersBar: React.FC<{ onApply?: () => void; onReset?: () => void }
       <div>
         <Select
           value={type ?? ''}
-          onChange={(e) => setType((e.target.value || undefined) as any)}
+          onChange={(e) => setType((e.target.value || undefined) as TxnType | undefined)}
           label="Type"
         >
           <option value="">All</option>

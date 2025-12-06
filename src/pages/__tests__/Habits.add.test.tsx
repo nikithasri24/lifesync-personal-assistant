@@ -1,36 +1,79 @@
-import { render, screen, fireEvent } from '@testing-library/react'
-import { describe, it, expect, vi } from 'vitest'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import React from 'react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
-const addHabitMock = vi.fn()
+const createHabitMock = vi.fn()
 
-vi.mock('../../stores/useAppStore', () => ({
-  useAppStore: () => ({
-    habitCategories: [{ id: 'general', name: 'General' }],
-    habits: [],
-    addHabit: addHabitMock,
-    deleteHabit: vi.fn(),
-    completeHabit: vi.fn(),
-    updateHabit: vi.fn(),
-    resetHabitToday: vi.fn(),
-    resetHabitHistory: vi.fn(),
-  })
+vi.mock('../../hooks/useHabitsQuery', () => ({
+  useHabits: () => ({
+    data: [],
+    isLoading: false,
+    error: null,
+  }),
+  useHabitEntries: () => ({
+    data: [],
+    isLoading: false,
+    error: null,
+  }),
+  useCreateHabit: () => ({
+    mutate: createHabitMock,
+    isPending: false,
+  }),
+  useUpdateHabit: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+  useDeleteHabit: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+  useCreateHabitEntry: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+  useDeleteHabitEntriesForDate: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+  useDeleteAllHabitEntries: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
 }))
 
 describe('Habits Add', () => {
+  beforeEach(() => {
+    createHabitMock.mockClear()
+  })
+
   it('adds a habit via the form', async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+      },
+    })
+
     const mod = await import('../Habits')
     const Habits = mod.default
-    render(<Habits />)
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <Habits />
+      </QueryClientProvider>
+    )
 
     const name = screen.getByPlaceholderText('Morning stretch') as HTMLInputElement
     fireEvent.change(name, { target: { value: 'Pushups' } })
     fireEvent.submit(name.closest('form')!)
 
-    expect(addHabitMock).toHaveBeenCalled()
-    const args = addHabitMock.mock.calls[0][0]
+    await waitFor(() => {
+      expect(createHabitMock).toHaveBeenCalled()
+    })
+
+    const args = createHabitMock.mock.calls[0][0]
     expect(args.name).toBe('Pushups')
-    expect(args.targetCount).toBe(1)
+    expect(args.target_count).toBe(1)
   })
 })
 

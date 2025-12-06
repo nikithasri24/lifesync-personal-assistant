@@ -288,7 +288,7 @@ export interface FocusEvent {
   sessionId?: string;
   userId: string;
   timestamp: Date;
-  data: Record<string, any>;
+  data: Record<string, string | number | boolean | Date>;
 }
 
 // Hook return types

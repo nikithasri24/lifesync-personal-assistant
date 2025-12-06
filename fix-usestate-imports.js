@@ -1,9 +1,16 @@
+const logger = {
+  debug: (domain, msg, ctx) => console.log(`[${domain}] ${msg}`, ctx || ''),
+  info: (domain, msg, ctx) => console.log(`[${domain}] ${msg}`, ctx || ''),
+  warn: (domain, msg, ctx) => console.warn(`[${domain}] ${msg}`, ctx || ''),
+  error: (domain, err, ctx) => console.error(`[${domain}]`, err, ctx || ''),
+};
+
 #!/usr/bin/env node
 
 import { readFileSync, writeFileSync } from 'fs';
 import { glob } from 'glob';
 
-console.log('🔧 Starting useState import fixes...');
+logger.info('FixUsestateImports', '🔧 Starting useState import fixes...');
 
 // Get all TypeScript hook files
 const files = glob.sync('src/hooks/*.{ts,tsx}', { 
@@ -56,16 +63,16 @@ files.forEach(filePath => {
 
     if (changes > 0) {
       writeFileSync(filePath, newContent);
-      console.log(`✅ Fixed useState import in ${filePath.split('/').pop()}`);
+      logger.info('FixUsestateImports', `✅ Fixed useState import in ${filePath.split('/').pop()}`);
       fixedFiles++;
       totalChanges += changes;
     }
 
   } catch (error) {
-    console.error(`❌ Error processing ${filePath}:`, error.message);
+    logger.error('FixUsestateImports', `❌ Error processing ${filePath}:`, error.message);
   }
 });
 
-console.log(`\n🎉 useState import fixes complete!`);
-console.log(`📁 Fixed ${fixedFiles} files`);
-console.log(`🔧 Made ${totalChanges} total changes`);
+logger.info('FixUsestateImports', `\n🎉 useState import fixes complete!`);
+logger.info('FixUsestateImports', `📁 Fixed ${fixedFiles} files`);
+logger.info('FixUsestateImports', `🔧 Made ${totalChanges} total changes`);

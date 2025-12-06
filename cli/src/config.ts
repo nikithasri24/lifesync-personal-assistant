@@ -1,7 +1,7 @@
 import fs from 'fs-extra';
 import path from 'path';
 import os from 'os';
-import { CliConfig } from './types.js';
+import { type CliConfig } from './types.js';
 
 const CONFIG_DIR = path.join(os.homedir(), '.lifesync');
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');
@@ -25,7 +25,7 @@ export async function ensureConfigExists(): Promise<void> {
       await fs.writeJson(CONFIG_FILE, DEFAULT_CONFIG, { spaces: 2 });
     }
   } catch (error) {
-    console.error('Error creating config:', error);
+    logger.error('Config', 'Error creating config:', error);
   }
 }
 
@@ -35,7 +35,7 @@ export async function loadConfig(): Promise<CliConfig> {
     const config = await fs.readJson(CONFIG_FILE);
     return { ...DEFAULT_CONFIG, ...config };
   } catch (error) {
-    console.error('Error loading config:', error);
+    logger.error('Config', 'Error loading config:', error);
     return DEFAULT_CONFIG;
   }
 }
@@ -45,7 +45,7 @@ export async function saveConfig(config: CliConfig): Promise<void> {
     await ensureConfigExists();
     await fs.writeJson(CONFIG_FILE, config, { spaces: 2 });
   } catch (error) {
-    console.error('Error saving config:', error);
+    logger.error('Config', 'Error saving config:', error);
   }
 }
 

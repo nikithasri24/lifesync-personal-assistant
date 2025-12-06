@@ -37,11 +37,11 @@ function parseAmount(text: string): number | null {
 }
 
 function parseCategory(text: string): string | undefined {
-  const m = text.match(/on ([a-zA-Z ]+)$/) || text.match(/for ([a-zA-Z ]+)$/)
+  const m = text.match(/on ([a-zA-Z ]+)$/) ?? text.match(/for ([a-zA-Z ]+)$/)
   return m ? m[1].trim().toLowerCase() : undefined
 }
 
-function normalize(s: string) { return s.toLowerCase().trim() }
+function normalize(s: string): string { return s.toLowerCase().trim() }
 
 async function resolveCategoryIdByName(name: string): Promise<{ id?: string; name?: string }> {
   const api = await getFinanceAPI()
@@ -110,19 +110,19 @@ function parseDateFromText(text: string): Date | undefined {
   return undefined
 }
 
-function isSameUTCDate(a: Date, b: Date) {
+function isSameUTCDate(a: Date, b: Date): boolean {
   return a.getUTCFullYear() === b.getUTCFullYear() && a.getUTCMonth() === b.getUTCMonth() && a.getUTCDate() === b.getUTCDate()
 }
 
 function parseOrdinal(text: string): number | undefined {
   const t = text.toLowerCase()
-  const m1 = t.match(/(?:last\s+)?(\d+)(?:st|nd|rd|th)?\s+last/) || t.match(/last\s+(\d+)(?:st|nd|rd|th)?/)
+  const m1 = t.match(/(?:last\s+)?(\d+)(?:st|nd|rd|th)?\s+last/) ?? t.match(/last\s+(\d+)(?:st|nd|rd|th)?/)
   if (m1) {
     const n = parseInt(m1[1], 10)
     if (Number.isFinite(n) && n > 0) return n
   }
   const words: Record<string, number> = { first: 1, second: 2, third: 3, fourth: 4, fifth: 5 }
-  const m2 = t.match(/(first|second|third|fourth|fifth)\s+last/) || t.match(/last\s+(first|second|third|fourth|fifth)/)
+  const m2 = t.match(/(first|second|third|fourth|fifth)\s+last/) ?? t.match(/last\s+(first|second|third|fourth|fifth)/)
   if (m2) return words[m2[1]]
   if (/(previous|prev)\b/.test(t)) return 2
   if (/before that/.test(t)) return 3
@@ -130,7 +130,7 @@ function parseOrdinal(text: string): number | undefined {
   return undefined
 }
 
-async function resolveTargetTransaction(n: number | undefined, preferVoiceEntry: boolean, lastRefIndex?: number) {
+async function resolveTargetTransaction(n: number | undefined, preferVoiceEntry: boolean, lastRefIndex?: number): Promise<{ tx: { id: string; accountId: string; amount: number; categoryId?: string; dateISO: string; description: string; type: 'debit' | 'credit' }; index: number } | undefined> {
   const api = await getFinanceAPI()
   const { items } = await api.listTransactions({ limit: 100 })
   if (!items.length) return undefined
@@ -163,7 +163,7 @@ export async function handleUtterance(text: string, ctx?: IntentContext): Promis
   if (ctx?.pendingCategory) {
     const api = await getFinanceAPI(); const resolved = await resolveCategoryIdByName(t)
     if (resolved.id) {
-      const range = ctx.timeframe || (() => { const m = currentMonth(); const r = monthRange(m); return { fromISO: r.from, toISO: r.to } })()
+      const range = ctx.timeframe ?? (() => { const m = currentMonth(); const r = monthRange(m); return { fromISO: r.from, toISO: r.to } })()
       const { items } = await api.listTransactions({ fromISO: range.fromISO, toISO: range.toISO, limit: 1000 })
       const filtered = items.filter(i => i.type === 'debit' && i.categoryId === resolved.id)
       const total = filtered.reduce((s, i) => s + i.amount, 0)
@@ -174,7 +174,7 @@ export async function handleUtterance(text: string, ctx?: IntentContext): Promis
 
   if (ctx?.pendingRename) {
     const api = await getFinanceAPI(); const { items } = await api.listTransactions({ limit: 50 })
-    const found = items.find(i => i.id === ctx.pendingRename!.txnId) || items.find(i => /voice entry/i.test(i.description)) || items[0]
+    const found = items.find(i => i.id === ctx.pendingRename?.txnId) ?? items.find(i => /voice entry/i.test(i.description)) ?? items[0]
     if (!found) return { reply: 'I could not find a transaction to rename.', context: { ...ctx, pendingRename: undefined } }
     const newDesc = text.trim()
     await api.upsertTransaction({ id: found.id, accountId: found.accountId, amount: found.amount, categoryId: found.categoryId, dateISO: found.dateISO, description: newDesc, type: found.type })
@@ -189,7 +189,7 @@ export async function handleUtterance(text: string, ctx?: IntentContext): Promis
       return { reply: `I couldn't find that category.${sug} Please say the category again.`, context: { ...ctx } }
     }
     const { items } = await api.listTransactions({ limit: 50 })
-    const found = items.find(i => i.id === ctx.pendingAssignCategory!.txnId) || items.find(i => /voice entry/i.test(i.description)) || items[0]
+    const found = items.find(i => i.id === ctx.pendingAssignCategory?.txnId) ?? items.find(i => /voice entry/i.test(i.description)) ?? items[0]
     if (!found) return { reply: 'I could not find a transaction to categorize.', context: { ...ctx, pendingAssignCategory: undefined } }
     await api.upsertTransaction({ id: found.id, accountId: found.accountId, amount: found.amount, categoryId: resolved.id, dateISO: found.dateISO, description: found.description, type: found.type })
     return { reply: `Categorized the last transaction as ${resolved.name}.`, context: { ...ctx, pendingAssignCategory: undefined, lastCategoryId: resolved.id, lastCategoryName: resolved.name }, toast: { message: 'Transaction categorized', type: 'success' } }
@@ -197,7 +197,7 @@ export async function handleUtterance(text: string, ctx?: IntentContext): Promis
 
   if (ctx?.pendingSetAmount) {
     const api = await getFinanceAPI(); const { items } = await api.listTransactions({ limit: 50 })
-    const found = items.find(i => i.id === ctx.pendingSetAmount!.txnId) || items.find(i => /voice entry/i.test(i.description)) || items[0]
+    const found = items.find(i => i.id === ctx.pendingSetAmount?.txnId) ?? items.find(i => /voice entry/i.test(i.description)) ?? items[0]
     if (!found) return { reply: 'I could not find a transaction to update.', context: { ...ctx, pendingSetAmount: undefined } }
     const amt = parseAmount(text); if (amt == null) return { reply: 'Please say the amount again.', context: { ...ctx } }
     await api.upsertTransaction({ id: found.id, accountId: found.accountId, amount: Math.abs(amt), categoryId: found.categoryId, dateISO: found.dateISO, description: found.description, type: found.type })
@@ -206,7 +206,7 @@ export async function handleUtterance(text: string, ctx?: IntentContext): Promis
 
   if (ctx?.pendingMoveAccount) {
     const api = await getFinanceAPI(); const { items } = await api.listTransactions({ limit: 50 })
-    const found = items.find(i => i.id === ctx.pendingMoveAccount!.txnId) || items.find(i => /voice entry/i.test(i.description)) || items[0]
+    const found = items.find(i => i.id === ctx.pendingMoveAccount?.txnId) ?? items.find(i => /voice entry/i.test(i.description)) ?? items[0]
     if (!found) return { reply: 'I could not find a transaction to move.', context: { ...ctx, pendingMoveAccount: undefined } }
     const r = await resolveAccountIdByName(text); if (!r.id) return { reply: "I couldn't find that account. Please say the account name again.", context: { ...ctx } }
     await api.upsertTransaction({ id: found.id, accountId: r.id, amount: found.amount, categoryId: found.categoryId, dateISO: found.dateISO, description: found.description, type: found.type })
@@ -215,11 +215,11 @@ export async function handleUtterance(text: string, ctx?: IntentContext): Promis
 
   if (ctx?.pendingSetType) {
     const api = await getFinanceAPI(); const { items } = await api.listTransactions({ limit: 50 })
-    const found = items.find(i => i.id === ctx.pendingSetType!.txnId) || items.find(i => /voice entry/i.test(i.description)) || items[0]
+    const found = items.find(i => i.id === ctx.pendingSetType?.txnId) ?? items.find(i => /voice entry/i.test(i.description)) ?? items[0]
     if (!found) return { reply: 'I could not find a transaction to update.', context: { ...ctx, pendingSetType: undefined } }
     const isCredit = /(credit|income|incoming|refund)/.test(t); const isDebit = /(debit|expense|outgoing|charge|purchase)/.test(t)
     if (!isCredit && !isDebit) return { reply: 'Should I set it to debit or credit?', context: { ...ctx } }
-    const newType = (isCredit ? 'credit' : 'debit') as 'credit' | 'debit'
+    const newType = (isCredit ? 'credit' : 'debit')
     await api.upsertTransaction({ id: found.id, accountId: found.accountId, amount: found.amount, categoryId: found.categoryId, dateISO: found.dateISO, description: found.description, type: newType })
     return { reply: `Set the transaction type to ${newType}.`, context: { ...ctx, pendingSetType: undefined }, toast: { message: 'Transaction type updated', type: 'success' } }
   }
@@ -237,13 +237,15 @@ export async function handleUtterance(text: string, ctx?: IntentContext): Promis
     try {
       const plans = await apiClient.getMealPlans().catch(() => [])
       const today = new Date()
-      const todayISO = today.toISOString().slice(0,10)
+      const _todayISO = today.toISOString().slice(0,10)
       const todays = JSON.stringify(plans) // quick-and-dirty scan; structure varies by backend
-      const mentioned = /breakfast\W+([^\n\"]{3,40})/i.exec(todays)
-      if (mentioned && mentioned[1]) {
+      const mentioned = /breakfast\W+([^\n"]{3,40})/i.exec(todays)
+      if (mentioned?.[1]) {
         return { reply: `On your meal plan, breakfast includes ${mentioned[1].replace(/\s{2,}/g,' ')}` }
       }
-    } catch {}
+    } catch {
+      // Intentionally empty - fallback to default message
+    }
     // fallback
     return { reply: 'I do not see a set breakfast on the plan today. Want me to suggest something based on your pantry?' }
   }
@@ -251,9 +253,9 @@ export async function handleUtterance(text: string, ctx?: IntentContext): Promis
   // Suggest simple recipe based on pantry
   if (/suggest.*(simple|quick).*(breakfast|meal|something).*pantry/.test(t) || /lazy.*cook|without.*prep/.test(t)) {
     try {
-      const pantry = await apiClient.getPantryItems().catch(() => []) as any[]
-      const names = new Set<string>((pantry || []).map(p => String(p.name || '').toLowerCase()))
-      const has = (s: string) => Array.from(names).some(n => n.includes(s))
+      const pantry = await apiClient.getPantryItems().catch(() => []) as Array<{ name?: string | number }>
+      const names = new Set<string>((pantry ?? []).map(p => (typeof p.name === 'string' || typeof p.name === 'number' ? String(p.name) : '').toLowerCase()))
+      const has = (s: string): boolean => Array.from(names).some(n => n.includes(s))
       const options: string[] = []
       if (has('egg') && has('bread')) options.push('Egg toast')
       if (has('egg')) options.push('Scrambled eggs')
@@ -266,11 +268,11 @@ export async function handleUtterance(text: string, ctx?: IntentContext): Promis
         return { reply: `Here are some quick options: ${options.slice(0,3).join(', ')}.` }
       }
       // try recipes tagged quick/breakfast
-      const recipes = await apiClient.getRecipes().catch(() => []) as any[]
-      const quick = (recipes || []).filter(r =>
-        (Array.isArray(r.tags) && (r.tags.includes('quick') || r.tags.includes('breakfast'))) ||
+      const recipes = await apiClient.getRecipes().catch(() => []) as Array<{ tags?: unknown; prep_time?: unknown; name?: string | number }>
+      const quick = (recipes ?? []).filter(r =>
+        (Array.isArray(r.tags) && (r.tags.includes('quick') ?? r.tags.includes('breakfast'))) ??
         (typeof r.prep_time === 'number' && r.prep_time <= 10)
-      ).map(r => r.name).slice(0,3)
+      ).map(r => (typeof r.name === 'string' || typeof r.name === 'number' ? String(r.name) : '')).slice(0,3)
       if (quick.length) return { reply: `Quick ideas: ${quick.join(', ')}.` }
       return { reply: 'How about toast with butter, or yogurt with fruit? Both are quick with minimal prep.' }
     } catch {
@@ -299,15 +301,15 @@ export async function handleUtterance(text: string, ctx?: IntentContext): Promis
 
   // Spend by category
   if (/spend(ing)? on /.test(t)) {
-    const api = await getFinanceAPI(); const window = parseTimeWindow(t) || ctx?.timeframe
-    const catName = (t.match(/spend(?:ing)? on ([a-z ]+)/)?.[1] || ctx?.lastCategoryName || '').trim()
+    const api = await getFinanceAPI(); const window = parseTimeWindow(t) ?? ctx?.timeframe
+    const catName = (t.match(/spend(?:ing)? on ([a-z ]+)/)?.[1] ?? ctx?.lastCategoryName ?? '').trim()
     let catId = ctx?.lastCategoryId; let catResolvedName = ctx?.lastCategoryName
     if (catName) {
       const resolved = await resolveCategoryIdByName(catName)
       if (resolved.id) { catId = resolved.id; catResolvedName = resolved.name }
       else return { reply: 'Which category? Please say the category name.', context: { ...ctx, timeframe: window, pendingCategory: true } }
     }
-    const range = window || (() => { const m = currentMonth(); const r = monthRange(m); return { fromISO: r.from, toISO: r.to } })()
+    const range = window ?? (() => { const m = currentMonth(); const r = monthRange(m); return { fromISO: r.from, toISO: r.to } })()
     const { items } = await api.listTransactions({ fromISO: range.fromISO, toISO: range.toISO, limit: 1000 })
     const filtered = items.filter(i => i.type === 'debit' && (!catId || i.categoryId === catId))
     const total = filtered.reduce((s, i) => s + i.amount, 0)
@@ -318,8 +320,8 @@ export async function handleUtterance(text: string, ctx?: IntentContext): Promis
   // Rename last transaction
   if (/^(rename|update|change) (the )?(last )?(transaction|entry)/.test(t) || /^set description to /.test(t)) {
     const api = await getFinanceAPI(); const { items } = await api.listTransactions({ limit: 50 })
-    const found = items.find(i => /voice entry/i.test(i.description)) || items[0]; if (!found) return { reply: 'I could not find a recent transaction to rename.' }
-    const m = text.match(/to (.+)$/); if (m && m[1]) { const newDesc = m[1].trim(); await api.upsertTransaction({ id: found.id, accountId: found.accountId, amount: found.amount, categoryId: found.categoryId, dateISO: found.dateISO, description: newDesc, type: found.type }); return { reply: `Renamed the last transaction to "${newDesc}".`, toast: { message: 'Transaction renamed', type: 'success' } } }
+    const found = items.find(i => /voice entry/i.test(i.description)) ?? items[0]; if (!found) return { reply: 'I could not find a recent transaction to rename.' }
+    const m = text.match(/to (.+)$/); if (m?.[1]) { const newDesc = m[1].trim(); await api.upsertTransaction({ id: found.id, accountId: found.accountId, amount: found.amount, categoryId: found.categoryId, dateISO: found.dateISO, description: newDesc, type: found.type }); return { reply: `Renamed the last transaction to "${newDesc}".`, toast: { message: 'Transaction renamed', type: 'success' } } }
     return { reply: 'What should I rename it to?', context: { ...ctx, pendingRename: { txnId: found.id } } }
   }
 
@@ -327,12 +329,12 @@ export async function handleUtterance(text: string, ctx?: IntentContext): Promis
   if (/^(categorize|set category|tag) (the )?(last )?(transaction|entry)/.test(t)) {
     const api = await getFinanceAPI(); const { items } = await api.listTransactions({ limit: 50 })
     const date = parseDateFromText(t)
-    let found = items.find(i => /voice entry/i.test(i.description)) || items[0]; if (!found) return { reply: 'I could not find a recent transaction to categorize.' }
+    let found = items.find(i => /voice entry/i.test(i.description)) ?? items[0]; if (!found) return { reply: 'I could not find a recent transaction to categorize.' }
     if (date) {
       const same = items.find(i => isSameUTCDate(new Date(i.dateISO), date))
       if (same) found = same
     }
-    const m = text.match(/as ([a-zA-Z ]+)$/); if (m && m[1]) { const cname = m[1].trim(); const r = await resolveCategoryIdByName(cname); if (!r.id) {
+    const m = text.match(/as ([a-zA-Z ]+)$/); if (m?.[1]) { const cname = m[1].trim(); const r = await resolveCategoryIdByName(cname); if (!r.id) {
         // Suggest top 3 categories when not found
         const cats = await (await getFinanceAPI()).listCategories();
         const q = cname.toLowerCase();
@@ -348,7 +350,7 @@ export async function handleUtterance(text: string, ctx?: IntentContext): Promis
   if (/^(set|update|change) (the )?(last )?(transaction|entry)? ?amount/.test(t) || /set amount to /.test(t)) {
     const api = await getFinanceAPI(); const { items } = await api.listTransactions({ limit: 50 })
     const date = parseDateFromText(t)
-    let found = items.find(i => /voice entry/i.test(i.description)) || items[0]
+    let found = items.find(i => /voice entry/i.test(i.description)) ?? items[0]
     if (date) {
       const same = items.find(i => isSameUTCDate(new Date(i.dateISO), date))
       if (same) found = same
@@ -363,12 +365,12 @@ export async function handleUtterance(text: string, ctx?: IntentContext): Promis
   if (/^(move|transfer) (the )?(last )?(transaction|entry)/.test(t) || /move to account /.test(t)) {
     const api = await getFinanceAPI(); const { items } = await api.listTransactions({ limit: 50 })
     const date = parseDateFromText(t)
-    let found = items.find(i => /voice entry/i.test(i.description)) || items[0]; if (!found) return { reply: 'I could not find a recent transaction to move.' }
+    let found = items.find(i => /voice entry/i.test(i.description)) ?? items[0]; if (!found) return { reply: 'I could not find a recent transaction to move.' }
     if (date) {
       const same = items.find(i => isSameUTCDate(new Date(i.dateISO), date))
       if (same) found = same
     }
-    const m = text.match(/to (account )?(.+)$/); if (m && m[2]) { const r = await resolveAccountIdByName(m[2]); if (!r.id) return { reply: `I couldn't find that account. Please say the account again.`, context: { ...ctx, pendingMoveAccount: { txnId: found.id } } }; await api.upsertTransaction({ id: found.id, accountId: r.id, amount: found.amount, categoryId: found.categoryId, dateISO: found.dateISO, description: found.description, type: found.type }); return { reply: `Moved the transaction to ${r.name}.`, toast: { message: 'Transaction moved to account', type: 'success' } } }
+    const m = text.match(/to (account )?(.+)$/); if (m?.[2]) { const r = await resolveAccountIdByName(m[2]); if (!r.id) return { reply: `I couldn't find that account. Please say the account again.`, context: { ...ctx, pendingMoveAccount: { txnId: found.id } } }; await api.upsertTransaction({ id: found.id, accountId: r.id, amount: found.amount, categoryId: found.categoryId, dateISO: found.dateISO, description: found.description, type: found.type }); return { reply: `Moved the transaction to ${r.name}.`, toast: { message: 'Transaction moved to account', type: 'success' } } }
     return { reply: 'Which account should I move it to?', context: { ...ctx, pendingMoveAccount: { txnId: found.id } } }
   }
 
@@ -376,21 +378,21 @@ export async function handleUtterance(text: string, ctx?: IntentContext): Promis
   if (/^(set|make|change) (the )?(last )?(transaction|entry) (to )?(credit|debit|expense|income|refund|charge|purchase)/.test(t)) {
     const api = await getFinanceAPI(); const { items } = await api.listTransactions({ limit: 50 })
     const date = parseDateFromText(t)
-    let found = items.find(i => /voice entry/i.test(i.description)) || items[0]; if (!found) return { reply: 'I could not find a recent transaction to update.' }
+    let found = items.find(i => /voice entry/i.test(i.description)) ?? items[0]; if (!found) return { reply: 'I could not find a recent transaction to update.' }
     if (date) {
       const same = items.find(i => isSameUTCDate(new Date(i.dateISO), date))
       if (same) found = same
     }
     const isCredit = /(credit|income|refund)/.test(t); const isDebit = /(debit|expense|charge|purchase)/.test(t)
     if (!isCredit && !isDebit) return { reply: 'Should I set it to debit or credit?', context: { ...ctx, pendingSetType: { txnId: found.id } } }
-    const newType = (isCredit ? 'credit' : 'debit') as 'credit' | 'debit'
+    const newType = (isCredit ? 'credit' : 'debit')
     await api.upsertTransaction({ id: found.id, accountId: found.accountId, amount: found.amount, categoryId: found.categoryId, dateISO: found.dateISO, description: found.description, type: newType })
     return { reply: `Set the transaction type to ${newType}.`, toast: { message: 'Transaction type updated', type: 'success' } }
   }
 
   // Undo last transaction (confirm)
   if (/^(undo|revert|delete) (the )?(last )?(transaction|entry)/.test(t)) {
-    const api = await getFinanceAPI(); let snap = ctx?.lastTxnSnapshot
+    const api = await getFinanceAPI(); const snap = ctx?.lastTxnSnapshot
     if (!snap) { const { items } = await api.listTransactions({ limit: 50 }); const found = items.find(i => /voice entry/i.test(i.description)); if (found) return { reply: `Do you want me to delete the last voice transaction of ${formatCurrency(found.amount)}?`, context: { ...ctx, pendingDelete: { id: found.id, amount: found.amount } } } }
     if (!snap) return { reply: 'I could not find a recent voice transaction to undo.' }
     const inverseType = snap.type === 'debit' ? 'credit' : 'debit'

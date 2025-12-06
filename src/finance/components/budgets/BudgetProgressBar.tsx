@@ -24,7 +24,7 @@ export const getBudgetStatus = (percentage: number): BudgetStatus => {
   return 'safe';
 };
 
-export const getBudgetColor = (status: BudgetStatus): string => {
+const getBudgetColor = (status: BudgetStatus): string => {
   switch (status) {
     case 'over':
       return 'rose'; // Red

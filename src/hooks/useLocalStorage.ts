@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { logger } from '../services/logger';
 
 type SetValue<T> = T | ((val: T) => T);
 
@@ -10,9 +11,9 @@ export function useLocalStorage<T>(
   const [storedValue, setStoredValue] = useState<T>(() => {
     try {
       const item = window.localStorage.getItem(key);
-      return item ? JSON.parse(item) : initialValue;
+      return item ? (JSON.parse(item) as T) : initialValue;
     } catch (error) {
-      console.warn(`Error reading localStorage key "${key}":`, error);
+      logger.warn('LocalStorage', `Error reading localStorage key "${key}":`, { error });
       return initialValue;
     }
   });
@@ -26,7 +27,7 @@ export function useLocalStorage<T>(
         setStoredValue(valueToStore);
         window.localStorage.setItem(key, JSON.stringify(valueToStore));
       } catch (error) {
-        console.warn(`Error setting localStorage key "${key}":`, error);
+        logger.warn('LocalStorage', `Error setting localStorage key "${key}":`, { error });
       }
     },
     [key, storedValue]
@@ -38,18 +39,18 @@ export function useLocalStorage<T>(
       window.localStorage.removeItem(key);
       setStoredValue(initialValue);
     } catch (error) {
-      console.warn(`Error removing localStorage key "${key}":`, error);
+      logger.warn('LocalStorage', `Error removing localStorage key "${key}":`, { error });
     }
   }, [key, initialValue]);
 
   // Listen for changes to localStorage from other tabs/windows
   useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
+    const handleStorageChange = (e: StorageEvent): void => {
       if (e.key === key && e.newValue !== null) {
         try {
-          setStoredValue(JSON.parse(e.newValue));
+          setStoredValue(JSON.parse(e.newValue) as T);
         } catch (error) {
-          console.warn(`Error parsing localStorage value for key "${key}":`, error);
+          logger.warn('LocalStorage', `Error parsing localStorage value for key "${key}":`, { error });
         }
       }
     };
@@ -69,9 +70,9 @@ export function useSessionStorage<T>(
   const [storedValue, setStoredValue] = useState<T>(() => {
     try {
       const item = window.sessionStorage.getItem(key);
-      return item ? JSON.parse(item) : initialValue;
+      return item ? (JSON.parse(item) as T) : initialValue;
     } catch (error) {
-      console.warn(`Error reading sessionStorage key "${key}":`, error);
+      logger.warn('LocalStorage', `Error reading sessionStorage key "${key}":`, { error });
       return initialValue;
     }
   });
@@ -83,7 +84,7 @@ export function useSessionStorage<T>(
         setStoredValue(valueToStore);
         window.sessionStorage.setItem(key, JSON.stringify(valueToStore));
       } catch (error) {
-        console.warn(`Error setting sessionStorage key "${key}":`, error);
+        logger.warn('LocalStorage', `Error setting sessionStorage key "${key}":`, { error });
       }
     },
     [key, storedValue]
@@ -94,7 +95,7 @@ export function useSessionStorage<T>(
       window.sessionStorage.removeItem(key);
       setStoredValue(initialValue);
     } catch (error) {
-      console.warn(`Error removing sessionStorage key "${key}":`, error);
+      logger.warn('LocalStorage', `Error removing sessionStorage key "${key}":`, { error });
     }
   }, [key, initialValue]);
 

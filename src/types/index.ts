@@ -32,7 +32,7 @@ export interface TodoItem {
   status: TaskStatus
   priority: TaskPriority
   categoryId?: TaskCategory
-  category?: TaskCategory | string
+  category?: string
   projectId?: string
   parentId?: string
   tags: string[]
@@ -126,6 +126,7 @@ export interface Note {
   title: string;
   content: string;
   tags: string[];
+  category?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -148,6 +149,8 @@ export interface JournalEntry {
   tags: string[];
   attachments: Attachment[];
   createdAt: Date;
+  weather?: unknown;
+  gratitude?: string;
 }
 
 export interface Goal {
@@ -278,201 +281,67 @@ export interface PantryItem {
   updatedAt: Date;
 }
 
-export interface MoodEntry {
-  id: string;
-  mood: JournalMood;
-  energy: 'low' | 'medium' | 'high';
-  notes?: string;
-  createdAt: Date;
-}
-
 export interface UserStats {
   level: number;
   xp: number;
   xpToNextLevel: number;
   totalGoalsCompleted: number;
 }
+export * from './travel';
 
-// 75 Hard Challenge types
-export interface SeventyFiveHardRule {
-  id: string;
-  title: string;
-  description: string;
-  isRequired: boolean;
-  isCustom: boolean;
-  dailyTarget?: number; // e.g. 2 for twice-daily workout
-  segmentLabels?: string[]; // custom labels per segment
-}
+// ==================== Health & Period Tracking Types ====================
 
-export interface RuleCompletion {
-  ruleId: string;
-  completed: boolean;
-  completedAt?: Date;
-  segments?: boolean[]; // for multi-target rules; length = dailyTarget
-}
-
-export interface SeventyFiveHardEntry {
-  id: string;
-  challengeId: string;
-  date: Date;
-  day: number;
-  ruleCompletions: RuleCompletion[];
-  notes?: string;
-  progressPhotoUrl?: string;
-  weight?: number;
-  measurements: Record<string, number>;
-}
-
-/**
- * @deprecated Use the new SeventyFiveHardChallenge from './seventyFiveHard' instead
- * This is kept for backward compatibility with existing store data
- */
-export interface LegacySeventyFiveHardChallenge {
-  id: string;
-  name: string;
+export interface HealthKitSample {
   startDate: Date;
   endDate: Date;
-  isActive: boolean;
-  currentDay: number;
-  rules: SeventyFiveHardRule[];
-  dailyEntries: SeventyFiveHardEntry[];
-  notes?: string;
+  value: number;
+}
+
+export interface HealthKitFlowData {
+  samples: HealthKitSample[];
+}
+
+export interface HealthKitData {
+  menstrualFlow?: HealthKitFlowData;
+  symptoms?: { samples: unknown[] };
+  ovulation?: unknown;
+  basalBodyTemperature?: { samples: unknown[] };
+}
+
+export interface HealthSyncStatus {
+  lastSync: Date;
+  status: 'success' | 'error';
+  recordsImported: number;
+  errors: string[];
+}
+
+export interface PeriodCycle {
+  id: string;
+  startDate: Date;
+  endDate?: Date;
+  flow: 'light' | 'medium' | 'heavy';
+  symptoms: string[];
+  source: 'apple-health' | 'manual';
+  synced: boolean;
   createdAt: Date;
-  pausedAt?: Date;
-  resumedAt?: Date;
-  totalPauseDuration?: number; // in days
-  pauseCount?: number; // number of times paused
+  updatedAt: Date;
 }
 
-// Alias for backward compatibility - TODO: Remove after full migration
-export type SeventyFiveHardChallenge = LegacySeventyFiveHardChallenge;
-
-// ==================== Travel Types ====================
-
-export type TravelType = 'vacation' | 'business' | 'weekend' | 'adventure';
-
-export interface TravelItineraryItem {
-  id: string;
-  date: Date;
-  time?: string;
-  type?: 'flight' | 'hotel' | 'activity' | 'transport' | 'note';
-  title: string;
-  location?: string;
-  notes?: string;
+interface HealthKitMessageHandler {
+  postMessage: (message: unknown) => Promise<unknown>;
 }
 
-export interface TravelTrip {
-  id: string;
-  title: string;
-  destination: string;
-  country?: string;
-  startDate: Date;
-  endDate: Date;
-  type: TravelType;
-  status: 'planning' | 'ongoing' | 'completed' | 'cancelled';
-  budget?: number;
-  spent?: number;
-  notes?: string;
-  itinerary: TravelItineraryItem[];
-  creditCardTrip?: boolean;
-  rating?: number;
-  memories?: string[];
+interface WebKitMessageHandlers {
+  health?: HealthKitMessageHandler;
 }
 
-export interface CreditCardTrip {
-  id: string;
-  cardName: string;
-  description: string;
-  pointsEarned: number;
-  pointsUsed: number;
-  earnedDate: Date;
-  redeemedDate?: Date;
-  bonusCategory?: string;
+interface WebKit {
+  messageHandlers?: WebKitMessageHandlers;
 }
 
-export interface PTOEntry {
-  id: string;
-  startDate: Date;
-  endDate: Date;
-  days: number;
-  type: 'approved' | 'pending' | 'planned' | 'taken';
-  reason?: string;
-}
-
-export interface WorldProgress {
-  countries: { total: number; visited: number; list: string[] };
-  states: { total: number; visited: number; list: string[] };
-  continents: Record<string, number>;
-}
-
-export interface MoonPhase {
-  date: Date;
-  phase: 'new' | 'waxing-crescent' | 'first-quarter' | 'waxing-gibbous' | 'full' | 'waning-gibbous' | 'last-quarter' | 'waning-crescent';
-  illumination: number;
-  isNewMoon: boolean;
-  quality: 'excellent' | 'good' | 'fair' | 'poor';
-}
-
-export interface CalendarEvent {
-  id: string;
-  date: Date;
-  title: string;
-  type: 'trip' | 'pto' | 'event';
-}
-
-export interface TravelStats {
-  totalTrips: number;
-}
-
-export interface Country {
-  id: string;
-  code: string;
-  name: string;
-  continent: string;
-  visited: boolean;
-  visitDate?: string | Date;
-  rating?: number;
-  tripCount: number;
-  photos?: string[];
-  notes?: string;
-}
-
-export interface USState {
-  id: string;
-  code: string;
-  name: string;
-  capital?: string;
-  visited: boolean;
-  visitDate?: string | Date;
-  rating?: number;
-  tripCount: number;
-  nationalParks?: string[];
-  photos?: string[];
-  notes?: string;
-}
-
-export interface IndiaState {
-  id: string;
-  code: string;
-  name: string;
-  capital?: string;
-  visited: boolean;
-  visitDate?: string | Date;
-  rating?: number;
-  tripCount: number;
-  photos?: string[];
-  notes?: string;
-}
-
-// Travel-focused National Park type (distinct from components map type)
-export interface NationalPark {
-  id: string;
-  name: string;
-  state: string;
-  coordinates?: { lat: number; lng: number };
-  visited?: boolean;
-  rating?: number;
-  visitDate?: string | Date;
-  photos?: string[];
-  notes?: string;
+declare global {
+  interface Window {
+    webkit?: WebKit;
+    HealthKit?: unknown;
+  }
 }

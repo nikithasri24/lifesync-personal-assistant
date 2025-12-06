@@ -14,8 +14,8 @@ vi.mock('inquirer', () => ({ default: { prompt: vi.fn().mockResolvedValue({ stat
 vi.mock('ora', () => ({ default: () => ({ start: () => ({ succeed: vi.fn(), fail: vi.fn(), info: vi.fn() }) }) }))
 vi.mock('chalk', () => ({
   default: (() => {
-    const color = (s: any) => String(s)
-    const boldFn = Object.assign((s: any) => String(s), { blue: color, red: color })
+    const color = (s: any): string => String(s)
+    const boldFn = Object.assign((s: any): string => String(s), { blue: color, red: color })
     return { green: color, gray: color, cyan: color, white: color, red: color, blue: color, magenta: color, yellow: color, bold: boldFn }
   })()
 }))
@@ -33,7 +33,7 @@ describe('cli tasks status & today', () => {
     expect(dm.updateTodoItem).toHaveBeenCalled()
     const [idArg, updates] = dm.updateTodoItem.mock.calls[0]
     expect(idArg).toBe('t1')
-    expect((updates as any).status).toBeDefined()
+    expect((updates).status).toBeDefined()
   })
 
   it("prints today's overview", async () => {

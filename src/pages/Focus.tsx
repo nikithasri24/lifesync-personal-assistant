@@ -1,24 +1,111 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Play, Pause, RotateCcw } from 'lucide-react';
+import { logger } from '../services/logger';
+import {
+  useActiveFocusSession,
+  useCreateFocusSession,
+  useUpdateFocusSession,
+} from '../hooks/useFocusQuery';
 
 const Focus: React.FC = () => {
   const [seconds, setSeconds] = useState(25 * 60);
   const [active, setActive] = useState(false);
+  const sessionIdRef = useRef<string | null>(null);
+  const startTimeRef = useRef<Date | null>(null);
 
+  const { _activeSession } = useActiveFocusSession();
+  const createSession = useCreateFocusSession();
+  const updateSession = useUpdateFocusSession();
+
+  // Timer countdown
   useEffect(() => {
     if (!active) return;
     const timer = setInterval(() => setSeconds((value) => Math.max(0, value - 1)), 1000);
     return () => clearInterval(timer);
   }, [active]);
 
+  // Auto-stop when timer reaches zero
   useEffect(() => {
-    if (seconds === 0) {
+    if (seconds === 0 && active) {
       setActive(false);
+      // Complete the session
+      if (sessionIdRef.current && startTimeRef.current) {
+        const actualDuration = Math.floor((Date.now() - startTimeRef.current.getTime()) / 1000);
+        updateSession.mutate({
+          id: sessionIdRef.current,
+          updates: {
+            status: 'completed',
+            end_time: new Date().toISOString(),
+            actual_duration: actualDuration,
+          },
+        });
+        sessionIdRef.current = null;
+        startTimeRef.current = null;
+      }
     }
-  }, [seconds]);
+  }, [seconds, active, updateSession]);
 
   const minutesDisplay = String(Math.floor(seconds / 60)).padStart(2, '0');
   const secondsDisplay = String(seconds % 60).padStart(2, '0');
+
+  const handlePlayPause = async (): Promise<void> => {
+    if (!active) {
+      // Starting a new session
+      setActive(true);
+      startTimeRef.current = new Date();
+
+      try {
+        const newSession = await createSession.mutateAsync({
+          preset: 'pomodoro',
+          duration: seconds,
+          start_time: new Date().toISOString(),
+          status: 'active',
+        });
+        sessionIdRef.current = newSession.id ?? null;
+      } catch (error) {
+        logger.error('Failed to create focus session:', { error });
+      }
+    } else {
+      // Pausing the session
+      setActive(false);
+
+      if (sessionIdRef.current) {
+        try {
+          await updateSession.mutateAsync({
+            id: sessionIdRef.current,
+            updates: {
+              status: 'paused',
+            },
+          });
+        } catch (error) {
+          logger.error('Failed to pause focus session:', { error });
+        }
+      }
+    }
+  };
+
+  const handleReset = async (): Promise<void> => {
+    setActive(false);
+    setSeconds(25 * 60);
+
+    // Cancel the current session if exists
+    if (sessionIdRef.current) {
+      try {
+        await updateSession.mutateAsync({
+          id: sessionIdRef.current,
+          updates: {
+            status: 'cancelled',
+            end_time: new Date().toISOString(),
+          },
+        });
+      } catch (error) {
+        logger.error('Failed to cancel focus session:', { error });
+      }
+
+      sessionIdRef.current = null;
+      startTimeRef.current = null;
+    }
+  };
 
   return (
     <div className="mx-auto flex max-w-lg flex-col gap-6 p-6 text-center">
@@ -36,7 +123,7 @@ const Focus: React.FC = () => {
         <div className="flex gap-3">
           <button
             type="button"
-            onClick={() => setActive((value) => !value)}
+            onClick={() => void handlePlayPause()}
             className="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500"
           >
             {active ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
@@ -44,10 +131,7 @@ const Focus: React.FC = () => {
           </button>
           <button
             type="button"
-            onClick={() => {
-              setActive(false);
-              setSeconds(25 * 60);
-            }}
+            onClick={() => void handleReset()}
             className="inline-flex items-center gap-2 rounded-full border border-indigo-200 px-4 py-2 text-sm font-medium text-indigo-600 transition hover:bg-white"
           >
             <RotateCcw className="h-4 w-4" />

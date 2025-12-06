@@ -29,7 +29,7 @@ const saved = (() => {
   }
 })();
 
-const useFinanceFilters = create<State & Actions>((set, get) => ({
+const useFinanceFilters = create<State & Actions>((set, _get) => ({
   text: saved.text,
   fromISO: saved.fromISO,
   toISO: saved.toISO,
@@ -47,7 +47,9 @@ useFinanceFilters.subscribe((state) => {
   try {
     const { text, fromISO, toISO, type, month } = state;
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ text, fromISO, toISO, type, month }));
-  } catch {}
+  } catch {
+    // Ignore localStorage errors
+  }
 });
 
 export default useFinanceFilters;

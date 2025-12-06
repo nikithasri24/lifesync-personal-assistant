@@ -232,5 +232,130 @@ export type CardOfferInput = Omit<CardOffer, 'id' | 'createdAt'> & {
   id?: string;
 };
 
+export type RewardsHistory = {
+  id: string;
+  accountId: string;
+  dateISO: string; // ISO date
+  pointsEarned: number;
+  pointsRedeemed: number;
+  balance: number;
+  description?: string;
+  transactionId?: string;
+  category?: string;
+  createdAt: string;
+};
+
+export type RewardsHistoryInput = Omit<RewardsHistory, 'id' | 'createdAt'> & {
+  id?: string;
+};
+
 export type TransactionInput = Omit<Transaction, 'id'> & { id?: string };
-export type GoalInput = Omit<Goal, 'id'> & { id?: string };
+
+// Insurance Tracking Types
+export type InsuranceType = 'health' | 'auto' | 'home' | 'life' | 'disability' | 'umbrella' | 'pet' | 'travel' | 'other';
+export type InsuranceStatus = 'active' | 'expired' | 'cancelled' | 'pending';
+export type PremiumFrequency = 'monthly' | 'quarterly' | 'semi-annual' | 'annual';
+export type ClaimStatus = 'filed' | 'under_review' | 'approved' | 'denied' | 'paid' | 'closed';
+export type BeneficiaryType = 'primary' | 'contingent';
+export type PaymentStatus = 'pending' | 'completed' | 'failed' | 'refunded';
+
+export type InsurancePolicy = {
+  id: string;
+  policyName: string;
+  policyNumber?: string;
+  provider: string;
+  type: InsuranceType;
+  status: InsuranceStatus;
+  coverageAmount?: number;
+  deductible?: number;
+  premiumAmount: number;
+  premiumFrequency: PremiumFrequency;
+  startDate: string; // ISO date
+  endDate?: string; // ISO date
+  renewalDate?: string; // ISO date
+  nextPaymentDate?: string; // ISO date
+  agentName?: string;
+  agentPhone?: string;
+  agentEmail?: string;
+  notes?: string;
+  documents?: unknown[]; // JSONB array
+  autoRenew: boolean;
+  renewalReminderDays: number;
+  createdAt: string;
+  updatedAt: string;
+  // From view
+  claimCount?: number;
+  totalClaimsPaid?: number;
+  beneficiaryCount?: number;
+  lastPaymentDate?: string;
+};
+
+export type InsuranceClaim = {
+  id: string;
+  policyId: string;
+  claimNumber?: string;
+  claimType: string;
+  claimDate: string; // ISO date
+  incidentDate: string; // ISO date
+  claimAmount: number;
+  approvedAmount?: number;
+  paidAmount?: number;
+  deductiblePaid?: number;
+  status: ClaimStatus;
+  description: string;
+  notes?: string;
+  adjusterName?: string;
+  adjusterPhone?: string;
+  adjusterEmail?: string;
+  filedDate?: string; // ISO date
+  approvedDate?: string; // ISO date
+  paidDate?: string; // ISO date
+  closedDate?: string; // ISO date
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type InsuranceBeneficiary = {
+  id: string;
+  policyId: string;
+  name: string;
+  relationship: string;
+  beneficiaryType: BeneficiaryType;
+  percentage: number;
+  phone?: string;
+  email?: string;
+  address?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type InsurancePremiumPayment = {
+  id: string;
+  policyId: string;
+  paymentDate: string; // ISO date
+  amount: number;
+  paymentMethod?: string;
+  coveragePeriodStart?: string; // ISO date
+  coveragePeriodEnd?: string; // ISO date
+  status: PaymentStatus;
+  transactionId?: string;
+  confirmationNumber?: string;
+  notes?: string;
+  createdAt: string;
+};
+
+export type InsurancePolicyInput = Omit<InsurancePolicy, 'id' | 'createdAt' | 'updatedAt' | 'claimCount' | 'totalClaimsPaid' | 'beneficiaryCount' | 'lastPaymentDate'> & {
+  id?: string;
+};
+
+export type InsuranceClaimInput = Omit<InsuranceClaim, 'id' | 'createdAt' | 'updatedAt'> & {
+  id?: string;
+};
+
+export type InsuranceBeneficiaryInput = Omit<InsuranceBeneficiary, 'id' | 'createdAt' | 'updatedAt'> & {
+  id?: string;
+};
+
+export type InsurancePremiumPaymentInput = Omit<InsurancePremiumPayment, 'id' | 'createdAt'> & {
+  id?: string;
+};

@@ -19,67 +19,101 @@ import {
   Flame,
   CheckCircle2,
   Circle,
-  ChevronRight,
-  TrendingUp,
-  Calendar
+  ChevronRight
 } from 'lucide-react';
 import { useAppStore } from '../stores/useAppStore';
-import { toggleSFHTask } from '../stores/seventyFiveHardActions';
+import { toggleSFHTask } from '../seventyFiveHard/actions';
 import { isSameDay, startOfDay } from 'date-fns';
 import { getDailyQuote } from '../utils/motivationalQuotes';
+import { logger } from '../services/logger';
 
-export default function SeventyFiveHardWidget() {
+interface SFHTask {
+  id: string;
+  title: string;
+  description?: string;
+}
+
+interface TaskCompletion {
+  taskId: string;
+  completed: boolean;
+}
+
+interface SFHCheckIn {
+  date: Date;
+  taskCompletions: TaskCompletion[];
+}
+
+interface SFHChallenge {
+  status: string;
+  currentDay: number;
+  tasks: SFHTask[];
+}
+
+export default function SeventyFiveHardWidget(): React.JSX.Element | null {
   const { sfhChallenge, sfhCheckIns, setActiveView } = useAppStore();
-
-  // Don't show widget if no active challenge
-  if (!sfhChallenge || sfhChallenge.status !== 'active') {
-    return null;
-  }
 
   // Memoize today's date to avoid recalculating
   const today = useMemo(() => startOfDay(new Date()), []);
 
-  // Memoize today's check-in lookup
+  // Memoize today's check-in lookup - must be called before early returns
   const todayCheckIn = useMemo(
-    () => sfhCheckIns.find(c => isSameDay(c.date, today)),
+    () => (sfhCheckIns as SFHCheckIn[]).find((c: SFHCheckIn) => isSameDay(c.date, today)) ?? null,
     [sfhCheckIns, today]
   );
-
-  if (!todayCheckIn) {
-    return null;
-  }
 
   // Memoize task completion map for O(1) lookups
   const taskCompletionMap = useMemo(() => {
     const map = new Map<string, boolean>();
-    todayCheckIn.taskCompletions.forEach(tc => {
-      map.set(tc.taskId, tc.completed);
-    });
+    if (todayCheckIn) {
+      todayCheckIn.taskCompletions.forEach((tc: TaskCompletion) => {
+        map.set(tc.taskId, tc.completed);
+      });
+    }
     return map;
-  }, [todayCheckIn.taskCompletions]);
+  }, [todayCheckIn]);
 
   // Memoize stats calculations
   const stats = useMemo(() => {
-    const completedTasks = todayCheckIn.taskCompletions.filter(tc => tc.completed).length;
-    const totalTasks = sfhChallenge.tasks.length;
+    if (!todayCheckIn || !sfhChallenge) {
+      return {
+        completedTasks: 0,
+        totalTasks: 0,
+        allComplete: false,
+        progress: 0,
+        daysRemaining: 75,
+      };
+    }
+    const completedTasks = todayCheckIn.taskCompletions.filter((tc: TaskCompletion) => tc.completed).length;
+    const totalTasks = (sfhChallenge as SFHChallenge).tasks.length;
     return {
       completedTasks,
       totalTasks,
       allComplete: completedTasks === totalTasks,
-      progress: (sfhChallenge.currentDay / 75) * 100,
-      daysRemaining: 75 - sfhChallenge.currentDay,
+      progress: ((sfhChallenge as SFHChallenge).currentDay / 75) * 100,
+      daysRemaining: 75 - (sfhChallenge as SFHChallenge).currentDay,
     };
-  }, [todayCheckIn.taskCompletions, sfhChallenge.tasks.length, sfhChallenge.currentDay]);
+  }, [todayCheckIn, sfhChallenge]);
 
   // Memoize handler to toggle task
-  const handleToggleTask = useCallback(async (taskId: string) => {
-    await toggleSFHTask(taskId);
+  const handleToggleTask = useCallback((taskId: string) => {
+    (toggleSFHTask as (taskId: string) => Promise<void>)(taskId).catch((error: unknown) => {
+      logger.error('SeventyFiveHardWidget', 'Failed to toggle task:', error);
+    });
   }, []);
 
   // Memoize navigation handler
   const handleViewFull = useCallback(() => {
     setActiveView('seventy-five-hard');
   }, [setActiveView]);
+
+  // Early return conditions - after all hooks
+  if (!sfhChallenge || (sfhChallenge as SFHChallenge).status !== 'active') {
+    return null;
+  }
+
+  if (!todayCheckIn) {
+    return null;
+  }
 
   return (
     <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl border-2 border-purple-200 dark:border-purple-800 p-6 shadow-lg">
@@ -94,7 +128,7 @@ export default function SeventyFiveHardWidget() {
               75 Hard Challenge
             </h3>
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Day {sfhChallenge.currentDay} of 75
+              Day {(sfhChallenge as SFHChallenge).currentDay} of 75
             </p>
           </div>
         </div>
@@ -129,7 +163,7 @@ export default function SeventyFiveHardWidget() {
       <div className="grid grid-cols-3 gap-3 mb-4">
         <div className="bg-white dark:bg-gray-800 rounded-lg p-3 text-center">
           <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-            {sfhChallenge.currentDay}
+            {(sfhChallenge as SFHChallenge).currentDay}
           </div>
           <div className="text-xs text-gray-600 dark:text-gray-400">
             Days Done
@@ -160,7 +194,7 @@ export default function SeventyFiveHardWidget() {
             <div className="flex items-start gap-2">
               <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
               <p className="text-xs font-medium text-green-900 dark:text-green-100 leading-relaxed">
-                {getDailyQuote(sfhChallenge.currentDay)}
+                {getDailyQuote((sfhChallenge as SFHChallenge).currentDay)}
               </p>
             </div>
           </div>
@@ -172,9 +206,9 @@ export default function SeventyFiveHardWidget() {
               </h4>
             </div>
 
-            {sfhChallenge.tasks
-              .filter((task) => !taskCompletionMap.get(task.id))
-              .map((task) => {
+            {(sfhChallenge as SFHChallenge).tasks
+              .filter((task: SFHTask) => !taskCompletionMap.get(task.id))
+              .map((task: SFHTask) => {
                 return (
                   <button
                     key={task.id}
@@ -203,7 +237,7 @@ export default function SeventyFiveHardWidget() {
       {!stats.allComplete && (
         <div className="mt-4 text-center">
           <p className="text-xs text-gray-600 dark:text-gray-400">
-            💡 Tap tasks to mark complete, or visit 75 Hard page for photos & notes
+            Tap tasks to mark complete, or visit 75 Hard page for photos & notes
           </p>
         </div>
       )}

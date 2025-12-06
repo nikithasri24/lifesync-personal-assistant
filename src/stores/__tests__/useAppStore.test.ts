@@ -15,7 +15,6 @@ describe('useAppStore', () => {
       recipes: [],
       pantryItems: [],
       mealPlans: [],
-      moodEntries: [],
       userStats: { level: 1, xp: 0, xpToNextLevel: 100, totalGoalsCompleted: 0 },
       activeView: 'dashboard',
       sidebarCollapsed: false,
@@ -97,7 +96,7 @@ describe('useAppStore', () => {
     it('should update habit details via updateHabit', async () => {
       const { result } = renderHook(() => useAppStore());
 
-      let habitId: string;
+      let habitId = '';
       await act(async () => {
         const created = await result.current.addHabit({
           name: 'Morning Exercise',
@@ -113,7 +112,7 @@ describe('useAppStore', () => {
       });
 
       await act(async () => {
-        await result.current.updateHabit(habitId!, {
+        await result.current.updateHabit(habitId, {
           name: 'Evening Yoga',
           description: 'Relaxing stretch',
           frequency: 'weekly',
@@ -136,7 +135,7 @@ describe('useAppStore', () => {
     it('should accumulate multiple completions in a single day', async () => {
       const { result } = renderHook(() => useAppStore());
 
-      let habitId: string;
+      let habitId = '';
       await act(async () => {
         const created = await result.current.addHabit({
           name: 'Water Intake',
@@ -152,8 +151,8 @@ describe('useAppStore', () => {
       });
 
       await act(async () => {
-        await result.current.completeHabit(habitId!);
-        await result.current.completeHabit(habitId!);
+        await result.current.completeHabit(habitId);
+        await result.current.completeHabit(habitId);
       });
 
       const habit = result.current.habits.find((item) => item.id === habitId);
@@ -163,7 +162,7 @@ describe('useAppStore', () => {
       expect(habit?.completions).toHaveLength(2);
 
       await act(async () => {
-        await result.current.completeHabit(habitId!);
+        await result.current.completeHabit(habitId);
       });
 
       const updated = result.current.habits.find((item) => item.id === habitId);

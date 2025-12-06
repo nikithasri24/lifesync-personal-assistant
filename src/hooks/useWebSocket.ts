@@ -1,14 +1,17 @@
 import { useState, useEffect, useRef, useCallback, startTransition } from 'react';
+import { logger } from '../services/logger';
 
-interface WebSocketMessage {
+type GenericPayload = Record<string, unknown>;
+
+interface WebSocketMessage<T extends GenericPayload = GenericPayload> {
   type: string;
-  payload: any;
+  payload: T;
   timestamp: Date;
 }
 
-interface UseWebSocketOptions {
+interface UseWebSocketOptions<T extends GenericPayload = GenericPayload> {
   url?: string;
-  onMessage?: (message: WebSocketMessage) => void;
+  onMessage?: (message: WebSocketMessage<T>) => void;
   onConnect?: () => void;
   onDisconnect?: () => void;
   onError?: (error: Event) => void;
@@ -17,15 +20,27 @@ interface UseWebSocketOptions {
   simulateConnection?: boolean;
 }
 
-interface WebSocketState {
+interface WebSocketState<T extends GenericPayload = GenericPayload> {
   isConnected: boolean;
   isConnecting: boolean;
   error: string | null;
-  lastMessage: WebSocketMessage | null;
+  lastMessage: WebSocketMessage<T> | null;
   connectionAttempts: number;
 }
 
-export function useWebSocket(options: UseWebSocketOptions = {}) {
+export function useWebSocket<T extends GenericPayload = GenericPayload>(
+  options: UseWebSocketOptions<T> = {}
+): {
+  isConnected: boolean;
+  isConnecting: boolean;
+  error: string | null;
+  lastMessage: WebSocketMessage<T> | null;
+  connectionAttempts: number;
+  connect: () => void;
+  disconnect: () => void;
+  sendMessage: (message: T) => boolean;
+  reconnect: () => void;
+} {
   const {
     url = 'wss://api.example.com/financial-data',
     onMessage,
@@ -48,6 +63,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const simulationIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const attemptReconnectRef = useRef<(() => void) | null>(null);
 
   // Simulate market data for demo purposes
   const simulateMarketData = useCallback(() => {
@@ -174,16 +190,16 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 
         wsRef.current.onmessage = (event) => {
           // Defer heavy work off the message event loop tick
-          const raw = event.data;
+          const raw: string = event.data as string;
           setTimeout(() => {
             try {
-              const message: WebSocketMessage = typeof raw === 'string' ? JSON.parse(raw) : raw;
+              const message: WebSocketMessage<T> = typeof raw === 'string' ? JSON.parse(raw) as WebSocketMessage<T> : raw as WebSocketMessage<T>;
               startTransition(() => {
                 setState(prev => ({ ...prev, lastMessage: message }));
                 onMessage?.(message);
               });
             } catch (error) {
-              console.error('Failed to handle WebSocket message:', error);
+              logger.error('Failed to handle WebSocket message:', { error });
             }
           }, 0);
         };
@@ -191,7 +207,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
         wsRef.current.onclose = () => {
           setState(prev => ({ ...prev, isConnected: false, isConnecting: false }));
           onDisconnect?.();
-          attemptReconnect();
+          attemptReconnectRef.current?.();
         };
 
         wsRef.current.onerror = (error) => {
@@ -202,7 +218,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
           }));
           onError?.(error);
         };
-      } catch (error) {
+      } catch (_error) {
         setState(prev => ({
           ...prev,
           error: 'Failed to create WebSocket connection',
@@ -255,23 +271,25 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     }, reconnectInterval);
   }, [state.connectionAttempts, maxReconnectAttempts, reconnectInterval, connect]);
 
-  const sendMessage = useCallback((message: any) => {
+  attemptReconnectRef.current = attemptReconnect;
+
+  const sendMessage = useCallback((message: T) => {
     if (!state.isConnected) {
-      console.warn('WebSocket is not connected');
+      logger.warn('WebSocket', 'WebSocket is not connected');
       return false;
     }
 
     try {
       if (simulateConnection) {
         // For simulation, just log the message
-        console.log('Simulated WebSocket send:', message);
+        logger.debug('Simulated WebSocket send:', { message });
         return true;
       } else if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
         wsRef.current.send(JSON.stringify(message));
         return true;
       }
     } catch (error) {
-      console.error('Failed to send WebSocket message:', error);
+      logger.error('Failed to send WebSocket message:', { error });
       setState(prev => ({ ...prev, error: 'Failed to send message' }));
     }
 
@@ -312,14 +330,38 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 }
 
 // Hook for financial data specifically
-export function useFinancialDataWebSocket() {
-  const SIMULATE_WS = (import.meta as any).env?.VITE_SIMULATE_WS === 'true';
-  const [marketData, setMarketData] = useState<any[]>([]);
-  const [portfolioData, setPortfolioData] = useState<any>(null);
-  const [alerts, setAlerts] = useState<any[]>([]);
-  const [news, setNews] = useState<any[]>([]);
+interface FinancialDataPayload {
+  symbol?: string;
+  price?: number;
+  totalValue?: number;
+  title?: string;
+  type?: string;
+}
 
-  const handleMessage = useCallback((message: WebSocketMessage) => {
+export function useFinancialDataWebSocket(): {
+  marketData: FinancialDataPayload[];
+  portfolioData: FinancialDataPayload | null;
+  alerts: FinancialDataPayload[];
+  news: FinancialDataPayload[];
+  clearAlerts: () => void;
+  clearNews: () => void;
+  isConnected: boolean;
+  isConnecting: boolean;
+  error: string | null;
+  lastMessage: WebSocketMessage<FinancialDataPayload> | null;
+  connectionAttempts: number;
+  connect: () => void;
+  disconnect: () => void;
+  sendMessage: (message: FinancialDataPayload) => boolean;
+  reconnect: () => void;
+} {
+  const SIMULATE_WS = import.meta.env.VITE_SIMULATE_WS === 'true';
+  const [marketData, setMarketData] = useState<FinancialDataPayload[]>([]);
+  const [portfolioData, setPortfolioData] = useState<FinancialDataPayload | null>(null);
+  const [alerts, setAlerts] = useState<FinancialDataPayload[]>([]);
+  const [news, setNews] = useState<FinancialDataPayload[]>([]);
+
+  const handleMessage = useCallback((message: WebSocketMessage<FinancialDataPayload>) => {
     switch (message.type) {
       case 'price_update':
         setMarketData(prev => {
@@ -333,15 +375,15 @@ export function useFinancialDataWebSocket() {
           return updated;
         });
         break;
-      
+
       case 'portfolio_update':
         setPortfolioData(message.payload);
         break;
-      
+
       case 'news_update':
         setNews(prev => [message.payload, ...prev.slice(0, 9)]); // Keep last 10 news items
         break;
-      
+
       case 'alert_trigger':
         setAlerts(prev => [message.payload, ...prev.slice(0, 4)]); // Keep last 5 alerts
         break;

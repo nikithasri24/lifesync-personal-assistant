@@ -1,10 +1,10 @@
 import fs from 'fs-extra';
 import path from 'path';
-import { ShoppingItem, Recipe, MealPlan, Store, TodoItem, TodoCategory } from './types.js';
+import { type ShoppingItem, type Recipe, type MealPlan, type Store, type TodoItem, type TodoCategory, type CliConfig } from './types.js';
 import { loadConfig } from './config.js';
 
 export class DataManager {
-  private config: any;
+  private config: CliConfig | null;
   private dataPath: string;
 
   constructor() {
@@ -12,7 +12,7 @@ export class DataManager {
     this.dataPath = '';
   }
 
-  async init() {
+  async init(): Promise<void> {
     this.config = await loadConfig();
     this.dataPath = this.config.dataPath;
     await fs.ensureDir(this.dataPath);
@@ -31,7 +31,7 @@ export class DataManager {
       }
       return [];
     } catch (error) {
-      console.error(`Error reading ${type} data:`, error);
+      logger.error('Data', `Error reading ${type} data:`, error);
       return [];
     }
   }
@@ -41,7 +41,7 @@ export class DataManager {
       const filePath = this.getFilePath(type);
       await fs.writeJson(filePath, data, { spaces: 2 });
     } catch (error) {
-      console.error(`Error writing ${type} data:`, error);
+      logger.error('Data', `Error writing ${type} data:`, error);
     }
   }
 

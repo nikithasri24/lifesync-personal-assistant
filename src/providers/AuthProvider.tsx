@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import type { Session, User } from '@supabase/supabase-js'
 import { ensureSupabase, isSupabaseConfigured } from '../lib/supabase'
 import { apiClient } from '../services/apiClient'
+import { logger } from '../services/logger';
 
 interface AuthContextValue {
   user: User | null
@@ -21,7 +22,7 @@ interface AuthProviderProps {
   children: ReactNode
 }
 
-export function AuthProvider({ children }: AuthProviderProps) {
+export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element {
   const [session, setSession] = useState<Session | null>(null)
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState<boolean>(isSupabaseConfigured)
@@ -37,7 +38,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         ? authUser.user_metadata.username
         : undefined
       const username = usernameFromMetadata
-        || (authUser.email ? authUser.email.split('@')[0] : authUser.id.slice(0, 12))
+        ?? (authUser.email ? authUser.email.split('@')[0] : authUser.id.slice(0, 12))
 
       await client
         .from('users')
@@ -54,7 +55,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           onConflict: 'id',
         })
     } catch (err) {
-      console.warn('Failed to ensure application user record:', err)
+      logger.warn('Failed to ensure application user record:', { err });
     }
   }, [])
 
@@ -68,7 +69,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     const client = ensureSupabase()
 
-    const syncState = (nextSession: Session | null) => {
+    const syncState = (nextSession: Session | null): void => {
       setSession(nextSession)
       const nextUser = nextSession?.user ?? null
       setUser(nextUser)
@@ -78,11 +79,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
     }
 
-    client.auth
+    void client.auth
       .getSession()
       .then(({ data, error }) => {
         if (error) {
-          console.error('Supabase session fetch failed:', error)
+          logger.error('Supabase session fetch failed:', { error });
           setError(error.message)
         }
         syncState(data.session ?? null)
@@ -98,7 +99,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [ensureUserRecord])
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string): Promise<void> => {
     if (!isSupabaseConfigured) {
       throw new Error('Supabase is not configured. Provide credentials in your environment.')
     }
@@ -121,7 +122,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = async (email: string, password: string): Promise<void> => {
     if (!isSupabaseConfigured) {
       throw new Error('Supabase is not configured. Provide credentials in your environment.')
     }
@@ -144,7 +145,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }
 
-  const signOut = async () => {
+  const signOut = async (): Promise<void> => {
     if (!isSupabaseConfigured) {
       setSession(null)
       setUser(null)
@@ -182,7 +183,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
-export function useAuthContext() {
+// eslint-disable-next-line react-refresh/only-export-components
+export function useAuthContext(): AuthContextValue {
   const context = useContext(AuthContext)
   if (!context) {
     throw new Error('useAuthContext must be used within an AuthProvider')

@@ -1,0 +1,644 @@
+
+> lifesync@1.0.0 lint
+> eslint . --max-warnings 0
+
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/cli/src/__tests__/tasks.command.test.ts
+  8:28  error  Missing return type on function  @typescript-eslint/explicit-function-return-type
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/cli/src/__tests__/tasks.mutations.test.ts
+  17:28  error  Missing return type on function  @typescript-eslint/explicit-function-return-type
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/cli/src/__tests__/tasks.status.today.test.ts
+  17:28  error  Missing return type on function  @typescript-eslint/explicit-function-return-type
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/cli/src/commands/config.ts
+  23:90  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/cli/src/commands/sync.ts
+  143:15  error  'syncOptions' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/cli/test/mocks/chalk.ts
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/cli/test/mocks/chalk.ts was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/cli/test/mocks/commander.ts
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/cli/test/mocks/commander.ts was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/cli/test/mocks/inquirer.ts
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/cli/test/mocks/inquirer.ts was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/cli/test/mocks/ora.ts
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/cli/test/mocks/ora.ts was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/fix-imports.js
+  8:2  error  Parsing error: Unexpected character '!'
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/fix-usestate-imports.js
+  8:2  error  Parsing error: Unexpected character '!'
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/lifesync/tests/e2e/focus.spec.ts
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/lifesync/tests/e2e/focus.spec.ts was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/lifesync/tests/e2e/todos.spec.ts
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/lifesync/tests/e2e/todos.spec.ts was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/scripts/applyBudgetTemplatesMigration.ts
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/scripts/applyBudgetTemplatesMigration.ts was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/scripts/discoverBudgetsSchema.ts
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/scripts/discoverBudgetsSchema.ts was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/scripts/migrate-to-logger.ts
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/scripts/migrate-to-logger.ts was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/scripts/seedFinance.ts
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/scripts/seedFinance.ts was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/scripts/verifyBudgetTemplates.ts
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/scripts/verifyBudgetTemplates.ts was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/serverless/vercel/fetch-youtube-snippet.ts
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/serverless/vercel/fetch-youtube-snippet.ts was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/App.tsx
+  77:9  error  Unexpected `await` of a non-Promise (non-"Thenable") value  @typescript-eslint/await-thenable
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/api/__tests__/goalsAPI.test.ts
+   81:16  error  Avoid referencing unbound methods which may cause unintentional scoping of `this`.
+If your function does not access `this`, you can annotate it with `this: void`, or consider using an arrow function instead  @typescript-eslint/unbound-method
+  321:16  error  Avoid referencing unbound methods which may cause unintentional scoping of `this`.
+If your function does not access `this`, you can annotate it with `this: void`, or consider using an arrow function instead  @typescript-eslint/unbound-method
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/api/__tests__/journalAPI.test.ts
+  62:14  error  Avoid referencing unbound methods which may cause unintentional scoping of `this`.
+If your function does not access `this`, you can annotate it with `this: void`, or consider using an arrow function instead  @typescript-eslint/unbound-method
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/api/__tests__/notesAPI.test.ts
+  59:14  error  Avoid referencing unbound methods which may cause unintentional scoping of `this`.
+If your function does not access `this`, you can annotate it with `this: void`, or consider using an arrow function instead  @typescript-eslint/unbound-method
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/components/DataVisualization.tsx
+  449:1  error  File has too many lines (501). Maximum allowed is 400  max-lines
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/components/DebtPayoffCalculator.tsx
+  224:27  error    Unexpected confirm                                                                                         no-alert
+  419:71  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  451:1   error    File has too many lines (671). Maximum allowed is 400                                                      max-lines
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/components/Layout.tsx
+  66:16  error  Missing return type on function  @typescript-eslint/explicit-function-return-type
+  66:16  error  Missing return type on function  @typescript-eslint/explicit-module-boundary-types
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/components/Logo.tsx
+  6:16  error  Missing return type on function  @typescript-eslint/explicit-function-return-type
+  6:16  error  Missing return type on function  @typescript-eslint/explicit-module-boundary-types
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/components/NikeLogo.tsx
+  6:16  error  Missing return type on function  @typescript-eslint/explicit-function-return-type
+  6:16  error  Missing return type on function  @typescript-eslint/explicit-module-boundary-types
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/components/PremiumLogo.tsx
+  6:16  error  Missing return type on function  @typescript-eslint/explicit-function-return-type
+  6:16  error  Missing return type on function  @typescript-eslint/explicit-module-boundary-types
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/components/SmartBudgetRecommendations.tsx
+  94:3  error  Parsing error: ')' expected
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/components/__tests__/ErrorState.test.tsx
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/components/__tests__/ErrorState.test.tsx was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/components/__tests__/FormField.test.tsx
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/components/__tests__/FormField.test.tsx was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/components/__tests__/Layout.test.tsx
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/components/__tests__/Layout.test.tsx was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/components/__tests__/LoadingSpinner.test.tsx
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/components/__tests__/LoadingSpinner.test.tsx was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/components/__tests__/SeventyFiveHardWidget.test.tsx
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/components/__tests__/SeventyFiveHardWidget.test.tsx was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/components/__tests__/TaskDragDrop.test.tsx
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/components/__tests__/TaskDragDrop.test.tsx was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/components/focus/gamification/components/cards/AchievementCard.tsx
+  13:41  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/components/focus/gamification/hooks/useGamificationState.ts
+  5:40  error  Missing return type on function  @typescript-eslint/explicit-function-return-type
+  5:40  error  Missing return type on function  @typescript-eslint/explicit-module-boundary-types
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/components/focus/tasks/__tests__/TaskFocusIntegration.test.tsx
+   11:37  error  Missing return type on function  @typescript-eslint/explicit-function-return-type
+  170:26  error  Missing return type on function  @typescript-eslint/explicit-function-return-type
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/components/focus/tasks/components/TaskCard.tsx
+   15:24  error    Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any
+  156:69  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/components/focus/tasks/utils/styleHelpers.ts
+  40:24  error  Parsing error: '>' expected
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/components/focus/timer/AdvancedTimer.tsx
+  461:1  error  File has too many lines (784). Maximum allowed is 400  max-lines
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/components/focus/wellness/WellnessCenter.tsx
+  466:1  error  File has too many lines (695). Maximum allowed is 400  max-lines
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/finance/__tests__/budgets.test.tsx
+  9:12  error  Async method 'getFinanceAPI' has no 'await' expression  @typescript-eslint/require-await
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/finance/__tests__/dashboard.test.tsx
+  8:12  error  Async method 'getFinanceAPI' has no 'await' expression  @typescript-eslint/require-await
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/finance/__tests__/transactions.test.tsx
+  8:12  error  Async method 'getFinanceAPI' has no 'await' expression  @typescript-eslint/require-await
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/finance/components/Card.tsx
+  14:15  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/finance/components/ChartLazy.tsx
+   3:30  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  26:9   error  Unsafe assignment of an `any` value       @typescript-eslint/no-unsafe-assignment
+  27:9   error  Unsafe assignment of an `any` value       @typescript-eslint/no-unsafe-assignment
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/finance/components/FiltersBar.tsx
+  33:36  error  Unsafe argument of type `any` assigned to a parameter of type `TxnType | undefined`  @typescript-eslint/no-unsafe-argument
+  33:69  error  Unexpected any. Specify a different type                                             @typescript-eslint/no-explicit-any
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/finance/components/budgets/BudgetEditor.tsx
+   41:5   error  'Element' is an 'error' type that acts as 'any' and overrides all other types in this union type  @typescript-eslint/no-redundant-type-constituents
+  155:24  error  Promise-returning function provided to attribute where a void return was expected                 @typescript-eslint/no-misused-promises
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/finance/components/budgets/BudgetProgressBar.tsx
+  21:14  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  27:14  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/finance/components/insurance/InsuranceCard.tsx
+  238:75  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/finance/components/metrics/MetricCard.tsx
+  129:41  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/finance/components/reports/SpendingReport.tsx
+  67:62  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/finance/data/__tests__/supabaseApi.test.ts
+   6:29  error    Missing return type on function           @typescript-eslint/explicit-function-return-type
+  15:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/finance/hooks/useFinanceQuery.ts
+  1:1  warning  Unused eslint-disable directive (no problems were reported from 'max-lines')
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/finance/pages/CalculatorsPage.tsx
+  451:1  error  File has too many lines (762). Maximum allowed is 400  max-lines
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/finance/pages/GoalsPage.tsx
+  91:23  error  React Hook "React.useMemo" is called conditionally. React Hooks must be called in the exact same order in every component render  react-hooks/rules-of-hooks
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/finance/pages/InsurancePage.tsx
+  99:49  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/finance/pages/NetWorthPage.tsx
+  45:42  error  Missing return type on function  @typescript-eslint/explicit-function-return-type
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/finance/pages/ProjectionsPage.tsx
+   46:5   error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+  135:51  error  Unsafe argument of type error typed assigned to a parameter of type `string | number | Date`                                                                        @typescript-eslint/no-unsafe-argument
+  446:1   error  File has too many lines (413). Maximum allowed is 400                                                                                                               max-lines
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/finance/routes.tsx
+  21:1   error  Missing return type on function                                                                         @typescript-eslint/explicit-function-return-type
+  21:10  error  Fast refresh only works when a file only exports components. Move your component(s) to a separate file  react-refresh/only-export-components
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/finance/store/useFinanceFilters.ts
+  50:11  error  Empty block statement  no-empty
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/finance/types.ts
+  281:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/finance/ui/Dialog.tsx
+  10:55  error  Avoid referencing unbound methods which may cause unintentional scoping of `this`.
+If your function does not access `this`, you can annotate it with `this: void`, or consider using an arrow function instead  @typescript-eslint/unbound-method
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/finance/ui/Input.tsx
+  6:22  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator                       @typescript-eslint/prefer-nullish-coalescing
+  6:25  error    React Hook "React.useId" is called conditionally. React Hooks must be called in the exact same order in every component render  react-hooks/rules-of-hooks
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/finance/ui/Select.tsx
+  12:25  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator                       @typescript-eslint/prefer-nullish-coalescing
+  12:28  error    React Hook "React.useId" is called conditionally. React Hooks must be called in the exact same order in every component render  react-hooks/rules-of-hooks
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/finance/utils/__tests__/timePeriodUtils.test.ts
+  312:24  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/finance/utils/budgetRecommendations.ts
+  67:37  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/finance/utils/calculations.ts
+  532:1  error  File has too many lines (693). Maximum allowed is 400  max-lines
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/finance/utils/cardBenefitsHelper.ts
+  9:78  error  Parsing error: Declaration or statement expected
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/finance/utils/csv.ts
+  6:22  error  'v' will use Object's default stringification format ('[object Object]') when stringified  @typescript-eslint/no-base-to-string
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/finance/utils/currency.ts
+  1:8  error  Missing return type on function  @typescript-eslint/explicit-function-return-type
+  1:8  error  Missing return type on function  @typescript-eslint/explicit-module-boundary-types
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/finance/utils/timePeriodUtils.ts
+  173:40  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/habits/components/HabitEditForm.tsx
+  21:8  error  Missing return type on function  @typescript-eslint/explicit-function-return-type
+  21:8  error  Missing return type on function  @typescript-eslint/explicit-module-boundary-types
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/habits/components/HabitForm.tsx
+  21:8  error  Missing return type on function  @typescript-eslint/explicit-function-return-type
+  21:8  error  Missing return type on function  @typescript-eslint/explicit-module-boundary-types
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/hooks/__tests__/useLocalStorage.test.tsx
+  15:52  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  43:54  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/hooks/__tests__/useTheme.test.ts
+  303:31  error  Avoid referencing unbound methods which may cause unintentional scoping of `this`.
+If your function does not access `this`, you can annotate it with `this: void`, or consider using an arrow function instead  @typescript-eslint/unbound-method
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/hooks/useApiTasks.ts
+  301:7  error  Unexpected `await` of a non-Promise (non-"Thenable") value  @typescript-eslint/await-thenable
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/hooks/useConversationalVoice.ts
+   98:59  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  333:46  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/hooks/useOptimization.ts
+  9:10  warning  React Hook useMemo received a function whose dependencies are unknown. Pass an inline function instead  react-hooks/exhaustive-deps
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/hooks/useResponsiveMap.ts
+  20:29  error  Missing return type on function  @typescript-eslint/explicit-function-return-type
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/hooks/useToast.ts
+  10:43  error  Missing return type on function  @typescript-eslint/explicit-function-return-type
+  10:43  error  Missing return type on function  @typescript-eslint/explicit-module-boundary-types
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/hooks/useWebSocket.ts
+  192:17  error    Unsafe assignment of an `any` value                                                                                    @typescript-eslint/no-unsafe-assignment
+  195:21  error    Unsafe assignment of an `any` value                                                                                    @typescript-eslint/no-unsafe-assignment
+  228:6   warning  React Hook useCallback has a missing dependency: 'attemptReconnect'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/lib/providers/llm/groq.provider.ts
+  69:41  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/main.tsx
+  8:12  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/mealPlanning/components/modals/ModalShell.tsx
+  13:8  error  Missing return type on function  @typescript-eslint/explicit-function-return-type
+  13:8  error  Missing return type on function  @typescript-eslint/explicit-module-boundary-types
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/mealPlanning/components/recipe/__tests__/RecipeCard.test.tsx
+  208:24  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/mealPlanning/services/storage/draftStorage.ts
+  69:11  warning  Prefer using an optional chain expression instead, as it's more concise and easier to read  @typescript-eslint/prefer-optional-chain
+  98:11  warning  Prefer using an optional chain expression instead, as it's more concise and easier to read  @typescript-eslint/prefer-optional-chain
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/mealPlanning/utils/dateUtils.ts
+  3:35  error  Missing return type on function  @typescript-eslint/explicit-function-return-type
+  3:35  error  Missing return type on function  @typescript-eslint/explicit-module-boundary-types
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/Calendar.tsx
+  14:28  error  Unsafe argument of type error typed assigned to a parameter of type `string | number | Date`  @typescript-eslint/no-unsafe-argument
+  14:83  error  Unsafe argument of type error typed assigned to a parameter of type `string | number | Date`  @typescript-eslint/no-unsafe-argument
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/ProjectTracking.tsx
+  442:0  error  Parsing error: '}' expected
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/SeventyFiveHard/components/CompletedView.tsx
+  21:16  error  Missing return type on function  @typescript-eslint/explicit-function-return-type
+  21:16  error  Missing return type on function  @typescript-eslint/explicit-module-boundary-types
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/SeventyFiveHard/components/EmptyState.tsx
+  17:16  error  Missing return type on function  @typescript-eslint/explicit-function-return-type
+  17:16  error  Missing return type on function  @typescript-eslint/explicit-module-boundary-types
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/SeventyFiveHard/components/FailurePromptModal.tsx
+  88:21  error  Promise-returning function provided to attribute where a void return was expected  @typescript-eslint/no-misused-promises
+  97:21  error  Promise-returning function provided to attribute where a void return was expected  @typescript-eslint/no-misused-promises
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/SeventyFiveHard/components/PhotoGallery.tsx
+  32:16  error  Missing return type on function  @typescript-eslint/explicit-function-return-type
+  32:16  error  Missing return type on function  @typescript-eslint/explicit-module-boundary-types
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Dashboard.test.tsx
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Dashboard.test.tsx was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Habits.add.test.tsx
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Habits.add.test.tsx was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Habits.category.test.tsx
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Habits.category.test.tsx was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Habits.category.updateLabel.test.tsx
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Habits.category.updateLabel.test.tsx was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Habits.complete.test.tsx
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Habits.complete.test.tsx was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Habits.edit.test.tsx
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Habits.edit.test.tsx was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Habits.errorToast.test.tsx
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Habits.errorToast.test.tsx was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Habits.frequency.custom.edit.test.tsx
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Habits.frequency.custom.edit.test.tsx was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Habits.frequency.custom.test.tsx
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Habits.frequency.custom.test.tsx was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Habits.progress.completed.test.tsx
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Habits.progress.completed.test.tsx was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Habits.progress.custom.todayCount.test.tsx
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Habits.progress.custom.todayCount.test.tsx was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Habits.progress.todayCount.test.tsx
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Habits.progress.todayCount.test.tsx was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Habits.progress.weekly.monthly.test.tsx
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Habits.progress.weekly.monthly.test.tsx was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Habits.validation.test.tsx
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Habits.validation.test.tsx was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/ProjectTracking.advanced.test.tsx
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/ProjectTracking.advanced.test.tsx was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/ProjectTracking.dragdrop.test.tsx
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/ProjectTracking.dragdrop.test.tsx was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/ProjectTracking.e2e.test.tsx
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/ProjectTracking.e2e.test.tsx was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/ProjectTracking.test.tsx
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/ProjectTracking.test.tsx was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/SeventyFiveHard.core.test.tsx
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/SeventyFiveHard.core.test.tsx was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/SeventyFiveHard.removals.test.tsx
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/SeventyFiveHard.removals.test.tsx was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Todos.badges.counts.test.tsx
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Todos.badges.counts.test.tsx was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Todos.bulk-actions.test.tsx
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Todos.bulk-actions.test.tsx was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Todos.bulk.select.filtered.test.tsx
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Todos.bulk.select.filtered.test.tsx was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Todos.calendar.date.test.tsx
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Todos.calendar.date.test.tsx was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Todos.calendar.hour.test.tsx
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Todos.calendar.hour.test.tsx was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Todos.drag.project.test.tsx
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Todos.drag.project.test.tsx was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Todos.dragdrop.test.tsx
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Todos.dragdrop.test.tsx was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Todos.filters.combinations.test.tsx
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Todos.filters.combinations.test.tsx was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Todos.filters.sort.test.tsx
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Todos.filters.sort.test.tsx was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Todos.filters.status.project.test.tsx
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Todos.filters.status.project.test.tsx was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Todos.inline-edit.test.tsx
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Todos.inline-edit.test.tsx was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Todos.project.modal.test.tsx
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Todos.project.modal.test.tsx was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Todos.quickadd.selectedProject.test.tsx
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Todos.quickadd.selectedProject.test.tsx was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Todos.status.star.test.tsx
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/Todos.status.star.test.tsx was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/test-utils.tsx
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/__tests__/test-utils.tsx was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/hooks/useProjectTracking.ts
+  150:16  error  Parsing error: ';' expected
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/projects/components/ProjectStats.tsx
+  13:8  error  Missing return type on function  @typescript-eslint/explicit-function-return-type
+  13:8  error  Missing return type on function  @typescript-eslint/explicit-module-boundary-types
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/projects/services/projectHelpers.ts
+  60:64  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  88:38  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/projects/types.ts
+  21:10  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/providers/QueryProvider.tsx
+  15:8  error  Missing return type on function  @typescript-eslint/explicit-function-return-type
+  15:8  error  Missing return type on function  @typescript-eslint/explicit-module-boundary-types
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/scripts/generateFinanceSQL.ts
+  163:1  error  Missing return type on function  @typescript-eslint/explicit-function-return-type
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/scripts/resync75HardTodos.ts
+   9:1  error  Missing return type on function                                                                                                                                     @typescript-eslint/explicit-function-return-type
+  21:1  error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/services/__tests__/apiClient.test.ts
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/services/__tests__/apiClient.test.ts was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/services/__tests__/expenseCategorizationEngine.test.ts
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/services/__tests__/expenseCategorizationEngine.test.ts was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/services/__tests__/supabaseAdapter.test.ts
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/services/__tests__/supabaseAdapter.test.ts was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/services/api.ts
+  6:7   error    Unsafe assignment of an `any` value                                                                        @typescript-eslint/no-unsafe-assignment
+  6:52  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/services/conversationEngine.ts
+  3:1  warning  Unused eslint-disable directive (no problems were reported from 'max-lines')
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/services/supabaseAdapter.ts
+  724:1  error  File has too many lines (967). Maximum allowed is 600  max-lines
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/services/types.ts
+  235:22  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/seventyFiveHard/actions/challengeActions.ts
+  254:41  error  Unsafe argument of type error typed assigned to a parameter of type `Task[]`  @typescript-eslint/no-unsafe-argument
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/shared/types/connections.ts
+   73:28  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  139:29  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/shopping/components/layout/ShoppingHeader.tsx
+  20:8  error  Missing return type on function  @typescript-eslint/explicit-function-return-type
+  20:8  error  Missing return type on function  @typescript-eslint/explicit-module-boundary-types
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/shopping/components/layout/ViewTabs.tsx
+  17:8  error  Missing return type on function  @typescript-eslint/explicit-function-return-type
+  17:8  error  Missing return type on function  @typescript-eslint/explicit-module-boundary-types
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/shopping/components/modals/BarcodeScannerModal.tsx
+  20:8  error  Missing return type on function  @typescript-eslint/explicit-function-return-type
+  20:8  error  Missing return type on function  @typescript-eslint/explicit-module-boundary-types
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/shopping/components/modals/EditItemModal.tsx
+  22:8  error  Missing return type on function  @typescript-eslint/explicit-function-return-type
+  22:8  error  Missing return type on function  @typescript-eslint/explicit-module-boundary-types
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/shopping/components/modals/StoreSuggestionsModal.tsx
+  90:36  error  Unsafe call of a(n) `error` type typed value             @typescript-eslint/no-unsafe-call
+  90:78  error  Unsafe member access .toFixed on an `error` typed value  @typescript-eslint/no-unsafe-member-access
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/shopping/components/pantry/__tests__/PantryActionButtons.test.tsx
+  71:89  error  Async arrow function has no 'await' expression  @typescript-eslint/require-await
+  80:87  error  Async arrow function has no 'await' expression  @typescript-eslint/require-await
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/shopping/components/views/DistributeView.tsx
+  20:8  error  Missing return type on function  @typescript-eslint/explicit-function-return-type
+  20:8  error  Missing return type on function  @typescript-eslint/explicit-module-boundary-types
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/shopping/components/views/MasterListView.tsx
+  21:8  error  Missing return type on function  @typescript-eslint/explicit-function-return-type
+  21:8  error  Missing return type on function  @typescript-eslint/explicit-module-boundary-types
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/shopping/hooks/usePantryManagement.ts
+  1:1  error  Imports "React" are only used as type  @typescript-eslint/consistent-type-imports
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/shopping/hooks/useShoppingModals.ts
+  1:1  error  Imports "React" are only used as type  @typescript-eslint/consistent-type-imports
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/shopping/hooks/useVoiceInput.ts
+  39:66  error  Unsafe argument of type `any` assigned to a parameter of type `LogContext | undefined`  @typescript-eslint/no-unsafe-argument
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/shopping/services/receiptParser.ts
+  36:38  error  Parsing error: Expression expected
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/shopping/utils/storeUtils.ts
+  42:28  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/skincare/components/ProductFormModal.tsx
+  50:7  error  Unexpected alert  no-alert
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/test/setup.ts
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/test/setup.ts was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/test/vitest.d.ts
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/test/vitest.d.ts was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/todos/components/Sidebar.tsx
+  53:8  error  Missing return type on function  @typescript-eslint/explicit-function-return-type
+  53:8  error  Missing return type on function  @typescript-eslint/explicit-module-boundary-types
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/todos/components/SubtaskForm.tsx
+  28:8   error  Missing return type on function  @typescript-eslint/explicit-function-return-type
+  28:8   error  Missing return type on function  @typescript-eslint/explicit-module-boundary-types
+  36:68  error  Missing return type on function  @typescript-eslint/explicit-function-return-type
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/todos/components/SubtaskRow.tsx
+  26:8   error  Missing return type on function  @typescript-eslint/explicit-function-return-type
+  26:8   error  Missing return type on function  @typescript-eslint/explicit-module-boundary-types
+  32:87  error  Missing return type on function  @typescript-eslint/explicit-function-return-type
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/todos/components/TaskListView.tsx
+  84:8  error  Missing return type on function  @typescript-eslint/explicit-function-return-type
+  84:8  error  Missing return type on function  @typescript-eslint/explicit-module-boundary-types
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/todos/components/TaskRow.tsx
+  189:28  error  Unsafe assignment of an error typed value  @typescript-eslint/no-unsafe-assignment
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/todos/services/taskFilters.ts
+  14:75  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/travel/components/EnhancedGeographicMap.tsx
+  468:1  error  File has too many lines (850). Maximum allowed is 400  max-lines
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/travel/components/ExpiryAlerts.tsx
+  30:43  error  Missing return type on function  @typescript-eslint/explicit-function-return-type
+  39:65  error  Missing return type on function  @typescript-eslint/explicit-function-return-type
+  68:63  error  Missing return type on function  @typescript-eslint/explicit-function-return-type
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/travel/components/InteractiveWorldMap.tsx
+  48:63  error  Unsafe argument of type `any` assigned to a parameter of type `LogContext | undefined`  @typescript-eslint/no-unsafe-argument
+  50:79  error  Unsafe argument of type `any` assigned to a parameter of type `LogContext | undefined`  @typescript-eslint/no-unsafe-argument
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/travel/components/RealisticMapView.tsx
+  69:15  error  Unsafe assignment of an `any` value        @typescript-eslint/no-unsafe-assignment
+  84:11  error  Unsafe assignment of an error typed value  @typescript-eslint/no-unsafe-assignment
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/travel/data/comprehensiveGeography.ts
+  10:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/travel/data/geographicFeatures.ts
+  23:15  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/travel/pages/TravelPage.tsx
+  232:3  error  Parsing error: ')' expected
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/travel/utils/findMissingCountries.ts
+  48:1  error  Async function 'findMissingCountries' has no 'await' expression                                                                                                     @typescript-eslint/require-await
+  48:1  error  Missing return type on function                                                                                                                                     @typescript-eslint/explicit-function-return-type
+  94:1  error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/travel/utils/testVisaBasedAccess.ts
+  27:93  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/types/finance.ts
+  459:1  error  File has too many lines (460). Maximum allowed is 400  max-lines
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/types/focusEnhanced.ts
+  137:10  error  Unexpected any. Specify a different type               @typescript-eslint/no-explicit-any
+  457:1   error  File has too many lines (522). Maximum allowed is 400  max-lines
+  571:9   error  Unexpected any. Specify a different type               @typescript-eslint/no-explicit-any
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/types/index.ts
+   35:14  error  "personal" | "health" | "work" | "learning" | "creative" | "other" is overridden by string in this union type  @typescript-eslint/no-redundant-type-constituents
+  152:13  error  Unexpected any. Specify a different type                                                                       @typescript-eslint/no-explicit-any
+  453:1   error  File has too many lines (465). Maximum allowed is 400                                                          max-lines
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/types/web-speech.d.ts
+  38:3  error  Interfaces cannot be constructed, only classes  @typescript-eslint/no-misused-new
+  44:1  error  Unexpected var, use let or const instead        no-var
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/utils/quickAdd.ts
+  23:41  error    Missing return type on function                                                                            @typescript-eslint/explicit-function-return-type
+  80:51  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  92:46  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/voice/time.ts
+   9:27  error  Missing return type on function  @typescript-eslint/explicit-function-return-type
+  11:37  error  Missing return type on function  @typescript-eslint/explicit-function-return-type
+  12:35  error  Missing return type on function  @typescript-eslint/explicit-function-return-type
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/supabase/functions/fetch-youtube-snippet/index.ts
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/supabase/functions/fetch-youtube-snippet/index.ts was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/supabase/functions/send-invitation-email/index.ts
+  0:0  error  Parsing error: /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/supabase/functions/send-invitation-email/index.ts was not found by the project service. Consider either including it in the tsconfig.json or including it in allowDefaultProject
+
+✖ 258 problems (220 errors, 38 warnings)
+  2 errors and 2 warnings potentially fixable with the `--fix` option.
+

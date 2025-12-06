@@ -5,6 +5,8 @@
  */
 
 import type { Transaction } from '../types';
+import { logger } from '../../services/logger';
+
 
 export interface BudgetRecommendation {
   suggested: number;
@@ -28,20 +30,20 @@ export function calculateBudgetRecommendation(
   categoryId: string,
   monthsToAnalyze: number = 3
 ): BudgetRecommendation | null {
-  console.log('[BudgetRecommendation] Calculating for category:', categoryId);
-  console.log('[BudgetRecommendation] Total transactions:', transactions.length);
-  console.log('[BudgetRecommendation] Months to analyze:', monthsToAnalyze);
+  logger.info('BudgetRecommendations', '[BudgetRecommendation] Calculating for category:', categoryId);
+  logger.info('BudgetRecommendations', '[BudgetRecommendation] Total transactions:', transactions.length);
+  logger.info('BudgetRecommendations', '[BudgetRecommendation] Months to analyze:', monthsToAnalyze);
 
   // Filter transactions for this category (debit only = spending)
   const categoryTransactions = transactions.filter(
     (txn) => txn.categoryId === categoryId && txn.type === 'debit'
   );
 
-  console.log('[BudgetRecommendation] Transactions for this category:', categoryTransactions.length);
-  console.log('[BudgetRecommendation] Sample transactions:', categoryTransactions.slice(0, 3));
+  logger.info('BudgetRecommendations', '[BudgetRecommendation] Transactions for this category:', categoryTransactions.length);
+  logger.info('BudgetRecommendations', '[BudgetRecommendation] Sample transactions:', categoryTransactions.slice(0, 3));
 
   if (categoryTransactions.length === 0) {
-    console.log('[BudgetRecommendation] No transactions for this category');
+    logger.info('BudgetRecommendations', '[BudgetRecommendation] No transactions for this category');
     return null; // No historical data
   }
 
@@ -56,7 +58,7 @@ export function calculateBudgetRecommendation(
     monthlySpending.set(monthKey, 0);
   }
 
-  console.log('[BudgetRecommendation] Analyzing months:', Array.from(monthlySpending.keys()));
+  logger.info('BudgetRecommendations', '[BudgetRecommendation] Analyzing months:', Array.from(monthlySpending.keys()));
 
   // Sum spending per month
   categoryTransactions.forEach((txn) => {
@@ -66,15 +68,15 @@ export function calculateBudgetRecommendation(
     }
   });
 
-  console.log('[BudgetRecommendation] Monthly spending:', Object.fromEntries(monthlySpending));
+  logger.info('BudgetRecommendations', '[BudgetRecommendation] Monthly spending:', Object.fromEntries(monthlySpending));
 
   // Calculate statistics
   const monthlyAmounts = Array.from(monthlySpending.values()).filter((amount) => amount > 0);
 
-  console.log('[BudgetRecommendation] Monthly amounts (non-zero):', monthlyAmounts);
+  logger.info('BudgetRecommendations', '[BudgetRecommendation] Monthly amounts (non-zero):', monthlyAmounts);
 
   if (monthlyAmounts.length === 0) {
-    console.log('[BudgetRecommendation] No spending in analyzed period');
+    logger.info('BudgetRecommendations', '[BudgetRecommendation] No spending in analyzed period');
     return null; // No spending in analyzed period
   }
 
@@ -109,7 +111,7 @@ export function calculateBudgetRecommendation(
     confidence,
   };
 
-  console.log('[BudgetRecommendation] Final recommendation:', recommendation);
+  logger.info('BudgetRecommendations', '[BudgetRecommendation] Final recommendation:', recommendation);
 
   return recommendation;
 }

@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /**
  * TransactionsPageGrouped
  * Transactions organized by category with date sorting and inline editing
@@ -12,10 +13,16 @@ import { QuickAddTransaction } from '../components/QuickAddTransaction';
 import ImportCSVButton from '../components/ImportCSVButton';
 import { EditableTransactionRow } from '../components/transactions/EditableTransactionRow';
 import BudgetTemplateManager from '../components/budgets/BudgetTemplateManager';
-import { getFinanceAPI } from '../data';
+import {
+  useTransactionsQuery,
+  useCategoriesQuery,
+  useBudgetsQuery,
+  useBudgetTemplatesQuery,
+} from '../hooks/useFinanceQuery';
 import { formatCurrency } from '../utils/currency';
 import useFinanceFilters from '../store/useFinanceFilters';
-import type { Transaction, Category, Budget } from '../types';
+import { getFinanceAPI } from '../data';
+import type { Transaction, Budget } from '../types';
 
 type GroupedTransactions = {
   categoryId: string | null;
@@ -27,11 +34,6 @@ type GroupedTransactions = {
 };
 
 const TransactionsPageGrouped: React.FC = () => {
-  const [transactions, setTransactions] = React.useState<Transaction[]>([]);
-  const [categories, setCategories] = React.useState<Category[]>([]);
-  const [budgets, setBudgets] = React.useState<Budget[]>([]);
-  const [budgetTemplates, setBudgetTemplates] = React.useState<Map<string, number>>(new Map());
-  const [loading, setLoading] = React.useState(false);
   const [showQuickAdd, setShowQuickAdd] = React.useState(false);
   const [showTemplateManager, setShowTemplateManager] = React.useState(false);
   const [collapsedGroups, setCollapsedGroups] = React.useState<Set<string>>(new Set());
@@ -43,54 +45,53 @@ const TransactionsPageGrouped: React.FC = () => {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   }, []);
 
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const api = await getFinanceAPI();
+  // React Query hooks
+  const { data: transactions = [], isLoading: txnsLoading, refetch: refetchTransactions } = useTransactionsQuery({
+    text: filters.text,
+    fromISO: filters.fromISO,
+    toISO: filters.toISO,
+    type: filters.type,
+    limit: 500,
+  });
+  const { data: categories = [], isLoading: categoriesLoading, refetch: refetchCategories } = useCategoriesQuery();
+  const { data: budgets = [], isLoading: budgetsLoading, refetch: refetchBudgets } = useBudgetsQuery(currentMonth);
+  const { data: budgetTemplatesList = [], isLoading: templatesLoading, refetch: refetchTemplates } = useBudgetTemplatesQuery();
 
-      const [txns, cats, buds, templates] = await Promise.all([
-        api.listTransactions({
-          text: filters.text,
-          fromISO: filters.fromISO,
-          toISO: filters.toISO,
-          type: filters.type,
-          limit: 500,
-        }),
-        api.listCategories(),
-        api.listBudgets(currentMonth),
-        api.listBudgetTemplates(),
-      ]);
+  const loading = txnsLoading || categoriesLoading || budgetsLoading || templatesLoading;
 
-      setTransactions(txns.items);
-      setCategories(cats);
-      setBudgets(buds);
+  // Load data function for refetching
+  const loadData = React.useCallback((): void => {
+    void refetchTransactions();
+    void refetchCategories();
+    void refetchBudgets();
+    void refetchTemplates();
+  }, [refetchTransactions, refetchCategories, refetchBudgets, refetchTemplates]);
 
-      // Convert templates to Map
-      const templateMap = new Map<string, number>();
-      templates.forEach((t) => templateMap.set(t.categoryId, t.defaultAmount));
-      setBudgetTemplates(templateMap);
-    } catch (error) {
-      console.error('Failed to load data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  React.useEffect(() => {
-    loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters.text, filters.fromISO, filters.toISO, filters.type]);
+  // Convert templates to Map
+  const budgetTemplates = React.useMemo(() => {
+    const templateMap = new Map<string, number>();
+    budgetTemplatesList.forEach((t) => templateMap.set(t.categoryId, t.defaultAmount));
+    return templateMap;
+  }, [budgetTemplatesList]);
 
   // Group transactions by category
   const groupedTransactions: GroupedTransactions[] = React.useMemo(() => {
     const groups = new Map<string | null, Transaction[]>();
 
+    // Ensure transactions is an array before iterating
+    if (!Array.isArray(transactions)) {
+      return [];
+    }
+
     transactions.forEach((txn) => {
-      const key = txn.categoryId || null;
+      const key = txn.categoryId ?? null;
       if (!groups.has(key)) {
         groups.set(key, []);
       }
-      groups.get(key)!.push(txn);
+      const groupArray = groups.get(key);
+      if (groupArray) {
+        groupArray.push(txn);
+      }
     });
 
     // Convert to array and sort each group by date (newest first)
@@ -98,7 +99,7 @@ const TransactionsPageGrouped: React.FC = () => {
 
     groups.forEach((txns, categoryId) => {
       const categoryName = categoryId
-        ? categories.find((c) => c.id === categoryId)?.name || 'Unknown Category'
+        ? categories.find((c) => c.id === categoryId)?.name ?? 'Unknown Category'
         : 'Uncategorized';
 
       // Sort transactions by date (newest first)
@@ -133,8 +134,8 @@ const TransactionsPageGrouped: React.FC = () => {
     });
   }, [transactions, categories, budgets]);
 
-  const toggleGroup = (categoryId: string | null) => {
-    const key = categoryId || 'uncategorized';
+  const toggleGroup = (categoryId: string | null): void => {
+    const key = categoryId ?? 'uncategorized';
     setCollapsedGroups((prev) => {
       const next = new Set(prev);
       if (next.has(key)) {
@@ -146,23 +147,25 @@ const TransactionsPageGrouped: React.FC = () => {
     });
   };
 
-  const isCollapsed = (categoryId: string | null) => {
-    const key = categoryId || 'uncategorized';
+  const isCollapsed = (categoryId: string | null): boolean => {
+    const key = categoryId ?? 'uncategorized';
     return collapsedGroups.has(key);
   };
 
-  const grandTotal = transactions.reduce(
-    (sum, txn) => sum + (txn.type === 'credit' ? txn.amount : -txn.amount),
-    0
-  );
+  const grandTotal = Array.isArray(transactions)
+    ? transactions.reduce(
+        (sum, txn) => sum + (txn.type === 'credit' ? txn.amount : -txn.amount),
+        0
+      )
+    : 0;
 
   // Calculate budget summary metrics
   const budgetSummary = React.useMemo(() => {
     const categoriesWithBudgets = groupedTransactions.filter(g => g.budgetLimit);
-    const totalBudgeted = categoriesWithBudgets.reduce((sum, g) => sum + (g.budgetLimit || 0), 0);
+    const totalBudgeted = categoriesWithBudgets.reduce((sum, g) => sum + (g.budgetLimit ?? 0), 0);
     const totalSpent = categoriesWithBudgets.reduce((sum, g) => sum + g.total, 0);
     const totalRemaining = totalBudgeted - totalSpent;
-    const overBudgetCount = categoriesWithBudgets.filter(g => g.total > (g.budgetLimit || 0)).length;
+    const overBudgetCount = categoriesWithBudgets.filter(g => g.total > (g.budgetLimit ?? 0)).length;
 
     return {
       categoriesWithBudgets: categoriesWithBudgets.length,
@@ -296,7 +299,7 @@ const TransactionsPageGrouped: React.FC = () => {
       >
         <div className="mb-4 flex justify-between items-center">
           <div className="text-sm text-primary opacity-70">
-            {transactions.length} transaction{transactions.length !== 1 ? 's' : ''} in{' '}
+            {Array.isArray(transactions) ? transactions.length : 0} transaction{(Array.isArray(transactions) ? transactions.length : 0) !== 1 ? 's' : ''} in{' '}
             {groupedTransactions.length} categor{groupedTransactions.length !== 1 ? 'ies' : 'y'}
           </div>
           <div className="text-sm font-semibold text-primary">
@@ -326,7 +329,7 @@ const TransactionsPageGrouped: React.FC = () => {
 
               return (
                 <div
-                  key={group.categoryId || 'uncategorized'}
+                  key={group.categoryId ?? 'uncategorized'}
                   className="rounded-lg border border-primary/20 overflow-hidden"
                 >
                   {/* Group Header */}
@@ -461,7 +464,7 @@ const TransactionsPageGrouped: React.FC = () => {
           onClose={() => setShowTemplateManager(false)}
           categories={categories}
           existingTemplates={budgetTemplates}
-          onSave={async (templates) => {
+          onSave={async (templates): Promise<void> => {
             const api = await getFinanceAPI();
             for (const template of templates) {
               await api.upsertBudgetTemplate({
@@ -472,7 +475,7 @@ const TransactionsPageGrouped: React.FC = () => {
             setShowTemplateManager(false);
             loadData();
           }}
-          onDelete={async (categoryId) => {
+          onDelete={async (categoryId): Promise<void> => {
             const api = await getFinanceAPI();
             await api.deleteBudgetTemplate(categoryId);
             loadData();

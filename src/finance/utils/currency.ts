@@ -3,7 +3,7 @@ export function formatCurrency(
   fractionDigits?: number,
   currency = 'USD',
   locale = 'en-US'
-) {
+): string {
   const options: Intl.NumberFormatOptions = {
     style: 'currency',
     currency,

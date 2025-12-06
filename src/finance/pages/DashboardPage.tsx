@@ -2,101 +2,71 @@ import React from 'react';
 import { Card } from '../components/Card';
 import { StackedBarChart } from '../components/StackedBarChart';
 import SankeyChart from '../components/visualizations/SankeyChart';
+import { FinancialInsightsCard } from '../components/insights/FinancialInsightsCard';
 import { formatCurrency } from '../utils/currency';
 import { currentMonth, monthRange, toMonth } from '../utils/date';
-import { getTimePeriodRange } from '../utils/timePeriodUtils';
-import { useFinanceMetrics } from '../hooks/useFinanceMetrics';
-import { getFinanceAPI } from '../data';
-import type { Transaction } from '../types';
+import { useFinanceMetrics, type FinanceMetrics } from '../hooks/useFinanceMetrics';
+import {
+  useTransactionsQuery,
+  useAccountsQuery,
+  useCategoriesQuery,
+  useBudgetsQuery,
+} from '../hooks/useFinanceQuery';
+import { logger } from '@/services/logger';
+import type { Transaction, Paginated } from '../types';
 
 const DashboardPage: React.FC = () => {
-  const [loading, setLoading] = React.useState(true);
   const [month, setMonth] = React.useState(currentMonth());
-  const [accounts, setAccounts] = React.useState<any[]>([]);
-  const [categories, setCategories] = React.useState<any[]>([]);
-  const [budgets, setBudgets] = React.useState<any[]>([]);
-  const [txns, setTxns] = React.useState<Transaction[]>([]);
 
-  // Initialize month from transactions only on first load
-  const [initialized, setInitialized] = React.useState(false);
+  // React Query hooks
+  const { data: transactionsData, isLoading: txnsLoading } = useTransactionsQuery({ limit: 500 });
+  const { data: accounts = [], isLoading: accountsLoading } = useAccountsQuery();
+  const { data: categories = [], isLoading: categoriesLoading } = useCategoriesQuery();
+  const { data: budgets = [], isLoading: budgetsLoading } = useBudgetsQuery(month);
 
-  React.useEffect(() => {
-    let mounted = true;
-    (async () => {
-      setLoading(true);
-      const api = await getFinanceAPI();
-
-      // On first load, get transactions and use current month by default
-      if (!initialized) {
-        const { items: txItems } = await api.listTransactions({ limit: 500 });
-        if (!mounted) return;
-
-        // Use current month instead of latest transaction month
-        // This ensures budgets are shown for the current month
-        const defaultMonth = currentMonth();
-
-        setTxns(txItems);
-        setMonth(defaultMonth);
-        setInitialized(true);
-        setLoading(false);
-        return;
-      }
-
-      // Load all data for the selected month
-      const [{ items: txItems }, accts, cats, b] = await Promise.all([
-        api.listTransactions({ limit: 500 }),
-        api.listAccounts(),
-        api.listCategories(),
-        api.listBudgets(month),
-      ]);
-      if (!mounted) return;
-      setTxns(txItems);
-      setAccounts(accts);
-      setCategories(cats);
-      setBudgets(b);
-      setLoading(false);
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, [month, initialized]);
+  // Type assertion: transactionsData is actually Paginated<Transaction> at runtime
+  // Wrapped in useMemo to prevent dependency issues in useEffect hooks
+  const txns: Transaction[] = React.useMemo((): Transaction[] => {
+    return (transactionsData as Paginated<Transaction> | undefined)?.items ?? [];
+  }, [transactionsData]);
+  const loading = txnsLoading || accountsLoading || categoriesLoading || budgetsLoading;
 
   const { from, to } = monthRange(month);
   // Filter transactions by extracting just the YYYY-MM part for comparison
-  const monthTxns = txns.filter((t) => {
-    const txnMonth = t.dateISO.slice(0, 7); // Extract YYYY-MM
+  const monthTxns: Transaction[] = txns.filter((t: Transaction): boolean => {
+    const txnMonth: string = t.dateISO.slice(0, 7); // Extract YYYY-MM
     return txnMonth === month;
   });
 
   // Debug logging
-  React.useEffect(() => {
-    console.log('[Dashboard] Transaction Filtering:', {
+  React.useEffect((): void => {
+    logger.debug('DashboardPage', 'Transaction Filtering', {
       selectedMonth: month,
       totalTransactions: txns.length,
       monthTransactions: monthTxns.length,
-      allTxnMonths: [...new Set(txns.map(t => t.dateISO.slice(0, 7)))].sort(),
-      sampleTxns: txns.slice(0, 3).map(t => ({
+      allTxnMonths: [...new Set(txns.map((t: Transaction): string => t.dateISO.slice(0, 7)))].sort(),
+      sampleTxns: txns.slice(0, 3).map((t: Transaction) => ({
         date: t.dateISO,
         month: t.dateISO.slice(0, 7),
         desc: t.description,
         type: t.type,
         amount: t.amount
       })),
-      monthTxnsSample: monthTxns.slice(0, 3).map(t => ({
+      monthTxnsSample: monthTxns.slice(0, 3).map((t: Transaction) => ({
         date: t.dateISO,
         desc: t.description,
         type: t.type,
         amount: t.amount
       }))
     });
-  }, [month, txns.length, monthTxns.length]);
+  }, [month, txns, monthTxns]);
 
-  const income = monthTxns.filter((t) => t.type === 'credit').reduce((s, t) => s + t.amount, 0);
-  const expense = monthTxns.filter((t) => t.type === 'debit').reduce((s, t) => s + t.amount, 0);
-  const cashflow = income - expense;
+  const income: number = monthTxns.filter((t: Transaction): boolean => t.type === 'credit').reduce((s: number, t: Transaction): number => s + t.amount, 0);
+  const expense: number = monthTxns.filter((t: Transaction): boolean => t.type === 'debit').reduce((s: number, t: Transaction): number => s + t.amount, 0);
+  const cashflow: number = income - expense;
 
   // Calculate metrics for Money Flow visualization
-  const currentPeriod = React.useMemo(() => {
+  const currentPeriod = React.useMemo((): { from: string; to: string; label: string } => {
     return {
       from: from,
       to: to,
@@ -104,11 +74,11 @@ const DashboardPage: React.FC = () => {
     };
   }, [from, to, month]);
 
-  const previousPeriod = React.useMemo(() => {
-    const [year, monthNum] = month.split('-').map(Number);
-    const prevMonth = monthNum === 1 ? 12 : monthNum - 1;
-    const prevYear = monthNum === 1 ? year - 1 : year;
-    const prevMonthStr = `${prevYear}-${String(prevMonth).padStart(2, '0')}`;
+  const previousPeriod = React.useMemo((): { from: string; to: string; label: string } => {
+    const [year, monthNum]: number[] = month.split('-').map(Number);
+    const prevMonth: number = monthNum === 1 ? 12 : monthNum - 1;
+    const prevYear: number = monthNum === 1 ? year - 1 : year;
+    const prevMonthStr: string = `${prevYear}-${String(prevMonth).padStart(2, '0')}`;
     const { from: prevFrom, to: prevTo } = monthRange(prevMonthStr);
     return {
       from: prevFrom,
@@ -118,7 +88,7 @@ const DashboardPage: React.FC = () => {
   }, [month]);
 
   // Only calculate metrics after data is loaded
-  const metrics = useFinanceMetrics({
+  const metrics: FinanceMetrics = useFinanceMetrics({
     transactions: loading ? [] : txns,
     categories: loading ? [] : categories,
     accounts: loading ? [] : accounts,
@@ -128,9 +98,9 @@ const DashboardPage: React.FC = () => {
   });
 
   // Debug metrics
-  React.useEffect(() => {
+  React.useEffect((): void => {
     if (!loading && txns.length > 0) {
-      console.log('[Dashboard] Metrics Debug:', {
+      logger.debug('DashboardPage', 'Metrics Debug', {
         sankeyDataLength: metrics.sankeyData.length,
         sankeyData: metrics.sankeyData,
         currentPeriod,
@@ -139,26 +109,26 @@ const DashboardPage: React.FC = () => {
         categoriesTotal: categories.length,
       });
     }
-  }, [loading, metrics.sankeyData, currentPeriod, txns.length, monthTxns.length, categories.length]);
+  }, [loading, metrics.sankeyData, currentPeriod, txns, monthTxns, categories]);
 
   // Calculate spending by category
-  const spendingMap = monthTxns.filter((t) => t.type === 'debit').reduce<Record<string, number>>((acc, t) => {
-    const key = t.categoryId ?? 'uncategorized';
+  const spendingMap: Record<string, number> = monthTxns.filter((t: Transaction): boolean => t.type === 'debit').reduce<Record<string, number>>((acc: Record<string, number>, t: Transaction): Record<string, number> => {
+    const key: string = t.categoryId ?? 'uncategorized';
     acc[key] = (acc[key] ?? 0) + t.amount;
     return acc;
   }, {});
 
   // Include all budgeted categories, even if there's no spending
-  const allCategoryIds = new Set([
+  const allCategoryIds: Set<string> = new Set([
     ...Object.keys(spendingMap),
-    ...budgets.map(b => b.categoryId)
+    ...budgets.map((b) => b.categoryId)
   ]);
 
   // top 5 categories by spend or budget
-  const spendByCat = Array.from(allCategoryIds)
-    .map((catId) => {
+  const spendByCat: Array<{ catId: string; name: string; total: number; budget: number }> = Array.from(allCategoryIds)
+    .map((catId: string): { catId: string; name: string; total: number; budget: number } => {
       const budget = budgets.find((b) => b.categoryId === catId);
-      const total = spendingMap[catId] || 0;
+      const total: number = spendingMap[catId] ?? 0;
       return {
         catId,
         name: categories.find((c) => c.id === catId)?.name ?? 'Uncategorized',
@@ -166,7 +136,7 @@ const DashboardPage: React.FC = () => {
         budget: budget?.limit ?? 0,
       };
     })
-    .sort((a, b) => {
+    .sort((a, b): number => {
       // Sort by spending first, then by budget
       if (b.total !== a.total) return b.total - a.total;
       return b.budget - a.budget;
@@ -174,25 +144,25 @@ const DashboardPage: React.FC = () => {
     .slice(0, 5);
 
   // Get months from transactions and ensure current month is included
-  const monthsInTx = Array.from(
-    new Set([...txns.map((t) => toMonth(t.dateISO)), currentMonth()])
+  const monthsInTx: string[] = Array.from(
+    new Set([...txns.map((t: Transaction): string => toMonth(t.dateISO)), currentMonth()])
   ).sort();
 
   // Get top 5 categories for stacked chart
-  const topCategoriesForChart = Array.from(allCategoryIds)
-    .map((catId) => {
-      const total = spendingMap[catId] || 0;
+  const topCategoriesForChart: Array<{ id: string; name: string; total: number }> = Array.from(allCategoryIds)
+    .map((catId: string): { id: string; name: string; total: number } => {
+      const total: number = spendingMap[catId] ?? 0;
       return {
         id: catId,
         name: categories.find((c) => c.id === catId)?.name ?? 'Uncategorized',
         total,
       };
     })
-    .sort((a, b) => b.total - a.total)
+    .sort((a, b): number => b.total - a.total)
     .slice(0, 5);
 
   // Define colors for categories
-  const categoryColors = [
+  const categoryColors: string[] = [
     '#0f172a', // slate-900
     '#1e40af', // blue-700
     '#7c3aed', // violet-600
@@ -200,24 +170,24 @@ const DashboardPage: React.FC = () => {
     '#ea580c', // orange-600
   ];
 
-  const stackKeys = topCategoriesForChart.map((cat, idx) => ({
+  const stackKeys: Array<{ key: string; color: string; label: string }> = topCategoriesForChart.map((cat, idx: number): { key: string; color: string; label: string } => ({
     key: cat.id,
-    color: categoryColors[idx] || '#64748b',
+    color: categoryColors[idx] ?? '#64748b',
     label: cat.name,
   }));
 
   // Calculate month-on-month spending by category (last 6 months)
-  const last6Months = monthsInTx.slice(-6);
-  const momData = last6Months.map((m) => {
+  const last6Months: string[] = monthsInTx.slice(-6);
+  const momData: Array<Record<string, string | number>> = last6Months.map((m: string): Record<string, string | number> => {
     const { from: mFrom, to: mTo } = monthRange(m);
-    const mTxns = txns.filter((t) => t.dateISO >= mFrom && t.dateISO <= mTo && t.type === 'debit');
-    const dataPoint: Record<string, any> = { month: m };
+    const mTxns: Transaction[] = txns.filter((t: Transaction): boolean => t.dateISO >= mFrom && t.dateISO <= mTo && t.type === 'debit');
+    const dataPoint: Record<string, string | number> = { month: m };
 
     // Calculate spending for top categories only
-    topCategoriesForChart.forEach((cat) => {
-      const catSpending = mTxns
-        .filter((t) => t.categoryId === cat.id)
-        .reduce((sum, t) => sum + t.amount, 0);
+    topCategoriesForChart.forEach((cat): void => {
+      const catSpending: number = mTxns
+        .filter((t: Transaction): boolean => t.categoryId === cat.id)
+        .reduce((sum: number, t: Transaction): number => sum + t.amount, 0);
       dataPoint[cat.id] = catSpending;
     });
 
@@ -225,16 +195,16 @@ const DashboardPage: React.FC = () => {
   });
 
   // Calculate spending trends for ALL available months (full history)
-  const spendingTrendsData = monthsInTx.map((m) => {
+  const spendingTrendsData: Array<Record<string, string | number>> = monthsInTx.map((m: string): Record<string, string | number> => {
     const { from: mFrom, to: mTo } = monthRange(m);
-    const mTxns = txns.filter((t) => t.dateISO >= mFrom && t.dateISO <= mTo && t.type === 'debit');
-    const dataPoint: Record<string, any> = { month: m };
+    const mTxns: Transaction[] = txns.filter((t: Transaction): boolean => t.dateISO >= mFrom && t.dateISO <= mTo && t.type === 'debit');
+    const dataPoint: Record<string, string | number> = { month: m };
 
     // Calculate spending for top categories
-    topCategoriesForChart.forEach((cat) => {
-      const catSpending = mTxns
-        .filter((t) => t.categoryId === cat.id)
-        .reduce((sum, t) => sum + t.amount, 0);
+    topCategoriesForChart.forEach((cat): void => {
+      const catSpending: number = mTxns
+        .filter((t: Transaction): boolean => t.categoryId === cat.id)
+        .reduce((sum: number, t: Transaction): number => sum + t.amount, 0);
       dataPoint[cat.id] = catSpending;
     });
 
@@ -242,18 +212,28 @@ const DashboardPage: React.FC = () => {
   });
 
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-      <Card title="Month" actions={
-        <select className="rounded-md border border-slate-300 px-2 py-1 text-sm" value={month} onChange={(e) => setMonth(e.target.value)}>
-          {monthsInTx.map((m) => (
-            <option key={m} value={m}>
-              {m}
-            </option>
-          ))}
-        </select>
-      }>
-        <div className="text-sm text-slate-600">Showing data for {month}</div>
-      </Card>
+    <div className="space-y-4">
+      {/* Financial Insights - Full Width */}
+      <div className="w-full">
+        <FinancialInsightsCard
+          transactions={txns}
+          accounts={accounts}
+          goals={[]}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <Card title="Month" actions={
+          <select className="rounded-md border border-slate-300 px-2 py-1 text-sm" value={month} onChange={(e: React.ChangeEvent<HTMLSelectElement>): void => setMonth(e.target.value)}>
+            {monthsInTx.map((m: string) => (
+              <option key={m} value={m}>
+                {m}
+              </option>
+            ))}
+          </select>
+        }>
+          <div className="text-sm text-slate-600">Showing data for {month}</div>
+        </Card>
 
       <Card title="Cash Flow (This Month)">
         {loading ? (
@@ -377,6 +357,7 @@ const DashboardPage: React.FC = () => {
           </div>
         )}
       </Card>
+    </div>
     </div>
   );
 };

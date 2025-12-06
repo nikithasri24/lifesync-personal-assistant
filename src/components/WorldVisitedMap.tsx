@@ -1,11 +1,34 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet'
+import type L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import countriesData from '../data/countries.json'
 
-type Feature = GeoJSON.Feature<GeoJSON.Geometry, { name?: string; ADMIN?: string; ISO_A2?: string; iso_a2?: string; iso_a3?: string }>
+interface CountryProperties {
+  name?: string
+  ADMIN?: string
+  ISO_A2?: string
+  iso_a2?: string
+  iso_a3?: string
+}
+
+interface CountryDataItem {
+  code?: string
+  continent?: string
+}
+
+type Feature = GeoJSON.Feature<GeoJSON.Geometry, CountryProperties>
 
 const WORLD_GEOJSON_URL = 'https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json'
+
+// Type guards for Leaflet layers
+function isPathLayer(layer: L.Layer): layer is L.Path {
+  return 'setStyle' in layer && typeof (layer as L.Path).setStyle === 'function'
+}
+
+function isInteractiveLayer(layer: L.Layer): layer is L.Layer & { on: (events: Record<string, () => void>) => void; bindTooltip: (content: string, options?: unknown) => void } {
+  return 'on' in layer && 'bindTooltip' in layer
+}
 
 const FitWorldBounds: React.FC<{ whenReady?: boolean }> = () => {
   const map = useMap()
@@ -13,9 +36,13 @@ const FitWorldBounds: React.FC<{ whenReady?: boolean }> = () => {
     try {
       map.setView([20, 0], 2)
       setTimeout(() => {
-        try { map.invalidateSize() } catch {}
+        try { map.invalidateSize() } catch {
+          // Ignore invalidateSize errors
+        }
       }, 200)
-    } catch {}
+    } catch {
+      // Ignore setView errors
+    }
   }, [map])
   return null
 }
@@ -24,21 +51,26 @@ const FitToData: React.FC<{ data: GeoJSON.FeatureCollection | null }> = ({ data 
   const map = useMap()
   useEffect(() => {
     if (!data) return
-    try {
-      // Compute bounds and fit
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const L = require('leaflet')
-      const layer = L.geoJSON(data as any)
-      const b = layer.getBounds()
-      if (b && b.isValid()) {
-        map.fitBounds(b.pad(0.05))
-      } else {
-        map.setView([20, 0], 2)
+    void (async (): Promise<void> => {
+      try {
+        // Compute bounds and fit
+        const leaflet = await import('leaflet')
+        const layer = leaflet.geoJSON(data)
+        const b = layer.getBounds()
+        if (b.isValid()) {
+          map.fitBounds(b.pad(0.05))
+        } else {
+          map.setView([20, 0], 2)
+        }
+        setTimeout(() => {
+          try { map.invalidateSize() } catch {
+            // Ignore invalidateSize errors
+          }
+        }, 200)
+      } catch {
+        // Ignore bounds fitting errors
       }
-      setTimeout(() => {
-        try { map.invalidateSize() } catch {}
-      }, 200)
-    } catch {}
+    })()
   }, [data, map])
   return null
 }
@@ -49,8 +81,10 @@ const WorldVisitedMap: React.FC = () => {
   const [baseLayer, setBaseLayer] = useState<'satellite' | 'streets' | 'topo'>(() => {
     try {
       const raw = localStorage.getItem('lifesync:travel:baseLayer')
-      return (raw === 'satellite' || raw === 'topo') ? (raw as any) : 'streets'
-    } catch { return 'streets' }
+      return (raw === 'satellite' || raw === 'topo') ? raw : 'streets'
+    } catch {
+      return 'streets'
+    }
   })
   const [tileError, setTileError] = useState(false)
 
@@ -59,11 +93,17 @@ const WorldVisitedMap: React.FC = () => {
       const raw = localStorage.getItem('lifesync:travel:visitedCountries')
       const arr = raw ? (JSON.parse(raw) as string[]) : []
       return new Set(arr.map((c) => c.toUpperCase()))
-    } catch { return new Set() }
+    } catch {
+      return new Set()
+    }
   })
 
-  const persistVisited = (next: Set<string>) => {
-    try { localStorage.setItem('lifesync:travel:visitedCountries', JSON.stringify(Array.from(next))) } catch {}
+  const persistVisited = (next: Set<string>): void => {
+    try {
+      localStorage.setItem('lifesync:travel:visitedCountries', JSON.stringify(Array.from(next)))
+    } catch {
+      // Ignore localStorage errors
+    }
   }
 
   const visitedByCode = useMemo(() => {
@@ -74,9 +114,9 @@ const WorldVisitedMap: React.FC = () => {
 
   const continentByCode = useMemo(() => {
     const map = new Map<string, string>()
-    for (const c of (countriesData as any[])) {
+    for (const c of (countriesData as CountryDataItem[])) {
       if (!c?.code) continue
-      const region = (c.continent || '').toString()
+      const region = (c.continent ?? '').toString()
       map.set(String(c.code).toUpperCase(), region)
     }
     return map
@@ -105,8 +145,8 @@ const WorldVisitedMap: React.FC = () => {
       ],
     }
 
-    const load = async () => {
-      const tryFetch = async (url: string) => {
+    const load = async (): Promise<void> => {
+      const tryFetch = async (url: string): Promise<GeoJSON.FeatureCollection> => {
         const res = await fetch(url)
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         return (await res.json()) as GeoJSON.FeatureCollection
@@ -126,53 +166,68 @@ const WorldVisitedMap: React.FC = () => {
           }
         }
         if (!cancelled && json) setData(json)
-      } catch (e: any) {
+      } catch (e) {
         if (!cancelled) {
-          setError(e?.message || 'Failed to load world map')
+          const errorMessage = e instanceof Error ? e.message : 'Failed to load world map'
+          setError(errorMessage)
           setData(MINIMAL_WORLD)
         }
       }
     }
-    load()
-    return () => { cancelled = true }
+    void load()
+    return (): void => { cancelled = true }
   }, [])
 
-  const onEachFeature = (feature: Feature, layer: any) => {
-    const props = feature?.properties || {}
-    const code = String((props.iso_a2 || props.ISO_A2 || '')).toUpperCase()
-    const name = props.name || props.ADMIN || code
+  const onEachFeature = (feature: Feature, layer: L.Layer): void => {
+    const props = feature?.properties ?? {}
+    const code = String((props.iso_a2 ?? props.ISO_A2 ?? '')).toUpperCase()
+    const name = props.name ?? props.ADMIN ?? code
     const isVisited = code ? visitedByCode.get(code) : false
-    const continent = (code ? continentByCode.get(code) : '') || ''
+    const continent = (code ? continentByCode.get(code) : '') ?? ''
     const filteredOut = regionFilter !== 'all' && continent.toLowerCase() !== regionFilter
 
-    layer.bindTooltip(`${name}${isVisited ? ' — visited' : ''}`, { sticky: true })
+    if (isInteractiveLayer(layer)) {
+      layer.bindTooltip(`${name}${isVisited ? ' — visited' : ''}`, { sticky: true })
 
-    layer.on({
-      mouseover: () => {
-        try { layer.setStyle({ weight: 1.2, color: '#4B5563' }) } catch {}
-      },
-      mouseout: () => {
-        try { layer.setStyle({ weight: 0.6, color: '#9CA3AF' }) } catch {}
-      },
-      click: () => {
-        if (filteredOut) return
-        if (!code) return
-        const next = new Set(visitedCodes)
-        if (isVisited) next.delete(code)
-        else next.add(code)
-        setVisitedCodes(next)
-        persistVisited(next)
-      },
-    })
+      layer.on({
+        mouseover: () => {
+          try {
+            if (isPathLayer(layer)) {
+              layer.setStyle({ weight: 1.2, color: '#4B5563' })
+            }
+          } catch {
+            // Ignore style errors
+          }
+        },
+        mouseout: () => {
+          try {
+            if (isPathLayer(layer)) {
+              layer.setStyle({ weight: 0.6, color: '#9CA3AF' })
+            }
+          } catch {
+            // Ignore style errors
+          }
+        },
+        click: () => {
+          if (filteredOut) return
+          if (!code) return
+          const next = new Set(visitedCodes)
+          if (isVisited) next.delete(code)
+          else next.add(code)
+          setVisitedCodes(next)
+          persistVisited(next)
+        },
+      })
+    }
   }
 
-  const style = (feature: any) => {
-    const props = feature?.properties || {}
-    const code = String((props.iso_a2 || props.ISO_A2 || '')).toUpperCase()
+  const style = (feature: Feature | undefined): L.PathOptions => {
+    const props = feature?.properties ?? {}
+    const code = String((props.iso_a2 ?? props.ISO_A2 ?? '')).toUpperCase()
     const isVisited = code ? visitedByCode.get(code) : false
-    const continent = (code ? continentByCode.get(code) : '') || ''
+    const continent = (code ? continentByCode.get(code) : '') ?? ''
     const filteredOut = regionFilter !== 'all' && continent.toLowerCase() !== regionFilter
-    const showPlain = true // always draw light fill so map is visible even without tiles
+    const _showPlain = true // always draw light fill so map is visible even without tiles
     return {
       color: filteredOut ? '#CBD5E1' : '#111827',
       weight: filteredOut ? 0.5 : 1.0,
@@ -192,7 +247,10 @@ const WorldVisitedMap: React.FC = () => {
           <label className="text-gray-600">Region:</label>
           <select
             value={regionFilter}
-            onChange={(e) => setRegionFilter(e.target.value as any)}
+            onChange={(e) => {
+              const value = e.target.value as typeof regionFilter
+              setRegionFilter(value)
+            }}
             className="text-gray-800 border border-gray-300 rounded px-2 py-1 focus:outline-none"
           >
             <option value="all">All</option>
@@ -212,7 +270,11 @@ const WorldVisitedMap: React.FC = () => {
             onChange={(e) => {
               const v = e.target.value as typeof baseLayer
               setBaseLayer(v)
-              try { localStorage.setItem('lifesync:travel:baseLayer', v) } catch {}
+              try {
+                localStorage.setItem('lifesync:travel:baseLayer', v)
+              } catch {
+                // Ignore localStorage errors
+              }
             }}
             className="text-gray-800 border border-gray-300 rounded px-2 py-1 focus:outline-none"
           >
@@ -288,7 +350,12 @@ const WorldVisitedMap: React.FC = () => {
         <FitWorldBounds />
         <FitToData data={data} />
         {data && (
-          <GeoJSON key={regionFilter} data={data as any} onEachFeature={onEachFeature as any} style={style as any} />
+          <GeoJSON
+            key={regionFilter}
+            data={data}
+            onEachFeature={onEachFeature as (feature: GeoJSON.Feature, layer: L.Layer) => void}
+            style={style as (feature?: GeoJSON.Feature) => L.PathOptions}
+          />
         )}
       </MapContainer>
       {tileError && (

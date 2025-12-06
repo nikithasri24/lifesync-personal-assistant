@@ -14,6 +14,7 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
+      '@': r('src'),
       commander: r('cli/test/mocks/commander.ts'),
       inquirer: r('cli/test/mocks/inquirer.ts'),
       ora: r('cli/test/mocks/ora.ts'),
@@ -35,6 +36,14 @@ export default defineConfig({
       reportsDirectory: './coverage',
       include: ['src/**/*.{ts,tsx}'],
       exclude: ['src/test/**', '**/__tests__/**', '**/*.d.ts'],
+    },
+    server: {
+      deps: {
+        inline: ['@testing-library/react'],
+      },
+    },
+    deps: {
+      moduleDirectories: ['node_modules', 'src'],
     },
   },
 })

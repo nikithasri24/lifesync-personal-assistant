@@ -3,6 +3,7 @@
 
 import { isSupabaseConfigured } from '../lib/supabase';
 import SupabaseAdapter from './supabaseAdapter';
+import { logger } from './logger';
 import type {
   TaskData,
   ProjectData,
@@ -17,7 +18,7 @@ import type {
   PlannedMealData,
   FocusSessionData,
   RecipeData,
-  RecipeIngredientData,
+  _RecipeIngredientData,
   AnalyticsData,
   SFHChallengeData,
   SFHEntryData,
@@ -41,7 +42,7 @@ export type {
   AnalyticsData,
 } from './types';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
+const API_BASE: string = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:3001/api';
 
 // ==================== API CLIENT CLASS ====================
 
@@ -50,11 +51,11 @@ class ApiClient {
   private readonly supabaseAdapter = isSupabaseConfigured ? new SupabaseAdapter(() => this.userId) : null;
 
   constructor() {
-    console.log('[ApiClient] Supabase configured:', isSupabaseConfigured);
-    console.log('[ApiClient] Using Supabase adapter:', Boolean(this.supabaseAdapter));
+    logger.info('Supabase configured', { isSupabaseConfigured });
+    logger.info('Using Supabase adapter', { hasAdapter: Boolean(this.supabaseAdapter) });
   }
 
-  setAuthContext(userId: string | null) {
+  setAuthContext(userId: string | null): void {
     this.userId = userId;
   }
 
@@ -69,15 +70,15 @@ class ApiClient {
 
     try {
       const response = await fetch(url, config);
-      
+
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        throw new Error(errorData.error || `HTTP ${response.status}`);
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' })) as { error?: string };
+        throw new Error(errorData.error ?? `HTTP ${response.status}`);
       }
 
-      return await response.json();
+      return await response.json() as T;
     } catch (error) {
-      console.error(`API Request failed: ${endpoint}`, error);
+      logger.error('ApiClient', error instanceof Error ? error : new Error(`API Request failed: ${endpoint}`), { endpoint });
       throw error;
     }
   }
@@ -227,11 +228,11 @@ class ApiClient {
     return Promise.resolve();
   }
 
-  async getHabitEntryForDate(habitId: string, date: string) {
+  async getHabitEntryForDate(habitId: string, date: string): Promise<{ id: string; value: number } | null> {
     if (this.supabaseAdapter) {
       return this.supabaseAdapter.getHabitEntryForDate(habitId, date);
     }
-    return Promise.resolve<{ id: string; value: number } | null>(null)
+    return Promise.resolve<{ id: string; value: number } | null>(null);
   }
 
   async deleteAllHabitEntries(habitId: string): Promise<void> {
@@ -284,6 +285,16 @@ class ApiClient {
     return this.request<FinancialTransactionData>('/financial/transactions', {
       method: 'POST',
       body: JSON.stringify(transaction),
+    });
+  }
+
+  async updateFinancialTransaction(id: string, updates: Partial<FinancialTransactionData>): Promise<FinancialTransactionData> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.updateFinancialTransaction(id, updates);
+    }
+    return this.request<FinancialTransactionData>(`/financial/transactions/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
     });
   }
 

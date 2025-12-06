@@ -8,7 +8,7 @@ import type { TodoItem, Project as StoreProject } from '../../../../types'
 
 const baseDate = new Date('2024-01-01T08:00:00.000Z')
 
-const daysFromBase = (days: number) => new Date(baseDate.getTime() + days * 24 * 60 * 60 * 1000)
+const daysFromBase = (days: number): Date => new Date(baseDate.getTime() + days * 24 * 60 * 60 * 1000)
 
 const sampleTasks: TodoItem[] = [
   {
@@ -167,7 +167,7 @@ afterEach(() => {
 })
 
 describe('TaskFocusIntegration tasks tab', () => {
-  const renderTasks = () => {
+  const renderTasks = (): { user: ReturnType<typeof userEvent.setup>; props: { onStartFocusSession: ReturnType<typeof vi.fn>; onTaskComplete: ReturnType<typeof vi.fn> } } => {
     const props = {
       onStartFocusSession: vi.fn(),
       onTaskComplete: vi.fn(),
@@ -196,7 +196,7 @@ describe('TaskFocusIntegration tasks tab', () => {
     const { user } = renderTasks()
 
     await screen.findByText('Design homepage mockups')
-    const filterSelect = screen.getByDisplayValue('All Tasks') as HTMLSelectElement
+    const filterSelect = screen.getByDisplayValue('All Tasks')
 
     await user.selectOptions(filterSelect, 'completed')
 
@@ -221,7 +221,7 @@ describe('TaskFocusIntegration tasks tab', () => {
     const { user } = renderTasks()
 
     await screen.findByText('Design homepage mockups')
-    const sortSelect = screen.getByDisplayValue('Sort by Priority') as HTMLSelectElement
+    const sortSelect = screen.getByDisplayValue('Sort by Priority')
 
     await user.selectOptions(sortSelect, 'dueDate')
 

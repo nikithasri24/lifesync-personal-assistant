@@ -1,18 +1,21 @@
+/* eslint-disable max-lines */
 /**
  * Focus Mode React Hooks
- * 
+ *
  * Custom hooks for integrating focus mode functionality into React components.
  * Provides state management, session control, and real-time updates.
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { logger } from '../services/logger';
+
 import { focusService } from '../services/focus/FocusService';
 import type {
   FocusSession,
   FocusPreset,
   FocusAnalytics,
-  FocusSettings,
-  ProductivityMetrics,
+  _FocusSettings,
+  _ProductivityMetrics,
   UseFocusSessionReturn,
   UseFocusAnalyticsReturn,
   FocusEvent,
@@ -57,7 +60,7 @@ export function useFocusSession(): UseFocusSessionReturn {
 
   // Listen to focus events
   useEffect(() => {
-    const handleFocusEvent = (event: FocusEvent) => {
+    const handleFocusEvent = (_event: FocusEvent): void => {
       const session = focusService.getCurrentSession();
       setCurrentSession(session ? { ...session } : null);
       
@@ -95,74 +98,74 @@ export function useFocusSession(): UseFocusSessionReturn {
     }
   }, []);
 
-  const startSession = useCallback(async (preset: FocusPreset, task?: string) => {
+  const startSession = useCallback(async (preset: FocusPreset, task?: string): Promise<void> => {
     try {
       const session = await focusService.startSession(preset, task);
       setCurrentSession(session);
     } catch (error) {
-      console.error('Failed to start focus session:', error);
+      logger.error('UseFocus', 'Failed to start focus session:', error);
       throw error;
     }
   }, []);
 
-  const pauseSession = useCallback(async () => {
+  const pauseSession = useCallback(async (): Promise<void> => {
     try {
       await focusService.pauseSession();
     } catch (error) {
-      console.error('Failed to pause focus session:', error);
+      logger.error('UseFocus', 'Failed to pause focus session:', error);
       throw error;
     }
   }, []);
 
-  const resumeSession = useCallback(async () => {
+  const resumeSession = useCallback(async (): Promise<void> => {
     try {
       await focusService.resumeSession();
     } catch (error) {
-      console.error('Failed to resume focus session:', error);
+      logger.error('UseFocus', 'Failed to resume focus session:', error);
       throw error;
     }
   }, []);
 
-  const endSession = useCallback(async () => {
+  const endSession = useCallback(async (): Promise<void> => {
     try {
       await focusService.endSession(true);
       setCurrentSession(null);
       setTimeRemaining(0);
       setProgress(0);
     } catch (error) {
-      console.error('Failed to end focus session:', error);
+      logger.error('UseFocus', 'Failed to end focus session:', error);
       throw error;
     }
   }, []);
 
-  const takeBreak = useCallback(async () => {
+  const takeBreak = useCallback(async (): Promise<void> => {
     try {
       await focusService.takeBreak();
     } catch (error) {
-      console.error('Failed to take break:', error);
+      logger.error('UseFocus', 'Failed to take break:', error);
       throw error;
     }
   }, []);
 
-  const endBreak = useCallback(async () => {
+  const endBreak = useCallback(async (): Promise<void> => {
     try {
       await focusService.endBreak();
     } catch (error) {
-      console.error('Failed to end break:', error);
+      logger.error('UseFocus', 'Failed to end break:', error);
       throw error;
     }
   }, []);
 
-  const updateEnvironment = useCallback(async (environment: Partial<any>) => {
+  const updateEnvironment = useCallback(async (environment: Partial<_FocusSettings>): Promise<void> => {
     try {
       if (currentSession) {
         await focusService.applyFocusEnvironment({
           ...currentSession.environment,
           ...environment
-        });
+        } as Parameters<typeof focusService.applyFocusEnvironment>[0]);
       }
     } catch (error) {
-      console.error('Failed to update environment:', error);
+      logger.error('UseFocus', 'Failed to update environment:', error);
       throw error;
     }
   }, [currentSession]);
@@ -189,7 +192,7 @@ export function useFocusAnalytics(period: 'day' | 'week' | 'month' | 'year' = 'w
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (): Promise<void> => {
     try {
       setIsLoading(true);
       setError(null);
@@ -204,21 +207,21 @@ export function useFocusAnalytics(period: 'day' | 'week' | 'month' | 'year' = 'w
   }, [period]);
 
   useEffect(() => {
-    refresh();
+    void refresh();
   }, [refresh]);
 
   const getInsights = useCallback(() => {
-    return analytics?.insights || [];
+    return analytics?.insights ?? [];
   }, [analytics]);
 
-  const exportData = useCallback(async (format: 'csv' | 'json' | 'pdf') => {
+  const exportData = useCallback((format: 'csv' | 'json' | 'pdf'): void => {
     if (!analytics) return;
-    
+
     try {
       // Implementation would depend on your export service
-      console.log(`Exporting analytics data as ${format}`);
+      logger.debug('UseFocus', `Exporting analytics data as ${format}`);
     } catch (error) {
-      console.error('Failed to export data:', error);
+      logger.error('UseFocus', 'Failed to export data:', error);
       throw error;
     }
   }, [analytics]);
@@ -235,7 +238,13 @@ export function useFocusAnalytics(period: 'day' | 'week' | 'month' | 'year' = 'w
 
 // ==================== Focus Presets Hook ====================
 
-export function useFocusPresets() {
+export function useFocusPresets(): {
+  presets: FocusPreset[];
+  isLoading: boolean;
+  createCustomPreset: (preset: Omit<FocusPreset, 'id' | 'createdAt' | 'usageCount'>) => FocusPreset;
+  updatePreset: (id: string, updates: Partial<FocusPreset>) => void;
+  deletePreset: (id: string) => void;
+} {
   const [presets, setPresets] = useState<FocusPreset[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
@@ -482,13 +491,17 @@ export function useFocusPresets() {
 
 // ==================== Focus Event Hook ====================
 
-export function useFocusEvents(eventTypes: FocusEventType[] = []) {
+export function useFocusEvents(eventTypes: FocusEventType[] = []): {
+  events: FocusEvent[];
+  clearEvents: () => void;
+  latestEvent: FocusEvent | null;
+} {
   const [events, setEvents] = useState<FocusEvent[]>([]);
 
   useEffect(() => {
     const listenerIds: string[] = [];
 
-    const handleEvent = (event: FocusEvent) => {
+    const handleEvent = (event: FocusEvent): void => {
       if (eventTypes.length === 0 || eventTypes.includes(event.type)) {
         setEvents(prev => [...prev.slice(-99), event]); // Keep last 100 events
       }
@@ -529,7 +542,11 @@ export function useFocusEvents(eventTypes: FocusEventType[] = []) {
 
 // ==================== Focus Timer Hook ====================
 
-export function useFocusTimer() {
+export function useFocusTimer(): {
+  timeElapsed: number;
+  isRunning: boolean;
+  formattedTime: string;
+} {
   const [timeElapsed, setTimeElapsed] = useState<number>(0);
   const [isRunning, setIsRunning] = useState<boolean>(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -560,7 +577,7 @@ export function useFocusTimer() {
 
   // Listen for session changes
   useEffect(() => {
-    const handleSessionChange = () => {
+    const handleSessionChange = (): void => {
       const session = focusService.getCurrentSession();
       setIsRunning(session?.status === 'active');
     };

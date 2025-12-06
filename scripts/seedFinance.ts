@@ -39,7 +39,7 @@ async function main() {
     const rows = institutions.map((i) => ({ id: mapId(i.id), user_id: userId, name: i.name, logo_url: i.logoUrl ?? null }));
     const { error } = await client.from('institutions').upsert(rows, { onConflict: 'id' });
     if (error) throw error;
-    console.log(`Inserted ${rows.length} institutions`);
+    logger.info('SeedFinance', `Inserted ${rows.length} institutions`);
   }
 
   // Categories
@@ -47,7 +47,7 @@ async function main() {
     const rows = categories.map((c) => ({ id: mapId(c.id), user_id: userId, name: c.name, parent_id: mapId(c.parentId) ?? null, icon: c.icon ?? null, color: c.color ?? null }));
     const { error } = await client.from('categories').upsert(rows, { onConflict: 'id' });
     if (error) throw error;
-    console.log(`Inserted ${rows.length} categories`);
+    logger.info('SeedFinance', `Inserted ${rows.length} categories`);
   }
 
   // Accounts
@@ -64,7 +64,7 @@ async function main() {
     }));
     const { error } = await client.from('accounts').upsert(rows, { onConflict: 'id' });
     if (error) throw error;
-    console.log(`Inserted ${rows.length} accounts`);
+    logger.info('SeedFinance', `Inserted ${rows.length} accounts`);
   }
 
   // Transactions
@@ -82,7 +82,7 @@ async function main() {
     }));
     const { error } = await client.from('transactions').upsert(rows, { onConflict: 'id' });
     if (error) throw error;
-    console.log(`Inserted ${rows.length} transactions`);
+    logger.info('SeedFinance', `Inserted ${rows.length} transactions`);
   }
 
   // Budgets
@@ -96,7 +96,7 @@ async function main() {
     }));
     const { error } = await client.from('budgets').upsert(rows, { onConflict: 'id' });
     if (error) throw error;
-    console.log(`Inserted ${rows.length} budgets`);
+    logger.info('SeedFinance', `Inserted ${rows.length} budgets`);
   }
 
   // Net worth
@@ -104,7 +104,7 @@ async function main() {
     const rows = networth.map((n) => ({ user_id: userId, month: n.month, assets: n.assets, liabilities: n.liabilities }));
     const { error } = await client.from('networth').upsert(rows, { onConflict: 'user_id,month' });
     if (error) throw error;
-    console.log(`Inserted ${rows.length} networth rows`);
+    logger.info('SeedFinance', `Inserted ${rows.length} networth rows`);
   }
 
   // Goals
@@ -121,14 +121,14 @@ async function main() {
     }));
     const { error } = await client.from('goals').upsert(rows, { onConflict: 'id' });
     if (error) throw error;
-    console.log(`Inserted ${rows.length} goals`);
+    logger.info('SeedFinance', `Inserted ${rows.length} goals`);
   }
 
-  console.log('Finance seed complete for user:', userId);
+  logger.info('SeedFinance', 'Finance seed complete for user:', userId);
 }
 
 main().catch((e) => {
-  console.error(e);
+  logger.error('SeedFinance', e);
   process.exit(1);
 });
 

@@ -8,7 +8,7 @@ import React from 'react';
 import { Card } from '../Card';
 import { Progress } from '../Progress';
 import { formatCurrency } from '../../utils/currency';
-import type { Transaction, Category, Budget } from '../../types';
+import type { Transaction, Category } from '../../types';
 import type { DateRange } from '../../utils/timePeriodUtils';
 import type { FinanceMetrics } from '../../hooks/useFinanceMetrics';
 import { TrendingDown, AlertCircle } from 'lucide-react';
@@ -21,8 +21,8 @@ export interface SpendingReportProps {
 }
 
 const SpendingReport: React.FC<SpendingReportProps> = ({
-  transactions,
-  categories,
+  _transactions,
+  _categories,
   dateRange,
   metrics,
 }) => {
@@ -64,7 +64,7 @@ const SpendingReport: React.FC<SpendingReportProps> = ({
         <div className="rounded-lg border border-white/20 bg-white/10 p-4">
           <div className="text-sm font-semibold text-primary">Top Category</div>
           <div className="mt-2 text-lg font-bold text-primary">
-            {metrics.categoryStats.topCategory?.categoryName || 'N/A'}
+            {metrics.categoryStats.topCategory?.categoryName ?? 'N/A'}
           </div>
           <div className="mt-1 text-sm font-medium text-primary opacity-70">
             {metrics.categoryStats.topCategory

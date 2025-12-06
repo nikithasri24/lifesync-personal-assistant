@@ -1,18 +1,19 @@
 import { Command } from 'commander';
 import inquirer from 'inquirer';
 import chalk from 'chalk';
-import ora from 'ora';
+import ora, { type Ora } from 'ora';
 import { dataManager } from '../data.js';
-import { ShoppingItem } from '../types.js';
+import { type ShoppingItem } from '../types.js';
 import { loadConfig } from '../config.js';
+import { logger } from '../utils/logger.js';
 
 export function createShoppingCommand(): Command {
-  const shopping = new Command('shopping')
+  const shopping: Command = new Command('shopping')
     .alias('shop')
-    .description('Manage shopping list items');
+    .description('Manage shopping list items') as Command;
 
   // Add item to shopping list
-  shopping
+  const addCommand: Command = shopping
     .command('add')
     .alias('a')
     .description('Add item to shopping list')
@@ -26,25 +27,47 @@ export function createShoppingCommand(): Command {
     .option('--brand <string>', 'Brand')
     .option('--notes <string>', 'Notes')
     .option('--organic', 'Mark as organic')
-    .option('--barcode <string>', 'Barcode')
-    .action(async (name, options) => {
+    .option('--barcode <string>', 'Barcode') as Command;
+
+  addCommand.action(async (name: string | undefined, options: {
+      quantity: string;
+      unit: string;
+      category?: string;
+      priority: string;
+      price?: string;
+      store?: string;
+      brand?: string;
+      notes?: string;
+      organic?: boolean;
+      barcode?: string;
+    }) => {
       await dataManager.init();
       const config = await loadConfig();
 
       let itemName = name;
-      let quantity = parseInt(options.quantity) || 1;
-      let unit = options.unit || 'pcs';
-      let category = options.category || config.defaultCategory || 'other';
-      let priority = options.priority || 'medium';
+      let quantity = parseInt(options.quantity, 10) || 1;
+      let unit = options.unit ?? 'pcs';
+      let category = options.category ?? config.defaultCategory ?? 'other';
+      let priority = options.priority ?? 'medium';
 
       // Interactive mode if no name provided
       if (!itemName) {
-        const answers = await inquirer.prompt([
+        const answers: {
+          name: string;
+          quantity: number;
+          unit: string;
+          category: string;
+          priority: string;
+          price?: number;
+          brand?: string;
+          notes?: string;
+          organic: boolean;
+        } = await inquirer.prompt([
           {
             type: 'input',
             name: 'name',
             message: 'Item name:',
-            validate: (input) => input.trim() !== '' || 'Item name is required'
+            validate: (input: string) => input.trim() !== '' || 'Item name is required'
           },
           {
             type: 'number',
@@ -64,7 +87,7 @@ export function createShoppingCommand(): Command {
             name: 'category',
             message: 'Category:',
             choices: [
-              'produce', 'dairy', 'meat', 'pantry', 'frozen', 
+              'produce', 'dairy', 'meat', 'pantry', 'frozen',
               'bakery', 'deli', 'household', 'personal', 'electronics', 'other'
             ],
             default: category
@@ -80,7 +103,7 @@ export function createShoppingCommand(): Command {
             type: 'input',
             name: 'price',
             message: 'Estimated price (optional):',
-            filter: (input) => input ? parseFloat(input) : undefined
+            filter: (input: string) => input ? parseFloat(input) : undefined
           },
           {
             type: 'input',
@@ -105,17 +128,17 @@ export function createShoppingCommand(): Command {
         unit = answers.unit;
         category = answers.category;
         priority = answers.priority;
-        options.price = answers.price;
+        options.price = answers.price?.toString();
         options.brand = answers.brand;
         options.notes = answers.notes;
         options.organic = answers.organic;
       }
 
-      const spinner = ora('Adding item to shopping list...').start();
+      const spinner: Ora = ora('Adding item to shopping list...').start() as Ora;
 
       try {
         const item = await dataManager.addShoppingItem({
-          name: itemName,
+          name: itemName ?? '',
           quantity,
           unit,
           category,
@@ -127,31 +150,39 @@ export function createShoppingCommand(): Command {
           notes: options.notes,
           barcode: options.barcode,
           nutritionInfo: options.organic ? { organic: true } : undefined,
-          addedBy: config.username || 'cli'
+          addedBy: config.username ?? 'cli'
         });
 
         spinner.succeed(chalk.green(`Added "${item.name}" to shopping list`));
-        console.log(chalk.gray(`  ${item.quantity} ${item.unit} | ${item.category} | ${item.priority} priority`));
-        if (item.estimatedPrice) console.log(chalk.gray(`  Est. price: $${item.estimatedPrice.toFixed(2)}`));
+        logger.info('Shopping', chalk.gray(`  ${item.quantity} ${item.unit} | ${item.category} | ${item.priority} priority`));
+        if (item.estimatedPrice !== undefined) {
+          logger.info('Shopping', chalk.gray(`  Est. price: $${item.estimatedPrice.toFixed(2)}`));
+        }
       } catch (error) {
         spinner.fail(chalk.red('Failed to add item'));
-        console.error(error);
+        logger.error('Shopping', error as Error);
       }
     });
 
   // List shopping items
-  shopping
+  const listCommand: Command = shopping
     .command('list')
     .alias('ls')
     .description('List shopping items')
     .option('-a, --all', 'Show all items including purchased')
     .option('-c, --category <string>', 'Filter by category')
     .option('-s, --store <string>', 'Filter by assigned store')
-    .option('-p, --priority <string>', 'Filter by priority')
-    .action(async (options) => {
+    .option('-p, --priority <string>', 'Filter by priority') as Command;
+
+  listCommand.action(async (options: {
+      all?: boolean;
+      category?: string;
+      store?: string;
+      priority?: string;
+    }) => {
       await dataManager.init();
 
-      const spinner = ora('Loading shopping list...').start();
+      const spinner: Ora = ora('Loading shopping list...').start() as Ora;
 
       try {
         const items = await dataManager.getShoppingItems();
@@ -176,7 +207,7 @@ export function createShoppingCommand(): Command {
         spinner.succeed(chalk.green(`Found ${filteredItems.length} items`));
 
         if (filteredItems.length === 0) {
-          console.log(chalk.yellow('No items found'));
+          logger.info('Shopping', chalk.yellow('No items found'));
           return;
         }
 
@@ -188,42 +219,49 @@ export function createShoppingCommand(): Command {
         }, {} as Record<string, ShoppingItem[]>);
 
         Object.entries(grouped).forEach(([category, categoryItems]) => {
-          console.log(`\n${chalk.bold.blue(category.toUpperCase())}`);
+          logger.info('Shopping', `\n${chalk.bold.blue(category.toUpperCase())}`);
           categoryItems.forEach(item => {
             const priorityColor = item.priority === 'high' ? chalk.red :
                                  item.priority === 'medium' ? chalk.yellow : chalk.gray;
             const status = item.purchased ? chalk.green('✓') : chalk.gray('○');
-            
-            console.log(`  ${status} ${chalk.white(item.name)} (${item.quantity} ${item.unit})`);
-            if (item.estimatedPrice) console.log(`    ${chalk.gray('$' + item.estimatedPrice.toFixed(2))}`);
-            if (item.assignedStore) console.log(`    ${chalk.blue(item.assignedStore)}`);
-            if (item.brand) console.log(`    ${chalk.gray(item.brand)}`);
-            if (item.priority !== 'medium') console.log(`    ${priorityColor(item.priority)}`);
+
+            logger.info('Shopping', `  ${status} ${chalk.white(item.name)} (${item.quantity} ${item.unit})`);
+            if (item.estimatedPrice !== undefined) {
+              logger.info('Shopping', `    ${chalk.gray('$' + item.estimatedPrice.toFixed(2))}`);
+            }
+            if (item.assignedStore !== undefined) {
+              logger.info('Shopping', `    ${chalk.blue(item.assignedStore)}`);
+            }
+            if (item.brand !== undefined) {
+              logger.info('Shopping', `    ${chalk.gray(item.brand)}`);
+            }
+            logger.info('Shopping', `    ${priorityColor(item.priority)}`);
           });
         });
 
-        const totalCost = filteredItems.reduce((sum, item) => sum + (item.estimatedPrice || 0), 0);
+        const totalCost = filteredItems.reduce((sum, item) => sum + (item.estimatedPrice ?? 0), 0);
         if (totalCost > 0) {
-          console.log(`\n${chalk.bold.green('Total estimated cost: $' + totalCost.toFixed(2))}`);
+          logger.info('Shopping', `\n${chalk.bold.green('Total estimated cost: $' + totalCost.toFixed(2))}`);
         }
 
       } catch (error) {
         spinner.fail(chalk.red('Failed to load shopping list'));
-        console.error(error);
+        logger.error('Shopping', error as Error);
       }
     });
 
   // Mark item as purchased
-  shopping
+  const buyCommand: Command = shopping
     .command('buy')
     .alias('check')
     .description('Mark item as purchased')
     .argument('<query>', 'Item name or ID to mark as purchased')
-    .option('--price <number>', 'Actual price paid')
-    .action(async (query, options) => {
+    .option('--price <number>', 'Actual price paid') as Command;
+
+  buyCommand.action(async (query: string, options: { price?: string }) => {
       await dataManager.init();
 
-      const spinner = ora('Updating item...').start();
+      const spinner: Ora = ora('Updating item...').start() as Ora;
 
       try {
         const items = await dataManager.getShoppingItems();
@@ -237,10 +275,11 @@ export function createShoppingCommand(): Command {
           return;
         }
 
+        const config = await loadConfig();
         const updates: Partial<ShoppingItem> = {
           purchased: true,
           purchasedAt: new Date(),
-          purchasedBy: (await loadConfig()).username || 'cli'
+          purchasedBy: config.username ?? 'cli'
         };
 
         if (options.price) {
@@ -251,25 +290,26 @@ export function createShoppingCommand(): Command {
 
         spinner.succeed(chalk.green(`Marked "${item.name}" as purchased`));
         if (options.price) {
-          console.log(chalk.gray(`  Actual price: $${options.price}`));
+          logger.info('Shopping', chalk.gray(`  Actual price: $${options.price}`));
         }
 
       } catch (error) {
         spinner.fail(chalk.red('Failed to update item'));
-        console.error(error);
+        logger.error('Shopping', error as Error);
       }
     });
 
   // Remove item
-  shopping
+  const removeCommand: Command = shopping
     .command('remove')
     .alias('rm')
     .description('Remove item from shopping list')
-    .argument('<query>', 'Item name or ID to remove')
-    .action(async (query) => {
+    .argument('<query>', 'Item name or ID to remove') as Command;
+
+  removeCommand.action(async (query: string) => {
       await dataManager.init();
 
-      const spinner = ora('Removing item...').start();
+      const spinner: Ora = ora('Removing item...').start() as Ora;
 
       try {
         const items = await dataManager.getShoppingItems();
@@ -283,12 +323,12 @@ export function createShoppingCommand(): Command {
           return;
         }
 
-        const confirmed = await inquirer.prompt([{
+        const confirmed: { confirm: boolean } = await inquirer.prompt([{
           type: 'confirm',
           name: 'confirm',
           message: `Remove "${item.name}" from shopping list?`,
           default: false
-        }]);
+        }]) as { confirm: boolean };
 
         if (!confirmed.confirm) {
           spinner.info(chalk.yellow('Cancelled'));
@@ -300,7 +340,7 @@ export function createShoppingCommand(): Command {
 
       } catch (error) {
         spinner.fail(chalk.red('Failed to remove item'));
-        console.error(error);
+        logger.error('Shopping', error as Error);
       }
     });
 
@@ -315,23 +355,23 @@ export function createShoppingCommand(): Command {
       const purchasedItems = items.filter(item => item.purchased);
 
       if (purchasedItems.length === 0) {
-        console.log(chalk.yellow('No purchased items to clear'));
+        logger.info('Shopping', chalk.yellow('No purchased items to clear'));
         return;
       }
 
-      const confirmed = await inquirer.prompt([{
+      const confirmed: { confirm: boolean } = await inquirer.prompt([{
         type: 'confirm',
         name: 'confirm',
         message: `Remove ${purchasedItems.length} purchased items?`,
         default: false
-      }]);
+      }]) as { confirm: boolean };
 
       if (!confirmed.confirm) {
-        console.log(chalk.yellow('Cancelled'));
+        logger.info('Shopping', chalk.yellow('Cancelled'));
         return;
       }
 
-      const spinner = ora('Clearing purchased items...').start();
+      const spinner: Ora = ora('Clearing purchased items...').start() as Ora;
 
       try {
         for (const item of purchasedItems) {
@@ -341,7 +381,7 @@ export function createShoppingCommand(): Command {
         spinner.succeed(chalk.green(`Cleared ${purchasedItems.length} purchased items`));
       } catch (error) {
         spinner.fail(chalk.red('Failed to clear items'));
-        console.error(error);
+        logger.error('Shopping', error as Error);
       }
     });
 

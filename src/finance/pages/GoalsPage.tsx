@@ -5,84 +5,83 @@
 
 import React from 'react';
 import { Plus } from 'lucide-react';
-import { getFinanceAPI } from '../data';
-import type { Goal, GoalInput, GoalProgressPoint, Account } from '../types';
+import {
+  useGoalsQuery,
+  useAccountsQuery,
+  useGoalProgressQuery,
+  useUpsertGoalMutation,
+  useDeleteGoalMutation,
+} from '../hooks/useFinanceQuery';
+import type { Goal, GoalInput, Account } from '../types';
 import GoalCard from '../components/goals/GoalCard';
 import GoalEditor from '../components/goals/GoalEditor';
 
+// Wrapper component to load progress for each goal
+const GoalCardWithProgress: React.FC<{
+  goal: Goal;
+  accounts: Account[];
+  onEdit: (goal: Goal) => void;
+}> = ({ goal, accounts, onEdit }) => {
+  const { data: progressHistory = [] } = useGoalProgressQuery(goal.id);
+  const linkedAccount = goal.linkedAccountId
+    ? accounts.find(a => a.id === goal.linkedAccountId)
+    : undefined;
+
+  return (
+    <GoalCard
+      goal={goal}
+      progressHistory={progressHistory}
+      linkedAccount={linkedAccount}
+      onEdit={onEdit}
+    />
+  );
+};
+
 const GoalsPage: React.FC = () => {
-  const [goals, setGoals] = React.useState<Goal[]>([]);
-  const [accounts, setAccounts] = React.useState<Account[]>([]);
-  const [progressHistories, setProgressHistories] = React.useState<Map<string, GoalProgressPoint[]>>(new Map());
-  const [loading, setLoading] = React.useState(true);
   const [editorOpen, setEditorOpen] = React.useState(false);
   const [editingGoal, setEditingGoal] = React.useState<Goal | undefined>(undefined);
 
-  const loadData = React.useCallback(async () => {
-    setLoading(true);
-    try {
-      console.log('[GoalsPage] Loading goals and accounts');
-      const api = await getFinanceAPI();
-      const [goalsData, accountsData] = await Promise.all([
-        api.listGoals(),
-        api.listAccounts(),
-      ]);
+  // React Query hooks
+  const { data: goals = [], isLoading: goalsLoading } = useGoalsQuery();
+  const { data: accounts = [], isLoading: accountsLoading } = useAccountsQuery();
+  const upsertGoalMutation = useUpsertGoalMutation();
+  const deleteGoalMutation = useDeleteGoalMutation();
 
-      console.log('[GoalsPage] Loaded:', {
-        goals: goalsData.length,
-        accounts: accountsData.length,
-      });
+  const loading = goalsLoading || accountsLoading;
 
-      setGoals(goalsData);
-      setAccounts(accountsData);
+  const sortedGoals = React.useMemo<Goal[]>(() => {
+    return [...goals].sort((a, b) => {
+      const aComplete = a.currentAmount >= a.targetAmount;
+      const bComplete = b.currentAmount >= b.targetAmount;
+      if (aComplete !== bComplete) return aComplete ? 1 : -1;
 
-      // Load progress history for each goal
-      const histories = new Map<string, GoalProgressPoint[]>();
-      for (const goal of goalsData) {
-        try {
-          const history = await api.getGoalProgressHistory(goal.id);
-          histories.set(goal.id, history);
-        } catch (err) {
-          console.warn(`Failed to load history for goal ${goal.id}:`, err);
-          histories.set(goal.id, []);
-        }
-      }
-      setProgressHistories(histories);
+      return new Date(a.dueDateISO).getTime() - new Date(b.dueDateISO).getTime();
+    });
+  }, [goals]);
 
-    } catch (error) {
-      console.error('[GoalsPage] Failed to load data:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  React.useEffect(() => {
-    loadData();
-  }, [loadData]);
-
-  const handleCreateGoal = () => {
+  const handleCreateGoal = (): void => {
     setEditingGoal(undefined);
     setEditorOpen(true);
   };
 
-  const handleEditGoal = (goal: Goal) => {
+  const handleEditGoal = (goal: Goal): void => {
     setEditingGoal(goal);
     setEditorOpen(true);
   };
 
-  const handleSaveGoal = async (goal: GoalInput) => {
-    const api = await getFinanceAPI();
-    await api.upsertGoal(goal);
-    await loadData(); // Reload all data
+  const handleSaveGoal = async (goal: GoalInput): Promise<void> => {
+    await upsertGoalMutation.mutateAsync(goal);
+    setEditorOpen(false);
+    setEditingGoal(undefined);
   };
 
-  const handleDeleteGoal = async (goalId: string) => {
-    const api = await getFinanceAPI();
-    await api.deleteGoal(goalId);
-    await loadData(); // Reload all data
+  const handleDeleteGoal = async (goalId: string): Promise<void> => {
+    await deleteGoalMutation.mutateAsync(goalId);
+    setEditorOpen(false);
+    setEditingGoal(undefined);
   };
 
-  const handleCloseEditor = () => {
+  const handleCloseEditor = (): void => {
     setEditorOpen(false);
     setEditingGoal(undefined);
   };
@@ -97,17 +96,6 @@ const GoalsPage: React.FC = () => {
       </div>
     );
   }
-
-  // Sort goals by status and due date
-  const sortedGoals = [...goals].sort((a, b) => {
-    // First by completion (incomplete first)
-    const aComplete = a.currentAmount >= a.targetAmount;
-    const bComplete = b.currentAmount >= b.targetAmount;
-    if (aComplete !== bComplete) return aComplete ? 1 : -1;
-
-    // Then by due date (soonest first)
-    return new Date(a.dueDateISO).getTime() - new Date(b.dueDateISO).getTime();
-  });
 
   return (
     <>
@@ -151,22 +139,14 @@ const GoalsPage: React.FC = () => {
       {/* Goal Cards */}
       {goals.length > 0 && (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 mb-6">
-          {sortedGoals.map((goal) => {
-            const linkedAccount = goal.linkedAccountId
-              ? accounts.find(a => a.id === goal.linkedAccountId)
-              : undefined;
-            const progressHistory = progressHistories.get(goal.id) || [];
-
-            return (
-              <GoalCard
-                key={goal.id}
-                goal={goal}
-                progressHistory={progressHistory}
-                linkedAccount={linkedAccount}
-                onEdit={handleEditGoal}
-              />
-            );
-          })}
+          {sortedGoals.map((goal) => (
+            <GoalCardWithProgress
+              key={goal.id}
+              goal={goal}
+              accounts={accounts}
+              onEdit={handleEditGoal}
+            />
+          ))}
         </div>
       )}
 

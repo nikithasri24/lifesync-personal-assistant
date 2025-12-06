@@ -29,7 +29,7 @@ export interface UseApiTasksReturn {
   refreshData: () => Promise<void>;
 }
 
-const toTaskStatus = (status?: TodoItem['status'] | string): TaskData['status'] => {
+const toTaskStatus = (status?: TodoItem['status']): TaskData['status'] => {
   switch (status) {
     case 'todo':
     case 'need-to-start':
@@ -41,6 +41,7 @@ const toTaskStatus = (status?: TodoItem['status'] | string): TaskData['status'] 
       return 'waiting';
     case 'currently-working':
     case 'in_progress':
+    case 'in-progress':
       return 'in_progress';
     case 'scheduled':
       return 'scheduled';
@@ -108,8 +109,8 @@ const mapTaskInsertToTodo = (
   deleted: task.deleted ?? false,
   deletedAt: task.deleted_at ? new Date(task.deleted_at) : undefined,
   notes: task.notes ?? undefined,
-  archived: task.archived === null || task.archived === undefined ? undefined : task.archived,
-  starred: task.starred === null || task.starred === undefined ? undefined : task.starred,
+  archived: task.archived ?? undefined,
+  starred: task.starred ?? undefined,
 });
 
 const mapTaskUpdateToTodoUpdate = (updates: Partial<TaskData>): Partial<TodoItem> => {
@@ -165,69 +166,90 @@ export const useApiTasks = (): UseApiTasksReturn => {
   } = useAppStore();
 
   const [error, setError] = useState<string | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
 
-  const tasks = useMemo(() => storeTasks?.map(mapTodoToTaskData) ?? [], [storeTasks]);
-  const projects = useMemo(() => storeProjects?.map(mapProjectToProjectData) ?? [], [storeProjects]);
+  const tasks = useMemo((): TaskData[] => {
+    if (!storeTasks || !Array.isArray(storeTasks)) return [];
+    try {
+      return storeTasks.map(mapTodoToTaskData);
+    } catch {
+      return [];
+    }
+  }, [storeTasks]);
 
-  const createTask = useCallback(async (taskData: Omit<TaskData, 'id' | 'created_at' | 'updated_at'>) => {
+  const projects = useMemo((): ProjectData[] => {
+    if (!storeProjects || !Array.isArray(storeProjects)) return [];
+    try {
+      return storeProjects.map(mapProjectToProjectData);
+    } catch {
+      return [];
+    }
+  }, [storeProjects]);
+
+  const createTask = useCallback(async (taskData: Omit<TaskData, 'id' | 'created_at' | 'updated_at'>): Promise<void> => {
     setError(null);
     try {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       await addTodo(mapTaskInsertToTodo(taskData));
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to create task';
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
       setError(message);
-      throw err;
+      throw new Error(message);
     }
   }, [addTodo]);
 
-  const updateTask = useCallback(async (id: string, updates: Partial<TaskData>) => {
+  const updateTask = useCallback(async (id: string, updates: Partial<TaskData>): Promise<void> => {
     setError(null);
     try {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       await updateTodo(id, mapTaskUpdateToTodoUpdate(updates));
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to update task';
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
       setError(message);
-      throw err;
+      throw new Error(message);
     }
   }, [updateTodo]);
 
-  const deleteTask = useCallback(async (id: string) => {
+  const deleteTask = useCallback(async (id: string): Promise<void> => {
     setError(null);
     try {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       await deleteTodo(id);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to delete task';
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
       setError(message);
-      throw err;
+      throw new Error(message);
     }
   }, [deleteTodo]);
 
-  const restoreTask = useCallback(async (id: string) => {
+  const restoreTask = useCallback(async (id: string): Promise<void> => {
     setError(null);
     try {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       await restoreTodo(id);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to restore task';
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
       setError(message);
-      throw err;
+      throw new Error(message);
     }
   }, [restoreTodo]);
 
-  const permanentlyDeleteTask = useCallback(async (id: string) => {
+  const permanentlyDeleteTask = useCallback(async (id: string): Promise<void> => {
     setError(null);
     try {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       await permanentlyDeleteTodo(id);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to remove task permanently';
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
       setError(message);
-      throw err;
+      throw new Error(message);
     }
   }, [permanentlyDeleteTodo]);
 
-  const createProject = useCallback(async (projectData: Omit<ProjectData, 'id' | 'created_at' | 'updated_at'>) => {
+  const createProject = useCallback(async (projectData: Omit<ProjectData, 'id' | 'created_at' | 'updated_at'>): Promise<void> => {
     setError(null);
     try {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       await addProjectToStore({
         name: projectData.name,
         description: projectData.description ?? undefined,
@@ -235,50 +257,52 @@ export const useApiTasks = (): UseApiTasksReturn => {
         status: (projectData.status as StoreProject['status']) ?? 'active',
         icon: projectData.icon ?? '📁',
       });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to create project';
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
       setError(message);
-      throw err;
+      throw new Error(message);
     }
   }, [addProjectToStore]);
 
-  const updateProject = useCallback(async (id: string, updates: Partial<ProjectData>) => {
+  const updateProject = useCallback(async (id: string, updates: Partial<ProjectData>): Promise<void> => {
     setError(null);
     try {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       await updateProjectInStore(id, {
         name: updates.name,
         description: updates.description ?? undefined,
         color: updates.color ?? undefined,
-        status: updates.status as StoreProject['status'] | undefined,
+        status: updates.status,
         icon: updates.icon ?? undefined,
       });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to update project';
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
       setError(message);
-      throw err;
+      throw new Error(message);
     }
   }, [updateProjectInStore]);
 
-  const deleteProject = useCallback(async (id: string) => {
+  const deleteProject = useCallback(async (id: string): Promise<void> => {
     setError(null);
     try {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       await deleteProjectFromStore(id);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to delete project';
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
       setError(message);
-      throw err;
+      throw new Error(message);
     }
   }, [deleteProjectFromStore]);
 
-  const refreshData = useCallback(async () => {
+  const refreshData = useCallback(async (): Promise<void> => {
     setRefreshing(true);
     setError(null);
     try {
-      await useAppStore.getState().initializeData();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to refresh data';
+      useAppStore.getState().initializeData();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
       setError(message);
-      throw err;
+      throw new Error(message);
     } finally {
       setRefreshing(false);
     }
@@ -287,7 +311,7 @@ export const useApiTasks = (): UseApiTasksReturn => {
   return {
     tasks,
     projects,
-    loading: tasksLoading || projectsLoading || refreshing,
+    loading: (tasksLoading === true) || (projectsLoading === true) || refreshing,
     error,
     createTask,
     updateTask,

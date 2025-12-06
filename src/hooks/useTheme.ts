@@ -27,7 +27,12 @@ function detectSystemTheme(): 'light' | 'dark' {
   }
 }
 
-export function useTheme() {
+export function useTheme(): {
+  theme: Theme;
+  currentTheme: 'light' | 'dark';
+  setTheme: React.Dispatch<React.SetStateAction<Theme>>;
+  toggleTheme: () => void;
+} {
   const [theme, setTheme] = useState<Theme>(() => readStoredTheme());
 
   const [systemTheme, setSystemTheme] = useState<'light' | 'dark'>(() => detectSystemTheme());
@@ -39,19 +44,19 @@ export function useTheme() {
       return;
     }
 
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)') as any;
-    const handleChange = (event: any) => {
+    const mediaQuery: MediaQueryList = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = (event: MediaQueryListEvent): void => {
       setSystemTheme(event.matches ? 'dark' : 'light');
     };
 
-    if (mediaQuery && typeof mediaQuery.addEventListener === 'function') {
-      mediaQuery.addEventListener('change', handleChange as MediaQueryListEvent);
-      return () => mediaQuery.removeEventListener('change', handleChange as MediaQueryListEvent);
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', handleChange);
+      return () => mediaQuery.removeEventListener('change', handleChange);
     }
 
     // Fallback for older browsers
-    mediaQuery?.addListener?.(handleChange as any);
-    return () => mediaQuery?.removeListener?.(handleChange as any);
+    mediaQuery.addListener(handleChange);
+    return () => mediaQuery.removeListener(handleChange);
   }, []);
 
   useEffect(() => {
@@ -71,7 +76,7 @@ export function useTheme() {
     }
   }, [theme, currentTheme]);
 
-  const toggleTheme = () => {
+  const toggleTheme = (): void => {
     setTheme(current => {
       if (current === 'light') return 'dark';
       if (current === 'dark') return 'system';
@@ -79,8 +84,10 @@ export function useTheme() {
     });
   };
 
-  return { theme,
+  return {
+    theme,
     currentTheme,
     setTheme,
-    toggleTheme };
+    toggleTheme
+  };
 }

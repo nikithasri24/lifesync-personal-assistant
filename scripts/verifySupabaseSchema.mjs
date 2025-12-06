@@ -1,5 +1,12 @@
 import { Client } from 'pg';
 
+const logger = {
+  debug: (domain, msg, ctx) => console.log(`[${domain}] ${msg}`, ctx || ''),
+  info: (domain, msg, ctx) => console.log(`[${domain}] ${msg}`, ctx || ''),
+  warn: (domain, msg, ctx) => console.warn(`[${domain}] ${msg}`, ctx || ''),
+  error: (domain, err, ctx) => console.error(`[${domain}]`, err, ctx || ''),
+};
+
 const REQUIRED_COLUMNS = {
   habits: [
     'goal_mode',
@@ -64,11 +71,11 @@ async function checkConstraints(client) {
 
 function printSummary(issues, durationMs) {
   if (issues.length === 0) {
-    console.log(`✅ Supabase schema verification passed (${durationMs}ms)`);
+    logger.info('VerifySupabaseSchema', `✅ Supabase schema verification passed (${durationMs}ms)`);
     return;
   }
 
-  console.error(`\n❌ Supabase schema verification failed (${durationMs}ms)`);
+  logger.error('VerifySupabaseSchema', `\n❌ Supabase schema verification failed (${durationMs}ms)`);
   const grouped = issues.reduce((acc, issue) => {
     if (!acc[issue.table]) acc[issue.table] = [];
     acc[issue.table].push(issue);
@@ -76,9 +83,9 @@ function printSummary(issues, durationMs) {
   }, {});
 
   for (const [table, tableIssues] of Object.entries(grouped)) {
-    console.error(`\n${table}:`);
+    logger.error('VerifySupabaseSchema', `\n${table}:`);
     tableIssues.forEach((issue) => {
-      console.error(`  - ${issue.detail}`);
+      logger.error('VerifySupabaseSchema', `  - ${issue.detail}`);
     });
   }
 }
@@ -92,8 +99,8 @@ async function main() {
     process.env.SUPABASE_DB_CONNECTION;
 
   if (!connectionString) {
-    console.error(
-      'Set SUPABASE_DB_URL (or DATABASE_URL/POSTGRES_URL) to run the schema verifier.',
+    logger.error('VerifySupabaseSchema',
+      'Set SUPABASE_DB_URL (or DATABASE_URL/POSTGRES_URL) to run the schema verifier.'
     );
     process.exitCode = 1;
     return;
@@ -103,7 +110,7 @@ async function main() {
   try {
     await client.connect();
   } catch (error) {
-    console.error('Failed to connect to Supabase/Postgres:', error.message);
+    logger.error('VerifySupabaseSchema', 'Failed to connect to Supabase/Postgres:', error.message);
     process.exitCode = 1;
     return;
   }
@@ -120,7 +127,7 @@ async function main() {
       process.exitCode = 1;
     }
   } catch (error) {
-    console.error('Schema verification failed:', error.message);
+    logger.error('VerifySupabaseSchema', 'Schema verification failed:', error.message);
     process.exitCode = 1;
   } finally {
     await client.end();

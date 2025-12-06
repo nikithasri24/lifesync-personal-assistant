@@ -1,0 +1,642 @@
+[
+  {
+    "file": "/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/components/focus/tasks/components/modals/CreateTaskModal.tsx",
+    "count": 13,
+    "messages": [
+      {
+        "line": 6,
+        "rule": "@typescript-eslint/consistent-type-imports",
+        "message": "Imports \"ChangeEvent\" are only used as type."
+      },
+      {
+        "line": 6,
+        "rule": "@typescript-eslint/no-unused-vars",
+        "message": "'useMemo' is defined but never used. Allowed unused vars must match /^_/u."
+      },
+      {
+        "line": 32,
+        "rule": "react-hooks/rules-of-hooks",
+        "message": "React Hook \"useCallback\" is called conditionally. React Hooks must be called in the exact same order in every component render."
+      },
+      {
+        "line": 36,
+        "rule": "react-hooks/rules-of-hooks",
+        "message": "React Hook \"useCallback\" is called conditionally. React Hooks must be called in the exact same order in every component render."
+      },
+      {
+        "line": 41,
+        "rule": "react-hooks/rules-of-hooks",
+        "message": "React Hook \"useCallback\" is called conditionally. React Hooks must be called in the exact same order in every component render."
+      },
+      {
+        "line": 46,
+        "rule": "react-hooks/rules-of-hooks",
+        "message": "React Hook \"useCallback\" is called conditionally. React Hooks must be called in the exact same order in every component render."
+      },
+      {
+        "line": 51,
+        "rule": "react-hooks/rules-of-hooks",
+        "message": "React Hook \"useCallback\" is called conditionally. React Hooks must be called in the exact same order in every component render."
+      },
+      {
+        "line": 55,
+        "rule": "react-hooks/rules-of-hooks",
+        "message": "React Hook \"useCallback\" is called conditionally. React Hooks must be called in the exact same order in every component render."
+      },
+      {
+        "line": 59,
+        "rule": "react-hooks/rules-of-hooks",
+        "message": "React Hook \"useCallback\" is called conditionally. React Hooks must be called in the exact same order in every component render."
+      },
+      {
+        "line": 63,
+        "rule": "react-hooks/rules-of-hooks",
+        "message": "React Hook \"useCallback\" is called conditionally. React Hooks must be called in the exact same order in every component render."
+      },
+      {
+        "line": 67,
+        "rule": "react-hooks/rules-of-hooks",
+        "message": "React Hook \"useCallback\" is called conditionally. React Hooks must be called in the exact same order in every component render."
+      },
+      {
+        "line": 74,
+        "rule": "react-hooks/rules-of-hooks",
+        "message": "React Hook \"React.useMemo\" is called conditionally. React Hooks must be called in the exact same order in every component render."
+      },
+      {
+        "line": 78,
+        "rule": "react-hooks/rules-of-hooks",
+        "message": "React Hook \"React.useMemo\" is called conditionally. React Hooks must be called in the exact same order in every component render."
+      }
+    ]
+  },
+  {
+    "file": "/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/finance/components/insights/FinancialInsightsCard.tsx",
+    "count": 6,
+    "messages": [
+      {
+        "line": 75,
+        "rule": "@typescript-eslint/no-unsafe-return",
+        "message": "Unsafe return of a value of type error."
+      },
+      {
+        "line": 85,
+        "rule": "@typescript-eslint/no-unsafe-assignment",
+        "message": "Unsafe assignment of an error typed value."
+      },
+      {
+        "line": 85,
+        "rule": "@typescript-eslint/no-unsafe-call",
+        "message": "Unsafe call of a(n) `error` type typed value."
+      },
+      {
+        "line": 85,
+        "rule": "@typescript-eslint/no-unsafe-member-access",
+        "message": "Unsafe member access .toLowerCase on an `error` typed value."
+      },
+      {
+        "line": 87,
+        "rule": "@typescript-eslint/no-unsafe-call",
+        "message": "Unsafe call of a(n) `error` type typed value."
+      },
+      {
+        "line": 87,
+        "rule": "@typescript-eslint/no-unsafe-member-access",
+        "message": "Unsafe member access .includes on an `error` typed value."
+      }
+    ]
+  },
+  {
+    "file": "/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/hooks/useAsync.ts",
+    "count": 5,
+    "messages": [
+      {
+        "line": 41,
+        "rule": "@typescript-eslint/no-floating-promises",
+        "message": "Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator."
+      },
+      {
+        "line": 63,
+        "rule": "@typescript-eslint/no-floating-promises",
+        "message": "Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator."
+      },
+      {
+        "line": 67,
+        "rule": "react-hooks/exhaustive-deps",
+        "message": "React Hook useCallback has a missing dependency: 'asyncHook'. Either include it or remove the dependency array."
+      },
+      {
+        "line": 101,
+        "rule": "@typescript-eslint/no-floating-promises",
+        "message": "Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator."
+      },
+      {
+        "line": 105,
+        "rule": "react-hooks/exhaustive-deps",
+        "message": "React Hook useEffect has a missing dependency: 'asyncHook'. Either include it or remove the dependency array."
+      }
+    ]
+  },
+  {
+    "file": "/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/hooks/useVoice.ts",
+    "count": 5,
+    "messages": [
+      {
+        "line": 26,
+        "rule": "@typescript-eslint/prefer-nullish-coalescing",
+        "message": "Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator."
+      },
+      {
+        "line": 34,
+        "rule": "@typescript-eslint/prefer-nullish-coalescing",
+        "message": "Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator."
+      },
+      {
+        "line": 57,
+        "rule": "@typescript-eslint/prefer-nullish-coalescing",
+        "message": "Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator."
+      },
+      {
+        "line": 87,
+        "rule": "no-empty",
+        "message": "Empty block statement."
+      },
+      {
+        "line": 98,
+        "rule": "@typescript-eslint/prefer-nullish-coalescing",
+        "message": "Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator."
+      }
+    ]
+  },
+  {
+    "file": "/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/mealPlanning/components/modals/RecipeEditModal.tsx",
+    "count": 5,
+    "messages": [
+      {
+        "line": 1,
+        "rule": "@typescript-eslint/consistent-type-imports",
+        "message": "Imports \"ReactElement\" are only used as type."
+      },
+      {
+        "line": 30,
+        "rule": "@typescript-eslint/prefer-nullish-coalescing",
+        "message": "Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator."
+      },
+      {
+        "line": 47,
+        "rule": "@typescript-eslint/explicit-function-return-type",
+        "message": "Missing return type on function."
+      },
+      {
+        "line": 60,
+        "rule": "@typescript-eslint/no-misused-promises",
+        "message": "Promise returned in function argument where a void return was expected."
+      },
+      {
+        "line": 104,
+        "rule": "react-hooks/exhaustive-deps",
+        "message": "React Hook useEffect has missing dependencies: 'recipe.cookTime', 'recipe.difficulty', 'recipe.prepTime', and 'recipe.servings'. Either include them or remove the dependency array."
+      }
+    ]
+  },
+  {
+    "file": "/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/pages/Notes.tsx",
+    "count": 5,
+    "messages": [
+      {
+        "line": 25,
+        "rule": "@typescript-eslint/require-await",
+        "message": "Async arrow function 'handleSubmit' has no 'await' expression."
+      },
+      {
+        "line": 25,
+        "rule": "@typescript-eslint/explicit-function-return-type",
+        "message": "Missing return type on function."
+      },
+      {
+        "line": 47,
+        "rule": "@typescript-eslint/explicit-function-return-type",
+        "message": "Missing return type on function."
+      },
+      {
+        "line": 98,
+        "rule": "@typescript-eslint/no-misused-promises",
+        "message": "Promise-returning function provided to attribute where a void return was expected."
+      },
+      {
+        "line": 170,
+        "rule": "@typescript-eslint/no-unsafe-argument",
+        "message": "Unsafe argument of type error typed assigned to a parameter of type `string | number | Date`."
+      }
+    ]
+  },
+  {
+    "file": "/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/scripts/createPhotosBucket.ts",
+    "count": 5,
+    "messages": [
+      {
+        "line": 9,
+        "rule": "@typescript-eslint/prefer-nullish-coalescing",
+        "message": "Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator."
+      },
+      {
+        "line": 10,
+        "rule": "@typescript-eslint/prefer-nullish-coalescing",
+        "message": "Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator."
+      },
+      {
+        "line": 10,
+        "rule": "@typescript-eslint/prefer-nullish-coalescing",
+        "message": "Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator."
+      },
+      {
+        "line": 14,
+        "rule": "@typescript-eslint/explicit-function-return-type",
+        "message": "Missing return type on function."
+      },
+      {
+        "line": 47,
+        "rule": "@typescript-eslint/no-unsafe-argument",
+        "message": "Unsafe argument of type `any` assigned to a parameter of type `string | Error`."
+      }
+    ]
+  },
+  {
+    "file": "/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/services/expenseCategorizationEngine.ts",
+    "count": 5,
+    "messages": [
+      {
+        "line": 206,
+        "rule": "@typescript-eslint/prefer-nullish-coalescing",
+        "message": "Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator."
+      },
+      {
+        "line": 206,
+        "rule": "@typescript-eslint/prefer-nullish-coalescing",
+        "message": "Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator."
+      },
+      {
+        "line": 283,
+        "rule": "@typescript-eslint/prefer-nullish-coalescing",
+        "message": "Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator."
+      },
+      {
+        "line": 283,
+        "rule": "@typescript-eslint/prefer-nullish-coalescing",
+        "message": "Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator."
+      },
+      {
+        "line": 417,
+        "rule": "@typescript-eslint/prefer-nullish-coalescing",
+        "message": "Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator."
+      }
+    ]
+  },
+  {
+    "file": "/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/shopping/components/items/MasterItemCard.tsx",
+    "count": 5,
+    "messages": [
+      {
+        "line": 23,
+        "rule": "@typescript-eslint/no-unsafe-assignment",
+        "message": "Unsafe assignment of an error typed value."
+      },
+      {
+        "line": 23,
+        "rule": "@typescript-eslint/no-redundant-type-constituents",
+        "message": "'Store' is an 'error' type that acts as 'any' and overrides all other types in this union type."
+      },
+      {
+        "line": 24,
+        "rule": "@typescript-eslint/no-unsafe-member-access",
+        "message": "Unsafe member access .id on an `error` typed value."
+      },
+      {
+        "line": 81,
+        "rule": "@typescript-eslint/no-unsafe-member-access",
+        "message": "Unsafe member access .name on an `error` typed value."
+      },
+      {
+        "line": 86,
+        "rule": "@typescript-eslint/no-unsafe-member-access",
+        "message": "Unsafe member access .name on an `error` typed value."
+      }
+    ]
+  },
+  {
+    "file": "/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/skincare/components/RoutineEditorModal.tsx",
+    "count": 5,
+    "messages": [
+      {
+        "line": 27,
+        "rule": "@typescript-eslint/prefer-nullish-coalescing",
+        "message": "Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator."
+      },
+      {
+        "line": 49,
+        "rule": "@typescript-eslint/explicit-function-return-type",
+        "message": "Missing return type on function."
+      },
+      {
+        "line": 59,
+        "rule": "@typescript-eslint/explicit-function-return-type",
+        "message": "Missing return type on function."
+      },
+      {
+        "line": 63,
+        "rule": "@typescript-eslint/explicit-function-return-type",
+        "message": "Missing return type on function."
+      },
+      {
+        "line": 67,
+        "rule": "@typescript-eslint/explicit-function-return-type",
+        "message": "Missing return type on function."
+      }
+    ]
+  },
+  {
+    "file": "/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/stores/__tests__/habits.persistence.test.tsx",
+    "count": 5,
+    "messages": [
+      {
+        "line": 29,
+        "rule": "@typescript-eslint/await-thenable",
+        "message": "Unexpected `await` of a non-Promise (non-\"Thenable\") value."
+      },
+      {
+        "line": 48,
+        "rule": "@typescript-eslint/no-non-null-assertion",
+        "message": "Forbidden non-null assertion."
+      },
+      {
+        "line": 53,
+        "rule": "@typescript-eslint/no-non-null-assertion",
+        "message": "Forbidden non-null assertion."
+      },
+      {
+        "line": 60,
+        "rule": "@typescript-eslint/no-non-null-assertion",
+        "message": "Forbidden non-null assertion."
+      },
+      {
+        "line": 71,
+        "rule": "@typescript-eslint/await-thenable",
+        "message": "Unexpected `await` of a non-Promise (non-\"Thenable\") value."
+      }
+    ]
+  },
+  {
+    "file": "/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/todos/components/FilterPanel.tsx",
+    "count": 5,
+    "messages": [
+      {
+        "line": 27,
+        "rule": "@typescript-eslint/explicit-function-return-type",
+        "message": "Missing return type on function."
+      },
+      {
+        "line": 27,
+        "rule": "@typescript-eslint/explicit-module-boundary-types",
+        "message": "Missing return type on function."
+      },
+      {
+        "line": 38,
+        "rule": "@typescript-eslint/explicit-function-return-type",
+        "message": "Missing return type on function."
+      },
+      {
+        "line": 42,
+        "rule": "@typescript-eslint/explicit-function-return-type",
+        "message": "Missing return type on function."
+      },
+      {
+        "line": 46,
+        "rule": "@typescript-eslint/explicit-function-return-type",
+        "message": "Missing return type on function."
+      }
+    ]
+  },
+  {
+    "file": "/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/todos/components/TaskItem.tsx",
+    "count": 5,
+    "messages": [
+      {
+        "line": 39,
+        "rule": "@typescript-eslint/explicit-function-return-type",
+        "message": "Missing return type on function."
+      },
+      {
+        "line": 39,
+        "rule": "@typescript-eslint/explicit-module-boundary-types",
+        "message": "Missing return type on function."
+      },
+      {
+        "line": 130,
+        "rule": "@typescript-eslint/prefer-nullish-coalescing",
+        "message": "Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator."
+      },
+      {
+        "line": 130,
+        "rule": "@typescript-eslint/prefer-nullish-coalescing",
+        "message": "Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator."
+      },
+      {
+        "line": 130,
+        "rule": "@typescript-eslint/prefer-nullish-coalescing",
+        "message": "Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator."
+      }
+    ]
+  },
+  {
+    "file": "/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/todos/hooks/useTaskExpansion.ts",
+    "count": 5,
+    "messages": [
+      {
+        "line": 7,
+        "rule": "@typescript-eslint/explicit-function-return-type",
+        "message": "Missing return type on function."
+      },
+      {
+        "line": 7,
+        "rule": "@typescript-eslint/explicit-module-boundary-types",
+        "message": "Missing return type on function."
+      },
+      {
+        "line": 17,
+        "rule": "@typescript-eslint/explicit-function-return-type",
+        "message": "Missing return type on function."
+      },
+      {
+        "line": 32,
+        "rule": "@typescript-eslint/explicit-function-return-type",
+        "message": "Missing return type on function."
+      },
+      {
+        "line": 39,
+        "rule": "@typescript-eslint/explicit-function-return-type",
+        "message": "Missing return type on function."
+      }
+    ]
+  },
+  {
+    "file": "/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/utils/__tests__/healthSync.test.ts",
+    "count": 5,
+    "messages": [
+      {
+        "line": 325,
+        "rule": "@typescript-eslint/await-thenable",
+        "message": "Unexpected `await` of a non-Promise (non-\"Thenable\") value."
+      },
+      {
+        "line": 334,
+        "rule": "@typescript-eslint/await-thenable",
+        "message": "Unexpected `await` of a non-Promise (non-\"Thenable\") value."
+      },
+      {
+        "line": 342,
+        "rule": "@typescript-eslint/await-thenable",
+        "message": "Unexpected `await` of a non-Promise (non-\"Thenable\") value."
+      },
+      {
+        "line": 588,
+        "rule": "@typescript-eslint/no-non-null-assertion",
+        "message": "Forbidden non-null assertion."
+      },
+      {
+        "line": 630,
+        "rule": "@typescript-eslint/no-non-null-assertion",
+        "message": "Forbidden non-null assertion."
+      }
+    ]
+  },
+  {
+    "file": "/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/cli/src/commands/recipes.ts",
+    "count": 4,
+    "messages": [
+      {
+        "line": 3,
+        "rule": null,
+        "message": "Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-unsafe-assignment')."
+      },
+      {
+        "line": 4,
+        "rule": null,
+        "message": "Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-unsafe-call')."
+      },
+      {
+        "line": 5,
+        "rule": null,
+        "message": "Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-unsafe-member-access')."
+      },
+      {
+        "line": 6,
+        "rule": null,
+        "message": "Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-unsafe-argument')."
+      }
+    ]
+  },
+  {
+    "file": "/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/components/AuthGate.tsx",
+    "count": 4,
+    "messages": [
+      {
+        "line": 9,
+        "rule": "@typescript-eslint/explicit-function-return-type",
+        "message": "Missing return type on function."
+      },
+      {
+        "line": 9,
+        "rule": "@typescript-eslint/explicit-module-boundary-types",
+        "message": "Missing return type on function."
+      },
+      {
+        "line": 21,
+        "rule": "@typescript-eslint/explicit-function-return-type",
+        "message": "Missing return type on function."
+      },
+      {
+        "line": 51,
+        "rule": "@typescript-eslint/no-misused-promises",
+        "message": "Promise-returning function provided to attribute where a void return was expected."
+      }
+    ]
+  },
+  {
+    "file": "/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/components/ThemeToggle.tsx",
+    "count": 4,
+    "messages": [
+      {
+        "line": 4,
+        "rule": "@typescript-eslint/explicit-function-return-type",
+        "message": "Missing return type on function."
+      },
+      {
+        "line": 4,
+        "rule": "@typescript-eslint/explicit-module-boundary-types",
+        "message": "Missing return type on function."
+      },
+      {
+        "line": 7,
+        "rule": "@typescript-eslint/explicit-function-return-type",
+        "message": "Missing return type on function."
+      },
+      {
+        "line": 13,
+        "rule": "@typescript-eslint/explicit-function-return-type",
+        "message": "Missing return type on function."
+      }
+    ]
+  },
+  {
+    "file": "/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/components/focus/FocusAnalytics.tsx",
+    "count": 4,
+    "messages": [
+      {
+        "line": 68,
+        "rule": "@typescript-eslint/no-unsafe-assignment",
+        "message": "Unsafe spread of an `any` value in an array."
+      },
+      {
+        "line": 88,
+        "rule": "@typescript-eslint/no-misused-promises",
+        "message": "Promise-returning function provided to attribute where a void return was expected."
+      },
+      {
+        "line": 135,
+        "rule": "@typescript-eslint/no-misused-promises",
+        "message": "Promise-returning function provided to attribute where a void return was expected."
+      },
+      {
+        "line": 146,
+        "rule": "@typescript-eslint/no-misused-promises",
+        "message": "Promise-returning function provided to attribute where a void return was expected."
+      }
+    ]
+  },
+  {
+    "file": "/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/components/focus/tasks/hooks/useFocusAggregate.ts",
+    "count": 4,
+    "messages": [
+      {
+        "line": 11,
+        "rule": "@typescript-eslint/no-unsafe-assignment",
+        "message": "Unsafe assignment of an error typed value."
+      },
+      {
+        "line": 11,
+        "rule": "@typescript-eslint/no-unsafe-call",
+        "message": "Unsafe call of a(n) `error` type typed value."
+      },
+      {
+        "line": 13,
+        "rule": "@typescript-eslint/no-unsafe-assignment",
+        "message": "Unsafe assignment of an error typed value."
+      },
+      {
+        "line": 14,
+        "rule": "@typescript-eslint/no-unsafe-argument",
+        "message": "Unsafe argument of type error typed assigned to a parameter of type `FocusSession[]`."
+      }
+    ]
+  }
+]

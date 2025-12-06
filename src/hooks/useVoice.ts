@@ -22,79 +22,96 @@ type Options = {
 }
 
 export function useVoice(initialLang = 'en-US', options?: Options): UseVoice {
-  const recRef = useRef<ISpeechRecognition | null>(null)
-  const [supported] = useState<boolean>(() => !!(window.SpeechRecognition || window.webkitSpeechRecognition))
-  const [listening, setListening] = useState(false)
-  const [transcript, setTranscript] = useState('')
-  const [lang, setLang] = useState(initialLang)
-  const [error, setError] = useState<string | undefined>(undefined)
+  const recRef = useRef<ISpeechRecognition | null>(null);
+  const [supported] = useState<boolean>(() => !!(window.SpeechRecognition ?? window.webkitSpeechRecognition));
+  const [listening, setListening] = useState(false);
+  const [transcript, setTranscript] = useState('');
+  const [lang, setLang] = useState(initialLang);
+  const [error, setError] = useState<string | undefined>(undefined);
 
   useEffect(() => {
-    if (!supported) return
-    const Ctor = (window.SpeechRecognition || window.webkitSpeechRecognition) as any
-    const rec: ISpeechRecognition = new Ctor()
-    rec.continuous = true
-    rec.interimResults = true
-    rec.lang = lang
+    if (!supported) return;
+    const Ctor = (window.SpeechRecognition ?? window.webkitSpeechRecognition) as new () => ISpeechRecognition;
+    const rec: ISpeechRecognition = new Ctor();
+    rec.continuous = true;
+    rec.interimResults = true;
+    rec.lang = lang;
     rec.onresult = (ev: SpeechRecognitionEvent) => {
-      let interim = ''
+      let interim = '';
       for (let i = ev.results.length - 1; i >= 0; i--) {
-        const result = ev.results[i]
-        const alt = result[0]
-        if (!alt) continue
+        const result = ev.results[i];
+        const alt = result[0];
+        if (!alt) continue;
         if (result.isFinal) {
-          setTranscript((t) => (t ? `${t} ${alt.transcript}` : alt.transcript))
-          if (options?.onFinal) options.onFinal(alt.transcript)
+          setTranscript((t) => (t ? `${t} ${alt.transcript}` : alt.transcript));
+          if (options?.onFinal) options.onFinal(alt.transcript);
         } else {
-          interim = alt.transcript
+          interim = alt.transcript;
         }
       }
       // Show interim in suffix (UI can choose how to display)
-      if (interim) setTranscript((t) => `${t.replace(/\s+$/, '')} ${interim}`)
-    }
-    rec.onerror = (e: any) => setError(e?.error || 'speech_error')
-    rec.onend = () => setListening(false)
-    recRef.current = rec
+      if (interim) setTranscript((t) => `${t.replace(/\s+$/, '')} ${interim}`);
+    };
+    rec.onerror = (e: Event) => {
+      const error = e as { error?: string };
+      setError(error.error ?? 'speech_error');
+    };
+    rec.onend = () => setListening(false);
+    recRef.current = rec;
     return () => {
-      try { rec.stop() } catch {}
-      recRef.current = null
-    }
-  }, [lang, supported])
+      try { rec.stop(); } catch (e: unknown) {
+        // Ignore any errors during stop
+        void e;
+      }
+      recRef.current = null;
+    };
+  }, [lang, supported, options]);
 
-  const start = useCallback(() => {
-    if (!supported || !recRef.current) return
-    setError(undefined)
+  const start = useCallback((): void => {
+    if (!supported || !recRef.current) return;
+    setError(undefined);
     try {
-      recRef.current.lang = lang
-      recRef.current.start()
-      setListening(true)
-    } catch (e: any) {
-      setError(e?.message || 'speech_start_failed')
+      if (recRef.current) {
+        recRef.current.lang = lang;
+        recRef.current.start();
+      }
+      setListening(true);
+    } catch (e: unknown) {
+      const error = e as Error;
+      setError(error.message || 'speech_start_failed');
     }
-  }, [lang, supported])
+  }, [lang, supported]);
 
-  const stop = useCallback(() => {
-    if (!recRef.current) return
-    try { recRef.current.stop() } catch {}
-    setListening(false)
-  }, [])
+  const stop = useCallback((): void => {
+    if (!recRef.current) return;
+    try {
+      recRef.current.stop();
+    } catch (e: unknown) {
+      // Ignore any errors during stop
+      void e;
+    }
+    setListening(false);
+  }, []);
 
-  const toggle = useCallback(() => (listening ? stop() : start()), [listening, start, stop])
-  const clear = useCallback(() => setTranscript(''), [])
+  const toggle = useCallback((): void => (listening ? stop() : start()), [listening, start, stop]);
+  const clear = useCallback((): void => setTranscript(''), []);
 
-  const speak = useCallback((text: string, opts?: { rate?: number; pitch?: number; lang?: string }) => {
+  const speak = useCallback((text: string, opts?: { rate?: number; pitch?: number; lang?: string }): Promise<void> => {
     return new Promise<void>((resolve) => {
-      if (!('speechSynthesis' in window)) return resolve()
-      const u = new SpeechSynthesisUtterance(text)
-      u.lang = opts?.lang || lang
-      u.rate = opts?.rate ?? 1
-      u.pitch = opts?.pitch ?? 1
-      u.onend = () => resolve()
-      u.onerror = () => resolve()
-      try { window.speechSynthesis.cancel() } catch {}
-      window.speechSynthesis.speak(u)
-    })
-  }, [lang])
+      if (!('speechSynthesis' in window)) return resolve();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = opts?.lang ?? lang;
+      u.rate = opts?.rate ?? 1;
+      u.pitch = opts?.pitch ?? 1;
+      u.onend = () => resolve();
+      u.onerror = () => resolve();
+      try { window.speechSynthesis.cancel(); } catch (e: unknown) {
+        // Ignore cancellation errors
+        void e;
+      }
+      window.speechSynthesis.speak(u);
+    });
+  }, [lang]);
 
   return useMemo(
     () => ({ supported, listening, transcript, lang, error, start, stop, toggle, clear, setLang, speak }),

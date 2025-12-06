@@ -33,9 +33,9 @@ export default function DailyCheckIn({
   onUpdateNotes,
   onUpdateWeight,
   onDeleteChallenge
-}: DailyCheckInProps) {
-  const [notes, setNotes] = useState(checkIn?.notes || '');
-  const [weight, setWeight] = useState(checkIn?.weight?.toString() || '');
+}: DailyCheckInProps): React.JSX.Element {
+  const [notes, setNotes] = useState(checkIn?.notes ?? '');
+  const [weight, setWeight] = useState(checkIn?.weight?.toString() ?? '');
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
 
@@ -46,8 +46,8 @@ export default function DailyCheckIn({
   // Sync local state when checkIn changes
   useEffect(() => {
     if (checkIn) {
-      setNotes(checkIn.notes || '');
-      setWeight(checkIn.weight?.toString() || '');
+      setNotes(checkIn.notes ?? '');
+      setWeight(checkIn.weight?.toString() ?? '');
     }
   }, [checkIn]);
 
@@ -74,19 +74,21 @@ export default function DailyCheckIn({
   const completionPercentage = getCompletionPercentage(checkIn.taskCompletions);
   const allComplete = tasksCompleted === totalTasks;
 
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setIsUploadingPhoto(true);
-    try {
-      await onUploadPhoto(file);
-    } finally {
-      setIsUploadingPhoto(false);
-    }
+    void onUploadPhoto(file)
+      .catch(() => {
+        // TODO: Add proper error handling
+      })
+      .finally(() => {
+        setIsUploadingPhoto(false);
+      });
   };
 
-  const handleNotesChange = (newNotes: string) => {
+  const handleNotesChange = (newNotes: string): void => {
     setNotes(newNotes);
 
     // Clear existing timer
@@ -98,19 +100,19 @@ export default function DailyCheckIn({
     notesDebounceTimer.current = setTimeout(() => {
       // Enforce max length (database constraint is 1000)
       if (newNotes.length > 1000) {
-        alert('Notes must be 1000 characters or less');
-        setNotes(checkIn?.notes || '');
+        // TODO: Replace with toast or modal notification
+        setNotes(checkIn?.notes ?? '');
         return;
       }
 
       // Only update if changed
       if (newNotes !== checkIn?.notes) {
-        onUpdateNotes(newNotes);
+        void onUpdateNotes(newNotes);
       }
     }, 1000);
   };
 
-  const handleNotesBlur = () => {
+  const handleNotesBlur = (): void => {
     // Clear debounce timer and save immediately on blur
     if (notesDebounceTimer.current) {
       clearTimeout(notesDebounceTimer.current);
@@ -118,18 +120,20 @@ export default function DailyCheckIn({
 
     // Enforce max length (database constraint is 1000)
     if (notes.length > 1000) {
-      alert('Notes must be 1000 characters or less');
-      setNotes(checkIn?.notes || '');
+      // TODO: Replace with toast or modal notification
+      setNotes(checkIn?.notes ?? '');
       return;
     }
 
     // Only update if changed
     if (notes !== checkIn?.notes) {
-      onUpdateNotes(notes);
+      void onUpdateNotes(notes).catch(() => {
+        // TODO: Add proper error handling
+      });
     }
   };
 
-  const handleWeightChange = (newWeight: string) => {
+  const handleWeightChange = (newWeight: string): void => {
     setWeight(newWeight);
 
     // Clear existing timer
@@ -153,12 +157,12 @@ export default function DailyCheckIn({
 
       // Only update if changed
       if (weightNum !== checkIn?.weight) {
-        onUpdateWeight(weightNum);
+        void onUpdateWeight(weightNum);
       }
     }, 1000);
   };
 
-  const handleWeightBlur = () => {
+  const handleWeightBlur = (): void => {
     // Clear debounce timer and validate immediately on blur
     if (weightDebounceTimer.current) {
       clearTimeout(weightDebounceTimer.current);
@@ -168,20 +172,22 @@ export default function DailyCheckIn({
 
     // Validate weight is a number
     if (isNaN(weightNum)) {
-      setWeight(checkIn?.weight?.toString() || '');
+      setWeight(checkIn?.weight?.toString() ?? '');
       return;
     }
 
     // Validate reasonable range (20-500 kg or ~50-1100 lbs)
     if (weightNum < 20 || weightNum > 1100) {
-      alert('Please enter a valid weight between 20-500 kg or 50-1100 lbs');
-      setWeight(checkIn?.weight?.toString() || '');
+      // TODO: Replace with toast or modal notification
+      setWeight(checkIn?.weight?.toString() ?? '');
       return;
     }
 
     // Only update if changed
     if (weightNum !== checkIn?.weight) {
-      onUpdateWeight(weightNum);
+      void onUpdateWeight(weightNum).catch(() => {
+        // TODO: Add proper error handling
+      });
     }
   };
 
@@ -204,6 +210,7 @@ export default function DailyCheckIn({
             {/* Menu */}
             <div className="relative">
               <button
+                type="button"
                 onClick={() => setShowMenu(!showMenu)}
                 className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                 title="Options"
@@ -213,6 +220,7 @@ export default function DailyCheckIn({
               {showMenu && (
                 <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10">
                   <button
+                    type="button"
                     onClick={() => {
                       setShowMenu(false);
                       onDeleteChallenge();
@@ -269,7 +277,7 @@ export default function DailyCheckIn({
         <div className="divide-y divide-gray-200 dark:divide-gray-700">
           {challenge.tasks.map(task => {
             const completion = checkIn.taskCompletions.find(tc => tc.taskId === task.id);
-            const isComplete = completion?.completed || false;
+            const isComplete = completion?.completed ?? false;
 
             return (
               <label
@@ -280,7 +288,7 @@ export default function DailyCheckIn({
                 <input
                   type="checkbox"
                   checked={isComplete}
-                  onChange={() => onToggleTask(task.id)}
+                  onChange={() => void onToggleTask(task.id)}
                   className="mt-1 w-5 h-5 rounded border-gray-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
                 />
 

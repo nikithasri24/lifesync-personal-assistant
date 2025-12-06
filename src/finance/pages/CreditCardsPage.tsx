@@ -4,41 +4,31 @@
  */
 
 import React from 'react';
-import { CreditCard, TrendingDown, AlertTriangle, CheckCircle, Plus } from 'lucide-react';
-import { getFinanceAPI } from '../data';
+import { CreditCard, TrendingDown, AlertTriangle, CheckCircle, Award } from 'lucide-react';
+import { useAccountsQuery, useUpdateAccountMutation } from '../hooks/useFinanceQuery';
 import type { Account } from '../types';
 import { formatCurrency } from '../utils/currency';
 import { CreditCardCard } from '../components/creditCards/CreditCardCard';
 import { CreditCardDetailsPage } from './CreditCardDetailsPage';
+import { CreditCardPointsTracker } from '../components/creditCards/CreditCardPointsTracker';
+import { logger } from '../../services/logger';
 
 const CreditCardsPage: React.FC = () => {
-  const [creditCards, setCreditCards] = React.useState<Account[]>([]);
-  const [loading, setLoading] = React.useState(true);
   const [selectedCardId, setSelectedCardId] = React.useState<string | null>(null);
+  const [showPointsTracker, setShowPointsTracker] = React.useState(false);
 
-  React.useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const api = await getFinanceAPI();
-        const accounts = await api.listAccounts();
-        const cards = accounts.filter(a => a.type === 'credit');
-        if (!mounted) return;
-        setCreditCards(cards);
-      } catch (error) {
-        console.error('[CreditCardsPage] Failed to load credit cards:', error);
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, []);
+  // React Query hooks
+  const { data: accounts = [], isLoading: loading } = useAccountsQuery();
+  const updateAccountMutation = useUpdateAccountMutation();
+
+  // Filter to only credit cards
+  const creditCards = React.useMemo(() => {
+    return accounts.filter(a => a.type === 'credit');
+  }, [accounts]);
 
   // Calculate summary metrics
   const totalBalance = creditCards.reduce((sum, card) => sum + Math.abs(card.balance), 0);
-  const totalCreditLimit = creditCards.reduce((sum, card) => sum + (card.creditLimit || 0), 0);
+  const totalCreditLimit = creditCards.reduce((sum, card) => sum + (card.creditLimit ?? 0), 0);
   const totalAvailable = totalCreditLimit - totalBalance;
   const overallUtilization = totalCreditLimit > 0 ? (totalBalance / totalCreditLimit) * 100 : 0;
 
@@ -49,10 +39,10 @@ const CreditCardsPage: React.FC = () => {
     return util >= 70;
   });
 
-  const cardsWithDueDates = creditCards.filter(c => c.paymentDueDay).length;
+  const _cardsWithDueDates = creditCards.filter(c => c.paymentDueDay).length;
 
   // Get upcoming payments
-  const getNextDueDate = (card: Account) => {
+  const getNextDueDate = (card: Account): Date | null => {
     if (!card.paymentDueDay) return null;
     const today = new Date();
     const dueDate = new Date(today.getFullYear(), today.getMonth(), card.paymentDueDay);
@@ -64,13 +54,32 @@ const CreditCardsPage: React.FC = () => {
 
   const upcomingPayments = creditCards
     .filter(c => c.paymentDueDay && c.minimumPayment)
-    .map(c => ({
-      card: c,
-      dueDate: getNextDueDate(c)!,
-      amount: c.minimumPayment!
-    }))
+    .map(c => {
+      const dueDate = getNextDueDate(c);
+      return dueDate ? {
+        card: c,
+        dueDate: dueDate,
+        amount: c.minimumPayment ?? 0
+      } : null;
+    })
+    .filter((payment): payment is NonNullable<typeof payment> => payment !== null)
     .sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime())
     .slice(0, 3);
+
+  // Check if any cards have rewards
+  const hasRewardsCards = creditCards.some(c => c.rewardsType && c.rewardsBalance !== undefined);
+
+  // Handle updating rewards balance
+  const handleUpdatePoints = async (accountId: string, newBalance: number): Promise<void> => {
+    try {
+      await updateAccountMutation.mutateAsync({
+        accountId,
+        updates: { rewardsBalance: newBalance }
+      });
+    } catch (error) {
+      logger.error('[CreditCardsPage] Failed to update rewards balance:', { error });
+    }
+  };
 
   if (loading) {
     return (
@@ -109,8 +118,55 @@ const CreditCardsPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* View Toggle - Show only if there are rewards cards */}
+      {hasRewardsCards && (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowPointsTracker(false)}
+              className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                !showPointsTracker
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-primary/20 text-primary hover:bg-primary/30'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <CreditCard className="h-4 w-4" />
+                <span>Cards View</span>
+              </div>
+            </button>
+            <button
+              onClick={() => setShowPointsTracker(true)}
+              className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                showPointsTracker
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-primary/20 text-primary hover:bg-primary/30'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Award className="h-4 w-4" />
+                <span>Points Tracker</span>
+              </div>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Points Tracker View */}
+      {showPointsTracker && hasRewardsCards && (
+        <CreditCardPointsTracker
+          cards={creditCards}
+          onUpdatePoints={(accountId: string, newBalance: number) => {
+            void handleUpdatePoints(accountId, newBalance);
+          }}
+        />
+      )}
+
+      {/* Cards View */}
+      {!showPointsTracker && (
+        <>
+          {/* Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {/* Total Balance */}
         <div className="rounded-2xl bg-primary/30 backdrop-blur-sm shadow-sm ring-1 border-rose-500/30 p-4">
           <div className="flex items-center gap-2 mb-2">
@@ -218,26 +274,28 @@ const CreditCardsPage: React.FC = () => {
         </div>
       )}
 
-      {/* Credit Cards Grid */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-primary">Your Credit Cards</h3>
-          <p className="text-sm text-primary opacity-60">
-            {creditCards.length} {creditCards.length === 1 ? 'card' : 'cards'}
-          </p>
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {creditCards.map(card => (
-            <div
-              key={card.id}
-              onClick={() => setSelectedCardId(card.id)}
-              className="cursor-pointer transition-transform hover:scale-[1.02]"
-            >
-              <CreditCardCard card={card} />
+          {/* Credit Cards Grid */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-primary">Your Credit Cards</h3>
+              <p className="text-sm text-primary opacity-60">
+                {creditCards.length} {creditCards.length === 1 ? 'card' : 'cards'}
+              </p>
             </div>
-          ))}
-        </div>
-      </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {creditCards.map(card => (
+                <div
+                  key={card.id}
+                  onClick={() => setSelectedCardId(card.id)}
+                  className="cursor-pointer transition-transform hover:scale-[1.02]"
+                >
+                  <CreditCardCard card={card} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };

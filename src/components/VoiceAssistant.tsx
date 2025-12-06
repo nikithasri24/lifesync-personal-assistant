@@ -12,15 +12,16 @@ export const VoiceAssistant: React.FC<Props> = ({ open, onClose }) => {
   const [context, setContext] = React.useState<IntentContext>({})
   const [rate, setRate] = React.useState(1)
   const [pitch, setPitch] = React.useState(1)
-  const { setActiveView, showGlobalToast } = useAppStore() as any
+  const { setActiveView, showGlobalToast } = useAppStore()
   const lastAssistantRef = React.useRef<string>('')
   const squelchUntilRef = React.useRef<number>(0)
 
   const { supported, listening, start, stop, speak } = useVoice('en-US', {
-    onFinal: async (text) => {
+    onFinal: (text) => {
+      void (async () => {
       // Echo suppression: ignore if within squelch window or matches last assistant text
       const now = Date.now()
-      const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim()
+      const norm = (s: string): string => s.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim()
       const nt = norm(text)
       if (now < squelchUntilRef.current) return
       if (lastAssistantRef.current && (nt === norm(lastAssistantRef.current) || nt.includes(norm(lastAssistantRef.current)))) return
@@ -30,7 +31,7 @@ export const VoiceAssistant: React.FC<Props> = ({ open, onClose }) => {
       setState('thinking')
       try {
         const res = await handleUtterance(text, context)
-        if (res.navigateView) setActiveView(res.navigateView as any)
+        if (res.navigateView) setActiveView(res.navigateView)
         setMessages((m) => [...m, { role: 'assistant', text: res.reply }])
         setContext((c) => ({ ...c, ...res.context }))
         setState('speaking')
@@ -39,19 +40,20 @@ export const VoiceAssistant: React.FC<Props> = ({ open, onClose }) => {
         squelchUntilRef.current = Date.now() + 2000
         lastAssistantRef.current = res.reply
         await speak(res.reply, { rate, pitch })
-        if (res.toast) {
-          showGlobalToast?.(res.toast.message, res.toast.type)
+        if (res.toast && showGlobalToast) {
+          showGlobalToast(res.toast.message, res.toast.type)
         }
         setState('idle')
         setTimeout(() => {
           squelchUntilRef.current = Date.now() + 800
           start()
         }, 600)
-      } catch (e) {
+      } catch (_e) {
         setMessages((m) => [...m, { role: 'assistant', text: 'Sorry, something went wrong.' }])
         setState('idle')
         setTimeout(() => start(), 600)
       }
+      })()
     },
   })
 
@@ -59,14 +61,14 @@ export const VoiceAssistant: React.FC<Props> = ({ open, onClose }) => {
     if (!open) return
     if (supported) start()
     return () => {
-      try { window.speechSynthesis?.cancel?.() } catch {}
+      try { window.speechSynthesis?.cancel?.() } catch { /* Ignore cancel errors */ }
       stop()
     }
   }, [open, start, stop, supported])
 
   React.useEffect(() => {
     if (!open) return
-    const onKey = (e: KeyboardEvent) => {
+    const onKey = (e: KeyboardEvent): void => {
       if (e.code === 'Space' && !(e.target as HTMLElement)?.closest('input,textarea')) {
         e.preventDefault()
         if (listening) stop(); else start()
@@ -78,7 +80,7 @@ export const VoiceAssistant: React.FC<Props> = ({ open, onClose }) => {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [open, listening, start, stop])
+  }, [open, listening, start, stop, onClose])
 
   if (!open) return null
 

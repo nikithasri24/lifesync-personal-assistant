@@ -10,8 +10,12 @@
  * This replaces the old complex implementation with 8 simple methods.
  */
 
+/* eslint-disable max-lines */
 import type { StateCreator } from 'zustand';
+import { logger } from '../services/logger';
+
 import { startOfDay, addDays, differenceInDays, isSameDay } from 'date-fns';
+import { format } from 'date-fns';  // Added explicit format import
 import { ensureSupabase } from '../lib/supabase';
 import type {
   SeventyFiveHardChallenge,
@@ -24,8 +28,6 @@ import type {
 import {
   mapRowToChallenge,
   mapRowToCheckIn,
-  mapChallengeToInsert,
-  mapCheckInToInsert,
   generateId,
   createInitialTaskCompletions,
   validateTasks,
@@ -89,12 +91,12 @@ export const createSeventyFiveHardStore: StateCreator<
    */
   startChallenge: async (tasks: Omit<Task, 'id'>[]) => {
     try {
-      console.log('[75Hard] Starting new challenge...');
+      logger.info('SeventyFiveHardStore', '[75Hard] Starting new challenge...');
 
       // Validate tasks
       const validationError = validateTasks(tasks);
       if (validationError) {
-        console.error('[75Hard] Validation error:', validationError);
+        logger.error('SeventyFiveHardStore', '[75Hard] Validation error:', validationError);
         return { success: false, error: validationError };
       }
 
@@ -113,13 +115,13 @@ export const createSeventyFiveHardStore: StateCreator<
         .maybeSingle();
 
       if (existing) {
-        console.error('[75Hard] User already has active challenge');
+        logger.error('SeventyFiveHardStore', '[75Hard] User already has active challenge');
         return { success: false, error: 'You already have an active challenge' };
       }
 
       // Create tasks with IDs
       const tasksWithIds: Task[] = tasks.map((t, index) => ({
-        ...t,
+        ...(t as Task),
         id: generateId(),
         order: index + 1
       }));
@@ -129,7 +131,7 @@ export const createSeventyFiveHardStore: StateCreator<
       // Create challenge
       const challengeData = {
         user_id: user.id,
-        start_date: formatDate(today, 'yyyy-MM-dd'),
+        start_date: format(today, 'yyyy-MM-dd'),
         current_day: 1,
         status: 'active' as const,
         tasks: tasksWithIds,
@@ -139,10 +141,10 @@ export const createSeventyFiveHardStore: StateCreator<
         .from('sfh_challenge')
         .insert(challengeData)
         .select()
-        .single();
+        .single() as { data: ChallengeRow | null; error: Error | null };
 
       if (challengeError) {
-        console.error('[75Hard] Error creating challenge:', challengeError);
+        logger.error('SeventyFiveHardStore', '[75Hard] Error creating challenge:', challengeError);
         return { success: false, error: 'Failed to create challenge' };
       }
 
@@ -151,7 +153,7 @@ export const createSeventyFiveHardStore: StateCreator<
 
       const checkInData = {
         challenge_id: newChallenge.id,
-        date: formatDate(today, 'yyyy-MM-dd'),
+        date: format(today, 'yyyy-MM-dd'),
         day_number: 1,
         task_completions: taskCompletions,
       };
@@ -161,20 +163,20 @@ export const createSeventyFiveHardStore: StateCreator<
         .insert(checkInData);
 
       if (checkInError) {
-        console.error('[75Hard] Error creating check-in:', checkInError);
+        logger.error('SeventyFiveHardStore', '[75Hard] Error creating check-in:', checkInError);
         // Rollback: delete challenge
         await supabase.from('sfh_challenge').delete().eq('id', newChallenge.id);
         return { success: false, error: 'Failed to create daily check-in' };
       }
 
-      console.log('[75Hard] ✅ Challenge created successfully');
+      logger.info('SeventyFiveHardStore', '[75Hard] ✅ Challenge created successfully');
 
       // Reload challenge
       await get().loadChallenge();
 
       return { success: true };
     } catch (error) {
-      console.error('[75Hard] Unexpected error:', error);
+      logger.error('SeventyFiveHardStore', '[75Hard] Unexpected error:', error);
       return { success: false, error: 'An unexpected error occurred' };
     }
   },
@@ -187,12 +189,12 @@ export const createSeventyFiveHardStore: StateCreator<
    */
   loadChallenge: async () => {
     try {
-      console.log('[75Hard] Loading challenge...');
+      logger.info('SeventyFiveHardStore', '[75Hard] Loading challenge...');
 
       const supabase = ensureSupabase();
       const user = (await supabase.auth.getUser()).data.user;
       if (!user) {
-        console.log('[75Hard] Not authenticated');
+        logger.info('SeventyFiveHardStore', '[75Hard] Not authenticated');
         set({ challenge: null, checkIns: [] });
         return;
       }
@@ -203,21 +205,21 @@ export const createSeventyFiveHardStore: StateCreator<
         .select('*')
         .eq('user_id', user.id)
         .eq('status', 'active')
-        .maybeSingle();
+        .maybeSingle() as { data: ChallengeRow | null; error: Error | null };
 
       if (challengeError) {
-        console.error('[75Hard] Error loading challenge:', challengeError);
+        logger.error('SeventyFiveHardStore', '[75Hard] Error loading challenge:', challengeError);
         return;
       }
 
       if (!challengeRow) {
-        console.log('[75Hard] No active challenge found');
+        logger.info('SeventyFiveHardStore', '[75Hard] No active challenge found');
         set({ challenge: null, checkIns: [] });
         return;
       }
 
       // Map database row to type
-      const challenge = mapRowToChallenge(challengeRow as ChallengeRow);
+      const challenge = mapRowToChallenge(challengeRow);
 
       // Load all check-ins
       const { data: checkInRows, error: checkInsError } = await supabase
@@ -227,20 +229,20 @@ export const createSeventyFiveHardStore: StateCreator<
         .order('date', { ascending: false });
 
       if (checkInsError) {
-        console.error('[75Hard] Error loading check-ins:', checkInsError);
+        logger.error('SeventyFiveHardStore', '[75Hard] Error loading check-ins:', checkInsError);
         return;
       }
 
       const checkIns = (checkInRows || []).map((row: CheckInRow) => mapRowToCheckIn(row));
 
-      console.log('[75Hard] ✅ Loaded challenge:', challenge.id, 'with', checkIns.length, 'check-ins');
+      logger.info('SeventyFiveHardStore', '[75Hard] ✅ Loaded challenge:', challenge.id, 'with', checkIns.length, 'check-ins');
 
       set({ challenge, checkIns });
 
       // Run failure detection
       await get().checkForMissedDay();
     } catch (error) {
-      console.error('[75Hard] Unexpected error loading challenge:', error);
+      logger.error('SeventyFiveHardStore', '[75Hard] Unexpected error loading challenge:', error);
     }
   },
 
@@ -258,7 +260,7 @@ export const createSeventyFiveHardStore: StateCreator<
 
     // Was yesterday before challenge started?
     if (yesterday < startOfDay(challenge.startDate)) {
-      console.log('[75Hard] Challenge started today, no check needed');
+      logger.info('SeventyFiveHardStore', '[75Hard] Challenge started today, no check needed');
       return;
     }
 
@@ -269,23 +271,23 @@ export const createSeventyFiveHardStore: StateCreator<
 
     // No check-in for yesterday?
     if (!yesterdayCheckIn) {
-      console.log('[75Hard] No check-in for yesterday - failure detected');
+      logger.info('SeventyFiveHardStore', '[75Hard] No check-in for yesterday - failure detected');
       failureDetected = true;
     }
     // Check-in exists but tasks incomplete?
     else {
       const allComplete = yesterdayCheckIn.taskCompletions.every(tc => tc.completed);
       if (!allComplete) {
-        console.log('[75Hard] Yesterday incomplete - failure detected');
+        logger.info('SeventyFiveHardStore', '[75Hard] Yesterday incomplete - failure detected');
         failureDetected = true;
       }
     }
 
     if (failureDetected) {
-      console.log('[75Hard] Showing failure prompt');
+      logger.info('SeventyFiveHardStore', '[75Hard] Showing failure prompt');
       set({ showFailurePrompt: true, failureDate: yesterday });
     } else {
-      console.log('[75Hard] Yesterday complete - ensure today check-in');
+      logger.info('SeventyFiveHardStore', '[75Hard] Yesterday complete - ensure today check-in');
       await get().ensureTodayCheckIn();
     }
   },
@@ -302,7 +304,7 @@ export const createSeventyFiveHardStore: StateCreator<
     const supabase = ensureSupabase();
 
     if (completed) {
-      console.log('[75Hard] User confirmed yesterday complete - creating check-in');
+      logger.info('SeventyFiveHardStore', '[75Hard] User confirmed yesterday complete - creating check-in');
 
       // Mark all tasks as complete
       const allTasksComplete = challenge.tasks.map(t => ({
@@ -318,7 +320,7 @@ export const createSeventyFiveHardStore: StateCreator<
         .from('sfh_daily_checkins')
         .upsert({
           challenge_id: challenge.id,
-          date: formatDate(failureDate, 'yyyy-MM-dd'),
+          date: format(failureDate, 'yyyy-MM-dd'),
           day_number: dayNumber,
           task_completions: allTasksComplete,
         });
@@ -326,7 +328,7 @@ export const createSeventyFiveHardStore: StateCreator<
       // Reload and continue
       await get().loadChallenge();
     } else {
-      console.log('[75Hard] User confirmed failure - resetting challenge');
+      logger.info('SeventyFiveHardStore', '[75Hard] User confirmed failure - resetting challenge');
       await get().resetChallenge();
     }
 
@@ -345,7 +347,7 @@ export const createSeventyFiveHardStore: StateCreator<
     const todayCheckIn = checkIns.find(c => isSameDay(c.date, today));
 
     if (!todayCheckIn) {
-      console.log('[75Hard] Creating today check-in');
+      logger.info('SeventyFiveHardStore', '[75Hard] Creating today check-in');
 
       const supabase = ensureSupabase();
       const taskCompletions = createInitialTaskCompletions(challenge.tasks);
@@ -358,7 +360,7 @@ export const createSeventyFiveHardStore: StateCreator<
         .from('sfh_daily_checkins')
         .upsert({
           challenge_id: challenge.id,
-          date: formatDate(today, 'yyyy-MM-dd'),
+          date: format(today, 'yyyy-MM-dd'),
           day_number: dayNumber,
           task_completions: taskCompletions,
         }, {
@@ -388,7 +390,7 @@ export const createSeventyFiveHardStore: StateCreator<
   toggleTask: async (taskId: string) => {
     // Prevent concurrent toggles of the same task
     if (togglingTasks.has(taskId)) {
-      console.log('[75Hard] Task toggle already in progress, ignoring duplicate request');
+      logger.info('SeventyFiveHardStore', '[75Hard] Task toggle already in progress, ignoring duplicate request');
       return;
     }
 
@@ -399,7 +401,7 @@ export const createSeventyFiveHardStore: StateCreator<
     const todayCheckIn = checkIns.find(c => isSameDay(c.date, today));
 
     if (!todayCheckIn) {
-      console.error('[75Hard] No check-in for today');
+      logger.error('SeventyFiveHardStore', '[75Hard] No check-in for today');
       return;
     }
 
@@ -436,7 +438,7 @@ export const createSeventyFiveHardStore: StateCreator<
         .eq('id', todayCheckIn.id);
 
       if (error) {
-        console.error('[75Hard] Failed to toggle task:', error);
+        logger.error('SeventyFiveHardStore', '[75Hard] Failed to toggle task:', error);
         // Revert optimistic update
         set({ checkIns });
         return;
@@ -446,7 +448,7 @@ export const createSeventyFiveHardStore: StateCreator<
       const allComplete = updatedCompletions.every(tc => tc.completed);
 
       if (allComplete) {
-        console.log('[75Hard] ✅ All tasks complete for today!');
+        logger.info('SeventyFiveHardStore', '[75Hard] ✅ All tasks complete for today!');
         set({ showDayCompleteMessage: true });
 
         // Auto-hide after 3 seconds
@@ -456,13 +458,13 @@ export const createSeventyFiveHardStore: StateCreator<
 
         // Check if this completes the challenge (day 75)
         if (challenge.currentDay === CHALLENGE_CONSTANTS.TOTAL_DAYS) {
-          console.log('[75Hard] 🎉 Challenge complete!');
+          logger.info('SeventyFiveHardStore', '[75Hard] 🎉 Challenge complete!');
           await get().completeChallenge();
         }
         // Note: Don't increment current_day here - it will be updated when tomorrow's check-in is created
       }
     } catch (error) {
-      console.error('[75Hard] Error in toggleTask:', error);
+      logger.error('SeventyFiveHardStore', '[75Hard] Error in toggleTask:', error);
       // Revert optimistic update
       set({ checkIns });
     } finally {
@@ -520,14 +522,14 @@ export const createSeventyFiveHardStore: StateCreator<
           img.onerror = () => reject(new Error('Failed to load image'));
           img.src = URL.createObjectURL(file);
         });
-      } catch (imgError) {
+      } catch (_imgError) {
         return {
           success: false,
           error: 'Invalid image file. Please upload a valid image.'
         };
       }
 
-      console.log('[75Hard] Uploading photo...');
+      logger.info('SeventyFiveHardStore', '[75Hard] Uploading photo...');
 
       const supabase = ensureSupabase();
 
@@ -536,7 +538,7 @@ export const createSeventyFiveHardStore: StateCreator<
       const fileName = `${challenge.id}/${todayCheckIn.dayNumber}-${Date.now()}.${fileExt}`;
 
       // Upload to storage
-      const { data, error } = await supabase.storage
+      const { _data, error } = await supabase.storage
         .from('75hard-photos')
         .upload(fileName, file, {
           cacheControl: '3600',
@@ -544,7 +546,7 @@ export const createSeventyFiveHardStore: StateCreator<
         });
 
       if (error) {
-        console.error('[75Hard] Error uploading photo:', error);
+        logger.error('SeventyFiveHardStore', '[75Hard] Error uploading photo:', error);
         return { success: false, error: 'Failed to upload photo' };
       }
 
@@ -571,10 +573,10 @@ export const createSeventyFiveHardStore: StateCreator<
         ),
       });
 
-      console.log('[75Hard] ✅ Photo uploaded successfully');
+      logger.info('SeventyFiveHardStore', '[75Hard] ✅ Photo uploaded successfully');
       return { success: true };
     } catch (error) {
-      console.error('[75Hard] Unexpected error uploading photo:', error);
+      logger.error('SeventyFiveHardStore', '[75Hard] Unexpected error uploading photo:', error);
       return { success: false, error: 'An unexpected error occurred' };
     }
   },
@@ -649,7 +651,7 @@ export const createSeventyFiveHardStore: StateCreator<
     const { challenge } = get();
     if (!challenge) return;
 
-    console.log('[75Hard] Resetting challenge...');
+    logger.info('SeventyFiveHardStore', '[75Hard] Resetting challenge...');
 
     const today = startOfDay(new Date());
     const supabase = ensureSupabase();
@@ -658,7 +660,7 @@ export const createSeventyFiveHardStore: StateCreator<
     await supabase
       .from('sfh_challenge')
       .update({
-        start_date: formatDate(today, 'yyyy-MM-dd'),
+        start_date: format(today, 'yyyy-MM-dd'),
         current_day: 1,
         updated_at: new Date().toISOString(),
       })
@@ -672,11 +674,11 @@ export const createSeventyFiveHardStore: StateCreator<
 
     if (allCheckIns) {
       const incompleteIds = allCheckIns
-        .filter(c => {
+        .filter((c: { id: string; task_completions: unknown }) => {
           const completions = c.task_completions as TaskCompletion[];
           return !completions.every(tc => tc.completed);
         })
-        .map(c => c.id);
+        .map((c: { id: string; task_completions: unknown }) => c.id);
 
       if (incompleteIds.length > 0) {
         await supabase
@@ -686,7 +688,7 @@ export const createSeventyFiveHardStore: StateCreator<
       }
     }
 
-    console.log('[75Hard] ✅ Challenge reset');
+    logger.info('SeventyFiveHardStore', '[75Hard] ✅ Challenge reset');
 
     // Reload challenge
     await get().loadChallenge();
@@ -702,7 +704,7 @@ export const createSeventyFiveHardStore: StateCreator<
     const { challenge } = get();
     if (!challenge) return;
 
-    console.log('[75Hard] 🎉 Completing challenge...');
+    logger.info('SeventyFiveHardStore', '[75Hard] 🎉 Completing challenge...');
 
     const completedAt = new Date();
     const supabase = ensureSupabase();
@@ -720,7 +722,7 @@ export const createSeventyFiveHardStore: StateCreator<
 
     await get().loadChallenge();
 
-    console.log('[75Hard] ✅ Challenge completed!');
+    logger.info('SeventyFiveHardStore', '[75Hard] ✅ Challenge completed!');
   },
 
   /**
@@ -731,11 +733,11 @@ export const createSeventyFiveHardStore: StateCreator<
   deleteChallenge: async () => {
     const { challenge } = get();
     if (!challenge) {
-      console.error('[75Hard] deleteChallenge called without challenge');
+      logger.error('SeventyFiveHardStore', '[75Hard] deleteChallenge called without challenge');
       return { success: false, error: 'No active challenge to delete' };
     }
 
-    console.log('[75Hard] Deleting challenge...');
+    logger.info('SeventyFiveHardStore', '[75Hard] Deleting challenge...');
 
     const supabase = ensureSupabase();
 
@@ -747,24 +749,24 @@ export const createSeventyFiveHardStore: StateCreator<
         .eq('challenge_id', challenge.id);
 
       if (deleteCheckInsError) {
-        console.error('[75Hard] Failed to delete check-ins:', deleteCheckInsError);
+        logger.error('SeventyFiveHardStore', '[75Hard] Failed to delete check-ins:', deleteCheckInsError);
         throw deleteCheckInsError;
       }
 
-      console.log('[75Hard] Deleted all check-ins');
+      logger.info('SeventyFiveHardStore', '[75Hard] Deleted all check-ins');
 
       // Step 2: Delete the challenge
       const { error: deleteChallengeError } = await supabase
         .from('sfh_challenge')
         .delete()
-        .eq('id', challenge.id);
+        .eq('id', challenge.id) as { error: Error | null };
 
       if (deleteChallengeError) {
-        console.error('[75Hard] Failed to delete challenge:', deleteChallengeError);
+        logger.error('SeventyFiveHardStore', '[75Hard] Failed to delete challenge:', deleteChallengeError);
         throw deleteChallengeError;
       }
 
-      console.log('[75Hard] Deleted challenge');
+      logger.info('SeventyFiveHardStore', '[75Hard] Deleted challenge');
 
       // Step 3: Clear from store
       set({
@@ -776,11 +778,14 @@ export const createSeventyFiveHardStore: StateCreator<
         showCelebration: false
       });
 
-      console.log('[75Hard] ✅ Challenge deleted successfully');
+      logger.info('SeventyFiveHardStore', '[75Hard] ✅ Challenge deleted successfully');
       return { success: true };
     } catch (error) {
-      console.error('[75Hard] Error in deleteChallenge:', error);
-      return { success: false, error: 'Failed to delete challenge. Please try again.' };
+      logger.error('SeventyFiveHardStore', '[75Hard] Error in deleteChallenge:', error);
+      const errorMessage = error instanceof Error
+        ? error.message
+        : 'Failed to delete challenge. Please try again.';
+      return { success: false, error: errorMessage };
     }
   },
 });

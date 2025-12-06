@@ -14,8 +14,8 @@ const promptMock = vi.fn()
 vi.mock('inquirer', () => ({ default: { prompt: promptMock } }))
 vi.mock('chalk', () => ({
   default: (() => {
-    const color = (s: any) => String(s)
-    const boldFn = Object.assign((s: any) => String(s), { blue: color, red: color })
+    const color = (s: any): string => String(s)
+    const boldFn = Object.assign((s: any): string => String(s), { blue: color, red: color })
     return { green: color, gray: color, cyan: color, white: color, red: color, blue: color, magenta: color, yellow: color, bold: boldFn }
   })()
 }))
@@ -33,7 +33,7 @@ describe('cli task mutations (done/start/remove)', () => {
     expect(dm.updateTodoItem).toHaveBeenCalled()
     const [id, updates] = dm.updateTodoItem.mock.calls[0]
     expect(id).toBe('t1')
-    expect((updates as any).status).toBe('done')
+    expect((updates).status).toBe('done')
     expect(res).toEqual({ id: 't1', status: 'done' })
   })
 
@@ -45,7 +45,7 @@ describe('cli task mutations (done/start/remove)', () => {
     expect(dm.updateTodoItem).toHaveBeenCalled()
     const [id, updates] = dm.updateTodoItem.mock.calls[0]
     expect(id).toBe('t2')
-    expect((updates as any).status).toBe('currently-working')
+    expect((updates).status).toBe('currently-working')
     expect(res).toEqual({ id: 't2', status: 'currently-working' })
   })
 

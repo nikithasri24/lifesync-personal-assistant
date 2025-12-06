@@ -8,6 +8,7 @@ import { Edit2, Save, X, Trash2 } from 'lucide-react';
 import type { Transaction, Category } from '../../types';
 import { formatCurrency } from '../../utils/currency';
 import { getFinanceAPI } from '../../data';
+import { logger } from '../../../services/logger';
 
 interface EditableTransactionRowProps {
   transaction: Transaction;
@@ -26,30 +27,30 @@ export const EditableTransactionRow: React.FC<EditableTransactionRowProps> = ({
   const [editData, setEditData] = useState({
     description: transaction.description,
     amount: transaction.amount.toString(),
-    categoryId: transaction.categoryId || '',
+    categoryId: transaction.categoryId ?? '',
     dateISO: transaction.dateISO.split('T')[0],
     type: transaction.type,
-    notes: transaction.notes || '',
+    notes: transaction.notes ?? '',
   });
   const [isSaving, setIsSaving] = useState(false);
 
-  const handleEdit = () => {
+  const handleEdit = (): void => {
     setIsEditing(true);
     setEditData({
       description: transaction.description,
       amount: transaction.amount.toString(),
-      categoryId: transaction.categoryId || '',
+      categoryId: transaction.categoryId ?? '',
       dateISO: transaction.dateISO.split('T')[0],
       type: transaction.type,
-      notes: transaction.notes || '',
+      notes: transaction.notes ?? '',
     });
   };
 
-  const handleCancel = () => {
+  const handleCancel = (): void => {
     setIsEditing(false);
   };
 
-  const handleSave = async () => {
+  const handleSave = async (): Promise<void> => {
     try {
       setIsSaving(true);
       const api = await getFinanceAPI();
@@ -68,14 +69,16 @@ export const EditableTransactionRow: React.FC<EditableTransactionRowProps> = ({
       setIsEditing(false);
       onUpdate();
     } catch (error) {
-      console.error('Failed to update transaction:', error);
+      logger.error('Failed to update transaction:', { error });
+      // eslint-disable-next-line no-alert
       alert('Failed to update transaction');
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleDelete = async () => {
+  const handleDelete = async (): Promise<void> => {
+    // eslint-disable-next-line no-alert
     if (!confirm('Delete this transaction?')) return;
 
     try {
@@ -83,7 +86,8 @@ export const EditableTransactionRow: React.FC<EditableTransactionRowProps> = ({
       await api.deleteTransaction(transaction.id);
       onDelete();
     } catch (error) {
-      console.error('Failed to delete transaction:', error);
+      logger.error('Failed to delete transaction:', { error });
+      // eslint-disable-next-line no-alert
       alert('Failed to delete transaction');
     }
   };
@@ -145,7 +149,9 @@ export const EditableTransactionRow: React.FC<EditableTransactionRowProps> = ({
         <td className="px-4 py-3">
           <div className="flex items-center gap-2 justify-end">
             <button
-              onClick={handleSave}
+              onClick={() => {
+                void handleSave();
+              }}
               disabled={isSaving}
               className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors disabled:opacity-50"
               title="Save"
@@ -167,7 +173,7 @@ export const EditableTransactionRow: React.FC<EditableTransactionRowProps> = ({
   }
 
   const categoryName = transaction.categoryId
-    ? categories.find((c) => c.id === transaction.categoryId)?.name || 'Unknown'
+    ? categories.find((c) => c.id === transaction.categoryId)?.name ?? 'Unknown'
     : 'Uncategorized';
 
   return (
@@ -218,7 +224,9 @@ export const EditableTransactionRow: React.FC<EditableTransactionRowProps> = ({
             <Edit2 className="h-4 w-4" />
           </button>
           <button
-            onClick={handleDelete}
+            onClick={() => {
+              void handleDelete();
+            }}
             className="p-1.5 text-rose-600 hover:bg-rose-50 rounded transition-colors"
             title="Delete"
           >

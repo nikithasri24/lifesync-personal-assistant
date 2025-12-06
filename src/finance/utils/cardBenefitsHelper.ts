@@ -4,8 +4,9 @@
  */
 
 import type { FinanceAPI } from '../data/api';
-import { findCardTemplate, CREDIT_CARD_TEMPLATES } from './creditCardTemplates';
+import { findCardTemplate, CREDIT_CARD_TEMPLATES, type CreditCardTemplate } from './creditCardTemplates';
 import type { CardBenefitInput, CardCategoryBonusInput, WelcomeBonusInput } from '../types';
+import { logger } from '../../services/logger';
 
 /**
  * Automatically populate benefits for a credit card based on its name
@@ -30,7 +31,13 @@ export async function populateBenefitsFromTemplate(
     // Add benefits
     if (template.benefits && template.benefits.length > 0) {
       for (const benefit of template.benefits) {
-        await api.upsertCardBenefit(accountId, benefit as CardBenefitInput);
+        const benefitInput: CardBenefitInput = {
+          name: benefit.name,
+          description: benefit.description,
+          value: benefit.value,
+          frequency: benefit.frequency
+        };
+        await api.upsertCardBenefit(accountId, benefitInput);
         benefitsAdded++;
       }
     }
@@ -38,20 +45,32 @@ export async function populateBenefitsFromTemplate(
     // Add category bonuses
     if (template.categoryBonuses && template.categoryBonuses.length > 0) {
       for (const bonus of template.categoryBonuses) {
-        await api.upsertCategoryBonus(accountId, bonus as CardCategoryBonusInput);
+        const bonusInput: CardCategoryBonusInput = {
+          category: bonus.category,
+          rewardsRate: bonus.rewardsRate
+        };
+        await api.upsertCategoryBonus(accountId, bonusInput);
         bonusesAdded++;
       }
     }
 
     // Add welcome bonus
     if (template.welcomeBonus) {
-      await api.upsertWelcomeBonus(accountId, template.welcomeBonus as WelcomeBonusInput);
+      const welcomeBonusInput: WelcomeBonusInput = {
+        accountId,
+        bonusAmount: template.welcomeBonus.bonusAmount,
+        requiredSpend: template.welcomeBonus.requiredSpend,
+        currentSpend: template.welcomeBonus.currentSpend,
+        deadline: template.welcomeBonus.deadline,
+        completed: template.welcomeBonus.completed
+      };
+      await api.upsertWelcomeBonus(accountId, welcomeBonusInput);
       welcomeBonusAdded = true;
     }
 
     return { benefitsAdded, bonusesAdded, welcomeBonusAdded };
   } catch (error) {
-    console.error('Failed to populate benefits from template:', error);
+    logger.error('Failed to populate benefits from template:', { error });
     throw error;
   }
 }
@@ -59,7 +78,17 @@ export async function populateBenefitsFromTemplate(
 /**
  * Get a list of all available card templates for selection
  */
-export function getAvailableCardTemplates() {
+export function getAvailableCardTemplates(): Array<{
+  id: string;
+  name: string;
+  issuer: string;
+  annualFee: number;
+  rewardsType: string;
+  baseRewardsRate: number;
+  benefitsCount: number;
+  bonusesCount: number;
+  hasWelcomeBonus: boolean;
+}> {
   return CREDIT_CARD_TEMPLATES.map((template) => ({
     id: template.id,
     name: template.name,
@@ -76,14 +105,14 @@ export function getAvailableCardTemplates() {
 /**
  * Get template by ID
  */
-export function getTemplateById(id: string) {
+export function getTemplateById(id: string): CreditCardTemplate | undefined {
   return CREDIT_CARD_TEMPLATES.find((t) => t.id === id);
 }
 
 /**
  * Suggest card templates based on partial name match
  */
-export function suggestCardTemplates(partialName: string, limit = 5) {
+export function suggestCardTemplates(partialName: string, limit = 5): CreditCardTemplate[] {
   const normalized = partialName.toLowerCase().trim();
 
   if (!normalized) {
@@ -154,7 +183,11 @@ export function getNetAnnualValue(templateId: string): number {
  */
 export function recommendCardsForCategories(
   categories: string[]
-): Array<{ template: typeof CREDIT_CARD_TEMPLATES[0]; score: number; reason: string }> {
+): Array<{
+  template: CreditCardTemplate;
+  score: number;
+  reason: string
+}> {
   const recommendations = CREDIT_CARD_TEMPLATES.map((template) => {
     let score = 0;
     const reasons: string[] = [];

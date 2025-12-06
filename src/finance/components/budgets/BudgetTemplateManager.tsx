@@ -1,6 +1,7 @@
 import React from 'react';
 import { X, Save, Trash2, Settings } from 'lucide-react';
-import type { BudgetTemplate, Category } from '../../types';
+import type { Category } from '../../types';
+import { logger } from '../../../services/logger';
 
 interface BudgetTemplateManagerProps {
   isOpen: boolean;
@@ -29,7 +30,7 @@ const BudgetTemplateManager: React.FC<BudgetTemplateManagerProps> = ({
     }
   }, [isOpen, existingTemplates]);
 
-  const handleAmountChange = (categoryId: string, value: string) => {
+  const handleAmountChange = (categoryId: string, value: string): void => {
     const amount = parseFloat(value);
     if (!isNaN(amount) && amount >= 0) {
       const newTemplates = new Map(templates);
@@ -43,19 +44,18 @@ const BudgetTemplateManager: React.FC<BudgetTemplateManagerProps> = ({
     }
   };
 
-  const handleDeleteTemplate = async (categoryId: string) => {
+  const handleDeleteTemplate = async (categoryId: string): Promise<void> => {
     try {
       await onDelete(categoryId);
       const newTemplates = new Map(templates);
       newTemplates.delete(categoryId);
       setTemplates(newTemplates);
     } catch (error) {
-      console.error('Failed to delete template:', error);
-      alert('Failed to delete template');
+      logger.error('Failed to delete template:', { error });
     }
   };
 
-  const handleSave = async () => {
+  const handleSave = async (): Promise<void> => {
     setSaving(true);
     try {
       const templatesToSave = Array.from(templates.entries()).map(([categoryId, defaultAmount]) => ({
@@ -65,14 +65,13 @@ const BudgetTemplateManager: React.FC<BudgetTemplateManagerProps> = ({
       await onSave(templatesToSave);
       onClose();
     } catch (error) {
-      console.error('Failed to save templates:', error);
-      alert('Failed to save templates');
+      logger.error('Failed to save templates:', { error });
     } finally {
       setSaving(false);
     }
   };
 
-  const handleBackdropClick = (e: React.MouseEvent) => {
+  const handleBackdropClick = (e: React.MouseEvent): void => {
     if (e.target === e.currentTarget) {
       onClose();
     }
@@ -186,7 +185,7 @@ const BudgetTemplateManager: React.FC<BudgetTemplateManagerProps> = ({
                     {hasTemplate && (
                       <button
                         type="button"
-                        onClick={() => handleDeleteTemplate(category.id)}
+                        onClick={() => void handleDeleteTemplate(category.id)}
                         className="rounded-lg p-2 text-red-500 hover:bg-red-50 transition-colors"
                         title="Delete template"
                       >
@@ -224,7 +223,7 @@ const BudgetTemplateManager: React.FC<BudgetTemplateManagerProps> = ({
               </button>
               <button
                 type="button"
-                onClick={handleSave}
+                onClick={() => void handleSave()}
                 disabled={saving}
                 className="inline-flex items-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-700 px-4 py-2 text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >

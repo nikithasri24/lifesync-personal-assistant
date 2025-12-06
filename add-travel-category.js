@@ -1,3 +1,10 @@
+const logger = {
+  debug: (domain, msg, ctx) => console.log(`[${domain}] ${msg}`, ctx || ''),
+  info: (domain, msg, ctx) => console.log(`[${domain}] ${msg}`, ctx || ''),
+  warn: (domain, msg, ctx) => console.warn(`[${domain}] ${msg}`, ctx || ''),
+  error: (domain, err, ctx) => console.error(`[${domain}]`, err, ctx || ''),
+};
+
 // Run this in your browser console while logged in to add Travel category
 // Copy and paste this entire code block into the browser console and press Enter
 
@@ -21,14 +28,14 @@
 
     if (response.ok) {
       const data = await response.json();
-      console.log('✅ Successfully added Travel category:', data);
+      logger.info('AddTravelCategory', '✅ Successfully added Travel category:', data);
       // Refresh the page to see the new category
       window.location.reload();
     } else {
       const error = await response.text();
-      console.error('❌ Failed to add category:', error);
+      logger.error('AddTravelCategory', '❌ Failed to add category:', error);
     }
   } catch (err) {
-    console.error('❌ Error:', err);
+    logger.error('AddTravelCategory', '❌ Error:', err);
   }
 })();

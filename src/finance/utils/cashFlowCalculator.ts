@@ -60,8 +60,8 @@ export function calculateCashFlowByCategory(
   const categoryMap = new Map<string, { amount: number; count: number }>();
 
   for (const txn of filteredTxns) {
-    const catId = txn.categoryId || 'uncategorized';
-    const existing = categoryMap.get(catId) || { amount: 0, count: 0 };
+    const catId = txn.categoryId ?? 'uncategorized';
+    const existing = categoryMap.get(catId) ?? { amount: 0, count: 0 };
     categoryMap.set(catId, {
       amount: existing.amount + txn.amount,
       count: existing.count + 1,
@@ -78,7 +78,7 @@ export function calculateCashFlowByCategory(
     const category = categories.find(c => c.id === catId);
     results.push({
       categoryId: catId,
-      categoryName: category?.name || 'Uncategorized',
+      categoryName: category?.name ?? 'Uncategorized',
       amount: data.amount,
       percentage: total > 0 ? (data.amount / total) * 100 : 0,
       transactionCount: data.count,

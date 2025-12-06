@@ -38,7 +38,7 @@ export function useAsync<T>(
 
   useEffect(() => {
     if (immediate) {
-      execute();
+      void execute();
     }
   }, [execute, immediate]);
 
@@ -60,11 +60,11 @@ export function useDebouncedAsync<T>(
     }
 
     const newTimeoutId = setTimeout(() => {
-      asyncHook.execute();
+      void asyncHook.execute();
     }, delay);
 
     setTimeoutId(newTimeoutId);
-  }, [asyncHook.execute, delay, timeoutId]);
+  }, [asyncHook, delay, timeoutId]);
 
   useEffect(() => {
     return () => {
@@ -98,11 +98,11 @@ export function usePolling<T>(
     if (!isPolling) return;
 
     const intervalId = setInterval(() => {
-      asyncHook.execute();
+      void asyncHook.execute();
     }, interval);
 
     return () => clearInterval(intervalId);
-  }, [isPolling, interval, asyncHook.execute]);
+  }, [isPolling, interval, asyncHook]);
 
   return { ...asyncHook, startPolling, stopPolling };
 }

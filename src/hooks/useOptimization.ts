@@ -1,23 +1,23 @@
-// @ts-nocheck
 import { useMemo, useCallback, useRef, useEffect, useState } from 'react';
+import { logger } from '../services/logger';
 
 // Memoization hook for expensive calculations
 export function useMemoizedCalculation<T>(
   calculateFn: () => T,
   dependencies: React.DependencyList
 ): T {
-  return useMemo(calculateFn, dependencies);
+  return useMemo(() => calculateFn(), dependencies);
 }
 
 // Debounced callback hook
-export function useDebouncedCallback<T extends (...args: any[]) => any>(
+export function useDebouncedCallback<T extends (...args: unknown[]) => unknown>(
   callback: T,
-  delay: number = 300
+  delay = 300
 ): T {
-  const debounceRef = useRef<any>();
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
   return useCallback(
-    ((...args: any[]) => {
+    ((...args: unknown[]) => {
       if (debounceRef.current) {
         clearTimeout(debounceRef.current);
       }
@@ -30,14 +30,14 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
 }
 
 // Throttled callback hook
-export function useThrottledCallback<T extends (...args: any[]) => any>(
+export function useThrottledCallback<T extends (...args: unknown[]) => unknown>(
   callback: T,
-  delay: number = 300
+  delay = 300
 ): T {
   const lastRun = useRef(Date.now());
 
   return useCallback(
-    ((...args: any[]) => {
+    ((...args: unknown[]) => {
       if (Date.now() - lastRun.current >= delay) {
         callback(...args);
         lastRun.current = Date.now();
@@ -107,7 +107,11 @@ export function useVirtualScroll<T>({
   itemHeight: number;
   containerHeight: number;
   overscan?: number;
-}) {
+}): {
+  visibleItems: { item: T; index: number }[];
+  totalHeight: number;
+  onScroll: (e: React.UIEvent<HTMLDivElement>) => void;
+} {
   const [scrollTop, setScrollTop] = useState(0);
 
   const visibleItems = useMemo(() => {
@@ -135,7 +139,7 @@ export function useVirtualScroll<T>({
 }
 
 // Performance monitoring hook
-export function usePerformanceMonitor(name: string) {
+export function usePerformanceMonitor(name: string): void {
   const startTime = useRef<number>(performance.now());
 
   useEffect(() => {
@@ -146,18 +150,22 @@ export function usePerformanceMonitor(name: string) {
     return () => {
       const endTime = performance.now();
       const duration = endTime - startTime.current;
-      console.log(`${name} render time: ${duration.toFixed(2)}ms`);
+      logger.debug('Optimization', `${name} render time: ${duration.toFixed(2)}ms`);
     };
   });
 }
 
 // Memory usage monitoring (development only)
-export function useMemoryMonitor(componentName: string) {
+export function useMemoryMonitor(componentName: string): void {
   useEffect(() => {
     if (process.env.NODE_ENV === 'development') {
-      const memoryInfo = (performance as any).memory;
+      const memoryInfo = (performance as { memory?: {
+        usedJSHeapSize: number;
+        totalJSHeapSize: number;
+        jsHeapSizeLimit: number;
+      } }).memory;
       if (memoryInfo) {
-        console.log(`${componentName} Memory Usage:`, {
+        logger.debug('Optimization', `${componentName} Memory Usage`, {
           used: Math.round(memoryInfo.usedJSHeapSize / 1048576) + ' MB',
           total: Math.round(memoryInfo.totalJSHeapSize / 1048576) + ' MB',
           limit: Math.round(memoryInfo.jsHeapSizeLimit / 1048576) + ' MB'

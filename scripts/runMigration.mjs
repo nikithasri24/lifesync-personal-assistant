@@ -21,8 +21,8 @@ const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-  console.error('❌ Missing Supabase credentials in .env file');
-  console.error('   Required: VITE_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (or VITE_SUPABASE_ANON_KEY)');
+  logger.error('RunMigration', '❌ Missing Supabase credentials in .env file');
+  logger.error('RunMigration', '   Required: VITE_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (or VITE_SUPABASE_ANON_KEY)');
   process.exit(1);
 }
 
@@ -30,8 +30,8 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
 const migrationFile = process.argv[2];
 
 if (!migrationFile) {
-  console.error('❌ Usage: node scripts/runMigration.mjs <migration-file>');
-  console.error('   Example: node scripts/runMigration.mjs 202511120003_improve_75hard_schema.sql');
+  logger.error('RunMigration', '❌ Usage: node scripts/runMigration.mjs <migration-file>');
+  logger.error('RunMigration', '   Example: node scripts/runMigration.mjs 202511120003_improve_75hard_schema.sql');
   process.exit(1);
 }
 
@@ -39,15 +39,15 @@ const migrationPath = path.join(__dirname, '..', 'supabase', 'migrations', migra
 
 // Check if migration file exists
 if (!fs.existsSync(migrationPath)) {
-  console.error(`❌ Migration file not found: ${migrationPath}`);
+  logger.error('RunMigration', `❌ Migration file not found: ${migrationPath}`);
   process.exit(1);
 }
 
-console.log(`\n📝 Reading migration file: ${migrationFile}`);
+logger.info('RunMigration', `\n📝 Reading migration file: ${migrationFile}`);
 const sql = fs.readFileSync(migrationPath, 'utf-8');
 
-console.log(`📊 Migration file size: ${sql.length} characters`);
-console.log(`\n🚀 Connecting to Supabase...`);
+logger.info('RunMigration', `📊 Migration file size: ${sql.length} characters`);
+logger.info('RunMigration', `\n🚀 Connecting to Supabase...`);
 
 // Create Supabase client
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
@@ -57,8 +57,8 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   }
 });
 
-console.log(`✅ Connected to Supabase at: ${SUPABASE_URL}`);
-console.log(`\n⚡ Running migration...`);
+logger.info('RunMigration', `✅ Connected to Supabase at: ${SUPABASE_URL}`);
+logger.info('RunMigration', `\n⚡ Running migration...`);
 
 try {
   // Execute the migration SQL
@@ -78,27 +78,27 @@ try {
   if (!response.ok) {
     // If exec_sql doesn't exist, we need to use a different approach
     // Let's try using the SQL editor endpoint
-    console.log('⚠️  Direct SQL execution via RPC not available');
-    console.log('📋 Please run the migration manually via Supabase Dashboard:');
-    console.log('   1. Go to: https://supabase.com/dashboard/project/<your-project>/sql/new');
-    console.log('   2. Copy the contents of:');
-    console.log(`      ${migrationPath}`);
-    console.log('   3. Paste into SQL Editor and click "Run"');
-    console.log('\n📄 Migration SQL Preview:');
-    console.log('─'.repeat(80));
-    console.log(sql.substring(0, 500) + (sql.length > 500 ? '\n... (truncated)' : ''));
-    console.log('─'.repeat(80));
+    logger.info('RunMigration', '⚠️  Direct SQL execution via RPC not available');
+    logger.info('RunMigration', '📋 Please run the migration manually via Supabase Dashboard:');
+    logger.info('RunMigration', '   1. Go to: https://supabase.com/dashboard/project/<your-project>/sql/new');
+    logger.info('RunMigration', '   2. Copy the contents of:');
+    logger.info('RunMigration', `      ${migrationPath}`);
+    logger.info('RunMigration', '   3. Paste into SQL Editor and click "Run"');
+    logger.info('RunMigration', '\n📄 Migration SQL Preview:');
+    logger.info('RunMigration', '─'.repeat(80));
+    logger.info('RunMigration', sql.substring(0, 500) + (sql.length > 500 ? '\n... (truncated)' : ''));
+    logger.info('RunMigration', '─'.repeat(80));
     process.exit(1);
   }
 
-  console.log('✅ Migration executed successfully!');
-  console.log('\n🎉 Database schema updated');
+  logger.info('RunMigration', '✅ Migration executed successfully!');
+  logger.info('RunMigration', '\n🎉 Database schema updated');
 
 } catch (error) {
-  console.error('❌ Error running migration:', error.message);
-  console.log('\n📋 Manual Migration Required:');
-  console.log('   1. Go to Supabase Dashboard SQL Editor');
-  console.log('   2. Run the migration file manually:');
-  console.log(`      ${migrationPath}`);
+  logger.error('RunMigration', '❌ Error running migration:', error.message);
+  logger.info('RunMigration', '\n📋 Manual Migration Required:');
+  logger.info('RunMigration', '   1. Go to Supabase Dashboard SQL Editor');
+  logger.info('RunMigration', '   2. Run the migration file manually:');
+  logger.info('RunMigration', `      ${migrationPath}`);
   process.exit(1);
 }

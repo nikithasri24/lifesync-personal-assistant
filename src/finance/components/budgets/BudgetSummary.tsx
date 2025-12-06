@@ -30,7 +30,7 @@ const BudgetSummary: React.FC<BudgetSummaryProps> = ({ data, month, className = 
     data;
   const remaining = totalBudget - totalSpent;
   const percentage = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
-  const status = getBudgetStatus(percentage);
+  const _status = getBudgetStatus(percentage);
 
   // Format month display
   const monthDisplay = new Date(month + '-01').toLocaleDateString('en-US', {

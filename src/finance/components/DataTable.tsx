@@ -13,7 +13,7 @@ type Props<T extends { id: string }> = {
   getKey?: (row: T) => string;
 };
 
-export function DataTable<T extends { id: string }>({ columns, rows, getKey }: Props<T>) {
+export function DataTable<T extends { id: string }>({ columns, rows, getKey }: Props<T>): React.ReactElement {
   return (
     <div className="overflow-auto rounded-xl border border-slate-200">
       <table className="min-w-full text-sm">
@@ -31,7 +31,7 @@ export function DataTable<T extends { id: string }>({ columns, rows, getKey }: P
             <tr key={getKey ? getKey(r) : r.id} className="border-t">
               {columns.map((c) => (
                 <td key={String(c.key)} className={`px-3 py-2 ${c.className ?? ''}`}>
-                  {c.render ? c.render(r) : (r as any)[c.key]}
+                  {c.render ? c.render(r) : (r as Record<string, unknown>)[c.key]}
                 </td>
               ))}
             </tr>

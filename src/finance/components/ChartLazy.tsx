@@ -1,6 +1,18 @@
 import React from 'react';
+import type {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+  CartesianGrid,
+} from 'recharts';
 
-type AnyObj = Record<string, any>;
+type AnyObj = Record<string, unknown>;
 
 type AreaLineProps = {
   data: AnyObj[];
@@ -9,12 +21,25 @@ type AreaLineProps = {
   height?: number;
 };
 
+type RechartsModule = {
+  ResponsiveContainer: typeof ResponsiveContainer;
+  AreaChart: typeof AreaChart;
+  Area: typeof Area;
+  LineChart: typeof LineChart;
+  Line: typeof Line;
+  XAxis: typeof XAxis;
+  YAxis: typeof YAxis;
+  Tooltip: typeof Tooltip;
+  Legend: typeof Legend;
+  CartesianGrid: typeof CartesianGrid;
+};
+
 export const ChartLazy: React.FC<AreaLineProps> = ({ data, xKey, yKeys, height = 220 }) => {
-  const [lib, setLib] = React.useState<AnyObj | null>(null);
+  const [lib, setLib] = React.useState<RechartsModule | null>(null);
   React.useEffect(() => {
     let mounted = true;
     import('recharts')
-      .then((m) => mounted && setLib(m as AnyObj))
+      .then((m) => mounted && setLib(m as RechartsModule))
       .catch(() => mounted && setLib(null));
     return () => {
       mounted = false;
