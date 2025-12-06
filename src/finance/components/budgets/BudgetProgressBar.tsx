@@ -8,21 +8,14 @@
  */
 
 import React from 'react';
+import { getBudgetStatus, type BudgetStatus } from './budgetStatus';
 
-export interface BudgetProgressBarProps {
+interface BudgetProgressBarProps {
   spent: number;
   limit: number;
   className?: string;
   showPercentage?: boolean;
 }
-
-export type BudgetStatus = 'safe' | 'warning' | 'over';
-
-export const getBudgetStatus = (percentage: number): BudgetStatus => {
-  if (percentage >= 100) return 'over';
-  if (percentage >= 80) return 'warning';
-  return 'safe';
-};
 
 const getBudgetColor = (status: BudgetStatus): string => {
   switch (status) {

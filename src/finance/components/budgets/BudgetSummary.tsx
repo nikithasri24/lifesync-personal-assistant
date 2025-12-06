@@ -8,7 +8,8 @@
 import React from 'react';
 import { PiggyBank, TrendingDown, TrendingUp, AlertTriangle } from 'lucide-react';
 import { formatCurrency } from '../../utils/currency';
-import BudgetProgressBar, { getBudgetStatus } from './BudgetProgressBar';
+import BudgetProgressBar from './BudgetProgressBar';
+import { getBudgetStatus } from './budgetStatus';
 
 export interface BudgetSummaryData {
   totalBudget: number;
