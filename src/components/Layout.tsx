@@ -35,7 +35,6 @@ const navigation = [
   { name: 'Dashboard', icon: Home, view: 'dashboard' as const, section: 'main' },
   { name: 'AI Assistant', icon: MessageCircle, view: 'assistant' as const, section: 'main' },
   { name: 'Calendar', icon: Calendar, view: 'calendar' as const, section: 'main' },
-  { name: 'Tasks', icon: CheckSquare, view: 'todos' as const, section: 'main' },
   { name: 'Task Scheduler', icon: LayoutGrid, view: 'scheduler' as const, section: 'main' },
   { name: 'Focus', icon: Timer, view: 'focus' as const, section: 'main' },
   { name: 'Habits', icon: Target, view: 'habits' as const, section: 'productivity' },

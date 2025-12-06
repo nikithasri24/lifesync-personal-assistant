@@ -22,16 +22,17 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
+  ChevronUp,
   Calendar as CalendarIcon,
   CheckCircle2,
   Target,
-  BookOpen,
+  GripVertical,
+  Inbox,
 } from 'lucide-react';
-import { useTasks } from '../hooks/useTasksQuery';
+import { useTasks, useUpdateTask } from '../hooks/useTasksQuery';
 import { useHabits, useHabitEntries } from '../hooks/useHabitsQuery';
-import { useJournalEntries } from '../hooks/useJournalQuery';
 import type { Task } from '../lib/supabase';
-import type { Habit, JournalEntry } from '../types';
+import type { Habit } from '../types';
 import { SkeletonCard } from '../components/LoadingSpinner';
 
 type CalendarView = 'week' | 'month' | 'day';
@@ -52,14 +53,21 @@ const Calendar: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<CalendarView>('week');
   const [miniCalendarDate, setMiniCalendarDate] = useState(new Date());
+  const [showUnscheduledPanel, setShowUnscheduledPanel] = useState(true);
+  const [draggedTask, setDraggedTask] = useState<Task | null>(null);
 
   // Fetch data
   const { data: tasks = [], isLoading: tasksLoading } = useTasks();
   const { data: habits = [], isLoading: habitsLoading } = useHabits({ isActive: true });
   const { data: habitEntries = [], isLoading: entriesLoading } = useHabitEntries();
-  const { data: journalEntries = [], isLoading: journalLoading } = useJournalEntries();
+  const updateTaskMutation = useUpdateTask();
 
-  const isLoading = tasksLoading || habitsLoading || entriesLoading || journalLoading;
+  const isLoading = tasksLoading || habitsLoading || entriesLoading;
+
+  // Get unscheduled tasks (no due_date or deleted)
+  const unscheduledTasks = useMemo(() => {
+    return tasks.filter(task => !task.due_date && task.status !== 'done' && !task.deleted);
+  }, [tasks]);
 
   // Time slots (7 AM to 9 PM)
   const timeSlots: TimeSlot[] = useMemo(() => {
@@ -145,16 +153,79 @@ const Calendar: React.FC = () => {
   const goToPreviousMonthMini = () => setMiniCalendarDate(prev => addWeeks(prev, -4));
   const goToNextMonthMini = () => setMiniCalendarDate(prev => addWeeks(prev, 4));
 
+  // Helper to check if a task is multi-day (estimated time >= 1 day or 480 minutes = 8 hours)
+  const isMultiDayTask = (task: Task): boolean => {
+    return task.estimated_time >= 480; // 8+ hours = multi-day
+  };
+
+  // Helper to get the number of days a task spans
+  const getTaskSpanDays = (task: Task): number => {
+    if (!isMultiDayTask(task)) return 1;
+    // Each day = 480 minutes (8 working hours)
+    return Math.ceil(task.estimated_time / 480);
+  };
+
+  // Helper to check if a task should appear on a specific date
+  const taskAppearsOnDate = (task: Task, date: Date): boolean => {
+    if (!task.due_date) return false;
+    const taskDate = typeof task.due_date === 'string' ? parseISO(task.due_date) : task.due_date;
+
+    if (isMultiDayTask(task)) {
+      const spanDays = getTaskSpanDays(task);
+      // Task appears on due date and the previous (spanDays - 1) days
+      for (let i = 0; i < spanDays; i++) {
+        const spanDate = addDays(taskDate, -i);
+        if (isSameDay(spanDate, date)) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    return isSameDay(taskDate, date);
+  };
+
+  // Helper to get task position in multi-day span (0 = first day, -1 = not multi-day)
+  const getTaskSpanPosition = (task: Task, date: Date): { position: number; totalDays: number; isFirst: boolean; isLast: boolean } => {
+    if (!task.due_date) return { position: -1, totalDays: 1, isFirst: true, isLast: true };
+    const taskDate = typeof task.due_date === 'string' ? parseISO(task.due_date) : task.due_date;
+
+    if (!isMultiDayTask(task)) {
+      return { position: -1, totalDays: 1, isFirst: true, isLast: true };
+    }
+
+    const spanDays = getTaskSpanDays(task);
+
+    // Find which day of the span this is
+    for (let i = 0; i < spanDays; i++) {
+      const spanDate = addDays(taskDate, -i);
+      if (isSameDay(spanDate, date)) {
+        return {
+          position: spanDays - i - 1, // 0 = first day, spanDays-1 = last day
+          totalDays: spanDays,
+          isFirst: i === spanDays - 1,
+          isLast: i === 0,
+        };
+      }
+    }
+
+    return { position: -1, totalDays: spanDays, isFirst: false, isLast: false };
+  };
+
   // Get events for a specific day
   const getEventsForDay = (date: Date) => {
     const dateKey = format(date, 'yyyy-MM-dd');
 
-    // Tasks
-    const dayTasks = tasks.filter(task => {
-      if (!task.due_date) return false;
-      const taskDate = typeof task.due_date === 'string' ? parseISO(task.due_date) : task.due_date;
-      return isSameDay(taskDate, date);
-    });
+    // Tasks (including multi-day tasks that span this date)
+    const dayTasks = tasks.filter(task => taskAppearsOnDate(task, date));
+
+    // Separate all-day tasks (high priority or starred tasks are treated as all-day)
+    const allDayTasks = dayTasks.filter(task =>
+      task.priority === 'urgent' || task.starred || task.estimated_time >= 240 // 4+ hours
+    );
+    const timedTasks = dayTasks.filter(task =>
+      !(task.priority === 'urgent' || task.starred || task.estimated_time >= 240)
+    );
 
     // Habits
     const dayHabitCompletions = habitEntries.filter(entry => entry.date === dateKey);
@@ -162,17 +233,36 @@ const Calendar: React.FC = () => {
       dayHabitCompletions.some(entry => entry.habit_id === habit.id)
     );
 
-    // Journal entries
-    const dayJournalEntries = journalEntries.filter(entry => {
-      const entryDate = typeof entry.createdAt === 'string' ? parseISO(entry.createdAt) : entry.createdAt;
-      return isSameDay(entryDate, date);
+    return {
+      tasks: timedTasks,
+      allDayTasks,
+      habits: completedHabits,
+    };
+  };
+
+  // Drag and drop handlers
+  const handleDragStart = (task: Task) => {
+    setDraggedTask(task);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedTask(null);
+  };
+
+  const handleDrop = (date: Date) => {
+    if (!draggedTask) return;
+
+    const dateString = format(date, 'yyyy-MM-dd');
+    updateTaskMutation.mutate({
+      id: draggedTask.id,
+      updates: { due_date: dateString }
     });
 
-    return {
-      tasks: dayTasks,
-      habits: completedHabits,
-      journalEntries: dayJournalEntries,
-    };
+    setDraggedTask(null);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault(); // Allow drop
   };
 
   // Loading state
@@ -189,7 +279,7 @@ const Calendar: React.FC = () => {
   return (
     <div className="flex h-screen overflow-hidden bg-white dark:bg-slate-900">
       {/* Sidebar */}
-      <div className="w-64 border-r border-slate-200 dark:border-slate-700 p-4 overflow-y-auto">
+      <div className="w-64 border-r border-slate-200 dark:border-slate-700 p-4 overflow-y-auto bg-white dark:bg-slate-900">
         {/* Mini Calendar */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-3">
@@ -213,27 +303,35 @@ const Calendar: React.FC = () => {
           </div>
 
           {/* Mini calendar grid */}
-          <div className="grid grid-cols-7 gap-1 text-center text-xs">
-            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
-              <div key={i} className="text-slate-500 dark:text-slate-400 font-medium py-1">
-                {day}
-              </div>
-            ))}
-            {miniCalendarDays.map((day, i) => (
-              <button
-                key={i}
-                onClick={() => setCurrentDate(day.date)}
-                className={`
-                  py-1 rounded text-xs font-medium transition-colors
-                  ${!day.isCurrentMonth ? 'text-slate-300 dark:text-slate-700' : 'text-slate-700 dark:text-slate-300'}
-                  ${day.isToday ? 'bg-blue-500 text-white' : ''}
-                  ${day.isSelected && !day.isToday ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300' : ''}
-                  ${!day.isToday && !day.isSelected ? 'hover:bg-slate-100 dark:hover:bg-slate-800' : ''}
-                `}
-              >
-                {format(day.date, 'd')}
-              </button>
-            ))}
+          <div>
+            {/* Day headers */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px' }} className="text-center mb-3">
+              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
+                <div key={i} className="text-slate-400 dark:text-slate-500 font-medium text-xs">
+                  {day}
+                </div>
+              ))}
+            </div>
+
+            {/* Calendar days */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px' }}>
+              {miniCalendarDays.map((day, i) => (
+                <button
+                  key={i}
+                  onClick={() => setCurrentDate(day.date)}
+                  style={{ height: '32px' }}
+                  className={`
+                    flex items-center justify-center text-sm font-normal transition-all rounded-full
+                    ${!day.isCurrentMonth ? 'text-slate-400 dark:text-slate-600' : 'text-slate-900 dark:text-slate-100'}
+                    ${day.isToday ? 'bg-blue-500 text-white font-medium' : ''}
+                    ${day.isSelected && !day.isToday ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300' : ''}
+                    ${!day.isToday && !day.isSelected ? 'hover:bg-slate-100 dark:hover:bg-slate-700' : ''}
+                  `}
+                >
+                  {format(day.date, 'd')}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -259,17 +357,6 @@ const Calendar: React.FC = () => {
               {habits.length}
             </p>
             <p className="text-xs text-green-700 dark:text-green-300">active</p>
-          </div>
-
-          <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
-            <div className="flex items-center gap-2 mb-1">
-              <BookOpen className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-              <span className="text-xs font-semibold text-purple-900 dark:text-purple-100">Journal</span>
-            </div>
-            <p className="text-xl font-bold text-purple-600 dark:text-purple-400">
-              {journalEntries.length}
-            </p>
-            <p className="text-xs text-purple-700 dark:text-purple-300">entries</p>
           </div>
         </div>
       </div>
@@ -375,6 +462,57 @@ const Calendar: React.FC = () => {
               </div>
             </div>
 
+            {/* All-day events section */}
+            <div className="flex border-b border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">
+              <div className="w-20 border-r border-slate-200 dark:border-slate-700 flex-shrink-0 px-2 py-2">
+                <span className="text-xs text-slate-500 dark:text-slate-400">All day</span>
+              </div>
+              {weekDays.map((day, dayIndex) => {
+                const events = getEventsForDay(day.date);
+                const hasAllDayEvents = events.allDayTasks.length > 0;
+
+                return (
+                  <div
+                    key={dayIndex}
+                    className={`
+                      flex-1 min-w-[140px] border-r border-slate-200 dark:border-slate-700 last:border-r-0 p-1
+                      ${day.isToday ? 'bg-blue-50/30 dark:bg-blue-900/10' : ''}
+                    `}
+                  >
+                    {hasAllDayEvents && (
+                      <div className="space-y-1">
+                        {events.allDayTasks.map((task) => {
+                          const spanInfo = getTaskSpanPosition(task, day.date);
+                          const isMultiDay = isMultiDayTask(task);
+
+                          return (
+                            <div
+                              key={task.id}
+                              className={`
+                                text-xs px-2 py-1 truncate flex items-center gap-1
+                                ${task.status === 'done'
+                                  ? 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400 line-through'
+                                  : 'bg-red-500 dark:bg-red-600 text-white font-medium'
+                                }
+                                ${spanInfo.isFirst ? 'rounded-l' : ''}
+                                ${spanInfo.isLast ? 'rounded-r' : ''}
+                                ${!spanInfo.isFirst && !spanInfo.isLast ? '' : ''}
+                              `}
+                              title={isMultiDay ? `${task.title} (Day ${spanInfo.position + 1}/${spanInfo.totalDays})` : task.title}
+                            >
+                              {!spanInfo.isFirst && <span className="text-xs">←</span>}
+                              <span className="truncate">{task.title}</span>
+                              {!spanInfo.isLast && <span className="text-xs">→</span>}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
             {/* Time slots and events */}
             <div className="relative">
               {timeSlots.map((slot, slotIndex) => (
@@ -389,56 +527,68 @@ const Calendar: React.FC = () => {
                   {/* Day columns */}
                   {weekDays.map((day, dayIndex) => {
                     const events = getEventsForDay(day.date);
-                    const hasEvents = events.tasks.length > 0 || events.habits.length > 0 || events.journalEntries.length > 0;
+                    const allEvents = [
+                      ...events.tasks.map((t, idx) => ({ type: 'task', data: t, slot: 8 + (idx % 6) })),
+                      ...events.habits.map((h, idx) => ({ type: 'habit', data: h, slot: 7 + idx })),
+                    ];
+
+                    const eventsForThisSlot = allEvents.filter(e => e.slot === slot.hour);
 
                     return (
                       <div
                         key={dayIndex}
+                        onDragOver={handleDragOver}
+                        onDrop={() => handleDrop(day.date)}
                         className={`
                           flex-1 min-w-[140px] min-h-[60px] border-r border-b border-slate-200 dark:border-slate-700 last:border-r-0 p-1
                           ${day.isToday ? 'bg-blue-50/30 dark:bg-blue-900/10' : ''}
+                          ${draggedTask ? 'hover:bg-blue-100 dark:hover:bg-blue-900/20 transition-colors' : ''}
                         `}
                       >
-                        {/* Show events in the 9 AM slot */}
-                        {slot.hour === 9 && hasEvents && (
+                        {/* Show events assigned to this time slot */}
+                        {eventsForThisSlot.length > 0 && (
                           <div className="space-y-1">
-                            {/* Tasks */}
-                            {events.tasks.slice(0, 2).map((task, i) => (
-                              <div
-                                key={task.id}
-                                className={`
-                                  text-xs px-2 py-1 rounded border-l-2 truncate
-                                  ${task.status === 'done'
-                                    ? 'bg-green-50 dark:bg-green-900/20 border-green-500 text-green-700 dark:text-green-300'
-                                    : 'bg-blue-50 dark:bg-blue-900/20 border-blue-500 text-blue-700 dark:text-blue-300'
-                                  }
-                                `}
-                                title={task.title}
-                              >
-                                {task.title}
-                              </div>
-                            ))}
+                            {eventsForThisSlot.map((event, idx) => {
+                              if (event.type === 'task') {
+                                const task = event.data as Task;
+                                return (
+                                  <div
+                                    key={`task-${task.id}`}
+                                    className={`
+                                      text-xs px-2 py-1 rounded border-l-2 truncate
+                                      ${task.status === 'done'
+                                        ? 'bg-slate-100 dark:bg-slate-800 border-slate-400 text-slate-600 dark:text-slate-400'
+                                        : 'bg-blue-500 dark:bg-blue-600 border-blue-600 text-white'
+                                      }
+                                    `}
+                                    title={`${slot.label} - ${task.title}`}
+                                  >
+                                    <div className="flex items-center gap-1">
+                                      <span className="font-medium">{slot.label.replace(' ', '')}</span>
+                                      <span className="truncate">{task.title}</span>
+                                    </div>
+                                  </div>
+                                );
+                              }
 
-                            {/* Habits indicator */}
-                            {events.habits.length > 0 && (
-                              <div className="text-xs px-2 py-1 rounded border-l-2 border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 truncate">
-                                ✓ {events.habits.length} habit{events.habits.length > 1 ? 's' : ''}
-                              </div>
-                            )}
+                              if (event.type === 'habit') {
+                                const habit = event.data as Habit;
+                                return (
+                                  <div
+                                    key={`habit-${habit.id}`}
+                                    className="text-xs px-2 py-1 rounded border-l-2 border-green-600 bg-green-500 dark:bg-green-600 text-white truncate"
+                                    title={`${slot.label} - ${habit.name}`}
+                                  >
+                                    <div className="flex items-center gap-1">
+                                      <span className="font-medium">{slot.label.replace(' ', '')}</span>
+                                      <span className="truncate">✓ {habit.name}</span>
+                                    </div>
+                                  </div>
+                                );
+                              }
 
-                            {/* Journal indicator */}
-                            {events.journalEntries.length > 0 && (
-                              <div className="text-xs px-2 py-1 rounded border-l-2 border-purple-500 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 truncate">
-                                📝 Journal entry
-                              </div>
-                            )}
-
-                            {/* More indicator */}
-                            {events.tasks.length > 2 && (
-                              <div className="text-xs text-slate-500 dark:text-slate-400 px-2">
-                                +{events.tasks.length - 2} more
-                              </div>
-                            )}
+                              return null;
+                            })}
                           </div>
                         )}
                       </div>
@@ -472,19 +622,22 @@ const Calendar: React.FC = () => {
               {monthGridDays.map((dayData, index) => {
                 const events = getEventsForDay(dayData.date);
                 const allEvents = [
+                  ...events.allDayTasks.map(t => ({ type: 'allday', data: t })),
                   ...events.tasks.map(t => ({ type: 'task', data: t })),
                   ...events.habits.map(h => ({ type: 'habit', data: h })),
-                  ...events.journalEntries.map(j => ({ type: 'journal', data: j })),
                 ];
 
                 return (
                   <div
                     key={index}
+                    onDragOver={handleDragOver}
+                    onDrop={() => handleDrop(dayData.date)}
                     className={`
                       border-r border-b border-slate-200 dark:border-slate-700 p-1.5 overflow-hidden
                       ${!dayData.isCurrentMonth ? 'bg-slate-50/50 dark:bg-slate-900/50' : 'bg-white dark:bg-slate-900'}
                       hover:bg-slate-50 dark:hover:bg-slate-800/50
                       transition-colors cursor-pointer
+                      ${draggedTask ? 'hover:ring-2 hover:ring-blue-400 dark:hover:ring-blue-600' : ''}
                     `}
                   >
                     {/* Date number */}
@@ -506,22 +659,52 @@ const Calendar: React.FC = () => {
                     <div className="space-y-0.5">
                       {/* Show first 3-4 events depending on space */}
                       {allEvents.slice(0, 4).map((event, idx) => {
+                        if (event.type === 'allday') {
+                          const task = event.data as Task;
+                          const spanInfo = getTaskSpanPosition(task, dayData.date);
+                          const isMultiDay = isMultiDayTask(task);
+
+                          return (
+                            <div
+                              key={`allday-${task.id}`}
+                              className={`
+                                flex items-center gap-0.5 text-xs px-1.5 py-0.5 rounded truncate
+                                ${task.status === 'done'
+                                  ? 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                                  : 'bg-red-500 dark:bg-red-600 text-white'
+                                }
+                              `}
+                              title={isMultiDay ? `All-day: ${task.title} (${spanInfo.position + 1}/${spanInfo.totalDays})` : `All-day: ${task.title}`}
+                            >
+                              {isMultiDay && !spanInfo.isFirst && <span className="text-[8px]">←</span>}
+                              <span className={`flex-shrink-0 w-1 h-1 rounded-full ${task.status === 'done' ? 'bg-slate-400' : 'bg-white'}`} />
+                              <span className="truncate font-medium">{task.title}</span>
+                              {isMultiDay && !spanInfo.isLast && <span className="text-[8px]">→</span>}
+                            </div>
+                          );
+                        }
+
                         if (event.type === 'task') {
                           const task = event.data as Task;
+                          const spanInfo = getTaskSpanPosition(task, dayData.date);
+                          const isMultiDay = isMultiDayTask(task);
+
                           return (
                             <div
                               key={`task-${task.id}`}
                               className={`
-                                flex items-center gap-1 text-xs px-1.5 py-0.5 rounded truncate
+                                flex items-center gap-0.5 text-xs px-1.5 py-0.5 rounded truncate
                                 ${task.status === 'done'
                                   ? 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                                   : 'bg-blue-500 dark:bg-blue-600 text-white'
                                 }
                               `}
-                              title={task.title}
+                              title={isMultiDay ? `${task.title} (${spanInfo.position + 1}/${spanInfo.totalDays})` : task.title}
                             >
+                              {isMultiDay && !spanInfo.isFirst && <span className="text-[8px]">←</span>}
                               <span className={`flex-shrink-0 w-1 h-1 rounded-full ${task.status === 'done' ? 'bg-slate-400' : 'bg-white'}`} />
                               <span className="truncate font-medium">{task.title}</span>
+                              {isMultiDay && !spanInfo.isLast && <span className="text-[8px]">→</span>}
                             </div>
                           );
                         }
@@ -536,19 +719,6 @@ const Calendar: React.FC = () => {
                             >
                               <span className="flex-shrink-0 w-1 h-1 rounded-full bg-white" />
                               <span className="truncate font-medium">✓ {habit.name}</span>
-                            </div>
-                          );
-                        }
-
-                        if (event.type === 'journal') {
-                          return (
-                            <div
-                              key={`journal-${idx}`}
-                              className="flex items-center gap-1 text-xs px-1.5 py-0.5 rounded truncate bg-purple-500 dark:bg-purple-600 text-white"
-                              title="Journal entry"
-                            >
-                              <span className="flex-shrink-0 w-1 h-1 rounded-full bg-white" />
-                              <span className="truncate font-medium">📝 Journal entry</span>
                             </div>
                           );
                         }
@@ -598,11 +768,74 @@ const Calendar: React.FC = () => {
               </div>
             </div>
 
+            {/* All-day events section */}
+            {(() => {
+              const events = getEventsForDay(currentDate);
+              return events.allDayTasks.length > 0 ? (
+                <div className="flex border-b border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">
+                  <div className="w-20 border-r border-slate-200 dark:border-slate-700 flex-shrink-0 px-2 py-2">
+                    <span className="text-xs text-slate-500 dark:text-slate-400">All day</span>
+                  </div>
+                  <div className={`flex-1 min-w-[600px] p-3 ${isToday(currentDate) ? 'bg-blue-50/30 dark:bg-blue-900/10' : ''}`}>
+                    <div className="space-y-2">
+                      {events.allDayTasks.map((task) => (
+                        <div
+                          key={task.id}
+                          className={`
+                            flex items-start gap-3 p-3 rounded-lg border-l-4
+                            ${task.status === 'done'
+                              ? 'bg-slate-100 dark:bg-slate-800 border-slate-400 text-slate-600 dark:text-slate-400'
+                              : 'bg-red-50 dark:bg-red-900/20 border-red-500'
+                            }
+                          `}
+                        >
+                          <div className="flex-1">
+                            <h4 className={`font-semibold text-sm ${
+                              task.status === 'done'
+                                ? 'text-slate-700 dark:text-slate-300 line-through'
+                                : 'text-red-700 dark:text-red-300'
+                            }`}>
+                              {task.title}
+                            </h4>
+                            {task.description && (
+                              <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                                {task.description}
+                              </p>
+                            )}
+                            <div className="flex items-center gap-2 mt-2">
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300">
+                                All-day event
+                              </span>
+                              <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                task.priority === 'urgent' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' :
+                                task.priority === 'high' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300' :
+                                task.priority === 'medium' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' :
+                                'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                              }`}>
+                                {task.priority || 'low'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : null;
+            })()}
+
             {/* Time slots and events */}
             <div className="relative">
               {timeSlots.map((slot, slotIndex) => {
                 const events = getEventsForDay(currentDate);
-                const hasEvents = events.tasks.length > 0 || events.habits.length > 0 || events.journalEntries.length > 0;
+
+                // Distribute events across time slots (same as week view)
+                const allEvents = [
+                  ...events.tasks.map((t, idx) => ({ type: 'task', data: t, slot: 8 + (idx % 6) })),
+                  ...events.habits.map((h, idx) => ({ type: 'habit', data: h, slot: 7 + idx })),
+                ];
+
+                const eventsForThisSlot = allEvents.filter(e => e.slot === slot.hour);
 
                 return (
                   <div key={slot.hour} className="flex">
@@ -620,97 +853,92 @@ const Calendar: React.FC = () => {
                         ${isToday(currentDate) ? 'bg-blue-50/30 dark:bg-blue-900/10' : ''}
                       `}
                     >
-                      {/* Show events in the 9 AM slot */}
-                      {slot.hour === 9 && hasEvents && (
+                      {/* Show events assigned to this time slot */}
+                      {eventsForThisSlot.length > 0 && (
                         <div className="space-y-2">
-                          {/* Tasks */}
-                          {events.tasks.map((task) => (
-                            <div
-                              key={task.id}
-                              className={`
-                                flex items-start gap-3 p-3 rounded-lg border-l-4
-                                ${task.status === 'done'
-                                  ? 'bg-green-50 dark:bg-green-900/20 border-green-500'
-                                  : 'bg-blue-50 dark:bg-blue-900/20 border-blue-500'
-                                }
-                              `}
-                            >
-                              <div className="flex-1">
-                                <h4 className={`font-semibold text-sm ${
-                                  task.status === 'done'
-                                    ? 'text-green-700 dark:text-green-300 line-through'
-                                    : 'text-blue-700 dark:text-blue-300'
-                                }`}>
-                                  {task.title}
-                                </h4>
-                                {task.description && (
-                                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                                    {task.description}
-                                  </p>
-                                )}
-                                <div className="flex items-center gap-2 mt-2">
-                                  <span className={`text-xs px-2 py-0.5 rounded-full ${
-                                    task.priority === 'urgent' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' :
-                                    task.priority === 'high' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300' :
-                                    task.priority === 'medium' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' :
-                                    'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-                                  }`}>
-                                    {task.priority || 'low'}
-                                  </span>
-                                  {task.status === 'done' && (
-                                    <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
-                                  )}
+                          {eventsForThisSlot.map((event, idx) => {
+                            if (event.type === 'task') {
+                              const task = event.data as Task;
+                              return (
+                                <div
+                                  key={task.id}
+                                  className={`
+                                    flex items-start gap-3 p-3 rounded-lg border-l-4
+                                    ${task.status === 'done'
+                                      ? 'bg-green-50 dark:bg-green-900/20 border-green-500'
+                                      : 'bg-blue-50 dark:bg-blue-900/20 border-blue-500'
+                                    }
+                                  `}
+                                >
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">
+                                        {slot.label}
+                                      </span>
+                                    </div>
+                                    <h4 className={`font-semibold text-sm ${
+                                      task.status === 'done'
+                                        ? 'text-green-700 dark:text-green-300 line-through'
+                                        : 'text-blue-700 dark:text-blue-300'
+                                    }`}>
+                                      {task.title}
+                                    </h4>
+                                    {task.description && (
+                                      <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                                        {task.description}
+                                      </p>
+                                    )}
+                                    <div className="flex items-center gap-2 mt-2">
+                                      <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                        task.priority === 'urgent' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' :
+                                        task.priority === 'high' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300' :
+                                        task.priority === 'medium' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' :
+                                        'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                                      }`}>
+                                        {task.priority || 'low'}
+                                      </span>
+                                      {task.status === 'done' && (
+                                        <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
+                                      )}
+                                    </div>
+                                  </div>
                                 </div>
-                              </div>
-                            </div>
-                          ))}
+                              );
+                            }
 
-                          {/* Habits */}
-                          {events.habits.map((habit) => (
-                            <div
-                              key={habit.id}
-                              className="flex items-center gap-3 p-3 rounded-lg border-l-4 border-green-500 bg-green-50 dark:bg-green-900/20"
-                            >
-                              <div
-                                className="w-4 h-4 rounded-full flex-shrink-0"
-                                style={{ backgroundColor: habit.color }}
-                              />
-                              <div className="flex-1">
-                                <h4 className="font-semibold text-sm text-green-700 dark:text-green-300">
-                                  {habit.name}
-                                </h4>
-                                {habit.description && (
-                                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                                    {habit.description}
-                                  </p>
-                                )}
-                              </div>
-                              <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0" />
-                            </div>
-                          ))}
+                            if (event.type === 'habit') {
+                              const habit = event.data as Habit;
+                              return (
+                                <div
+                                  key={habit.id}
+                                  className="flex items-center gap-3 p-3 rounded-lg border-l-4 border-green-500 bg-green-50 dark:bg-green-900/20"
+                                >
+                                  <div
+                                    className="w-4 h-4 rounded-full flex-shrink-0"
+                                    style={{ backgroundColor: habit.color }}
+                                  />
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <span className="text-xs font-semibold text-green-600 dark:text-green-400">
+                                        {slot.label}
+                                      </span>
+                                    </div>
+                                    <h4 className="font-semibold text-sm text-green-700 dark:text-green-300">
+                                      {habit.name}
+                                    </h4>
+                                    {habit.description && (
+                                      <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                                        {habit.description}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0" />
+                                </div>
+                              );
+                            }
 
-                          {/* Journal entries */}
-                          {events.journalEntries.map((entry) => (
-                            <div
-                              key={entry.id}
-                              className="flex items-start gap-3 p-3 rounded-lg border-l-4 border-purple-500 bg-purple-50 dark:bg-purple-900/20"
-                            >
-                              <BookOpen className="w-5 h-5 text-purple-600 dark:text-purple-400 flex-shrink-0 mt-0.5" />
-                              <div className="flex-1">
-                                <h4 className="font-semibold text-sm text-purple-700 dark:text-purple-300 mb-1">
-                                  Journal Entry
-                                </h4>
-                                <p className="text-xs text-slate-700 dark:text-slate-300 line-clamp-3">
-                                  {entry.content}
-                                </p>
-                                {entry.mood && (
-                                  <span className="inline-block mt-2 text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded-full">
-                                    Mood: {entry.mood}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          ))}
+                            return null;
+                          })}
                         </div>
                       )}
                     </div>
@@ -722,6 +950,76 @@ const Calendar: React.FC = () => {
         </div>
         )}
       </div>
+
+      {/* Unscheduled Tasks Panel - Bottom Drawer */}
+      {unscheduledTasks.length > 0 && (
+        <div className="border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+          <button
+            onClick={() => setShowUnscheduledPanel(!showUnscheduledPanel)}
+            className="w-full flex items-center justify-between px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <Inbox className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Unscheduled Tasks ({unscheduledTasks.length})
+              </span>
+            </div>
+            {showUnscheduledPanel ? (
+              <ChevronDown className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+            ) : (
+              <ChevronUp className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+            )}
+          </button>
+
+          {showUnscheduledPanel && (
+            <div className="p-4 max-h-48 overflow-y-auto">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                {unscheduledTasks.map((task) => (
+                  <div
+                    key={task.id}
+                    draggable
+                    onDragStart={() => handleDragStart(task)}
+                    onDragEnd={handleDragEnd}
+                    className={`
+                      flex items-center gap-2 p-2 rounded-lg border cursor-move
+                      transition-all hover:shadow-md
+                      ${draggedTask?.id === task.id
+                        ? 'opacity-50 border-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                        : 'border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 hover:border-blue-300 dark:hover:border-blue-600'
+                      }
+                    `}
+                  >
+                    <GripVertical className="w-4 h-4 text-slate-400 dark:text-slate-500 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
+                        {task.title}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className={`text-xs px-1.5 py-0.5 rounded ${
+                          task.priority === 'urgent' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' :
+                          task.priority === 'high' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300' :
+                          task.priority === 'medium' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' :
+                          'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400'
+                        }`}>
+                          {task.priority || 'low'}
+                        </span>
+                        {task.estimated_time > 0 && (
+                          <span className="text-xs text-slate-500 dark:text-slate-400">
+                            {Math.floor(task.estimated_time / 60)}h {task.estimated_time % 60}m
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 text-center">
+                Drag tasks to the calendar to schedule them
+              </p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

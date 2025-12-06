@@ -218,7 +218,7 @@ export default function Dashboard(): JSX.Element {
       value: todayTodos.length,
       icon: CheckSquare,
       color: 'bg-blue-500',
-      onClick: (): void => setActiveView('todos')
+      onClick: (): void => setActiveView('scheduler')
     },
     {
       title: 'Pending Habits',
@@ -239,7 +239,7 @@ export default function Dashboard(): JSX.Element {
       value: `${completedTodosThisWeek.length} tasks`,
       icon: TrendingUp,
       color: 'bg-orange-500',
-      onClick: (): void => setActiveView('todos')
+      onClick: (): void => setActiveView('scheduler')
     }
   ];
 
@@ -306,7 +306,7 @@ export default function Dashboard(): JSX.Element {
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-xl font-semibold text-primary font-display">Today's Tasks</h3>
             <button
-              onClick={() => setActiveView('todos')}
+              onClick={() => setActiveView('scheduler')}
               className="text-accent hover:text-accent font-medium text-sm transition-colors duration-200"
             >
               View all →
@@ -323,7 +323,7 @@ export default function Dashboard(): JSX.Element {
                   You're all caught up! Create a task or enjoy your free time.
                 </p>
                 <LoadingButton
-                  onClick={() => setActiveView('todos')}
+                  onClick={() => setActiveView('scheduler')}
                   variant="primary"
                   size="md"
                   className="bg-gradient-to-r from-blue-500 to-purple-600 hover:shadow-lg hover:scale-105"

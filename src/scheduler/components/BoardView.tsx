@@ -43,11 +43,15 @@ export const BoardView: React.FC<BoardViewProps> = ({
 
     columns.forEach(column => {
       const columnTasks = tasks.filter(task => {
-        // Match based on status or column configuration
+        // Prioritize taskIds if provided (for custom filtering like backlog vs todo)
+        if (column.taskIds !== undefined) {
+          return column.taskIds.includes(task.id);
+        }
+        // Otherwise, match based on status
         if (column.status) {
           return task.status === column.status;
         }
-        return column.taskIds?.includes(task.id);
+        return false;
       });
 
       // Filter out subtasks if not showing them
@@ -71,9 +75,10 @@ export const BoardView: React.FC<BoardViewProps> = ({
 
   // Drag handlers
   const handleDragStart = (e: React.DragEvent, task: ScheduledTask) => {
+    console.log('Drag started for task:', task.title);
     setDraggedTask(task);
     e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/html', e.currentTarget.innerHTML);
+    e.dataTransfer.setData('text/plain', task.id);
   };
 
   const handleDragEnd = () => {
@@ -83,7 +88,11 @@ export const BoardView: React.FC<BoardViewProps> = ({
 
   const handleDragOver = (e: React.DragEvent, columnId: string) => {
     e.preventDefault();
+    e.stopPropagation();
     e.dataTransfer.dropEffect = 'move';
+    if (dragOverColumn !== columnId) {
+      console.log('Dragging over column:', columnId);
+    }
     setDragOverColumn(columnId);
   };
 
@@ -96,20 +105,37 @@ export const BoardView: React.FC<BoardViewProps> = ({
 
   const handleDrop = (e: React.DragEvent, targetColumn: BoardColumn) => {
     e.preventDefault();
+    e.stopPropagation();
 
-    if (!draggedTask) return;
+    console.log('Drop triggered on column:', targetColumn.id);
+    console.log('Dragged task:', draggedTask);
+
+    if (!draggedTask) {
+      console.log('No dragged task found');
+      return;
+    }
 
     const sourceColumn = columns.find(col =>
       tasksByColumn.get(col.id)?.some(t => t.id === draggedTask.id)
     );
 
-    if (!sourceColumn) return;
+    if (!sourceColumn) {
+      console.log('No source column found');
+      return;
+    }
 
     const targetTasks = tasksByColumn.get(targetColumn.id) || [];
     const newIndex = targetTasks.length;
 
     // Determine new status based on column
     const newStatus = targetColumn.status as Task['status'];
+
+    console.log('Creating drop result:', {
+      taskId: draggedTask.id,
+      sourceColumn: sourceColumn.id,
+      targetColumn: targetColumn.id,
+      newStatus
+    });
 
     const result: DragDropResult = {
       taskId: draggedTask.id,
@@ -119,7 +145,13 @@ export const BoardView: React.FC<BoardViewProps> = ({
       newStatus,
     };
 
-    onTaskDrop?.(result);
+    if (onTaskDrop) {
+      console.log('Calling onTaskDrop');
+      onTaskDrop(result);
+    } else {
+      console.log('onTaskDrop is not defined');
+    }
+
     handleDragEnd();
   };
 
@@ -155,10 +187,12 @@ export const BoardView: React.FC<BoardViewProps> = ({
           return (
             <div
               key={column.id}
-              className="flex flex-col w-80 flex-shrink-0 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700"
+              className="flex flex-col w-80 flex-shrink-0 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+              onDragOver={(e) => handleDragOver(e, column.id)}
+              onDrop={(e) => handleDrop(e, column)}
             >
               {/* Column Header */}
-              <div className="p-4 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
+              <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <div
@@ -200,7 +234,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
               {/* Column Content - Scrollable */}
               <div
                 className={`
-                  flex-1 overflow-y-auto p-4 space-y-3
+                  flex-1 overflow-y-auto p-4 space-y-3 min-h-[200px]
                   transition-colors
                   ${isDragOver ? 'bg-blue-50 dark:bg-blue-900/20' : ''}
                 `}
@@ -224,16 +258,17 @@ export const BoardView: React.FC<BoardViewProps> = ({
                   columnTasks.map((task) => (
                     <div
                       key={task.id}
-                      draggable
+                      draggable={true}
                       onDragStart={(e) => handleDragStart(e, task)}
                       onDragEnd={handleDragEnd}
-                      className="cursor-move"
+                      className={`cursor-move ${draggedTask?.id === task.id ? 'pointer-events-none' : ''}`}
                     >
                       <TaskCard
                         task={task}
                         assignees={getTaskAssignees(task)}
                         isDragging={draggedTask?.id === task.id}
                         onClick={() => onTaskClick?.(task)}
+                        onQuickEdit={() => onTaskClick?.(task)}
                         onStartTimer={() => onStartTimer?.(task.id)}
                       />
                     </div>
@@ -242,15 +277,15 @@ export const BoardView: React.FC<BoardViewProps> = ({
               </div>
 
               {/* Add Task Button */}
-              <div className="p-4 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
+              <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
                 <button
                   onClick={() => onCreateTask?.(column.id)}
                   className={`
                     w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg
-                    text-sm font-semibold transition-colors border
+                    text-sm font-medium transition-colors
                     ${atWipLimit
-                      ? 'bg-slate-200 dark:bg-slate-800 text-slate-500 border-slate-300 dark:border-slate-700 cursor-not-allowed'
-                      : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-600 border-slate-200 dark:border-slate-600'
+                      ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                      : 'bg-blue-600 hover:bg-blue-700 text-white'
                     }
                   `}
                   disabled={atWipLimit}

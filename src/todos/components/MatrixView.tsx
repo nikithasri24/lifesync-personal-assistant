@@ -26,17 +26,22 @@ export function MatrixView({
     t => selectedProject === 'all' || t.projectId === selectedProject
   );
 
+  // Helper to get due date from either dueDate or due_date
+  const getDueDate = (task: any) => task.due_date || task.dueDate;
+
   const matrix: EisenhowerMatrix = {
     urgentImportant: {
       title: 'Urgent & Important',
       subtitle: 'Do first',
       color: 'bg-red-50 dark:bg-slate-800',
       tasks: filteredTasks.filter(
-        t =>
-          t.status !== 'done' &&
-          (t.priority === 'urgent' || t.priority === 'high') &&
-          t.dueDate &&
-          (isToday(t.dueDate) || isPast(t.dueDate))
+        t => {
+          const dueDate = getDueDate(t);
+          return t.status !== 'done' &&
+            (t.priority === 'urgent' || t.priority === 'high') &&
+            dueDate &&
+            (isToday(new Date(dueDate)) || isPast(new Date(dueDate)));
+        }
       )
     },
     notUrgentImportant: {
@@ -44,10 +49,12 @@ export function MatrixView({
       subtitle: 'Schedule',
       color: 'bg-blue-50 dark:bg-slate-800',
       tasks: filteredTasks.filter(
-        t =>
-          t.status !== 'done' &&
-          (t.priority === 'urgent' || t.priority === 'high') &&
-          (!t.dueDate || (!isToday(t.dueDate) && !isPast(t.dueDate)))
+        t => {
+          const dueDate = getDueDate(t);
+          return t.status !== 'done' &&
+            (t.priority === 'urgent' || t.priority === 'high') &&
+            (!dueDate || (!isToday(new Date(dueDate)) && !isPast(new Date(dueDate))));
+        }
       )
     },
     urgentNotImportant: {
@@ -55,11 +62,13 @@ export function MatrixView({
       subtitle: 'Delegate',
       color: 'bg-yellow-50 dark:bg-slate-800',
       tasks: filteredTasks.filter(
-        t =>
-          t.status !== 'done' &&
-          (t.priority === 'medium' || t.priority === 'low') &&
-          t.dueDate &&
-          (isToday(t.dueDate) || isPast(t.dueDate))
+        t => {
+          const dueDate = getDueDate(t);
+          return t.status !== 'done' &&
+            (t.priority === 'medium' || t.priority === 'low') &&
+            dueDate &&
+            (isToday(new Date(dueDate)) || isPast(new Date(dueDate)));
+        }
       )
     },
     notUrgentNotImportant: {
@@ -67,10 +76,12 @@ export function MatrixView({
       subtitle: 'Eliminate',
       color: 'bg-gray-50 dark:bg-slate-800',
       tasks: filteredTasks.filter(
-        t =>
-          t.status !== 'done' &&
-          (t.priority === 'medium' || t.priority === 'low') &&
-          (!t.dueDate || (!isToday(t.dueDate) && !isPast(t.dueDate)))
+        t => {
+          const dueDate = getDueDate(t);
+          return t.status !== 'done' &&
+            (t.priority === 'medium' || t.priority === 'low') &&
+            (!dueDate || (!isToday(new Date(dueDate)) && !isPast(new Date(dueDate))));
+        }
       )
     }
   };
@@ -88,101 +99,127 @@ export function MatrixView({
   };
 
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <div className="bg-blue-50 dark:bg-slate-800 border border-blue-200 dark:border-slate-600 rounded-lg p-4">
-          <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
+    <div className="h-full flex flex-col">
+      {/* Header */}
+      <div className="flex-shrink-0 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-gray-800 dark:to-gray-800 border-l-4 border-purple-500 rounded-lg p-4">
+          <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-1">
             Eisenhower Matrix
           </h3>
-          <p className="text-blue-700 dark:text-blue-300 text-sm">
+          <p className="text-gray-600 dark:text-gray-400 text-sm">
             Organize your tasks by urgency and importance to prioritize what matters most.
           </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-6 h-96">
-        {(Object.entries(matrix) as [keyof EisenhowerMatrix, MatrixQuadrant][]).map(([key, quadrant]) => (
-          <div
-            key={key}
-            className={`${quadrant.color} dark:bg-slate-800 dark:border-slate-600 border rounded-lg p-4 flex flex-col`}
-          >
-            <div className="mb-4">
-              <h3 className="font-semibold text-gray-900 dark:text-white">{quadrant.title}</h3>
-              <p className="text-sm text-gray-600 dark:text-slate-400">{quadrant.subtitle}</p>
-              <span className="inline-block mt-2 bg-white dark:bg-slate-700 px-2 py-1 rounded-full text-xs font-medium text-gray-700 dark:text-gray-300">
-                {quadrant.tasks.length} tasks
-              </span>
-            </div>
+      {/* Matrix Grid */}
+      <div className="flex-1 p-6 overflow-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full min-h-[600px]">
+        {(Object.entries(matrix) as [keyof EisenhowerMatrix, MatrixQuadrant][]).map(([key, quadrant]) => {
+          const getBorderColor = () => {
+            if (key === 'urgentImportant') return 'border-red-200 dark:border-red-900/30';
+            if (key === 'notUrgentImportant') return 'border-blue-200 dark:border-blue-900/30';
+            if (key === 'urgentNotImportant') return 'border-yellow-200 dark:border-yellow-900/30';
+            return 'border-gray-300 dark:border-gray-700';
+          };
 
-            <div className="flex-1 space-y-3 overflow-y-auto">
+          const getHeaderColor = () => {
+            if (key === 'urgentImportant') return 'bg-red-500';
+            if (key === 'notUrgentImportant') return 'bg-blue-500';
+            if (key === 'urgentNotImportant') return 'bg-yellow-500';
+            return 'bg-gray-500';
+          };
+
+          return (
+            <div
+              key={key}
+              className={`${quadrant.color} border-2 ${getBorderColor()} rounded-xl overflow-hidden flex flex-col shadow-sm hover:shadow-md transition-shadow`}
+            >
+              {/* Quadrant Header */}
+              <div className={`${getHeaderColor()} px-4 py-3`}>
+                <h3 className="font-bold text-white text-base">{quadrant.title}</h3>
+                <p className="text-white/90 text-sm mt-0.5">{quadrant.subtitle}</p>
+              </div>
+
+              {/* Task Count Badge */}
+              <div className="px-4 py-2 bg-white/50 dark:bg-gray-900/30 border-b border-gray-200 dark:border-gray-700">
+                <span className="inline-flex items-center gap-1.5 bg-white dark:bg-gray-800 px-3 py-1 rounded-full text-xs font-semibold text-gray-700 dark:text-gray-300 shadow-sm">
+                  <span className={`w-2 h-2 rounded-full ${getHeaderColor()}`}></span>
+                  {quadrant.tasks.length} {quadrant.tasks.length === 1 ? 'task' : 'tasks'}
+                </span>
+              </div>
+
+            {/* Tasks List */}
+            <div className="flex-1 p-4 space-y-2 overflow-y-auto">
               {quadrant.tasks.map((task) => {
                 const project = projects.find(p => p.id === task.projectId);
+                const taskDueDate = getDueDate(task);
                 return (
                   <div
                     key={task.id}
-                    className="bg-white dark:bg-slate-700 p-3 rounded-lg shadow-sm border border-gray-200 dark:border-slate-600"
+                    className="group bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-md transition-all cursor-pointer"
                   >
-                    <div className="flex items-start space-x-3">
+                    <div className="flex items-start gap-3">
                       <button
                         onClick={() => onToggleStatus(task.id)}
                         disabled={isUpdating}
-                        className={`mt-0.5 w-4 h-4 rounded border-2 flex items-center justify-center transition-all disabled:opacity-50 ${getPriorityStyles(
+                        className={`mt-0.5 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all disabled:opacity-50 flex-shrink-0 ${getPriorityStyles(
                           task.priority,
                           task.status
                         )}`}
                       >
-                        {task.status === 'done' && <CheckCircle2 size={10} />}
+                        {task.status === 'done' && <CheckCircle2 size={12} className="text-white" />}
                       </button>
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium text-gray-900 dark:text-white text-sm mb-1">
+                        <div className="font-semibold text-gray-900 dark:text-white text-sm mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                           {task.title}
                         </div>
                         {task.description && (
-                          <div className="text-xs text-gray-600 dark:text-slate-400 mb-2">
+                          <div className="text-xs text-gray-600 dark:text-gray-400 mb-2 line-clamp-2">
                             {task.description}
                           </div>
                         )}
-                        <div className="flex items-center space-x-2 text-xs">
+                        <div className="flex flex-wrap items-center gap-1.5 text-xs">
                           {task.priority !== 'low' && (
                             <span
-                              className={`px-2 py-0.5 rounded-full font-medium ${
+                              className={`px-2 py-0.5 rounded-md font-semibold ${
                                 task.priority === 'urgent'
-                                  ? 'bg-red-100 text-red-800'
+                                  ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
                                   : task.priority === 'high'
-                                  ? 'bg-orange-100 text-orange-800'
-                                  : 'bg-blue-100 text-blue-800'
+                                  ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400'
+                                  : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
               }`}
                             >
                               {task.priority}
                             </span>
                           )}
-                          {task.dueDate && (
+                          {taskDueDate && (
                             <span
-                              className={`flex items-center space-x-1 px-2 py-0.5 rounded ${
-                                isPast(task.dueDate)
-                                  ? 'bg-red-100 text-red-800'
-                                  : isToday(task.dueDate)
-                                  ? 'bg-orange-100 text-orange-800'
-                                  : 'bg-gray-100 text-gray-600'
+                              className={`flex items-center gap-1 px-2 py-0.5 rounded-md font-medium ${
+                                isPast(new Date(taskDueDate))
+                                  ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                                  : isToday(new Date(taskDueDate))
+                                  ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400'
+                                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
                               }`}
                             >
-                              <CalendarDays size={10} />
+                              <CalendarDays size={12} />
                               <span>
-                                {isPast(task.dueDate)
+                                {isPast(new Date(taskDueDate))
                                   ? 'Overdue'
-                                  : isToday(task.dueDate)
+                                  : isToday(new Date(taskDueDate))
                                   ? 'Today'
-                                  : format(task.dueDate, 'MMM d')}
+                                  : format(new Date(taskDueDate), 'MMM d')}
                               </span>
                             </span>
                           )}
                           {project && (
-                            <span className="flex items-center space-x-1 px-2 py-0.5 bg-gray-100 dark:bg-slate-600 rounded">
+                            <span className="flex items-center gap-1 px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded-md">
                               <div
                                 className="w-2 h-2 rounded-full"
                                 style={{ backgroundColor: project.color }}
                               ></div>
-                              <span className="text-gray-700 dark:text-gray-300">{project.name}</span>
+                              <span className="text-gray-700 dark:text-gray-300 font-medium">{project.name}</span>
                             </span>
                           )}
                         </div>
@@ -192,14 +229,17 @@ export function MatrixView({
                 );
               })}
               {quadrant.tasks.length === 0 && (
-                <div className="text-center py-6 text-gray-400 dark:text-slate-500">
-                  <div className="text-2xl mb-2">🎆</div>
-                  <p className="text-sm">No tasks here</p>
+                <div className="flex flex-col items-center justify-center h-full min-h-[200px] text-gray-400 dark:text-gray-500">
+                  <div className="text-4xl mb-3">✨</div>
+                  <p className="text-sm font-medium">No tasks here</p>
+                  <p className="text-xs mt-1">You're all clear!</p>
                 </div>
               )}
             </div>
           </div>
-        ))}
+          );
+        })}
+        </div>
       </div>
     </div>
   );

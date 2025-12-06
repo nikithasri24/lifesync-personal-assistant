@@ -1,56 +1,75 @@
 /**
- * TaskScheduler - Modern Professional Task Scheduling System
- * Inspired by Asana, ClickUp, and Monday.com
+ * TaskScheduler - Complete Task Management System
+ * Combines professional scheduling views with full task management capabilities
  *
  * Features:
  * - Board View (Kanban with drag-and-drop)
- * - Timeline View (Gantt chart with dependencies)
+ * - Timeline View (Gantt chart)
  * - List View (Spreadsheet-style)
- * - Task Dependencies
- * - Time Tracking
- * - Team Collaboration
- * - Milestones & Sprints
- * - Auto-scheduling
- * - Recurring Tasks
- * - Advanced Filtering
+ * - Matrix View (Eisenhower Matrix)
+ * - Traditional Task List
+ * - Full CRUD operations
+ * - Quick add & inline editing
+ * - Pomodoro timer
+ * - Advanced filtering
+ * - Search functionality
+ * - Project organization
  */
 
 import React, { useState, useMemo } from 'react';
 import {
-  LayoutGrid,
-  List,
-  Calendar,
   Search,
   Filter,
   Plus,
-  Settings,
-  Users,
-  Target,
-  Zap,
-  Clock,
+  Timer,
 } from 'lucide-react';
 
-// Import components
+// Scheduler Components
 import { BoardView } from '../scheduler/components/BoardView';
-import { TimelineView } from '../scheduler/components/TimelineView';
-import { ListView } from '../scheduler/components/ListView';
+import { TaskEditModal } from '../scheduler/components/TaskEditModal';
 
-// Import types
+// Task Management Components
+import {
+  FilterPanel,
+  QuickAddForm,
+} from '../todos/components';
+
+// Hooks
+import {
+  useTasks,
+  useProjects,
+  useCreateTask,
+  useUpdateTask,
+  useDeleteTask,
+} from '../hooks/useTasksQuery';
+import {
+  useTaskModals,
+  useTaskExpansion,
+  usePomodoro,
+  useTaskFilters,
+  useTaskEditing,
+} from '../todos/hooks';
+import { useApiHealth } from '../hooks/useApiHealth';
+
+// Types
 import type {
-  ViewMode,
   ScheduledTask,
   BoardColumn,
-  TimelineConfig,
-  ListConfig,
-  TaskFilters,
-  DragDropResult,
   TeamMember,
   Milestone,
-  Sprint,
 } from '../scheduler/types';
+import type { TaskData } from '../services/types';
 
-// Import hooks
-import { useTasks, useProjects } from '../hooks/useTasksQuery';
+// Utilities
+import { transformApiTasks, transformApiProjects } from '../todos/utils';
+import { applyFilters } from '../todos/services/taskFilters';
+import {
+  getTodayTasks,
+  getUpcomingTasks,
+  getInboxTasks,
+} from '../todos/services/taskHelpers';
+
+// Loading
 import { SkeletonCard } from '../components/LoadingSpinner';
 
 const TaskScheduler: React.FC = () => {
@@ -58,103 +77,84 @@ const TaskScheduler: React.FC = () => {
   // State Management
   // ============================================================================
 
-  const [viewMode, setViewMode] = useState<ViewMode>('board');
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
-  const [showSidebar, setShowSidebar] = useState(true);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [editingTask, setEditingTask] = useState<ScheduledTask | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
 
-  // Fetch data
-  const { data: apiTasks = [], isLoading: tasksLoading } = useTasks();
-  const { data: projects = [], isLoading: projectsLoading } = useProjects();
+  // ============================================================================
+  // React Query Hooks - Server State
+  // ============================================================================
 
+  const { data: apiTasks = [], isLoading: tasksLoading, error: tasksError } = useTasks();
+  const { data: apiProjects = [], isLoading: projectsLoading } = useProjects();
+
+  const createTaskMutation = useCreateTask();
+  const updateTaskMutation = useUpdateTask();
+  const deleteTaskMutation = useDeleteTask();
+
+  // Note: API health check disabled - using Supabase instead of REST API
+  // const apiHealth = useApiHealth(15000);
   const isLoading = tasksLoading || projectsLoading;
 
   // ============================================================================
-  // Board Configuration
+  // Data Transformation
   // ============================================================================
 
-  const boardColumns: BoardColumn[] = [
+  const tasks = useMemo(() => transformApiTasks(apiTasks), [apiTasks]);
+  const projects = useMemo(() => transformApiProjects(apiProjects), [apiProjects]);
+
+  // ============================================================================
+  // Custom Hooks - Client State
+  // ============================================================================
+
+  const modals = useTaskModals();
+  const expansion = useTaskExpansion();
+  const pomodoro = usePomodoro();
+  const filters = useTaskFilters();
+
+  const editing = useTaskEditing(
     {
-      id: 'backlog',
-      title: 'Backlog',
-      status: 'todo',
-      color: '#94a3b8',
-      taskIds: [],
-      order: 0,
+      createTaskMutation: {
+        mutate: (data: Partial<TaskData>, options?: { onSuccess?: () => void }) => {
+          void createTaskMutation.mutate(data, options);
+        },
+        isPending: createTaskMutation.isPending
+      },
+      updateTaskMutation: {
+        mutate: (data: { id: string; updates: Partial<TaskData> }) => {
+          void updateTaskMutation.mutate(data);
+        },
+        isPending: updateTaskMutation.isPending
+      }
     },
     {
-      id: 'todo',
-      title: 'To Do',
-      status: 'todo',
-      color: '#3b82f6',
-      taskIds: [],
-      limit: 5,
-      order: 1,
+      quickAddText: modals.quickAddText,
+      setQuickAddText: modals.setQuickAddText,
+      closeQuickAdd: modals.closeQuickAdd,
+      editTaskText: modals.editTaskText,
+      setEditTaskText: modals.setEditTaskText,
+      editingTask: modals.editingTask,
+      setEditingTask: modals.setEditingTask,
+      openTaskEdit: modals.openTaskEdit,
+      closeTaskEdit: modals.closeTaskEdit,
     },
     {
-      id: 'in_progress',
-      title: 'In Progress',
-      status: 'in_progress',
-      color: '#8b5cf6',
-      taskIds: [],
-      limit: 3,
-      order: 2,
+      subtaskDrafts: expansion.subtaskDrafts,
+      setSubtaskDraft: expansion.setSubtaskDraft,
+      clearSubtaskDraft: expansion.clearSubtaskDraft,
+      getSubtaskDraft: expansion.getSubtaskDraft,
+      setActiveSubtaskForm: modals.setActiveSubtaskForm,
     },
-    {
-      id: 'review',
-      title: 'Review',
-      status: 'waiting',
-      color: '#f59e0b',
-      taskIds: [],
-      order: 3,
-    },
-    {
-      id: 'done',
-      title: 'Done',
-      status: 'done',
-      color: '#10b981',
-      taskIds: [],
-      order: 4,
-    },
-  ];
+    apiTasks,
+    projects
+  );
+
+
 
   // ============================================================================
-  // Timeline Configuration
-  // ============================================================================
-
-  const [timelineConfig, setTimelineConfig] = useState<TimelineConfig>({
-    startDate: new Date(),
-    endDate: new Date(),
-    zoom: 'month',
-    showDependencies: true,
-    showMilestones: true,
-    showWeekends: false,
-    showCriticalPath: false,
-  });
-
-  // ============================================================================
-  // List Configuration
-  // ============================================================================
-
-  const [listConfig, setListConfig] = useState<ListConfig>({
-    columns: [
-      { id: 'title', label: 'Task', field: 'title', sortable: true, width: 300 },
-      { id: 'status', label: 'Status', field: 'status', sortable: true, width: 120 },
-      { id: 'priority', label: 'Priority', field: 'priority', sortable: true, width: 100 },
-      { id: 'assignees', label: 'Assignees', field: 'assignees', width: 150 },
-      { id: 'dueDate', label: 'Due Date', field: 'dueDate', sortable: true, width: 130 },
-      { id: 'estimatedTime', label: 'Estimate', field: 'estimatedTime', sortable: true, width: 100 },
-      { id: 'progress', label: 'Progress', field: 'progress', sortable: true, width: 140 },
-    ],
-    sortBy: 'priority',
-    sortDirection: 'desc',
-    showSubtasks: false,
-    compactMode: false,
-  });
-
-  // ============================================================================
-  // Mock Data (In production, this would come from your API)
+  // Mock Data
   // ============================================================================
 
   const teamMembers: TeamMember[] = [
@@ -165,15 +165,6 @@ const TaskScheduler: React.FC = () => {
       avatar: '',
       role: 'Developer',
       workload: 32,
-      capacity: 40,
-    },
-    {
-      id: '2',
-      name: 'Jane Smith',
-      email: 'jane@example.com',
-      avatar: '',
-      role: 'Designer',
-      workload: 28,
       capacity: 40,
     },
   ];
@@ -192,13 +183,12 @@ const TaskScheduler: React.FC = () => {
   ];
 
   // ============================================================================
-  // Transform Tasks
+  // Transform Tasks for Scheduler Views
   // ============================================================================
 
   const scheduledTasks: ScheduledTask[] = useMemo(() => {
     return apiTasks.map(task => ({
       ...task,
-      // Add scheduling-specific fields
       progress: task.status === 'done' ? 100 : task.status === 'in_progress' ? 50 : 0,
       assignees: [],
       dependencies: [],
@@ -231,32 +221,168 @@ const TaskScheduler: React.FC = () => {
   }, [scheduledTasks, searchQuery]);
 
   // ============================================================================
+  // Board Configuration (must be after filteredTasks)
+  // ============================================================================
+
+  // Separate tasks into backlog and todo based on priority and due date
+  // Backlog: Only todo items with NO due date AND low/medium priority
+  const backlogTasks = useMemo(() => {
+    return filteredTasks.filter(task =>
+      task.status === 'todo' &&
+      !task.due_date &&
+      (task.priority === 'low' || task.priority === 'medium')
+    ).map(t => t.id);
+  }, [filteredTasks]);
+
+  // ToDo: Todo items that are NOT in backlog (have due date OR high/urgent priority)
+  const todoTasks = useMemo(() => {
+    const backlogSet = new Set(backlogTasks);
+    return filteredTasks.filter(task =>
+      task.status === 'todo' &&
+      !backlogSet.has(task.id)
+    ).map(t => t.id);
+  }, [filteredTasks, backlogTasks]);
+
+  const boardColumns: BoardColumn[] = useMemo(() => [
+    {
+      id: 'backlog',
+      title: 'Backlog',
+      status: 'todo',
+      color: '#94a3b8',
+      taskIds: backlogTasks,
+      order: 0,
+    },
+    {
+      id: 'todo',
+      title: 'To Do',
+      status: 'todo',
+      color: '#3b82f6',
+      taskIds: todoTasks,
+      order: 1,
+    },
+    {
+      id: 'in_progress',
+      title: 'In Progress',
+      status: 'in_progress',
+      color: '#8b5cf6',
+      taskIds: filteredTasks.filter(t => t.status === 'in_progress').map(t => t.id),
+      order: 2,
+    },
+    {
+      id: 'review',
+      title: 'Review',
+      status: 'waiting',
+      color: '#f59e0b',
+      taskIds: filteredTasks.filter(t => t.status === 'waiting').map(t => t.id),
+      order: 3,
+    },
+    {
+      id: 'done',
+      title: 'Done',
+      status: 'done',
+      color: '#10b981',
+      taskIds: filteredTasks.filter(t => t.status === 'done').map(t => t.id),
+      order: 4,
+    },
+  ], [backlogTasks, todoTasks, filteredTasks]);
+
+  // Get tasks for traditional view
+  const viewTasks = useMemo(() => {
+    let baseTasks = tasks;
+
+    if (filters.currentView === 'today') {
+      baseTasks = getTodayTasks(tasks);
+    } else if (filters.currentView === 'inbox') {
+      baseTasks = getInboxTasks(tasks);
+    } else if (filters.currentView === 'upcoming') {
+      baseTasks = getUpcomingTasks(tasks);
+    } else if (filters.selectedProject !== 'all') {
+      baseTasks = tasks.filter(t => t.projectId === filters.selectedProject && t.status !== 'done');
+    }
+
+    return applyFilters(baseTasks, filters.filters, filters.searchQuery);
+  }, [tasks, filters.currentView, filters.selectedProject, filters.filters, filters.searchQuery]);
+
+  // ============================================================================
   // Event Handlers
   // ============================================================================
 
-  const handleTaskDrop = (result: DragDropResult) => {
-    console.log('Task dropped:', result);
-    // In production: Update task status via API
-  };
-
   const handleTaskClick = (task: ScheduledTask) => {
+    console.log('Task clicked:', task.id, task.title);
     setSelectedTaskId(task.id);
-    console.log('Task clicked:', task);
-    // In production: Open task detail modal
+    setEditingTask(task);
+    setShowEditModal(true);
   };
 
   const handleStartTimer = (taskId: string) => {
-    console.log('Start timer for task:', taskId);
-    // In production: Start time tracking
+    pomodoro.startPomodoro(taskId);
   };
 
-  const handleCreateTask = (columnId?: string) => {
-    console.log('Create task in column:', columnId);
-    // In production: Open create task modal
+  const handleCreateTask = () => {
+    modals.openQuickAdd();
+  };
+
+  const handleSaveTask = (taskId: string, updates: Partial<TaskData>) => {
+    updateTaskMutation.mutate({
+      id: taskId,
+      updates,
+    }, {
+      onSuccess: () => {
+        setShowEditModal(false);
+        setEditingTask(null);
+      },
+    });
+  };
+
+  const handleDeleteTask = (taskId: string) => {
+    deleteTaskMutation.mutate(taskId, {
+      onSuccess: () => {
+        setShowEditModal(false);
+        setEditingTask(null);
+      },
+    });
+  };
+
+  const handleCloseEditModal = () => {
+    setShowEditModal(false);
+    setEditingTask(null);
+  };
+
+  const handleTaskDrop = (result: { taskId: string; sourceColumn: string; targetColumn: string; newStatus: string }) => {
+    console.log('Task dropped:', result);
+
+    const task = scheduledTasks.find(t => t.id === result.taskId);
+    if (!task) return;
+
+    const updates: Partial<TaskData> = {
+      status: result.newStatus as TaskData['status'],
+    };
+
+    // Special handling for Backlog vs ToDo columns
+    // If dropping to "todo" column (not backlog), ensure it has high priority or due date
+    if (result.targetColumn === 'todo' && result.newStatus === 'todo') {
+      // If task doesn't have a due date and is low/medium priority, give it high priority
+      // so it goes to ToDo instead of Backlog
+      if (!task.due_date && (task.priority === 'low' || task.priority === 'medium')) {
+        updates.priority = 'high';
+      }
+    }
+    // If dropping to backlog, ensure it matches backlog criteria
+    else if (result.targetColumn === 'backlog' && result.newStatus === 'todo') {
+      // Remove due date and set to medium priority to keep it in backlog
+      if (!updates.priority || updates.priority === 'high' || updates.priority === 'urgent') {
+        updates.priority = 'medium';
+      }
+    }
+
+    updateTaskMutation.mutate({
+      id: result.taskId,
+      updates,
+    });
   };
 
   // ============================================================================
-  // Render
+  // Loading & Error States
   // ============================================================================
 
   if (isLoading) {
@@ -269,75 +395,49 @@ const TaskScheduler: React.FC = () => {
     );
   }
 
+  if (tasksError) {
+    return (
+      <div className="h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center">
+        <div className="rounded-lg border border-red-200 bg-red-50 p-6 max-w-md">
+          <h3 className="text-lg font-semibold text-red-900 mb-2">Error Loading Tasks</h3>
+          <p className="text-sm text-red-700 mb-4">
+            Unable to load your tasks. Please try refreshing the page.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+          >
+            Refresh Page
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ============================================================================
+  // Render
+  // ============================================================================
+
   return (
-    <div className="flex flex-col h-screen bg-slate-100 dark:bg-slate-950">
+    <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <div className="flex-shrink-0 bg-white dark:bg-slate-900 border-b-2 border-slate-200 dark:border-slate-700">
-        <div className="flex items-center justify-between px-6 py-4">
-          {/* Left Section */}
-          <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+      <div className="flex-shrink-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+        <div className="px-6 py-4">
+          {/* Title Row */}
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
               Task Scheduler
             </h1>
 
-            {/* View Switcher */}
-            <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-lg p-1 border border-slate-200 dark:border-slate-700">
-              <button
-                onClick={() => setViewMode('board')}
-                className={`
-                  flex items-center gap-2 px-3 py-1.5 rounded transition-colors
-                  ${viewMode === 'board'
-                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm font-semibold'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 font-medium'
-                  }
-                `}
-                title="Board View"
-              >
-                <LayoutGrid className="w-4 h-4" />
-                <span className="text-sm">Board</span>
-              </button>
-              <button
-                onClick={() => setViewMode('timeline')}
-                className={`
-                  flex items-center gap-2 px-3 py-1.5 rounded transition-colors
-                  ${viewMode === 'timeline'
-                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm font-semibold'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 font-medium'
-                  }
-                `}
-                title="Timeline View"
-              >
-                <Calendar className="w-4 h-4" />
-                <span className="text-sm">Timeline</span>
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`
-                  flex items-center gap-2 px-3 py-1.5 rounded transition-colors
-                  ${viewMode === 'list'
-                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm font-semibold'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 font-medium'
-                  }
-                `}
-                title="List View"
-              >
-                <List className="w-4 h-4" />
-                <span className="text-sm">List</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Right Section */}
-          <div className="flex items-center gap-3">
             {/* Search */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search tasks..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-4 py-2 w-64 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                className="pl-10 pr-4 py-2 w-64 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
 
@@ -347,122 +447,132 @@ const TaskScheduler: React.FC = () => {
               className={`
                 p-2 rounded-lg transition-colors
                 ${showFilters
-                  ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                  : 'hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }
               `}
-              title="Filters"
             >
               <Filter className="w-5 h-5" />
             </button>
 
-            {/* Quick Actions */}
-            <button
-              className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors text-slate-600 dark:text-slate-400"
-              title="Auto-schedule"
-            >
-              <Zap className="w-5 h-5" />
-            </button>
-
-            <button
-              className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors text-slate-600 dark:text-slate-400"
-              title="Team"
-            >
-              <Users className="w-5 h-5" />
-            </button>
-
-            <button
-              className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors text-slate-600 dark:text-slate-400"
-              title="Settings"
-            >
-              <Settings className="w-5 h-5" />
-            </button>
+            {/* Pomodoro Timer */}
+            {pomodoro.pomodoroTimer && (
+              <button
+                onClick={pomodoro.togglePomodoro}
+                className="flex items-center gap-2 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+              >
+                <Timer className="w-4 h-4" />
+                <span className="text-sm">
+                  {Math.floor(pomodoro.pomodoroTimer.timeLeft / 60)}:
+                  {(pomodoro.pomodoroTimer.timeLeft % 60).toString().padStart(2, '0')}
+                </span>
+              </button>
+            )}
 
             {/* Create Task Button */}
             <button
-              onClick={() => handleCreateTask()}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium shadow-sm transition-colors"
+              onClick={handleCreateTask}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
             >
               <Plus className="w-4 h-4" />
               New Task
             </button>
           </div>
+
+          {/* Priority Stats Row */}
+          <div className="flex items-center gap-6 pb-4">
+            <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+              <span className="text-sm font-semibold text-blue-900 dark:text-blue-300">
+                Important:
+              </span>
+              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                {filteredTasks.filter(t => t.status !== 'done' && t.priority === 'important').length}
+              </span>
+            </div>
+          </div>
         </div>
 
+        {/* Quick Add Form */}
+        {modals.showQuickAdd && (
+          <div className="px-6 pb-4">
+            <QuickAddForm
+              value={modals.quickAddText}
+              onChange={modals.setQuickAddText}
+              onSubmit={() => void editing.quickAddTask()}
+              onCancel={modals.closeQuickAdd}
+              isLoading={createTaskMutation.isPending}
+            />
+          </div>
+        )}
+
+        {/* Filter Panel */}
+        {showFilters && (
+          <div className="px-6 pb-4 border-t border-slate-200 dark:border-slate-700 pt-4">
+            <FilterPanel
+              filters={filters.filters}
+              onFilterChange={filters.setFilters}
+              onClearFilters={filters.resetFilters}
+            />
+          </div>
+        )}
+
         {/* Stats Bar */}
-        <div className="px-6 py-3 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-700">
-          <div className="flex items-center gap-8 text-sm">
+        <div className="px-6 py-3 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex items-center gap-6 text-sm">
             <div className="flex items-center gap-2">
-              <span className="text-slate-600 dark:text-slate-300 font-medium">Total Tasks:</span>
-              <span className="font-bold text-slate-900 dark:text-white px-2 py-0.5 bg-slate-200 dark:bg-slate-700 rounded">
+              <span className="text-gray-600 dark:text-gray-400">Total:</span>
+              <span className="font-bold text-gray-900 dark:text-white">
                 {filteredTasks.length}
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-slate-600 dark:text-slate-300 font-medium">In Progress:</span>
-              <span className="font-bold text-blue-600 dark:text-blue-300 px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 rounded">
+              <span className="text-gray-600 dark:text-gray-400">In Progress:</span>
+              <span className="font-bold text-blue-600 dark:text-blue-400">
                 {filteredTasks.filter(t => t.status === 'in_progress').length}
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-slate-600 dark:text-slate-300 font-medium">Completed:</span>
-              <span className="font-bold text-green-600 dark:text-green-300 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 rounded">
+              <span className="text-gray-600 dark:text-gray-400">Completed:</span>
+              <span className="font-bold text-green-600 dark:text-green-400">
                 {filteredTasks.filter(t => t.status === 'done').length}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-slate-600 dark:text-slate-300 font-medium">Milestones:</span>
-              <span className="font-bold text-purple-600 dark:text-purple-300 px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 rounded">
-                {milestones.length}
               </span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* Main Content - Board View Only */}
       <div className="flex-1 overflow-hidden">
-        {viewMode === 'board' && (
-          <BoardView
-            tasks={filteredTasks}
-            columns={boardColumns}
-            teamMembers={teamMembers}
-            onTaskClick={handleTaskClick}
-            onTaskDrop={handleTaskDrop}
-            onCreateTask={handleCreateTask}
-            onStartTimer={handleStartTimer}
-          />
-        )}
-
-        {viewMode === 'timeline' && (
-          <TimelineView
-            tasks={filteredTasks}
-            config={timelineConfig}
-            onConfigChange={setTimelineConfig}
-            onTaskClick={handleTaskClick}
-          />
-        )}
-
-        {viewMode === 'list' && (
-          <ListView
-            tasks={filteredTasks}
-            config={listConfig}
-            teamMembers={teamMembers}
-            onTaskClick={handleTaskClick}
-            onStartTimer={handleStartTimer}
-          />
-        )}
+        <BoardView
+          tasks={filteredTasks}
+          columns={boardColumns}
+          teamMembers={teamMembers}
+          onTaskClick={handleTaskClick}
+          onTaskDrop={handleTaskDrop}
+          onCreateTask={handleCreateTask}
+          onStartTimer={handleStartTimer}
+        />
       </div>
 
       {/* Help Text */}
-      <div className="flex-shrink-0 px-6 py-2.5 bg-blue-50 dark:bg-slate-800/80 border-t-2 border-blue-200 dark:border-blue-900/50">
-        <p className="text-xs text-blue-900 dark:text-blue-200 font-medium">
-          💡 <strong className="font-bold">Pro Tip:</strong> {' '}
-          {viewMode === 'board' && 'Drag tasks between columns to change their status. Try it out!'}
-          {viewMode === 'timeline' && 'Use the zoom controls (Day/Week/Month) to adjust your view. Click tasks to see details.'}
-          {viewMode === 'list' && 'Select multiple tasks using checkboxes for bulk actions. Click column headers to sort.'}
+      <div className="flex-shrink-0 px-6 py-2 bg-blue-50 dark:bg-gray-800 border-t border-blue-200 dark:border-gray-700">
+        <p className="text-sm text-gray-700 dark:text-gray-300">
+          <strong className="font-semibold text-blue-600 dark:text-blue-400">Tip:</strong> {' '}
+          Drag tasks between columns to change status. Click any task to edit. Focus on urgent & important items first.
         </p>
       </div>
+
+      {/* Task Edit Modal */}
+      <TaskEditModal
+        task={editingTask}
+        projects={apiProjects}
+        isOpen={showEditModal}
+        onClose={handleCloseEditModal}
+        onSave={handleSaveTask}
+        onDelete={handleDeleteTask}
+        isSaving={updateTaskMutation.isPending || deleteTaskMutation.isPending}
+      />
     </div>
   );
 };

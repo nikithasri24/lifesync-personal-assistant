@@ -1,6 +1,12 @@
 // Shared data contracts for LifeSync services
 // These mirror the Supabase/PostgreSQL schema while remaining compatible with the legacy REST API.
 
+/**
+ * TaskData - User tasks for the task management system
+ *
+ * NOTE: This is completely separate from 75 Hard challenges.
+ * 75 Hard uses its own dedicated system and should NEVER create TaskData entries.
+ */
 export interface TaskData {
   id?: string;
   user_id?: string;
@@ -13,6 +19,7 @@ export interface TaskData {
   actual_time?: number | null;
   due_date?: string | null;
   tags?: string[] | null;
+  /** Category for user tasks only. NOT for system-generated tasks like 75 Hard. */
   category?: 'work' | 'personal' | 'learning' | 'creative' | 'health' | 'other' | null;
   notes?: string | null;
   starred?: boolean | null;

@@ -53,7 +53,7 @@ export interface Task {
   description?: string
   project_id?: string
   status: 'todo' | 'done' | 'waiting' | 'scheduled' | 'in_progress'
-  priority: 'low' | 'medium' | 'high' | 'urgent'
+  priority: 'low' | 'medium' | 'high' | 'urgent' | 'important'
   estimated_time: number
   actual_time: number
   due_date?: string

@@ -50,15 +50,20 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   const isBlocked = task.is_blocked || (task.blockedBy?.length || 0) > 0;
   const progress = task.progress || 0;
 
-  // Priority colors - Enhanced contrast for dark mode
+  // Simple priority-based logic
+  const isImportant = task.priority === 'important';
+
+  // Priority colors - Border and background for urgency
   const priorityColors = {
-    urgent: 'border-red-500 bg-red-50 dark:bg-red-900/30 dark:border-red-400',
-    high: 'border-orange-500 bg-orange-50 dark:bg-orange-900/30 dark:border-orange-400',
-    medium: 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900/30 dark:border-yellow-400',
-    low: 'border-slate-300 bg-white dark:bg-slate-700 dark:border-slate-500',
+    important: 'border-blue-500 dark:border-blue-400',
+    urgent: 'border-red-500 dark:border-red-400',
+    high: 'border-orange-500 dark:border-orange-400',
+    medium: 'border-yellow-500 dark:border-yellow-400',
+    low: 'border-gray-300 dark:border-gray-500',
   };
 
   const priorityDotColors = {
+    important: 'bg-blue-500',
     urgent: 'bg-red-500',
     high: 'bg-orange-500',
     medium: 'bg-yellow-500',
@@ -76,9 +81,13 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   return (
     <div
       className={`
-        group relative rounded-lg border-l-4 shadow-sm
-        transition-all duration-200 hover:shadow-lg
-        ${priorityColors[task.priority]}
+        group relative rounded-lg shadow-md overflow-hidden
+        transition-all duration-200 hover:shadow-xl
+        ${isImportant
+          ? 'bg-gradient-to-br from-blue-500 to-blue-600 border-2 border-blue-700'
+          : 'bg-white dark:bg-gray-800 border-l-4'
+        }
+        ${!isImportant ? priorityColors[task.priority] : ''}
         ${isSelected ? 'ring-2 ring-blue-500 dark:ring-blue-400 ring-offset-2' : ''}
         ${isDragging ? 'opacity-50 rotate-2 scale-105' : ''}
         ${isBlocked ? 'opacity-75' : ''}
@@ -86,6 +95,17 @@ export const TaskCard: React.FC<TaskCardProps> = ({
       `}
       onClick={onClick}
     >
+      {/* Important Header Banner */}
+      {isImportant && (
+        <div className="bg-blue-700 px-3 py-1 flex items-center gap-2">
+          <span className="text-lg">⭐</span>
+          <span className="text-xs font-bold text-white uppercase tracking-wide">Important</span>
+        </div>
+      )}
+
+      {/* Card Content Wrapper */}
+      <div className={isImportant ? 'bg-white dark:bg-gray-800' : ''}>
+
       {/* Card Header */}
       <div className="p-3">
         <div className="flex items-start justify-between gap-2 mb-2">
@@ -93,10 +113,9 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           <div className="flex-1 min-w-0">
             <h4
               className={`
-                text-sm font-bold line-clamp-2
+                text-sm font-bold line-clamp-2 text-gray-900 dark:text-white
                 ${task.status === 'done' ? 'line-through opacity-60' : ''}
               `}
-              style={{ color: '#000000' }}
             >
               {task.title}
             </h4>
@@ -121,7 +140,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 
         {/* Description */}
         {task.description && (
-          <p className="text-xs font-medium line-clamp-2 mb-2" style={{ color: '#000000' }}>
+          <p className="text-xs text-gray-700 dark:text-gray-300 line-clamp-2 mb-2">
             {task.description}
           </p>
         )}
@@ -132,14 +151,13 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             {task.tags.slice(0, 3).map((tag) => (
               <span
                 key={tag}
-                className="px-2 py-0.5 text-xs rounded-full bg-slate-300 font-bold"
-                style={{ color: '#000000' }}
+                className="px-2 py-0.5 text-xs rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 font-medium"
               >
                 {tag}
               </span>
             ))}
             {task.tags.length > 3 && (
-              <span className="px-2 py-0.5 text-xs rounded-full bg-slate-300 font-bold" style={{ color: '#000000' }}>
+              <span className="px-2 py-0.5 text-xs rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 font-medium">
                 +{task.tags.length - 3}
               </span>
             )}
@@ -149,7 +167,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         {/* Progress Bar */}
         {progress > 0 && progress < 100 && (
           <div className="mb-2">
-            <div className="flex items-center justify-between text-xs mb-1" style={{ color: '#000000' }}>
+            <div className="flex items-center justify-between text-xs text-gray-700 dark:text-gray-300 mb-1">
               <span className="font-semibold">Progress</span>
               <span className="font-bold">{progress}%</span>
             </div>
@@ -163,10 +181,10 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         )}
 
         {/* Metadata Row 1: Due date, Estimate, Priority */}
-        <div className="flex items-center gap-3 text-xs font-semibold mb-2" style={{ color: '#000000' }}>
+        <div className="flex items-center gap-3 text-xs text-gray-700 dark:text-gray-300 font-medium mb-2">
           {/* Due Date */}
           {task.due_date && (
-            <div className="flex items-center gap-1 font-bold" style={{ color: isOverdue ? '#b91c1c' : '#000000' }}>
+            <div className={`flex items-center gap-1 ${isOverdue ? 'text-red-600 dark:text-red-400 font-bold' : ''}`}>
               <Calendar className="w-3 h-3" />
               <span title={format(new Date(task.due_date), 'PPP')}>
                 {formatDistanceToNow(new Date(task.due_date), { addSuffix: true })}
@@ -252,21 +270,22 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         </div>
       </div>
 
-      {/* Time Tracking Quick Action */}
-      {task.status === 'in_progress' && onStartTimer && (
-        <div className="border-t border-slate-200 dark:border-slate-700 px-3 py-2 bg-slate-50 dark:bg-slate-900/50">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onStartTimer();
-            }}
-            className="w-full flex items-center justify-center gap-2 text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
-          >
-            <Play className="w-3.5 h-3.5" />
-            <span>Start Timer</span>
-          </button>
-        </div>
-      )}
+        {/* Time Tracking Quick Action */}
+        {task.status === 'in_progress' && onStartTimer && (
+          <div className="border-t border-slate-200 dark:border-slate-700 px-3 py-2 bg-slate-50 dark:bg-slate-900/50">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onStartTimer();
+              }}
+              className="w-full flex items-center justify-center gap-2 text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+            >
+              <Play className="w-3.5 h-3.5" />
+              <span>Start Timer</span>
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* Status Indicator */}
       {task.status === 'done' && (
@@ -276,7 +295,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
       )}
 
       {/* Overdue Badge */}
-      {isOverdue && (
+      {isOverdue && !isImportant && (
         <div className="absolute -top-2 -left-2 bg-red-600 text-white rounded-full px-2 py-0.5 text-xs font-bold shadow-lg">
           OVERDUE
         </div>

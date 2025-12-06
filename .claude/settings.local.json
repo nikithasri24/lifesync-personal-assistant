@@ -44,7 +44,8 @@
       "Bash(curl:*)",
       "Bash(npm start)",
       "Bash(git reset:*)",
-      "Bash(.env.local)"
+      "Bash(.env.local)",
+      "Bash(xargs:*)"
     ],
     "deny": [],
     "ask": []
