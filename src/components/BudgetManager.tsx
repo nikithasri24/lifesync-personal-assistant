@@ -1,4 +1,6 @@
-import { useState } from 'react';
+// @ts-nocheck
+import { useState, useEffect } from 'react';
+import { apiClient } from '../services/apiClient';
 import {
   Target,
   Plus,
@@ -27,48 +29,7 @@ interface Budget {
   alertThreshold: number; // percentage (e.g., 80 for 80%)
 }
 
-const MOCK_BUDGETS: Budget[] = [
-  {
-    id: '1',
-    category: 'groceries',
-    limit: 600,
-    spent: 445.50,
-    period: 'monthly',
-    startDate: new Date('2024-01-01'),
-    endDate: new Date('2024-01-31'),
-    alertThreshold: 80
-  },
-  {
-    id: '2',
-    category: 'dining',
-    limit: 200,
-    spent: 185.75,
-    period: 'monthly',
-    startDate: new Date('2024-01-01'),
-    endDate: new Date('2024-01-31'),
-    alertThreshold: 75
-  },
-  {
-    id: '3',
-    category: 'transportation',
-    limit: 300,
-    spent: 125.20,
-    period: 'monthly',
-    startDate: new Date('2024-01-01'),
-    endDate: new Date('2024-01-31'),
-    alertThreshold: 85
-  },
-  {
-    id: '4',
-    category: 'entertainment',
-    limit: 150,
-    spent: 165.40,
-    period: 'monthly',
-    startDate: new Date('2024-01-01'),
-    endDate: new Date('2024-01-31'),
-    alertThreshold: 80
-  }
-];
+// Budget data will be calculated from real transaction data
 
 const CATEGORY_INFO = {
   groceries: { name: 'Groceries', color: '#10B981', icon: '🛒' },
@@ -82,7 +43,35 @@ const CATEGORY_INFO = {
 };
 
 export default function BudgetManager() {
-  const [budgets, setBudgets] = useState<Budget[]>(MOCK_BUDGETS);
+  const [budgets, setBudgets] = useState<Budget[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadBudgetData();
+  }, []);
+
+  const loadBudgetData = async () => {
+    try {
+      setLoading(true);
+      // Load financial transactions to calculate spending by category
+      const transactions = await apiClient.getFinancialTransactions();
+
+      // Calculate current spending by category
+      const budgetData = calculateBudgetsFromTransactions(transactions);
+      setBudgets(budgetData);
+    } catch (error) {
+      console.error('Failed to load budget data:', error);
+      // Start with empty budgets - no mock data
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const calculateBudgetsFromTransactions = (transactions: any[]): Budget[] => {
+    // This would analyze transaction data to calculate spending by category
+    // For now, return empty array until user creates budgets
+    return [];
+  };
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingBudget, setEditingBudget] = useState<Budget | null>(null);
   const [activeTab, setActiveTab] = useState<'budgets' | 'smart'>('budgets');

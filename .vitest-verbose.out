@@ -1,0 +1,503 @@
+
+ RUN  v3.2.4 /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant
+
+ × cli/src/__tests__/tasks.add.test.ts > cli tasks add > adds a task with flags (non-interactive) 873ms
+   → expected "spy" to be called at least once
+ × cli/src/__tests__/tasks.command.test.ts > cli tasks command > lists tasks with tag filter 875ms
+   → expected "spy" to be called at least once
+ × cli/src/__tests__/tasks.status.today.test.ts > cli tasks status & today > updates task status to done 875ms
+   → expected "spy" to be called at least once
+ × cli/src/__tests__/tasks.status.today.test.ts > cli tasks status & today > prints today's overview 1ms
+   → expected '' to match /Today's Overview|Today\'s Overview/
+stdout | src/pages/__tests__/Todos.badges.counts.test.tsx > Todos badges and sidebar counts > renders status and priority badges, and displays sidebar counts
+[ApiClient] Supabase configured: [33mfalse[39m
+[ApiClient] Using Supabase adapter: [33mfalse[39m
+
+stdout | src/pages/__tests__/Todos.filters.status.project.test.tsx > Todos status and project filters > filters by project via sidebar click
+[ApiClient] Supabase configured: [33mfalse[39m
+[ApiClient] Using Supabase adapter: [33mfalse[39m
+
+stdout | src/pages/__tests__/Todos.inline-edit.test.tsx > Todos inline editing > edits task title inline and saves on Enter
+[ApiClient] Supabase configured: [33mfalse[39m
+[ApiClient] Using Supabase adapter: [33mfalse[39m
+
+stdout | src/pages/__tests__/Todos.bulk-actions.test.tsx > Todos bulk actions > archives selected tasks via bulk action
+[ApiClient] Supabase configured: [33mfalse[39m
+[ApiClient] Using Supabase adapter: [33mfalse[39m
+
+ ✓ src/pages/__tests__/Todos.badges.counts.test.tsx > Todos badges and sidebar counts > renders status and priority badges, and displays sidebar counts 1163ms
+ ✓ src/pages/__tests__/Todos.filters.status.project.test.tsx > Todos status and project filters > filters by project via sidebar click 1171ms
+ ✓ src/pages/__tests__/Todos.filters.status.project.test.tsx > Todos status and project filters > filters by status when using Smart Lists 43ms
+ ✓ src/pages/__tests__/Todos.bulk-actions.test.tsx > Todos bulk actions > archives selected tasks via bulk action 1193ms
+ ✓ src/pages/__tests__/Todos.bulk-actions.test.tsx > Todos bulk actions > deletes selected tasks via bulk action 58ms
+ × src/pages/__tests__/Todos.inline-edit.test.tsx > Todos inline editing > edits task title inline and saves on Enter 2170ms
+   → Unable to find an element with the title: Save.
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"min-h-full bg-gray-50 dark:bg-slate-900 flex"[39m
+      [33mstyle[39m=[32m"position: relative;"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"w-72 bg-white dark:bg-slate-800 border-r border-gray-200 dark:border-slate-700 flex flex-col shadow-sm"[39m
+        [33mstyle[39m=[32m"pointer-events: auto; position: relative; z-index: 10;"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"p-4 border-b border-gray-100 dark:border-slate-700"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"flex items-center space-x-3"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center"[39m
+            [36m>[39m
+              [36m<svg[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"lucide lucide-square-check-big w-5 h-5 text-white"[39m
+                [33mfill[39m=[32m"none"[39m
+                [33mheight[39m=[32m"24"[39m
+                [33mstroke[39m=[32m"currentColor"[39m
+                [33mstroke-linecap[39m=[32m"round"[39m
+                [33mstroke-linejoin[39m=[32m"round"[39m
+                [33mstroke-width[39m=[32m"2"[39m
+                [33mviewBox[39m=[32m"0 0 24 24"[39m
+                [33mwidth[39m=[32m"24"[39m
+                [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+              [36m>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"M21 10.656V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h12.344"[39m
+                [36m/>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"m9 11 3 3L22 4"[39m
+                [36m/>[39m
+              [36m</svg>[39m
+            [36m</div>[39m
+            [36m<h2[39m
+              [33mclass[39m=[32m"font-semibold text-slate-900 dark:text-white text-lg"[39m
+            [36m>[39m
+              [0mTickTick[0m
+            [36m</h2>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"p-4"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"w-full flex items-center space-x-2 px-3 py-2.5 text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-md transition-colors text-sm font-medium"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33maria-hidden[39m=[32m"true"[39m
+              [33mclass[39m=[32m"lucide lucide-plus"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"16"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"16"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M5 12h14"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M12 5v14"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [36m<span>[39m
+              [0mAdd task[0m
+            [36m</span>[39m
+          [36m</button>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex-1 px-4 pb-4"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mb-4"[39m
+          [36m>[39m
+            [36m<h3[39m
+              [33mclass[39m=[32m"text-xs font-bold text-black dark:text-white uppercase tracking-wider mb-2 px-3"[39m
+            [36m>[39m
+              [0mSmart Lists[0m
+            [36m</h3>[39m
+            [36m<nav[39m
+              [33mclass[39m=[32m"space-y-1"[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm transition-colors cursor-pointer bg-blue-600 text-white dark:bg-blue-500 dark:text-white  transition-all duration-200 border-2 border-transparent relative z-50"[39m
+                [33mstyle[39m=[32m"min-height: 40px; pointer-events: auto; position: relative; transform: scale(1);"[39m
+              [36m>[39m
+                [36m<svg[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mclass[39m=[32m"lucide lucide-inbox w-4 h-4"[39m
+                  [33mfill[39m=[32m"none"[39m
+                  [33mheight[39m=[32m"24"[39m
+                  [33mstroke[39m=[32m"currentColor"[39m
+                  [33mstroke-linecap[39m=[32m"round"[39m
+                  [33mstroke-linejoin[39m=[32m"round"[39m
+                  [33mstroke-width[39m=[32m"2"[39m
+                  [33mviewBox[39m=[32m"0 0 24 24"[39m
+                  [33mwidth[39m=[32m"24"[39m
+                  [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+                [36m>[39m
+                  [36m<polyline[39m
+                    [33mpoints[39m=[32m"22 12 16 12 14 15 10 15 8 12 2 12"[39m
+                  [36m/>[39m
+                  [36m<path[39m
+                    [33md[39m=[32m"M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"[39m
+                  [36m/>[39m
+                [36m</svg>[39m
+                [36m<span>[39m
+                  [0mAll[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"ml-auto text-xs px-2 py-0.5 rounded-full font-medium bg-white text-blue-600 dark:bg-white dark:text-blue-500"[39m
+                [36m>[39m
+                  [0m1[0m
+                [36m</span>[39m
+              [36m</div>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm transition-colors cursor-pointer text-black dark:text-white hover:bg-gray-200 dark:hover:bg-slate-700  transition-all duration-200 border-2 border-transparent relative z-50"[39m
+                [33mstyle[39m=[32m"min-height: 40px; pointer-events: auto; position: relative; transform: scale(1);"[39m
+              [36m>[39m
+                [36m<svg[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mclass[39m=[32m"lucide lucide-sun w-4 h-4"[39m
+                  [33mfill[39m=[32m"none"[39m
+                  [33mheight[39m=[32m"24"[39m
+                  [33mstroke[39m=[32m"currentColor"[39m
+                  [33mstroke-linecap[39m=[32m"round"[39m
+                  [33mstroke-linejoin[39m=[32m"round"[39m
+                  [33mstroke-width[3...
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"min-h-full bg-gray-50 dark:bg-slate-900 flex"[39m
+      [33mstyle[39m=[32m"position: relative;"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"w-72 bg-white dark:bg-slate-800 border-r border-gray-200 dark:border-slate-700 flex flex-col shadow-sm"[39m
+        [33mstyle[39m=[32m"pointer-events: auto; position: relative; z-index: 10;"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"p-4 border-b border-gray-100 dark:border-slate-700"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"flex items-center space-x-3"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center"[39m
+            [36m>[39m
+              [36m<svg[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"lucide lucide-square-check-big w-5 h-5 text-white"[39m
+                [33mfill[39m=[32m"none"[39m
+                [33mheight[39m=[32m"24"[39m
+                [33mstroke[39m=[32m"currentColor"[39m
+                [33mstroke-linecap[39m=[32m"round"[39m
+                [33mstroke-linejoin[39m=[32m"round"[39m
+                [33mstroke-width[39m=[32m"2"[39m
+                [33mviewBox[39m=[32m"0 0 24 24"[39m
+                [33mwidth[39m=[32m"24"[39m
+                [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+              [36m>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"M21 10.656V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h12.344"[39m
+                [36m/>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"m9 11 3 3L22 4"[39m
+                [36m/>[39m
+              [36m</svg>[39m
+            [36m</div>[39m
+            [36m<h2[39m
+              [33mclass[39m=[32m"font-semibold text-slate-900 dark:text-white text-lg"[39m
+            [36m>[39m
+              [0mTickTick[0m
+            [36m</h2>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"p-4"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"w-full flex items-center space-x-2 px-3 py-2.5 text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-md transition-colors text-sm font-medium"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33maria-hidden[39m=[32m"true"[39m
+              [33mclass[39m=[32m"lucide lucide-plus"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"16"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"16"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M5 12h14"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M12 5v14"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [36m<span>[39m
+              [0mAdd task[0m
+            [36m</span>[39m
+          [36m</button>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex-1 px-4 pb-4"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mb-4"[39m
+          [36m>[39m
+            [36m<h3[39m
+              [33mclass[39m=[32m"text-xs font-bold text-black dark:text-white uppercase tracking-wider mb-2 px-3"[39m
+            [36m>[39m
+              [0mSmart Lists[0m
+            [36m</h3>[39m
+            [36m<nav[39m
+              [33mclass[39m=[32m"space-y-1"[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm transition-colors cursor-pointer bg-blue-600 text-white dark:bg-blue-500 dark:text-white  transition-all duration-200 border-2 border-transparent relative z-50"[39m
+                [33mstyle[39m=[32m"min-height: 40px; pointer-events: auto; position: relative; transform: scale(1);"[39m
+              [36m>[39m
+                [36m<svg[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mclass[39m=[32m"lucide lucide-inbox w-4 h-4"[39m
+                  [33mfill[39m=[32m"none"[39m
+                  [33mheight[39m=[32m"24"[39m
+                  [33mstroke[39m=[32m"currentColor"[39m
+                  [33mstroke-linecap[39m=[32m"round"[39m
+                  [33mstroke-linejoin[39m=[32m"round"[39m
+                  [33mstroke-width[39m=[32m"2"[39m
+                  [33mviewBox[39m=[32m"0 0 24 24"[39m
+                  [33mwidth[39m=[32m"24"[39m
+                  [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+                [36m>[39m
+                  [36m<polyline[39m
+                    [33mpoints[39m=[32m"22 12 16 12 14 15 10 15 8 12 2 12"[39m
+                  [36m/>[39m
+                  [36m<path[39m
+                    [33md[39m=[32m"M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"[39m
+                  [36m/>[39m
+                [36m</svg>[39m
+                [36m<span>[39m
+                  [0mAll[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"ml-auto text-xs px-2 py-0.5 rounded-full font-medium bg-white text-blue-600 dark:bg-white dark:text-blue-500"[39m
+                [36m>[39m
+                  [0m1[0m
+                [36m</span>[39m
+              [36m</div>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm transition-colors cursor-pointer text-black dark:text-white hover:bg-gray-200 dark:hover:bg-slate-700  transition-all duration-200 border-2 border-transparent relative z-50"[39m
+                [33mstyle[39m=[32m"min-height: 40px; pointer-events: auto; position: relative; transform: scale(1);"[39m
+              [36m>[39m
+                [36m<svg[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mclass[39m=[32m"lucide lucide-sun w-4 h-4"[39m
+                  [33mfill[39m=[32m"none"[39m
+                  [33mheight[39m=[32m"24"[39m
+                  [33mstroke[39m=[32m"currentColor"[39m
+                  [33mstroke-linecap[39m=[32m"round"[39m
+                  [33mstroke-linejoin[39m=[32m"round"[39m
+                  [33mstroke-width[3...
+ ✓ src/pages/__tests__/Todos.inline-edit.test.tsx > Todos inline editing > toggles bulk mode and selects a task via checkbox 36ms
+stdout | src/pages/__tests__/Todos.status.star.test.tsx > Todos status and star toggles > toggles star via action button
+[ApiClient] Supabase configured: [33mfalse[39m
+[ApiClient] Using Supabase adapter: [33mfalse[39m
+
+stdout | src/pages/__tests__/Todos.filters.sort.test.tsx > Todos filters and sort > filters by search query
+[ApiClient] Supabase configured: [33mfalse[39m
+[ApiClient] Using Supabase adapter: [33mfalse[39m
+
+stdout | src/pages/__tests__/Todos.project.modal.test.tsx > Project creation modal > opens, fills and creates a project
+[ApiClient] Supabase configured: [33mfalse[39m
+[ApiClient] Using Supabase adapter: [33mfalse[39m
+
+ ✓ src/pages/__tests__/Todos.status.star.test.tsx > Todos status and star toggles > toggles star via action button 963ms
+ ✓ src/pages/__tests__/Todos.status.star.test.tsx > Todos status and star toggles > marks complete via status button 19ms
+ ✓ src/pages/__tests__/Todos.project.modal.test.tsx > Project creation modal > opens, fills and creates a project 1022ms
+ ✓ src/pages/__tests__/Todos.filters.sort.test.tsx > Todos filters and sort > filters by search query 994ms
+ ✓ src/pages/__tests__/Todos.filters.sort.test.tsx > Todos filters and sort > sorts by title A-Z 37ms
+stdout | src/pages/__tests__/Todos.dragdrop.test.tsx > Todos drag-and-drop reorder > reorders tasks and calls reorder API with new positions
+[ApiClient] Supabase configured: [33mfalse[39m
+[ApiClient] Using Supabase adapter: [33mfalse[39m
+
+stdout | src/pages/__tests__/Todos.dragdrop.test.tsx > Todos drag-and-drop reorder > reorders tasks and calls reorder API with new positions
+Reordered tasks persisted [ { id: [32m'2'[39m, position: [33m0[39m }, { id: [32m'1'[39m, position: [33m1[39m } ] ...
+
+stdout | src/pages/__tests__/Todos.filters.combinations.test.tsx > Todos combined filters > filters by priority and status and project
+[ApiClient] Supabase configured: [33mfalse[39m
+[ApiClient] Using Supabase adapter: [33mfalse[39m
+
+ ✓ src/pages/__tests__/Todos.dragdrop.test.tsx > Todos drag-and-drop reorder > reorders tasks and calls reorder API with new positions 820ms
+ ✓ src/pages/__tests__/Todos.dragdrop.test.tsx > Todos drag-and-drop reorder > drops a task onto Today and updates due_date 15ms
+stdout | src/pages/__tests__/Todos.bulk.select.filtered.test.tsx > Bulk Select respects filtered list > Select All selects only filtered tasks
+[ApiClient] Supabase configured: [33mfalse[39m
+[ApiClient] Using Supabase adapter: [33mfalse[39m
+
+ ✓ src/pages/__tests__/Todos.dragdrop.test.tsx > Todos drag-and-drop reorder > drops a task onto Inbox and sets status todo 12ms
+ ✓ src/pages/__tests__/Todos.dragdrop.test.tsx > Todos drag-and-drop reorder > drops a task onto Scheduled and sets status scheduled 11ms
+ ✓ src/pages/__tests__/Todos.dragdrop.test.tsx > Todos drag-and-drop reorder > drops a task onto Waiting and sets status waiting 10ms
+ ✓ src/pages/__tests__/Todos.dragdrop.test.tsx > Todos drag-and-drop reorder > drops a task onto Starred and toggles starred 9ms
+ ✓ src/pages/__tests__/Todos.dragdrop.test.tsx > Todos drag-and-drop reorder > drops a task onto Completed and sets status done with completed_at 12ms
+ ✓ src/pages/__tests__/Todos.dragdrop.test.tsx > Todos drag-and-drop reorder > drops a task onto Archived and sets archived true 12ms
+ ✓ src/pages/__tests__/Todos.dragdrop.test.tsx > Todos drag-and-drop reorder > drops a task onto Upcoming and sets due_date ~7 days ahead 13ms
+ ✓ src/pages/__tests__/Todos.filters.combinations.test.tsx > Todos combined filters > filters by priority and status and project 1020ms
+ ✓ src/pages/__tests__/Todos.bulk.select.filtered.test.tsx > Bulk Select respects filtered list > Select All selects only filtered tasks 1086ms
+stdout | src/pages/__tests__/Todos.calendar.date.test.tsx > Calendar date drop > sets due_date when dropped on calendar-date
+[ApiClient] Supabase configured: [33mfalse[39m
+[ApiClient] Using Supabase adapter: [33mfalse[39m
+
+stdout | src/pages/__tests__/Todos.calendar.hour.test.tsx > Calendar hour drop > sets due_date with selected hour when dropped on calendar-hour
+[ApiClient] Supabase configured: [33mfalse[39m
+[ApiClient] Using Supabase adapter: [33mfalse[39m
+
+stdout | src/pages/__tests__/Todos.drag.project.test.tsx > Drag to project (unit) > updates project_id when dropped on project sidebar
+[ApiClient] Supabase configured: [33mfalse[39m
+[ApiClient] Using Supabase adapter: [33mfalse[39m
+
+stdout | src/pages/__tests__/Todos.quickadd.selectedProject.test.tsx > Quick Add respects selected project > defaults project_id to selected project when no #project token
+[ApiClient] Supabase configured: [33mfalse[39m
+[ApiClient] Using Supabase adapter: [33mfalse[39m
+
+stdout | src/pages/__tests__/Todos.calendar.hour.test.tsx > Calendar hour drop > sets due_date with selected hour when dropped on calendar-hour
+Dropping on calendar hour: calendar-hour-2025-01-02-10
+
+stdout | src/pages/__tests__/Todos.calendar.hour.test.tsx > Calendar hour drop > sets due_date with selected hour when dropped on calendar-hour
+Task moved to new date and time: 2025-01-02T10:00:00.000Z
+
+ ✓ src/pages/__tests__/Todos.calendar.hour.test.tsx > Calendar hour drop > sets due_date with selected hour when dropped on calendar-hour 908ms
+ ✓ src/pages/__tests__/Todos.drag.project.test.tsx > Drag to project (unit) > updates project_id when dropped on project sidebar 916ms
+stdout | src/pages/__tests__/Todos.calendar.date.test.tsx > Calendar date drop > sets due_date when dropped on calendar-date
+Dropping on calendar date: calendar-date-2025-04-15
+
+stdout | src/pages/__tests__/Todos.calendar.date.test.tsx > Calendar date drop > sets due_date when dropped on calendar-date
+Task moved to new date: 2025-04-15T00:00:00.000Z
+
+ ✓ src/pages/__tests__/Todos.calendar.date.test.tsx > Calendar date drop > sets due_date when dropped on calendar-date 933ms
+ ✓ src/pages/__tests__/Todos.quickadd.selectedProject.test.tsx > Quick Add respects selected project > defaults project_id to selected project when no #project token 1045ms
+stdout | src/pages/__tests__/Dashboard.test.tsx
+[ApiClient] Supabase configured: [33mfalse[39m
+[ApiClient] Using Supabase adapter: [33mfalse[39m
+
+stdout | src/components/__tests__/Layout.test.tsx
+[ApiClient] Supabase configured: [33mfalse[39m
+[ApiClient] Using Supabase adapter: [33mfalse[39m
+
+stdout | src/components/focus/tasks/__tests__/TaskFocusIntegration.test.tsx
+[ApiClient] Supabase configured: [33mfalse[39m
+[ApiClient] Using Supabase adapter: [33mfalse[39m
+
+ ✓ src/components/focus/tasks/__tests__/TaskFocusIntegration.test.tsx > TaskFocusIntegration tasks tab > renders seeded tasks by default 84ms
+ ✓ src/pages/__tests__/Dashboard.test.tsx > Dashboard > renders the welcome hero once loading finishes 73ms
+ ✓ src/pages/__tests__/Dashboard.test.tsx > Dashboard > shows the primary stats cards with counts 18ms
+ ✓ src/components/__tests__/Layout.test.tsx > Layout > renders the premium brand header 47ms
+ ✓ src/pages/__tests__/Dashboard.test.tsx > Dashboard > lists today’s tasks and allows completing one 17ms
+ ✓ src/pages/__tests__/Dashboard.test.tsx > Dashboard > shows today’s habits and allows recording a completion 18ms
+ ✓ src/pages/__tests__/Dashboard.test.tsx > Dashboard > navigates when a stats card is clicked 11ms
+ ✓ src/pages/__tests__/Dashboard.test.tsx > Dashboard > renders empty states when there is no data 7ms
+ ✓ src/components/__tests__/Layout.test.tsx > Layout > highlights navigation items and reacts to clicks 64ms
+ ✓ src/components/__tests__/Layout.test.tsx > Layout > allows collapsing and expanding the sidebar 24ms
+ ✓ src/components/focus/tasks/__tests__/TaskFocusIntegration.test.tsx > TaskFocusIntegration tasks tab > filters to completed tasks only 58ms
+ ✓ src/components/focus/tasks/__tests__/TaskFocusIntegration.test.tsx > TaskFocusIntegration tasks tab > searches tasks by title 75ms
+ ✓ src/components/focus/tasks/__tests__/TaskFocusIntegration.test.tsx > TaskFocusIntegration tasks tab > sorts tasks by due date 59ms
+ ✓ src/pages/__tests__/Habits.add.test.tsx > Habits Add > adds a habit via the form 94ms
+ ✓ src/components/__tests__/LoadingSpinner.test.tsx > LoadingSpinner > renders a spinning loader and optional text 44ms
+ ✓ src/components/__tests__/LoadingSpinner.test.tsx > LoadingSpinner > supports different sizes 3ms
+ ✓ src/components/__tests__/LoadingSpinner.test.tsx > Skeleton components > SkeletonCard advertises loading content 3ms
+ ✓ src/components/__tests__/LoadingSpinner.test.tsx > Skeleton components > SkeletonTable generates the requested number of rows 6ms
+ ✓ src/components/__tests__/LoadingSpinner.test.tsx > Skeleton components > SkeletonChart accepts additional class names 4ms
+ ✓ src/components/__tests__/ErrorState.test.tsx > ErrorState family > renders default generic error 19ms
+ ✓ src/components/__tests__/ErrorState.test.tsx > ErrorState family > renders network error and invokes retry 38ms
+ ✓ src/components/__tests__/ErrorState.test.tsx > ErrorState family > renders not found with custom resource 2ms
+ ✓ src/components/__tests__/ErrorState.test.tsx > ErrorState family > renders permission error 2ms
+ ✓ src/components/__tests__/ErrorState.test.tsx > ErrorState family > renders empty state and triggers action 4ms
+ ✓ src/components/__tests__/FormField.test.tsx > FormField > renders a label and required indicator 18ms
+ ✓ src/components/__tests__/FormField.test.tsx > FormField > updates the value and calls onChange when typing 6ms
+ ✓ src/components/__tests__/FormField.test.tsx > FormField > shows the error message and links it via aria-describedby 27ms
+ ✓ src/components/__tests__/FormField.test.tsx > SelectField > renders options and propagates changes 6ms
+ ✓ src/components/__tests__/FormField.test.tsx > TextAreaField > captures multiline content 2ms
+ ✓ src/hooks/__tests__/useTheme.test.ts > useTheme > Initial State > starts with system theme when no saved preference 8ms
+ ✓ src/hooks/__tests__/useTheme.test.ts > useTheme > Initial State > starts with saved theme from localStorage 1ms
+ ✓ src/hooks/__tests__/useTheme.test.ts > useTheme > Initial State > detects system dark mode preference 1ms
+ ✓ src/hooks/__tests__/useTheme.test.ts > useTheme > Initial State > handles invalid saved theme gracefully 1ms
+ ✓ src/hooks/__tests__/useTheme.test.ts > useTheme > Theme Setting > updates theme and saves to localStorage 2ms
+ ✓ src/hooks/__tests__/useTheme.test.ts > useTheme > Theme Setting > updates currentTheme correctly for system theme 1ms
+ ✓ src/hooks/__tests__/useTheme.test.ts > useTheme > Theme Setting > allows setting all valid theme values 1ms
+ ✓ src/hooks/__tests__/useTheme.test.ts > useTheme > Theme Toggle > cycles through themes in correct order 2ms
+ ✓ src/hooks/__tests__/useTheme.test.ts > useTheme > Theme Toggle > handles toggle from any starting theme 2ms
+ ✓ src/hooks/__tests__/useTheme.test.ts > useTheme > DOM Updates > adds dark class to document when dark theme is active 1ms
+ ✓ src/hooks/__tests__/useTheme.test.ts > useTheme > DOM Updates > removes dark class when light theme is active 1ms
+ ✓ src/hooks/__tests__/useTheme.test.ts > useTheme > DOM Updates > applies correct class for system theme 0ms
+ ✓ src/hooks/__tests__/useTheme.test.ts > useTheme > System Theme Changes > listens for system theme changes 3ms
+ ✓ src/hooks/__tests__/useTheme.test.ts > useTheme > System Theme Changes > updates system theme when media query changes 1ms
+ ✓ src/hooks/__tests__/useTheme.test.ts > useTheme > System Theme Changes > updates system theme when media query changes to light 1ms
+ ✓ src/hooks/__tests__/useTheme.test.ts > useTheme > System Theme Changes > only affects currentTheme when theme is system 1ms
+ ✓ src/hooks/__tests__/useTheme.test.ts > useTheme > Cleanup > removes event listener on unmount 1ms
+ ✓ src/hooks/__tests__/useTheme.test.ts > useTheme > Persistence > persists theme changes to localStorage 1ms
+ ✓ src/hooks/__tests__/useTheme.test.ts > useTheme > Persistence > maintains theme across hook re-renders 1ms
+ ✓ src/hooks/__tests__/useTheme.test.ts > useTheme > Edge Cases > handles localStorage being unavailable 1ms
+ ✓ src/hooks/__tests__/useTheme.test.ts > useTheme > Edge Cases > handles matchMedia being unavailable 0ms
+ ✓ src/hooks/__tests__/useTheme.test.ts > useTheme > Edge Cases > handles corrupted localStorage data 0ms
+ ✓ src/hooks/__tests__/useTheme.test.ts > useTheme > Return Values > returns all expected properties 1ms
+ ✓ src/hooks/__tests__/useTheme.test.ts > useTheme > Return Values > currentTheme is always light or dark 1ms
+ ✓ src/pages/__tests__/ProjectTracking.test.tsx > ProjectTracking > renders the placeholder heading and message 40ms
+ ✓ src/pages/__tests__/ProjectTracking.dragdrop.test.tsx > ProjectTracking – drag and drop placeholders > communicates that drag and drop capabilities are not yet available 14ms
+ ✓ src/pages/__tests__/ProjectTracking.advanced.test.tsx > ProjectTracking – advanced scenarios > falls back to the informational placeholder while advanced features are unavailable 14ms
+ ✓ src/pages/__tests__/ProjectTracking.e2e.test.tsx > ProjectTracking – end to end placeholder > guides the user to continue managing work from other sections 17ms
+ ✓ src/hooks/__tests__/useLocalStorage.test.tsx > useLocalStorage > reads initial value and writes to localStorage 8ms
+ ✓ src/hooks/__tests__/useLocalStorage.test.tsx > useLocalStorage > supports functional update 1ms
+ ✓ src/hooks/__tests__/useLocalStorage.test.tsx > useLocalStorage > removes value 1ms
+ ✓ src/hooks/__tests__/useLocalStorage.test.tsx > useSessionStorage > reads initial and writes to sessionStorage 1ms
+stdout | src/stores/__tests__/useAppStore.test.ts
+[ApiClient] Supabase configured: [33mfalse[39m
+[ApiClient] Using Supabase adapter: [33mfalse[39m
+
+ ✓ src/stores/__tests__/useAppStore.test.ts > useAppStore > Habits > should add a habit 9ms
+ ✓ src/stores/__tests__/useAppStore.test.ts > useAppStore > Habits > should update a habit 1ms
+ ✓ src/stores/__tests__/useAppStore.test.ts > useAppStore > Habits > should delete a habit 1ms
+ ✓ src/stores/__tests__/useAppStore.test.ts > useAppStore > Habits > should update habit details via updateHabit 1ms
+ ✓ src/stores/__tests__/useAppStore.test.ts > useAppStore > Habits > should accumulate multiple completions in a single day 2ms
+ ✓ src/stores/__tests__/useAppStore.test.ts > useAppStore > Habits > should complete a habit 1ms
+ ✓ src/stores/__tests__/useAppStore.test.ts > useAppStore > Todos > should add a todo 1ms
+ ✓ src/stores/__tests__/useAppStore.test.ts > useAppStore > Todos > should toggle todo completion 1ms
+ ✓ src/stores/__tests__/useAppStore.test.ts > useAppStore > Notes > should add a note 1ms
+ ✓ src/stores/__tests__/useAppStore.test.ts > useAppStore > Notes > should update a note 1ms
+ ✓ src/stores/__tests__/useAppStore.test.ts > useAppStore > Shopping Items > should add a shopping item 1ms
+ ✓ src/stores/__tests__/useAppStore.test.ts > useAppStore > Shopping Items > should toggle shopping item purchase status 1ms
+ ✓ src/stores/__tests__/useAppStore.test.ts > useAppStore > UI State > should set active view 0ms
+ ✓ src/stores/__tests__/useAppStore.test.ts > useAppStore > UI State > should toggle sidebar collapsed state 0ms
+ ✓ src/utils/__tests__/quickAdd.test.ts > parseQuickAdd > parses tags, date, priority and project (explicit) 2ms
+ ✓ src/utils/__tests__/quickAdd.test.ts > parseQuickAdd > supports numeric priority and ISO date 0ms
+ ✓ src/utils/__tests__/quickAdd.test.ts > parseQuickAdd > leaves project empty when not matched and collects #tags and @tags 0ms
+ ✓ src/utils/__tests__/quickAdd.test.ts > parseQuickAdd > supports quoted project names with spaces 0ms
+ ✓ src/utils/__tests__/quickAdd.test.ts > parseQuickAdd > handles mixed token order and extra whitespace 0ms
+ ✓ src/utils/__tests__/quickAdd.test.ts > parseSubtaskQuickAdd > parses tags, date and priority 0ms
+ ✓ src/utils/__tests__/quickAdd.test.ts > parseSubtaskQuickAdd > supports numeric priority and ISO date for subtask 0ms
+ ✓ src/utils/__tests__/validation.test.ts > validation utils > validateField handles required, min/max and pattern 1ms
+ ✓ src/utils/__tests__/validation.test.ts > validation utils > validateForm aggregates errors 0ms
+ ✓ src/utils/__tests__/validation.test.ts > validation utils > getFieldClassName toggles error styles 0ms
+ ✓ src/components/__tests__/TaskDragDrop.test.tsx > drag and drop test utilities > initialises and tears down without throwing 2ms
+stdout | src/stores/__tests__/habits.persistence.test.tsx
+[ApiClient] Supabase configured: [33mfalse[39m
+[ApiClient] Using Supabase adapter: [33mfalse[39m
+
+ ✓ src/stores/__tests__/habits.persistence.test.tsx > Habits persistence with Supabase configured > persists a completion and reflects it after reinitialization 11ms
+
+ Test Files  4 failed | 31 passed (35)
+      Tests  5 failed | 113 passed (118)
+   Start at  10:59:28
+   Duration  8.56s (transform 722ms, setup 5.09s, collect 7.50s, tests 19.34s, environment 14.48s, prepare 1.78s)
+

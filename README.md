@@ -150,6 +150,54 @@ A comprehensive, Nike-inspired personal productivity and life management applica
 - `npm run build` - Build for production
 - `npm run preview` - Preview production build
 - `npm run lint` - Run ESLint
+- `npm run verify:supabase-schema` - Ensure required Supabase tables/columns exist
+- `npm run backup:supabase-schema` - Snapshot the Supabase schema metadata to `backups/`
+
+### Development Guardrails (Recommended)
+
+- `npm run guard` — runs typecheck and unit tests in watch mode to catch regressions as you code
+- Git hooks (Husky):
+  - pre-commit: lint-staged (ESLint on staged files)
+  - pre-push: typecheck + unit tests
+- CI (GitHub Actions):
+  - Lint + typecheck + unit tests on every PR/push
+  - E2E smoke: drag-to-reorder persistence, subtask quick-add tokens, and quick-add parsing
+
+Run locally:
+
+```
+# background safety net while coding
+npm run guard
+
+# unit tests / typecheck
+npm test
+npm run typecheck
+
+# e2e smoke locally
+npm run test:e2e -- tests/e2e/reorder.spec.ts tests/e2e/subtask-quickadd.spec.ts tests/e2e/quickadd-parse.spec.ts
+```
+
+Quick-Add Parsers:
+- Shared, unit-tested utilities live in `src/utils/quickAdd.ts` and are used by Tasks UI.
+- Supported tokens:
+  - `#project:Name` or `#project:"Name With Spaces"` — project assignment (substring match)
+  - `#tags` and `@tags` — multiple tags
+  - `@today`, `@tomorrow`, `@YYYY-MM-DD` — due date
+  - `!urgent|!high|!medium|!low` or `!1..4` — priority (1=urgent … 4=low)
+
+### Supabase Schema Utilities
+
+The Supabase helpers expect a Postgres connection string with permissions to read `information_schema`.
+
+```bash
+export SUPABASE_DB_URL="postgres://user:password@db.host:5432/postgres"
+npm run verify:supabase-schema
+npm run backup:supabase-schema
+```
+
+Use the verifier in CI or before deploying migrations to catch missing columns (like `goal_mode` or
+`current_progress`). The backup command writes a timestamped JSON snapshot to the `backups/` folder, which
+you can commit or archive as needed for manual restores.
 
 ## 📱 Application Structure
 

@@ -51,7 +51,7 @@ export default function GlobalSearch({ onClose }: GlobalSearchProps) {
           type: 'habit',
           title: habit.name,
           content: habit.description || '',
-          category: habit.category,
+          category: habit.categoryId,
           date: habit.createdAt,
           icon: Target,
           onClick: () => {
@@ -97,7 +97,7 @@ export default function GlobalSearch({ onClose }: GlobalSearchProps) {
           type: 'note',
           title: note.title,
           content: note.content.substring(0, 100) + '...',
-          category: note.category,
+          category: note.tags[0],
           date: note.updatedAt,
           icon: FileText,
           onClick: () => {
@@ -161,7 +161,7 @@ export default function GlobalSearch({ onClose }: GlobalSearchProps) {
           id: item.id,
           type: 'shopping',
           title: item.name,
-          content: `${item.quantity} ${item.category}`,
+          content: item.quantity ? `${item.quantity} ${item.unit ?? ''}`.trim() : item.unit ?? '',
           category: item.category,
           date: item.createdAt,
           icon: Heart,

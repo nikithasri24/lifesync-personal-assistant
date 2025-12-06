@@ -39,30 +39,25 @@ function App() {
     }
   }, [user, authLoading]);
 
-  // Initialize data from database on app start
+  // Initialize data from Supabase database only
   useEffect(() => {
-    if (isSupabaseConfigured) {
-      if (authLoading || !user) {
-        return;
-      }
-
-      if (initializedFor.current === user.id) {
-        return;
-      }
-
-      initializedFor.current = user.id;
-      initializeData();
-      console.log('🔄 Initialized LifeSync data for Supabase user');
+    // Only proceed if Supabase is configured
+    if (!isSupabaseConfigured) {
+      console.warn('🔄 Supabase not configured. Please configure environment variables.');
       return;
     }
 
-    if (initializedFor.current === 'local') {
+    if (authLoading || !user) {
       return;
     }
 
-    initializedFor.current = 'local';
+    if (initializedFor.current === user.id) {
+      return;
+    }
+
+    initializedFor.current = user.id;
     initializeData();
-    console.log('🔄 Initialized LifeSync using local/mock data');
+    console.log('🔄 Initialized LifeSync data for Supabase user');
   }, [initializeData, user, authLoading]);
 
   // Show loading spinner while initializing

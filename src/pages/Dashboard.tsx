@@ -1,4 +1,3 @@
-import { useAppStore } from '../stores/useAppStore';
 import { 
   CheckSquare, 
   Target, 
@@ -6,11 +5,15 @@ import {
   BookOpen,
   TrendingUp
 } from 'lucide-react';
-import { format, isToday, addDays } from 'date-fns';
+import { useAppStore } from '../stores/useAppStore';
+import { format, isToday, isSameDay, addDays } from 'date-fns';
 import { SkeletonCard } from '../components/LoadingSpinner';
 import { useState, useEffect } from 'react';
+import { Toast } from '../components/Toast';
+import { useToast } from '../hooks/useToast';
 
 export default function Dashboard() {
+  const { ensureSFHTasksForToday } = useAppStore();
   const { 
     habits, 
     notes, 
@@ -26,6 +29,7 @@ export default function Dashboard() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [completingTask, setCompletingTask] = useState<string | null>(null);
+  const { toast, showToast, dismissToast } = useToast();
 
   const completeTask = async (taskId: string) => {
     try {
@@ -38,31 +42,50 @@ export default function Dashboard() {
     }
   };
 
+  const completeHabitSafely = async (habitId: string) => {
+    try {
+      await completeHabit(habitId);
+    } catch (error) {
+      console.error('[Dashboard] Failed to complete habit', error);
+      showToast('Unable to record that habit completion. Please try again.', 'error');
+    }
+  };
+
   // Simulate loading state for better UX
   useEffect(() => {
     const timer = setTimeout(() => setIsLoading(false), 1000);
     return () => clearTimeout(timer);
   }, []);
 
-  const todayTodos = tasks.filter(task => 
+  // Ensure 75 Hard tasks for today are present so they show up in the Tasks section
+  useEffect(() => {
+    ensureSFHTasksForToday?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const isSFH = (t: any) => Array.isArray(t.tags) && t.tags.includes('sfh');
+  const todayTodosAll = tasks.filter(task => 
     task.status !== 'done' && !task.deleted && 
     task.dueDate && 
     isToday(task.dueDate)
   );
+  // Exclude 75 Hard from Dashboard metrics and list to focus on actual tasks
+  const todayTodos = todayTodosAll.filter(t => !isSFH(t));
 
   const upcomingTodos = tasks.filter(task => 
     task.status !== 'done' && !task.deleted && 
     task.dueDate && 
     task.dueDate > new Date() &&
     task.dueDate <= addDays(new Date(), 7)
-  );
+  ).filter(t => !isSFH(t));
 
   const todayHabits = habits.filter(habit => {
-    const today = new Date().toDateString();
-    const todayCompletions = habit.completions.filter(completion => 
-      new Date(completion.completedAt).toDateString() === today
+    const today = new Date();
+    const todayCompletions = habit.completions.filter((completion) =>
+      isSameDay(completion.completedAt, today)
     );
-    return todayCompletions.length < habit.targetCount;
+    const targetForToday = Math.max(1, habit.targetCount);
+    return todayCompletions.length < targetForToday;
   });
 
   const recentNotes = notes
@@ -84,6 +107,8 @@ export default function Dashboard() {
     weekAgo.setDate(weekAgo.getDate() - 7);
     return completedDate >= weekAgo;
   });
+  // Dashboard completion stats exclude 75 Hard as well
+  const completedTodosThisWeekCount = completedTodosThisWeek.filter(t => !isSFH(t)).length;
 
   const statsCards = [
     {
@@ -135,6 +160,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6 sm:space-y-8">
+      <Toast toast={toast} onDismiss={dismissToast} />
       {/* Welcome Section - Enhanced Mobile */}
       <div className="relative overflow-hidden bg-gradient-to-br from-blue-600 to-purple-700 rounded-xl sm:rounded-2xl p-6 sm:p-8 text-white shadow-xl">
         <div className="relative z-10">
@@ -251,10 +277,12 @@ export default function Dashboard() {
               </div>
             ) : (
               todayHabits.slice(0, 5).map((habit, index) => {
-                const todayCompletions = habit.completions.filter(completion => 
-                  isToday(new Date(completion.completedAt))
+                const todayCompletions = habit.completions.filter((completion) =>
+                  isSameDay(completion.completedAt, new Date())
                 ).length;
-                
+                const targetForToday = Math.max(1, habit.targetCount);
+                const reachedTodayTarget = todayCompletions >= targetForToday;
+
                 return (
                   <div 
                     key={habit.id} 
@@ -267,17 +295,29 @@ export default function Dashboard() {
                         style={{ backgroundColor: habit.color }}
                       />
                       <div>
-                        <p className="text-sm font-medium text-primary">{habit.name}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium text-primary">{habit.name}</p>
+                          {reachedTodayTarget ? (
+                            <span className="rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-semibold text-green-600 border border-green-200">
+                              Completed today{targetForToday > 1 ? ` (${todayCompletions}/${targetForToday})` : ''}
+                            </span>
+                          ) : (
+                            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600 border border-slate-200">
+                              Today {todayCompletions}/{targetForToday}
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs text-secondary mt-1">
-                          {todayCompletions}/{habit.targetCount} completed
+                          {todayCompletions}/{targetForToday} completed
                         </p>
                       </div>
                     </div>
                     <button
-                      onClick={() => completeHabit(habit.id)}
-                      className="btn-primary text-xs px-4 py-2 hover:shadow-lg transform hover:scale-105 transition-all duration-200"
+                      onClick={() => completeHabitSafely(habit.id)}
+                      disabled={reachedTodayTarget}
+                      className={`btn-primary text-xs px-4 py-2 hover:shadow-lg transform transition-all duration-200 ${reachedTodayTarget ? 'cursor-not-allowed opacity-60 hover:shadow-none hover:scale-100' : 'hover:scale-105'}`}
                     >
-                      Complete
+                      {reachedTodayTarget ? 'Completed' : 'Complete'}
                     </button>
                   </div>
                 );

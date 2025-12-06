@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { useTheme, Theme } from '../useTheme'
+import { useTheme } from '../useTheme'
+import type { Theme } from '../useTheme'
 
 // Mock matchMedia
 const mockMatchMedia = vi.fn()

@@ -1,0 +1,6 @@
+[
+  { "id": "acct_checking", "institutionId": "inst_chase", "name": "Everyday Checking", "type": "checking", "balance": 3250.45, "lastUpdatedISO": "2024-06-30T12:00:00.000Z" },
+  { "id": "acct_savings", "institutionId": "inst_chase", "name": "High Yield Savings", "type": "savings", "balance": 8200.10, "lastUpdatedISO": "2024-06-30T12:00:00.000Z" },
+  { "id": "acct_credit", "institutionId": "inst_chase", "name": "Freedom Credit", "type": "credit", "balance": 450.32, "liability": true, "lastUpdatedISO": "2024-06-30T12:00:00.000Z" },
+  { "id": "acct_brokerage", "institutionId": "inst_robinhood", "name": "Brokerage", "type": "brokerage", "balance": 12050.00, "lastUpdatedISO": "2024-06-30T12:00:00.000Z" }
+]

@@ -13,8 +13,10 @@ describe('useAppStore', () => {
       journalEntries: [],
       shoppingItems: [],
       recipes: [],
-      financialRecords: [],
-      budgets: [],
+      pantryItems: [],
+      mealPlans: [],
+      moodEntries: [],
+      userStats: { level: 1, xp: 0, xpToNextLevel: 100, totalGoalsCompleted: 0 },
       activeView: 'dashboard',
       sidebarCollapsed: false,
     });
@@ -30,8 +32,10 @@ describe('useAppStore', () => {
           description: 'Daily workout routine',
           frequency: 'daily',
           targetCount: 1,
-          category: 'fitness',
-          color: '#ef4444'
+          categoryId: 'wellness',
+          color: '#ef4444',
+          currentProgress: 0,
+          streak: 0,
         });
       });
 
@@ -49,8 +53,10 @@ describe('useAppStore', () => {
           description: 'Daily workout routine',
           frequency: 'daily',
           targetCount: 1,
-          category: 'fitness',
-          color: '#ef4444'
+          categoryId: 'wellness',
+          color: '#ef4444',
+          currentProgress: 0,
+          streak: 0,
         });
       });
 
@@ -72,8 +78,10 @@ describe('useAppStore', () => {
           description: 'Daily workout routine',
           frequency: 'daily',
           targetCount: 1,
-          category: 'fitness',
-          color: '#ef4444'
+          categoryId: 'wellness',
+          color: '#ef4444',
+          currentProgress: 0,
+          streak: 0,
         });
       });
 
@@ -81,9 +89,86 @@ describe('useAppStore', () => {
 
       act(() => {
         result.current.deleteHabit(habitId);
-      });
+    });
 
       expect(result.current.habits).toHaveLength(0);
+    });
+
+    it('should update habit details via updateHabit', async () => {
+      const { result } = renderHook(() => useAppStore());
+
+      let habitId: string;
+      await act(async () => {
+        const created = await result.current.addHabit({
+          name: 'Morning Exercise',
+          description: 'Daily workout routine',
+          frequency: 'daily',
+          targetCount: 1,
+          categoryId: 'wellness',
+          color: '#ef4444',
+          currentProgress: 0,
+          streak: 0,
+        });
+        habitId = created.id;
+      });
+
+      await act(async () => {
+        await result.current.updateHabit(habitId!, {
+          name: 'Evening Yoga',
+          description: 'Relaxing stretch',
+          frequency: 'weekly',
+          targetCount: 3,
+          categoryId: 'movement',
+          color: '#10b981',
+        });
+      });
+
+      const updated = result.current.habits.find((habit) => habit.id === habitId);
+      expect(updated).toBeDefined();
+      expect(updated?.name).toBe('Evening Yoga');
+      expect(updated?.description).toBe('Relaxing stretch');
+      expect(updated?.frequency).toBe('weekly');
+      expect(updated?.targetCount).toBe(3);
+      expect(updated?.categoryId).toBe('movement');
+      expect(updated?.color).toBe('#10b981');
+    });
+
+    it('should accumulate multiple completions in a single day', async () => {
+      const { result } = renderHook(() => useAppStore());
+
+      let habitId: string;
+      await act(async () => {
+        const created = await result.current.addHabit({
+          name: 'Water Intake',
+          description: 'Drink water throughout the day',
+          frequency: 'daily',
+          targetCount: 2,
+          categoryId: 'health',
+          color: '#3b82f6',
+          currentProgress: 0,
+          streak: 0,
+        });
+        habitId = created.id;
+      });
+
+      await act(async () => {
+        await result.current.completeHabit(habitId!);
+        await result.current.completeHabit(habitId!);
+      });
+
+      const habit = result.current.habits.find((item) => item.id === habitId);
+      expect(habit).toBeDefined();
+      expect(habit?.currentProgress).toBe(2);
+      expect(habit?.streak).toBe(2);
+      expect(habit?.completions).toHaveLength(2);
+
+      await act(async () => {
+        await result.current.completeHabit(habitId!);
+      });
+
+      const updated = result.current.habits.find((item) => item.id === habitId);
+      expect(updated?.currentProgress).toBe(3);
+      expect(updated?.completions).toHaveLength(3);
     });
 
     it('should complete a habit', () => {
@@ -95,15 +180,17 @@ describe('useAppStore', () => {
           description: 'Daily workout routine',
           frequency: 'daily',
           targetCount: 1,
-          category: 'fitness',
-          color: '#ef4444'
+          categoryId: 'wellness',
+          color: '#ef4444',
+          currentProgress: 0,
+          streak: 0,
         });
       });
 
       const habitId = result.current.habits[0].id;
 
       act(() => {
-        result.current.completeHabit(habitId, 'Great workout today!');
+        result.current.completeHabit(habitId, { notes: 'Great workout today!' });
       });
 
       expect(result.current.habits[0].completions).toHaveLength(1);
@@ -121,6 +208,7 @@ describe('useAppStore', () => {
           description: 'Get milk, bread, and eggs',
           priority: 'medium',
           completed: false,
+           status: 'todo',
           tags: ['shopping'],
           estimatedTime: 30
         });
@@ -140,6 +228,7 @@ describe('useAppStore', () => {
           description: 'Get milk, bread, and eggs',
           priority: 'medium',
           completed: false,
+           status: 'todo',
           tags: ['shopping'],
           estimatedTime: 30
         });
@@ -169,15 +258,13 @@ describe('useAppStore', () => {
         result.current.addNote({
           title: 'Meeting Notes',
           content: 'Discussed project timeline',
-          category: 'meeting',
-          tags: ['work'],
-          isPinned: false
+          tags: ['work']
         });
       });
 
       expect(result.current.notes).toHaveLength(1);
       expect(result.current.notes[0].title).toBe('Meeting Notes');
-      expect(result.current.notes[0].category).toBe('meeting');
+      expect(result.current.notes[0].tags).toContain('work');
     });
 
     it('should update a note', () => {
@@ -187,19 +274,17 @@ describe('useAppStore', () => {
         result.current.addNote({
           title: 'Meeting Notes',
           content: 'Discussed project timeline',
-          category: 'meeting',
-          tags: ['work'],
-          isPinned: false
+          tags: ['work']
         });
       });
 
       const noteId = result.current.notes[0].id;
 
       act(() => {
-        result.current.updateNote(noteId, { isPinned: true });
+        result.current.updateNote(noteId, { title: 'Updated Notes' });
       });
 
-      expect(result.current.notes[0].isPinned).toBe(true);
+      expect(result.current.notes[0].title).toBe('Updated Notes');
     });
   });
 
@@ -211,7 +296,7 @@ describe('useAppStore', () => {
         result.current.addShoppingItem({
           name: 'Milk',
           quantity: 2,
-          category: 'groceries',
+          category: 'other',
           priority: 'medium',
           purchased: false
         });
@@ -229,7 +314,7 @@ describe('useAppStore', () => {
         result.current.addShoppingItem({
           name: 'Milk',
           quantity: 2,
-          category: 'groceries',
+          category: 'other',
           priority: 'medium',
           purchased: false
         });

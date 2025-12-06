@@ -1,0 +1,4 @@
+[
+  { "id": "goal_emergency", "name": "Emergency Fund", "targetAmount": 10000, "currentAmount": 4500, "dueDateISO": "2024-12-31T00:00:00.000Z", "type": "savings" },
+  { "id": "goal_cc", "name": "Pay Credit Card", "targetAmount": 1000, "currentAmount": 400, "dueDateISO": "2024-08-31T00:00:00.000Z", "type": "debt" }
+]

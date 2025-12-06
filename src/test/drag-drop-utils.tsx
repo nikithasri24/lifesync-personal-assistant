@@ -190,6 +190,11 @@ export const mockDndKit = () => {
   
   vi.doMock('@dnd-kit/core', () => ({
     DndContext: mockDndContext,
+    // collision + sensors exports referenced by the app
+    closestCenter: vi.fn(),
+    closestCorners: vi.fn(),
+    rectIntersection: vi.fn(),
+    pointerWithin: vi.fn(),
     useDraggable: vi.fn().mockReturnValue({
       attributes: {},
       listeners: {},
@@ -207,6 +212,7 @@ export const mockDndKit = () => {
     MouseSensor: vi.fn(),
     TouchSensor: vi.fn(),
     KeyboardSensor: vi.fn(),
+    PointerSensor: vi.fn(),
   }))
   
   vi.doMock('@dnd-kit/sortable', () => ({
@@ -219,6 +225,7 @@ export const mockDndKit = () => {
       transition: null,
       isDragging: false
     }),
+    sortableKeyboardCoordinates: vi.fn(),
     verticalListSortingStrategy: 'vertical',
     horizontalListSortingStrategy: 'horizontal',
     rectSortingStrategy: 'rect',

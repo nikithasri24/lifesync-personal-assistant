@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/1531</span>
+                <span class='fraction'>0/1528</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/1531</span>
+                <span class='fraction'>0/1528</span>
             </div>
         
             
@@ -1960,9 +1960,7 @@
 <a name='L1895'></a><a href='#L1895'>1895</a>
 <a name='L1896'></a><a href='#L1896'>1896</a>
 <a name='L1897'></a><a href='#L1897'>1897</a>
-<a name='L1898'></a><a href='#L1898'>1898</a>
-<a name='L1899'></a><a href='#L1899'>1899</a>
-<a name='L1900'></a><a href='#L1900'>1900</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L1898'></a><a href='#L1898'>1898</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -2118,12 +2116,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -2194,6 +2186,7 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -2243,6 +2236,7 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -2384,6 +2378,7 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -3861,7 +3856,8 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import React, { useState, useEffect } from 'react';<span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" ></span></span></span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import React, { useState, useEffect } from 'react';<span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" ></span></span></span>
 <span class="cstat-no" title="statement not covered" >import { useAppStore } from '../stores/useAppStore';</span>
 <span class="cstat-no" title="statement not covered" >import { useApiTasks } from '../hooks/useApiTasks';</span>
 <span class="cstat-no" title="statement not covered" >import { useApiHealth } from '../hooks/useApiHealth';</span>
@@ -4015,14 +4011,8 @@ interface Project {
 <span class="cstat-no" title="statement not covered" >    parentId: todo.parentId</span>
 <span class="cstat-no" title="statement not covered" >  }));</span>
 &nbsp;
-  // Hybrid projects: use API if available, fallback to mock data
-<span class="cstat-no" title="statement not covered" >  const mockProjects = [</span>
-<span class="cstat-no" title="statement not covered" >    { id: '1', name: 'Personal', description: 'Personal tasks and goals', color: '#6366f1', status: 'active' as const, icon: '👤' },</span>
-<span class="cstat-no" title="statement not covered" >    { id: '2', name: 'Work', description: 'Work-related tasks', color: '#10b981', status: 'active' as const, icon: '💼' },</span>
-<span class="cstat-no" title="statement not covered" >    { id: '3', name: 'Learning', description: 'Learning and development', color: '#f59e0b', status: 'active' as const, icon: '📚' },</span>
-<span class="cstat-no" title="statement not covered" >    { id: '4', name: 'Health', description: 'Health and wellness', color: '#ef4444', status: 'active' as const, icon: '❤️' }</span>
-<span class="cstat-no" title="statement not covered" >  ];</span>
-<span class="cstat-no" title="statement not covered" >  const projects = apiError ? mockProjects : (apiProjects.length &gt; 0 ? apiProjects : mockProjects);</span>
+  // Use Supabase projects only - no mock fallback
+<span class="cstat-no" title="statement not covered" >  const projects = apiProjects;</span>
 &nbsp;
   // Helper functions
 <span class="cstat-no" title="statement not covered" >  const getTodoistPriorityFlag = (priority: string) =&gt; {</span>
@@ -4049,8 +4039,8 @@ interface Project {
 <span class="cstat-no" title="statement not covered" >  const parseQuickAdd = (text: string) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    let title = text;</span>
 <span class="cstat-no" title="statement not covered" >    let priority = 'medium';</span>
-<span class="cstat-no" title="statement not covered" >    let dueDate = null;</span>
-<span class="cstat-no" title="statement not covered" >    let projectId = '';</span>
+<span class="cstat-no" title="statement not covered" >    let dueDate: Date | null = null;</span>
+<span class="cstat-no" title="statement not covered" >    let projectId: string | undefined;</span>
 <span class="cstat-no" title="statement not covered" >    let tags: string[] = [];</span>
 &nbsp;
     // Extract priority flags (p1, p2, p3, p4)
@@ -4099,16 +4089,17 @@ interface Project {
 <span class="cstat-no" title="statement not covered" >      description: '',</span>
 <span class="cstat-no" title="statement not covered" >      priority: parsed.priority as any,</span>
 <span class="cstat-no" title="statement not covered" >      completed: false,</span>
+<span class="cstat-no" title="statement not covered" >      status: 'todo' as const,</span>
 <span class="cstat-no" title="statement not covered" >      estimatedTime: 25,</span>
 <span class="cstat-no" title="statement not covered" >      actualTime: 0,</span>
-<span class="cstat-no" title="statement not covered" >      dueDate: parsed.dueDate,</span>
-<span class="cstat-no" title="statement not covered" >      projectId: parsed.projectId,</span>
+<span class="cstat-no" title="statement not covered" >      dueDate: parsed.dueDate ?? undefined,</span>
+<span class="cstat-no" title="statement not covered" >      projectId: parsed.projectId ?? undefined,</span>
 <span class="cstat-no" title="statement not covered" >      tags: parsed.tags,</span>
-<span class="cstat-no" title="statement not covered" >      categoryId: 'work'</span>
+<span class="cstat-no" title="statement not covered" >      categoryId: 'work' as const</span>
 <span class="cstat-no" title="statement not covered" >    };</span>
 &nbsp;
     // Add to local store immediately
-<span class="cstat-no" title="statement not covered" >    addTodo(todoData);</span>
+<span class="cstat-no" title="statement not covered" >    await addTodo(todoData);</span>
     
     // Try to sync to API in background (but don't fail if it's down)
 <span class="cstat-no" title="statement not covered" >    if (!apiError &amp;&amp; createApiTask) {</span>
@@ -4140,7 +4131,8 @@ interface Project {
       // Update local store immediately
 <span class="cstat-no" title="statement not covered" >      updateTodo(taskId, { </span>
 <span class="cstat-no" title="statement not covered" >        completed: !task.completed,</span>
-<span class="cstat-no" title="statement not covered" >        completedAt: !task.completed ? new Date() : undefined</span>
+<span class="cstat-no" title="statement not covered" >        completedAt: !task.completed ? new Date() : undefined,</span>
+<span class="cstat-no" title="statement not covered" >        status: !task.completed ? 'done' : 'todo'</span>
 <span class="cstat-no" title="statement not covered" >      });</span>
       
       // Try to sync to API in background
@@ -4170,8 +4162,8 @@ interface Project {
 <span class="cstat-no" title="statement not covered" >        updateTodo(taskId, {</span>
 <span class="cstat-no" title="statement not covered" >          title: parsed.title,</span>
 <span class="cstat-no" title="statement not covered" >          priority: parsed.priority as any,</span>
-<span class="cstat-no" title="statement not covered" >          dueDate: parsed.dueDate || currentTodo.dueDate,</span>
-<span class="cstat-no" title="statement not covered" >          projectId: parsed.projectId || currentTodo.projectId,</span>
+<span class="cstat-no" title="statement not covered" >          dueDate: parsed.dueDate ?? currentTodo.dueDate,</span>
+<span class="cstat-no" title="statement not covered" >          projectId: parsed.projectId ?? currentTodo.projectId,</span>
 <span class="cstat-no" title="statement not covered" >          tags: parsed.tags.length &gt; 0 ? parsed.tags : currentTodo.tags</span>
 <span class="cstat-no" title="statement not covered" >        });</span>
         
@@ -4277,10 +4269,11 @@ interface Project {
 <span class="cstat-no" title="statement not covered" >      description: '',</span>
 <span class="cstat-no" title="statement not covered" >      priority: 'medium' as const,</span>
 <span class="cstat-no" title="statement not covered" >      completed: false,</span>
+<span class="cstat-no" title="statement not covered" >      status: 'todo' as const,</span>
 <span class="cstat-no" title="statement not covered" >      estimatedTime: 25,</span>
 <span class="cstat-no" title="statement not covered" >      actualTime: 0,</span>
 <span class="cstat-no" title="statement not covered" >      tags: [],</span>
-<span class="cstat-no" title="statement not covered" >      categoryId: 'work',</span>
+<span class="cstat-no" title="statement not covered" >      categoryId: 'work' as const,</span>
 <span class="cstat-no" title="statement not covered" >      parentId: parentId</span>
 <span class="cstat-no" title="statement not covered" >    };</span>
 &nbsp;
@@ -5760,14 +5753,15 @@ interface Project {
 <span class="cstat-no" title="statement not covered" >      &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >    &lt;/div&gt;</span>
   );
-<span class="cstat-no" title="statement not covered" >}</span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-09-20T14:23:26.909Z
+                at 2025-09-27T18:38:25.638Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

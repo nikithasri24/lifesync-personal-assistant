@@ -1,0 +1,8 @@
+[
+  { "month": "2024-01", "assets": 18000, "liabilities": 2000 },
+  { "month": "2024-02", "assets": 18500, "liabilities": 1900 },
+  { "month": "2024-03", "assets": 19000, "liabilities": 1800 },
+  { "month": "2024-04", "assets": 20000, "liabilities": 1700 },
+  { "month": "2024-05", "assets": 21200, "liabilities": 1650 },
+  { "month": "2024-06", "assets": 23500, "liabilities": 1550 }
+]

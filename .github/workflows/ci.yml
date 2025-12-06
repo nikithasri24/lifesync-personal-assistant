@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test -- --run
+
+  e2e-smoke:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+      - name: Run Playwright E2E Smoke
+        env:
+          E2E_BASE_URL: http://localhost:5173
+          E2E_DEV_COMMAND: npm run dev
+        run: npx playwright test \
+          tests/e2e/reorder.spec.ts \
+          tests/e2e/subtask-quickadd.spec.ts \
+          tests/e2e/quickadd-parse.spec.ts \
+          tests/e2e/drag-to-calendar-date.spec.ts \
+          tests/e2e/drag-to-today.spec.ts \
+          tests/e2e/drag-to-upcoming.spec.ts \
+          tests/e2e/drag-to-project.spec.ts
+          tests/e2e/inline-edit-title.spec.ts
+          tests/e2e/bulk-archive.spec.ts
+          tests/e2e/complete-task.spec.ts
+          tests/e2e/search-sort.spec.ts
+          tests/e2e/drag-to-waiting-scheduled-starred.spec.ts
+          tests/e2e/bulk-delete.spec.ts
+          tests/e2e/drag-persistence.spec.ts
+          tests/e2e/star-toggle.spec.ts
+          tests/e2e/star-persistence.spec.ts
+          tests/e2e/project-filter-toggle.spec.ts
+          tests/e2e/project-filter-search.spec.ts
+          tests/e2e/habits-add.spec.ts

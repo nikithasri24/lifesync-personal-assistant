@@ -11,6 +11,13 @@ node_modules
 dist
 dist-ssr
 *.local
+.env*
+coverage/
+api-monitor.log
+logs/
+*.backup
+pocketbase
+pocketbase.zip
 
 # Editor directories and files
 .vscode/*

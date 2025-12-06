@@ -114,8 +114,9 @@ export default function Todos() {
   const [pomodoroTimer, setPomodoroTimer] = useState<{ taskId: string | null; timeLeft: number; isActive: boolean; isBreak: boolean }>({ taskId: null, timeLeft: 25 * 60, isActive: false, isBreak: false });
   const [pomodoroMode, setPomodoroMode] = useState<'work' | 'shortBreak' | 'longBreak'>('work');
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
-  const [showSubtaskForm, setShowSubtaskForm] = useState<string | null>(null);
-  const [subtaskText, setSubtaskText] = useState('');
+  // Subtask form state: keep per-task drafts and track the active form
+  const [activeSubtaskForm, setActiveSubtaskForm] = useState<string | null>(null);
+  const [subtaskDrafts, setSubtaskDrafts] = useState<Record<string, string>>({});
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({
     priority: 'all',
@@ -152,14 +153,8 @@ export default function Todos() {
     parentId: todo.parentId
   }));
 
-  // Hybrid projects: use API if available, fallback to mock data
-  const mockProjects = [
-    { id: '1', name: 'Personal', description: 'Personal tasks and goals', color: '#6366f1', status: 'active' as const, icon: '👤' },
-    { id: '2', name: 'Work', description: 'Work-related tasks', color: '#10b981', status: 'active' as const, icon: '💼' },
-    { id: '3', name: 'Learning', description: 'Learning and development', color: '#f59e0b', status: 'active' as const, icon: '📚' },
-    { id: '4', name: 'Health', description: 'Health and wellness', color: '#ef4444', status: 'active' as const, icon: '❤️' }
-  ];
-  const projects = apiError ? mockProjects : (apiProjects.length > 0 ? apiProjects : mockProjects);
+  // Use Supabase projects only - no mock fallback
+  const projects = apiProjects;
 
   // Helper functions
   const getTodoistPriorityFlag = (priority: string) => {
@@ -186,8 +181,8 @@ export default function Todos() {
   const parseQuickAdd = (text: string) => {
     let title = text;
     let priority = 'medium';
-    let dueDate = null;
-    let projectId = '';
+    let dueDate: Date | null = null;
+    let projectId: string | undefined;
     let tags: string[] = [];
 
     // Extract priority flags (p1, p2, p3, p4)
@@ -236,16 +231,17 @@ export default function Todos() {
       description: '',
       priority: parsed.priority as any,
       completed: false,
+      status: 'todo' as const,
       estimatedTime: 25,
       actualTime: 0,
-      dueDate: parsed.dueDate,
-      projectId: parsed.projectId,
+      dueDate: parsed.dueDate ?? undefined,
+      projectId: parsed.projectId ?? undefined,
       tags: parsed.tags,
-      categoryId: 'work'
+      categoryId: 'work' as const
     };
 
     // Add to local store immediately
-    addTodo(todoData);
+    await addTodo(todoData);
     
     // Try to sync to API in background (but don't fail if it's down)
     if (!apiError && createApiTask) {
@@ -277,7 +273,8 @@ export default function Todos() {
       // Update local store immediately
       updateTodo(taskId, { 
         completed: !task.completed,
-        completedAt: !task.completed ? new Date() : undefined
+        completedAt: !task.completed ? new Date() : undefined,
+        status: !task.completed ? 'done' : 'todo'
       });
       
       // Try to sync to API in background
@@ -307,8 +304,8 @@ export default function Todos() {
         updateTodo(taskId, {
           title: parsed.title,
           priority: parsed.priority as any,
-          dueDate: parsed.dueDate || currentTodo.dueDate,
-          projectId: parsed.projectId || currentTodo.projectId,
+          dueDate: parsed.dueDate ?? currentTodo.dueDate,
+          projectId: parsed.projectId ?? currentTodo.projectId,
           tags: parsed.tags.length > 0 ? parsed.tags : currentTodo.tags
         });
         
@@ -407,17 +404,19 @@ export default function Todos() {
   };
 
   const addSubtask = async (parentId: string) => {
-    if (!subtaskText.trim()) return;
+    const draft = (subtaskDrafts[parentId] || '').trim();
+    if (!draft) return;
     
     const subtaskData = {
-      title: subtaskText,
+      title: draft,
       description: '',
       priority: 'medium' as const,
       completed: false,
+      status: 'todo' as const,
       estimatedTime: 25,
       actualTime: 0,
       tags: [],
-      categoryId: 'work',
+      categoryId: 'work' as const,
       parentId: parentId
     };
 
@@ -428,7 +427,7 @@ export default function Todos() {
     if (!apiError && createApiTask) {
       try {
         await createApiTask({
-          title: subtaskText,
+          title: draft,
           description: '',
           priority: 'medium' as const,
           status: 'todo' as const,
@@ -443,8 +442,8 @@ export default function Todos() {
       }
     }
     
-    setSubtaskText('');
-    setShowSubtaskForm(null);
+    setSubtaskDrafts(prev => ({ ...prev, [parentId]: '' }));
+    setActiveSubtaskForm(null);
   };
 
   const getSubtasks = (parentId: string) => {
@@ -1675,7 +1674,10 @@ export default function Todos() {
                           {/* Actions */}
                           <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity ml-3">
                             <button
-                              onClick={() => setShowSubtaskForm(task.id)}
+                              onClick={() => {
+                                setActiveSubtaskForm(task.id);
+                                setSubtaskDrafts(prev => ({ ...prev, [task.id]: prev[task.id] || '' }));
+                              }}
                               className="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-md text-gray-400 hover:text-gray-600 dark:text-slate-400 transition-colors"
                               title="Add Subtask"
                             >
@@ -1704,16 +1706,16 @@ export default function Todos() {
                         </div>
 
                         {/* Subtask form */}
-                        {showSubtaskForm === task.id && (
+                        {activeSubtaskForm === task.id && (
                           <div className="px-6 pb-3">
                             <div className="ml-10 flex items-center space-x-2">
                               <input
                                 type="text"
-                                value={subtaskText}
-                                onChange={(e) => setSubtaskText(e.target.value)}
+                                value={subtaskDrafts[task.id] || ''}
+                                onChange={(e) => setSubtaskDrafts(prev => ({ ...prev, [task.id]: e.target.value }))}
                                 onKeyDown={(e) => {
                                   if (e.key === 'Enter') addSubtask(task.id);
-                                  if (e.key === 'Escape') { setShowSubtaskForm(null); setSubtaskText(''); }
+                                  if (e.key === 'Escape') { setActiveSubtaskForm(null); setSubtaskDrafts(prev => ({ ...prev, [task.id]: '' })); }
                                 }}
                                 placeholder="Subtask name"
                                 className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:text-white"
@@ -1726,7 +1728,7 @@ export default function Todos() {
                                 Add
                               </button>
                               <button
-                                onClick={() => { setShowSubtaskForm(null); setSubtaskText(''); }}
+                                onClick={() => { setActiveSubtaskForm(null); setSubtaskDrafts(prev => ({ ...prev, [task.id]: '' })); }}
                                 className="px-3 py-2 text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-md text-sm transition-colors"
                               >
                                 Cancel

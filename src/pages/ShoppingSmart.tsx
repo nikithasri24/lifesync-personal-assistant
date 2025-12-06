@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAppStore } from '../stores/useAppStore';
 import { 
   Plus, 
@@ -41,9 +41,10 @@ import {
   Settings,
   Globe,
   Building,
-  Navigation
+  Navigation,
+  Receipt,
 } from 'lucide-react';
-import { format, isToday, isThisWeek, isThisMonth } from 'date-fns';
+import { format, isToday, isThisWeek, isThisMonth, differenceInCalendarDays } from 'date-fns';
 
 interface ShoppingItem {
   id: string;
@@ -157,7 +158,14 @@ export default function ShoppingSmart() {
     addShoppingItem, 
     updateShoppingItem, 
     deleteShoppingItem, 
-    toggleShoppingItem 
+    toggleShoppingItem,
+    pantryItems,
+    addPantryItem,
+    updatePantryItem,
+    deletePantryItem,
+    showGlobalToast,
+    addFinancialTransaction,
+    financialAccounts,
   } = useAppStore();
 
   // Sample stores with ratings and preferences
@@ -289,7 +297,7 @@ export default function ShoppingSmart() {
   // Store-specific lists (auto-generated from master list)
   const [storeLists, setStoreLists] = useState<ShoppingList[]>([]);
 
-  const [activeView, setActiveView] = useState<'master' | 'stores' | 'distribute'>('master');
+  const [activeView, setActiveView] = useState<'master' | 'stores' | 'distribute' | 'pantry'>('master');
   const [showAddItem, setShowAddItem] = useState(false);
   const [showEditItem, setShowEditItem] = useState(false);
   const [editingItem, setEditingItem] = useState<ShoppingItem | null>(null);
@@ -328,12 +336,196 @@ export default function ShoppingSmart() {
   // Barcode scanning state
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const [barcodeResult, setBarcodeResult] = useState<string | null>(null);
+  const [captureMessage, setCaptureMessage] = useState<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const barcodeDetectorRef = useRef<any>(null);
   const [isScanning, setIsScanning] = useState(false);
   
   // Location-based suggestions
   const [userLocation, setUserLocation] = useState<{lat: number; lng: number} | null>(null);
   const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
   const [selectedItemForSuggestions, setSelectedItemForSuggestions] = useState<ShoppingItem | null>(null);
+  // Pantry modal state
+  const [showAddPantry, setShowAddPantry] = useState(false);
+  const [pantryForm, setPantryForm] = useState<{ name: string; quantity: string; unit: string; category: ShoppingItem['category']; expiration: string }>({ name: '', quantity: '1', unit: '', category: 'pantry', expiration: '' });
+  const [pantryFormLocation, setPantryFormLocation] = useState('')
+  const [pantryFormThreshold, setPantryFormThreshold] = useState('')
+  const [pantryFilter, setPantryFilter] = useState<'all' | 'expired' | 'soon' | 'low'>('all')
+  const [pantrySort, setPantrySort] = useState<'expiry' | 'name'>('expiry')
+  const [editingPantryId, setEditingPantryId] = useState<string | null>(null)
+  const [editPantry, setEditPantry] = useState<{ qty: string; unit: string; exp: string; low: boolean; threshold: string }>({ qty: '0', unit: '', exp: '', low: false, threshold: '' })
+  const [replenishId, setReplenishId] = useState<string | null>(null)
+  const [replenishTarget, setReplenishTarget] = useState<string>('')
+  // Receipt scanning (image OCR via experimental TextDetector)
+  const [showScanReceipt, setShowScanReceipt] = useState(false)
+  const [receiptImageUrl, setReceiptImageUrl] = useState<string | null>(null)
+  const [receiptText, setReceiptText] = useState('')
+  const receiptVideoRef = useRef<HTMLVideoElement | null>(null)
+  const [receiptCameraOn, setReceiptCameraOn] = useState(false)
+  const [receiptCameraMsg, setReceiptCameraMsg] = useState<string | null>(null)
+  // Cropping/snippet state
+  const receiptImgRef = useRef<HTMLImageElement | null>(null)
+  const [cropEnabled, setCropEnabled] = useState(false)
+  const [cropStart, setCropStart] = useState<{x:number;y:number}|null>(null)
+  const [cropEnd, setCropEnd] = useState<{x:number;y:number}|null>(null)
+  const [isCropping, setIsCropping] = useState(false)
+  // Receipt metadata extracted from full text
+  const [receiptMeta, setReceiptMeta] = useState<{ merchant?: string; address?: string; date?: string; time?: string; subtotal?: number; tax?: number; total?: number; payment?: string }>({})
+  const [receiptOcrLoading, setReceiptOcrLoading] = useState(false)
+  type ParsedReceiptItem = {
+    id: string;
+    name: string;
+    quantity: number;
+    selected: boolean;
+    category: ShoppingItem['category'];
+    threshold: string;
+    price?: number; // total line price or unit price if multi-buy detected
+    size?: string;  // e.g., 12 oz, 1 lb, 16 ct
+  }
+  const [parsedReceipt, setParsedReceipt] = useState<ParsedReceiptItem[]>([])
+  const [receiptSelectAll, setReceiptSelectAll] = useState(false)
+  const [receiptBulkCategory, setReceiptBulkCategory] = useState<ShoppingItem['category']>('pantry')
+  const [receiptBulkThreshold, setReceiptBulkThreshold] = useState('')
+  const [receiptViewMode, setReceiptViewMode] = useState<'table' | 'pretty'>('pretty')
+
+  const pantrySortedFiltered = React.useMemo(() => {
+    let items = [...pantryItems]
+    const now = new Date()
+    if (pantryFilter === 'expired') items = items.filter(p => p.expirationDate && p.expirationDate.getTime() < now.getTime())
+    if (pantryFilter === 'soon') items = items.filter(p => p.expirationDate && differenceInCalendarDays(p.expirationDate, now) <= 7 && differenceInCalendarDays(p.expirationDate, now) >= 0)
+    if (pantryFilter === 'low') items = items.filter(p => p.isLowStock)
+    if (pantrySort === 'expiry') items.sort((a,b) => {
+      const ax = a.expirationDate ? a.expirationDate.getTime() : Infinity
+      const bx = b.expirationDate ? b.expirationDate.getTime() : Infinity
+      return ax - bx
+    })
+    if (pantrySort === 'name') items.sort((a,b) => a.name.localeCompare(b.name))
+    return items
+  }, [pantryItems, pantryFilter, pantrySort])
+
+  // Heuristic parser to extract item lines from receipt text with auto-categorization
+  function parseReceiptToItems(text: string) {
+    const lines = text
+      .split(/\r?\n/)
+      .map(l => l.trim())
+      .filter(Boolean)
+    const skip = /^(subtotal|sub\s*total|item\s*count|balance|tax|total|change|cash|visa|mastercard|amex|debit|credit|thank|thanks|store|merchant|date|time|auth|approval|card|aid|tvr|tac|entry|ref|inv|order|sales\s*tax)\b/i
+    const trailPrice = /(?:\$\s*)?(\d{1,3}(?:[\.,]\d{3})*(?:[\.,]\d{2})|\d+(?:[\.,]\d{2}))/
+    const priceAtEnd = new RegExp(`${trailPrice.source}$`)
+    const qtyPrefix = /^(\d+)\s*[x×]\s+/i
+    const qtySuffix = /\s*[x×]\s*(\d+)$/i
+    const multiFor = /(\d+)\s*(?:for|\/@|\/|@)\s*\$?\s*(\d+(?:[\.,]\d{2})?)/i // 2 for 5.00, 3/$10, 2@5.00
+    const sizeToken = /(\d+(?:[\.,]\d+)?\s*(?:oz|fl\s*oz|lb|lbs|g|kg|ml|l|ct|count|pack|pk|ea|btl|bottle|jar|can))\b/i
+    const items: ParsedReceiptItem[] = []
+    for (let raw of lines) {
+      if (skip.test(raw)) continue
+      // Remove obvious headers/footers
+      if (/^\*{3,}|^-{3,}|_{3,}$/.test(raw)) continue
+      let price: number | undefined
+      let qty = 1
+      // trailing price
+      const pe = raw.match(priceAtEnd)
+      if (pe) {
+        const val = pe[1].replace(/,/g,'.')
+        price = Number(val)
+        raw = raw.slice(0, pe.index).trim()
+      }
+      // multi-buy formats
+      const mf = raw.match(multiFor)
+      if (mf) {
+        const count = Number(mf[1]) || 1
+        const total = Number(String(mf[2]).replace(/,/g,'.')) || undefined
+        qty = count
+        if (total && count > 0) price = Number((total / count).toFixed(2))
+        raw = raw.replace(multiFor, '').trim()
+      }
+      // explicit qty x prefix/suffix
+      const pre = raw.match(qtyPrefix)
+      if (pre) { qty = Math.max(1, Number(pre[1]) || 1); raw = raw.replace(qtyPrefix, '') }
+      const suf = raw.match(qtySuffix)
+      if (suf) { qty = Math.max(1, Number(suf[1]) || qty); raw = raw.replace(qtySuffix, '') }
+      // remove leading numeric codes (PLU/SKU)
+      raw = raw.replace(/^(?:plu|sku|upc|#)?\s*\d{5,}\s*/i, '').trim()
+      // size token
+      let size: string | undefined
+      const sm = raw.match(sizeToken)
+      if (sm) { size = sm[1].replace(/\s+/g,' ').toLowerCase(); raw = raw.replace(sizeToken, '').trim() }
+      // clean name
+      let name = raw.replace(/\s{2,}/g,' ').trim()
+      if (!name || name.length < 2) continue
+      if (items.some(i => i.name.toLowerCase() === name.toLowerCase())) continue
+      const category = categorizeName(name)
+      items.push({ id: Math.random().toString(36).slice(2, 10), name, quantity: qty, selected: true, category, threshold: '', price, size })
+    }
+    setParsedReceipt(items)
+  }
+
+  // Extracts merchant, date/time, totals, payment method from full OCR text
+  function parseReceiptMeta(text: string) {
+    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean)
+    const meta: { merchant?: string; address?: string; date?: string; time?: string; subtotal?: number; tax?: number; total?: number; payment?: string } = {}
+    // Merchant: first non-empty alpha line
+    const merchantLine = lines.find(l => /[A-Za-z]/.test(l) && !/(receipt|invoice|order|store|merchant|thank)/i.test(l))
+    if (merchantLine) meta.merchant = merchantLine
+    // Address: line with street or city, state zip
+    const addressLine = lines.find(l => /(\d+\s+\w+\s+(st|ave|rd|blvd|dr|ct)\b|,\s*[A-Z]{2}\s*\d{5})/i.test(l))
+    if (addressLine) meta.address = addressLine
+    // Date and time
+    const dateMatch = text.match(/(\d{4}[\/-]\d{1,2}[\/-]\d{1,2}|\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4})/)
+    const timeMatch = text.match(/\b(\d{1,2}:\d{2}(?::\d{2})?\s*(?:AM|PM)?)\b/i)
+    if (dateMatch) meta.date = dateMatch[1]
+    if (timeMatch) meta.time = timeMatch[1]
+    // Totals
+    const money = (s: string) => {
+      const m = s.match(/(\d{1,3}(?:[\.,]\d{3})*(?:[\.,]\d{2})|\d+(?:[\.,]\d{2}))/)
+      if (!m) return undefined
+      return Number(m[1].replace(/,/g,'.'))
+    }
+    const subLine = lines.find(l => /sub\s*total/i.test(l)) || lines.find(l => /^subtotal/i.test(l))
+    const taxLine = lines.find(l => /tax/i.test(l))
+    // Prefer a line that starts with total
+    const totalLine = lines.find(l => /^total\b/i.test(l)) || lines.reverse().find(l => /total/i.test(l))
+    if (subLine) meta.subtotal = money(subLine)
+    if (taxLine) meta.tax = money(taxLine)
+    if (totalLine) meta.total = money(totalLine)
+    // Payment
+    const payLine = lines.find(l => /(visa|mastercard|amex|debit|credit|cash)/i.test(l))
+    if (payLine) meta.payment = payLine
+    return meta
+  }
+
+  const receiptCategorySummary = React.useMemo(() => {
+    const summary: Record<string, { count: number; qty: number; est: number }> = {}
+    let estSubtotal = 0
+    for (const it of parsedReceipt) {
+      const key = it.category
+      if (!summary[key]) summary[key] = { count: 0, qty: 0, est: 0 }
+      summary[key].count += 1
+      summary[key].qty += it.quantity
+      if (typeof it.price === 'number') {
+        const line = it.price * it.quantity
+        summary[key].est += line
+        estSubtotal += line
+      }
+    }
+    return { summary, estSubtotal }
+  }, [parsedReceipt])
+
+  function categorizeName(name: string): ShoppingItem['category'] {
+    const n = name.toLowerCase()
+    const any = (arr: string[]) => arr.some(k => n.includes(k))
+    if (any(['banana','apple','onion','tomato','lettuce','spinach','greens','carrot','cucumber','pepper','avocado','broccoli','cauliflower','corn','scallion','garlic','ginger','herb'])) return 'produce'
+    if (any(['milk','yogurt','butter','cheese','cream','half and half'])) return 'dairy'
+    if (any(['chicken','beef','pork','turkey','steak','ground beef','sausage','bacon','ham','fish','salmon','shrimp','tuna'])) return 'meat'
+    if (any(['bread','bagel','bun','tortilla','roll','croissant','baguette'])) return 'bakery'
+    if (any(['frozen','ice cream','frozen pizza','frozen peas','frozen corn'])) return 'frozen'
+    if (any(['deli','salami','prosciutto','sliced','cold cut'])) return 'deli'
+    if (any(['soap','detergent','paper towel','toilet paper','cleaner','bleach','foil','wrap','ziplock','bag'])) return 'household'
+    if (any(['shampoo','toothpaste','toothbrush','deodorant','razor','lotion'])) return 'personal'
+    if (any(['battery','charger','usb','cable'])) return 'electronics'
+    if (any(['rice','pasta','noodle','flour','sugar','salt','oil','olive','vinegar','sauce','ketchup','mustard','mayo','beans','lentil','cereal','granola','oats','oatmeal','spice','seasoning','broth','stock','can'])) return 'pantry'
+    return 'other'
+  }
 
   // Auto-populate distribute tab when master list changes
   useEffect(() => {
@@ -527,31 +719,47 @@ export default function ShoppingSmart() {
     setShowBarcodeScanner(true);
     setIsScanning(true);
     setBarcodeResult(null);
+    setCaptureMessage(null);
 
     try {
       // Check if the browser supports the Barcode Detection API
       if ('BarcodeDetector' in window) {
-        const barcodeDetector = new (window as any).BarcodeDetector({
-          formats: ['code_128', 'code_39', 'ean_13', 'ean_8', 'upc_a', 'upc_e']
-        });
+        // Build a safe list of formats supported by this browser
+        const desired = ['code_128','code-128','code_39','code-39','ean_13','ean-13','ean_8','ean-8','upc_a','upc-a','upc_e','upc-e']
+        let formats: string[] | undefined = undefined
+        try {
+          const supported: string[] = typeof (window as any).BarcodeDetector.getSupportedFormats === 'function'
+            ? await (window as any).BarcodeDetector.getSupportedFormats()
+            : []
+          if (Array.isArray(supported) && supported.length) {
+            const supportedSet = new Set(supported)
+            formats = desired.filter(f => supportedSet.has(f))
+          }
+        } catch {}
+        const detectorOpts = formats && formats.length ? { formats } : undefined
+        const barcodeDetector = new (window as any).BarcodeDetector(detectorOpts)
+        barcodeDetectorRef.current = barcodeDetector
 
         // Get camera stream
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { 
-            facingMode: 'environment', // Use back camera
+          video: {
+            facingMode: { ideal: 'environment' },
             width: { ideal: 1280 },
             height: { ideal: 720 }
-          }
-        });
+          },
+          audio: false,
+        })
 
-        // Create video element for camera feed
-        const video = document.createElement('video');
-        video.srcObject = stream;
-        video.play();
+        // Attach stream to on-screen video element
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream as any;
+          try { await (videoRef.current as any).play(); } catch {}
+        }
 
         // Start barcode detection
         const detectBarcodes = async () => {
-          if (!video.videoWidth || !video.videoHeight) {
+          const video = videoRef.current as HTMLVideoElement | null;
+          if (!video || !video.videoWidth || !video.videoHeight) {
             requestAnimationFrame(detectBarcodes);
             return;
           }
@@ -578,7 +786,8 @@ export default function ShoppingSmart() {
               return;
             }
           } catch (error) {
-            console.warn('Barcode detection error:', error);
+            // Some browsers intermittently throw while the frame is not ready; keep trying
+            // console.warn('Barcode detection error:', error);
           }
 
           if (isScanning) {
@@ -586,12 +795,11 @@ export default function ShoppingSmart() {
           }
         };
 
-        video.onloadedmetadata = () => {
-          detectBarcodes();
-        };
+        if (videoRef.current) {
+          videoRef.current.onloadedmetadata = () => detectBarcodes();
+        }
 
-        // Store video element reference for cleanup
-        (window as any).currentBarcodeVideo = video;
+        // Store stream reference for cleanup
         (window as any).currentBarcodeStream = stream;
 
       } else {
@@ -611,6 +819,7 @@ export default function ShoppingSmart() {
   const stopBarcodeScanning = () => {
     setIsScanning(false);
     setShowBarcodeScanner(false);
+    setCaptureMessage(null);
 
     // Clean up camera stream and video
     if ((window as any).currentBarcodeStream) {
@@ -619,49 +828,64 @@ export default function ShoppingSmart() {
       (window as any).currentBarcodeStream = null;
     }
     
-    if ((window as any).currentBarcodeVideo) {
-      (window as any).currentBarcodeVideo = null;
+    if (videoRef.current) {
+      try { videoRef.current.pause(); } catch {}
+      (videoRef.current as any).srcObject = null;
     }
   };
 
-  // Mock product lookup function (in real app, this would call a product API)
+  // Manual capture while scanning (one-shot detection on current frame)
+  const captureBarcodeNow = async () => {
+    setCaptureMessage(null)
+    try {
+      const detector = barcodeDetectorRef.current
+      const video = videoRef.current
+      if (!detector || !video) return
+      const result = await detector.detect(video)
+      if (Array.isArray(result) && result.length > 0) {
+        const code = result[0].rawValue
+        setBarcodeResult(code)
+        const productInfo = await lookupProductByBarcode(code)
+        setNewItem(prev => ({
+          ...prev,
+          name: productInfo.name,
+          barcode: code,
+          estimatedPrice: productInfo.price?.toString() || '',
+          category: productInfo.category || 'other'
+        }))
+        setShowAddItem(true)
+        stopBarcodeScanning()
+      } else {
+        setCaptureMessage('No barcode found. Try moving closer, centering, and tapping Capture again.')
+      }
+    } catch (e) {
+      setCaptureMessage('Capture failed. Please try again or enter manually.')
+    }
+  }
+
+  // Real product lookup via server proxy -> Open Food Facts
   const lookupProductByBarcode = async (barcode: string): Promise<{
     name: string;
     price?: number;
     category?: string;
     brand?: string;
+    image?: string;
   }> => {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // Mock product database
-    const mockProducts: { [key: string]: any } = {
-      '012345678905': {
-        name: 'Organic Bananas',
-        price: 4.99,
-        category: 'produce',
-        brand: 'Organic Valley'
-      },
-      '012345678912': {
-        name: 'Whole Milk',
-        price: 3.49,
-        category: 'dairy',
-        brand: 'Horizon'
-      },
-      '012345678929': {
-        name: 'Ground Beef',
-        price: 8.99,
-        category: 'meat',
-        brand: 'Grass Fed'
+    try {
+      const resp = await fetch(`/api/barcode/lookup?code=${encodeURIComponent(barcode)}`, { headers: { Accept: 'application/json' } })
+      if (!resp.ok) throw new Error('lookup failed')
+      const data = await resp.json()
+      return {
+        name: data.name || `Product ${barcode.slice(-4)}`,
+        price: typeof data.price === 'number' ? data.price : undefined,
+        category: data.category || 'other',
+        brand: data.brand || undefined,
+        image: data.image || undefined,
       }
-    };
-
-    return mockProducts[barcode] || {
-      name: `Product ${barcode.slice(-4)}`,
-      price: Math.random() * 20 + 1,
-      category: 'other'
-    };
-  };
+    } catch {
+      return { name: `Product ${barcode.slice(-4)}`, category: 'other' }
+    }
+  }
 
   // Get user location for store suggestions
   const getUserLocation = async () => {
@@ -943,17 +1167,17 @@ export default function ShoppingSmart() {
             <div className="flex items-center">
               <ShoppingBag className="h-8 w-8 text-blue-600" />
               <div className="ml-3">
-                <p className="text-sm font-medium text-blue-600">Master List</p>
-                <p className="text-lg font-semibold text-blue-900">{totalMasterItems} items</p>
+                <p className="text-sm font-medium text-black">Master List</p>
+                <p className="text-lg font-semibold text-black">{totalMasterItems} items</p>
               </div>
             </div>
           </div>
-          <div className="bg-green-50 rounded-lg p-4">
+          <div className="bg-gray-50 rounded-lg p-4">
             <div className="flex items-center">
-              <Store className="h-8 w-8 text-green-600" />
+              <Store className="h-8 w-8 text-gray-600" />
               <div className="ml-3">
-                <p className="text-sm font-medium text-green-600">Store Lists</p>
-                <p className="text-lg font-semibold text-green-900">{storeLists.length} stores</p>
+                <p className="text-sm font-medium text-black">Store Lists</p>
+                <p className="text-lg font-semibold text-black">{storeLists.length} stores</p>
               </div>
             </div>
           </div>
@@ -961,8 +1185,8 @@ export default function ShoppingSmart() {
             <div className="flex items-center">
               <DollarSign className="h-8 w-8 text-purple-600" />
               <div className="ml-3">
-                <p className="text-sm font-medium text-purple-600">Est. Total</p>
-                <p className="text-lg font-semibold text-purple-900">${totalEstimatedCost.toFixed(2)}</p>
+                <p className="text-sm font-medium text-black">Est. Total</p>
+                <p className="text-lg font-semibold text-black">${totalEstimatedCost.toFixed(2)}</p>
               </div>
             </div>
           </div>
@@ -978,7 +1202,7 @@ export default function ShoppingSmart() {
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 activeView === 'master'
                   ? 'bg-blue-100 text-blue-700'
-                  : 'text-gray-600 hover:bg-gray-100'
+                  : 'text-black hover:bg-gray-100'
               }`}
             >
               <div className="flex items-center space-x-2">
@@ -994,7 +1218,7 @@ export default function ShoppingSmart() {
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 activeView === 'distribute'
                   ? 'bg-blue-100 text-blue-700'
-                  : 'text-gray-600 hover:bg-gray-100'
+                  : 'text-black hover:bg-gray-100'
               }`}
             >
               <div className="flex items-center space-x-2">
@@ -1007,7 +1231,7 @@ export default function ShoppingSmart() {
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 activeView === 'stores'
                   ? 'bg-blue-100 text-blue-700'
-                  : 'text-gray-600 hover:bg-gray-100'
+                  : 'text-black hover:bg-gray-100'
               }`}
             >
               <div className="flex items-center space-x-2">
@@ -1016,6 +1240,19 @@ export default function ShoppingSmart() {
                 <span className="text-xs bg-gray-200 px-2 py-1 rounded-full">
                   {storeLists.length}
                 </span>
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveView('pantry')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                activeView === 'pantry'
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'text-black hover:bg-gray-100'
+              }`}
+            >
+              <div className="flex items-center space-x-2">
+                <Package size={16} />
+                <span>Pantry</span>
               </div>
             </button>
           </div>
@@ -1213,6 +1450,872 @@ export default function ShoppingSmart() {
         )}
       </div>
 
+      {/* Pantry View */}
+      {activeView === 'pantry' && (
+        <div className="bg-white rounded-xl shadow-sm border p-4 mt-4">
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="text-lg font-semibold">Pantry</h4>
+            <div className="flex items-center gap-2">
+              {/* Summary */}
+              <span className="text-xs text-gray-600 hidden md:inline">
+                {pantryItems.filter(p => p.isLowStock).length} low-stock • {pantryItems.filter(p => p.expirationDate && differenceInCalendarDays(p.expirationDate, new Date()) < 0).length} expired
+              </span>
+              {/* Bulk add low-stock */}
+              <button
+                type="button"
+                className="px-3 py-1 rounded border border-gray-300 text-sm hover:bg-gray-50"
+                title="Add all low-stock items to shopping list"
+                onClick={async () => {
+                  const lows = pantryItems.filter(p => p.isLowStock && (p.lowStockThreshold ?? 0) > 0)
+                  for (const p of lows) {
+                    const target = p.lowStockThreshold ?? 0
+                    const need = Math.max(0, target - (p.quantity || 0)) || 1
+                    await addShoppingItem({
+                      name: p.name,
+                      quantity: need,
+                      unit: p.unit,
+                      category: p.category,
+                      subcategory: undefined,
+                      priority: 'medium',
+                      purchased: false,
+                      price: undefined,
+                      estimatedPrice: undefined,
+                      aisle: undefined,
+                      brand: undefined,
+                      size: undefined,
+                      notes: p.notes,
+                      imageUrl: undefined,
+                      nutritionInfo: undefined,
+                      tags: ['from:pantry'],
+                      addedBy: undefined,
+                      purchasedAt: undefined,
+                      purchasedBy: undefined,
+                      assignedStore: undefined,
+                      bestStores: [],
+                    })
+                  }
+                  showGlobalToast?.(`Added ${lows.length} low-stock items to shopping`, 'success')
+                }}
+              >Add low-stock to Shopping</button>
+              <button
+                type="button"
+                className="px-3 py-1 rounded border border-gray-300 text-sm hover:bg-gray-50"
+                title="Move all expired items to shopping list"
+                onClick={async () => {
+                  const now = new Date()
+                  const expired = pantryItems.filter(p => p.expirationDate && p.expirationDate.getTime() < now.getTime())
+                  for (const p of expired) {
+                    const qty = p.quantity && p.quantity > 0 ? p.quantity : 1
+                    await addShoppingItem({
+                      name: p.name,
+                      quantity: qty,
+                      unit: p.unit,
+                      category: p.category,
+                      subcategory: undefined,
+                      priority: 'medium',
+                      purchased: false,
+                      price: undefined,
+                      estimatedPrice: undefined,
+                      aisle: undefined,
+                      brand: undefined,
+                      size: undefined,
+                      notes: p.notes,
+                      imageUrl: undefined,
+                      nutritionInfo: undefined,
+                      tags: ['from:pantry','reason:expired'],
+                      addedBy: undefined,
+                      purchasedAt: undefined,
+                      purchasedBy: undefined,
+                      assignedStore: undefined,
+                      bestStores: [],
+                    })
+                  }
+                  showGlobalToast?.(`Moved ${expired.length} expired items to shopping`, 'info')
+                }}
+              >Move expired to Shopping</button>
+              {/* Export CSV */}
+              <button
+                type="button"
+                className="px-3 py-1 rounded border border-gray-300 text-sm hover:bg-gray-50"
+                title="Export pantry to CSV"
+                onClick={() => {
+                  const headers = ['Name','Quantity','Unit','Category','Expiration','LowStock','Threshold','Location']
+                  const rows = pantryItems.map(p => [
+                    p.name,
+                    String(p.quantity ?? ''),
+                    p.unit ?? '',
+                    p.category,
+                    p.expirationDate ? format(p.expirationDate, 'yyyy-MM-dd') : '',
+                    p.isLowStock ? 'yes' : 'no',
+                    p.lowStockThreshold != null ? String(p.lowStockThreshold) : '',
+                    p.location ?? '',
+                  ])
+                  const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n')
+                  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+                  const url = URL.createObjectURL(blob)
+                  const a = document.createElement('a')
+                  a.href = url
+                  a.download = `pantry-${format(new Date(), 'yyyyMMdd-HHmmss')}.csv`
+                  a.click()
+                  URL.revokeObjectURL(url)
+                }}
+              >Export CSV</button>
+              {/* Simple filters */}
+              <select
+                className="rounded border border-gray-300 px-2 py-1 text-sm"
+                onChange={(e) => setPantryFilter(e.target.value as any)}
+                defaultValue="all"
+                title="Filter"
+              >
+                <option value="all">All</option>
+                <option value="soon">Expiring soon</option>
+                <option value="expired">Expired</option>
+                <option value="low">Low stock</option>
+              </select>
+              <select
+                className="rounded border border-gray-300 px-2 py-1 text-sm"
+                onChange={(e) => setPantrySort(e.target.value as any)}
+                defaultValue="expiry"
+                title="Sort"
+              >
+                <option value="expiry">Sort by expiry</option>
+                <option value="name">Sort by name</option>
+              </select>
+              <button onClick={() => setShowAddPantry(true)} className="btn-primary flex items-center space-x-2">
+                <Plus size={16} />
+                <span>Add Pantry Item</span>
+              </button>
+              <button onClick={() => setShowScanReceipt(true)} className="px-3 py-1 rounded border border-gray-300 text-sm hover:bg-gray-50 flex items-center gap-2" title="Scan receipt to auto-add items">
+                <Receipt size={16} />
+                <span>Scan Receipt</span>
+              </button>
+            </div>
+          </div>
+
+          {pantryItems.length === 0 ? (
+            <p className="text-sm text-gray-500">No pantry items yet.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr className="text-left text-gray-600">
+                    <th className="py-2 px-3">Item</th>
+                    <th className="py-2 px-3">Qty</th>
+                    <th className="py-2 px-3">Expires</th>
+                    <th className="py-2 px-3">Status</th>
+                    <th className="py-2 px-3">Low stock</th>
+                    <th className="py-2 px-3">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pantrySortedFiltered.map((p) => {
+                    const days = p.expirationDate ? differenceInCalendarDays(p.expirationDate, new Date()) : null
+                    let status = '—'
+                    let cls = 'text-gray-600'
+                    if (days != null) {
+                      if (days < 0) { status = 'Expired'; cls = 'text-rose-700' }
+                      else if (days <= 7) { status = `Expires in ${days}d`; cls = 'text-amber-700' }
+                      else { status = `Fresh (${days}d)`; cls = 'text-emerald-700' }
+                    }
+                    return (
+                      <tr key={p.id} className="border-t">
+                        <td className="py-2 px-3 font-medium text-gray-900">{p.name}</td>
+                        <td className="py-2 px-3">
+                          {editingPantryId === p.id ? (
+                            <div className="flex items-center gap-2">
+                              <input type="number" min={0} value={editPantry.qty} onChange={(e) => setEditPantry(s => ({ ...s, qty: e.target.value }))} className="w-20 rounded border border-gray-300 px-2 py-1" />
+                              <input value={editPantry.unit} onChange={(e) => setEditPantry(s => ({ ...s, unit: e.target.value }))} className="w-20 rounded border border-gray-300 px-2 py-1" />
+                            </div>
+                          ) : (
+                            <>{p.quantity} {p.unit || ''}</>
+                          )}
+                        </td>
+                        <td className="py-2 px-3">
+                          {editingPantryId === p.id ? (
+                            <input type="date" value={editPantry.exp} onChange={(e) => setEditPantry(s => ({ ...s, exp: e.target.value }))} className="rounded border border-gray-300 px-2 py-1" />
+                          ) : (
+                            <>{p.expirationDate ? format(p.expirationDate, 'MMM d, yyyy') : '—'}</>
+                          )}
+                        </td>
+                        <td className="py-2 px-3"><span className={cls}>{status}</span></td>
+                        <td className="py-2 px-3">
+                          {editingPantryId === p.id ? (
+                            <div className="flex items-center gap-2">
+                              <label className="inline-flex items-center gap-1 text-xs text-gray-700">
+                                <input type="checkbox" checked={editPantry.low} onChange={(e) => setEditPantry(s => ({ ...s, low: e.target.checked }))} /> Low
+                              </label>
+                              <input type="number" min={0} placeholder="Threshold" value={editPantry.threshold} onChange={(e) => setEditPantry(s => ({ ...s, threshold: e.target.value }))} className="w-24 rounded border border-gray-300 px-2 py-1" />
+                            </div>
+                          ) : (
+                            <span className={`text-xs ${p.isLowStock ? 'text-amber-700' : 'text-gray-500'}`}>{p.isLowStock ? `Low (≤ ${p.lowStockThreshold ?? '—'})` : 'OK'}</span>
+                          )}
+                        </td>
+                        <td className="py-2 px-3 space-x-2">
+                          {editingPantryId === p.id ? (
+                            <>
+                              <button className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50" onClick={async () => {
+                                const qty = Number(editPantry.qty) || 0
+                                const exp = editPantry.exp ? new Date(editPantry.exp) : undefined
+                                await updatePantryItem(p.id, { quantity: qty, unit: editPantry.unit || undefined, expirationDate: exp, isLowStock: editPantry.low, lowStockThreshold: editPantry.threshold ? Number(editPantry.threshold) : undefined })
+                                setEditingPantryId(null)
+                              }}>Save</button>
+                              <button className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50" onClick={() => setEditingPantryId(null)}>Cancel</button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50"
+                                onClick={() => {
+                                  setEditingPantryId(p.id)
+                                  setEditPantry({ qty: String(p.quantity), unit: p.unit || '', exp: p.expirationDate ? format(p.expirationDate, 'yyyy-MM-dd') : '', low: !!p.isLowStock, threshold: p.lowStockThreshold ? String(p.lowStockThreshold) : '' })
+                                }}
+                              >Edit</button>
+                              <button
+                                className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50"
+                                title="Replenish to target quantity"
+                                onClick={() => { setReplenishId(p.id); setReplenishTarget(p.lowStockThreshold ? String(p.lowStockThreshold) : String(Math.max(p.quantity, 1))) }}
+                              >Replenish</button>
+                              <button
+                                className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50"
+                                onClick={() => {
+                                  void addShoppingItem({
+                                    name: p.name,
+                                    quantity: (p.lowStockThreshold && p.quantity < p.lowStockThreshold) ? (p.lowStockThreshold - p.quantity) : p.quantity || 1,
+                                    unit: p.unit,
+                                    category: p.category,
+                                    subcategory: undefined,
+                                    priority: 'medium',
+                                    purchased: false,
+                                    price: undefined,
+                                    estimatedPrice: undefined,
+                                    aisle: undefined,
+                                    brand: undefined,
+                                    size: undefined,
+                                    notes: p.notes,
+                                    imageUrl: undefined,
+                                    nutritionInfo: undefined,
+                                    tags: ['from:pantry'],
+                                    addedBy: undefined,
+                                    purchasedAt: undefined,
+                                    purchasedBy: undefined,
+                                    assignedStore: undefined,
+                                    bestStores: [],
+                                  })
+                                  showGlobalToast?.(`Added ${p.name} to shopping`, 'success')
+                                }}
+                              >Add to Shopping</button>
+                              <button
+                                className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50"
+                                onClick={() => void deletePantryItem(p.id)}
+                              >Delete</button>
+                            </>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {replenishId && (
+            <div className="mt-3 flex items-center gap-2 text-sm">
+              <span className="text-gray-700">Replenish to target quantity:</span>
+              <input type="number" min={0} value={replenishTarget} onChange={(e) => setReplenishTarget(e.target.value)} className="w-28 rounded border border-gray-300 px-2 py-1" />
+              <button
+                className="px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-500"
+                onClick={async () => {
+                  const p = pantryItems.find(x => x.id === replenishId)
+                  if (!p) { setReplenishId(null); return }
+                  const target = Number(replenishTarget) || 0
+                  const need = Math.max(0, target - (p.quantity || 0))
+                  if (need <= 0) {
+                    showGlobalToast?.('Already at or above target', 'info')
+                    setReplenishId(null)
+                    return
+                  }
+                  await addShoppingItem({
+                    name: p.name,
+                    quantity: need,
+                    unit: p.unit,
+                    category: p.category,
+                    subcategory: undefined,
+                    priority: 'medium',
+                    purchased: false,
+                    price: undefined,
+                    estimatedPrice: undefined,
+                    aisle: undefined,
+                    brand: undefined,
+                    size: undefined,
+                    notes: p.notes,
+                    imageUrl: undefined,
+                    nutritionInfo: undefined,
+                    tags: ['from:pantry','reason:replenish'],
+                    addedBy: undefined,
+                    purchasedAt: undefined,
+                    purchasedBy: undefined,
+                    assignedStore: undefined,
+                    bestStores: [],
+                  })
+                  showGlobalToast?.(`Added ${need} ${p.unit || ''} of ${p.name} to shopping`, 'success')
+                  setReplenishId(null)
+                }}
+              >Go</button>
+              <button className="px-3 py-1 rounded border border-gray-300 hover:bg-gray-50" onClick={() => setReplenishId(null)}>Cancel</button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Add Pantry Modal */}
+      {showAddPantry && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-semibold">Add Pantry Item</h3>
+              <button onClick={() => setShowAddPantry(false)} className="p-2 hover:bg-gray-100 rounded-md"><X size={18} /></button>
+            </div>
+            <div className="grid gap-3 text-sm">
+              <label className="grid gap-1">
+                <span className="text-gray-700">Name</span>
+                <input value={pantryForm.name} onChange={(e) => setPantryForm(s => ({ ...s, name: e.target.value }))} className="rounded border border-gray-300 px-2 py-1" />
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                <label className="grid gap-1">
+                  <span className="text-gray-700">Qty</span>
+                  <input type="number" min={0} value={pantryForm.quantity} onChange={(e) => setPantryForm(s => ({ ...s, quantity: e.target.value }))} className="rounded border border-gray-300 px-2 py-1" />
+                </label>
+                <label className="grid gap-1">
+                  <span className="text-gray-700">Unit</span>
+                  <input value={pantryForm.unit} onChange={(e) => setPantryForm(s => ({ ...s, unit: e.target.value }))} className="rounded border border-gray-300 px-2 py-1" />
+                </label>
+                <label className="grid gap-1">
+                  <span className="text-gray-700">Category</span>
+                  <select value={pantryForm.category} onChange={(e) => setPantryForm(s => ({ ...s, category: e.target.value as any }))} className="rounded border border-gray-300 px-2 py-1">
+                    <option value="produce">Produce</option>
+                    <option value="dairy">Dairy</option>
+                    <option value="meat">Meat</option>
+                    <option value="pantry">Pantry</option>
+                    <option value="other">Other</option>
+                  </select>
+                </label>
+              </div>
+              <label className="grid gap-1">
+                <span className="text-gray-700">Expiration Date</span>
+                <input type="date" value={pantryForm.expiration} onChange={(e) => setPantryForm(s => ({ ...s, expiration: e.target.value }))} className="rounded border border-gray-300 px-2 py-1" />
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <label className="grid gap-1">
+                  <span className="text-gray-700">Location (optional)</span>
+                  <input value={pantryFormLocation} onChange={(e) => setPantryFormLocation(e.target.value)} className="rounded border border-gray-300 px-2 py-1" />
+                </label>
+                <label className="grid gap-1">
+                  <span className="text-gray-700">Low stock threshold</span>
+                  <input type="number" min={0} value={pantryFormThreshold} onChange={(e) => setPantryFormThreshold(e.target.value)} className="rounded border border-gray-300 px-2 py-1" />
+                </label>
+              </div>
+            </div>
+            <div className="mt-4 flex justify-end gap-2">
+              <button onClick={() => setShowAddPantry(false)} className="px-4 py-2 rounded border border-gray-300 hover:bg-gray-50">Cancel</button>
+              <button
+                className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-500"
+                onClick={async () => {
+                  const qty = Number(pantryForm.quantity) || 0
+                  const exp = pantryForm.expiration ? new Date(pantryForm.expiration) : undefined
+                  await addPantryItem({ name: pantryForm.name.trim(), quantity: qty, unit: pantryForm.unit.trim() || undefined, category: pantryForm.category, expirationDate: exp, location: pantryFormLocation || undefined, lowStockThreshold: pantryFormThreshold ? Number(pantryFormThreshold) : undefined, isLowStock: pantryFormThreshold ? qty <= Number(pantryFormThreshold) : undefined })
+                  setPantryForm({ name: '', quantity: '1', unit: '', category: 'pantry', expiration: '' })
+                  setPantryFormLocation('')
+                  setPantryFormThreshold('')
+                  setShowAddPantry(false)
+                }}
+              >Save</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Scan Receipt Modal */}
+      {showScanReceipt && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl p-6">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-semibold">Scan Receipt</h3>
+              <button onClick={() => { setShowScanReceipt(false); setReceiptImageUrl(null); setReceiptText(''); setParsedReceipt([]) }} className="p-2 hover:bg-gray-100 rounded-md"><X size={18} /></button>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <div className="border rounded-lg p-3 min-h-[200px] flex items-center justify-center bg-gray-50 relative select-none">
+                  {receiptImageUrl ? (
+                    <div
+                      className={`relative inline-block ${cropEnabled ? 'cursor-crosshair' : ''}`}
+                      onMouseDown={(e) => {
+                        if (!cropEnabled) return
+                        setIsCropping(true)
+                        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+                        setCropStart({ x: e.clientX - rect.left, y: e.clientY - rect.top })
+                        setCropEnd(null)
+                      }}
+                      onMouseMove={(e) => {
+                        if (!cropEnabled || !isCropping || !cropStart) return
+                        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+                        setCropEnd({ x: e.clientX - rect.left, y: e.clientY - rect.top })
+                      }}
+                      onMouseUp={() => setIsCropping(false)}
+                    >
+                      <img ref={receiptImgRef} src={receiptImageUrl} alt="Receipt" className="max-h-64 object-contain" />
+                      {cropEnabled && cropStart && cropEnd && (
+                        <div
+                          className="absolute border-2 border-amber-500 bg-amber-200/20"
+                          style={{
+                            left: Math.min(cropStart.x, cropEnd.x),
+                            top: Math.min(cropStart.y, cropEnd.y),
+                            width: Math.abs(cropEnd.x - cropStart.x),
+                            height: Math.abs(cropEnd.y - cropStart.y),
+                          }}
+                        />
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-sm text-gray-500">Upload a receipt image</span>
+                  )}
+                </div>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0]
+                      if (!f) return
+                      const url = URL.createObjectURL(f)
+                      setReceiptImageUrl(url)
+                    }}
+                  />
+                  {!receiptCameraOn ? (
+                    <button
+                      type="button"
+                      className="px-3 py-1 rounded border border-gray-300 text-sm hover:bg-gray-50"
+                      onClick={async () => {
+                        setReceiptCameraOn(true)
+                        setReceiptCameraMsg('Starting camera… If it does not appear, ensure you are on https or localhost and camera permission is allowed.')
+                        try {
+                          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false })
+                          if (receiptVideoRef.current) {
+                            receiptVideoRef.current.srcObject = stream as any
+                            try { await (receiptVideoRef.current as any).play() } catch {}
+                          }
+                          setReceiptCameraMsg(null)
+                        } catch (e) {
+                          setReceiptCameraMsg('Camera access failed. Use Upload, or open this site via https/localhost and allow camera permissions.')
+                          setReceiptCameraOn(false)
+                        }
+                      }}
+                    >Use Camera</button>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        className="px-3 py-1 rounded bg-blue-600 text-white text-sm hover:bg-blue-500"
+                        onClick={() => {
+                          const video = receiptVideoRef.current
+                          if (!video || !video.videoWidth) return
+                          const canvas = document.createElement('canvas')
+                          canvas.width = video.videoWidth
+                          canvas.height = video.videoHeight
+                          const ctx = canvas.getContext('2d')
+                          if (!ctx) return
+                          ctx.drawImage(video, 0, 0)
+                          const dataUrl = canvas.toDataURL('image/jpeg', 0.9)
+                          setReceiptImageUrl(dataUrl)
+                        }}
+                      >Capture</button>
+                      <button
+                        type="button"
+                        className="px-3 py-1 rounded border border-gray-300 text-sm hover:bg-gray-50"
+                        onClick={() => {
+                          const stream: any = receiptVideoRef.current?.srcObject
+                          if (stream) { stream.getTracks?.().forEach((t: any) => t.stop()) }
+                          if (receiptVideoRef.current) (receiptVideoRef.current as any).srcObject = null
+                          setReceiptCameraOn(false)
+                          setReceiptCameraMsg(null)
+                        }}
+                      >Stop</button>
+                    </>
+                  )}
+                  <button
+                    type="button"
+                    className="px-3 py-1 rounded bg-blue-600 text-white text-sm hover:bg-blue-500"
+                    onClick={async () => {
+                      if (!receiptImageUrl) return
+                      setParsedReceipt([])
+                      setReceiptText('')
+                      try {
+                        if ('TextDetector' in window) {
+                          const img = new Image()
+                          img.src = receiptImageUrl
+                          await new Promise(r => { img.onload = r })
+                          const bitmap = await createImageBitmap(img)
+                          // @ts-expect-error experimental API
+                          const td = new (window as any).TextDetector()
+                          const results = await td.detect(bitmap)
+                          let text = ''
+                          if (Array.isArray(results) && results.length) {
+                            // Group by y-position to reconstruct lines
+                            const groups: Record<string, Array<any>> = {}
+                            for (const r of results) {
+                              const box = (r.boundingBox || r.boundingClientRect || { y: 0, top: 0 })
+                              const y = Math.round((box.y ?? box.top ?? 0) / 10) * 10
+                              const key = String(y)
+                              if (!groups[key]) groups[key] = []
+                              groups[key].push(r)
+                            }
+                            const lines = Object.keys(groups)
+                              .map(k => ({ y: Number(k), items: groups[k].sort((a,b) => (a.boundingBox?.x ?? a.boundingBox?.left ?? 0) - (b.boundingBox?.x ?? b.boundingBox?.left ?? 0)) }))
+                              .sort((a,b) => a.y - b.y)
+                              .map(g => g.items.map(it => String(it.rawValue || '').trim()).filter(Boolean).join(' '))
+                            text = lines.join('\n')
+                          }
+                          setReceiptText(text)
+                          setReceiptMeta(parseReceiptMeta(text))
+                          parseReceiptToItems(text)
+                        } else {
+                          alert('On-device text detection is not supported in this browser. Paste text below instead, or use Extract via server.')
+                        }
+                      } catch (e) {
+                        console.warn('Text detection failed', e)
+                        alert('Text detection failed. Paste text below instead, or use Extract via server.')
+                      }
+                    }}
+                  >Extract text (beta)</button>
+                  <button
+                    type="button"
+                    className="px-3 py-1 rounded bg-indigo-600 text-white text-sm hover:bg-indigo-500"
+                    title="Use the server OCR service to extract text"
+                    onClick={async () => {
+                      if (!receiptImageUrl) return
+                      try {
+                        setReceiptOcrLoading(true)
+                        // Convert blob URL to data URL if needed
+                        let dataUrl = receiptImageUrl
+                        if (dataUrl.startsWith('blob:')) {
+                          const resp = await fetch(dataUrl)
+                          const blob = await resp.blob()
+                          dataUrl = await new Promise<string>((resolve) => {
+                            const reader = new FileReader()
+                            reader.onloadend = () => resolve(String(reader.result))
+                            reader.readAsDataURL(blob)
+                          })
+                        }
+                        const resp = await fetch('/api/ocr/receipt', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ dataUrl }),
+                        })
+                        if (!resp.ok) {
+                          const j = await resp.json().catch(() => ({}))
+                          throw new Error(j.error || `HTTP ${resp.status}`)
+                        }
+                        const j = await resp.json()
+                        const text = String(j.text || '')
+                        setReceiptText(text)
+                        setReceiptMeta(parseReceiptMeta(text))
+                        parseReceiptToItems(text)
+                      } catch (e) {
+                        alert('Server OCR failed. Please paste text manually or try again.')
+                      } finally {
+                        setReceiptOcrLoading(false)
+                      }
+                    }}
+                    disabled={receiptOcrLoading}
+                  >{receiptOcrLoading ? 'Extracting…' : 'Auto extract & parse'}</button>
+                  {receiptImageUrl && (
+                    <>
+                      <a
+                        href={receiptImageUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-3 py-1 rounded border border-gray-300 text-sm hover:bg-gray-50"
+                        title="Open image in new tab"
+                      >Open image</a>
+                      <a
+                        href={receiptImageUrl}
+                        download={`receipt-${Date.now()}.jpg`}
+                        className="px-3 py-1 rounded border border-gray-300 text-sm hover:bg-gray-50"
+                        title="Download image"
+                      >Download</a>
+                      <button
+                        type="button"
+                        className={`px-3 py-1 rounded border text-sm ${cropEnabled ? 'border-amber-500 bg-amber-50' : 'border-gray-300 hover:bg-gray-50'}`}
+                        onClick={() => { setCropEnabled(!cropEnabled); setCropStart(null); setCropEnd(null) }}
+                        title="Toggle crop selection"
+                      >{cropEnabled ? 'Cancel Crop' : 'Enable Crop'}</button>
+                      <button
+                        type="button"
+                        className="px-3 py-1 rounded bg-amber-600 text-white text-sm hover:bg-amber-500 disabled:opacity-50"
+                        disabled={!cropEnabled || !cropStart || !cropEnd}
+                        onClick={() => {
+                          if (!receiptImgRef.current || !cropStart || !cropEnd) return
+                          const img = receiptImgRef.current
+                          // Compute displayed rect relative to natural size
+                          const dispRect = img.getBoundingClientRect()
+                          // But we used offset within wrapper; derive scale using actual rendered image size
+                          const dispWidth = img.clientWidth
+                          const dispHeight = img.clientHeight
+                          const scaleX = img.naturalWidth / dispWidth
+                          const scaleY = img.naturalHeight / dispHeight
+                          const x = Math.round(Math.min(cropStart.x, cropEnd.x) * scaleX)
+                          const y = Math.round(Math.min(cropStart.y, cropEnd.y) * scaleY)
+                          const w = Math.round(Math.abs(cropEnd.x - cropStart.x) * scaleX)
+                          const h = Math.round(Math.abs(cropEnd.y - cropStart.y) * scaleY)
+                          if (w <= 2 || h <= 2) return
+                          const canvas = document.createElement('canvas')
+                          canvas.width = w
+                          canvas.height = h
+                          const ctx = canvas.getContext('2d')
+                          if (!ctx) return
+                          const temp = new Image()
+                          temp.src = img.src
+                          temp.onload = () => {
+                            ctx.drawImage(temp, x, y, w, h, 0, 0, w, h)
+                            const url = canvas.toDataURL('image/jpeg', 0.95)
+                            setReceiptImageUrl(url)
+                            setCropStart(null)
+                            setCropEnd(null)
+                            setCropEnabled(false)
+                          }
+                        }}
+                      >Crop to selection</button>
+                    </>
+                  )}
+                </div>
+                {receiptCameraOn && (
+                  <div className="mt-2 relative rounded overflow-hidden bg-black">
+                    <video ref={receiptVideoRef} className="w-full h-64 object-contain" playsInline muted autoPlay />
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-2 text-white text-xs">Align receipt and tap Capture</div>
+                  </div>
+                )}
+                {receiptCameraMsg && (
+                  <p className="mt-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">{receiptCameraMsg}</p>
+                )}
+                <label className="mt-3 grid gap-1 text-sm">
+                  <span className="text-gray-700">Or paste text</span>
+                  <textarea rows={6} value={receiptText} onChange={(e) => setReceiptText(e.target.value)} className="rounded border border-gray-300 px-2 py-1" placeholder="Paste recognized text from your receipt" />
+                  <div className="flex justify-end">
+                    <button type="button" className="px-3 py-1 rounded border border-gray-300 text-sm hover:bg-gray-50" onClick={() => { setReceiptMeta(parseReceiptMeta(receiptText)); parseReceiptToItems(receiptText) }}>Parse</button>
+                  </div>
+                </label>
+              </div>
+              <div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <h4 className="text-sm font-semibold text-gray-900">Detected items</h4>
+                    <div className="flex items-center rounded-full bg-gray-100 p-0.5 text-xs">
+                      <button
+                        type="button"
+                        className={`px-2 py-1 rounded-full ${receiptViewMode === 'pretty' ? 'bg-white shadow text-gray-900' : 'text-gray-600'}`}
+                        onClick={() => setReceiptViewMode('pretty')}
+                        title="Show receipt-style preview"
+                      >Receipt view</button>
+                      <button
+                        type="button"
+                        className={`px-2 py-1 rounded-full ${receiptViewMode === 'table' ? 'bg-white shadow text-gray-900' : 'text-gray-600'}`}
+                        onClick={() => setReceiptViewMode('table')}
+                        title="Show editable table"
+                      >Table view</button>
+                    </div>
+                  </div>
+                  {parsedReceipt.length > 0 && (
+                    <div className="flex items-center gap-2 text-xs">
+                      <label className="inline-flex items-center gap-1">
+                        <input
+                          type="checkbox"
+                          checked={receiptSelectAll}
+                          onChange={(e) => {
+                            setReceiptSelectAll(e.target.checked)
+                            setParsedReceipt(list => list.map(x => ({ ...x, selected: e.target.checked })))
+                          }}
+                        />
+                        <span>{receiptSelectAll ? 'Deselect all' : 'Select all'}</span>
+                      </label>
+                      <span className="text-gray-400">|</span>
+                      <span className="text-gray-700">Category</span>
+                      <select value={receiptBulkCategory} onChange={(e) => setReceiptBulkCategory(e.target.value as any)} className="rounded border border-gray-300 px-2 py-1">
+                        <option value="produce">Produce</option>
+                        <option value="dairy">Dairy</option>
+                        <option value="meat">Meat</option>
+                        <option value="pantry">Pantry</option>
+                        <option value="frozen">Frozen</option>
+                        <option value="bakery">Bakery</option>
+                        <option value="deli">Deli</option>
+                        <option value="household">Household</option>
+                        <option value="personal">Personal</option>
+                        <option value="electronics">Electronics</option>
+                        <option value="other">Other</option>
+                      </select>
+                      <button
+                        className="px-2 py-1 rounded border border-gray-300 hover:bg-gray-50"
+                        onClick={() => setParsedReceipt(list => list.map(x => x.selected ? { ...x, category: receiptBulkCategory } : x))}
+                      >Apply</button>
+                      <span className="text-gray-400">|</span>
+                      <span className="text-gray-700">Threshold</span>
+                      <input value={receiptBulkThreshold} onChange={(e) => setReceiptBulkThreshold(e.target.value)} className="w-20 rounded border border-gray-300 px-2 py-1" placeholder="0" />
+                      <button
+                        className="px-2 py-1 rounded border border-gray-300 hover:bg-gray-50"
+                        onClick={() => setParsedReceipt(list => list.map(x => x.selected ? { ...x, threshold: receiptBulkThreshold } : x))}
+                      >Apply</button>
+                    </div>
+                  )}
+                </div>
+                {/* Receipt summary card */}
+                {(receiptMeta.merchant || receiptMeta.total != null || receiptMeta.subtotal != null || parsedReceipt.length > 0) && (
+                  <div className="mt-2 rounded border bg-white p-3 text-xs text-gray-700">
+                    {receiptMeta.merchant && <div className="font-medium text-gray-900">{receiptMeta.merchant}</div>}
+                    {receiptMeta.address && <div className="text-gray-500">{receiptMeta.address}</div>}
+                    <div className="mt-2 grid grid-cols-2 gap-2">
+                      {receiptMeta.date && <div><span className="text-gray-500">Date:</span> {receiptMeta.date}</div>}
+                      {receiptMeta.time && <div><span className="text-gray-500">Time:</span> {receiptMeta.time}</div>}
+                      {receiptMeta.subtotal != null && <div><span className="text-gray-500">Subtotal:</span> ${receiptMeta.subtotal?.toFixed(2)}</div>}
+                      {receiptMeta.tax != null && <div><span className="text-gray-500">Tax:</span> ${receiptMeta.tax?.toFixed(2)}</div>}
+                      {receiptMeta.total != null && <div className="col-span-2"><span className="text-gray-500">Total:</span> <span className="font-medium text-gray-900">${receiptMeta.total?.toFixed(2)}</span></div>}
+                      {receiptMeta.payment && <div className="col-span-2"><span className="text-gray-500">Payment:</span> {receiptMeta.payment}</div>}
+                    </div>
+                    {receiptCategorySummary.estSubtotal > 0 && (
+                      <div className="mt-2 text-gray-600">
+                        <div>Items est subtotal: ${receiptCategorySummary.estSubtotal.toFixed(2)} {receiptMeta.subtotal ? `(vs $${receiptMeta.subtotal.toFixed(2)})` : ''}</div>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {parsedReceipt.length === 0 ? (
+                  <p className="text-sm text-gray-500 mt-2">No items parsed yet.</p>
+                ) : receiptViewMode === 'table' ? (
+                  <div className="mt-2 overflow-x-auto border rounded">
+                    <table className="min-w-full text-sm">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-3 py-2 w-10"></th>
+                          <th className="px-3 py-2 text-left">Item</th>
+                          <th className="px-3 py-2 text-left">Qty</th>
+                          <th className="px-3 py-2 text-left">Category</th>
+                          <th className="px-3 py-2 text-left">Threshold</th>
+                          <th className="px-3 py-2 text-left">Details</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {parsedReceipt.map((it, idx) => (
+                          <tr key={it.id} className={idx % 2 ? 'bg-white' : 'bg-gray-50/50'}>
+                            <td className="px-3 py-2 align-top">
+                              <input type="checkbox" checked={it.selected} onChange={(e) => setParsedReceipt(list => list.map(x => x.id === it.id ? { ...x, selected: e.target.checked } : x))} />
+                            </td>
+                            <td className="px-3 py-2 align-top">
+                              <div className="font-medium text-gray-900 truncate" title={it.name}>{it.name}</div>
+                            </td>
+                            <td className="px-3 py-2 align-top">
+                              <input type="number" min={1} value={it.quantity} onChange={(e) => setParsedReceipt(list => list.map(x => x.id === it.id ? { ...x, quantity: Math.max(1, Number(e.target.value)||1) } : x))} className="w-20 rounded border border-gray-300 px-2 py-1 text-sm" />
+                            </td>
+                            <td className="px-3 py-2 align-top">
+                              <select value={it.category} onChange={(e) => setParsedReceipt(list => list.map(x => x.id === it.id ? { ...x, category: e.target.value as any } : x))} className="rounded border border-gray-300 px-2 py-1 text-sm">
+                                <option value="produce">Produce</option>
+                                <option value="dairy">Dairy</option>
+                                <option value="meat">Meat</option>
+                                <option value="pantry">Pantry</option>
+                                <option value="frozen">Frozen</option>
+                                <option value="bakery">Bakery</option>
+                                <option value="deli">Deli</option>
+                                <option value="household">Household</option>
+                                <option value="personal">Personal</option>
+                                <option value="electronics">Electronics</option>
+                                <option value="other">Other</option>
+                              </select>
+                            </td>
+                            <td className="px-3 py-2 align-top">
+                              <input type="number" min={0} value={it.threshold} onChange={(e) => setParsedReceipt(list => list.map(x => x.id === it.id ? { ...x, threshold: e.target.value } : x))} className="w-24 rounded border border-gray-300 px-2 py-1 text-sm" placeholder="0" />
+                            </td>
+                            <td className="px-3 py-2 align-top text-xs text-gray-600">
+                              {it.size ? it.size : ''}{it.price != null ? (it.size ? ' • ' : '') + `$${it.price.toFixed(2)}` : ''}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="mt-2 rounded border bg-white">
+                    <div className="p-4">
+                      <div className="text-sm text-gray-900 font-semibold">Store: {receiptMeta.merchant || '—'}</div>
+                      <div className="text-xs text-gray-600 mt-0.5">Date {receiptMeta.date || '—'}{receiptMeta.time ? ` ${receiptMeta.time}` : ''}</div>
+                    </div>
+                    <div className="border-t">
+                      <div className="px-4 py-2 text-xs text-gray-500">Items</div>
+                      <ul className="divide-y">
+                        {parsedReceipt.map((it) => (
+                          <li key={it.id} className="px-4 py-2 text-sm">
+                            <div className="font-medium text-gray-900">{it.name}</div>
+                            <div className="text-xs text-gray-600">
+                              {it.price != null ? `$${it.price.toFixed(2)}` : ''}
+                              {(it.size || it.quantity) ? `${it.price != null ? ' ' : ''}${it.size ? it.size : ''}${it.size && it.quantity ? ' • ' : ''}${it.quantity ? `${it.quantity} ${it.quantity > 1 ? 'units' : 'unit'}` : ''}` : ''}
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div className="border-t p-4 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600">Total</span>
+                        <span className="font-semibold text-gray-900">${(receiptMeta.total != null ? receiptMeta.total : receiptCategorySummary.estSubtotal).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div className="mt-3 flex justify-end gap-2">
+                  <button className="px-4 py-2 rounded border border-gray-300 hover:bg-gray-50" onClick={() => { setShowScanReceipt(false); setReceiptImageUrl(null); setReceiptText(''); setParsedReceipt([]) }}>Cancel</button>
+                  <button
+                    className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-50"
+                    disabled={parsedReceipt.filter(x => x.selected).length === 0}
+                    onClick={async () => {
+                      const chosen = parsedReceipt.filter(x => x.selected)
+                      for (const it of chosen) {
+                        const thresholdNum = it.threshold ? Number(it.threshold) : undefined
+                        await addPantryItem({ name: it.name, quantity: it.quantity, category: it.category, lowStockThreshold: thresholdNum, isLowStock: thresholdNum != null ? it.quantity <= thresholdNum : undefined })
+                      }
+                      showGlobalToast?.(`Added ${chosen.length} items to pantry`, 'success')
+                      setShowScanReceipt(false); setReceiptImageUrl(null); setReceiptText(''); setParsedReceipt([])
+                    }}
+                  >Add to Pantry</button>
+                  <button
+                    className="px-4 py-2 rounded bg-emerald-600 text-white hover:bg-emerald-500"
+                    title="Log groceries expense in Financial Tracker"
+                    onClick={async () => {
+                      const amount = (receiptMeta.total != null && receiptMeta.total > 0)
+                        ? receiptMeta.total
+                        : receiptCategorySummary.estSubtotal
+                      const acctId = financialAccounts?.[0]?.id
+                      if (!acctId) {
+                        showGlobalToast?.('Add a financial account first (Financials tab)', 'info')
+                        return
+                      }
+                      try {
+                        await addFinancialTransaction({
+                          accountId: acctId,
+                          amount: Number(amount.toFixed(2)),
+                          type: 'expense',
+                          description: `Groceries — ${receiptMeta.merchant || 'Unknown Store'}`,
+                          date: new Date(),
+                          categoryId: undefined,
+                        })
+                        showGlobalToast?.('Logged groceries expense', 'success')
+                      } catch (e) {
+                        showGlobalToast?.('Failed to log expense', 'error')
+                      }
+                    }}
+                  >Log Groceries Expense</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Barcode Scanner Modal */}
       {showBarcodeScanner && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
@@ -1234,13 +2337,38 @@ export default function ShoppingSmart() {
               
               {isScanning ? (
                 <div className="space-y-3">
-                  <p className="text-gray-600">Point your camera at a barcode</p>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-blue-600 h-2 rounded-full animate-pulse w-1/2"></div>
+                  <div className="relative w-full overflow-hidden rounded-lg bg-black">
+                    <video
+                      ref={videoRef}
+                      className="w-full h-64 object-cover"
+                      playsInline
+                      muted
+                      autoPlay
+                    />
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-2 text-white text-xs">
+                      Point your camera at a barcode • Supports UPC, EAN, Code 128, Code 39
+                    </div>
                   </div>
-                  <p className="text-sm text-gray-500">
-                    Camera scanning for barcodes...
-                  </p>
+                  <p className="text-sm text-gray-500 text-center">Camera scanning for barcodes...</p>
+                  <div className="flex items-center justify-center gap-3">
+                    <button
+                      type="button"
+                      onClick={captureBarcodeNow}
+                      className="px-4 py-2 rounded-full bg-blue-600 text-white text-sm font-medium hover:bg-blue-500"
+                    >
+                      Capture
+                    </button>
+                    <button
+                      type="button"
+                      onClick={stopBarcodeScanning}
+                      className="px-4 py-2 rounded-full border border-gray-300 text-sm font-medium hover:bg-gray-50"
+                    >
+                      Stop
+                    </button>
+                  </div>
+                  {captureMessage && (
+                    <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2 text-center">{captureMessage}</p>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-3">

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, startTransition, useRef } from 'react';
 import {
   Plus,
   CheckSquare,
@@ -20,6 +20,7 @@ import {
   AlertCircle,
   CheckCircle,
   ArrowDown,
+  ArrowUp,
   X,
   Trash2,
   Copy,
@@ -48,8 +49,7 @@ import {
   Target,
   GripVertical,
   Edit3,
-  ChevronDown as ChevronDownIcon,
-  ChevronRight as ChevronRightIcon
+  ChevronDown
 } from 'lucide-react';
 import {
   DndContext,
@@ -64,6 +64,7 @@ import {
   type DragEndEvent,
   type CollisionDetection,
   rectIntersection,
+  pointerWithin,
 } from '@dnd-kit/core';
 import {
   arrayMove,
@@ -74,8 +75,10 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { format, isToday, addDays, isPast, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth } from 'date-fns';
+import { parseQuickAdd as parseQuickAddUtil, parseSubtaskQuickAdd as parseSubtaskQuickAddUtil } from '../utils/quickAdd';
 import { useApiTasks } from '../hooks/useApiTasks';
-import type { TaskData, ProjectData } from '../services/apiClient';
+import apiClient, { type TaskData, type ProjectData } from '../services/apiClient';
+import { useAppStore } from '../stores/useAppStore';
 
 interface Task {
   id: string;
@@ -99,6 +102,7 @@ interface Task {
   parentId?: string;
   subtasks?: Task[];
   followUpTasks?: FollowUpTask[];
+  position?: number;
 }
 
 interface FollowUpTask {
@@ -132,7 +136,7 @@ interface DroppableCalendarDateProps {
   style?: React.CSSProperties;
 }
 
-function DroppableCalendarDate({ id, children, className, onClick, style }: DroppableCalendarDateProps) {
+  function DroppableCalendarDate({ id, children, className, onClick, style }: DroppableCalendarDateProps) {
   const { setNodeRef, isOver } = useDroppable({
     id,
     data: {
@@ -281,6 +285,8 @@ const getSubtaskStatusStyles = (status: TaskStatus) => {
 };
 
 export default function TodosWorkingFollowUp() {
+  // Feature flag: disable drag & drop interactions (can toggle later)
+  const ENABLE_DND = false;
   // API hook for tasks and projects
   const {
     tasks: apiTasks,
@@ -297,8 +303,18 @@ export default function TodosWorkingFollowUp() {
     deleteProject: apiDeleteProject,
     refreshData
   } = useApiTasks();
+  
+  // Global setting to show/hide 75 Hard tasks
+  const { showSFHTasksInTasks, setShowSFHTasksInTasks } = useAppStore();
 
-  const [currentView, setCurrentView] = useState<'today' | 'inbox' | 'upcoming' | 'waiting' | 'scheduled' | 'completed' | 'starred' | 'calendar' | 'trash' | 'archived'>('inbox');
+  const [currentView, setCurrentView] = useState<'today' | 'inbox' | 'upcoming' | 'waiting' | 'scheduled' | 'completed' | 'starred' | 'calendar' | 'trash' | 'archived'>(() => {
+    try {
+      const raw = localStorage.getItem('lifesync:tasks:currentView');
+      if (!raw) return 'inbox';
+      const allowed = new Set(['today','inbox','upcoming','waiting','scheduled','completed','starred','calendar','trash','archived']);
+      return allowed.has(raw) ? (raw as any) : 'inbox';
+    } catch { return 'inbox'; }
+  });
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [quickAddText, setQuickAddText] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -308,7 +324,15 @@ export default function TodosWorkingFollowUp() {
   const [followUpDays, setFollowUpDays] = useState(0);
   const [subtaskDrafts, setSubtaskDrafts] = useState<Record<string, string>>({});
   const [editingSubtask, setEditingSubtask] = useState<{ id: string; title: string } | null>(null);
-  const [collapsedSubtasks, setCollapsedSubtasks] = useState<Set<string>>(new Set());
+  // Persisted collapsed state per task/subtask id
+  const [collapsedMap, setCollapsedMap] = useState<Record<string, boolean>>(() => {
+    try {
+      const raw = localStorage.getItem('lifesync:tasks:collapsed');
+      return raw ? JSON.parse(raw) : {};
+    } catch { return {}; }
+  });
+  // Show add-subtask panel per task only when requested
+  const [openSubtaskAddFor, setOpenSubtaskAddFor] = useState<string | null>(null);
   
   // Task editing states
   const [editingTask, setEditingTask] = useState<string | null>(null);
@@ -334,6 +358,11 @@ export default function TodosWorkingFollowUp() {
   useEffect(() => {
     setCalendarView('month');
   }, []);
+
+  // Persist currentView changes
+  useEffect(() => {
+    try { localStorage.setItem('lifesync:tasks:currentView', currentView); } catch {}
+  }, [currentView]);
   const [filters, setFilters] = useState({
     priority: 'all',
     status: 'all',
@@ -355,22 +384,27 @@ export default function TodosWorkingFollowUp() {
   const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
   const [bulkMode, setBulkMode] = useState(false);
 
-  // Drag and drop sensors
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
+  // Ensure 75 Hard tasks for today are present
+  const { ensureSFHTasksForToday } = useAppStore();
+  useEffect(() => {
+    ensureSFHTasksForToday?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  // Custom collision detection that prioritizes sidebar items
+  // Drag and drop sensors
+  const sensors = ENABLE_DND
+    ? useSensors(
+        useSensor(PointerSensor, {
+          activationConstraint: { distance: 8 },
+        }),
+        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+      )
+    : useSensors();
+
+  // Custom collision detection that prioritizes sidebar, calendar, root drop, then task targets
   const customCollisionDetection: CollisionDetection = (args) => {
     // First, check if we're colliding with any sidebar items
-    const sidebarCollisions = rectIntersection({
+    const sidebarCollisions = pointerWithin({
       ...args,
       droppableContainers: args.droppableContainers.filter(container => 
         container.id.toString().startsWith('sidebar-')
@@ -382,7 +416,7 @@ export default function TodosWorkingFollowUp() {
     }
 
     // Check for calendar date collisions
-    const calendarCollisions = rectIntersection({
+    const calendarCollisions = pointerWithin({
       ...args,
       droppableContainers: args.droppableContainers.filter(container => 
         container.id.toString().startsWith('calendar-date-') ||
@@ -392,6 +426,28 @@ export default function TodosWorkingFollowUp() {
     
     if (calendarCollisions.length > 0) {
       return calendarCollisions;
+    }
+
+    // Root drop zone (un-nest)
+    const rootCollisions = pointerWithin({
+      ...args,
+      droppableContainers: args.droppableContainers.filter(container => 
+        container.id.toString() === 'root-drop'
+      )
+    });
+    if (rootCollisions.length > 0) {
+      return rootCollisions;
+    }
+
+    // Task nesting targets
+    const taskTargetCollisions = pointerWithin({
+      ...args,
+      droppableContainers: args.droppableContainers.filter(container => 
+        container.id.toString().startsWith('task-drop-')
+      )
+    });
+    if (taskTargetCollisions.length > 0) {
+      return taskTargetCollisions;
     }
 
     // If no special collisions, fall back to task reordering
@@ -414,7 +470,8 @@ export default function TodosWorkingFollowUp() {
       deletedAt: apiTask.deleted_at ? new Date(apiTask.deleted_at) : undefined,
       parentId: apiTask.parent_id || undefined,
       subtasks: [],
-      followUpTasks: []
+      followUpTasks: [],
+      position: apiTask.position ?? undefined,
     };
   };
 
@@ -428,33 +485,37 @@ export default function TodosWorkingFollowUp() {
     };
   };
 
-  // Convert API data to component format
-  const rawTasks = apiTasks.map(convertApiTaskToTask);
-  const taskMap = new Map<string, Task>();
-
-  rawTasks.forEach(task => {
-    task.subtasks = [];
-    taskMap.set(task.id, task);
-  });
-
-  rawTasks.forEach(task => {
-    if (task.parentId) {
-      const parent = taskMap.get(task.parentId);
-      if (parent) {
-        parent.subtasks = parent.subtasks || [];
-        parent.subtasks.push(task);
+  // Convert API data to component format (memoized to avoid heavy work on each click)
+  const [taskPositions, setTaskPositions] = useState<Record<string, number>>({});
+  const rawTasks = useMemo(() => apiTasks.map(t => {
+    const task = convertApiTaskToTask(t);
+    if (taskPositions[task.id] !== undefined) {
+      return { ...task, position: taskPositions[task.id] };
+    }
+    return task;
+  }), [apiTasks, taskPositions]);
+  const { tasks, taskMap } = useMemo(() => {
+    const map = new Map<string, Task>();
+    // clone and ensure subtasks arrays are fresh
+    const cloned = rawTasks.map(t => ({ ...t, subtasks: [] as Task[] }));
+    cloned.forEach(task => { map.set(task.id, task); });
+    cloned.forEach(task => {
+      if (task.parentId) {
+        const parent = map.get(task.parentId);
+        if (parent) {
+          parent.subtasks = parent.subtasks || [];
+          parent.subtasks.push(task);
+        }
       }
-    }
-  });
-
-  rawTasks.forEach(task => {
-    if (task.subtasks && task.subtasks.length > 1) {
-      task.subtasks.sort((a, b) => (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0));
-    }
-  });
-
-  const tasks = rawTasks.filter(task => !task.parentId);
-  const projects = apiProjects.map(convertApiProjectToProject);
+    });
+    cloned.forEach(task => {
+      if (task.subtasks && task.subtasks.length > 1) {
+        task.subtasks.sort((a, b) => (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0));
+      }
+    });
+    return { tasks: cloned.filter(t => !t.parentId), taskMap: map };
+  }, [rawTasks]);
+  const projects = useMemo(() => apiProjects.map(convertApiProjectToProject), [apiProjects]);
   const getTaskById = (id: string | null | undefined) => (id ? taskMap.get(id) : undefined);
 
   // Pomodoro timer effect
@@ -506,7 +567,10 @@ export default function TodosWorkingFollowUp() {
   }, [pomodoroTimer.isActive, pomodoroTimer.timeLeft, pomodoroTimer.isBreak, pomodoroTimer.taskId, tasks]);
 
   // Drag and drop handlers
+  const [showRootDrop, setShowRootDrop] = useState(false);
+
   const handleDragStart = (event: any) => {
+    if (ENABLE_DND) setShowRootDrop(true);
     // console.log('Drag started:', event.active?.id);
   };
 
@@ -521,19 +585,29 @@ export default function TodosWorkingFollowUp() {
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     // console.log('Drag ended:', { active: active?.id, over: over?.id });
+    setShowRootDrop(false);
 
     if (!over) {
-      console.log('No drop target found');
+      if (import.meta.env.DEV) console.log('No drop target found');
       return;
     }
 
     const overId = over.id as string;
+    const draggedIdRaw = String(active.id);
+    const getDraggedTaskId = (id: string) => {
+      if (id.startsWith('task-')) return id.slice('task-'.length);
+      if (id.startsWith('subtask-')) {
+        const raw = id.slice('subtask-'.length); // parentId + '-' + subId
+        if (raw.length >= 36) return raw.slice(-36); // take full UUID of subtask id
+      }
+      return id;
+    };
+    const draggedTaskId = getDraggedTaskId(draggedIdRaw);
     
     // Handle dropping on sidebar items (status/project changes)
     if (overId.startsWith('sidebar-')) {
       // console.log('Dropping on sidebar item:', overId);
-      const draggedId = active.id as string;
-      const taskId = draggedId.startsWith('task-') ? draggedId.replace('task-', '') : draggedId;
+      const taskId = draggedTaskId;
       
       (async () => {
         try {
@@ -570,9 +644,8 @@ export default function TodosWorkingFollowUp() {
 
     // Handle dropping on calendar dates
     if (overId.startsWith('calendar-date-')) {
-      console.log('Dropping on calendar date:', overId);
-      const draggedId = active.id as string;
-      const taskId = draggedId.startsWith('task-') ? draggedId.replace('task-', '') : draggedId;
+      if (import.meta.env.DEV) console.log('Dropping on calendar date:', overId);
+      const taskId = draggedTaskId;
       const dateStr = overId.replace('calendar-date-', '');
       
       (async () => {
@@ -589,7 +662,7 @@ export default function TodosWorkingFollowUp() {
             due_date: newDueDate.toISOString(),
             status: task?.status === 'scheduled' ? 'todo' : task?.status
           });
-          console.log('Task moved to new date:', newDueDate.toISOString());
+          if (import.meta.env.DEV) console.log('Task moved to new date:', newDueDate.toISOString());
         } catch (err) {
           console.error('Failed to update task date on drop:', err);
         }
@@ -599,9 +672,8 @@ export default function TodosWorkingFollowUp() {
 
     // Handle dropping on calendar dates (for month view)
     if (overId.startsWith('calendar-date-')) {
-      console.log('Dropping on calendar date:', overId);
-      const draggedId = active.id as string;
-      const taskId = draggedId.startsWith('task-') ? draggedId.replace('task-', '') : draggedId;
+      if (import.meta.env.DEV) console.log('Dropping on calendar date:', overId);
+      const taskId = draggedTaskId;
       const dateStr = overId.replace('calendar-date-', '');
       
       (async () => {
@@ -613,7 +685,7 @@ export default function TodosWorkingFollowUp() {
             due_date: newDueDate.toISOString(),
             status: 'todo'
           });
-          console.log('Task moved to new date:', newDueDate.toISOString());
+          if (import.meta.env.DEV) console.log('Task moved to new date:', newDueDate.toISOString());
         } catch (err) {
           console.error('Failed to update task date on drop:', err);
         }
@@ -623,21 +695,23 @@ export default function TodosWorkingFollowUp() {
 
     // Handle dropping on calendar hours (for week/day view)
     if (overId.startsWith('calendar-hour-')) {
-      console.log('Dropping on calendar hour:', overId);
-      const draggedId = active.id as string;
-      const taskId = draggedId.startsWith('task-') ? draggedId.replace('task-', '') : draggedId;
-      const [, , dateStr, hourStr] = overId.split('-');
+      if (import.meta.env.DEV) console.log('Dropping on calendar hour:', overId);
+      const taskId = draggedTaskId;
+      const parts = String(overId).split('-');
+      // id format: calendar-hour-YYYY-MM-DD-HH
+      const dateStr = parts.slice(2, 5).join('-');
+      const hourStr = parts[5];
       
       (async () => {
         try {
-          const newDueDate = new Date(dateStr);
-          newDueDate.setHours(parseInt(hourStr), 0, 0, 0);
+          const [yy, mm, dd] = dateStr.split('-').map(Number);
+          const newDueDate = new Date(Date.UTC(yy, (mm as number) - 1, dd as number, parseInt(hourStr), 0, 0, 0));
           
           await apiUpdateTask(taskId, { 
             due_date: newDueDate.toISOString(),
             status: 'todo'
           });
-          console.log('Task moved to new date and time:', newDueDate.toISOString());
+          if (import.meta.env.DEV) console.log('Task moved to new date and time:', newDueDate.toISOString());
         } catch (err) {
           console.error('Failed to update task time on drop:', err);
         }
@@ -645,10 +719,119 @@ export default function TodosWorkingFollowUp() {
       return;
     }
 
-    // Handle reordering within the task list (not implemented with database yet)
+    // Drop to root to un-nest
+    if (overId === 'root-drop') {
+      (async () => {
+        try {
+          await apiUpdateTask(draggedTaskId, { parent_id: null });
+          if (import.meta.env.DEV) console.log('Moved task to top level', draggedTaskId);
+        } catch (err) {
+          console.error('Failed to move task to top level:', err);
+        }
+      })();
+      return;
+    }
+
+    // Handle dropping a task onto another task to nest as subtask
+    if (overId.startsWith('task-drop-')) {
+      const targetId = overId.replace('task-drop-', '');
+      // Prevent self-parenting
+      if (targetId === draggedTaskId) return;
+      // Prevent making ancestor a child of its descendant
+      const isAncestor = (ancestorId: string, descendantId: string): boolean => {
+        let cur = getTaskById(descendantId);
+        const guard = new Set<string>();
+        while (cur && cur.parentId && !guard.has(cur.parentId)) {
+          if (cur.parentId === ancestorId) return true;
+          guard.add(cur.parentId);
+          cur = getTaskById(cur.parentId);
+        }
+        return false;
+      };
+      if (isAncestor(draggedTaskId, targetId)) return;
+
+      (async () => {
+        try {
+          await apiUpdateTask(draggedTaskId, { parent_id: targetId });
+          if (import.meta.env.DEV) console.log('Nested task', draggedTaskId, 'under', targetId);
+        } catch (err) {
+          console.error('Failed to set parent on drop:', err);
+        }
+      })();
+      return;
+    }
+
+    // Handle reordering within the task list
     if (active.id !== over.id) {
-      console.log('Task reordering not implemented with database yet');
-      // TODO: Implement task ordering with position field in database
+      // Subtask reordering: ids in form "subtask-<parentId>-<subId>" (parent/sub may contain '-')
+      const aId = String(active.id);
+      const oId = String(over.id);
+      if (aId.startsWith('subtask-') && oId.startsWith('subtask-')) {
+        const parse = (id: string) => {
+          const raw = id.slice('subtask-'.length); // parentId + '-' + subId
+          if (raw.length < 36 + 1 + 36) {
+            // Best effort: assume last 36 is subId, rest minus the separator is parent
+            const sub = raw.slice(-36);
+            const parent = raw.slice(0, raw.length - 36 - 1);
+            return { parent, sub };
+          }
+          const sub = raw.slice(-36);
+          const parent = raw.slice(0, raw.length - 36 - 1);
+          return { parent, sub };
+        };
+        const a = parse(aId);
+        const o = parse(oId);
+        if (a && o && a.parent === o.parent) {
+          try {
+            const parent = getTaskById(a.parent);
+            if (!parent) return;
+            const visibleSubs = (parent.subtasks || []).filter(s => !s.deleted);
+            const ids = visibleSubs.map(s => s.id);
+            const oldIndex = ids.indexOf(a.sub);
+            const newIndex = ids.indexOf(o.sub);
+            if (oldIndex === -1 || newIndex === -1) return;
+
+            const newIds = arrayMove(ids, oldIndex, newIndex);
+            const order = newIds.map((id, index) => ({ id, position: index }));
+            // optimistic local update
+            setTaskPositions(prev => ({ ...prev, ...Object.fromEntries(order.map(o => [o.id, o.position])) }));
+            void (async () => {
+              await apiClient.reorderTasks(order);
+              if (import.meta.env.DEV) console.log('Reordered subtasks persisted', { parent: a.parent, order });
+            })().catch((err) => {
+              console.error('Failed to persist subtask reorder:', err);
+            });
+          } catch (err) {
+            console.error('Failed to persist subtask reorder:', err);
+          }
+          return;
+        }
+      }
+
+      try {
+        const activeId = draggedTaskId;
+        const overTaskId = getDraggedTaskId(String(over.id));
+
+        const ids = tasksToShow.map(t => t.id);
+        const oldIndex = ids.indexOf(activeId);
+        const newIndex = ids.indexOf(overTaskId);
+        if (oldIndex === -1 || newIndex === -1) return;
+
+        const newIds = arrayMove(ids, oldIndex, newIndex);
+        const order = newIds.map((id, index) => ({ id, position: index }));
+        // optimistic local update
+        setTaskPositions(prev => ({ ...prev, ...Object.fromEntries(order.map(o => [o.id, o.position])) }));
+        void (async () => {
+          await apiClient.reorderTasks(order);
+          if (import.meta.env.DEV) console.log('Reordered tasks persisted', order.slice(0, 5), '...');
+        })().catch((err) => {
+          console.error('Failed to persist task reorder:', err);
+        });
+        // No immediate refresh needed due to optimistic update
+      } catch (err) {
+        // synchronous errors only
+        console.error('Failed to set up task reorder:', err);
+      }
     }
   };
 
@@ -657,7 +840,7 @@ export default function TodosWorkingFollowUp() {
     if (!quickAddText.trim()) return;
     
     try {
-      const parsed = parseQuickAdd(quickAddText);
+      const parsed = parseQuickAddUtil(quickAddText, projects.map(p => ({ id: p.id, name: p.name })));
       await apiCreateTask({
         title: parsed.title,
         description: '',
@@ -677,70 +860,36 @@ export default function TodosWorkingFollowUp() {
     }
   };
 
-  const parseQuickAdd = (text: string) => {
-    let title = text;
-    let priority = 'medium';
-    let dueDate = null;
-    let projectId = '';
-    let tags: string[] = [];
-
-    // Extract priority flags (p1, p2, p3, p4)
-    const priorityMatch = text.match(/p([1-4])/);
-    if (priorityMatch) {
-      const p = parseInt(priorityMatch[1]);
-      priority = p === 1 ? 'urgent' : p === 2 ? 'high' : p === 3 ? 'medium' : 'low';
-      title = title.replace(/p[1-4]/, '').trim();
-    }
-
-    // Extract project references (#project)
-    const projectMatch = text.match(/#(\w+)/);
-    if (projectMatch) {
-      const projectName = projectMatch[1].toLowerCase();
-      const project = projects.find(p => p.name.toLowerCase().includes(projectName));
-      if (project) projectId = project.id;
-      title = title.replace(/#\w+/, '').trim();
-    }
-
-    // Extract tags (@tag)
-    const tagMatches = text.match(/@(\w+)/g);
-    if (tagMatches) {
-      tags = tagMatches.map(match => match.slice(1));
-      title = title.replace(/@\w+/g, '').trim();
-    }
-
-    // Extract dates
-    if (text.includes('today')) {
-      dueDate = new Date();
-      title = title.replace(/today/, '').trim();
-    } else if (text.includes('tomorrow')) {
-      dueDate = addDays(new Date(), 1);
-      title = title.replace(/tomorrow/, '').trim();
-    }
-
-    return { title, priority, dueDate, projectId, tags };
-  };
+  
 
   const handleSubtaskDraftChange = (taskId: string, value: string) => {
     setSubtaskDrafts(prev => ({ ...prev, [taskId]: value }));
   };
 
-  const createSubtask = async (parentId: string) => {
-    const title = (subtaskDrafts[parentId] ?? '').trim();
-    if (!title) return;
+  
+
+  const createSubtask = async (parentId: string, rawOverride?: string) => {
+    const raw = (rawOverride ?? subtaskDrafts[parentId] ?? '').trim();
+    if (!raw) return;
 
     const parentTask = getTaskById(parentId);
+    const parsed = parseSubtaskQuickAddUtil(raw);
 
     try {
       await apiCreateTask({
-        title,
+        title: parsed.title || raw,
         description: '',
         status: 'todo',
-        priority: parentTask?.priority || 'medium',
+        priority: parsed.priority || parentTask?.priority || 'medium',
         estimated_time: 15,
         actual_time: 0,
-        due_date: parentTask?.dueDate ? parentTask.dueDate.toISOString() : undefined,
+        due_date: parsed.dueDate
+          ? parsed.dueDate.toISOString()
+          : parentTask?.dueDate
+            ? parentTask.dueDate.toISOString()
+            : undefined,
         project_id: parentTask?.projectId,
-        tags: [],
+        tags: parsed.tags.length ? parsed.tags : [],
         category: parentTask?.category || 'work',
         parent_id: parentId,
       });
@@ -772,6 +921,65 @@ export default function TodosWorkingFollowUp() {
     }
   };
 
+  // Localized, memoized subtask add input to prevent parent remounts stealing focus
+  const SubtaskAddInput = React.memo(function SubtaskAddInput({ parentId, onAdd, onClose }: { parentId: string; onAdd: (raw: string) => void; onClose: () => void }) {
+    const [value, setValue] = useState('');
+    const inputRef = useRef<HTMLInputElement | null>(null);
+
+    useEffect(() => {
+      // Keep focus stable if the parent re-renders
+      const el = inputRef.current;
+      if (el && document.activeElement === el) {
+        const pos = el.selectionStart ?? value.length;
+        // Re-apply caret position after potential reflow
+        requestAnimationFrame(() => {
+          try {
+            el.setSelectionRange(pos, pos);
+          } catch {}
+        });
+      }
+    });
+
+    const handleAdd = () => {
+      const raw = value.trim();
+      if (!raw) return;
+      onAdd(raw);
+      setValue('');
+      // Auto-close after adding to keep UI minimal
+      onClose();
+    };
+
+    return (
+      <div className="px-4 py-2">
+        <input
+          ref={inputRef}
+          type="text"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onKeyDown={(e) => {
+            e.stopPropagation();
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              handleAdd();
+            }
+            if (e.key === 'Escape') {
+              e.preventDefault();
+              setValue('');
+              onClose();
+            }
+          }}
+          onBlur={() => {
+            // Close when focus leaves the field
+            onClose();
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
+          className="w-full text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-md px-3 py-1.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="Add subtask"
+        />
+      </div>
+    );
+  });
+
   const startEditingSubtask = (subtaskId: string, currentTitle: string) => {
     setEditingSubtask({ id: subtaskId, title: currentTitle });
   };
@@ -780,16 +988,18 @@ export default function TodosWorkingFollowUp() {
     setEditingSubtask(null);
   };
 
-  const toggleSubtaskCollapse = (taskId: string) => {
-    setCollapsedSubtasks(prev => {
-      const next = new Set(prev);
-      if (next.has(taskId)) {
-        next.delete(taskId);
-      } else {
-        next.add(taskId);
-      }
+  const setCollapsed = (id: string, value: boolean) => {
+    setCollapsedMap(prev => {
+      const next = { ...prev, [id]: value };
+      try { localStorage.setItem('lifesync:tasks:collapsed', JSON.stringify(next)); } catch {}
       return next;
     });
+  };
+  const isCollapsed = (id: string, childCount: number) => {
+    const v = collapsedMap[id];
+    if (typeof v === 'boolean') return v;
+    // Default: collapse when more than 3 children
+    return childCount > 3;
   };
 
   const saveSubtaskEdit = async () => {
@@ -809,202 +1019,215 @@ export default function TodosWorkingFollowUp() {
     }
   };
 
-  const renderSubtasks = (task: Task) => {
-    const subtasks = (task.subtasks || []).filter(sub => !sub.deleted).sort((a, b) => a.createdAt?.getTime?.() ?? 0 - (b.createdAt?.getTime?.() ?? 0));
-    const isCollapsed = collapsedSubtasks.has(task.id);
-    const completedCount = subtasks.filter(sub => sub.status === 'done').length;
+  // Draggable subtask row component
+  function SubtaskRow({ parentId, subtask, idx, total }: { parentId: string; subtask: Task; idx: number; total: number }) {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+      id: `subtask-${parentId}-${subtask.id}`,
+      data: { type: 'subtask', parentId, subtaskId: subtask.id },
+    });
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+      opacity: isDragging ? 0.6 : 1,
+    } as React.CSSProperties;
 
-    if (!subtasks.length && task.deleted) {
+    const childrenCount = (subtask.subtasks || []).filter(s => !s.deleted).length;
+    const collapsed = isCollapsed(subtask.id, childrenCount);
+
+    return (
+      <div key={subtask.id} className="group flex flex-col py-1 text-sm text-slate-700 dark:text-slate-200" ref={setNodeRef} style={style}>
+        <div className="flex items-center">
+          {/* Collapse/expand grandchildren chevron if this subtask has children */}
+          {childrenCount > 0 && (
+            <button
+              type="button"
+              aria-label={collapsed ? 'Expand subtasks' : 'Collapse subtasks'}
+              aria-expanded={!collapsed}
+              onClick={(e) => { e.stopPropagation(); setCollapsed(subtask.id, !collapsed); }}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setCollapsed(subtask.id, !collapsed); } }}
+              className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 mr-1"
+              title={collapsed ? 'Expand subtasks' : 'Collapse subtasks'}
+            >
+              {collapsed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
+              {collapsed && (
+                <span className="ml-0.5 text-[9px] text-slate-400">({childrenCount})</span>
+              )}
+            </button>
+          )}
+          {/* Drag handle */}
+          {ENABLE_DND && (
+            <button
+              {...attributes}
+              {...listeners}
+              className="mr-2 p-1 text-slate-400 hover:text-slate-600 rounded hover:bg-slate-100 dark:hover:bg-slate-700 cursor-grab active:cursor-grabbing"
+              title="Drag to reorder"
+            >
+              <GripVertical size={12} />
+            </button>
+          )}
+          {/* Checkbox */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              updateSubtaskStatus(subtask.id, subtask.status === 'done' ? 'todo' : 'done');
+            }}
+            className={`mr-3 w-4 h-4 rounded border flex items-center justify-center transition-colors ${
+              subtask.status === 'done'
+                ? 'border-emerald-500 bg-emerald-500 text-white'
+                : 'border-slate-300 text-slate-400 hover:border-emerald-400 hover:text-emerald-400'
+            }`}
+            title={subtask.status === 'done' ? 'Mark as not done' : 'Mark subtask complete'}
+          >
+            {subtask.status === 'done' && <CheckCircle2 size={10} />}
+          </button>
+
+          {/* Title */}
+          <div className="flex-1 min-w-0">
+            {editingSubtask?.id === subtask.id ? (
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={editingSubtask.title}
+                  onChange={(e) => setEditingSubtask({ id: subtask.id, title: e.target.value })}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') { e.preventDefault(); saveSubtaskEdit(); }
+                    if (e.key === 'Escape') { e.preventDefault(); cancelSubtaskEdit(); }
+                  }}
+                  className="flex-1 text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded px-2 py-1 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  autoFocus
+                />
+                <button onClick={(e) => { e.stopPropagation(); saveSubtaskEdit(); }} className="p-1 text-emerald-600 hover:text-emerald-700" title="Save">
+                  <CheckCircle size={12} />
+                </button>
+                <button onClick={(e) => { e.stopPropagation(); cancelSubtaskEdit(); }} className="p-1 text-slate-400 hover:text-slate-500" title="Cancel">
+                  <X size={12} />
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); startEditingSubtask(subtask.id, subtask.title || ''); }}
+                className={`text-left truncate ${subtask.status === 'done' ? 'line-through text-slate-400' : 'hover:text-blue-600'}`}
+                title="Rename subtask"
+              >
+                {subtask.title || 'Untitled subtask'}
+              </button>
+            )}
+          </div>
+
+          {/* Hover actions (minimal by default) */}
+          <div className="ml-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            {/* Add nested subtask */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setOpenSubtaskAddFor(subtask.id);
+              }}
+              className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-green-600"
+              title="Add subtask"
+            >
+              <Plus size={12} />
+            </button>
+            {/* Optional status select on hover */}
+            <select
+              value={subtask.status}
+              onChange={(e) => updateSubtaskStatus(subtask.id, e.target.value as TaskStatus)}
+              className="text-xs font-medium rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 px-2 py-1 text-slate-600 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+              {SUBTASK_STATUSES.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <button onClick={(e) => { e.stopPropagation(); startEditingSubtask(subtask.id, subtask.title || ''); }} className="p-1 text-slate-400 hover:text-blue-500 transition-colors" title="Rename subtask">
+              <Edit3 size={12} />
+            </button>
+            <button onClick={(e) => { e.stopPropagation(); deleteSubtask(subtask.id); }} className="p-1 text-slate-400 hover:text-red-500 transition-colors" title="Delete subtask">
+              <Trash2 size={12} />
+            </button>
+          </div>
+        </div>
+        {/* Nested subtasks and inline add input for this subtask */}
+        <div className="ml-14">
+          {openSubtaskAddFor === subtask.id && (
+            <SubtaskAddInput
+              parentId={subtask.id}
+              onAdd={(raw) => createSubtask(subtask.id, raw)}
+              onClose={() => setOpenSubtaskAddFor(null)}
+            />
+          )}
+          {(() => {
+            const childrenCount2 = (subtask.subtasks || []).filter(s => !s.deleted).length;
+            return !isCollapsed(subtask.id, childrenCount2) ? renderSubtasks(subtask) : null;
+          })()}
+        </div>
+      </div>
+    );
+  }
+
+  // Root drop zone to move tasks/subtasks back to top level
+  function RootDropZone() {
+    const { setNodeRef, isOver } = useDroppable({ id: 'root-drop', data: { type: 'root-target' } });
+    return (
+      <div
+        ref={setNodeRef}
+        className={`fixed top-0 left-0 right-0 z-50 h-12 flex items-center justify-center border-b-2 border-dashed transition-colors ${
+          isOver ? 'bg-blue-50 border-blue-400 text-blue-700' : 'bg-white/70 dark:bg-slate-900/70 border-slate-300 text-slate-500'
+        }`}
+        aria-label="Drop here to move to top level"
+        style={{ backdropFilter: 'saturate(180%) blur(6px)' }}
+      >
+        Drop here to move to top level
+      </div>
+    );
+  }
+
+  // Move subtask up/down with optimistic persistence
+  const moveSubtask = async (parentId: string, subtaskId: string, direction: 'up' | 'down') => {
+    try {
+      const parent = getTaskById(parentId);
+      if (!parent) return;
+      const visibleSubs = (parent.subtasks || []).filter(s => !s.deleted);
+      const ids = visibleSubs.map(s => s.id);
+      const index = ids.indexOf(subtaskId);
+      if (index === -1) return;
+      const newIndex = direction === 'up' ? Math.max(0, index - 1) : Math.min(ids.length - 1, index + 1);
+      if (newIndex === index) return;
+
+      const newIds = arrayMove(ids, index, newIndex);
+      const order = newIds.map((id, i) => ({ id, position: i }));
+      setTaskPositions(prev => ({ ...prev, ...Object.fromEntries(order.map(o => [o.id, o.position])) }));
+      await apiClient.reorderTasks(order);
+    } catch (e) {
+      console.error('Failed to move subtask', e);
+    }
+  };
+
+  const renderSubtasks = (task: Task) => {
+    const subtasks = (task.subtasks || [])
+      .filter(sub => !sub.deleted)
+      .sort((a, b) => {
+        const ap = typeof a.position === 'number' ? a.position : Number.MAX_SAFE_INTEGER;
+        const bp = typeof b.position === 'number' ? b.position : Number.MAX_SAFE_INTEGER;
+        if (ap !== bp) return ap - bp;
+        return (a.createdAt?.getTime?.() ?? 0) - (b.createdAt?.getTime?.() ?? 0);
+      });
+    const isAddOpen = openSubtaskAddFor === task.id;
+    // Only show the subtask panel if there are subtasks, or user explicitly opened Add Subtask
+    if (!subtasks.length && !isAddOpen) {
       return null;
     }
 
     return (
-      <div className="mt-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/40">
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            toggleSubtaskCollapse(task.id);
-          }}
-          className="w-full flex items-center justify-between px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors rounded-lg"
-        >
-          <span>{subtasks.length ? `${completedCount}/${subtasks.length} subtasks` : 'Subtasks'}</span>
-          {isCollapsed ? <ChevronRightIcon size={14} className="text-slate-400" /> : <ChevronDownIcon size={14} className="text-slate-400" />}
-        </button>
-
-        {!isCollapsed && (
-          <div className="divide-y divide-slate-200 dark:divide-slate-800">
-            {subtasks.length === 0 ? (
-              <div className="px-4 py-3 text-xs text-slate-400 dark:text-slate-500">No subtasks yet.</div>
-            ) : (
-              subtasks.map((subtask) => {
-                const assignee = subtask.assigned_to || 'Unassigned';
-                const hasNotes = Boolean(subtask.notes && subtask.notes.trim());
-
-                return (
-                  <div key={subtask.id} className="flex flex-col gap-2 px-4 py-3 text-sm text-slate-700 dark:text-slate-200">
-                    <div className="flex items-start gap-3">
-                      <GripVertical size={12} className="text-slate-300 dark:text-slate-600" aria-hidden />
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          updateSubtaskStatus(subtask.id, subtask.status === 'done' ? 'todo' : 'done');
-                        }}
-                        className={`mt-0.5 flex items-center justify-center w-5 h-5 rounded border transition-colors ${
-                          subtask.status === 'done'
-                            ? 'border-emerald-500 bg-emerald-500 text-white'
-                            : 'border-slate-300 text-slate-400 hover:border-emerald-400 hover:text-emerald-400'
-                        }`}
-                        title={subtask.status === 'done' ? 'Mark as not done' : 'Mark subtask complete'}
-                      >
-                        {subtask.status === 'done' && <CheckCircle2 size={12} />}
-                      </button>
-                      <div className="flex-1 min-w-0">
-                        {editingSubtask?.id === subtask.id ? (
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="text"
-                              value={editingSubtask.title}
-                              onChange={(e) => setEditingSubtask({ id: subtask.id, title: e.target.value })}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  e.preventDefault();
-                                  saveSubtaskEdit();
-                                }
-                                if (e.key === 'Escape') {
-                                  e.preventDefault();
-                                  cancelSubtaskEdit();
-                                }
-                              }}
-                              className="flex-1 text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded px-2 py-1 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              autoFocus
-                            />
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                saveSubtaskEdit();
-                              }}
-                              className="p-1 text-emerald-600 hover:text-emerald-700"
-                              title="Save"
-                            >
-                              <CheckCircle size={12} />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                cancelSubtaskEdit();
-                              }}
-                              className="p-1 text-slate-400 hover:text-slate-500"
-                              title="Cancel"
-                            >
-                              <X size={12} />
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              startEditingSubtask(subtask.id, subtask.title || '');
-                            }}
-                            className={`text-left leading-snug ${subtask.status === 'done' ? 'line-through text-slate-400' : 'hover:text-blue-600'}`}
-                            title="Rename subtask"
-                          >
-                            {subtask.title || 'Untitled subtask'}
-                          </button>
-                        )}
-                        <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-slate-400 dark:text-slate-500">
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ${getSubtaskStatusStyles(subtask.status)}`}>
-                            {SUBTASK_STATUSES.find(opt => opt.value === subtask.status)?.label ?? 'Unknown'}
-                          </span>
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-600">
-                            <User size={10} />
-                            {assignee}
-                          </span>
-                          {subtask.dueDate && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-600">
-                              <CalendarDays size={10} />
-                              {format(subtask.dueDate, 'MMM d')}
-                            </span>
-                          )}
-                          {hasNotes && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-600">
-                              <MessageSquare size={10} />
-                              Notes
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 self-start">
-                        <select
-                          value={subtask.status}
-                          onChange={(e) => updateSubtaskStatus(subtask.id, e.target.value as TaskStatus)}
-                          className="text-xs font-medium rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 px-2 py-1 text-slate-600 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        >
-                          {SUBTASK_STATUSES.map(option => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                        {editingSubtask?.id !== subtask.id && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              startEditingSubtask(subtask.id, subtask.title || '');
-                            }}
-                            className="p-1 text-slate-400 hover:text-blue-500 transition-colors"
-                            title="Rename subtask"
-                          >
-                            <Edit3 size={12} />
-                          </button>
-                        )}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            deleteSubtask(subtask.id);
-                          }}
-                          className="p-1 text-slate-400 hover:text-red-500 transition-colors"
-                          title="Delete subtask"
-                        >
-                          <Trash2 size={12} />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-
-            {!task.deleted && (
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 px-4 py-3">
-                <input
-                  type="text"
-                  value={subtaskDrafts[task.id] || ''}
-                  onChange={(e) => handleSubtaskDraftChange(task.id, e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      createSubtask(task.id);
-                    }
-                  }}
-                  className="flex-1 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Add a subtask..."
-                />
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    createSubtask(task.id);
-                  }}
-                  className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-                >
-                  <Plus size={14} />
-                  Add
-                </button>
-              </div>
-            )}
+      <div className="mt-2 ml-14">
+        <SortableContext items={subtasks.map(s => `subtask-${task.id}-${s.id}`)} strategy={verticalListSortingStrategy}>
+          <div className="space-y-0.5">
+            {subtasks.length > 0 && subtasks.map((subtask, idx) => (
+              <SubtaskRow key={subtask.id} parentId={task.id} subtask={subtask} idx={idx} total={subtasks.length} />
+            ))}
           </div>
-        )}
+        </SortableContext>
       </div>
     );
   };
@@ -1170,7 +1393,7 @@ export default function TodosWorkingFollowUp() {
 
   // Focus time management functions
   const startEditingFocusTime = (taskId: string, currentTime: number) => {
-    console.log('Starting focus time edit for task:', taskId, 'current time:', currentTime);
+    if (import.meta.env.DEV) console.log('Starting focus time edit for task:', taskId, 'current time:', currentTime);
     setEditingFocusTime(taskId);
     setTempFocusTime(currentTime);
   };
@@ -1221,52 +1444,110 @@ export default function TodosWorkingFollowUp() {
     }
   };
 
-  // Filtering and sorting functions
-  const getFilteredAndSortedTasks = (taskList: Task[]) => {
-    let filtered = taskList;
-
-    // Apply search filter
-    if (searchQuery.trim()) {
-      filtered = filtered.filter(task => 
-        task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        task.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        task.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
-      );
+  // Memoized list for the main task view (reduces expensive recomputation on each click)
+  const tasksToShow = useMemo(() => {
+    let base: Task[];
+    switch (currentView) {
+      case 'today':
+        base = tasks.filter(task => task.dueDate && isToday(task.dueDate) && task.status !== 'done' && !task.archived && !task.deleted);
+        break;
+      case 'upcoming':
+        base = tasks
+          .filter(task => task.dueDate && task.dueDate > new Date() && task.status !== 'done' && !task.archived && !task.deleted)
+          .sort((a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime());
+        break;
+      case 'waiting':
+        base = tasks.filter(task => task.status === 'waiting' && !task.archived && !task.deleted);
+        break;
+      case 'scheduled':
+        base = tasks.filter(task => task.status === 'scheduled' && !task.archived && !task.deleted);
+        break;
+      case 'completed':
+        base = tasks.filter(task => task.status === 'done' && !task.archived && !task.deleted);
+        break;
+      case 'starred':
+        base = tasks.filter(task => task.starred && !task.archived && !task.deleted);
+        break;
+      case 'trash':
+        base = tasks
+          .filter(task => task.deleted)
+          .sort((a, b) => (b.deletedAt?.getTime() ?? 0) - (a.deletedAt?.getTime() ?? 0));
+        break;
+      case 'archived':
+        base = tasks.filter(task => task.archived && !task.deleted);
+        break;
+      case 'inbox':
+      default:
+        base = tasks.filter(task => task.status !== 'done' && !task.archived && !task.deleted);
+        break;
     }
 
-    // Apply other filters
+    if (selectedProject !== 'all') {
+      base = base.filter(task => task.projectId === selectedProject);
+    }
+
+    // Hide 75 Hard tasks when disabled in settings
+    if (!showSFHTasksInTasks) {
+      base = base.filter(t => !(t.tags || []).includes('sfh'));
+    }
+
+    const query = searchQuery.trim().toLowerCase();
+    if (query) {
+      const matchesTask = (t: Task) =>
+        t.title.toLowerCase().includes(query) ||
+        (t.description?.toLowerCase().includes(query) ?? false) ||
+        t.tags.some(tag => tag.toLowerCase().includes(query));
+      base = base.filter(parent => {
+        if (matchesTask(parent)) return true;
+        const subs = parent.subtasks || [];
+        return subs.some(matchesTask);
+      });
+    }
     if (filters.priority !== 'all') {
-      filtered = filtered.filter(task => task.priority === filters.priority);
+      base = base.filter(task => task.priority === filters.priority);
     }
-    
     if (filters.status !== 'all') {
-      filtered = filtered.filter(task => task.status === filters.status);
+      base = base.filter(task => task.status === filters.status);
     }
-    
     if (filters.project !== 'all') {
-      filtered = filtered.filter(task => task.projectId === filters.project);
+      base = base.filter(task => task.projectId === filters.project);
     }
-    
     if (filters.tags.length > 0) {
-      filtered = filtered.filter(task => 
-        filters.tags.some(tag => task.tags.includes(tag))
-      );
+      base = base.filter(task => filters.tags.some(tag => task.tags.includes(tag)));
     }
 
-    // Sort tasks
-    filtered.sort((a, b) => {
-      let aValue, bValue;
-      
+    // 75 Hard visibility in Tasks views: only today's SFH tasks and cap to 5
+    // (applies regardless of sub-view in Tasks UX)
+    let forSort = base;
+    {
+      const isSFH = (t: Task) => (t.tags || []).includes('sfh');
+      const todaySFH = base.filter(t => isSFH(t) && t.dueDate && isToday(t.dueDate)).slice(0, 5);
+      const nonSFH = base.filter(t => !isSFH(t));
+      forSort = [...nonSFH, ...todaySFH];
+    }
+
+    // If manual positions exist and sorting by created date, respect manual order
+    if (sortBy === 'created' && forSort.some(t => typeof t.position === 'number')) {
+      return [...forSort].sort((a, b) => {
+        const ap = typeof a.position === 'number' ? a.position : Number.MAX_SAFE_INTEGER;
+        const bp = typeof b.position === 'number' ? b.position : Number.MAX_SAFE_INTEGER;
+        return sortOrder === 'asc' ? ap - bp : bp - ap;
+      });
+    }
+
+    const sorted = [...forSort].sort((a, b) => {
+      let aValue: any, bValue: any;
       switch (sortBy) {
         case 'dueDate':
-          aValue = a.dueDate?.getTime() || Infinity;
-          bValue = b.dueDate?.getTime() || Infinity;
+          aValue = a.dueDate?.getTime() ?? Infinity;
+          bValue = b.dueDate?.getTime() ?? Infinity;
           break;
-        case 'priority':
-          const priorityOrder = { urgent: 4, high: 3, medium: 2, low: 1 };
+        case 'priority': {
+          const priorityOrder: Record<Task['priority'], number> = { urgent: 4, high: 3, medium: 2, low: 1 };
           aValue = priorityOrder[a.priority];
           bValue = priorityOrder[b.priority];
           break;
+        }
         case 'created':
           aValue = a.createdAt.getTime();
           bValue = b.createdAt.getTime();
@@ -1278,16 +1559,44 @@ export default function TodosWorkingFollowUp() {
         default:
           return 0;
       }
-      
-      if (sortOrder === 'asc') {
-        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
-      } else {
-        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
-      }
+      if (sortOrder === 'asc') return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+      return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
     });
 
-    return filtered;
-  };
+    return sorted;
+  }, [tasks, currentView, selectedProject, searchQuery, filters, sortBy, sortOrder, showSFHTasksInTasks]);
+
+  // Precompute counts per project for sidebar
+  const projectActiveCounts = useMemo(() => {
+    const map = new Map<string, number>();
+    tasks.forEach(t => {
+      if (t.status !== 'done' && !t.archived) {
+        const key = t.projectId || '';
+        map.set(key, (map.get(key) ?? 0) + 1);
+      }
+    });
+    return map;
+  }, [tasks]);
+
+  // Counts that mirror visibility rules (especially for 75 Hard)
+  const inboxCount = useMemo(() => {
+    let base = tasks.filter(task => task.status !== 'done' && !task.archived && !task.deleted);
+    // Apply 75 Hard visibility: only today's SFH and cap to 5
+    const isSFH = (t: Task) => (t.tags || []).includes('sfh');
+    const todaySFH = base.filter(t => isSFH(t) && t.dueDate && isToday(t.dueDate));
+    const cappedSFH = showSFHTasksInTasks ? todaySFH.slice(0, 5) : [];
+    const nonSFH = base.filter(t => !isSFH(t));
+    return nonSFH.length + cappedSFH.length;
+  }, [tasks, showSFHTasksInTasks]);
+
+  const todayCount = useMemo(() => {
+    let base = tasks.filter(task => task.dueDate && isToday(task.dueDate) && task.status !== 'done' && !task.archived && !task.deleted);
+    const isSFH = (t: Task) => (t.tags || []).includes('sfh');
+    const todaySFH = base.filter(isSFH);
+    const cappedSFH = showSFHTasksInTasks ? todaySFH.slice(0, 5) : [];
+    const nonSFH = base.filter(t => !isSFH(t));
+    return nonSFH.length + cappedSFH.length;
+  }, [tasks, showSFHTasksInTasks]);
 
   // View-specific task getters
   const getTodayTasks = () => {
@@ -1332,45 +1641,7 @@ export default function TodosWorkingFollowUp() {
       .sort((a, b) => (b.deletedAt?.getTime() ?? 0) - (a.deletedAt?.getTime() ?? 0));
   };
 
-  const getTasksToShow = () => {
-    let tasksToShow = [];
-    switch (currentView) {
-      case 'today': 
-        tasksToShow = getTodayTasks();
-        break;
-      case 'upcoming': 
-        tasksToShow = getUpcomingTasks();
-        break;
-      case 'waiting': 
-        tasksToShow = getWaitingTasks();
-        break;
-      case 'scheduled': 
-        tasksToShow = getScheduledTasks();
-        break;
-      case 'completed':
-        tasksToShow = getCompletedTasks();
-        break;
-      case 'starred':
-        tasksToShow = getStarredTasks();
-        break;
-      case 'trash':
-        tasksToShow = getDeletedTasks();
-        break;
-      case 'archived':
-        tasksToShow = getArchivedTasks();
-        break;
-      case 'inbox':
-      default:
-        tasksToShow = getInboxTasks();
-        break;
-    }
-    
-    if (selectedProject !== 'all') {
-      tasksToShow = tasksToShow.filter(task => task.projectId === selectedProject);
-    }
-    
-    return getFilteredAndSortedTasks(tasksToShow);
-  };
+  const getTasksToShow = () => tasksToShow;
 
   // Bulk operations
   const toggleTaskSelection = (taskId: string) => {
@@ -1386,7 +1657,7 @@ export default function TodosWorkingFollowUp() {
   };
 
   const selectAllTasks = () => {
-    const taskIds = getTasksToShow().map(task => task.id);
+    const taskIds = tasksToShow.map(task => task.id);
     setSelectedTasks(new Set(taskIds));
   };
 
@@ -1396,7 +1667,8 @@ export default function TodosWorkingFollowUp() {
 
   const bulkDeleteTasks = async () => {
     try {
-      const promises = Array.from(selectedTasks).map(taskId => dbDeleteTask(taskId));
+      // Soft-delete via API so items move to trash/are removed as per store rules
+      const promises = Array.from(selectedTasks).map(taskId => apiDeleteTask(taskId));
       await Promise.all(promises);
       setSelectedTasks(new Set());
     } catch (err) {
@@ -1590,6 +1862,16 @@ export default function TodosWorkingFollowUp() {
       }
     });
 
+    // Make each task a droppable target for nesting (set as parent)
+    const { setNodeRef: setDropRef, isOver: isOverTaskTarget } = useDroppable({
+      id: `task-drop-${task.id}`,
+      data: { type: 'task-target', taskId: task.id },
+    });
+    const setCombinedRef = (node: HTMLElement | null) => {
+      setNodeRef(node);
+      setDropRef(node);
+    };
+
     const style = {
       transform: CSS.Transform.toString(transform),
       transition,
@@ -1599,20 +1881,24 @@ export default function TodosWorkingFollowUp() {
 
     return (
       <div
-        ref={setNodeRef}
+        ref={setCombinedRef}
         style={style}
-        className="group px-6 py-4 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors border-b border-gray-100 dark:border-slate-700 relative"
+        className={`group px-6 py-4 transition-colors border-b border-gray-100 dark:border-slate-700 relative ${
+          isOverTaskTarget ? 'bg-blue-50 dark:bg-blue-900/30' : 'hover:bg-gray-50 dark:hover:bg-slate-800'
+        }`}
       >
         <div className="flex items-start">
           {/* Drag Handle */}
-          <div
-            {...attributes}
-            {...listeners}
-            className="mt-2 mr-3 p-3 text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing hover:bg-gray-100 dark:hover:bg-slate-700 rounded transition-colors touch-none select-none bg-gray-50 dark:bg-slate-700"
-            style={{ touchAction: 'none' }}
-          >
-            <GripVertical size={20} />
-          </div>
+          {ENABLE_DND && (
+            <div
+              {...attributes}
+              {...listeners}
+              className="mt-2 mr-3 p-3 text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing hover:bg-gray-100 dark:hover:bg-slate-700 rounded transition-colors touch-none select-none bg-gray-50 dark:bg-slate-700"
+              style={{ touchAction: 'none' }}
+            >
+              <GripVertical size={20} />
+            </div>
+          )}
 
           {/* Bulk selection checkbox */}
           {bulkMode && (
@@ -1621,6 +1907,7 @@ export default function TodosWorkingFollowUp() {
               checked={isSelected}
               onChange={() => toggleTaskSelection(task.id)}
               className="mt-2 mr-3 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              aria-label={`Select task ${task.title}`}
             />
           )}
 
@@ -1650,6 +1937,7 @@ export default function TodosWorkingFollowUp() {
                     }
                   })()
             }`}
+            title={task.status === 'done' ? 'Mark as not done' : 'Mark complete'}
           >
             {task.status === 'done' && <CheckCircle size={12} />}
             {task.status === 'waiting' && <Clock size={12} className="text-orange-600" />}
@@ -1661,18 +1949,61 @@ export default function TodosWorkingFollowUp() {
           {/* Task Content - Rest of the existing task content */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center space-x-2 mb-2">
+              {/* Collapse/expand children chevron if has subtasks */}
+              {((task.subtasks || []).filter(s => !s.deleted).length > 0) && (() => {
+                const childrenCount = (task.subtasks || []).filter(s => !s.deleted).length;
+                const collapsed = isCollapsed(task.id, childrenCount);
+                return (
+                  <button
+                    type="button"
+                    aria-label={collapsed ? 'Expand subtasks' : 'Collapse subtasks'}
+                    aria-expanded={!collapsed}
+                    onClick={(e) => { e.stopPropagation(); setCollapsed(task.id, !collapsed); }}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setCollapsed(task.id, !collapsed); } }}
+                    className="p-1 rounded hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-400 hover:text-gray-600"
+                    title={collapsed ? 'Expand subtasks' : 'Collapse subtasks'}
+                  >
+                    {collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+                    {collapsed && (
+                      <span className="ml-0.5 text-[10px] text-gray-400">({childrenCount})</span>
+                    )}
+                  </button>
+                );
+              })()}
               {editingTask === task.id ? (
-                <input
-                  type="text"
-                  value={editTaskData.title || ''}
-                  onChange={(e) => setEditTaskData(prev => ({ ...prev, title: e.target.value }))}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') saveTaskEdit();
-                    if (e.key === 'Escape') cancelTaskEdit();
-                  }}
-                  className="flex-1 text-base font-normal border border-blue-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  autoFocus
-                />
+                <div className="flex items-center gap-2 w-full">
+                  <input
+                    type="text"
+                    value={editTaskData.title || ''}
+                    onChange={(e) => setEditTaskData(prev => ({ ...prev, title: e.target.value }))}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') saveTaskEdit();
+                      if (e.key === 'Escape') cancelTaskEdit();
+                    }}
+                    className="flex-1 text-base font-normal border border-blue-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    autoFocus
+                  />
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      saveTaskEdit();
+                    }}
+                    className="p-1 text-emerald-600 hover:text-emerald-700"
+                    title="Save"
+                  >
+                    <CheckCircle size={14} />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      cancelTaskEdit();
+                    }}
+                    className="p-1 text-slate-400 hover:text-slate-500"
+                    title="Cancel"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
               ) : (
                 <span className={`text-base cursor-pointer font-normal ${
                   task.status === 'done' ? 'line-through text-gray-400' : 
@@ -1732,53 +2063,7 @@ export default function TodosWorkingFollowUp() {
                 </span>
               )}
               
-              {/* Focus time setting */}
-              {editingFocusTime === task.id ? (
-                <div className="flex items-center space-x-2 px-2 py-1 bg-blue-50 dark:bg-blue-900 rounded">
-                  <Timer size={12} className="text-blue-600" />
-                  <input
-                    type="number"
-                    value={tempFocusTime}
-                    onChange={(e) => setTempFocusTime(parseInt(e.target.value) || 25)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') saveFocusTime(task.id);
-                      if (e.key === 'Escape') cancelFocusTimeEdit();
-                    }}
-                    className="w-16 text-xs bg-white dark:bg-slate-800 border border-blue-300 dark:border-blue-600 rounded px-1 py-0.5 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    min="5"
-                    max="120"
-                    autoFocus
-                  />
-                  <span className="text-xs text-blue-700 dark:text-blue-300">min</span>
-                  <button
-                    onClick={() => saveFocusTime(task.id)}
-                    className="p-0.5 text-green-600 hover:text-green-800 transition-colors"
-                    title="Save"
-                  >
-                    <CheckCircle size={12} />
-                  </button>
-                  <button
-                    onClick={cancelFocusTimeEdit}
-                    className="p-0.5 text-gray-400 hover:text-gray-600 transition-colors"
-                    title="Cancel"
-                  >
-                    <X size={12} />
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    console.log('Focus time button clicked for task:', task.id, 'current time:', task.estimatedTime);
-                    startEditingFocusTime(task.id, task.estimatedTime);
-                  }}
-                  className="flex items-center space-x-1.5 px-2 py-1 bg-gray-100 dark:bg-slate-700 rounded hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors cursor-pointer"
-                  title="Click to edit focus time"
-                >
-                  <Timer size={12} className="text-gray-600 dark:text-gray-300" />
-                  <span className="font-medium text-gray-700 dark:text-gray-300">{task.estimatedTime}m</span>
-                </button>
-              )}
+              {/* Focus time control moved to hover actions */}
 
               {task.tags.map((tag, index) => (
                 <span 
@@ -1790,7 +2075,22 @@ export default function TodosWorkingFollowUp() {
                 </span>
               ))}
 
-              {renderSubtasks(task)}
+              {/* On-demand add subtask input for this task */}
+              {openSubtaskAddFor === task.id && (
+                <div className="ml-14 w-full">
+                  <SubtaskAddInput
+                    parentId={task.id}
+                    onAdd={(raw) => createSubtask(task.id, raw)}
+                    onClose={() => setOpenSubtaskAddFor(null)}
+                  />
+                </div>
+              )}
+
+              {/* Render children only if not collapsed */}
+              {(() => {
+                const childrenCount = (task.subtasks || []).filter(s => !s.deleted).length;
+                return !isCollapsed(task.id, childrenCount) ? renderSubtasks(task) : null;
+              })()}
             </div>
           </div>
 
@@ -1875,6 +2175,17 @@ export default function TodosWorkingFollowUp() {
                   >
                     <Timer size={14} />
                   </button>
+                  {/* Add subtask (open input panel) */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOpenSubtaskAddFor(task.id);
+                    }}
+                    className="p-1 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-md text-gray-400 hover:text-green-600 transition-colors -ml-1"
+                    title="Add subtask"
+                  >
+                    <Plus size={12} />
+                  </button>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -1885,6 +2196,39 @@ export default function TodosWorkingFollowUp() {
                   >
                     <Edit3 size={10} />
                   </button>
+                  {editingFocusTime === task.id && (
+                    <div className="ml-2 flex items-center space-x-1 px-2 py-1 bg-blue-50 dark:bg-blue-900 rounded">
+                      <Timer size={12} className="text-blue-600" />
+                      <input
+                        type="number"
+                        value={tempFocusTime}
+                        onChange={(e) => setTempFocusTime(parseInt(e.target.value) || 25)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') saveFocusTime(task.id);
+                          if (e.key === 'Escape') cancelFocusTimeEdit();
+                        }}
+                        className="w-16 text-xs bg-white dark:bg-slate-800 border border-blue-300 dark:border-blue-600 rounded px-1 py-0.5 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        min="5"
+                        max="120"
+                        autoFocus
+                      />
+                      <span className="text-xs text-blue-700 dark:text-blue-300">min</span>
+                      <button
+                        onClick={() => saveFocusTime(task.id)}
+                        className="p-0.5 text-green-600 hover:text-green-800 transition-colors"
+                        title="Save"
+                      >
+                        <CheckCircle size={12} />
+                      </button>
+                      <button
+                        onClick={cancelFocusTimeEdit}
+                        className="p-0.5 text-gray-400 hover:text-gray-600 transition-colors"
+                        title="Cancel"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <button
                   onClick={() => startEditingTask(task)}
@@ -1951,7 +2295,7 @@ export default function TodosWorkingFollowUp() {
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-    <div className="h-screen bg-gray-50 dark:bg-slate-900 flex" style={{ position: 'relative' }}>
+    <div className="min-h-full bg-gray-50 dark:bg-slate-900 flex" style={{ position: 'relative' }}>
       {/* Sidebar */}
       <div 
         className="w-72 bg-white dark:bg-slate-800 border-r border-gray-200 dark:border-slate-700 flex flex-col shadow-sm" 
@@ -1985,7 +2329,9 @@ export default function TodosWorkingFollowUp() {
                   if (e.key === 'Enter') quickAddTask();
                   if (e.key === 'Escape') { setShowQuickAdd(false); setQuickAddText(''); }
                 }}
-                placeholder={selectedProject !== 'all' ? `Add task to ${projects.find(p => p.id === selectedProject)?.name}...` : "What needs to be done?"}
+                placeholder={selectedProject !== 'all'
+                  ? `Add task to ${projects.find(p => p.id === selectedProject)?.name}... e.g., "Email client #followup @tomorrow !high"`
+                  : 'What needs to be done? e.g., "Email client #project:\"Acme Website\" #followup @tomorrow !high"'}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-700 dark:text-white"
                 autoFocus
               />
@@ -2021,8 +2367,8 @@ export default function TodosWorkingFollowUp() {
             <h3 className="text-xs font-bold text-black dark:text-white uppercase tracking-wider mb-2 px-3">Smart Lists</h3>
             <nav className="space-y-1">
               {[
-                { id: 'inbox', label: 'All', icon: Inbox, count: getInboxTasks().length },
-                { id: 'today', label: 'Today', icon: Sun, count: getTodayTasks().length },
+                { id: 'inbox', label: 'All', icon: Inbox, count: inboxCount },
+                { id: 'today', label: 'Today', icon: Sun, count: todayCount },
                 { id: 'upcoming', label: 'Next 7 days', icon: ArrowRight, count: getUpcomingTasks().length },
                 { id: 'calendar', label: 'Calendar', icon: Calendar, count: null },
                 { id: 'waiting', label: 'Waiting For', icon: Clock, count: getWaitingTasks().length },
@@ -2040,7 +2386,7 @@ export default function TodosWorkingFollowUp() {
                       ? 'bg-blue-600 text-white dark:bg-blue-500 dark:text-white' 
                       : 'text-black dark:text-white hover:bg-gray-200 dark:hover:bg-slate-700'
                   }`}
-                  onClick={() => setCurrentView(id as any)}
+                  onClick={() => startTransition(() => setCurrentView(id as any))}
                 >
                   <Icon className="w-4 h-4" />
                   <span>{label}</span>
@@ -2079,7 +2425,7 @@ export default function TodosWorkingFollowUp() {
                         ? 'bg-blue-600 text-white dark:bg-blue-500 dark:text-white' 
                         : 'text-black dark:text-white hover:bg-gray-200 dark:hover:bg-slate-700'
                     }`}
-                    onClick={() => setSelectedProject(selectedProject === project.id ? 'all' : project.id)}
+                    onClick={() => startTransition(() => setSelectedProject(selectedProject === project.id ? 'all' : project.id))}
                   >
                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: project.color }}></div>
                     <span className="truncate">{project.name}</span>
@@ -2088,7 +2434,7 @@ export default function TodosWorkingFollowUp() {
                         ? 'bg-white text-blue-600 dark:bg-white dark:text-blue-500' 
                         : 'bg-gray-200 text-black dark:bg-slate-600 dark:text-gray-300'
                     }`}>
-                      {tasks.filter(t => t.projectId === project.id && t.status !== 'done' && !t.archived).length}
+                      {projectActiveCounts.get(project.id) ?? 0}
                     </span>
                   </DroppableSidebarItem>
                   <button
@@ -2186,6 +2532,61 @@ export default function TodosWorkingFollowUp() {
                   className="pl-10 pr-4 py-2 w-64 text-sm border border-gray-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-700 dark:text-white"
                 />
               </div>
+
+              {/* Organize as Tree (auto-nest) */}
+              <button
+                onClick={async () => {
+                  // Auto-nest tasks where title starts with "sub <ParentTitle>"
+                  try {
+                    const all = tasks; // full list, not filtered
+                    const titleMap = new Map<string, string>();
+                    all.forEach(t => {
+                      titleMap.set((t.title || '').trim().toLowerCase(), t.id);
+                    });
+
+                    const updates: Array<Promise<any>> = [];
+                    for (const t of all) {
+                      if (t.parentId) continue; // already nested
+                      const m = (t.title || '').trim().match(/^sub\s+(.+)$/i);
+                      if (!m) continue;
+                      const parentTitle = m[1].trim().toLowerCase();
+                      const parentId = titleMap.get(parentTitle);
+                      if (!parentId || parentId === t.id) continue;
+
+                      // prevent cycles: ensure target is not a descendant
+                      let cur = getTaskById(parentId);
+                      let isDescendant = false;
+                      const guard = new Set<string>();
+                      while (cur && cur.parentId && !guard.has(cur.parentId)) {
+                        if (cur.parentId === t.id) { isDescendant = true; break; }
+                        guard.add(cur.parentId);
+                        cur = getTaskById(cur.parentId);
+                      }
+                      if (isDescendant) continue;
+
+                      updates.push(apiUpdateTask(t.id, { parent_id: parentId }));
+                    }
+                    if (updates.length) await Promise.allSettled(updates);
+                  } catch (err) {
+                    console.error('Auto-nest failed', err);
+                  }
+                }}
+                className="px-3 py-2 text-sm rounded-md border border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-200"
+                title='Auto-nest tasks whose title is like "sub <ParentTitle>"'
+              >
+                Organize as tree
+              </button>
+
+              {/* 75 Hard toggle */}
+              <label className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-slate-300 select-none cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={!!showSFHTasksInTasks}
+                  onChange={(e) => setShowSFHTasksInTasks(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                Show 75 Hard tasks
+              </label>
               
               {/* Sort */}
               <div className="relative">
@@ -2215,6 +2616,7 @@ export default function TodosWorkingFollowUp() {
                 className={`p-2 rounded-md transition-colors ${
                   showFilters ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
                 } dark:hover:bg-slate-700`}
+                title="Filters"
               >
                 <Filter size={18} />
               </button>
@@ -2370,15 +2772,15 @@ export default function TodosWorkingFollowUp() {
                           if (calendarView === 'month') {
                             const newDate = new Date(calendarDate);
                             newDate.setMonth(newDate.getMonth() - 1);
-                            setCalendarDate(newDate);
+                            startTransition(() => setCalendarDate(newDate));
                           } else if (calendarView === 'week') {
                             const newDate = new Date(calendarDate);
                             newDate.setDate(newDate.getDate() - 7);
-                            setCalendarDate(newDate);
+                            startTransition(() => setCalendarDate(newDate));
                           } else {
                             const newDate = new Date(calendarDate);
                             newDate.setDate(newDate.getDate() - 1);
-                            setCalendarDate(newDate);
+                            startTransition(() => setCalendarDate(newDate));
                           }
                         }}
                         className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full transition-colors"
@@ -2390,15 +2792,15 @@ export default function TodosWorkingFollowUp() {
                           if (calendarView === 'month') {
                             const newDate = new Date(calendarDate);
                             newDate.setMonth(newDate.getMonth() + 1);
-                            setCalendarDate(newDate);
+                            startTransition(() => setCalendarDate(newDate));
                           } else if (calendarView === 'week') {
                             const newDate = new Date(calendarDate);
                             newDate.setDate(newDate.getDate() + 7);
-                            setCalendarDate(newDate);
+                            startTransition(() => setCalendarDate(newDate));
                           } else {
                             const newDate = new Date(calendarDate);
                             newDate.setDate(newDate.getDate() + 1);
-                            setCalendarDate(newDate);
+                            startTransition(() => setCalendarDate(newDate));
                           }
                         }}
                         className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full transition-colors"
@@ -2407,7 +2809,7 @@ export default function TodosWorkingFollowUp() {
                       </button>
                     </div>
                     <button
-                      onClick={() => setCalendarDate(new Date())}
+                      onClick={() => startTransition(() => setCalendarDate(new Date()))}
                       className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-slate-700 rounded-md border border-gray-300 dark:border-slate-600 transition-colors"
                     >
                       Today
@@ -2422,7 +2824,7 @@ export default function TodosWorkingFollowUp() {
                   <div className="flex items-center space-x-2">
                     <div className="flex bg-gray-100 dark:bg-slate-700 rounded-md p-1">
                       <button
-                        onClick={() => setCalendarView('day')}
+                        onClick={() => startTransition(() => setCalendarView('day'))}
                         className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
                           calendarView === 'day' 
                             ? 'bg-white dark:bg-slate-600 text-gray-900 dark:text-white shadow-sm' 
@@ -2432,7 +2834,7 @@ export default function TodosWorkingFollowUp() {
                         Day
                       </button>
                       <button
-                        onClick={() => setCalendarView('week')}
+                        onClick={() => startTransition(() => setCalendarView('week'))}
                         className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
                           calendarView === 'week' 
                             ? 'bg-white dark:bg-slate-600 text-gray-900 dark:text-white shadow-sm' 
@@ -2442,7 +2844,7 @@ export default function TodosWorkingFollowUp() {
                         Week
                       </button>
                       <button
-                        onClick={() => setCalendarView('month')}
+                        onClick={() => startTransition(() => setCalendarView('month'))}
                         className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
                           calendarView === 'month' 
                             ? 'bg-white dark:bg-slate-600 text-gray-900 dark:text-white shadow-sm' 
@@ -2537,7 +2939,7 @@ export default function TodosWorkingFollowUp() {
                                     className={`border-r border-b border-gray-200 last:border-r-0 cursor-pointer hover:bg-blue-50 transition-colors flex flex-col ${
                                       !isCurrentMonth ? 'bg-gray-50' : 'bg-white'
                                     }`}
-                                    onClick={() => setCalendarDate(day)}
+                                    onClick={() => startTransition(() => setCalendarDate(day))}
                                     style={{ 
                                       height: '128px', 
                                       width: 'calc(100% / 7)', 
@@ -2560,9 +2962,9 @@ export default function TodosWorkingFollowUp() {
                                       </div>
                                     
                                     {/* Events area */}
-                                    <div className="flex-1 overflow-hidden" style={{ height: 'calc(128px - 48px)' }}>
-                                      <div className="space-y-1 h-full overflow-hidden">
-                                        {dayTasks.slice(0, 3).map((task) => (
+                                    <div className="flex-1 overflow-y-auto" style={{ height: 'calc(128px - 48px)' }}>
+                                      <div className="space-y-1 h-full pr-1">
+                                        {dayTasks.map((task) => (
                                           <div 
                                             key={task.id}
                                             className="text-xs px-2 py-1 text-white rounded font-medium cursor-pointer hover:opacity-90 transition-opacity flex items-center overflow-hidden"
@@ -2585,11 +2987,6 @@ export default function TodosWorkingFollowUp() {
                                             </span>
                                           </div>
                                         ))}
-                                        {dayTasks.length > 3 && (
-                                          <div className="text-xs text-gray-500 px-2 font-medium overflow-hidden" style={{ height: '20px', lineHeight: '20px', width: '100%' }}>
-                                            +{dayTasks.length - 3} more
-                                          </div>
-                                        )}
                                       </div>
                                     </div>
                                     </div>
@@ -2836,11 +3233,13 @@ export default function TodosWorkingFollowUp() {
               </div>
             ) : (
               <div className="py-4">
+                  {/* Un-nest drop area (only while dragging and when DnD enabled) */}
+                  {ENABLE_DND && showRootDrop && <RootDropZone />}
                   <SortableContext
-                    items={getTasksToShow().map(task => task.id)}
+                    items={tasksToShow.map(task => task.id)}
                     strategy={verticalListSortingStrategy}
                   >
-                    {getTasksToShow().map((task) => {
+                    {tasksToShow.map((task) => {
                       const project = projects.find(p => p.id === task.projectId);
                       const dependencyStatus = getDependencyStatus(task);
                       const isSelected = selectedTasks.has(task.id);
@@ -2858,7 +3257,7 @@ export default function TodosWorkingFollowUp() {
                   </SortableContext>
 
                 {/* Empty state */}
-                {getTasksToShow().length === 0 && (
+                {tasksToShow.length === 0 && (
                   <div className="text-center py-16 px-6">
                     <p>No tasks to show</p>
                   </div>

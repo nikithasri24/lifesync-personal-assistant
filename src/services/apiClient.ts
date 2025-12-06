@@ -19,6 +19,8 @@ import type {
   RecipeData,
   RecipeIngredientData,
   AnalyticsData,
+  SFHChallengeData,
+  SFHEntryData,
 } from './types';
 
 export type {
@@ -177,6 +179,17 @@ class ApiClient {
     });
   }
 
+  // ==================== TASK ORDERING ====================
+  async reorderTasks(order: Array<{ id: string; position: number }>): Promise<{ success: boolean; updated: number }> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.reorderTasks(order);
+    }
+    return this.request<{ success: boolean; updated: number }>(`/tasks/reorder`, {
+      method: 'POST',
+      body: JSON.stringify({ order }),
+    });
+  }
+
   // ==================== HABIT OPERATIONS ====================
 
   async getHabits(): Promise<HabitData[]> {
@@ -204,6 +217,28 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify(entry),
     });
+  }
+
+  async deleteHabitEntryForDate(habitId: string, date: string): Promise<void> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.deleteHabitEntryForDate(habitId, date);
+    }
+    // In mock/local mode, no-op
+    return Promise.resolve();
+  }
+
+  async getHabitEntryForDate(habitId: string, date: string) {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.getHabitEntryForDate(habitId, date);
+    }
+    return Promise.resolve<{ id: string; value: number } | null>(null)
+  }
+
+  async deleteAllHabitEntries(habitId: string): Promise<void> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.deleteAllHabitEntries(habitId)
+    }
+    return Promise.resolve()
   }
 
   async updateHabit(habitId: string, updates: Partial<HabitData>): Promise<HabitData> {
@@ -468,6 +503,24 @@ class ApiClient {
     });
   }
 
+  async updateRecipe(id: string, updates: Partial<RecipeData>): Promise<RecipeData> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.updateRecipe(id, updates);
+    }
+    return this.request<RecipeData>(`/recipes/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  async deleteRecipe(id: string): Promise<void> {
+    if (this.supabaseAdapter) {
+      await this.supabaseAdapter.deleteRecipe(id);
+      return;
+    }
+    await this.request<void>(`/recipes/${id}`, { method: 'DELETE' });
+  }
+
   // ==================== ANALYTICS ====================
 
   async getAnalytics(): Promise<AnalyticsData> {
@@ -475,6 +528,63 @@ class ApiClient {
       return this.supabaseAdapter.getAnalytics();
     }
     return this.request<AnalyticsData>('/analytics/dashboard');
+  }
+
+  // ==================== 75 HARD ====================
+  async getSFHChallenges(): Promise<SFHChallengeData[]> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.getSFHChallenges();
+    }
+    return [];
+  }
+
+  async getSFHEntries(challengeIds: string[]): Promise<SFHEntryData[]> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.getSFHEntries(challengeIds);
+    }
+    return [];
+  }
+
+  async createSFHChallenge(challenge: Omit<SFHChallengeData, 'id' | 'created_at' | 'user_id'>): Promise<SFHChallengeData> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.createSFHChallenge(challenge);
+    }
+    throw new Error('Supabase not configured');
+  }
+
+  async updateSFHChallenge(id: string, updates: Partial<SFHChallengeData>): Promise<SFHChallengeData> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.updateSFHChallenge(id, updates);
+    }
+    throw new Error('Supabase not configured');
+  }
+
+  async deleteSFHChallenge(id: string): Promise<void> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.deleteSFHChallenge(id);
+    }
+    throw new Error('Supabase not configured');
+  }
+
+  async createSFHEntry(entry: Omit<SFHEntryData, 'id' | 'created_at' | 'user_id'>): Promise<SFHEntryData> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.createSFHEntry(entry);
+    }
+    throw new Error('Supabase not configured');
+  }
+
+  async updateSFHEntry(id: string, updates: Partial<SFHEntryData>): Promise<SFHEntryData> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.updateSFHEntry(id, updates);
+    }
+    throw new Error('Supabase not configured');
+  }
+
+  async deleteSFHEntriesForChallenge(challengeId: string): Promise<void> {
+    if (this.supabaseAdapter) {
+      return this.supabaseAdapter.deleteSFHEntriesForChallenge(challengeId);
+    }
+    return Promise.resolve();
   }
 
   // ==================== HEALTH CHECK ====================
