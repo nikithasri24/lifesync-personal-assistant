@@ -20,7 +20,7 @@ import BudgetSummary, { type BudgetSummaryData } from '../components/budgets/Bud
 import BudgetEditor from '../components/budgets/BudgetEditor';
 import BudgetBulkEditor from '../components/budgets/BudgetBulkEditor';
 import BudgetTemplateManager from '../components/budgets/BudgetTemplateManager';
-import { getBudgetStatus, type BudgetStatus } from '../components/budgets/BudgetProgressBar';
+import { getBudgetStatus, type BudgetStatus } from '../components/budgets/budgetStatus';
 import { calculateBudgetRecommendation, type BudgetRecommendation } from '../utils/budgetRecommendations';
 
 const BudgetsPage: React.FC = () => {
