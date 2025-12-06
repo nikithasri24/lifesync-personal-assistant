@@ -15,6 +15,7 @@ const TransactionsPage = React.lazy(() => import('./pages/TransactionsPageEnhanc
 const BudgetsPage = React.lazy(() => import('./pages/BudgetsPage'));
 const NetWorthPage = React.lazy(() => import('./pages/NetWorthPage'));
 const GoalsPage = React.lazy(() => import('./pages/GoalsPage'));
+const CreditCardsPage = React.lazy(() => import('./pages/CreditCardsPage'));
 const SettingsPage = React.lazy(() => import('./pages/SettingsPage'));
 
 function FinanceLayout() {
@@ -25,6 +26,7 @@ function FinanceLayout() {
     { to: '/finance/budgets', label: 'Budgets' },
     { to: '/finance/net-worth', label: 'Net Worth' },
     { to: '/finance/goals', label: 'Goals' },
+    { to: '/finance/credit-cards', label: 'Credit Cards' },
     { to: '/finance/settings', label: 'Settings' },
   ];
   // Uses simple anchors to avoid hard dependency on react-router-dom at build time
@@ -57,6 +59,7 @@ export function registerFinanceRoutes(): RouteObject[] {
         { path: 'budgets', element: <BudgetsPage /> },
         { path: 'net-worth', element: <NetWorthPage /> },
         { path: 'goals', element: <GoalsPage /> },
+        { path: 'credit-cards', element: <CreditCardsPage /> },
         { path: 'settings', element: <SettingsPage /> },
       ],
     },

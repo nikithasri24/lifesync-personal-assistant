@@ -1238,10 +1238,16 @@ export default function Todos() {
                 );
               }
               else if (currentView === 'kanban') {
+                // Double-check: ensure 75 Hard tasks are excluded from all columns (defense in depth)
+                const nonSFHTasks = tasks.filter(t => {
+                  const originalTodo = todos.find(todo => todo.id === t.id);
+                  return originalTodo ? !isSFHTask(originalTodo) : true;
+                });
+
                 const kanbanColumns = [
-                  { id: 'todo', title: 'To Do', tasks: tasks.filter(t => t.status === 'todo' && (selectedProject === 'all' || t.projectId === selectedProject)) },
+                  { id: 'todo', title: 'To Do', tasks: nonSFHTasks.filter(t => t.status === 'todo' && (selectedProject === 'all' || t.projectId === selectedProject)) },
                   { id: 'in_progress', title: 'In Progress', tasks: [] }, // Add in_progress status later
-                  { id: 'done', title: 'Done', tasks: tasks.filter(t => t.status === 'done' && (selectedProject === 'all' || t.projectId === selectedProject)) }
+                  { id: 'done', title: 'Done', tasks: nonSFHTasks.filter(t => t.status === 'done' && (selectedProject === 'all' || t.projectId === selectedProject)) }
                 ];
                 
                 return (

@@ -171,6 +171,7 @@ interface RealAppState {
   // State
   sfhChallenge: import('../types/seventyFiveHard').SeventyFiveHardChallenge | null
   sfhCheckIns: import('../types/seventyFiveHard').DailyCheckIn[]
+  sfhCheckInsLoadedRange: { from: Date | null; to: Date | null } | null  // Track loaded check-in date range for lazy loading
   sfhShowFailurePrompt: boolean
   sfhFailureDate: Date | null
   sfhShowDayCompleteMessage: boolean
@@ -1059,6 +1060,7 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
   // 75 Hard (New Architecture) - Initial State
   sfhChallenge: null,
   sfhCheckIns: [],
+  sfhCheckInsLoadedRange: null,
   sfhShowFailurePrompt: false,
   sfhFailureDate: null,
   sfhShowDayCompleteMessage: false,
