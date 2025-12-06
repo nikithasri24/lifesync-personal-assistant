@@ -1,7 +1,7 @@
-import { 
-  CheckSquare, 
-  Target, 
-  FileText, 
+import {
+  CheckSquare,
+  Target,
+  FileText,
   BookOpen,
   TrendingUp
 } from 'lucide-react';
@@ -11,12 +11,12 @@ import { SkeletonCard } from '../components/LoadingSpinner';
 import { useState, useEffect } from 'react';
 import { Toast } from '../components/Toast';
 import { useToast } from '../hooks/useToast';
+import SeventyFiveHardWidget from '../components/SeventyFiveHardWidget';
 
 export default function Dashboard() {
-  const { ensureSFHTasksForToday } = useAppStore();
-  const { 
-    habits, 
-    notes, 
+  const {
+    habits,
+    notes,
     journalEntries,
     completeHabit,
     setActiveView,
@@ -57,16 +57,18 @@ export default function Dashboard() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Ensure 75 Hard tasks for today are present so they show up in the Tasks section
-  useEffect(() => {
-    ensureSFHTasksForToday?.();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Note: 75 Hard todo cleanup/sync is already handled by App.tsx → loadSFHChallenge() → ensureSFHTodosForToday()
+  // No need to call it again here to avoid race condition and duplicate task creation
 
-  const isSFH = (t: any) => Array.isArray(t.tags) && t.tags.includes('sfh');
-  const todayTodosAll = tasks.filter(task => 
-    task.status !== 'done' && !task.deleted && 
-    task.dueDate && 
+  // Helper to identify 75 Hard tasks (both old 'sfh' tag and new '75hard' tag)
+  const isSFH = (t: any) => {
+    const tags = Array.isArray(t.tags) ? t.tags : [];
+    return tags.includes('sfh') || tags.includes('75hard');
+  };
+
+  const todayTodosAll = tasks.filter(task =>
+    task.status !== 'done' && !task.deleted &&
+    task.dueDate &&
     isToday(task.dueDate)
   );
   // Exclude 75 Hard from Dashboard metrics and list to focus on actual tasks
@@ -194,6 +196,9 @@ export default function Dashboard() {
           </div>
         ))}
       </div>
+
+      {/* 75 Hard Challenge Widget */}
+      <SeventyFiveHardWidget />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Today's Tasks */}

@@ -138,7 +138,7 @@ class SupabaseAdapter {
       .single()
 
     if (error) throw new Error(error.message)
-    console.log('[SupabaseAdapter] getTasks created task', data?.id)
+    console.log('[SupabaseAdapter] createTask created task', data?.id)
     return data as TaskData
   }
 
@@ -970,7 +970,7 @@ class SupabaseAdapter {
   async getSFHChallenges(): Promise<import('./types').SFHChallengeData[]> {
     const userId = this.requireUserId()
     const { data, error } = await this.client
-      .from('sfh_challenges')
+      .from('sfh_challenge')
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
@@ -979,25 +979,22 @@ class SupabaseAdapter {
   }
 
   async getSFHEntries(challengeIds: string[]): Promise<import('./types').SFHEntryData[]> {
-    const userId = this.requireUserId()
     if (challengeIds.length === 0) return []
-    // Fetch all entries for user instead of filtering by challenge IDs to avoid URL length issues
+    // Fetch entries for the specified challenges (RLS will ensure user can only access their own)
     const { data, error } = await this.client
-      .from('sfh_entries')
+      .from('sfh_daily_checkins')
       .select('*')
-      .eq('user_id', userId)
+      .in('challenge_id', challengeIds)
       .order('date', { ascending: true })
     if (error) throw new Error(error.message)
-    // Filter in memory to only include entries for the requested challenges
-    const challengeIdSet = new Set(challengeIds)
-    return ((data ?? []) as any[]).filter(entry => challengeIdSet.has(entry.challenge_id))
+    return (data ?? []) as any
   }
 
   async createSFHChallenge(challenge: Omit<import('./types').SFHChallengeData, 'id' | 'created_at' | 'user_id'>) {
     const userId = this.requireUserId()
     const payload = { ...challenge, user_id: userId }
     const { data, error } = await this.client
-      .from('sfh_challenges')
+      .from('sfh_challenge')
       .insert(payload)
       .select()
       .single()
@@ -1008,7 +1005,7 @@ class SupabaseAdapter {
   async updateSFHChallenge(id: string, updates: Partial<import('./types').SFHChallengeData>) {
     const userId = this.requireUserId()
     const { data, error } = await this.client
-      .from('sfh_challenges')
+      .from('sfh_challenge')
       .update(updates)
       .eq('id', id)
       .eq('user_id', userId)
@@ -1021,7 +1018,7 @@ class SupabaseAdapter {
   async deleteSFHChallenge(id: string): Promise<void> {
     const userId = this.requireUserId()
     const { error } = await this.client
-      .from('sfh_challenges')
+      .from('sfh_challenge')
       .delete()
       .eq('id', id)
       .eq('user_id', userId)
@@ -1029,11 +1026,10 @@ class SupabaseAdapter {
   }
 
   async createSFHEntry(entry: Omit<import('./types').SFHEntryData, 'id' | 'created_at' | 'user_id'>) {
-    const userId = this.requireUserId()
-    const payload = { ...entry, user_id: userId }
+    // No need to add user_id - it's inferred through challenge_id and RLS
     const { data, error } = await this.client
-      .from('sfh_entries')
-      .insert(payload)
+      .from('sfh_daily_checkins')
+      .insert(entry)
       .select()
       .single()
     if (error) throw new Error(error.message)
@@ -1041,12 +1037,11 @@ class SupabaseAdapter {
   }
 
   async updateSFHEntry(id: string, updates: Partial<import('./types').SFHEntryData>) {
-    const userId = this.requireUserId()
+    // RLS ensures user can only update their own entries
     const { data, error } = await this.client
-      .from('sfh_entries')
+      .from('sfh_daily_checkins')
       .update(updates)
       .eq('id', id)
-      .eq('user_id', userId)
       .select()
       .single()
     if (error) throw new Error(error.message)
@@ -1054,12 +1049,11 @@ class SupabaseAdapter {
   }
 
   async deleteSFHEntriesForChallenge(challengeId: string): Promise<void> {
-    const userId = this.requireUserId()
+    // RLS ensures user can only delete their own entries
     const { error } = await this.client
-      .from('sfh_entries')
+      .from('sfh_daily_checkins')
       .delete()
       .eq('challenge_id', challengeId)
-      .eq('user_id', userId)
     if (error) throw new Error(error.message)
   }
 }

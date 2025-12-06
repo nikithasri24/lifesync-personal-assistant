@@ -323,7 +323,11 @@ export interface SeventyFiveHardEntry {
   measurements: Record<string, number>;
 }
 
-export interface SeventyFiveHardChallenge {
+/**
+ * @deprecated Use the new SeventyFiveHardChallenge from './seventyFiveHard' instead
+ * This is kept for backward compatibility with existing store data
+ */
+export interface LegacySeventyFiveHardChallenge {
   id: string;
   name: string;
   startDate: Date;
@@ -334,7 +338,14 @@ export interface SeventyFiveHardChallenge {
   dailyEntries: SeventyFiveHardEntry[];
   notes?: string;
   createdAt: Date;
+  pausedAt?: Date;
+  resumedAt?: Date;
+  totalPauseDuration?: number; // in days
+  pauseCount?: number; // number of times paused
 }
+
+// Alias for backward compatibility - TODO: Remove after full migration
+export type SeventyFiveHardChallenge = LegacySeventyFiveHardChallenge;
 
 // ==================== Travel Types ====================
 

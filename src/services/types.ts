@@ -237,32 +237,31 @@ export interface FocusSessionData {
   updated_at?: string;
 }
 
-// 75 Hard (stored as JSON-friendly rows for simpler sync)
+// 75 Hard - New simplified schema
 export interface SFHChallengeData {
   id?: string;
   user_id?: string;
-  name: string;
   start_date: string; // yyyy-MM-dd
-  end_date: string;   // yyyy-MM-dd
-  is_active: boolean;
   current_day: number;
-  rules: Array<{ id: string; title: string; description: string; is_required: boolean; is_custom: boolean; daily_target?: number; segment_labels?: string[] }>;
-  notes?: string | null;
+  status: 'active' | 'completed'; // No more is_active - using status field
+  tasks: Array<{ id: string; title: string; description?: string; order: number }>; // Renamed from rules
+  completed_at?: string | null; // ISO timestamp
   created_at?: string;
+  updated_at?: string;
 }
 
+// 75 Hard Daily Check-in - New simplified schema
 export interface SFHEntryData {
   id?: string;
-  user_id?: string;
   challenge_id: string;
   date: string; // yyyy-MM-dd
-  day: number;
-  rule_completions: Array<{ rule_id: string; completed: boolean; completed_at?: string | null; segments?: boolean[] }>;
-  notes?: string | null;
-  progress_photo_url?: string | null;
+  day_number: number; // Renamed from 'day'
+  task_completions: Array<{ taskId: string; completed: boolean; completedAt?: string | null }>; // Renamed from rule_completions
+  photo?: string | null; // Renamed from progress_photo_url
   weight?: number | null;
-  measurements?: Record<string, number> | null;
+  notes?: string | null;
   created_at?: string;
+  updated_at?: string;
 }
 
 export interface RecipeData {

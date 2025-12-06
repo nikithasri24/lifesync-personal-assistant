@@ -384,13 +384,6 @@ export default function TodosWorkingFollowUp() {
   const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
   const [bulkMode, setBulkMode] = useState(false);
 
-  // Ensure 75 Hard tasks for today are present
-  const { ensureSFHTasksForToday } = useAppStore();
-  useEffect(() => {
-    ensureSFHTasksForToday?.();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   // Drag and drop sensors
   const sensors = ENABLE_DND
     ? useSensors(

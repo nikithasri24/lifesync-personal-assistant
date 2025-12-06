@@ -135,19 +135,27 @@ export default function Todos() {
     indigo: { primary: 'bg-indigo-500', secondary: 'bg-indigo-100' }
   };
 
-  // Use local store data as primary source
-  const tasks = todos.map(todo => ({
-    id: todo.id,
-    title: todo.title,
-    description: todo.description,
-    priority: todo.priority,
-    status: todo.completed ? 'done' as const : 'todo' as const,
-    estimatedTime: todo.estimatedTime || 30,
-    actualTime: todo.actualTime || 0,
-    dueDate: todo.dueDate,
-    projectId: todo.projectId,
-    tags: todo.tags || [],
-    category: todo.categoryId || 'personal',
+  // Helper to identify 75 Hard tasks (should be managed from 75 Hard page, not Tasks tab)
+  const isSFHTask = (todo: any) => {
+    const tags = Array.isArray(todo.tags) ? todo.tags : [];
+    return tags.includes('sfh') || tags.includes('75hard');
+  };
+
+  // Use local store data as primary source, excluding 75 Hard tasks
+  const tasks = todos
+    .filter(todo => !isSFHTask(todo)) // Exclude 75 Hard tasks from Tasks tab
+    .map(todo => ({
+      id: todo.id,
+      title: todo.title,
+      description: todo.description,
+      priority: todo.priority,
+      status: todo.completed ? 'done' as const : 'todo' as const,
+      estimatedTime: todo.estimatedTime || 30,
+      actualTime: todo.actualTime || 0,
+      dueDate: todo.dueDate,
+      projectId: todo.projectId,
+      tags: todo.tags || [],
+      category: todo.categoryId || 'personal',
     createdAt: todo.createdAt,
     completedAt: todo.completed ? todo.updatedAt : undefined,
     parentId: todo.parentId
