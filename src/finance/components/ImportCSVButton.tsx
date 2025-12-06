@@ -1,0 +1,241 @@
+/**
+ * Import CSV Button Component
+ * Production-ready CSV import with proper error handling and validation
+ */
+
+import React from 'react';
+import { Button } from '../ui/Button';
+import { getFinanceAPI } from '../data';
+import { parseFinanceCSV, mapCategoryName } from '../utils/csvParser';
+import type { ParsedTransaction } from '../utils/csvParser';
+
+interface ImportStats {
+  total: number;
+  imported: number;
+  failed: number;
+  errors: Array<{ transaction: string; error: string }>;
+}
+
+const ImportCSVButton: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => {
+  const [importing, setImporting] = React.useState(false);
+  const [progress, setProgress] = React.useState(0);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const ensureCategoriesExist = async (api: any, requiredCategories: Set<string>): Promise<Map<string, string>> => {
+    const categories = await api.listCategories();
+    const categoryMap = new Map<string, string>();
+
+    // Map existing categories
+    categories.forEach((cat: any) => categoryMap.set(cat.name, cat.id));
+
+    // Create missing categories
+    const { createClient } = await import('@supabase/supabase-js');
+    const supabase = createClient(
+      import.meta.env.VITE_SUPABASE_URL,
+      import.meta.env.VITE_SUPABASE_ANON_KEY
+    );
+
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData.user) throw new Error('Not authenticated');
+
+    for (const categoryName of requiredCategories) {
+      if (!categoryMap.has(categoryName)) {
+        console.log(`Creating missing category: ${categoryName}`);
+
+        const { data, error } = await supabase
+          .from('categories')
+          .insert({
+            user_id: userData.user.id,
+            name: categoryName
+          })
+          .select('id')
+          .single();
+
+        if (error) {
+          console.error(`Failed to create category ${categoryName}:`, error);
+        } else if (data) {
+          categoryMap.set(categoryName, data.id);
+        }
+      }
+    }
+
+    return categoryMap;
+  };
+
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    setImporting(true);
+    setProgress(0);
+
+    const stats: ImportStats = {
+      total: 0,
+      imported: 0,
+      failed: 0,
+      errors: []
+    };
+
+    try {
+      const api = await getFinanceAPI();
+
+      // Get account
+      const accounts = await api.listAccounts();
+      if (accounts.length === 0) {
+        throw new Error('No account found. Please create an account first.');
+      }
+      const accountId = accounts[0].id;
+
+      // Parse all CSV files
+      let allTransactions: ParsedTransaction[] = [];
+      const fileNames: string[] = [];
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        fileNames.push(file.name);
+        const content = await file.text();
+
+        // Extract month from filename (e.g., "Jul 2025" → "2025-07-15")
+        const monthMatch = file.name.match(/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{4})/);
+        let month = '2025-01-15'; // Default
+        if (monthMatch) {
+          const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+          const monthNum = monthNames.indexOf(monthMatch[1]) + 1;
+          const year = monthMatch[2];
+          month = `${year}-${monthNum.toString().padStart(2, '0')}-15`;
+        }
+
+        const transactions = parseFinanceCSV(content, month);
+        allTransactions = allTransactions.concat(transactions);
+      }
+
+      if (allTransactions.length === 0) {
+        alert('No transactions found in the selected files.');
+        return;
+      }
+
+      stats.total = allTransactions.length;
+
+      // Get required categories
+      const requiredCategories = new Set<string>();
+      allTransactions.forEach(txn => {
+        requiredCategories.add(mapCategoryName(txn.categoryName));
+      });
+
+      console.log('📊 Import Summary:');
+      console.log(`- Files: ${fileNames.join(', ')}`);
+      console.log(`- Total transactions: ${stats.total}`);
+      console.log(`- Required categories: ${Array.from(requiredCategories).join(', ')}`);
+
+      // Confirm import
+      if (!confirm(`Import ${stats.total} transactions from ${files.length} file(s)?\n\nFiles: ${fileNames.join(', ')}`)) {
+        return;
+      }
+
+      // Ensure all categories exist
+      console.log('🏷️  Ensuring categories exist...');
+      const categoryMap = await ensureCategoriesExist(api, requiredCategories);
+      console.log('✓ Categories ready:', Array.from(categoryMap.entries()));
+
+      // Import transactions
+      console.log('💾 Starting import...');
+      for (const txn of allTransactions) {
+        try {
+          // Map category name
+          const mappedCategory = mapCategoryName(txn.categoryName);
+          const categoryId = categoryMap.get(mappedCategory);
+
+          if (!categoryId) {
+            throw new Error(`Category not found: ${mappedCategory}`);
+          }
+
+          // Generate UUID for new transaction
+          const txnId = crypto.randomUUID();
+
+          const transactionData = {
+            id: txnId,
+            accountId,
+            dateISO: txn.date,
+            description: txn.description,
+            categoryId,
+            amount: txn.amount,
+            type: 'debit' as const
+          };
+
+          // Insert transaction
+          await api.upsertTransaction(transactionData);
+
+          stats.imported++;
+          setProgress(Math.round((stats.imported / stats.total) * 100));
+
+          if (stats.imported % 10 === 0) {
+            console.log(`  Progress: ${stats.imported}/${stats.total}`);
+          }
+        } catch (err) {
+          stats.failed++;
+          const errorMsg = err instanceof Error ? err.message : String(err);
+          stats.errors.push({
+            transaction: `${txn.description} ($${txn.amount})`,
+            error: errorMsg
+          });
+          console.error(`❌ Failed: ${txn.description}:`, errorMsg);
+        }
+      }
+
+      console.log('✅ Import complete!');
+      console.log(`- Imported: ${stats.imported}`);
+      console.log(`- Failed: ${stats.failed}`);
+
+      if (stats.errors.length > 0) {
+        console.group('⚠️ Errors:');
+        stats.errors.forEach(e => console.error(`${e.transaction}: ${e.error}`));
+        console.groupEnd();
+      }
+
+      // Show results
+      let message = `✅ Successfully imported ${stats.imported} of ${stats.total} transactions!`;
+      if (stats.failed > 0) {
+        message += `\n\n⚠️ ${stats.failed} failed (check console for details)`;
+      }
+      message += '\n\nPage will refresh to show new transactions...';
+
+      alert(message);
+
+      // Force full page reload
+      window.location.reload();
+
+    } catch (error) {
+      console.error('💥 Import failed:', error);
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      alert(`Import failed: ${errorMsg}\n\nCheck console for details.`);
+    } finally {
+      setImporting(false);
+      setProgress(0);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  return (
+    <>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".csv"
+        multiple
+        onChange={handleFileSelect}
+        style={{ display: 'none' }}
+      />
+      <Button
+        variant="outline"
+        onClick={() => fileInputRef.current?.click()}
+        disabled={importing}
+      >
+        {importing ? `Importing... ${progress}%` : '📥 Import CSV Files'}
+      </Button>
+    </>
+  );
+};
+
+export default ImportCSVButton;

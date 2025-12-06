@@ -24,7 +24,11 @@ async function getUid(client: SupabaseClient): Promise<string> {
 }
 
 export class SupabaseApi implements FinanceAPI {
-  constructor(private client: SupabaseClient) {}
+  private client: SupabaseClient;
+
+  constructor(client: SupabaseClient) {
+    this.client = client;
+  }
 
   async listInstitutions(): Promise<Institution[]> {
     const uid = await getUid(this.client);
@@ -76,6 +80,10 @@ export class SupabaseApi implements FinanceAPI {
       amount: Number(r.amount),
       type: r.type,
       notes: r.notes ?? undefined,
+      merchantName: r.merchant_name ?? undefined,
+      confidenceScore: r.confidence_score ? Number(r.confidence_score) : undefined,
+      suggestedCategoryId: r.suggested_category_id ?? undefined,
+      categorizationRuleId: r.categorization_rule_id ?? undefined,
     }));
     const nextCursor = items.length === limit ? items[items.length - 1]?.id : undefined;
     return { items, nextCursor };
@@ -84,6 +92,10 @@ export class SupabaseApi implements FinanceAPI {
   async upsertTransaction(txn: TransactionInput): Promise<void> {
     txn = await validateTransactionInput(txn);
     const uid = await getUid(this.client);
+
+    // Extract merchant name from description
+    const merchantName = this.extractMerchantName(txn.description);
+
     const row: any = {
       id: txn.id,
       user_id: uid,
@@ -94,9 +106,59 @@ export class SupabaseApi implements FinanceAPI {
       amount: txn.amount,
       type: txn.type,
       notes: txn.notes ?? null,
+      merchant_name: merchantName,
     };
     const { error } = await this.client.from('transactions').upsert(row).select('id').single();
     if (error) throw error;
+  }
+
+  /**
+   * Bulk update transactions with categorization results
+   */
+  async bulkCategorizeTransactions(
+    updates: Array<{
+      id: string;
+      categoryId: string;
+      confidence: number;
+      ruleId: string | null;
+      merchantName: string | null;
+    }>
+  ): Promise<void> {
+    const uid = await getUid(this.client);
+
+    // Update each transaction
+    for (const update of updates) {
+      const { error } = await this.client
+        .from('transactions')
+        .update({
+          category_id: update.categoryId,
+          confidence_score: update.confidence,
+          categorization_rule_id: update.ruleId,
+          merchant_name: update.merchantName,
+        })
+        .eq('id', update.id)
+        .eq('user_id', uid);
+
+      if (error) throw error;
+    }
+  }
+
+  /**
+   * Extract merchant name from transaction description
+   */
+  private extractMerchantName(description: string): string {
+    let normalized = description.trim().toUpperCase();
+
+    // Remove common prefixes
+    normalized = normalized.replace(/^(DEBIT|CREDIT|PURCHASE|POS|CARD|PAYMENT|PAYPAL|SQ\s+\*|TST\s+\*)\s+/i, '');
+
+    // Remove trailing numbers
+    normalized = normalized.replace(/\s+\d+$/, '');
+
+    // Remove company suffixes
+    normalized = normalized.replace(/\s+(LLC|INC|CORP|CO|LTD)\.?$/i, '');
+
+    return normalized.trim();
   }
 
   async deleteTransaction(id: string): Promise<void> {

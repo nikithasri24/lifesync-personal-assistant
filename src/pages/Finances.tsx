@@ -2,7 +2,7 @@ import React from 'react'
 
 const DashboardPage = React.lazy(() => import('../finance/pages/DashboardPage'))
 const AccountsPage = React.lazy(() => import('../finance/pages/AccountsPage'))
-const TransactionsPage = React.lazy(() => import('../finance/pages/TransactionsPage'))
+const TransactionsPage = React.lazy(() => import('../finance/pages/TransactionsPageEnhanced'))
 const BudgetsPage = React.lazy(() => import('../finance/pages/BudgetsPage'))
 const NetWorthPage = React.lazy(() => import('../finance/pages/NetWorthPage'))
 const GoalsPage = React.lazy(() => import('../finance/pages/GoalsPage'))
