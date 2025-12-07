@@ -5,7 +5,7 @@ import {
   createHabitEntry,
   deleteHabit,
   deleteHabitEntry,
-  deleteHabitEntryForDate,
+  deleteHabitEntriesForDate,
   getHabit,
   getHabitEntries,
   getHabitEntriesForHabit,
@@ -153,7 +153,7 @@ export const createHabitsSlice: StateCreator<HabitsSlice, [], [], HabitsSlice> =
   },
 
   deleteHabitEntryForDate: async (habitId, date) => {
-    await deleteHabitEntryForDate(habitId, date);
+    await deleteHabitEntriesForDate(habitId, date);
     set((state) => {
       const list = state.habitEntries[habitId] ?? [];
       return {

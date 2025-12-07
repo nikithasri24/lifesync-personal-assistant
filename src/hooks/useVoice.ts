@@ -38,17 +38,27 @@ export function useVoice(initialLang = 'en-US', options?: Options): UseVoice {
     rec.lang = lang;
     rec.onresult = (ev: SpeechRecognitionEvent) => {
       let interim = '';
+      let finalText = '';
+      let hasFinal = false;
+
       for (let i = ev.results.length - 1; i >= 0; i--) {
         const result = ev.results[i];
         const alt = result[0];
         if (!alt) continue;
         if (result.isFinal) {
+          finalText = alt.transcript;
+          hasFinal = true;
           setTranscript((t) => (t ? `${t} ${alt.transcript}` : alt.transcript));
-          if (options?.onFinal) options.onFinal(alt.transcript);
         } else {
           interim = alt.transcript;
         }
       }
+
+      // Only call onFinal once per event, with the final text
+      if (hasFinal && options?.onFinal && finalText) {
+        options.onFinal(finalText);
+      }
+
       // Show interim in suffix (UI can choose how to display)
       if (interim) setTranscript((t) => `${t.replace(/\s+$/, '')} ${interim}`);
     };

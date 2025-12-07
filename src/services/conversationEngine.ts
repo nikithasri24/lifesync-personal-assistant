@@ -114,10 +114,12 @@ ${toolRegistry.getToolNames().join(', ')}
 
 Guidelines:
 - Be conversational and natural, like ChatGPT
+- IMPORTANT: Voice input may have recognition errors (e.g., "Whiteman C" instead of "Vitamin C"). Always search for similar habit names before creating new ones.
+- When a habit name doesn't match exactly, check for similar names (fuzzy matching) and ask for confirmation
 - Ask clarifying questions when you need more information
 - Use functions to actually perform actions (don't just say you'll do something)
 - Be proactive and suggest helpful actions
-- Keep responses concise but warm
+- Keep responses concise but warm (max 2-3 sentences)
 - When recording expenses, always ask for the category if not provided
 - Suggest budgets when you notice spending patterns
 - Help connect goals to concrete plans
@@ -131,7 +133,7 @@ You: "Awesome goal! When are you planning to go? I'll help create a savings plan
 
     try {
       const completion = await groq.chat.completions.create({
-        model: 'llama-3.1-70b-versatile',
+        model: 'llama-3.1-8b-instant',
         messages: [
           { role: 'system', content: systemMessage },
           ...recentMessages
@@ -139,7 +141,7 @@ You: "Awesome goal! When are you planning to go? I'll help create a savings plan
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
         tools: allTools as any,
         tool_choice: 'auto',
-        temperature: 0.7,
+        temperature: 0.5,
         max_tokens: 1024,
       });
 
@@ -184,7 +186,7 @@ You: "Awesome goal! When are you planning to go? I'll help create a savings plan
 
         // Get final response after function execution
         const followUp = await groq.chat.completions.create({
-          model: 'llama-3.1-70b-versatile',
+          model: 'llama-3.1-8b-instant',
           messages: [
             { role: 'system', content: systemMessage },
             ...recentMessages,
@@ -200,7 +202,7 @@ You: "Awesome goal! When are you planning to go? I'll help create a savings plan
               tool_call_id: response.tool_calls[0].id
             }
           ],
-          temperature: 0.7,
+          temperature: 0.5,
           max_tokens: 512,
         });
 
