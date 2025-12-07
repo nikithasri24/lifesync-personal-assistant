@@ -58,7 +58,7 @@ export function parseError(error: unknown): ErrorDetails {
         title: 'Access Denied',
         message: 'You don\'t have permission to perform this action',
         suggestion: 'This might be a database permissions issue. Please contact support.',
-        action: null,
+        action: undefined,
         canRetry: false,
       };
     }
@@ -69,7 +69,7 @@ export function parseError(error: unknown): ErrorDetails {
         title: 'Resource Not Found',
         message: 'The requested resource doesn\'t exist',
         suggestion: 'The database might not be properly set up. Please contact support.',
-        action: null,
+        action: undefined,
         canRetry: false,
       };
     }
@@ -80,7 +80,7 @@ export function parseError(error: unknown): ErrorDetails {
         title: 'Duplicate Entry',
         message: 'This item already exists',
         suggestion: 'Try updating the existing item instead',
-        action: null,
+        action: undefined,
         canRetry: false,
       };
     }

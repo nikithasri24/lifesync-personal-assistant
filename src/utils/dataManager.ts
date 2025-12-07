@@ -191,7 +191,7 @@ export const createAutoBackup = (): string | null => {
 
     return backupKey;
   } catch (error: unknown) {
-    logger.error('Failed to create backup:', { error });
+    logger.error('Failed to create backup:', error);
     return null;
   }
 };
@@ -223,7 +223,7 @@ export const restoreFromBackup = (backupKey: string): boolean => {
     mergeImportedData(data as ExportData, true);
     return true;
   } catch (error: unknown) {
-    logger.error('Failed to restore backup:', { error });
+    logger.error('Failed to restore backup:', error);
     return false;
   }
 };

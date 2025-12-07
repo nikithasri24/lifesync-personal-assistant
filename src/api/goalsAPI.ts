@@ -97,9 +97,9 @@ function mapDbToDream(row: DreamRow): Dream {
   return {
     id: row.id,
     title: row.title,
-    description: row.description ?? undefined,
-    category: row.category ?? undefined,
-    notes: row.notes ?? '',
+    description: row.description || undefined,
+    category: row.category || undefined,
+    notes: row.notes || '',
     createdAt: new Date(row.created_at),
     lastUpdated: new Date(row.last_updated),
   };
@@ -111,10 +111,10 @@ function mapDbToDream(row: DreamRow): Dream {
  * Get all goals for the authenticated user with optional filters
  */
 export async function getGoals(filters?: GoalFilters): Promise<Goal[]> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase!.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
-  let query = supabase
+  let query = supabase!
     .from('goals')
     .select('*')
     .eq('user_id', user.id)

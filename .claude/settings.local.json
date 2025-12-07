@@ -48,7 +48,8 @@
       "Bash(xargs:*)",
       "Bash(mkdir:*)",
       "Bash(touch:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "ask": []
