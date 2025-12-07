@@ -47,7 +47,8 @@
       "Bash(.env.local)",
       "Bash(xargs:*)",
       "Bash(mkdir:*)",
-      "Bash(touch:*)"
+      "Bash(touch:*)",
+      "Bash(ls:*)"
     ],
     "deny": [],
     "ask": []
