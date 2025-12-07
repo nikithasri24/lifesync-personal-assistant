@@ -45,7 +45,9 @@
       "Bash(npm start)",
       "Bash(git reset:*)",
       "Bash(.env.local)",
-      "Bash(xargs:*)"
+      "Bash(xargs:*)",
+      "Bash(mkdir:*)",
+      "Bash(touch:*)"
     ],
     "deny": [],
     "ask": []

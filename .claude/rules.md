@@ -1,5 +1,78 @@
 # Claude Code Rules for LifeSync Personal Assistant
 
+## 🎯 PROJECT STATUS (December 2025)
+
+**⚠️ THIS IS NOT A GREENFIELD PROJECT - THIS IS AN ENHANCEMENT PROJECT ⚠️**
+
+### Current State (What We Already Have):
+
+**Infrastructure (100% Complete):**
+- ✅ Supabase fully integrated with RLS policies (39+ migrations)
+- ✅ AI/LLM infrastructure complete (Groq provider + conversation engine)
+- ✅ Voice interface working (Web Speech API)
+- ✅ React Query configured and ready
+- ✅ Zustand stores with modern slice pattern
+- ✅ Structured logging system
+- ✅ TypeScript strict mode enforced
+- ✅ Comprehensive testing setup (58+ test files)
+
+**Features (70% Complete):**
+- ✅ **Tasks**: Full API, Store, UI with drag-drop, filters, bulk operations, AI tools
+- ✅ **Habits**: Full API, Store, UI with streak tracking (AI tools partial)
+- ✅ **Finance**: Full API, Store, UI with advanced tracking, AI tools
+- ✅ **Shopping/Meals**: Complete with barcode scanning, receipt parsing (AI tools missing)
+- ✅ **Goals**: Using React Query (modern pattern), API ready (AI tools placeholder)
+- ✅ **Journal**: API and Store ready (AI tools missing)
+- ✅ **Additional**: Focus mode, 75 Hard tracker, Task scheduler with Kanban/Timeline
+
+**What Needs Work:**
+- ⚠️ AI tool coverage incomplete (50% done)
+- ⚠️ Tool registry needs extraction from conversation engine
+- ⚠️ React Query migration incomplete (only Goals migrated)
+- ⚠️ Voice/Visual mode switcher not implemented
+- ⚠️ Some features still use Zustand for server state (should use React Query)
+
+### CRITICAL PROJECT GUIDELINES
+
+**❌ DO NOT:**
+- ❌ Delete existing working code without explicit approval
+- ❌ Rebuild features from scratch (they already work!)
+- ❌ Ignore existing patterns and architecture
+- ❌ Duplicate existing functionality
+- ❌ Assume this is a greenfield project
+- ❌ Follow "clean rewrite" approaches
+- ❌ Break existing tests (58+ tests must continue passing)
+- ❌ Remove valuable features not in current focus
+
+**✅ DO:**
+- ✅ Enhance existing features incrementally
+- ✅ Extract and modularize (e.g., tool registry extraction)
+- ✅ Migrate to React Query for server state (preserve UI, just change data layer)
+- ✅ Complete AI tool coverage for all features
+- ✅ Preserve all tests and UIs
+- ✅ Build on top of existing infrastructure
+- ✅ Follow established patterns in the codebase
+- ✅ Read existing code before making changes
+
+### Current Enhancement Focus:
+
+**Phase 1 (Weeks 1-3): Complete AI Integration**
+1. Extract tool registry from conversationEngine.ts
+2. Create modular AI tools for each feature
+3. Implement missing AI tools (shopping, meals, habits, goals, journal)
+
+**Phase 2 (Weeks 4-5): React Query Migration**
+1. Migrate Tasks, Habits, Finance to React Query hooks
+2. Migrate Shopping/Meals to React Query hooks
+3. Remove server state from Zustand (keep UI state only)
+
+**Phase 3 (Weeks 6-7): Voice/Visual Integration**
+1. Implement mode switcher component
+2. Enhance Assistant page design
+3. Polish and test end-to-end
+
+---
+
 ## 🚨 Critical Rules (NEVER Break These)
 
 ### TypeScript Strict Mode
@@ -106,6 +179,380 @@ const calculateTotal = (items: ShoppingItem[]): number => {
   return items.reduce((sum, item) => sum + item.price, 0)
 }
 ```
+
+## 🤖 AI Development Rules (Follow Strictly)
+
+### LLM Integration
+
+**Centralized Provider Pattern:**
+- ✅ ALWAYS use the existing `GroqProvider` class (src/lib/providers/llm/groq.provider.ts)
+- ❌ NEVER instantiate LangChain models directly in components or services
+- ✅ Configuration in one place (environment variables)
+- ✅ Consistent error handling across all LLM calls
+
+```typescript
+// ❌ WRONG - Direct instantiation
+import { ChatGroq } from '@langchain/groq'
+const llm = new ChatGroq({ apiKey: '...' })
+
+// ✅ CORRECT - Use existing provider
+import { groqProvider } from '@/lib/providers/llm/groq.provider'
+const response = await groqProvider.generateResponse(messages, tools)
+```
+
+**LLM Call Logging:**
+- ✅ Always log LLM calls with structured data
+- ✅ Include: duration, token count (if available), model used
+- ✅ Log errors with full context
+- ✅ Use appropriate log levels
+
+```typescript
+// ✅ CORRECT
+const startTime = Date.now()
+try {
+  const response = await groqProvider.generateResponse(messages, tools)
+  logger.info('ConversationEngine', 'LLM call successful', {
+    duration: Date.now() - startTime,
+    messageCount: messages.length,
+    toolsAvailable: tools.length
+  })
+  return response
+} catch (error) {
+  logger.error('ConversationEngine', error as Error, {
+    duration: Date.now() - startTime,
+    messageCount: messages.length
+  })
+  throw error
+}
+```
+
+**Timeout and Error Handling:**
+- ✅ Set reasonable timeouts (max 30s for LLM calls)
+- ✅ Implement graceful degradation
+- ✅ Provide fallback responses for LLM failures
+- ✅ Don't expose raw LLM errors to users
+
+```typescript
+// ✅ CORRECT
+try {
+  const response = await Promise.race([
+    groqProvider.generateResponse(messages, tools),
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('LLM timeout')), 30000)
+    )
+  ])
+  return response
+} catch (error) {
+  logger.error('ConversationEngine', error as Error)
+  return {
+    content: "I'm having trouble processing that right now. Could you try rephrasing or try again in a moment?",
+    role: 'assistant'
+  }
+}
+```
+
+### Tool Registry & AI Tools
+
+**Tool Organization:**
+- ✅ Each feature must have its own `tools.ts` file
+- ✅ Location: `src/features/{feature}/tools.ts` or `src/{feature}/tools.ts`
+- ✅ Tools must be exported as an array for registration
+- ✅ Tools must follow the Tool interface from conversation engine
+
+```typescript
+// ✅ CORRECT Structure
+// src/features/tasks/tools.ts
+import { Tool } from '@/services/conversationEngine'
+import { createTaskSchema, getTasksSchema } from './schemas'
+
+export const taskTools: Tool[] = [
+  {
+    name: 'create_task',
+    description: 'Create a new task for the user',
+    parameters: createTaskSchema,
+    execute: async (args, userId) => {
+      // Implementation
+    }
+  },
+  // ... more tools
+]
+```
+
+**Tool Naming:**
+- ✅ Use snake_case for tool names (LLM convention)
+- ✅ Use verb_noun pattern: `create_task`, `get_habits`, `log_expense`
+- ✅ Be specific: `complete_task_by_title` not just `complete_task`
+- ❌ Avoid generic names: `update`, `get`, `delete`
+
+**Tool Descriptions:**
+- ✅ Must be clear and specific
+- ✅ Must specify what parameters are required
+- ✅ Must indicate what the tool returns
+- ✅ Written for LLM to understand, not humans
+
+```typescript
+// ❌ BAD
+description: 'Creates a task'
+
+// ✅ GOOD
+description: 'Create a new task for the user. Requires title (string), optional description, priority (low/medium/high), and dueDate (ISO string). Returns the created task object with id.'
+```
+
+**Tool Parameter Validation:**
+- ✅ ALWAYS use Zod schemas for parameter validation
+- ✅ Define schemas in separate file or at top of tools.ts
+- ✅ Validate before executing tool logic
+- ✅ Return clear validation errors
+
+```typescript
+// ✅ CORRECT
+import { z } from 'zod'
+
+const createTaskSchema = z.object({
+  title: z.string().min(1, 'Title is required'),
+  description: z.string().optional(),
+  priority: z.enum(['low', 'medium', 'high']).default('medium'),
+  dueDate: z.string().datetime().optional()
+})
+
+export const taskTools: Tool[] = [
+  {
+    name: 'create_task',
+    description: '...',
+    parameters: createTaskSchema,
+    execute: async (args, userId) => {
+      // Zod validation happens before this
+      const { title, description, priority, dueDate } = args
+
+      try {
+        const task = await createTask({ title, description, priority, dueDate, userId })
+        return {
+          success: true,
+          task,
+          message: `Created task: ${title}`
+        }
+      } catch (error) {
+        logger.error('TaskTools', error as Error, { operation: 'create_task', userId })
+        return {
+          success: false,
+          error: 'Failed to create task. Please try again.'
+        }
+      }
+    }
+  }
+]
+```
+
+**Tool Error Handling:**
+- ✅ Always return user-friendly error messages
+- ✅ Log technical errors with logger
+- ✅ Return success/failure indicators
+- ❌ NEVER throw errors from tool execute function
+- ✅ Return structured responses
+
+```typescript
+// ✅ CORRECT - Structured response
+return {
+  success: true,
+  data: result,
+  message: 'Operation completed successfully'
+}
+
+// or on error
+return {
+  success: false,
+  error: 'User-friendly error message',
+  message: 'Could not complete the operation'
+}
+```
+
+**Tool Registration:**
+- ✅ All tools must be registered in the conversation engine
+- ✅ Registration happens at startup/initialization
+- ✅ Tools can be registered in groups by feature
+- ⚠️ Currently tools are hardcoded in conversationEngine.ts (this needs to be refactored)
+
+```typescript
+// CURRENT STATE (needs refactoring)
+// tools are hardcoded in src/services/conversationEngine.ts
+
+// TARGET STATE (what we're moving towards)
+// src/services/conversationEngine.ts
+import { taskTools } from '@/features/tasks/tools'
+import { habitTools } from '@/features/habits/tools'
+import { financeTools } from '@/features/finance/tools'
+
+export class ConversationEngine {
+  constructor() {
+    this.registerTools([
+      ...taskTools,
+      ...habitTools,
+      ...financeTools
+    ])
+  }
+}
+```
+
+### Voice Interface Rules
+
+**Voice and Text Parity:**
+- ✅ EVERY voice command must work via text input
+- ✅ EVERY AI tool must be accessible through conversation
+- ✅ Don't build voice-only features
+- ✅ Test both input methods
+
+**Voice Recognition Handling:**
+- ✅ Show transcripts to users before processing
+- ✅ Allow users to edit transcripts before submission
+- ✅ Provide visual feedback during listening
+- ✅ Handle recognition errors gracefully
+
+```typescript
+// ✅ CORRECT Pattern
+const { transcript, isListening } = useVoiceInput()
+
+// Show interim transcript
+{transcript && (
+  <div className="interim-transcript">
+    Listening: "{transcript}"
+  </div>
+)}
+
+// On final transcript, show in input field (editable)
+// User can review and edit before sending
+```
+
+**Fallback Strategy:**
+- ✅ If voice recognition fails, default to text input
+- ✅ If speech synthesis fails, show text response
+- ✅ Never block functionality due to voice issues
+- ✅ Inform users when voice features aren't available
+
+### Conversation Context Management
+
+**Context Window:**
+- ✅ Keep last 10 messages for context (performance balance)
+- ✅ Always include system prompt as first message
+- ✅ Include current date/time/day in system prompt
+- ✅ Trim context window before sending to LLM
+
+```typescript
+// ✅ CORRECT
+const getContextMessages = (conversationHistory: Message[]): Message[] => {
+  const systemPrompt = conversationHistory[0] // Always keep
+  const recentMessages = conversationHistory.slice(-10) // Last 10
+
+  return [systemPrompt, ...recentMessages.filter(m => m.role !== 'system')]
+}
+```
+
+**Conversation Persistence:**
+- ✅ Persist to Supabase after each user/assistant turn
+- ✅ Store full conversation history (not just context window)
+- ✅ Include tool calls and results in history
+- ✅ Handle persistence errors gracefully (don't block conversation)
+
+```typescript
+// ✅ CORRECT
+private async persistConversation(): Promise<void> {
+  try {
+    await supabase
+      .from('conversations')
+      .upsert({
+        id: this.sessionId,
+        user_id: this.userId,
+        messages: this.conversationHistory,
+        updated_at: new Date().toISOString()
+      })
+  } catch (error) {
+    // Log but don't throw - conversation continues in memory
+    logger.error('ConversationEngine', error as Error, {
+      operation: 'persistConversation',
+      sessionId: this.sessionId
+    })
+  }
+}
+```
+
+**System Prompt Guidelines:**
+- ✅ Include current date, time, and day of week
+- ✅ List available features/capabilities
+- ✅ Set personality and tone
+- ✅ Specify response format preferences
+- ✅ Update system prompt when context changes
+
+```typescript
+// ✅ CORRECT
+private getSystemPrompt(): string {
+  const now = new Date()
+  return `You are LifeSync AI, a personal assistant helping manage life.
+
+Current date: ${now.toLocaleDateString()}
+Current day: ${now.toLocaleDateString('en-US', { weekday: 'long' })}
+Current time: ${now.toLocaleTimeString()}
+
+You have access to tools for:
+- Tasks & Projects
+- Finance & Budgeting
+- Habits & Streaks
+- Shopping & Meal Planning
+- Goals & Dreams
+- Journal
+
+Be conversational, natural, and proactive. Ask clarifying questions when needed.
+Keep responses concise (2-3 sentences max).
+When users mention things to track, use your tools to perform the actions immediately.`
+}
+```
+
+### Testing AI Features
+
+**AI Tool Testing:**
+- ✅ Write unit tests for tool execute functions
+- ✅ Mock Supabase calls in tests
+- ✅ Test parameter validation
+- ✅ Test error handling
+- ✅ Test success responses
+
+```typescript
+// ✅ CORRECT
+describe('taskTools', () => {
+  describe('create_task', () => {
+    it('should create task with valid parameters', async () => {
+      const result = await taskTools[0].execute({
+        title: 'Test task',
+        priority: 'high'
+      }, 'user-123')
+
+      expect(result.success).toBe(true)
+      expect(result.task).toBeDefined()
+      expect(result.task.title).toBe('Test task')
+    })
+
+    it('should handle errors gracefully', async () => {
+      // Mock Supabase to throw error
+      const result = await taskTools[0].execute({ title: '' }, 'user-123')
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBeDefined()
+    })
+  })
+})
+```
+
+**Voice Interface Testing:**
+- ✅ E2E tests for voice commands (using Playwright)
+- ✅ Test voice recognition error handling
+- ✅ Test text input fallback
+- ✅ Test conversation flow
+
+**Integration Testing:**
+- ✅ Test full conversation flows
+- ✅ Test multi-turn conversations
+- ✅ Test tool chaining (one tool result feeds another)
+- ✅ Test conversation persistence
+
+---
 
 ## 📐 Architecture Patterns (Follow Strictly)
 
