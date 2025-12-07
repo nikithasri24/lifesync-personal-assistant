@@ -26,6 +26,7 @@ import Toast from './Toast';
 import ThemeToggle from './ThemeToggle';
 import VoiceLauncher from './VoiceLauncher';
 import PremiumLogo from './PremiumLogo';
+import ModeSwitch, { useAppMode } from './ModeSwitch';
 import clsx from 'clsx';
 
 const navigation = [
@@ -63,7 +64,33 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps): JSX.Element {
   const { activeView, setActiveView, sidebarCollapsed, setSidebarCollapsed, globalToast, clearGlobalToast } = useAppStore();
+  const { mode } = useAppMode();
 
+  // In voice mode and on assistant page, show full-screen assistant
+  const isVoiceModeAssistant = mode === 'voice' && activeView === 'assistant';
+
+  // Auto-switch to assistant view when entering voice mode
+  React.useEffect(() => {
+    if (mode === 'voice' && activeView !== 'assistant') {
+      setActiveView('assistant');
+    }
+  }, [mode, activeView, setActiveView]);
+
+  // Voice mode: full-screen assistant without navigation
+  if (isVoiceModeAssistant) {
+    return (
+      <div className="h-screen flex flex-col bg-gradient-to-br from-slate-50 via-orange-50 to-slate-50">
+        {/* Floating mode switch */}
+        <div className="absolute top-4 right-4 z-50">
+          <ModeSwitch />
+        </div>
+        {children}
+        <Toast toast={globalToast} onDismiss={clearGlobalToast} />
+      </div>
+    );
+  }
+
+  // Visual mode: traditional dashboard layout
   return (
     <div className="h-screen flex bg-secondary overflow-x-hidden">
       {/* Mobile sidebar overlay */}
@@ -243,6 +270,7 @@ export default function Layout({ children }: LayoutProps): JSX.Element {
                   })}
                 </div>
               </div>
+              <ModeSwitch />
               <VoiceLauncher />
             </div>
           </div>
