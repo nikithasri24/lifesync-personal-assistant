@@ -26,6 +26,9 @@ import type {
   LoanInput,
   LoanPayment,
   LoanPaymentInput,
+  RecurringTransaction,
+  RecurringTransactionInput,
+  PendingTransaction,
 } from '../types';
 import { logger } from '@/services/logger';
 
@@ -51,6 +54,8 @@ export const financeKeys = {
   loans: () => [...financeKeys.all, 'loans'] as const,
   loan: (id: string) => [...financeKeys.all, 'loan', id] as const,
   loanPayments: (loanId: string) => [...financeKeys.all, 'loanPayments', loanId] as const,
+  recurringTransactions: () => [...financeKeys.all, 'recurringTransactions'] as const,
+  pendingTransactions: () => [...financeKeys.all, 'pendingTransactions'] as const,
 };
 
 // ==================== Institutions ====================
@@ -700,6 +705,149 @@ export function useDeleteLoanPaymentMutation(): UseMutationResult<void, Error, {
     },
     onError: (error: Error, { paymentId }) => {
       logger.error('Failed to delete loan payment', { error: error.message, paymentId });
+    },
+  });
+}
+
+// ==================== Recurring Transactions ====================
+
+export function useRecurringTransactionsQuery(): UseQueryResult<RecurringTransaction[], Error> {
+  return useQuery<RecurringTransaction[], Error>({
+    queryKey: financeKeys.recurringTransactions(),
+    queryFn: async () => {
+      const api = await getFinanceAPI();
+      return api.listRecurringTransactions();
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+}
+
+export function usePendingTransactionsQuery(): UseQueryResult<PendingTransaction[], Error> {
+  return useQuery<PendingTransaction[], Error>({
+    queryKey: financeKeys.pendingTransactions(),
+    queryFn: async () => {
+      const api = await getFinanceAPI();
+      return api.listPendingTransactions();
+    },
+    refetchInterval: 1000 * 60, // Refetch every minute for pending items
+    staleTime: 1000 * 30, // 30 seconds
+  });
+}
+
+export function useUpsertRecurringTransactionMutation(): UseMutationResult<void, Error, RecurringTransactionInput, unknown> {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, RecurringTransactionInput>({
+    mutationFn: async (recurring: RecurringTransactionInput) => {
+      logger.debug('Upserting recurring transaction', { recurring });
+      const api = await getFinanceAPI();
+      await api.upsertRecurringTransaction(recurring);
+    },
+    onSuccess: (_, recurring) => {
+      logger.info('Recurring transaction saved successfully', { id: recurring.id });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.recurringTransactions() });
+    },
+    onError: (error: Error) => {
+      logger.error('Failed to save recurring transaction', { error: error.message });
+    },
+  });
+}
+
+export function useDeleteRecurringTransactionMutation(): UseMutationResult<void, Error, string, unknown> {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, string>({
+    mutationFn: async (recurringId: string) => {
+      logger.debug('Deleting recurring transaction', { recurringId });
+      const api = await getFinanceAPI();
+      await api.deleteRecurringTransaction(recurringId);
+    },
+    onSuccess: (_, recurringId) => {
+      logger.info('Recurring transaction deleted successfully', { recurringId });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.recurringTransactions() });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.pendingTransactions() });
+    },
+    onError: (error: Error) => {
+      logger.error('Failed to delete recurring transaction', { error: error.message });
+    },
+  });
+}
+
+export function useApprovePendingTransactionMutation(): UseMutationResult<void, Error, { pendingId: string; edits?: Partial<TransactionInput> }, unknown> {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, { pendingId: string; edits?: Partial<TransactionInput> }>({
+    mutationFn: async ({ pendingId, edits }) => {
+      logger.debug('Approving pending transaction', { pendingId, hasEdits: !!edits });
+      const api = await getFinanceAPI();
+      await api.approvePendingTransaction(pendingId, edits);
+    },
+    onSuccess: (_, { pendingId }) => {
+      logger.info('Pending transaction approved successfully', { pendingId });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.pendingTransactions() });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.transactions() });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.accounts() });
+    },
+    onError: (error: Error) => {
+      logger.error('Failed to approve pending transaction', { error: error.message });
+    },
+  });
+}
+
+export function useSkipPendingTransactionMutation(): UseMutationResult<void, Error, string, unknown> {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, string>({
+    mutationFn: async (pendingId: string) => {
+      logger.debug('Skipping pending transaction', { pendingId });
+      const api = await getFinanceAPI();
+      await api.skipPendingTransaction(pendingId);
+    },
+    onSuccess: (_, pendingId) => {
+      logger.info('Pending transaction skipped successfully', { pendingId });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.pendingTransactions() });
+    },
+    onError: (error: Error) => {
+      logger.error('Failed to skip pending transaction', { error: error.message });
+    },
+  });
+}
+
+export function useDeletePendingTransactionMutation(): UseMutationResult<void, Error, string, unknown> {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, string>({
+    mutationFn: async (pendingId: string) => {
+      logger.debug('Deleting pending transaction', { pendingId });
+      const api = await getFinanceAPI();
+      await api.deletePendingTransaction(pendingId);
+    },
+    onSuccess: (_, pendingId) => {
+      logger.info('Pending transaction deleted successfully', { pendingId });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.pendingTransactions() });
+    },
+    onError: (error: Error) => {
+      logger.error('Failed to delete pending transaction', { error: error.message });
+    },
+  });
+}
+
+export function useGeneratePendingTransactionsMutation(): UseMutationResult<void, Error, void, unknown> {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, void>({
+    mutationFn: async () => {
+      logger.debug('Generating pending transactions');
+      const api = await getFinanceAPI();
+      await api.generatePendingTransactions();
+    },
+    onSuccess: () => {
+      logger.info('Pending transactions generated successfully');
+      void queryClient.invalidateQueries({ queryKey: financeKeys.pendingTransactions() });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.recurringTransactions() });
+    },
+    onError: (error: Error) => {
+      logger.error('Failed to generate pending transactions', { error: error.message });
     },
   });
 }

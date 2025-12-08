@@ -2,6 +2,7 @@ import React from 'react'
 
 const DashboardPage = React.lazy(() => import('../finance/pages/DashboardPage'))
 const TransactionsPage = React.lazy(() => import('../finance/pages/TransactionsPageGrouped'))
+const RecurringPage = React.lazy(() => import('../finance/pages/RecurringPage'))
 const NetWorthPage = React.lazy(() => import('../finance/pages/NetWorthPage'))
 const GoalsPage = React.lazy(() => import('../finance/pages/GoalsPage'))
 const LoansPage = React.lazy(() => import('../finance/pages/LoansPage'))
@@ -11,11 +12,12 @@ const CreditCardsPage = React.lazy(() => import('../finance/pages/CreditCardsPag
 const InsurancePage = React.lazy(() => import('../finance/pages/InsurancePage'))
 const SettingsPage = React.lazy(() => import('../finance/pages/SettingsPage'))
 
-type TabKey = 'dashboard' | 'transactions' | 'networth' | 'goals' | 'loans' | 'projections' | 'calculators' | 'creditcards' | 'insurance' | 'settings'
+type TabKey = 'dashboard' | 'transactions' | 'recurring' | 'networth' | 'goals' | 'loans' | 'projections' | 'calculators' | 'creditcards' | 'insurance' | 'settings'
 
 const tabs: { key: TabKey; label: string }[] = [
   { key: 'dashboard', label: 'Dashboard' },
   { key: 'transactions', label: 'Transactions' },
+  { key: 'recurring', label: 'Recurring' },
   { key: 'networth', label: 'Net Worth' },
   { key: 'goals', label: 'Goals' },
   { key: 'loans', label: 'Loans' },
@@ -53,6 +55,7 @@ const Finances: React.FC = () => {
         <React.Suspense fallback={<div>Loading finance…</div>}>
           {tab === 'dashboard' && <DashboardPage />}
           {tab === 'transactions' && <TransactionsPage />}
+          {tab === 'recurring' && <RecurringPage />}
           {tab === 'networth' && <NetWorthPage />}
           {tab === 'goals' && <GoalsPage />}
           {tab === 'loans' && <LoansPage />}
