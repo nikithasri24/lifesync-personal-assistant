@@ -16,6 +16,7 @@ const BudgetsPage = React.lazy(() => import('./pages/BudgetsPage'));
 const NetWorthPage = React.lazy(() => import('./pages/NetWorthPage'));
 const GoalsPage = React.lazy(() => import('./pages/GoalsPage'));
 const CreditCardsPage = React.lazy(() => import('./pages/CreditCardsPage'));
+const RetirementPage = React.lazy(() => import('./pages/RetirementPage'));
 const SettingsPage = React.lazy(() => import('./pages/SettingsPage'));
 
 export function registerFinanceRoutes(): RouteObject[] {
@@ -27,6 +28,7 @@ export function registerFinanceRoutes(): RouteObject[] {
       { to: '/finance/budgets', label: 'Budgets' },
       { to: '/finance/net-worth', label: 'Net Worth' },
       { to: '/finance/goals', label: 'Goals' },
+      { to: '/finance/retirement', label: 'Retirement' },
       { to: '/finance/credit-cards', label: 'Credit Cards' },
       { to: '/finance/settings', label: 'Settings' },
     ];
@@ -59,6 +61,7 @@ export function registerFinanceRoutes(): RouteObject[] {
         { path: 'budgets', element: <BudgetsPage /> },
         { path: 'net-worth', element: <NetWorthPage /> },
         { path: 'goals', element: <GoalsPage /> },
+        { path: 'retirement', element: <RetirementPage /> },
         { path: 'credit-cards', element: <CreditCardsPage /> },
         { path: 'settings', element: <SettingsPage /> },
       ],

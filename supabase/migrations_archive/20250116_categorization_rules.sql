@@ -124,27 +124,32 @@ CREATE INDEX IF NOT EXISTS idx_merchant_database_name
 -- Categorization rules - user can only see their own
 ALTER TABLE categorization_rules ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY IF NOT EXISTS "Users can view own categorization rules"
+DROP POLICY IF EXISTS "Users can view own categorization rules" ON categorization_rules;
+CREATE POLICY "Users can view own categorization rules"
   ON categorization_rules FOR SELECT
   USING (auth.uid() = user_id);
 
-CREATE POLICY IF NOT EXISTS "Users can insert own categorization rules"
+DROP POLICY IF EXISTS "Users can insert own categorization rules" ON categorization_rules;
+CREATE POLICY "Users can insert own categorization rules"
   ON categorization_rules FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY IF NOT EXISTS "Users can update own categorization rules"
+DROP POLICY IF EXISTS "Users can update own categorization rules" ON categorization_rules;
+CREATE POLICY "Users can update own categorization rules"
   ON categorization_rules FOR UPDATE
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY IF NOT EXISTS "Users can delete own categorization rules"
+DROP POLICY IF EXISTS "Users can delete own categorization rules" ON categorization_rules;
+CREATE POLICY "Users can delete own categorization rules"
   ON categorization_rules FOR DELETE
   USING (auth.uid() = user_id);
 
 -- Merchant database - read-only for all authenticated users
 ALTER TABLE merchant_database ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY IF NOT EXISTS "Authenticated users can read merchant database"
+DROP POLICY IF EXISTS "Authenticated users can read merchant database" ON merchant_database;
+CREATE POLICY "Authenticated users can read merchant database"
   ON merchant_database FOR SELECT
   USING (auth.role() = 'authenticated');
 

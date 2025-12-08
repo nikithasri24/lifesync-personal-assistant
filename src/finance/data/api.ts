@@ -25,6 +25,13 @@ import type {
   LoanInput,
   LoanPayment,
   LoanPaymentInput,
+  RetirementAccountWithStats,
+  RetirementAccountMetadataInput,
+  RetirementContribution,
+  RetirementContributionInput,
+  RetirementPerformance,
+  RetirementPerformanceInput,
+  ContributionRoom,
 } from '../types';
 
 export interface FinanceAPI {
@@ -67,4 +74,19 @@ export interface FinanceAPI {
   listLoanPayments(loanId: string): Promise<LoanPayment[]>;
   upsertLoanPayment(loanId: string, payment: LoanPaymentInput): Promise<void>;
   deleteLoanPayment(paymentId: string): Promise<void>;
+  // Retirement account tracking
+  listRetirementAccounts(): Promise<RetirementAccountWithStats[]>;
+  getRetirementAccount(accountId: string): Promise<RetirementAccountWithStats | null>;
+  upsertRetirementAccountMetadata(metadata: RetirementAccountMetadataInput): Promise<void>;
+  deleteRetirementAccountMetadata(accountId: string): Promise<void>;
+  // Contribution tracking
+  listRetirementContributions(retirementAccountId: string): Promise<RetirementContribution[]>;
+  addRetirementContribution(contribution: RetirementContributionInput): Promise<void>;
+  deleteRetirementContribution(contributionId: string): Promise<void>;
+  calculateContributionRoom(retirementAccountId: string, annualIncome: number): Promise<ContributionRoom>;
+  // Performance tracking
+  listRetirementPerformance(retirementAccountId: string): Promise<RetirementPerformance[]>;
+  recordRetirementPerformance(performance: RetirementPerformanceInput): Promise<void>;
+  // Vesting calculations
+  calculateVestedBalance(retirementAccountId: string, employmentYears: number): Promise<number>;
 }

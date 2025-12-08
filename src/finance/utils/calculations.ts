@@ -59,7 +59,7 @@ export function calculateNetWorth(accounts: Array<{
       if (['checking', 'savings', 'cash'].includes(type)) {
         liquidAssets += balance;
         totalAssets += balance;
-      } else if (['investment', 'brokerage', 'retirement', '401k', 'ira', 'roth'].includes(type)) {
+      } else if (['investment', 'brokerage', 'retirement', '401k', '403b', 'traditional_ira', 'roth_ira', 'sep_ira', 'simple_ira', 'hsa', 'ira', 'roth'].includes(type)) {
         investments += balance;
         totalAssets += balance;
       } else if (type === 'real_estate' || type === 'property') {

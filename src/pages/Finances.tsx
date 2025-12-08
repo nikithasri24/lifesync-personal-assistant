@@ -1,26 +1,30 @@
 import React from 'react'
 
 const DashboardPage = React.lazy(() => import('../finance/pages/DashboardPage'))
+const AccountsPage = React.lazy(() => import('../finance/pages/AccountsPage'))
 const TransactionsPage = React.lazy(() => import('../finance/pages/TransactionsPageGrouped'))
 const RecurringPage = React.lazy(() => import('../finance/pages/RecurringPage'))
 const NetWorthPage = React.lazy(() => import('../finance/pages/NetWorthPage'))
 const GoalsPage = React.lazy(() => import('../finance/pages/GoalsPage'))
 const LoansPage = React.lazy(() => import('../finance/pages/LoansPage'))
+const RetirementPage = React.lazy(() => import('../finance/pages/RetirementPage'))
 const ProjectionsPage = React.lazy(() => import('../finance/pages/ProjectionsPage'))
 const CalculatorsPage = React.lazy(() => import('../finance/pages/CalculatorsPage'))
 const CreditCardsPage = React.lazy(() => import('../finance/pages/CreditCardsPage'))
 const InsurancePage = React.lazy(() => import('../finance/pages/InsurancePage'))
 const SettingsPage = React.lazy(() => import('../finance/pages/SettingsPage'))
 
-type TabKey = 'dashboard' | 'transactions' | 'recurring' | 'networth' | 'goals' | 'loans' | 'projections' | 'calculators' | 'creditcards' | 'insurance' | 'settings'
+type TabKey = 'dashboard' | 'accounts' | 'transactions' | 'recurring' | 'networth' | 'goals' | 'loans' | 'retirement' | 'projections' | 'calculators' | 'creditcards' | 'insurance' | 'settings'
 
 const tabs: { key: TabKey; label: string }[] = [
   { key: 'dashboard', label: 'Dashboard' },
+  { key: 'accounts', label: 'Accounts' },
   { key: 'transactions', label: 'Transactions' },
   { key: 'recurring', label: 'Recurring' },
   { key: 'networth', label: 'Net Worth' },
   { key: 'goals', label: 'Goals' },
   { key: 'loans', label: 'Loans' },
+  { key: 'retirement', label: 'Retirement' },
   { key: 'projections', label: 'Projections' },
   { key: 'calculators', label: 'Calculators' },
   { key: 'creditcards', label: 'Credit Cards' },
@@ -54,11 +58,13 @@ const Finances: React.FC = () => {
       <div>
         <React.Suspense fallback={<div>Loading finance…</div>}>
           {tab === 'dashboard' && <DashboardPage />}
+          {tab === 'accounts' && <AccountsPage />}
           {tab === 'transactions' && <TransactionsPage />}
           {tab === 'recurring' && <RecurringPage />}
           {tab === 'networth' && <NetWorthPage />}
           {tab === 'goals' && <GoalsPage />}
           {tab === 'loans' && <LoansPage />}
+          {tab === 'retirement' && <RetirementPage />}
           {tab === 'projections' && <ProjectionsPage />}
           {tab === 'calculators' && <CalculatorsPage />}
           {tab === 'creditcards' && <CreditCardsPage />}

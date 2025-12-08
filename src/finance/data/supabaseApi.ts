@@ -30,6 +30,18 @@ import type {
   RecurringTransactionInput,
   PendingTransaction,
   PendingTransactionInput,
+  RetirementAccountWithStats,
+  RetirementAccountMetadataInput,
+  RetirementContribution,
+  RetirementContributionInput,
+  RetirementPerformance,
+  RetirementPerformanceInput,
+  ContributionRoom,
+  TaxTreatment,
+  EmployerMatchType,
+  VestingScheduleType,
+  ContributionType,
+  InvestmentAllocation,
 } from '../types';
 import type { FinanceAPI } from './api';
 import { validateGoalInput, validateTransactionInput } from '../utils/validate';
@@ -408,6 +420,68 @@ interface LoanPaymentUpdateRow {
   transaction_id: string | undefined;
   notes: string | undefined;
   id?: string;
+}
+
+// Retirement Account Row Interfaces
+interface RetirementAccountRow {
+  id: string;
+  user_id: string;
+  account_id: string;
+  tax_treatment: string;
+  annual_contribution_limit: string | number;
+  catch_up_limit: string | number | null;
+  current_year_contributions: string | number;
+  contribution_year: number;
+  has_employer_match: boolean;
+  employer_match_percentage: string | number | null;
+  employer_match_limit: string | number | null;
+  employer_match_type: string | null;
+  employer_contributions_ytd: string | number;
+  has_vesting_schedule: boolean;
+  vesting_schedule_type: string | null;
+  vesting_cliff_years: string | number | null;
+  vesting_graded_years: string | number | null;
+  vesting_percentage: string | number;
+  unvested_balance: string | number;
+  allocation: unknown;
+  is_family_coverage: boolean | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  // From view
+  account_name?: string;
+  account_balance?: string | number;
+  remaining_employee_room?: string | number;
+  total_ytd_contributions?: string | number;
+  vested_balance?: string | number;
+  latest_gains?: string | number | null;
+  latest_return_rate?: string | number | null;
+}
+
+interface RetirementContributionRow {
+  id: string;
+  user_id: string;
+  retirement_account_id: string;
+  contribution_date: string;
+  amount: string | number;
+  contribution_type: string;
+  contribution_year: number;
+  transaction_id: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
+interface RetirementPerformanceRow {
+  id: string;
+  user_id: string;
+  retirement_account_id: string;
+  snapshot_date: string;
+  balance: string | number;
+  total_contributions: string | number;
+  total_gains: string | number;
+  rate_of_return: string | number | null;
+  allocation_snapshot: unknown;
+  created_at: string;
 }
 
 async function getUid(client: SupabaseClient): Promise<string> {
@@ -1435,11 +1509,296 @@ export class SupabaseApi implements FinanceAPI {
 
   async deletePendingTransaction(pendingId: string): Promise<void> {
     const uid = await getUid(this.client);
-    const { error } = await this.client
+    const { error} = await this.client
       .from('pending_transactions')
       .delete()
       .eq('id', pendingId)
       .eq('user_id', uid);
     if (error) throw error;
+  }
+
+  // ============================================================================
+  // RETIREMENT ACCOUNT TRACKING METHODS
+  // ============================================================================
+
+  async listRetirementAccounts(): Promise<RetirementAccountWithStats[]> {
+    const uid = await getUid(this.client);
+    const { data, error } = await this.client
+      .from('retirement_accounts_with_stats')
+      .select('*')
+      .eq('user_id', uid)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    return (data ?? []).map((r: RetirementAccountRow) => ({
+      id: r.id,
+      accountId: r.account_id,
+      taxTreatment: r.tax_treatment as TaxTreatment,
+      annualContributionLimit: Number(r.annual_contribution_limit),
+      catchUpLimit: r.catch_up_limit ? Number(r.catch_up_limit) : undefined,
+      currentYearContributions: Number(r.current_year_contributions),
+      contributionYear: r.contribution_year,
+      hasEmployerMatch: r.has_employer_match,
+      employerMatchPercentage: r.employer_match_percentage ? Number(r.employer_match_percentage) : undefined,
+      employerMatchLimit: r.employer_match_limit ? Number(r.employer_match_limit) : undefined,
+      employerMatchType: r.employer_match_type as EmployerMatchType | undefined,
+      employerContributionsYTD: Number(r.employer_contributions_ytd),
+      hasVestingSchedule: r.has_vesting_schedule,
+      vestingScheduleType: r.vesting_schedule_type as VestingScheduleType | undefined,
+      vestingCliffYears: r.vesting_cliff_years ? Number(r.vesting_cliff_years) : undefined,
+      vestingGradedYears: r.vesting_graded_years ? Number(r.vesting_graded_years) : undefined,
+      vestingPercentage: Number(r.vesting_percentage),
+      unvestedBalance: Number(r.unvested_balance),
+      allocation: r.allocation as InvestmentAllocation | undefined,
+      isFamilyCoverage: r.is_family_coverage ?? undefined,
+      notes: r.notes ?? undefined,
+      createdAt: new Date(r.created_at).toISOString(),
+      updatedAt: new Date(r.updated_at).toISOString(),
+      // View fields
+      accountName: r.account_name ?? '',
+      accountBalance: r.account_balance ? Number(r.account_balance) : 0,
+      remainingEmployeeRoom: r.remaining_employee_room ? Number(r.remaining_employee_room) : 0,
+      totalYTDContributions: r.total_ytd_contributions ? Number(r.total_ytd_contributions) : 0,
+      vestedBalance: r.vested_balance ? Number(r.vested_balance) : 0,
+      latestGains: r.latest_gains ? Number(r.latest_gains) : undefined,
+      latestReturnRate: r.latest_return_rate ? Number(r.latest_return_rate) : undefined,
+    }));
+  }
+
+  async getRetirementAccount(accountId: string): Promise<RetirementAccountWithStats | null> {
+    const uid = await getUid(this.client);
+    const { data, error } = await this.client
+      .from('retirement_accounts_with_stats')
+      .select('*')
+      .eq('user_id', uid)
+      .eq('account_id', accountId)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') return null; // Not found
+      throw error;
+    }
+
+    if (!data) return null;
+
+    const r = data as RetirementAccountRow;
+    return {
+      id: r.id,
+      accountId: r.account_id,
+      taxTreatment: r.tax_treatment as TaxTreatment,
+      annualContributionLimit: Number(r.annual_contribution_limit),
+      catchUpLimit: r.catch_up_limit ? Number(r.catch_up_limit) : undefined,
+      currentYearContributions: Number(r.current_year_contributions),
+      contributionYear: r.contribution_year,
+      hasEmployerMatch: r.has_employer_match,
+      employerMatchPercentage: r.employer_match_percentage ? Number(r.employer_match_percentage) : undefined,
+      employerMatchLimit: r.employer_match_limit ? Number(r.employer_match_limit) : undefined,
+      employerMatchType: r.employer_match_type as EmployerMatchType | undefined,
+      employerContributionsYTD: Number(r.employer_contributions_ytd),
+      hasVestingSchedule: r.has_vesting_schedule,
+      vestingScheduleType: r.vesting_schedule_type as VestingScheduleType | undefined,
+      vestingCliffYears: r.vesting_cliff_years ? Number(r.vesting_cliff_years) : undefined,
+      vestingGradedYears: r.vesting_graded_years ? Number(r.vesting_graded_years) : undefined,
+      vestingPercentage: Number(r.vesting_percentage),
+      unvestedBalance: Number(r.unvested_balance),
+      allocation: r.allocation as InvestmentAllocation | undefined,
+      isFamilyCoverage: r.is_family_coverage ?? undefined,
+      notes: r.notes ?? undefined,
+      createdAt: new Date(r.created_at).toISOString(),
+      updatedAt: new Date(r.updated_at).toISOString(),
+      // View fields
+      accountName: r.account_name ?? '',
+      accountBalance: r.account_balance ? Number(r.account_balance) : 0,
+      remainingEmployeeRoom: r.remaining_employee_room ? Number(r.remaining_employee_room) : 0,
+      totalYTDContributions: r.total_ytd_contributions ? Number(r.total_ytd_contributions) : 0,
+      vestedBalance: r.vested_balance ? Number(r.vested_balance) : 0,
+      latestGains: r.latest_gains ? Number(r.latest_gains) : undefined,
+      latestReturnRate: r.latest_return_rate ? Number(r.latest_return_rate) : undefined,
+    };
+  }
+
+  async upsertRetirementAccountMetadata(metadata: RetirementAccountMetadataInput): Promise<void> {
+    const uid = await getUid(this.client);
+
+    const row = {
+      user_id: uid,
+      account_id: metadata.accountId,
+      tax_treatment: metadata.taxTreatment,
+      annual_contribution_limit: metadata.annualContributionLimit,
+      catch_up_limit: metadata.catchUpLimit ?? null,
+      current_year_contributions: metadata.currentYearContributions,
+      contribution_year: metadata.contributionYear,
+      has_employer_match: metadata.hasEmployerMatch,
+      employer_match_percentage: metadata.employerMatchPercentage ?? null,
+      employer_match_limit: metadata.employerMatchLimit ?? null,
+      employer_match_type: metadata.employerMatchType ?? null,
+      employer_contributions_ytd: metadata.employerContributionsYTD,
+      has_vesting_schedule: metadata.hasVestingSchedule,
+      vesting_schedule_type: metadata.vestingScheduleType ?? null,
+      vesting_cliff_years: metadata.vestingCliffYears ?? null,
+      vesting_graded_years: metadata.vestingGradedYears ?? null,
+      vesting_percentage: metadata.vestingPercentage,
+      unvested_balance: metadata.unvestedBalance,
+      allocation: metadata.allocation ?? null,
+      is_family_coverage: metadata.isFamilyCoverage ?? null,
+      notes: metadata.notes ?? null,
+      ...(metadata.id && { id: metadata.id }),
+    };
+
+    const { error } = await this.client
+      .from('retirement_accounts')
+      .upsert(row);
+
+    if (error) throw error;
+  }
+
+  async deleteRetirementAccountMetadata(accountId: string): Promise<void> {
+    const uid = await getUid(this.client);
+    const { error } = await this.client
+      .from('retirement_accounts')
+      .delete()
+      .eq('user_id', uid)
+      .eq('account_id', accountId);
+
+    if (error) throw error;
+  }
+
+  async listRetirementContributions(retirementAccountId: string): Promise<RetirementContribution[]> {
+    const uid = await getUid(this.client);
+    const { data, error } = await this.client
+      .from('retirement_contributions')
+      .select('*')
+      .eq('user_id', uid)
+      .eq('retirement_account_id', retirementAccountId)
+      .order('contribution_date', { ascending: false });
+
+    if (error) throw error;
+
+    return (data ?? []).map((r: RetirementContributionRow) => ({
+      id: r.id,
+      retirementAccountId: r.retirement_account_id,
+      contributionDate: r.contribution_date,
+      amount: Number(r.amount),
+      contributionType: r.contribution_type as ContributionType,
+      contributionYear: r.contribution_year,
+      transactionId: r.transaction_id ?? undefined,
+      notes: r.notes ?? undefined,
+      createdAt: new Date(r.created_at).toISOString(),
+    }));
+  }
+
+  async addRetirementContribution(contribution: RetirementContributionInput): Promise<void> {
+    const uid = await getUid(this.client);
+
+    const row = {
+      user_id: uid,
+      retirement_account_id: contribution.retirementAccountId,
+      contribution_date: contribution.contributionDate,
+      amount: contribution.amount,
+      contribution_type: contribution.contributionType,
+      contribution_year: contribution.contributionYear,
+      transaction_id: contribution.transactionId ?? null,
+      notes: contribution.notes ?? null,
+      ...(contribution.id && { id: contribution.id }),
+    };
+
+    const { error } = await this.client
+      .from('retirement_contributions')
+      .upsert(row);
+
+    if (error) throw error;
+  }
+
+  async deleteRetirementContribution(contributionId: string): Promise<void> {
+    const uid = await getUid(this.client);
+    const { error } = await this.client
+      .from('retirement_contributions')
+      .delete()
+      .eq('id', contributionId)
+      .eq('user_id', uid);
+
+    if (error) throw error;
+  }
+
+  async calculateContributionRoom(retirementAccountId: string, annualIncome: number): Promise<ContributionRoom> {
+    const { data, error } = await this.client
+      .rpc('calculate_contribution_room', {
+        p_retirement_account_id: retirementAccountId,
+        p_annual_income: annualIncome,
+      });
+
+    if (error) throw error;
+
+    // RPC returns array with one result
+    const result = data?.[0];
+    if (!result) {
+      throw new Error('Failed to calculate contribution room');
+    }
+
+    return {
+      employeeRoom: Number(result.employee_room),
+      employerRoom: Number(result.employer_room),
+      totalLimit: Number(result.total_limit),
+      isOver50: Boolean(result.is_over_50),
+    };
+  }
+
+  async listRetirementPerformance(retirementAccountId: string): Promise<RetirementPerformance[]> {
+    const uid = await getUid(this.client);
+    const { data, error } = await this.client
+      .from('retirement_performance')
+      .select('*')
+      .eq('user_id', uid)
+      .eq('retirement_account_id', retirementAccountId)
+      .order('snapshot_date', { ascending: false });
+
+    if (error) throw error;
+
+    return (data ?? []).map((r: RetirementPerformanceRow) => ({
+      id: r.id,
+      retirementAccountId: r.retirement_account_id,
+      snapshotDate: r.snapshot_date,
+      balance: Number(r.balance),
+      totalContributions: Number(r.total_contributions),
+      totalGains: Number(r.total_gains),
+      rateOfReturn: r.rate_of_return ? Number(r.rate_of_return) : undefined,
+      allocationSnapshot: r.allocation_snapshot as InvestmentAllocation | undefined,
+      createdAt: new Date(r.created_at).toISOString(),
+    }));
+  }
+
+  async recordRetirementPerformance(performance: RetirementPerformanceInput): Promise<void> {
+    const uid = await getUid(this.client);
+
+    const row = {
+      user_id: uid,
+      retirement_account_id: performance.retirementAccountId,
+      snapshot_date: performance.snapshotDate,
+      balance: performance.balance,
+      total_contributions: performance.totalContributions,
+      total_gains: performance.totalGains,
+      rate_of_return: performance.rateOfReturn ?? null,
+      allocation_snapshot: performance.allocationSnapshot ?? null,
+      ...(performance.id && { id: performance.id }),
+    };
+
+    const { error } = await this.client
+      .from('retirement_performance')
+      .upsert(row);
+
+    if (error) throw error;
+  }
+
+  async calculateVestedBalance(retirementAccountId: string, employmentYears: number): Promise<number> {
+    const { data, error } = await this.client
+      .rpc('calculate_vested_balance', {
+        p_retirement_account_id: retirementAccountId,
+        p_employment_years: employmentYears,
+      });
+
+    if (error) throw error;
+
+    return Number(data ?? 0);
   }
 }

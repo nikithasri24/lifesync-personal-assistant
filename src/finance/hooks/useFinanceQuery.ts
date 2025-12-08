@@ -29,6 +29,8 @@ import type {
   RecurringTransaction,
   RecurringTransactionInput,
   PendingTransaction,
+  RetirementAccountWithStats,
+  RetirementAccountMetadataInput,
 } from '../types';
 import { logger } from '@/services/logger';
 
@@ -56,6 +58,8 @@ export const financeKeys = {
   loanPayments: (loanId: string) => [...financeKeys.all, 'loanPayments', loanId] as const,
   recurringTransactions: () => [...financeKeys.all, 'recurringTransactions'] as const,
   pendingTransactions: () => [...financeKeys.all, 'pendingTransactions'] as const,
+  retirementAccounts: () => [...financeKeys.all, 'retirementAccounts'] as const,
+  retirementAccount: (id: string) => [...financeKeys.all, 'retirementAccount', id] as const,
 };
 
 // ==================== Institutions ====================
@@ -117,6 +121,26 @@ export function useUpdateAccountMutation(): UseMutationResult<void, Error, { acc
     onSuccess: (_, { accountId }) => {
       logger.info('Account updated successfully', { id: accountId });
       void queryClient.invalidateQueries({ queryKey: financeKeys.accounts() });
+    },
+  });
+}
+
+export function useUpsertAccountMutation(): UseMutationResult<void, Error, { id?: string; name: string; type: string; balance: number; institutionId?: string }, unknown> {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, { id?: string; name: string; type: string; balance: number; institutionId?: string }>({
+    mutationFn: async (account) => {
+      logger.debug('Upserting account', { account });
+      const api = await getFinanceAPI();
+      await api.upsertAccount(account);
+    },
+    onSuccess: (_, account) => {
+      logger.info('Account upserted successfully', { name: account.name });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.accounts() });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.netWorth() });
+    },
+    onError: (error: Error, account) => {
+      logger.error('Failed to upsert account', { error: error.message, name: account.name });
     },
   });
 }
@@ -848,6 +872,73 @@ export function useGeneratePendingTransactionsMutation(): UseMutationResult<void
     },
     onError: (error: Error) => {
       logger.error('Failed to generate pending transactions', { error: error.message });
+    },
+  });
+}
+
+// ==================== Retirement Accounts ====================
+
+export function useRetirementAccountsQuery(): UseQueryResult<RetirementAccountWithStats[], Error> {
+  return useQuery<RetirementAccountWithStats[], Error>({
+    queryKey: financeKeys.retirementAccounts(),
+    queryFn: async () => {
+      const api = await getFinanceAPI();
+      return api.listRetirementAccounts();
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+}
+
+export function useRetirementAccountQuery(accountId: string | null): UseQueryResult<RetirementAccountWithStats | null, Error> {
+  return useQuery<RetirementAccountWithStats | null, Error>({
+    queryKey: accountId ? financeKeys.retirementAccount(accountId) : ['retirementAccount-null'],
+    queryFn: async () => {
+      if (!accountId) return null;
+      const api = await getFinanceAPI();
+      return api.getRetirementAccount(accountId);
+    },
+    enabled: !!accountId,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+}
+
+export function useUpsertRetirementAccountMetadataMutation(): UseMutationResult<void, Error, RetirementAccountMetadataInput, unknown> {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, RetirementAccountMetadataInput>({
+    mutationFn: async (metadata: RetirementAccountMetadataInput) => {
+      logger.debug('Upserting retirement account metadata', { accountId: metadata.accountId });
+      const api = await getFinanceAPI();
+      await api.upsertRetirementAccountMetadata(metadata);
+    },
+    onSuccess: (_, metadata) => {
+      logger.info('Retirement account metadata upserted successfully', { accountId: metadata.accountId });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.retirementAccounts() });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.retirementAccount(metadata.accountId) });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.accounts() });
+    },
+    onError: (error: Error, metadata) => {
+      logger.error('Failed to upsert retirement account metadata', { error: error.message, accountId: metadata.accountId });
+    },
+  });
+}
+
+export function useDeleteRetirementAccountMetadataMutation(): UseMutationResult<void, Error, string, unknown> {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, string>({
+    mutationFn: async (accountId: string) => {
+      logger.debug('Deleting retirement account metadata', { accountId });
+      const api = await getFinanceAPI();
+      await api.deleteRetirementAccountMetadata(accountId);
+    },
+    onSuccess: (_, accountId) => {
+      logger.info('Retirement account metadata deleted successfully', { accountId });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.retirementAccounts() });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.retirementAccount(accountId) });
+    },
+    onError: (error: Error, accountId) => {
+      logger.error('Failed to delete retirement account metadata', { error: error.message, accountId });
     },
   });
 }
