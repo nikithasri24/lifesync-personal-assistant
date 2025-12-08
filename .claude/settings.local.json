@@ -45,7 +45,20 @@
       "Bash(npm start)",
       "Bash(git reset:*)",
       "Bash(.env.local)",
-      "Bash(xargs:*)"
+      "Bash(xargs:*)",
+      "Bash(mkdir:*)",
+      "Bash(touch:*)",
+      "Bash(ls:*)",
+      "Bash(grep:*)",
+      "WebSearch",
+      "WebFetch(domain:console.groq.com)",
+      "Bash(npx supabase db diff:*)",
+      "Bash(do mv \"$file\" \"$file.bak\")",
+      "Bash(test -f /Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/ARCHITECTURE_MATRIX.md)",
+      "Bash(npx supabase db:*)",
+      "Bash(npx supabase migration repair:*)",
+      "Bash(npx supabase status:*)",
+      "Bash(npx supabase:*)"
     ],
     "deny": [],
     "ask": []

@@ -5,10 +5,22 @@
 export * from './useAppStore';
 export * from './useRealAppStore';
 
-// 75 Hard store
-export * from './seventyFiveHardStore';
-export * from '../seventyFiveHard/actions';
-export * from './seventyFiveHardSelectors';
-
 // New composed store (modern approach)
 export * from './useComposedStore';
+export {
+  selectUI,
+  selectNotes,
+  selectJournal,
+  selectGoals,
+  selectTasks,
+  selectHabits,
+  selectMeals,
+  selectShopping,
+  selectFinance,
+} from './useComposedStore';
+
+export type { TasksSlice } from './slices/tasksSlice';
+export type { HabitsSlice } from './slices/habitsSlice';
+export type { MealsSlice } from './slices/mealsSlice';
+export type { ShoppingSlice } from './slices/shoppingSlice';
+export type { FinanceSlice } from './slices/financeSlice';

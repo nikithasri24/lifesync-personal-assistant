@@ -6,12 +6,6 @@
 declare global {
   interface Window {
     /**
-     * Cleanup function for 75 Hard duplicates
-     * Returns void (fires and forgets the async operation)
-     */
-    cleanup75HardDuplicates?: () => void;
-
-    /**
      * WebKit interface for iOS/Safari specific APIs
      */
     webkit?: {

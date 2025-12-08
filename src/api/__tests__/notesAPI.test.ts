@@ -36,7 +36,7 @@ describe('notesAPI', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (supabase.auth.getUser as any).mockResolvedValue({
+    (supabase!.auth.getUser as any).mockResolvedValue({
       data: { user: mockUser },
     });
   });
@@ -52,11 +52,11 @@ describe('notesAPI', () => {
         }),
       };
 
-      (supabase.from as any).mockReturnValue(mockQuery);
+      (supabase!.from as any).mockReturnValue(mockQuery);
 
       const result = await getNotes();
 
-      expect(vi.mocked(supabase.from)).toHaveBeenCalledWith('notes');
+      expect(vi.mocked(supabase!.from)).toHaveBeenCalledWith('notes');
       expect(mockQuery.eq).toHaveBeenCalledWith('user_id', mockUser.id);
       expect(mockQuery.order).toHaveBeenCalledWith('created_at', { ascending: false });
       expect(result).toHaveLength(1);
@@ -78,7 +78,7 @@ describe('notesAPI', () => {
         }),
       };
 
-      (supabase.from as any).mockReturnValue(mockQuery);
+      (supabase!.from as any).mockReturnValue(mockQuery);
 
       const filters: NoteFilters = { searchQuery: 'test' };
       const result = await getNotes(filters);
@@ -97,7 +97,7 @@ describe('notesAPI', () => {
         then: vi.fn((resolve) => resolve({ data: [], error: null })),
       };
 
-      (supabase.from as any).mockReturnValue(mockQuery);
+      (supabase!.from as any).mockReturnValue(mockQuery);
 
       const filters: NoteFilters = { tags: ['work'] };
       await getNotes(filters);
@@ -113,7 +113,7 @@ describe('notesAPI', () => {
         then: vi.fn((resolve) => resolve({ data: [], error: null })),
       };
 
-      (supabase.from as any).mockReturnValue(mockQuery);
+      (supabase!.from as any).mockReturnValue(mockQuery);
 
       const filters: NoteFilters = { category: 'personal' };
       await getNotes(filters);
@@ -124,7 +124,7 @@ describe('notesAPI', () => {
     });
 
     it('should throw error when not authenticated', async () => {
-      (supabase.auth.getUser as any).mockResolvedValue({
+      (supabase!.auth.getUser as any).mockResolvedValue({
         data: { user: null },
       });
 
@@ -143,7 +143,7 @@ describe('notesAPI', () => {
         }),
       };
 
-      (supabase.from as any).mockReturnValue(mockQuery);
+      (supabase!.from as any).mockReturnValue(mockQuery);
 
       const result = await getNote('note-123');
 
@@ -163,7 +163,7 @@ describe('notesAPI', () => {
         }),
       };
 
-      (supabase.from as any).mockReturnValue(mockQuery);
+      (supabase!.from as any).mockReturnValue(mockQuery);
 
       await expect(getNote('nonexistent')).rejects.toThrow('Note not found');
     });
@@ -180,7 +180,7 @@ describe('notesAPI', () => {
         }),
       };
 
-      (supabase.from as any).mockReturnValue(mockQuery);
+      (supabase!.from as any).mockReturnValue(mockQuery);
 
       const input: CreateNoteInput = {
         title: 'Test Note',
@@ -213,7 +213,7 @@ describe('notesAPI', () => {
         }),
       };
 
-      (supabase.from as any).mockReturnValue(mockQuery);
+      (supabase!.from as any).mockReturnValue(mockQuery);
 
       const input: CreateNoteInput = {
         content: 'Just content, no title',
@@ -241,7 +241,7 @@ describe('notesAPI', () => {
         }),
       };
 
-      (supabase.from as any).mockReturnValue(mockQuery);
+      (supabase!.from as any).mockReturnValue(mockQuery);
 
       await expect(
         createNote({ content: 'Test' })
@@ -261,7 +261,7 @@ describe('notesAPI', () => {
         }),
       };
 
-      (supabase.from as any).mockReturnValue(mockQuery);
+      (supabase!.from as any).mockReturnValue(mockQuery);
 
       const updates: UpdateNoteInput = {
         content: 'Updated content',
@@ -289,7 +289,7 @@ describe('notesAPI', () => {
         }),
       };
 
-      (supabase.from as any).mockReturnValue(mockQuery);
+      (supabase!.from as any).mockReturnValue(mockQuery);
 
       const updates: UpdateNoteInput = {
         tags: ['new-tag'],
@@ -314,7 +314,7 @@ describe('notesAPI', () => {
         }),
       };
 
-      (supabase.from as any).mockReturnValue(mockQuery);
+      (supabase!.from as any).mockReturnValue(mockQuery);
 
       await expect(
         updateNote('nonexistent', { content: 'New' })
@@ -335,7 +335,7 @@ describe('notesAPI', () => {
       mockDelete.mockReturnValue({ eq: mockEq1 });
       mockEq1.mockReturnValue({ eq: mockEq2 });
 
-      (supabase.from as any).mockReturnValue(mockQuery);
+      (supabase!.from as any).mockReturnValue(mockQuery);
 
       await deleteNote('note-123');
 
@@ -358,7 +358,7 @@ describe('notesAPI', () => {
       mockDelete.mockReturnValue({ eq: mockEq1 });
       mockEq1.mockReturnValue({ eq: mockEq2 });
 
-      (supabase.from as any).mockReturnValue(mockQuery);
+      (supabase!.from as any).mockReturnValue(mockQuery);
 
       await expect(deleteNote('note-123')).rejects.toThrow();
     });

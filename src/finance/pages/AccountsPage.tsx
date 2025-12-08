@@ -56,7 +56,7 @@ const AccountsPage: React.FC = () => {
                   <div className="text-xs text-slate-500">{a.type}</div>
                 </div>
                 <div className="text-right">
-                  <div className="font-semibold">{formatCurrency(a.balance)}</div>
+                  <div className="font-semibold">{formatCurrency(a.liability ? -a.balance : a.balance)}</div>
                   <div className="text-xs text-slate-500">Updated {new Date(a.lastUpdatedISO).toLocaleDateString()}</div>
                 </div>
               </div>

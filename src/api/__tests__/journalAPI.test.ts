@@ -28,7 +28,7 @@ describe('journalAPI', () => {
     user_id: 'test-user-123',
     title: 'Test Entry',
     content: 'Test content',
-    mood: 'happy',
+    mood: 'good' as const,
     tags: ['test', 'api'],
     attachments: [],
     weather: null,
@@ -39,7 +39,7 @@ describe('journalAPI', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (supabase.auth.getUser as any).mockResolvedValue({
+    (supabase!.auth.getUser as any).mockResolvedValue({
       data: { user: mockUser },
     });
   });
@@ -55,11 +55,11 @@ describe('journalAPI', () => {
         }),
       };
 
-      (supabase.from as any).mockReturnValue(mockQuery);
+      (supabase!.from as any).mockReturnValue(mockQuery);
 
       const result = await getJournalEntries();
 
-      expect(vi.mocked(supabase.from)).toHaveBeenCalledWith('journal_entries');
+      expect(vi.mocked(supabase!.from)).toHaveBeenCalledWith('journal_entries');
       expect(mockQuery.eq).toHaveBeenCalledWith('user_id', mockUser.id);
       expect(mockQuery.order).toHaveBeenCalledWith('created_at', { ascending: false });
       expect(result).toHaveLength(1);
@@ -82,7 +82,7 @@ describe('journalAPI', () => {
         }),
       };
 
-      (supabase.from as any).mockReturnValue(mockQuery);
+      (supabase!.from as any).mockReturnValue(mockQuery);
 
       const filters: JournalEntryFilters = { searchQuery: 'test' };
       const result = await getJournalEntries(filters);
@@ -101,7 +101,7 @@ describe('journalAPI', () => {
         then: vi.fn((resolve) => resolve({ data: [], error: null })),
       };
 
-      (supabase.from as any).mockReturnValue(mockQuery);
+      (supabase!.from as any).mockReturnValue(mockQuery);
 
       const filters: JournalEntryFilters = { tags: ['work'] };
       await getJournalEntries(filters);
@@ -118,7 +118,7 @@ describe('journalAPI', () => {
         then: vi.fn((resolve) => resolve({ data: [], error: null })),
       };
 
-      (supabase.from as any).mockReturnValue(mockQuery);
+      (supabase!.from as any).mockReturnValue(mockQuery);
 
       const filters: JournalEntryFilters = { moods: ['happy', 'excited'] };
       await getJournalEntries(filters);
@@ -136,7 +136,7 @@ describe('journalAPI', () => {
         then: vi.fn((resolve) => resolve({ data: [], error: null })),
       };
 
-      (supabase.from as any).mockReturnValue(mockQuery);
+      (supabase!.from as any).mockReturnValue(mockQuery);
 
       const startDate = new Date('2025-11-01');
       const endDate = new Date('2025-11-30');
@@ -148,7 +148,7 @@ describe('journalAPI', () => {
     });
 
     it('should throw error when not authenticated', async () => {
-      (supabase.auth.getUser as any).mockResolvedValue({
+      (supabase!.auth.getUser as any).mockResolvedValue({
         data: { user: null },
       });
 
@@ -165,7 +165,7 @@ describe('journalAPI', () => {
         }),
       };
 
-      (supabase.from as any).mockReturnValue(mockQuery);
+      (supabase!.from as any).mockReturnValue(mockQuery);
 
       await expect(getJournalEntries()).rejects.toThrow();
     });
@@ -182,7 +182,7 @@ describe('journalAPI', () => {
         }),
       };
 
-      (supabase.from as any).mockReturnValue(mockQuery);
+      (supabase!.from as any).mockReturnValue(mockQuery);
 
       const result = await getJournalEntry('entry-123');
 
@@ -201,7 +201,7 @@ describe('journalAPI', () => {
         }),
       };
 
-      (supabase.from as any).mockReturnValue(mockQuery);
+      (supabase!.from as any).mockReturnValue(mockQuery);
 
       await expect(getJournalEntry('nonexistent')).rejects.toThrow('Journal entry not found');
     });
@@ -218,12 +218,12 @@ describe('journalAPI', () => {
         }),
       };
 
-      (supabase.from as any).mockReturnValue(mockQuery);
+      (supabase!.from as any).mockReturnValue(mockQuery);
 
       const input: CreateJournalEntryInput = {
         title: 'Test Entry',
         content: 'Test content',
-        mood: 'happy',
+        mood: 'good' as const,
         tags: ['test'],
         attachments: [],
       };
@@ -235,7 +235,7 @@ describe('journalAPI', () => {
           user_id: mockUser.id,
           title: 'Test Entry',
           content: 'Test content',
-          mood: 'happy',
+          mood: 'good' as const,
           tags: ['test'],
           attachments: [],
         })
@@ -253,10 +253,11 @@ describe('journalAPI', () => {
         }),
       };
 
-      (supabase.from as any).mockReturnValue(mockQuery);
+      (supabase!.from as any).mockReturnValue(mockQuery);
 
       const input: CreateJournalEntryInput = {
         content: 'Minimal entry',
+        mood: 'neutral',
       };
 
       await createJournalEntry(input);
@@ -278,10 +279,10 @@ describe('journalAPI', () => {
         }),
       };
 
-      (supabase.from as any).mockReturnValue(mockQuery);
+      (supabase!.from as any).mockReturnValue(mockQuery);
 
       await expect(
-        createJournalEntry({ content: 'Test' })
+        createJournalEntry({ content: 'Test', mood: 'neutral' })
       ).rejects.toThrow();
     });
   });
@@ -298,7 +299,7 @@ describe('journalAPI', () => {
         }),
       };
 
-      (supabase.from as any).mockReturnValue(mockQuery);
+      (supabase!.from as any).mockReturnValue(mockQuery);
 
       const updates: UpdateJournalEntryInput = {
         content: 'Updated content',
@@ -327,10 +328,10 @@ describe('journalAPI', () => {
         }),
       };
 
-      (supabase.from as any).mockReturnValue(mockQuery);
+      (supabase!.from as any).mockReturnValue(mockQuery);
 
       const updates: UpdateJournalEntryInput = {
-        mood: 'excited',
+        mood: 'excellent' as const,
       };
 
       await updateJournalEntry('entry-123', updates);
@@ -352,7 +353,7 @@ describe('journalAPI', () => {
         }),
       };
 
-      (supabase.from as any).mockReturnValue(mockQuery);
+      (supabase!.from as any).mockReturnValue(mockQuery);
 
       await expect(
         updateJournalEntry('nonexistent', { content: 'New' })
@@ -373,7 +374,7 @@ describe('journalAPI', () => {
       mockDelete.mockReturnValue({ eq: mockEq1 });
       mockEq1.mockReturnValue({ eq: mockEq2 });
 
-      (supabase.from as any).mockReturnValue(mockQuery);
+      (supabase!.from as any).mockReturnValue(mockQuery);
 
       await deleteJournalEntry('entry-123');
 
@@ -396,7 +397,7 @@ describe('journalAPI', () => {
       mockDelete.mockReturnValue({ eq: mockEq1 });
       mockEq1.mockReturnValue({ eq: mockEq2 });
 
-      (supabase.from as any).mockReturnValue(mockQuery);
+      (supabase!.from as any).mockReturnValue(mockQuery);
 
       await expect(deleteJournalEntry('entry-123')).rejects.toThrow();
     });

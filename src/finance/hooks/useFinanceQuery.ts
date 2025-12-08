@@ -22,6 +22,13 @@ import type {
   WelcomeBonusInput,
   CardOffer,
   CardOfferInput,
+  Loan,
+  LoanInput,
+  LoanPayment,
+  LoanPaymentInput,
+  RecurringTransaction,
+  RecurringTransactionInput,
+  PendingTransaction,
 } from '../types';
 import { logger } from '@/services/logger';
 
@@ -44,6 +51,11 @@ export const financeKeys = {
   categoryBonuses: (accountId: string) => [...financeKeys.all, 'categoryBonuses', accountId] as const,
   welcomeBonuses: (accountId: string) => [...financeKeys.all, 'welcomeBonuses', accountId] as const,
   cardOffers: (accountId: string) => [...financeKeys.all, 'cardOffers', accountId] as const,
+  loans: () => [...financeKeys.all, 'loans'] as const,
+  loan: (id: string) => [...financeKeys.all, 'loan', id] as const,
+  loanPayments: (loanId: string) => [...financeKeys.all, 'loanPayments', loanId] as const,
+  recurringTransactions: () => [...financeKeys.all, 'recurringTransactions'] as const,
+  pendingTransactions: () => [...financeKeys.all, 'pendingTransactions'] as const,
 };
 
 // ==================== Institutions ====================
@@ -116,7 +128,9 @@ export function useTransactionsQuery(params?: TxnQuery, options?: Omit<UseQueryO
     queryKey: financeKeys.transactions(params),
     queryFn: async () => {
       const api = await getFinanceAPI();
-      return api.listTransactions(params ?? { limit: 500 });
+      const result = await api.listTransactions(params ?? { limit: 500 });
+      // Extract items from paginated response
+      return result.items;
     },
     staleTime: 1000 * 60 * 2, // 2 minutes
     ...options,
@@ -544,6 +558,296 @@ export function useUpsertCardOfferMutation(): UseMutationResult<void, Error, { a
     },
     onError: (error: Error, { accountId }) => {
       logger.error('Failed to upsert card offer', { error: error.message, accountId });
+    },
+  });
+}
+
+// ==================== Loans ====================
+
+export function useLoansQuery(): UseQueryResult<Loan[], Error> {
+  return useQuery<Loan[], Error>({
+    queryKey: financeKeys.loans(),
+    queryFn: async () => {
+      const api = await getFinanceAPI();
+      return api.listLoans();
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+}
+
+export function useUpsertLoanMutation(): UseMutationResult<void, Error, LoanInput, { previousLoans: Loan[] | undefined }> {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, LoanInput, { previousLoans: Loan[] | undefined }>({
+    mutationFn: async (loan: LoanInput) => {
+      logger.debug('Upserting loan', { loanName: loan.loanName });
+      const api = await getFinanceAPI();
+      await api.upsertLoan(loan);
+    },
+    onMutate: async (loan) => {
+      logger.debug('Optimistic update: loan', { loanName: loan.loanName });
+      await queryClient.cancelQueries({ queryKey: financeKeys.loans() });
+      const previousLoans = queryClient.getQueryData<Loan[]>(financeKeys.loans());
+
+      // Optimistic update
+      if (loan.id) {
+        queryClient.setQueryData<Loan[]>(financeKeys.loans(), (old) => {
+          if (!old) return old;
+          return old.map((l) => (l.id === loan.id ? { ...l, ...loan } : l));
+        });
+      } else {
+        // For new loans, we can't optimistically add without an ID
+        // Just skip optimistic update for creates
+      }
+
+      return { previousLoans };
+    },
+    onError: (err: Error, loan, context) => {
+      logger.error('Failed to upsert loan', { error: err.message, loanName: loan.loanName });
+      if (context?.previousLoans) {
+        queryClient.setQueryData<Loan[]>(financeKeys.loans(), context.previousLoans);
+      }
+    },
+    onSuccess: (_, loan) => {
+      logger.info('Loan upserted successfully', { loanName: loan.loanName });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.loans() });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.accounts() });
+    },
+  });
+}
+
+export function useDeleteLoanMutation(): UseMutationResult<void, Error, string, { previousLoans: Loan[] | undefined }> {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, string, { previousLoans: Loan[] | undefined }>({
+    mutationFn: async (loanId: string) => {
+      logger.debug('Deleting loan', { loanId });
+      const api = await getFinanceAPI();
+      await api.deleteLoan(loanId);
+    },
+    onMutate: async (loanId) => {
+      logger.debug('Optimistic delete: loan', { loanId });
+      await queryClient.cancelQueries({ queryKey: financeKeys.loans() });
+      const previousLoans = queryClient.getQueryData<Loan[]>(financeKeys.loans());
+
+      // Optimistic delete
+      queryClient.setQueryData<Loan[]>(financeKeys.loans(), (old) => {
+        if (!old) return old;
+        return old.filter((l) => l.id !== loanId);
+      });
+
+      return { previousLoans };
+    },
+    onError: (err: Error, loanId, context) => {
+      logger.error('Failed to delete loan', { error: err.message, loanId });
+      if (context?.previousLoans) {
+        queryClient.setQueryData<Loan[]>(financeKeys.loans(), context.previousLoans);
+      }
+    },
+    onSuccess: (_, loanId) => {
+      logger.info('Loan deleted successfully', { loanId });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.loans() });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.loanPayments(loanId) });
+    },
+  });
+}
+
+// ==================== Loan Payments ====================
+
+export function useLoanPaymentsQuery(loanId: string | null): UseQueryResult<LoanPayment[], Error> {
+  return useQuery<LoanPayment[], Error>({
+    queryKey: loanId ? financeKeys.loanPayments(loanId) : ['loanPayments-null'],
+    queryFn: async () => {
+      if (!loanId) throw new Error('Loan ID is required');
+      const api = await getFinanceAPI();
+      return api.listLoanPayments(loanId);
+    },
+    enabled: !!loanId,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+}
+
+export function useUpsertLoanPaymentMutation(): UseMutationResult<void, Error, { loanId: string; payment: LoanPaymentInput }, unknown> {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, { loanId: string; payment: LoanPaymentInput }>({
+    mutationFn: async ({ loanId, payment }: { loanId: string; payment: LoanPaymentInput }) => {
+      logger.debug('Upserting loan payment', { loanId, paymentDate: payment.paymentDate });
+      const api = await getFinanceAPI();
+      await api.upsertLoanPayment(loanId, payment);
+    },
+    onSuccess: (_, { loanId }) => {
+      logger.info('Loan payment upserted successfully', { loanId });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.loanPayments(loanId) });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.loans() });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.loan(loanId) });
+    },
+    onError: (error: Error, { loanId }) => {
+      logger.error('Failed to upsert loan payment', { error: error.message, loanId });
+    },
+  });
+}
+
+export function useDeleteLoanPaymentMutation(): UseMutationResult<void, Error, { paymentId: string; loanId: string }, unknown> {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, { paymentId: string; loanId: string }>({
+    mutationFn: async ({ paymentId }: { paymentId: string; loanId: string }) => {
+      logger.debug('Deleting loan payment', { paymentId });
+      const api = await getFinanceAPI();
+      await api.deleteLoanPayment(paymentId);
+    },
+    onSuccess: (_, { loanId, paymentId }) => {
+      logger.info('Loan payment deleted successfully', { paymentId });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.loanPayments(loanId) });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.loans() });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.loan(loanId) });
+    },
+    onError: (error: Error, { paymentId }) => {
+      logger.error('Failed to delete loan payment', { error: error.message, paymentId });
+    },
+  });
+}
+
+// ==================== Recurring Transactions ====================
+
+export function useRecurringTransactionsQuery(): UseQueryResult<RecurringTransaction[], Error> {
+  return useQuery<RecurringTransaction[], Error>({
+    queryKey: financeKeys.recurringTransactions(),
+    queryFn: async () => {
+      const api = await getFinanceAPI();
+      return api.listRecurringTransactions();
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+}
+
+export function usePendingTransactionsQuery(): UseQueryResult<PendingTransaction[], Error> {
+  return useQuery<PendingTransaction[], Error>({
+    queryKey: financeKeys.pendingTransactions(),
+    queryFn: async () => {
+      const api = await getFinanceAPI();
+      return api.listPendingTransactions();
+    },
+    refetchInterval: 1000 * 60, // Refetch every minute for pending items
+    staleTime: 1000 * 30, // 30 seconds
+  });
+}
+
+export function useUpsertRecurringTransactionMutation(): UseMutationResult<void, Error, RecurringTransactionInput, unknown> {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, RecurringTransactionInput>({
+    mutationFn: async (recurring: RecurringTransactionInput) => {
+      logger.debug('Upserting recurring transaction', { recurring });
+      const api = await getFinanceAPI();
+      await api.upsertRecurringTransaction(recurring);
+    },
+    onSuccess: (_, recurring) => {
+      logger.info('Recurring transaction saved successfully', { id: recurring.id });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.recurringTransactions() });
+    },
+    onError: (error: Error) => {
+      logger.error('Failed to save recurring transaction', { error: error.message });
+    },
+  });
+}
+
+export function useDeleteRecurringTransactionMutation(): UseMutationResult<void, Error, string, unknown> {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, string>({
+    mutationFn: async (recurringId: string) => {
+      logger.debug('Deleting recurring transaction', { recurringId });
+      const api = await getFinanceAPI();
+      await api.deleteRecurringTransaction(recurringId);
+    },
+    onSuccess: (_, recurringId) => {
+      logger.info('Recurring transaction deleted successfully', { recurringId });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.recurringTransactions() });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.pendingTransactions() });
+    },
+    onError: (error: Error) => {
+      logger.error('Failed to delete recurring transaction', { error: error.message });
+    },
+  });
+}
+
+export function useApprovePendingTransactionMutation(): UseMutationResult<void, Error, { pendingId: string; edits?: Partial<TransactionInput> }, unknown> {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, { pendingId: string; edits?: Partial<TransactionInput> }>({
+    mutationFn: async ({ pendingId, edits }) => {
+      logger.debug('Approving pending transaction', { pendingId, hasEdits: !!edits });
+      const api = await getFinanceAPI();
+      await api.approvePendingTransaction(pendingId, edits);
+    },
+    onSuccess: (_, { pendingId }) => {
+      logger.info('Pending transaction approved successfully', { pendingId });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.pendingTransactions() });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.transactions() });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.accounts() });
+    },
+    onError: (error: Error) => {
+      logger.error('Failed to approve pending transaction', { error: error.message });
+    },
+  });
+}
+
+export function useSkipPendingTransactionMutation(): UseMutationResult<void, Error, string, unknown> {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, string>({
+    mutationFn: async (pendingId: string) => {
+      logger.debug('Skipping pending transaction', { pendingId });
+      const api = await getFinanceAPI();
+      await api.skipPendingTransaction(pendingId);
+    },
+    onSuccess: (_, pendingId) => {
+      logger.info('Pending transaction skipped successfully', { pendingId });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.pendingTransactions() });
+    },
+    onError: (error: Error) => {
+      logger.error('Failed to skip pending transaction', { error: error.message });
+    },
+  });
+}
+
+export function useDeletePendingTransactionMutation(): UseMutationResult<void, Error, string, unknown> {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, string>({
+    mutationFn: async (pendingId: string) => {
+      logger.debug('Deleting pending transaction', { pendingId });
+      const api = await getFinanceAPI();
+      await api.deletePendingTransaction(pendingId);
+    },
+    onSuccess: (_, pendingId) => {
+      logger.info('Pending transaction deleted successfully', { pendingId });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.pendingTransactions() });
+    },
+    onError: (error: Error) => {
+      logger.error('Failed to delete pending transaction', { error: error.message });
+    },
+  });
+}
+
+export function useGeneratePendingTransactionsMutation(): UseMutationResult<void, Error, void, unknown> {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, void>({
+    mutationFn: async () => {
+      logger.debug('Generating pending transactions');
+      const api = await getFinanceAPI();
+      await api.generatePendingTransactions();
+    },
+    onSuccess: () => {
+      logger.info('Pending transactions generated successfully');
+      void queryClient.invalidateQueries({ queryKey: financeKeys.pendingTransactions() });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.recurringTransactions() });
+    },
+    onError: (error: Error) => {
+      logger.error('Failed to generate pending transactions', { error: error.message });
     },
   });
 }

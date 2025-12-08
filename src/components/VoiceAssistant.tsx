@@ -1,20 +1,27 @@
 import React from 'react'
 import { X, Sparkles, Mic } from 'lucide-react'
 import useVoice from '../hooks/useVoice'
-import { handleUtterance, type IntentContext } from '../voice/intents'
+import { ConversationEngine } from '../services/conversationEngine'
 import { useAppStore } from '../stores/useAppStore'
+import { useAuth } from '../hooks/useAuth'
 
 type Props = { open: boolean; onClose: () => void }
 
 export const VoiceAssistant: React.FC<Props> = ({ open, onClose }) => {
+  const { user } = useAuth()
   const [messages, setMessages] = React.useState<{ role: 'user' | 'assistant'; text: string }[]>([])
   const [state, setState] = React.useState<'idle' | 'listening' | 'thinking' | 'speaking'>('idle')
-  const [context, setContext] = React.useState<IntentContext>({})
   const [rate, setRate] = React.useState(1)
   const [pitch, setPitch] = React.useState(1)
-  const { setActiveView, showGlobalToast } = useAppStore()
+  const { showGlobalToast } = useAppStore()
   const lastAssistantRef = React.useRef<string>('')
   const squelchUntilRef = React.useRef<number>(0)
+  const engineRef = React.useRef<ConversationEngine | null>(null)
+
+  // Initialize conversation engine
+  React.useEffect(() => {
+    engineRef.current = new ConversationEngine(user?.id ?? 'demo-user')
+  }, [user?.id])
 
   const { supported, listening, start, stop, speak } = useVoice('en-US', {
     onFinal: (text) => {
@@ -29,29 +36,53 @@ export const VoiceAssistant: React.FC<Props> = ({ open, onClose }) => {
 
       setMessages((m) => [...m, { role: 'user', text }])
       setState('thinking')
+
+      // Stop listening immediately to prevent echo
+      if (listening) stop()
+
       try {
-        const res = await handleUtterance(text, context)
-        if (res.navigateView) setActiveView(res.navigateView)
-        setMessages((m) => [...m, { role: 'assistant', text: res.reply }])
-        setContext((c) => ({ ...c, ...res.context }))
-        setState('speaking')
-        if (listening) stop()
-        // Squelch recognition during TTS and a short grace period after
-        squelchUntilRef.current = Date.now() + 2000
-        lastAssistantRef.current = res.reply
-        await speak(res.reply, { rate, pitch })
-        if (res.toast && showGlobalToast) {
-          showGlobalToast(res.toast.message, res.toast.type)
+        const res = await engineRef.current?.chat(text)
+        if (!res) {
+          throw new Error('No response from AI')
         }
+        setMessages((m) => [...m, { role: 'assistant', text: res.response }])
+
+        // Store response and set long squelch window BEFORE speaking
+        lastAssistantRef.current = res.response
+        const estimatedSpeechDuration = res.response.length * 50 // ~50ms per character
+        squelchUntilRef.current = Date.now() + estimatedSpeechDuration + 3000 // speech duration + 3 second buffer
+
+        setState('speaking')
+        await speak(res.response, { rate, pitch })
+
+        // Show success toast for function calls
+        if (res.functionCalls && res.functionCalls.length > 0 && showGlobalToast) {
+          const successCalls = res.functionCalls.filter(fc => fc.result.success)
+          if (successCalls.length > 0) {
+            showGlobalToast(`Completed ${successCalls.length} action${successCalls.length > 1 ? 's' : ''}`, 'success')
+          }
+        }
+
         setState('idle')
+        // Wait a bit before restarting listening
         setTimeout(() => {
-          squelchUntilRef.current = Date.now() + 800
           start()
-        }, 600)
-      } catch (_e) {
-        setMessages((m) => [...m, { role: 'assistant', text: 'Sorry, something went wrong.' }])
+        }, 1000)
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        let userMessage = 'Sorry, something went wrong.'
+        let retryDelay = 3000
+
+        if (errorMessage.includes('rate_limit_exceeded') || errorMessage.includes('429')) {
+          userMessage = 'Hit rate limit. Waiting 10 seconds before listening again...'
+          retryDelay = 10000 // Wait 10 seconds for rate limit
+        } else if (errorMessage.includes('model_decommissioned')) {
+          userMessage = 'The AI model needs to be updated. Please refresh the page.'
+        }
+
+        setMessages((m) => [...m, { role: 'assistant', text: userMessage }])
         setState('idle')
-        setTimeout(() => start(), 600)
+        setTimeout(() => start(), retryDelay)
       }
       })()
     },
@@ -99,11 +130,18 @@ export const VoiceAssistant: React.FC<Props> = ({ open, onClose }) => {
 
         <div className="max-h-[60vh] overflow-auto p-4 space-y-3 text-sm">
           {messages.length === 0 && (
-            <div className="text-slate-600">Ask things like “What’s my spending this month?” or “Add transaction 12 dollars for coffee”.</div>
+            <div className="text-slate-600">Try saying things like "Mark my reading habit as done", "What's my spending this month?", or "Add a task to review code".</div>
           )}
           {messages.map((m, i) => (
             <div key={i} className={`flex ${m.role === 'assistant' ? '' : 'justify-end'}`}>
-              <div className={`rounded-xl px-3 py-2 ${m.role === 'assistant' ? 'bg-slate-100 text-slate-900' : 'bg-slate-900 text-white'}`}>
+              <div
+                className={`rounded-xl px-4 py-2.5 max-w-[80%] ${
+                  m.role === 'assistant'
+                    ? 'bg-slate-100 text-slate-900'
+                    : 'bg-gradient-to-br from-orange-600 to-pink-600 shadow-lg'
+                }`}
+                style={m.role === 'user' ? { color: '#ffffff', fontWeight: '500' } : undefined}
+              >
                 {m.text}
               </div>
             </div>

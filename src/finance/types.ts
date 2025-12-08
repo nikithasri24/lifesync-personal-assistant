@@ -251,6 +251,59 @@ export type RewardsHistoryInput = Omit<RewardsHistory, 'id' | 'createdAt'> & {
 
 export type TransactionInput = Omit<Transaction, 'id'> & { id?: string };
 
+// Recurring Transactions Types
+export type RecurringFrequency = 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'yearly';
+export type PendingTransactionStatus = 'pending' | 'approved' | 'skipped' | 'edited';
+
+export type RecurringTransaction = {
+  id: string;
+  description: string;
+  amount: number;
+  type: 'credit' | 'debit';
+  categoryId?: string;
+  accountId?: string;
+  frequency: RecurringFrequency;
+  startDate: string; // ISO date
+  endDate?: string; // ISO date
+  dayOfMonth?: number; // 1-31 or -1 for last day
+  dayOfWeek?: number; // 0=Sun, 1=Mon, etc.
+  autoCreate: boolean;
+  requireApproval: boolean;
+  daysBefore: number;
+  active: boolean;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+  lastGeneratedDate?: string; // ISO date
+  // From view
+  nextOccurrenceDate?: string; // ISO date
+  pendingCount?: number;
+};
+
+export type RecurringTransactionInput = Omit<RecurringTransaction, 'id' | 'createdAt' | 'updatedAt' | 'lastGeneratedDate' | 'nextOccurrenceDate' | 'pendingCount'> & {
+  id?: string;
+};
+
+export type PendingTransaction = {
+  id: string;
+  recurringTransactionId?: string;
+  description: string;
+  amount: number;
+  type: 'credit' | 'debit';
+  categoryId?: string;
+  accountId?: string;
+  scheduledDate: string; // ISO date
+  status: PendingTransactionStatus;
+  transactionId?: string; // Link to approved transaction
+  notes?: string;
+  createdAt: string;
+  reviewedAt?: string;
+};
+
+export type PendingTransactionInput = Omit<PendingTransaction, 'id' | 'createdAt' | 'reviewedAt'> & {
+  id?: string;
+};
+
 // Insurance Tracking Types
 export type InsuranceType = 'health' | 'auto' | 'home' | 'life' | 'disability' | 'umbrella' | 'pet' | 'travel' | 'other';
 export type InsuranceStatus = 'active' | 'expired' | 'cancelled' | 'pending';
@@ -357,5 +410,59 @@ export type InsuranceBeneficiaryInput = Omit<InsuranceBeneficiary, 'id' | 'creat
 };
 
 export type InsurancePremiumPaymentInput = Omit<InsurancePremiumPayment, 'id' | 'createdAt'> & {
+  id?: string;
+};
+
+// Loan Tracking Types
+export type LoanType = 'auto' | 'mortgage' | 'personal' | 'student' | 'business' | 'other';
+export type LoanStatus = 'active' | 'paid_off' | 'deferred' | 'defaulted';
+
+export type Loan = {
+  id: string;
+  accountId?: string; // Link to account if tracked there
+  loanName: string;
+  loanType: LoanType;
+  status: LoanStatus;
+  principalAmount: number; // Total loan amount
+  currentBalance: number; // Remaining balance
+  interestRate: number; // Annual percentage rate
+  monthlyPayment: number; // Required monthly payment
+  extraPayment: number; // Additional monthly payment
+  targetPayoffDate: string; // ISO date
+  startDate: string; // ISO date
+  firstPaymentDate: string; // ISO date
+  lender?: string;
+  loanNumber?: string;
+  termMonths?: number; // Original loan term in months
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+  // Calculated fields
+  totalPaid?: number;
+  interestPaid?: number;
+  principalPaid?: number;
+  remainingPayments?: number;
+  projectedPayoffDate?: string; // ISO date
+};
+
+export type LoanPayment = {
+  id: string;
+  loanId: string;
+  paymentDate: string; // ISO date
+  amount: number;
+  principalAmount: number;
+  interestAmount: number;
+  extraAmount: number; // Extra payment beyond required
+  balanceAfter: number; // Balance after this payment
+  transactionId?: string; // Link to transaction if exists
+  notes?: string;
+  createdAt: string;
+};
+
+export type LoanInput = Omit<Loan, 'id' | 'createdAt' | 'updatedAt' | 'totalPaid' | 'interestPaid' | 'principalPaid' | 'remainingPayments' | 'projectedPayoffDate'> & {
+  id?: string;
+};
+
+export type LoanPaymentInput = Omit<LoanPayment, 'id' | 'createdAt'> & {
   id?: string;
 };

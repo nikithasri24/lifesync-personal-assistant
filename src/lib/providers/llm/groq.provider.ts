@@ -2,7 +2,7 @@
  * Groq LLM Provider
  *
  * Free tier: 14,400 requests/day
- * Models: llama-3.1-70b-versatile, mixtral-8x7b-32768
+ * Models: llama-3-groq-70b-tool-use (best for function calling), llama-3.3-70b-versatile, mixtral-8x7b-32768
  * Fast inference, function calling support
  */
 
@@ -22,7 +22,7 @@ export class GroqProvider implements LLMProvider {
   private model: string;
   private available: boolean = true;
 
-  constructor(apiKey: string, model: string = 'llama-3.1-70b-versatile') {
+  constructor(apiKey: string, model: string = 'llama-3.1-8b-instant') {
     this.client = new Groq({
       apiKey,
       dangerouslyAllowBrowser: true // OK for personal use; use server proxy in production

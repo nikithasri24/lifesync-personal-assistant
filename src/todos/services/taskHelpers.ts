@@ -5,14 +5,6 @@ import { isToday, addDays, isPast } from 'date-fns';
 import type { Task, Project } from '../types';
 
 /**
- * Helper to identify 75 Hard tasks (should be managed from 75 Hard page, not Tasks tab)
- */
-export function isSFHTask(task: { tags?: string[] }): boolean {
-  const tags = Array.isArray(task.tags) ? task.tags : [];
-  return tags.includes('sfh') || tags.includes('75hard');
-}
-
-/**
  * Get tasks due today
  */
 export function getTodayTasks(tasks: Task[]): Task[] {
@@ -32,7 +24,7 @@ export function getUpcomingTasks(tasks: Task[]): Task[] {
 }
 
 /**
- * Get all inbox tasks (all tasks excluding 75 Hard tasks)
+ * Get all inbox tasks
  */
 export function getInboxTasks(tasks: Task[]): Task[] {
   return tasks.filter(task => task.status !== 'done');

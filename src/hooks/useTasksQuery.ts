@@ -101,7 +101,12 @@ export function useCreateTask(): UseMutationResult<TaskData, Error, Omit<TaskDat
 /**
  * Update an existing task
  */
-export function useUpdateTask(): UseMutationResult<TaskData, Error, { id: string; updates: Partial<TaskData> }, unknown> {
+export function useUpdateTask(): UseMutationResult<
+  TaskData,
+  Error,
+  { id: string; updates: Partial<TaskData> },
+  { previousTasks?: TaskData[]; previousTask?: TaskData }
+> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -110,22 +115,48 @@ export function useUpdateTask(): UseMutationResult<TaskData, Error, { id: string
       const result = await updateTask(id, updates);
       return result;
     },
-    onMutate: ({ id, updates }) => {
+    // Optimistic update - happens BEFORE API call
+    onMutate: async ({ id, updates }) => {
       logger.debug('Optimistic update: updating task', { id, updates });
+
+      // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
+      await queryClient.cancelQueries({ queryKey: queryKeys.tasks.lists() });
+      await queryClient.cancelQueries({ queryKey: queryKeys.tasks.detail(id) });
+
+      // Snapshot the previous values for rollback
+      const previousTasks = queryClient.getQueryData<TaskData[]>(queryKeys.tasks.lists());
+      const previousTask = queryClient.getQueryData<TaskData>(queryKeys.tasks.detail(id));
+
+      // Optimistically update task lists
+      queryClient.setQueryData<TaskData[]>(
+        queryKeys.tasks.lists(),
+        (old) => {
+          return old?.map((task) =>
+            task.id === id ? { ...task, ...updates } : task
+          );
+        }
+      );
+
+      // Optimistically update task detail
+      if (previousTask) {
+        queryClient.setQueryData(
+          queryKeys.tasks.detail(id),
+          { ...previousTask, ...updates }
+        );
+      }
+
+      // Return context with previous values for rollback
+      return { previousTasks, previousTask };
     },
     onSuccess: (updatedTask) => {
       logger.info('Task updated successfully', { id: updatedTask.id, title: updatedTask.title });
 
-      // Invalidate all task lists
-      void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.lists() });
-
-      // Update the specific task detail cache
+      // Update with server response (in case server modified the data)
       queryClient.setQueryData(
         queryKeys.tasks.detail(updatedTask.id ?? ''),
         updatedTask
       );
 
-      // Optimistically update in list caches
       queryClient.setQueryData<TaskData[]>(
         queryKeys.tasks.lists(),
         (old) => {
@@ -135,8 +166,21 @@ export function useUpdateTask(): UseMutationResult<TaskData, Error, { id: string
         }
       );
     },
-    onError: (error: Error, { id }) => {
-      logger.error('Failed to update task', { error: error.message, id });
+    onError: (error: Error, { id }, context) => {
+      logger.error('Failed to update task - rolling back', { error: error.message, id });
+
+      // Rollback to previous state on error
+      if (context?.previousTasks) {
+        queryClient.setQueryData(queryKeys.tasks.lists(), context.previousTasks);
+      }
+      if (context?.previousTask) {
+        queryClient.setQueryData(queryKeys.tasks.detail(id), context.previousTask);
+      }
+    },
+    // Always refetch after success or error to ensure we're in sync with server
+    onSettled: (_data, _error, { id }) => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.lists() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.detail(id) });
     },
   });
 }

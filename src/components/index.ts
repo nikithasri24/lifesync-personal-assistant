@@ -18,7 +18,6 @@ export { Logo } from './Logo';
 export { NationalParksMap } from './NationalParksMap';
 export { NikeLogo } from './NikeLogo';
 export { PremiumLogo } from './PremiumLogo';
-export { SeventyFiveHardWidget } from './SeventyFiveHardWidget';
 export { SmartBudgetRecommendations } from './SmartBudgetRecommendations';
 export { SmartExpenseCategorizer } from './SmartExpenseCategorizer';
 export { ThemeToggle } from './ThemeToggle';

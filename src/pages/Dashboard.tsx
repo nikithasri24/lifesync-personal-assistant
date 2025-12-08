@@ -17,7 +17,6 @@ import { useState, useEffect } from 'react';
 import { Toast } from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { LoadingButton } from '../components/LoadingButton';
-import SeventyFiveHardWidget from '../components/SeventyFiveHardWidget';
 import { useTasks, useUpdateTask } from '../hooks/useTasksQuery';
 import { useHabits, useCreateHabitEntry, useHabitEntries } from '../hooks/useHabitsQuery';
 import { useNotes } from '../hooks/useNotesQuery';
@@ -138,29 +137,18 @@ export default function Dashboard(): JSX.Element {
     return () => clearTimeout(timer);
   }, []);
 
-  // Note: 75 Hard todo cleanup/sync is already handled by App.tsx → loadSFHChallenge() → ensureSFHTodosForToday()
-  // No need to call it again here to avoid race condition and duplicate task creation
-
-  // Helper to identify 75 Hard tasks (both old 'sfh' tag and new '75hard' tag)
-  const isSFH = (t: Task): boolean => {
-    const tags = Array.isArray(t.tags) ? t.tags : [];
-    return tags.includes('sfh') ?? tags.includes('75hard');
-  };
-
-  const todayTodosAll = tasks.filter((task: Task): boolean =>
+  const todayTodos = tasks.filter((task: Task): boolean =>
     task.status !== 'done' && !task.deleted &&
     !!task.due_date &&
     isToday(new Date(task.due_date))
   );
-  // Exclude 75 Hard from Dashboard metrics and list to focus on actual tasks
-  const todayTodos = todayTodosAll.filter((t: Task): boolean => !isSFH(t));
 
   const upcomingTodos = tasks.filter((task: Task): boolean =>
     task.status !== 'done' && !task.deleted &&
     !!task.due_date &&
     new Date(task.due_date) > new Date() &&
     new Date(task.due_date) <= addDays(new Date(), 7)
-  ).filter((t: Task): boolean => !isSFH(t));
+  );
 
   // Calculate habit progress for today
   const todayKey = format(new Date(), 'yyyy-MM-dd');
@@ -195,10 +183,8 @@ export default function Dashboard(): JSX.Element {
     return entryDate >= weekAgo;
   });
 
-  // Dashboard completion stats - exclude 75 Hard tasks since they're managed separately
   const completedTodosThisWeek = tasks.filter((task: Task): boolean => {
     if (task.status !== 'done' || task.deleted) return false;
-    if (isSFH(task)) return false; // Exclude 75 Hard tasks from completion stats
     const completedDate = task.completed_at ? new Date(task.completed_at) : (task.created_at ? new Date(task.created_at) : null);
     if (!completedDate) return false;
     const weekAgo = new Date();
@@ -296,9 +282,6 @@ export default function Dashboard(): JSX.Element {
           </div>
         ))}
       </div>
-
-      {/* 75 Hard Challenge Widget */}
-      <SeventyFiveHardWidget />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Today's Tasks */}

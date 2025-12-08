@@ -8,15 +8,16 @@ import { TrendingUp, TrendingDown, DollarSign, PieChart, BarChart3 } from 'lucid
 import { Card } from '../components/Card';
 import { ChartLazy } from '../components/ChartLazy';
 import { formatCurrency } from '../utils/currency';
-import { useNetWorthQuery, useAccountsQuery } from '../hooks/useFinanceQuery';
+import { useNetWorthQuery, useAccountsQuery, useLoansQuery } from '../hooks/useFinanceQuery';
 import type { Account } from '../types';
 
 const NetWorthPage: React.FC = () => {
   // React Query hooks
   const { data: netWorthData = [], isLoading: netWorthLoading } = useNetWorthQuery();
   const { data: accounts = [], isLoading: accountsLoading } = useAccountsQuery();
+  const { data: loans = [], isLoading: loansLoading } = useLoansQuery();
 
-  const loading = netWorthLoading || accountsLoading;
+  const loading = netWorthLoading || accountsLoading || loansLoading;
 
   // Transform data to include net worth calculation
   const data = React.useMemo(() => {
@@ -38,7 +39,13 @@ const NetWorthPage: React.FC = () => {
   const assetAccounts = accounts.filter(a => !a.liability);
   const liabilityAccounts = accounts.filter(a => a.liability);
   const totalAssets = assetAccounts.reduce((sum, a) => sum + a.balance, 0);
-  const totalLiabilities = liabilityAccounts.reduce((sum, a) => sum + Math.abs(a.balance), 0);
+
+  // Include active loans in liabilities
+  const activeLoans = loans.filter(l => l.status === 'active');
+  const totalLoanLiabilities = activeLoans.reduce((sum, l) => sum + l.currentBalance, 0);
+  const totalAccountLiabilities = liabilityAccounts.reduce((sum, a) => sum + Math.abs(a.balance), 0);
+  const totalLiabilities = totalAccountLiabilities + totalLoanLiabilities;
+
   const currentNet = totalAssets - totalLiabilities;
 
   // Group accounts by type
@@ -108,7 +115,10 @@ const NetWorthPage: React.FC = () => {
             </div>
             <div className="space-y-1">
               <p className="text-2xl font-bold text-primary">{formatCurrency(totalLiabilities)}</p>
-              <p className="text-xs text-primary opacity-60">{liabilityAccounts.length} accounts</p>
+              <p className="text-xs text-primary opacity-60">
+                {liabilityAccounts.length} account{liabilityAccounts.length !== 1 ? 's' : ''}
+                {activeLoans.length > 0 && `, ${activeLoans.length} loan${activeLoans.length !== 1 ? 's' : ''}`}
+              </p>
             </div>
           </div>
 
@@ -192,7 +202,7 @@ const NetWorthPage: React.FC = () => {
                     {accts.map(a => (
                       <div key={a.id} className="flex items-center justify-between text-xs text-primary opacity-70">
                         <span>{a.name}</span>
-                        <span>{formatCurrency(a.balance)}</span>
+                        <span>{formatCurrency(a.liability ? -a.balance : a.balance)}</span>
                       </div>
                     ))}
                   </div>
@@ -238,7 +248,30 @@ const NetWorthPage: React.FC = () => {
                 </div>
               );
             })}
-            {liabilityAccounts.length === 0 && (
+            {/* Loans Section */}
+            {activeLoans.length > 0 && (
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-primary">Loans</span>
+                  <span className="text-sm font-semibold text-primary">{formatCurrency(totalLoanLiabilities)}</span>
+                </div>
+                <div className="mb-2 h-2 w-full rounded-full bg-primary/20">
+                  <div
+                    className="h-2 rounded-full bg-rose-500"
+                    style={{ width: `${totalLiabilities > 0 ? (totalLoanLiabilities / totalLiabilities) * 100 : 0}%` }}
+                  />
+                </div>
+                <div className="space-y-1.5 ml-3">
+                  {activeLoans.map(loan => (
+                    <div key={loan.id} className="flex items-center justify-between text-xs text-primary opacity-70">
+                      <span>{loan.loanName}</span>
+                      <span>{formatCurrency(loan.currentBalance)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {liabilityAccounts.length === 0 && activeLoans.length === 0 && (
               <p className="text-sm text-primary opacity-60 text-center py-4">No liabilities - great job! 🎉</p>
             )}
           </div>

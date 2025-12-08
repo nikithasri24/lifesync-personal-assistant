@@ -18,6 +18,7 @@ interface QuickAddTransactionProps {
 export const QuickAddTransaction: React.FC<QuickAddTransactionProps> = ({ onClose, onSuccess }) => {
   const [loading, setLoading] = React.useState(false);
   const [accounts, setAccounts] = React.useState<Array<{ id: string; name: string }>>([]);
+  const [categories, setCategories] = React.useState<Array<{ id: string; name: string }>>([]);
   const { showToast } = useToast();
   const [formData, setFormData] = React.useState({
     accountId: '',
@@ -25,25 +26,74 @@ export const QuickAddTransaction: React.FC<QuickAddTransactionProps> = ({ onClos
     amount: '',
     date: new Date().toISOString().split('T')[0],
     type: 'debit' as 'debit' | 'credit',
+    categoryId: '',
     notes: ''
   });
 
-  // Load accounts
+  // Load accounts and categories
   React.useEffect(() => {
-    async function loadAccounts(): Promise<void> {
+    async function loadData(): Promise<void> {
       try {
         const api = await getFinanceAPI();
-        const accts = await api.listAccounts();
+        const [accts, cats] = await Promise.all([
+          api.listAccounts(),
+          api.listCategories()
+        ]);
         setAccounts(accts);
+        setCategories(cats);
         if (accts.length > 0) {
           setFormData(prev => ({ ...prev, accountId: accts[0].id }));
         }
       } catch (error) {
-        logger.error('Failed to load accounts:', { error });
+        logger.error('Failed to load accounts/categories:', { error });
       }
     }
-    void loadAccounts();
+    void loadData();
   }, []);
+
+  // Filter categories based on transaction type
+  const incomeCategories = ['Salary', 'Income', 'Freelance', 'Bonus', 'Investment', 'Refund', 'Gift', 'Other Income'];
+  const expenseCategories = ['Coffee', 'Groceries', 'Dining Out', 'Entertainment', 'Shopping', 'Gas', 'Utilities', 'Miscellaneous', 'Vanity'];
+
+  const filteredCategories = React.useMemo(() => {
+    if (formData.type === 'credit') {
+      // Show income categories first, then others
+      return categories.sort((a, b) => {
+        const aIsIncome = incomeCategories.some(ic => a.name.toLowerCase().includes(ic.toLowerCase()));
+        const bIsIncome = incomeCategories.some(ic => b.name.toLowerCase().includes(ic.toLowerCase()));
+        if (aIsIncome && !bIsIncome) return -1;
+        if (!aIsIncome && bIsIncome) return 1;
+        return a.name.localeCompare(b.name);
+      });
+    } else {
+      // Show expense categories first, then others
+      return categories.sort((a, b) => {
+        const aIsExpense = expenseCategories.some(ec => a.name.toLowerCase().includes(ec.toLowerCase()));
+        const bIsExpense = expenseCategories.some(ec => b.name.toLowerCase().includes(ec.toLowerCase()));
+        if (aIsExpense && !bIsExpense) return -1;
+        if (!aIsExpense && bIsExpense) return 1;
+        return a.name.localeCompare(b.name);
+      });
+    }
+  }, [categories, formData.type]);
+
+  // Auto-select appropriate category when type changes
+  React.useEffect(() => {
+    if (categories.length === 0) return;
+
+    const suggestedCategoryNames = formData.type === 'credit'
+      ? ['Salary', 'Income', 'Miscellaneous']
+      : ['Miscellaneous'];
+
+    // Find first matching category
+    const suggestedCategory = categories.find(cat =>
+      suggestedCategoryNames.some(name => cat.name.toLowerCase().includes(name.toLowerCase()))
+    );
+
+    if (suggestedCategory) {
+      setFormData(prev => ({ ...prev, categoryId: suggestedCategory.id }));
+    }
+  }, [formData.type, categories]);
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
@@ -57,20 +107,23 @@ export const QuickAddTransaction: React.FC<QuickAddTransactionProps> = ({ onClos
         amount: parseFloat(formData.amount),
         dateISO: formData.date,
         type: formData.type,
+        categoryId: formData.categoryId || undefined,
         notes: formData.notes || undefined,
       });
 
+      showToast('Transaction added successfully!', 'success');
       onSuccess();
       onClose();
     } catch (error: unknown) {
-      logger.error('Failed to add transaction:', { error });
-      showToast('Failed to add transaction. Check console for details.', 'error');
+      const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
+      logger.error('Failed to add transaction:', { error, errorMessage });
+      showToast(`Failed to add transaction: ${errorMessage}`, 'error');
     } finally {
       setLoading(false);
     }
   };
 
-  const presetTransactions: Array<{ description: string; amount: string }> = [
+  const expensePresets: Array<{ description: string; amount: string }> = [
     { description: 'STARBUCKS #1234', amount: '5.75' },
     { description: 'NETFLIX.COM', amount: '15.49' },
     { description: 'WHOLE FOODS', amount: '127.50' },
@@ -81,6 +134,17 @@ export const QuickAddTransaction: React.FC<QuickAddTransactionProps> = ({ onClos
     { description: 'MCDONALDS #456', amount: '12.50' },
     { description: 'TARGET STORE', amount: '65.30' },
     { description: 'CVS PHARMACY', amount: '28.75' },
+  ];
+
+  const incomePresets: Array<{ description: string; amount: string }> = [
+    { description: 'Monthly Salary', amount: '5000.00' },
+    { description: 'Paycheck', amount: '2500.00' },
+    { description: 'Freelance Payment', amount: '1500.00' },
+    { description: 'Bonus', amount: '2000.00' },
+    { description: 'Tax Refund', amount: '3000.00' },
+    { description: 'Investment Dividend', amount: '250.00' },
+    { description: 'Side Hustle Income', amount: '800.00' },
+    { description: 'Rental Income', amount: '1200.00' },
   ];
 
   const fillPreset = React.useCallback((preset: { description: string; amount: string }): void => {
@@ -96,8 +160,14 @@ export const QuickAddTransaction: React.FC<QuickAddTransactionProps> = ({ onClos
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="p-6 border-b border-slate-200">
-          <h2 className="text-2xl font-semibold text-slate-900">Quick Add Transaction</h2>
-          <p className="text-sm text-slate-600 mt-1">Add a test transaction</p>
+          <h2 className="text-2xl font-semibold text-slate-900">
+            {formData.type === 'credit' ? 'Add Income' : 'Add Expense'}
+          </h2>
+          <p className="text-sm text-slate-600 mt-1">
+            {formData.type === 'credit'
+              ? 'Record income, salary, or other money received'
+              : 'Record expenses, purchases, or money spent'}
+          </p>
         </div>
 
         {/* Content */}
@@ -123,18 +193,51 @@ export const QuickAddTransaction: React.FC<QuickAddTransactionProps> = ({ onClos
               </select>
             </div>
 
-            {/* Quick Presets */}
+            {/* Type Selection - Moved up for better UX */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Type
+              </label>
+              <div className="flex gap-4">
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    value="debit"
+                    checked={formData.type === 'debit'}
+                    onChange={(_e) => setFormData({ ...formData, type: 'debit' })}
+                    className="mr-2"
+                  />
+                  <span className="text-rose-600 font-medium">Expense (Debit)</span>
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    value="credit"
+                    checked={formData.type === 'credit'}
+                    onChange={(_e) => setFormData({ ...formData, type: 'credit' })}
+                    className="mr-2"
+                  />
+                  <span className="text-emerald-600 font-medium">Income (Credit)</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Quick Presets - Dynamic based on type */}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
                 Quick Presets (click to fill)
               </label>
               <div className="flex flex-wrap gap-2">
-                {presetTransactions.map((preset) => (
+                {(formData.type === 'credit' ? incomePresets : expensePresets).map((preset) => (
                   <button
                     key={preset.description}
                     type="button"
                     onClick={() => fillPreset(preset)}
-                    className="text-xs px-3 py-1 bg-slate-100 hover:bg-slate-200 rounded-full border border-slate-300 transition-colors"
+                    className={`text-xs px-3 py-1 rounded-full border transition-colors ${
+                      formData.type === 'credit'
+                        ? 'bg-emerald-50 hover:bg-emerald-100 border-emerald-300 text-emerald-700'
+                        : 'bg-slate-100 hover:bg-slate-200 border-slate-300'
+                    }`}
                   >
                     {preset.description} (${preset.amount})
                   </button>
@@ -173,6 +276,28 @@ export const QuickAddTransaction: React.FC<QuickAddTransactionProps> = ({ onClos
               />
             </div>
 
+            {/* Category */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Category
+              </label>
+              <select
+                value={formData.categoryId}
+                onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
+              >
+                <option value="">-- Select Category --</option>
+                {filteredCategories.map(cat => (
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-slate-500">
+                {formData.type === 'credit'
+                  ? 'Income categories shown first'
+                  : 'Expense categories shown first'}
+              </p>
+            </div>
+
             {/* Date */}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -185,35 +310,6 @@ export const QuickAddTransaction: React.FC<QuickAddTransactionProps> = ({ onClos
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
                 required
               />
-            </div>
-
-            {/* Type */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Type
-              </label>
-              <div className="flex gap-4">
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    value="debit"
-                    checked={formData.type === 'debit'}
-                    onChange={(_e) => setFormData({ ...formData, type: 'debit' })}
-                    className="mr-2"
-                  />
-                  Debit (Expense)
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    value="credit"
-                    checked={formData.type === 'credit'}
-                    onChange={(_e) => setFormData({ ...formData, type: 'credit' })}
-                    className="mr-2"
-                  />
-                  Credit (Income)
-                </label>
-              </div>
             </div>
 
             {/* Notes (optional) */}

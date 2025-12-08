@@ -97,9 +97,9 @@ function mapDbToDream(row: DreamRow): Dream {
   return {
     id: row.id,
     title: row.title,
-    description: row.description ?? undefined,
-    category: row.category ?? undefined,
-    notes: row.notes ?? '',
+    description: row.description || undefined,
+    category: row.category || undefined,
+    notes: row.notes || '',
     createdAt: new Date(row.created_at),
     lastUpdated: new Date(row.last_updated),
   };
@@ -109,6 +109,8 @@ function mapDbToDream(row: DreamRow): Dream {
 
 /**
  * Get all goals for the authenticated user with optional filters
+ * @param filters - Optional filters for status, category, and priority
+ * @returns Promise<Goal[]> - Array of goals matching the filters
  */
 export async function getGoals(filters?: GoalFilters): Promise<Goal[]> {
   const { data: { user } } = await supabase.auth.getUser();
@@ -141,6 +143,9 @@ export async function getGoals(filters?: GoalFilters): Promise<Goal[]> {
 
 /**
  * Get a single goal by ID
+ * @param id - Goal ID
+ * @returns Promise<Goal> - The requested goal
+ * @throws Error if goal not found or user not authenticated
  */
 export async function getGoal(id: string): Promise<Goal> {
   const { data: { user } } = await supabase.auth.getUser();
@@ -161,6 +166,9 @@ export async function getGoal(id: string): Promise<Goal> {
 
 /**
  * Create a new goal
+ * @param input - Goal data including title, description, category, etc.
+ * @returns Promise<Goal> - The created goal
+ * @throws Error if creation fails or user not authenticated
  */
 export async function createGoal(input: CreateGoalInput): Promise<Goal> {
   const { data: { user } } = await supabase.auth.getUser();
@@ -189,6 +197,10 @@ export async function createGoal(input: CreateGoalInput): Promise<Goal> {
 
 /**
  * Update an existing goal
+ * @param id - Goal ID to update
+ * @param input - Partial goal data to update
+ * @returns Promise<Goal> - The updated goal
+ * @throws Error if goal not found or user not authenticated
  */
 export async function updateGoal(id: string, input: UpdateGoalInput): Promise<Goal> {
   const { data: { user } } = await supabase.auth.getUser();
@@ -222,6 +234,9 @@ export async function updateGoal(id: string, input: UpdateGoalInput): Promise<Go
 
 /**
  * Delete a goal
+ * @param id - Goal ID to delete
+ * @returns Promise<void>
+ * @throws Error if deletion fails or user not authenticated
  */
 export async function deleteGoal(id: string): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser();
@@ -240,6 +255,8 @@ export async function deleteGoal(id: string): Promise<void> {
 
 /**
  * Get all dreams for the authenticated user
+ * @returns Promise<Dream[]> - Array of all user's dreams
+ * @throws Error if user not authenticated
  */
 export async function getDreams(): Promise<Dream[]> {
   const { data: { user } } = await supabase.auth.getUser();
@@ -258,6 +275,9 @@ export async function getDreams(): Promise<Dream[]> {
 
 /**
  * Get a single dream by ID
+ * @param id - Dream ID
+ * @returns Promise<Dream> - The requested dream
+ * @throws Error if dream not found or user not authenticated
  */
 export async function getDream(id: string): Promise<Dream> {
   const { data: { user } } = await supabase.auth.getUser();
@@ -278,6 +298,9 @@ export async function getDream(id: string): Promise<Dream> {
 
 /**
  * Create a new dream
+ * @param input - Dream data including title, description, etc.
+ * @returns Promise<Dream> - The created dream
+ * @throws Error if creation fails or user not authenticated
  */
 export async function createDream(input: CreateDreamInput): Promise<Dream> {
   const { data: { user } } = await supabase.auth.getUser();
@@ -303,6 +326,10 @@ export async function createDream(input: CreateDreamInput): Promise<Dream> {
 
 /**
  * Update an existing dream
+ * @param id - Dream ID to update
+ * @param input - Partial dream data to update
+ * @returns Promise<Dream> - The updated dream
+ * @throws Error if dream not found or user not authenticated
  */
 export async function updateDream(id: string, input: UpdateDreamInput): Promise<Dream> {
   const { data: { user } } = await supabase.auth.getUser();
@@ -331,6 +358,9 @@ export async function updateDream(id: string, input: UpdateDreamInput): Promise<
 
 /**
  * Delete a dream
+ * @param id - Dream ID to delete
+ * @returns Promise<void>
+ * @throws Error if deletion fails or user not authenticated
  */
 export async function deleteDream(id: string): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser();

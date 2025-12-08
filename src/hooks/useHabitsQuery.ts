@@ -219,7 +219,12 @@ export function useHabitEntriesForHabit(habitId: string | null): UseQueryResult<
 /**
  * Create a habit entry (log completion)
  */
-export function useCreateHabitEntry(): UseMutationResult<HabitEntryData, Error, Omit<HabitEntryData, 'id' | 'created_at' | 'updated_at'>> {
+export function useCreateHabitEntry(): UseMutationResult<
+  HabitEntryData,
+  Error,
+  Omit<HabitEntryData, 'id' | 'created_at' | 'updated_at'>,
+  { previousEntries?: HabitEntryData[]; previousHabit?: HabitData }
+> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -228,30 +233,92 @@ export function useCreateHabitEntry(): UseMutationResult<HabitEntryData, Error, 
       const result = await createHabitEntry(input);
       return result;
     },
-    onSuccess: (newEntry) => {
-      logger.info('Habit entry created successfully', { id: newEntry.id, habitId: newEntry.habit_id });
+    // Optimistic update - instant visual feedback!
+    onMutate: async (input) => {
+      logger.debug('Optimistic update: logging habit', { habitId: input.habit_id, date: input.date });
 
-      // Invalidate habit entries queries
-      void queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'habitEntries'] });
+      // Cancel outgoing queries
+      await queryClient.cancelQueries({ queryKey: [...queryKeys.tasks.all, 'habitEntries'] });
+      await queryClient.cancelQueries({ queryKey: [...queryKeys.tasks.all, 'habits', 'detail', input.habit_id] });
+      await queryClient.cancelQueries({ queryKey: [...queryKeys.tasks.all, 'habits'] });
 
-      // Invalidate the specific habit (to update streak/progress)
-      void queryClient.invalidateQueries({
-        queryKey: [...queryKeys.tasks.all, 'habits', 'detail', newEntry.habit_id]
-      });
+      // Snapshot previous state for rollback
+      const previousEntries = queryClient.getQueryData<HabitEntryData[]>(
+        [...queryKeys.tasks.all, 'habitEntries', undefined] as const
+      );
+      const previousHabit = queryClient.getQueryData<HabitData>(
+        [...queryKeys.tasks.all, 'habits', 'detail', input.habit_id] as const
+      );
 
-      // Invalidate all habits list (to show updated streak counts)
-      void queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'habits'] });
+      // Create optimistic entry with temporary ID
+      const optimisticEntry: HabitEntryData = {
+        ...input,
+        id: 'temp-' + Date.now(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
 
-      // Optimistically add to entries cache
+      // Optimistically add to entries list
       queryClient.setQueryData<HabitEntryData[]>(
         [...queryKeys.tasks.all, 'habitEntries', undefined] as const,
         (old) => {
-          return old ? [newEntry, ...old] : [newEntry];
+          return old ? [optimisticEntry, ...old] : [optimisticEntry];
+        }
+      );
+
+      // Optimistically update habit streak/progress
+      if (previousHabit) {
+        queryClient.setQueryData<HabitData>(
+          [...queryKeys.tasks.all, 'habits', 'detail', input.habit_id] as const,
+          {
+            ...previousHabit,
+            streak_count: (previousHabit.streak_count ?? 0) + 1,
+            current_progress: (previousHabit.current_progress ?? 0) + (input.value ?? 1),
+          }
+        );
+      }
+
+      return { previousEntries, previousHabit };
+    },
+    onSuccess: (newEntry) => {
+      logger.info('Habit entry created successfully', { id: newEntry.id, habitId: newEntry.habit_id });
+
+      // Replace optimistic entry with real server data
+      queryClient.setQueryData<HabitEntryData[]>(
+        [...queryKeys.tasks.all, 'habitEntries', undefined] as const,
+        (old) => {
+          return old?.map(entry =>
+            entry.id?.startsWith('temp-') && entry.habit_id === newEntry.habit_id
+              ? newEntry
+              : entry
+          );
         }
       );
     },
-    onError: (error: Error) => {
-      logger.error('Failed to create habit entry', { error: error.message });
+    onError: (error: Error, _input, context) => {
+      logger.error('Failed to create habit entry - rolling back', { error: error.message });
+
+      // Rollback optimistic updates on error
+      if (context?.previousEntries) {
+        queryClient.setQueryData(
+          [...queryKeys.tasks.all, 'habitEntries', undefined] as const,
+          context.previousEntries
+        );
+      }
+      if (context?.previousHabit) {
+        queryClient.setQueryData(
+          [...queryKeys.tasks.all, 'habits', 'detail', context.previousHabit.id] as const,
+          context.previousHabit
+        );
+      }
+    },
+    // Always refetch to ensure sync with server
+    onSettled: (_data, _error, input) => {
+      void queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'habitEntries'] });
+      void queryClient.invalidateQueries({
+        queryKey: [...queryKeys.tasks.all, 'habits', 'detail', input.habit_id]
+      });
+      void queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'habits'] });
     },
   });
 }

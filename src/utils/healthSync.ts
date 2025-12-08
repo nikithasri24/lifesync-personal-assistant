@@ -60,7 +60,7 @@ export class HealthKitIntegration {
 
       return permission;
     } catch (error) {
-      logger.error('Failed to request HealthKit permissions:', { error });
+      logger.error('Failed to request HealthKit permissions:', error);
       return false;
     }
   }
@@ -90,7 +90,7 @@ To sync with Apple Health:
       }
       return false;
     } catch (error) {
-      logger.error('HealthKit permission request failed:', { error });
+      logger.error('HealthKit permission request failed:', error);
       return false;
     }
   }
@@ -160,7 +160,7 @@ To sync with Apple Health:
 
       return data;
     } catch (error) {
-      logger.error('Failed to fetch live Health data:', { error });
+      logger.error('Failed to fetch live Health data:', error);
       return {};
     }
   }
@@ -182,7 +182,7 @@ To sync with Apple Health:
 
       return result as HealthKitData['menstrualFlow'];
     } catch (error) {
-      logger.error('Failed to query menstrual flow:', { error });
+      logger.error('Failed to query menstrual flow:', error);
       return null;
     }
   }
@@ -214,7 +214,7 @@ To sync with Apple Health:
       const flatResults: unknown[] = results.flat();
       return { samples: flatResults };
     } catch (error) {
-      logger.error('Failed to query symptoms:', { error });
+      logger.error('Failed to query symptoms:', error);
       return null;
     }
   }
@@ -232,7 +232,7 @@ To sync with Apple Health:
 
       return result;
     } catch (error) {
-      logger.error('Failed to query ovulation data:', { error });
+      logger.error('Failed to query ovulation data:', error);
       return null;
     }
   }
@@ -250,7 +250,7 @@ To sync with Apple Health:
 
       return result as HealthKitData['basalBodyTemperature'];
     } catch (error) {
-      logger.error('Failed to query basal body temperature:', { error });
+      logger.error('Failed to query basal body temperature:', error);
       return null;
     }
   }
@@ -272,7 +272,7 @@ To sync with Apple Health:
       // Method 3: Mock data for demo (remove in production)
       return this.generateMockHealthData();
     } catch (error) {
-      logger.error('Fallback health query failed:', { error });
+      logger.error('Fallback health query failed:', error);
       return {};
     }
   }

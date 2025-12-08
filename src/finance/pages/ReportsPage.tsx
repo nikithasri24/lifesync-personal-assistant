@@ -12,7 +12,7 @@ import {
   useAccountsQuery} from '../hooks/useFinanceQuery';
 import { getTimePeriodRange, getPreviousPeriodRange, type TimePeriod } from '../utils/timePeriodUtils';
 import { useFinanceMetrics, type FinanceMetrics } from '../hooks/useFinanceMetrics';
-import type { Transaction, Paginated } from '../types';
+import type { Transaction } from '../types';
 import { logger } from '@/services/logger';
 
 // Components
@@ -31,12 +31,10 @@ const ReportsPage: React.FC = () => {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('last-6-months');
 
   // React Query hooks
-  const { data: transactionsData, isLoading: txnsLoading } = useTransactionsQuery({ limit: 5000 });
+  const { data: transactions = [], isLoading: txnsLoading } = useTransactionsQuery({ limit: 5000 });
   const { data: categories = [], isLoading: categoriesLoading } = useCategoriesQuery();
   const { data: accounts = [], isLoading: accountsLoading } = useAccountsQuery();
 
-  // Type assertion: transactionsData is actually Paginated<Transaction> at runtime
-  const transactions: Transaction[] = (transactionsData as Paginated<Transaction> | undefined)?.items ?? [];
   const loading = txnsLoading || categoriesLoading || accountsLoading;
 
   // Date ranges

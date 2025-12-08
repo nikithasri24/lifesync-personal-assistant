@@ -57,7 +57,7 @@ describe('goalsAPI', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (supabase.auth.getUser as any).mockResolvedValue({
+    (supabase!.auth.getUser as any).mockResolvedValue({
       data: { user: mockUser },
     });
   });
@@ -74,12 +74,12 @@ describe('goalsAPI', () => {
           }),
         };
 
-        (supabase.from as any).mockReturnValue(mockQuery);
+        (supabase!.from as any).mockReturnValue(mockQuery);
 
         const result = await getGoals();
 
         // eslint-disable-next-line @typescript-eslint/unbound-method
-        expect(supabase.from).toHaveBeenCalledWith('goals');
+        expect(supabase!.from).toHaveBeenCalledWith('goals');
         expect(mockQuery.eq).toHaveBeenCalledWith('user_id', mockUser.id);
         expect(mockQuery.order).toHaveBeenCalledWith('created_at', { ascending: false });
         expect(result).toHaveLength(1);
@@ -94,7 +94,7 @@ describe('goalsAPI', () => {
           then: vi.fn((resolve) => resolve({ data: [], error: null })),
         };
 
-        (supabase.from as any).mockReturnValue(mockQuery);
+        (supabase!.from as any).mockReturnValue(mockQuery);
 
         const filters: GoalFilters = { status: 'completed' };
         await getGoals(filters);
@@ -112,7 +112,7 @@ describe('goalsAPI', () => {
           then: vi.fn((resolve) => resolve({ data: [], error: null })),
         };
 
-        (supabase.from as any).mockReturnValue(mockQuery);
+        (supabase!.from as any).mockReturnValue(mockQuery);
 
         const filters: GoalFilters = { category: 'health' };
         await getGoals(filters);
@@ -128,7 +128,7 @@ describe('goalsAPI', () => {
           then: vi.fn((resolve) => resolve({ data: [], error: null })),
         };
 
-        (supabase.from as any).mockReturnValue(mockQuery);
+        (supabase!.from as any).mockReturnValue(mockQuery);
 
         const filters: GoalFilters = { priority: 'high' };
         await getGoals(filters);
@@ -137,7 +137,7 @@ describe('goalsAPI', () => {
       });
 
       it('should throw error when not authenticated', async () => {
-        (supabase.auth.getUser as any).mockResolvedValue({
+        (supabase!.auth.getUser as any).mockResolvedValue({
           data: { user: null },
         });
 
@@ -156,7 +156,7 @@ describe('goalsAPI', () => {
           }),
         };
 
-        (supabase.from as any).mockReturnValue(mockQuery);
+        (supabase!.from as any).mockReturnValue(mockQuery);
 
         const result = await getGoal('goal-123');
 
@@ -175,7 +175,7 @@ describe('goalsAPI', () => {
           }),
         };
 
-        (supabase.from as any).mockReturnValue(mockQuery);
+        (supabase!.from as any).mockReturnValue(mockQuery);
 
         await expect(getGoal('nonexistent')).rejects.toThrow('Goal not found');
       });
@@ -192,7 +192,7 @@ describe('goalsAPI', () => {
           }),
         };
 
-        (supabase.from as any).mockReturnValue(mockQuery);
+        (supabase!.from as any).mockReturnValue(mockQuery);
 
         const input: CreateGoalInput = {
           title: 'Learn TypeScript',
@@ -231,7 +231,7 @@ describe('goalsAPI', () => {
           }),
         };
 
-        (supabase.from as any).mockReturnValue(mockQuery);
+        (supabase!.from as any).mockReturnValue(mockQuery);
 
         const input: CreateGoalInput = {
           title: 'Simple Goal',
@@ -264,7 +264,7 @@ describe('goalsAPI', () => {
           }),
         };
 
-        (supabase.from as any).mockReturnValue(mockQuery);
+        (supabase!.from as any).mockReturnValue(mockQuery);
 
         const updates: UpdateGoalInput = {
           progress: 50,
@@ -292,7 +292,7 @@ describe('goalsAPI', () => {
         mockDelete.mockReturnValue({ eq: mockEq1 });
         mockEq1.mockReturnValue({ eq: mockEq2 });
 
-        (supabase.from as any).mockReturnValue(mockQuery);
+        (supabase!.from as any).mockReturnValue(mockQuery);
 
         await deleteGoal('goal-123');
 
@@ -315,12 +315,12 @@ describe('goalsAPI', () => {
           }),
         };
 
-        (supabase.from as any).mockReturnValue(mockQuery);
+        (supabase!.from as any).mockReturnValue(mockQuery);
 
         const result = await getDreams();
 
         // eslint-disable-next-line @typescript-eslint/unbound-method
-        expect(supabase.from).toHaveBeenCalledWith('dreams');
+        expect(supabase!.from).toHaveBeenCalledWith('dreams');
         expect(mockQuery.eq).toHaveBeenCalledWith('user_id', mockUser.id);
         expect(mockQuery.order).toHaveBeenCalledWith('created_at', { ascending: false });
         expect(result).toHaveLength(1);
@@ -328,7 +328,7 @@ describe('goalsAPI', () => {
       });
 
       it('should throw error when not authenticated', async () => {
-        (supabase.auth.getUser as any).mockResolvedValue({
+        (supabase!.auth.getUser as any).mockResolvedValue({
           data: { user: null },
         });
 
@@ -347,7 +347,7 @@ describe('goalsAPI', () => {
           }),
         };
 
-        (supabase.from as any).mockReturnValue(mockQuery);
+        (supabase!.from as any).mockReturnValue(mockQuery);
 
         const result = await getDream('dream-456');
 
@@ -365,7 +365,7 @@ describe('goalsAPI', () => {
           }),
         };
 
-        (supabase.from as any).mockReturnValue(mockQuery);
+        (supabase!.from as any).mockReturnValue(mockQuery);
 
         await expect(getDream('nonexistent')).rejects.toThrow('Dream not found');
       });
@@ -382,7 +382,7 @@ describe('goalsAPI', () => {
           }),
         };
 
-        (supabase.from as any).mockReturnValue(mockQuery);
+        (supabase!.from as any).mockReturnValue(mockQuery);
 
         const input: CreateDreamInput = {
           title: 'Visit Japan',
@@ -415,7 +415,7 @@ describe('goalsAPI', () => {
           }),
         };
 
-        (supabase.from as any).mockReturnValue(mockQuery);
+        (supabase!.from as any).mockReturnValue(mockQuery);
 
         const input: CreateDreamInput = {
           title: 'Simple Dream',
@@ -446,7 +446,7 @@ describe('goalsAPI', () => {
           }),
         };
 
-        (supabase.from as any).mockReturnValue(mockQuery);
+        (supabase!.from as any).mockReturnValue(mockQuery);
 
         const updates: UpdateDreamInput = {
           notes: 'Updated notes',
@@ -472,7 +472,7 @@ describe('goalsAPI', () => {
         mockDelete.mockReturnValue({ eq: mockEq1 });
         mockEq1.mockReturnValue({ eq: mockEq2 });
 
-        (supabase.from as any).mockReturnValue(mockQuery);
+        (supabase!.from as any).mockReturnValue(mockQuery);
 
         await deleteDream('dream-456');
 

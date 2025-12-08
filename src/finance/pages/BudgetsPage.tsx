@@ -13,7 +13,7 @@ import {
   useUpsertBudgetTemplateMutation,
   useDeleteBudgetTemplateMutation,
 } from '../hooks/useFinanceQuery';
-import type { Budget, Transaction, Paginated } from '../types';
+import type { Budget, Transaction } from '../types';
 import { MonthPicker } from '../components/MonthPicker';
 import BudgetCard from '../components/budgets/BudgetCard';
 import BudgetSummary, { type BudgetSummaryData } from '../components/budgets/BudgetSummary';
@@ -32,7 +32,7 @@ const BudgetsPage: React.FC = () => {
   const [selectedCategoryId, setSelectedCategoryId] = React.useState<string>('');
 
   // React Query hooks
-  const { data: transactionsData, isLoading: txnsLoading } = useTransactionsQuery({ limit: 1000 });
+  const { data: txns = [], isLoading: txnsLoading } = useTransactionsQuery({ limit: 1000 });
   const { data: budgetsData = [], isLoading: budgetsLoading } = useBudgetsQuery(month);
   const { data: categories = [], isLoading: categoriesLoading } = useCategoriesQuery();
   const { data: templates = [], isLoading: templatesLoading } = useBudgetTemplatesQuery();
@@ -41,7 +41,6 @@ const BudgetsPage: React.FC = () => {
   const upsertBudgetTemplateMutation = useUpsertBudgetTemplateMutation();
   const deleteBudgetTemplateMutation = useDeleteBudgetTemplateMutation();
 
-  const txns = React.useMemo<Transaction[]>(() => (transactionsData as Paginated<Transaction> | undefined)?.items ?? [], [transactionsData]);
   const budgets = budgetsData;
   const loading = txnsLoading || budgetsLoading || categoriesLoading || templatesLoading;
 

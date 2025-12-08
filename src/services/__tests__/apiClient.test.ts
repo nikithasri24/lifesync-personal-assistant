@@ -113,19 +113,6 @@ describe('ApiClient', () => {
     });
   });
 
-  describe('75 Hard Operations', () => {
-    it('should have all 75 Hard methods', () => {
-      expect(typeof apiClient.getSFHChallenges).toBe('function');
-      expect(typeof apiClient.getSFHEntries).toBe('function');
-      expect(typeof apiClient.createSFHChallenge).toBe('function');
-      expect(typeof apiClient.updateSFHChallenge).toBe('function');
-      expect(typeof apiClient.deleteSFHChallenge).toBe('function');
-      expect(typeof apiClient.createSFHEntry).toBe('function');
-      expect(typeof apiClient.updateSFHEntry).toBe('function');
-      expect(typeof apiClient.deleteSFHEntriesForChallenge).toBe('function');
-    });
-  });
-
   describe('Health Check', () => {
     it('should have healthCheck method', () => {
       expect(typeof apiClient.healthCheck).toBe('function');

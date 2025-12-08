@@ -3,6 +3,7 @@ import { Card } from '../components/Card';
 import { StackedBarChart } from '../components/StackedBarChart';
 import SankeyChart from '../components/visualizations/SankeyChart';
 import { FinancialInsightsCard } from '../components/insights/FinancialInsightsCard';
+import { AccountModal } from '../components/AccountModal';
 import { formatCurrency } from '../utils/currency';
 import { currentMonth, monthRange, toMonth } from '../utils/date';
 import { useFinanceMetrics, type FinanceMetrics } from '../hooks/useFinanceMetrics';
@@ -11,25 +12,27 @@ import {
   useAccountsQuery,
   useCategoriesQuery,
   useBudgetsQuery,
+  useGoalsQuery,
 } from '../hooks/useFinanceQuery';
 import { logger } from '@/services/logger';
-import type { Transaction, Paginated } from '../types';
+import type { Transaction, Account } from '../types';
+import { Pencil, Plus } from 'lucide-react';
 
 const DashboardPage: React.FC = () => {
   const [month, setMonth] = React.useState(currentMonth());
+  const [showAccountModal, setShowAccountModal] = React.useState(false);
+  const [editingAccount, setEditingAccount] = React.useState<Account | undefined>(undefined);
 
   // React Query hooks
-  const { data: transactionsData, isLoading: txnsLoading } = useTransactionsQuery({ limit: 500 });
-  const { data: accounts = [], isLoading: accountsLoading } = useAccountsQuery();
+  const { data: transactions = [], isLoading: txnsLoading } = useTransactionsQuery({ limit: 500 });
+  const { data: accounts = [], isLoading: accountsLoading, refetch: refetchAccounts } = useAccountsQuery();
   const { data: categories = [], isLoading: categoriesLoading } = useCategoriesQuery();
   const { data: budgets = [], isLoading: budgetsLoading } = useBudgetsQuery(month);
+  const { data: goals = [], isLoading: goalsLoading } = useGoalsQuery();
 
-  // Type assertion: transactionsData is actually Paginated<Transaction> at runtime
-  // Wrapped in useMemo to prevent dependency issues in useEffect hooks
-  const txns: Transaction[] = React.useMemo((): Transaction[] => {
-    return (transactionsData as Paginated<Transaction> | undefined)?.items ?? [];
-  }, [transactionsData]);
-  const loading = txnsLoading || accountsLoading || categoriesLoading || budgetsLoading;
+  // useTransactionsQuery now returns Transaction[] directly (after our fix)
+  const txns: Transaction[] = transactions;
+  const loading = txnsLoading || accountsLoading || categoriesLoading || budgetsLoading || goalsLoading;
 
   const { from, to } = monthRange(month);
   // Filter transactions by extracting just the YYYY-MM part for comparison
@@ -64,6 +67,24 @@ const DashboardPage: React.FC = () => {
   const income: number = monthTxns.filter((t: Transaction): boolean => t.type === 'credit').reduce((s: number, t: Transaction): number => s + t.amount, 0);
   const expense: number = monthTxns.filter((t: Transaction): boolean => t.type === 'debit').reduce((s: number, t: Transaction): number => s + t.amount, 0);
   const cashflow: number = income - expense;
+
+  // Debug income calculation
+  React.useEffect((): void => {
+    const incomeTxns = monthTxns.filter((t: Transaction): boolean => t.type === 'credit');
+    logger.debug('DashboardPage', 'Income Calculation', {
+      selectedMonth: month,
+      totalIncomeTxns: incomeTxns.length,
+      totalIncomeAmount: income,
+      incomeTxnsSample: incomeTxns.slice(0, 5).map((t: Transaction) => ({
+        date: t.dateISO,
+        month: t.dateISO.slice(0, 7),
+        desc: t.description,
+        amount: t.amount,
+        type: t.type
+      })),
+      allCreditTxns: txns.filter((t: Transaction): boolean => t.type === 'credit').length
+    });
+  }, [month, monthTxns, income, txns]);
 
   // Calculate metrics for Money Flow visualization
   const currentPeriod = React.useMemo((): { from: string; to: string; label: string } => {
@@ -212,17 +233,18 @@ const DashboardPage: React.FC = () => {
   });
 
   return (
-    <div className="space-y-4">
-      {/* Financial Insights - Full Width */}
-      <div className="w-full">
-        <FinancialInsightsCard
-          transactions={txns}
-          accounts={accounts}
-          goals={[]}
-        />
-      </div>
+    <>
+      <div className="space-y-4">
+        {/* Financial Insights - Full Width */}
+        <div className="w-full">
+          <FinancialInsightsCard
+            transactions={txns}
+            accounts={accounts}
+            goals={goals}
+          />
+        </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         <Card title="Month" actions={
           <select className="rounded-md border border-slate-300 px-2 py-1 text-sm" value={month} onChange={(e: React.ChangeEvent<HTMLSelectElement>): void => setMonth(e.target.value)}>
             {monthsInTx.map((m: string) => (
@@ -235,7 +257,7 @@ const DashboardPage: React.FC = () => {
           <div className="text-sm text-slate-600">Showing data for {month}</div>
         </Card>
 
-      <Card title="Cash Flow (This Month)">
+      <Card title={`Cash Flow (${month})`}>
         {loading ? (
           <div>Loading…</div>
         ) : (
@@ -263,17 +285,51 @@ const DashboardPage: React.FC = () => {
         )}
       </Card>
 
-      <Card title="Accounts Snapshot">
+      <Card
+        title="Accounts Snapshot"
+        actions={
+          <button
+            onClick={() => {
+              setEditingAccount(undefined);
+              setShowAccountModal(true);
+            }}
+            className="flex items-center gap-1 rounded-md bg-slate-900 px-3 py-1.5 text-sm text-white hover:bg-slate-800 transition-colors"
+          >
+            <Plus size={16} />
+            Add Account
+          </button>
+        }
+      >
         <div className="space-y-2 text-sm">
-          {accounts.map((a) => (
-            <div key={a.id} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
-              <div>
-                <div className="font-medium">{a.name}</div>
-                <div className="text-xs text-slate-500">{a.type}</div>
-              </div>
-              <div className="font-semibold">{formatCurrency(a.balance)}</div>
+          {accounts.length === 0 ? (
+            <div className="text-center py-6 text-slate-500">
+              No accounts yet. Click "Add Account" to create one.
             </div>
-          ))}
+          ) : (
+            accounts.map((a) => (
+              <div key={a.id} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 group hover:bg-slate-100 transition-colors">
+                <div className="flex-1">
+                  <div className="font-medium">{a.name}</div>
+                  <div className="text-xs text-slate-500">{a.type}</div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="font-semibold">
+                    {formatCurrency(a.liability ? -a.balance : a.balance)}
+                  </div>
+                  <button
+                    onClick={() => {
+                      setEditingAccount(a);
+                      setShowAccountModal(true);
+                    }}
+                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-slate-200 rounded transition-opacity"
+                    title="Edit account"
+                  >
+                    <Pencil size={14} className="text-slate-600" />
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </Card>
 
@@ -357,8 +413,23 @@ const DashboardPage: React.FC = () => {
           </div>
         )}
       </Card>
-    </div>
-    </div>
+        </div>
+      </div>
+
+      {/* Account Modal */}
+      {showAccountModal && (
+        <AccountModal
+          account={editingAccount}
+          onClose={() => {
+            setShowAccountModal(false);
+            setEditingAccount(undefined);
+          }}
+          onSuccess={() => {
+            void refetchAccounts();
+          }}
+        />
+      )}
+    </>
   );
 };
 
