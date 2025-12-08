@@ -26,6 +26,10 @@ import type {
   LoanInput,
   LoanPayment,
   LoanPaymentInput,
+  RecurringTransaction,
+  RecurringTransactionInput,
+  PendingTransaction,
+  PendingTransactionInput,
 } from '../types';
 import type { FinanceAPI } from './api';
 import { validateGoalInput, validateTransactionInput } from '../utils/validate';
@@ -309,6 +313,66 @@ interface LoanPaymentRow {
   transaction_id: string | null;
   notes: string | null;
   created_at: string;
+}
+
+interface RecurringTransactionRow {
+  id: string;
+  description: string;
+  amount: string | number;
+  type: string;
+  category_id: string | null;
+  account_id: string | null;
+  frequency: string;
+  start_date: string;
+  end_date: string | null;
+  day_of_month: number | null;
+  day_of_week: number | null;
+  auto_create: boolean;
+  require_approval: boolean;
+  days_before: number;
+  active: boolean;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  last_generated_date: string | null;
+  next_occurrence_date?: string | null;
+  pending_count?: number;
+}
+
+interface PendingTransactionRow {
+  id: string;
+  recurring_transaction_id: string | null;
+  description: string;
+  amount: string | number;
+  type: string;
+  category_id: string | null;
+  account_id: string | null;
+  scheduled_date: string;
+  status: string;
+  transaction_id: string | null;
+  notes: string | null;
+  created_at: string;
+  reviewed_at: string | null;
+}
+
+interface RecurringTransactionUpdateRow {
+  id?: string;
+  user_id: string;
+  description: string;
+  amount: number;
+  type: string;
+  category_id: string | null;
+  account_id: string | null;
+  frequency: string;
+  start_date: string;
+  end_date: string | null;
+  day_of_month: number | null;
+  day_of_week: number | null;
+  auto_create: boolean;
+  require_approval: boolean;
+  days_before: number;
+  active: boolean;
+  notes: string | null;
 }
 
 interface LoanUpdateRow {
@@ -1190,10 +1254,191 @@ export class SupabaseApi implements FinanceAPI {
 
   async deleteLoanPayment(paymentId: string): Promise<void> {
     const uid = await getUid(this.client);
-    const { error } = await this.client
+    const { error} = await this.client
       .from('loan_payments')
       .delete()
       .eq('id', paymentId)
+      .eq('user_id', uid);
+    if (error) throw error;
+  }
+
+  // Recurring Transactions API Methods
+  async listRecurringTransactions(): Promise<RecurringTransaction[]> {
+    const uid = await getUid(this.client);
+    const { data, error } = await this.client
+      .from('recurring_transactions_upcoming')
+      .select('*')
+      .eq('user_id', uid)
+      .order('next_occurrence_date', { ascending: true });
+    if (error) throw error;
+    return (data ?? []).map((r: RecurringTransactionRow) => ({
+      id: r.id,
+      description: r.description,
+      amount: Number(r.amount),
+      type: r.type,
+      categoryId: r.category_id ?? undefined,
+      accountId: r.account_id ?? undefined,
+      frequency: r.frequency,
+      startDate: new Date(r.start_date).toISOString().split('T')[0],
+      endDate: r.end_date ? new Date(r.end_date).toISOString().split('T')[0] : undefined,
+      dayOfMonth: r.day_of_month ?? undefined,
+      dayOfWeek: r.day_of_week ?? undefined,
+      autoCreate: r.auto_create,
+      requireApproval: r.require_approval,
+      daysBefore: r.days_before,
+      active: r.active,
+      notes: r.notes ?? undefined,
+      createdAt: new Date(r.created_at).toISOString(),
+      updatedAt: new Date(r.updated_at).toISOString(),
+      lastGeneratedDate: r.last_generated_date ? new Date(r.last_generated_date).toISOString().split('T')[0] : undefined,
+      nextOccurrenceDate: r.next_occurrence_date ? new Date(r.next_occurrence_date).toISOString().split('T')[0] : undefined,
+      pendingCount: r.pending_count ?? 0,
+    }));
+  }
+
+  async upsertRecurringTransaction(recurring: RecurringTransactionInput): Promise<void> {
+    const uid = await getUid(this.client);
+    const row: RecurringTransactionUpdateRow = {
+      user_id: uid,
+      description: recurring.description,
+      amount: recurring.amount,
+      type: recurring.type,
+      category_id: recurring.categoryId ?? null,
+      account_id: recurring.accountId ?? null,
+      frequency: recurring.frequency,
+      start_date: recurring.startDate,
+      end_date: recurring.endDate ?? null,
+      day_of_month: recurring.dayOfMonth ?? null,
+      day_of_week: recurring.dayOfWeek ?? null,
+      auto_create: recurring.autoCreate,
+      require_approval: recurring.requireApproval,
+      days_before: recurring.daysBefore,
+      active: recurring.active,
+      notes: recurring.notes ?? null,
+    };
+    if (recurring.id) {
+      row.id = recurring.id;
+    }
+
+    const { error } = await this.client.from('recurring_transactions').upsert(row);
+    if (error) throw error;
+  }
+
+  async deleteRecurringTransaction(recurringId: string): Promise<void> {
+    const uid = await getUid(this.client);
+    const { error } = await this.client
+      .from('recurring_transactions')
+      .delete()
+      .eq('id', recurringId)
+      .eq('user_id', uid);
+    if (error) throw error;
+  }
+
+  async generatePendingTransactions(): Promise<void> {
+    const uid = await getUid(this.client);
+    const { error } = await this.client.rpc('generate_pending_transactions', {
+      p_user_id: uid,
+    });
+    if (error) throw error;
+  }
+
+  async listPendingTransactions(): Promise<PendingTransaction[]> {
+    const uid = await getUid(this.client);
+    const { data, error } = await this.client
+      .from('pending_transactions')
+      .select('*')
+      .eq('user_id', uid)
+      .eq('status', 'pending')
+      .order('scheduled_date', { ascending: true });
+    if (error) throw error;
+    return (data ?? []).map((r: PendingTransactionRow) => ({
+      id: r.id,
+      recurringTransactionId: r.recurring_transaction_id ?? undefined,
+      description: r.description,
+      amount: Number(r.amount),
+      type: r.type,
+      categoryId: r.category_id ?? undefined,
+      accountId: r.account_id ?? undefined,
+      scheduledDate: new Date(r.scheduled_date).toISOString().split('T')[0],
+      status: r.status,
+      transactionId: r.transaction_id ?? undefined,
+      notes: r.notes ?? undefined,
+      createdAt: new Date(r.created_at).toISOString(),
+      reviewedAt: r.reviewed_at ? new Date(r.reviewed_at).toISOString() : undefined,
+    }));
+  }
+
+  async approvePendingTransaction(pendingId: string, edits?: Partial<TransactionInput>): Promise<void> {
+    const uid = await getUid(this.client);
+
+    // Get the pending transaction
+    const { data: pending, error: fetchError } = await this.client
+      .from('pending_transactions')
+      .select('*')
+      .eq('id', pendingId)
+      .eq('user_id', uid)
+      .single();
+    if (fetchError) throw fetchError;
+    if (!pending) throw new Error('Pending transaction not found');
+
+    // Create the actual transaction
+    const txnInput: TransactionInput = {
+      accountId: edits?.accountId ?? pending.account_id,
+      dateISO: edits?.dateISO ?? pending.scheduled_date,
+      description: edits?.description ?? pending.description,
+      categoryId: edits?.categoryId ?? pending.category_id,
+      amount: edits?.amount ?? Number(pending.amount),
+      type: edits?.type ?? pending.type,
+      notes: edits?.notes ?? pending.notes,
+    };
+
+    await this.upsertTransaction(txnInput);
+
+    // Get the created transaction ID
+    const { data: createdTxn, error: txnError } = await this.client
+      .from('transactions')
+      .select('id')
+      .eq('user_id', uid)
+      .eq('date', txnInput.dateISO)
+      .eq('description', txnInput.description)
+      .eq('amount', txnInput.amount)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+    if (txnError) throw txnError;
+
+    // Update pending transaction status
+    const { error: updateError } = await this.client
+      .from('pending_transactions')
+      .update({
+        status: edits ? 'edited' : 'approved',
+        transaction_id: createdTxn?.id,
+        reviewed_at: new Date().toISOString(),
+      })
+      .eq('id', pendingId)
+      .eq('user_id', uid);
+    if (updateError) throw updateError;
+  }
+
+  async skipPendingTransaction(pendingId: string): Promise<void> {
+    const uid = await getUid(this.client);
+    const { error } = await this.client
+      .from('pending_transactions')
+      .update({
+        status: 'skipped',
+        reviewed_at: new Date().toISOString(),
+      })
+      .eq('id', pendingId)
+      .eq('user_id', uid);
+    if (error) throw error;
+  }
+
+  async deletePendingTransaction(pendingId: string): Promise<void> {
+    const uid = await getUid(this.client);
+    const { error } = await this.client
+      .from('pending_transactions')
+      .delete()
+      .eq('id', pendingId)
       .eq('user_id', uid);
     if (error) throw error;
   }

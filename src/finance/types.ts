@@ -251,6 +251,59 @@ export type RewardsHistoryInput = Omit<RewardsHistory, 'id' | 'createdAt'> & {
 
 export type TransactionInput = Omit<Transaction, 'id'> & { id?: string };
 
+// Recurring Transactions Types
+export type RecurringFrequency = 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'yearly';
+export type PendingTransactionStatus = 'pending' | 'approved' | 'skipped' | 'edited';
+
+export type RecurringTransaction = {
+  id: string;
+  description: string;
+  amount: number;
+  type: 'credit' | 'debit';
+  categoryId?: string;
+  accountId?: string;
+  frequency: RecurringFrequency;
+  startDate: string; // ISO date
+  endDate?: string; // ISO date
+  dayOfMonth?: number; // 1-31 or -1 for last day
+  dayOfWeek?: number; // 0=Sun, 1=Mon, etc.
+  autoCreate: boolean;
+  requireApproval: boolean;
+  daysBefore: number;
+  active: boolean;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+  lastGeneratedDate?: string; // ISO date
+  // From view
+  nextOccurrenceDate?: string; // ISO date
+  pendingCount?: number;
+};
+
+export type RecurringTransactionInput = Omit<RecurringTransaction, 'id' | 'createdAt' | 'updatedAt' | 'lastGeneratedDate' | 'nextOccurrenceDate' | 'pendingCount'> & {
+  id?: string;
+};
+
+export type PendingTransaction = {
+  id: string;
+  recurringTransactionId?: string;
+  description: string;
+  amount: number;
+  type: 'credit' | 'debit';
+  categoryId?: string;
+  accountId?: string;
+  scheduledDate: string; // ISO date
+  status: PendingTransactionStatus;
+  transactionId?: string; // Link to approved transaction
+  notes?: string;
+  createdAt: string;
+  reviewedAt?: string;
+};
+
+export type PendingTransactionInput = Omit<PendingTransaction, 'id' | 'createdAt' | 'reviewedAt'> & {
+  id?: string;
+};
+
 // Insurance Tracking Types
 export type InsuranceType = 'health' | 'auto' | 'home' | 'life' | 'disability' | 'umbrella' | 'pet' | 'travel' | 'other';
 export type InsuranceStatus = 'active' | 'expired' | 'cancelled' | 'pending';
