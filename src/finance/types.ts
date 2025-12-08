@@ -359,3 +359,57 @@ export type InsuranceBeneficiaryInput = Omit<InsuranceBeneficiary, 'id' | 'creat
 export type InsurancePremiumPaymentInput = Omit<InsurancePremiumPayment, 'id' | 'createdAt'> & {
   id?: string;
 };
+
+// Loan Tracking Types
+export type LoanType = 'auto' | 'mortgage' | 'personal' | 'student' | 'business' | 'other';
+export type LoanStatus = 'active' | 'paid_off' | 'deferred' | 'defaulted';
+
+export type Loan = {
+  id: string;
+  accountId?: string; // Link to account if tracked there
+  loanName: string;
+  loanType: LoanType;
+  status: LoanStatus;
+  principalAmount: number; // Total loan amount
+  currentBalance: number; // Remaining balance
+  interestRate: number; // Annual percentage rate
+  monthlyPayment: number; // Required monthly payment
+  extraPayment: number; // Additional monthly payment
+  targetPayoffDate: string; // ISO date
+  startDate: string; // ISO date
+  firstPaymentDate: string; // ISO date
+  lender?: string;
+  loanNumber?: string;
+  termMonths?: number; // Original loan term in months
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+  // Calculated fields
+  totalPaid?: number;
+  interestPaid?: number;
+  principalPaid?: number;
+  remainingPayments?: number;
+  projectedPayoffDate?: string; // ISO date
+};
+
+export type LoanPayment = {
+  id: string;
+  loanId: string;
+  paymentDate: string; // ISO date
+  amount: number;
+  principalAmount: number;
+  interestAmount: number;
+  extraAmount: number; // Extra payment beyond required
+  balanceAfter: number; // Balance after this payment
+  transactionId?: string; // Link to transaction if exists
+  notes?: string;
+  createdAt: string;
+};
+
+export type LoanInput = Omit<Loan, 'id' | 'createdAt' | 'updatedAt' | 'totalPaid' | 'interestPaid' | 'principalPaid' | 'remainingPayments' | 'projectedPayoffDate'> & {
+  id?: string;
+};
+
+export type LoanPaymentInput = Omit<LoanPayment, 'id' | 'createdAt'> & {
+  id?: string;
+};

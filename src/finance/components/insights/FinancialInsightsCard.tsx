@@ -40,11 +40,11 @@ interface FinancialInsightsCardProps {
 export const FinancialInsightsCard: React.FC<FinancialInsightsCardProps> = ({
   transactions,
   accounts,
-  goals: _goals = [], // Use underscore to indicate unused variable
+  goals,
   onClick,
   className = '',
 }) => {
-  // Calculate time period for analysis (last 3 months)
+  // Calculate time period for analysis (last 3 months or available data)
   const threeMonthsAgo = new Date();
   threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
@@ -52,44 +52,84 @@ export const FinancialInsightsCard: React.FC<FinancialInsightsCardProps> = ({
     t => new Date(t.dateISO) >= threeMonthsAgo
   );
 
-  // Calculate monthly income and expenses
-  const monthlyIncome = recentTransactions
-    .filter(t => t.amount > 0)
-    .reduce((sum, t) => sum + t.amount, 0) / 3;
+  // Group transactions by month and calculate averages
+  const calculateMonthlyAverage = (txns: Transaction[], type: 'credit' | 'debit'): number => {
+    if (txns.length === 0) return 0;
 
-  const monthlyExpenses = Math.abs(
-    recentTransactions
-      .filter(t => t.amount < 0)
-      .reduce((sum, t) => sum + t.amount, 0) / 3
-  );
+    // Group transactions by month (YYYY-MM format)
+    const monthlyTotals = txns
+      .filter(t => t.type === type)
+      .reduce((acc, t) => {
+        const monthKey = t.dateISO.substring(0, 7); // Extract YYYY-MM
+        acc[monthKey] = (acc[monthKey] || 0) + t.amount;
+        return acc;
+      }, {} as Record<string, number>);
+
+    // Get all monthly totals
+    const totals = Object.values(monthlyTotals);
+
+    if (totals.length === 0) return 0;
+
+    // Calculate average of the monthly totals
+    const sum = totals.reduce((a, b) => a + b, 0);
+    return sum / totals.length;
+  };
+
+  // Calculate monthly income and expenses based on actual monthly averages
+  const monthlyIncome = calculateMonthlyAverage(recentTransactions, 'credit');
+  const monthlyExpenses = calculateMonthlyAverage(recentTransactions, 'debit');
 
   // Core calculations
   const netWorth = calculateNetWorth(accounts);
   const savingsRate = calculateSavingsRate(monthlyIncome, monthlyExpenses);
 
-  // Emergency fund calculation
-  const emergencyAccounts = accounts.filter(
-    a => a.type === 'savings' || a.type === 'checking'
+  // Emergency fund calculation - use goal's current amount
+  const emergencyFundGoal = goals.find(
+    g => g.name.toLowerCase().includes('emergency') && g.type === 'savings'
   );
-  const emergencyFundBalance = emergencyAccounts.reduce(
-    (sum, a) => sum + a.balance,
-    0
-  );
+
+  // Debug logging
+  console.log('=== Emergency Fund Debug ===');
+  console.log('All goals:', goals.map(g => ({ name: g.name, type: g.type, currentAmount: g.currentAmount })));
+  console.log('Emergency fund goal found:', emergencyFundGoal);
+
+  let emergencyFundBalance = 0;
+
+  if (emergencyFundGoal) {
+    // Use the goal's current amount
+    emergencyFundBalance = emergencyFundGoal.currentAmount;
+    console.log('Using goal currentAmount:', emergencyFundBalance);
+  } else {
+    // Fallback: use all savings and checking accounts
+    const emergencyAccounts = accounts.filter(
+      a => a.type === 'savings' || a.type === 'checking'
+    );
+    emergencyFundBalance = emergencyAccounts.reduce((sum, a) => sum + a.balance, 0);
+    console.log('Using fallback (all savings/checking):', emergencyFundBalance);
+  }
+
   const emergencyFund = calculateEmergencyFund(emergencyFundBalance, monthlyExpenses);
 
   // Debt calculations
-  const monthlyDebtPayments = Math.abs(
-    recentTransactions
-      .filter((t): t is Transaction & { category: string } => {
-        if (t.amount >= 0 || t.category == null) return false;
-        // Type assertion is safe here because we've already checked for null above
-        const category = t.category as string;
-        const lowercaseCategory = category.toLowerCase();
-        const debtTypes = ['loan', 'debt', 'mortgage'] as const;
-        return debtTypes.some(type => lowercaseCategory.includes(type));
-      })
-      .reduce((sum: number, t: Transaction & { category: string }) => sum + t.amount, 0) / 3
-  );
+  const debtTransactions = recentTransactions.filter((t): t is Transaction & { categoryId: string } => {
+    if (t.type !== 'debit' || t.categoryId == null) return false;
+    const categoryId = t.categoryId as string;
+    const lowercaseCategory = categoryId.toLowerCase();
+    const debtTypes = ['loan', 'debt', 'mortgage'] as const;
+    return debtTypes.some(type => lowercaseCategory.includes(type));
+  });
+
+  // Group debt payments by month and calculate average
+  const monthlyDebtTotals = debtTransactions.reduce((acc, t) => {
+    const monthKey = t.dateISO.substring(0, 7);
+    acc[monthKey] = (acc[monthKey] || 0) + t.amount;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const debtTotals = Object.values(monthlyDebtTotals);
+  const monthlyDebtPayments = debtTotals.length > 0
+    ? debtTotals.reduce((a, b) => a + b, 0) / debtTotals.length
+    : 0;
 
   const dti = calculateDebtToIncome(monthlyDebtPayments, monthlyIncome);
   const creditUtil = calculateCreditUtilization(accounts);
@@ -192,6 +232,9 @@ export const FinancialInsightsCard: React.FC<FinancialInsightsCardProps> = ({
             {emergencyFund.monthsCovered < 3 ? '⚠️ ' : '✓ '}
             months covered
           </p>
+          <p className="text-xs text-primary opacity-40 mt-0.5">
+            {formatCurrency(emergencyFundBalance)} ÷ {formatCurrency(monthlyExpenses)}/mo
+          </p>
         </div>
 
         {/* Net Worth */}
@@ -260,9 +303,9 @@ export const FinancialInsightsCard: React.FC<FinancialInsightsCardProps> = ({
 
         {/* Credit Utilization Warning */}
         {creditUtil.utilizationRate > 30 && (
-          <div className="flex items-start gap-2 p-2 rounded-lg bg-red-50 dark:bg-red-900/20">
-            <AlertCircle className="h-4 w-4 text-red-600 flex-shrink-0 mt-0.5" />
-            <p className="text-xs text-primary">
+          <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20">
+            <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-amber-900 dark:text-amber-100">
               <span className="font-semibold">High credit utilization:</span>
               {' '}{creditUtil.utilizationRate.toFixed(1)}% - {creditUtil.impact}
             </p>

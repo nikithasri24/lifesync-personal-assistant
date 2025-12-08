@@ -6,8 +6,6 @@ import LoadingSpinner from './components/LoadingSpinner';
 import { AuthGate } from './components/AuthGate';
 import { useAuth } from './hooks/useAuth';
 import { isSupabaseConfigured } from './lib/supabase';
-import { loadSFHChallenge } from './seventyFiveHard/actions';
-import { cleanup75HardDuplicates } from './utils/cleanup75HardDuplicates';
 import { logger } from './services/logger';
 
 // Lazy load all page components for route-based code splitting
@@ -27,17 +25,9 @@ const Travel = lazy(() => import('./pages/Travel'));
 const VisaPage = lazy(() => import('./travel/pages/VisaPage'));
 const TripPlanner = lazy(() => import('./travel/components/TripPlanner'));
 const Finances = lazy(() => import('./pages/Finances'));
-const SeventyFiveHard = lazy(() => import('./pages/SeventyFiveHard/index'));
 const Skincare = lazy(() => import('./pages/Skincare'));
 const Assistant = lazy(() => import('./pages/Assistant'));
 const TaskScheduler = lazy(() => import('./pages/TaskScheduler'));
-
-// Expose cleanup function globally for debugging
-if (typeof window !== 'undefined') {
-  window.cleanup75HardDuplicates = () => {
-    void cleanup75HardDuplicates();
-  };
-}
 
 function App(): React.ReactElement {
   const { activeView, loading, initializeData } = useRealAppStore();
@@ -72,18 +62,13 @@ function App(): React.ReactElement {
 
     initializedFor.current = user.id;
 
-    // Initialize data and load 75 Hard challenge
+    // Initialize data
     void (async (): Promise<void> => {
       try {
         await initializeData();
         logger.debug('App', '🔄 Initialized LifeSync data for Supabase user');
-
-        // Load active 75 Hard challenge (new architecture)
-        // This will check for missed days and show failure prompt if needed
-        await loadSFHChallenge();
-        logger.debug('App', '✅ 75 Hard challenge loaded');
       } catch (error) {
-        logger.error('App', 'Failed to initialize data or load 75 Hard challenge:', { error });
+        logger.error('App', 'Failed to initialize data:', { error });
       }
     })();
   }, [initializeData, user, authLoading]);
@@ -138,8 +123,6 @@ function App(): React.ReactElement {
         return <MealPlanning />;
       case 'shared':
         return <Shared />;
-      case 'seventy-five-hard':
-        return <SeventyFiveHard />;
       case 'skincare':
         return <Skincare />;
       case 'assistant':

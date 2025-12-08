@@ -30,13 +30,13 @@ const Focus: React.FC = () => {
       setActive(false);
       // Complete the session
       if (sessionIdRef.current && startTimeRef.current) {
-        const actualDuration = Math.floor((Date.now() - startTimeRef.current.getTime()) / 1000);
+        const actualDurationSeconds = Math.floor((Date.now() - startTimeRef.current.getTime()) / 1000);
         updateSession.mutate({
           id: sessionIdRef.current,
           updates: {
             status: 'completed',
-            end_time: new Date().toISOString(),
-            actual_duration: actualDuration,
+            completed_at: new Date().toISOString(),
+            actual_duration_seconds: actualDurationSeconds,
           },
         });
         sessionIdRef.current = null;
@@ -56,10 +56,10 @@ const Focus: React.FC = () => {
 
       try {
         const newSession = await createSession.mutateAsync({
-          preset: 'pomodoro',
-          duration: seconds,
-          start_time: new Date().toISOString(),
-          status: 'active',
+          type: 'pomodoro',
+          duration_minutes: Math.floor(seconds / 60),
+          started_at: new Date().toISOString(),
+          status: 'in-progress',
         });
         sessionIdRef.current = newSession.id ?? null;
       } catch (error) {
@@ -74,7 +74,7 @@ const Focus: React.FC = () => {
           await updateSession.mutateAsync({
             id: sessionIdRef.current,
             updates: {
-              status: 'paused',
+              status: 'in-progress',
             },
           });
         } catch (error) {
@@ -94,8 +94,8 @@ const Focus: React.FC = () => {
         await updateSession.mutateAsync({
           id: sessionIdRef.current,
           updates: {
-            status: 'cancelled',
-            end_time: new Date().toISOString(),
+            status: 'abandoned',
+            completed_at: new Date().toISOString(),
           },
         });
       } catch (error) {

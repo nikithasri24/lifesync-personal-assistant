@@ -20,8 +20,6 @@ import type {
   RecipeData,
   _RecipeIngredientData,
   AnalyticsData,
-  SFHChallengeData,
-  SFHEntryData,
 } from './types';
 
 export type {
@@ -539,63 +537,6 @@ class ApiClient {
       return this.supabaseAdapter.getAnalytics();
     }
     return this.request<AnalyticsData>('/analytics/dashboard');
-  }
-
-  // ==================== 75 HARD ====================
-  async getSFHChallenges(): Promise<SFHChallengeData[]> {
-    if (this.supabaseAdapter) {
-      return this.supabaseAdapter.getSFHChallenges();
-    }
-    return [];
-  }
-
-  async getSFHEntries(challengeIds: string[]): Promise<SFHEntryData[]> {
-    if (this.supabaseAdapter) {
-      return this.supabaseAdapter.getSFHEntries(challengeIds);
-    }
-    return [];
-  }
-
-  async createSFHChallenge(challenge: Omit<SFHChallengeData, 'id' | 'created_at' | 'user_id'>): Promise<SFHChallengeData> {
-    if (this.supabaseAdapter) {
-      return this.supabaseAdapter.createSFHChallenge(challenge);
-    }
-    throw new Error('Supabase not configured');
-  }
-
-  async updateSFHChallenge(id: string, updates: Partial<SFHChallengeData>): Promise<SFHChallengeData> {
-    if (this.supabaseAdapter) {
-      return this.supabaseAdapter.updateSFHChallenge(id, updates);
-    }
-    throw new Error('Supabase not configured');
-  }
-
-  async deleteSFHChallenge(id: string): Promise<void> {
-    if (this.supabaseAdapter) {
-      return this.supabaseAdapter.deleteSFHChallenge(id);
-    }
-    throw new Error('Supabase not configured');
-  }
-
-  async createSFHEntry(entry: Omit<SFHEntryData, 'id' | 'created_at' | 'user_id'>): Promise<SFHEntryData> {
-    if (this.supabaseAdapter) {
-      return this.supabaseAdapter.createSFHEntry(entry);
-    }
-    throw new Error('Supabase not configured');
-  }
-
-  async updateSFHEntry(id: string, updates: Partial<SFHEntryData>): Promise<SFHEntryData> {
-    if (this.supabaseAdapter) {
-      return this.supabaseAdapter.updateSFHEntry(id, updates);
-    }
-    throw new Error('Supabase not configured');
-  }
-
-  async deleteSFHEntriesForChallenge(challengeId: string): Promise<void> {
-    if (this.supabaseAdapter) {
-      return this.supabaseAdapter.deleteSFHEntriesForChallenge(challengeId);
-    }
-    return Promise.resolve();
   }
 
   // ==================== HEALTH CHECK ====================

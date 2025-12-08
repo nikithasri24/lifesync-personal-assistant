@@ -6,19 +6,15 @@
 
 import type { TaskData, ProjectData } from '../../services/types';
 import type { Task, Project } from '../types';
-import { isSFHTask } from '../services/taskHelpers';
 
 /**
  * Transform API tasks to local Task format
- * Excludes 75 Hard tasks from the transformation
  *
  * @param apiTasks - Tasks from the API
  * @returns Transformed tasks in local format
  */
 export function transformApiTasks(apiTasks: TaskData[]): Task[] {
-  return apiTasks
-    .filter(task => !isSFHTask({ tags: task.tags ?? undefined }))
-    .map(task => {
+  return apiTasks.map(task => {
       // Ensure status is valid
       const status: 'todo' | 'done' = task.status === 'done' ? 'done' : 'todo';
 

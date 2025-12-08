@@ -56,6 +56,42 @@ export class MockApi implements FinanceAPI {
     }
   }
 
+  async upsertAccount(account: { id?: string; name: string; type: string; balance: number; institutionId?: string }): Promise<void> {
+    await sleep(randomLatency());
+    if (account.id) {
+      const existingIndex = accounts.findIndex(a => a.id === account.id);
+      if (existingIndex >= 0) {
+        accounts[existingIndex] = {
+          ...accounts[existingIndex],
+          name: account.name,
+          type: account.type,
+          balance: account.balance,
+          institutionId: account.institutionId,
+          lastUpdatedISO: new Date().toISOString(),
+        };
+      }
+    } else {
+      const newAccount: Account = {
+        id: `mock-${Date.now()}`,
+        name: account.name,
+        type: account.type,
+        balance: account.balance,
+        liability: account.type === 'credit',
+        lastUpdatedISO: new Date().toISOString(),
+        institutionId: account.institutionId,
+      };
+      accounts.push(newAccount);
+    }
+  }
+
+  async deleteAccount(accountId: string): Promise<void> {
+    await sleep(randomLatency());
+    const index = accounts.findIndex(a => a.id === accountId);
+    if (index >= 0) {
+      accounts.splice(index, 1);
+    }
+  }
+
   async listTransactions(params: TxnQuery): Promise<Paginated<Transaction>> {
     await sleep(randomLatency());
     const {
@@ -321,5 +357,32 @@ export class MockApi implements FinanceAPI {
         };
       }
     }
+  }
+
+  // Loan tracking methods (mock implementation)
+  async listLoans(): Promise<import('../types').Loan[]> {
+    await sleep(randomLatency());
+    return [];
+  }
+
+  async upsertLoan(_loan: import('../types').LoanInput): Promise<void> {
+    await sleep(randomLatency());
+  }
+
+  async deleteLoan(_loanId: string): Promise<void> {
+    await sleep(randomLatency());
+  }
+
+  async listLoanPayments(_loanId: string): Promise<import('../types').LoanPayment[]> {
+    await sleep(randomLatency());
+    return [];
+  }
+
+  async upsertLoanPayment(_loanId: string, _payment: import('../types').LoanPaymentInput): Promise<void> {
+    await sleep(randomLatency());
+  }
+
+  async deleteLoanPayment(_paymentId: string): Promise<void> {
+    await sleep(randomLatency());
   }
 }

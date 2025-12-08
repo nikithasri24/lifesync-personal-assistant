@@ -1,9 +1,10 @@
 // Utilities Barrel Exports
 // Centralized exports for all utility modules
 
-export * from './cleanup75HardDuplicates';
 export * from './dataManager';
+export * from './dateUtils';
+export * from './errorHandler';
 export * from './healthSync';
-export * from './motivationalQuotes';
 export * from './quickAdd';
 export * from './validation';
+export * from './validators';

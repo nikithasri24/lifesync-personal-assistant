@@ -26,7 +26,6 @@ export type ViewKey =
   | 'shopping'
   | 'travel'
   | 'personal'
-  | '75hard'
   | 'skincare'
   | 'health';
 

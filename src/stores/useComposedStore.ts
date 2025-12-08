@@ -26,6 +26,14 @@ import { createHabitsSlice, type HabitsSlice } from './slices/habitsSlice';
 import { createMealsSlice, type MealsSlice } from './slices/mealsSlice';
 import { createShoppingSlice, type ShoppingSlice } from './slices/shoppingSlice';
 import { createFinanceSlice, type FinanceSlice } from './slices/financeSlice';
+import { createProjectsSlice, type ProjectsSlice } from './slices/projectsSlice';
+import { createFocusSlice, type FocusSlice } from './slices/focusSlice';
+import { createSchedulerSlice, type SchedulerSlice } from './slices/schedulerSlice';
+import { createLifeGoalsSlice, type LifeGoalsSlice } from './slices/lifeGoalsSlice';
+import { createCalendarSlice, type CalendarSlice } from './slices/calendarSlice';
+import { createSkincareSlice, type SkincareSlice } from './slices/skincareSlice';
+import { createTravelSlice, type TravelSlice } from './slices/travelSlice';
+import { createNationalParksSlice, type NationalParksSlice } from './slices/nationalParksSlice';
 
 // Compose all slices into one store type
 export type ComposedStore = UISlice &
@@ -36,7 +44,15 @@ export type ComposedStore = UISlice &
   HabitsSlice &
   MealsSlice &
   ShoppingSlice &
-  FinanceSlice;
+  FinanceSlice &
+  ProjectsSlice &
+  FocusSlice &
+  SchedulerSlice &
+  LifeGoalsSlice &
+  CalendarSlice &
+  SkincareSlice &
+  TravelSlice &
+  NationalParksSlice;
 
 /**
  * Modern, composed Zustand store
@@ -63,6 +79,14 @@ export const useComposedStore = create<ComposedStore>()(
         ...createMealsSlice(...a),
         ...createShoppingSlice(...a),
         ...createFinanceSlice(...a),
+        ...createProjectsSlice(...a),
+        ...createFocusSlice(...a),
+        ...createSchedulerSlice(...a),
+        ...createLifeGoalsSlice(...a),
+        ...createCalendarSlice(...a),
+        ...createSkincareSlice(...a),
+        ...createTravelSlice(...a),
+        ...createNationalParksSlice(...a),
       }),
       {
         name: 'lifesync-storage',
@@ -337,4 +361,66 @@ export const selectDreams = (state: ComposedStore): Pick<
   updateDream: state.updateDream,
   deleteDream: state.deleteDream,
   getDreamById: state.getDreamById,
+});
+
+export const selectProjects = (state: ComposedStore): Pick<
+  ComposedStore,
+  | 'projects'
+  | 'projectsLoaded'
+  | 'projectsLoading'
+  | 'projectsError'
+  | 'loadProjects'
+  | 'refreshProject'
+  | 'addProject'
+  | 'updateProject'
+  | 'deleteProject'
+  | 'getProjectById'
+  | 'addMilestone'
+  | 'updateMilestone'
+  | 'deleteMilestone'
+  | 'linkTask'
+  | 'unlinkTask'
+> => ({
+  projects: state.projects,
+  projectsLoaded: state.projectsLoaded,
+  projectsLoading: state.projectsLoading,
+  projectsError: state.projectsError,
+  loadProjects: state.loadProjects,
+  refreshProject: state.refreshProject,
+  addProject: state.addProject,
+  updateProject: state.updateProject,
+  deleteProject: state.deleteProject,
+  getProjectById: state.getProjectById,
+  addMilestone: state.addMilestone,
+  updateMilestone: state.updateMilestone,
+  deleteMilestone: state.deleteMilestone,
+  linkTask: state.linkTask,
+  unlinkTask: state.unlinkTask,
+});
+
+export const selectFocus = (state: ComposedStore): Pick<
+  ComposedStore,
+  | 'sessions'
+  | 'sessionsLoaded'
+  | 'sessionsLoading'
+  | 'sessionsError'
+  | 'loadSessions'
+  | 'createSession'
+  | 'completeSession'
+  | 'abandonSession'
+  | 'updateSessionDetails'
+  | 'getStats'
+  | 'getSessionById'
+> => ({
+  sessions: state.sessions,
+  sessionsLoaded: state.sessionsLoaded,
+  sessionsLoading: state.sessionsLoading,
+  sessionsError: state.sessionsError,
+  loadSessions: state.loadSessions,
+  createSession: state.createSession,
+  completeSession: state.completeSession,
+  abandonSession: state.abandonSession,
+  updateSessionDetails: state.updateSessionDetails,
+  getStats: state.getStats,
+  getSessionById: state.getSessionById,
 });

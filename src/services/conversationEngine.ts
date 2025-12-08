@@ -10,6 +10,17 @@ import { goalTools } from '@/goals/tools';
 import { shoppingTools } from '@/shopping/tools';
 import { mealTools } from '@/mealPlanning/tools';
 import { journalTools } from '@/journal/tools';
+import { projectTools } from '@/projects/tools';
+import { focusTools } from '@/focus/tools';
+import { schedulerTools } from '@/scheduler/tools';
+import { analyticsTools } from '@/analytics/tools';
+import { lifeGoalsTools } from '@/lifeGoals/tools';
+import { calendarTools } from '@/calendar/tools';
+import { skincareTools } from '@/skincare/tools';
+import { travelTools } from '@/travel/tools';
+import { notesTools } from '@/notes/tools';
+import { nationalParksTools } from '@/nationalParks/tools';
+import { dashboardTools } from '@/dashboard/tools';
 import { apiClient } from './apiClient';
 import { logger } from './logger';
 
@@ -37,7 +48,18 @@ function initializeTools(): void {
     ...goalTools,
     ...shoppingTools,
     ...mealTools,
-    ...journalTools
+    ...journalTools,
+    ...projectTools,
+    ...focusTools,
+    ...schedulerTools,
+    ...analyticsTools,
+    ...lifeGoalsTools,
+    ...calendarTools,
+    ...skincareTools,
+    ...travelTools,
+    ...notesTools,
+    ...nationalParksTools,
+    ...dashboardTools
   ]);
 
   logger.info('ConversationEngine', 'Tools registered', {
@@ -104,7 +126,7 @@ export class ConversationEngine {
 
     // System prompt with dynamic tool listing
     const toolSummary = toolRegistry.getSummary();
-    const systemMessage = `You are a helpful AI assistant managing the user's personal life. You have access to their tasks, finances, goals, habits, meals, shopping, journal, and travel plans.
+    const systemMessage = `You are a helpful AI assistant managing the user's personal life. You have access to their tasks, projects, finances, goals, habits, meals, shopping, journal, and travel plans.
 
 Current Context:
 ${context}

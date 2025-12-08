@@ -5,15 +5,15 @@ export async function validateTransactionInput(input: TransactionInput): Promise
   await Promise.resolve(); // Satisfy require-await rule
   const schema = z.object({
     id: z.string().optional(),
-    accountId: z.string(),
-    dateISO: z.string(),
-    description: z.string().min(1),
-    categoryId: z.string().optional(),
-    amount: z.number(),
+    accountId: z.string().min(1, 'Account is required'),
+    dateISO: z.string().min(1, 'Date is required'),
+    description: z.string().min(1, 'Description is required'),
+    categoryId: z.string().min(1).optional(),
+    amount: z.number().positive('Amount must be positive'),
     type: z.enum(['debit', 'credit']),
     notes: z.string().optional(),
   });
-  return schema.parse(input);
+  return schema.parse(input) as TransactionInput;
 }
 
 export async function validateGoalInput(input: GoalInput): Promise<GoalInput> {

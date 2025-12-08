@@ -43,7 +43,6 @@ export type ShareableModule =
   | 'journal'
   | 'mood'
   | 'period'
-  | 'seventy-five-hard'
   | 'skincare';
 
 // =====================================================
@@ -285,15 +284,6 @@ export const MODULE_CONFIGS: Record<ShareableModule, ModulePermissionConfig> = {
     icon: 'Droplets',
     defaultLevel: 'none',
     supportedLevels: ['none'],
-    hasSettings: false,
-  },
-  'seventy-five-hard': {
-    module: 'seventy-five-hard',
-    label: '75 Hard',
-    description: '75 Hard challenge progress',
-    icon: 'Trophy',
-    defaultLevel: 'none',
-    supportedLevels: ['none', 'view'],
     hasSettings: false,
   },
   skincare: {

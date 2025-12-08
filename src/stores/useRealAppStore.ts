@@ -1,25 +1,11 @@
 import { logger } from '../services/logger';
 import { create } from 'zustand'
-import { differenceInDays } from 'date-fns'
 import {
-  ensureSupabase,
   isSupabaseConfigured,
 } from '../lib/supabase'
-import {
-  apiClient,
-} from '../services/apiClient'
 import type {
   UserStats,
-  DailyCheckIn,
 } from '../types'
-import type { SeventyFiveHardChallenge } from '../types/seventyFiveHard'
-
-interface LegacySeventyFiveHardChallenge {
-  id: string
-  startDate: Date
-  currentDay: number
-  isActive: boolean
-}
 
 type ViewKey =
   | 'dashboard'
@@ -39,7 +25,6 @@ type ViewKey =
   | 'shopping'
   | 'meals'
   | 'shared'
-  | 'seventy-five-hard'
   | 'skincare'
   | 'assistant'
 
@@ -53,23 +38,6 @@ export interface RealAppState {
 
   userStats: UserStats
 
-  // ==================== 75 Hard (New Architecture) ====================
-  // State
-  sfhChallenge: SeventyFiveHardChallenge | null
-  sfhCheckIns: DailyCheckIn[]
-  sfhCheckInsLoadedRange: { from: Date | null; to: Date | null } | null  // Track loaded check-in date range for lazy loading
-  sfhShowFailurePrompt: boolean
-  sfhFailureDate: Date | null
-  sfhShowDayCompleteMessage: boolean
-  sfhShowCelebration: boolean
-
-  // Note: 75 Hard actions are in src/stores/seventyFiveHardActions.ts (standalone functions)
-
-  // ==================== 75 Hard ====================
-  seventyFiveHardChallenges: LegacySeventyFiveHardChallenge[]
-  updateActiveChallengesDays: () => void
-  resetSFHEnsuredDate: () => void
-
   initializeData: () => void
   setActiveView: (view: ViewKey) => void
   setSidebarCollapsed: (collapsed: boolean) => void
@@ -77,21 +45,10 @@ export interface RealAppState {
   addMealOption: (mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack', name: string) => void
   removeMealOption: (mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack', name: string) => void
 
-  // 75 Hard × Tasks integration
-  showSFHTasksInTasks: boolean
-  setShowSFHTasksInTasks: (show: boolean) => void
-  sfhEnsureInProgress: boolean
-  sfhEnsuredForDate: string | null
-
   // Global toast
   globalToast: { message: string; type?: 'info' | 'success' | 'error' } | null
   showGlobalToast: (message: string, type?: 'info' | 'success' | 'error') => void
   clearGlobalToast: () => void
-
-  // 75 Hard sync status
-  sfhLastSynced: Date | null
-  setSFHLastSynced: (d: Date) => void
-
 }
 
 const _createId = (): string => {
@@ -121,14 +78,6 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
     } catch { return 'dashboard' }
   })(),
 
-  // 75 Hard (New Architecture) - Initial State
-  sfhChallenge: null,
-  sfhCheckIns: [],
-  sfhCheckInsLoadedRange: null,
-  sfhShowFailurePrompt: false,
-  sfhFailureDate: null,
-  sfhShowDayCompleteMessage: false,
-  sfhShowCelebration: false,
   // Global settings (UI preferences, not data)
   weekStartsOn: (() => {
     try {
@@ -153,19 +102,8 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
   })(),
   sidebarCollapsed: false,
   globalToast: null,
-  sfhLastSynced: null,
 
   userStats: { level: 1, xp: 0, xpToNextLevel: 100, totalGoalsCompleted: 0 },
-  showSFHTasksInTasks: (() => {
-    try {
-      const raw = localStorage.getItem('lifesync:settings:sfhShowInTasks')
-      if (raw == null) return true
-      return raw === 'true'
-    } catch { return true }
-  })(),
-  sfhEnsureInProgress: false,
-  sfhEnsuredForDate: null,
-  seventyFiveHardChallenges: [],
 
   initializeData: () => {
     if (!isSupabaseConfigured) {
@@ -199,9 +137,6 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
       set({
         loading: false,
       })
-
-      // Update current day for all active challenges after initialization
-      get().updateActiveChallengesDays()
     } catch (error) {
       logger.error('UseRealAppStore', '[LifeSync] Failed to initialise store from Supabase', error)
       set({
@@ -256,69 +191,6 @@ export const useRealAppStore = create<RealAppState>((set, get) => ({
   },
   setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
 
-  setShowSFHTasksInTasks: (show: boolean) => {
-    set({ showSFHTasksInTasks: show })
-    try {
-      localStorage.setItem('lifesync:settings:sfhShowInTasks', String(show))
-    } catch (error) {
-      logger.warn('Failed to save sfhShowInTasks to localStorage', error)
-    }
-  },
-
   showGlobalToast: (message, type = 'info') => set({ globalToast: { message, type } }),
   clearGlobalToast: () => set({ globalToast: null }),
-  setSFHLastSynced: (d: Date) => {
-    set({ sfhLastSynced: d })
-    try {
-      localStorage.setItem('lifesync:75hard:lastSynced', d.toISOString())
-    } catch (error) {
-      logger.warn('Failed to save 75hard lastSynced to localStorage', error)
-    }
-  },
-
-  updateActiveChallengesDays: () => {
-    const state = get()
-    const today = new Date()
-    let updated = false
-
-    const updatedChallenges = state.seventyFiveHardChallenges.map((challenge: LegacySeventyFiveHardChallenge) => {
-      if (!challenge.isActive) return challenge
-
-      // Calculate the actual current day based on elapsed time
-      const daysElapsed = differenceInDays(today, challenge.startDate)
-      const actualCurrentDay = Math.max(1, Math.min(daysElapsed + 1, 75))
-
-      // Only update if the value has changed
-      if (actualCurrentDay !== challenge.currentDay) {
-        updated = true
-        return { ...challenge, currentDay: actualCurrentDay }
-      }
-
-      return challenge
-    })
-
-    if (updated) {
-      set({ seventyFiveHardChallenges: updatedChallenges })
-      // Persist to localStorage
-      try {
-        localStorage.setItem('lifesync:75hard', JSON.stringify(updatedChallenges))
-      } catch (e) {
-        logger.warn('UseRealAppStore', '[75Hard] Failed to save updated challenges to localStorage', e)
-      }
-    }
-  },
-
-  // Reset the sfhEnsuredForDate to force task recreation
-  resetSFHEnsuredDate: () => {
-    set({ sfhEnsuredForDate: null })
-    try {
-      localStorage.removeItem('lifesync:sfh:ensuredForDate')
-    } catch (err) {
-      logger.warn('UseRealAppStore', '[75Hard] Failed to remove ensuredForDate from localStorage:', err)
-    }
-    logger.info('UseRealAppStore', '[75Hard] Reset sfhEnsuredForDate - tasks will be recreated on next ensureSFHTasksForToday call')
-  },
-
-  // ==================== 75 Hard (New Architecture) Methods ====================
-
 }))

@@ -601,63 +601,7 @@ describe('SupabaseAdapter', () => {
       expect(result.focus).toBeDefined();
     });
   });
-
-  describe('75 Hard Challenge', () => {
-    it('should get SFH challenges', async () => {
-      const mockChallenges = [{ id: 'c1', start_date: '2025-01-01' }];
-      const mockQuery = createMockQuery();
-      mockQuery.order.mockResolvedValue({ data: mockChallenges, error: null });
-      vi.mocked(mockSupabaseClient.from).mockReturnValue(mockQuery as any);
-
-      const result = await adapter.getSFHChallenges();
-
-      expect(mockSupabaseClient.from).toHaveBeenCalledWith('sfh_challenge');
-      expect(result).toEqual(mockChallenges);
-    });
-
-    it('should get SFH entries for challenges', async () => {
-      const mockEntries = [{ id: 'e1', challenge_id: 'c1' }];
-      const mockQuery = createMockQuery();
-      mockQuery.order.mockResolvedValue({ data: mockEntries, error: null });
-      vi.mocked(mockSupabaseClient.from).mockReturnValue(mockQuery as any);
-
-      const result = await adapter.getSFHEntries(['c1', 'c2']);
-
-      expect(mockQuery.in).toHaveBeenCalledWith('challenge_id', ['c1', 'c2']);
-      expect(result).toEqual(mockEntries);
-    });
-
-    it('should return empty array when no challenge IDs provided', async () => {
-      const result = await adapter.getSFHEntries([]);
-
-      expect(result).toEqual([]);
-    });
-
-    it('should create SFH challenge', async () => {
-      const mockQuery = createMockQuery();
-      mockQuery.single.mockResolvedValue({
-        data: { id: 'c1', start_date: '2025-01-01' },
-        error: null,
-      });
-      vi.mocked(mockSupabaseClient.from).mockReturnValue(mockQuery as any);
-
-      const result = await adapter.createSFHChallenge({ start_date: '2025-01-01' });
-
-      expect(mockQuery.insert).toHaveBeenCalledWith(
-        expect.objectContaining({ user_id: 'test-user-123' })
-      );
-    });
-
-    it('should delete SFH challenge', async () => {
-      const mockQuery = createMockQuery();
-      vi.mocked(mockSupabaseClient.from).mockReturnValue(mockQuery as any);
-
-      await adapter.deleteSFHChallenge('c1');
-
-      expect(mockQuery.delete).toHaveBeenCalled();
-      expect(mockQuery.eq).toHaveBeenCalledWith('id', 'c1');
-    });
-  });
+});
 
   describe('Error Handling', () => {
     it('should throw descriptive errors', async () => {

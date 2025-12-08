@@ -1,3 +1,29 @@
+/**
+ * Habits Zustand Slice
+ *
+ * MIGRATION STATUS: React Query hooks available
+ * - New React Query hooks: /src/habits/hooks/useHabitsQuery.ts
+ * - Recommended: Use React Query hooks for new features
+ * - This slice is maintained for backward compatibility
+ *
+ * Migration Guide:
+ * - Replace `loadHabits()` with `useHabitsQuery()`
+ * - Replace `loadHabitEntries()` with `useAllHabitEntriesQuery()`
+ * - Replace `loadHabitEntriesForHabit()` with `useHabitEntriesQuery(habitId)`
+ * - Replace `addHabit()` with `useCreateHabitMutation()`
+ * - Replace `updateHabit()` with `useUpdateHabitMutation()`
+ * - Replace `deleteHabit()` with `useDeleteHabitMutation()`
+ * - Replace `addHabitEntry()` with `useLogHabitMutation()`
+ * - Replace `updateHabitEntry()` with `useUpdateHabitEntryMutation()`
+ * - Replace `deleteHabitEntry()` with `useDeleteHabitEntryMutation()`
+ *
+ * Benefits of React Query:
+ * - Automatic streak calculation updates
+ * - Optimistic updates for instant UI feedback
+ * - Better cache management for habit entries
+ * - Automatic refetch on window focus
+ */
+
 import type { StateCreator } from 'zustand';
 import type { HabitData, HabitEntryData } from '@/services/types';
 import {

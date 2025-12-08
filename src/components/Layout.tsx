@@ -40,7 +40,6 @@ const navigation = [
   { name: 'Notes', icon: FileText, view: 'notes' as const, section: 'productivity' },
   { name: 'Projects', icon: FolderOpen, view: 'projects' as const, section: 'productivity' },
   { name: 'Journal', icon: BookOpen, view: 'journal' as const, section: 'wellbeing' },
-  { name: '75 Hard', icon: Trophy, view: 'seventy-five-hard' as const, section: 'wellbeing' },
   { name: 'Skincare', icon: Sparkles, view: 'skincare' as const, section: 'wellbeing' },
   { name: 'Travel', icon: MapPin, view: 'travel' as const, section: 'personal' },
   { name: 'Visa Calculator', icon: Plane, view: 'visa' as const, section: 'personal' },

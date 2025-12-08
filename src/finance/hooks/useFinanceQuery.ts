@@ -22,6 +22,10 @@ import type {
   WelcomeBonusInput,
   CardOffer,
   CardOfferInput,
+  Loan,
+  LoanInput,
+  LoanPayment,
+  LoanPaymentInput,
 } from '../types';
 import { logger } from '@/services/logger';
 
@@ -44,6 +48,9 @@ export const financeKeys = {
   categoryBonuses: (accountId: string) => [...financeKeys.all, 'categoryBonuses', accountId] as const,
   welcomeBonuses: (accountId: string) => [...financeKeys.all, 'welcomeBonuses', accountId] as const,
   cardOffers: (accountId: string) => [...financeKeys.all, 'cardOffers', accountId] as const,
+  loans: () => [...financeKeys.all, 'loans'] as const,
+  loan: (id: string) => [...financeKeys.all, 'loan', id] as const,
+  loanPayments: (loanId: string) => [...financeKeys.all, 'loanPayments', loanId] as const,
 };
 
 // ==================== Institutions ====================
@@ -116,7 +123,9 @@ export function useTransactionsQuery(params?: TxnQuery, options?: Omit<UseQueryO
     queryKey: financeKeys.transactions(params),
     queryFn: async () => {
       const api = await getFinanceAPI();
-      return api.listTransactions(params ?? { limit: 500 });
+      const result = await api.listTransactions(params ?? { limit: 500 });
+      // Extract items from paginated response
+      return result.items;
     },
     staleTime: 1000 * 60 * 2, // 2 minutes
     ...options,
@@ -544,6 +553,153 @@ export function useUpsertCardOfferMutation(): UseMutationResult<void, Error, { a
     },
     onError: (error: Error, { accountId }) => {
       logger.error('Failed to upsert card offer', { error: error.message, accountId });
+    },
+  });
+}
+
+// ==================== Loans ====================
+
+export function useLoansQuery(): UseQueryResult<Loan[], Error> {
+  return useQuery<Loan[], Error>({
+    queryKey: financeKeys.loans(),
+    queryFn: async () => {
+      const api = await getFinanceAPI();
+      return api.listLoans();
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+}
+
+export function useUpsertLoanMutation(): UseMutationResult<void, Error, LoanInput, { previousLoans: Loan[] | undefined }> {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, LoanInput, { previousLoans: Loan[] | undefined }>({
+    mutationFn: async (loan: LoanInput) => {
+      logger.debug('Upserting loan', { loanName: loan.loanName });
+      const api = await getFinanceAPI();
+      await api.upsertLoan(loan);
+    },
+    onMutate: async (loan) => {
+      logger.debug('Optimistic update: loan', { loanName: loan.loanName });
+      await queryClient.cancelQueries({ queryKey: financeKeys.loans() });
+      const previousLoans = queryClient.getQueryData<Loan[]>(financeKeys.loans());
+
+      // Optimistic update
+      if (loan.id) {
+        queryClient.setQueryData<Loan[]>(financeKeys.loans(), (old) => {
+          if (!old) return old;
+          return old.map((l) => (l.id === loan.id ? { ...l, ...loan } : l));
+        });
+      } else {
+        // For new loans, we can't optimistically add without an ID
+        // Just skip optimistic update for creates
+      }
+
+      return { previousLoans };
+    },
+    onError: (err: Error, loan, context) => {
+      logger.error('Failed to upsert loan', { error: err.message, loanName: loan.loanName });
+      if (context?.previousLoans) {
+        queryClient.setQueryData<Loan[]>(financeKeys.loans(), context.previousLoans);
+      }
+    },
+    onSuccess: (_, loan) => {
+      logger.info('Loan upserted successfully', { loanName: loan.loanName });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.loans() });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.accounts() });
+    },
+  });
+}
+
+export function useDeleteLoanMutation(): UseMutationResult<void, Error, string, { previousLoans: Loan[] | undefined }> {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, string, { previousLoans: Loan[] | undefined }>({
+    mutationFn: async (loanId: string) => {
+      logger.debug('Deleting loan', { loanId });
+      const api = await getFinanceAPI();
+      await api.deleteLoan(loanId);
+    },
+    onMutate: async (loanId) => {
+      logger.debug('Optimistic delete: loan', { loanId });
+      await queryClient.cancelQueries({ queryKey: financeKeys.loans() });
+      const previousLoans = queryClient.getQueryData<Loan[]>(financeKeys.loans());
+
+      // Optimistic delete
+      queryClient.setQueryData<Loan[]>(financeKeys.loans(), (old) => {
+        if (!old) return old;
+        return old.filter((l) => l.id !== loanId);
+      });
+
+      return { previousLoans };
+    },
+    onError: (err: Error, loanId, context) => {
+      logger.error('Failed to delete loan', { error: err.message, loanId });
+      if (context?.previousLoans) {
+        queryClient.setQueryData<Loan[]>(financeKeys.loans(), context.previousLoans);
+      }
+    },
+    onSuccess: (_, loanId) => {
+      logger.info('Loan deleted successfully', { loanId });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.loans() });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.loanPayments(loanId) });
+    },
+  });
+}
+
+// ==================== Loan Payments ====================
+
+export function useLoanPaymentsQuery(loanId: string | null): UseQueryResult<LoanPayment[], Error> {
+  return useQuery<LoanPayment[], Error>({
+    queryKey: loanId ? financeKeys.loanPayments(loanId) : ['loanPayments-null'],
+    queryFn: async () => {
+      if (!loanId) throw new Error('Loan ID is required');
+      const api = await getFinanceAPI();
+      return api.listLoanPayments(loanId);
+    },
+    enabled: !!loanId,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+}
+
+export function useUpsertLoanPaymentMutation(): UseMutationResult<void, Error, { loanId: string; payment: LoanPaymentInput }, unknown> {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, { loanId: string; payment: LoanPaymentInput }>({
+    mutationFn: async ({ loanId, payment }: { loanId: string; payment: LoanPaymentInput }) => {
+      logger.debug('Upserting loan payment', { loanId, paymentDate: payment.paymentDate });
+      const api = await getFinanceAPI();
+      await api.upsertLoanPayment(loanId, payment);
+    },
+    onSuccess: (_, { loanId }) => {
+      logger.info('Loan payment upserted successfully', { loanId });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.loanPayments(loanId) });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.loans() });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.loan(loanId) });
+    },
+    onError: (error: Error, { loanId }) => {
+      logger.error('Failed to upsert loan payment', { error: error.message, loanId });
+    },
+  });
+}
+
+export function useDeleteLoanPaymentMutation(): UseMutationResult<void, Error, { paymentId: string; loanId: string }, unknown> {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, { paymentId: string; loanId: string }>({
+    mutationFn: async ({ paymentId }: { paymentId: string; loanId: string }) => {
+      logger.debug('Deleting loan payment', { paymentId });
+      const api = await getFinanceAPI();
+      await api.deleteLoanPayment(paymentId);
+    },
+    onSuccess: (_, { loanId, paymentId }) => {
+      logger.info('Loan payment deleted successfully', { paymentId });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.loanPayments(loanId) });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.loans() });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.loan(loanId) });
+    },
+    onError: (error: Error, { paymentId }) => {
+      logger.error('Failed to delete loan payment', { error: error.message, paymentId });
     },
   });
 }

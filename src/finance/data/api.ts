@@ -21,12 +21,18 @@ import type {
   WelcomeBonusInput,
   CardOffer,
   CardOfferInput,
+  Loan,
+  LoanInput,
+  LoanPayment,
+  LoanPaymentInput,
 } from '../types';
 
 export interface FinanceAPI {
   listInstitutions(): Promise<Institution[]>;
   listAccounts(): Promise<Account[]>;
   updateAccount(accountId: string, updates: Partial<Account>): Promise<void>;
+  upsertAccount(account: { id?: string; name: string; type: string; balance: number; institutionId?: string }): Promise<void>;
+  deleteAccount(accountId: string): Promise<void>;
   listTransactions(params: TxnQuery): Promise<Paginated<Transaction>>;
   upsertTransaction(txn: TransactionInput): Promise<void>;
   deleteTransaction(id: string): Promise<void>;
@@ -54,4 +60,11 @@ export interface FinanceAPI {
   upsertWelcomeBonus(accountId: string, bonus: WelcomeBonusInput): Promise<void>;
   listCardOffers(accountId: string): Promise<CardOffer[]>;
   upsertCardOffer(accountId: string, offer: CardOfferInput): Promise<void>;
+  // Loan tracking
+  listLoans(): Promise<Loan[]>;
+  upsertLoan(loan: LoanInput): Promise<void>;
+  deleteLoan(loanId: string): Promise<void>;
+  listLoanPayments(loanId: string): Promise<LoanPayment[]>;
+  upsertLoanPayment(loanId: string, payment: LoanPaymentInput): Promise<void>;
+  deleteLoanPayment(paymentId: string): Promise<void>;
 }

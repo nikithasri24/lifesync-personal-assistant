@@ -1,7 +1,34 @@
 /**
- * Goals Slice
+ * Goals Zustand Slice
  *
- * Manages goals and dreams state and operations
+ * MIGRATION STATUS: React Query hooks available
+ * - New React Query hooks:
+ *   - /src/goals/hooks/useGoalsQuery.ts (simplified API)
+ *   - /src/goals/hooks/useLifeGoalsQuery.ts (full-featured API)
+ * - Recommended: Use React Query hooks for new features
+ * - This slice is maintained for backward compatibility
+ *
+ * Migration Guide:
+ * - Replace `loadGoals()` with `useGoalsQuery()` or `useLifeGoalsQuery()`
+ * - Replace `addGoal()` with `useCreateGoalMutation()`
+ * - Replace `updateGoal()` with `useUpdateGoalMutation()`
+ * - Replace `deleteGoal()` with `useDeleteGoalMutation()`
+ * - Replace `loadDreams()` with `useLifeDreamsQuery()`
+ * - Replace `addDream()` with `useCreateLifeDreamMutation()`
+ * - Replace `updateDream()` with `useUpdateLifeDreamMutation()`
+ * - Replace `deleteDream()` with `useDeleteLifeDreamMutation()`
+ *
+ * Additional React Query Features:
+ * - Milestone management hooks
+ * - Check-in tracking hooks
+ * - Streak recording hooks
+ * - Goal templates and analytics
+ *
+ * Benefits of React Query:
+ * - Better milestone and check-in tracking
+ * - Optimistic updates for progress tracking
+ * - Automatic XP calculation updates
+ * - Streak management with automatic invalidation
  */
 
 import { type StateCreator } from 'zustand';

@@ -3,9 +3,6 @@
 
 /**
  * TaskData - User tasks for the task management system
- *
- * NOTE: This is completely separate from 75 Hard challenges.
- * 75 Hard uses its own dedicated system and should NEVER create TaskData entries.
  */
 export interface TaskData {
   id?: string;
@@ -19,7 +16,6 @@ export interface TaskData {
   actual_time?: number | null;
   due_date?: string | null;
   tags?: string[] | null;
-  /** Category for user tasks only. NOT for system-generated tasks like 75 Hard. */
   category?: 'work' | 'personal' | 'learning' | 'creative' | 'health' | 'other' | null;
   notes?: string | null;
   starred?: boolean | null;
@@ -226,47 +222,20 @@ export interface RecipeIngredientData {
 export interface FocusSessionData {
   id?: string;
   user_id?: string;
-  task_id?: string;
-  preset: string;
-  duration: number;
-  actual_duration?: number;
-  start_time: string;
-  end_time?: string;
-  status?: 'active' | 'completed' | 'cancelled' | 'paused';
-  breaks_taken?: number;
-  distractions?: number;
-  mood_before?: string;
-  mood_after?: string;
-  productivity_score?: number;
-  notes?: string;
-  environment_data?: unknown;
-  created_at?: string;
-  updated_at?: string;
-}
-
-// 75 Hard - New simplified schema
-export interface SFHChallengeData {
-  id?: string;
-  user_id?: string;
-  start_date: string; // yyyy-MM-dd
-  current_day: number;
-  status: 'active' | 'completed'; // No more is_active - using status field
-  tasks: Array<{ id: string; title: string; description?: string; order: number }>; // Renamed from rules
-  completed_at?: string | null; // ISO timestamp
-  created_at?: string;
-  updated_at?: string;
-}
-
-// 75 Hard Daily Check-in - New simplified schema
-export interface SFHEntryData {
-  id?: string;
-  challenge_id: string;
-  date: string; // yyyy-MM-dd
-  day_number: number; // Renamed from 'day'
-  task_completions: Array<{ taskId: string; completed: boolean; completedAt?: string | null }>; // Renamed from rule_completions
-  photo?: string | null; // Renamed from progress_photo_url
-  weight?: number | null;
+  task_id?: string | null;
+  type: 'pomodoro' | 'deep-work' | 'custom';
+  duration_minutes: number; // planned duration in minutes
+  actual_duration_seconds?: number | null; // actual duration in seconds
+  started_at: string;
+  completed_at?: string | null;
+  status: 'in-progress' | 'completed' | 'abandoned';
+  breaks_taken?: number | null;
+  distractions?: number | null;
+  mood_before?: string | null;
+  mood_after?: string | null;
+  productivity_score?: number | null; // 1-10
   notes?: string | null;
+  environment_data?: Record<string, unknown> | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -312,4 +281,245 @@ export interface AnalyticsData {
     total: string;
     total_focus_time: string;
   };
+}
+
+// =====================================================
+// PROJECT TRACKING - Enhanced Projects System
+// =====================================================
+
+export interface Project {
+  id: string;
+  user_id: string;
+  name: string;
+  description?: string;
+  status: 'planning' | 'active' | 'on-hold' | 'completed' | 'archived';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  start_date?: string;
+  target_date?: string;
+  completed_date?: string;
+  tags: string[];
+  color?: string;
+  progress: number; // 0-100
+  milestones?: ProjectMilestone[];
+  team_members?: string[]; // for shared projects
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProjectMilestone {
+  id: string;
+  project_id: string;
+  title: string;
+  description?: string;
+  target_date?: string;
+  completed: boolean;
+  completed_date?: string;
+  order_index: number;
+  created_at?: string;
+}
+
+export interface ProjectTask {
+  id: string;
+  project_id: string;
+  task_id: string; // reference to tasks table
+  created_at?: string;
+}
+
+// =====================================================
+// TASK SCHEDULER - Schedule Blocks System
+// =====================================================
+
+export interface ScheduleBlock {
+  id: string;
+  user_id: string;
+  date: string; // YYYY-MM-DD
+  start_time: string; // HH:MM format
+  end_time: string;
+  task_id?: string | null;
+  title?: string | null; // for non-task events
+  type: 'task' | 'event' | 'focus' | 'break';
+  is_recurring: boolean;
+  recurrence_rule?: string | null; // RRULE format
+  color?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// =====================================================
+// LIFE GOALS - Long-term Life Planning
+// =====================================================
+
+export interface LifeGoal {
+  id: string;
+  user_id: string;
+  title: string;
+  description?: string | null;
+  category: 'career' | 'financial' | 'family' | 'experiences' | 'legacy' | 'health' | 'personal-growth';
+  target_age?: number | null;
+  target_year?: number | null;
+  priority: 'must-have' | 'important' | 'nice-to-have';
+  status: 'dreaming' | 'planning' | 'in-progress' | 'achieved';
+  achievement_date?: string | null;
+  related_goal_ids: string[]; // link to shorter-term goals
+  milestones: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+// =====================================================
+// CALENDAR - Calendar Events System
+// =====================================================
+
+export interface CalendarEvent {
+  id: string;
+  user_id: string;
+  title: string;
+  description?: string | null;
+  start_date: string;
+  start_time?: string | null;
+  end_date: string;
+  end_time?: string | null;
+  all_day: boolean;
+  location?: string | null;
+  type: 'event' | 'meeting' | 'reminder' | 'birthday' | 'holiday';
+  color?: string | null;
+  is_recurring: boolean;
+  recurrence_rule?: string | null;
+  reminder_minutes?: number | null;
+  attendees?: string[] | null;
+  task_id?: string | null; // link to tasks
+  project_id?: string | null; // link to projects
+  created_at: string;
+  updated_at: string;
+}
+
+// =====================================================
+// SKINCARE - Skincare Tracking System
+// =====================================================
+
+export interface SkincareProduct {
+  id: string;
+  user_id: string;
+  name: string;
+  brand: string;
+  category: 'cleanser' | 'toner' | 'serum' | 'moisturizer' | 'sunscreen' | 'treatment' | 'mask' | 'exfoliant';
+  ingredients: string[];
+  key_ingredients: string[]; // active ingredients
+  open_date?: string | null;
+  expiry_date?: string | null;
+  purchase_date?: string | null;
+  price?: number | null;
+  rating?: number | null;
+  notes?: string | null;
+  in_use: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SkincareRoutine {
+  id: string;
+  user_id: string;
+  name: string; // "Morning Routine", "Evening Routine"
+  time_of_day: 'am' | 'pm' | 'both';
+  steps: SkincareRoutineStep[];
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SkincareRoutineStep {
+  id: string;
+  routine_id: string;
+  order_index: number;
+  product_id?: string | null;
+  step_type: string; // "cleanse", "tone", "treat", "moisturize", "protect"
+  instructions?: string | null;
+  created_at: string;
+}
+
+export interface SkinConditionLog {
+  id: string;
+  user_id: string;
+  date: string;
+  overall_condition: 1 | 2 | 3 | 4 | 5; // 1=terrible, 5=excellent
+  concerns: string[]; // "acne", "dryness", "redness", "sensitivity"
+  notes?: string | null;
+  photo_url?: string | null;
+  created_at: string;
+}
+
+// =====================================================
+// TRAVEL - Travel Planning System
+// =====================================================
+
+export interface Trip {
+  id: string;
+  user_id: string;
+  name: string;
+  destination_countries: string[];
+  start_date: string;
+  end_date: string;
+  status: 'planning' | 'booked' | 'in-progress' | 'completed';
+  budget?: number | null;
+  actual_cost?: number | null;
+  travelers: string[]; // names
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TripDay {
+  id: string;
+  trip_id: string;
+  date: string;
+  location: string;
+  activities: string[];
+  accommodations?: string | null;
+  transportation?: string | null;
+  notes?: string | null;
+  created_at: string;
+}
+
+export interface TravelDocument {
+  id: string;
+  trip_id?: string | null; // optional, for general docs
+  user_id: string;
+  type: 'passport' | 'visa' | 'ticket' | 'booking' | 'insurance' | 'vaccination';
+  name: string;
+  document_number?: string | null;
+  issue_date?: string | null;
+  expiry_date?: string | null;
+  file_url?: string | null;
+  notes?: string | null;
+  created_at: string;
+}
+
+export interface PackingList {
+  id: string;
+  trip_id?: string | null;
+  user_id: string;
+  name: string;
+  items: PackingItem[];
+  created_at: string;
+}
+
+export interface PackingItem {
+  id: string;
+  list_id: string;
+  name: string;
+  category: 'clothing' | 'toiletries' | 'electronics' | 'documents' | 'misc';
+  quantity: number;
+  packed: boolean;
+  created_at: string;
+}
+
+export interface VisaRequirement {
+  id: string;
+  user_id: string;
+  passport_country: string;
+  destination_country: string;
+  visa_required: boolean;
+  visa_type?: string | null;
+  max_stay_days?: number | null;
+  notes?: string | null;
+  last_updated: string;
 }

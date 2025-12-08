@@ -82,6 +82,9 @@ function mapDbToJournalEntry(data: JournalEntryDB): JournalEntry {
 
 /**
  * Get all journal entries for the current user
+ * @param filters - Optional filters for search, moods, tags, and date range
+ * @returns Promise<JournalEntry[]> - Array of journal entries matching the filters
+ * @throws Error if user not authenticated
  */
 export async function getJournalEntries(filters?: JournalEntryFilters): Promise<JournalEntry[]> {
   const { data: { user } } = await supabase.auth.getUser();
@@ -133,6 +136,9 @@ export async function getJournalEntries(filters?: JournalEntryFilters): Promise<
 
 /**
  * Get a single journal entry by ID
+ * @param id - Journal entry ID
+ * @returns Promise<JournalEntry> - The requested journal entry
+ * @throws Error if entry not found or user not authenticated
  */
 export async function getJournalEntry(id: string): Promise<JournalEntry> {
   const { data: { user } } = await supabase.auth.getUser();
@@ -153,6 +159,9 @@ export async function getJournalEntry(id: string): Promise<JournalEntry> {
 
 /**
  * Create a new journal entry
+ * @param input - Journal entry data including content, mood, tags, etc.
+ * @returns Promise<JournalEntry> - The created journal entry
+ * @throws Error if creation fails or user not authenticated
  */
 export async function createJournalEntry(input: CreateJournalEntryInput): Promise<JournalEntry> {
   const { data: { user } } = await supabase.auth.getUser();
@@ -179,6 +188,10 @@ export async function createJournalEntry(input: CreateJournalEntryInput): Promis
 
 /**
  * Update an existing journal entry
+ * @param id - Journal entry ID to update
+ * @param input - Partial journal entry data to update
+ * @returns Promise<JournalEntry> - The updated journal entry
+ * @throws Error if entry not found or user not authenticated
  */
 export async function updateJournalEntry(
   id: string,
@@ -218,6 +231,9 @@ export async function updateJournalEntry(
 
 /**
  * Delete a journal entry
+ * @param id - Journal entry ID to delete
+ * @returns Promise<void>
+ * @throws Error if deletion fails or user not authenticated
  */
 export async function deleteJournalEntry(id: string): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser();
@@ -234,6 +250,8 @@ export async function deleteJournalEntry(id: string): Promise<void> {
 
 /**
  * Get all unique tags used by the user
+ * @returns Promise<string[]> - Sorted array of unique tags
+ * @throws Error if user not authenticated
  */
 export async function getJournalTags(): Promise<string[]> {
   const { data: { user } } = await supabase.auth.getUser();
@@ -253,6 +271,10 @@ export async function getJournalTags(): Promise<string[]> {
 
 /**
  * Get mood statistics for a date range
+ * @param startDate - Optional start date for filtering
+ * @param endDate - Optional end date for filtering
+ * @returns Promise<Record<JournalMood, number>> - Count of each mood type
+ * @throws Error if user not authenticated
  */
 export async function getMoodStats(startDate?: Date, endDate?: Date): Promise<Record<JournalMood, number>> {
   const { data: { user } } = await supabase.auth.getUser();

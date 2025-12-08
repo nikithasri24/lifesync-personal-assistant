@@ -1,3 +1,26 @@
+/**
+ * Tasks Zustand Slice
+ *
+ * MIGRATION STATUS: React Query hooks available
+ * - New React Query hooks: /src/tasks/hooks/useTasksQuery.ts
+ * - Recommended: Use React Query hooks for new features
+ * - This slice is maintained for backward compatibility
+ *
+ * Migration Guide:
+ * - Replace `loadTasks()` with `useTasksQuery()`
+ * - Replace `addTask()` with `useCreateTaskMutation()`
+ * - Replace `updateTask()` with `useUpdateTaskMutation()`
+ * - Replace `softDeleteTask()` with `useDeleteTaskMutation()`
+ * - Replace `restoreTask()` with `useRestoreTaskMutation()`
+ * - Replace `hardDeleteTask()` with `usePermanentlyDeleteTaskMutation()`
+ *
+ * Benefits of React Query:
+ * - Automatic caching and background refetching
+ * - Optimistic updates with automatic rollback on error
+ * - Better loading and error states
+ * - Automatic request deduplication
+ */
+
 import type { StateCreator } from 'zustand';
 import type { TaskData } from '@/services/types';
 import {

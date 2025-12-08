@@ -27,9 +27,9 @@ export interface NetWorthCalculation {
  * Calculate net worth from accounts
  */
 export function calculateNetWorth(accounts: Array<{
-  currentBalance: number;
-  accountType?: string;
-  category?: string;
+  balance: number;
+  type?: string;
+  liability?: boolean;
 }>): NetWorthCalculation {
   let totalAssets = 0;
   let totalLiabilities = 0;
@@ -41,33 +41,34 @@ export function calculateNetWorth(accounts: Array<{
   let longTermDebt = 0;
 
   accounts.forEach(account => {
-    const balance = account.currentBalance ?? 0;
-    const type = (account.accountType ?? '').toLowerCase();
+    const balance = account.balance ?? 0;
+    const type = (account.type ?? '').toLowerCase();
+    const isLiability = account.liability ?? false;
 
-    // Assets
-    if (['checking', 'savings', 'cash'].includes(type)) {
-      liquidAssets += balance;
-      totalAssets += balance;
-    } else if (['investment', 'brokerage', 'retirement', '401k', 'ira', 'roth'].includes(type)) {
-      investments += balance;
-      totalAssets += balance;
-    } else if (type === 'real_estate' || type === 'property') {
-      realEstate += balance;
-      totalAssets += balance;
-    } else if (balance > 0) {
-      otherAssets += balance;
-      totalAssets += balance;
-    }
-
-    // Liabilities
-    if (['credit_card', 'loan', 'debt'].includes(type) && balance < 0) {
-      const debtAmount = Math.abs(balance);
-      if (type === 'credit_card') {
+    // Handle liabilities (credit cards, loans)
+    if (isLiability) {
+      const debtAmount = balance;
+      if (type === 'credit') {
         shortTermDebt += debtAmount;
       } else {
         longTermDebt += debtAmount;
       }
       totalLiabilities += debtAmount;
+    } else {
+      // Assets
+      if (['checking', 'savings', 'cash'].includes(type)) {
+        liquidAssets += balance;
+        totalAssets += balance;
+      } else if (['investment', 'brokerage', 'retirement', '401k', 'ira', 'roth'].includes(type)) {
+        investments += balance;
+        totalAssets += balance;
+      } else if (type === 'real_estate' || type === 'property') {
+        realEstate += balance;
+        totalAssets += balance;
+      } else if (balance > 0) {
+        otherAssets += balance;
+        totalAssets += balance;
+      }
     }
   });
 
@@ -673,9 +674,9 @@ export function calculateCreditCardPayoff(
  */
 export function calculateCreditUtilization(
   accounts: Array<{
-    currentBalance: number;
+    balance: number;
     creditLimit?: number;
-    accountType?: string;
+    type?: string;
   }>
 ): {
   utilizationRate: number;
@@ -688,9 +689,9 @@ export function calculateCreditUtilization(
   let totalLimit = 0;
 
   accounts.forEach(account => {
-    const type = (account.accountType ?? '').toLowerCase();
-    if (type === 'credit_card' || type === 'credit') {
-      totalBalance += Math.abs(account.currentBalance ?? 0);
+    const type = (account.type ?? '').toLowerCase();
+    if (type === 'credit') {
+      totalBalance += account.balance ?? 0;
       totalLimit += account.creditLimit ?? 0;
     }
   });
