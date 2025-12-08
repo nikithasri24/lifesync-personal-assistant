@@ -67,6 +67,7 @@ import {
   getTodayTasks,
   getUpcomingTasks,
   getInboxTasks,
+  parseQuickAdd,
 } from '../todos/services/taskHelpers';
 
 // Loading
@@ -82,6 +83,7 @@ const TaskScheduler: React.FC = () => {
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [editingTask, setEditingTask] = useState<ScheduledTask | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [createTaskColumnId, setCreateTaskColumnId] = useState<string | null>(null);
 
   // ============================================================================
   // React Query Hooks - Server State
@@ -318,7 +320,9 @@ const TaskScheduler: React.FC = () => {
     pomodoro.startPomodoro(taskId);
   };
 
-  const handleCreateTask = () => {
+  const handleCreateTask = (columnId?: string) => {
+    // Store which column we're creating from
+    setCreateTaskColumnId(columnId || null);
     modals.openQuickAdd();
   };
 
@@ -499,8 +503,62 @@ const TaskScheduler: React.FC = () => {
             <QuickAddForm
               value={modals.quickAddText}
               onChange={modals.setQuickAddText}
-              onSubmit={() => void editing.quickAddTask()}
-              onCancel={modals.closeQuickAdd}
+              onSubmit={() => {
+                if (!modals.quickAddText.trim()) return;
+
+                // Parse the quick add text
+                const parsed = parseQuickAdd(modals.quickAddText, projects);
+
+                // Determine priority based on column
+                let priority = parsed.priority;
+                let status: TaskData['status'] = 'todo';
+
+                if (createTaskColumnId === 'todo') {
+                  // Tasks in ToDo should have high priority (or a due date)
+                  // If no priority specified in text, default to high
+                  if (!parsed.priority || parsed.priority === 'low' || parsed.priority === 'medium') {
+                    priority = 'high';
+                  }
+                } else if (createTaskColumnId === 'backlog') {
+                  // Tasks in Backlog should have medium/low priority and no due date by default
+                  if (!parsed.priority) {
+                    priority = 'medium';
+                  }
+                } else if (createTaskColumnId) {
+                  // For other columns, set the appropriate status
+                  const column = boardColumns.find(c => c.id === createTaskColumnId);
+                  if (column?.status) {
+                    status = column.status as TaskData['status'];
+                  }
+                }
+
+                // Create the task with appropriate defaults
+                createTaskMutation.mutate(
+                  {
+                    title: parsed.title,
+                    description: '',
+                    priority,
+                    status,
+                    estimated_time: 25,
+                    actual_time: 0,
+                    due_date: parsed.dueDate ? parsed.dueDate.toISOString() : null,
+                    project_id: parsed.projectId ?? null,
+                    tags: parsed.tags,
+                    category: 'work',
+                  },
+                  {
+                    onSuccess: () => {
+                      modals.setQuickAddText('');
+                      modals.closeQuickAdd();
+                      setCreateTaskColumnId(null);
+                    },
+                  }
+                );
+              }}
+              onCancel={() => {
+                modals.closeQuickAdd();
+                setCreateTaskColumnId(null);
+              }}
               isLoading={createTaskMutation.isPending}
             />
           </div>
@@ -543,7 +601,7 @@ const TaskScheduler: React.FC = () => {
       </div>
 
       {/* Main Content - Board View Only */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 min-h-0">
         <BoardView
           tasks={filteredTasks}
           columns={boardColumns}

@@ -176,21 +176,22 @@ export const BoardView: React.FC<BoardViewProps> = ({
   };
 
   return (
-    <div className={`h-full overflow-x-auto ${className}`}>
-      <div className="flex gap-4 h-full p-4 min-w-max">
-        {columns.map((column) => {
-          const columnTasks = tasksByColumn.get(column.id) || [];
-          const stats = getColumnStats(column.id);
-          const atWipLimit = isAtWipLimit(column);
-          const isDragOver = dragOverColumn === column.id;
+    <div className={`h-full flex flex-col ${className}`}>
+      <div className="flex-1 overflow-x-auto overflow-y-hidden">
+        <div className="flex gap-4 h-full p-4 min-w-max">
+          {columns.map((column) => {
+            const columnTasks = tasksByColumn.get(column.id) || [];
+            const stats = getColumnStats(column.id);
+            const atWipLimit = isAtWipLimit(column);
+            const isDragOver = dragOverColumn === column.id;
 
-          return (
-            <div
-              key={column.id}
-              className="flex flex-col w-80 flex-shrink-0 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
-              onDragOver={(e) => handleDragOver(e, column.id)}
-              onDrop={(e) => handleDrop(e, column)}
-            >
+            return (
+              <div
+                key={column.id}
+                className="flex flex-col w-80 flex-shrink-0 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 h-full"
+                onDragOver={(e) => handleDragOver(e, column.id)}
+                onDrop={(e) => handleDrop(e, column)}
+              >
               {/* Column Header */}
               <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
                 <div className="flex items-center justify-between mb-2">
@@ -298,12 +299,13 @@ export const BoardView: React.FC<BoardViewProps> = ({
           );
         })}
 
-        {/* Add Column Button */}
-        <div className="flex items-center justify-center w-64 flex-shrink-0">
-          <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
-            <Plus className="w-4 h-4" />
-            Add Column
-          </button>
+          {/* Add Column Button */}
+          <div className="flex items-center justify-center w-64 flex-shrink-0">
+            <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
+              <Plus className="w-4 h-4" />
+              Add Column
+            </button>
+          </div>
         </div>
       </div>
     </div>
