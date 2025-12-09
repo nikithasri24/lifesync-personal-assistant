@@ -253,6 +253,27 @@ export async function deleteHabitEntriesForDate(habitId: string, date: string): 
 }
 
 /**
+ * Delete all entries for a date range (used for resetting weekly/monthly progress)
+ */
+export async function deleteHabitEntriesForDateRange(
+  habitId: string,
+  startDate: string,
+  endDate: string
+): Promise<void> {
+  const { error } = await supabase
+    .from('habit_entries')
+    .delete()
+    .eq('habit_id', habitId)
+    .gte('date', startDate)
+    .lte('date', endDate);
+
+  if (error) throw error;
+
+  // Update habit streak and progress
+  await updateHabitStreakAndProgress(habitId);
+}
+
+/**
  * Delete all entries for a habit (used for resetting history)
  */
 export async function deleteAllHabitEntries(habitId: string): Promise<void> {

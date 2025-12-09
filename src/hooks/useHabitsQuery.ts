@@ -20,6 +20,7 @@ import {
   updateHabitEntry,
   deleteHabitEntry,
   deleteHabitEntriesForDate,
+  deleteHabitEntriesForDateRange,
   deleteAllHabitEntries,
 } from '@/api/habitsAPI';
 import { logger } from '@/services/logger';
@@ -287,11 +288,29 @@ export function useCreateHabitEntry(): UseMutationResult<
       queryClient.setQueryData<HabitEntryData[]>(
         [...queryKeys.tasks.all, 'habitEntries', undefined] as const,
         (old) => {
-          return old?.map(entry =>
-            entry.id?.startsWith('temp-') && entry.habit_id === newEntry.habit_id
-              ? newEntry
-              : entry
-          );
+          if (!old) return [newEntry];
+
+          // Try to replace the optimistic entry
+          let replaced = false;
+          const updated = old.map(entry => {
+            if (entry.id?.startsWith('temp-') && entry.habit_id === newEntry.habit_id && entry.date === newEntry.date) {
+              replaced = true;
+              return newEntry;
+            }
+            return entry;
+          });
+
+          // If no optimistic entry was found, check if entry already exists before adding
+          if (!replaced) {
+            const entryExists = updated.some(
+              entry => entry.habit_id === newEntry.habit_id && entry.date === newEntry.date && entry.id === newEntry.id
+            );
+            if (!entryExists) {
+              return [newEntry, ...updated];
+            }
+          }
+
+          return updated;
         }
       );
     },
@@ -425,6 +444,38 @@ export function useDeleteHabitEntriesForDate(): UseMutationResult<void, Error, {
     },
     onError: (error: Error, { habitId, date }) => {
       logger.error('Failed to delete habit entries for date', { error: error.message, habitId, date });
+    },
+  });
+}
+
+/**
+ * Delete all entries for a date range (reset weekly/monthly progress)
+ */
+export function useDeleteHabitEntriesForDateRange(): UseMutationResult<void, Error, { habitId: string; startDate: string; endDate: string }> {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ habitId, startDate, endDate }: { habitId: string; startDate: string; endDate: string }) => {
+      logger.debug('Deleting habit entries for date range', { habitId, startDate, endDate });
+      const result = await deleteHabitEntriesForDateRange(habitId, startDate, endDate);
+      return result;
+    },
+    onSuccess: (_data, { habitId, startDate, endDate }) => {
+      logger.info('Habit entries deleted for date range', { habitId, startDate, endDate });
+
+      // Invalidate habit entries queries
+      void queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'habitEntries'] });
+
+      // Invalidate the specific habit
+      void queryClient.invalidateQueries({
+        queryKey: [...queryKeys.tasks.all, 'habits', 'detail', habitId]
+      });
+
+      // Invalidate all habits list
+      void queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'habits'] });
+    },
+    onError: (error: Error, { habitId, startDate, endDate }) => {
+      logger.error('Failed to delete habit entries for date range', { error: error.message, habitId, startDate, endDate });
     },
   });
 }

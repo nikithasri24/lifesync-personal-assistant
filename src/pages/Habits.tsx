@@ -28,6 +28,7 @@ import {
   useDeleteHabit,
   useCreateHabitEntry,
   useDeleteHabitEntriesForDate,
+  useDeleteHabitEntriesForDateRange,
   useDeleteAllHabitEntries,
 } from '../hooks/useHabitsQuery';
 import { logger } from '../services/logger';
@@ -35,6 +36,25 @@ import type { HabitDraft } from '../habits/types';
 import { createDraft, toHabitDraft } from '../habits/services/habitHelpers';
 import { HabitForm } from '../habits/components/HabitForm';
 import { HabitCard } from '../habits/components/HabitCard';
+
+// Helper function to get the start and end of the current week (Monday to Sunday)
+const getWeekBoundaries = (date: Date = new Date()): { start: string; end: string } => {
+  const current = new Date(date);
+  const day = current.getDay();
+  const diff = current.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
+
+  const monday = new Date(current.setDate(diff));
+  monday.setHours(0, 0, 0, 0);
+
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  sunday.setHours(23, 59, 59, 999);
+
+  return {
+    start: monday.toISOString().split('T')[0],
+    end: sunday.toISOString().split('T')[0],
+  };
+};
 
 const Habits: React.FC = () => {
   // React Query hooks - automatic loading and caching
@@ -46,6 +66,7 @@ const Habits: React.FC = () => {
   const deleteHabitMutation = useDeleteHabit();
   const createEntryMutation = useCreateHabitEntry();
   const deleteEntriesForDateMutation = useDeleteHabitEntriesForDate();
+  const deleteEntriesForDateRangeMutation = useDeleteHabitEntriesForDateRange();
   const deleteAllEntriesMutation = useDeleteAllHabitEntries();
 
   // UI State
@@ -54,6 +75,7 @@ const Habits: React.FC = () => {
   const [editDraft, setEditDraft] = useState<HabitDraft | null>(null);
 
   const todayKey = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+  const weekBoundaries = getWeekBoundaries();
   const { toast, showToast, dismissToast } = useToast();
 
   // Combine habits with their entry counts
@@ -62,24 +84,42 @@ const Habits: React.FC = () => {
       // Filter entries for this habit
       const habitEntries = apiEntries.filter(entry => entry.habit_id === habit.id);
 
-      // Count today's completions
-      const todayCompletions = habitEntries.filter(
-        entry => entry.date === todayKey
-      ).length;
-
       const targetCount = habit.target_value ?? 1;
-      const hasReachedTarget = todayCompletions >= targetCount;
+      let completionCount = 0;
+      let hasReachedTarget = false;
+
+      // Handle different frequencies
+      if (habit.frequency === 'weekly') {
+        // For weekly habits, count completions within the current week
+        completionCount = habitEntries.filter(
+          entry => entry.date >= weekBoundaries.start && entry.date <= weekBoundaries.end
+        ).length;
+        hasReachedTarget = completionCount >= targetCount;
+      } else if (habit.frequency === 'monthly') {
+        // For monthly habits, count completions within the current month
+        const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM format
+        completionCount = habitEntries.filter(
+          entry => entry.date.startsWith(currentMonth)
+        ).length;
+        hasReachedTarget = completionCount >= targetCount;
+      } else {
+        // For daily habits (default), count today's completions
+        completionCount = habitEntries.filter(
+          entry => entry.date === todayKey
+        ).length;
+        hasReachedTarget = completionCount >= targetCount;
+      }
 
       return {
         habit,
-        todayCompletions,
+        todayCompletions: completionCount,
         targetCount,
         hasReachedTarget,
         currentStreak: habit.streak_count ?? 0,
         totalCompletions: habit.current_progress ?? 0,
       };
     });
-  }, [apiHabits, apiEntries, todayKey]);
+  }, [apiHabits, apiEntries, todayKey, weekBoundaries]);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
@@ -113,18 +153,57 @@ const Habits: React.FC = () => {
   };
 
   const handleResetToday = (habitId: string): void => {
-    deleteEntriesForDateMutation.mutate(
-      { habitId, date: todayKey },
-      {
-        onSuccess: () => {
-          showToast('Cleared today\'s completion', 'success');
-        },
-        onError: (error) => {
-          logger.error('[Habits] Failed to reset today', { error });
-          showToast('Unable to reset today. Please try again.', 'error');
-        },
-      }
-    );
+    const habit = apiHabits.find(h => h.id === habitId);
+    if (!habit) return;
+
+    // For weekly/monthly habits, delete all entries within the period
+    if (habit.frequency === 'weekly') {
+      deleteEntriesForDateRangeMutation.mutate(
+        { habitId, startDate: weekBoundaries.start, endDate: weekBoundaries.end },
+        {
+          onSuccess: () => {
+            showToast('Cleared this week\'s completion', 'success');
+          },
+          onError: (error) => {
+            logger.error('[Habits] Failed to reset this week', error);
+            showToast('Unable to reset this week. Please try again.', 'error');
+          },
+        }
+      );
+    } else if (habit.frequency === 'monthly') {
+      const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+      const startOfMonth = `${currentMonth}-01`;
+      const endOfMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0)
+        .toISOString()
+        .split('T')[0];
+
+      deleteEntriesForDateRangeMutation.mutate(
+        { habitId, startDate: startOfMonth, endDate: endOfMonth },
+        {
+          onSuccess: () => {
+            showToast('Cleared this month\'s completion', 'success');
+          },
+          onError: (error) => {
+            logger.error('[Habits] Failed to reset this month', error);
+            showToast('Unable to reset this month. Please try again.', 'error');
+          },
+        }
+      );
+    } else {
+      // For daily habits, delete only today's entries
+      deleteEntriesForDateMutation.mutate(
+        { habitId, date: todayKey },
+        {
+          onSuccess: () => {
+            showToast('Cleared today\'s completion', 'success');
+          },
+          onError: (error) => {
+            logger.error('[Habits] Failed to reset today', error);
+            showToast('Unable to reset today. Please try again.', 'error');
+          },
+        }
+      );
+    }
   };
 
   const handleResetHistory = (habitId: string): void => {
@@ -279,6 +358,16 @@ const Habits: React.FC = () => {
         ) : (
           habitsWithStats
             .filter(({ habit }) => habit.id !== undefined)
+            .filter(({ habit, hasReachedTarget }) => {
+              // Hide weekly/monthly habits that have been completed for the period
+              if (habit.frequency === 'weekly' && hasReachedTarget) {
+                return false;
+              }
+              if (habit.frequency === 'monthly' && hasReachedTarget) {
+                return false;
+              }
+              return true;
+            })
             .map(({ habit, todayCompletions, targetCount, hasReachedTarget, currentStreak, totalCompletions }) => {
               // Filter entries for this specific habit
               const habitSpecificEntries = apiEntries.filter(entry => entry.habit_id === habit.id);
@@ -298,7 +387,7 @@ const Habits: React.FC = () => {
                   isCompletingHabit={createEntryMutation.isPending}
                   isUpdating={updateHabitMutation.isPending}
                   hasUpdateError={updateHabitMutation.isError}
-                  isResettingToday={deleteEntriesForDateMutation.isPending}
+                  isResettingToday={deleteEntriesForDateMutation.isPending || deleteEntriesForDateRangeMutation.isPending}
                   isResettingHistory={deleteAllEntriesMutation.isPending}
                   isDeleting={deleteHabitMutation.isPending}
                   onComplete={() => { handleCompleteHabit(habit.id as string); }}
