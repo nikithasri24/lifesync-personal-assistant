@@ -58,7 +58,10 @@
       "Bash(npx supabase db:*)",
       "Bash(npx supabase migration repair:*)",
       "Bash(npx supabase status:*)",
-      "Bash(npx supabase:*)"
+      "Bash(npx supabase:*)",
+      "Bash(lsof:*)",
+      "Bash(git restore:*)",
+      "Bash(psql:*)"
     ],
     "deny": [],
     "ask": []

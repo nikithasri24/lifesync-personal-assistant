@@ -74,6 +74,15 @@ export const queryKeys = {
     detail: (id: string) => [...queryKeys.notes.details(), id] as const,
   },
 
+  // List Items (for list-type notes)
+  listItems: {
+    all: ['listItems'] as const,
+    lists: (noteId: string) => [...queryKeys.listItems.all, 'list', noteId] as const,
+    list: (noteId: string) => [...queryKeys.listItems.lists(noteId)] as const,
+    details: () => [...queryKeys.listItems.all, 'detail'] as const,
+    detail: (id: string) => [...queryKeys.listItems.details(), id] as const,
+  },
+
   // Journal
   journal: {
     all: ['journal'] as const,

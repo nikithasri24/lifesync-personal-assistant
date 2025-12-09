@@ -1,12 +1,13 @@
 /**
  * Notes API - Supabase backend for notes persistence
  * Provides CRUD operations and search/filter capabilities
+ * Extended to support list-type notes with list items
  */
 
 import { supabase } from '../lib/supabase';
-import type { Note } from '../types';
+import type { Note, ListItem, NoteType } from '../types';
 
-// Database row type
+// Database row types
 interface NoteRow {
   id: string;
   user_id: string;
@@ -14,6 +15,23 @@ interface NoteRow {
   content: string;
   tags: string[];
   category: string | null;
+  note_type: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface ListItemRow {
+  id: string;
+  user_id: string;
+  note_id: string;
+  title: string;
+  notes: string | null;
+  completed: boolean;
+  completed_at: string | null;
+  tags: string[];
+  due_date: string | null;
+  url: string | null;
+  sort_order: number;
   created_at: string;
   updated_at: string;
 }
@@ -24,6 +42,7 @@ export interface CreateNoteInput {
   content: string;
   tags?: string[];
   category?: string;
+  noteType?: NoteType;
 }
 
 export interface UpdateNoteInput {
@@ -31,12 +50,33 @@ export interface UpdateNoteInput {
   content?: string;
   tags?: string[];
   category?: string;
+  noteType?: NoteType;
 }
 
 export interface NoteFilters {
   searchQuery?: string;
   tags?: string[];
   category?: string;
+  noteType?: NoteType;
+}
+
+// List Item input types
+export interface CreateListItemInput {
+  title: string;
+  notes?: string;
+  tags?: string[];
+  dueDate?: Date;
+  url?: string;
+}
+
+export interface UpdateListItemInput {
+  title?: string;
+  notes?: string;
+  completed?: boolean;
+  tags?: string[];
+  dueDate?: Date | null;
+  url?: string;
+  sortOrder?: number;
 }
 
 /**
@@ -49,6 +89,27 @@ function mapDbToNote(row: NoteRow): Note {
     content: row.content,
     tags: row.tags ?? [],
     category: row.category ?? undefined,
+    noteType: (row.note_type as NoteType) ?? 'note',
+    createdAt: new Date(row.created_at),
+    updatedAt: new Date(row.updated_at),
+  };
+}
+
+/**
+ * Map database row to ListItem type
+ */
+function mapDbToListItem(row: ListItemRow): ListItem {
+  return {
+    id: row.id,
+    noteId: row.note_id,
+    title: row.title,
+    notes: row.notes ?? undefined,
+    completed: row.completed,
+    completedAt: row.completed_at ? new Date(row.completed_at) : undefined,
+    tags: row.tags ?? [],
+    dueDate: row.due_date ? new Date(row.due_date) : undefined,
+    url: row.url ?? undefined,
+    sortOrder: row.sort_order,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
   };
@@ -70,6 +131,11 @@ export async function getNotes(filters?: NoteFilters): Promise<Note[]> {
   // Apply category filter
   if (filters?.category) {
     query = query.eq('category', filters.category);
+  }
+
+  // Apply note type filter
+  if (filters?.noteType) {
+    query = query.eq('note_type', filters.noteType);
   }
 
   // Apply tag filter (contains any of the specified tags)
@@ -132,6 +198,7 @@ export async function createNote(input: CreateNoteInput): Promise<Note> {
       content: input.content,
       tags: input.tags ?? [],
       category: input.category ?? null,
+      note_type: input.noteType ?? 'note',
     })
     .select()
     .single();
@@ -156,6 +223,7 @@ export async function updateNote(id: string, input: UpdateNoteInput): Promise<No
   if (input.content !== undefined) updateData.content = input.content;
   if (input.tags !== undefined) updateData.tags = input.tags;
   if (input.category !== undefined) updateData.category = input.category || null;
+  if (input.noteType !== undefined) updateData.note_type = input.noteType;
 
   const result = await supabase
     .from('notes')
@@ -228,4 +296,151 @@ export async function getNoteCategories(): Promise<string[]> {
     .filter((cat): cat is string => cat !== null);
 
   return Array.from(new Set(categories)).sort();
+}
+
+// ============================================================================
+// LIST ITEMS API
+// ============================================================================
+
+/**
+ * Get all list items for a specific note
+ */
+export async function getListItems(noteId: string): Promise<ListItem[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { data, error } = await supabase
+    .from('list_items')
+    .select('*')
+    .eq('note_id', noteId)
+    .eq('user_id', user.id)
+    .order('sort_order', { ascending: true })
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+
+  return (data || []).map(mapDbToListItem);
+}
+
+/**
+ * Get a single list item by ID
+ */
+export async function getListItem(id: string): Promise<ListItem> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const result = await supabase
+    .from('list_items')
+    .select('*')
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .single();
+
+  if (result.error) throw result.error;
+  if (!result.data) throw new Error('List item not found');
+
+  return mapDbToListItem(result.data as ListItemRow);
+}
+
+/**
+ * Create a new list item
+ */
+export async function createListItem(noteId: string, input: CreateListItemInput): Promise<ListItem> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const result = await supabase
+    .from('list_items')
+    .insert({
+      user_id: user.id,
+      note_id: noteId,
+      title: input.title,
+      notes: input.notes ?? null,
+      tags: input.tags ?? [],
+      due_date: input.dueDate?.toISOString().split('T')[0] ?? null,
+      url: input.url ?? null,
+    })
+    .select()
+    .single();
+
+  if (result.error) throw result.error;
+  if (!result.data) throw new Error('Failed to create list item');
+
+  return mapDbToListItem(result.data as ListItemRow);
+}
+
+/**
+ * Update an existing list item
+ */
+export async function updateListItem(id: string, input: UpdateListItemInput): Promise<ListItem> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const updateData: Partial<{
+    title: string;
+    notes: string | null;
+    completed: boolean;
+    tags: string[];
+    due_date: string | null;
+    url: string | null;
+    sort_order: number;
+  }> = {};
+
+  if (input.title !== undefined) updateData.title = input.title;
+  if (input.notes !== undefined) updateData.notes = input.notes || null;
+  if (input.completed !== undefined) updateData.completed = input.completed;
+  if (input.tags !== undefined) updateData.tags = input.tags;
+  if (input.dueDate !== undefined) {
+    updateData.due_date = input.dueDate ? input.dueDate.toISOString().split('T')[0] : null;
+  }
+  if (input.url !== undefined) updateData.url = input.url || null;
+  if (input.sortOrder !== undefined) updateData.sort_order = input.sortOrder;
+
+  const result = await supabase
+    .from('list_items')
+    .update(updateData)
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .select()
+    .single();
+
+  if (result.error) throw result.error;
+  if (!result.data) throw new Error('List item not found or update failed');
+
+  return mapDbToListItem(result.data as ListItemRow);
+}
+
+/**
+ * Delete a list item
+ */
+export async function deleteListItem(id: string): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { error } = await supabase
+    .from('list_items')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', user.id);
+
+  if (error) throw error;
+}
+
+/**
+ * Get all unique tags from user's list items
+ */
+export async function getListItemTags(): Promise<string[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { data, error } = await supabase
+    .from('list_items')
+    .select('tags')
+    .eq('user_id', user.id);
+
+  if (error) throw error;
+
+  const typedData = (data ?? []) as Array<{ tags: string[] | null }>;
+  const allTags = typedData.flatMap((row) => row.tags ?? []);
+  return Array.from(new Set(allTags)).sort();
 }

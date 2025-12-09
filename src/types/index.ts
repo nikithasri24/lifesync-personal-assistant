@@ -121,12 +121,30 @@ export interface HabitCategory {
   icon?: string;
 }
 
+export type NoteType = 'note' | 'list';
+
 export interface Note {
   id: string;
   title: string;
   content: string;
   tags: string[];
   category?: string;
+  noteType: NoteType;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ListItem {
+  id: string;
+  noteId: string;
+  title: string;
+  notes?: string;
+  completed: boolean;
+  completedAt?: Date;
+  tags: string[];
+  dueDate?: Date;
+  url?: string;
+  sortOrder: number;
   createdAt: Date;
   updatedAt: Date;
 }
