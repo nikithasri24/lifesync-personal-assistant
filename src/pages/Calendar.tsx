@@ -772,21 +772,23 @@ const Calendar: React.FC = () => {
               }}
               style={{
                 position: 'fixed',
-                top: '100px',
+                top: '50%',
                 left: '50%',
-                transform: 'translateX(-50%)',
-                width: '300px',
-                height: '200px',
+                transform: 'translate(-50%, -50%)',
+                width: '500px',
+                height: '400px',
                 backgroundColor: 'red',
-                border: '5px solid yellow',
-                zIndex: 9999,
+                border: '10px solid yellow',
+                zIndex: 999999,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 color: 'white',
-                fontSize: '24px',
+                fontSize: '48px',
                 fontWeight: 'bold',
-                pointerEvents: 'auto'
+                pointerEvents: 'auto',
+                boxShadow: '0 0 50px rgba(255, 0, 0, 0.8)',
+                cursor: 'copy'
               }}
             >
               DROP HERE TO TEST
