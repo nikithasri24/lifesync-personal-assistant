@@ -923,7 +923,7 @@ const Calendar: React.FC = () => {
                       >
                         {/* Show events assigned to this time slot */}
                         {eventsForThisSlot.length > 0 && (
-                          <div className="space-y-0.5">
+                          <div className="space-y-0.5" style={{ pointerEvents: 'none' }}>
                             {eventsForThisSlot.map((event, idx) => {
                               if (event.type === 'task') {
                                 const task = event.data as Task;
@@ -945,6 +945,7 @@ const Calendar: React.FC = () => {
                                       e.stopPropagation(); // Prevent drop on task itself
                                     }}
                                     onClick={() => handleTaskClick(task)}
+                                    style={{ pointerEvents: 'auto' }}
                                     className={`
                                       text-[10px] px-1.5 py-0.5 rounded border-l-2 truncate cursor-pointer hover:opacity-80 transition-opacity
                                       ${task.status === 'done'
@@ -967,6 +968,7 @@ const Calendar: React.FC = () => {
                                 return (
                                   <div
                                     key={`habit-${habit.id}`}
+                                    style={{ pointerEvents: 'auto' }}
                                     className="text-[10px] px-1.5 py-0.5 rounded border-l-2 border-green-600 bg-green-500 dark:bg-green-600 text-white truncate"
                                     title={`${slot.label} - ${habit.name}`}
                                   >
@@ -1046,7 +1048,7 @@ const Calendar: React.FC = () => {
                     </div>
 
                     {/* Events list */}
-                    <div className="space-y-0.5">
+                    <div className="space-y-0.5" style={{ pointerEvents: 'none' }}>
                       {/* Show first 3-4 events depending on space */}
                       {allEvents.slice(0, 4).map((event, idx) => {
                         if (event.type === 'allday') {
@@ -1066,6 +1068,7 @@ const Calendar: React.FC = () => {
                               onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
                               onDrop={(e) => { e.preventDefault(); e.stopPropagation(); }}
                               onClick={() => handleTaskClick(task)}
+                              style={{ pointerEvents: 'auto' }}
                               className={`
                                 flex items-center gap-0.5 text-xs px-1.5 py-0.5 rounded truncate cursor-pointer hover:opacity-80 transition-opacity
                                 ${task.status === 'done'
@@ -1101,6 +1104,7 @@ const Calendar: React.FC = () => {
                               onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
                               onDrop={(e) => { e.preventDefault(); e.stopPropagation(); }}
                               onClick={() => handleTaskClick(task)}
+                              style={{ pointerEvents: 'auto' }}
                               className={`
                                 flex items-center gap-0.5 text-xs px-1.5 py-0.5 rounded truncate cursor-pointer hover:opacity-80 transition-opacity
                                 ${task.status === 'done'
