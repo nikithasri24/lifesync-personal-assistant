@@ -18,6 +18,7 @@ import {
   useDeleteJournalEntry,
 } from '../hooks/useJournalQuery';
 import { JournalSearchBar } from './components/JournalSearchBar';
+import { RichTextEditor } from '../components/RichTextEditor';
 
 type JournalDraft = {
   title: string;
@@ -236,8 +237,9 @@ const GridJournalEnhanced: React.FC = () => {
           <NotebookPen className="h-5 w-5 text-indigo-500" />
           {editingId ? 'Edit entry' : 'New entry'}
         </h2>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <label className="flex flex-col gap-1 text-sm sm:col-span-2">
+        <div className="mt-4 flex flex-col gap-4">
+          {/* Title - Full Width */}
+          <label className="flex flex-col gap-1 text-sm">
             <span className="font-medium text-slate-700 dark:text-slate-300">Title</span>
             <input
               value={draft.title}
@@ -247,40 +249,44 @@ const GridJournalEnhanced: React.FC = () => {
               placeholder="A quick headline for the day"
             />
           </label>
-          <label className="flex flex-col gap-1 text-sm sm:col-span-2">
+
+          {/* Mood and Tags - Side by Side */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="font-medium text-slate-700 dark:text-slate-300">Mood</span>
+              <select
+                value={draft.mood}
+                onChange={(event) => setDraft((prev) => ({ ...prev, mood: event.target.value as JournalMood }))}
+                disabled={isSubmitting}
+                className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none dark:text-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {MOOD_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="font-medium text-slate-700 dark:text-slate-300">Tags</span>
+              <input
+                value={draft.tags}
+                onChange={(event) => setDraft((prev) => ({ ...prev, tags: event.target.value }))}
+                disabled={isSubmitting}
+                className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none dark:text-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                placeholder="Creativity, focus, gratitude"
+              />
+            </label>
+          </div>
+
+          {/* What happened - Full Width */}
+          <label className="flex flex-col gap-1 text-sm">
             <span className="font-medium text-slate-700 dark:text-slate-300">What happened?</span>
-            <textarea
-              required
-              value={draft.content}
-              onChange={(event) => setDraft((prev) => ({ ...prev, content: event.target.value }))}
-              disabled={isSubmitting}
-              className="h-32 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none dark:text-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            <RichTextEditor
+              content={draft.content}
+              onChange={(content) => setDraft((prev) => ({ ...prev, content }))}
               placeholder="Capture highlights, lessons, or anything noteworthy"
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium text-slate-700 dark:text-slate-300">Mood</span>
-            <select
-              value={draft.mood}
-              onChange={(event) => setDraft((prev) => ({ ...prev, mood: event.target.value as JournalMood }))}
               disabled={isSubmitting}
-              className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none dark:text-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {MOOD_OPTIONS.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium text-slate-700 dark:text-slate-300">Tags</span>
-            <input
-              value={draft.tags}
-              onChange={(event) => setDraft((prev) => ({ ...prev, tags: event.target.value }))}
-              disabled={isSubmitting}
-              className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none dark:text-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
-              placeholder="Creativity, focus, gratitude"
             />
           </label>
         </div>
@@ -367,7 +373,10 @@ const GridJournalEnhanced: React.FC = () => {
                   </button>
                 </div>
               </div>
-              <p className="mt-3 whitespace-pre-line text-sm text-slate-700 dark:text-slate-300">{entry.content}</p>
+              <div
+                className="mt-3 prose prose-sm dark:prose-invert max-w-none text-slate-700 dark:text-slate-300"
+                dangerouslySetInnerHTML={{ __html: entry.content }}
+              />
 
               {/* Delete Confirmation Dialog */}
               {deleteConfirm === entry.id && (
