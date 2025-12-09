@@ -1339,7 +1339,6 @@ const Calendar: React.FC = () => {
                           onDragEnd={handleDragEnd}
                           onDragOver={(e) => e.stopPropagation()}
                           onDrop={(e) => e.stopPropagation()}
-                          onClick={() => handleTaskClick(task)}
                           className={`
                             p-2 rounded border cursor-move transition-all hover:shadow-sm w-full
                             ${draggedTask?.id === task.id
