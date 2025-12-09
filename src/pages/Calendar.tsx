@@ -60,12 +60,13 @@ const Calendar: React.FC = () => {
   const [sidebarWidth, setSidebarWidth] = useState(112);
   const [isResizing, setIsResizing] = useState(false);
   const [expandedSections, setExpandedSections] = useState({
+    scheduled: true,
     inProgress: true,
     todo: true,
     backlog: true,
   });
 
-  const toggleSection = (section: 'inProgress' | 'todo' | 'backlog') => {
+  const toggleSection = (section: 'scheduled' | 'inProgress' | 'todo' | 'backlog') => {
     setExpandedSections(prev => ({
       ...prev,
       [section]: !prev[section]
@@ -91,7 +92,16 @@ const Calendar: React.FC = () => {
     return tasks.filter(task => !task.due_date && task.status !== 'done' && !task.deleted);
   }, [tasks]);
 
+  // Get scheduled tasks (tasks WITH due_date that are not done)
+  const scheduledTasks = useMemo(() => {
+    return tasks.filter(task => task.due_date && task.status !== 'done' && !task.deleted);
+  }, [tasks]);
+
   const categorizedTasks = useMemo(() => {
+    // Scheduled: tasks already on calendar (WITH due_date)
+    const scheduled = scheduledTasks;
+
+    // Unscheduled categories
     const inProgress = unscheduledTasks.filter(t => t.status === 'in_progress');
 
     // Backlog: todo items with low/medium priority
@@ -106,15 +116,15 @@ const Calendar: React.FC = () => {
       (t.status === 'waiting' || t.status === 'blocked')
     );
 
-    return { todo, inProgress, backlog };
-  }, [unscheduledTasks]);
+    return { scheduled, todo, inProgress, backlog };
+  }, [scheduledTasks, unscheduledTasks]);
 
-  // Time slots (7 AM to 9 PM)
+  // Time slots (All 24 hours: Midnight to 11 PM)
   const timeSlots: TimeSlot[] = useMemo(() => {
     const slots: TimeSlot[] = [];
-    for (let hour = 7; hour <= 21; hour++) {
+    for (let hour = 0; hour <= 23; hour++) {
       const period = hour >= 12 ? 'PM' : 'AM';
-      const displayHour = hour > 12 ? hour - 12 : hour;
+      const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
       slots.push({
         hour,
         label: `${displayHour} ${period}`,
@@ -321,6 +331,55 @@ const Calendar: React.FC = () => {
     setDraggedTask(null);
   };
 
+  // Drop task into a specific category (scheduled, todo, inProgress, backlog)
+  const handleDropInCategory = (
+    e: React.DragEvent,
+    targetCategory: 'scheduled' | 'todo' | 'inProgress' | 'backlog'
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!draggedTask) return;
+
+    const updates: Partial<Task> = {};
+
+    switch (targetCategory) {
+      case 'scheduled':
+        // Can't move to scheduled without a date - keep existing behavior
+        // User should drag to calendar instead
+        break;
+
+      case 'todo':
+        // Move to To Do = high priority + unscheduled
+        updates.status = 'todo';
+        updates.priority = 'high';
+        updates.due_date = null;
+        break;
+
+      case 'inProgress':
+        // Move to In Progress = in_progress status + unscheduled
+        updates.status = 'in_progress';
+        updates.due_date = null;
+        break;
+
+      case 'backlog':
+        // Move to Backlog = low priority + unscheduled
+        updates.status = 'todo';
+        updates.priority = 'low';
+        updates.due_date = null;
+        break;
+    }
+
+    if (Object.keys(updates).length > 0) {
+      updateTaskMutation.mutate({
+        id: draggedTask.id,
+        updates
+      });
+    }
+
+    setDraggedTask(null);
+  };
+
   // Click handler to edit a task
   const handleTaskClick = (task: Task) => {
     // Convert Task to ScheduledTask for the modal
@@ -404,6 +463,22 @@ const Calendar: React.FC = () => {
   const handleResizeStart = () => {
     setIsResizing(true);
   };
+
+  // Auto-scroll to current time on mount and view change
+  React.useEffect(() => {
+    const currentHour = new Date().getHours();
+    const timeSlotElement = document.getElementById(`time-slot-${currentHour}`);
+
+    if (timeSlotElement) {
+      // Delay to ensure DOM is ready
+      setTimeout(() => {
+        timeSlotElement.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+      }, 100);
+    }
+  }, [view, currentDate]); // Re-scroll when view or date changes
 
   // Loading state
   if (isLoading) {
@@ -663,7 +738,7 @@ const Calendar: React.FC = () => {
             {/* Time slots and events */}
             <div className="relative">
               {timeSlots.map((slot, slotIndex) => (
-                <div key={slot.hour} className="flex">
+                <div key={slot.hour} id={`time-slot-${slot.hour}`} className="flex">
                   {/* Time label */}
                   <div className="w-20 border-r border-slate-200 dark:border-slate-700 flex-shrink-0 px-2 py-2">
                     <span className="text-xs text-slate-500 dark:text-slate-400">
@@ -1003,7 +1078,7 @@ const Calendar: React.FC = () => {
                 const eventsForThisSlot = allEvents.filter(e => e.slot === slot.hour);
 
                 return (
-                  <div key={slot.hour} className="flex">
+                  <div key={slot.hour} id={`time-slot-${slot.hour}`} className="flex">
                     {/* Time label */}
                     <div className="w-20 border-r border-slate-200 dark:border-slate-700 flex-shrink-0 px-2 py-2">
                       <span className="text-xs text-slate-500 dark:text-slate-400">
@@ -1172,9 +1247,86 @@ const Calendar: React.FC = () => {
                 onDragOver={handleDragOver}
                 onDrop={handleDropInUnscheduled}
               >
+                {/* Scheduled Section */}
+                {categorizedTasks.scheduled.length > 0 && (
+                  <div
+                    className="mb-3"
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDropInCategory(e, 'scheduled')}
+                  >
+                    <button
+                      onClick={() => toggleSection('scheduled')}
+                      className="w-full flex items-center justify-between px-1 py-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors"
+                    >
+                      <h4 className="text-[10px] font-semibold text-slate-600 dark:text-slate-400">
+                        📅 SCHEDULED ({categorizedTasks.scheduled.length})
+                      </h4>
+                      {expandedSections.scheduled ? (
+                        <ChevronDown className="w-3 h-3 text-slate-400" />
+                      ) : (
+                        <ChevronUp className="w-3 h-3 text-slate-400" />
+                      )}
+                    </button>
+                    {expandedSections.scheduled && (
+                    <div
+                      className="space-y-1.5 w-full mt-1.5"
+                      style={{ minHeight: draggedTask ? '40px' : 'auto' }}
+                    >
+                      {categorizedTasks.scheduled.map((task) => (
+                        <div
+                          key={task.id}
+                          draggable
+                          onDragStart={() => handleDragStart(task)}
+                          onDragEnd={handleDragEnd}
+                          onClick={() => handleTaskClick(task)}
+                          className={`
+                            p-2 rounded border cursor-move transition-all hover:shadow-sm w-full
+                            ${draggedTask?.id === task.id
+                              ? 'opacity-50 border-green-400 bg-green-50 dark:bg-green-900/20'
+                              : 'border-green-200 dark:border-green-600 bg-green-50 dark:bg-green-900/10 hover:border-green-300 dark:hover:border-green-500'
+                            }
+                          `}
+                          style={{ maxWidth: '100%', overflow: 'hidden' }}
+                        >
+                          <div className="w-full" style={{ maxWidth: '100%' }}>
+                            <div className="flex items-start gap-1" style={{ width: '100%', maxWidth: '100%' }}>
+                              <GripVertical className="w-3 h-3 text-green-400 dark:text-green-500 flex-shrink-0 mt-0.5" />
+                              <div style={{ flex: '1', minWidth: '0', maxWidth: '100%' }}>
+                                <p
+                                  className="text-xs font-medium text-green-900 dark:text-green-100 leading-tight"
+                                  style={{
+                                    wordBreak: 'break-word',
+                                    overflowWrap: 'break-word',
+                                    hyphens: 'auto',
+                                    whiteSpace: 'normal',
+                                    overflow: 'hidden'
+                                  }}
+                                >
+                                  {task.title}
+                                </p>
+                                {/* Show due date for scheduled tasks */}
+                                {task.due_date && (
+                                  <p className="text-[10px] text-green-700 dark:text-green-300 mt-0.5">
+                                    {format(new Date(task.due_date), 'MMM d, h:mm a')}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    )}
+                  </div>
+                )}
+
                 {/* In Progress Section */}
                 {categorizedTasks.inProgress.length > 0 && (
-                  <div className="mb-3">
+                  <div
+                    className="mb-3"
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDropInCategory(e, 'inProgress')}
+                  >
                     <button
                       onClick={() => toggleSection('inProgress')}
                       className="w-full flex items-center justify-between px-1 py-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors"
@@ -1189,7 +1341,10 @@ const Calendar: React.FC = () => {
                       )}
                     </button>
                     {expandedSections.inProgress && (
-                    <div className="space-y-1.5 w-full mt-1.5">
+                    <div
+                      className="space-y-1.5 w-full mt-1.5"
+                      style={{ minHeight: draggedTask ? '40px' : 'auto' }}
+                    >
                       {categorizedTasks.inProgress.map((task) => (
                         <div
                           key={task.id}
@@ -1233,7 +1388,11 @@ const Calendar: React.FC = () => {
 
                 {/* To Do Section */}
                 {categorizedTasks.todo.length > 0 && (
-                  <div className="mb-3">
+                  <div
+                    className="mb-3"
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDropInCategory(e, 'todo')}
+                  >
                     <button
                       onClick={() => toggleSection('todo')}
                       className="w-full flex items-center justify-between px-1 py-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors"
@@ -1248,7 +1407,10 @@ const Calendar: React.FC = () => {
                       )}
                     </button>
                     {expandedSections.todo && (
-                    <div className="space-y-1.5 w-full mt-1.5">
+                    <div
+                      className="space-y-1.5 w-full mt-1.5"
+                      style={{ minHeight: draggedTask ? '40px' : 'auto' }}
+                    >
                       {categorizedTasks.todo.map((task) => (
                         <div
                           key={task.id}
@@ -1292,7 +1454,11 @@ const Calendar: React.FC = () => {
 
                 {/* Backlog Section */}
                 {categorizedTasks.backlog.length > 0 && (
-                  <div className="mb-3">
+                  <div
+                    className="mb-3"
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDropInCategory(e, 'backlog')}
+                  >
                     <button
                       onClick={() => toggleSection('backlog')}
                       className="w-full flex items-center justify-between px-1 py-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors"
@@ -1307,7 +1473,10 @@ const Calendar: React.FC = () => {
                       )}
                     </button>
                     {expandedSections.backlog && (
-                    <div className="space-y-1.5 w-full mt-1.5">
+                    <div
+                      className="space-y-1.5 w-full mt-1.5"
+                      style={{ minHeight: draggedTask ? '40px' : 'auto' }}
+                    >
                       {categorizedTasks.backlog.map((task) => (
                         <div
                           key={task.id}
