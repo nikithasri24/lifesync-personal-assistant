@@ -389,9 +389,10 @@ const Calendar: React.FC = () => {
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault(); // Allow drop
-    // Minimal logging to avoid spam
-    if (Math.random() < 0.01) { // Log 1% of events
-      console.log('[Calendar] handleDragOver: Drop zone active');
+    e.stopPropagation(); // Prevent bubbling
+    // More frequent logging to debug
+    if (Math.random() < 0.1) { // Log 10% of events
+      console.log('[Calendar] handleDragOver: Drop zone active', e.currentTarget.className);
     }
   };
 
@@ -865,7 +866,7 @@ const Calendar: React.FC = () => {
                         className={`
                           flex-1 min-w-[140px] max-w-[140px] min-h-[60px] border-r border-b border-slate-200 dark:border-slate-700 last:border-r-0 p-1 overflow-hidden
                           ${day.isToday ? 'bg-blue-50/30 dark:bg-blue-900/10' : ''}
-                          ${draggedTask ? 'hover:bg-blue-100 dark:hover:bg-blue-900/20 transition-colors' : ''}
+                          ${draggedTask ? 'hover:bg-green-200 dark:hover:bg-green-900/30 hover:border-2 hover:border-dashed hover:border-green-500 transition-colors' : ''}
                         `}
                       >
                         {/* Show events assigned to this time slot */}
@@ -974,7 +975,7 @@ const Calendar: React.FC = () => {
                       ${!dayData.isCurrentMonth ? 'bg-slate-50/50 dark:bg-slate-900/50' : 'bg-white dark:bg-slate-900'}
                       hover:bg-slate-50 dark:hover:bg-slate-800/50
                       transition-colors cursor-pointer
-                      ${draggedTask ? 'hover:ring-2 hover:ring-blue-400 dark:hover:ring-blue-600' : ''}
+                      ${draggedTask ? 'hover:ring-4 hover:ring-green-400 dark:hover:ring-green-600 hover:bg-green-50 dark:hover:bg-green-900/20' : ''}
                     `}
                   >
                     {/* Date number */}
@@ -1336,7 +1337,8 @@ const Calendar: React.FC = () => {
               width: showUnscheduledPanel ? `${sidebarWidth}px` : '48px',
               maxWidth: showUnscheduledPanel ? `${sidebarWidth}px` : '48px',
               minWidth: showUnscheduledPanel ? `${sidebarWidth}px` : '48px',
-              overflow: 'hidden',
+              overflowY: 'hidden',
+              overflowX: 'visible', // Allow drag ghost to escape sidebar
               transition: showUnscheduledPanel ? 'none' : 'all 300ms'
             }}
           >
@@ -1375,7 +1377,8 @@ const Calendar: React.FC = () => {
 
             {showUnscheduledPanel && (
               <div
-                className="p-2 overflow-y-auto h-full w-full"
+                className="p-2 h-full w-full"
+                style={{ overflowY: 'auto', overflowX: 'visible' }}
                 onDragOver={handleDragOver}
                 onDrop={handleDropInUnscheduled}
               >
