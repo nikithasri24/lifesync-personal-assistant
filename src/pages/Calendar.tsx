@@ -744,6 +744,41 @@ const Calendar: React.FC = () => {
           </div>
         </div>
 
+        {/* DEBUG DROP ZONE */}
+        {draggedTask && (
+          <div
+            onDragOver={(e) => {
+              e.preventDefault();
+              console.log('[DEBUG] DRAGOVER ON DEBUG ZONE');
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              console.log('[DEBUG] DROP ON DEBUG ZONE');
+              handleDrop(new Date());
+            }}
+            style={{
+              position: 'fixed',
+              top: '100px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: '300px',
+              height: '200px',
+              backgroundColor: 'red',
+              border: '5px solid yellow',
+              zIndex: 9999,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+              fontSize: '24px',
+              fontWeight: 'bold',
+              pointerEvents: 'auto'
+            }}
+          >
+            DROP HERE TO TEST
+          </div>
+        )}
+
         {/* Week View */}
         {view === 'week' && (
         <div className="flex-1 overflow-auto">
