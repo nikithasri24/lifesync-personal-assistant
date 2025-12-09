@@ -807,8 +807,8 @@ const Calendar: React.FC = () => {
                                 handleDragStart(task, e);
                               }}
                               onDragEnd={(e) => handleDragEnd(e)}
-                              onDragOver={(e) => e.stopPropagation()}
-                              onDrop={(e) => e.stopPropagation()}
+                              onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                              onDrop={(e) => { e.preventDefault(); e.stopPropagation(); }}
                               onClick={() => handleTaskClick(task)}
                               className={`
                                 text-[10px] px-1.5 py-0.5 truncate flex items-center gap-0.5 cursor-pointer hover:opacity-80 transition-opacity
@@ -884,9 +884,11 @@ const Calendar: React.FC = () => {
                                     }}
                                     onDragEnd={(e) => handleDragEnd(e)}
                                     onDragOver={(e) => {
+                                      e.preventDefault(); // MUST allow drop
                                       e.stopPropagation(); // Prevent drop on task itself
                                     }}
                                     onDrop={(e) => {
+                                      e.preventDefault();
                                       e.stopPropagation(); // Prevent drop on task itself
                                     }}
                                     onClick={() => handleTaskClick(task)}
@@ -1008,8 +1010,8 @@ const Calendar: React.FC = () => {
                                 handleDragStart(task, e);
                               }}
                               onDragEnd={(e) => handleDragEnd(e)}
-                              onDragOver={(e) => e.stopPropagation()}
-                              onDrop={(e) => e.stopPropagation()}
+                              onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                              onDrop={(e) => { e.preventDefault(); e.stopPropagation(); }}
                               onClick={() => handleTaskClick(task)}
                               className={`
                                 flex items-center gap-0.5 text-xs px-1.5 py-0.5 rounded truncate cursor-pointer hover:opacity-80 transition-opacity
@@ -1043,8 +1045,8 @@ const Calendar: React.FC = () => {
                                 handleDragStart(task, e);
                               }}
                               onDragEnd={(e) => handleDragEnd(e)}
-                              onDragOver={(e) => e.stopPropagation()}
-                              onDrop={(e) => e.stopPropagation()}
+                              onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                              onDrop={(e) => { e.preventDefault(); e.stopPropagation(); }}
                               onClick={() => handleTaskClick(task)}
                               className={`
                                 flex items-center gap-0.5 text-xs px-1.5 py-0.5 rounded truncate cursor-pointer hover:opacity-80 transition-opacity
@@ -1142,8 +1144,8 @@ const Calendar: React.FC = () => {
                             handleDragStart(task, e);
                           }}
                           onDragEnd={(e) => handleDragEnd(e)}
-                          onDragOver={(e) => e.stopPropagation()}
-                          onDrop={(e) => e.stopPropagation()}
+                          onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                          onDrop={(e) => { e.preventDefault(); e.stopPropagation(); }}
                           onClick={() => handleTaskClick(task)}
                           className={`
                             flex items-start gap-3 p-3 rounded-lg border-l-4 cursor-pointer hover:opacity-80 transition-opacity
@@ -1233,8 +1235,8 @@ const Calendar: React.FC = () => {
                                     handleDragStart(task, e);
                                   }}
                                   onDragEnd={(e) => handleDragEnd(e)}
-                                  onDragOver={(e) => e.stopPropagation()}
-                                  onDrop={(e) => e.stopPropagation()}
+                                  onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                                  onDrop={(e) => { e.preventDefault(); e.stopPropagation(); }}
                                   onClick={() => handleTaskClick(task)}
                                   className={`
                                     flex items-start gap-3 p-3 rounded-lg border-l-4 cursor-pointer hover:opacity-80 transition-opacity
@@ -1415,8 +1417,8 @@ const Calendar: React.FC = () => {
                             handleDragStart(task, e);
                           }}
                           onDragEnd={(e) => handleDragEnd(e)}
-                          onDragOver={(e) => e.stopPropagation()}
-                          onDrop={(e) => e.stopPropagation()}
+                          onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                          onDrop={(e) => { e.preventDefault(); e.stopPropagation(); }}
                           className={`
                             p-2 rounded border cursor-move transition-all hover:shadow-sm w-full
                             ${draggedTask?.id === task.id
@@ -1496,8 +1498,8 @@ const Calendar: React.FC = () => {
                             handleDragStart(task, e);
                           }}
                           onDragEnd={(e) => handleDragEnd(e)}
-                          onDragOver={(e) => e.stopPropagation()}
-                          onDrop={(e) => e.stopPropagation()}
+                          onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                          onDrop={(e) => { e.preventDefault(); e.stopPropagation(); }}
                           className={`
                             p-2 rounded border cursor-move transition-all hover:shadow-sm w-full
                             ${draggedTask?.id === task.id
@@ -1571,8 +1573,8 @@ const Calendar: React.FC = () => {
                             handleDragStart(task, e);
                           }}
                           onDragEnd={(e) => handleDragEnd(e)}
-                          onDragOver={(e) => e.stopPropagation()}
-                          onDrop={(e) => e.stopPropagation()}
+                          onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                          onDrop={(e) => { e.preventDefault(); e.stopPropagation(); }}
                           className={`
                             p-2 rounded border cursor-move hover:shadow-sm w-full
                             ${draggedTask?.id === task.id
@@ -1646,8 +1648,8 @@ const Calendar: React.FC = () => {
                             handleDragStart(task, e);
                           }}
                           onDragEnd={(e) => handleDragEnd(e)}
-                          onDragOver={(e) => e.stopPropagation()}
-                          onDrop={(e) => e.stopPropagation()}
+                          onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                          onDrop={(e) => { e.preventDefault(); e.stopPropagation(); }}
                           className={`
                             p-2 rounded border cursor-move transition-all hover:shadow-sm w-full
                             ${draggedTask?.id === task.id
