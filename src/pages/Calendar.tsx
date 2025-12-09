@@ -1269,8 +1269,12 @@ const Calendar: React.FC = () => {
                     </button>
                     {expandedSections.scheduled && (
                     <div
-                      className="space-y-1.5 w-full mt-1.5"
-                      style={{ minHeight: draggedTask ? '40px' : 'auto' }}
+                      className={`space-y-1.5 w-full mt-1.5 rounded transition-colors ${
+                        draggedTask ? 'border-2 border-dashed border-green-300 dark:border-green-600 bg-green-50/50 dark:bg-green-900/10 p-2' : ''
+                      }`}
+                      style={{ minHeight: draggedTask ? '60px' : 'auto' }}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDropInCategory(e, 'scheduled')}
                     >
                       {categorizedTasks.scheduled.map((task) => (
                         <div
@@ -1342,8 +1346,12 @@ const Calendar: React.FC = () => {
                     </button>
                     {expandedSections.inProgress && (
                     <div
-                      className="space-y-1.5 w-full mt-1.5"
-                      style={{ minHeight: draggedTask ? '40px' : 'auto' }}
+                      className={`space-y-1.5 w-full mt-1.5 rounded transition-colors ${
+                        draggedTask ? 'border-2 border-dashed border-purple-300 dark:border-purple-600 bg-purple-50/50 dark:bg-purple-900/10 p-2' : ''
+                      }`}
+                      style={{ minHeight: draggedTask ? '60px' : 'auto' }}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDropInCategory(e, 'inProgress')}
                     >
                       {categorizedTasks.inProgress.map((task) => (
                         <div
@@ -1408,8 +1416,12 @@ const Calendar: React.FC = () => {
                     </button>
                     {expandedSections.todo && (
                     <div
-                      className="space-y-1.5 w-full mt-1.5"
-                      style={{ minHeight: draggedTask ? '40px' : 'auto' }}
+                      className={`space-y-1.5 w-full mt-1.5 rounded transition-colors ${
+                        draggedTask ? 'border-2 border-dashed border-blue-300 dark:border-blue-600 bg-blue-50/50 dark:bg-blue-900/10 p-2' : ''
+                      }`}
+                      style={{ minHeight: draggedTask ? '60px' : 'auto' }}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDropInCategory(e, 'todo')}
                     >
                       {categorizedTasks.todo.map((task) => (
                         <div
@@ -1474,8 +1486,12 @@ const Calendar: React.FC = () => {
                     </button>
                     {expandedSections.backlog && (
                     <div
-                      className="space-y-1.5 w-full mt-1.5"
-                      style={{ minHeight: draggedTask ? '40px' : 'auto' }}
+                      className={`space-y-1.5 w-full mt-1.5 rounded transition-colors ${
+                        draggedTask ? 'border-2 border-dashed border-slate-300 dark:border-slate-600 bg-slate-50/50 dark:bg-slate-800/30 p-2' : ''
+                      }`}
+                      style={{ minHeight: draggedTask ? '60px' : 'auto' }}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDropInCategory(e, 'backlog')}
                     >
                       {categorizedTasks.backlog.map((task) => (
                         <div
