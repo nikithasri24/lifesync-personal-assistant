@@ -297,6 +297,7 @@ const Calendar: React.FC = () => {
 
   // Drag and drop handlers
   const handleDragStart = (task: Task) => {
+    console.log('[Calendar] Drag started:', task.title, 'from status:', task.status, 'priority:', task.priority);
     setDraggedTask(task);
   };
 
@@ -1331,7 +1332,7 @@ const Calendar: React.FC = () => {
                       {categorizedTasks.scheduled.map((task) => (
                         <div
                           key={task.id}
-                          draggable
+                          draggable={true}
                           onDragStart={(e) => {
                             e.stopPropagation();
                             handleDragStart(task);
@@ -1346,9 +1347,9 @@ const Calendar: React.FC = () => {
                               : 'border-green-200 dark:border-green-600 bg-green-50 dark:bg-green-900/10 hover:border-green-300 dark:hover:border-green-500'
                             }
                           `}
-                          style={{ maxWidth: '100%', overflow: 'hidden' }}
+                          style={{ maxWidth: '100%', overflow: 'hidden', userSelect: 'none' }}
                         >
-                          <div className="w-full" style={{ maxWidth: '100%' }}>
+                          <div className="w-full" style={{ maxWidth: '100%', pointerEvents: 'none' }}>
                             <div className="flex items-start gap-1" style={{ width: '100%', maxWidth: '100%' }}>
                               <GripVertical className="w-3 h-3 text-green-400 dark:text-green-500 flex-shrink-0 mt-0.5" />
                               <div style={{ flex: '1', minWidth: '0', maxWidth: '100%' }}>
@@ -1412,7 +1413,7 @@ const Calendar: React.FC = () => {
                       {categorizedTasks.inProgress.map((task) => (
                         <div
                           key={task.id}
-                          draggable
+                          draggable={true}
                           onDragStart={(e) => {
                             e.stopPropagation();
                             handleDragStart(task);
@@ -1427,9 +1428,9 @@ const Calendar: React.FC = () => {
                               : 'border-purple-200 dark:border-purple-600 bg-purple-50 dark:bg-purple-900/10 hover:border-purple-300 dark:hover:border-purple-500'
                             }
                           `}
-                          style={{ maxWidth: '100%', overflow: 'hidden' }}
+                          style={{ maxWidth: '100%', overflow: 'hidden', userSelect: 'none' }}
                         >
-                          <div className="w-full" style={{ maxWidth: '100%' }}>
+                          <div className="w-full" style={{ maxWidth: '100%', pointerEvents: 'none' }}>
                             <div className="flex items-start gap-1 mb-1" style={{ width: '100%', maxWidth: '100%' }}>
                               <GripVertical className="w-3 h-3 text-purple-400 dark:text-purple-500 flex-shrink-0 mt-0.5" />
                               <div style={{ flex: '1', minWidth: '0', maxWidth: '100%' }}>
@@ -1487,7 +1488,7 @@ const Calendar: React.FC = () => {
                       {categorizedTasks.todo.map((task) => (
                         <div
                           key={task.id}
-                          draggable
+                          draggable={true}
                           onDragStart={(e) => {
                             e.stopPropagation();
                             handleDragStart(task);
@@ -1502,9 +1503,9 @@ const Calendar: React.FC = () => {
                               : 'border-blue-200 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/10 hover:border-blue-300 dark:hover:border-blue-500'
                             }
                           `}
-                          style={{ maxWidth: '100%', overflow: 'hidden' }}
+                          style={{ maxWidth: '100%', overflow: 'hidden', userSelect: 'none' }}
                         >
-                          <div className="w-full" style={{ maxWidth: '100%' }}>
+                          <div className="w-full" style={{ maxWidth: '100%', pointerEvents: 'none' }}>
                             <div className="flex items-start gap-1" style={{ width: '100%', maxWidth: '100%' }}>
                               <GripVertical className="w-3 h-3 text-blue-400 dark:text-blue-500 flex-shrink-0 mt-0.5" />
                               <div style={{ flex: '1', minWidth: '0', maxWidth: '100%' }}>
@@ -1562,7 +1563,7 @@ const Calendar: React.FC = () => {
                       {categorizedTasks.backlog.map((task) => (
                         <div
                           key={task.id}
-                          draggable
+                          draggable={true}
                           onDragStart={(e) => {
                             e.stopPropagation();
                             handleDragStart(task);
@@ -1577,9 +1578,9 @@ const Calendar: React.FC = () => {
                               : 'border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/50 hover:border-slate-300 dark:hover:border-slate-500'
                             }
                           `}
-                          style={{ maxWidth: '100%', overflow: 'hidden' }}
+                          style={{ maxWidth: '100%', overflow: 'hidden', userSelect: 'none' }}
                         >
-                          <div className="w-full" style={{ maxWidth: '100%' }}>
+                          <div className="w-full" style={{ maxWidth: '100%', pointerEvents: 'none' }}>
                             <div className="flex items-start gap-1" style={{ width: '100%', maxWidth: '100%' }}>
                               <GripVertical className="w-3 h-3 text-slate-400 dark:text-slate-500 flex-shrink-0 mt-0.5" />
                               <div style={{ flex: '1', minWidth: '0', maxWidth: '100%' }}>
