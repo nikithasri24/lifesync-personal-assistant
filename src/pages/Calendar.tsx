@@ -103,22 +103,42 @@ const Calendar: React.FC = () => {
   }, [tasks]);
 
   const categorizedTasks = useMemo(() => {
-    // Scheduled: tasks already on calendar (WITH due_date)
-    const scheduled = scheduledTasks;
-
-    // Unscheduled categories
-    const inProgress = unscheduledTasks.filter(t => t.status === 'in_progress');
-
-    // Backlog: todo items with low/medium priority
-    const backlog = unscheduledTasks.filter(t =>
-      t.status === 'todo' &&
-      (t.priority === 'low' || t.priority === 'medium')
+    // Scheduled: tasks WITH due_date OR manually set to scheduled section
+    const scheduled = tasks.filter(t =>
+      !t.deleted &&
+      t.status !== 'done' &&
+      (t.due_date || t.sidebar_section === 'scheduled')
     );
 
-    // Todo: todo items with high/urgent priority, or other statuses
-    const todo = unscheduledTasks.filter(t =>
-      (t.status === 'todo' && (t.priority === 'high' || t.priority === 'urgent')) ||
-      (t.status === 'waiting' || t.status === 'blocked')
+    // Get unscheduled tasks (no due_date AND not manually in scheduled section)
+    const unscheduled = tasks.filter(t =>
+      !t.deleted &&
+      t.status !== 'done' &&
+      !t.due_date &&
+      t.sidebar_section !== 'scheduled'
+    );
+
+    // Use manual sidebar_section if set, otherwise use automatic categorization
+    const inProgress = unscheduled.filter(t =>
+      t.sidebar_section === 'in_progress' ||
+      (!t.sidebar_section && t.status === 'in_progress')
+    );
+
+    const todo = unscheduled.filter(t =>
+      t.sidebar_section === 'todo' ||
+      (!t.sidebar_section && (
+        (t.status === 'todo' && (t.priority === 'high' || t.priority === 'urgent')) ||
+        t.status === 'waiting' ||
+        t.status === 'blocked'
+      ))
+    );
+
+    const backlog = unscheduled.filter(t =>
+      t.sidebar_section === 'backlog' ||
+      (!t.sidebar_section &&
+        t.status === 'todo' &&
+        (t.priority === 'low' || t.priority === 'medium')
+      )
     );
 
     // Debug logging
@@ -126,12 +146,17 @@ const Calendar: React.FC = () => {
       scheduled: scheduled.length,
       inProgress: inProgress.length,
       todo: todo.length,
-      todoTasks: todo.map(t => ({ title: t.title, status: t.status, priority: t.priority })),
+      todoTasks: todo.map(t => ({
+        title: t.title,
+        status: t.status,
+        priority: t.priority,
+        sidebar_section: t.sidebar_section
+      })),
       backlog: backlog.length,
     });
 
     return { scheduled, todo, inProgress, backlog };
-  }, [scheduledTasks, unscheduledTasks]);
+  }, [tasks]);
 
   // Time slots (All 24 hours: Midnight to 11 PM)
   const timeSlots: TimeSlot[] = useMemo(() => {
@@ -333,12 +358,19 @@ const Calendar: React.FC = () => {
     const dateString = format(date, 'yyyy-MM-dd');
     const previousDate = draggedTask.due_date;
 
+    // When scheduling a task, clear manual sidebar section
+    // The task will now appear in Scheduled section because it has a due_date
+    const updates: Partial<Task> = {
+      due_date: dateString,
+      sidebar_section: null, // Clear manual section assignment
+    };
+
     // Use command for undo/redo support
-    const command = new MoveTaskCommand(
+    const command = new ChangeTaskCategoryCommand(
       draggedTask.id as string,
       draggedTask.title,
-      dateString,
-      previousDate
+      updates,
+      draggedTask
     );
 
     void executeCommand(command);
@@ -349,21 +381,25 @@ const Calendar: React.FC = () => {
     e.preventDefault(); // Allow drop
   };
 
-  // Drop task in unscheduled panel to remove due_date
+  // Drop task in unscheduled panel to remove due_date and clear manual section
   const handleDropInUnscheduled = (e: React.DragEvent) => {
     e.preventDefault();
     if (!draggedTask) return;
 
-    // Only update if task has a due_date (i.e., it's currently scheduled)
-    if (draggedTask.due_date) {
-      const command = new MoveTaskCommand(
-        draggedTask.id as string,
-        draggedTask.title,
-        null,
-        draggedTask.due_date
-      );
-      void executeCommand(command);
-    }
+    // Remove from calendar and clear manual section assignment
+    // Task will be auto-categorized based on status/priority
+    const updates: Partial<Task> = {
+      due_date: null,
+      sidebar_section: null, // Let auto-categorization handle it
+    };
+
+    const command = new ChangeTaskCategoryCommand(
+      draggedTask.id as string,
+      draggedTask.title,
+      updates,
+      draggedTask
+    );
+    void executeCommand(command);
 
     setDraggedTask(null);
   };
@@ -382,28 +418,26 @@ const Calendar: React.FC = () => {
 
     switch (targetCategory) {
       case 'scheduled':
-        // Can't move to scheduled without a date - keep existing behavior
-        // User should drag to calendar instead
+        // Keep on calendar with its current due_date
+        updates.sidebar_section = 'scheduled';
         break;
 
       case 'todo':
-        // Move to To Do = high priority + unscheduled
-        updates.status = 'todo';
-        updates.priority = 'high';
-        updates.due_date = null;
+        // Move to To Do section - manual organization
+        updates.sidebar_section = 'todo';
+        updates.due_date = null; // Remove from calendar
         break;
 
       case 'inProgress':
-        // Move to In Progress = in_progress status + unscheduled
-        updates.status = 'in_progress';
-        updates.due_date = null;
+        // Move to In Progress section - manual organization
+        updates.sidebar_section = 'in_progress';
+        updates.due_date = null; // Remove from calendar
         break;
 
       case 'backlog':
-        // Move to Backlog = low priority + unscheduled
-        updates.status = 'todo';
-        updates.priority = 'low';
-        updates.due_date = null;
+        // Move to Backlog section - manual organization
+        updates.sidebar_section = 'backlog';
+        updates.due_date = null; // Remove from calendar
         break;
     }
 

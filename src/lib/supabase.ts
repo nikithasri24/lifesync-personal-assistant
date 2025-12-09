@@ -61,6 +61,7 @@ export interface Task {
   created_at: string
   completed_at?: string
   category: 'work' | 'personal' | 'learning' | 'creative' | 'health' | 'other'
+  sidebar_section?: 'todo' | 'in_progress' | 'backlog' | 'scheduled' | null
   parent_id?: string
   depends_on?: string[]
   follow_up_tasks?: FollowUpTask[]
