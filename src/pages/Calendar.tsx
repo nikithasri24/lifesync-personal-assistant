@@ -348,12 +348,20 @@ const Calendar: React.FC = () => {
     }
   };
 
-  const handleDragEnd = () => {
+  const handleDragEnd = (e?: React.DragEvent) => {
+    console.log('[Calendar] handleDragEnd called:', {
+      dropEffect: e?.dataTransfer?.dropEffect,
+      draggedTask: draggedTask?.title
+    });
     setDraggedTask(null);
   };
 
   const handleDrop = (date: Date) => {
-    if (!draggedTask) return;
+    console.log('[Calendar] handleDrop called:', { date, draggedTask: draggedTask?.title });
+    if (!draggedTask) {
+      console.log('[Calendar] handleDrop: No dragged task, returning');
+      return;
+    }
 
     const dateString = format(date, 'yyyy-MM-dd');
     const previousDate = draggedTask.due_date;
@@ -364,6 +372,8 @@ const Calendar: React.FC = () => {
       due_date: dateString,
       sidebar_section: null, // Clear manual section assignment
     };
+
+    console.log('[Calendar] handleDrop: Executing command with updates:', updates);
 
     // Use command for undo/redo support
     const command = new ChangeTaskCategoryCommand(
@@ -379,6 +389,10 @@ const Calendar: React.FC = () => {
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault(); // Allow drop
+    // Minimal logging to avoid spam
+    if (Math.random() < 0.01) { // Log 1% of events
+      console.log('[Calendar] handleDragOver: Drop zone active');
+    }
   };
 
   // Drop task in unscheduled panel to remove due_date and clear manual section
@@ -409,10 +423,14 @@ const Calendar: React.FC = () => {
     e: React.DragEvent,
     targetCategory: 'scheduled' | 'todo' | 'inProgress' | 'backlog'
   ) => {
+    console.log('[Calendar] handleDropInCategory called:', { targetCategory, draggedTask: draggedTask?.title });
     e.preventDefault();
     e.stopPropagation();
 
-    if (!draggedTask) return;
+    if (!draggedTask) {
+      console.log('[Calendar] handleDropInCategory: No dragged task, returning');
+      return;
+    }
 
     const updates: Partial<Task> = {};
 
@@ -441,6 +459,8 @@ const Calendar: React.FC = () => {
         break;
     }
 
+    console.log('[Calendar] handleDropInCategory: Updates to apply:', updates);
+
     if (Object.keys(updates).length > 0) {
       // Use command for undo/redo support
       const command = new ChangeTaskCategoryCommand(
@@ -449,6 +469,7 @@ const Calendar: React.FC = () => {
         updates,
         draggedTask
       );
+      console.log('[Calendar] handleDropInCategory: Executing command');
       void executeCommand(command);
     }
 
@@ -785,7 +806,7 @@ const Calendar: React.FC = () => {
                                 e.stopPropagation();
                                 handleDragStart(task, e);
                               }}
-                              onDragEnd={handleDragEnd}
+                              onDragEnd={(e) => handleDragEnd(e)}
                               onDragOver={(e) => e.stopPropagation()}
                               onDrop={(e) => e.stopPropagation()}
                               onClick={() => handleTaskClick(task)}
@@ -861,7 +882,7 @@ const Calendar: React.FC = () => {
                                       e.stopPropagation();
                                       handleDragStart(task, e);
                                     }}
-                                    onDragEnd={handleDragEnd}
+                                    onDragEnd={(e) => handleDragEnd(e)}
                                     onDragOver={(e) => {
                                       e.stopPropagation(); // Prevent drop on task itself
                                     }}
@@ -986,7 +1007,7 @@ const Calendar: React.FC = () => {
                                 e.stopPropagation();
                                 handleDragStart(task, e);
                               }}
-                              onDragEnd={handleDragEnd}
+                              onDragEnd={(e) => handleDragEnd(e)}
                               onDragOver={(e) => e.stopPropagation()}
                               onDrop={(e) => e.stopPropagation()}
                               onClick={() => handleTaskClick(task)}
@@ -1021,7 +1042,7 @@ const Calendar: React.FC = () => {
                                 e.stopPropagation();
                                 handleDragStart(task, e);
                               }}
-                              onDragEnd={handleDragEnd}
+                              onDragEnd={(e) => handleDragEnd(e)}
                               onDragOver={(e) => e.stopPropagation()}
                               onDrop={(e) => e.stopPropagation()}
                               onClick={() => handleTaskClick(task)}
@@ -1120,7 +1141,7 @@ const Calendar: React.FC = () => {
                             e.stopPropagation();
                             handleDragStart(task, e);
                           }}
-                          onDragEnd={handleDragEnd}
+                          onDragEnd={(e) => handleDragEnd(e)}
                           onDragOver={(e) => e.stopPropagation()}
                           onDrop={(e) => e.stopPropagation()}
                           onClick={() => handleTaskClick(task)}
@@ -1211,7 +1232,7 @@ const Calendar: React.FC = () => {
                                     e.stopPropagation();
                                     handleDragStart(task, e);
                                   }}
-                                  onDragEnd={handleDragEnd}
+                                  onDragEnd={(e) => handleDragEnd(e)}
                                   onDragOver={(e) => e.stopPropagation()}
                                   onDrop={(e) => e.stopPropagation()}
                                   onClick={() => handleTaskClick(task)}
@@ -1393,7 +1414,7 @@ const Calendar: React.FC = () => {
                             e.stopPropagation();
                             handleDragStart(task, e);
                           }}
-                          onDragEnd={handleDragEnd}
+                          onDragEnd={(e) => handleDragEnd(e)}
                           onDragOver={(e) => e.stopPropagation()}
                           onDrop={(e) => e.stopPropagation()}
                           className={`
@@ -1474,7 +1495,7 @@ const Calendar: React.FC = () => {
                             e.stopPropagation();
                             handleDragStart(task, e);
                           }}
-                          onDragEnd={handleDragEnd}
+                          onDragEnd={(e) => handleDragEnd(e)}
                           onDragOver={(e) => e.stopPropagation()}
                           onDrop={(e) => e.stopPropagation()}
                           className={`
@@ -1549,7 +1570,7 @@ const Calendar: React.FC = () => {
                             e.stopPropagation();
                             handleDragStart(task, e);
                           }}
-                          onDragEnd={handleDragEnd}
+                          onDragEnd={(e) => handleDragEnd(e)}
                           onDragOver={(e) => e.stopPropagation()}
                           onDrop={(e) => e.stopPropagation()}
                           className={`
@@ -1624,7 +1645,7 @@ const Calendar: React.FC = () => {
                             e.stopPropagation();
                             handleDragStart(task, e);
                           }}
-                          onDragEnd={handleDragEnd}
+                          onDragEnd={(e) => handleDragEnd(e)}
                           onDragOver={(e) => e.stopPropagation()}
                           onDrop={(e) => e.stopPropagation()}
                           className={`
