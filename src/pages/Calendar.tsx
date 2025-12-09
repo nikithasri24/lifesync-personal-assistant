@@ -59,6 +59,11 @@ const Calendar: React.FC = () => {
   const [miniCalendarDate, setMiniCalendarDate] = useState(new Date());
   const [showUnscheduledPanel, setShowUnscheduledPanel] = useState(false);
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
+
+  // Debug: Log when draggedTask changes
+  React.useEffect(() => {
+    console.log('[Calendar] draggedTask state changed to:', draggedTask?.title || 'null');
+  }, [draggedTask]);
   const [sidebarWidth, setSidebarWidth] = useState(112);
   const [isResizing, setIsResizing] = useState(false);
   const [expandedSections, setExpandedSections] = useState({
@@ -339,12 +344,19 @@ const Calendar: React.FC = () => {
       dragEvent: event ? 'has event' : 'no event',
       target: event?.currentTarget?.tagName,
     });
+
+    console.log('[Calendar] BEFORE setDraggedTask, draggedTask is:', draggedTask?.title);
     setDraggedTask(task);
+    console.log('[Calendar] AFTER setDraggedTask called (state update scheduled)');
 
     // Set drag data for better browser compatibility
     if (event?.dataTransfer) {
       event.dataTransfer.effectAllowed = 'move';
       event.dataTransfer.setData('text/plain', task.id as string);
+      console.log('[Calendar] dataTransfer set:', {
+        effectAllowed: event.dataTransfer.effectAllowed,
+        types: event.dataTransfer.types
+      });
     }
   };
 
@@ -745,39 +757,42 @@ const Calendar: React.FC = () => {
         </div>
 
         {/* DEBUG DROP ZONE */}
-        {draggedTask && (
-          <div
-            onDragOver={(e) => {
-              e.preventDefault();
-              console.log('[DEBUG] DRAGOVER ON DEBUG ZONE');
-            }}
-            onDrop={(e) => {
-              e.preventDefault();
-              console.log('[DEBUG] DROP ON DEBUG ZONE');
-              handleDrop(new Date());
-            }}
-            style={{
-              position: 'fixed',
-              top: '100px',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              width: '300px',
-              height: '200px',
-              backgroundColor: 'red',
-              border: '5px solid yellow',
-              zIndex: 9999,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'white',
-              fontSize: '24px',
-              fontWeight: 'bold',
-              pointerEvents: 'auto'
-            }}
-          >
-            DROP HERE TO TEST
-          </div>
-        )}
+        {draggedTask && (() => {
+          console.log('[DEBUG] Rendering red debug zone for task:', draggedTask.title);
+          return (
+            <div
+              onDragOver={(e) => {
+                e.preventDefault();
+                console.log('[DEBUG] DRAGOVER ON DEBUG ZONE');
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                console.log('[DEBUG] DROP ON DEBUG ZONE');
+                handleDrop(new Date());
+              }}
+              style={{
+                position: 'fixed',
+                top: '100px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '300px',
+                height: '200px',
+                backgroundColor: 'red',
+                border: '5px solid yellow',
+                zIndex: 9999,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontSize: '24px',
+                fontWeight: 'bold',
+                pointerEvents: 'auto'
+              }}
+            >
+              DROP HERE TO TEST
+            </div>
+          );
+        })()}
 
         {/* Week View */}
         {view === 'week' && (
