@@ -7,6 +7,7 @@ import { AuthGate } from './components/AuthGate';
 import { useAuth } from './hooks/useAuth';
 import { isSupabaseConfigured } from './lib/supabase';
 import { logger } from './services/logger';
+import { UndoRedoButtons } from './components/UndoRedoButtons';
 
 // Lazy load all page components for route-based code splitting
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -147,6 +148,8 @@ function App(): React.ReactElement {
         }>
           {renderPage()}
         </Suspense>
+        {/* Global undo/redo buttons */}
+        <UndoRedoButtons />
       </Layout>
     </AuthGate>
   );

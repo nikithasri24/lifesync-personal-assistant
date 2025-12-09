@@ -36,6 +36,8 @@ import type { Habit } from '../types';
 import { SkeletonCard } from '../components/LoadingSpinner';
 import { TaskEditModal } from '../scheduler/components/TaskEditModal';
 import type { ScheduledTask } from '../scheduler/types';
+import { useUndoRedo } from '../contexts/UndoRedoContext';
+import { MoveTaskCommand, ChangeTaskCategoryCommand } from '../commands/TaskCommands';
 
 type CalendarView = 'week' | 'month' | 'day';
 
@@ -80,6 +82,9 @@ const Calendar: React.FC = () => {
   const { data: apiProjects = [], isLoading: projectsLoading } = useProjects();
   const updateTaskMutation = useUpdateTask();
   const deleteTaskMutation = useDeleteTask();
+
+  // Undo/Redo
+  const { executeCommand } = useUndoRedo();
 
   // Task editing state
   const [editingTask, setEditingTask] = useState<ScheduledTask | null>(null);
@@ -303,11 +308,17 @@ const Calendar: React.FC = () => {
     if (!draggedTask) return;
 
     const dateString = format(date, 'yyyy-MM-dd');
-    updateTaskMutation.mutate({
-      id: draggedTask.id,
-      updates: { due_date: dateString }
-    });
+    const previousDate = draggedTask.due_date;
 
+    // Use command for undo/redo support
+    const command = new MoveTaskCommand(
+      draggedTask.id as string,
+      draggedTask.title,
+      dateString,
+      previousDate
+    );
+
+    void executeCommand(command);
     setDraggedTask(null);
   };
 
@@ -322,10 +333,13 @@ const Calendar: React.FC = () => {
 
     // Only update if task has a due_date (i.e., it's currently scheduled)
     if (draggedTask.due_date) {
-      updateTaskMutation.mutate({
-        id: draggedTask.id,
-        updates: { due_date: null }
-      });
+      const command = new MoveTaskCommand(
+        draggedTask.id as string,
+        draggedTask.title,
+        null,
+        draggedTask.due_date
+      );
+      void executeCommand(command);
     }
 
     setDraggedTask(null);
@@ -371,10 +385,14 @@ const Calendar: React.FC = () => {
     }
 
     if (Object.keys(updates).length > 0) {
-      updateTaskMutation.mutate({
-        id: draggedTask.id,
-        updates
-      });
+      // Use command for undo/redo support
+      const command = new ChangeTaskCategoryCommand(
+        draggedTask.id as string,
+        draggedTask.title,
+        updates,
+        draggedTask
+      );
+      void executeCommand(command);
     }
 
     setDraggedTask(null);

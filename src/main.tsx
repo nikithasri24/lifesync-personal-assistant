@@ -4,12 +4,15 @@ import './index.css'
 import App from './App.tsx'
 import { AuthProvider } from './providers/AuthProvider'
 import { QueryProvider } from './providers/QueryProvider'
+import { UndoRedoProvider } from './contexts/UndoRedoContext'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryProvider>
       <AuthProvider>
-        <App />
+        <UndoRedoProvider>
+          <App />
+        </UndoRedoProvider>
       </AuthProvider>
     </QueryProvider>
   </StrictMode>,
