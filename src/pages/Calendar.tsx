@@ -121,6 +121,15 @@ const Calendar: React.FC = () => {
       (t.status === 'waiting' || t.status === 'blocked')
     );
 
+    // Debug logging
+    console.log('[Calendar] Categorized tasks:', {
+      scheduled: scheduled.length,
+      inProgress: inProgress.length,
+      todo: todo.length,
+      todoTasks: todo.map(t => ({ title: t.title, status: t.status, priority: t.priority })),
+      backlog: backlog.length,
+    });
+
     return { scheduled, todo, inProgress, backlog };
   }, [scheduledTasks, unscheduledTasks]);
 
@@ -296,9 +305,22 @@ const Calendar: React.FC = () => {
   };
 
   // Drag and drop handlers
-  const handleDragStart = (task: Task) => {
-    console.log('[Calendar] Drag started:', task.title, 'from status:', task.status, 'priority:', task.priority);
+  const handleDragStart = (task: Task, event?: React.DragEvent) => {
+    console.log('[Calendar] Drag started:', {
+      title: task.title,
+      status: task.status,
+      priority: task.priority,
+      id: task.id,
+      dragEvent: event ? 'has event' : 'no event',
+      target: event?.currentTarget?.tagName,
+    });
     setDraggedTask(task);
+
+    // Set drag data for better browser compatibility
+    if (event?.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', task.id as string);
+    }
   };
 
   const handleDragEnd = () => {
@@ -727,7 +749,7 @@ const Calendar: React.FC = () => {
                               draggable
                               onDragStart={(e) => {
                                 e.stopPropagation();
-                                handleDragStart(task);
+                                handleDragStart(task, e);
                               }}
                               onDragEnd={handleDragEnd}
                               onDragOver={(e) => e.stopPropagation()}
@@ -803,7 +825,7 @@ const Calendar: React.FC = () => {
                                     draggable
                                     onDragStart={(e) => {
                                       e.stopPropagation();
-                                      handleDragStart(task);
+                                      handleDragStart(task, e);
                                     }}
                                     onDragEnd={handleDragEnd}
                                     onDragOver={(e) => {
@@ -928,7 +950,7 @@ const Calendar: React.FC = () => {
                               draggable
                               onDragStart={(e) => {
                                 e.stopPropagation();
-                                handleDragStart(task);
+                                handleDragStart(task, e);
                               }}
                               onDragEnd={handleDragEnd}
                               onDragOver={(e) => e.stopPropagation()}
@@ -963,7 +985,7 @@ const Calendar: React.FC = () => {
                               draggable
                               onDragStart={(e) => {
                                 e.stopPropagation();
-                                handleDragStart(task);
+                                handleDragStart(task, e);
                               }}
                               onDragEnd={handleDragEnd}
                               onDragOver={(e) => e.stopPropagation()}
@@ -1062,7 +1084,7 @@ const Calendar: React.FC = () => {
                           draggable
                           onDragStart={(e) => {
                             e.stopPropagation();
-                            handleDragStart(task);
+                            handleDragStart(task, e);
                           }}
                           onDragEnd={handleDragEnd}
                           onDragOver={(e) => e.stopPropagation()}
@@ -1153,7 +1175,7 @@ const Calendar: React.FC = () => {
                                   draggable
                                   onDragStart={(e) => {
                                     e.stopPropagation();
-                                    handleDragStart(task);
+                                    handleDragStart(task, e);
                                   }}
                                   onDragEnd={handleDragEnd}
                                   onDragOver={(e) => e.stopPropagation()}
@@ -1335,7 +1357,7 @@ const Calendar: React.FC = () => {
                           draggable={true}
                           onDragStart={(e) => {
                             e.stopPropagation();
-                            handleDragStart(task);
+                            handleDragStart(task, e);
                           }}
                           onDragEnd={handleDragEnd}
                           onDragOver={(e) => e.stopPropagation()}
@@ -1416,7 +1438,7 @@ const Calendar: React.FC = () => {
                           draggable={true}
                           onDragStart={(e) => {
                             e.stopPropagation();
-                            handleDragStart(task);
+                            handleDragStart(task, e);
                           }}
                           onDragEnd={handleDragEnd}
                           onDragOver={(e) => e.stopPropagation()}
@@ -1491,19 +1513,19 @@ const Calendar: React.FC = () => {
                           draggable={true}
                           onDragStart={(e) => {
                             e.stopPropagation();
-                            handleDragStart(task);
+                            handleDragStart(task, e);
                           }}
                           onDragEnd={handleDragEnd}
                           onDragOver={(e) => e.stopPropagation()}
                           onDrop={(e) => e.stopPropagation()}
                           className={`
-                            p-2 rounded border cursor-move transition-all hover:shadow-sm w-full
+                            p-2 rounded border cursor-move hover:shadow-sm w-full
                             ${draggedTask?.id === task.id
                               ? 'opacity-50 border-blue-400 bg-blue-50 dark:bg-blue-900/20'
                               : 'border-blue-200 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/10 hover:border-blue-300 dark:hover:border-blue-500'
                             }
                           `}
-                          style={{ maxWidth: '100%', overflow: 'hidden', userSelect: 'none' }}
+                          style={{ maxWidth: '100%', overflow: 'hidden', userSelect: 'none', WebkitUserDrag: 'element', touchAction: 'none' }}
                         >
                           <div className="w-full" style={{ maxWidth: '100%', pointerEvents: 'none' }}>
                             <div className="flex items-start gap-1" style={{ width: '100%', maxWidth: '100%' }}>
@@ -1566,7 +1588,7 @@ const Calendar: React.FC = () => {
                           draggable={true}
                           onDragStart={(e) => {
                             e.stopPropagation();
-                            handleDragStart(task);
+                            handleDragStart(task, e);
                           }}
                           onDragEnd={handleDragEnd}
                           onDragOver={(e) => e.stopPropagation()}
