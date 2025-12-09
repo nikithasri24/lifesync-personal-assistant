@@ -8,6 +8,7 @@ import type { Command } from '../contexts/UndoRedoContext';
 import type { Task } from '../lib/supabase';
 import { createTask, updateTask, deleteTask } from '../api/tasksAPI';
 import { logger } from '../services/logger';
+import { queryClient } from '../lib/react-query';
 
 /**
  * Create Task Command
@@ -30,6 +31,7 @@ export class CreateTaskCommand implements Command {
     logger.debug('[CreateTaskCommand] Executing', { title: this.taskData.title });
     const created = await createTask(this.taskData);
     this.createdTaskId = created.id as string;
+    await queryClient.invalidateQueries({ queryKey: ['tasks'] });
   }
 
   async undo(): Promise<void> {
@@ -38,6 +40,7 @@ export class CreateTaskCommand implements Command {
     }
     logger.debug('[CreateTaskCommand] Undoing', { taskId: this.createdTaskId });
     await deleteTask(this.createdTaskId);
+    await queryClient.invalidateQueries({ queryKey: ['tasks'] });
   }
 }
 
@@ -69,6 +72,7 @@ export class UpdateTaskCommand implements Command {
   async execute(): Promise<void> {
     logger.debug('[UpdateTaskCommand] Executing', { taskId: this.taskId, updates: this.updates });
     await updateTask(this.taskId, this.updates);
+    await queryClient.invalidateQueries({ queryKey: ['tasks'] });
   }
 
   async undo(): Promise<void> {
@@ -77,6 +81,7 @@ export class UpdateTaskCommand implements Command {
     }
     logger.debug('[UpdateTaskCommand] Undoing', { taskId: this.taskId, previousState: this.previousState });
     await updateTask(this.taskId, this.previousState);
+    await queryClient.invalidateQueries({ queryKey: ['tasks'] });
   }
 }
 
@@ -99,6 +104,7 @@ export class DeleteTaskCommand implements Command {
   async execute(): Promise<void> {
     logger.debug('[DeleteTaskCommand] Executing', { taskId: this.task.id });
     await deleteTask(this.task.id as string);
+    await queryClient.invalidateQueries({ queryKey: ['tasks'] });
   }
 
   async undo(): Promise<void> {
@@ -106,6 +112,7 @@ export class DeleteTaskCommand implements Command {
     // Recreate the task with the same data (except timestamps)
     const { id, created_at, updated_at, ...taskData } = this.task;
     await createTask(taskData);
+    await queryClient.invalidateQueries({ queryKey: ['tasks'] });
   }
 }
 
@@ -136,11 +143,15 @@ export class MoveTaskCommand implements Command {
   async execute(): Promise<void> {
     logger.debug('[MoveTaskCommand] Executing', { taskId: this.taskId, newDate: this.newDate });
     await updateTask(this.taskId, { due_date: this.newDate });
+    // Invalidate React Query cache to refresh UI
+    await queryClient.invalidateQueries({ queryKey: ['tasks'] });
   }
 
   async undo(): Promise<void> {
     logger.debug('[MoveTaskCommand] Undoing', { taskId: this.taskId, previousDate: this.previousDate });
     await updateTask(this.taskId, { due_date: this.previousDate });
+    // Invalidate React Query cache to refresh UI
+    await queryClient.invalidateQueries({ queryKey: ['tasks'] });
   }
 }
 
@@ -188,6 +199,8 @@ export class ChangeTaskCategoryCommand implements Command {
       priority: this.newPriority,
       due_date: this.newDueDate,
     });
+    // Invalidate React Query cache to refresh UI
+    await queryClient.invalidateQueries({ queryKey: ['tasks'] });
   }
 
   async undo(): Promise<void> {
@@ -197,5 +210,7 @@ export class ChangeTaskCategoryCommand implements Command {
       priority: this.previousPriority,
       due_date: this.previousDueDate,
     });
+    // Invalidate React Query cache to refresh UI
+    await queryClient.invalidateQueries({ queryKey: ['tasks'] });
   }
 }
