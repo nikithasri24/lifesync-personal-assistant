@@ -759,40 +759,60 @@ const Calendar: React.FC = () => {
         {/* DEBUG DROP ZONE */}
         {draggedTask && (() => {
           console.log('[DEBUG] Rendering red debug zone for task:', draggedTask.title);
+          console.log('[DEBUG] Current view:', view);
+          console.log('[DEBUG] Window size:', window.innerWidth, 'x', window.innerHeight);
+
           return (
-            <div
-              onDragOver={(e) => {
-                e.preventDefault();
-                console.log('[DEBUG] DRAGOVER ON DEBUG ZONE');
-              }}
-              onDrop={(e) => {
-                e.preventDefault();
-                console.log('[DEBUG] DROP ON DEBUG ZONE');
-                handleDrop(new Date());
-              }}
-              style={{
-                position: 'fixed',
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
-                width: '500px',
-                height: '400px',
-                backgroundColor: 'red',
-                border: '10px solid yellow',
-                zIndex: 999999,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'white',
-                fontSize: '48px',
-                fontWeight: 'bold',
-                pointerEvents: 'auto',
-                boxShadow: '0 0 50px rgba(255, 0, 0, 0.8)',
-                cursor: 'copy'
-              }}
-            >
-              DROP HERE TO TEST
-            </div>
+            <>
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  console.log('[DEBUG] DRAGOVER ON DEBUG ZONE');
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  console.log('[DEBUG] DROP ON DEBUG ZONE');
+                  alert('DROP SUCCESSFUL ON DEBUG ZONE!');
+                  handleDrop(new Date());
+                }}
+                style={{
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundColor: 'rgba(255, 0, 0, 0.5)',
+                  zIndex: 999999,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  pointerEvents: 'auto',
+                }}
+              >
+                <div style={{
+                  backgroundColor: 'red',
+                  border: '20px solid yellow',
+                  padding: '50px',
+                  color: 'white',
+                  fontSize: '64px',
+                  fontWeight: 'bold',
+                  textAlign: 'center',
+                  boxShadow: '0 0 100px rgba(255, 255, 0, 1)',
+                  animation: 'pulse 1s infinite'
+                }}>
+                  DROP HERE<br/>TO TEST<br/>
+                  <div style={{ fontSize: '32px', marginTop: '20px' }}>
+                    View: {view}
+                  </div>
+                </div>
+              </div>
+              <style>{`
+                @keyframes pulse {
+                  0%, 100% { transform: scale(1); }
+                  50% { transform: scale(1.05); }
+                }
+              `}</style>
+            </>
           );
         })()}
 
