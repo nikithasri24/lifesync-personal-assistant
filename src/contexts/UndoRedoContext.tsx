@@ -23,7 +23,7 @@ export interface Command {
   timestamp: number;
 }
 
-interface UndoRedoContextType {
+export interface UndoRedoContextType {
   // Execute a command and add it to history
   executeCommand: (command: Command) => Promise<void>;
   // Undo the last command
