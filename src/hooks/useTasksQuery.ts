@@ -44,7 +44,7 @@ export interface TaskFilters {
  */
 export function useTasks(filters?: TaskFilters): UseQueryResult<TaskData[], Error> {
   return useQuery({
-    queryKey: queryKeys.tasks.list(filters),
+    queryKey: queryKeys.tasks.list(filters as Record<string, unknown> | undefined),
     queryFn: () => getTasks(filters),
     ...queryOptions.user,
   });
@@ -74,12 +74,12 @@ export function useCreateTask(): UseMutationResult<TaskData, Error, Omit<TaskDat
 
   return useMutation({
     mutationFn: async (input: Omit<TaskData, 'id' | 'created_at' | 'updated_at'>) => {
-      logger.debug('Creating task', { title: input.title, priority: input.priority });
+      logger.debug('Tasks', 'Creating task', { title: input.title, priority: input.priority });
       const result = await createTask(input);
       return result;
     },
     onSuccess: (newTask) => {
-      logger.info('Task created successfully', { id: newTask.id, title: newTask.title });
+      logger.info('Tasks', 'Task created successfully', { id: newTask.id, title: newTask.title });
 
       // Invalidate all task lists
       void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.lists() });
@@ -93,7 +93,7 @@ export function useCreateTask(): UseMutationResult<TaskData, Error, Omit<TaskDat
       );
     },
     onError: (error: Error) => {
-      logger.error('Failed to create task', { error: error.message });
+      logger.error('Tasks', 'Failed to create task', { error: error.message });
     },
   });
 }
@@ -111,13 +111,13 @@ export function useUpdateTask(): UseMutationResult<
 
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<TaskData> }) => {
-      logger.debug('Updating task', { id, updates });
+      logger.debug('Tasks', 'Updating task', { id, updates });
       const result = await updateTask(id, updates);
       return result;
     },
     // Optimistic update - happens BEFORE API call
     onMutate: async ({ id, updates }) => {
-      logger.debug('Optimistic update: updating task', { id, updates });
+      logger.debug('Tasks', 'Optimistic update: updating task', { id, updates });
 
       // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
       await queryClient.cancelQueries({ queryKey: queryKeys.tasks.lists() });
@@ -149,7 +149,7 @@ export function useUpdateTask(): UseMutationResult<
       return { previousTasks, previousTask };
     },
     onSuccess: (updatedTask) => {
-      logger.info('Task updated successfully', { id: updatedTask.id, title: updatedTask.title });
+      logger.info('Tasks', 'Task updated successfully', { id: updatedTask.id, title: updatedTask.title });
 
       // Update with server response (in case server modified the data)
       queryClient.setQueryData(
@@ -167,7 +167,7 @@ export function useUpdateTask(): UseMutationResult<
       );
     },
     onError: (error: Error, { id }, context) => {
-      logger.error('Failed to update task - rolling back', { error: error.message, id });
+      logger.error('Tasks', 'Failed to update task - rolling back', { error: error.message, id });
 
       // Rollback to previous state on error
       if (context?.previousTasks) {
@@ -188,17 +188,17 @@ export function useUpdateTask(): UseMutationResult<
 /**
  * Delete a task (soft delete)
  */
-export function useDeleteTask(): UseMutationResult<TaskData, Error, string, unknown> {
+export function useDeleteTask(): UseMutationResult<void, Error, string, unknown> {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (id: string) => {
-      logger.debug('Deleting task (soft delete)', { id });
+      logger.debug('Tasks', 'Deleting task (soft delete)', { id });
       const result = await deleteTask(id);
       return result;
     },
     onSuccess: (_data, deletedId) => {
-      logger.info('Task deleted successfully', { id: deletedId });
+      logger.info('Tasks', 'Task deleted successfully', { id: deletedId });
 
       // Invalidate all task lists
       void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.lists() });
@@ -216,7 +216,7 @@ export function useDeleteTask(): UseMutationResult<TaskData, Error, string, unkn
       );
     },
     onError: (error: Error, id) => {
-      logger.error('Failed to delete task', { error: error.message, id });
+      logger.error('Tasks', 'Failed to delete task', { error: error.message, id });
     },
   });
 }
@@ -229,12 +229,12 @@ export function usePermanentlyDeleteTask(): UseMutationResult<void, Error, strin
 
   return useMutation({
     mutationFn: async (id: string) => {
-      logger.debug('Permanently deleting task', { id });
+      logger.debug('Tasks', 'Permanently deleting task', { id });
       const result = await permanentlyDeleteTask(id);
       return result;
     },
     onSuccess: (_data, deletedId) => {
-      logger.info('Task permanently deleted', { id: deletedId });
+      logger.info('Tasks', 'Task permanently deleted', { id: deletedId });
 
       // Invalidate all task lists
       void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.lists() });
@@ -251,7 +251,7 @@ export function usePermanentlyDeleteTask(): UseMutationResult<void, Error, strin
       );
     },
     onError: (error: Error, id) => {
-      logger.error('Failed to permanently delete task', { error: error.message, id });
+      logger.error('Tasks', 'Failed to permanently delete task', { error: error.message, id });
     },
   });
 }
@@ -264,12 +264,12 @@ export function useRestoreTask(): UseMutationResult<TaskData, Error, string, unk
 
   return useMutation({
     mutationFn: async (id: string) => {
-      logger.debug('Restoring task', { id });
+      logger.debug('Tasks', 'Restoring task', { id });
       const result = await restoreTask(id);
       return result;
     },
     onSuccess: (restoredTask) => {
-      logger.info('Task restored successfully', { id: restoredTask.id, title: restoredTask.title });
+      logger.info('Tasks', 'Task restored successfully', { id: restoredTask.id, title: restoredTask.title });
 
       // Invalidate all task lists
       void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.lists() });
@@ -285,7 +285,7 @@ export function useRestoreTask(): UseMutationResult<TaskData, Error, string, unk
       );
     },
     onError: (error: Error, id) => {
-      logger.error('Failed to restore task', { error: error.message, id });
+      logger.error('Tasks', 'Failed to restore task', { error: error.message, id });
     },
   });
 }
@@ -333,12 +333,12 @@ export function useCreateProject(): UseMutationResult<ProjectData, Error, Omit<P
 
   return useMutation({
     mutationFn: async (input: Omit<ProjectData, 'id' | 'created_at' | 'updated_at'>) => {
-      logger.debug('Creating project', { name: input.name, status: input.status });
+      logger.debug('Projects', 'Creating project', { name: input.name, status: input.status });
       const result = await createProject(input);
       return result;
     },
     onSuccess: (newProject) => {
-      logger.info('Project created successfully', { id: newProject.id, name: newProject.name });
+      logger.info('Projects', 'Project created successfully', { id: newProject.id, name: newProject.name });
 
       // Invalidate all project queries
       void queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'projects'] });
@@ -352,7 +352,7 @@ export function useCreateProject(): UseMutationResult<ProjectData, Error, Omit<P
       );
     },
     onError: (error: Error) => {
-      logger.error('Failed to create project', { error: error.message });
+      logger.error('Projects', 'Failed to create project', { error: error.message });
     },
   });
 }
@@ -365,15 +365,15 @@ export function useUpdateProject(): UseMutationResult<ProjectData, Error, { id: 
 
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<ProjectData> }) => {
-      logger.debug('Updating project', { id, updates });
+      logger.debug('Projects', 'Updating project', { id, updates });
       const result = await updateProject(id, updates);
       return result;
     },
     onMutate: ({ id, updates }) => {
-      logger.debug('Optimistic update: updating project', { id, updates });
+      logger.debug('Projects', 'Optimistic update: updating project', { id, updates });
     },
     onSuccess: (updatedProject) => {
-      logger.info('Project updated successfully', { id: updatedProject.id, name: updatedProject.name });
+      logger.info('Projects', 'Project updated successfully', { id: updatedProject.id, name: updatedProject.name });
 
       // Invalidate all project queries
       void queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'projects'] });
@@ -395,7 +395,7 @@ export function useUpdateProject(): UseMutationResult<ProjectData, Error, { id: 
       );
     },
     onError: (error: Error, { id }) => {
-      logger.error('Failed to update project', { error: error.message, id });
+      logger.error('Projects', 'Failed to update project', { error: error.message, id });
     },
   });
 }
@@ -408,12 +408,12 @@ export function useDeleteProject(): UseMutationResult<void, Error, string, unkno
 
   return useMutation({
     mutationFn: async (id: string) => {
-      logger.debug('Deleting project', { id });
+      logger.debug('Projects', 'Deleting project', { id });
       const result = await deleteProject(id);
       return result;
     },
     onSuccess: (_data, deletedId) => {
-      logger.info('Project deleted successfully', { id: deletedId });
+      logger.info('Projects', 'Project deleted successfully', { id: deletedId });
 
       // Invalidate all project queries
       void queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'projects'] });
@@ -430,7 +430,7 @@ export function useDeleteProject(): UseMutationResult<void, Error, string, unkno
       );
     },
     onError: (error: Error, id) => {
-      logger.error('Failed to delete project', { error: error.message, id });
+      logger.error('Projects', 'Failed to delete project', { error: error.message, id });
     },
   });
 }

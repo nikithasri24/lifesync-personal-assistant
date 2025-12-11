@@ -3,6 +3,8 @@
 
 /**
  * TaskData - User tasks for the task management system
+ * This is the canonical Task type used throughout the application.
+ * It aligns with the Supabase/PostgreSQL schema.
  */
 export interface TaskData {
   id?: string;
@@ -11,7 +13,7 @@ export interface TaskData {
   description?: string;
   project_id?: string | null;
   status?: 'todo' | 'done' | 'waiting' | 'scheduled' | 'in_progress';
-  priority?: 'low' | 'medium' | 'high' | 'urgent';
+  priority?: 'low' | 'medium' | 'high' | 'urgent' | 'important';
   estimated_time?: number | null;
   actual_time?: number | null;
   due_date?: string | null;
@@ -27,6 +29,32 @@ export interface TaskData {
   completed_at?: string | null;
   created_at?: string;
   updated_at?: string;
+  // Properties from lib/supabase.ts Task type
+  sidebar_section?: 'todo' | 'in_progress' | 'backlog' | 'scheduled' | null;
+  depends_on?: string[] | null;
+  follow_up_tasks?: FollowUpTask[] | null;
+  is_waiting_for?: string | null;
+  trigger_date?: string | null;
+  is_blocked?: boolean | null;
+  reminder?: string | null;
+  attachments?: string[] | null;
+  assigned_to?: string | null;
+}
+
+/**
+ * FollowUpTask - A subtask or follow-up action for a task
+ */
+export interface FollowUpTask {
+  id: string;
+  title: string;
+  description?: string;
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
+  days_after?: number;
+  trigger_condition?: 'immediate' | 'delayed' | 'manual';
+  category?: 'work' | 'personal' | 'learning' | 'creative' | 'health' | 'other';
+  estimated_time?: number;
+  tags?: string[];
+  completed?: boolean;
 }
 
 export interface ProjectData {

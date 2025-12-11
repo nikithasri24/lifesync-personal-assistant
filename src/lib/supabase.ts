@@ -1,6 +1,10 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { logger } from '../services/logger'
 
+// Re-export TaskData as Task for backward compatibility
+// TaskData is the canonical type defined in services/types.ts
+export type { TaskData as Task, FollowUpTask } from '../services/types'
+
 // Prefer process.env when available (tests/scripts), fallback to Vite's import.meta.env
 const env = typeof process !== 'undefined' ? process.env : {}
 const supabaseUrl = env.VITE_SUPABASE_URL ?? (import.meta.env as Record<string, unknown>)?.VITE_SUPABASE_URL as string | undefined
@@ -46,38 +50,7 @@ export const ensureSupabase = (): SupabaseClient => {
   return supabaseClient
 }
 
-// Database Types
-export interface Task {
-  id: string
-  title: string
-  description?: string
-  project_id?: string
-  status: 'todo' | 'done' | 'waiting' | 'scheduled' | 'in_progress'
-  priority: 'low' | 'medium' | 'high' | 'urgent' | 'important'
-  estimated_time: number
-  actual_time: number
-  due_date?: string
-  tags: string[]
-  created_at: string
-  completed_at?: string
-  category: 'work' | 'personal' | 'learning' | 'creative' | 'health' | 'other'
-  sidebar_section?: 'todo' | 'in_progress' | 'backlog' | 'scheduled' | null
-  parent_id?: string
-  depends_on?: string[]
-  follow_up_tasks?: FollowUpTask[]
-  is_waiting_for?: string
-  trigger_date?: string
-  is_blocked?: boolean
-  reminder?: string
-  notes?: string
-  attachments?: string[]
-  starred?: boolean
-  archived?: boolean
-  deleted?: boolean
-  deleted_at?: string
-  assigned_to?: string
-  user_id: string
-}
+// Database Types - Task and FollowUpTask are re-exported from services/types.ts at the top of this file
 
 export interface Project {
   id: string
@@ -88,18 +61,6 @@ export interface Project {
   icon: string
   user_id: string
   created_at: string
-}
-
-export interface FollowUpTask {
-  id: string
-  title: string
-  description?: string
-  priority: 'low' | 'medium' | 'high' | 'urgent'
-  days_after?: number
-  trigger_condition?: 'immediate' | 'delayed' | 'manual'
-  category: 'work' | 'personal' | 'learning' | 'creative' | 'health' | 'other'
-  estimated_time: number
-  tags: string[]
 }
 
 // Database Tables Schema (SQL)

@@ -148,8 +148,7 @@ const Calendar: React.FC = () => {
       t.sidebar_section === 'todo' ||
       (!t.sidebar_section && (
         (t.status === 'todo' && (t.priority === 'high' || t.priority === 'urgent')) ||
-        t.status === 'waiting' ||
-        t.status === 'blocked'
+        t.status === 'waiting'
       ))
     );
 
@@ -250,14 +249,14 @@ const Calendar: React.FC = () => {
 
   // Helper to check if a task is multi-day (estimated time >= 1 day or 480 minutes = 8 hours)
   const isMultiDayTask = (task: Task): boolean => {
-    return task.estimated_time >= 480; // 8+ hours = multi-day
+    return (task.estimated_time ?? 0) >= 480; // 8+ hours = multi-day
   };
 
   // Helper to get the number of days a task spans
   const getTaskSpanDays = (task: Task): number => {
     if (!isMultiDayTask(task)) return 1;
     // Each day = 480 minutes (8 working hours)
-    return Math.ceil(task.estimated_time / 480);
+    return Math.ceil((task.estimated_time ?? 0) / 480);
   };
 
   // Helper to check if a task should appear on a specific date
@@ -316,10 +315,10 @@ const Calendar: React.FC = () => {
 
     // Separate all-day tasks (high priority or starred tasks are treated as all-day)
     const allDayTasks = dayTasks.filter(task =>
-      task.priority === 'urgent' || task.starred || task.estimated_time >= 240 // 4+ hours
+      task.priority === 'urgent' || task.starred || (task.estimated_time ?? 0) >= 240 // 4+ hours
     );
     const timedTasks = dayTasks.filter(task =>
-      !(task.priority === 'urgent' || task.starred || task.estimated_time >= 240)
+      !(task.priority === 'urgent' || task.starred || (task.estimated_time ?? 0) >= 240)
     );
 
     // Calendar Events
