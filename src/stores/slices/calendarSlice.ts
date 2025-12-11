@@ -4,7 +4,7 @@
  */
 
 import type { StateCreator } from 'zustand';
-import type { CalendarEvent } from '@/services/types';
+import type { CalendarEvent, TaskData } from '@/services/types';
 import {
   getCalendarEvents,
   createCalendarEvent as apiCreateCalendarEvent,
@@ -28,6 +28,7 @@ export interface CalendarSlice {
   deleteCalendarEvent: (id: string) => Promise<void>;
   findFreeSlots: (date: string, durationMinutes: number) => Promise<Array<{ start: string; end: string }>>;
   getCalendarEventById: (id: string) => CalendarEvent | undefined;
+  convertTaskToEvent: (task: TaskData) => Promise<CalendarEvent>;
 }
 
 export const createCalendarSlice: StateCreator<CalendarSlice, [], [], CalendarSlice> = (
@@ -116,4 +117,48 @@ export const createCalendarSlice: StateCreator<CalendarSlice, [], [], CalendarSl
 
   // Get calendar event by ID
   getCalendarEventById: (id) => get().calendarEvents.find((e) => e.id === id),
+
+  // Convert task to calendar event
+  convertTaskToEvent: async (task): Promise<CalendarEvent> => {
+    try {
+      // Create event from task data
+      const eventData: Omit<CalendarEvent, 'id' | 'user_id' | 'created_at' | 'updated_at'> = {
+        title: task.title,
+        description: task.description || '',
+        start_date: task.due_date || new Date().toISOString().split('T')[0],
+        start_time: '09:00', // Default start time
+        end_date: task.due_date || new Date().toISOString().split('T')[0],
+        end_time: task.estimated_time ?
+          // Calculate end time based on estimated time
+          `${9 + Math.floor((task.estimated_time || 0) / 60)}:${(task.estimated_time || 0) % 60 || '00'}` :
+          '10:00',
+        all_day: (task.estimated_time || 0) >= 480, // 8+ hours = all day
+        location: '',
+        type: 'event',
+        color: null,
+        is_recurring: false,
+        recurrence_rule: null,
+        reminder_minutes: 15,
+        attendees: [],
+        task_id: task.id, // Link to original task
+        project_id: task.project_id,
+      };
+
+      const created = await apiCreateCalendarEvent(eventData);
+      set((state) => ({
+        calendarEvents: [...state.calendarEvents, created].sort((a, b) => a.start_date.localeCompare(b.start_date))
+      }));
+
+      logger.info('CalendarSlice', 'Task converted to calendar event', {
+        taskId: task.id,
+        eventId: created.id,
+        title: created.title
+      });
+
+      return created;
+    } catch (error) {
+      logger.error('CalendarSlice', error as Error, { context: 'convertTaskToEvent', taskId: task.id });
+      throw error;
+    }
+  },
 });

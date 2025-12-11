@@ -5,7 +5,7 @@
 
 import React, { useState } from 'react';
 import { Plus, Edit2, Trash2, Calendar, DollarSign, ToggleLeft, ToggleRight, AlertCircle } from 'lucide-react';
-import type { RecurringTransaction } from '../../types';
+import type { RecurringTransaction, RecurringTransactionInput } from '../../types';
 import {
   useRecurringTransactionsQuery,
   useUpsertRecurringTransactionMutation,
@@ -41,7 +41,7 @@ export const RecurringTransactionsList: React.FC = () => {
     setShowEditor(true);
   };
 
-  const handleSave = async (input: any) => {
+  const handleSave = async (input: RecurringTransactionInput) => {
     await upsertMutation.mutateAsync(input);
     setShowEditor(false);
     setEditingRecurring(undefined);

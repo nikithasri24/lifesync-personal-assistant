@@ -10,6 +10,7 @@ import type {
   SchedulingConstraints,
   SchedulingResult,
 } from '../types';
+import { logger } from '../../services/logger';
 
 /**
  * Default scheduling constraints
@@ -76,7 +77,10 @@ export function topologicalSort(
 
   // Check for cycles
   if (result.length !== tasks.length) {
-    console.warn('Circular dependencies detected');
+    logger.warn('Scheduler', 'Circular dependencies detected in task graph', {
+      totalTasks: tasks.length,
+      sortedTasks: result.length
+    });
     // Return all tasks, cycles will be handled separately
     return tasks.map(t => t.id);
   }

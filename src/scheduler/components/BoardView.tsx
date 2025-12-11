@@ -75,7 +75,6 @@ export const BoardView: React.FC<BoardViewProps> = ({
 
   // Drag handlers
   const handleDragStart = (e: React.DragEvent, task: ScheduledTask) => {
-    console.log('Drag started for task:', task.title);
     setDraggedTask(task);
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', task.id);
@@ -90,9 +89,6 @@ export const BoardView: React.FC<BoardViewProps> = ({
     e.preventDefault();
     e.stopPropagation();
     e.dataTransfer.dropEffect = 'move';
-    if (dragOverColumn !== columnId) {
-      console.log('Dragging over column:', columnId);
-    }
     setDragOverColumn(columnId);
   };
 
@@ -107,11 +103,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
     e.preventDefault();
     e.stopPropagation();
 
-    console.log('Drop triggered on column:', targetColumn.id);
-    console.log('Dragged task:', draggedTask);
-
     if (!draggedTask) {
-      console.log('No dragged task found');
       return;
     }
 
@@ -120,7 +112,6 @@ export const BoardView: React.FC<BoardViewProps> = ({
     );
 
     if (!sourceColumn) {
-      console.log('No source column found');
       return;
     }
 
@@ -129,13 +120,6 @@ export const BoardView: React.FC<BoardViewProps> = ({
 
     // Determine new status based on column
     const newStatus = targetColumn.status as Task['status'];
-
-    console.log('Creating drop result:', {
-      taskId: draggedTask.id,
-      sourceColumn: sourceColumn.id,
-      targetColumn: targetColumn.id,
-      newStatus
-    });
 
     const result: DragDropResult = {
       taskId: draggedTask.id,
@@ -146,10 +130,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
     };
 
     if (onTaskDrop) {
-      console.log('Calling onTaskDrop');
       onTaskDrop(result);
-    } else {
-      console.log('onTaskDrop is not defined');
     }
 
     handleDragEnd();

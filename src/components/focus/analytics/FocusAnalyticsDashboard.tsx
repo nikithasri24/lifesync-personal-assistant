@@ -34,7 +34,7 @@ import {
   Lightbulb
 } from 'lucide-react';
 import { eachDayOfInterval, endOfWeek, format, startOfWeek } from 'date-fns'
-import { useAppStore } from '../../../stores/useAppStore'
+import { useComposedStore } from '../../../stores/useComposedStore'
 import { logger } from '../../../services/logger';
 
 // Types for focus session data from API
@@ -188,7 +188,7 @@ export const FocusAnalyticsDashboard: React.FC<Props> = ({
       dayMap.set(dayKey, entry)
     })
 
-    const { weekStartsOn } = useAppStore.getState()
+    const { weekStartsOn } = useComposedStore.getState()
     const weekStart = startOfWeek(new Date(), { weekStartsOn })
     const orderedDays = eachDayOfInterval({ start: weekStart, end: endOfWeek(weekStart, { weekStartsOn }) })
     const weeklyStats = orderedDays.map((date) => {

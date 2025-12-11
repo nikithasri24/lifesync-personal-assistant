@@ -5,7 +5,8 @@ import { createPortal } from 'react-dom';
 import { addDays, format, isSameWeek, startOfWeek, isSameDay } from 'date-fns';
 import { CalendarDays, ChefHat, Loader2, Plus, Save, Heart, Youtube, Search, X } from 'lucide-react';
 import DatePickerPopover from '../components/DatePickerPopover';
-import { useAppStore } from '../stores/useAppStore';
+import { useComposedStore } from '../stores/useComposedStore';
+import { useToast } from '../hooks/useToast';
 import type { PlannedMeal, Recipe } from '../types';
 import {
   useRecipesQuery,
@@ -198,7 +199,8 @@ const MealPlanning: React.FC = () => {
   const createMealPlanMutation = useCreateMealPlanMutation();
 
   // Global UI settings
-  const { weekStartsOn, showGlobalToast, addNote } = useAppStore();
+  const { weekStartsOn, addNote } = useComposedStore();
+  const { showToast } = useToast();
 
   // Custom hooks
   const modalState = useMealFormModals();
@@ -214,7 +216,7 @@ const MealPlanning: React.FC = () => {
     mealPlans,
     weekNav.activePlan,
     createPlannedMealMutation.mutateAsync,
-    showGlobalToast
+    showToast
   );
 
   // Copy week state
@@ -355,7 +357,7 @@ const MealPlanning: React.FC = () => {
       }
 
       if (!targetPlan) {
-        showGlobalToast('Failed to create target week plan', 'error');
+        showToast('Failed to create target week plan', 'error');
         return;
       }
 
@@ -385,12 +387,12 @@ const MealPlanning: React.FC = () => {
       });
 
       await Promise.all(copyPromises);
-      showGlobalToast(`Copied ${plannedMeals.length} meals to target week`, 'success');
+      showToast(`Copied ${plannedMeals.length} meals to target week`, 'success');
       modalState.setShowCopyWeek(false);
       weekNav.goToWeek(copyTargetWeek);
     } catch (error) {
       logger.error('MealPlanning', 'Failed to copy week:', error);
-      showGlobalToast('Failed to copy meals', 'error');
+      showToast('Failed to copy meals', 'error');
     }
   };
 
@@ -553,7 +555,7 @@ const MealPlanning: React.FC = () => {
             })
             .join('\n');
           void navigator.clipboard.writeText(text);
-          showGlobalToast('Shopping list copied to clipboard!', 'success');
+          showToast('Shopping list copied to clipboard!', 'success');
         }}
       />
 

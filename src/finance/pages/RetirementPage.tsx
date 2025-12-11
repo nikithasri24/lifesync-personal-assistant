@@ -15,6 +15,7 @@ import {
 import { RetirementDashboard } from '../components/retirement';
 import RetirementAccountEditor from '../components/retirement/RetirementAccountEditor';
 import type { Account, RetirementAccountWithStats, RetirementAccountMetadataInput } from '../types';
+import { logger } from '../../services/logger';
 
 const RetirementPage: React.FC = () => {
   const { data: accounts = [], refetch: refetchAccounts } = useAccountsQuery();
@@ -60,7 +61,7 @@ const RetirementPage: React.FC = () => {
       // Note: We're not deleting the actual account, just the retirement metadata
       // If you want to delete the account too, you'll need to add a deleteAccount mutation
     } catch (error) {
-      console.error('Failed to delete retirement account:', error);
+      logger.error('RetirementPage', error instanceof Error ? error : new Error(String(error)), { context: 'handleDelete', accountId });
       alert('Failed to delete account. Please try again.');
     }
   };
@@ -81,7 +82,7 @@ const RetirementPage: React.FC = () => {
       setEditingAccount(null);
       setEditingMetadata(null);
     } catch (error) {
-      console.error('Failed to save retirement account:', error);
+      logger.error('RetirementPage', error instanceof Error ? error : new Error(String(error)), { context: 'handleSave', metadata });
       alert('Failed to save retirement account. Please try again.');
     }
   };

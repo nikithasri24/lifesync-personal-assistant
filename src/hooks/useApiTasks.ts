@@ -4,7 +4,7 @@
 
 import { useCallback, useMemo, useState } from 'react';
 import type { TaskData, ProjectData } from '../services/apiClient';
-import { useAppStore } from '../stores/useAppStore';
+import { useComposedStore } from '../stores/useComposedStore';
 import type { TodoItem, Project as StoreProject } from '../types';
 
 export interface UseApiTasksReturn {
@@ -163,7 +163,7 @@ export const useApiTasks = (): UseApiTasksReturn => {
     addProject: addProjectToStore,
     updateProject: updateProjectInStore,
     deleteProject: deleteProjectFromStore,
-  } = useAppStore();
+  } = useComposedStore();
 
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState<boolean>(false);
@@ -298,7 +298,9 @@ export const useApiTasks = (): UseApiTasksReturn => {
     setRefreshing(true);
     setError(null);
     try {
-      useAppStore.getState().initializeData();
+      // TODO: This hook is deprecated - data is now in React Query
+      // Components should use React Query's refetch() instead
+      // For now, this is a no-op
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       setError(message);

@@ -7,6 +7,7 @@ import { Select } from '../ui/Select';
 import { useAccountsQuery, useInstitutionsQuery, useUpsertAccountMutation } from '../hooks/useFinanceQuery';
 import { formatCurrency } from '../utils/currency';
 import type { Account, AccountType } from '../types';
+import { logger } from '../../services/logger';
 
 const AccountsPage: React.FC = () => {
   const [open, setOpen] = React.useState(false);
@@ -41,7 +42,7 @@ const AccountsPage: React.FC = () => {
       setOpen(false);
       setForm({ type: 'checking', balance: 0 }); // Reset form
     } catch (error) {
-      console.error('Failed to save account:', error);
+      logger.error('AccountsPage', error instanceof Error ? error : new Error(String(error)), { context: 'onSave', form });
       alert('Failed to save account. Please try again.');
     }
   };

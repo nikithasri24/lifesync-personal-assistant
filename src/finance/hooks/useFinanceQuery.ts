@@ -145,6 +145,27 @@ export function useUpsertAccountMutation(): UseMutationResult<void, Error, { id?
   });
 }
 
+export function useDeleteAccountMutation(): UseMutationResult<void, Error, string, unknown> {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, string>({
+    mutationFn: async (accountId: string) => {
+      logger.debug('Deleting account', { accountId });
+      const api = await getFinanceAPI();
+      await api.deleteAccount(accountId);
+    },
+    onSuccess: (_, accountId) => {
+      logger.info('Account deleted successfully', { accountId });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.accounts() });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.netWorth() });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.transactions() });
+    },
+    onError: (error: Error, accountId) => {
+      logger.error('Failed to delete account', { error: error.message, accountId });
+    },
+  });
+}
+
 // ==================== Transactions ====================
 
 export function useTransactionsQuery(params?: TxnQuery, options?: Omit<UseQueryOptions<Transaction[], Error>, 'queryKey' | 'queryFn'>): UseQueryResult<Transaction[], Error> {

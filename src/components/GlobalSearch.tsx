@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Search, X, FileText, Target, CheckSquare, BookOpen, Heart } from 'lucide-react';
-import { useAppStore } from '../stores/useAppStore';
+import { useComposedStore } from '../stores/useComposedStore';
 import { format } from 'date-fns';
 import { useHabits } from '../hooks/useHabitsQuery';
 import { useTasks } from '../hooks/useTasksQuery';
@@ -29,7 +29,7 @@ interface GlobalSearchProps {
 export default function GlobalSearch({ onClose }: GlobalSearchProps): JSX.Element {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
-  const { setActiveView } = useAppStore();
+  const { setActiveView } = useComposedStore();
 
   // Use React Query hooks for data
   const { data: habitsData } = useHabits();

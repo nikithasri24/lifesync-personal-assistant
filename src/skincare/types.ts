@@ -102,6 +102,10 @@ export type SkincareRoutine = {
   // Scheduling
   daysOfWeek?: number[]; // 0=Sunday, 1=Monday, etc. null means all days
 
+  // Reminders
+  reminderEnabled?: boolean;
+  reminderTime?: string; // HH:MM format
+
   notes?: string;
 
   createdAt: string;

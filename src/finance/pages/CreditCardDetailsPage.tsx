@@ -5,11 +5,17 @@
 
 import React, { useEffect, useState } from 'react';
 import { ArrowLeft, Edit, Plus } from 'lucide-react';
-import { getFinanceAPI } from '../data';
 import type { Account, CardBenefit, CardCategoryBonus, WelcomeBonus, CardOffer } from '../types';
 import { CreditCardCard } from '../components/creditCards/CreditCardCard';
 import { CardBenefitsPanel } from '../components/creditCards/CardBenefitsPanel';
 import { logger } from '../../services/logger';
+import {
+  useAccountsQuery,
+  useCardBenefitsQuery,
+  useCategoryBonusesQuery,
+  useWelcomeBonusesQuery,
+  useCardOffersQuery
+} from '../hooks/useFinanceQuery';
 
 interface CreditCardDetailsPageProps {
   accountId: string;
@@ -17,48 +23,16 @@ interface CreditCardDetailsPageProps {
 }
 
 export const CreditCardDetailsPage: React.FC<CreditCardDetailsPageProps> = ({ accountId, onBack }) => {
-  const [card, setCard] = useState<Account | null>(null);
-  const [benefits, setBenefits] = useState<CardBenefit[]>([]);
-  const [categoryBonuses, setCategoryBonuses] = useState<CardCategoryBonus[]>([]);
-  const [welcomeBonuses, setWelcomeBonuses] = useState<WelcomeBonus[]>([]);
-  const [offers, setOffers] = useState<CardOffer[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Use React Query hooks for data fetching
+  const { data: accounts = [], isLoading: accountsLoading } = useAccountsQuery();
+  const { data: benefits = [], isLoading: benefitsLoading } = useCardBenefitsQuery(accountId);
+  const { data: categoryBonuses = [], isLoading: bonusesLoading } = useCategoryBonusesQuery(accountId);
+  const { data: welcomeBonuses = [], isLoading: welcomeLoading } = useWelcomeBonusesQuery(accountId);
+  const { data: offers = [], isLoading: offersLoading } = useCardOffersQuery(accountId);
 
-  useEffect(() => {
-    const loadData = async (): Promise<void> => {
-      try {
-        setLoading(true);
-
-        const api = await getFinanceAPI();
-
-        // Load card details
-        const accounts = await api.listAccounts();
-        const foundCard = accounts.find((a) => a.id === accountId);
-        if (foundCard) {
-          setCard(foundCard);
-        }
-
-        // Load benefits data
-        const [benefitsData, bonusesData, welcomeData, offersData] = await Promise.all([
-          api.listCardBenefits(accountId),
-          api.listCategoryBonuses(accountId),
-          api.listWelcomeBonuses(accountId),
-          api.listCardOffers(accountId),
-        ]);
-
-        setBenefits(benefitsData);
-        setCategoryBonuses(bonusesData);
-        setWelcomeBonuses(welcomeData);
-        setOffers(offersData);
-      } catch (error) {
-        logger.error('Failed to load card details:', { error });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    void loadData();
-  }, [accountId]);
+  // Find the specific card
+  const card = accounts.find((a) => a.id === accountId) ?? null;
+  const loading = accountsLoading || benefitsLoading || bonusesLoading || welcomeLoading || offersLoading;
 
   if (loading) {
     return (

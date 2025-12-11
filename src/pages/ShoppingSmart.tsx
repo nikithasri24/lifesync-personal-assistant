@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { logger } from '../services/logger';
 
-import { useAppStore } from '../stores/useAppStore';
+import { useComposedStore } from '../stores/useComposedStore';
+import { useToast } from '../hooks/useToast';
 import type { ShoppingItem, Store as StoreType, ShoppingList } from '../shopping/types';
 import { distributeItemsToStores as distributeItems, type DistributionStrategy } from '../shopping/services/storeDistribution';
 import { mapShoppingItemDataToModel, mapShoppingItemToCreateInput, mapShoppingItemToUpdateInput } from '../shopping/services/shoppingMappers';
@@ -98,7 +99,8 @@ export default function ShoppingSmart(): JSX.Element {
   const _shoppingLoading = isLoadingList || isLoadingItems || pantryLoading;
 
   // Get other store data that hasn't been migrated yet
-  const { showGlobalToast, addFinancialTransaction, financialAccounts } = useAppStore();
+  const { addFinancialTransaction, financialAccounts } = useComposedStore();
+  const { showToast } = useToast();
 
   // Ensure active shopping list exists on mount
   useEffect(() => {
@@ -425,11 +427,11 @@ export default function ShoppingSmart(): JSX.Element {
               onSortChange={setPantrySort}
               onAddLowStock={async () => {
                 const count = await addLowStockToShopping();
-                showGlobalToast?.(`Added ${count} low-stock items to shopping`, 'success');
+                showToast(`Added ${count} low-stock items to shopping`, 'success');
               }}
               onAddExpired={async () => {
                 const count = await addExpiredToShopping();
-                showGlobalToast?.(`Moved ${count} expired items to shopping`, 'info');
+                showToast(`Moved ${count} expired items to shopping`, 'info');
               }}
               onAddItem={() => setShowAddPantry(true)}
               onScanReceipt={() => setShowScanReceipt(true)}
@@ -467,14 +469,14 @@ export default function ShoppingSmart(): JSX.Element {
 
               const need = Math.max(0, targetQuantity - (item.quantity || 0));
               if (need <= 0) {
-                showGlobalToast?.('Already at or above target', 'info');
+                showToast('Already at or above target', 'info');
                 cancelReplenish();
                 return;
               }
 
               const shoppingItem = createShoppingItemFromPantry(item, need);
               await addShoppingItem({ ...shoppingItem, tags: ['from:pantry', 'reason:replenish'] });
-              showGlobalToast?.(`Added ${need} ${item.unit ?? ''} of ${item.name} to shopping`, 'success');
+              showToast(`Added ${need} ${item.unit ?? ''} of ${item.name} to shopping`, 'success');
               cancelReplenish();
             }}
             onCancelReplenish={cancelReplenish}
@@ -484,7 +486,7 @@ export default function ShoppingSmart(): JSX.Element {
                 : item.quantity ?? 1;
               const shoppingItem = createShoppingItemFromPantry(item, qty);
               void addShoppingItem(shoppingItem);
-              showGlobalToast?.(`Added ${item.name} to shopping`, 'success');
+              showToast(`Added ${item.name} to shopping`, 'success');
             }}
             onDelete={(itemId) => void deletePantryItemMutation.mutate(itemId)}
           />
@@ -515,13 +517,13 @@ export default function ShoppingSmart(): JSX.Element {
               isLowStock: thresholdNum != null ? it.quantity <= thresholdNum : undefined
             });
           }
-          showGlobalToast?.(`Added ${items.length} items to pantry`, 'success');
+          showToast(`Added ${items.length} items to pantry`, 'success');
         }}
         onLogExpense={async (amount, merchant) => {
           const accounts = financialAccounts as Array<{ id: string }> | undefined;
           const acctId = accounts?.[0]?.id;
           if (!acctId) {
-            showGlobalToast?.('Add a financial account first (Financials tab)', 'info');
+            showToast('Add a financial account first (Financials tab)', 'info');
             return;
           }
           try {
@@ -540,9 +542,9 @@ export default function ShoppingSmart(): JSX.Element {
               description: `Groceries — ${merchant}`,
               date: new Date(),
               categoryId: undefined});
-            showGlobalToast?.('Logged groceries expense', 'success');
+            showToast('Logged groceries expense', 'success');
           } catch (_e) {
-            showGlobalToast?.('Failed to log expense', 'error');
+            showToast('Failed to log expense', 'error');
           }
         }}
       />

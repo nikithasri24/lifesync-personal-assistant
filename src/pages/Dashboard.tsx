@@ -10,7 +10,7 @@ import {
   Sparkles,
   Zap
 } from 'lucide-react';
-import { useAppStore } from '../stores/useAppStore';
+import { useComposedStore } from '../stores/useComposedStore';
 import { format, isToday, isSameDay, addDays } from 'date-fns';
 import { SkeletonCard } from '../components/LoadingSpinner';
 import { useState, useEffect } from 'react';
@@ -51,7 +51,7 @@ interface CompleteHabitMutation {
 }
 
 export default function Dashboard(): JSX.Element {
-  const { setActiveView } = useAppStore();
+  const { setActiveView } = useComposedStore();
 
   // React Query hooks for all data sources
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call

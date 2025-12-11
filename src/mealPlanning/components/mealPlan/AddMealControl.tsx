@@ -15,7 +15,7 @@ import {
   useCreateRecipeMutation,
   useCreateMealPlanMutation,
 } from '../../hooks/useMealPlanningQuery';
-import { useAppStore } from '../../../stores';
+import { useComposedStore } from '../../../stores';
 import { parseLocalDateKey, ensureDate } from '../../utils/mealPlanHelpers';
 import { getMealDraft, saveMealDraft, clearMealDraft } from '../../services/storage/draftStorage';
 import { logger } from '../../../services/logger';
@@ -80,7 +80,7 @@ export const AddMealControl: React.FC<AddMealControlProps> = ({
   triggerRef,
   onFetchRecipe,
 }) => {
-  const { mealOptions, weekStartsOn } = useAppStore();
+  const { mealOptions, weekStartsOn } = useComposedStore();
   const { data: recipes = [] } = useRecipesQuery();
   const { data: mealPlans = [] } = useMealPlansQuery();
   const createPlannedMealMutation = useCreatePlannedMealMutation();

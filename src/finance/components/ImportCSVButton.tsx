@@ -7,9 +7,9 @@ import React from 'react';
 import { logger } from '../../services/logger';
 
 import { Button } from '../ui/Button';
-import { getFinanceAPI } from '../data';
 import { parseFinanceCSV, mapCategoryName } from '../utils/csvParser';
 import type { ParsedTransaction } from '../utils/csvParser';
+import { useAccountsQuery, useCategoriesQuery, useUpsertTransactionMutation } from '../hooks/useFinanceQuery';
 
 interface ImportStats {
   total: number;
@@ -23,16 +23,20 @@ const ImportCSVButton: React.FC<{ _onSuccess: () => void }> = ({ _onSuccess }) =
   const [progress, setProgress] = React.useState<number>(0);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
+  // React Query hooks
+  const { data: accounts = [] } = useAccountsQuery();
+  const { data: categories = [] } = useCategoriesQuery();
+  const upsertTransactionMutation = useUpsertTransactionMutation();
+
   const ensureCategoriesExist = async (
-    api: { listCategories: () => Promise<Array<{ name: string; id: string }>> },
+    existingCategories: Array<{ name: string; id: string }>,
     requiredCategories: Set<string>
   ): Promise<Map<string, string>> => {
-    const categories = await api.listCategories();
     const categoryMap = new Map<string, string>();
 
     // Map existing categories
-    if (Array.isArray(categories)) {
-      categories.forEach(cat => categoryMap.set(cat.name, cat.id));
+    if (Array.isArray(existingCategories)) {
+      existingCategories.forEach(cat => categoryMap.set(cat.name, cat.id));
     }
 
     // Create missing categories
@@ -84,10 +88,7 @@ const ImportCSVButton: React.FC<{ _onSuccess: () => void }> = ({ _onSuccess }) =
     };
 
     try {
-      const api = await getFinanceAPI();
-
       // Get account
-      const accounts = await api.listAccounts();
       if (accounts.length === 0) {
         throw new Error('No account found. Please create an account first.');
       }
@@ -143,7 +144,7 @@ const ImportCSVButton: React.FC<{ _onSuccess: () => void }> = ({ _onSuccess }) =
 
       // Ensure all categories exist
       logger.info('ImportCSVButton', 'Ensuring categories exist...');
-      const categoryMap = await ensureCategoriesExist(api, requiredCategories);
+      const categoryMap = await ensureCategoriesExist(categories, requiredCategories);
       logger.info('ImportCSVButton', 'Categories ready:', Array.from(categoryMap.entries()));
 
       // Import transactions
@@ -171,8 +172,8 @@ const ImportCSVButton: React.FC<{ _onSuccess: () => void }> = ({ _onSuccess }) =
             type: 'debit' as const
           };
 
-          // Insert transaction
-          await api.upsertTransaction(transactionData);
+          // Insert transaction using React Query mutation
+          await upsertTransactionMutation.mutateAsync(transactionData);
 
           stats.imported++;
           setProgress(Math.round((stats.imported / stats.total) * 100));

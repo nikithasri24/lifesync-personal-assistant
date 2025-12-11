@@ -95,6 +95,7 @@ export const useComposedStore = create<ComposedStore>()(
           activeView: state.activeView,
           sidebarCollapsed: state.sidebarCollapsed,
           weekStartsOn: state.weekStartsOn,
+          mealOptions: state.mealOptions,
         }),
       }
     ),

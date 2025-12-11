@@ -34,7 +34,7 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onDelete }) => {
     });
   };
 
-  const handleUpdateItem = (itemId: string, updates: any) => {
+  const handleUpdateItem = (itemId: string, updates: Partial<ListItem>) => {
     updateItemMutation.mutate({
       id: itemId,
       noteId: note.id,

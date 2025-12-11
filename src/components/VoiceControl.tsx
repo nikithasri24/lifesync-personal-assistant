@@ -1,6 +1,6 @@
 import React from 'react'
 import { Mic, MicOff } from 'lucide-react'
-import { useAppStore } from '../stores/useAppStore'
+import { useComposedStore } from '../stores/useComposedStore'
 import useVoice from '../hooks/useVoice'
 import type { ViewKey } from '../stores/slices/uiSlice'
 
@@ -42,7 +42,7 @@ function matchCommand(text: string): { view?: ViewKey } | null {
 }
 
 export const VoiceControl: React.FC<Props> = ({ className = '' }) => {
-  const { activeView, setActiveView } = useAppStore()
+  const { activeView, setActiveView } = useComposedStore()
   const { supported, listening, transcript, toggle, clear, speak } = useVoice('en-US')
   const [lastHandled, setLastHandled] = React.useState('')
   const [_unsupported] = React.useState(false)

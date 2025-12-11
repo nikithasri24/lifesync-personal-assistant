@@ -166,15 +166,22 @@ export class ChangeTaskCategoryCommand implements Command {
   private newStatus: Task['status'];
   private newPriority: Task['priority'];
   private newDueDate: string | null;
+  private newSidebarSection: Task['sidebar_section'];
   private previousStatus: Task['status'];
   private previousPriority: Task['priority'];
   private previousDueDate: string | null;
+  private previousSidebarSection: Task['sidebar_section'];
   private taskTitle: string;
 
   constructor(
     taskId: string,
     taskTitle: string,
-    updates: { status?: Task['status']; priority?: Task['priority']; due_date?: string | null },
+    updates: {
+      status?: Task['status'];
+      priority?: Task['priority'];
+      due_date?: string | null;
+      sidebar_section?: Task['sidebar_section'];
+    },
     currentTask: Task
   ) {
     this.id = `change-category-${taskId}-${Date.now()}`;
@@ -186,10 +193,12 @@ export class ChangeTaskCategoryCommand implements Command {
     this.newStatus = updates.status ?? currentTask.status;
     this.newPriority = updates.priority ?? currentTask.priority;
     this.newDueDate = updates.due_date !== undefined ? updates.due_date : currentTask.due_date;
+    this.newSidebarSection = updates.sidebar_section ?? currentTask.sidebar_section ?? null;
 
     this.previousStatus = currentTask.status;
     this.previousPriority = currentTask.priority;
     this.previousDueDate = currentTask.due_date;
+    this.previousSidebarSection = currentTask.sidebar_section ?? null;
   }
 
   async execute(): Promise<void> {
@@ -198,6 +207,7 @@ export class ChangeTaskCategoryCommand implements Command {
       status: this.newStatus,
       priority: this.newPriority,
       due_date: this.newDueDate,
+      sidebar_section: this.newSidebarSection,
     });
     // Invalidate React Query cache to refresh UI
     await queryClient.invalidateQueries({ queryKey: ['tasks'] });
@@ -209,6 +219,7 @@ export class ChangeTaskCategoryCommand implements Command {
       status: this.previousStatus,
       priority: this.previousPriority,
       due_date: this.previousDueDate,
+      sidebar_section: this.previousSidebarSection,
     });
     // Invalidate React Query cache to refresh UI
     await queryClient.invalidateQueries({ queryKey: ['tasks'] });

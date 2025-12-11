@@ -6,10 +6,10 @@
 
 import React from 'react';
 import { Button } from '../ui/Button';
-import { getFinanceAPI } from '../data';
 import { logger } from '../../services/logger';
 import { useToast } from '../../hooks/useToast';
 import type { Account } from '../types';
+import { useUpsertAccountMutation, useDeleteAccountMutation } from '../hooks/useFinanceQuery';
 
 interface AccountModalProps {
   account?: Account;
@@ -18,8 +18,9 @@ interface AccountModalProps {
 }
 
 export const AccountModal: React.FC<AccountModalProps> = ({ account, onClose, onSuccess }) => {
-  const [loading, setLoading] = React.useState(false);
   const { showToast } = useToast();
+  const upsertAccountMutation = useUpsertAccountMutation();
+  const deleteAccountMutation = useDeleteAccountMutation();
   const [formData, setFormData] = React.useState({
     name: account?.name ?? '',
     type: account?.type ?? 'checking',
@@ -30,11 +31,9 @@ export const AccountModal: React.FC<AccountModalProps> = ({ account, onClose, on
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
-    setLoading(true);
 
     try {
-      const api = await getFinanceAPI();
-      await api.upsertAccount({
+      await upsertAccountMutation.mutateAsync({
         id: account?.id,
         name: formData.name,
         type: formData.type,
@@ -48,10 +47,8 @@ export const AccountModal: React.FC<AccountModalProps> = ({ account, onClose, on
       onSuccess();
       onClose();
     } catch (error: unknown) {
-      logger.error('Failed to save account:', { error });
+      logger.error('AccountModal', error instanceof Error ? error : new Error(String(error)), { context: 'handleSubmit' });
       showToast('Failed to save account. Check console for details.', 'error');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -62,18 +59,14 @@ export const AccountModal: React.FC<AccountModalProps> = ({ account, onClose, on
       return;
     }
 
-    setLoading(true);
     try {
-      const api = await getFinanceAPI();
-      await api.deleteAccount(account.id);
+      await deleteAccountMutation.mutateAsync(account.id);
       showToast('Account deleted successfully!', 'success');
       onSuccess();
       onClose();
     } catch (error: unknown) {
-      logger.error('Failed to delete account:', { error });
+      logger.error('AccountModal', error instanceof Error ? error : new Error(String(error)), { context: 'handleDelete', accountId: account.id });
       showToast('Failed to delete account. Check console for details.', 'error');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -165,15 +158,15 @@ export const AccountModal: React.FC<AccountModalProps> = ({ account, onClose, on
               <Button
                 variant="ghost"
                 onClick={handleDelete}
-                disabled={loading}
+                disabled={upsertAccountMutation.isPending || deleteAccountMutation.isPending}
                 className="text-rose-600 hover:bg-rose-50"
               >
-                Delete
+                {deleteAccountMutation.isPending ? 'Deleting...' : 'Delete'}
               </Button>
             )}
           </div>
-          <Button onClick={(e) => { void handleSubmit(e); }} disabled={loading}>
-            {loading ? 'Saving...' : isEditing ? 'Update Account' : 'Create Account'}
+          <Button onClick={(e) => { void handleSubmit(e); }} disabled={upsertAccountMutation.isPending || deleteAccountMutation.isPending}>
+            {upsertAccountMutation.isPending ? 'Saving...' : isEditing ? 'Update Account' : 'Create Account'}
           </Button>
         </div>
       </div>

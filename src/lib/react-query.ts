@@ -134,6 +134,74 @@ export const queryKeys = {
     budgets: ['finance', 'budgets'] as const,
     categories: ['finance', 'categories'] as const,
   },
+
+  // Calendar Events
+  calendar: {
+    all: ['calendar'] as const,
+    lists: () => [...queryKeys.calendar.all, 'list'] as const,
+    list: (filters?: QueryFilters) => [...queryKeys.calendar.lists(), filters] as const,
+    details: () => [...queryKeys.calendar.all, 'detail'] as const,
+    detail: (id: string) => [...queryKeys.calendar.details(), id] as const,
+  },
+
+  // Skincare
+  skincare: {
+    all: ['skincare'] as const,
+    products: {
+      all: () => [...queryKeys.skincare.all, 'products'] as const,
+      lists: () => [...queryKeys.skincare.products.all(), 'list'] as const,
+      list: (filters?: QueryFilters) => [...queryKeys.skincare.products.lists(), filters] as const,
+      details: () => [...queryKeys.skincare.products.all(), 'detail'] as const,
+      detail: (id: string) => [...queryKeys.skincare.products.details(), id] as const,
+    },
+    routines: {
+      all: () => [...queryKeys.skincare.all, 'routines'] as const,
+      lists: () => [...queryKeys.skincare.routines.all(), 'list'] as const,
+      list: (filters?: QueryFilters) => [...queryKeys.skincare.routines.lists(), filters] as const,
+      details: () => [...queryKeys.skincare.routines.all(), 'detail'] as const,
+      detail: (id: string) => [...queryKeys.skincare.routines.details(), id] as const,
+      forDay: (dayOfWeek: number, timeSlot: string) =>
+        [...queryKeys.skincare.routines.all(), 'day', dayOfWeek, timeSlot] as const,
+    },
+    logs: {
+      all: () => [...queryKeys.skincare.all, 'logs'] as const,
+      lists: () => [...queryKeys.skincare.logs.all(), 'list'] as const,
+      list: (filters?: QueryFilters) => [...queryKeys.skincare.logs.lists(), filters] as const,
+      details: () => [...queryKeys.skincare.logs.all(), 'detail'] as const,
+      detail: (id: string) => [...queryKeys.skincare.logs.details(), id] as const,
+    },
+    stats: (startDate: string, endDate: string) =>
+      [...queryKeys.skincare.all, 'stats', startDate, endDate] as const,
+    streaks: () => [...queryKeys.skincare.all, 'streaks'] as const,
+  },
+
+  // Travel
+  travel: {
+    all: ['travel'] as const,
+    trips: {
+      all: () => [...queryKeys.travel.all, 'trips'] as const,
+      lists: () => [...queryKeys.travel.trips.all(), 'list'] as const,
+      list: (filters?: QueryFilters) => [...queryKeys.travel.trips.lists(), filters] as const,
+      details: () => [...queryKeys.travel.trips.all(), 'detail'] as const,
+      detail: (id: string) => [...queryKeys.travel.trips.details(), id] as const,
+    },
+    tripDays: {
+      all: () => [...queryKeys.travel.all, 'tripDays'] as const,
+      lists: () => [...queryKeys.travel.tripDays.all(), 'list'] as const,
+      list: (tripId: string) => [...queryKeys.travel.tripDays.lists(), tripId] as const,
+    },
+    documents: {
+      all: () => [...queryKeys.travel.all, 'documents'] as const,
+      lists: () => [...queryKeys.travel.documents.all(), 'list'] as const,
+      list: (tripId?: string) => [...queryKeys.travel.documents.lists(), tripId] as const,
+    },
+    packingLists: {
+      all: () => [...queryKeys.travel.all, 'packingLists'] as const,
+      lists: () => [...queryKeys.travel.packingLists.all(), 'list'] as const,
+      list: (tripId?: string) => [...queryKeys.travel.packingLists.lists(), tripId] as const,
+    },
+    budget: (tripId: string) => [...queryKeys.travel.all, 'budget', tripId] as const,
+  },
 } as const;
 
 /**

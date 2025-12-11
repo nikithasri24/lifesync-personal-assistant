@@ -1067,7 +1067,17 @@ class SupabaseAdapter {
 
     if (error) throw new Error(error.message)
 
-    return (data ?? []).map((row: any) => ({
+    type NoteRow = {
+      id: string;
+      title: string | null;
+      content: string;
+      tags: string[] | null;
+      category: string | null;
+      created_at: string;
+      updated_at: string;
+    };
+
+    return (data ?? []).map((row: NoteRow) => ({
       id: row.id,
       title: row.title ?? '',
       content: row.content,
@@ -1133,7 +1143,12 @@ class SupabaseAdapter {
 
   async updateNote(id: string, updates: Partial<Note>): Promise<Note> {
     const userId = this.requireUserId()
-    const payload: any = {}
+    const payload: {
+      title?: string | null;
+      content?: string;
+      tags?: string[];
+      category?: string | null;
+    } = {}
 
     if (updates.title !== undefined) payload.title = updates.title || null
     if (updates.content !== undefined) payload.content = updates.content
@@ -1184,7 +1199,25 @@ class SupabaseAdapter {
 
     if (error) throw new Error(error.message)
 
-    return (data ?? []).map((row: any) => ({
+    type GoalRow = {
+      id: string;
+      title: string;
+      description: string | null;
+      category: Goal['category'] | null;
+      priority: Goal['priority'] | null;
+      status: Goal['status'] | null;
+      progress: number | null;
+      target_date: string | null;
+      completed_date: string | null;
+      tags: string[] | null;
+      is_public: boolean | null;
+      difficulty: Goal['difficulty'] | null;
+      xp_reward: number | null;
+      notes: string | null;
+      created_at: string;
+    };
+
+    return (data ?? []).map((row: GoalRow) => ({
       id: row.id,
       title: row.title,
       description: row.description ?? '',
@@ -1285,7 +1318,20 @@ class SupabaseAdapter {
 
   async updateGoal(id: string, updates: Partial<Goal>): Promise<Goal> {
     const userId = this.requireUserId()
-    const payload: any = {}
+    const payload: {
+      title?: string;
+      description?: string | null;
+      category?: Goal['category'] | null;
+      priority?: Goal['priority'];
+      status?: Goal['status'];
+      progress?: number;
+      target_date?: string | null;
+      tags?: string[];
+      is_public?: boolean;
+      difficulty?: Goal['difficulty'];
+      xp_reward?: number;
+      notes?: string;
+    } = {}
 
     if (updates.title !== undefined) payload.title = updates.title
     if (updates.description !== undefined) payload.description = updates.description ?? null
@@ -1354,7 +1400,24 @@ class SupabaseAdapter {
 
     if (error) throw new Error(error.message)
 
-    return (data ?? []).map((row: any) => ({
+    type DreamRow = {
+      id: string;
+      title: string;
+      description: string | null;
+      category: Dream['category'] | null;
+      priority: Dream['priority'] | null;
+      status: Dream['status'] | null;
+      estimated_cost: number | null;
+      estimated_timeframe: string | null;
+      tags: string[] | null;
+      is_public: boolean | null;
+      created_at: string;
+      last_updated: string;
+      achieved_at: string | null;
+      notes: string | null;
+    };
+
+    return (data ?? []).map((row: DreamRow) => ({
       id: row.id,
       title: row.title,
       description: row.description ?? '',
@@ -1417,7 +1480,18 @@ class SupabaseAdapter {
 
   async updateDream(id: string, updates: Partial<Dream>): Promise<Dream> {
     const userId = this.requireUserId()
-    const payload: any = {}
+    const payload: {
+      title?: string;
+      description?: string | null;
+      category?: Dream['category'] | null;
+      priority?: Dream['priority'];
+      status?: Dream['status'];
+      estimated_cost?: number | null;
+      estimated_timeframe?: string | null;
+      tags?: string[];
+      is_public?: boolean;
+      notes?: string;
+    } = {}
 
     if (updates.title !== undefined) payload.title = updates.title
     if (updates.description !== undefined) payload.description = updates.description ?? null
@@ -1481,7 +1555,19 @@ class SupabaseAdapter {
 
     if (error) throw new Error(error.message)
 
-    return (data ?? []).map((row: any) => ({
+    type JournalEntryRow = {
+      id: string;
+      title: string | null;
+      content: string;
+      mood: JournalMood;
+      tags: string[] | null;
+      attachments: Attachment[] | null;
+      created_at: string;
+      weather: unknown | null;
+      gratitude: string | null;
+    };
+
+    return (data ?? []).map((row: JournalEntryRow) => ({
       id: row.id,
       title: row.title ?? '',
       content: row.content,
@@ -1556,7 +1642,15 @@ class SupabaseAdapter {
 
   async updateJournalEntry(id: string, updates: Partial<JournalEntry>): Promise<JournalEntry> {
     const userId = this.requireUserId()
-    const payload: any = {}
+    const payload: {
+      title?: string | null;
+      content?: string;
+      mood?: JournalMood;
+      tags?: string[];
+      weather?: unknown | null;
+      gratitude?: string | null;
+      attachments?: Attachment[];
+    } = {}
 
     if (updates.title !== undefined) payload.title = updates.title || null
     if (updates.content !== undefined) payload.content = updates.content

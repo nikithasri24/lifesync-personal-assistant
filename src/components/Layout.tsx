@@ -22,7 +22,8 @@ import {
   MessageCircle,
   LayoutGrid
 } from 'lucide-react';
-import { useAppStore } from '../stores/useAppStore';
+import { useComposedStore } from '../stores/useComposedStore';
+import { useToast } from '../hooks/useToast';
 import Toast from './Toast';
 import ThemeToggle from './ThemeToggle';
 import VoiceLauncher from './VoiceLauncher';
@@ -63,7 +64,8 @@ interface LayoutProps {
 }
 
 export default function Layout({ children }: LayoutProps): JSX.Element {
-  const { activeView, setActiveView, sidebarCollapsed, setSidebarCollapsed, globalToast, clearGlobalToast } = useAppStore();
+  const { activeView, setActiveView, sidebarCollapsed, setSidebarCollapsed } = useComposedStore();
+  const { toast, dismissToast } = useToast();
   const { mode } = useAppMode();
 
   // In voice mode and on assistant page, show full-screen assistant
@@ -85,7 +87,7 @@ export default function Layout({ children }: LayoutProps): JSX.Element {
           <ModeSwitch />
         </div>
         {children}
-        <Toast toast={globalToast} onDismiss={clearGlobalToast} />
+        <Toast toast={toast} onDismiss={dismissToast} />
       </div>
     );
   }
@@ -290,7 +292,7 @@ export default function Layout({ children }: LayoutProps): JSX.Element {
           </div>
         </main>
       </div>
-      <Toast toast={globalToast} onDismiss={clearGlobalToast} />
+      <Toast toast={toast} onDismiss={dismissToast} />
     </div>
   );
 }

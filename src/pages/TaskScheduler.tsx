@@ -310,7 +310,6 @@ const TaskScheduler: React.FC = () => {
   // ============================================================================
 
   const handleTaskClick = (task: ScheduledTask) => {
-    console.log('Task clicked:', task.id, task.title);
     setSelectedTaskId(task.id);
     setEditingTask(task);
     setShowEditModal(true);
@@ -353,8 +352,6 @@ const TaskScheduler: React.FC = () => {
   };
 
   const handleTaskDrop = (result: { taskId: string; sourceColumn: string; targetColumn: string; newStatus: string }) => {
-    console.log('Task dropped:', result);
-
     const task = scheduledTasks.find(t => t.id === result.taskId);
     if (!task) return;
 

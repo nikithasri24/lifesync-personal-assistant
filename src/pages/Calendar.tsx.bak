@@ -39,7 +39,6 @@ import { SkeletonCard } from '../components/LoadingSpinner';
 import { TaskEditModal } from '../scheduler/components/TaskEditModal';
 import { EventModal } from '../components/calendar/EventModal';
 import { EventCard } from '../components/calendar/EventCard';
-import { QuickScheduleModal } from '../components/calendar/QuickScheduleModal';
 import type { ScheduledTask } from '../scheduler/types';
 import { useUndoRedo } from '../contexts/UndoRedoContext';
 import { MoveTaskCommand, ChangeTaskCategoryCommand } from '../commands/TaskCommands';
@@ -66,6 +65,10 @@ const Calendar: React.FC = () => {
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
   const [draggedEvent, setDraggedEvent] = useState<CalendarEvent | null>(null);
 
+  // Debug: Log when draggedTask changes
+  React.useEffect(() => {
+    console.log('[Calendar] draggedTask state changed to:', draggedTask?.title || 'null');
+  }, [draggedTask]);
   const [sidebarWidth, setSidebarWidth] = useState(112);
   const [isResizing, setIsResizing] = useState(false);
   const [expandedSections, setExpandedSections] = useState({
@@ -105,10 +108,6 @@ const Calendar: React.FC = () => {
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [showEventModal, setShowEventModal] = useState(false);
   const [eventModalInitialDate, setEventModalInitialDate] = useState<Date | null>(null);
-
-  // Quick schedule state
-  const [showQuickSchedule, setShowQuickSchedule] = useState(false);
-  const [quickScheduleDate, setQuickScheduleDate] = useState<Date | null>(null);
 
   const isLoading = tasksLoading || habitsLoading || entriesLoading || eventsLoading;
 
@@ -160,6 +159,20 @@ const Calendar: React.FC = () => {
         (t.priority === 'low' || t.priority === 'medium')
       )
     );
+
+    // Debug logging
+    console.log('[Calendar] Categorized tasks:', {
+      scheduled: scheduled.length,
+      inProgress: inProgress.length,
+      todo: todo.length,
+      todoTasks: todo.map(t => ({
+        title: t.title,
+        status: t.status,
+        priority: t.priority,
+        sidebar_section: t.sidebar_section
+      })),
+      backlog: backlog.length,
+    });
 
     return { scheduled, todo, inProgress, backlog };
   }, [tasks]);
@@ -352,34 +365,47 @@ const Calendar: React.FC = () => {
 
   // Drag and drop handlers
   const handleDragStart = (task: Task, event?: React.DragEvent) => {
+    console.log('[Calendar] Drag started:', {
+      title: task.title,
+      status: task.status,
+      priority: task.priority,
+      id: task.id,
+      dragEvent: event ? 'has event' : 'no event',
+      target: event?.currentTarget?.tagName,
+    });
+
+    console.log('[Calendar] BEFORE setDraggedTask, draggedTask is:', draggedTask?.title);
     setDraggedTask(task);
+    console.log('[Calendar] AFTER setDraggedTask called (state update scheduled)');
 
     // Set drag data for better browser compatibility
     if (event?.dataTransfer) {
       event.dataTransfer.effectAllowed = 'move';
       event.dataTransfer.setData('text/plain', task.id as string);
+      console.log('[Calendar] dataTransfer set:', {
+        effectAllowed: event.dataTransfer.effectAllowed,
+        types: event.dataTransfer.types
+      });
     }
   };
 
   const handleDragEnd = (e?: React.DragEvent) => {
+    console.log('[Calendar] handleDragEnd called:', {
+      dropEffect: e?.dataTransfer?.dropEffect,
+      draggedTask: draggedTask?.title
+    });
     setDraggedTask(null);
   };
 
-  const handleDrop = (date: Date, e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    // Get the date from the data attribute if available (more reliable)
-    const target = e.currentTarget as HTMLElement;
-    const dataDate = target.getAttribute('data-date');
-    const dataHour = target.getAttribute('data-hour');
-    const finalDate = dataDate ? parseISO(dataDate) : date;
-
+  const handleDrop = (date: Date) => {
+    console.log('[Calendar] handleDrop called:', { date, draggedTask: draggedTask?.title });
     if (!draggedTask) {
+      console.log('[Calendar] handleDrop: No dragged task, returning');
       return;
     }
 
-    const dateString = format(finalDate, 'yyyy-MM-dd');
+    const dateString = format(date, 'yyyy-MM-dd');
+    const previousDate = draggedTask.due_date;
 
     // When scheduling a task, clear manual sidebar section
     // The task will now appear in Scheduled section because it has a due_date
@@ -387,6 +413,8 @@ const Calendar: React.FC = () => {
       due_date: dateString,
       sidebar_section: null, // Clear manual section assignment
     };
+
+    console.log('[Calendar] handleDrop: Executing command with updates:', updates);
 
     // Use command for undo/redo support
     const command = new ChangeTaskCategoryCommand(
@@ -406,12 +434,15 @@ const Calendar: React.FC = () => {
     if (e.dataTransfer) {
       e.dataTransfer.dropEffect = 'move';
     }
+    // More frequent logging to debug
+    if (Math.random() < 0.1) { // Log 10% of events
+      console.log('[Calendar] handleDragOver: Drop zone active', e.currentTarget.className);
+    }
   };
 
   // Drop task in unscheduled panel to remove due_date and clear manual section
   const handleDropInUnscheduled = (e: React.DragEvent) => {
     e.preventDefault();
-    e.stopPropagation();
     if (!draggedTask) return;
 
     // Remove from calendar and clear manual section assignment
@@ -437,10 +468,12 @@ const Calendar: React.FC = () => {
     e: React.DragEvent,
     targetCategory: 'scheduled' | 'todo' | 'inProgress' | 'backlog'
   ) => {
+    console.log('[Calendar] handleDropInCategory called:', { targetCategory, draggedTask: draggedTask?.title });
     e.preventDefault();
     e.stopPropagation();
 
     if (!draggedTask) {
+      console.log('[Calendar] handleDropInCategory: No dragged task, returning');
       return;
     }
 
@@ -471,6 +504,8 @@ const Calendar: React.FC = () => {
         break;
     }
 
+    console.log('[Calendar] handleDropInCategory: Updates to apply:', updates);
+
     if (Object.keys(updates).length > 0) {
       // Use command for undo/redo support
       const command = new ChangeTaskCategoryCommand(
@@ -479,6 +514,7 @@ const Calendar: React.FC = () => {
         updates,
         draggedTask
       );
+      console.log('[Calendar] handleDropInCategory: Executing command');
       void executeCommand(command);
     }
 
@@ -595,6 +631,7 @@ const Calendar: React.FC = () => {
   };
 
   const handleEventDragStart = (event: CalendarEvent, e: React.DragEvent) => {
+    console.log('[Calendar] Event drag started:', event.title);
     setDraggedEvent(event);
     if (e.dataTransfer) {
       e.dataTransfer.effectAllowed = 'move';
@@ -603,47 +640,8 @@ const Calendar: React.FC = () => {
   };
 
   const handleEventDragEnd = (e: React.DragEvent) => {
+    console.log('[Calendar] Event drag ended');
     setDraggedEvent(null);
-  };
-
-  // Quick schedule handlers
-  const handleCellClick = (date: Date, e: React.MouseEvent) => {
-    // Don't open quick schedule if user is dragging
-    if (draggedTask || draggedEvent) return;
-
-    // Don't open if clicking on a task/event
-    const target = e.target as HTMLElement;
-    if (target.closest('[draggable="true"]') || target.closest('button')) return;
-
-    setQuickScheduleDate(date);
-    setShowQuickSchedule(true);
-  };
-
-  const handleQuickScheduleTask = (taskId: string, date: Date) => {
-    const task = tasks.find(t => t.id === taskId);
-    if (!task) return;
-
-    const dateString = format(date, 'yyyy-MM-dd');
-    const updates: Partial<Task> = {
-      due_date: dateString,
-      sidebar_section: null, // Clear manual section assignment
-    };
-
-    const command = new ChangeTaskCategoryCommand(
-      taskId,
-      task.title,
-      updates,
-      task
-    );
-
-    void executeCommand(command);
-  };
-
-  const handleQuickCreateNew = (date: Date) => {
-    // Open the new event modal with the selected date
-    setEventModalInitialDate(date);
-    setEditingEvent(null);
-    setShowEventModal(true);
   };
 
   // Resize handlers
@@ -708,25 +706,25 @@ const Calendar: React.FC = () => {
   return (
     <div className="flex h-screen overflow-hidden bg-white dark:bg-slate-900">
       {/* Left Sidebar - Mini Calendar & Tasks */}
-      <div style={{ width: '200px' }} className="flex-shrink-0 border-r border-slate-200 dark:border-slate-700 flex flex-col overflow-hidden bg-white dark:bg-slate-900">
+      <div className="w-72 border-r border-slate-200 dark:border-slate-700 flex flex-col overflow-hidden bg-white dark:bg-slate-900">
         {/* Mini Calendar */}
-        <div className="p-2 border-b border-slate-200 dark:border-slate-700">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-xs font-semibold text-slate-900 dark:text-slate-100 truncate">
-              {format(miniCalendarDate, 'MMM yy')}
+        <div className="p-4 border-b border-slate-200 dark:border-slate-700">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+              {format(miniCalendarDate, 'MMMM yyyy')}
             </h3>
-            <div className="flex gap-0.5">
+            <div className="flex gap-1">
               <button
                 onClick={goToPreviousMonthMini}
-                className="p-0.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded"
+                className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded"
               >
-                <ChevronLeft className="w-3 h-3 text-slate-600 dark:text-slate-400" />
+                <ChevronLeft className="w-4 h-4 text-slate-600 dark:text-slate-400" />
               </button>
               <button
                 onClick={goToNextMonthMini}
-                className="p-0.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded"
+                className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded"
               >
-                <ChevronRight className="w-3 h-3 text-slate-600 dark:text-slate-400" />
+                <ChevronRight className="w-4 h-4 text-slate-600 dark:text-slate-400" />
               </button>
             </div>
           </div>
@@ -734,7 +732,7 @@ const Calendar: React.FC = () => {
           {/* Mini calendar grid */}
           <div>
             {/* Day headers */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px' }} className="text-center mb-1">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px' }} className="text-center mb-3">
               {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
                 <div key={i} className="text-slate-400 dark:text-slate-500 font-medium text-xs">
                   {day}
@@ -743,14 +741,14 @@ const Calendar: React.FC = () => {
             </div>
 
             {/* Calendar days */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px' }}>
               {miniCalendarDays.map((day, i) => (
                 <button
                   key={i}
                   onClick={() => setCurrentDate(day.date)}
-                  style={{ height: '20px', fontSize: '10px' }}
+                  style={{ height: '32px' }}
                   className={`
-                    flex items-center justify-center font-normal transition-all rounded-full
+                    flex items-center justify-center text-sm font-normal transition-all rounded-full
                     ${!day.isCurrentMonth ? 'text-slate-400 dark:text-slate-600' : 'text-slate-900 dark:text-slate-100'}
                     ${day.isToday ? 'bg-blue-500 text-white font-medium' : ''}
                     ${day.isSelected && !day.isToday ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300' : ''}
@@ -765,57 +763,57 @@ const Calendar: React.FC = () => {
         </div>
 
         {/* Task Sections - Always visible */}
-        <div className="flex-1 overflow-y-auto p-1.5 bg-slate-50 dark:bg-slate-800/50"
+        <div className="flex-1 overflow-y-auto p-3 bg-slate-50 dark:bg-slate-800/50"
           onDragOver={handleDragOver}
           onDrop={handleDropInUnscheduled}
         >
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide truncate">
-              Tasks
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">
+              Unscheduled Tasks
             </h3>
-            <span className="text-[10px] text-slate-500 dark:text-slate-400">
+            <span className="text-xs text-slate-500 dark:text-slate-400">
               {unscheduledTasks.length}
             </span>
           </div>
 
           {/* Scheduled Section */}
           {categorizedTasks.scheduled.length > 0 && (
-            <div className="mb-2" onDragOver={handleDragOver} onDrop={(e) => handleDropInCategory(e, 'scheduled')}>
+            <div className="mb-3" onDragOver={handleDragOver} onDrop={(e) => handleDropInCategory(e, 'scheduled')}>
               <button
                 onClick={() => toggleSection('scheduled')}
-                className="w-full flex items-center justify-between px-1 py-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors"
+                className="w-full flex items-center justify-between px-2 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors"
               >
-                <h4 className="text-[10px] font-semibold text-slate-600 dark:text-slate-400 truncate">
-                  📅 ({categorizedTasks.scheduled.length})
+                <h4 className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+                  📅 Scheduled ({categorizedTasks.scheduled.length})
                 </h4>
                 {expandedSections.scheduled ? (
-                  <ChevronDown className="w-2.5 h-2.5 text-slate-400" />
+                  <ChevronDown className="w-3 h-3 text-slate-400" />
                 ) : (
-                  <ChevronUp className="w-2.5 h-2.5 text-slate-400" />
+                  <ChevronUp className="w-3 h-3 text-slate-400" />
                 )}
               </button>
               {expandedSections.scheduled && (
-                <div className="space-y-1 mt-1">
+                <div className="space-y-1.5 mt-1.5">
                   {categorizedTasks.scheduled.map((task) => (
                     <div
                       key={task.id}
                       draggable
                       onDragStart={(e) => { e.stopPropagation(); handleDragStart(task, e); }}
                       onDragEnd={handleDragEnd}
-                      className={`p-1 rounded border cursor-move transition-all hover:shadow-sm ${
+                      className={`p-2 rounded border cursor-move transition-all hover:shadow-sm ${
                         draggedTask?.id === task.id
                           ? 'opacity-50 border-green-400 bg-green-50 dark:bg-green-900/20'
                           : 'border-green-200 dark:border-green-700 bg-green-50 dark:bg-green-900/10'
                       }`}
                     >
-                      <div className="flex items-start gap-1">
-                        <GripVertical className="w-2 h-2 text-green-500 flex-shrink-0 mt-0.5" />
+                      <div className="flex items-start gap-1.5">
+                        <GripVertical className="w-3 h-3 text-green-500 flex-shrink-0 mt-0.5" />
                         <div className="flex-1 min-w-0">
-                          <p className="text-[9px] font-medium text-green-900 dark:text-green-100 truncate" title={task.title}>
+                          <p className="text-xs font-medium text-green-900 dark:text-green-100 truncate">
                             {task.title}
                           </p>
                           {task.due_date && (
-                            <p className="text-[8px] text-green-700 dark:text-green-300">
+                            <p className="text-[10px] text-green-700 dark:text-green-300 mt-0.5">
                               {format(new Date(task.due_date), 'MMM d')}
                             </p>
                           )}
@@ -830,37 +828,37 @@ const Calendar: React.FC = () => {
 
           {/* In Progress Section */}
           {categorizedTasks.inProgress.length > 0 && (
-            <div className="mb-2" onDragOver={handleDragOver} onDrop={(e) => handleDropInCategory(e, 'inProgress')}>
+            <div className="mb-3" onDragOver={handleDragOver} onDrop={(e) => handleDropInCategory(e, 'inProgress')}>
               <button
                 onClick={() => toggleSection('inProgress')}
-                className="w-full flex items-center justify-between px-1 py-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors"
+                className="w-full flex items-center justify-between px-2 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors"
               >
-                <h4 className="text-[10px] font-semibold text-slate-600 dark:text-slate-400 truncate">
-                  🔄 ({categorizedTasks.inProgress.length})
+                <h4 className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+                  🔄 In Progress ({categorizedTasks.inProgress.length})
                 </h4>
                 {expandedSections.inProgress ? (
-                  <ChevronDown className="w-2.5 h-2.5 text-slate-400" />
+                  <ChevronDown className="w-3 h-3 text-slate-400" />
                 ) : (
-                  <ChevronUp className="w-2.5 h-2.5 text-slate-400" />
+                  <ChevronUp className="w-3 h-3 text-slate-400" />
                 )}
               </button>
               {expandedSections.inProgress && (
-                <div className="space-y-1 mt-1">
+                <div className="space-y-1.5 mt-1.5">
                   {categorizedTasks.inProgress.map((task) => (
                     <div
                       key={task.id}
                       draggable
                       onDragStart={(e) => { e.stopPropagation(); handleDragStart(task, e); }}
                       onDragEnd={handleDragEnd}
-                      className={`p-1 rounded border cursor-move transition-all hover:shadow-sm ${
+                      className={`p-2 rounded border cursor-move transition-all hover:shadow-sm ${
                         draggedTask?.id === task.id
                           ? 'opacity-50 border-purple-400 bg-purple-50 dark:bg-purple-900/20'
                           : 'border-purple-200 dark:border-purple-700 bg-purple-50 dark:bg-purple-900/10'
                       }`}
                     >
-                      <div className="flex items-start gap-1">
-                        <GripVertical className="w-2 h-2 text-purple-500 flex-shrink-0 mt-0.5" />
-                        <p className="text-[9px] font-medium text-purple-900 dark:text-purple-100 flex-1 min-w-0 truncate" title={task.title}>
+                      <div className="flex items-start gap-1.5">
+                        <GripVertical className="w-3 h-3 text-purple-500 flex-shrink-0 mt-0.5" />
+                        <p className="text-xs font-medium text-purple-900 dark:text-purple-100 truncate flex-1 min-w-0">
                           {task.title}
                         </p>
                       </div>
@@ -873,37 +871,37 @@ const Calendar: React.FC = () => {
 
           {/* To Do Section */}
           {categorizedTasks.todo.length > 0 && (
-            <div className="mb-2" onDragOver={handleDragOver} onDrop={(e) => handleDropInCategory(e, 'todo')}>
+            <div className="mb-3" onDragOver={handleDragOver} onDrop={(e) => handleDropInCategory(e, 'todo')}>
               <button
                 onClick={() => toggleSection('todo')}
-                className="w-full flex items-center justify-between px-1 py-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors"
+                className="w-full flex items-center justify-between px-2 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors"
               >
-                <h4 className="text-[10px] font-semibold text-slate-600 dark:text-slate-400 truncate">
-                  ✅ ({categorizedTasks.todo.length})
+                <h4 className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+                  ✅ To Do ({categorizedTasks.todo.length})
                 </h4>
                 {expandedSections.todo ? (
-                  <ChevronDown className="w-2.5 h-2.5 text-slate-400" />
+                  <ChevronDown className="w-3 h-3 text-slate-400" />
                 ) : (
-                  <ChevronUp className="w-2.5 h-2.5 text-slate-400" />
+                  <ChevronUp className="w-3 h-3 text-slate-400" />
                 )}
               </button>
               {expandedSections.todo && (
-                <div className="space-y-1 mt-1">
+                <div className="space-y-1.5 mt-1.5">
                   {categorizedTasks.todo.map((task) => (
                     <div
                       key={task.id}
                       draggable
                       onDragStart={(e) => { e.stopPropagation(); handleDragStart(task, e); }}
                       onDragEnd={handleDragEnd}
-                      className={`p-1 rounded border cursor-move transition-all hover:shadow-sm ${
+                      className={`p-2 rounded border cursor-move transition-all hover:shadow-sm ${
                         draggedTask?.id === task.id
                           ? 'opacity-50 border-blue-400 bg-blue-50 dark:bg-blue-900/20'
                           : 'border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/10'
                       }`}
                     >
-                      <div className="flex items-start gap-1">
-                        <GripVertical className="w-2 h-2 text-blue-500 flex-shrink-0 mt-0.5" />
-                        <p className="text-[9px] font-medium text-blue-900 dark:text-blue-100 flex-1 min-w-0 truncate" title={task.title}>
+                      <div className="flex items-start gap-1.5">
+                        <GripVertical className="w-3 h-3 text-blue-500 flex-shrink-0 mt-0.5" />
+                        <p className="text-xs font-medium text-blue-900 dark:text-blue-100 truncate flex-1 min-w-0">
                           {task.title}
                         </p>
                       </div>
@@ -916,37 +914,37 @@ const Calendar: React.FC = () => {
 
           {/* Backlog Section */}
           {categorizedTasks.backlog.length > 0 && (
-            <div className="mb-2" onDragOver={handleDragOver} onDrop={(e) => handleDropInCategory(e, 'backlog')}>
+            <div className="mb-3" onDragOver={handleDragOver} onDrop={(e) => handleDropInCategory(e, 'backlog')}>
               <button
                 onClick={() => toggleSection('backlog')}
-                className="w-full flex items-center justify-between px-1 py-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors"
+                className="w-full flex items-center justify-between px-2 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors"
               >
-                <h4 className="text-[10px] font-semibold text-slate-600 dark:text-slate-400 truncate">
-                  📦 ({categorizedTasks.backlog.length})
+                <h4 className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+                  📦 Backlog ({categorizedTasks.backlog.length})
                 </h4>
                 {expandedSections.backlog ? (
-                  <ChevronDown className="w-2.5 h-2.5 text-slate-400" />
+                  <ChevronDown className="w-3 h-3 text-slate-400" />
                 ) : (
-                  <ChevronUp className="w-2.5 h-2.5 text-slate-400" />
+                  <ChevronUp className="w-3 h-3 text-slate-400" />
                 )}
               </button>
               {expandedSections.backlog && (
-                <div className="space-y-1 mt-1">
+                <div className="space-y-1.5 mt-1.5">
                   {categorizedTasks.backlog.map((task) => (
                     <div
                       key={task.id}
                       draggable
                       onDragStart={(e) => { e.stopPropagation(); handleDragStart(task, e); }}
                       onDragEnd={handleDragEnd}
-                      className={`p-1 rounded border cursor-move transition-all hover:shadow-sm ${
+                      className={`p-2 rounded border cursor-move transition-all hover:shadow-sm ${
                         draggedTask?.id === task.id
                           ? 'opacity-50 border-slate-400 bg-slate-100 dark:bg-slate-800'
                           : 'border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800/50'
                       }`}
                     >
-                      <div className="flex items-start gap-1">
-                        <GripVertical className="w-2 h-2 text-slate-400 flex-shrink-0 mt-0.5" />
-                        <p className="text-[9px] font-medium text-slate-700 dark:text-slate-300 flex-1 min-w-0 truncate" title={task.title}>
+                      <div className="flex items-start gap-1.5">
+                        <GripVertical className="w-3 h-3 text-slate-400 flex-shrink-0 mt-0.5" />
+                        <p className="text-xs font-medium text-slate-700 dark:text-slate-300 truncate flex-1 min-w-0">
                           {task.title}
                         </p>
                       </div>
@@ -958,8 +956,8 @@ const Calendar: React.FC = () => {
           )}
 
           {unscheduledTasks.length === 0 && (
-            <p className="text-[9px] text-slate-500 dark:text-slate-400 text-center mt-4">
-              All scheduled
+            <p className="text-xs text-slate-500 dark:text-slate-400 text-center mt-6">
+              All tasks scheduled
             </p>
           )}
         </div>
@@ -1090,12 +1088,13 @@ const Calendar: React.FC = () => {
                 return (
                   <div
                     key={dayIndex}
-                    data-date={format(day.date, 'yyyy-MM-dd')}
-                    onClick={(e) => handleCellClick(day.date, e)}
                     onDragOver={handleDragOver}
-                    onDrop={(e) => handleDrop(day.date, e)}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      handleDrop(day.date);
+                    }}
                     className={`
-                      flex-1 min-w-[140px] max-w-[140px] border-r border-slate-200 dark:border-slate-700 last:border-r-0 p-1 overflow-hidden cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors
+                      flex-1 min-w-[140px] max-w-[140px] border-r border-slate-200 dark:border-slate-700 last:border-r-0 p-1 overflow-hidden
                       ${day.isToday ? 'bg-blue-50/30 dark:bg-blue-900/10' : ''}
                     `}
                   >
@@ -1187,15 +1186,19 @@ const Calendar: React.FC = () => {
                     return (
                       <div
                         key={dayIndex}
-                        data-date={format(day.date, 'yyyy-MM-dd')}
-                        data-hour={slot.hour}
-                        onClick={(e) => handleCellClick(day.date, e)}
-                        onDragOver={handleDragOver}
-                        onDrop={(e) => handleDrop(day.date, e)}
+                        onDragOver={(e) => {
+                          handleDragOver(e);
+                          console.log('[Calendar] CELL dragOver:', day.date);
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          console.log('[Calendar] CELL drop:', day.date);
+                          handleDrop(day.date);
+                        }}
                         className={`
-                          flex-1 min-w-[140px] max-w-[140px] min-h-[60px] border-r border-b border-slate-200 dark:border-slate-700 last:border-r-0 p-1 overflow-hidden cursor-pointer
+                          flex-1 min-w-[140px] max-w-[140px] min-h-[60px] border-r border-b border-slate-200 dark:border-slate-700 last:border-r-0 p-1 overflow-hidden
                           ${day.isToday ? 'bg-blue-50/30 dark:bg-blue-900/10' : ''}
-                          ${draggedTask ? 'hover:bg-green-200 dark:hover:bg-green-900/30 hover:border-2 hover:border-dashed hover:border-green-500 transition-colors' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}
+                          ${draggedTask ? 'hover:bg-green-200 dark:hover:bg-green-900/30 hover:border-2 hover:border-dashed hover:border-green-500 transition-colors' : ''}
                         `}
                       >
                         {/* Show events assigned to this time slot */}
@@ -1307,10 +1310,11 @@ const Calendar: React.FC = () => {
                 return (
                   <div
                     key={index}
-                    data-date={format(dayData.date, 'yyyy-MM-dd')}
-                    onClick={(e) => handleCellClick(dayData.date, e)}
                     onDragOver={handleDragOver}
-                    onDrop={(e) => handleDrop(dayData.date, e)}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      handleDrop(dayData.date);
+                    }}
                     className={`
                       border-r border-b border-slate-200 dark:border-slate-700 p-1.5 overflow-hidden
                       ${!dayData.isCurrentMonth ? 'bg-slate-50/50 dark:bg-slate-900/50' : 'bg-white dark:bg-slate-900'}
@@ -1474,10 +1478,12 @@ const Calendar: React.FC = () => {
                     <span className="text-xs text-slate-500 dark:text-slate-400">All day</span>
                   </div>
                   <div
-                    data-date={format(currentDate, 'yyyy-MM-dd')}
                     className={`flex-1 min-w-[600px] p-3 ${isToday(currentDate) ? 'bg-blue-50/30 dark:bg-blue-900/10' : ''}`}
                     onDragOver={handleDragOver}
-                    onDrop={(e) => handleDrop(currentDate, e)}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      handleDrop(currentDate);
+                    }}
                   >
                     <div className="space-y-2">
                       {events.allDayTasks.map((task) => (
@@ -1558,10 +1564,11 @@ const Calendar: React.FC = () => {
 
                     {/* Day column */}
                     <div
-                      data-date={format(currentDate, 'yyyy-MM-dd')}
-                      data-hour={slot.hour}
                       onDragOver={handleDragOver}
-                      onDrop={(e) => handleDrop(currentDate, e)}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        handleDrop(currentDate);
+                      }}
                       className={`
                         flex-1 min-w-[600px] min-h-[60px] border-b border-slate-200 dark:border-slate-700 p-3
                         ${isToday(currentDate) ? 'bg-blue-50/30 dark:bg-blue-900/10' : ''}
@@ -1678,6 +1685,354 @@ const Calendar: React.FC = () => {
       <TaskEditModal
         task={editingTask}
         projects={apiProjects}
+                onMouseDown={handleResizeStart}
+                className="absolute left-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-500 transition-colors z-10"
+                style={{
+                  marginLeft: '-2px',
+                  width: '4px'
+                }}
+              />
+            )}
+            <button
+              onClick={() => setShowUnscheduledPanel(!showUnscheduledPanel)}
+              className="w-full flex items-center justify-center py-2 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors border-b border-slate-200 dark:border-slate-700"
+              style={{ overflow: 'hidden' }}
+            >
+              {showUnscheduledPanel ? (
+                <div className="flex flex-col items-center gap-1 w-full px-1" style={{ overflow: 'hidden' }}>
+                  <Inbox className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+                  <span className="text-[10px] font-medium text-slate-700 dark:text-slate-300 text-center">
+                    ({unscheduledTasks.length})
+                  </span>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-2">
+                  <Inbox className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+                  <span className="text-xs text-slate-600 dark:text-slate-400 transform -rotate-90 whitespace-nowrap">
+                    {unscheduledTasks.length}
+                  </span>
+                </div>
+              )}
+            </button>
+
+            {showUnscheduledPanel && (
+              <div
+                className="p-2 h-full w-full"
+                style={{ overflowY: 'auto', overflowX: 'visible' }}
+                onDragOver={handleDragOver}
+                onDrop={handleDropInUnscheduled}
+              >
+                {/* Scheduled Section */}
+                {categorizedTasks.scheduled.length > 0 && (
+                  <div
+                    className="mb-3"
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDropInCategory(e, 'scheduled')}
+                  >
+                    <button
+                      onClick={() => toggleSection('scheduled')}
+                      className="w-full flex items-center justify-between px-1 py-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors"
+                    >
+                      <h4 className="text-[10px] font-semibold text-slate-600 dark:text-slate-400">
+                        📅 SCHEDULED ({categorizedTasks.scheduled.length})
+                      </h4>
+                      {expandedSections.scheduled ? (
+                        <ChevronDown className="w-3 h-3 text-slate-400" />
+                      ) : (
+                        <ChevronUp className="w-3 h-3 text-slate-400" />
+                      )}
+                    </button>
+                    {expandedSections.scheduled && (
+                    <div
+                      className={`space-y-1.5 w-full mt-1.5 rounded transition-colors ${
+                        draggedTask ? 'border-2 border-dashed border-green-300 dark:border-green-600 bg-green-50/50 dark:bg-green-900/10 p-2' : ''
+                      }`}
+                      style={{ minHeight: draggedTask ? '60px' : 'auto' }}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDropInCategory(e, 'scheduled')}
+                    >
+                      {categorizedTasks.scheduled.map((task) => (
+                        <div
+                          key={task.id}
+                          draggable={true}
+                          onDragStart={(e) => {
+                            e.stopPropagation();
+                            handleDragStart(task, e);
+                          }}
+                          onDragEnd={(e) => handleDragEnd(e)}
+                          className={`
+                            p-2 rounded border cursor-move transition-all hover:shadow-sm w-full
+                            ${draggedTask?.id === task.id
+                              ? 'opacity-50 border-green-400 bg-green-50 dark:bg-green-900/20'
+                              : 'border-green-200 dark:border-green-600 bg-green-50 dark:bg-green-900/10 hover:border-green-300 dark:hover:border-green-500'
+                            }
+                          `}
+                          style={{ maxWidth: '100%', overflow: 'hidden', userSelect: 'none' }}
+                        >
+                          <div className="w-full" style={{ maxWidth: '100%', pointerEvents: 'none' }}>
+                            <div className="flex items-start gap-1" style={{ width: '100%', maxWidth: '100%' }}>
+                              <GripVertical className="w-3 h-3 text-green-400 dark:text-green-500 flex-shrink-0 mt-0.5" />
+                              <div style={{ flex: '1', minWidth: '0', maxWidth: '100%' }}>
+                                <p
+                                  className="text-xs font-medium text-green-900 dark:text-green-100 leading-tight"
+                                  style={{
+                                    wordBreak: 'break-word',
+                                    overflowWrap: 'break-word',
+                                    hyphens: 'auto',
+                                    whiteSpace: 'normal',
+                                    overflow: 'hidden'
+                                  }}
+                                >
+                                  {task.title}
+                                </p>
+                                {/* Show due date for scheduled tasks */}
+                                {task.due_date && (
+                                  <p className="text-[10px] text-green-700 dark:text-green-300 mt-0.5">
+                                    {format(new Date(task.due_date), 'MMM d, h:mm a')}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    )}
+                  </div>
+                )}
+
+                {/* In Progress Section */}
+                {categorizedTasks.inProgress.length > 0 && (
+                  <div
+                    className="mb-3"
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDropInCategory(e, 'inProgress')}
+                  >
+                    <button
+                      onClick={() => toggleSection('inProgress')}
+                      className="w-full flex items-center justify-between px-1 py-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors"
+                    >
+                      <h4 className="text-[10px] font-semibold text-slate-600 dark:text-slate-400">
+                        IN PROGRESS ({categorizedTasks.inProgress.length})
+                      </h4>
+                      {expandedSections.inProgress ? (
+                        <ChevronDown className="w-3 h-3 text-slate-400" />
+                      ) : (
+                        <ChevronUp className="w-3 h-3 text-slate-400" />
+                      )}
+                    </button>
+                    {expandedSections.inProgress && (
+                    <div
+                      className={`space-y-1.5 w-full mt-1.5 rounded transition-colors ${
+                        draggedTask ? 'border-2 border-dashed border-purple-300 dark:border-purple-600 bg-purple-50/50 dark:bg-purple-900/10 p-2' : ''
+                      }`}
+                      style={{ minHeight: draggedTask ? '60px' : 'auto' }}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDropInCategory(e, 'inProgress')}
+                    >
+                      {categorizedTasks.inProgress.map((task) => (
+                        <div
+                          key={task.id}
+                          draggable={true}
+                          onDragStart={(e) => {
+                            e.stopPropagation();
+                            handleDragStart(task, e);
+                          }}
+                          onDragEnd={(e) => handleDragEnd(e)}
+                          className={`
+                            p-2 rounded border cursor-move transition-all hover:shadow-sm w-full
+                            ${draggedTask?.id === task.id
+                              ? 'opacity-50 border-purple-400 bg-purple-50 dark:bg-purple-900/20'
+                              : 'border-purple-200 dark:border-purple-600 bg-purple-50 dark:bg-purple-900/10 hover:border-purple-300 dark:hover:border-purple-500'
+                            }
+                          `}
+                          style={{ maxWidth: '100%', overflow: 'hidden', userSelect: 'none' }}
+                        >
+                          <div className="w-full" style={{ maxWidth: '100%', pointerEvents: 'none' }}>
+                            <div className="flex items-start gap-1 mb-1" style={{ width: '100%', maxWidth: '100%' }}>
+                              <GripVertical className="w-3 h-3 text-purple-400 dark:text-purple-500 flex-shrink-0 mt-0.5" />
+                              <div style={{ flex: '1', minWidth: '0', maxWidth: '100%' }}>
+                                <p
+                                  className="text-xs font-medium text-purple-900 dark:text-purple-100 leading-tight"
+                                  style={{
+                                    wordBreak: 'break-word',
+                                    overflowWrap: 'break-word',
+                                    hyphens: 'auto',
+                                    whiteSpace: 'normal',
+                                    overflow: 'hidden'
+                                  }}
+                                >
+                                  {task.title}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    )}
+                  </div>
+                )}
+
+                {/* To Do Section */}
+                {categorizedTasks.todo.length > 0 && (
+                  <div
+                    className="mb-3"
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDropInCategory(e, 'todo')}
+                  >
+                    <button
+                      onClick={() => toggleSection('todo')}
+                      className="w-full flex items-center justify-between px-1 py-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors"
+                    >
+                      <h4 className="text-[10px] font-semibold text-slate-600 dark:text-slate-400">
+                        TO DO ({categorizedTasks.todo.length})
+                      </h4>
+                      {expandedSections.todo ? (
+                        <ChevronDown className="w-3 h-3 text-slate-400" />
+                      ) : (
+                        <ChevronUp className="w-3 h-3 text-slate-400" />
+                      )}
+                    </button>
+                    {expandedSections.todo && (
+                    <div
+                      className={`space-y-1.5 w-full mt-1.5 rounded transition-colors ${
+                        draggedTask ? 'border-2 border-dashed border-blue-300 dark:border-blue-600 bg-blue-50/50 dark:bg-blue-900/10 p-2' : ''
+                      }`}
+                      style={{ minHeight: draggedTask ? '60px' : 'auto' }}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDropInCategory(e, 'todo')}
+                    >
+                      {categorizedTasks.todo.map((task) => (
+                        <div
+                          key={task.id}
+                          draggable={true}
+                          onDragStart={(e) => {
+                            e.stopPropagation();
+                            handleDragStart(task, e);
+                          }}
+                          onDragEnd={(e) => handleDragEnd(e)}
+                          className={`
+                            p-2 rounded border cursor-move hover:shadow-sm w-full
+                            ${draggedTask?.id === task.id
+                              ? 'opacity-50 border-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                              : 'border-blue-200 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/10 hover:border-blue-300 dark:hover:border-blue-500'
+                            }
+                          `}
+                          style={{ maxWidth: '100%', overflow: 'hidden', userSelect: 'none', WebkitUserDrag: 'element', touchAction: 'none' }}
+                        >
+                          <div className="w-full" style={{ maxWidth: '100%', pointerEvents: 'none' }}>
+                            <div className="flex items-start gap-1" style={{ width: '100%', maxWidth: '100%' }}>
+                              <GripVertical className="w-3 h-3 text-blue-400 dark:text-blue-500 flex-shrink-0 mt-0.5" />
+                              <div style={{ flex: '1', minWidth: '0', maxWidth: '100%' }}>
+                                <p
+                                  className="text-xs font-medium text-blue-900 dark:text-blue-100 leading-tight"
+                                  style={{
+                                    wordBreak: 'break-word',
+                                    overflowWrap: 'break-word',
+                                    hyphens: 'auto',
+                                    whiteSpace: 'normal',
+                                    overflow: 'hidden'
+                                  }}
+                                >
+                                  {task.title}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Backlog Section */}
+                {categorizedTasks.backlog.length > 0 && (
+                  <div
+                    className="mb-3"
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDropInCategory(e, 'backlog')}
+                  >
+                    <button
+                      onClick={() => toggleSection('backlog')}
+                      className="w-full flex items-center justify-between px-1 py-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors"
+                    >
+                      <h4 className="text-[10px] font-semibold text-slate-600 dark:text-slate-400">
+                        BACKLOG ({categorizedTasks.backlog.length})
+                      </h4>
+                      {expandedSections.backlog ? (
+                        <ChevronDown className="w-3 h-3 text-slate-400" />
+                      ) : (
+                        <ChevronUp className="w-3 h-3 text-slate-400" />
+                      )}
+                    </button>
+                    {expandedSections.backlog && (
+                    <div
+                      className={`space-y-1.5 w-full mt-1.5 rounded transition-colors ${
+                        draggedTask ? 'border-2 border-dashed border-slate-300 dark:border-slate-600 bg-slate-50/50 dark:bg-slate-800/30 p-2' : ''
+                      }`}
+                      style={{ minHeight: draggedTask ? '60px' : 'auto' }}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDropInCategory(e, 'backlog')}
+                    >
+                      {categorizedTasks.backlog.map((task) => (
+                        <div
+                          key={task.id}
+                          draggable={true}
+                          onDragStart={(e) => {
+                            e.stopPropagation();
+                            handleDragStart(task, e);
+                          }}
+                          onDragEnd={(e) => handleDragEnd(e)}
+                          className={`
+                            p-2 rounded border cursor-move transition-all hover:shadow-sm w-full
+                            ${draggedTask?.id === task.id
+                              ? 'opacity-50 border-slate-400 bg-slate-50 dark:bg-slate-900/20'
+                              : 'border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/50 hover:border-slate-300 dark:hover:border-slate-500'
+                            }
+                          `}
+                          style={{ maxWidth: '100%', overflow: 'hidden', userSelect: 'none' }}
+                        >
+                          <div className="w-full" style={{ maxWidth: '100%', pointerEvents: 'none' }}>
+                            <div className="flex items-start gap-1" style={{ width: '100%', maxWidth: '100%' }}>
+                              <GripVertical className="w-3 h-3 text-slate-400 dark:text-slate-500 flex-shrink-0 mt-0.5" />
+                              <div style={{ flex: '1', minWidth: '0', maxWidth: '100%' }}>
+                                <p
+                                  className="text-xs font-medium text-slate-700 dark:text-slate-300 leading-tight"
+                                  style={{
+                                    wordBreak: 'break-word',
+                                    overflowWrap: 'break-word',
+                                    hyphens: 'auto',
+                                    whiteSpace: 'normal',
+                                    overflow: 'hidden'
+                                  }}
+                                >
+                                  {task.title}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    )}
+                  </div>
+                )}
+
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-4 text-center">
+                  Drag tasks to schedule
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Task Edit Modal */}
+      <TaskEditModal
+        task={editingTask}
+        projects={apiProjects}
         isOpen={showEditModal}
         onClose={handleCloseEditModal}
         onSave={handleSaveTask}
@@ -1694,16 +2049,6 @@ const Calendar: React.FC = () => {
         onDelete={handleDeleteEvent}
         isSaving={createEventMutation.isPending || updateEventMutation.isPending || deleteEventMutation.isPending}
         initialDate={eventModalInitialDate}
-      />
-
-      {/* Quick Schedule Modal */}
-      <QuickScheduleModal
-        isOpen={showQuickSchedule}
-        onClose={() => setShowQuickSchedule(false)}
-        selectedDate={quickScheduleDate}
-        unscheduledTasks={unscheduledTasks}
-        onScheduleTask={handleQuickScheduleTask}
-        onCreateNew={handleQuickCreateNew}
       />
     </div>
   );

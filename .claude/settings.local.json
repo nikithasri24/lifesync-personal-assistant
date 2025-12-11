@@ -61,7 +61,8 @@
       "Bash(npx supabase:*)",
       "Bash(lsof:*)",
       "Bash(git restore:*)",
-      "Bash(psql:*)"
+      "Bash(psql:*)",
+      "WebFetch(domain:i.pinimg.com)"
     ],
     "deny": [],
     "ask": []

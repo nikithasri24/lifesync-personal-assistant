@@ -28,6 +28,7 @@ import {
   calculateCreditUtilization,
 } from '../../utils/calculations';
 import { formatCurrency } from '../../utils/currency';
+import { logger } from '../../../services/logger';
 
 interface FinancialInsightsCardProps {
   transactions: Transaction[];
@@ -89,23 +90,24 @@ export const FinancialInsightsCard: React.FC<FinancialInsightsCardProps> = ({
   );
 
   // Debug logging
-  console.log('=== Emergency Fund Debug ===');
-  console.log('All goals:', goals.map(g => ({ name: g.name, type: g.type, currentAmount: g.currentAmount })));
-  console.log('Emergency fund goal found:', emergencyFundGoal);
+  logger.debug('FinancialInsights', 'Emergency fund calculation', {
+    goalsCount: goals.length,
+    emergencyFundGoalFound: !!emergencyFundGoal
+  });
 
   let emergencyFundBalance = 0;
 
   if (emergencyFundGoal) {
     // Use the goal's current amount
     emergencyFundBalance = emergencyFundGoal.currentAmount;
-    console.log('Using goal currentAmount:', emergencyFundBalance);
+    logger.debug('FinancialInsights', 'Using emergency fund goal currentAmount', { emergencyFundBalance });
   } else {
     // Fallback: use all savings and checking accounts
     const emergencyAccounts = accounts.filter(
       a => a.type === 'savings' || a.type === 'checking'
     );
     emergencyFundBalance = emergencyAccounts.reduce((sum, a) => sum + a.balance, 0);
-    console.log('Using fallback (all savings/checking):', emergencyFundBalance);
+    logger.debug('FinancialInsights', 'Using fallback savings/checking balance', { emergencyFundBalance });
   }
 
   const emergencyFund = calculateEmergencyFund(emergencyFundBalance, monthlyExpenses);

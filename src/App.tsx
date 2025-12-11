@@ -1,12 +1,9 @@
-import { useEffect, useRef, lazy, Suspense } from 'react';
-import { useRealAppStore } from './stores/useRealAppStore';
+import { lazy, Suspense } from 'react';
+import { useComposedStore } from './stores/useComposedStore';
 import Layout from './components/Layout';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import LoadingSpinner from './components/LoadingSpinner';
 import { AuthGate } from './components/AuthGate';
-import { useAuth } from './hooks/useAuth';
-import { isSupabaseConfigured } from './lib/supabase';
-import { logger } from './services/logger';
 import { UndoRedoButtons } from './components/UndoRedoButtons';
 
 // Lazy load all page components for route-based code splitting
@@ -31,60 +28,7 @@ const Assistant = lazy(() => import('./pages/Assistant'));
 const TaskScheduler = lazy(() => import('./pages/TaskScheduler'));
 
 function App(): React.ReactElement {
-  const { activeView, loading, initializeData } = useRealAppStore();
-  const { user, loading: authLoading } = useAuth();
-  const initializedFor = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (!isSupabaseConfigured) {
-      return;
-    }
-
-    if (!authLoading && !user) {
-      initializedFor.current = null;
-    }
-  }, [user, authLoading]);
-
-  // Initialize data from Supabase database only
-  useEffect(() => {
-    // Only proceed if Supabase is configured
-    if (!isSupabaseConfigured) {
-      logger.warn('App', '🔄 Supabase not configured. Please configure environment variables.');
-      return;
-    }
-
-    if (authLoading || !user) {
-      return;
-    }
-
-    if (initializedFor.current === user.id) {
-      return;
-    }
-
-    initializedFor.current = user.id;
-
-    // Initialize data
-    void (async (): Promise<void> => {
-      try {
-        await initializeData();
-        logger.debug('App', '🔄 Initialized LifeSync data for Supabase user');
-      } catch (error) {
-        logger.error('App', 'Failed to initialize data:', { error });
-      }
-    })();
-  }, [initializeData, user, authLoading]);
-
-  // Show loading spinner while initializing
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <LoadingSpinner />
-          <p className="mt-4 text-muted">Loading LifeSync...</p>
-        </div>
-      </div>
-    );
-  }
+  const { activeView } = useComposedStore();
 
   const renderPage = (): React.ReactElement => {
     switch (activeView) {

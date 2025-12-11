@@ -2,7 +2,7 @@ import React from 'react'
 import { X, Sparkles, Mic } from 'lucide-react'
 import useVoice from '../hooks/useVoice'
 import { ConversationEngine } from '../services/conversationEngine'
-import { useAppStore } from '../stores/useAppStore'
+import { useToast } from '../hooks/useToast'
 import { useAuth } from '../hooks/useAuth'
 
 type Props = { open: boolean; onClose: () => void }
@@ -13,7 +13,7 @@ export const VoiceAssistant: React.FC<Props> = ({ open, onClose }) => {
   const [state, setState] = React.useState<'idle' | 'listening' | 'thinking' | 'speaking'>('idle')
   const [rate, setRate] = React.useState(1)
   const [pitch, setPitch] = React.useState(1)
-  const { showGlobalToast } = useAppStore()
+  const { showToast } = useToast()
   const lastAssistantRef = React.useRef<string>('')
   const squelchUntilRef = React.useRef<number>(0)
   const engineRef = React.useRef<ConversationEngine | null>(null)
@@ -56,10 +56,10 @@ export const VoiceAssistant: React.FC<Props> = ({ open, onClose }) => {
         await speak(res.response, { rate, pitch })
 
         // Show success toast for function calls
-        if (res.functionCalls && res.functionCalls.length > 0 && showGlobalToast) {
+        if (res.functionCalls && res.functionCalls.length > 0) {
           const successCalls = res.functionCalls.filter(fc => fc.result.success)
           if (successCalls.length > 0) {
-            showGlobalToast(`Completed ${successCalls.length} action${successCalls.length > 1 ? 's' : ''}`, 'success')
+            showToast(`Completed ${successCalls.length} action${successCalls.length > 1 ? 's' : ''}`, 'success')
           }
         }
 

@@ -6,9 +6,9 @@
 
 import React from 'react';
 import { Button } from '../ui/Button';
-import { getFinanceAPI } from '../data';
 import { logger } from '../../services/logger';
 import { useToast } from '../../hooks/useToast';
+import { useUpsertTransactionMutation, useAccountsQuery, useCategoriesQuery } from '../hooks/useFinanceQuery';
 
 interface QuickAddTransactionProps {
   onClose: () => void;
@@ -16,10 +16,13 @@ interface QuickAddTransactionProps {
 }
 
 export const QuickAddTransaction: React.FC<QuickAddTransactionProps> = ({ onClose, onSuccess }) => {
-  const [loading, setLoading] = React.useState(false);
-  const [accounts, setAccounts] = React.useState<Array<{ id: string; name: string }>>([]);
-  const [categories, setCategories] = React.useState<Array<{ id: string; name: string }>>([]);
   const { showToast } = useToast();
+  const upsertTransactionMutation = useUpsertTransactionMutation();
+
+  // Use React Query hooks for data fetching
+  const { data: accounts = [] } = useAccountsQuery();
+  const { data: categories = [] } = useCategoriesQuery();
+
   const [formData, setFormData] = React.useState({
     accountId: '',
     description: '',
@@ -30,26 +33,12 @@ export const QuickAddTransaction: React.FC<QuickAddTransactionProps> = ({ onClos
     notes: ''
   });
 
-  // Load accounts and categories
+  // Set default account when accounts load
   React.useEffect(() => {
-    async function loadData(): Promise<void> {
-      try {
-        const api = await getFinanceAPI();
-        const [accts, cats] = await Promise.all([
-          api.listAccounts(),
-          api.listCategories()
-        ]);
-        setAccounts(accts);
-        setCategories(cats);
-        if (accts.length > 0) {
-          setFormData(prev => ({ ...prev, accountId: accts[0].id }));
-        }
-      } catch (error) {
-        logger.error('Failed to load accounts/categories:', { error });
-      }
+    if (accounts.length > 0 && !formData.accountId) {
+      setFormData(prev => ({ ...prev, accountId: accounts[0].id }));
     }
-    void loadData();
-  }, []);
+  }, [accounts, formData.accountId]);
 
   // Filter categories based on transaction type
   const incomeCategories = ['Salary', 'Income', 'Freelance', 'Bonus', 'Investment', 'Refund', 'Gift', 'Other Income'];
@@ -97,11 +86,9 @@ export const QuickAddTransaction: React.FC<QuickAddTransactionProps> = ({ onClos
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
-    setLoading(true);
 
     try {
-      const api = await getFinanceAPI();
-      await api.upsertTransaction({
+      await upsertTransactionMutation.mutateAsync({
         accountId: formData.accountId,
         description: formData.description,
         amount: parseFloat(formData.amount),
@@ -116,10 +103,8 @@ export const QuickAddTransaction: React.FC<QuickAddTransactionProps> = ({ onClos
       onClose();
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
-      logger.error('Failed to add transaction:', { error, errorMessage });
+      logger.error('QuickAddTransaction', error instanceof Error ? error : new Error(String(error)), { errorMessage });
       showToast(`Failed to add transaction: ${errorMessage}`, 'error');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -330,11 +315,11 @@ export const QuickAddTransaction: React.FC<QuickAddTransactionProps> = ({ onClos
 
         {/* Footer */}
         <div className="p-6 border-t border-slate-200 flex justify-between">
-          <Button variant="ghost" onClick={onClose} disabled={loading}>
+          <Button variant="ghost" onClick={onClose} disabled={upsertTransactionMutation.isPending}>
             Cancel
           </Button>
-          <Button onClick={(e) => { void handleSubmit(e); }} disabled={loading || !formData.accountId}>
-            {loading ? 'Adding...' : 'Add Transaction'}
+          <Button onClick={(e) => { void handleSubmit(e); }} disabled={upsertTransactionMutation.isPending || !formData.accountId}>
+            {upsertTransactionMutation.isPending ? 'Adding...' : 'Add Transaction'}
           </Button>
         </div>
       </div>

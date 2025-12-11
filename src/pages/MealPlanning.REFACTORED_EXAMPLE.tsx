@@ -18,7 +18,7 @@ import { CalendarDays, Loader2 } from 'lucide-react';
 import DatePickerPopover from '../components/DatePickerPopover';
 
 // App store
-import { useAppStore } from '../stores/useAppStore';
+import { useComposedStore } from '../stores/useComposedStore';
 
 // Types
 import type { PlannedMeal } from '../types';
@@ -113,7 +113,7 @@ const MealPlanning: React.FC = () => {
   // ========================================
   // GLOBAL STATE (Zustand)
   // ========================================
-  const { weekStartsOn, _setWeekStartsOn, _addNote, showGlobalToast } = useAppStore();
+  const { weekStartsOn, _setWeekStartsOn, _addNote, showGlobalToast } = useComposedStore();
 
   // ========================================
   // ✨ NEW: CUSTOM HOOKS (Replaces ~900 lines)

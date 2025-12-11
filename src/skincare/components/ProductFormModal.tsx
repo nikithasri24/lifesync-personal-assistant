@@ -47,10 +47,23 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
   const handleSubmit = (e: React.FormEvent): void => {
     e.preventDefault();
     if (!formData.name.trim()) {
-      console.error('Product name is required');
+      alert('Product name is required');
       return;
     }
-    onSave(formData);
+
+    // Ensure usageTime is an array
+    const cleanedData: SkincareProductInput = {
+      ...formData,
+      usageTime: Array.isArray(formData.usageTime) && formData.usageTime.length > 0
+        ? formData.usageTime
+        : ['AM'],
+      brand: formData.brand || undefined,
+      productType: formData.productType || undefined,
+      notes: formData.notes || undefined,
+      size: formData.size || undefined,
+    };
+
+    onSave(cleanedData);
   };
 
   const handleUsageTimeChange = (time: UsageTime): void => {

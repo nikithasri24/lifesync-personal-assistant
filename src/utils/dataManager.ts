@@ -1,4 +1,7 @@
-import { useAppStore } from '../stores/useAppStore';
+// TODO: This file is deprecated and should be removed or refactored to use the API layer directly
+// The useComposedStore no longer contains data arrays (they're in React Query now)
+// This file is not currently used in the application
+
 import { logger } from '../services/logger';
 import type { Habit, TodoItem, Note, JournalEntry, Recipe } from '../types';
 import type { ShoppingItem } from '../shopping/types';
@@ -18,26 +21,18 @@ export interface ExportData {
 }
 
 export const exportData = (): ExportData => {
-  const store = useAppStore.getState() as {
-    habits?: unknown;
-    todos?: unknown;
-    notes?: unknown;
-    journalEntries?: unknown;
-    recipes?: unknown;
-    shoppingItems?: unknown;
-    financialRecords?: unknown;
-    budgets?: unknown;
-  };
+  // TODO: Refactor to use React Query cache or API layer
+  logger.warn('dataManager', 'exportData is deprecated - data is now in React Query, not Zustand');
 
   return {
-    habits: (store.habits ?? []) as Habit[],
-    todos: (store.todos ?? []) as TodoItem[],
-    notes: (store.notes ?? []) as Note[],
-    journalEntries: (store.journalEntries ?? []) as JournalEntry[],
-    recipes: (store.recipes ?? []) as Recipe[],
-    shoppingItems: (store.shoppingItems ?? []) as ShoppingItem[],
-    financialRecords: (store.financialRecords ?? []) as Transaction[],
-    budgets: (store.budgets ?? []) as Budget[],
+    habits: [],
+    todos: [],
+    notes: [],
+    journalEntries: [],
+    recipes: [],
+    shoppingItems: [],
+    financialRecords: [],
+    budgets: [],
     exportDate: new Date().toISOString(),
     version: '1.0.0'
   };
@@ -128,48 +123,11 @@ export const importData = async (file: File): Promise<ExportData> => {
 };
 
 export const mergeImportedData = (importedData: ExportData, replaceExisting = false): void => {
-  const store = useAppStore.getState() as {
-    habits: Habit[];
-    todos: TodoItem[];
-    notes: Note[];
-    journalEntries: JournalEntry[];
-    recipes: Recipe[];
-    shoppingItems: ShoppingItem[];
-    financialRecords: Transaction[];
-    budgets: Budget[];
-  };
+  // TODO: Refactor to use API layer to insert data into Supabase
+  logger.warn('dataManager', 'mergeImportedData is deprecated - data should be imported via API layer', { importedData, replaceExisting });
 
-  if (replaceExisting) {
-    // Replace all data
-    useAppStore.setState({
-      habits: importedData.habits ?? [],
-      todos: importedData.todos ?? [],
-      notes: importedData.notes ?? [],
-      journalEntries: importedData.journalEntries ?? [],
-      recipes: importedData.recipes ?? [],
-      shoppingItems: importedData.shoppingItems ?? [],
-      financialRecords: importedData.financialRecords ?? [],
-      budgets: importedData.budgets ?? []
-    });
-  } else {
-    // Merge with existing data (avoid duplicates by ID)
-    const mergeArray = <T extends { id: string }>(existing: T[], imported: T[]): T[] => {
-      const existingIds = new Set(existing.map(item => item.id));
-      const newItems = imported.filter(item => !existingIds.has(item.id));
-      return [...existing, ...newItems];
-    };
-
-    useAppStore.setState({
-      habits: mergeArray(store.habits, importedData.habits ?? []),
-      todos: mergeArray(store.todos, importedData.todos ?? []),
-      notes: mergeArray(store.notes, importedData.notes ?? []),
-      journalEntries: mergeArray(store.journalEntries, importedData.journalEntries ?? []),
-      recipes: mergeArray(store.recipes, importedData.recipes ?? []),
-      shoppingItems: mergeArray(store.shoppingItems, importedData.shoppingItems ?? []),
-      financialRecords: mergeArray(store.financialRecords, importedData.financialRecords ?? []),
-      budgets: mergeArray(store.budgets, importedData.budgets ?? [])
-    });
-  }
+  // This function is no longer functional since data is in React Query/Supabase, not Zustand
+  throw new Error('mergeImportedData is deprecated - please use API layer to import data');
 };
 
 // Backup management

@@ -936,10 +936,10 @@ export class SupabaseApi implements FinanceAPI {
     if (error) throw error;
 
     // Debug logging
-    console.log('=== listGoals Debug ===');
-    console.log('User ID:', uid);
-    console.log('Raw data from DB:', data);
-    console.log('Number of goals:', data?.length ?? 0);
+    logger.debug('FinanceAPI', 'listGoals query completed', {
+      userId: uid,
+      rawDataCount: data?.length ?? 0
+    });
 
     const goals = (data ?? []).map((r: GoalRow) => ({
       id: r.id,
@@ -956,7 +956,7 @@ export class SupabaseApi implements FinanceAPI {
       updatedAtISO: r.updated_at ? new Date(r.updated_at).toISOString() : undefined,
     }));
 
-    console.log('Mapped goals:', goals);
+    logger.debug('FinanceAPI', 'Goals mapped successfully', { goalsCount: goals.length });
     return goals;
   }
 

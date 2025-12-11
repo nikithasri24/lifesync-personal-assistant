@@ -1,9 +1,10 @@
 /**
  * RoutineEditorModal - Edit routine and assign products
+ * Enhanced with day-of-week selection and reminder settings
  */
 
 import React from 'react';
-import { X, Save, Trash2, Plus } from 'lucide-react';
+import { X, Save, Trash2, Plus, Bell, BellOff } from 'lucide-react';
 import type { SkincareRoutine, SkincareRoutineInput, SkincareProduct } from '../types';
 
 type RoutineEditorModalProps = {
@@ -13,6 +14,16 @@ type RoutineEditorModalProps = {
   onDelete: () => void;
   onClose: () => void;
 };
+
+const DAYS_OF_WEEK = [
+  { value: 1, label: 'Mon' },
+  { value: 2, label: 'Tue' },
+  { value: 3, label: 'Wed' },
+  { value: 4, label: 'Thu' },
+  { value: 5, label: 'Fri' },
+  { value: 6, label: 'Sat' },
+  { value: 0, label: 'Sun' },
+];
 
 const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
   routine,
@@ -27,8 +38,22 @@ const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
   const [notes, setNotes] = React.useState(routine.notes ?? '');
   const [showAddProducts, setShowAddProducts] = React.useState(false);
 
+  // New state for weekly scheduling
+  const [daysOfWeek, setDaysOfWeek] = React.useState<number[]>(
+    routine.daysOfWeek && routine.daysOfWeek.length > 0 ? routine.daysOfWeek : []
+  );
+  const [allDays, setAllDays] = React.useState(
+    !routine.daysOfWeek || routine.daysOfWeek.length === 0
+  );
+
+  // New state for reminders
+  const [reminderEnabled, setReminderEnabled] = React.useState(
+    routine.reminderEnabled ?? false
+  );
+  const [reminderTime, setReminderTime] = React.useState(routine.reminderTime ?? '08:00');
+
   // Filter products by routine type
-  const compatibleProducts = allProducts.filter(product => {
+  const compatibleProducts = allProducts.filter((product) => {
     const usageTime = product.usageTime;
     if (routine.routineType === 'AM') {
       return usageTime.includes('AM') || usageTime.includes('BOTH');
@@ -39,11 +64,11 @@ const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
   });
 
   // Get products not in routine
-  const availableProducts = compatibleProducts.filter(p => !productIds.includes(p.id));
+  const availableProducts = compatibleProducts.filter((p) => !productIds.includes(p.id));
 
   // Get products in routine (ordered)
   const routineProducts = productIds
-    .map(id => allProducts.find(p => p.id === id))
+    .map((id) => allProducts.find((p) => p.id === id))
     .filter(Boolean) as SkincareProduct[];
 
   const handleSubmit = (e: React.FormEvent): void => {
@@ -53,6 +78,9 @@ const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
       isActive,
       productIds,
       notes,
+      daysOfWeek: allDays ? [] : daysOfWeek,
+      reminderEnabled,
+      reminderTime: reminderEnabled ? reminderTime : undefined,
     });
   };
 
@@ -61,7 +89,7 @@ const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
   };
 
   const handleRemoveProduct = (productId: string): void => {
-    setProductIds(productIds.filter(id => id !== productId));
+    setProductIds(productIds.filter((id) => id !== productId));
   };
 
   const handleMoveProduct = (index: number, direction: 'up' | 'down'): void => {
@@ -71,8 +99,26 @@ const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
     if (newIndex < 0 || newIndex >= newProductIds.length) return;
 
     // Swap
-    [newProductIds[index], newProductIds[newIndex]] = [newProductIds[newIndex], newProductIds[index]];
+    [newProductIds[index], newProductIds[newIndex]] = [
+      newProductIds[newIndex],
+      newProductIds[index],
+    ];
     setProductIds(newProductIds);
+  };
+
+  const toggleDay = (day: number): void => {
+    if (daysOfWeek.includes(day)) {
+      setDaysOfWeek(daysOfWeek.filter((d) => d !== day));
+    } else {
+      setDaysOfWeek([...daysOfWeek, day]);
+    }
+  };
+
+  const handleAllDaysChange = (checked: boolean): void => {
+    setAllDays(checked);
+    if (checked) {
+      setDaysOfWeek([]);
+    }
   };
 
   return (
@@ -102,7 +148,7 @@ const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
             <input
               type="text"
               value={name}
-              onChange={e => setName(e.target.value)}
+              onChange={(e) => setName(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="e.g., Morning Routine"
               required
@@ -115,12 +161,94 @@ const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
               type="checkbox"
               id="isActive"
               checked={isActive}
-              onChange={e => setIsActive(e.target.checked)}
+              onChange={(e) => setIsActive(e.target.checked)}
               className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
             />
             <label htmlFor="isActive" className="text-sm font-medium text-gray-700">
               Active routine (shown in daily tracking)
             </label>
+          </div>
+
+          {/* Days of Week Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Schedule
+            </label>
+
+            {/* All Days checkbox */}
+            <div className="flex items-center gap-2 mb-3">
+              <input
+                type="checkbox"
+                id="allDays"
+                checked={allDays}
+                onChange={(e) => handleAllDaysChange(e.target.checked)}
+                className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+              />
+              <label htmlFor="allDays" className="text-sm text-gray-600">
+                Every day
+              </label>
+            </div>
+
+            {/* Individual days */}
+            {!allDays && (
+              <div className="grid grid-cols-7 gap-2">
+                {DAYS_OF_WEEK.map((day) => (
+                  <button
+                    key={day.value}
+                    type="button"
+                    onClick={() => toggleDay(day.value)}
+                    className={`px-3 py-2 text-sm font-medium rounded-lg border-2 transition-all ${
+                      daysOfWeek.includes(day.value)
+                        ? 'bg-blue-600 text-white border-blue-600'
+                        : 'bg-white text-gray-600 border-gray-300 hover:border-blue-300'
+                    }`}
+                  >
+                    {day.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Reminder Settings */}
+          <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                {reminderEnabled ? (
+                  <Bell className="h-5 w-5 text-blue-600" />
+                ) : (
+                  <BellOff className="h-5 w-5 text-gray-400" />
+                )}
+                <label className="text-sm font-medium text-gray-700">Reminders</label>
+              </div>
+              <button
+                type="button"
+                onClick={() => setReminderEnabled(!reminderEnabled)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  reminderEnabled ? 'bg-blue-600' : 'bg-gray-300'
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    reminderEnabled ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {reminderEnabled && (
+              <div>
+                <label className="block text-xs text-gray-600 mb-2">
+                  Remind me at:
+                </label>
+                <input
+                  type="time"
+                  value={reminderTime}
+                  onChange={(e) => setReminderTime(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                />
+              </div>
+            )}
           </div>
 
           {/* Products in Routine */}
@@ -146,7 +274,7 @@ const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                   Available {routine.routineType} Products:
                 </p>
                 <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {availableProducts.map(product => (
+                  {availableProducts.map((product) => (
                     <button
                       key={product.id}
                       type="button"
@@ -248,12 +376,10 @@ const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
 
           {/* Notes */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Notes
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
             <textarea
               value={notes}
-              onChange={e => setNotes(e.target.value)}
+              onChange={(e) => setNotes(e.target.value)}
               rows={2}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="Any notes about this routine..."

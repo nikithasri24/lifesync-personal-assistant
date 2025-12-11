@@ -14,7 +14,7 @@ import {
   useUpdateRecipeMutation,
   useMealPlansQuery,
 } from '../../hooks/useMealPlanningQuery';
-import { useAppStore } from '../../../stores';
+import { useComposedStore } from '../../../stores';
 import { ensureDate } from '../../utils/mealPlanHelpers';
 import { logger } from '../../../services/logger';
 
@@ -63,7 +63,7 @@ export const MealItem: React.FC<MealItemProps> = ({
   onShowRecipeForm,
   onShowSimpleEdit,
 }: MealItemProps): React.ReactElement => {
-  const { mealOptions } = useAppStore();
+  const { mealOptions } = useComposedStore();
   const { data: mealPlans = [] } = useMealPlansQuery();
   const updatePlannedMealMutation = useUpdatePlannedMealMutation();
   const deletePlannedMealMutation = useDeletePlannedMealMutation();

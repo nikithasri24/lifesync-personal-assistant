@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { useAppStore } from '../../../stores/useAppStore';
+import { useComposedStore } from '../../../stores/useComposedStore';
 
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 
 export function MealOptionsManager(): React.JSX.Element {
-  const { mealOptions, addMealOption, removeMealOption } = useAppStore();
+  const { mealOptions, addMealOption, removeMealOption } = useComposedStore();
   const [inputs, setInputs] = useState({ breakfast: '', lunch: '', dinner: '', snack: '' });
 
   const sections: Array<{ key: MealType; label: string; color: string }> = [
