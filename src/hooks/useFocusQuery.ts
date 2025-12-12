@@ -34,19 +34,19 @@ export function useCreateFocusSession(): UseMutationResult<
 
   return useMutation({
     mutationFn: async (session: Omit<FocusSessionData, 'id' | 'created_at' | 'updated_at'>) => {
-      logger.debug('Creating focus session', { type: session.preset, duration: session.duration });
+      logger.debug('Focus', 'Creating focus session', { type: session.preset, duration: session.duration });
       const result = await createFocusSession(session);
       return result;
     },
     onSuccess: (newSession) => {
-      logger.info('Focus session created successfully', { id: newSession.id ?? 'unknown', type: newSession.preset });
+      logger.info('Focus', 'Focus session created successfully', { id: newSession.id ?? 'unknown', type: newSession.preset });
       queryClient.setQueryData<FocusSessionData[]>(focusKeys.sessions(), (old) => {
         if (!old) return [newSession];
         return [...old, newSession];
       });
     },
     onError: (error: Error, session) => {
-      logger.error('Failed to create focus session', { error: error.message, type: session.preset });
+      logger.error('Focus', 'Failed to create focus session', { error: error.message, type: session.preset });
     },
   });
 }
@@ -61,12 +61,12 @@ export function useUpdateFocusSession(): UseMutationResult<
 
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<FocusSessionData> }) => {
-      logger.debug('Updating focus session', { id, updates });
+      logger.debug('Focus', 'Updating focus session', { id, updates });
       const result = await updateFocusSession(id, updates);
       return result;
     },
     onMutate: async ({ id, updates }) => {
-      logger.debug('Optimistic update: focus session', { id, updates });
+      logger.debug('Focus', 'Optimistic update: focus session', { id, updates });
       // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: focusKeys.sessions() });
 
@@ -88,14 +88,14 @@ export function useUpdateFocusSession(): UseMutationResult<
       return { previousSessions };
     },
     onError: (err: Error, { id }, context) => {
-      logger.error('Failed to update focus session', { error: err.message, id });
+      logger.error('Focus', 'Failed to update focus session', { error: err.message, id });
       // Rollback on error
       if (context?.previousSessions) {
         queryClient.setQueryData(focusKeys.sessions(), context.previousSessions);
       }
     },
     onSuccess: (updatedSession, { id }) => {
-      logger.info('Focus session updated successfully', { id, status: updatedSession.status ?? 'unknown' });
+      logger.info('Focus', 'Focus session updated successfully', { id, status: updatedSession.status ?? 'unknown' });
       // Update with server response
       queryClient.setQueryData<FocusSessionData[]>(focusKeys.sessions(), (old) => {
         if (!old) return old;

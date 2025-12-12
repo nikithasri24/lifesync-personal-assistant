@@ -199,7 +199,7 @@ export function useWebSocket<T extends GenericPayload = GenericPayload>(
                 onMessage?.(message);
               });
             } catch (error) {
-              logger.error('Failed to handle WebSocket message:', { error });
+              logger.error('WebSocket', 'Failed to handle WebSocket message:', { error });
             }
           }, 0);
         };
@@ -275,21 +275,21 @@ export function useWebSocket<T extends GenericPayload = GenericPayload>(
 
   const sendMessage = useCallback((message: T) => {
     if (!state.isConnected) {
-      logger.warn('WebSocket', 'WebSocket is not connected');
+      logger.warn('WebSocket', 'WebSocket', 'WebSocket is not connected');
       return false;
     }
 
     try {
       if (simulateConnection) {
         // For simulation, just log the message
-        logger.debug('Simulated WebSocket send:', { message });
+        logger.debug('WebSocket', 'Simulated WebSocket send:', { message });
         return true;
       } else if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
         wsRef.current.send(JSON.stringify(message));
         return true;
       }
     } catch (error) {
-      logger.error('Failed to send WebSocket message:', { error });
+      logger.error('WebSocket', 'Failed to send WebSocket message:', { error });
       setState(prev => ({ ...prev, error: 'Failed to send message' }));
     }
 

@@ -551,7 +551,7 @@ export function useCreateRecipeMutation(): ReturnType<typeof useMutation<Recipe,
       if (context?.previousRecipes) {
         queryClient.setQueryData(mealPlanningKeys.recipesList(), context.previousRecipes);
       }
-      logger.error('[useCreateRecipeMutation] Error creating recipe:', err);
+      logger.error('MealPlanning', '[useCreateRecipeMutation] Error creating recipe:', err);
     },
     onSuccess: (newRecipe) => {
       queryClient.setQueryData<Recipe[]>(mealPlanningKeys.recipesList(), (old) => {
@@ -589,7 +589,7 @@ export function useUpdateRecipeMutation(): ReturnType<typeof useMutation<Recipe,
       if (context?.previousRecipes) {
         queryClient.setQueryData(mealPlanningKeys.recipesList(), context.previousRecipes);
       }
-      logger.error('[useUpdateRecipeMutation] Error updating recipe:', err);
+      logger.error('MealPlanning', '[useUpdateRecipeMutation] Error updating recipe:', err);
     },
     onSuccess: (updatedRecipe) => {
       queryClient.setQueryData<Recipe[]>(mealPlanningKeys.recipesList(), (old) => {
@@ -626,7 +626,7 @@ export function useDeleteRecipeMutation(): ReturnType<typeof useMutation<string,
       if (context?.previousRecipes) {
         queryClient.setQueryData(mealPlanningKeys.recipesList(), context.previousRecipes);
       }
-      logger.error('[useDeleteRecipeMutation] Error deleting recipe:', err);
+      logger.error('MealPlanning', '[useDeleteRecipeMutation] Error deleting recipe:', err);
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: mealPlanningKeys.recipesList() });
@@ -649,7 +649,7 @@ export function useDeleteAllRecipesMutation(): ReturnType<typeof useMutation<voi
         try {
           await apiClient.deleteRecipe(recipe.id);
         } catch (e) {
-          logger.warn('Failed to delete recipe', recipe.id, e);
+          logger.warn('MealPlanning', 'Failed to delete recipe', recipe.id, e);
         }
       }
     },
@@ -665,7 +665,7 @@ export function useDeleteAllRecipesMutation(): ReturnType<typeof useMutation<voi
       if (context?.previousRecipes) {
         queryClient.setQueryData(mealPlanningKeys.recipesList(), context.previousRecipes);
       }
-      logger.error('[useDeleteAllRecipesMutation] Error deleting all recipes:', err);
+      logger.error('MealPlanning', '[useDeleteAllRecipesMutation] Error deleting all recipes:', err);
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: mealPlanningKeys.recipesList() });
@@ -750,7 +750,7 @@ export function useMealPlanForWeek(weekStartDate: Date, weekStartsOn: 0 | 1 = 0)
 
         return plan;
       } catch (e) {
-        logger.warn('[MealPlanForWeek] Cloud create failed; falling back to local-only plan', e);
+        logger.warn('MealPlanning', '[MealPlanForWeek] Cloud create failed; falling back to local-only plan', e);
         const localPlan: MealPlanWeek = {
           id: `local-${Date.now()}`,
           name: 'Meal plan',
@@ -815,7 +815,7 @@ export function useCreateMealPlanMutation(): ReturnType<typeof useMutation<MealP
       if (context?.previousPlans) {
         queryClient.setQueryData(mealPlanningKeys.mealPlansList(), context.previousPlans);
       }
-      logger.error('[useCreateMealPlanMutation] Error creating meal plan:', err);
+      logger.error('MealPlanning', '[useCreateMealPlanMutation] Error creating meal plan:', err);
     },
     onSuccess: (newPlan) => {
       queryClient.setQueryData<MealPlanWeek[]>(mealPlanningKeys.mealPlansList(), (old) => {
@@ -861,7 +861,7 @@ export function useUpdateMealPlanMutation(): ReturnType<typeof useMutation<MealP
       if (context?.previousPlans) {
         queryClient.setQueryData(mealPlanningKeys.mealPlansList(), context.previousPlans);
       }
-      logger.error('[useUpdateMealPlanMutation] Error updating meal plan:', err);
+      logger.error('MealPlanning', '[useUpdateMealPlanMutation] Error updating meal plan:', err);
     },
     onSuccess: (updatedPlan) => {
       queryClient.setQueryData<MealPlanWeek[]>(mealPlanningKeys.mealPlansList(), (old) => {
@@ -902,7 +902,7 @@ export function useDeleteMealPlanMutation(): ReturnType<typeof useMutation<strin
       if (context?.previousPlans) {
         queryClient.setQueryData(mealPlanningKeys.mealPlansList(), context.previousPlans);
       }
-      logger.error('[useDeleteMealPlanMutation] Error deleting meal plan:', err);
+      logger.error('MealPlanning', '[useDeleteMealPlanMutation] Error deleting meal plan:', err);
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: mealPlanningKeys.mealPlansList() });
@@ -950,7 +950,7 @@ export function useCreatePlannedMealMutation(): ReturnType<typeof useMutation<Pl
       if (context?.previousPlans) {
         queryClient.setQueryData(mealPlanningKeys.mealPlansList(), context.previousPlans);
       }
-      logger.error('[useCreatePlannedMealMutation] Error creating planned meal:', err);
+      logger.error('MealPlanning', '[useCreatePlannedMealMutation] Error creating planned meal:', err);
     },
     onSuccess: (newMeal) => {
       queryClient.setQueryData<MealPlanWeek[]>(mealPlanningKeys.mealPlansList(), (old) => {
@@ -1002,7 +1002,7 @@ export function useUpdatePlannedMealMutation(): ReturnType<typeof useMutation<{ 
       if (context?.previousPlans) {
         queryClient.setQueryData(mealPlanningKeys.mealPlansList(), context.previousPlans);
       }
-      logger.error('[useUpdatePlannedMealMutation] Error updating planned meal:', err);
+      logger.error('MealPlanning', '[useUpdatePlannedMealMutation] Error updating planned meal:', err);
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: mealPlanningKeys.mealPlansList() });
@@ -1039,7 +1039,7 @@ export function useDeletePlannedMealMutation(): ReturnType<typeof useMutation<st
       if (context?.previousPlans) {
         queryClient.setQueryData(mealPlanningKeys.mealPlansList(), context.previousPlans);
       }
-      logger.error('[useDeletePlannedMealMutation] Error deleting planned meal:', err);
+      logger.error('MealPlanning', '[useDeletePlannedMealMutation] Error deleting planned meal:', err);
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: mealPlanningKeys.mealPlansList() });
@@ -1099,7 +1099,7 @@ export function useCreatePantryItemMutation(): ReturnType<typeof useMutation<Pan
       if (context?.previousItems) {
         queryClient.setQueryData(mealPlanningKeys.pantryList(), context.previousItems);
       }
-      logger.error('[useCreatePantryItemMutation] Error creating pantry item:', err);
+      logger.error('MealPlanning', '[useCreatePantryItemMutation] Error creating pantry item:', err);
     },
     onSuccess: (newItem) => {
       queryClient.setQueryData<PantryItem[]>(mealPlanningKeys.pantryList(), (old) => {
@@ -1141,7 +1141,7 @@ export function useUpdatePantryItemMutation(): ReturnType<typeof useMutation<Pan
       if (context?.previousItems) {
         queryClient.setQueryData(mealPlanningKeys.pantryList(), context.previousItems);
       }
-      logger.error('[useUpdatePantryItemMutation] Error updating pantry item:', err);
+      logger.error('MealPlanning', '[useUpdatePantryItemMutation] Error updating pantry item:', err);
     },
     onSuccess: (updatedItem) => {
       queryClient.setQueryData<PantryItem[]>(mealPlanningKeys.pantryList(), (old) => {
@@ -1178,7 +1178,7 @@ export function useDeletePantryItemMutation(): ReturnType<typeof useMutation<str
       if (context?.previousItems) {
         queryClient.setQueryData(mealPlanningKeys.pantryList(), context.previousItems);
       }
-      logger.error('[useDeletePantryItemMutation] Error deleting pantry item:', err);
+      logger.error('MealPlanning', '[useDeletePantryItemMutation] Error deleting pantry item:', err);
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: mealPlanningKeys.pantryList() });

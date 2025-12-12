@@ -284,13 +284,13 @@ export function useCreateTaskMutation(): ReturnType<typeof useMutation<Task, Err
 
   return useMutation({
     mutationFn: async (input: Partial<TaskInput>) => {
-      logger.debug('Creating task', { title: input.title });
+      logger.debug('Tasks', 'Tasks', 'Creating task', { title: input.title });
       const payload = buildTaskInsertPayload(input);
       const created = await createTask(payload);
       return mapTaskDataToTask(created);
     },
     onMutate: async (input) => {
-      logger.debug('Optimistic update: create task', { title: input.title });
+      logger.debug('Tasks', 'Tasks', 'Optimistic update: create task', { title: input.title });
       // Cancel outgoing queries
       await queryClient.cancelQueries({ queryKey: tasksKeys.lists() });
 
@@ -328,14 +328,14 @@ export function useCreateTaskMutation(): ReturnType<typeof useMutation<Task, Err
       return { previousTasks };
     },
     onError: (err: Error, input, context) => {
-      logger.error('Failed to create task', { error: err.message, title: input.title });
+      logger.error('Tasks', 'Tasks', 'Failed to create task', { error: err.message, title: input.title });
       // Rollback on error
       if (context?.previousTasks) {
         queryClient.setQueryData(tasksKeys.list(), context.previousTasks);
       }
     },
     onSuccess: (newTask) => {
-      logger.info('Task created successfully', { id: newTask.id, title: newTask.title });
+      logger.info('Tasks', 'Tasks', 'Task created successfully', { id: newTask.id, title: newTask.title });
       // Replace temp task with real one
       queryClient.setQueryData<Task[]>(tasksKeys.list(), (old) => {
         if (!old) return [newTask];
@@ -355,13 +355,13 @@ export function useUpdateTaskMutation(): ReturnType<typeof useMutation<Task, Err
 
   return useMutation({
     mutationFn: async ({ taskId, updates }: { taskId: string; updates: TaskUpdate }) => {
-      logger.debug('Updating task', { taskId, updates });
+      logger.debug('Tasks', 'Tasks', 'Updating task', { taskId, updates });
       const payload = buildTaskUpdatePayload(updates);
       const updated = await updateTask(taskId, payload);
       return mapTaskDataToTask(updated);
     },
     onMutate: async ({ taskId, updates }) => {
-      logger.debug('Optimistic update: task', { taskId, updates });
+      logger.debug('Tasks', 'Tasks', 'Optimistic update: task', { taskId, updates });
       // Cancel outgoing queries
       await queryClient.cancelQueries({ queryKey: tasksKeys.lists() });
 
@@ -381,14 +381,14 @@ export function useUpdateTaskMutation(): ReturnType<typeof useMutation<Task, Err
       return { previousTasks };
     },
     onError: (err: Error, { taskId }, context) => {
-      logger.error('Failed to update task', { error: err.message, taskId });
+      logger.error('Tasks', 'Tasks', 'Failed to update task', { error: err.message, taskId });
       // Rollback on error
       if (context?.previousTasks) {
         queryClient.setQueryData(tasksKeys.list(), context.previousTasks);
       }
     },
     onSuccess: (updatedTask) => {
-      logger.info('Task updated successfully', { id: updatedTask.id, title: updatedTask.title });
+      logger.info('Tasks', 'Tasks', 'Task updated successfully', { id: updatedTask.id, title: updatedTask.title });
       // Update with server response
       queryClient.setQueryData<Task[]>(tasksKeys.list(), (old) => {
         if (!old) return [updatedTask];
@@ -408,12 +408,12 @@ export function useDeleteTaskMutation(): ReturnType<typeof useMutation<string, E
 
   return useMutation({
     mutationFn: async (taskId: string) => {
-      logger.debug('Soft deleting task', { taskId });
+      logger.debug('Tasks', 'Tasks', 'Soft deleting task', { taskId });
       await deleteTask(taskId);
       return taskId;
     },
     onMutate: async (taskId) => {
-      logger.debug('Optimistic update: soft delete task', { taskId });
+      logger.debug('Tasks', 'Tasks', 'Optimistic update: soft delete task', { taskId });
       // Cancel outgoing queries
       await queryClient.cancelQueries({ queryKey: tasksKeys.lists() });
 
@@ -433,14 +433,14 @@ export function useDeleteTaskMutation(): ReturnType<typeof useMutation<string, E
       return { previousTasks };
     },
     onError: (err: Error, taskId, context) => {
-      logger.error('Failed to delete task', { error: err.message, taskId });
+      logger.error('Tasks', 'Tasks', 'Failed to delete task', { error: err.message, taskId });
       // Rollback on error
       if (context?.previousTasks) {
         queryClient.setQueryData(tasksKeys.list(), context.previousTasks);
       }
     },
     onSuccess: (taskId) => {
-      logger.info('Task deleted successfully', { id: taskId });
+      logger.info('Tasks', 'Tasks', 'Task deleted successfully', { id: taskId });
       // Invalidate to ensure consistency
       void queryClient.invalidateQueries({ queryKey: tasksKeys.lists() });
       void queryClient.invalidateQueries({ queryKey: tasksKeys.analytics() });
@@ -456,12 +456,12 @@ export function useRestoreTaskMutation(): ReturnType<typeof useMutation<Task, Er
 
   return useMutation({
     mutationFn: async (taskId: string) => {
-      logger.debug('Restoring task', { taskId });
+      logger.debug('Tasks', 'Tasks', 'Restoring task', { taskId });
       const restored = await restoreTask(taskId);
       return mapTaskDataToTask(restored);
     },
     onMutate: async (taskId) => {
-      logger.debug('Optimistic update: restore task', { taskId });
+      logger.debug('Tasks', 'Tasks', 'Optimistic update: restore task', { taskId });
       // Cancel outgoing queries
       await queryClient.cancelQueries({ queryKey: tasksKeys.lists() });
 
@@ -481,14 +481,14 @@ export function useRestoreTaskMutation(): ReturnType<typeof useMutation<Task, Er
       return { previousTasks };
     },
     onError: (err: Error, taskId, context) => {
-      logger.error('Failed to restore task', { error: err.message, taskId });
+      logger.error('Tasks', 'Tasks', 'Failed to restore task', { error: err.message, taskId });
       // Rollback on error
       if (context?.previousTasks) {
         queryClient.setQueryData(tasksKeys.list(), context.previousTasks);
       }
     },
     onSuccess: (restoredTask) => {
-      logger.info('Task restored successfully', { id: restoredTask.id });
+      logger.info('Tasks', 'Tasks', 'Task restored successfully', { id: restoredTask.id });
       // Update with server response
       queryClient.setQueryData<Task[]>(tasksKeys.list(), (old) => {
         if (!old) return [restoredTask];
@@ -508,12 +508,12 @@ export function usePermanentlyDeleteTaskMutation(): ReturnType<typeof useMutatio
 
   return useMutation({
     mutationFn: async (taskId: string) => {
-      logger.debug('Permanently deleting task', { taskId });
+      logger.debug('Tasks', 'Tasks', 'Permanently deleting task', { taskId });
       await permanentlyDeleteTask(taskId);
       return taskId;
     },
     onMutate: async (taskId) => {
-      logger.debug('Optimistic update: permanently delete task', { taskId });
+      logger.debug('Tasks', 'Tasks', 'Optimistic update: permanently delete task', { taskId });
       // Cancel outgoing queries
       await queryClient.cancelQueries({ queryKey: tasksKeys.lists() });
 
@@ -529,14 +529,14 @@ export function usePermanentlyDeleteTaskMutation(): ReturnType<typeof useMutatio
       return { previousTasks };
     },
     onError: (err: Error, taskId, context) => {
-      logger.error('Failed to permanently delete task', { error: err.message, taskId });
+      logger.error('Tasks', 'Tasks', 'Failed to permanently delete task', { error: err.message, taskId });
       // Rollback on error
       if (context?.previousTasks) {
         queryClient.setQueryData(tasksKeys.list(), context.previousTasks);
       }
     },
     onSuccess: (taskId) => {
-      logger.info('Task permanently deleted successfully', { id: taskId });
+      logger.info('Tasks', 'Tasks', 'Task permanently deleted successfully', { id: taskId });
       // Invalidate to ensure consistency
       void queryClient.invalidateQueries({ queryKey: tasksKeys.lists() });
       void queryClient.invalidateQueries({ queryKey: tasksKeys.analytics() });

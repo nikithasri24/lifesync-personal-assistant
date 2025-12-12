@@ -82,7 +82,7 @@ export const useTaskFocusActions = ({ onTaskComplete, storeTasks }: UseTaskFocus
         subtasks: [],
       } as Omit<TaskData, 'id' | 'created_at' | 'updated_at'>);
     } catch (error) {
-      logger.error('Error creating task:', { error });
+      logger.error('Focus', 'Error creating task:', { error });
       throw error;
     }
   };
@@ -101,7 +101,7 @@ export const useTaskFocusActions = ({ onTaskComplete, storeTasks }: UseTaskFocus
         icon: newProject.icon ?? '📁',
       } as Omit<ProjectData, 'id' | 'created_at' | 'updated_at'>);
     } catch (error) {
-      logger.error('Error creating project:', { error });
+      logger.error('Focus', 'Error creating project:', { error });
       throw error;
     }
   };
@@ -120,17 +120,17 @@ export const useTaskFocusActions = ({ onTaskComplete, storeTasks }: UseTaskFocus
         onTaskComplete(taskId);
       }
     } catch (error) {
-      logger.error('Error updating task status:', { error });
+      logger.error('Focus', 'Error updating task status:', { error });
       throw error;
     }
   };
 
   const addSubtask = (taskId: string, subtaskTitle: string): void => {
-    logger.warn('Subtask creation is not yet integrated with the backend', { taskId, subtaskTitle });
+    logger.warn('Focus', 'Subtask creation is not yet integrated with the backend', { taskId, subtaskTitle });
   };
 
   const toggleSubtask = (taskId: string, subtaskId: string): void => {
-    logger.warn('Subtask updates are not yet integrated with the backend', { taskId, subtaskId });
+    logger.warn('Focus', 'Subtask updates are not yet integrated with the backend', { taskId, subtaskId });
   };
 
   return {

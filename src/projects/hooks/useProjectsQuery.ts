@@ -164,13 +164,13 @@ export function useCreateProjectMutation(): ReturnType<typeof useMutation<Projec
 
   return useMutation({
     mutationFn: async (input: ProjectInput) => {
-      logger.debug('Creating project', { name: input.name, status: input.status });
+      logger.debug('Projects', 'Projects', 'Creating project', { name: input.name, status: input.status });
       const payload = buildProjectInsertPayload(input);
       const created = await apiClient.createProject(payload);
       return mapProjectDataToProject(created);
     },
     onMutate: async (input) => {
-      logger.debug('Optimistic update: create project', { name: input.name });
+      logger.debug('Projects', 'Projects', 'Optimistic update: create project', { name: input.name });
       // Cancel outgoing queries
       await queryClient.cancelQueries({ queryKey: projectsKeys.list() });
 
@@ -195,14 +195,14 @@ export function useCreateProjectMutation(): ReturnType<typeof useMutation<Projec
       return { previousProjects };
     },
     onError: (err: Error, input, context) => {
-      logger.error('Failed to create project', { error: err.message, name: input.name });
+      logger.error('Projects', 'Projects', 'Failed to create project', { error: err.message, name: input.name });
       // Rollback on error
       if (context?.previousProjects) {
         queryClient.setQueryData(projectsKeys.list(), context.previousProjects);
       }
     },
     onSuccess: (newProject) => {
-      logger.info('Project created successfully', { id: newProject.id, name: newProject.name });
+      logger.info('Projects', 'Projects', 'Project created successfully', { id: newProject.id, name: newProject.name });
       // Replace temp project with real one
       queryClient.setQueryData<Project[]>(projectsKeys.list(), (old) => {
         if (!old) return [newProject];
@@ -220,13 +220,13 @@ export function useUpdateProjectMutation(): ReturnType<typeof useMutation<Projec
 
   return useMutation({
     mutationFn: async ({ projectId, updates }: { projectId: string; updates: ProjectUpdate }) => {
-      logger.debug('Updating project', { projectId, updates });
+      logger.debug('Projects', 'Projects', 'Updating project', { projectId, updates });
       const payload = buildProjectUpdatePayload(updates);
       const updated = await apiClient.updateProject(projectId, payload);
       return mapProjectDataToProject(updated);
     },
     onMutate: async ({ projectId, updates }) => {
-      logger.debug('Optimistic update: project', { projectId, updates });
+      logger.debug('Projects', 'Projects', 'Optimistic update: project', { projectId, updates });
       // Cancel outgoing queries
       await queryClient.cancelQueries({ queryKey: projectsKeys.list() });
 
@@ -246,14 +246,14 @@ export function useUpdateProjectMutation(): ReturnType<typeof useMutation<Projec
       return { previousProjects };
     },
     onError: (err: Error, { projectId }, context) => {
-      logger.error('Failed to update project', { error: err.message, projectId });
+      logger.error('Projects', 'Projects', 'Failed to update project', { error: err.message, projectId });
       // Rollback on error
       if (context?.previousProjects) {
         queryClient.setQueryData(projectsKeys.list(), context.previousProjects);
       }
     },
     onSuccess: (updatedProject) => {
-      logger.info('Project updated successfully', { id: updatedProject.id, name: updatedProject.name });
+      logger.info('Projects', 'Projects', 'Project updated successfully', { id: updatedProject.id, name: updatedProject.name });
       // Update with server response
       queryClient.setQueryData<Project[]>(projectsKeys.list(), (old) => {
         if (!old) return [updatedProject];
@@ -271,12 +271,12 @@ export function useDeleteProjectMutation(): ReturnType<typeof useMutation<string
 
   return useMutation({
     mutationFn: async (projectId: string) => {
-      logger.debug('Deleting project', { projectId });
+      logger.debug('Projects', 'Projects', 'Deleting project', { projectId });
       await apiClient.deleteProject(projectId);
       return projectId;
     },
     onMutate: async (projectId) => {
-      logger.debug('Optimistic update: delete project', { projectId });
+      logger.debug('Projects', 'Projects', 'Optimistic update: delete project', { projectId });
       // Cancel outgoing queries
       await queryClient.cancelQueries({ queryKey: projectsKeys.list() });
 
@@ -292,14 +292,14 @@ export function useDeleteProjectMutation(): ReturnType<typeof useMutation<string
       return { previousProjects };
     },
     onError: (err: Error, projectId, context) => {
-      logger.error('Failed to delete project', { error: err.message, projectId });
+      logger.error('Projects', 'Projects', 'Failed to delete project', { error: err.message, projectId });
       // Rollback on error
       if (context?.previousProjects) {
         queryClient.setQueryData(projectsKeys.list(), context.previousProjects);
       }
     },
     onSuccess: (projectId) => {
-      logger.info('Project deleted successfully', { id: projectId });
+      logger.info('Projects', 'Projects', 'Project deleted successfully', { id: projectId });
       // Invalidate to ensure consistency
       void queryClient.invalidateQueries({ queryKey: projectsKeys.list() });
     },
@@ -376,18 +376,18 @@ export function useCreateMilestoneMutation(): ReturnType<typeof useMutation<Proj
 
   return useMutation({
     mutationFn: async ({ projectId, milestone }: { projectId: string; milestone: MilestoneInput }) => {
-      logger.debug('Creating milestone', { projectId, title: milestone.title });
+      logger.debug('Projects', 'Projects', 'Creating milestone', { projectId, title: milestone.title });
       // TODO: Implement API endpoint
       // const created = await apiClient.createProjectMilestone(projectId, milestone);
       throw new Error('API endpoint not yet implemented');
     },
     onSuccess: (newMilestone, { projectId }) => {
-      logger.info('Milestone created successfully', { id: newMilestone.id, projectId });
+      logger.info('Projects', 'Projects', 'Milestone created successfully', { id: newMilestone.id, projectId });
       void queryClient.invalidateQueries({ queryKey: projectsKeys.milestones(projectId) });
       void queryClient.invalidateQueries({ queryKey: projectsKeys.analytics() });
     },
     onError: (error: Error, { projectId, milestone }) => {
-      logger.error('Failed to create milestone', { error: error.message, projectId, title: milestone.title });
+      logger.error('Projects', 'Projects', 'Failed to create milestone', { error: error.message, projectId, title: milestone.title });
     },
   });
 }
@@ -401,18 +401,18 @@ export function useUpdateMilestoneMutation(): ReturnType<typeof useMutation<Proj
 
   return useMutation({
     mutationFn: async ({ milestoneId, updates }: { milestoneId: string; projectId: string; updates: MilestoneUpdate }) => {
-      logger.debug('Updating milestone', { milestoneId, updates });
+      logger.debug('Projects', 'Projects', 'Updating milestone', { milestoneId, updates });
       // TODO: Implement API endpoint
       // const updated = await apiClient.updateProjectMilestone(milestoneId, updates);
       throw new Error('API endpoint not yet implemented');
     },
     onSuccess: (updatedMilestone, { projectId }) => {
-      logger.info('Milestone updated successfully', { id: updatedMilestone.id, projectId });
+      logger.info('Projects', 'Projects', 'Milestone updated successfully', { id: updatedMilestone.id, projectId });
       void queryClient.invalidateQueries({ queryKey: projectsKeys.milestones(projectId) });
       void queryClient.invalidateQueries({ queryKey: projectsKeys.analytics() });
     },
     onError: (error: Error, { milestoneId }) => {
-      logger.error('Failed to update milestone', { error: error.message, milestoneId });
+      logger.error('Projects', 'Projects', 'Failed to update milestone', { error: error.message, milestoneId });
     },
   });
 }
@@ -426,18 +426,18 @@ export function useDeleteMilestoneMutation(): ReturnType<typeof useMutation<void
 
   return useMutation({
     mutationFn: async ({ milestoneId }: { milestoneId: string; projectId: string }) => {
-      logger.debug('Deleting milestone', { milestoneId });
+      logger.debug('Projects', 'Projects', 'Deleting milestone', { milestoneId });
       // TODO: Implement API endpoint
       // await apiClient.deleteProjectMilestone(milestoneId);
       throw new Error('API endpoint not yet implemented');
     },
     onSuccess: (_, { milestoneId, projectId }) => {
-      logger.info('Milestone deleted successfully', { id: milestoneId, projectId });
+      logger.info('Projects', 'Projects', 'Milestone deleted successfully', { id: milestoneId, projectId });
       void queryClient.invalidateQueries({ queryKey: projectsKeys.milestones(projectId) });
       void queryClient.invalidateQueries({ queryKey: projectsKeys.analytics() });
     },
     onError: (error: Error, { milestoneId }) => {
-      logger.error('Failed to delete milestone', { error: error.message, milestoneId });
+      logger.error('Projects', 'Projects', 'Failed to delete milestone', { error: error.message, milestoneId });
     },
   });
 }

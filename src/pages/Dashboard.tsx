@@ -91,7 +91,7 @@ export default function Dashboard(): JSX.Element {
       const newStatus = task.status === 'done' ? 'todo' : 'done';
       await updateTaskMutation.mutateAsync({ id: taskId, updates: { status: newStatus } });
     } catch (error) {
-      logger.error('Failed to complete task:', { error });
+      logger.error('Dashboard', 'Failed to complete task:', { error });
       showError(error, () => void completeTask(taskId));
     } finally {
       setCompletingTask(null);
@@ -101,7 +101,7 @@ export default function Dashboard(): JSX.Element {
   const completeHabitSafely = async (habitId: string): Promise<void> => {
     try {
       setCompletingHabit(habitId);
-      logger.debug('[Dashboard] Complete button clicked', { habitId });
+      logger.debug('Dashboard', '[Dashboard] Complete button clicked', { habitId });
       const today = format(new Date(), 'yyyy-MM-dd');
       await createHabitEntryMutation.mutateAsync({
         habit_id: habitId,
@@ -124,7 +124,7 @@ export default function Dashboard(): JSX.Element {
         });
       }, 2000);
     } catch (error) {
-      logger.error('[Dashboard] Failed to complete habit', { error });
+      logger.error('Dashboard', '[Dashboard] Failed to complete habit', { error });
       showError(error, () => void completeHabitSafely(habitId));
     } finally {
       setCompletingHabit(null);

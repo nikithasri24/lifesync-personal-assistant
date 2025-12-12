@@ -61,13 +61,13 @@ export const UndoRedoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Execute a command and add it to history
   const executeCommand = useCallback(async (command: Command) => {
     if (isProcessing.current) {
-      logger.warn('[UndoRedo] Command execution blocked - operation in progress');
+      logger.warn('UndoRedo', '[UndoRedo] Command execution blocked - operation in progress');
       return;
     }
 
     try {
       isProcessing.current = true;
-      logger.debug('[UndoRedo] Executing command', { id: command.id, description: command.description });
+      logger.debug('UndoRedo', '[UndoRedo] Executing command', { id: command.id, description: command.description });
 
       // Execute the command
       await command.execute();
@@ -85,9 +85,9 @@ export const UndoRedoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       // Clear redo stack (new action invalidates redo history)
       setRedoStack([]);
 
-      logger.info('[UndoRedo] Command executed successfully', { id: command.id });
+      logger.info('UndoRedo', '[UndoRedo] Command executed successfully', { id: command.id });
     } catch (error) {
-      logger.error('[UndoRedo] Command execution failed', { error, command });
+      logger.error('UndoRedo', '[UndoRedo] Command execution failed', { error, command });
       showToast(`Failed to ${command.description}`, 'error');
       throw error;
     } finally {
@@ -105,7 +105,7 @@ export const UndoRedoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     try {
       isProcessing.current = true;
-      logger.debug('[UndoRedo] Undoing command', { id: command.id, description: command.description });
+      logger.debug('UndoRedo', '[UndoRedo] Undoing command', { id: command.id, description: command.description });
 
       // Undo the command
       await command.undo();
@@ -115,9 +115,9 @@ export const UndoRedoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setRedoStack(prev => [...prev, command]);
 
       showToast(`Undone: ${command.description}`, 'success');
-      logger.info('[UndoRedo] Command undone successfully', { id: command.id });
+      logger.info('UndoRedo', '[UndoRedo] Command undone successfully', { id: command.id });
     } catch (error) {
-      logger.error('[UndoRedo] Undo failed', { error, command });
+      logger.error('UndoRedo', '[UndoRedo] Undo failed', { error, command });
       showToast(`Failed to undo: ${command.description}`, 'error');
     } finally {
       isProcessing.current = false;
@@ -134,7 +134,7 @@ export const UndoRedoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     try {
       isProcessing.current = true;
-      logger.debug('[UndoRedo] Redoing command', { id: command.id, description: command.description });
+      logger.debug('UndoRedo', '[UndoRedo] Redoing command', { id: command.id, description: command.description });
 
       // Re-execute the command
       await command.execute();
@@ -144,9 +144,9 @@ export const UndoRedoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setUndoStack(prev => [...prev, command]);
 
       showToast(`Redone: ${command.description}`, 'success');
-      logger.info('[UndoRedo] Command redone successfully', { id: command.id });
+      logger.info('UndoRedo', '[UndoRedo] Command redone successfully', { id: command.id });
     } catch (error) {
-      logger.error('[UndoRedo] Redo failed', { error, command });
+      logger.error('UndoRedo', '[UndoRedo] Redo failed', { error, command });
       showToast(`Failed to redo: ${command.description}`, 'error');
     } finally {
       isProcessing.current = false;
@@ -157,7 +157,7 @@ export const UndoRedoProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const clearHistory = useCallback(() => {
     setUndoStack([]);
     setRedoStack([]);
-    logger.info('[UndoRedo] History cleared');
+    logger.info('UndoRedo', '[UndoRedo] History cleared');
   }, []);
 
   // Keyboard shortcuts

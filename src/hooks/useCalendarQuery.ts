@@ -81,12 +81,12 @@ export function useCreateCalendarEvent(): UseMutationResult<
 
   return useMutation({
     mutationFn: async (input: Omit<CalendarEvent, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
-      logger.debug('Creating calendar event', { title: input.title, type: input.type });
+      logger.debug('Calendar', 'Creating calendar event', { title: input.title, type: input.type });
       const result = await createCalendarEvent(input);
       return result;
     },
     onSuccess: (newEvent) => {
-      logger.info('useCalendarQuery', 'Calendar event created successfully', { id: newEvent.id, title: newEvent.title });
+      logger.info('Calendar', 'useCalendarQuery', 'Calendar event created successfully', { id: newEvent.id, title: newEvent.title });
 
       // Invalidate all calendar event lists
       void queryClient.invalidateQueries({ queryKey: queryKeys.calendar.lists() });
@@ -100,7 +100,7 @@ export function useCreateCalendarEvent(): UseMutationResult<
       );
     },
     onError: (error: Error) => {
-      logger.error('useCalendarQuery', error, { context: 'createCalendarEvent' });
+      logger.error('Calendar', 'useCalendarQuery', error, { context: 'createCalendarEvent' });
     },
   });
 }
@@ -118,13 +118,13 @@ export function useUpdateCalendarEvent(): UseMutationResult<
 
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<CalendarEvent> }) => {
-      logger.debug('Updating calendar event', { id, updates });
+      logger.debug('Calendar', 'Updating calendar event', { id, updates });
       const result = await updateCalendarEvent(id, updates);
       return result;
     },
     // Optimistic update - happens BEFORE API call
     onMutate: async ({ id, updates }) => {
-      logger.debug('Optimistic update: updating calendar event', { id, updates });
+      logger.debug('Calendar', 'Optimistic update: updating calendar event', { id, updates });
 
       // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
       await queryClient.cancelQueries({ queryKey: queryKeys.calendar.lists() });
@@ -156,7 +156,7 @@ export function useUpdateCalendarEvent(): UseMutationResult<
       return { previousEvents, previousEvent };
     },
     onSuccess: (updatedEvent) => {
-      logger.info('useCalendarQuery', 'Calendar event updated successfully', { id: updatedEvent.id, title: updatedEvent.title });
+      logger.info('Calendar', 'useCalendarQuery', 'Calendar event updated successfully', { id: updatedEvent.id, title: updatedEvent.title });
 
       // Update with server response (in case server modified the data)
       queryClient.setQueryData(
@@ -174,7 +174,7 @@ export function useUpdateCalendarEvent(): UseMutationResult<
       );
     },
     onError: (error: Error, { id }, context) => {
-      logger.error('useCalendarQuery', error, { context: 'updateCalendarEvent', id });
+      logger.error('Calendar', 'useCalendarQuery', error, { context: 'updateCalendarEvent', id });
 
       // Rollback to previous state on error
       if (context?.previousEvents) {
@@ -200,11 +200,11 @@ export function useDeleteCalendarEvent(): UseMutationResult<void, Error, string,
 
   return useMutation({
     mutationFn: async (id: string) => {
-      logger.debug('Deleting calendar event', { id });
+      logger.debug('Calendar', 'Deleting calendar event', { id });
       await deleteCalendarEvent(id);
     },
     onSuccess: (_data, deletedId) => {
-      logger.info('useCalendarQuery', 'Calendar event deleted successfully', { id: deletedId });
+      logger.info('Calendar', 'useCalendarQuery', 'Calendar event deleted successfully', { id: deletedId });
 
       // Invalidate all calendar event lists
       void queryClient.invalidateQueries({ queryKey: queryKeys.calendar.lists() });
@@ -221,7 +221,7 @@ export function useDeleteCalendarEvent(): UseMutationResult<void, Error, string,
       );
     },
     onError: (error: Error, id) => {
-      logger.error('useCalendarQuery', error, { context: 'deleteCalendarEvent', id });
+      logger.error('Calendar', 'useCalendarQuery', error, { context: 'deleteCalendarEvent', id });
     },
   });
 }

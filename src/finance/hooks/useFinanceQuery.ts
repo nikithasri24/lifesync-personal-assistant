@@ -93,12 +93,12 @@ export function useUpdateAccountMutation(): UseMutationResult<void, Error, { acc
 
   return useMutation<void, Error, { accountId: string; updates: Partial<Account> }, { previousAccounts: Account[] | undefined }>({
     mutationFn: async ({ accountId, updates }: { accountId: string; updates: Partial<Account> }) => {
-      logger.debug('Updating account', { accountId, updates });
+      logger.debug('Finance', 'Updating account', { accountId, updates });
       const api = await getFinanceAPI();
       await api.updateAccount(accountId, updates);
     },
     onMutate: async ({ accountId, updates }) => {
-      logger.debug('Optimistic update: account', { accountId, updates });
+      logger.debug('Finance', 'Optimistic update: account', { accountId, updates });
       await queryClient.cancelQueries({ queryKey: financeKeys.accounts() });
       const previousAccounts = queryClient.getQueryData<Account[]>(financeKeys.accounts());
 
@@ -113,13 +113,13 @@ export function useUpdateAccountMutation(): UseMutationResult<void, Error, { acc
       return { previousAccounts };
     },
     onError: (err: Error, { accountId }, context) => {
-      logger.error('Failed to update account', { error: err.message, accountId });
+      logger.error('Finance', 'Failed to update account', { error: err.message, accountId });
       if (context?.previousAccounts) {
         queryClient.setQueryData(financeKeys.accounts(), context.previousAccounts);
       }
     },
     onSuccess: (_, { accountId }) => {
-      logger.info('Account updated successfully', { id: accountId });
+      logger.info('Finance', 'Account updated successfully', { id: accountId });
       void queryClient.invalidateQueries({ queryKey: financeKeys.accounts() });
     },
   });
@@ -130,17 +130,17 @@ export function useUpsertAccountMutation(): UseMutationResult<void, Error, { id?
 
   return useMutation<void, Error, { id?: string; name: string; type: string; balance: number; institutionId?: string }>({
     mutationFn: async (account) => {
-      logger.debug('Upserting account', { account });
+      logger.debug('Finance', 'Upserting account', { account });
       const api = await getFinanceAPI();
       await api.upsertAccount(account);
     },
     onSuccess: (_, account) => {
-      logger.info('Account upserted successfully', { name: account.name });
+      logger.info('Finance', 'Account upserted successfully', { name: account.name });
       void queryClient.invalidateQueries({ queryKey: financeKeys.accounts() });
       void queryClient.invalidateQueries({ queryKey: financeKeys.netWorth() });
     },
     onError: (error: Error, account) => {
-      logger.error('Failed to upsert account', { error: error.message, name: account.name });
+      logger.error('Finance', 'Failed to upsert account', { error: error.message, name: account.name });
     },
   });
 }
@@ -150,18 +150,18 @@ export function useDeleteAccountMutation(): UseMutationResult<void, Error, strin
 
   return useMutation<void, Error, string>({
     mutationFn: async (accountId: string) => {
-      logger.debug('Deleting account', { accountId });
+      logger.debug('Finance', 'Deleting account', { accountId });
       const api = await getFinanceAPI();
       await api.deleteAccount(accountId);
     },
     onSuccess: (_, accountId) => {
-      logger.info('Account deleted successfully', { accountId });
+      logger.info('Finance', 'Account deleted successfully', { accountId });
       void queryClient.invalidateQueries({ queryKey: financeKeys.accounts() });
       void queryClient.invalidateQueries({ queryKey: financeKeys.netWorth() });
       void queryClient.invalidateQueries({ queryKey: financeKeys.transactions() });
     },
     onError: (error: Error, accountId) => {
-      logger.error('Failed to delete account', { error: error.message, accountId });
+      logger.error('Finance', 'Failed to delete account', { error: error.message, accountId });
     },
   });
 }
@@ -187,17 +187,17 @@ export function useUpsertTransactionMutation(): UseMutationResult<void, Error, T
 
   return useMutation<void, Error, TransactionInput>({
     mutationFn: async (transaction: TransactionInput) => {
-      logger.debug('Upserting transaction', { id: transaction.id, amount: transaction.amount });
+      logger.debug('Finance', 'Upserting transaction', { id: transaction.id, amount: transaction.amount });
       const api = await getFinanceAPI();
       await api.upsertTransaction(transaction);
     },
     onSuccess: (_, transaction) => {
-      logger.info('Transaction upserted successfully', { id: transaction.id });
+      logger.info('Finance', 'Transaction upserted successfully', { id: transaction.id });
       // Invalidate all transaction queries since we don't know which params were used
       void queryClient.invalidateQueries({ queryKey: financeKeys.all });
     },
     onError: (error: Error, transaction) => {
-      logger.error('Failed to upsert transaction', { error: error.message, id: transaction.id });
+      logger.error('Finance', 'Failed to upsert transaction', { error: error.message, id: transaction.id });
     },
   });
 }
@@ -207,16 +207,16 @@ export function useDeleteTransactionMutation(): UseMutationResult<void, Error, s
 
   return useMutation<void, Error, string>({
     mutationFn: async (id: string) => {
-      logger.debug('Deleting transaction', { id });
+      logger.debug('Finance', 'Deleting transaction', { id });
       const api = await getFinanceAPI();
       await api.deleteTransaction(id);
     },
     onSuccess: (_, id) => {
-      logger.info('Transaction deleted successfully', { id });
+      logger.info('Finance', 'Transaction deleted successfully', { id });
       void queryClient.invalidateQueries({ queryKey: financeKeys.all });
     },
     onError: (error: Error, id) => {
-      logger.error('Failed to delete transaction', { error: error.message, id });
+      logger.error('Finance', 'Failed to delete transaction', { error: error.message, id });
     },
   });
 }
@@ -239,16 +239,16 @@ export function useUpsertBudgetMutation(): UseMutationResult<void, Error, { cate
 
   return useMutation<void, Error, { categoryId: string; month: string; limit: number }>({
     mutationFn: async (budget: { categoryId: string; month: string; limit: number }) => {
-      logger.debug('Upserting budget', { categoryId: budget.categoryId, month: budget.month, limit: budget.limit });
+      logger.debug('Finance', 'Upserting budget', { categoryId: budget.categoryId, month: budget.month, limit: budget.limit });
       const api = await getFinanceAPI();
       await api.upsertBudget(budget);
     },
     onSuccess: (_, variables) => {
-      logger.info('Budget upserted successfully', { categoryId: variables.categoryId, month: variables.month });
+      logger.info('Finance', 'Budget upserted successfully', { categoryId: variables.categoryId, month: variables.month });
       void queryClient.invalidateQueries({ queryKey: financeKeys.budgets(variables.month) });
     },
     onError: (error: Error, budget) => {
-      logger.error('Failed to upsert budget', { error: error.message, categoryId: budget.categoryId });
+      logger.error('Finance', 'Failed to upsert budget', { error: error.message, categoryId: budget.categoryId });
     },
   });
 }
@@ -258,16 +258,16 @@ export function useDeleteBudgetMutation(): UseMutationResult<void, Error, { cate
 
   return useMutation<void, Error, { categoryId: string; month: string }>({
     mutationFn: async ({ categoryId, month }: { categoryId: string; month: string }) => {
-      logger.debug('Deleting budget', { categoryId, month });
+      logger.debug('Finance', 'Deleting budget', { categoryId, month });
       const api = await getFinanceAPI();
       await api.deleteBudget(categoryId, month);
     },
     onSuccess: (_, variables) => {
-      logger.info('Budget deleted successfully', { categoryId: variables.categoryId, month: variables.month });
+      logger.info('Finance', 'Budget deleted successfully', { categoryId: variables.categoryId, month: variables.month });
       void queryClient.invalidateQueries({ queryKey: financeKeys.budgets(variables.month) });
     },
     onError: (error: Error, { categoryId, month }) => {
-      logger.error('Failed to delete budget', { error: error.message, categoryId, month });
+      logger.error('Finance', 'Failed to delete budget', { error: error.message, categoryId, month });
     },
   });
 }
@@ -290,16 +290,16 @@ export function useUpsertBudgetTemplateMutation(): UseMutationResult<void, Error
 
   return useMutation<void, Error, BudgetTemplateInput>({
     mutationFn: async (template: BudgetTemplateInput) => {
-      logger.debug('Upserting budget template', { categoryId: template.categoryId });
+      logger.debug('Finance', 'Upserting budget template', { categoryId: template.categoryId });
       const api = await getFinanceAPI();
       await api.upsertBudgetTemplate(template);
     },
     onSuccess: (_, template) => {
-      logger.info('Budget template upserted successfully', { categoryId: template.categoryId });
+      logger.info('Finance', 'Budget template upserted successfully', { categoryId: template.categoryId });
       void queryClient.invalidateQueries({ queryKey: financeKeys.budgetTemplates() });
     },
     onError: (error: Error, template) => {
-      logger.error('Failed to upsert budget template', { error: error.message, categoryId: template.categoryId });
+      logger.error('Finance', 'Failed to upsert budget template', { error: error.message, categoryId: template.categoryId });
     },
   });
 }
@@ -309,16 +309,16 @@ export function useDeleteBudgetTemplateMutation(): UseMutationResult<void, Error
 
   return useMutation<void, Error, string>({
     mutationFn: async (categoryId: string) => {
-      logger.debug('Deleting budget template', { categoryId });
+      logger.debug('Finance', 'Deleting budget template', { categoryId });
       const api = await getFinanceAPI();
       await api.deleteBudgetTemplate(categoryId);
     },
     onSuccess: (_, categoryId) => {
-      logger.info('Budget template deleted successfully', { categoryId });
+      logger.info('Finance', 'Budget template deleted successfully', { categoryId });
       void queryClient.invalidateQueries({ queryKey: financeKeys.budgetTemplates() });
     },
     onError: (error: Error, categoryId) => {
-      logger.error('Failed to delete budget template', { error: error.message, categoryId });
+      logger.error('Finance', 'Failed to delete budget template', { error: error.message, categoryId });
     },
   });
 }
@@ -328,16 +328,16 @@ export function useInitializeBudgetsMutation(): UseMutationResult<void, Error, s
 
   return useMutation<void, Error, string>({
     mutationFn: async (month: string) => {
-      logger.debug('Initializing budgets from templates', { month });
+      logger.debug('Finance', 'Initializing budgets from templates', { month });
       const api = await getFinanceAPI();
       return api.initializeBudgetsFromTemplates(month);
     },
     onSuccess: (_, month) => {
-      logger.info('Budgets initialized successfully', { month });
+      logger.info('Finance', 'Budgets initialized successfully', { month });
       void queryClient.invalidateQueries({ queryKey: financeKeys.budgets(month) });
     },
     onError: (error: Error, month) => {
-      logger.error('Failed to initialize budgets', { error: error.message, month });
+      logger.error('Finance', 'Failed to initialize budgets', { error: error.message, month });
     },
   });
 }
@@ -386,16 +386,16 @@ export function useUpsertGoalMutation(): UseMutationResult<void, Error, GoalInpu
 
   return useMutation<void, Error, GoalInput>({
     mutationFn: async (goal: GoalInput) => {
-      logger.debug('Upserting goal', { id: goal.id, name: goal.name });
+      logger.debug('Finance', 'Upserting goal', { id: goal.id, name: goal.name });
       const api = await getFinanceAPI();
       await api.upsertGoal(goal);
     },
     onSuccess: (_, goal) => {
-      logger.info('Goal upserted successfully', { id: goal.id, name: goal.name });
+      logger.info('Finance', 'Goal upserted successfully', { id: goal.id, name: goal.name });
       void queryClient.invalidateQueries({ queryKey: financeKeys.goals() });
     },
     onError: (error: Error, goal) => {
-      logger.error('Failed to upsert goal', { error: error.message, id: goal.id });
+      logger.error('Finance', 'Failed to upsert goal', { error: error.message, id: goal.id });
     },
   });
 }
@@ -405,16 +405,16 @@ export function useDeleteGoalMutation(): UseMutationResult<void, Error, string, 
 
   return useMutation<void, Error, string>({
     mutationFn: async (goalId: string) => {
-      logger.debug('Deleting goal', { goalId });
+      logger.debug('Finance', 'Deleting goal', { goalId });
       const api = await getFinanceAPI();
       await api.deleteGoal(goalId);
     },
     onSuccess: (_, goalId) => {
-      logger.info('Goal deleted successfully', { id: goalId });
+      logger.info('Finance', 'Goal deleted successfully', { id: goalId });
       void queryClient.invalidateQueries({ queryKey: financeKeys.goals() });
     },
     onError: (error: Error, goalId) => {
-      logger.error('Failed to delete goal', { error: error.message, goalId });
+      logger.error('Finance', 'Failed to delete goal', { error: error.message, goalId });
     },
   });
 }
@@ -437,17 +437,17 @@ export function useSyncGoalMutation(): UseMutationResult<void, Error, string, un
 
   return useMutation<void, Error, string>({
     mutationFn: async (goalId: string) => {
-      logger.debug('Syncing goal from account', { goalId });
+      logger.debug('Finance', 'Syncing goal from account', { goalId });
       const api = await getFinanceAPI();
       await api.syncGoalFromAccount(goalId);
     },
     onSuccess: (_, goalId) => {
-      logger.info('Goal synced successfully', { goalId });
+      logger.info('Finance', 'Goal synced successfully', { goalId });
       void queryClient.invalidateQueries({ queryKey: financeKeys.goals() });
       void queryClient.invalidateQueries({ queryKey: financeKeys.goalProgress(goalId) });
     },
     onError: (error: Error, goalId) => {
-      logger.error('Failed to sync goal', { error: error.message, goalId });
+      logger.error('Finance', 'Failed to sync goal', { error: error.message, goalId });
     },
   });
 }
@@ -472,16 +472,16 @@ export function useUpsertCardBenefitMutation(): UseMutationResult<void, Error, {
 
   return useMutation<void, Error, { accountId: string; benefit: CardBenefitInput }>({
     mutationFn: async ({ accountId, benefit }: { accountId: string; benefit: CardBenefitInput }) => {
-      logger.debug('Upserting card benefit', { accountId, benefitName: benefit.name });
+      logger.debug('Finance', 'Upserting card benefit', { accountId, benefitName: benefit.name });
       const api = await getFinanceAPI();
       await api.upsertCardBenefit(accountId, benefit);
     },
     onSuccess: (_, { accountId, benefit }) => {
-      logger.info('Card benefit upserted successfully', { accountId, benefitName: benefit.name });
+      logger.info('Finance', 'Card benefit upserted successfully', { accountId, benefitName: benefit.name });
       void queryClient.invalidateQueries({ queryKey: financeKeys.cardBenefits(accountId) });
     },
     onError: (error: Error, { accountId }) => {
-      logger.error('Failed to upsert card benefit', { error: error.message, accountId });
+      logger.error('Finance', 'Failed to upsert card benefit', { error: error.message, accountId });
     },
   });
 }
@@ -491,16 +491,16 @@ export function useDeleteCardBenefitMutation(): UseMutationResult<void, Error, {
 
   return useMutation<void, Error, { benefitId: string; accountId: string }>({
     mutationFn: async ({ benefitId, accountId }: { benefitId: string; accountId: string }) => {
-      logger.debug('Deleting card benefit', { benefitId, accountId });
+      logger.debug('Finance', 'Deleting card benefit', { benefitId, accountId });
       const api = await getFinanceAPI();
       await api.deleteCardBenefit(benefitId);
     },
     onSuccess: (_, { benefitId, accountId }) => {
-      logger.info('Card benefit deleted successfully', { benefitId, accountId });
+      logger.info('Finance', 'Card benefit deleted successfully', { benefitId, accountId });
       void queryClient.invalidateQueries({ queryKey: financeKeys.cardBenefits(accountId) });
     },
     onError: (error: Error, { benefitId, accountId }) => {
-      logger.error('Failed to delete card benefit', { error: error.message, benefitId, accountId });
+      logger.error('Finance', 'Failed to delete card benefit', { error: error.message, benefitId, accountId });
     },
   });
 }
@@ -525,16 +525,16 @@ export function useUpsertCategoryBonusMutation(): UseMutationResult<void, Error,
 
   return useMutation<void, Error, { accountId: string; bonus: CardCategoryBonusInput }>({
     mutationFn: async ({ accountId, bonus }: { accountId: string; bonus: CardCategoryBonusInput }) => {
-      logger.debug('Upserting category bonus', { accountId, category: bonus.category });
+      logger.debug('Finance', 'Upserting category bonus', { accountId, category: bonus.category });
       const api = await getFinanceAPI();
       await api.upsertCategoryBonus(accountId, bonus);
     },
     onSuccess: (_, { accountId, bonus }) => {
-      logger.info('Category bonus upserted successfully', { accountId, category: bonus.category });
+      logger.info('Finance', 'Category bonus upserted successfully', { accountId, category: bonus.category });
       void queryClient.invalidateQueries({ queryKey: financeKeys.categoryBonuses(accountId) });
     },
     onError: (error: Error, { accountId }) => {
-      logger.error('Failed to upsert category bonus', { error: error.message, accountId });
+      logger.error('Finance', 'Failed to upsert category bonus', { error: error.message, accountId });
     },
   });
 }
@@ -559,16 +559,16 @@ export function useUpsertWelcomeBonusMutation(): UseMutationResult<void, Error, 
 
   return useMutation<void, Error, { accountId: string; bonus: WelcomeBonusInput }>({
     mutationFn: async ({ accountId, bonus }: { accountId: string; bonus: WelcomeBonusInput }) => {
-      logger.debug('Upserting welcome bonus', { accountId });
+      logger.debug('Finance', 'Upserting welcome bonus', { accountId });
       const api = await getFinanceAPI();
       await api.upsertWelcomeBonus(accountId, bonus);
     },
     onSuccess: (_, { accountId }) => {
-      logger.info('Welcome bonus upserted successfully', { accountId });
+      logger.info('Finance', 'Welcome bonus upserted successfully', { accountId });
       void queryClient.invalidateQueries({ queryKey: financeKeys.welcomeBonuses(accountId) });
     },
     onError: (error: Error, { accountId }) => {
-      logger.error('Failed to upsert welcome bonus', { error: error.message, accountId });
+      logger.error('Finance', 'Failed to upsert welcome bonus', { error: error.message, accountId });
     },
   });
 }
@@ -593,16 +593,16 @@ export function useUpsertCardOfferMutation(): UseMutationResult<void, Error, { a
 
   return useMutation<void, Error, { accountId: string; offer: CardOfferInput }>({
     mutationFn: async ({ accountId, offer }: { accountId: string; offer: CardOfferInput }) => {
-      logger.debug('Upserting card offer', { accountId, merchant: offer.merchant });
+      logger.debug('Finance', 'Upserting card offer', { accountId, merchant: offer.merchant });
       const api = await getFinanceAPI();
       await api.upsertCardOffer(accountId, offer);
     },
     onSuccess: (_, { accountId, offer }) => {
-      logger.info('Card offer upserted successfully', { accountId, merchant: offer.merchant });
+      logger.info('Finance', 'Card offer upserted successfully', { accountId, merchant: offer.merchant });
       void queryClient.invalidateQueries({ queryKey: financeKeys.cardOffers(accountId) });
     },
     onError: (error: Error, { accountId }) => {
-      logger.error('Failed to upsert card offer', { error: error.message, accountId });
+      logger.error('Finance', 'Failed to upsert card offer', { error: error.message, accountId });
     },
   });
 }
@@ -625,12 +625,12 @@ export function useUpsertLoanMutation(): UseMutationResult<void, Error, LoanInpu
 
   return useMutation<void, Error, LoanInput, { previousLoans: Loan[] | undefined }>({
     mutationFn: async (loan: LoanInput) => {
-      logger.debug('Upserting loan', { loanName: loan.loanName });
+      logger.debug('Finance', 'Upserting loan', { loanName: loan.loanName });
       const api = await getFinanceAPI();
       await api.upsertLoan(loan);
     },
     onMutate: async (loan) => {
-      logger.debug('Optimistic update: loan', { loanName: loan.loanName });
+      logger.debug('Finance', 'Optimistic update: loan', { loanName: loan.loanName });
       await queryClient.cancelQueries({ queryKey: financeKeys.loans() });
       const previousLoans = queryClient.getQueryData<Loan[]>(financeKeys.loans());
 
@@ -648,13 +648,13 @@ export function useUpsertLoanMutation(): UseMutationResult<void, Error, LoanInpu
       return { previousLoans };
     },
     onError: (err: Error, loan, context) => {
-      logger.error('Failed to upsert loan', { error: err.message, loanName: loan.loanName });
+      logger.error('Finance', 'Failed to upsert loan', { error: err.message, loanName: loan.loanName });
       if (context?.previousLoans) {
         queryClient.setQueryData<Loan[]>(financeKeys.loans(), context.previousLoans);
       }
     },
     onSuccess: (_, loan) => {
-      logger.info('Loan upserted successfully', { loanName: loan.loanName });
+      logger.info('Finance', 'Loan upserted successfully', { loanName: loan.loanName });
       void queryClient.invalidateQueries({ queryKey: financeKeys.loans() });
       void queryClient.invalidateQueries({ queryKey: financeKeys.accounts() });
     },
@@ -666,12 +666,12 @@ export function useDeleteLoanMutation(): UseMutationResult<void, Error, string, 
 
   return useMutation<void, Error, string, { previousLoans: Loan[] | undefined }>({
     mutationFn: async (loanId: string) => {
-      logger.debug('Deleting loan', { loanId });
+      logger.debug('Finance', 'Deleting loan', { loanId });
       const api = await getFinanceAPI();
       await api.deleteLoan(loanId);
     },
     onMutate: async (loanId) => {
-      logger.debug('Optimistic delete: loan', { loanId });
+      logger.debug('Finance', 'Optimistic delete: loan', { loanId });
       await queryClient.cancelQueries({ queryKey: financeKeys.loans() });
       const previousLoans = queryClient.getQueryData<Loan[]>(financeKeys.loans());
 
@@ -684,13 +684,13 @@ export function useDeleteLoanMutation(): UseMutationResult<void, Error, string, 
       return { previousLoans };
     },
     onError: (err: Error, loanId, context) => {
-      logger.error('Failed to delete loan', { error: err.message, loanId });
+      logger.error('Finance', 'Failed to delete loan', { error: err.message, loanId });
       if (context?.previousLoans) {
         queryClient.setQueryData<Loan[]>(financeKeys.loans(), context.previousLoans);
       }
     },
     onSuccess: (_, loanId) => {
-      logger.info('Loan deleted successfully', { loanId });
+      logger.info('Finance', 'Loan deleted successfully', { loanId });
       void queryClient.invalidateQueries({ queryKey: financeKeys.loans() });
       void queryClient.invalidateQueries({ queryKey: financeKeys.loanPayments(loanId) });
     },
@@ -717,18 +717,18 @@ export function useUpsertLoanPaymentMutation(): UseMutationResult<void, Error, {
 
   return useMutation<void, Error, { loanId: string; payment: LoanPaymentInput }>({
     mutationFn: async ({ loanId, payment }: { loanId: string; payment: LoanPaymentInput }) => {
-      logger.debug('Upserting loan payment', { loanId, paymentDate: payment.paymentDate });
+      logger.debug('Finance', 'Upserting loan payment', { loanId, paymentDate: payment.paymentDate });
       const api = await getFinanceAPI();
       await api.upsertLoanPayment(loanId, payment);
     },
     onSuccess: (_, { loanId }) => {
-      logger.info('Loan payment upserted successfully', { loanId });
+      logger.info('Finance', 'Loan payment upserted successfully', { loanId });
       void queryClient.invalidateQueries({ queryKey: financeKeys.loanPayments(loanId) });
       void queryClient.invalidateQueries({ queryKey: financeKeys.loans() });
       void queryClient.invalidateQueries({ queryKey: financeKeys.loan(loanId) });
     },
     onError: (error: Error, { loanId }) => {
-      logger.error('Failed to upsert loan payment', { error: error.message, loanId });
+      logger.error('Finance', 'Failed to upsert loan payment', { error: error.message, loanId });
     },
   });
 }
@@ -738,18 +738,18 @@ export function useDeleteLoanPaymentMutation(): UseMutationResult<void, Error, {
 
   return useMutation<void, Error, { paymentId: string; loanId: string }>({
     mutationFn: async ({ paymentId }: { paymentId: string; loanId: string }) => {
-      logger.debug('Deleting loan payment', { paymentId });
+      logger.debug('Finance', 'Deleting loan payment', { paymentId });
       const api = await getFinanceAPI();
       await api.deleteLoanPayment(paymentId);
     },
     onSuccess: (_, { loanId, paymentId }) => {
-      logger.info('Loan payment deleted successfully', { paymentId });
+      logger.info('Finance', 'Loan payment deleted successfully', { paymentId });
       void queryClient.invalidateQueries({ queryKey: financeKeys.loanPayments(loanId) });
       void queryClient.invalidateQueries({ queryKey: financeKeys.loans() });
       void queryClient.invalidateQueries({ queryKey: financeKeys.loan(loanId) });
     },
     onError: (error: Error, { paymentId }) => {
-      logger.error('Failed to delete loan payment', { error: error.message, paymentId });
+      logger.error('Finance', 'Failed to delete loan payment', { error: error.message, paymentId });
     },
   });
 }
@@ -784,16 +784,16 @@ export function useUpsertRecurringTransactionMutation(): UseMutationResult<void,
 
   return useMutation<void, Error, RecurringTransactionInput>({
     mutationFn: async (recurring: RecurringTransactionInput) => {
-      logger.debug('Upserting recurring transaction', { recurring });
+      logger.debug('Finance', 'Upserting recurring transaction', { recurring });
       const api = await getFinanceAPI();
       await api.upsertRecurringTransaction(recurring);
     },
     onSuccess: (_, recurring) => {
-      logger.info('Recurring transaction saved successfully', { id: recurring.id });
+      logger.info('Finance', 'Recurring transaction saved successfully', { id: recurring.id });
       void queryClient.invalidateQueries({ queryKey: financeKeys.recurringTransactions() });
     },
     onError: (error: Error) => {
-      logger.error('Failed to save recurring transaction', { error: error.message });
+      logger.error('Finance', 'Failed to save recurring transaction', { error: error.message });
     },
   });
 }
@@ -803,17 +803,17 @@ export function useDeleteRecurringTransactionMutation(): UseMutationResult<void,
 
   return useMutation<void, Error, string>({
     mutationFn: async (recurringId: string) => {
-      logger.debug('Deleting recurring transaction', { recurringId });
+      logger.debug('Finance', 'Deleting recurring transaction', { recurringId });
       const api = await getFinanceAPI();
       await api.deleteRecurringTransaction(recurringId);
     },
     onSuccess: (_, recurringId) => {
-      logger.info('Recurring transaction deleted successfully', { recurringId });
+      logger.info('Finance', 'Recurring transaction deleted successfully', { recurringId });
       void queryClient.invalidateQueries({ queryKey: financeKeys.recurringTransactions() });
       void queryClient.invalidateQueries({ queryKey: financeKeys.pendingTransactions() });
     },
     onError: (error: Error) => {
-      logger.error('Failed to delete recurring transaction', { error: error.message });
+      logger.error('Finance', 'Failed to delete recurring transaction', { error: error.message });
     },
   });
 }
@@ -823,18 +823,18 @@ export function useApprovePendingTransactionMutation(): UseMutationResult<void, 
 
   return useMutation<void, Error, { pendingId: string; edits?: Partial<TransactionInput> }>({
     mutationFn: async ({ pendingId, edits }) => {
-      logger.debug('Approving pending transaction', { pendingId, hasEdits: !!edits });
+      logger.debug('Finance', 'Approving pending transaction', { pendingId, hasEdits: !!edits });
       const api = await getFinanceAPI();
       await api.approvePendingTransaction(pendingId, edits);
     },
     onSuccess: (_, { pendingId }) => {
-      logger.info('Pending transaction approved successfully', { pendingId });
+      logger.info('Finance', 'Pending transaction approved successfully', { pendingId });
       void queryClient.invalidateQueries({ queryKey: financeKeys.pendingTransactions() });
       void queryClient.invalidateQueries({ queryKey: financeKeys.transactions() });
       void queryClient.invalidateQueries({ queryKey: financeKeys.accounts() });
     },
     onError: (error: Error) => {
-      logger.error('Failed to approve pending transaction', { error: error.message });
+      logger.error('Finance', 'Failed to approve pending transaction', { error: error.message });
     },
   });
 }
@@ -844,16 +844,16 @@ export function useSkipPendingTransactionMutation(): UseMutationResult<void, Err
 
   return useMutation<void, Error, string>({
     mutationFn: async (pendingId: string) => {
-      logger.debug('Skipping pending transaction', { pendingId });
+      logger.debug('Finance', 'Skipping pending transaction', { pendingId });
       const api = await getFinanceAPI();
       await api.skipPendingTransaction(pendingId);
     },
     onSuccess: (_, pendingId) => {
-      logger.info('Pending transaction skipped successfully', { pendingId });
+      logger.info('Finance', 'Pending transaction skipped successfully', { pendingId });
       void queryClient.invalidateQueries({ queryKey: financeKeys.pendingTransactions() });
     },
     onError: (error: Error) => {
-      logger.error('Failed to skip pending transaction', { error: error.message });
+      logger.error('Finance', 'Failed to skip pending transaction', { error: error.message });
     },
   });
 }
@@ -863,16 +863,16 @@ export function useDeletePendingTransactionMutation(): UseMutationResult<void, E
 
   return useMutation<void, Error, string>({
     mutationFn: async (pendingId: string) => {
-      logger.debug('Deleting pending transaction', { pendingId });
+      logger.debug('Finance', 'Deleting pending transaction', { pendingId });
       const api = await getFinanceAPI();
       await api.deletePendingTransaction(pendingId);
     },
     onSuccess: (_, pendingId) => {
-      logger.info('Pending transaction deleted successfully', { pendingId });
+      logger.info('Finance', 'Pending transaction deleted successfully', { pendingId });
       void queryClient.invalidateQueries({ queryKey: financeKeys.pendingTransactions() });
     },
     onError: (error: Error) => {
-      logger.error('Failed to delete pending transaction', { error: error.message });
+      logger.error('Finance', 'Failed to delete pending transaction', { error: error.message });
     },
   });
 }
@@ -882,17 +882,17 @@ export function useGeneratePendingTransactionsMutation(): UseMutationResult<void
 
   return useMutation<void, Error, void>({
     mutationFn: async () => {
-      logger.debug('Generating pending transactions');
+      logger.debug('Finance', 'Generating pending transactions');
       const api = await getFinanceAPI();
       await api.generatePendingTransactions();
     },
     onSuccess: () => {
-      logger.info('Pending transactions generated successfully');
+      logger.info('Finance', 'Pending transactions generated successfully');
       void queryClient.invalidateQueries({ queryKey: financeKeys.pendingTransactions() });
       void queryClient.invalidateQueries({ queryKey: financeKeys.recurringTransactions() });
     },
     onError: (error: Error) => {
-      logger.error('Failed to generate pending transactions', { error: error.message });
+      logger.error('Finance', 'Failed to generate pending transactions', { error: error.message });
     },
   });
 }
@@ -928,18 +928,18 @@ export function useUpsertRetirementAccountMetadataMutation(): UseMutationResult<
 
   return useMutation<void, Error, RetirementAccountMetadataInput>({
     mutationFn: async (metadata: RetirementAccountMetadataInput) => {
-      logger.debug('Upserting retirement account metadata', { accountId: metadata.accountId });
+      logger.debug('Finance', 'Upserting retirement account metadata', { accountId: metadata.accountId });
       const api = await getFinanceAPI();
       await api.upsertRetirementAccountMetadata(metadata);
     },
     onSuccess: (_, metadata) => {
-      logger.info('Retirement account metadata upserted successfully', { accountId: metadata.accountId });
+      logger.info('Finance', 'Retirement account metadata upserted successfully', { accountId: metadata.accountId });
       void queryClient.invalidateQueries({ queryKey: financeKeys.retirementAccounts() });
       void queryClient.invalidateQueries({ queryKey: financeKeys.retirementAccount(metadata.accountId) });
       void queryClient.invalidateQueries({ queryKey: financeKeys.accounts() });
     },
     onError: (error: Error, metadata) => {
-      logger.error('Failed to upsert retirement account metadata', { error: error.message, accountId: metadata.accountId });
+      logger.error('Finance', 'Failed to upsert retirement account metadata', { error: error.message, accountId: metadata.accountId });
     },
   });
 }
@@ -949,17 +949,17 @@ export function useDeleteRetirementAccountMetadataMutation(): UseMutationResult<
 
   return useMutation<void, Error, string>({
     mutationFn: async (accountId: string) => {
-      logger.debug('Deleting retirement account metadata', { accountId });
+      logger.debug('Finance', 'Deleting retirement account metadata', { accountId });
       const api = await getFinanceAPI();
       await api.deleteRetirementAccountMetadata(accountId);
     },
     onSuccess: (_, accountId) => {
-      logger.info('Retirement account metadata deleted successfully', { accountId });
+      logger.info('Finance', 'Retirement account metadata deleted successfully', { accountId });
       void queryClient.invalidateQueries({ queryKey: financeKeys.retirementAccounts() });
       void queryClient.invalidateQueries({ queryKey: financeKeys.retirementAccount(accountId) });
     },
     onError: (error: Error, accountId) => {
-      logger.error('Failed to delete retirement account metadata', { error: error.message, accountId });
+      logger.error('Finance', 'Failed to delete retirement account metadata', { error: error.message, accountId });
     },
   });
 }

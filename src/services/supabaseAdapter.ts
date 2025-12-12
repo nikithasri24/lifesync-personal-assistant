@@ -116,9 +116,9 @@ class SupabaseAdapter {
 
   // ===== Tasks =====
   async getTasks(): Promise<TaskData[]> {
-    logger.debug('SupabaseAdapter', 'getTasks invoked');
+    logger.debug('Supabase', 'SupabaseAdapter', 'getTasks invoked');
     const userId = this.requireUserId()
-    logger.debug('getTasks user', { userId });
+    logger.debug('Supabase', 'getTasks user', { userId });
     const { data, error }: { data: TaskData[]|ProjectData[]|HabitData[]|HabitEntryData[]|FinancialAccountData[]|FinancialTransactionData[]|ShoppingListData[]|ShoppingItemData[]|PantryItemData[]|MealPlanData[]|PlannedMealData[]|FocusSessionData[]|RecipeData[] | null; error: PostgrestError | null } = await this.client
       .from('tasks')
       .select('*')
@@ -149,7 +149,7 @@ class SupabaseAdapter {
     if (error) throw new Error(error.message)
     if (!data) throw new Error('Failed to create task')
     const taskData = data as TaskData
-    logger.debug('createTask created task', { taskId: taskData.id })
+    logger.debug('Supabase', 'createTask created task', { taskId: taskData.id })
     return taskData
   }
 
@@ -699,7 +699,7 @@ class SupabaseAdapter {
 
     if (findErr) {
       // Non-fatal: proceed to insert if lookup fails
-      logger.warn('find meal_plan failed; attempting insert', { error: findErr })
+      logger.warn('Supabase', 'find meal_plan failed; attempting insert', { error: findErr })
     } else if (existingRows && existingRows.length > 0) {
       return existingRows[0] as MealPlanData
     }
@@ -916,7 +916,7 @@ class SupabaseAdapter {
 
       if (updRes.error) {
         // Log and continue; we already created the base row
-        logger.warn('recipes patch failed', { error: updRes.error.message })
+        logger.warn('Supabase', 'recipes patch failed', { error: updRes.error.message })
       } else if (updRes.data) {
         // If patch returned the full row, prefer it
         return updRes.data as RecipeData

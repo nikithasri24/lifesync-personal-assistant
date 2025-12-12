@@ -39,7 +39,7 @@ export default function SmartExpenseCategorizer(): React.JSX.Element {
       setInsights(expenseCategorizationEngine.generateSpendingInsights(transactionData));
       setPotentialBills(expenseCategorizationEngine.detectPotentialBills(transactionData));
     } catch (error) {
-      logger.error('Failed to process categorizations:', { error: error instanceof Error ? error.message : String(error) });
+      logger.error('Finance', 'Failed to process categorizations:', { error: error instanceof Error ? error.message : String(error) });
     } finally {
       setProcessing(false);
     }
@@ -55,7 +55,7 @@ export default function SmartExpenseCategorizer(): React.JSX.Element {
       setTransactions(recentTransactions);
       processCategorizations(recentTransactions);
     } catch (error) {
-      logger.error('Failed to load transactions:', { error: error instanceof Error ? error.message : String(error) });
+      logger.error('Finance', 'Failed to load transactions:', { error: error instanceof Error ? error.message : String(error) });
     } finally {
       setLoading(false);
     }
@@ -72,7 +72,7 @@ export default function SmartExpenseCategorizer(): React.JSX.Element {
       const transaction = categorizations.find(c => c.transaction.id === transactionId)?.transaction;
       if (transaction) expenseCategorizationEngine.learnFromUserCategorization(transaction, categoryId);
     } catch (error) {
-      logger.error('Failed to update transaction category:', { error: error instanceof Error ? error.message : String(error) });
+      logger.error('Finance', 'Failed to update transaction category:', { error: error instanceof Error ? error.message : String(error) });
     }
   };
 
@@ -85,7 +85,7 @@ export default function SmartExpenseCategorizer(): React.JSX.Element {
       });
       await Promise.all(updates);
     } catch (error) {
-      logger.error('Failed to bulk categorize:', { error: error instanceof Error ? error.message : String(error) });
+      logger.error('Finance', 'Failed to bulk categorize:', { error: error instanceof Error ? error.message : String(error) });
     } finally {
       setProcessing(false);
     }
