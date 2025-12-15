@@ -11,8 +11,8 @@ import { mapShoppingItemDataToModel, mapShoppingItemToCreateInput, mapShoppingIt
 import { MOCK_STORES } from '../shopping/fixtures/mockStores';
 import { ShoppingHeader } from '../shopping/components/layout/ShoppingHeader';
 import { ViewTabs } from '../shopping/components/layout/ViewTabs';
+import { ShoppingModals } from '../shopping/components/layout/ShoppingModals';
 import { MasterListView, DistributeView, StoreListsView } from '../shopping/components/views';
-import { AddItemModal, EditItemModal, BarcodeScannerModal, ReceiptScanningModal, AddPantryItemModal, StoreSuggestionsModal } from '../shopping/components/modals';
 import { PantryActionButtons } from '../shopping/components/pantry/PantryActionButtons';
 import { PantryTable } from '../shopping/components/pantry/PantryTable';
 import { useVoiceInput, useBarcodeScanner, useStoreSuggestions, usePantryManagement, useItemForm, useShoppingModals, usePantryActions } from '../shopping/hooks';
@@ -494,26 +494,20 @@ export default function ShoppingSmart(): ReactElement {
         </div>
       )}
 
-      {/* Add Pantry Modal */}
-      <AddPantryItemModal
-        isOpen={showAddPantry}
-        onClose={() => setShowAddPantry(false)}
-        onSave={async (item) => {
+      <ShoppingModals
+        showAddPantry={showAddPantry}
+        onAddPantryClose={() => setShowAddPantry(false)}
+        onAddPantrySave={async (item) => {
           await createPantryItemMutation.mutateAsync({
             ...item,
             createdAt: new Date()
           });
         }}
-      />
-
-      {/* Scan Receipt Modal */}
-      <ReceiptScanningModal
-        isOpen={showScanReceipt}
-        onClose={() => setShowScanReceipt(false)}
+        showScanReceipt={showScanReceipt}
+        onScanReceiptClose={() => setShowScanReceipt(false)}
         onAddToPantry={async (items) => {
           for (const it of items) {
             const thresholdNum = it.threshold ? Number(it.threshold) : undefined;
-            // Map shopping category to valid pantry category
             const validPantryCategories = ['produce', 'dairy', 'meat', 'pantry', 'other'] as const;
             const pantryCategory = validPantryCategories.includes(it.category as any)
               ? (it.category as 'produce' | 'dairy' | 'meat' | 'pantry' | 'other')
@@ -531,51 +525,33 @@ export default function ShoppingSmart(): ReactElement {
           showToast(`Added ${items.length} items to pantry`, 'success');
         }}
         onLogExpense={async (_amount, _merchant) => {
-          // Financial integration not yet implemented
           showToast('Financial integration not available', 'info');
         }}
-      />
-      {/* Barcode Scanner Modal */}
-      <BarcodeScannerModal
-        isOpen={showBarcodeScanner}
+        showBarcodeScanner={showBarcodeScanner}
         isScanning={isScanning}
         barcodeResult={barcodeResult}
         captureMessage={captureMessage}
         videoRef={videoRef}
-        onClose={handleStopBarcodeScanning}
-        onCapture={() => { void captureNow(); }}
-        onStop={handleStopBarcodeScanning}
-      />
-
-      {/* Edit Item Modal */}
-      <EditItemModal
-        isOpen={showEditItem}
-        formData={editItemForm.formData}
+        onBarcodeScannerClose={handleStopBarcodeScanning}
+        onBarcodeCapture={() => { void captureNow(); }}
+        onBarcodeStop={handleStopBarcodeScanning}
+        showEditItem={showEditItem}
+        editFormData={editItemForm.formData}
         stores={stores}
-        onClose={closeEditModal}
-        onSubmit={updateExistingItem}
-        onFormChange={(updates) => editItemForm.updateForm(updates)}
-      />
-
-      {/* Add Item Modal */}
-      <AddItemModal
-        isOpen={showAddItem}
-        formData={newItemForm.formData}
-        barcodeResult={barcodeResult}
-        stores={stores}
-        onClose={() => setShowAddItem(false)}
-        onSubmit={addItemToMaster}
-        onFormChange={(updates) => newItemForm.updateForm(updates)}
+        onEditItemClose={closeEditModal}
+        onEditItemSubmit={updateExistingItem}
+        onEditFormChange={(updates) => editItemForm.updateForm(updates)}
+        showAddItem={showAddItem}
+        addFormData={newItemForm.formData}
+        onAddItemClose={() => setShowAddItem(false)}
+        onAddItemSubmit={addItemToMaster}
+        onAddFormChange={(updates) => newItemForm.updateForm(updates)}
         onBarcodeChange={setBarcodeResult}
-      />
-
-      {/* Store Suggestions Modal */}
-      <StoreSuggestionsModal
-        isOpen={showLocationSuggestions}
-        item={selectedItemForSuggestions}
+        showLocationSuggestions={showLocationSuggestions}
+        selectedItemForSuggestions={selectedItemForSuggestions}
         userLocation={userLocation}
         nearbyStores={selectedItemForSuggestions ? findNearbyStoresForItem(selectedItemForSuggestions) : []}
-        onClose={closeStoreSuggestions}
+        onStoreSuggestionsClose={closeStoreSuggestions}
         onGetLocation={() => { void getUserLocation(); }}
         onAssignStore={(storeId) => {
           if (selectedItemForSuggestions) {
