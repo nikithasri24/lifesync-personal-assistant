@@ -3,7 +3,7 @@ import React, { type ReactElement, useEffect, useMemo, useState , type FormEvent
 import { logger } from '../services/logger';
 import { createPortal } from 'react-dom';
 import { addDays, format, isSameWeek, startOfWeek, isSameDay } from 'date-fns';
-import { CalendarDays, ChefHat, Loader2, Plus, Save, Heart, Youtube, Search, X } from 'lucide-react';
+import { ChefHat, Plus, Save, Heart, Youtube, Search, X } from 'lucide-react';
 import DatePickerPopover from '../components/DatePickerPopover';
 import { useComposedStore } from '../stores/useComposedStore';
 import { useToast } from '../hooks/useToast';
@@ -37,18 +37,11 @@ import AddMealControl from '../mealPlanning/components/mealPlan/AddMealControl';
 // Import layout components
 import { MealPlanToolbar } from '../mealPlanning/components/layout/MealPlanToolbar';
 import { SelectionToolbar } from '../mealPlanning/components/layout/SelectionToolbar';
-import { WeeklyGrid } from '../mealPlanning/components/layout/WeeklyGrid';
+import { WeeklyOverviewSection } from '../mealPlanning/components/layout/WeeklyOverviewSection';
 import { SavedRecipesSection } from '../mealPlanning/components/layout/SavedRecipesSection';
 import { ImportSections } from '../mealPlanning/components/layout/ImportSections';
-import { RecipeDraftPreview } from '../mealPlanning/components/layout/RecipeDraftPreview';
+import { ModalContainer } from '../mealPlanning/components/layout/ModalContainer';
 
-// Import modals
-import { QuickRecipeModal } from '../mealPlanning/components/modals/QuickRecipeModal';
-import { SimpleRecipeEditModal } from '../mealPlanning/components/modals/SimpleRecipeEditModal';
-import { RecipeEditModal } from '../mealPlanning/components/modals/RecipeEditModal';
-import { RecipeViewModal } from '../mealPlanning/components/modals/RecipeViewModal';
-import { GroceryListModal } from '../mealPlanning/components/modals/GroceryListModal';
-import { CopyWeekModal } from '../mealPlanning/components/modals/CopyWeekModal';
 
 // Import utilities
 import { toKey, ensureDate, parseLocalDateKey } from '../mealPlanning/utils';
@@ -268,35 +261,20 @@ const MealPlanning: React.FC = () => {
       )}
 
       {/* Weekly overview */}
-      <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm order-1">
-        <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
-          <CalendarDays className="h-5 w-5 text-sky-500" />
-          Weekly overview
-        </h2>
-
-        {isLoading && (
-          <div className="mt-6 flex items-center gap-2 text-sm text-slate-600">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Loading meal plan…
-          </div>
-        )}
-
-        {!isLoading && weekNav.weekDays.length > 0 && (
-          <WeeklyGrid
-            weekDays={weekNav.weekDays}
-            mealsByDate={mealsByDate}
-            recipes={recipes}
-            activePlan={weekNav.activePlan}
-            selectedCells={multiCellSelection.selectedCells}
-            makeCellKey={multiCellSelection.makeCellKey}
-            onCellClick={multiCellSelection.handleCellClick}
-            onShowRecipeForm={modalState.openRecipeForm}
-            onShowSimpleEdit={modalState.openSimpleEdit}
-            createPlannedMeal={createPlannedMealWrapper}
-            updatePlannedMeal={updatePlannedMealWrapper}
-          />
-        )}
-      </section>
+      <WeeklyOverviewSection
+        isLoading={isLoading}
+        weekDays={weekNav.weekDays}
+        mealsByDate={mealsByDate}
+        recipes={recipes}
+        activePlan={weekNav.activePlan}
+        selectedCells={multiCellSelection.selectedCells}
+        makeCellKey={multiCellSelection.makeCellKey}
+        onCellClick={multiCellSelection.handleCellClick}
+        onShowRecipeForm={modalState.openRecipeForm}
+        onShowSimpleEdit={modalState.openSimpleEdit}
+        createPlannedMeal={createPlannedMealWrapper}
+        updatePlannedMeal={updatePlannedMealWrapper}
+      />
 
       {/* Import sections */}
       <ImportSections
@@ -321,9 +299,9 @@ const MealPlanning: React.FC = () => {
       />
 
       {/* Modals */}
-      <GroceryListModal
-        isOpen={modalState.showGroceryList}
-        onClose={() => modalState.setShowGroceryList(false)}
+      <ModalContainer
+        showGroceryList={modalState.showGroceryList}
+        onCloseGroceryList={() => modalState.setShowGroceryList(false)}
         groceryList={groceryState.groceryList}
         neededItems={groceryState.neededItems}
         atHomeItems={groceryState.atHomeItems}
@@ -343,60 +321,25 @@ const MealPlanning: React.FC = () => {
           void navigator.clipboard.writeText(text);
           showToast('Shopping list copied to clipboard!', 'success');
         }}
-      />
-
-      <CopyWeekModal
-        isOpen={modalState.showCopyWeek}
-        onClose={() => modalState.setShowCopyWeek(false)}
+        showCopyWeek={modalState.showCopyWeek}
+        onCloseCopyWeek={() => modalState.setShowCopyWeek(false)}
         sourceWeekStart={weekNav.currentWeekStart}
         targetWeekStart={weekCopy.copyTargetWeek}
         onTargetWeekChange={(d) => weekCopy.setCopyTargetWeek(startOfWeek(d, { weekStartsOn }))}
         mealCount={plannedMeals.length}
         weekStartsOn={weekStartsOn}
         onCopy={handleCopyWeek}
+        recipeFormModal={modalState.recipeFormModal}
+        onCloseRecipeForm={modalState.closeRecipeForm}
+        simpleEditModal={modalState.simpleEditModal}
+        onCloseSimpleEdit={modalState.closeSimpleEdit}
+        editingRecipeId={modalState.editingRecipeId}
+        onCloseRecipeEdit={modalState.closeRecipeEdit}
+        onOpenRecipeEdit={modalState.openRecipeEdit}
+        viewingRecipeId={modalState.viewingRecipeId}
+        onCloseRecipeView={modalState.closeRecipeView}
+        recipes={recipes}
       />
-
-      {modalState.recipeFormModal && (
-        <QuickRecipeModal
-          initialName={modalState.recipeFormModal.initialName}
-          onSave={modalState.recipeFormModal.onSave}
-          onClose={modalState.closeRecipeForm}
-        />
-      )}
-
-      {modalState.simpleEditModal && (
-        <SimpleRecipeEditModal
-          recipe={modalState.simpleEditModal.recipe}
-          onSave={modalState.simpleEditModal.onSave}
-          onClose={modalState.closeSimpleEdit}
-        />
-      )}
-
-      {modalState.editingRecipeId && (() => {
-        const recipe = recipes.find((r) => r.id === modalState.editingRecipeId);
-        return recipe ? (
-          <RecipeEditModal
-            recipe={recipe}
-            onClose={modalState.closeRecipeEdit}
-          />
-        ) : null;
-      })()}
-
-      {modalState.viewingRecipeId && (() => {
-        const recipe = recipes.find((r) => r.id === modalState.viewingRecipeId);
-        return recipe ? (
-          <RecipeViewModal
-            recipe={recipe}
-            onClose={modalState.closeRecipeView}
-            onEdit={() => {
-              if (modalState.viewingRecipeId) {
-                modalState.openRecipeEdit(modalState.viewingRecipeId);
-                modalState.closeRecipeView();
-              }
-            }}
-          />
-        ) : null;
-      })()}
     </div>
   );
 };
