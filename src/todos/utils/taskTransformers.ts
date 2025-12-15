@@ -55,7 +55,10 @@ export function transformApiTasks(apiTasks: TaskData[]): Task[] {
         category,
         createdAt: new Date(task.created_at),
         completedAt: task.completed_at ? new Date(task.completed_at) : undefined,
-        parentId: task.parent_id ?? undefined
+        parentId: task.parent_id ?? undefined,
+        starred: task.starred ?? false,
+        archived: task.archived ?? false,
+        deleted: task.deleted ?? false
       };
     });
 }

@@ -7,6 +7,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { TaskData } from '@/services/types';
+import type { Task, TaskInput, TaskUpdate, TaskFilters, TaskAnalytics } from '@/types/task';
 import { logger } from '@/services/logger';
 import {
   getTasks,
@@ -17,71 +18,6 @@ import {
   restoreTask,
   permanentlyDeleteTask,
 } from '@/api/tasksAPI';
-
-// ==================== Types ====================
-
-export interface Task {
-  id: string;
-  title: string;
-  description?: string;
-  projectId?: string;
-  status: 'todo' | 'done' | 'waiting' | 'scheduled' | 'in_progress';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  estimatedTime?: number;
-  actualTime?: number;
-  dueDate?: Date;
-  tags: string[];
-  category?: 'work' | 'personal' | 'learning' | 'creative' | 'health' | 'other';
-  notes?: string;
-  starred: boolean;
-  archived: boolean;
-  deleted: boolean;
-  parentId?: string;
-  position?: number;
-  deletedAt?: Date;
-  completedAt?: Date;
-  createdAt: Date;
-  updatedAt?: Date;
-}
-
-export type TaskInput = Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'deleted' | 'deletedAt' | 'archived' | 'starred'>;
-export type TaskUpdate = Partial<Omit<Task, 'id' | 'createdAt' | 'updatedAt'>>;
-
-export interface TaskFilters {
-  status?: Task['status'];
-  priority?: Task['priority'];
-  category?: Task['category'];
-  projectId?: string;
-  parentId?: string;
-  starred?: boolean;
-  archived?: boolean;
-  deleted?: boolean;
-  tags?: string[];
-}
-
-export interface TaskAnalytics {
-  total: number;
-  byStatus: {
-    todo: number;
-    in_progress: number;
-    done: number;
-    waiting: number;
-    scheduled: number;
-  };
-  byPriority: {
-    low: number;
-    medium: number;
-    high: number;
-    urgent: number;
-  };
-  starred: number;
-  overdue: number;
-  completedToday: number;
-  completedThisWeek: number;
-  totalEstimatedTime: number;
-  totalActualTime: number;
-  averageCompletionTime: number;
-}
 
 // ==================== Query Keys ====================
 

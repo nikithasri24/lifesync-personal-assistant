@@ -3,7 +3,7 @@
  */
 
 import type { Project } from '../hooks/useProjectsQuery';
-import type { TodoItem } from '../../types';
+import type { Task } from '@/types/task';
 import type { ProjectMetrics, ProjectStats, ProjectFormData } from '../types';
 
 /**
@@ -11,11 +11,11 @@ import type { ProjectMetrics, ProjectStats, ProjectFormData } from '../types';
  */
 export function calculateProjectMetrics(
   projects: Project[],
-  todos: TodoItem[]
+  tasks: Task[]
 ): ProjectMetrics[] {
   return projects.map((project) => {
-    const projectTasks = todos.filter((task) => task.projectId === project.id && !task.deleted);
-    const completedTasks = projectTasks.filter((task) => task.completed);
+    const projectTasks = tasks.filter((task) => task.projectId === project.id && !task.deleted);
+    const completedTasks = projectTasks.filter((task) => task.status === 'done');
     const progress = projectTasks.length > 0 ? (completedTasks.length / projectTasks.length) * 100 : 0;
 
     return {

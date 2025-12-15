@@ -2,6 +2,8 @@
  * Projects Domain Types
  */
 
+import type { Task } from '@/types/task';
+
 export type ViewMode = 'grid' | 'list';
 export type StatusFilter = 'all' | 'active' | 'completed' | 'on_hold';
 
@@ -18,7 +20,7 @@ export type ProjectMetrics = {
   totalTasks: number;
   completedTasks: number;
   progress: number;
-  tasks: unknown[]; // TodoItem[]
+  tasks: Task[];
 };
 
 export type ProjectStats = {

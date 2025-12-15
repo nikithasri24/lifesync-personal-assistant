@@ -2,23 +2,9 @@
  * Core types for the Todos domain
  */
 
-export interface Task {
-  id: string;
-  title: string;
-  description?: string;
-  projectId?: string;
-  status: 'todo' | 'done';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  estimatedTime: number; // minutes
-  actualTime: number; // minutes from focus sessions
-  dueDate?: Date;
-  tags: string[];
-  createdAt: Date;
-  completedAt?: Date;
-  category: 'work' | 'personal' | 'learning' | 'creative' | 'health' | 'other';
-  parentId?: string; // For subtasks
-  subtasks?: Task[];
-}
+import type { Task } from '@/types/task';
+
+export type { Task };
 
 export interface Project {
   id: string;

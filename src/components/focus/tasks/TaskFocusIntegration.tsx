@@ -10,7 +10,7 @@ import React, { useMemo } from 'react';
 import { useTasksQuery } from '../../../tasks/hooks/useTasksQuery';
 import { useProjectsQuery } from '../../../projects/hooks/useProjectsQuery';
 import type { TaskFocusIntegrationProps, TaskView, ProjectView } from './types';
-import type { TodoItem } from '../../../types';
+import type { Task } from '@/types/task';
 import type { Project } from '../../../projects/hooks/useProjectsQuery';
 import { transformTaskToView, transformProjectToView, filterTasks, sortTasks } from './utils';
 import { useFocusAggregate, useTaskFocusState } from './hooks';
@@ -31,11 +31,11 @@ export const TaskFocusIntegration: React.FC<TaskFocusIntegrationProps> = ({
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
   const tasksQueryResult = useTasksQuery();
   // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-  const storeTasksData = tasksQueryResult.data as TodoItem[] | undefined;
+  const storeTasksData = tasksQueryResult.data as Task[] | undefined;
   const { data: storeProjectsData } = useProjectsQuery();
 
   // Safely memoize the data with proper type guards
-  const storeTasks = useMemo<TodoItem[]>(() => {
+  const storeTasks = useMemo<Task[]>(() => {
     return Array.isArray(storeTasksData) ? storeTasksData : [];
   }, [storeTasksData]);
 
@@ -65,7 +65,7 @@ export const TaskFocusIntegration: React.FC<TaskFocusIntegrationProps> = ({
 
   // Transform store data to view models
   const tasks = useMemo<TaskView[]>(() => {
-    return storeTasks.map((todo: TodoItem) => transformTaskToView(todo, focusAggregate));
+    return storeTasks.map((task: Task) => transformTaskToView(task, focusAggregate));
   }, [storeTasks, focusAggregate]);
 
   const projects = useMemo<ProjectView[]>(() => {

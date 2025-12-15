@@ -19,7 +19,10 @@ const mockTask: Task = {
   actualTime: 0,
   tags: ['test'],
   createdAt: new Date(),
-  category: 'work'
+  category: 'work',
+  starred: false,
+  archived: false,
+  deleted: false
 };
 
 const mockProject: Project = {

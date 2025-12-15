@@ -2,7 +2,7 @@
  * Type definitions for Task Focus Integration
  */
 
-import type { TodoItem } from '../../../types';
+import type { Task } from '@/types/task';
 
 export type TaskStatusView = 'todo' | 'in_progress' | 'completed' | 'cancelled';
 
@@ -20,7 +20,7 @@ export interface TaskView {
   description?: string;
   projectId?: string;
   status: TaskStatusView;
-  underlyingStatus: TodoItem['status'];
+  underlyingStatus: Task['status'];
   priority: 'low' | 'medium' | 'high' | 'urgent';
   estimatedTime?: number;
   actualTime?: number;

@@ -25,34 +25,8 @@ export interface FollowUpTask {
   tags?: string[]
 }
 
-export interface TodoItem {
-  id: string
-  title: string
-  description?: string
-  status: TaskStatus
-  priority: TaskPriority
-  categoryId?: TaskCategory
-  category?: string
-  projectId?: string
-  parentId?: string
-  tags: string[]
-  estimatedTime?: number
-  actualTime?: number
-  dueDate?: Date
-  completed: boolean
-  completedAt?: Date
-  createdAt: Date
-  updatedAt?: Date
-  deleted?: boolean
-  deletedAt?: Date
-  notes?: string
-  starred?: boolean
-  archived?: boolean
-  assignedTo?: string
-  dependsOn?: string[]
-  followUpTasks?: FollowUpTask[]
-  subtasks?: SubTask[]
-}
+// TodoItem has been deprecated and removed. Use Task from '@/types/task' instead.
+// Migration: task.completed → task.status === 'done'
 
 export type HabitFrequency = 'daily' | 'weekly' | 'monthly' | 'custom';
 

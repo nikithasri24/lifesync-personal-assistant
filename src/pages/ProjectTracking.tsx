@@ -18,7 +18,7 @@ import type { StatusFilter } from '../projects/types';
 import { ProjectStats } from '../projects/components/ProjectStats';
 import { StatusBadge } from '../projects/components/StatusBadge';
 import type { Project } from '../projects/hooks/useProjectsQuery';
-import type { TodoItem } from '../types';
+import type { Task } from '@/types/task';
 import { ProjectFormModal, DeleteConfirmModal } from './components/ProjectModals';
 
 const ProjectTracking: React.FC = () => {
@@ -275,19 +275,19 @@ const ProjectTracking: React.FC = () => {
 
                   {isExpanded && metrics.tasks.length > 0 && (
                     <div className="mt-2 space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-900/50">
-                      {metrics.tasks.map((task: TodoItem) => (
+                      {metrics.tasks.map((task: Task) => (
                         <div
                           key={task.id}
                           className="flex items-start gap-2 text-sm"
                         >
-                          {task.completed ? (
+                          {task.status === 'done' ? (
                             <CheckCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-500" />
                           ) : (
                             <Circle className="mt-0.5 h-4 w-4 flex-shrink-0 text-slate-400" />
                           )}
                           <span
                             className={`flex-1 ${
-                              task.completed
+                              task.status === 'done'
                                 ? 'text-slate-500 line-through dark:text-slate-500'
                                 : 'text-slate-900 dark:text-white'
                             }`}
