@@ -93,8 +93,6 @@ export default function ShoppingSmart(): ReactElement {
   const updatePantryItemMutation = useUpdatePantryItemMutation();
   const deletePantryItemMutation = useDeletePantryItemMutation();
 
-  const _shoppingLoading = isLoadingList || isLoadingItems || pantryLoading;
-
   // Get other store data that hasn't been migrated yet
   const { showToast } = useToast();
 
@@ -138,15 +136,10 @@ export default function ShoppingSmart(): ReactElement {
   // Sample stores with ratings and preferences
   const [stores] = useState<StoreType[]>(MOCK_STORES);
 
-  // Use global shopping items as master list
-  const _masterList = shoppingItems;
-
   // Store-specific lists (auto-generated from master list)
   const [storeLists, setStoreLists] = useState<ShoppingList[]>([]);
 
   const [activeView, setActiveView] = useState<'master' | 'stores' | 'distribute' | 'pantry'>('master');
-  const [searchQuery, _setSearchQuery] = useState('');
-  const [_selectedStores, _setSelectedStores] = useState<string[]>([]);
   const [distributionStrategy, setDistributionStrategy] = useState<DistributionStrategy>('mixed');
 
   // Form state management using consolidated hook
@@ -329,10 +322,6 @@ export default function ShoppingSmart(): ReactElement {
   };
 
   // Smart store recommendation algorithm
-
-  const _filteredMasterItems = shoppingItems.filter(item =>
-    searchQuery === '' || item.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   const totalMasterItems = shoppingItems.filter(item => !item.purchased).length;
   const totalEstimatedCost = shoppingItems.reduce((sum, item) => sum + (item.estimatedPrice ?? 0), 0);

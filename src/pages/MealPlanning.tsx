@@ -12,7 +12,6 @@ import {
   useRecipesQuery,
   useMealPlansQuery,
   useCreateRecipeMutation,
-  useUpdateRecipeMutation,
   useDeleteRecipeMutation,
   useDeleteAllRecipesMutation,
   useCreateMealPlanMutation,
@@ -81,10 +80,9 @@ const cleanupOldDrafts = (): void => {
 
 const MealPlanning: React.FC = () => {
   // React Query hooks
-  const { data: recipes = [], isLoading: _recipesLoading } = useRecipesQuery();
+  const { data: recipes = [] } = useRecipesQuery();
   const { data: mealPlans = [], isLoading: mealPlansLoading } = useMealPlansQuery();
   const createRecipeMutation = useCreateRecipeMutation();
-  const _updateRecipeMutation = useUpdateRecipeMutation();
   const createPlannedMealMutation = useCreatePlannedMealMutation();
   const updatePlannedMealMutation = useUpdatePlannedMealMutation();
   const deleteRecipeMutation = useDeleteRecipeMutation();
@@ -92,7 +90,7 @@ const MealPlanning: React.FC = () => {
   const createMealPlanMutation = useCreateMealPlanMutation();
 
   // Global UI settings
-  const { weekStartsOn, addNote } = useComposedStore();
+  const { weekStartsOn } = useComposedStore();
   const { showToast } = useToast();
 
   // Wrapper functions to adapt mutation signatures (defined early for hook dependencies)
@@ -176,45 +174,6 @@ const MealPlanning: React.FC = () => {
       recipeImport.clearUrlImport();
     } catch (_e) {
       recipeImport.setImportError('Failed to save recipe');
-    }
-  };
-
-  const _saveImportedAsNote = async (): Promise<void> => {
-    if (!recipeImport.importDraft) return;
-    try {
-      const title = recipeImport.importDraft.name ?? 'Imported Recipe';
-      const lines: string[] = [];
-      lines.push(`# ${title}`);
-      if (recipeImport.importDraft.sourceUrl) {
-        lines.push('');
-        lines.push(`Source: ${recipeImport.importDraft.sourceUrl}`);
-      }
-      if (recipeImport.importDraft.description) {
-        lines.push('');
-        lines.push(recipeImport.importDraft.description);
-      }
-      if (Array.isArray(recipeImport.importDraft.ingredients) && recipeImport.importDraft.ingredients.length) {
-        lines.push('');
-        lines.push('## Ingredients');
-        for (const ing of recipeImport.importDraft.ingredients) {
-          const name = typeof ing === 'object' && ing !== null && 'name' in ing ? (ing as { name: string }).name : String(ing);
-          lines.push(`- ${name}`);
-        }
-      }
-      if (Array.isArray(recipeImport.importDraft.instructions) && recipeImport.importDraft.instructions.length) {
-        lines.push('');
-        lines.push('## Instructions');
-        const instructions = recipeImport.importDraft.instructions as unknown[];
-        instructions.forEach((step: unknown, idx: number) => {
-          lines.push(`${idx + 1}. ${String(step)}`);
-        });
-      }
-      const content = lines.join('\n');
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-      await addNote({ title, content, tags: ['recipe', 'imported'] });
-      recipeImport.clearUrlImport();
-    } catch (_e: unknown) {
-      recipeImport.setImportError('Failed to save as note');
     }
   };
 

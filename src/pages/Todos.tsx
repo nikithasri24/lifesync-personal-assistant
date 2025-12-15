@@ -22,7 +22,6 @@ import {
   useProjects,
   useCreateTask,
   useUpdateTask,
-  useDeleteTask,
 } from '../hooks/useTasksQuery';
 import type { TaskData } from '../services/types';
 
@@ -66,7 +65,6 @@ export default function Todos(): React.ReactElement {
 
   const createTaskMutation = useCreateTask();
   const updateTaskMutation = useUpdateTask();
-  const _deleteTaskMutation = useDeleteTask(); // TODO: Implement delete functionality
 
   // Enhanced API health monitoring
   const apiHealth = useApiHealth(15000); // Check every 15 seconds
