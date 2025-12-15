@@ -3,9 +3,9 @@
  * Browse and create goals from pre-defined templates
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Target, Zap, Clock, Tag, TrendingUp, Award, BookOpen, X } from 'lucide-react';
-import { getGoalTemplates, createGoalFromTemplate } from '../api/lifeGoalsAPI';
+import { useGoalTemplatesQuery, useCreateGoalFromTemplateMutation } from '../hooks/useLifeGoalsQuery';
 import type { LifeGoalWithMilestones } from '../types/lifeGoals';
 import { logger } from '../../services/logger';
 
@@ -64,53 +64,45 @@ const categoryIcons: Record<string, React.ComponentType<{ className?: string }>>
 };
 
 const GoalTemplates: React.FC<GoalTemplatesProps> = ({ onGoalCreated, onClose }) => {
-  const [templates, setTemplates] = useState<Template[]>([]);
-  const [loading, setLoading] = useState(true);
+  // React Query hooks
+  const { data: rawTemplates = [], isLoading: loading } = useGoalTemplatesQuery();
+  const { mutate: createFromTemplate, isPending: creating, error: mutationError } = useCreateGoalFromTemplateMutation();
+
+  // Local state
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
-  const [creating, setCreating] = useState(false);
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const loadTemplates = async (): Promise<void> => {
-      try {
-        setLoading(true);
-        const data = await getGoalTemplates() as unknown as TemplateResponse[];
-        setTemplates(data.map((t: TemplateResponse) => ({
-          id: t.id,
-          name: t.name,
-          description: t.description,
-          category: t.category,
-          difficulty: t.difficulty,
-          estimatedDurationDays: t.estimated_duration_days,
-          defaultMilestones: t.default_milestones ?? [],
-          suggestedTags: t.suggested_tags ?? [],
-          tips: t.tips,
-          resources: t.resources ?? [],
-          usageCount: t.usage_count,
-        })));
-      } catch (error: unknown) {
-        logger.error('Goals', 'Error loading templates', { error: error instanceof Error ? error.message : String(error) });
-      } finally {
-        setLoading(false);
-      }
-    };
-    void loadTemplates();
-  }, []);
+  // Map LifeGoalTemplate to component's Template type
+  const templates: Template[] = rawTemplates.map(t => ({
+    id: t.id,
+    name: t.name,
+    description: t.description ?? '',
+    category: t.category,
+    difficulty: t.difficulty,
+    estimatedDurationDays: t.estimatedDurationDays ?? 0,
+    defaultMilestones: t.defaultMilestones,
+    suggestedTags: t.suggestedTags,
+    tips: t.tips ?? '',
+    resources: t.resources,
+    usageCount: t.usageCount,
+  }));
 
-  const handleCreateFromTemplate = async (templateId: string): Promise<void> => {
-    try {
-      setCreating(true);
-      setError(null);
-      const goal = await createGoalFromTemplate(templateId);
-      onGoalCreated(goal);
-      onClose();
-    } catch (error: unknown) {
-      logger.error('Goals', 'Error creating goal from template', { error: error instanceof Error ? error.message : String(error) });
-      setError('Failed to create goal. Please try again.');
-    } finally {
-      setCreating(false);
-    }
+  const handleCreateFromTemplate = (templateId: string): void => {
+    setError(null);
+    createFromTemplate(
+      { templateId },
+      {
+        onSuccess: (goal) => {
+          onGoalCreated(goal as unknown as LifeGoalWithMilestones);
+          onClose();
+        },
+        onError: (err) => {
+          logger.error('Goals', err);
+          setError('Failed to create goal. Please try again.');
+        },
+      }
+    );
   };
 
   const categories = ['all', 'fitness', 'health', 'career', 'financial', 'personal'];

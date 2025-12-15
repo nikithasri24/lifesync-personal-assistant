@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { Brain, Zap, CheckCircle, AlertTriangle, EyeOff, RefreshCw, Filter, Search, TrendingUp, Calendar, Lightbulb, Target } from 'lucide-react';
-import { apiClient } from '../services/apiClient';
+import { useTransactionsQuery, useUpsertTransactionMutation } from '../finance/hooks/useFinanceQuery';
 import { expenseCategorizationEngine, type CategorySuggestion } from '../services/expenseCategorizationEngine';
 import type { FinancialTransactionData } from '../services/types';
 import { logger } from '../services/logger';
@@ -15,15 +15,49 @@ interface TransactionCategorization {
 interface Anomaly { transaction: FinancialTransactionData; reason: string; }
 
 export default function SmartExpenseCategorizer(): React.JSX.Element {
-  const [transactions, setTransactions] = useState<FinancialTransactionData[]>([]);
+  // React Query hooks - fetch last 3 months of transactions
+  const threeMonthsAgo = useMemo(() => {
+    const date = new Date();
+    date.setMonth(date.getMonth() - 3);
+    return date.toISOString();
+  }, []);
+
+  const { data: allTransactions = [], isLoading: loading } = useTransactionsQuery({
+    fromISO: threeMonthsAgo,
+    type: 'debit', // 'debit' = expenses/withdrawals
+  });
+
+  const { mutate: updateTransaction } = useUpsertTransactionMutation();
+
+  // Local state
   const [categorizations, setCategorizations] = useState<TransactionCategorization[]>([]);
-  const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [filter, setFilter] = useState<'all' | 'uncategorized' | 'needs_review'>('uncategorized');
   const [searchTerm, setSearchTerm] = useState('');
   const [showInsights, setShowInsights] = useState(true);
   const [insights, setInsights] = useState<{ insights: string[]; anomalies: Anomaly[] }>({ insights: [], anomalies: [] });
   const [potentialBills, setPotentialBills] = useState<FinancialTransactionData[]>([]);
+
+  // Convert Transaction (UI) → FinancialTransactionData (DB) for categorization engine
+  // Only process debit transactions (expenses)
+  const uiTransactions = useMemo(() =>
+    allTransactions.filter(t => t.type === 'debit'),
+    [allTransactions]
+  );
+
+  const transactions: FinancialTransactionData[] = useMemo(() =>
+    uiTransactions.map(t => ({
+      id: t.id,
+      account_id: t.accountId,
+      category_id: t.categoryId,
+      type: 'expense', // Map 'debit' → 'expense' for categorization engine
+      amount: t.amount,
+      description: t.description,
+      payee: t.merchantName,
+      date: t.dateISO,
+      notes: t.notes,
+    })), [uiTransactions]
+  );
 
   const processCategorizations = useCallback((transactionData: FinancialTransactionData[]): void => {
     setProcessing(true);
@@ -39,41 +73,54 @@ export default function SmartExpenseCategorizer(): React.JSX.Element {
       setInsights(expenseCategorizationEngine.generateSpendingInsights(transactionData));
       setPotentialBills(expenseCategorizationEngine.detectPotentialBills(transactionData));
     } catch (error) {
-      logger.error('Finance', 'Failed to process categorizations:', { error: error instanceof Error ? error.message : String(error) });
+      logger.error('Finance', error as Error);
     } finally {
       setProcessing(false);
     }
   }, []);
 
-  const loadTransactions = useCallback(async (): Promise<void> => {
-    try {
-      setLoading(true);
-      const data = await apiClient.getFinancialTransactions();
-      const threeMonthsAgo = new Date();
-      threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-      const recentTransactions = data.filter(t => new Date(t.date) >= threeMonthsAgo && t.type === 'expense');
-      setTransactions(recentTransactions);
-      processCategorizations(recentTransactions);
-    } catch (error) {
-      logger.error('Finance', 'Failed to load transactions:', { error: error instanceof Error ? error.message : String(error) });
-    } finally {
-      setLoading(false);
+  // Process categorizations when transactions change
+  useMemo(() => {
+    if (transactions.length > 0) {
+      processCategorizations(transactions);
     }
-  }, [processCategorizations]);
+  }, [transactions, processCategorizations]);
 
-  useEffect(() => {
-    void loadTransactions();
-  }, [loadTransactions]);
+  const handleCategorySelection = (transactionId: string, categoryId: string): void => {
+    // Find the full transaction
+    const uiTransaction = uiTransactions.find(t => t.id === transactionId);
+    if (!uiTransaction) return;
 
-  const handleCategorySelection = async (transactionId: string, categoryId: string): Promise<void> => {
-    try {
-      await apiClient.updateFinancialTransaction(transactionId, { category_id: categoryId });
-      setCategorizations(prev => prev.map(cat => cat.transaction.id === transactionId ? { ...cat, selectedCategory: categoryId, isConfirmed: true } : cat));
-      const transaction = categorizations.find(c => c.transaction.id === transactionId)?.transaction;
-      if (transaction) expenseCategorizationEngine.learnFromUserCategorization(transaction, categoryId);
-    } catch (error) {
-      logger.error('Finance', 'Failed to update transaction category:', { error: error instanceof Error ? error.message : String(error) });
-    }
+    // Update transaction with new category
+    updateTransaction(
+      {
+        id: uiTransaction.id,
+        accountId: uiTransaction.accountId,
+        dateISO: uiTransaction.dateISO,
+        description: uiTransaction.description,
+        categoryId, // Updated field
+        amount: uiTransaction.amount,
+        type: uiTransaction.type,
+        notes: uiTransaction.notes,
+        merchantName: uiTransaction.merchantName,
+      },
+      {
+        onSuccess: () => {
+          setCategorizations(prev => prev.map(cat =>
+            cat.transaction.id === transactionId
+              ? { ...cat, selectedCategory: categoryId, isConfirmed: true }
+              : cat
+          ));
+          const transaction = categorizations.find(c => c.transaction.id === transactionId)?.transaction;
+          if (transaction) {
+            expenseCategorizationEngine.learnFromUserCategorization(transaction, categoryId);
+          }
+        },
+        onError: (error) => {
+          logger.error('Finance', error);
+        },
+      }
+    );
   };
 
   const handleBulkCategorize = async (): Promise<void> => {

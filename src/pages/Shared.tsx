@@ -3,64 +3,55 @@
  * Manage connections with other users and control sharing permissions
  */
 
-import React, { type ReactElement, useState, useEffect , type FormEvent } from 'react';
+import React, { type ReactElement, useState } from 'react';
 import { Users, UserPlus, Bell, Settings } from 'lucide-react';
 import {
-  getUserConnections,
-  getPendingInvitations,
-} from '../shared/api/connectionsAPI';
+  useConnectionsQuery,
+  useInvitationsQuery,
+  useAcceptInvitationMutation,
+  useRejectInvitationMutation,
+  useDeleteConnectionMutation,
+} from '../shared/hooks/useConnectionsQuery';
 import type { ConnectionWithUser, PendingInvitation } from '../shared/types/connections';
 import { ConnectionsList } from '../shared/components/ConnectionsList';
 import NewConnectionForm from '../shared/components/NewConnectionForm';
 import { InvitationsPanel } from '../shared/components/InvitationsPanel';
-import { logger } from '../services/logger';
 
 type TabView = 'connections' | 'invitations' | 'add';
 
 const Shared: React.FC = () => {
-  const [connections, setConnections] = useState<ConnectionWithUser[]>([]);
-  const [sentInvitations, setSentInvitations] = useState<PendingInvitation[]>([]);
-  const [receivedInvitations, setReceivedInvitations] = useState<PendingInvitation[]>([]);
-  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabView>('connections');
 
-  useEffect(() => {
-    void loadData();
-  }, []);
+  // React Query hooks
+  const { data: connections = [], isLoading: connectionsLoading } = useConnectionsQuery();
+  const { data: invitations, isLoading: invitationsLoading } = useInvitationsQuery();
+  const { mutate: acceptInvitation } = useAcceptInvitationMutation();
+  const { mutate: rejectInvitation } = useRejectInvitationMutation();
+  const { mutate: deleteConnection } = useDeleteConnectionMutation();
 
-  const loadData = async (): Promise<void> => {
-    try {
-      setLoading(true);
-      const [connectionsData, invitationsData] = await Promise.all([
-        getUserConnections(),
-        getPendingInvitations(),
-      ]);
-      setConnections(connectionsData);
-      setSentInvitations(invitationsData.sent);
-      setReceivedInvitations(invitationsData.received);
-    } catch (error) {
-      logger.error('Shared', error as Error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const loading = connectionsLoading || invitationsLoading;
+  const sentInvitations = invitations?.sent ?? [];
+  const receivedInvitations = invitations?.received ?? [];
 
   const handleConnectionCreated = (): void => {
-    void loadData();
     setActiveTab('invitations');
+    // React Query auto-refetches invitations
   };
 
   const handleInvitationAccepted = (): void => {
-    void loadData();
+    // NOTE: Once InvitationsPanel is implemented, it should pass invitationId
+    // and call: acceptInvitation(invitationId);
     setActiveTab('connections');
   };
 
   const handleInvitationRejected = (): void => {
-    void loadData();
+    // NOTE: Once InvitationsPanel is implemented, it should pass invitationId
+    // and call: rejectInvitation(invitationId);
   };
 
   const handleConnectionDeleted = (): void => {
-    void loadData();
+    // NOTE: Once ConnectionsList is implemented, it should pass connectionId
+    // and call: deleteConnection(connectionId);
   };
 
   if (loading) {
