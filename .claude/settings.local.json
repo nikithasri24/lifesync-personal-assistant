@@ -64,7 +64,8 @@
       "Bash(psql:*)",
       "WebFetch(domain:i.pinimg.com)",
       "Bash(cut:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(do)"
     ],
     "deny": [],
     "ask": []
