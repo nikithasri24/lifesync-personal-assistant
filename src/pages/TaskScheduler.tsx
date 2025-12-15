@@ -26,6 +26,8 @@ import { TaskEditModal } from '../scheduler/components/TaskEditModal';
 import { TaskSchedulerHeader } from '../scheduler/components/layout/TaskSchedulerHeader';
 import { StatsBar } from '../scheduler/components/layout/StatsBar';
 import { HelpTipBanner } from '../scheduler/components/layout/HelpTipBanner';
+import { TaskSchedulerLoadingState } from '../scheduler/components/layout/TaskSchedulerLoadingState';
+import { TaskSchedulerErrorState } from '../scheduler/components/layout/TaskSchedulerErrorState';
 
 // Task Management Components
 import {
@@ -68,9 +70,6 @@ import {
   getInboxTasks,
   parseQuickAdd,
 } from '../todos/services/taskHelpers';
-
-// Loading
-import { SkeletonCard } from '../components/LoadingSpinner';
 
 const TaskScheduler: React.FC = () => {
   // ============================================================================
@@ -387,32 +386,11 @@ const TaskScheduler: React.FC = () => {
   // ============================================================================
 
   if (isLoading) {
-    return (
-      <div className="flex h-screen bg-white dark:bg-slate-900">
-        <div className="flex-1 p-6">
-          <SkeletonCard className="h-full" />
-        </div>
-      </div>
-    );
+    return <TaskSchedulerLoadingState />;
   }
 
   if (tasksError) {
-    return (
-      <div className="h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center">
-        <div className="rounded-lg border border-red-200 bg-red-50 p-6 max-w-md">
-          <h3 className="text-lg font-semibold text-red-900 mb-2">Error Loading Tasks</h3>
-          <p className="text-sm text-red-700 mb-4">
-            Unable to load your tasks. Please try refreshing the page.
-          </p>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
-          >
-            Refresh Page
-          </button>
-        </div>
-      </div>
-    );
+    return <TaskSchedulerErrorState />;
   }
 
   // ============================================================================
