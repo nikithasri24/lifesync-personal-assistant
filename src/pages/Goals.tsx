@@ -10,8 +10,6 @@
 
 import React, { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
-import { Plus, Target, Trash2, CheckCircle2, Sparkles } from 'lucide-react';
-import { SkeletonCard } from '../components/LoadingSpinner';
 import {
   useLifeGoals,
   useCreateLifeGoal,
@@ -23,21 +21,19 @@ import {
   useDeleteLifeDream,
 } from '../hooks/useGoalsQuery';
 import type { GoalDraft, DreamDraft } from '../goals/types/drafts';
-import type { GoalCategory, GoalPriority, DreamCategory, DreamPriority, DreamStatus } from '../goals/types/lifeGoals';
-import {
-  GOAL_CATEGORIES,
-  GOAL_PRIORITIES,
-  DREAM_CATEGORIES,
-  DREAM_PRIORITIES,
-  DREAM_STATUSES,
-} from '../goals/constants';
 import {
   createGoalDraft,
   createDreamDraft,
   mapGoalDraftToCreateInput,
   mapDreamDraftToCreateInput,
 } from '../goals/services/goalHelpers';
-import { EmptyState } from '../goals/components/EmptyState';
+import { GoalsHeader } from '../goals/components/layout/GoalsHeader';
+import { GoalsStatsGrid } from '../goals/components/layout/GoalsStatsGrid';
+import { GoalsTabSwitcher } from '../goals/components/layout/GoalsTabSwitcher';
+import { GoalsList } from '../goals/components/layout/GoalsList';
+import { DreamsList } from '../goals/components/layout/DreamsList';
+import { GoalForm } from '../goals/components/layout/GoalForm';
+import { DreamForm } from '../goals/components/layout/DreamForm';
 
 const Goals: React.FC = () => {
   // React Query hooks - automatic loading and caching
@@ -100,415 +96,98 @@ const Goals: React.FC = () => {
     });
   };
 
-  const renderGoalList = (): React.ReactNode => {
-    // Show loading state
-    if (goalsLoading) {
-      return (
-        <div className="space-y-3">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <SkeletonCard key={i} className="h-32" />
-          ))}
-        </div>
-      );
-    }
-
-    // Show error state
-    if (goalsError) {
-      return (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-          <p className="text-sm text-red-700">
-            Error loading goals. Please try refreshing the page.
-          </p>
-        </div>
-      );
-    }
-
-    if (goals.length === 0) {
-      return <EmptyState label="No goals yet. Start by creating one." icon={<Target className="h-6 w-6" />} />;
-    }
-
-    return (
-      <ul className="space-y-3">
-        {goals.map((goal) => (
-          <li key={goal.id} className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-semibold text-slate-900">{goal.title}</p>
-                <p className="text-xs text-slate-500">{goal.category} • {goal.priority}</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => updateGoalMutation.mutate({
-                    id: goal.id,
-                    updates: {
-                      status: 'completed',
-                      progress: 100,
-                      completedDate: new Date().toISOString(),
-                    },
-                  })}
-                  disabled={updateGoalMutation.isPending}
-                  className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-600 transition hover:bg-emerald-100 disabled:opacity-50"
-                >
-                  <CheckCircle2 className="h-4 w-4" />
-                  Mark complete
-                </button>
-                <button
-                  type="button"
-                  onClick={() => deleteGoalMutation.mutate(goal.id)}
-                  disabled={deleteGoalMutation.isPending}
-                  className="rounded-full border border-slate-200 p-1 text-slate-500 transition hover:bg-slate-100 disabled:opacity-50"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-            {goal.description && (
-              <p className="text-sm text-slate-600">{goal.description}</p>
-            )}
-            <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
-              <span>Status: {goal.status}</span>
-              <span>Progress: {goal.progress}%</span>
-              {goal.targetDate && (
-                <span>Target date: {new Date(goal.targetDate).toLocaleDateString()}</span>
-              )}
-            </div>
-          </li>
-        ))}
-      </ul>
-    );
+  const handleMarkGoalComplete = (goalId: string): void => {
+    updateGoalMutation.mutate({
+      id: goalId,
+      updates: {
+        status: 'completed',
+        progress: 100,
+        completedDate: new Date().toISOString(),
+      },
+    });
   };
 
-  const renderDreamList = (): React.ReactNode => {
-    // Show loading state
-    if (dreamsLoading) {
-      return (
-        <div className="space-y-3">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <SkeletonCard key={i} className="h-32" />
-          ))}
-        </div>
-      );
-    }
+  const handleDeleteGoal = (goalId: string): void => {
+    deleteGoalMutation.mutate(goalId);
+  };
 
-    // Show error state
-    if (dreamsError) {
-      return (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-          <p className="text-sm text-red-700">
-            Error loading dreams. Please try refreshing the page.
-          </p>
-        </div>
-      );
-    }
+  const handleMarkDreamAchieved = (dreamId: string): void => {
+    updateDreamMutation.mutate({
+      id: dreamId,
+      updates: {
+        status: 'achieved',
+        achievedAt: new Date().toISOString(),
+      },
+    });
+  };
 
-    if (dreams.length === 0) {
-      return <EmptyState label="No dreams captured yet. Start with one aspiration." />;
-    }
-
-    return (
-      <ul className="space-y-3">
-        {dreams.map((dream) => (
-          <li key={dream.id} className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-semibold text-slate-900">{dream.title}</p>
-                <p className="text-xs text-slate-500">{dream.category} • {dream.priority}</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => updateDreamMutation.mutate({
-                    id: dream.id,
-                    updates: {
-                      status: 'achieved',
-                      achievedAt: new Date().toISOString(),
-                    },
-                  })}
-                  disabled={updateDreamMutation.isPending}
-                  className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-600 transition hover:bg-indigo-100 disabled:opacity-50"
-                >
-                  <Sparkles className="h-4 w-4" />
-                  Mark achieved
-                </button>
-                <button
-                  type="button"
-                  onClick={() => deleteDreamMutation.mutate(dream.id)}
-                  disabled={deleteDreamMutation.isPending}
-                  className="rounded-full border border-slate-200 p-1 text-slate-500 transition hover:bg-slate-100 disabled:opacity-50"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-            {dream.description && (
-              <p className="text-sm text-slate-600">{dream.description}</p>
-            )}
-            <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
-              <span>Status: {dream.status}</span>
-              {typeof dream.estimatedCost === 'number' && (
-                <span>Estimated cost: ${dream.estimatedCost.toLocaleString()}</span>
-              )}
-              {dream.estimatedTimeframe && (
-                <span>Timeframe: {dream.estimatedTimeframe}</span>
-              )}
-            </div>
-          </li>
-        ))}
-      </ul>
-    );
+  const handleDeleteDream = (dreamId: string): void => {
+    deleteDreamMutation.mutate(dreamId);
   };
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6 p-6">
-      <header className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Goals & Dreams</h1>
-          <p className="text-sm text-slate-600">Track meaningful progress and celebrate future aspirations.</p>
-        </div>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              setShowGoalForm(true);
-              setActiveTab('goals');
-            }}
-            className="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500"
-          >
-            <Plus className="h-4 w-4" />
-            New goal
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setShowDreamForm(true);
-              setActiveTab('dreams');
-            }}
-            className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-          >
-            <Sparkles className="h-4 w-4" />
-            New dream
-          </button>
-        </div>
-      </header>
+      <GoalsHeader
+        onNewGoal={() => {
+          setShowGoalForm(true);
+          setActiveTab('goals');
+        }}
+        onNewDream={() => {
+          setShowDreamForm(true);
+          setActiveTab('dreams');
+        }}
+      />
 
-      <section className="grid gap-4 sm:grid-cols-2">
-        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Goals</p>
-          <p className="mt-2 text-2xl font-semibold text-slate-900">{goalStats.total}</p>
-          <p className="text-xs text-slate-500">{goalStats.completed} completed • {goalStats.inProgress} in progress</p>
-        </div>
-        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Dreams</p>
-          <p className="mt-2 text-2xl font-semibold text-slate-900">{dreamStats.total}</p>
-          <p className="text-xs text-slate-500">{dreamStats.achieved} achieved</p>
-        </div>
-      </section>
+      <GoalsStatsGrid goalStats={goalStats} dreamStats={dreamStats} />
 
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={() => setActiveTab('goals')}
-          className={`flex-1 rounded-full px-4 py-2 text-sm font-medium transition ${
-            activeTab === 'goals' ? 'bg-indigo-600 text-white' : 'border border-slate-200 text-slate-700 hover:bg-slate-50'
-          }`}
-        >
-          Goals
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('dreams')}
-          className={`flex-1 rounded-full px-4 py-2 text-sm font-medium transition ${
-            activeTab === 'dreams' ? 'bg-indigo-600 text-white' : 'border border-slate-200 text-slate-700 hover:bg-slate-50'
-          }`}
-        >
-          Dreams
-        </button>
-      </div>
+      <GoalsTabSwitcher activeTab={activeTab} onTabChange={setActiveTab} />
 
       <section>
-        {activeTab === 'goals' ? renderGoalList() : renderDreamList()}
+        {activeTab === 'goals' ? (
+          <GoalsList
+            goals={goals}
+            isLoading={goalsLoading}
+            error={goalsError}
+            onMarkComplete={handleMarkGoalComplete}
+            onDelete={handleDeleteGoal}
+            isUpdating={updateGoalMutation.isPending}
+            isDeleting={deleteGoalMutation.isPending}
+          />
+        ) : (
+          <DreamsList
+            dreams={dreams}
+            isLoading={dreamsLoading}
+            error={dreamsError}
+            onMarkAchieved={handleMarkDreamAchieved}
+            onDelete={handleDeleteDream}
+            isUpdating={updateDreamMutation.isPending}
+            isDeleting={deleteDreamMutation.isPending}
+          />
+        )}
       </section>
 
       {showGoalForm && (
-        <form onSubmit={handleGoalSubmit} className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-900">Create a goal</h2>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium text-slate-700">Title</span>
-              <input
-                required
-                value={goalDraft.title}
-                onChange={(event) => setGoalDraft((prev) => ({ ...prev, title: event.target.value }))}
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
-                placeholder="Launch new product"
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium text-slate-700">Category</span>
-              <select
-                value={goalDraft.category}
-                onChange={(event) => setGoalDraft((prev) => ({ ...prev, category: event.target.value as GoalCategory }))}
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
-              >
-                {GOAL_CATEGORIES.map((category) => (
-                  <option key={category} value={category}>{category}</option>
-                ))}
-              </select>
-            </label>
-            <label className="flex flex-col gap-1 text-sm sm:col-span-2">
-              <span className="font-medium text-slate-700">Description</span>
-              <textarea
-                value={goalDraft.description}
-                onChange={(event) => setGoalDraft((prev) => ({ ...prev, description: event.target.value }))}
-                className="h-24 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
-                placeholder="Why this goal matters and how you will tackle it"
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium text-slate-700">Priority</span>
-              <select
-                value={goalDraft.priority}
-                onChange={(event) => setGoalDraft((prev) => ({ ...prev, priority: event.target.value as GoalPriority }))}
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
-              >
-                {GOAL_PRIORITIES.map((priority) => (
-                  <option key={priority} value={priority}>{priority}</option>
-                ))}
-              </select>
-            </label>
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium text-slate-700">Target date</span>
-              <input
-                type="date"
-                value={goalDraft.targetDate}
-                onChange={(event) => setGoalDraft((prev) => ({ ...prev, targetDate: event.target.value }))}
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
-              />
-            </label>
-          </div>
-          <div className="mt-6 flex gap-2">
-            <button
-              type="submit"
-              className="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500"
-            >
-              <Target className="h-4 w-4" />
-              Save goal
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setShowGoalForm(false);
-                setGoalDraft(createGoalDraft());
-              }}
-              className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
+        <GoalForm
+          goalDraft={goalDraft}
+          onDraftChange={(updates) => setGoalDraft((prev) => ({ ...prev, ...updates }))}
+          onSubmit={handleGoalSubmit}
+          onCancel={() => {
+            setShowGoalForm(false);
+            setGoalDraft(createGoalDraft());
+          }}
+        />
       )}
 
       {showDreamForm && (
-        <form onSubmit={handleDreamSubmit} className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-900">Capture a dream</h2>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium text-slate-700">Title</span>
-              <input
-                required
-                value={dreamDraft.title}
-                onChange={(event) => setDreamDraft((prev) => ({ ...prev, title: event.target.value }))}
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
-                placeholder="Backpack through Europe"
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium text-slate-700">Category</span>
-              <select
-                value={dreamDraft.category}
-                onChange={(event) => setDreamDraft((prev) => ({ ...prev, category: event.target.value as DreamCategory }))}
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
-              >
-                {DREAM_CATEGORIES.map((category) => (
-                  <option key={category} value={category}>{category}</option>
-                ))}
-              </select>
-            </label>
-            <label className="flex flex-col gap-1 text-sm sm:col-span-2">
-              <span className="font-medium text-slate-700">Description</span>
-              <textarea
-                value={dreamDraft.description}
-                onChange={(event) => setDreamDraft((prev) => ({ ...prev, description: event.target.value }))}
-                className="h-24 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
-                placeholder="Why this dream is meaningful and what it looks like"
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium text-slate-700">Priority</span>
-              <select
-                value={dreamDraft.priority}
-                onChange={(event) => setDreamDraft((prev) => ({ ...prev, priority: event.target.value as DreamPriority }))}
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
-              >
-                {DREAM_PRIORITIES.map((priority) => (
-                  <option key={priority} value={priority}>{priority}</option>
-                ))}
-              </select>
-            </label>
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium text-slate-700">Status</span>
-              <select
-                value={dreamDraft.status}
-                onChange={(event) => setDreamDraft((prev) => ({ ...prev, status: event.target.value as DreamStatus }))}
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
-              >
-                {DREAM_STATUSES.map((status) => (
-                  <option key={status} value={status}>{status}</option>
-                ))}
-              </select>
-            </label>
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium text-slate-700">Estimated cost (optional)</span>
-              <input
-                type="number"
-                min="0"
-                value={dreamDraft.estimatedCost}
-                onChange={(event) => setDreamDraft((prev) => ({ ...prev, estimatedCost: event.target.value }))}
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
-                placeholder="5000"
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium text-slate-700">Timeframe (optional)</span>
-              <input
-                value={dreamDraft.estimatedTimeframe}
-                onChange={(event) => setDreamDraft((prev) => ({ ...prev, estimatedTimeframe: event.target.value }))}
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
-                placeholder="Within 5 years"
-              />
-            </label>
-          </div>
-          <div className="mt-6 flex gap-2">
-            <button
-              type="submit"
-              className="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500"
-            >
-              <Sparkles className="h-4 w-4" />
-              Save dream
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setShowDreamForm(false);
-                setDreamDraft(createDreamDraft());
-              }}
-              className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
+        <DreamForm
+          dreamDraft={dreamDraft}
+          onDraftChange={(updates) => setDreamDraft((prev) => ({ ...prev, ...updates }))}
+          onSubmit={handleDreamSubmit}
+          onCancel={() => {
+            setShowDreamForm(false);
+            setDreamDraft(createDreamDraft());
+          }}
+        />
       )}
     </div>
   );
