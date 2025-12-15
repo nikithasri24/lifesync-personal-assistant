@@ -17,16 +17,15 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import {
-  Search,
-  Filter,
-  Plus,
-  Timer,
-} from 'lucide-react';
 
 // Scheduler Components
 import { BoardView } from '../scheduler/components/BoardView';
 import { TaskEditModal } from '../scheduler/components/TaskEditModal';
+
+// Layout Components
+import { TaskSchedulerHeader } from '../scheduler/components/layout/TaskSchedulerHeader';
+import { StatsBar } from '../scheduler/components/layout/StatsBar';
+import { HelpTipBanner } from '../scheduler/components/layout/HelpTipBanner';
 
 // Task Management Components
 import {
@@ -424,76 +423,16 @@ const TaskScheduler: React.FC = () => {
     <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
       <div className="flex-shrink-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <div className="px-6 py-4">
-          {/* Title Row */}
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Task Scheduler
-            </h1>
-
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search tasks..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-4 py-2 w-64 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-
-            {/* Filter Toggle */}
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className={`
-                p-2 rounded-lg transition-colors
-                ${showFilters
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }
-              `}
-            >
-              <Filter className="w-5 h-5" />
-            </button>
-
-            {/* Pomodoro Timer */}
-            {pomodoro.pomodoroTimer.taskId !== null && (
-              <button
-                onClick={pomodoro.togglePomodoro}
-                className="flex items-center gap-2 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
-              >
-                <Timer className="w-4 h-4" />
-                <span className="text-sm">
-                  {Math.floor(pomodoro.pomodoroTimer.timeLeft / 60)}:
-                  {(pomodoro.pomodoroTimer.timeLeft % 60).toString().padStart(2, '0')}
-                </span>
-              </button>
-            )}
-
-            {/* Create Task Button */}
-            <button
-              onClick={() => handleCreateTask()}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              New Task
-            </button>
-          </div>
-
-          {/* Priority Stats Row */}
-          <div className="flex items-center gap-6 pb-4">
-            <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-              <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-              <span className="text-sm font-semibold text-blue-900 dark:text-blue-300">
-                Important:
-              </span>
-              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
-                {filteredTasks.filter(t => t.status !== 'done' && t.priority === 'important').length}
-              </span>
-            </div>
-          </div>
-        </div>
+        <TaskSchedulerHeader
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          showFilters={showFilters}
+          onToggleFilters={() => setShowFilters(!showFilters)}
+          pomodoroTimer={pomodoro.pomodoroTimer}
+          onTogglePomodoro={pomodoro.togglePomodoro}
+          onCreateTask={() => handleCreateTask()}
+          importantTaskCount={filteredTasks.filter(t => t.status !== 'done' && t.priority === 'important').length}
+        />
 
         {/* Quick Add Form */}
         {modals.showQuickAdd && (
@@ -576,28 +515,11 @@ const TaskScheduler: React.FC = () => {
         )}
 
         {/* Stats Bar */}
-        <div className="px-6 py-3 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-6 text-sm">
-            <div className="flex items-center gap-2">
-              <span className="text-gray-600 dark:text-gray-400">Total:</span>
-              <span className="font-bold text-gray-900 dark:text-white">
-                {filteredTasks.length}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-gray-600 dark:text-gray-400">In Progress:</span>
-              <span className="font-bold text-blue-600 dark:text-blue-400">
-                {filteredTasks.filter(t => t.status === 'in_progress').length}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-gray-600 dark:text-gray-400">Completed:</span>
-              <span className="font-bold text-green-600 dark:text-green-400">
-                {filteredTasks.filter(t => t.status === 'done').length}
-              </span>
-            </div>
-          </div>
-        </div>
+        <StatsBar
+          totalTasks={filteredTasks.length}
+          inProgressTasks={filteredTasks.filter(t => t.status === 'in_progress').length}
+          completedTasks={filteredTasks.filter(t => t.status === 'done').length}
+        />
       </div>
 
       {/* Main Content - Board View Only */}
@@ -614,12 +536,7 @@ const TaskScheduler: React.FC = () => {
       </div>
 
       {/* Help Text */}
-      <div className="flex-shrink-0 px-6 py-2 bg-blue-50 dark:bg-gray-800 border-t border-blue-200 dark:border-gray-700">
-        <p className="text-sm text-gray-700 dark:text-gray-300">
-          <strong className="font-semibold text-blue-600 dark:text-blue-400">Tip:</strong> {' '}
-          Drag tasks between columns to change status. Click any task to edit. Focus on urgent & important items first.
-        </p>
-      </div>
+      <HelpTipBanner />
 
       {/* Task Edit Modal */}
       <TaskEditModal
