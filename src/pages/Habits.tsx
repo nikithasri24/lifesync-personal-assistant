@@ -18,7 +18,6 @@
 import React, { type ReactElement, useMemo, useState, type FormEvent } from 'react';
 import { Toast } from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { SkeletonCard } from '../components/LoadingSpinner';
 import {
   useHabits,
   useHabitEntries,
@@ -34,7 +33,10 @@ import { logger } from '../services/logger';
 import type { HabitDraft } from '../habits/types';
 import { createDraft, toHabitDraft } from '../habits/services/habitHelpers';
 import { HabitForm } from '../habits/components/HabitForm';
-import { HabitCard } from '../habits/components/HabitCard';
+import { HabitsHeader } from '../habits/components/layout/HabitsHeader';
+import { HabitsLoadingState } from '../habits/components/layout/HabitsLoadingState';
+import { HabitsErrorState } from '../habits/components/layout/HabitsErrorState';
+import { HabitsList } from '../habits/components/layout/HabitsList';
 
 // Helper function to get the start and end of the current week (Monday to Sunday)
 const getWeekBoundaries = (date: Date = new Date()): { start: string; end: string } => {
@@ -296,49 +298,23 @@ const Habits: React.FC = () => {
 
   // Loading state
   if (habitsLoading || entriesLoading) {
-    return (
-      <div className="mx-auto flex max-w-4xl flex-col gap-6 p-6">
-        <header className="flex flex-col gap-2">
-          <h1 className="text-2xl font-semibold text-slate-900">Habit tracker</h1>
-          <p className="text-sm text-slate-600">Loading your habits...</p>
-        </header>
-        <div className="space-y-3">
-          <SkeletonCard className="h-32" />
-          <SkeletonCard className="h-32" />
-          <SkeletonCard className="h-32" />
-        </div>
-      </div>
-    );
+    return <HabitsLoadingState />;
   }
 
   // Error state
   if (habitsError) {
     return (
-      <div className="mx-auto flex max-w-4xl flex-col gap-6 p-6">
+      <>
         <Toast toast={toast} onDismiss={dismissToast} />
-        <div className="rounded-lg border border-red-200 bg-red-50 p-6">
-          <h3 className="text-lg font-semibold text-red-900 mb-2">Error Loading Habits</h3>
-          <p className="text-sm text-red-700 mb-4">
-            Unable to load your habits. Please try refreshing the page.
-          </p>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
-          >
-            Refresh Page
-          </button>
-        </div>
-      </div>
+        <HabitsErrorState />
+      </>
     );
   }
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6 p-6">
       <Toast toast={toast} onDismiss={dismissToast} />
-      <header className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold text-slate-900">Habit tracker</h1>
-        <p className="text-sm text-slate-600">A lightweight overview to help you stay consistent with the routines that matter.</p>
-      </header>
+      <HabitsHeader />
 
       <HabitForm
         draft={draft}
@@ -349,59 +325,26 @@ const Habits: React.FC = () => {
         onClear={() => setDraft(createDraft())}
       />
 
-      <section className="space-y-3">
-        {habitsWithStats.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-slate-300 bg-white p-12 text-center text-slate-500">
-            No habits yet. Add one above to start tracking.
-          </div>
-        ) : (
-          habitsWithStats
-            .filter(({ habit }) => habit.id !== undefined)
-            .filter(({ habit, hasReachedTarget }) => {
-              // Hide weekly/monthly habits that have been completed for the period
-              if (habit.frequency === 'weekly' && hasReachedTarget) {
-                return false;
-              }
-              if (habit.frequency === 'monthly' && hasReachedTarget) {
-                return false;
-              }
-              return true;
-            })
-            .map(({ habit, todayCompletions, targetCount, hasReachedTarget, currentStreak, totalCompletions }) => {
-              // Filter entries for this specific habit
-              const habitSpecificEntries = apiEntries.filter(entry => entry.habit_id === habit.id);
-
-              return (
-                <HabitCard
-                  key={habit.id}
-                  habit={habit}
-                  habitEntries={habitSpecificEntries}
-                  todayCompletions={todayCompletions}
-                  targetCount={targetCount}
-                  hasReachedTarget={hasReachedTarget}
-                  currentStreak={currentStreak}
-                  totalCompletions={totalCompletions}
-                  isEditing={editingHabitId === habit.id}
-                  editDraft={editDraft}
-                  isCompletingHabit={createEntryMutation.isPending}
-                  isUpdating={updateHabitMutation.isPending}
-                  hasUpdateError={updateHabitMutation.isError}
-                  isResettingToday={deleteEntriesForDateMutation.isPending || deleteEntriesForDateRangeMutation.isPending}
-                  isResettingHistory={deleteAllEntriesMutation.isPending}
-                  isDeleting={deleteHabitMutation.isPending}
-                  onComplete={() => { handleCompleteHabit(habit.id as string); }}
-                  onStartEdit={() => { startEditing(habit.id as string); }}
-                  onCancelEdit={cancelEditing}
-                  onEditDraftChange={setEditDraft}
-                  onEditSubmit={handleEditSubmit}
-                  onResetToday={() => { handleResetToday(habit.id as string); }}
-                  onResetHistory={() => { handleResetHistory(habit.id as string); }}
-                  onDelete={() => { handleDeleteHabit(habit.id as string); }}
-                />
-              );
-            })
-        )}
-      </section>
+      <HabitsList
+        habitsWithStats={habitsWithStats}
+        apiEntries={apiEntries}
+        editingHabitId={editingHabitId}
+        editDraft={editDraft}
+        isCompletingHabit={createEntryMutation.isPending}
+        isUpdating={updateHabitMutation.isPending}
+        hasUpdateError={updateHabitMutation.isError}
+        isResettingToday={deleteEntriesForDateMutation.isPending || deleteEntriesForDateRangeMutation.isPending}
+        isResettingHistory={deleteAllEntriesMutation.isPending}
+        isDeleting={deleteHabitMutation.isPending}
+        onComplete={handleCompleteHabit}
+        onStartEdit={startEditing}
+        onCancelEdit={cancelEditing}
+        onEditDraftChange={setEditDraft}
+        onEditSubmit={handleEditSubmit}
+        onResetToday={handleResetToday}
+        onResetHistory={handleResetHistory}
+        onDelete={handleDeleteHabit}
+      />
     </div>
   );
 };
