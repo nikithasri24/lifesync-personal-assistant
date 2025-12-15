@@ -46,10 +46,13 @@ export function useLifeGoals(): UseQueryResult<LifeGoal[], Error> {
 /**
  * Get a single life goal by ID with milestones
  */
-export function useLifeGoal(id: string | null): UseQueryResult<LifeGoalWithMilestones, Error> {
+export function useLifeGoal(id: string | null): UseQueryResult<LifeGoalWithMilestones | null, Error> {
   return useQuery({
     queryKey: queryKeys.goals.detail(id ?? ''),
-    queryFn: () => getLifeGoalById(id ?? ''),
+    queryFn: () => {
+      if (!id) return null;
+      return getLifeGoalById(id);
+    },
     enabled: !!id,
     ...queryOptions.user,
   });

@@ -9,14 +9,14 @@ import type { Task } from '../../lib/supabase';
  * Check if a task is multi-day (estimated time >= 8 hours)
  */
 export const isMultiDayTask = (task: Task): boolean => {
-  return task.estimated_time >= 480; // 8+ hours = multi-day (480 minutes)
+  return task.estimated_time != null && task.estimated_time >= 480; // 8+ hours = multi-day (480 minutes)
 };
 
 /**
  * Get the number of days a task spans
  */
 export const getTaskSpanDays = (task: Task): number => {
-  if (!isMultiDayTask(task)) return 1;
+  if (!isMultiDayTask(task) || task.estimated_time == null) return 1;
   // Each day = 480 minutes (8 working hours)
   return Math.ceil(task.estimated_time / 480);
 };

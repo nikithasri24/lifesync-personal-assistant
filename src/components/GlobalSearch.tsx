@@ -8,8 +8,8 @@ import { useNotes } from '../hooks/useNotesQuery';
 import { useJournalEntries } from '../hooks/useJournalQuery';
 import { useRecipesQuery } from '../mealPlanning/hooks/useMealPlanningQuery';
 import { useActiveShoppingList, useShoppingItems } from '../hooks/useShoppingQuery';
-import type { HabitData, ShoppingItemData, ShoppingListData } from '../services/types';
-import type { TodoItem, Note, JournalEntry, Recipe, Ingredient } from '../types';
+import type { HabitData, ShoppingItemData, ShoppingListData, TaskData } from '../services/types';
+import type { Note, JournalEntry, Recipe, Ingredient } from '../types';
 
 interface SearchResult {
   id: string;
@@ -26,7 +26,7 @@ interface GlobalSearchProps {
   onClose: () => void;
 }
 
-export default function GlobalSearch({ onClose }: GlobalSearchProps): JSX.Element {
+export default function GlobalSearch({ onClose }: GlobalSearchProps) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const { setActiveView } = useComposedStore();
@@ -43,11 +43,11 @@ export default function GlobalSearch({ onClose }: GlobalSearchProps): JSX.Elemen
 
   // Extract data with proper typing and default values using useMemo
   const habits: HabitData[] = useMemo(() => habitsData ?? [], [habitsData]);
-  const todos: TodoItem[] = useMemo(() => todosData ?? [], [todosData]);
+  const todos: TaskData[] = useMemo(() => todosData ?? [], [todosData]);
   const notes: Note[] = useMemo(() => notesData ?? [], [notesData]);
-  const journalEntries: JournalEntry[] = useMemo(() => journalData ?? [], [journalData]);
+  const journalEntries: JournalEntry[] = useMemo(() => (journalData as JournalEntry[] | undefined) ?? [], [journalData]);
   const recipes: Recipe[] = useMemo(() => recipesData ?? [], [recipesData]);
-  const shoppingItems: ShoppingItemData[] = useMemo(() => shoppingData ?? [], [shoppingData]);
+  const shoppingItems: ShoppingItemData[] = useMemo(() => (shoppingData as ShoppingItemData[] | undefined) ?? [], [shoppingData]);
 
   useEffect(() => {
     if (query.length < 2) {
@@ -87,19 +87,19 @@ export default function GlobalSearch({ onClose }: GlobalSearchProps): JSX.Elemen
     });
 
     // Search todos
-    todos.forEach((todo: TodoItem): void => {
+    todos.forEach((todo: TaskData): void => {
       if (
         todo.title.toLowerCase().includes(lowercaseQuery) ||
         (todo.description ?? '').toLowerCase().includes(lowercaseQuery) ||
-        todo.tags.some((tag: string): boolean => tag.toLowerCase().includes(lowercaseQuery))
+        (todo.tags ?? []).some((tag: string): boolean => tag.toLowerCase().includes(lowercaseQuery))
       ) {
         searchResults.push({
-          id: todo.id,
+          id: todo.id ?? '',
           type: 'todo',
           title: todo.title,
           content: todo.description ?? '',
           category: todo.priority,
-          date: todo.createdAt,
+          date: todo.created_at ? new Date(todo.created_at) : undefined,
           icon: CheckSquare,
           onClick: (): void => {
             setActiveView('todos');

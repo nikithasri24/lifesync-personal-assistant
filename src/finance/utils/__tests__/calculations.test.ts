@@ -23,8 +23,8 @@ describe('calculations', () => {
   describe('calculateNetWorth', () => {
     it('should calculate net worth with only assets', () => {
       const accounts = [
-        { currentBalance: 10000, accountType: 'checking' },
-        { currentBalance: 50000, accountType: 'investment' },
+        { balance: 10000, type: 'checking' },
+        { balance: 50000, type: 'investment' },
       ];
       const result = calculateNetWorth(accounts);
       expect(result.totalAssets).toBe(60000);
@@ -34,8 +34,8 @@ describe('calculations', () => {
 
     it('should categorize liquid assets correctly', () => {
       const accounts = [
-        { currentBalance: 5000, accountType: 'checking' },
-        { currentBalance: 10000, accountType: 'savings' },
+        { balance: 5000, type: 'checking' },
+        { balance: 10000, type: 'savings' },
       ];
       const result = calculateNetWorth(accounts);
       expect(result.breakdown.liquidAssets).toBe(15000);
@@ -43,8 +43,8 @@ describe('calculations', () => {
 
     it('should categorize investments correctly', () => {
       const accounts = [
-        { currentBalance: 50000, accountType: 'investment' },
-        { currentBalance: 30000, accountType: '401k' },
+        { balance: 50000, type: 'investment' },
+        { balance: 30000, type: '401k' },
       ];
       const result = calculateNetWorth(accounts);
       expect(result.breakdown.investments).toBe(80000);
@@ -52,8 +52,8 @@ describe('calculations', () => {
 
     it('should handle liabilities', () => {
       const accounts = [
-        { currentBalance: 10000, accountType: 'checking' },
-        { currentBalance: -5000, accountType: 'credit_card' },
+        { balance: 10000, type: 'checking' },
+        { balance: -5000, type: 'credit_card' },
       ];
       const result = calculateNetWorth(accounts);
       expect(result.totalLiabilities).toBe(5000);
@@ -63,10 +63,10 @@ describe('calculations', () => {
 
     it('should handle mixed assets and liabilities', () => {
       const accounts = [
-        { currentBalance: 20000, accountType: 'checking' },
-        { currentBalance: 100000, accountType: 'investment' },
-        { currentBalance: -3000, accountType: 'credit_card' },
-        { currentBalance: -200000, accountType: 'loan' },
+        { balance: 20000, type: 'checking' },
+        { balance: 100000, type: 'investment' },
+        { balance: -3000, type: 'credit_card' },
+        { balance: -200000, type: 'loan' },
       ];
       const result = calculateNetWorth(accounts);
       expect(result.totalAssets).toBe(120000);
@@ -333,7 +333,7 @@ describe('calculations', () => {
   describe('calculateCreditUtilization', () => {
     it('should calculate excellent utilization', () => {
       const accounts = [
-        { currentBalance: -500, creditLimit: 10000, accountType: 'credit_card' },
+        { balance: -500, creditLimit: 10000, type: 'credit_card' },
       ];
       const result = calculateCreditUtilization(accounts);
       expect(result.utilizationRate).toBe(5);
@@ -342,7 +342,7 @@ describe('calculations', () => {
 
     it('should calculate high utilization', () => {
       const accounts = [
-        { currentBalance: -8000, creditLimit: 10000, accountType: 'credit_card' },
+        { balance: -8000, creditLimit: 10000, type: 'credit_card' },
       ];
       const result = calculateCreditUtilization(accounts);
       expect(result.utilizationRate).toBe(80);
@@ -351,8 +351,8 @@ describe('calculations', () => {
 
     it('should handle multiple credit cards', () => {
       const accounts = [
-        { currentBalance: -2000, creditLimit: 10000, accountType: 'credit_card' },
-        { currentBalance: -3000, creditLimit: 10000, accountType: 'credit_card' },
+        { balance: -2000, creditLimit: 10000, type: 'credit_card' },
+        { balance: -3000, creditLimit: 10000, type: 'credit_card' },
       ];
       const result = calculateCreditUtilization(accounts);
       expect(result.totalBalance).toBe(5000);
@@ -362,8 +362,8 @@ describe('calculations', () => {
 
     it('should ignore non-credit accounts', () => {
       const accounts = [
-        { currentBalance: -1000, creditLimit: 10000, accountType: 'credit_card' },
-        { currentBalance: 5000, accountType: 'checking' },
+        { balance: -1000, creditLimit: 10000, type: 'credit_card' },
+        { balance: 5000, type: 'checking' },
       ];
       const result = calculateCreditUtilization(accounts);
       expect(result.totalBalance).toBe(1000);

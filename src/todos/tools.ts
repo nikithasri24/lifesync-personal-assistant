@@ -118,7 +118,7 @@ async function executeCreateTask(
       }
     };
   } catch (error) {
-    logger.error('TaskTools', error as Error, {
+    logger.error('TaskTools', 'Operation failed', { error,
       operation: 'create_task',
       args
     });
@@ -198,7 +198,7 @@ async function executeGetWeekOverview(
       }
     };
   } catch (error) {
-    logger.error('TaskTools', error as Error, {
+    logger.error('TaskTools', 'Operation failed', { error,
       operation: 'get_week_overview'
     });
 

@@ -39,7 +39,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
   }, [newTask, onTaskChange]);
 
   const handleDifficultyChange = useCallback((e: ChangeEvent<HTMLSelectElement>): void => {
-    const difficulty = Number.parseInt(e.target.value, 10);
+    const difficulty = Number.parseInt(e.target.value, 10) as 1 | 2 | 3 | 4 | 5 | undefined;
     onTaskChange({ ...newTask, difficulty });
   }, [newTask, onTaskChange]);
 

@@ -7,7 +7,7 @@ import { createShoppingItemFromPantry } from '../utils/pantryUtils';
  */
 export function usePantryActions(
   pantryItems: PantryItem[],
-  addShoppingItem: (item: Partial<ShoppingItem>) => Promise<void>
+  addShoppingItem: (item: Omit<ShoppingItem, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>
 ): {
   addLowStockToShopping: () => Promise<number>;
   addExpiredToShopping: () => Promise<number>;
@@ -19,13 +19,13 @@ export function usePantryActions(
     const lows: PantryItem[] = pantryItems.filter(
       (p): p is PantryItem & { isLowStock: true; lowStockThreshold: number } =>
         p.isLowStock === true &&
-        p.lowStockThreshold !== null &&
+        p.lowStockThreshold !== undefined &&
         p.lowStockThreshold > 0 &&
         p.quantity !== null
     );
 
     const addItemPromises = lows.map(async (p) => {
-      const target = p.lowStockThreshold;
+      const target = p.lowStockThreshold!;
       const need = Math.max(0, target - p.quantity) || 1;
       const item = createShoppingItemFromPantry(p, need);
       await addShoppingItem({ ...item, tags: ['from:pantry'] });

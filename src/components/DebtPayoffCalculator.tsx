@@ -7,10 +7,11 @@ import DebtSummaryCards from './DebtPayoffCalculator/DebtSummaryCards';
 import StrategyRecommendation from './DebtPayoffCalculator/StrategyRecommendation';
 import DebtCard from './DebtPayoffCalculator/DebtCard';
 import DebtFormModal from './DebtPayoffCalculator/DebtFormModal';
+import type { DebtFormData } from './DebtPayoffCalculator/DebtFormModal';
 import StrategyCalculatorModal from './DebtPayoffCalculator/StrategyCalculatorModal';
 import ConfirmDialog from './DebtPayoffCalculator/ConfirmDialog';
 
-export default function DebtPayoffCalculator(): JSX.Element {
+export default function DebtPayoffCalculator() {
   const [debts, setDebts] = useState<DebtAccount[]>(MOCK_DEBTS);
   const [showAddDebt, setShowAddDebt] = useState(false);
   const [showCalculator, setShowCalculator] = useState(false);
@@ -18,8 +19,8 @@ export default function DebtPayoffCalculator(): JSX.Element {
   const [extraPayment, setExtraPayment] = useState<number>(0);
   const [selectedStrategy, setSelectedStrategy] = useState<'snowball' | 'avalanche' | 'custom'>('avalanche');
   const [deleteConfirmDebtId, setDeleteConfirmDebtId] = useState<string | null>(null);
-  const [debtForm, setDebtForm] = useState({
-    type: 'credit_card' as const,
+  const [debtForm, setDebtForm] = useState<DebtFormData>({
+    type: 'credit_card',
     balance: '',
     interestRate: '',
     minimumPayment: '',

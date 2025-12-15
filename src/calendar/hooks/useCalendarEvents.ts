@@ -32,10 +32,10 @@ export const useCalendarEventsForDay = (
 
     // Separate all-day tasks (high priority or starred tasks are treated as all-day)
     const allDayTasks = dayTasks.filter(task =>
-      task.priority === 'urgent' || task.starred || task.estimated_time >= 240 // 4+ hours
+      task.priority === 'urgent' || task.starred || (task.estimated_time != null && task.estimated_time >= 240) // 4+ hours
     );
     const timedTasks = dayTasks.filter(task =>
-      !(task.priority === 'urgent' || task.starred || task.estimated_time >= 240)
+      !(task.priority === 'urgent' || task.starred || (task.estimated_time != null && task.estimated_time >= 240))
     );
 
     // Calendar Events

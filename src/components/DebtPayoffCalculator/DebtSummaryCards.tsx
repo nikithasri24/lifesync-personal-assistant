@@ -12,7 +12,7 @@ export default function DebtSummaryCards({
   totalMinimumPayments,
   weightedAverageRate,
   debtCount
-}: DebtSummaryCardsProps): JSX.Element {
+}: DebtSummaryCardsProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
       <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-6 border border-red-200">

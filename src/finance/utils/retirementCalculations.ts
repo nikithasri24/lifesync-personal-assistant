@@ -249,7 +249,7 @@ export function validateAllocation(allocation: InvestmentAllocation): {
   Object.entries(allocation).forEach(([key, value]) => {
     if (key === 'funds') {
       // Sum fund allocations
-      (value as Array<{ percentage: number }>).forEach(fund => {
+      (value as Array<{ name: string; ticker?: string; percentage: number }>).forEach(fund => {
         if (fund.percentage < 0) {
           errors.push(`Fund ${fund.name || 'unknown'} has negative percentage`);
         }

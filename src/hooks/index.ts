@@ -19,7 +19,7 @@ export * from './useOptimization';
 export * from './useResponsiveMap';
 export * from './useShoppingQuery';
 export * from './useSkincareQuery';
-export * from './useTasks';
+// export * from './useTasks'; // Commented out - conflicts with useTasksQuery
 export * from './useTasksQuery';
 export * from './useTheme';
 export * from './useToast';

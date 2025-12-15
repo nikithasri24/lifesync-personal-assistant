@@ -11,14 +11,16 @@ import type {
   ModulePermission,
   ConnectionInvitation,
   ConnectionWithUser,
-  _ConnectionWithPermissions,
+  ConnectionWithPermissions,
   PendingInvitation,
   CreateConnectionInput,
   UpdateConnectionInput,
-  _UpdatePermissionInput,
+  UpdatePermissionInput,
   AcceptConnectionInput,
   ShareableModule,
   ModulePermissionLevel,
+  ConnectionRelationship,
+  ConnectionStatus,
 } from '../types/connections';
 
 // =====================================================
@@ -114,11 +116,11 @@ export async function getUserConnections(): Promise<ConnectionWithUser[]> {
       otherUser: {
         id: otherUser.id,
         email: otherUser.email,
-        fullName: otherUser.full_name ?? '',
-        avatarUrl: otherUser.avatar_url ?? null,
+        fullName: otherUser.full_name ?? undefined,
+        avatarUrl: otherUser.avatar_url ?? undefined,
       },
-      myLabel: isRequester ? (conn.requester_label ?? null) : (conn.receiver_label ?? null),
-      theirLabel: isRequester ? (conn.receiver_label ?? null) : (conn.requester_label ?? null),
+      myLabel: isRequester ? (conn.requester_label ?? undefined) : (conn.receiver_label ?? undefined),
+      theirLabel: isRequester ? (conn.receiver_label ?? undefined) : (conn.requester_label ?? undefined),
     };
   });
 }
@@ -155,8 +157,8 @@ export async function getPendingInvitations(): Promise<{
       fromUser: {
         id: fromUser.id,
         email: fromUser.email,
-        fullName: fromUser.full_name ?? '',
-        avatarUrl: fromUser.avatar_url ?? null,
+        fullName: fromUser.full_name ?? undefined,
+        avatarUrl: fromUser.avatar_url ?? undefined,
       },
     };
 
@@ -236,7 +238,7 @@ export async function createConnection(input: CreateConnectionInput): Promise<Pr
       message: input.message,
     });
   } catch (emailError) {
-    logger.error('ConnectionsAPI', 'Failed to send invitation email:', emailError);
+    logger.error('ConnectionsAPI', 'Failed to send invitation email', { error: emailError });
     // Don't fail the invitation if email fails
   }
 
@@ -486,13 +488,13 @@ function mapDbToConnection(data: DbConnection): ProfileConnection {
     id: data.id,
     requesterId: data.requester_id,
     receiverId: data.receiver_id,
-    relationship: data.relationship,
-    status: data.status,
-    requesterLabel: data.requester_label ?? null,
-    receiverLabel: data.receiver_label ?? null,
-    notes: data.notes ?? null,
+    relationship: data.relationship as ConnectionRelationship,
+    status: data.status as ConnectionStatus,
+    requesterLabel: data.requester_label ?? undefined,
+    receiverLabel: data.receiver_label ?? undefined,
+    notes: data.notes ?? undefined,
     createdAt: data.created_at,
-    acceptedAt: data.accepted_at ?? null,
+    acceptedAt: data.accepted_at ?? undefined,
     updatedAt: data.updated_at,
   };
 }
@@ -501,8 +503,8 @@ function mapDbToPermission(data: DbPermission): ModulePermission {
   return {
     id: data.id,
     connectionId: data.connection_id,
-    module: data.module,
-    permissionLevel: data.permission_level,
+    module: data.module as ShareableModule,
+    permissionLevel: data.permission_level as ModulePermissionLevel,
     userId: data.user_id,
     settings: data.settings ?? {},
     createdAt: data.created_at,
@@ -514,10 +516,10 @@ function mapDbToInvitation(data: DbInvitation): ConnectionInvitation {
   return {
     id: data.id,
     connectionId: data.connection_id,
-    message: data.message ?? null,
-    proposedPermissions: data.proposed_permissions ?? {},
+    message: data.message ?? undefined,
+    proposedPermissions: (data.proposed_permissions ?? {}) as Record<ShareableModule, ModulePermissionLevel>,
     createdAt: data.created_at,
-    expiresAt: data.expires_at ?? null,
+    expiresAt: data.expires_at ?? '',
   };
 }
 

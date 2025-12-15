@@ -67,7 +67,7 @@ export const createProjectsSlice: StateCreator<ProjectsSlice, [], [], ProjectsSl
       logger.info('ProjectsSlice', 'Projects loaded successfully', { count: projects.length });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to load projects';
-      logger.error('ProjectsSlice', error as Error, { context: 'loadProjects' });
+      logger.error('ProjectsSlice', 'Operation failed', { error, context: 'loadProjects' });
       set({
         projectsError: errorMessage,
         projectsLoading: false,
@@ -85,7 +85,7 @@ export const createProjectsSlice: StateCreator<ProjectsSlice, [], [], ProjectsSl
       }));
       logger.info('ProjectsSlice', 'Project refreshed', { id });
     } catch (error) {
-      logger.error('ProjectsSlice', error as Error, { context: 'refreshProject', id });
+      logger.error('ProjectsSlice', 'Operation failed', { error, context: 'refreshProject', id });
       throw error;
     }
   },
@@ -98,7 +98,7 @@ export const createProjectsSlice: StateCreator<ProjectsSlice, [], [], ProjectsSl
       logger.info('ProjectsSlice', 'Project created', { id: created.id, name: created.name });
       return created;
     } catch (error) {
-      logger.error('ProjectsSlice', error as Error, { context: 'addProject' });
+      logger.error('ProjectsSlice', 'Operation failed', { error, context: 'addProject' });
       throw error;
     }
   },
@@ -123,7 +123,7 @@ export const createProjectsSlice: StateCreator<ProjectsSlice, [], [], ProjectsSl
     } catch (error) {
       // Revert optimistic update on error
       set({ projects: get().projects });
-      logger.error('ProjectsSlice', error as Error, { context: 'updateProject', id });
+      logger.error('ProjectsSlice', 'Operation failed', { error, context: 'updateProject', id });
       throw error;
     }
   },
@@ -142,7 +142,7 @@ export const createProjectsSlice: StateCreator<ProjectsSlice, [], [], ProjectsSl
     } catch (error) {
       // Revert optimistic delete on error
       set({ projects: get().projects });
-      logger.error('ProjectsSlice', error as Error, { context: 'deleteProject', id });
+      logger.error('ProjectsSlice', 'Operation failed', { error, context: 'deleteProject', id });
       throw error;
     }
   },
@@ -175,7 +175,7 @@ export const createProjectsSlice: StateCreator<ProjectsSlice, [], [], ProjectsSl
       });
       return created;
     } catch (error) {
-      logger.error('ProjectsSlice', error as Error, { context: 'addMilestone' });
+      logger.error('ProjectsSlice', 'Operation failed', { error, context: 'addMilestone' });
       throw error;
     }
   },
@@ -195,7 +195,7 @@ export const createProjectsSlice: StateCreator<ProjectsSlice, [], [], ProjectsSl
       logger.info('ProjectsSlice', 'Milestone updated', { id, updates: Object.keys(updates) });
       return updated;
     } catch (error) {
-      logger.error('ProjectsSlice', error as Error, { context: 'updateMilestone', id });
+      logger.error('ProjectsSlice', 'Operation failed', { error, context: 'updateMilestone', id });
       throw error;
     }
   },
@@ -216,7 +216,7 @@ export const createProjectsSlice: StateCreator<ProjectsSlice, [], [], ProjectsSl
       }));
       logger.info('ProjectsSlice', 'Milestone deleted', { projectId, milestoneId });
     } catch (error) {
-      logger.error('ProjectsSlice', error as Error, {
+      logger.error('ProjectsSlice', 'Operation failed', { error,
         context: 'deleteMilestone',
         projectId,
         milestoneId,
@@ -233,7 +233,7 @@ export const createProjectsSlice: StateCreator<ProjectsSlice, [], [], ProjectsSl
       // Optionally refresh the project to get updated task list
       await get().refreshProject(projectId);
     } catch (error) {
-      logger.error('ProjectsSlice', error as Error, { context: 'linkTask', projectId, taskId });
+      logger.error('ProjectsSlice', 'Operation failed', { error, context: 'linkTask', projectId, taskId });
       throw error;
     }
   },
@@ -246,7 +246,7 @@ export const createProjectsSlice: StateCreator<ProjectsSlice, [], [], ProjectsSl
       // Optionally refresh the project to get updated task list
       await get().refreshProject(projectId);
     } catch (error) {
-      logger.error('ProjectsSlice', error as Error, {
+      logger.error('ProjectsSlice', 'Operation failed', { error,
         context: 'unlinkTask',
         projectId,
         taskId,

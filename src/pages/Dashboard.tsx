@@ -1,3 +1,4 @@
+import type { ReactElement } from 'react';
 /* eslint-disable max-lines */
 import {
   CheckSquare,
@@ -50,7 +51,7 @@ interface CompleteHabitMutation {
   mutateAsync: (habitId: string) => Promise<void>;
 }
 
-export default function Dashboard(): JSX.Element {
+export default function Dashboard(): ReactElement {
   const { setActiveView } = useComposedStore();
 
   // React Query hooks for all data sources
@@ -67,7 +68,7 @@ export default function Dashboard(): JSX.Element {
 
   const tasks: Task[] = (tasksQuery as TasksQueryResult).data ?? [];
   const tasksLoading: boolean = (tasksQuery as TasksQueryResult).isLoading ?? false;
-  const habits: Habit[] = (habitsQuery as HabitsQueryResult).data ?? [];
+  const habits: Habit[] = (habitsQuery as unknown as HabitsQueryResult).data ?? [];
   const habitEntries = (habitEntriesQuery as { data: Array<{ habit_id: string; date: string; value?: number }> }).data ?? [];
   const notes: Note[] = (notesQuery as NotesQueryResult).data ?? [];
   const journalEntries: JournalEntry[] = (journalQuery as JournalQueryResult).data ?? [];
@@ -323,7 +324,7 @@ export default function Dashboard(): JSX.Element {
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
                   <button
-                    onClick={(): void => { void completeTask(task.id); }}
+                    onClick={(): void => { if (task.id) void completeTask(task.id); }}
                     disabled={completingTask === task.id}
                     className={`flex items-center justify-center w-6 h-6 rounded border-2 transition-all duration-200 ${
                       completingTask === task.id
@@ -592,7 +593,7 @@ export default function Dashboard(): JSX.Element {
               >
                 <div className="flex items-center space-x-4">
                   <button
-                    onClick={(): void => { void completeTask(task.id); }}
+                    onClick={(): void => { if (task.id) void completeTask(task.id); }}
                     disabled={completingTask === task.id}
                     className={`flex items-center justify-center w-8 h-8 rounded-lg border-2 transition-all duration-200 ${
                       completingTask === task.id

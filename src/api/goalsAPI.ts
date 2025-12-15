@@ -80,13 +80,19 @@ function mapDbToGoal(row: GoalRow): Goal {
   return {
     id: row.id,
     title: row.title,
-    description: row.description ?? undefined,
-    category: row.category ?? undefined,
-    targetDate: row.target_date ? new Date(row.target_date) : undefined,
+    description: row.description ?? '',
+    category: (row.category ?? 'personal') as Goal['category'],
+    targetDate: row.target_date ? new Date(row.target_date) : new Date(),
     status: row.status as Goal['status'],
     progress: row.progress,
     priority: row.priority as Goal['priority'],
     createdAt: new Date(row.created_at),
+    startDate: new Date(row.created_at),
+    tags: [],
+    isPublic: false,
+    difficulty: 'medium' as const,
+    xpReward: 0,
+    notes: '',
   };
 }
 
@@ -97,11 +103,15 @@ function mapDbToDream(row: DreamRow): Dream {
   return {
     id: row.id,
     title: row.title,
-    description: row.description || undefined,
-    category: row.category || undefined,
+    description: row.description || '',
+    category: (row.category || 'experiences') as Dream['category'],
     notes: row.notes || '',
     createdAt: new Date(row.created_at),
     lastUpdated: new Date(row.last_updated),
+    priority: 'someday' as const,
+    status: 'dreaming' as const,
+    tags: [],
+    isPublic: false,
   };
 }
 

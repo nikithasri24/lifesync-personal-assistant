@@ -19,6 +19,7 @@ export function useRecipeImport(): {
   setVideoLang: (value: string) => void;
   isVideoImporting: boolean;
   videoImportError: string | null;
+  setVideoImportError: (value: string | null) => void;
   videoDraft: Omit<Recipe, 'id' | 'createdAt'> | null;
   importFromVideo: () => Promise<void>;
   clearVideoImport: () => void;
@@ -30,8 +31,9 @@ export function useRecipeImport(): {
   setTextImageUrl: (value: string) => void;
   isTextParsing: boolean;
   textError: string | null;
+  setTextError: (value: string | null) => void;
   textDraft: Omit<Recipe, 'id' | 'createdAt'> | null;
-  parseFromText: () => void;
+  parseFromText: () => Promise<void>;
   clearTextImport: () => void;
 } {
   // URL Import
@@ -71,7 +73,7 @@ export function useRecipeImport(): {
     }
   };
 
-  const parseFromText = (): void => {
+  const parseFromText = async (): Promise<void> => {
     if (!textInput.trim()) return;
     setIsTextParsing(true);
     setTextError(null);
@@ -121,6 +123,7 @@ export function useRecipeImport(): {
     setVideoLang,
     isVideoImporting,
     videoImportError,
+    setVideoImportError,
     videoDraft,
     importFromVideo,
     clearVideoImport,
@@ -134,6 +137,7 @@ export function useRecipeImport(): {
     setTextImageUrl,
     isTextParsing,
     textError,
+    setTextError,
     textDraft,
     parseFromText,
     clearTextImport,

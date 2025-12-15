@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Trash2, FileText, List as ListIcon, ChevronDown, ChevronUp } from 'lucide-react';
-import type { Note } from '../../types';
+import type { Note, ListItem } from '../../types';
 import { useListItems, useCreateListItem, useUpdateListItem, useDeleteListItem } from '../../hooks/useNotesQuery';
 import ListItemRow from './ListItemRow';
 import AddListItem from './AddListItem';
@@ -35,10 +35,16 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onDelete }) => {
   };
 
   const handleUpdateItem = (itemId: string, updates: Partial<ListItem>) => {
+    // Convert null to undefined for optional fields
+    const sanitizedUpdates = { ...updates };
+    if ('dueDate' in sanitizedUpdates && sanitizedUpdates.dueDate === null) {
+      sanitizedUpdates.dueDate = undefined;
+    }
+
     updateItemMutation.mutate({
       id: itemId,
       noteId: note.id,
-      updates,
+      updates: sanitizedUpdates,
     });
   };
 

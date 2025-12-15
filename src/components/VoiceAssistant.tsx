@@ -57,7 +57,7 @@ export const VoiceAssistant: React.FC<Props> = ({ open, onClose }) => {
 
         // Show success toast for function calls
         if (res.functionCalls && res.functionCalls.length > 0) {
-          const successCalls = res.functionCalls.filter(fc => fc.result.success)
+          const successCalls = res.functionCalls.filter((fc: { result: { success: boolean } }) => fc.result.success)
           if (successCalls.length > 0) {
             showToast(`Completed ${successCalls.length} action${successCalls.length > 1 ? 's' : ''}`, 'success')
           }

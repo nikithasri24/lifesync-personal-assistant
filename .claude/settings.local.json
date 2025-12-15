@@ -62,7 +62,8 @@
       "Bash(lsof:*)",
       "Bash(git restore:*)",
       "Bash(psql:*)",
-      "WebFetch(domain:i.pinimg.com)"
+      "WebFetch(domain:i.pinimg.com)",
+      "Bash(cut:*)"
     ],
     "deny": [],
     "ask": []

@@ -61,18 +61,18 @@ const BudgetEditor: React.FC<BudgetEditorProps> = ({
       });
 
       const selectedCategory = existingBudget?.categoryId ?? initialCategoryId ?? '';
-      logger.info('BudgetEditor', '[BudgetEditor] Setting category to:', selectedCategory);
+      logger.info('Finance', 'Setting category', { categoryId: selectedCategory });
       setCategoryId(selectedCategory);
 
       // Pre-fill with recommendation for new budgets, or existing limit for edits
       if (existingBudget) {
-        logger.info('BudgetEditor', '[BudgetEditor] Editing existing budget, setting limit to:', existingBudget.limit);
+        logger.info('Finance', 'Editing existing budget', { limit: existingBudget.limit });
         setLimit(existingBudget.limit?.toString() ?? '');
       } else if (recommendation?.suggested) {
-        logger.info('BudgetEditor', '[BudgetEditor] Pre-filling with recommendation:', recommendation.suggested);
+        logger.info('Finance', 'Pre-filling with recommendation', { suggested: recommendation.suggested });
         setLimit(recommendation.suggested.toString());
       } else {
-        logger.info('BudgetEditor', '[BudgetEditor] No recommendation available, leaving limit empty');
+        logger.info('Finance', 'No recommendation available, leaving limit empty');
         setLimit('');
       }
 
@@ -163,10 +163,10 @@ const BudgetEditor: React.FC<BudgetEditorProps> = ({
               value={categoryId}
               onChange={(e) => {
                 const newCategoryId = e.target.value;
-                logger.info('BudgetEditor', '[BudgetEditor] Category changed to:', newCategoryId);
+                logger.info('Finance', 'Category changed', { categoryId: newCategoryId });
                 setCategoryId(newCategoryId);
                 if (onCategoryChange) {
-                  logger.info('BudgetEditor', '[BudgetEditor] Calling onCategoryChange callback');
+                  logger.info('Finance', 'Calling onCategoryChange callback');
                   onCategoryChange(newCategoryId);
                 }
               }}

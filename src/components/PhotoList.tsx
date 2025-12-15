@@ -5,7 +5,7 @@ interface PhotoListProps {
   onChange: (next: string[]) => void
 }
 
-function PhotoList({ items, onChange }: PhotoListProps): JSX.Element {
+function PhotoList({ items, onChange }: PhotoListProps) {
   const [value, setValue] = useState('')
   const add = (): void => {
     const v = value.trim()

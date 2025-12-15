@@ -29,7 +29,7 @@ export function FilterPanel({
   onFilterChange,
   onClearFilters,
   isVisible,
-  _onClose
+  onClose: _onClose
 }: FilterPanelProps): React.JSX.Element | null {
   if (!isVisible) {
     return null;

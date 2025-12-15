@@ -100,14 +100,14 @@ export function ReceiptScanningModal({
   const handleLogExpense = async (): Promise<void> => {
     if (!onLogExpense) return;
 
-    const amount = (receiptMeta.total !== null && receiptMeta.total > 0)
+    const amount = (receiptMeta.total !== null && receiptMeta.total !== undefined && receiptMeta.total > 0)
       ? receiptMeta.total
       : receiptCategorySummary.estSubtotal;
 
-    await onLogExpense(amount, receiptMeta.merchant ?? 'Unknown Store');
+    await onLogExpense(amount ?? 0, receiptMeta.merchant ?? 'Unknown Store');
   };
 
-  if (!isOpen) return null;
+  if (!isOpen) return <></> as React.ReactElement;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">

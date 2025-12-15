@@ -20,7 +20,7 @@ const RetirementPage = React.lazy(() => import('./pages/RetirementPage'));
 const SettingsPage = React.lazy(() => import('./pages/SettingsPage'));
 
 export function registerFinanceRoutes(): RouteObject[] {
-  const FinanceLayout = (): JSX.Element => {
+  const FinanceLayout = (): React.ReactElement => {
     const tabs = [
       { to: '/finance', label: 'Dashboard' },
       { to: '/finance/accounts', label: 'Accounts' },

@@ -186,9 +186,9 @@ const ProjectTracking: React.FC = () => {
         </div>
       ) : (
         <div className={viewMode === 'grid' ? 'grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3' : 'space-y-4'}>
-          {filteredProjects.map((project) => {
+          {filteredProjects.map((project: Project) => {
             const safeProject = safeProjectAccess(project);
-            const metrics = projectMetrics.find(m => m.projectId === safeProject.id) ?? {
+            const metrics = projectMetrics.find((m: { projectId: string }) => m.projectId === safeProject.id) ?? {
               projectId: safeProject.id,
               completedTasks: 0,
               totalTasks: 0,

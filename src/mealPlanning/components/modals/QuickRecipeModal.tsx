@@ -63,19 +63,15 @@ export function QuickRecipeModal({ initialName, onSave, onClose }: QuickRecipeMo
       cookTime: undefined,
       servings: 4,
       tags: [],
-      imageUrl: undefined,
+      image: undefined,
       sourceUrl: undefined,
-      videoUrl: undefined,
       videoThumbnail: undefined,
       notes: undefined,
     };
 
     try {
-      const saveResult = onSave(recipeData);
-      // Check if onSave returns a Promise
-      if (saveResult instanceof Promise) {
-        await saveResult;
-      }
+      onSave(recipeData);
+      onClose();
     } finally {
       setSaving(false);
     }

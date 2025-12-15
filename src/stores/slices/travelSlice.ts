@@ -78,7 +78,7 @@ export const createTravelSlice: StateCreator<TravelSlice, [], [], TravelSlice> =
       logger.info('TravelSlice', 'Trips loaded', { count: trips.length });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to load trips';
-      logger.error('TravelSlice', error as Error, { context: 'loadTrips' });
+      logger.error('TravelSlice', 'Operation failed', { error, context: 'loadTrips' });
       set({
         travelError: errorMessage,
         travelLoading: false,
@@ -95,7 +95,7 @@ export const createTravelSlice: StateCreator<TravelSlice, [], [], TravelSlice> =
       logger.info('TravelSlice', 'Trip created', { id: created.id, name: created.name });
       return created;
     } catch (error) {
-      logger.error('TravelSlice', error as Error, { context: 'addTrip' });
+      logger.error('TravelSlice', 'Operation failed', { error, context: 'addTrip' });
       throw error;
     }
   },
@@ -110,7 +110,7 @@ export const createTravelSlice: StateCreator<TravelSlice, [], [], TravelSlice> =
       logger.info('TravelSlice', 'Trip updated', { id });
       return updated;
     } catch (error) {
-      logger.error('TravelSlice', error as Error, { context: 'updateTrip', id });
+      logger.error('TravelSlice', 'Operation failed', { error, context: 'updateTrip', id });
       throw error;
     }
   },
@@ -124,7 +124,7 @@ export const createTravelSlice: StateCreator<TravelSlice, [], [], TravelSlice> =
       }));
       logger.info('TravelSlice', 'Trip deleted', { id });
     } catch (error) {
-      logger.error('TravelSlice', error as Error, { context: 'deleteTrip', id });
+      logger.error('TravelSlice', 'Operation failed', { error, context: 'deleteTrip', id });
       throw error;
     }
   },
@@ -141,7 +141,7 @@ export const createTravelSlice: StateCreator<TravelSlice, [], [], TravelSlice> =
       }));
       logger.info('TravelSlice', 'Trip days loaded', { tripId, count: days.length });
     } catch (error) {
-      logger.error('TravelSlice', error as Error, { context: 'loadTripDays', tripId });
+      logger.error('TravelSlice', 'Operation failed', { error, context: 'loadTripDays', tripId });
       throw error;
     }
   },
@@ -161,7 +161,7 @@ export const createTravelSlice: StateCreator<TravelSlice, [], [], TravelSlice> =
       logger.info('TravelSlice', 'Trip day created', { id: created.id, date: created.date });
       return created;
     } catch (error) {
-      logger.error('TravelSlice', error as Error, { context: 'addTripDay' });
+      logger.error('TravelSlice', 'Operation failed', { error, context: 'addTripDay' });
       throw error;
     }
   },
@@ -173,7 +173,7 @@ export const createTravelSlice: StateCreator<TravelSlice, [], [], TravelSlice> =
       set({ travelDocuments: documents });
       logger.info('TravelSlice', 'Travel documents loaded', { tripId, count: documents.length });
     } catch (error) {
-      logger.error('TravelSlice', error as Error, { context: 'loadTravelDocuments', tripId });
+      logger.error('TravelSlice', 'Operation failed', { error, context: 'loadTravelDocuments', tripId });
       throw error;
     }
   },
@@ -186,7 +186,7 @@ export const createTravelSlice: StateCreator<TravelSlice, [], [], TravelSlice> =
       logger.info('TravelSlice', 'Travel document created', { id: created.id, name: created.name });
       return created;
     } catch (error) {
-      logger.error('TravelSlice', error as Error, { context: 'addTravelDocument' });
+      logger.error('TravelSlice', 'Operation failed', { error, context: 'addTravelDocument' });
       throw error;
     }
   },
@@ -198,7 +198,7 @@ export const createTravelSlice: StateCreator<TravelSlice, [], [], TravelSlice> =
       set({ packingLists: lists });
       logger.info('TravelSlice', 'Packing lists loaded', { tripId, count: lists.length });
     } catch (error) {
-      logger.error('TravelSlice', error as Error, { context: 'loadPackingLists', tripId });
+      logger.error('TravelSlice', 'Operation failed', { error, context: 'loadPackingLists', tripId });
       throw error;
     }
   },
@@ -211,7 +211,7 @@ export const createTravelSlice: StateCreator<TravelSlice, [], [], TravelSlice> =
       logger.info('TravelSlice', 'Packing list created', { id: created.id, name: created.name });
       return created;
     } catch (error) {
-      logger.error('TravelSlice', error as Error, { context: 'addPackingList' });
+      logger.error('TravelSlice', 'Operation failed', { error, context: 'addPackingList' });
       throw error;
     }
   },
@@ -223,7 +223,7 @@ export const createTravelSlice: StateCreator<TravelSlice, [], [], TravelSlice> =
       logger.info('TravelSlice', 'Trip budget summary retrieved', { tripId, summary });
       return summary;
     } catch (error) {
-      logger.error('TravelSlice', error as Error, { context: 'getTripBudget', tripId });
+      logger.error('TravelSlice', 'Operation failed', { error, context: 'getTripBudget', tripId });
       throw error;
     }
   },

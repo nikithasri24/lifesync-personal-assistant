@@ -19,7 +19,6 @@ export const GoalProgressChart: React.FC<GoalProgressChartProps> = ({
   expectedPath,
   actualPath = [],
   targetAmount,
-  _currentAmount,
   height = 120,
 }) => {
   const width = 600;

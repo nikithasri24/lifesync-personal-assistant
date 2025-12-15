@@ -75,11 +75,13 @@ export function StoreSuggestionsModal({
                 <span>Nearby Stores</span>
               </h4>
 
-              {nearbyStores.map(store => (
+              {nearbyStores.map(store => {
+                const storeType = STORE_TYPES.find(st => st.value === store.type);
+                return (
                 <div key={store.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
                   <div className="flex items-start justify-between">
                     <div className="flex items-start space-x-3">
-                      <span className="text-xl">{STORE_TYPES[store.type]}</span>
+                      <span className="text-xl">{storeType?.icon}</span>
                       <div className="flex-1">
                         <h5 className="font-medium text-gray-900">{store.name}</h5>
                         <p className="text-sm text-gray-600">{store.address}</p>
@@ -87,7 +89,7 @@ export function StoreSuggestionsModal({
                         <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
                           <span className="flex items-center space-x-1">
                             <Navigation size={12} />
-                            <span>{(store.actualDistance ?? store.distance)?.toFixed(1)} mi</span>
+                            <span>{store.distance?.toFixed(1)} mi</span>
                           </span>
 
                           {store.avgPrices?.[item.name] && (
@@ -151,7 +153,8 @@ export function StoreSuggestionsModal({
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
 
               {nearbyStores.length === 0 && (
                 <div className="text-center py-6 text-gray-500">

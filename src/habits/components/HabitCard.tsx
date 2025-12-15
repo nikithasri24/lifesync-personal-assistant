@@ -61,7 +61,7 @@ export function HabitCard({
   onResetToday,
   onResetHistory,
   onDelete,
-}: HabitCardProps): JSX.Element {
+}: HabitCardProps) {
   const [showStreakVisualization, setShowStreakVisualization] = useState(false);
 
   return (

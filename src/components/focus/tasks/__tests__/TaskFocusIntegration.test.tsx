@@ -3,166 +3,163 @@ import { render, screen, waitFor, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { TaskFocusIntegration } from '../TaskFocusIntegration'
 import { vi } from 'vitest'
-import { useAppStore } from '../../../../stores/useAppStore'
-import type { TodoItem, Project as StoreProject } from '../../../../types'
+import { useComposedStore } from '../../../../stores/useComposedStore'
+import type { TaskData, Project } from '@/services/types'
 
 const baseDate = new Date('2024-01-01T08:00:00.000Z')
 
 const daysFromBase = (days: number): Date => new Date(baseDate.getTime() + days * 24 * 60 * 60 * 1000)
 
-const sampleTasks: TodoItem[] = [
+const sampleTasks: TaskData[] = [
   {
     id: '1',
+    user_id: 'test-user',
     title: 'Design homepage mockups',
     description: 'Create wireframes and visual designs for the new homepage',
-    status: 'in-progress',
+    status: 'in_progress',
     priority: 'high',
-    categoryId: 'work',
-    dueDate: daysFromBase(2),
+    project_id: '1',
+    due_date: daysFromBase(2).toISOString(),
     tags: ['design', 'ui', 'homepage'],
-    createdAt: baseDate,
-    updatedAt: baseDate,
-    estimatedTime: 180,
-    actualTime: 75,
-    notes: 'Focus on mobile-first approach',
-    projectId: '1',
-    subtasks: [],
-    completed: false
+    created_at: baseDate.toISOString(),
+    updated_at: baseDate.toISOString(),
+    estimated_time: 180,
+    actual_time: 75,
+    notes: 'Focus on mobile-first approach'
   },
   {
     id: '2',
+    user_id: 'test-user',
     title: 'Implement responsive navigation',
     description: 'Code the new navigation component with mobile responsiveness',
     status: 'todo',
     priority: 'medium',
-    categoryId: 'work',
-    dueDate: daysFromBase(5),
+    project_id: '1',
+    due_date: daysFromBase(5).toISOString(),
     tags: ['frontend', 'react', 'responsive'],
-    createdAt: baseDate,
-    updatedAt: baseDate,
-    estimatedTime: 120,
-    actualTime: 0,
-    projectId: '1',
-    subtasks: [],
-    completed: false
+    created_at: baseDate.toISOString(),
+    updated_at: baseDate.toISOString(),
+    estimated_time: 120,
+    actual_time: 0
   },
   {
     id: '3',
+    user_id: 'test-user',
     title: 'Set up analytics tracking',
     description: 'Implement analytics events',
     status: 'todo',
     priority: 'low',
-    categoryId: 'work',
-    dueDate: daysFromBase(10),
+    project_id: '1',
+    due_date: daysFromBase(10).toISOString(),
     tags: ['analytics', 'tracking'],
-    createdAt: baseDate,
-    updatedAt: baseDate,
-    estimatedTime: 90,
-    actualTime: 0,
-    projectId: '1',
-    subtasks: [],
-    completed: false
+    created_at: baseDate.toISOString(),
+    updated_at: baseDate.toISOString(),
+    estimated_time: 90,
+    actual_time: 0
   },
   {
     id: '4',
+    user_id: 'test-user',
     title: 'Complete React Hooks tutorial',
     description: 'Go through the official React Hooks documentation and examples',
     status: 'done',
     priority: 'medium',
-    categoryId: 'learning',
-    dueDate: baseDate,
+    project_id: '2',
+    due_date: baseDate.toISOString(),
     tags: ['react', 'hooks', 'tutorial'],
-    createdAt: baseDate,
-    updatedAt: baseDate,
-    estimatedTime: 180,
-    actualTime: 165,
-    completedAt: baseDate,
-    projectId: '2',
-    subtasks: [],
-    completed: true
+    created_at: baseDate.toISOString(),
+    updated_at: baseDate.toISOString(),
+    estimated_time: 180,
+    actual_time: 165,
+    completed_at: baseDate.toISOString()
   },
   {
     id: '5',
+    user_id: 'test-user',
     title: 'Build a todo app with React',
     description: 'Practice React skills by building a functional todo application',
-    status: 'in-progress',
+    status: 'in_progress',
     priority: 'high',
-    categoryId: 'learning',
-    dueDate: daysFromBase(3),
+    project_id: '2',
+    due_date: daysFromBase(3).toISOString(),
     tags: ['react', 'project', 'practice'],
-    createdAt: baseDate,
-    updatedAt: baseDate,
-    estimatedTime: 240,
-    actualTime: 120,
-    projectId: '2',
-    subtasks: [],
-    completed: false
+    created_at: baseDate.toISOString(),
+    updated_at: baseDate.toISOString(),
+    estimated_time: 240,
+    actual_time: 120
   },
   {
     id: '6',
+    user_id: 'test-user',
     title: 'Morning workout routine',
     description: '30-minute morning exercise routine',
     status: 'todo',
     priority: 'medium',
-    categoryId: 'health',
-    dueDate: baseDate,
+    project_id: '3',
+    due_date: baseDate.toISOString(),
     tags: ['exercise', 'morning', 'routine'],
-    createdAt: baseDate,
-    updatedAt: baseDate,
-    estimatedTime: 30,
-    actualTime: 0,
-    projectId: '3',
-    subtasks: [],
-    completed: false
+    created_at: baseDate.toISOString(),
+    updated_at: baseDate.toISOString(),
+    estimated_time: 30,
+    actual_time: 0
   }
 ]
 
-const sampleProjects: StoreProject[] = [
+const sampleProjects: Project[] = [
   {
     id: '1',
+    user_id: 'test-user',
     name: 'Website Redesign',
     description: 'Complete overhaul of company website',
     color: '#6366f1',
     status: 'active',
-    icon: '📁',
-    createdAt: baseDate,
-    updatedAt: baseDate,
+    priority: 'high',
+    tags: [],
+    progress: 30,
+    created_at: baseDate.toISOString(),
+    updated_at: baseDate.toISOString(),
   },
   {
     id: '2',
+    user_id: 'test-user',
     name: 'Learning React',
     description: 'Master React framework',
     color: '#10b981',
     status: 'active',
-    icon: '📘',
-    createdAt: baseDate,
-    updatedAt: baseDate,
+    priority: 'medium',
+    tags: [],
+    progress: 50,
+    created_at: baseDate.toISOString(),
+    updated_at: baseDate.toISOString(),
   },
   {
     id: '3',
+    user_id: 'test-user',
     name: 'Fitness Goals',
     description: 'Health and wellness objectives',
     color: '#f59e0b',
     status: 'active',
-    icon: '💪',
-    createdAt: baseDate,
-    updatedAt: baseDate,
+    priority: 'medium',
+    tags: [],
+    progress: 10,
+    created_at: baseDate.toISOString(),
+    updated_at: baseDate.toISOString(),
   }
 ]
 
 beforeEach(() => {
   act(() => {
-    useAppStore.setState({
+    useComposedStore.setState({
       tasks: sampleTasks.map(task => ({ ...task })),
       projects: sampleProjects.map(project => ({ ...project })),
-      focusSessions: []
+      sessions: []
     })
   })
 })
 
 afterEach(() => {
   act(() => {
-    useAppStore.setState({ tasks: [], projects: [], focusSessions: [] })
+    useComposedStore.setState({ tasks: [], projects: [], sessions: [] })
   })
 })
 

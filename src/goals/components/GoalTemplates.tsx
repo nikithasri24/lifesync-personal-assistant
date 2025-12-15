@@ -90,7 +90,7 @@ const GoalTemplates: React.FC<GoalTemplatesProps> = ({ onGoalCreated, onClose })
           usageCount: t.usage_count,
         })));
       } catch (error: unknown) {
-        logger.error('Error loading templates:', { error: error instanceof Error ? error : String(error) });
+        logger.error('Goals', 'Error loading templates', { error: error instanceof Error ? error.message : String(error) });
       } finally {
         setLoading(false);
       }
@@ -106,7 +106,7 @@ const GoalTemplates: React.FC<GoalTemplatesProps> = ({ onGoalCreated, onClose })
       onGoalCreated(goal);
       onClose();
     } catch (error: unknown) {
-      logger.error('Error creating goal from template:', { error: error instanceof Error ? error : String(error) });
+      logger.error('Goals', 'Error creating goal from template', { error: error instanceof Error ? error.message : String(error) });
       setError('Failed to create goal. Please try again.');
     } finally {
       setCreating(false);

@@ -120,7 +120,7 @@ const GridJournalEnhanced: React.FC = () => {
     setSelectedTags([]);
   };
 
-  const hasActiveFilters = searchQuery || selectedMoods.length > 0 || selectedTags.length > 0;
+  const hasActiveFilters = Boolean(searchQuery) || selectedMoods.length > 0 || selectedTags.length > 0;
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>): void => {

@@ -135,9 +135,10 @@ export class FocusService {
     void this.resetFocusEnvironment();
 
     await this.saveSession(session);
-    this.emitEvent(completed ? 'session_completed' : 'session_cancelled', { 
+    this.emitEvent(completed ? 'session_completed' : 'session_cancelled', {
       sessionId: session.id,
-      productivity: session.productivity 
+      focusScore: session.productivity.focusScore,
+      distractionCount: session.productivity.distractionCount
     });
     
     this.currentSession = null;
@@ -210,7 +211,7 @@ export class FocusService {
       await this.activateSystemFocusMode();
 
     } catch (error) {
-      logger.warn('FocusService', 'Some environment settings could not be applied:', error);
+      logger.warn('FocusService', 'Some environment settings could not be applied', { error: error as Error });
     }
   }
 
@@ -222,7 +223,7 @@ export class FocusService {
       await this.stopAmbientSound();
       await this.deactivateSystemFocusMode();
     } catch (error) {
-      logger.warn('FocusService', 'Some environment settings could not be reset:', error);
+      logger.warn('FocusService', 'Some environment settings could not be reset', { error: error as Error });
     }
   }
 
@@ -293,9 +294,11 @@ export class FocusService {
       this.currentSession.productivity.focusScore - penalty);
 
     await this.saveSession(this.currentSession);
-    this.emitEvent('distraction_detected', { 
-      sessionId: this.currentSession.id, 
-      distraction: fullDistraction 
+    this.emitEvent('distraction_detected', {
+      sessionId: this.currentSession.id,
+      distractionType: fullDistraction.type,
+      severity: fullDistraction.severity,
+      handled: fullDistraction.handled
     });
   }
 
@@ -404,7 +407,7 @@ export class FocusService {
       try {
         callback(event);
       } catch (error) {
-        logger.error('FocusService', 'Error in focus event listener:', error);
+        logger.error('FocusService', error as Error, { context: 'focus event listener' });
       }
     });
   }
@@ -460,7 +463,7 @@ export class FocusService {
 
   private blockApplications(apps: string[]): Promise<void> {
     // Would use system APIs to block applications
-    logger.info('FocusService', 'Blocking applications:', apps);
+    logger.info('FocusService', 'Blocking applications', { apps });
     return Promise.resolve();
   }
 
@@ -472,7 +475,7 @@ export class FocusService {
 
   private blockWebsites(websites: string[]): Promise<void> {
     // Would use browser extension or system-level blocking
-    logger.info('FocusService', 'Blocking websites:', websites);
+    logger.info('FocusService', 'Blocking websites', { websites });
     return Promise.resolve();
   }
 
@@ -604,7 +607,7 @@ export class FocusService {
 
   private setupBreakSchedule(schedule: BreakSchedule): void {
     // Would setup automated break scheduling
-    logger.info('FocusService', 'Setting up break schedule:', schedule);
+    logger.info('FocusService', 'Setting up break schedule', { schedule });
   }
 
   private setupVisibilityChangeDetection(): void {

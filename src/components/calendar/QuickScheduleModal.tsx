@@ -137,7 +137,7 @@ export const QuickScheduleModal: React.FC<QuickScheduleModalProps> = ({
                               {task.priority}
                             </span>
                           )}
-                          {task.estimated_time > 0 && (
+                          {task.estimated_time != null && task.estimated_time > 0 && (
                             <span className="text-xs text-slate-500 dark:text-slate-400">
                               {task.estimated_time >= 60
                                 ? `${Math.round(task.estimated_time / 60)}h`

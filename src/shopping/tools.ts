@@ -151,7 +151,7 @@ async function getOrCreateDefaultList(listName: string = 'My Shopping List'): Pr
 
     return list;
   } catch (error) {
-    logger.error('ShoppingTools', error as Error, {
+    logger.error('ShoppingTools', 'Operation failed', { error,
       operation: 'getOrCreateDefaultList',
       listName
     });
@@ -209,8 +209,7 @@ async function executeAddToShoppingList(
       quantity,
       unit,
       category,
-      is_purchased: false,
-      shopping_list_id: list.id
+      is_purchased: false
     });
 
     logger.info('ShoppingTools', 'Item added to shopping list', {
@@ -232,7 +231,7 @@ async function executeAddToShoppingList(
       list_name: list.name
     };
   } catch (error) {
-    logger.error('ShoppingTools', error as Error, {
+    logger.error('ShoppingTools', 'Operation failed', { error,
       operation: 'add_to_shopping_list',
       args
     });
@@ -307,7 +306,7 @@ async function executeGetShoppingList(
       message: `You have ${items.length} item${items.length !== 1 ? 's' : ''} on ${list.name}`
     };
   } catch (error) {
-    logger.error('ShoppingTools', error as Error, {
+    logger.error('ShoppingTools', 'Operation failed', { error,
       operation: 'get_shopping_list',
       args
     });
@@ -350,7 +349,7 @@ async function executeAddToPantry(
     });
 
     // Add to pantry
-    const item = await apiClient.addPantryItem({
+    const item = await apiClient.createPantryItem({
       name: itemName.trim(),
       quantity,
       unit,
@@ -377,7 +376,7 @@ async function executeAddToPantry(
       }
     };
   } catch (error) {
-    logger.error('ShoppingTools', error as Error, {
+    logger.error('ShoppingTools', 'Operation failed', { error,
       operation: 'add_to_pantry',
       args
     });
@@ -436,7 +435,7 @@ async function executeGetPantry(
       message: `You have ${items.length} item${items.length !== 1 ? 's' : ''} in your pantry`
     };
   } catch (error) {
-    logger.error('ShoppingTools', error as Error, {
+    logger.error('ShoppingTools', 'Operation failed', { error,
       operation: 'get_pantry',
       args
     });

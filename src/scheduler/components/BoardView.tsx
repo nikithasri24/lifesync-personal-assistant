@@ -45,7 +45,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
       const columnTasks = tasks.filter(task => {
         // Prioritize taskIds if provided (for custom filtering like backlog vs todo)
         if (column.taskIds !== undefined) {
-          return column.taskIds.includes(task.id);
+          return task.id && column.taskIds.includes(task.id);
         }
         // Otherwise, match based on status
         if (column.status) {
@@ -75,6 +75,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
 
   // Drag handlers
   const handleDragStart = (e: React.DragEvent, task: ScheduledTask) => {
+    if (!task.id) return;
     setDraggedTask(task);
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', task.id);
@@ -119,7 +120,11 @@ export const BoardView: React.FC<BoardViewProps> = ({
     const newIndex = targetTasks.length;
 
     // Determine new status based on column
-    const newStatus = targetColumn.status as Task['status'];
+    const newStatus = (targetColumn.status || 'todo') as Task['status'];
+
+    if (!draggedTask.id) {
+      return;
+    }
 
     const result: DragDropResult = {
       taskId: draggedTask.id,
@@ -188,7 +193,9 @@ export const BoardView: React.FC<BoardViewProps> = ({
                       {stats.count}
                     </span>
                     {atWipLimit && (
-                      <AlertCircle className="w-4 h-4 text-red-500" title="At WIP limit" />
+                      <div title="At WIP limit">
+                        <AlertCircle className="w-4 h-4 text-red-500" />
+                      </div>
                     )}
                   </div>
 
@@ -251,7 +258,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
                         isDragging={draggedTask?.id === task.id}
                         onClick={() => onTaskClick?.(task)}
                         onQuickEdit={() => onTaskClick?.(task)}
-                        onStartTimer={() => onStartTimer?.(task.id)}
+                        onStartTimer={() => task.id && onStartTimer?.(task.id)}
                       />
                     </div>
                   ))

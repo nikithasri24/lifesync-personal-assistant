@@ -87,7 +87,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           ? 'bg-gradient-to-br from-blue-500 to-blue-600 border-2 border-blue-700'
           : 'bg-white dark:bg-gray-800 border-l-4'
         }
-        ${!isImportant ? priorityColors[task.priority] : ''}
+        ${!isImportant && task.priority ? priorityColors[task.priority] || '' : ''}
         ${isSelected ? 'ring-2 ring-blue-500 dark:ring-blue-400 ring-offset-2' : ''}
         ${isDragging ? 'opacity-50 rotate-2 scale-105' : ''}
         ${isBlocked ? 'opacity-75' : ''}
@@ -193,7 +193,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           )}
 
           {/* Estimated Time */}
-          {task.estimated_time > 0 && (
+          {task.estimated_time != null && task.estimated_time > 0 && (
             <div className="flex items-center gap-1">
               <Clock className="w-3 h-3" />
               <span>{Math.floor(task.estimated_time / 60)}h {task.estimated_time % 60}m</span>
@@ -201,10 +201,12 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           )}
 
           {/* Priority Indicator */}
-          <div className="flex items-center gap-1">
-            <div className={`w-2 h-2 rounded-full ${priorityDotColors[task.priority]}`} />
-            <span className="capitalize">{task.priority}</span>
-          </div>
+          {task.priority && (
+            <div className="flex items-center gap-1">
+              <div className={`w-2 h-2 rounded-full ${priorityDotColors[task.priority] || 'bg-slate-300'}`} />
+              <span className="capitalize">{task.priority}</span>
+            </div>
+          )}
         </div>
 
         {/* Metadata Row 2: Assignees, Comments, Attachments, Dependencies */}

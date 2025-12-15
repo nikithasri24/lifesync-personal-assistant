@@ -8,7 +8,8 @@ export * from './api/connectionsAPI';
 export * from './types/connections';
 
 // Components
-export { ConnectionsList } from './components/ConnectionsList';
-export { InvitationsPanel } from './components/InvitationsPanel';
-export { NewConnectionForm } from './components/NewConnectionForm';
-export { PermissionManager } from './components/PermissionManager';
+export { default as ConnectionsList } from './components/ConnectionsList';
+export { default as InvitationsPanel } from './components/InvitationsPanel';
+export { default as NewConnectionForm } from './components/NewConnectionForm';
+// TODO: Implement PermissionManager component
+// export { default as PermissionManager } from './components/PermissionManager';

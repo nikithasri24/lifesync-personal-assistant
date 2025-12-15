@@ -161,7 +161,7 @@ export function TaskRow({
         </div>
 
         {/* Task metadata */}
-        {(task.description ?? false) || (task.dueDate ?? false) || (project ?? false) || (task.tags.length > 0) && (
+        {(Boolean(task.description) || Boolean(task.dueDate) || Boolean(project) || task.tags.length > 0) && (
           <div className="flex items-center space-x-4 text-xs text-gray-500 dark:text-slate-400 ml-2">
             {task.description && (
               <span className="truncate max-w-xs text-gray-600 dark:text-slate-400">

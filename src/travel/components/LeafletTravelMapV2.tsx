@@ -131,8 +131,8 @@ const LeafletTravelMapV2: React.FC<LeafletTravelMapV2Props> = ({
             geometry: f.geometry ?? { type: 'Polygon', coordinates: [] } as GeoJSON.Geometry,
           }))
           .filter((f): f is CountryFeature => {
-            const hasValidCode = f.properties.iso_a2 && f.properties.iso_a2.length === 2 && f.properties.iso_a2 !== '-99';
-            const hasValidGeometry = f.geometry && (f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon');
+            const hasValidCode = !!(f.properties.iso_a2 && f.properties.iso_a2.length === 2 && f.properties.iso_a2 !== '-99');
+            const hasValidGeometry = !!(f.geometry && (f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon'));
             return hasValidCode && hasValidGeometry;
           });
 
@@ -141,7 +141,7 @@ const LeafletTravelMapV2: React.FC<LeafletTravelMapV2Props> = ({
         setLoading(false);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to load map data';
-        logger.error('Error loading map data:', { err });
+        logger.error('LeafletTravelMapV2', 'Error loading map data', { error: err instanceof Error ? err.message : String(err) });
         setError(errorMessage);
         setLoading(false);
       }
@@ -169,7 +169,7 @@ const LeafletTravelMapV2: React.FC<LeafletTravelMapV2Props> = ({
           setStates(data.features ?? []);
         }
       } catch (err) {
-        logger.error('Error loading state boundaries:', { err });
+        logger.error('LeafletTravelMapV2', 'Error loading state boundaries', { error: err instanceof Error ? err.message : String(err) });
       }
     };
 
@@ -389,7 +389,7 @@ const LeafletTravelMapV2: React.FC<LeafletTravelMapV2Props> = ({
               data={{
                 type: 'FeatureCollection',
                 features: countries,
-              }}
+              } as GeoJSON.FeatureCollection}
               onEachFeature={onEachCountry}
               key={`countries-${JSON.stringify(visitedCountries)}-${JSON.stringify(visitedStates)}-${showStatesAsCountries}`}
             />
@@ -402,7 +402,7 @@ const LeafletTravelMapV2: React.FC<LeafletTravelMapV2Props> = ({
               data={{
                 type: 'FeatureCollection',
                 features: states,
-              }}
+              } as GeoJSON.FeatureCollection}
               onEachFeature={onEachState}
               key={`states-${JSON.stringify(visitedStates)}-${currentZoom}-${showStatesAsCountries}`}
             />

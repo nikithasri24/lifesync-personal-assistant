@@ -63,7 +63,7 @@ interface LayoutProps {
   children: React.ReactNode;
 }
 
-export default function Layout({ children }: LayoutProps): JSX.Element {
+export default function Layout({ children }: LayoutProps) {
   const { activeView, setActiveView, sidebarCollapsed, setSidebarCollapsed } = useComposedStore();
   const { toast, dismissToast } = useToast();
   const { mode } = useAppMode();

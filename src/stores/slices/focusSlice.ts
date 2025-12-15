@@ -66,7 +66,7 @@ export const createFocusSlice: StateCreator<FocusSlice, [], [], FocusSlice> = (
       const message =
         error instanceof Error ? error.message : 'Failed to load focus sessions';
       set({ sessionsError: message, sessionsLoading: false });
-      logger.error('Focus', error as Error, { context: 'loadSessions' });
+      logger.error('Focus', 'Operation failed', { error, context: 'loadSessions' });
       throw error;
     }
   },
@@ -77,7 +77,7 @@ export const createFocusSlice: StateCreator<FocusSlice, [], [], FocusSlice> = (
       set((state) => ({ sessions: [created, ...state.sessions] }));
       return created;
     } catch (error) {
-      logger.error('Focus', error as Error, { context: 'createSession' });
+      logger.error('Focus', 'Operation failed', { error, context: 'createSession' });
       throw error;
     }
   },
@@ -105,7 +105,7 @@ export const createFocusSlice: StateCreator<FocusSlice, [], [], FocusSlice> = (
       }));
       return updated;
     } catch (error) {
-      logger.error('Focus', error as Error, {
+      logger.error('Focus', 'Operation failed', { error,
         context: 'completeSession',
         sessionId: id,
       });
@@ -127,7 +127,7 @@ export const createFocusSlice: StateCreator<FocusSlice, [], [], FocusSlice> = (
       }));
       return updated;
     } catch (error) {
-      logger.error('Focus', error as Error, {
+      logger.error('Focus', 'Operation failed', { error,
         context: 'abandonSession',
         sessionId: id,
       });
@@ -145,7 +145,7 @@ export const createFocusSlice: StateCreator<FocusSlice, [], [], FocusSlice> = (
       }));
       return updated;
     } catch (error) {
-      logger.error('Focus', error as Error, {
+      logger.error('Focus', 'Operation failed', { error,
         context: 'updateSessionDetails',
         sessionId: id,
       });

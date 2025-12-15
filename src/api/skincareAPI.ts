@@ -359,7 +359,7 @@ export async function getSkincareStats(): Promise<{
   const products = await getSkincareProducts();
   const logs = await getSkinConditionLogs();
 
-  const productsInUse = products.filter((p) => p.in_use).length;
+  const productsInUse = products.filter((p) => p.currentlyUsing).length;
   const recentLogs = logs.slice(0, 7); // last 7 logs
   const averageCondition =
     logs.length > 0
@@ -456,7 +456,7 @@ export async function getRoutinesForDay(
   }
 
   // Convert snake_case to camelCase
-  return (data ?? []).map((row) => ({
+  return (data ?? []).map((row: any) => ({
     id: row.id,
     userId: row.user_id,
     name: row.name,

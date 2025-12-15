@@ -5,7 +5,7 @@ export const VERSION = '1.0.0';
 export const BUILD_DATE = '2025-09-05T18:02:50.268Z';
 export const COMMIT_SHA = 'unknown';
 export const COMMIT_SHORT_SHA = 'unknown';
-export const BRANCH = 'unknown';
+export const BRANCH: string = 'unknown';
 export const LAST_TAG = 'none';
 export const COMMITS_SINCE_TAG = 0;
 

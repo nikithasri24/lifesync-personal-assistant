@@ -59,7 +59,6 @@ export const mapDreamDraftToCreateInput = (draft: DreamDraft): CreateLifeDreamIn
     description: draft.description.trim(),
     category: draft.category,
     priority: draft.priority,
-    status: draft.status,
     estimatedCost: estimatedCost ? Number(estimatedCost) : undefined,
     estimatedTimeframe: draft.estimatedTimeframe.trim() || undefined,
   };

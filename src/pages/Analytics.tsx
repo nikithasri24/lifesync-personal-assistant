@@ -1,3 +1,4 @@
+import type { ReactElement } from 'react';
 import {
   TrendingUp,
   Calendar,
@@ -35,7 +36,7 @@ interface DayProductivity {
   total: number;
 }
 
-export default function Analytics(): JSX.Element {
+export default function Analytics() {
   const { data: habits = [] } = useHabits();
   const { data: habitEntries = [] } = useHabitEntries();
   const { data: tasks = [] } = useTasks();
@@ -226,7 +227,7 @@ export default function Analytics(): JSX.Element {
           Weekly Productivity
         </h3>
         <div className="space-y-4">
-          {weeklyProductivity.map((day, index): JSX.Element => (
+          {weeklyProductivity.map((day, index): ReactElement => (
             <div key={index} className="flex items-center space-x-4">
               <div className="w-16 text-sm text-gray-600 flex-shrink-0">
                 {format(day.date, 'EEE')}
@@ -274,7 +275,7 @@ export default function Analytics(): JSX.Element {
             ) : (
               habitStats
                 .sort((a, b): number => b.streak - a.streak)
-                .map((habit): JSX.Element => (
+                .map((habit): ReactElement => (
                   <div key={habit.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div className="flex items-center space-x-3">
                       <div
@@ -346,7 +347,7 @@ export default function Analytics(): JSX.Element {
         <div className="card">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Mood Trends</h3>
           <div className="grid grid-cols-5 gap-4">
-            {(['excellent', 'good', 'neutral', 'bad', 'terrible'] as const).map((mood): JSX.Element => {
+            {(['excellent', 'good', 'neutral', 'bad', 'terrible'] as const).map((mood): ReactElement => {
               const count = journalEntries.filter((entry): boolean => entry.mood === mood).length;
               const percentage = journalEntries.length > 0 ? (count / journalEntries.length) * 100 : 0;
 

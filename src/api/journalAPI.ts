@@ -42,7 +42,7 @@ export interface UpdateJournalEntryInput {
   attachments?: Attachment[];
 }
 
-export interface JournalEntryFilters {
+export interface JournalEntryFilters extends Record<string, unknown> {
   searchQuery?: string;
   moods?: JournalMood[];
   tags?: string[];

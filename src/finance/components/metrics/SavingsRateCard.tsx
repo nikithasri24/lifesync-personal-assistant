@@ -20,7 +20,7 @@ const SavingsRateCard: React.FC<SavingsRateCardProps> = ({
   savingsRate,
   savings,
   income,
-  _expenses,
+
   className = '',
 }) => {
   const status = getSavingsRateStatus(savingsRate);

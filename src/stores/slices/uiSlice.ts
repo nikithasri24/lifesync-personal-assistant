@@ -14,6 +14,7 @@ export type ViewKey =
   | 'dashboard'
   | 'focus'
   | 'tasks'
+  | 'todos'
   | 'habits'
   | 'goals'
   | 'journal'
@@ -27,7 +28,13 @@ export type ViewKey =
   | 'travel'
   | 'personal'
   | 'skincare'
-  | 'health';
+  | 'health'
+  | 'visa'
+  | 'projects'
+  | 'assistant'
+  | 'scheduler'
+  | 'trip-planner'
+  | 'shared';
 
 export interface UISlice {
   // State

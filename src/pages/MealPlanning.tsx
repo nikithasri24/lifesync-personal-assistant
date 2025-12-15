@@ -1,5 +1,5 @@
 /* eslint-disable max-lines */
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { type ReactElement, useEffect, useMemo, useState , type FormEvent } from 'react';
 import { logger } from '../services/logger';
 import { createPortal } from 'react-dom';
 import { addDays, format, isSameWeek, startOfWeek, isSameDay } from 'date-fns';
@@ -55,7 +55,7 @@ interface SelectionToolbarProps {
   selectedIndex: number;
   onIndexChange: (index: number) => void;
   onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
-  inputRef: React.RefObject<HTMLInputElement>;
+  inputRef: React.RefObject<HTMLInputElement | null>;
   showList: boolean;
   onShowListChange: (show: boolean) => void;
   onAddMeal: (recipeId: string, customMeal?: string) => Promise<void>;
@@ -69,7 +69,7 @@ interface MultiCellDropdownProps {
   onAddMeal: (recipeId: string, customMeal?: string) => Promise<void>;
   onClose: () => void;
   query: string;
-  inputRef: React.RefObject<HTMLInputElement>;
+  inputRef: React.RefObject<HTMLInputElement | null>;
 }
 
 interface WeeklyGridProps {
@@ -80,8 +80,8 @@ interface WeeklyGridProps {
   selectedCells: Set<string>;
   makeCellKey: (dateKey: string, mealType: string) => string;
   onCellClick: (dateKey: string, mealType: string, e: React.MouseEvent) => void;
-  onShowRecipeForm: (initialName: string, onSave: (recipe: Partial<Recipe>) => Promise<void>) => void;
-  onShowSimpleEdit: (recipe: Recipe, onSave: (updates: Partial<Recipe>) => Promise<void>) => void;
+  onShowRecipeForm: (initialName: string, onSave: (recipe: Omit<Recipe, 'id' | 'createdAt'>) => void) => void;
+  onShowSimpleEdit: (recipe: Recipe, onSave: (updates: Partial<Recipe>) => void) => void;
   createPlannedMeal: (data: {
     planId: string;
     meal: {
@@ -182,7 +182,7 @@ const cleanupOldDrafts = (): void => {
       logger.debug('MealPlanning', `Cleaned up ${keysToRemove.length} old meal drafts`);
     }
   } catch (error) {
-    logger.error('MealPlanning', 'Failed to cleanup old drafts:', error);
+    logger.error('MealPlanning', 'Failed to cleanup old drafts:', { error: error instanceof Error ? error.message : String(error) });
   }
 };
 
@@ -202,6 +202,19 @@ const MealPlanning: React.FC = () => {
   const { weekStartsOn, addNote } = useComposedStore();
   const { showToast } = useToast();
 
+  // Wrapper functions to adapt mutation signatures (defined early for hook dependencies)
+  const createPlannedMealWrapper = async (data: { planId: string; meal: any }): Promise<void> => {
+    await createPlannedMealMutation.mutateAsync(data);
+  };
+
+  const updatePlannedMealWrapper = async (data: { mealId: string; updates: any }): Promise<void> => {
+    await updatePlannedMealMutation.mutateAsync(data);
+  };
+
+  const createRecipeWrapper = async (recipe: Partial<Recipe>): Promise<Recipe> => {
+    return await createRecipeMutation.mutateAsync(recipe as any);
+  };
+
   // Custom hooks
   const modalState = useMealFormModals();
   const weekNav = useWeekNavigation(weekStartsOn, mealPlans);
@@ -215,7 +228,7 @@ const MealPlanning: React.FC = () => {
     recipes,
     mealPlans,
     weekNav.activePlan,
-    createPlannedMealMutation.mutateAsync,
+    createPlannedMealWrapper,
     showToast
   );
 
@@ -391,7 +404,7 @@ const MealPlanning: React.FC = () => {
       modalState.setShowCopyWeek(false);
       weekNav.goToWeek(copyTargetWeek);
     } catch (error) {
-      logger.error('MealPlanning', 'Failed to copy week:', error);
+      logger.error('MealPlanning', 'Failed to copy week:', { error: error instanceof Error ? error.message : String(error) });
       showToast('Failed to copy meals', 'error');
     }
   };
@@ -506,8 +519,8 @@ const MealPlanning: React.FC = () => {
             onCellClick={multiCellSelection.handleCellClick}
             onShowRecipeForm={modalState.openRecipeForm}
             onShowSimpleEdit={modalState.openSimpleEdit}
-            createPlannedMeal={createPlannedMealMutation.mutateAsync}
-            updatePlannedMeal={updatePlannedMealMutation.mutateAsync}
+            createPlannedMeal={createPlannedMealWrapper}
+            updatePlannedMeal={updatePlannedMealWrapper}
           />
         )}
       </section>
@@ -515,7 +528,7 @@ const MealPlanning: React.FC = () => {
       {/* Import sections */}
       <ImportSections
         recipeImport={recipeImport}
-        createRecipe={createRecipeMutation.mutateAsync}
+        createRecipe={createRecipeWrapper}
         handleImportRecipe={handleImportRecipe}
         saveImportedRecipe={saveImportedRecipe}
       />
@@ -567,7 +580,7 @@ const MealPlanning: React.FC = () => {
         onTargetWeekChange={(d) => setCopyTargetWeek(startOfWeek(d, { weekStartsOn }))}
         mealCount={plannedMeals.length}
         weekStartsOn={weekStartsOn}
-        onCopy={() => void handleCopyWeek()}
+        onCopy={handleCopyWeek}
       />
 
       {modalState.recipeFormModal && (
@@ -629,7 +642,7 @@ function SelectionToolbar({
   onShowListChange,
   onAddMeal,
   onClearSelection,
-}: SelectionToolbarProps): JSX.Element {
+}: SelectionToolbarProps): ReactElement {
   return (
     <section className="rounded-lg border-2 border-indigo-500 bg-indigo-50 p-3 sm:p-4 shadow-lg animate-in slide-in-from-top">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -693,7 +706,7 @@ function SelectionToolbar({
 }
 
 // Multi-cell dropdown component
-function MultiCellDropdown({ matches, selectedIndex, onIndexChange, onAddMeal, onClose, query, inputRef }: MultiCellDropdownProps): JSX.Element {
+function MultiCellDropdown({ matches, selectedIndex, onIndexChange, onAddMeal, onClose, query, inputRef }: MultiCellDropdownProps): ReactElement {
   const rect = inputRef.current?.getBoundingClientRect();
   return (
     <div
@@ -782,7 +795,7 @@ function WeeklyGrid({
   onShowSimpleEdit,
   createPlannedMeal,
   updatePlannedMeal,
-}: WeeklyGridProps): JSX.Element {
+}: WeeklyGridProps): ReactElement {
   return (
     <div className="mt-6">
       <div className="overflow-x-auto">
@@ -942,7 +955,7 @@ function WeeklyGrid({
 }
 
 // Import sections component
-function ImportSections({ recipeImport, createRecipe, handleImportRecipe, saveImportedRecipe }: ImportSectionsProps): JSX.Element {
+function ImportSections({ recipeImport, createRecipe, handleImportRecipe, saveImportedRecipe }: ImportSectionsProps): ReactElement {
   return (
     <section className="grid gap-6 lg:grid-cols-2">
       {/* Video to Recipe (YouTube) */}
@@ -1005,7 +1018,9 @@ function ImportSections({ recipeImport, createRecipe, handleImportRecipe, saveIm
             onSave={() => {
               return (async (): Promise<void> => {
                 try {
-                  await createRecipe(recipeImport.videoDraft);
+                  if (recipeImport.videoDraft) {
+                    await createRecipe(recipeImport.videoDraft);
+                  }
                   recipeImport.clearVideoImport();
                 } catch {
                   recipeImport.setVideoImportError?.('Failed to save recipe');
@@ -1123,10 +1138,12 @@ function ImportSections({ recipeImport, createRecipe, handleImportRecipe, saveIm
             onSave={() => {
               return (async (): Promise<void> => {
                 try {
-                  await createRecipe({
-                    ...recipeImport.textDraft,
-                    image: recipeImport.textDraft.image ?? recipeImport.textImageUrl ?? undefined,
-                  });
+                  if (recipeImport.textDraft) {
+                    await createRecipe({
+                      ...recipeImport.textDraft,
+                      image: recipeImport.textDraft.image ?? recipeImport.textImageUrl ?? undefined,
+                    });
+                  }
                   recipeImport.clearTextImport();
                 } catch (_e) {
                   recipeImport.setTextError?.('Failed to save recipe');
@@ -1142,7 +1159,7 @@ function ImportSections({ recipeImport, createRecipe, handleImportRecipe, saveIm
 }
 
 // Recipe draft preview component
-function RecipeDraftPreview({ draft, imageUrl, onSave, onCancel }: RecipeDraftPreviewProps): JSX.Element {
+function RecipeDraftPreview({ draft, imageUrl, onSave, onCancel }: RecipeDraftPreviewProps): ReactElement {
   return (
     <div className="mt-6 grid gap-4 sm:grid-cols-2">
       <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
@@ -1213,7 +1230,7 @@ function SavedRecipesSection({
   onViewRecipe,
   onEditRecipe,
   onDeleteRecipe,
-}: SavedRecipesSectionProps): JSX.Element {
+}: SavedRecipesSectionProps): ReactElement {
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
       <div className="flex items-center justify-between">
@@ -1240,7 +1257,7 @@ function SavedRecipesSection({
                   // eslint-disable-next-line no-alert
                   if (window.confirm('Delete ALL saved recipes? This cannot be undone.')) {
                     void onDeleteAll().catch((e: unknown) => {
-                      logger.error('MealPlanning', 'Failed to delete all recipes', e);
+                      logger.error('MealPlanning', e as Error);
                     });
                   }
                 }}

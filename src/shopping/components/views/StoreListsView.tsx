@@ -13,7 +13,7 @@ interface StoreListsViewProps {
   stores: Store[];
 }
 
-export function StoreListsView({ storeLists, stores }: StoreListsViewProps): JSX.Element {
+export function StoreListsView({ storeLists, stores }: StoreListsViewProps) {
   if (storeLists.length === 0) {
     return (
       <div className="p-4">

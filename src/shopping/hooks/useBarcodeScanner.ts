@@ -19,7 +19,7 @@ interface UseBarcodeScannerReturn {
   isScanning: boolean;
   barcodeResult: string | null;
   captureMessage: string | null;
-  videoRef: React.RefObject<HTMLVideoElement>;
+  videoRef: React.RefObject<HTMLVideoElement | null>;
   startScanning: () => Promise<void>;
   stopScanning: () => void;
   captureNow: () => Promise<void>;
@@ -122,6 +122,9 @@ export function useBarcodeScanner(
       }
 
       const detectorOpts = formats?.length ? { formats } : undefined;
+      if (!window.BarcodeDetector) {
+        throw new Error('BarcodeDetector not supported');
+      }
       const barcodeDetector = new window.BarcodeDetector(detectorOpts) as { detect: (image: ImageBitmapSource) => Promise<Array<{ rawValue: string }>> };
       barcodeDetectorRef.current = barcodeDetector;
 
@@ -190,7 +193,7 @@ export function useBarcodeScanner(
         };
       }
     } catch (error) {
-      logger.error('useBarcodeScanner', 'Camera access error:', error);
+      logger.error('useBarcodeScanner', error as Error, { context: 'Camera access error' });
       logger.warn('useBarcodeScanner', 'Camera access denied. Please enable camera permissions to scan barcodes.');
       setIsScanning(false);
     }

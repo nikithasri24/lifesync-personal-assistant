@@ -31,7 +31,7 @@ const createNoteDefinition: ToolDefinition = {
         },
         tags: {
           type: 'array',
-          items: { type: 'string' },
+          items: { type: 'string', description: 'Tag name' },
           description: 'Array of tags (e.g., ["work", "important"]) - optional'
         },
         category: {
@@ -58,7 +58,7 @@ const searchNotesDefinition: ToolDefinition = {
         },
         tags: {
           type: 'array',
-          items: { type: 'string' },
+          items: { type: 'string', description: 'Tag name' },
           description: 'Filter by tags - optional'
         },
         category: {
@@ -92,7 +92,7 @@ const updateNoteDefinition: ToolDefinition = {
         },
         tags: {
           type: 'array',
-          items: { type: 'string' },
+          items: { type: 'string', description: 'Tag name' },
           description: 'Updated tags - optional'
         },
         category: {
@@ -133,7 +133,7 @@ const getNotesByTagDefinition: ToolDefinition = {
       properties: {
         tags: {
           type: 'array',
-          items: { type: 'string' },
+          items: { type: 'string', description: 'Tag name' },
           description: 'Array of tags to filter by - required'
         }
       },
@@ -210,7 +210,7 @@ async function executeCreateNote(
       note: formatNote(note)
     };
   } catch (error) {
-    logger.error('NoteTools', error as Error, {
+    logger.error('NoteTools', 'Operation failed', { error,
       operation: 'create_note',
       args
     });
@@ -257,7 +257,7 @@ async function executeSearchNotes(
       message: `Found ${notes.length} note${notes.length !== 1 ? 's' : ''}`
     };
   } catch (error) {
-    logger.error('NoteTools', error as Error, {
+    logger.error('NoteTools', 'Operation failed', { error,
       operation: 'search_notes',
       args
     });
@@ -324,7 +324,7 @@ async function executeUpdateNote(
       note: formatNote(note)
     };
   } catch (error) {
-    logger.error('NoteTools', error as Error, {
+    logger.error('NoteTools', 'Operation failed', { error,
       operation: 'update_note',
       args
     });
@@ -369,7 +369,7 @@ async function executeDeleteNote(
       message: 'Note deleted successfully'
     };
   } catch (error) {
-    logger.error('NoteTools', error as Error, {
+    logger.error('NoteTools', 'Operation failed', { error,
       operation: 'delete_note',
       args
     });
@@ -418,7 +418,7 @@ async function executeGetNotesByTag(
       message: `Found ${notes.length} note${notes.length !== 1 ? 's' : ''} with tags: ${tags.join(', ')}`
     };
   } catch (error) {
-    logger.error('NoteTools', error as Error, {
+    logger.error('NoteTools', 'Operation failed', { error,
       operation: 'get_notes_by_tag',
       args
     });

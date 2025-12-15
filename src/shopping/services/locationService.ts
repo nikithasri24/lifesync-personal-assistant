@@ -22,7 +22,7 @@ export async function getUserLocation(): Promise<Coordinates | null> {
       lng: position.coords.longitude
     };
   } catch (error) {
-    logger.error('LocationService', 'Unable to get your location. Please enable location services.', error);
+    logger.error('LocationService', error as Error, { context: 'Unable to get your location. Please enable location services.' });
     return null;
   }
 }

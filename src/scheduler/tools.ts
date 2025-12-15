@@ -136,7 +136,7 @@ async function executeCreateScheduleBlock(args: Record<string, unknown>): Promis
       data: block,
     };
   } catch (error) {
-    logger.error('SchedulerTools', error as Error, { context: 'executeCreateScheduleBlock' });
+    logger.error('SchedulerTools', 'Operation failed', { error, context: 'executeCreateScheduleBlock' });
     return { success: false, error: (error as Error).message };
   }
 }
@@ -156,7 +156,7 @@ async function executeGetSchedule(args: Record<string, unknown>): Promise<ToolRe
       count: blocks.length,
     };
   } catch (error) {
-    logger.error('SchedulerTools', error as Error, { context: 'executeGetSchedule' });
+    logger.error('SchedulerTools', 'Operation failed', { error, context: 'executeGetSchedule' });
     return { success: false, error: (error as Error).message };
   }
 }
@@ -179,7 +179,7 @@ async function executeUpdateScheduleBlock(args: Record<string, unknown>): Promis
       data: updated,
     };
   } catch (error) {
-    logger.error('SchedulerTools', error as Error, { context: 'executeUpdateScheduleBlock' });
+    logger.error('SchedulerTools', 'Operation failed', { error, context: 'executeUpdateScheduleBlock' });
     return { success: false, error: (error as Error).message };
   }
 }
@@ -194,7 +194,7 @@ async function executeDeleteScheduleBlock(args: Record<string, unknown>): Promis
       message: 'Schedule block deleted successfully',
     };
   } catch (error) {
-    logger.error('SchedulerTools', error as Error, { context: 'executeDeleteScheduleBlock' });
+    logger.error('SchedulerTools', 'Operation failed', { error, context: 'executeDeleteScheduleBlock' });
     return { success: false, error: (error as Error).message };
   }
 }
@@ -210,7 +210,7 @@ async function executeFindFreeTime(args: Record<string, unknown>): Promise<ToolR
       count: slots.length,
     };
   } catch (error) {
-    logger.error('SchedulerTools', error as Error, { context: 'executeFindFreeTime' });
+    logger.error('SchedulerTools', 'Operation failed', { error, context: 'executeFindFreeTime' });
     return { success: false, error: (error as Error).message };
   }
 }

@@ -55,7 +55,7 @@ const ReportsPage: React.FC = () => {
     if (!loading && transactions.length > 0) {
       logger.debug('ReportsPage', '📈 Metrics Calculated', {
         timePeriod,
-        dateRange: `${currentPeriod.startDate} to ${currentPeriod.endDate}`,
+        dateRange: `${currentPeriod.from} to ${currentPeriod.to}`,
         totalIncome: metrics.summary.totalIncome,
         totalExpenses: metrics.summary.totalExpenses,
         netCashFlow: metrics.summary.netCashFlow,

@@ -284,7 +284,7 @@ export const generateBudgetWarnings = (
     warnings.push('Your total overspending is significant and may impact long-term financial goals.');
   }
 
-  const emergencyFund = accounts.filter(a => a.type === 'savings').reduce((sum, a) => sum + a.balance, 0);
+  const emergencyFund = accounts.filter(a => a.type === 'savings').reduce((sum, a) => sum + (a.balance ?? 0), 0);
   const monthlyExpenses = recommendations.reduce((sum, r) => sum + r.currentSpending, 0);
   if (emergencyFund < monthlyExpenses * 3) {
     warnings.push('Your emergency fund appears insufficient (less than 3 months of expenses).');

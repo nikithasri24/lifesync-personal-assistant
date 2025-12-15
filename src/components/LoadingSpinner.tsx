@@ -6,7 +6,7 @@ interface LoadingSpinnerProps {
   text?: string;
 }
 
-export default function LoadingSpinner({ size = 'md', className = '', text }: LoadingSpinnerProps): JSX.Element {
+export default function LoadingSpinner({ size = 'md', className = '', text }: LoadingSpinnerProps) {
   const sizeClasses = {
     sm: 'w-4 h-4',
     md: 'w-6 h-6',
@@ -28,7 +28,7 @@ export default function LoadingSpinner({ size = 'md', className = '', text }: Lo
 }
 
 // Loading Skeleton Components
-export function SkeletonCard({ className = '' }: { className?: string }): JSX.Element {
+export function SkeletonCard({ className = '' }: { className?: string }) {
   return (
     <div
       role="group"
@@ -50,7 +50,7 @@ export function SkeletonCard({ className = '' }: { className?: string }): JSX.El
   );
 }
 
-export function SkeletonTable({ rows = 5, columns = 4 }: { rows?: number; columns?: number }): JSX.Element {
+export function SkeletonTable({ rows = 5, columns = 4 }: { rows?: number; columns?: number }) {
   return (
     <div
       role="group"
@@ -79,7 +79,7 @@ export function SkeletonTable({ rows = 5, columns = 4 }: { rows?: number; column
   );
 }
 
-export function SkeletonChart({ className = '' }: { className?: string }): JSX.Element {
+export function SkeletonChart({ className = '' }: { className?: string }) {
   return (
     <div
       role="group"
@@ -97,7 +97,7 @@ export function SkeletonChart({ className = '' }: { className?: string }): JSX.E
   );
 }
 
-export function SkeletonList({ items = 5, className = '' }: { items?: number; className?: string }): JSX.Element {
+export function SkeletonList({ items = 5, className = '' }: { items?: number; className?: string }) {
   return (
     <div role="group" aria-label="Loading list" className={`space-y-3 ${className}`}>
       {Array.from({ length: items }).map((_, index) => (
@@ -119,7 +119,7 @@ export function SkeletonList({ items = 5, className = '' }: { items?: number; cl
   );
 }
 
-export function SkeletonForm({ fields = 4, className = '' }: { fields?: number; className?: string }): JSX.Element {
+export function SkeletonForm({ fields = 4, className = '' }: { fields?: number; className?: string }) {
   return (
     <div role="group" aria-label="Loading form" className={`space-y-4 ${className}`}>
       {Array.from({ length: fields }).map((_, index) => (
@@ -136,7 +136,7 @@ export function SkeletonForm({ fields = 4, className = '' }: { fields?: number; 
   );
 }
 
-export function SkeletonGrid({ items = 6, columns = 3, className = '' }: { items?: number; columns?: number; className?: string }): JSX.Element {
+export function SkeletonGrid({ items = 6, columns = 3, className = '' }: { items?: number; columns?: number; className?: string }) {
   const gridCols = {
     2: 'grid-cols-2',
     3: 'grid-cols-3',

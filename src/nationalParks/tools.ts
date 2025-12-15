@@ -35,7 +35,7 @@ const searchParksDefinition: ToolDefinition = {
         },
         features: {
           type: 'array',
-          items: { type: 'string' },
+          items: { type: 'string', description: 'Feature name' },
           description: 'Array of features to search for - optional'
         }
       }
@@ -295,7 +295,7 @@ async function executeSearchParks(
       message: `Found ${results.length} park${results.length !== 1 ? 's' : ''}`
     };
   } catch (error) {
-    logger.error('NationalParksTools', error as Error, {
+    logger.error('NationalParksTools', 'Operation failed', { error,
       operation: 'search_parks',
       args
     });
@@ -350,7 +350,7 @@ async function executeGetParkInfo(
       message: `Information for ${park.name}`
     };
   } catch (error) {
-    logger.error('NationalParksTools', error as Error, {
+    logger.error('NationalParksTools', 'Operation failed', { error,
       operation: 'get_park_info',
       args
     });
@@ -407,7 +407,9 @@ async function executeAddVisitedPark(
       nationalParkId: park.id,
       nationalParkName: park.name,
       status,
-      visitDate: visitDate ? new Date(visitDate) : new Date(),
+      firstVisitDate: visitDate || new Date().toISOString(),
+      lastVisitDate: visitDate || new Date().toISOString(),
+      visitCount: 1,
       notes
     });
 
@@ -423,7 +425,7 @@ async function executeAddVisitedPark(
       location_id: location.id
     };
   } catch (error) {
-    logger.error('NationalParksTools', error as Error, {
+    logger.error('NationalParksTools', 'Operation failed', { error,
       operation: 'add_visited_park',
       args
     });
@@ -470,7 +472,7 @@ async function executeGetVisitedParks(
         location_id: loc.id,
         park: park ? formatPark(park) : null,
         status: loc.status,
-        visit_date: loc.visitDate,
+        visit_date: loc.lastVisitDate,
         notes: loc.notes
       };
     }).filter(v => v.park !== null);
@@ -486,7 +488,7 @@ async function executeGetVisitedParks(
       message: `You have ${visitedParks.length} ${status ?? 'total'} park${visitedParks.length !== 1 ? 's' : ''}`
     };
   } catch (error) {
-    logger.error('NationalParksTools', error as Error, {
+    logger.error('NationalParksTools', 'Operation failed', { error,
       operation: 'get_visited_parks',
       args
     });
@@ -550,7 +552,7 @@ async function executePlanParkVisit(
       message: `Visit plan for ${park.name} (${tripDuration} day${tripDuration !== 1 ? 's' : ''})`
     };
   } catch (error) {
-    logger.error('NationalParksTools', error as Error, {
+    logger.error('NationalParksTools', 'Operation failed', { error,
       operation: 'plan_park_visit',
       args
     });

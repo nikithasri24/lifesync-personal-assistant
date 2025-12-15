@@ -9,7 +9,7 @@ const DEBT_TYPES = [
   { value: 'other', label: 'Other Debt', icon: '📋', color: '#8B5CF6' }
 ];
 
-interface DebtFormData {
+export interface DebtFormData {
   type: 'credit_card' | 'student_loan' | 'mortgage' | 'loan' | 'other';
   balance: string;
   interestRate: string;
@@ -32,7 +32,7 @@ export default function DebtFormModal({
   onFormChange,
   onSave,
   onClose
-}: DebtFormModalProps): JSX.Element {
+}: DebtFormModalProps) {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4">

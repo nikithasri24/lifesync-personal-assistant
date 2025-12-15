@@ -7,7 +7,7 @@ interface ListItemRowProps {
   item: ListItem;
   onToggleComplete: () => void;
   onDelete: () => void;
-  onUpdate: (updates: { title?: string; notes?: string; tags?: string[]; dueDate?: Date | null; url?: string }) => void;
+  onUpdate: (updates: { title?: string; notes?: string; tags?: string[]; dueDate?: Date; url?: string }) => void;
 }
 
 const ListItemRow: React.FC<ListItemRowProps> = ({ item, onToggleComplete, onDelete, onUpdate }) => {

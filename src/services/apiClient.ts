@@ -18,7 +18,6 @@ import type {
   PlannedMealData,
   FocusSessionData,
   RecipeData,
-  _RecipeIngredientData,
   AnalyticsData,
 } from './types';
 
@@ -49,8 +48,8 @@ class ApiClient {
   private readonly supabaseAdapter = isSupabaseConfigured ? new SupabaseAdapter(() => this.userId) : null;
 
   constructor() {
-    logger.info('Supabase configured', { isSupabaseConfigured });
-    logger.info('Using Supabase adapter', { hasAdapter: Boolean(this.supabaseAdapter) });
+    logger.info('apiClient', 'Supabase configured', { isSupabaseConfigured });
+    logger.info('apiClient', 'Using Supabase adapter', { hasAdapter: Boolean(this.supabaseAdapter) });
   }
 
   setAuthContext(userId: string | null): void {

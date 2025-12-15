@@ -23,7 +23,7 @@ import { logger } from '@/services/logger';
 // CALENDAR EVENTS QUERY HOOKS
 // =====================================================
 
-export interface CalendarEventFilters {
+export interface CalendarEventFilters extends Record<string, unknown> {
   startDate?: string;
   endDate?: string;
   type?: CalendarEvent['type'];
@@ -86,7 +86,7 @@ export function useCreateCalendarEvent(): UseMutationResult<
       return result;
     },
     onSuccess: (newEvent) => {
-      logger.info('Calendar', 'useCalendarQuery', 'Calendar event created successfully', { id: newEvent.id, title: newEvent.title });
+      logger.info('Calendar', 'Calendar event created successfully', { id: newEvent.id, title: newEvent.title });
 
       // Invalidate all calendar event lists
       void queryClient.invalidateQueries({ queryKey: queryKeys.calendar.lists() });
@@ -100,7 +100,7 @@ export function useCreateCalendarEvent(): UseMutationResult<
       );
     },
     onError: (error: Error) => {
-      logger.error('Calendar', 'useCalendarQuery', error, { context: 'createCalendarEvent' });
+      logger.error('Calendar', 'Failed to create calendar event', { error: error.message });
     },
   });
 }
@@ -156,7 +156,7 @@ export function useUpdateCalendarEvent(): UseMutationResult<
       return { previousEvents, previousEvent };
     },
     onSuccess: (updatedEvent) => {
-      logger.info('Calendar', 'useCalendarQuery', 'Calendar event updated successfully', { id: updatedEvent.id, title: updatedEvent.title });
+      logger.info('Calendar', 'Calendar event updated successfully', { id: updatedEvent.id, title: updatedEvent.title });
 
       // Update with server response (in case server modified the data)
       queryClient.setQueryData(
@@ -174,7 +174,7 @@ export function useUpdateCalendarEvent(): UseMutationResult<
       );
     },
     onError: (error: Error, { id }, context) => {
-      logger.error('Calendar', 'useCalendarQuery', error, { context: 'updateCalendarEvent', id });
+      logger.error('Calendar', 'Failed to update calendar event', { error: error.message, id });
 
       // Rollback to previous state on error
       if (context?.previousEvents) {
@@ -204,7 +204,7 @@ export function useDeleteCalendarEvent(): UseMutationResult<void, Error, string,
       await deleteCalendarEvent(id);
     },
     onSuccess: (_data, deletedId) => {
-      logger.info('Calendar', 'useCalendarQuery', 'Calendar event deleted successfully', { id: deletedId });
+      logger.info('Calendar', 'Calendar event deleted successfully', { id: deletedId });
 
       // Invalidate all calendar event lists
       void queryClient.invalidateQueries({ queryKey: queryKeys.calendar.lists() });
@@ -221,7 +221,7 @@ export function useDeleteCalendarEvent(): UseMutationResult<void, Error, string,
       );
     },
     onError: (error: Error, id) => {
-      logger.error('Calendar', 'useCalendarQuery', error, { context: 'deleteCalendarEvent', id });
+      logger.error('Calendar', 'Failed to delete calendar event', { error: error.message, id });
     },
   });
 }

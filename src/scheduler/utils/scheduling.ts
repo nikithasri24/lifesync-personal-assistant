@@ -41,8 +41,10 @@ export function topologicalSort(
 
   // Initialize graph
   tasks.forEach(task => {
-    graph.set(task.id, []);
-    inDegree.set(task.id, 0);
+    if (task.id) {
+      graph.set(task.id, []);
+      inDegree.set(task.id, 0);
+    }
   });
 
   // Build graph
@@ -82,7 +84,7 @@ export function topologicalSort(
       sortedTasks: result.length
     });
     // Return all tasks, cycles will be handled separately
-    return tasks.map(t => t.id);
+    return tasks.map(t => t.id).filter((id): id is string => id !== undefined);
   }
 
   return result;
@@ -373,15 +375,17 @@ export function detectConflicts(
 
       // Check for overlap
       if (start1 < end2 && start2 < end1) {
-        // Add conflict
-        if (!conflicts.has(task1.id)) {
-          conflicts.set(task1.id, []);
+        // Add conflict (only if both tasks have IDs)
+        if (task1.id && task2.id) {
+          if (!conflicts.has(task1.id)) {
+            conflicts.set(task1.id, []);
+          }
+          if (!conflicts.has(task2.id)) {
+            conflicts.set(task2.id, []);
+          }
+          conflicts.get(task1.id)!.push(task2.id);
+          conflicts.get(task2.id)!.push(task1.id);
         }
-        if (!conflicts.has(task2.id)) {
-          conflicts.set(task2.id, []);
-        }
-        conflicts.get(task1.id)!.push(task2.id);
-        conflicts.get(task2.id)!.push(task1.id);
       }
     }
   }

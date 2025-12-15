@@ -53,7 +53,7 @@ export const createSchedulerSlice: StateCreator<SchedulerSlice, [], [], Schedule
       logger.info('SchedulerSlice', 'Schedule blocks loaded', { count: blocks.length });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to load schedule blocks';
-      logger.error('SchedulerSlice', error as Error, { context: 'loadScheduleBlocks' });
+      logger.error('SchedulerSlice', 'Operation failed', { error, context: 'loadScheduleBlocks' });
       set({
         schedulerError: errorMessage,
         schedulerLoading: false,
@@ -71,7 +71,7 @@ export const createSchedulerSlice: StateCreator<SchedulerSlice, [], [], Schedule
       logger.info('SchedulerSlice', 'Schedule loaded for date', { date, count: blocks.length });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to load schedule';
-      logger.error('SchedulerSlice', error as Error, { context: 'loadScheduleForDate', date });
+      logger.error('SchedulerSlice', 'Operation failed', { error, context: 'loadScheduleForDate', date });
       set({
         schedulerError: errorMessage,
         schedulerLoading: false,
@@ -91,7 +91,7 @@ export const createSchedulerSlice: StateCreator<SchedulerSlice, [], [], Schedule
       logger.info('SchedulerSlice', 'Schedule block created', { id: created.id, date: created.date });
       return created;
     } catch (error) {
-      logger.error('SchedulerSlice', error as Error, { context: 'addScheduleBlock' });
+      logger.error('SchedulerSlice', 'Operation failed', { error, context: 'addScheduleBlock' });
       throw error;
     }
   },
@@ -106,7 +106,7 @@ export const createSchedulerSlice: StateCreator<SchedulerSlice, [], [], Schedule
       logger.info('SchedulerSlice', 'Schedule block updated', { id });
       return updated;
     } catch (error) {
-      logger.error('SchedulerSlice', error as Error, { context: 'updateScheduleBlock', id });
+      logger.error('SchedulerSlice', 'Operation failed', { error, context: 'updateScheduleBlock', id });
       throw error;
     }
   },
@@ -120,7 +120,7 @@ export const createSchedulerSlice: StateCreator<SchedulerSlice, [], [], Schedule
       }));
       logger.info('SchedulerSlice', 'Schedule block deleted', { id });
     } catch (error) {
-      logger.error('SchedulerSlice', error as Error, { context: 'deleteScheduleBlock', id });
+      logger.error('SchedulerSlice', 'Operation failed', { error, context: 'deleteScheduleBlock', id });
       throw error;
     }
   },
@@ -132,7 +132,7 @@ export const createSchedulerSlice: StateCreator<SchedulerSlice, [], [], Schedule
       logger.info('SchedulerSlice', 'Free time slots found', { date, count: slots.length });
       return slots;
     } catch (error) {
-      logger.error('SchedulerSlice', error as Error, { context: 'findFreeTime', date, durationMinutes });
+      logger.error('SchedulerSlice', 'Operation failed', { error, context: 'findFreeTime', date, durationMinutes });
       throw error;
     }
   },

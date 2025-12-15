@@ -55,7 +55,7 @@ export interface NationalParksSlice {
   ) => Promise<VisitedParkData>;
   deleteVisitedPark: (id: string) => Promise<void>;
   isParkVisited: (parkId: string) => Promise<boolean>;
-  getVisitStatistics: () => Promise<ReturnType<typeof getVisitStats>>;
+  getVisitStatistics: () => ReturnType<typeof getVisitStats>;
 }
 
 export const createNationalParksSlice: StateCreator<
@@ -85,7 +85,7 @@ export const createNationalParksSlice: StateCreator<
       const errorMessage =
         error instanceof Error ? error.message : 'Failed to load parks';
       set({ parksError: errorMessage, parksLoading: false });
-      logger.error('NationalParksSlice', error as Error, { context: 'loadParks' });
+      logger.error('NationalParksSlice', 'Operation failed', { error, context: 'loadParks' });
       throw error;
     }
   },
@@ -100,7 +100,7 @@ export const createNationalParksSlice: StateCreator<
       });
       return results;
     } catch (error) {
-      logger.error('NationalParksSlice', error as Error, { context: 'searchParks', query });
+      logger.error('NationalParksSlice', 'Operation failed', { error, context: 'searchParks', query });
       throw error;
     }
   },
@@ -119,7 +119,7 @@ export const createNationalParksSlice: StateCreator<
         count: visitedParks.length,
       });
     } catch (error) {
-      logger.error('NationalParksSlice', error as Error, { context: 'loadVisitedParks' });
+      logger.error('NationalParksSlice', 'Operation failed', { error, context: 'loadVisitedParks' });
       throw error;
     }
   },
@@ -133,7 +133,7 @@ export const createNationalParksSlice: StateCreator<
       logger.info('NationalParksSlice', 'Visited park added', { parkId });
       return visitedPark;
     } catch (error) {
-      logger.error('NationalParksSlice', error as Error, {
+      logger.error('NationalParksSlice', 'Operation failed', { error,
         context: 'addVisitedPark',
         parkId,
       });
@@ -154,7 +154,7 @@ export const createNationalParksSlice: StateCreator<
       logger.info('NationalParksSlice', 'Visited park updated', { id });
       return updatedPark;
     } catch (error) {
-      logger.error('NationalParksSlice', error as Error, {
+      logger.error('NationalParksSlice', 'Operation failed', { error,
         context: 'updateVisitedPark',
         id,
       });
@@ -170,7 +170,7 @@ export const createNationalParksSlice: StateCreator<
       set({ visitedParks: currentVisitedParks.filter((park) => park.id !== id) });
       logger.info('NationalParksSlice', 'Visited park deleted', { id });
     } catch (error) {
-      logger.error('NationalParksSlice', error as Error, {
+      logger.error('NationalParksSlice', 'Operation failed', { error,
         context: 'deleteVisitedPark',
         id,
       });
@@ -188,7 +188,7 @@ export const createNationalParksSlice: StateCreator<
       });
       return isVisited;
     } catch (error) {
-      logger.error('NationalParksSlice', error as Error, {
+      logger.error('NationalParksSlice', 'Operation failed', { error,
         context: 'isParkVisited',
         parkId,
       });
@@ -205,7 +205,7 @@ export const createNationalParksSlice: StateCreator<
       });
       return stats;
     } catch (error) {
-      logger.error('NationalParksSlice', error as Error, { context: 'getVisitStatistics' });
+      logger.error('NationalParksSlice', 'Operation failed', { error, context: 'getVisitStatistics' });
       throw error;
     }
   },

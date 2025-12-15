@@ -11,7 +11,7 @@ interface BarcodeScannerModalProps {
   isScanning: boolean;
   barcodeResult: string | null;
   captureMessage: string | null;
-  videoRef: React.RefObject<HTMLVideoElement>;
+  videoRef: React.RefObject<HTMLVideoElement | null>;
   onClose: () => void;
   onCapture: () => void;
   onStop: () => void;

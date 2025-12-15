@@ -568,11 +568,15 @@ export interface RetirementPerformance {
 export interface RetirementAccountWithStats extends RetirementAccountMetadata {
   accountName: string;
   accountBalance: number;
+  accountType?: RetirementAccountType;
   remainingEmployeeRoom: number;
   totalYTDContributions: number;
   vestedBalance: number;
+  totalValue?: number;
+  totalVested?: number;
   latestGains?: number;
   latestReturnRate?: number;
+  latestRateOfReturn?: number;
 }
 
 export interface ContributionRoom {

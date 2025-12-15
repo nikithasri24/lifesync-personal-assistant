@@ -92,7 +92,7 @@ export const createGoalsSlice: StateCreator<GoalsSlice, [], [], GoalsSlice> = (
       const goals = await getUserLifeGoals();
       set({ goals, goalsLoaded: true, goalsLoading: false });
     } catch (error) {
-      logger.error('Goals', error as Error, { context: 'loadGoals' });
+      logger.error('Goals', 'Operation failed', { error, context: 'loadGoals' });
       set({ goalsLoading: false });
       throw error;
     }
@@ -105,7 +105,7 @@ export const createGoalsSlice: StateCreator<GoalsSlice, [], [], GoalsSlice> = (
       set((state) => ({ goals: [...state.goals, goal] }));
       return goal;
     } catch (error) {
-      logger.error('Goals', error as Error, { context: 'addGoal' });
+      logger.error('Goals', 'Operation failed', { error, context: 'addGoal' });
       throw error;
     }
   },
@@ -119,7 +119,7 @@ export const createGoalsSlice: StateCreator<GoalsSlice, [], [], GoalsSlice> = (
       }));
       return updatedGoal;
     } catch (error) {
-      logger.error('Goals', error as Error, { context: 'updateGoal' });
+      logger.error('Goals', 'Operation failed', { error, context: 'updateGoal' });
       throw error;
     }
   },
@@ -132,7 +132,7 @@ export const createGoalsSlice: StateCreator<GoalsSlice, [], [], GoalsSlice> = (
         goals: state.goals.filter((g) => g.id !== id),
       }));
     } catch (error) {
-      logger.error('Goals', error as Error, { context: 'deleteGoal' });
+      logger.error('Goals', 'Operation failed', { error, context: 'deleteGoal' });
       throw error;
     }
   },
@@ -151,7 +151,7 @@ export const createGoalsSlice: StateCreator<GoalsSlice, [], [], GoalsSlice> = (
       const dreams = await getUserLifeDreams();
       set({ dreams, dreamsLoaded: true, dreamsLoading: false });
     } catch (error) {
-      logger.error('Dreams', error as Error, { context: 'loadDreams' });
+      logger.error('Dreams', 'Operation failed', { error, context: 'loadDreams' });
       set({ dreamsLoading: false });
       throw error;
     }
@@ -164,7 +164,7 @@ export const createGoalsSlice: StateCreator<GoalsSlice, [], [], GoalsSlice> = (
       set((state) => ({ dreams: [...state.dreams, dream] }));
       return dream;
     } catch (error) {
-      logger.error('Dreams', error as Error, { context: 'addDream' });
+      logger.error('Dreams', 'Operation failed', { error, context: 'addDream' });
       throw error;
     }
   },
@@ -178,7 +178,7 @@ export const createGoalsSlice: StateCreator<GoalsSlice, [], [], GoalsSlice> = (
       }));
       return updatedDream;
     } catch (error) {
-      logger.error('Dreams', error as Error, { context: 'updateDream' });
+      logger.error('Dreams', 'Operation failed', { error, context: 'updateDream' });
       throw error;
     }
   },
@@ -191,7 +191,7 @@ export const createGoalsSlice: StateCreator<GoalsSlice, [], [], GoalsSlice> = (
         dreams: state.dreams.filter((d) => d.id !== id),
       }));
     } catch (error) {
-      logger.error('Dreams', error as Error, { context: 'deleteDream' });
+      logger.error('Dreams', 'Operation failed', { error, context: 'deleteDream' });
       throw error;
     }
   },

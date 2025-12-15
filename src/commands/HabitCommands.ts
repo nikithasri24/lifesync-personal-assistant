@@ -31,7 +31,7 @@ export class CreateHabitCommand implements Command {
   }
 
   async execute(): Promise<void> {
-    logger.debug('[CreateHabitCommand] Executing', { name: this.habitData.name });
+    logger.debug('Habits', '[CreateHabitCommand] Executing', { name: this.habitData.name });
     const created = await createHabit(this.habitData);
     this.createdHabitId = created.id as string;
   }
@@ -40,7 +40,7 @@ export class CreateHabitCommand implements Command {
     if (!this.createdHabitId) {
       throw new Error('Cannot undo: habit was not created');
     }
-    logger.debug('[CreateHabitCommand] Undoing', { habitId: this.createdHabitId });
+    logger.debug('Habits', '[CreateHabitCommand] Undoing', { habitId: this.createdHabitId });
     await deleteHabit(this.createdHabitId);
   }
 }
@@ -71,7 +71,7 @@ export class UpdateHabitCommand implements Command {
   }
 
   async execute(): Promise<void> {
-    logger.debug('[UpdateHabitCommand] Executing', { habitId: this.habitId });
+    logger.debug('Habits', '[UpdateHabitCommand] Executing', { habitId: this.habitId });
     await updateHabit(this.habitId, this.updates);
   }
 
@@ -79,7 +79,7 @@ export class UpdateHabitCommand implements Command {
     if (!this.previousState) {
       throw new Error('Cannot undo: previous state not stored');
     }
-    logger.debug('[UpdateHabitCommand] Undoing', { habitId: this.habitId });
+    logger.debug('Habits', '[UpdateHabitCommand] Undoing', { habitId: this.habitId });
     await updateHabit(this.habitId, this.previousState);
   }
 }
@@ -101,12 +101,12 @@ export class DeleteHabitCommand implements Command {
   }
 
   async execute(): Promise<void> {
-    logger.debug('[DeleteHabitCommand] Executing', { habitId: this.habit.id });
+    logger.debug('Habits', '[DeleteHabitCommand] Executing', { habitId: this.habit.id });
     await deleteHabit(this.habit.id as string);
   }
 
   async undo(): Promise<void> {
-    logger.debug('[DeleteHabitCommand] Undoing', { habitId: this.habit.id });
+    logger.debug('Habits', '[DeleteHabitCommand] Undoing', { habitId: this.habit.id });
     const { id, created_at, updated_at, ...habitData } = this.habit;
     await createHabit(habitData);
   }
@@ -132,7 +132,7 @@ export class LogHabitEntryCommand implements Command {
   }
 
   async execute(): Promise<void> {
-    logger.debug('[LogHabitEntryCommand] Executing', { habitId: this.entryData.habit_id });
+    logger.debug('Habits', '[LogHabitEntryCommand] Executing', { habitId: this.entryData.habit_id });
     const created = await createHabitEntry(this.entryData);
     this.createdEntryId = created.id as string;
   }
@@ -141,7 +141,7 @@ export class LogHabitEntryCommand implements Command {
     if (!this.createdEntryId) {
       throw new Error('Cannot undo: entry was not created');
     }
-    logger.debug('[LogHabitEntryCommand] Undoing', { entryId: this.createdEntryId });
+    logger.debug('Habits', '[LogHabitEntryCommand] Undoing', { entryId: this.createdEntryId });
     await deleteHabitEntry(this.createdEntryId, this.entryData.habit_id);
   }
 }

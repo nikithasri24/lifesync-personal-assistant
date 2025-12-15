@@ -1,6 +1,5 @@
 /* eslint-disable max-lines */
-import React, { useMemo, useState } from 'react';
-import type { FormEvent } from 'react';
+import React, { type ReactElement, useMemo, useState , type FormEvent } from 'react';
 import { Plus, Target, Trash2, CheckCircle2, Sparkles, TrendingUp, Edit3, Lightbulb, Trophy } from 'lucide-react';
 import {
   useLifeGoalsQuery,
@@ -25,10 +24,10 @@ import type {
   LifeGoalMilestone,
 } from '../goals/types/lifeGoals';
 import GoalTemplates from '../goals/components/GoalTemplates';
-import GoalMilestones from '../goals/components/GoalMilestones';
-import GoalStreaks from '../goals/components/GoalStreaks';
+import { GoalMilestones } from '../goals/components/GoalMilestones';
+import { GoalStreaks } from '../goals/components/GoalStreaks';
 import GoalGamification from '../goals/components/GoalGamification';
-import GoalCheckins from '../goals/components/GoalCheckins';
+import { GoalCheckins } from '../goals/components/GoalCheckins';
 import { logger } from '../services/logger';
 
 const GOAL_CATEGORIES: GoalCategory[] = ['personal', 'health', 'career', 'financial', 'fitness'];
@@ -151,7 +150,7 @@ const LifeGoals: React.FC = () => {
       setGoalDraft(createGoalDraft());
       setShowGoalForm(false);
     } catch (error) {
-      logger.error('Error creating goal:', { error });
+      logger.error('LifeGoals', error as Error);
       // Error is logged; user will see mutation error state
     }
   };
@@ -172,7 +171,7 @@ const LifeGoals: React.FC = () => {
       setDreamDraft(createDreamDraft());
       setShowDreamForm(false);
     } catch (error) {
-      logger.error('Error creating dream:', { error });
+      logger.error('LifeGoals', error as Error);
       // Error is logged; user will see mutation error state
     }
   };
@@ -188,7 +187,7 @@ const LifeGoals: React.FC = () => {
         },
       });
     } catch (error) {
-      logger.error('Error updating goal:', { error });
+      logger.error('LifeGoals', error as Error);
       // Error is logged; user will see mutation error state
     }
   };
@@ -200,7 +199,7 @@ const LifeGoals: React.FC = () => {
     try {
       await deleteGoalMutation.mutateAsync(goalId);
     } catch (error) {
-      logger.error('Error deleting goal:', { error });
+      logger.error('LifeGoals', error as Error);
       // Error is logged; user will see mutation error state
     }
   };
@@ -215,7 +214,7 @@ const LifeGoals: React.FC = () => {
         },
       });
     } catch (error) {
-      logger.error('Error updating dream:', { error });
+      logger.error('LifeGoals', error as Error);
       // Error is logged; user will see mutation error state
     }
   };
@@ -227,7 +226,7 @@ const LifeGoals: React.FC = () => {
     try {
       await deleteDreamMutation.mutateAsync(dreamId);
     } catch (error) {
-      logger.error('Error deleting dream:', { error });
+      logger.error('LifeGoals', error as Error);
       // Error is logged; user will see mutation error state
     }
   };
@@ -245,7 +244,7 @@ const LifeGoals: React.FC = () => {
       setEditingProgress(null);
       setProgressValue(0);
     } catch (error) {
-      logger.error('Error updating progress:', { error });
+      logger.error('LifeGoals', error as Error);
       // Error is logged; user will see mutation error state
     }
   };
@@ -278,7 +277,7 @@ const LifeGoals: React.FC = () => {
     setGoalMilestones(prev => ({ ...prev, [goal.id]: milestones }));
   };
 
-  const renderGoalList = (): JSX.Element => {
+  const renderGoalList = (): ReactElement => {
     if (goals.length === 0) {
       return <EmptyState label="No goals yet. Start by creating one." icon={<Target className="h-6 w-6" />} />;
     }
@@ -425,7 +424,7 @@ const LifeGoals: React.FC = () => {
     );
   };
 
-  const renderDreamList = (): JSX.Element => {
+  const renderDreamList = (): ReactElement => {
     if (dreams.length === 0) {
       return <EmptyState label="No dreams captured yet. Start with one aspiration." />;
     }

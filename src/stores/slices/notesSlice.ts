@@ -42,7 +42,7 @@ export const createNotesSlice: StateCreator<NotesSlice, [], [], NotesSlice> = (
       const notes = await getNotes();
       set({ notes, notesLoaded: true, notesLoading: false });
     } catch (error) {
-      logger.error('Notes', error as Error, { context: 'loadNotes' });
+      logger.error('Notes', 'Operation failed', { error, context: 'loadNotes' });
       set({ notesLoading: false });
       throw error;
     }
@@ -55,7 +55,7 @@ export const createNotesSlice: StateCreator<NotesSlice, [], [], NotesSlice> = (
       set((state) => ({ notes: [...state.notes, note] }));
       return note;
     } catch (error) {
-      logger.error('Notes', error as Error, { context: 'addNote' });
+      logger.error('Notes', 'Operation failed', { error, context: 'addNote' });
       throw error;
     }
   },
@@ -69,7 +69,7 @@ export const createNotesSlice: StateCreator<NotesSlice, [], [], NotesSlice> = (
       }));
       return updatedNote;
     } catch (error) {
-      logger.error('Notes', error as Error, { context: 'updateNote', noteId: id });
+      logger.error('Notes', 'Operation failed', { error, context: 'updateNote', noteId: id });
       throw error;
     }
   },
@@ -82,7 +82,7 @@ export const createNotesSlice: StateCreator<NotesSlice, [], [], NotesSlice> = (
         notes: state.notes.filter((n) => n.id !== id),
       }));
     } catch (error) {
-      logger.error('Notes', error as Error, { context: 'deleteNote', noteId: id });
+      logger.error('Notes', 'Operation failed', { error, context: 'deleteNote', noteId: id });
       throw error;
     }
   },

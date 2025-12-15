@@ -5,7 +5,7 @@
  * for journal CRUD operations.
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, type UseMutationResult } from '@tanstack/react-query';
 import type { JournalEntry } from '../types';
 import { queryKeys, queryOptions } from '@/lib/react-query';
 import {
@@ -83,7 +83,7 @@ export function useMoodStats(startDate?: Date, endDate?: Date): ReturnType<typeo
 /**
  * Create a new journal entry
  */
-export function useCreateJournalEntry(): ReturnType<typeof useMutation> {
+export function useCreateJournalEntry(): UseMutationResult<JournalEntry, Error, CreateJournalEntryInput, unknown> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -114,7 +114,7 @@ export function useCreateJournalEntry(): ReturnType<typeof useMutation> {
 /**
  * Update an existing journal entry
  */
-export function useUpdateJournalEntry(): ReturnType<typeof useMutation> {
+export function useUpdateJournalEntry(): UseMutationResult<JournalEntry, Error, { id: string; updates: UpdateJournalEntryInput }, unknown> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -153,7 +153,7 @@ export function useUpdateJournalEntry(): ReturnType<typeof useMutation> {
 /**
  * Delete a journal entry
  */
-export function useDeleteJournalEntry(): ReturnType<typeof useMutation> {
+export function useDeleteJournalEntry(): UseMutationResult<void, Error, string, unknown> {
   const queryClient = useQueryClient();
 
   return useMutation({

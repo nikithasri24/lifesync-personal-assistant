@@ -1,19 +1,13 @@
 import type React from 'react';
 import { useState, useMemo } from 'react';
 import { differenceInCalendarDays } from 'date-fns';
+import type { PantryItem } from '../../types';
 
 export type PantryFilter = 'all' | 'expired' | 'soon' | 'low';
 export type PantrySort = 'expiry' | 'name';
 
-export interface PantryItem {
-  id: string;
-  name: string;
-  quantity: number;
-  unit?: string;
-  expirationDate?: Date | null;
-  isLowStock?: boolean;
-  lowStockThreshold?: number | null;
-}
+// Re-export PantryItem for convenience
+export type { PantryItem };
 
 export function usePantryManagement(pantryItems: PantryItem[]): {
   pantryFilter: PantryFilter;

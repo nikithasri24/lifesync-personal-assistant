@@ -4,7 +4,8 @@
  */
 
 import type { StateCreator } from 'zustand';
-import type { SkincareProduct, SkinConditionLog } from '@/services/types';
+import type { SkincareProduct } from '@/skincare/types';
+import type { SkinConditionLog } from '@/services/types';
 import {
   getSkincareProducts,
   createSkincareProduct as apiCreateSkincareProduct,
@@ -26,14 +27,14 @@ export interface SkincareSlice {
 
   // Actions
   loadSkincareProducts: (filters?: Parameters<typeof getSkincareProducts>[0]) => Promise<void>;
-  addSkincareProduct: (product: Omit<SkincareProduct, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<SkincareProduct>;
+  addSkincareProduct: (product: Omit<SkincareProduct, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => Promise<SkincareProduct>;
   updateSkincareProduct: (id: string, updates: Partial<SkincareProduct>) => Promise<SkincareProduct>;
   deleteSkincareProduct: (id: string) => Promise<void>;
 
   loadSkinConditionLogs: (filters?: Parameters<typeof getSkinConditionLogs>[0]) => Promise<void>;
   addSkinConditionLog: (log: Omit<SkinConditionLog, 'id' | 'user_id' | 'created_at'>) => Promise<SkinConditionLog>;
 
-  getSkincareStats: () => Promise<ReturnType<typeof getSkincareStats>>;
+  getSkincareStats: () => ReturnType<typeof getSkincareStats>;
   getSkincareProductById: (id: string) => SkincareProduct | undefined;
 }
 
@@ -59,7 +60,7 @@ export const createSkincareSlice: StateCreator<SkincareSlice, [], [], SkincareSl
       logger.info('SkincareSlice', 'Skincare products loaded', { count: products.length });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to load skincare products';
-      logger.error('SkincareSlice', error as Error, { context: 'loadSkincareProducts' });
+      logger.error('SkincareSlice', 'Operation failed', { error, context: 'loadSkincareProducts' });
       set({
         skincareError: errorMessage,
         skincareLoading: false,
@@ -76,7 +77,7 @@ export const createSkincareSlice: StateCreator<SkincareSlice, [], [], SkincareSl
       logger.info('SkincareSlice', 'Skincare product created', { id: created.id, name: created.name });
       return created;
     } catch (error) {
-      logger.error('SkincareSlice', error as Error, { context: 'addSkincareProduct' });
+      logger.error('SkincareSlice', 'Operation failed', { error, context: 'addSkincareProduct' });
       throw error;
     }
   },
@@ -91,7 +92,7 @@ export const createSkincareSlice: StateCreator<SkincareSlice, [], [], SkincareSl
       logger.info('SkincareSlice', 'Skincare product updated', { id });
       return updated;
     } catch (error) {
-      logger.error('SkincareSlice', error as Error, { context: 'updateSkincareProduct', id });
+      logger.error('SkincareSlice', 'Operation failed', { error, context: 'updateSkincareProduct', id });
       throw error;
     }
   },
@@ -105,7 +106,7 @@ export const createSkincareSlice: StateCreator<SkincareSlice, [], [], SkincareSl
       }));
       logger.info('SkincareSlice', 'Skincare product deleted', { id });
     } catch (error) {
-      logger.error('SkincareSlice', error as Error, { context: 'deleteSkincareProduct', id });
+      logger.error('SkincareSlice', 'Operation failed', { error, context: 'deleteSkincareProduct', id });
       throw error;
     }
   },
@@ -117,7 +118,7 @@ export const createSkincareSlice: StateCreator<SkincareSlice, [], [], SkincareSl
       set({ skinConditionLogs: logs });
       logger.info('SkincareSlice', 'Skin condition logs loaded', { count: logs.length });
     } catch (error) {
-      logger.error('SkincareSlice', error as Error, { context: 'loadSkinConditionLogs' });
+      logger.error('SkincareSlice', 'Operation failed', { error, context: 'loadSkinConditionLogs' });
       throw error;
     }
   },
@@ -130,7 +131,7 @@ export const createSkincareSlice: StateCreator<SkincareSlice, [], [], SkincareSl
       logger.info('SkincareSlice', 'Skin condition log created', { id: created.id, date: created.date });
       return created;
     } catch (error) {
-      logger.error('SkincareSlice', error as Error, { context: 'addSkinConditionLog' });
+      logger.error('SkincareSlice', 'Operation failed', { error, context: 'addSkinConditionLog' });
       throw error;
     }
   },
@@ -142,7 +143,7 @@ export const createSkincareSlice: StateCreator<SkincareSlice, [], [], SkincareSl
       logger.info('SkincareSlice', 'Skincare stats retrieved', stats);
       return stats;
     } catch (error) {
-      logger.error('SkincareSlice', error as Error, { context: 'getSkincareStats' });
+      logger.error('SkincareSlice', 'Operation failed', { error, context: 'getSkincareStats' });
       throw error;
     }
   },

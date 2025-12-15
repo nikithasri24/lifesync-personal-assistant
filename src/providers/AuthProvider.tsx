@@ -1,193 +1,126 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import type { Session, User } from '@supabase/supabase-js'
-import { ensureSupabase, isSupabaseConfigured } from '../lib/supabase'
-import { apiClient } from '../services/apiClient'
+import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import type { User } from '@supabase/supabase-js';
 import { logger } from '../services/logger';
 
-interface AuthContextValue {
-  user: User | null
-  session: Session | null
-  loading: boolean
-  isConfigured: boolean
-  error: string | null
-  signIn: (email: string, password: string) => Promise<void>
-  signUp: (email: string, password: string) => Promise<void>
-  signOut: () => Promise<void>
-  clearError: () => void
+interface AuthContextType {
+  user: User | null;
+  loading: boolean;
+  error: string | null;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string) => Promise<void>;
+  signOut: () => Promise<void>;
+  clearError: () => void;
+  isConfigured: boolean;
 }
 
-const AuthContext = createContext<AuthContextValue | undefined>(undefined)
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export function useAuthContext(): AuthContextType {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuthContext must be used within AuthProvider');
+  }
+  return context;
+}
 
 interface AuthProviderProps {
-  children: ReactNode
+  children: ReactNode;
 }
 
-export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element {
-  const [session, setSession] = useState<Session | null>(null)
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState<boolean>(isSupabaseConfigured)
-  const [error, setError] = useState<string | null>(null)
-
-  const ensureUserRecord = useCallback(async (authUser: User) => {
-    if (!isSupabaseConfigured) return
-
-    try {
-      const client = ensureSupabase()
-      const email = authUser.email?.toLowerCase() ?? `${authUser.id}@local`
-      const usernameFromMetadata = typeof authUser.user_metadata?.username === 'string'
-        ? authUser.user_metadata.username
-        : undefined
-      const username = usernameFromMetadata
-        ?? (authUser.email ? authUser.email.split('@')[0] : authUser.id.slice(0, 12))
-
-      await client
-        .from('users')
-        .upsert({
-          id: authUser.id,
-          email,
-          username,
-          password_hash: 'managed-by-supabase',
-          first_name: typeof authUser.user_metadata?.first_name === 'string' ? authUser.user_metadata.first_name : null,
-          last_name: typeof authUser.user_metadata?.last_name === 'string' ? authUser.user_metadata.last_name : null,
-          email_verified: Boolean(authUser.email_confirmed_at),
-          is_active: true,
-        }, {
-          onConflict: 'id',
-        })
-    } catch (err) {
-      logger.warn('Failed to ensure application user record:', { err });
-    }
-  }, [])
+export function AuthProvider({ children }: AuthProviderProps) {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const configured = isSupabaseConfigured;
 
   useEffect(() => {
-    apiClient.setAuthContext(null)
-
-    if (!isSupabaseConfigured) {
-      setLoading(false)
-      return
+    if (!configured) {
+      setLoading(false);
+      return;
     }
 
-    const client = ensureSupabase()
+    // Check active sessions
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
 
-    const syncState = (nextSession: Session | null): void => {
-      setSession(nextSession)
-      const nextUser = nextSession?.user ?? null
-      setUser(nextUser)
-      apiClient.setAuthContext(nextUser?.id ?? null)
-      if (nextUser) {
-        void ensureUserRecord(nextUser)
-      }
-    }
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
 
-    void client.auth
-      .getSession()
-      .then(({ data, error }) => {
-        if (error) {
-          logger.error('Supabase session fetch failed:', { error });
-          setError(error.message)
-        }
-        syncState(data.session ?? null)
-      })
-      .finally(() => setLoading(false))
+    return () => subscription.unsubscribe();
+  }, [configured]);
 
-    const { data: subscription } = client.auth.onAuthStateChange((_event, nextSession) => {
-      syncState(nextSession)
-    })
-
-    return () => {
-      subscription.subscription.unsubscribe()
-    }
-  }, [ensureUserRecord])
-
-  const signIn = async (email: string, password: string): Promise<void> => {
-    if (!isSupabaseConfigured) {
-      throw new Error('Supabase is not configured. Provide credentials in your environment.')
-    }
-
-    const client = ensureSupabase()
-    setError(null)
-    setLoading(true)
-
+  const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await client.auth.signInWithPassword({ email, password })
-      if (error) {
-        throw error
-      }
+      setError(null);
+      setLoading(true);
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (signInError) throw signInError;
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unable to sign in'
-      setError(message)
-      throw err
+      const message = err instanceof Error ? err.message : 'Failed to sign in';
+      setError(message);
+      logger.error('Auth', 'Sign in failed', { error: message });
+      throw err;
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
-  const signUp = async (email: string, password: string): Promise<void> => {
-    if (!isSupabaseConfigured) {
-      throw new Error('Supabase is not configured. Provide credentials in your environment.')
-    }
-
-    const client = ensureSupabase()
-    setError(null)
-    setLoading(true)
-
+  const signUp = async (email: string, password: string) => {
     try {
-      const { error } = await client.auth.signUp({ email, password })
-      if (error) {
-        throw error
-      }
+      setError(null);
+      setLoading(true);
+      const { error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+      if (signUpError) throw signUpError;
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unable to sign up'
-      setError(message)
-      throw err
+      const message = err instanceof Error ? err.message : 'Failed to sign up';
+      setError(message);
+      logger.error('Auth', 'Sign up failed', { error: message });
+      throw err;
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
-  const signOut = async (): Promise<void> => {
-    if (!isSupabaseConfigured) {
-      setSession(null)
-      setUser(null)
-      apiClient.setAuthContext(null)
-      return
+  const signOut = async () => {
+    try {
+      setError(null);
+      const { error: signOutError } = await supabase.auth.signOut();
+      if (signOutError) throw signOutError;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to sign out';
+      setError(message);
+      logger.error('Auth', 'Sign out failed', { error: message });
+      throw err;
     }
+  };
 
-    const client = ensureSupabase()
-    setError(null)
+  const clearError = () => {
+    setError(null);
+  };
 
-    const { error } = await client.auth.signOut()
-    if (error) {
-      const message = error.message || 'Unable to sign out'
-      setError(message)
-      throw error
-    }
-
-    setSession(null)
-    setUser(null)
-    apiClient.setAuthContext(null)
-  }
-
-  const value = useMemo<AuthContextValue>(() => ({
+  const value: AuthContextType = {
     user,
-    session,
     loading,
-    isConfigured: isSupabaseConfigured,
     error,
     signIn,
     signUp,
     signOut,
-    clearError: () => setError(null),
-  }), [error, loading, session, user])
+    clearError,
+    isConfigured: configured,
+  };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
-}
-
-// eslint-disable-next-line react-refresh/only-export-components
-export function useAuthContext(): AuthContextValue {
-  const context = useContext(AuthContext)
-  if (!context) {
-    throw new Error('useAuthContext must be used within an AuthProvider')
-  }
-  return context
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

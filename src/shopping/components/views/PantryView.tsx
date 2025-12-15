@@ -3,9 +3,9 @@
  * Displays and manages pantry inventory with expiration tracking
  */
 
-import React, { useState, useMemo } from 'react';
-import { Plus, Receipt } from 'lucide-react';
-import { format, differenceInCalendarDays } from 'date-fns';
+import React, { useState, useMemo, type ReactElement } from 'react';
+import {  Plus, Receipt } from 'lucide-react';
+import {  format, differenceInCalendarDays } from 'date-fns';
 import type { PantryItem } from '../../../types';
 import type { ShoppingItem } from '../../types';
 
@@ -44,7 +44,7 @@ export function PantryView({
   onUpdateItem,
   onDeleteItem,
   onShowToast,
-}: PantryViewProps): JSX.Element {
+}: PantryViewProps) {
   const [pantryFilter, setPantryFilter] = useState<PantryFilterType>('all');
   const [pantrySort, setPantrySort] = useState<PantrySortType>('expiry');
   const [editingPantryId, setEditingPantryId] = useState<string | null>(null);
@@ -335,7 +335,7 @@ export function PantryView({
               </tr>
             </thead>
             <tbody>
-              {pantrySortedFiltered.map((p: PantryItem): JSX.Element => {
+              {pantrySortedFiltered.map((p: PantryItem): ReactElement => {
                 const days: number | null = p.expirationDate !== undefined
                   ? differenceInCalendarDays(p.expirationDate, new Date())
                   : null;

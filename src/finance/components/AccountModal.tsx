@@ -8,7 +8,7 @@ import React from 'react';
 import { Button } from '../ui/Button';
 import { logger } from '../../services/logger';
 import { useToast } from '../../hooks/useToast';
-import type { Account } from '../types';
+import type { Account, AccountType } from '../types';
 import { useUpsertAccountMutation, useDeleteAccountMutation } from '../hooks/useFinanceQuery';
 
 interface AccountModalProps {
@@ -108,7 +108,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({ account, onClose, on
               </label>
               <select
                 value={formData.type}
-                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, type: e.target.value as AccountType })}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
                 required
               >
@@ -151,7 +151,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({ account, onClose, on
         {/* Footer */}
         <div className="p-6 border-t border-slate-200 flex justify-between items-center">
           <div className="flex gap-2">
-            <Button variant="ghost" onClick={onClose} disabled={loading}>
+            <Button variant="ghost" onClick={onClose} disabled={upsertAccountMutation.isPending || deleteAccountMutation.isPending}>
               Cancel
             </Button>
             {isEditing && (

@@ -79,7 +79,7 @@ export function calculateGoalProjections(
       };
     }
 
-    const targetDate = goal.targetDate ? new Date(String(goal.targetDate)) : null;
+    const targetDate = goal.dueDateISO ? new Date(String(goal.dueDateISO)) : null;
     const yearsUntilTarget = targetDate
       ? (targetDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24 * 365)
       : 10;

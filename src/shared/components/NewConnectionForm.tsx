@@ -44,7 +44,7 @@ const NewConnectionForm: React.FC<NewConnectionFormProps> = ({ onConnectionCreat
       onConnectionCreated();
       showToast('Invitation sent successfully', 'success');
     } catch (err: unknown) {
-      logger.error('Error creating connection:', { error: err });
+      logger.error('Connections', 'Error creating connection', { error: err });
       const errorMessage = err instanceof Error ? err.message : 'Failed to send invitation';
       showToast(errorMessage, 'error');
     } finally {

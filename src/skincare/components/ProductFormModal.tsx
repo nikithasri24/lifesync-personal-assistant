@@ -2,8 +2,8 @@
  * ProductFormModal - Add/Edit skincare product
  */
 
-import React from 'react';
-import { X, Save } from 'lucide-react';
+import React, { type ReactElement } from 'react';
+import {  X, Save } from 'lucide-react';
 import type { SkincareProduct, SkincareProductInput, ProductCategory, UsageTime } from '../types';
 
 type ProductFormModalProps = {
@@ -16,7 +16,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
   product,
   onSave,
   onClose,
-}): JSX.Element => {
+}): ReactElement => {
   const [formData, setFormData] = React.useState<SkincareProductInput>({
     name: product?.name ?? '',
     brand: product?.brand ?? '',

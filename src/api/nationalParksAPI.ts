@@ -5,7 +5,27 @@
 
 import { supabase } from '../lib/supabase';
 import type { NationalPark } from '../types/nationalParks';
+import type { NationalPark as TravelPark } from '../travel/data/nationalParks';
 import { logger } from '../services/logger';
+
+/**
+ * Maps travel data park format to the NationalPark type used by the app
+ */
+function mapTravelParkToNationalPark(park: TravelPark): NationalPark {
+  // Extract state abbreviation from stateCode (e.g., "US-CA" -> "CA")
+  const state = park.stateCode ? park.stateCode.split('-')[1] ?? park.stateCode : 'Unknown';
+
+  return {
+    id: park.id,
+    name: park.name,
+    state,
+    coordinates: [park.lat, park.lon],
+    established: park.established ? park.established.toString() : 'Unknown',
+    description: park.description ?? '',
+    visitors: 'Unknown', // Travel data doesn't include visitor counts
+    features: [], // Travel data doesn't include features
+  };
+}
 
 // Database types
 export interface VisitedParkData {
@@ -41,7 +61,8 @@ export async function getParks(filters?: ParkFilters): Promise<NationalPark[]> {
     // This function can be extended to fetch from Supabase if parks are stored in DB
     const { nationalParks } = await import('../travel/data/nationalParks');
 
-    let parks = [...nationalParks];
+    // Map travel parks to app NationalPark format
+    let parks = nationalParks.map(mapTravelParkToNationalPark);
 
     // Apply filters
     if (filters) {
@@ -74,7 +95,7 @@ export async function getParks(filters?: ParkFilters): Promise<NationalPark[]> {
 
     return parks;
   } catch (error) {
-    logger.error('NationalParksAPI', error as Error, { context: 'getParks', filters });
+    logger.error('NationalParksAPI', 'Operation failed', { error, context: 'getParks', filters });
     throw error;
   }
 }
@@ -94,9 +115,9 @@ export async function getPark(id: string): Promise<NationalPark> {
       throw new Error('Park not found');
     }
 
-    return park;
+    return mapTravelParkToNationalPark(park);
   } catch (error) {
-    logger.error('NationalParksAPI', error as Error, { context: 'getPark', id });
+    logger.error('NationalParksAPI', 'Operation failed', { error, context: 'getPark', id });
     throw error;
   }
 }

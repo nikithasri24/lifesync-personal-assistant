@@ -13,7 +13,7 @@ const Focus: React.FC = () => {
   const sessionIdRef = useRef<string | null>(null);
   const startTimeRef = useRef<Date | null>(null);
 
-  const { _activeSession } = useActiveFocusSession();
+  const { activeSession: _activeSession } = useActiveFocusSession();
   const createSession = useCreateFocusSession();
   const updateSession = useUpdateFocusSession();
 
@@ -63,7 +63,7 @@ const Focus: React.FC = () => {
         });
         sessionIdRef.current = newSession.id ?? null;
       } catch (error) {
-        logger.error('Failed to create focus session:', { error });
+        logger.error('Focus', error as Error, { context: 'create session failed' });
       }
     } else {
       // Pausing the session
@@ -78,7 +78,7 @@ const Focus: React.FC = () => {
             },
           });
         } catch (error) {
-          logger.error('Failed to pause focus session:', { error });
+          logger.error('Focus', error as Error, { context: 'pause session failed' });
         }
       }
     }
@@ -99,7 +99,7 @@ const Focus: React.FC = () => {
           },
         });
       } catch (error) {
-        logger.error('Failed to cancel focus session:', { error });
+        logger.error('Focus', error as Error, { context: 'cancel session failed' });
       }
 
       sessionIdRef.current = null;

@@ -1,10 +1,11 @@
 import { Sun, Moon, Monitor } from 'lucide-react';
 import { useTheme } from '../hooks/useTheme';
+import type { ReactElement } from 'react';
 
-export default function ThemeToggle(): JSX.Element {
+export default function ThemeToggle() {
   const { theme, currentTheme, toggleTheme } = useTheme();
 
-  const getIcon = (): JSX.Element => {
+  const getIcon = (): ReactElement => {
     if (theme === 'system') return <Monitor size={18} className="transition-transform duration-300 group-hover:scale-110" />;
     if (currentTheme === 'dark') return <Moon size={18} className="transition-transform duration-300 group-hover:-rotate-12" />;
     return <Sun size={18} className="transition-transform duration-300 group-hover:rotate-180" />;

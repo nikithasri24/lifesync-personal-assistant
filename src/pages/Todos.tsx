@@ -97,7 +97,7 @@ export default function Todos(): React.ReactElement {
     {
       createTaskMutation: {
         mutate: (data: Partial<TaskData>, options?: { onSuccess?: () => void }) => {
-          void createTaskMutation.mutate(data, options);
+          void createTaskMutation.mutate(data as Omit<TaskData, 'id' | 'created_at' | 'updated_at'>, options);
         },
         isPending: createTaskMutation.isPending
       },

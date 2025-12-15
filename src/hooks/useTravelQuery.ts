@@ -36,7 +36,7 @@ import type { Trip, TripDay, TravelDocument, PackingList } from '@/services/type
 // TRIPS QUERY HOOKS
 // =====================================================
 
-export interface TripFilters {
+export interface TripFilters extends Record<string, unknown> {
   status?: Trip['status'];
 }
 
@@ -78,12 +78,12 @@ export function useCreateTrip(): UseMutationResult<
 
   return useMutation({
     mutationFn: async (input: Omit<Trip, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
-      logger.debug('Travel', 'Travel', 'Creating trip', { name: input.name, destination: input.destination });
+      logger.debug('Travel', 'Creating trip', { name: input.name, destinations: input.destination_countries });
       const result = await createTrip(input);
       return result;
     },
     onSuccess: (newTrip) => {
-      logger.info('Travel', 'Travel', 'Trip created successfully', { id: newTrip.id, name: newTrip.name });
+      logger.info('Travel', 'Trip created successfully', { id: newTrip.id, name: newTrip.name });
 
       // Invalidate all trips lists
       void queryClient.invalidateQueries({ queryKey: queryKeys.travel.trips.all() });
@@ -94,7 +94,7 @@ export function useCreateTrip(): UseMutationResult<
       });
     },
     onError: (error: Error) => {
-      logger.error('Travel', 'Travel', 'Failed to create trip', { error: error.message });
+      logger.error('Travel', 'Failed to create trip', { error: error.message });
     },
   });
 }
@@ -111,12 +111,12 @@ export function useUpdateTrip(): UseMutationResult<
 
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<Trip> }) => {
-      logger.debug('Travel', 'Travel', 'Updating trip', { id, updates: Object.keys(updates) });
+      logger.debug('Travel', 'Updating trip', { id, updates: Object.keys(updates) });
       const result = await updateTrip(id, updates);
       return result;
     },
     onSuccess: (updatedTrip) => {
-      logger.info('Travel', 'Travel', 'Trip updated successfully', { id: updatedTrip.id });
+      logger.info('Travel', 'Trip updated successfully', { id: updatedTrip.id });
 
       // Invalidate all trips lists
       void queryClient.invalidateQueries({ queryKey: queryKeys.travel.trips.all() });
@@ -128,7 +128,7 @@ export function useUpdateTrip(): UseMutationResult<
       );
     },
     onError: (error: Error) => {
-      logger.error('Travel', 'Travel', 'Failed to update trip', { error: error.message });
+      logger.error('Travel', 'Failed to update trip', { error: error.message });
     },
   });
 }
@@ -141,11 +141,11 @@ export function useDeleteTrip(): UseMutationResult<void, Error, string> {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      logger.debug('Travel', 'Travel', 'Deleting trip', { id });
+      logger.debug('Travel', 'Deleting trip', { id });
       await deleteTrip(id);
     },
     onSuccess: (_, deletedId) => {
-      logger.info('Travel', 'Travel', 'Trip deleted successfully', { id: deletedId });
+      logger.info('Travel', 'Trip deleted successfully', { id: deletedId });
 
       // Invalidate all trips lists
       void queryClient.invalidateQueries({ queryKey: queryKeys.travel.trips.all() });
@@ -154,7 +154,7 @@ export function useDeleteTrip(): UseMutationResult<void, Error, string> {
       queryClient.removeQueries({ queryKey: queryKeys.travel.trips.detail(deletedId) });
     },
     onError: (error: Error) => {
-      logger.error('Travel', 'Travel', 'Failed to delete trip', { error: error.message });
+      logger.error('Travel', 'Failed to delete trip', { error: error.message });
     },
   });
 }
@@ -190,12 +190,12 @@ export function useCreateTripDay(): UseMutationResult<
 
   return useMutation({
     mutationFn: async (input: Omit<TripDay, 'id' | 'created_at'>) => {
-      logger.debug('Travel', 'Travel', 'Creating trip day', { tripId: input.trip_id, date: input.date });
+      logger.debug('Travel', 'Creating trip day', { tripId: input.trip_id, date: input.date });
       const result = await createTripDay(input);
       return result;
     },
     onSuccess: (newTripDay) => {
-      logger.info('Travel', 'Travel', 'Trip day created successfully', { id: newTripDay.id, tripId: newTripDay.trip_id });
+      logger.info('Travel', 'Trip day created successfully', { id: newTripDay.id, tripId: newTripDay.trip_id });
 
       // Invalidate trip days for this trip
       void queryClient.invalidateQueries({
@@ -203,7 +203,7 @@ export function useCreateTripDay(): UseMutationResult<
       });
     },
     onError: (error: Error) => {
-      logger.error('Travel', 'Travel', 'Failed to create trip day', { error: error.message });
+      logger.error('Travel', 'Failed to create trip day', { error: error.message });
     },
   });
 }
@@ -235,18 +235,18 @@ export function useCreateTravelDocument(): UseMutationResult<
 
   return useMutation({
     mutationFn: async (input: Omit<TravelDocument, 'id' | 'user_id' | 'created_at'>) => {
-      logger.debug('Travel', 'Travel', 'Creating travel document', { type: input.type, tripId: input.trip_id });
+      logger.debug('Travel', 'Creating travel document', { type: input.type, tripId: input.trip_id });
       const result = await createTravelDocument(input);
       return result;
     },
     onSuccess: (newDocument) => {
-      logger.info('Travel', 'Travel', 'Travel document created successfully', { id: newDocument.id });
+      logger.info('Travel', 'Travel document created successfully', { id: newDocument.id });
 
       // Invalidate all documents lists
       void queryClient.invalidateQueries({ queryKey: queryKeys.travel.documents.all() });
     },
     onError: (error: Error) => {
-      logger.error('Travel', 'Travel', 'Failed to create travel document', { error: error.message });
+      logger.error('Travel', 'Failed to create travel document', { error: error.message });
     },
   });
 }
@@ -278,18 +278,18 @@ export function useCreatePackingList(): UseMutationResult<
 
   return useMutation({
     mutationFn: async (input: Omit<PackingList, 'id' | 'user_id' | 'created_at' | 'items'>) => {
-      logger.debug('Travel', 'Travel', 'Creating packing list', { name: input.name, tripId: input.trip_id });
+      logger.debug('Travel', 'Creating packing list', { name: input.name, tripId: input.trip_id });
       const result = await createPackingList(input);
       return result;
     },
     onSuccess: (newList) => {
-      logger.info('Travel', 'Travel', 'Packing list created successfully', { id: newList.id });
+      logger.info('Travel', 'Packing list created successfully', { id: newList.id });
 
       // Invalidate all packing lists
       void queryClient.invalidateQueries({ queryKey: queryKeys.travel.packingLists.all() });
     },
     onError: (error: Error) => {
-      logger.error('Travel', 'Travel', 'Failed to create packing list', { error: error.message });
+      logger.error('Travel', 'Failed to create packing list', { error: error.message });
     },
   });
 }

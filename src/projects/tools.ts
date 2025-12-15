@@ -230,7 +230,7 @@ async function executeCreateProject(args: Record<string, unknown>): Promise<Tool
       },
     };
   } catch (error) {
-    logger.error('ProjectTools', error as Error, { context: 'executeCreateProject' });
+    logger.error('ProjectTools', 'Operation failed', { error, context: 'executeCreateProject' });
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to create project',
@@ -268,7 +268,7 @@ async function executeGetProjects(args: Record<string, unknown>): Promise<ToolRe
       total: projects.length,
     };
   } catch (error) {
-    logger.error('ProjectTools', error as Error, { context: 'executeGetProjects' });
+    logger.error('ProjectTools', 'Operation failed', { error, context: 'executeGetProjects' });
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to get projects',
@@ -349,7 +349,7 @@ async function executeUpdateProgress(args: Record<string, unknown>): Promise<Too
       },
     };
   } catch (error) {
-    logger.error('ProjectTools', error as Error, { context: 'executeUpdateProgress' });
+    logger.error('ProjectTools', 'Operation failed', { error, context: 'executeUpdateProgress' });
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to update project progress',
@@ -422,7 +422,7 @@ async function executeAddMilestone(args: Record<string, unknown>): Promise<ToolR
       },
     };
   } catch (error) {
-    logger.error('ProjectTools', error as Error, { context: 'executeAddMilestone' });
+    logger.error('ProjectTools', 'Operation failed', { error, context: 'executeAddMilestone' });
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to add milestone',
@@ -486,7 +486,7 @@ async function executeGetStatus(args: Record<string, unknown>): Promise<ToolResu
       },
     };
   } catch (error) {
-    logger.error('ProjectTools', error as Error, { context: 'executeGetStatus' });
+    logger.error('ProjectTools', 'Operation failed', { error, context: 'executeGetStatus' });
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to get project status',

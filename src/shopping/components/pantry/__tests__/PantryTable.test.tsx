@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { PantryTable } from '../PantryTable';
-import type { PantryItem } from '../../../types';
+import type { PantryItem } from '@/types';
 
 describe('PantryTable', () => {
   const mockItems: PantryItem[] = [

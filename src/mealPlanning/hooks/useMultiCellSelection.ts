@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { logger } from '../../services/logger';
-import type { Recipe, MealPlanWeek } from '../../types';
+import type { MealPlanWeek } from '../../types';
+import type { Recipe } from './useMealPlanningQuery';
 
 export type CellKey = string; // format: "yyyy-MM-dd:mealType"
 
@@ -13,7 +14,7 @@ interface CreatePlannedMealParams {
     customMeal?: string;
     servings: number;
     peopleCount: number;
-    status: string;
+    status: 'planned' | 'prepped' | 'cooked' | 'eaten';
     notes?: string;
     preparedAt?: Date;
     consumedAt?: Date;
@@ -116,7 +117,7 @@ export function useMultiCellSelection(
       clearSelection();
       setMultiCellQuery('');
     } catch (error) {
-      logger.error('MultiCellSelection', 'Failed to add meals to selected cells:', error);
+      logger.error('MultiCellSelection', error as Error, { context: 'add meals to selected cells failed' });
       showToast?.('Failed to add meals', 'error');
     }
   };

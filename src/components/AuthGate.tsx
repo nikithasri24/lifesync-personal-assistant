@@ -6,7 +6,7 @@ interface AuthGateProps {
   children: ReactNode
 }
 
-export function AuthGate({ children }: AuthGateProps): JSX.Element {
+export function AuthGate({ children }: AuthGateProps) {
   const { user, loading, error, signIn, signUp, clearError, isConfigured } = useAuth()
   const [mode, setMode] = useState<'signin' | 'signup'>('signin')
   const [email, setEmail] = useState('')

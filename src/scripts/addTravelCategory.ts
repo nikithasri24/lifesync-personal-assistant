@@ -30,11 +30,11 @@ async function addTravelCategory(): Promise<void> {
   const user: User | null = data?.user ?? null;
 
   if (authError || !user) {
-    logger.error('AddTravelCategory', 'Authentication error:', authError?.message ?? 'Unknown error');
+    logger.error('AddTravelCategory', authError?.message ?? 'Unknown error', { operation: 'authentication' });
     return;
   }
 
-  logger.info('AddTravelCategory', 'Adding Travel category for user:', user.id);
+  logger.info('AddTravelCategory', 'Adding Travel category for user', { userId: user.id });
 
   // Explicitly type the existing category check
   const { data: existing, error: checkError } = await supabase
@@ -45,12 +45,12 @@ async function addTravelCategory(): Promise<void> {
     .maybeSingle<ExistingCategory>();
 
   if (checkError) {
-    logger.error('AddTravelCategory', 'Error checking for existing category:', checkError.message);
+    logger.error('AddTravelCategory', checkError.message, { operation: 'checkExisting' });
     return;
   }
 
   if (existing) {
-    logger.info('AddTravelCategory', 'Travel category already exists:', existing.id);
+    logger.info('AddTravelCategory', 'Travel category already exists', { categoryId: existing.id });
     return;
   }
 
@@ -70,19 +70,19 @@ async function addTravelCategory(): Promise<void> {
     .single<NewCategory>();
 
   if (error) {
-    logger.error('AddTravelCategory', 'Error adding Travel category:', error.message);
+    logger.error('AddTravelCategory', error.message, { operation: 'insertCategory' });
     return;
   }
 
-  logger.info('AddTravelCategory', '✅ Successfully added Travel category:', String(insertedData?.id ?? 'unknown'));
+  logger.info('AddTravelCategory', '✅ Successfully added Travel category', { categoryName: newCategory.name });
 }
 
 addTravelCategory()
   .then(() => {
-    logger.info('AddTravelCategory', 'Script completed');
+    logger.info('AddTravelCategory', 'Script completed', {});
     process.exit(0);
   })
   .catch((err: unknown) => {
-    logger.error('AddTravelCategory', 'Script failed:', err instanceof Error ? err.message : String(err));
+    logger.error('AddTravelCategory', err instanceof Error ? err : String(err), { operation: 'script' });
     process.exit(1);
   });

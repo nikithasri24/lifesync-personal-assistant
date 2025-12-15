@@ -64,7 +64,7 @@ export class MockApi implements FinanceAPI {
         accounts[existingIndex] = {
           ...accounts[existingIndex],
           name: account.name,
-          type: account.type,
+          type: account.type as import('../types').AccountType,
           balance: account.balance,
           institutionId: account.institutionId,
           lastUpdatedISO: new Date().toISOString(),
@@ -74,7 +74,7 @@ export class MockApi implements FinanceAPI {
       const newAccount: Account = {
         id: `mock-${Date.now()}`,
         name: account.name,
-        type: account.type,
+        type: account.type as import('../types').AccountType,
         balance: account.balance,
         liability: account.type === 'credit',
         lastUpdatedISO: new Date().toISOString(),
@@ -384,5 +384,102 @@ export class MockApi implements FinanceAPI {
 
   async deleteLoanPayment(_paymentId: string): Promise<void> {
     await sleep(randomLatency());
+  }
+
+  // Credit card benefits methods (mock implementation)
+  async listCardBenefits(_accountId: string): Promise<import('../types').CardBenefit[]> {
+    await sleep(randomLatency());
+    return [];
+  }
+
+  async upsertCardBenefit(_accountId: string, _benefit: import('../types').CardBenefitInput): Promise<void> {
+    await sleep(randomLatency());
+  }
+
+  async deleteCardBenefit(_benefitId: string): Promise<void> {
+    await sleep(randomLatency());
+  }
+
+  async listCategoryBonuses(_accountId: string): Promise<import('../types').CardCategoryBonus[]> {
+    await sleep(randomLatency());
+    return [];
+  }
+
+  async upsertCategoryBonus(_accountId: string, _bonus: import('../types').CardCategoryBonusInput): Promise<void> {
+    await sleep(randomLatency());
+  }
+
+  async listWelcomeBonuses(_accountId: string): Promise<import('../types').WelcomeBonus[]> {
+    await sleep(randomLatency());
+    return [];
+  }
+
+  async upsertWelcomeBonus(_accountId: string, _bonus: import('../types').WelcomeBonusInput): Promise<void> {
+    await sleep(randomLatency());
+  }
+
+  async listCardOffers(_accountId: string): Promise<import('../types').CardOffer[]> {
+    await sleep(randomLatency());
+    return [];
+  }
+
+  async upsertCardOffer(_accountId: string, _offer: import('../types').CardOfferInput): Promise<void> {
+    await sleep(randomLatency());
+  }
+
+  // Retirement account tracking methods (mock implementation)
+  async listRetirementAccounts(): Promise<import('../types').RetirementAccountWithStats[]> {
+    await sleep(randomLatency());
+    return [];
+  }
+
+  async getRetirementAccount(_accountId: string): Promise<import('../types').RetirementAccountWithStats | null> {
+    await sleep(randomLatency());
+    return null;
+  }
+
+  async upsertRetirementAccountMetadata(_metadata: import('../types').RetirementAccountMetadataInput): Promise<void> {
+    await sleep(randomLatency());
+  }
+
+  async deleteRetirementAccountMetadata(_accountId: string): Promise<void> {
+    await sleep(randomLatency());
+  }
+
+  async listRetirementContributions(_retirementAccountId: string): Promise<import('../types').RetirementContribution[]> {
+    await sleep(randomLatency());
+    return [];
+  }
+
+  async addRetirementContribution(_contribution: import('../types').RetirementContributionInput): Promise<void> {
+    await sleep(randomLatency());
+  }
+
+  async deleteRetirementContribution(_contributionId: string): Promise<void> {
+    await sleep(randomLatency());
+  }
+
+  async calculateContributionRoom(_retirementAccountId: string, _annualIncome: number): Promise<import('../types').ContributionRoom> {
+    await sleep(randomLatency());
+    return {
+      employeeRoom: 0,
+      employerRoom: 0,
+      totalLimit: 0,
+      isOver50: false
+    };
+  }
+
+  async listRetirementPerformance(_retirementAccountId: string): Promise<import('../types').RetirementPerformance[]> {
+    await sleep(randomLatency());
+    return [];
+  }
+
+  async recordRetirementPerformance(_performance: import('../types').RetirementPerformanceInput): Promise<void> {
+    await sleep(randomLatency());
+  }
+
+  async calculateVestedBalance(_retirementAccountId: string, _employmentYears: number): Promise<number> {
+    await sleep(randomLatency());
+    return 0;
   }
 }

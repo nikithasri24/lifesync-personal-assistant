@@ -19,7 +19,7 @@ type SkincareRoutineCardProps = {
 const SkincareRoutineCard: React.FC<SkincareRoutineCardProps> = ({
   routine,
   products,
-  _allProducts,
+  allProducts: _allProducts,
   completed,
   onToggleComplete,
   onEdit,

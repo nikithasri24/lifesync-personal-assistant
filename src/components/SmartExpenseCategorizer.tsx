@@ -31,7 +31,7 @@ export default function SmartExpenseCategorizer(): React.JSX.Element {
       const results = expenseCategorizationEngine.bulkCategorize(transactionData);
       const categorizations: TransactionCategorization[] = transactionData.map(transaction => ({
         transaction,
-        suggestions: results.get(transaction.id) ?? [],
+        suggestions: transaction.id ? (results.get(transaction.id) ?? []) : [],
         selectedCategory: transaction.category_id,
         isConfirmed: !!transaction.category_id
       }));
@@ -79,9 +79,9 @@ export default function SmartExpenseCategorizer(): React.JSX.Element {
   const handleBulkCategorize = async (): Promise<void> => {
     setProcessing(true);
     try {
-      const updates = categorizations.filter(cat => !cat.isConfirmed && cat.suggestions.length > 0).map(async (cat) => {
+      const updates = categorizations.filter(cat => !cat.isConfirmed && cat.suggestions.length > 0 && cat.transaction.id).map(async (cat) => {
         const bestSuggestion = cat.suggestions[0];
-        if (bestSuggestion.confidence > 0.7) await handleCategorySelection(cat.transaction.id, bestSuggestion.categoryId);
+        if (bestSuggestion.confidence > 0.7 && cat.transaction.id) await handleCategorySelection(cat.transaction.id, bestSuggestion.categoryId);
       });
       await Promise.all(updates);
     } catch (error) {
@@ -277,7 +277,7 @@ export default function SmartExpenseCategorizer(): React.JSX.Element {
                         <div className="text-center">
                           <div className="text-xs text-gray-500 mb-1">AI Suggestion</div>
                           <button
-                            onClick={() => { void handleCategorySelection(transaction.id, bestSuggestion.categoryId); }}
+                            onClick={() => { if (transaction.id) void handleCategorySelection(transaction.id, bestSuggestion.categoryId); }}
                             className="flex items-center gap-2 px-3 py-2 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 transition-colors"
                           >
                             <span>{getCategoryIcon(bestSuggestion.categoryId)}</span>
@@ -309,7 +309,7 @@ export default function SmartExpenseCategorizer(): React.JSX.Element {
                         {cat.suggestions.slice(1, 4).map((suggestion, index) => (
                           <button
                             key={index}
-                            onClick={() => { void handleCategorySelection(transaction.id, suggestion.categoryId); }}
+                            onClick={() => { if (transaction.id) void handleCategorySelection(transaction.id, suggestion.categoryId); }}
                             className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
                           >
                             {getCategoryIcon(suggestion.categoryId)} {suggestion.categoryName}

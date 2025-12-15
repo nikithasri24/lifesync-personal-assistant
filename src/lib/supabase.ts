@@ -38,7 +38,9 @@ if (isSupabaseConfigured && supabaseUrl && supabaseAnonKey) {
   )
 }
 
-export const supabase = supabaseClient
+// Non-null assertion for type safety - callers should check isSupabaseConfigured
+// before using supabase in contexts where it might not be configured
+export const supabase = supabaseClient!
 
 export const ensureSupabase = (): SupabaseClient => {
   if (!supabaseClient) {
@@ -46,7 +48,6 @@ export const ensureSupabase = (): SupabaseClient => {
       'Supabase client is not configured. Provide VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your environment.',
     )
   }
-
   return supabaseClient
 }
 

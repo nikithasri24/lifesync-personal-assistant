@@ -129,7 +129,7 @@ export async function getProductivityAnalytics(dateRange: {
       productivityScore,
     };
   } catch (error) {
-    logger.error('Analytics', error as Error, { context: 'getProductivityAnalytics' });
+    logger.error('Analytics', 'Operation failed', { error, context: 'getProductivityAnalytics' });
     throw error;
   }
 }
@@ -189,7 +189,7 @@ export async function getFinanceAnalytics(dateRange: {
       netSavings: totalIncome - totalSpending,
     };
   } catch (error) {
-    logger.error('Analytics', error as Error, { context: 'getFinanceAnalytics' });
+    logger.error('Analytics', 'Operation failed', { error, context: 'getFinanceAnalytics' });
     throw error;
   }
 }
@@ -257,7 +257,7 @@ export async function getWellbeingAnalytics(dateRange: {
       journalStreak,
     };
   } catch (error) {
-    logger.error('Analytics', error as Error, { context: 'getWellbeingAnalytics' });
+    logger.error('Analytics', 'Operation failed', { error, context: 'getWellbeingAnalytics' });
     throw error;
   }
 }

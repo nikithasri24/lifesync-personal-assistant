@@ -39,7 +39,7 @@ export function PantryTable({
   onCancelReplenish,
   onAddToShopping,
   onDelete,
-}: PantryTableProps): JSX.Element {
+}: PantryTableProps) {
   if (items.length === 0) {
     return <p className="text-sm text-gray-500">No pantry items yet.</p>;
   }

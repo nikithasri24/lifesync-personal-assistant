@@ -129,7 +129,7 @@ const EnhancedGeographicMap: React.FC<EnhancedGeographicMapProps> = ({
         setLoading(false);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to load map data';
-        logger.error('Error loading map data:', { err });
+        logger.error('EnhancedGeographicMap', 'Error loading map data', { error: err instanceof Error ? err.message : String(err) });
         setError(errorMessage);
         setLoading(false);
       }
@@ -154,7 +154,7 @@ const EnhancedGeographicMap: React.FC<EnhancedGeographicMapProps> = ({
           logger.debug('EnhancedGeographicMap', `Loaded ${data.features?.length ?? 0} state/province boundaries`);
         }
       } catch (err) {
-        logger.error('Error loading state boundaries:', { err });
+        logger.error('EnhancedGeographicMap', 'Error loading state boundaries', { error: err instanceof Error ? err.message : String(err) });
       } finally {
         setLoadingStates(false);
       }

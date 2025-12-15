@@ -26,7 +26,7 @@ export const useCalendarDragDrop = ({
   const handleDragStart = (task: Task, event?: React.DragEvent) => {
     setDraggedTask(task);
 
-    if (event?.dataTransfer) {
+    if (event?.dataTransfer && task.id) {
       event.dataTransfer.effectAllowed = 'move';
       event.dataTransfer.setData('text/plain', task.id);
     }
@@ -40,7 +40,7 @@ export const useCalendarDragDrop = ({
     e.preventDefault();
     e.stopPropagation();
 
-    if (draggedTask) {
+    if (draggedTask && draggedTask.id) {
       const newDueDate = format(date, 'yyyy-MM-dd');
       const oldDueDate = draggedTask.due_date || null;
 
@@ -76,7 +76,7 @@ export const useCalendarDragDrop = ({
     e.preventDefault();
     e.stopPropagation();
 
-    if (draggedTask) {
+    if (draggedTask && draggedTask.id) {
       const command = new MoveTaskCommand(
         draggedTask.id,
         draggedTask.title,
@@ -96,7 +96,7 @@ export const useCalendarDragDrop = ({
     e.preventDefault();
     e.stopPropagation();
 
-    if (!draggedTask) return;
+    if (!draggedTask || !draggedTask.id) return;
 
     // Map UI categories to database sidebar_section values
     const sectionMap: Record<string, 'scheduled' | 'todo' | 'in_progress' | 'backlog'> = {

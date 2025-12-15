@@ -119,7 +119,7 @@ export class DatabaseService {
       throw error
     }
 
-    return (data ?? []) as Task[]
+    return (data ?? []) as Project[]
   }
 
   async createProject(project: Omit<Project, 'id' | 'created_at'>): Promise<Project> {

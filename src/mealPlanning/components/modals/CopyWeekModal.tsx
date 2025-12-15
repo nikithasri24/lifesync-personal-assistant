@@ -40,7 +40,7 @@ export function CopyWeekModal({
 
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-2">Target Week Start Date</label>
-          <DatePickerPopover value={targetWeekStart} onChange={onTargetWeekChange} weekStartsOn={weekStartsOn} />
+          <DatePickerPopover value={targetWeekStart} onChange={onTargetWeekChange} weekStartsOn={weekStartsOn === 0 || weekStartsOn === 1 ? weekStartsOn : 0} />
           <p className="mt-2 text-xs text-slate-500">
             Week of {format(targetWeekStart, 'MMM d')} - {format(addDays(targetWeekStart, 6), 'MMM d, yyyy')}
           </p>

@@ -34,9 +34,10 @@ export const ListView: React.FC<ListViewProps> = ({
   const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
   const [editingCell, setEditingCell] = useState<{ taskId: string; field: string } | null>(null);
 
-  const priorityColors = {
+  const priorityColors: Record<string, string> = {
     urgent: 'text-red-600 dark:text-red-400',
     high: 'text-orange-600 dark:text-orange-400',
+    important: 'text-orange-600 dark:text-orange-400',
     medium: 'text-yellow-600 dark:text-yellow-400',
     low: 'text-slate-600 dark:text-slate-400',
   };
@@ -63,7 +64,7 @@ export const ListView: React.FC<ListViewProps> = ({
     if (selectedTasks.size === tasks.length) {
       setSelectedTasks(new Set());
     } else {
-      setSelectedTasks(new Set(tasks.map(t => t.id)));
+      setSelectedTasks(new Set(tasks.map(t => t.id).filter((id): id is string => id !== undefined)));
     }
   };
 
@@ -82,18 +83,18 @@ export const ListView: React.FC<ListViewProps> = ({
         );
 
       case 'status':
-        return (
-          <span className={`px-2 py-1 text-xs font-medium rounded-full ${statusBadges[task.status]}`}>
+        return task.status ? (
+          <span className={`px-2 py-1 text-xs font-medium rounded-full ${statusBadges[task.status] || ''}`}>
             {task.status.replace('_', ' ')}
           </span>
-        );
+        ) : null;
 
       case 'priority':
-        return (
-          <span className={`font-medium capitalize ${priorityColors[task.priority]}`}>
+        return task.priority ? (
+          <span className={`font-medium capitalize ${priorityColors[task.priority] || ''}`}>
             {task.priority}
           </span>
-        );
+        ) : null;
 
       case 'dueDate':
         return task.due_date ? (
@@ -209,27 +210,29 @@ export const ListView: React.FC<ListViewProps> = ({
                 </td>
               </tr>
             ) : (
-              tasks.map((task) => (
-                <tr
-                  key={task.id}
-                  className={`
-                    hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer
-                    ${selectedTasks.has(task.id) ? 'bg-blue-50 dark:bg-blue-900/10' : ''}
-                  `}
-                  onClick={() => onTaskClick?.(task)}
-                >
-                  {/* Checkbox */}
-                  <td className="px-4 py-3">
-                    <input
-                      type="checkbox"
-                      checked={selectedTasks.has(task.id)}
-                      onChange={(e) => {
-                        e.stopPropagation();
-                        handleSelectTask(task.id);
-                      }}
-                      className="rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500"
-                    />
-                  </td>
+              tasks.map((task) => {
+                if (!task.id) return null;
+                return (
+                  <tr
+                    key={task.id}
+                    className={`
+                      hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer
+                      ${selectedTasks.has(task.id) ? 'bg-blue-50 dark:bg-blue-900/10' : ''}
+                    `}
+                    onClick={() => onTaskClick?.(task)}
+                  >
+                    {/* Checkbox */}
+                    <td className="px-4 py-3">
+                      <input
+                        type="checkbox"
+                        checked={selectedTasks.has(task.id)}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          if (task.id) handleSelectTask(task.id);
+                        }}
+                        className="rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500"
+                      />
+                    </td>
 
                   {/* Dynamic Columns */}
                   {config.columns.map((column) => (
@@ -241,11 +244,11 @@ export const ListView: React.FC<ListViewProps> = ({
                   {/* Actions */}
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1">
-                      {task.status === 'in_progress' && (
+                      {task.status === 'in_progress' && task.id && (
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            onStartTimer?.(task.id);
+                            if (task.id) onStartTimer?.(task.id);
                           }}
                           className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors"
                           title="Start timer"
@@ -263,16 +266,18 @@ export const ListView: React.FC<ListViewProps> = ({
                       >
                         <Edit2 className="w-4 h-4 text-slate-600 dark:text-slate-400" />
                       </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onTaskDelete?.(task.id);
-                        }}
-                        className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors"
-                        title="Delete task"
-                      >
-                        <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
-                      </button>
+                      {task.id && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (task.id) onTaskDelete?.(task.id);
+                          }}
+                          className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors"
+                          title="Delete task"
+                        >
+                          <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
+                        </button>
+                      )}
                       <button
                         className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors"
                         title="More actions"
@@ -282,7 +287,8 @@ export const ListView: React.FC<ListViewProps> = ({
                     </div>
                   </td>
                 </tr>
-              ))
+                );
+              })
             )}
           </tbody>
         </table>

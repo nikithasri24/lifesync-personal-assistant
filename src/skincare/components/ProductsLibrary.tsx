@@ -17,7 +17,7 @@ const ProductsLibrary: React.FC<ProductsLibraryProps> = ({
   products,
   onAddProduct,
   onEditProduct,
-  _onDeleteProduct,
+  onDeleteProduct: _onDeleteProduct,
 }) => {
   const [searchQuery, setSearchQuery] = React.useState('');
   const [filterCategory, setFilterCategory] = React.useState<ProductCategory | 'all'>('all');

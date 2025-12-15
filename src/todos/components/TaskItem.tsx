@@ -53,7 +53,7 @@ export function TaskItem({
   onAddSubtask,
   onStartPomodoro,
   isUpdating
-}: TaskItemProps): JSX.Element {
+}: TaskItemProps) {
   const taskIsOverdue = task.dueDate && isOverdue(task.dueDate, task.status);
 
   const getPriorityStyles = (priority: string): string => {

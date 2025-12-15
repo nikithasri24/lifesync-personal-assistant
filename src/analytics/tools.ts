@@ -105,7 +105,7 @@ async function executeGetProductivitySummary(args: Record<string, unknown>): Pro
       data: summary,
     };
   } catch (error) {
-    logger.error('AnalyticsTools', error as Error, { context: 'executeGetProductivitySummary' });
+    logger.error('AnalyticsTools', 'Operation failed', { error, context: 'executeGetProductivitySummary' });
     return { success: false, error: (error as Error).message };
   }
 }
@@ -122,7 +122,7 @@ async function executeGetFinanceSummary(args: Record<string, unknown>): Promise<
       data: summary,
     };
   } catch (error) {
-    logger.error('AnalyticsTools', error as Error, { context: 'executeGetFinanceSummary' });
+    logger.error('AnalyticsTools', 'Operation failed', { error, context: 'executeGetFinanceSummary' });
     return { success: false, error: (error as Error).message };
   }
 }
@@ -139,7 +139,7 @@ async function executeGetWellbeingInsights(args: Record<string, unknown>): Promi
       data: insights,
     };
   } catch (error) {
-    logger.error('AnalyticsTools', error as Error, { context: 'executeGetWellbeingInsights' });
+    logger.error('AnalyticsTools', 'Operation failed', { error, context: 'executeGetWellbeingInsights' });
     return { success: false, error: (error as Error).message };
   }
 }
@@ -155,7 +155,7 @@ async function executeGetWeeklyReport(_args: Record<string, unknown>): Promise<T
       data: report,
     };
   } catch (error) {
-    logger.error('AnalyticsTools', error as Error, { context: 'executeGetWeeklyReport' });
+    logger.error('AnalyticsTools', 'Operation failed', { error, context: 'executeGetWeeklyReport' });
     return { success: false, error: (error as Error).message };
   }
 }
@@ -171,7 +171,7 @@ async function executeGetMonthlyReport(_args: Record<string, unknown>): Promise<
       data: report,
     };
   } catch (error) {
-    logger.error('AnalyticsTools', error as Error, { context: 'executeGetMonthlyReport' });
+    logger.error('AnalyticsTools', 'Operation failed', { error, context: 'executeGetMonthlyReport' });
     return { success: false, error: (error as Error).message };
   }
 }

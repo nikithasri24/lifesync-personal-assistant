@@ -3,16 +3,16 @@
  * Manage connections with other users and control sharing permissions
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { type ReactElement, useState, useEffect , type FormEvent } from 'react';
 import { Users, UserPlus, Bell, Settings } from 'lucide-react';
 import {
   getUserConnections,
   getPendingInvitations,
 } from '../shared/api/connectionsAPI';
 import type { ConnectionWithUser, PendingInvitation } from '../shared/types/connections';
-import ConnectionsList from '../shared/components/ConnectionsList';
+import { ConnectionsList } from '../shared/components/ConnectionsList';
 import NewConnectionForm from '../shared/components/NewConnectionForm';
-import InvitationsPanel from '../shared/components/InvitationsPanel';
+import { InvitationsPanel } from '../shared/components/InvitationsPanel';
 import { logger } from '../services/logger';
 
 type TabView = 'connections' | 'invitations' | 'add';
@@ -39,7 +39,7 @@ const Shared: React.FC = () => {
       setSentInvitations(invitationsData.sent);
       setReceivedInvitations(invitationsData.received);
     } catch (error) {
-      logger.error('Error loading connections:', { error });
+      logger.error('Shared', error as Error);
     } finally {
       setLoading(false);
     }

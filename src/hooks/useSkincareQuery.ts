@@ -32,13 +32,13 @@ import {
   getSkincareStreak,
 } from '@/api/skincareAPI';
 import { logger } from '@/services/logger';
-import type { SkincareProduct, SkincareRoutine, SkincareLog } from '@/services/types';
+import type { SkincareProduct, SkincareRoutine, SkincareLog, SkinCondition } from '@/skincare/types';
 
 // =====================================================
 // PRODUCTS QUERY HOOKS
 // =====================================================
 
-export interface SkincareProductFilters {
+export interface SkincareProductFilters extends Record<string, unknown> {
   category?: SkincareProduct['category'];
   in_use?: boolean;
 }
@@ -70,12 +70,12 @@ export function useCreateProduct(): UseMutationResult<
     mutationFn: async (
       input: Omit<SkincareProduct, 'id' | 'userId' | 'createdAt' | 'updatedAt'>
     ) => {
-      logger.debug('Skincare', 'Skincare', 'Creating skincare product', { name: input.name, category: input.category });
+      logger.debug('Skincare', 'Creating skincare product', { name: input.name, category: input.category });
       const result = await createSkincareProduct(input);
       return result;
     },
     onSuccess: (newProduct) => {
-      logger.info('Skincare', 'Skincare', 'Skincare product created successfully', {
+      logger.info('Skincare', 'Skincare product created successfully', {
         id: newProduct.id,
         name: newProduct.name,
       });
@@ -92,7 +92,7 @@ export function useCreateProduct(): UseMutationResult<
       );
     },
     onError: (error: Error) => {
-      logger.error('Skincare', 'Skincare', 'Failed to create skincare product', { error: error.message });
+      logger.error('Skincare', 'Failed to create skincare product', { error: error.message });
     },
   });
 }
@@ -109,12 +109,12 @@ export function useUpdateProduct(): UseMutationResult<
 
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<SkincareProduct> }) => {
-      logger.debug('Skincare', 'Skincare', 'Updating skincare product', { id, updates });
+      logger.debug('Skincare', 'Updating skincare product', { id, updates });
       const result = await updateSkincareProduct(id, updates);
       return result;
     },
     onSuccess: (updatedProduct) => {
-      logger.info('Skincare', 'Skincare', 'Skincare product updated successfully', {
+      logger.info('Skincare', 'Skincare product updated successfully', {
         id: updatedProduct.id,
         name: updatedProduct.name,
       });
@@ -139,7 +139,7 @@ export function useUpdateProduct(): UseMutationResult<
       );
     },
     onError: (error: Error, { id }) => {
-      logger.error('Skincare', 'Skincare', 'Failed to update skincare product', { error: error.message, id });
+      logger.error('Skincare', 'Failed to update skincare product', { error: error.message, id });
     },
   });
 }
@@ -152,12 +152,12 @@ export function useDeleteProduct(): UseMutationResult<void, Error, string> {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      logger.debug('Skincare', 'Skincare', 'Deleting skincare product', { id });
+      logger.debug('Skincare', 'Deleting skincare product', { id });
       const result = await deleteSkincareProduct(id);
       return result;
     },
     onSuccess: (_data, deletedId) => {
-      logger.info('Skincare', 'Skincare', 'Skincare product deleted successfully', { id: deletedId });
+      logger.info('Skincare', 'Skincare product deleted successfully', { id: deletedId });
 
       // Invalidate all products queries
       void queryClient.invalidateQueries({ queryKey: queryKeys.skincare.products.all() });
@@ -174,7 +174,7 @@ export function useDeleteProduct(): UseMutationResult<void, Error, string> {
       );
     },
     onError: (error: Error, id) => {
-      logger.error('Skincare', 'Skincare', 'Failed to delete skincare product', { error: error.message, id });
+      logger.error('Skincare', 'Failed to delete skincare product', { error: error.message, id });
     },
   });
 }
@@ -183,7 +183,7 @@ export function useDeleteProduct(): UseMutationResult<void, Error, string> {
 // ROUTINES QUERY HOOKS
 // =====================================================
 
-export interface SkincareRoutineFilters {
+export interface SkincareRoutineFilters extends Record<string, unknown> {
   routineType?: 'AM' | 'PM' | 'WEEKLY' | 'SPECIAL';
   isActive?: boolean;
 }
@@ -229,12 +229,12 @@ export function useCreateRoutine(): UseMutationResult<
     mutationFn: async (
       input: Omit<SkincareRoutine, 'id' | 'userId' | 'createdAt' | 'updatedAt'>
     ) => {
-      logger.debug('Skincare', 'Skincare', 'Creating skincare routine', { name: input.name, type: input.routineType });
+      logger.debug('Skincare', 'Creating skincare routine', { name: input.name, type: input.routineType });
       const result = await createSkincareRoutine(input);
       return result;
     },
     onSuccess: (newRoutine) => {
-      logger.info('Skincare', 'Skincare', 'Skincare routine created successfully', {
+      logger.info('Skincare', 'Skincare routine created successfully', {
         id: newRoutine.id,
         name: newRoutine.name,
       });
@@ -251,7 +251,7 @@ export function useCreateRoutine(): UseMutationResult<
       );
     },
     onError: (error: Error) => {
-      logger.error('Skincare', 'Skincare', 'Failed to create skincare routine', { error: error.message });
+      logger.error('Skincare', 'Failed to create skincare routine', { error: error.message });
     },
   });
 }
@@ -268,12 +268,12 @@ export function useUpdateRoutine(): UseMutationResult<
 
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<SkincareRoutine> }) => {
-      logger.debug('Skincare', 'Skincare', 'Updating skincare routine', { id, updates });
+      logger.debug('Skincare', 'Updating skincare routine', { id, updates });
       const result = await updateSkincareRoutine(id, updates);
       return result;
     },
     onSuccess: (updatedRoutine) => {
-      logger.info('Skincare', 'Skincare', 'Skincare routine updated successfully', {
+      logger.info('Skincare', 'Skincare routine updated successfully', {
         id: updatedRoutine.id,
         name: updatedRoutine.name,
       });
@@ -298,7 +298,7 @@ export function useUpdateRoutine(): UseMutationResult<
       );
     },
     onError: (error: Error, { id }) => {
-      logger.error('Skincare', 'Skincare', 'Failed to update skincare routine', { error: error.message, id });
+      logger.error('Skincare', 'Failed to update skincare routine', { error: error.message, id });
     },
   });
 }
@@ -311,12 +311,12 @@ export function useDeleteRoutine(): UseMutationResult<void, Error, string> {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      logger.debug('Skincare', 'Skincare', 'Deleting skincare routine', { id });
+      logger.debug('Skincare', 'Deleting skincare routine', { id });
       const result = await deleteSkincareRoutine(id);
       return result;
     },
     onSuccess: (_data, deletedId) => {
-      logger.info('Skincare', 'Skincare', 'Skincare routine deleted successfully', { id: deletedId });
+      logger.info('Skincare', 'Skincare routine deleted successfully', { id: deletedId });
 
       // Invalidate all routines queries
       void queryClient.invalidateQueries({ queryKey: queryKeys.skincare.routines.all() });
@@ -333,7 +333,7 @@ export function useDeleteRoutine(): UseMutationResult<void, Error, string> {
       );
     },
     onError: (error: Error, id) => {
-      logger.error('Skincare', 'Skincare', 'Failed to delete skincare routine', { error: error.message, id });
+      logger.error('Skincare', 'Failed to delete skincare routine', { error: error.message, id });
     },
   });
 }
@@ -342,7 +342,7 @@ export function useDeleteRoutine(): UseMutationResult<void, Error, string> {
 // LOGS QUERY HOOKS (Completion Tracking)
 // =====================================================
 
-export interface SkincareLogFilters {
+export interface SkincareLogFilters extends Record<string, unknown> {
   startDate?: string;
   endDate?: string;
   routineType?: 'AM' | 'PM';
@@ -382,7 +382,7 @@ export function useLogCompletion(): UseMutationResult<
 
   return useMutation({
     mutationFn: async (input) => {
-      logger.debug('Skincare', 'Skincare', 'Logging routine completion', {
+      logger.debug('Skincare', 'Logging routine completion', {
         date: input.date,
         routineType: input.routineType,
       });
@@ -391,7 +391,7 @@ export function useLogCompletion(): UseMutationResult<
     },
     // Optimistic update - instant visual feedback!
     onMutate: async (input) => {
-      logger.debug('Skincare', 'Skincare', 'Optimistic update: logging routine completion', {
+      logger.debug('Skincare', 'Optimistic update: logging routine completion', {
         date: input.date,
         routineType: input.routineType,
       });
@@ -407,18 +407,18 @@ export function useLogCompletion(): UseMutationResult<
       // Create optimistic log with temporary ID
       const optimisticLog: SkincareLog = {
         id: 'temp-' + Date.now(),
-        user_id: '', // Will be filled by server
+        userId: '', // Will be filled by server
         date: input.date,
-        routine_id: input.routineId,
-        routine_type: input.routineType,
+        routineId: input.routineId ?? undefined,
+        routineType: input.routineType,
         completed: true,
-        completed_at: new Date().toISOString(),
-        products_used: input.productsUsed,
-        skipped_products: input.skippedProducts || [],
-        skin_condition: input.skinCondition,
-        skin_notes: input.skinNotes,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        completedAt: new Date().toISOString(),
+        productsUsed: input.productsUsed,
+        skippedProducts: input.skippedProducts || [],
+        skinCondition: input.skinCondition as SkinCondition | undefined,
+        skinNotes: input.skinNotes,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       };
 
       // Optimistically add to logs list
@@ -429,10 +429,10 @@ export function useLogCompletion(): UseMutationResult<
       return { previousLogs };
     },
     onSuccess: (newLog) => {
-      logger.info('Skincare', 'Skincare', 'Routine completion logged successfully', {
+      logger.info('Skincare', 'Routine completion logged successfully', {
         id: newLog.id,
         date: newLog.date,
-        routineType: newLog.routine_type,
+        routineType: newLog.routineType,
       });
 
       // Replace optimistic log with real server data
@@ -445,7 +445,7 @@ export function useLogCompletion(): UseMutationResult<
           if (
             log.id?.startsWith('temp-') &&
             log.date === newLog.date &&
-            log.routine_type === newLog.routine_type
+            log.routineType === newLog.routineType
           ) {
             replaced = true;
             return newLog;
@@ -458,7 +458,7 @@ export function useLogCompletion(): UseMutationResult<
           const logExists = updated.some(
             (log) =>
               log.date === newLog.date &&
-              log.routine_type === newLog.routine_type &&
+              log.routineType === newLog.routineType &&
               log.id === newLog.id
           );
           if (!logExists) {
@@ -474,7 +474,7 @@ export function useLogCompletion(): UseMutationResult<
       void queryClient.invalidateQueries({ queryKey: queryKeys.skincare.streaks() });
     },
     onError: (error: Error, _input, context) => {
-      logger.error('Skincare', 'Skincare', 'Failed to log routine completion - rolling back', { error: error.message });
+      logger.error('Skincare', 'Failed to log routine completion - rolling back', { error: error.message });
 
       // Rollback optimistic updates on error
       if (context?.previousLogs) {
@@ -500,12 +500,12 @@ export function useResetCompletion(): UseMutationResult<
 
   return useMutation({
     mutationFn: async ({ date, routineType }: { date: string; routineType: 'AM' | 'PM' }) => {
-      logger.debug('Skincare', 'Skincare', 'Resetting completion', { date, routineType });
+      logger.debug('Skincare', 'Resetting completion', { date, routineType });
       const result = await resetCompletion(date, routineType);
       return result;
     },
     onSuccess: (_data, { date, routineType }) => {
-      logger.info('Skincare', 'Skincare', 'Completion reset successfully', { date, routineType });
+      logger.info('Skincare', 'Completion reset successfully', { date, routineType });
 
       // Invalidate logs queries
       void queryClient.invalidateQueries({ queryKey: queryKeys.skincare.logs.all() });
@@ -513,7 +513,7 @@ export function useResetCompletion(): UseMutationResult<
       // Optimistically remove from cache
       queryClient.setQueryData<SkincareLog[]>(queryKeys.skincare.logs.list(undefined), (old) => {
         return old?.filter(
-          (log) => !(log.date === date && log.routine_type === routineType)
+          (log) => !(log.date === date && log.routineType === routineType)
         );
       });
 
@@ -522,7 +522,7 @@ export function useResetCompletion(): UseMutationResult<
       void queryClient.invalidateQueries({ queryKey: queryKeys.skincare.streaks() });
     },
     onError: (error: Error, { date, routineType }) => {
-      logger.error('Skincare', 'Skincare', 'Failed to reset completion', { error: error.message, date, routineType });
+      logger.error('Skincare', 'Failed to reset completion', { error: error.message, date, routineType });
     },
   });
 }

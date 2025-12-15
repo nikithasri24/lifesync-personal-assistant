@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { type ReactElement } from 'react';
 import {
   Eye,
   Droplets,
@@ -8,8 +8,8 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { type WellnessEvent, type HealthMetrics, type FocusSessionType } from './types';
-import { Frown, Meh, Smile } from 'lucide-react';
+import {  type WellnessEvent, type HealthMetrics, type FocusSessionType } from './types';
+import {  Frown, Meh, Smile } from 'lucide-react';
 
 interface Props {
   todayEvents: WellnessEvent[];
@@ -22,7 +22,7 @@ interface Props {
   onShowBreathing: () => void;
 }
 
-const getMoodIcon = (mood: number): JSX.Element => {
+const getMoodIcon = (mood: number): ReactElement => {
   if (mood <= 2) return <Frown className="w-6 h-6 text-red-500" />;
   if (mood <= 3) return <Meh className="w-6 h-6 text-yellow-500" />;
   return <Smile className="w-6 h-6 text-green-500" />;

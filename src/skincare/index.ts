@@ -8,8 +8,8 @@ export * from './types';
 export * from './data';
 
 // Components
-export { ProductFormModal } from './components/ProductFormModal';
-export { ProductsLibrary } from './components/ProductsLibrary';
-export { RoutineEditorModal } from './components/RoutineEditorModal';
-export { SkincareCalendar } from './components/SkincareCalendar';
-export { SkincareRoutineCard } from './components/SkincareRoutineCard';
+export { default as ProductFormModal } from './components/ProductFormModal';
+export { default as ProductsLibrary } from './components/ProductsLibrary';
+export { default as RoutineEditorModal } from './components/RoutineEditorModal';
+export { default as SkincareCalendar } from './components/SkincareCalendar';
+export { default as SkincareRoutineCard } from './components/SkincareRoutineCard';

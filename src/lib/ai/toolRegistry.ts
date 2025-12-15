@@ -174,7 +174,7 @@ class ToolRegistry {
     } catch (error) {
       const duration = Date.now() - startTime;
 
-      logger.error('ToolRegistry', error as Error, {
+      logger.error('ToolRegistry', 'Operation failed', { error,
         toolName: name,
         userId,
         duration,

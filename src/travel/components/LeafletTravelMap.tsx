@@ -143,10 +143,10 @@ const LeafletTravelMap: React.FC<LeafletTravelMapProps> = ({
           })
           .filter((f): f is CountryFeature => {
             const hasValidCode =
-              f.properties.iso_a2 && f.properties.iso_a2.length === 2 && f.properties.iso_a2 !== '-99';
+              !!(f.properties.iso_a2 && f.properties.iso_a2.length === 2 && f.properties.iso_a2 !== '-99');
             const hasValidGeometry =
-              f.geometry && (typeof f.geometry === 'object' && f.geometry !== null &&
-                ('type' in f.geometry && (f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon')));
+              !!(f.geometry && (typeof f.geometry === 'object' && f.geometry !== null &&
+                ('type' in f.geometry && (f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon'))));
             return hasValidCode && hasValidGeometry;
           });
 
@@ -155,7 +155,7 @@ const LeafletTravelMap: React.FC<LeafletTravelMapProps> = ({
         setLoading(false);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to load map data';
-        logger.error('LeafletTravelMap', 'Error loading map data:', err);
+        logger.error('LeafletTravelMap', 'Error loading map data', { error: err instanceof Error ? err.message : String(err) });
         setError(errorMessage);
         setLoading(false);
       }
@@ -184,20 +184,20 @@ const LeafletTravelMap: React.FC<LeafletTravelMapProps> = ({
           setStates(data.features ?? []);
           logger.debug('LeafletTravelMap', `✅ Loaded ${data.features?.length ?? 0} state/province boundaries`);
           if (data.features && data.features.length > 0) {
-            logger.info('LeafletTravelMap', 'Sample state:', data.features[0].properties);
+            logger.info('LeafletTravelMap', 'Sample state', { properties: data.features[0].properties });
           }
         } else {
-          logger.error('LeafletTravelMap', 'Failed to fetch states:', response.status);
+          logger.error('LeafletTravelMap', 'Failed to fetch states', { status: response.status });
         }
       } catch (err) {
-        logger.error('LeafletTravelMap', 'Error loading state boundaries:', err);
+        logger.error('LeafletTravelMap', 'Error loading state boundaries', { error: err instanceof Error ? err.message : String(err) });
       } finally {
         setLoadingStates(false);
       }
     };
 
     // Only load states when zoomed in enough
-    logger.info('LeafletTravelMap', 'Current zoom level:', currentZoom);
+    logger.info('LeafletTravelMap', 'Current zoom level', { zoom: currentZoom });
     if (currentZoom >= 5) {
       logger.info('LeafletTravelMap', 'Zoom level >= 5, loading states...');
       void loadStateData();
@@ -282,9 +282,9 @@ const LeafletTravelMap: React.FC<LeafletTravelMapProps> = ({
       },
       click: (_e: L.LeafletMouseEvent) => {
         // Only handle country clicks when zoomed out (not looking at states)
-        logger.info('LeafletTravelMap', 'Country clicked, current zoom:', zoomRef.current);
+        logger.info('LeafletTravelMap', 'Country clicked', { zoom: zoomRef.current });
         if (zoomRef.current < 5) {
-          logger.info('LeafletTravelMap', '✓ Processing country click:', countryCode);
+          logger.info('LeafletTravelMap', '✓ Processing country click', { countryCode });
           onCountryClick(countryCode);
         } else {
           logger.info('LeafletTravelMap', '✗ Country click ignored (zoom >= 5, expecting state click)');
@@ -308,11 +308,11 @@ const LeafletTravelMap: React.FC<LeafletTravelMapProps> = ({
     const countryCode = props.iso_a2 ?? props.adm0_a3;
 
     if (!stateCode) {
-      logger.info('LeafletTravelMap', 'State without code:', feature.properties);
+      logger.info('LeafletTravelMap', 'State without code', { properties: feature.properties });
       return;
     }
 
-    logger.info('LeafletTravelMap', 'Processing state:', { stateName, stateCode, countryCode });
+    logger.info('LeafletTravelMap', 'Processing state', { stateName, stateCode, countryCode });
 
     // Style the state
     if (layer instanceof L.Path) {
@@ -431,7 +431,7 @@ const LeafletTravelMap: React.FC<LeafletTravelMapProps> = ({
             data={{
               type: 'FeatureCollection',
               features: countries,
-            }}
+            } as GeoJSON.FeatureCollection}
             onEachFeature={onEachCountry}
             key={JSON.stringify(visitedCountries)}
           />
@@ -442,10 +442,9 @@ const LeafletTravelMap: React.FC<LeafletTravelMapProps> = ({
               data={{
                 type: 'FeatureCollection',
                 features: states,
-              }}
+              } as GeoJSON.FeatureCollection}
               onEachFeature={onEachState}
               key={`states-${JSON.stringify(visitedStates)}`}
-              style={{ zIndex: 1000 }}
               pane="overlayPane"
             />
           )}

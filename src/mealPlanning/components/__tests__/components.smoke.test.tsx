@@ -7,7 +7,7 @@ import { render } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MealItem } from '../mealPlan/MealItem';
-import { MealCell } from '../mealPlan/MealCell';
+// import { MealCell } from '../mealPlan/MealCell'; // Component doesn't exist
 import { CellWithMeals } from '../mealPlan/CellWithMeals';
 import { AddMealControl } from '../mealPlan/AddMealControl';
 import type { PlannedMeal, Recipe } from '../../../types';
@@ -51,12 +51,14 @@ const createWrapper = () => {
 describe('MealPlanning Components - Smoke Tests', () => {
   const mockMeal: PlannedMeal = {
     id: 'meal-1',
+    mealPlanId: 'plan-1',
     date: new Date('2024-01-15'),
     mealType: 'breakfast',
     customMeal: 'Oatmeal',
     servings: 2,
     peopleCount: 2,
     status: 'planned',
+    createdAt: new Date('2024-01-10'),
   };
 
   const mockRecipe: Recipe = {
@@ -84,27 +86,27 @@ describe('MealPlanning Components - Smoke Tests', () => {
     });
   });
 
-  describe('MealCell', () => {
-    it('renders without crashing', () => {
-      const { container } = render(
-        <MealCell
-          dateKey="2024-01-15"
-          date={new Date('2024-01-15')}
-          mealType="breakfast"
-          dayMeals={[mockMeal]}
-          recipes={[mockRecipe]}
-          plannedMeals={[mockMeal]}
-          activePlan={null}
-          isSelected={false}
-          onClick={vi.fn()}
-        >
-          <div>Cell content</div>
-        </MealCell>,
-        { wrapper: createWrapper() }
-      );
-      expect(container).toBeInTheDocument();
-    });
-  });
+  // describe('MealCell', () => {
+  //   it('renders without crashing', () => {
+  //     const { container } = render(
+  //       <MealCell
+  //         dateKey="2024-01-15"
+  //         date={new Date('2024-01-15')}
+  //         mealType="breakfast"
+  //         dayMeals={[mockMeal]}
+  //         recipes={[mockRecipe]}
+  //         plannedMeals={[mockMeal]}
+  //         activePlan={null}
+  //         isSelected={false}
+  //         onClick={vi.fn()}
+  //       >
+  //         <div>Cell content</div>
+  //       </MealCell>,
+  //       { wrapper: createWrapper() }
+  //     );
+  //     expect(container).toBeInTheDocument();
+  //   });
+  // });
 
   describe('CellWithMeals', () => {
     it('renders without crashing', () => {

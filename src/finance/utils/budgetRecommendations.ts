@@ -30,17 +30,17 @@ export function calculateBudgetRecommendation(
   categoryId: string,
   monthsToAnalyze: number = 3
 ): BudgetRecommendation | null {
-  logger.info('BudgetRecommendations', '[BudgetRecommendation] Calculating for category:', categoryId);
-  logger.info('BudgetRecommendations', '[BudgetRecommendation] Total transactions:', transactions.length);
-  logger.info('BudgetRecommendations', '[BudgetRecommendation] Months to analyze:', monthsToAnalyze);
+  logger.info('BudgetRecommendations', '[BudgetRecommendation] Calculating for category', { categoryId });
+  logger.info('BudgetRecommendations', '[BudgetRecommendation] Total transactions', { count: transactions.length });
+  logger.info('BudgetRecommendations', '[BudgetRecommendation] Months to analyze', { monthsToAnalyze });
 
   // Filter transactions for this category (debit only = spending)
   const categoryTransactions = transactions.filter(
     (txn) => txn.categoryId === categoryId && txn.type === 'debit'
   );
 
-  logger.info('BudgetRecommendations', '[BudgetRecommendation] Transactions for this category:', categoryTransactions.length);
-  logger.info('BudgetRecommendations', '[BudgetRecommendation] Sample transactions:', categoryTransactions.slice(0, 3));
+  logger.info('BudgetRecommendations', '[BudgetRecommendation] Transactions for this category', { count: categoryTransactions.length });
+  logger.info('BudgetRecommendations', '[BudgetRecommendation] Sample transactions', { samples: categoryTransactions.slice(0, 3) });
 
   if (categoryTransactions.length === 0) {
     logger.info('BudgetRecommendations', '[BudgetRecommendation] No transactions for this category');
@@ -58,7 +58,7 @@ export function calculateBudgetRecommendation(
     monthlySpending.set(monthKey, 0);
   }
 
-  logger.info('BudgetRecommendations', '[BudgetRecommendation] Analyzing months:', Array.from(monthlySpending.keys()));
+  logger.info('BudgetRecommendations', '[BudgetRecommendation] Analyzing months', { months: Array.from(monthlySpending.keys()) });
 
   // Sum spending per month
   categoryTransactions.forEach((txn) => {
@@ -73,7 +73,7 @@ export function calculateBudgetRecommendation(
   // Calculate statistics
   const monthlyAmounts = Array.from(monthlySpending.values()).filter((amount) => amount > 0);
 
-  logger.info('BudgetRecommendations', '[BudgetRecommendation] Monthly amounts (non-zero):', monthlyAmounts);
+  logger.info('BudgetRecommendations', '[BudgetRecommendation] Monthly amounts (non-zero)', { amounts: monthlyAmounts });
 
   if (monthlyAmounts.length === 0) {
     logger.info('BudgetRecommendations', '[BudgetRecommendation] No spending in analyzed period');
@@ -111,7 +111,7 @@ export function calculateBudgetRecommendation(
     confidence,
   };
 
-  logger.info('BudgetRecommendations', '[BudgetRecommendation] Final recommendation:', recommendation);
+  logger.info('BudgetRecommendations', '[BudgetRecommendation] Final recommendation', { recommendation });
 
   return recommendation;
 }

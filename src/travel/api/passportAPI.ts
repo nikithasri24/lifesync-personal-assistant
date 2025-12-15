@@ -94,7 +94,7 @@ function visaRowToUserVisa(row: UserVisaRow): UserVisa {
     countryCode: row.country_code,
     countryName: row.country_name,
     visaType: row.visa_type,
-    issueDate: row.issue_date ?? undefined,
+    issueDate: row.issue_date ?? '',
     expiryDate: row.expiry_date,
     multipleEntry: row.multiple_entry,
     maxStayDays: row.max_stay_days ?? undefined,

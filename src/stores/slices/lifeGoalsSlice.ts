@@ -49,7 +49,7 @@ export const createLifeGoalsSlice: StateCreator<LifeGoalsSlice, [], [], LifeGoal
       logger.info('LifeGoalsSlice', 'Life goals loaded', { count: goals.length });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to load life goals';
-      logger.error('LifeGoalsSlice', error as Error, { context: 'loadLifeGoals' });
+      logger.error('LifeGoalsSlice', 'Operation failed', { error, context: 'loadLifeGoals' });
       set({
         lifeGoalsError: errorMessage,
         lifeGoalsLoading: false,
@@ -66,7 +66,7 @@ export const createLifeGoalsSlice: StateCreator<LifeGoalsSlice, [], [], LifeGoal
       logger.info('LifeGoalsSlice', 'Life goal created', { id: created.id, title: created.title });
       return created;
     } catch (error) {
-      logger.error('LifeGoalsSlice', error as Error, { context: 'addLifeGoal' });
+      logger.error('LifeGoalsSlice', 'Operation failed', { error, context: 'addLifeGoal' });
       throw error;
     }
   },
@@ -81,7 +81,7 @@ export const createLifeGoalsSlice: StateCreator<LifeGoalsSlice, [], [], LifeGoal
       logger.info('LifeGoalsSlice', 'Life goal updated', { id });
       return updated;
     } catch (error) {
-      logger.error('LifeGoalsSlice', error as Error, { context: 'updateLifeGoal', id });
+      logger.error('LifeGoalsSlice', 'Operation failed', { error, context: 'updateLifeGoal', id });
       throw error;
     }
   },
@@ -95,7 +95,7 @@ export const createLifeGoalsSlice: StateCreator<LifeGoalsSlice, [], [], LifeGoal
       }));
       logger.info('LifeGoalsSlice', 'Life goal deleted', { id });
     } catch (error) {
-      logger.error('LifeGoalsSlice', error as Error, { context: 'deleteLifeGoal', id });
+      logger.error('LifeGoalsSlice', 'Operation failed', { error, context: 'deleteLifeGoal', id });
       throw error;
     }
   },

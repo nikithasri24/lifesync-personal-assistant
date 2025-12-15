@@ -18,7 +18,6 @@ interface CardBenefitsPanelProps {
 }
 
 export const CardBenefitsPanel: React.FC<CardBenefitsPanelProps> = ({
-  _accountId,
   benefits,
   categoryBonuses,
   welcomeBonuses,

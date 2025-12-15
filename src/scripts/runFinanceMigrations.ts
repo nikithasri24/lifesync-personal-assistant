@@ -24,7 +24,7 @@ async function runMigration(sqlFilePath: string): Promise<boolean> {
 
   try {
     // Execute the SQL
-    const { _data, error } = await supabase.rpc('exec_sql', { sql_query: sql });
+    const { data, error } = await supabase.rpc('exec_sql', { sql_query: sql });
 
     if (error) {
       throw error;

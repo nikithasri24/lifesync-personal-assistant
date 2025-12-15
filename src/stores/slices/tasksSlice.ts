@@ -73,7 +73,7 @@ export const createTasksSlice: StateCreator<TasksSlice, [], [], TasksSlice> = (
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to load tasks';
       set({ tasksError: message, tasksLoading: false });
-      logger.error('Tasks', error as Error, { context: 'loadTasks' });
+      logger.error('Tasks', 'Operation failed', { error, context: 'loadTasks' });
       throw error;
     }
   },
@@ -84,7 +84,7 @@ export const createTasksSlice: StateCreator<TasksSlice, [], [], TasksSlice> = (
       set((state) => ({ tasks: [created, ...state.tasks] }));
       return created;
     } catch (error) {
-      logger.error('Tasks', error as Error, { context: 'addTask' });
+      logger.error('Tasks', 'Operation failed', { error, context: 'addTask' });
       throw error;
     }
   },
@@ -97,7 +97,7 @@ export const createTasksSlice: StateCreator<TasksSlice, [], [], TasksSlice> = (
       }));
       return updated;
     } catch (error) {
-      logger.error('Tasks', error as Error, { context: 'updateTask', taskId: id });
+      logger.error('Tasks', 'Operation failed', { error, context: 'updateTask', taskId: id });
       throw error;
     }
   },
@@ -111,7 +111,7 @@ export const createTasksSlice: StateCreator<TasksSlice, [], [], TasksSlice> = (
         ),
       }));
     } catch (error) {
-      logger.error('Tasks', error as Error, { context: 'softDeleteTask', taskId: id });
+      logger.error('Tasks', 'Operation failed', { error, context: 'softDeleteTask', taskId: id });
       throw error;
     }
   },
@@ -127,7 +127,7 @@ export const createTasksSlice: StateCreator<TasksSlice, [], [], TasksSlice> = (
       }));
       return latest;
     } catch (error) {
-      logger.error('Tasks', error as Error, { context: 'restoreTask', taskId: id });
+      logger.error('Tasks', 'Operation failed', { error, context: 'restoreTask', taskId: id });
       throw error;
     }
   },
@@ -137,7 +137,7 @@ export const createTasksSlice: StateCreator<TasksSlice, [], [], TasksSlice> = (
       await permanentlyDeleteTask(id);
       set((state) => ({ tasks: state.tasks.filter((t) => t.id !== id) }));
     } catch (error) {
-      logger.error('Tasks', error as Error, { context: 'hardDeleteTask', taskId: id });
+      logger.error('Tasks', 'Operation failed', { error, context: 'hardDeleteTask', taskId: id });
       throw error;
     }
   },

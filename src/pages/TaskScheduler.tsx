@@ -120,7 +120,7 @@ const TaskScheduler: React.FC = () => {
     {
       createTaskMutation: {
         mutate: (data: Partial<TaskData>, options?: { onSuccess?: () => void }) => {
-          void createTaskMutation.mutate(data, options);
+          void createTaskMutation.mutate(data as Omit<TaskData, 'id' | 'created_at' | 'updated_at'>, options);
         },
         isPending: createTaskMutation.isPending
       },
@@ -233,7 +233,7 @@ const TaskScheduler: React.FC = () => {
       task.status === 'todo' &&
       !task.due_date &&
       (task.priority === 'low' || task.priority === 'medium')
-    ).map(t => t.id);
+    ).map(t => t.id).filter((id): id is string => id !== undefined);
   }, [filteredTasks]);
 
   // ToDo: Todo items that are NOT in backlog (have due date OR high/urgent priority)
@@ -241,8 +241,9 @@ const TaskScheduler: React.FC = () => {
     const backlogSet = new Set(backlogTasks);
     return filteredTasks.filter(task =>
       task.status === 'todo' &&
+      task.id !== undefined &&
       !backlogSet.has(task.id)
-    ).map(t => t.id);
+    ).map(t => t.id).filter((id): id is string => id !== undefined);
   }, [filteredTasks, backlogTasks]);
 
   const boardColumns: BoardColumn[] = useMemo(() => [
@@ -267,7 +268,7 @@ const TaskScheduler: React.FC = () => {
       title: 'In Progress',
       status: 'in_progress',
       color: '#8b5cf6',
-      taskIds: filteredTasks.filter(t => t.status === 'in_progress').map(t => t.id),
+      taskIds: filteredTasks.filter(t => t.status === 'in_progress').map(t => t.id).filter((id): id is string => id !== undefined),
       order: 2,
     },
     {
@@ -275,7 +276,7 @@ const TaskScheduler: React.FC = () => {
       title: 'Review',
       status: 'waiting',
       color: '#f59e0b',
-      taskIds: filteredTasks.filter(t => t.status === 'waiting').map(t => t.id),
+      taskIds: filteredTasks.filter(t => t.status === 'waiting').map(t => t.id).filter((id): id is string => id !== undefined),
       order: 3,
     },
     {
@@ -283,7 +284,7 @@ const TaskScheduler: React.FC = () => {
       title: 'Done',
       status: 'done',
       color: '#10b981',
-      taskIds: filteredTasks.filter(t => t.status === 'done').map(t => t.id),
+      taskIds: filteredTasks.filter(t => t.status === 'done').map(t => t.id).filter((id): id is string => id !== undefined),
       order: 4,
     },
   ], [backlogTasks, todoTasks, filteredTasks]);
@@ -310,7 +311,7 @@ const TaskScheduler: React.FC = () => {
   // ============================================================================
 
   const handleTaskClick = (task: ScheduledTask) => {
-    setSelectedTaskId(task.id);
+    setSelectedTaskId(task.id ?? null);
     setEditingTask(task);
     setShowEditModal(true);
   };
@@ -351,9 +352,9 @@ const TaskScheduler: React.FC = () => {
     setEditingTask(null);
   };
 
-  const handleTaskDrop = (result: { taskId: string; sourceColumn: string; targetColumn: string; newStatus: string }) => {
+  const handleTaskDrop = (result: { taskId: string; sourceColumn: string; targetColumn: string; newStatus?: string }) => {
     const task = scheduledTasks.find(t => t.id === result.taskId);
-    if (!task) return;
+    if (!task || !result.newStatus) return;
 
     const updates: Partial<TaskData> = {
       status: result.newStatus as TaskData['status'],
@@ -472,7 +473,7 @@ const TaskScheduler: React.FC = () => {
 
             {/* Create Task Button */}
             <button
-              onClick={handleCreateTask}
+              onClick={() => handleCreateTask()}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
             >
               <Plus className="w-4 h-4" />
@@ -568,6 +569,8 @@ const TaskScheduler: React.FC = () => {
               filters={filters.filters}
               onFilterChange={filters.setFilters}
               onClearFilters={filters.resetFilters}
+              isVisible={showFilters}
+              onClose={() => setShowFilters(false)}
             />
           </div>
         )}

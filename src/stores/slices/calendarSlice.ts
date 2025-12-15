@@ -52,7 +52,7 @@ export const createCalendarSlice: StateCreator<CalendarSlice, [], [], CalendarSl
       logger.info('CalendarSlice', 'Calendar events loaded', { count: events.length });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to load calendar events';
-      logger.error('CalendarSlice', error as Error, { context: 'loadCalendarEvents' });
+      logger.error('CalendarSlice', 'Operation failed', { error, context: 'loadCalendarEvents' });
       set({
         calendarError: errorMessage,
         calendarLoading: false,
@@ -69,7 +69,7 @@ export const createCalendarSlice: StateCreator<CalendarSlice, [], [], CalendarSl
       logger.info('CalendarSlice', 'Calendar event created', { id: created.id, title: created.title });
       return created;
     } catch (error) {
-      logger.error('CalendarSlice', error as Error, { context: 'addCalendarEvent' });
+      logger.error('CalendarSlice', 'Operation failed', { error, context: 'addCalendarEvent' });
       throw error;
     }
   },
@@ -84,7 +84,7 @@ export const createCalendarSlice: StateCreator<CalendarSlice, [], [], CalendarSl
       logger.info('CalendarSlice', 'Calendar event updated', { id });
       return updated;
     } catch (error) {
-      logger.error('CalendarSlice', error as Error, { context: 'updateCalendarEvent', id });
+      logger.error('CalendarSlice', 'Operation failed', { error, context: 'updateCalendarEvent', id });
       throw error;
     }
   },
@@ -98,7 +98,7 @@ export const createCalendarSlice: StateCreator<CalendarSlice, [], [], CalendarSl
       }));
       logger.info('CalendarSlice', 'Calendar event deleted', { id });
     } catch (error) {
-      logger.error('CalendarSlice', error as Error, { context: 'deleteCalendarEvent', id });
+      logger.error('CalendarSlice', 'Operation failed', { error, context: 'deleteCalendarEvent', id });
       throw error;
     }
   },
@@ -110,7 +110,7 @@ export const createCalendarSlice: StateCreator<CalendarSlice, [], [], CalendarSl
       logger.info('CalendarSlice', 'Free slots found', { date, count: slots.length });
       return slots;
     } catch (error) {
-      logger.error('CalendarSlice', error as Error, { context: 'findFreeSlots', date, durationMinutes });
+      logger.error('CalendarSlice', 'Operation failed', { error, context: 'findFreeSlots', date, durationMinutes });
       throw error;
     }
   },
@@ -157,7 +157,7 @@ export const createCalendarSlice: StateCreator<CalendarSlice, [], [], CalendarSl
 
       return created;
     } catch (error) {
-      logger.error('CalendarSlice', error as Error, { context: 'convertTaskToEvent', taskId: task.id });
+      logger.error('CalendarSlice', 'Operation failed', { error, context: 'convertTaskToEvent', taskId: task.id });
       throw error;
     }
   },

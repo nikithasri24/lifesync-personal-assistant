@@ -26,7 +26,7 @@ import type {
   Trip,
   TravelDocument,
 } from './types'
-import type { Note, Goal, Dream, JournalEntry } from '../types'
+import type { Note, Goal, Dream, JournalEntry, JournalMood, Attachment } from '../types'
 
 class SupabaseAdapter {
   private readonly getUserId: () => string | null
@@ -69,7 +69,7 @@ class SupabaseAdapter {
   }
 
   private async assertShoppingItemOwnership(itemId: string, userId: string): Promise<string> {
-    const { data, error }: { data: TaskData[]|ProjectData[]|HabitData[]|HabitEntryData[]|FinancialAccountData[]|FinancialTransactionData[]|ShoppingListData[]|ShoppingItemData[]|PantryItemData[]|MealPlanData[]|PlannedMealData[]|FocusSessionData[]|RecipeData[] | null; error: PostgrestError | null } = await this.client
+    const { data, error } = await this.client
       .from('shopping_items')
       .select('id, shopping_list_id')
       .eq('id', itemId)
@@ -85,7 +85,7 @@ class SupabaseAdapter {
   }
 
   private async assertMealPlanOwnership(planId: string, userId: string): Promise<void> {
-    const { data, error }: { data: TaskData[]|ProjectData[]|HabitData[]|HabitEntryData[]|FinancialAccountData[]|FinancialTransactionData[]|ShoppingListData[]|ShoppingItemData[]|PantryItemData[]|MealPlanData[]|PlannedMealData[]|FocusSessionData[]|RecipeData[] | null; error: PostgrestError | null } = await this.client
+    const { data, error } = await this.client
       .from('meal_plans')
       .select('id')
       .eq('id', planId)
@@ -99,7 +99,7 @@ class SupabaseAdapter {
   }
 
   private async assertPlannedMealOwnership(mealId: string, userId: string): Promise<string> {
-    const { data, error }: { data: TaskData[]|ProjectData[]|HabitData[]|HabitEntryData[]|FinancialAccountData[]|FinancialTransactionData[]|ShoppingListData[]|ShoppingItemData[]|PantryItemData[]|MealPlanData[]|PlannedMealData[]|FocusSessionData[]|RecipeData[] | null; error: PostgrestError | null } = await this.client
+    const { data, error } = await this.client
       .from('planned_meals')
       .select('id, meal_plan_id')
       .eq('id', mealId)
@@ -116,10 +116,10 @@ class SupabaseAdapter {
 
   // ===== Tasks =====
   async getTasks(): Promise<TaskData[]> {
-    logger.debug('Supabase', 'SupabaseAdapter', 'getTasks invoked');
+    logger.debug('Supabase', 'getTasks invoked');
     const userId = this.requireUserId()
     logger.debug('Supabase', 'getTasks user', { userId });
-    const { data, error }: { data: TaskData[]|ProjectData[]|HabitData[]|HabitEntryData[]|FinancialAccountData[]|FinancialTransactionData[]|ShoppingListData[]|ShoppingItemData[]|PantryItemData[]|MealPlanData[]|PlannedMealData[]|FocusSessionData[]|RecipeData[] | null; error: PostgrestError | null } = await this.client
+    const { data, error } = await this.client
       .from('tasks')
       .select('*')
       .eq('user_id', userId)
@@ -140,7 +140,7 @@ class SupabaseAdapter {
       deleted: false,
     })
 
-    const { data, error }: { data: TaskData[]|ProjectData[]|HabitData[]|HabitEntryData[]|FinancialAccountData[]|FinancialTransactionData[]|ShoppingListData[]|ShoppingItemData[]|PantryItemData[]|MealPlanData[]|PlannedMealData[]|FocusSessionData[]|RecipeData[] | null; error: PostgrestError | null } = await this.client
+    const { data, error } = await this.client
       .from('tasks')
       .insert(payload)
       .select()
@@ -181,7 +181,7 @@ class SupabaseAdapter {
 
   async deleteTask(id: string): Promise<TaskData> {
     const userId = this.requireUserId()
-    const { data, error }: { data: TaskData[]|ProjectData[]|HabitData[]|HabitEntryData[]|FinancialAccountData[]|FinancialTransactionData[]|ShoppingListData[]|ShoppingItemData[]|PantryItemData[]|MealPlanData[]|PlannedMealData[]|FocusSessionData[]|RecipeData[] | null; error: PostgrestError | null } = await this.client
+    const { data, error } = await this.client
       .from('tasks')
       .update({ deleted: true, deleted_at: new Date().toISOString() })
       .eq('id', id)
@@ -196,7 +196,7 @@ class SupabaseAdapter {
 
   async restoreTask(id: string): Promise<TaskData> {
     const userId = this.requireUserId()
-    const { data, error }: { data: TaskData[]|ProjectData[]|HabitData[]|HabitEntryData[]|FinancialAccountData[]|FinancialTransactionData[]|ShoppingListData[]|ShoppingItemData[]|PantryItemData[]|MealPlanData[]|PlannedMealData[]|FocusSessionData[]|RecipeData[] | null; error: PostgrestError | null } = await this.client
+    const { data, error } = await this.client
       .from('tasks')
       .update({ deleted: false, deleted_at: null })
       .eq('id', id)
@@ -211,7 +211,7 @@ class SupabaseAdapter {
 
   async permanentlyDeleteTask(id: string): Promise<{ message: string; task: TaskData }> {
     const userId = this.requireUserId()
-    const { data, error }: { data: TaskData[]|ProjectData[]|HabitData[]|HabitEntryData[]|FinancialAccountData[]|FinancialTransactionData[]|ShoppingListData[]|ShoppingItemData[]|PantryItemData[]|MealPlanData[]|PlannedMealData[]|FocusSessionData[]|RecipeData[] | null; error: PostgrestError | null } = await this.client
+    const { data, error } = await this.client
       .from('tasks')
       .delete()
       .eq('id', id)
@@ -247,7 +247,7 @@ class SupabaseAdapter {
   // ===== Projects =====
   async getProjects(): Promise<ProjectData[]> {
     const userId = this.requireUserId()
-    const { data, error }: { data: TaskData[]|ProjectData[]|HabitData[]|HabitEntryData[]|FinancialAccountData[]|FinancialTransactionData[]|ShoppingListData[]|ShoppingItemData[]|PantryItemData[]|MealPlanData[]|PlannedMealData[]|FocusSessionData[]|RecipeData[] | null; error: PostgrestError | null } = await this.client
+    const { data, error } = await this.client
       .from('projects')
       .select('*')
       .eq('user_id', userId)
@@ -267,7 +267,7 @@ class SupabaseAdapter {
       icon: project.icon ?? '📁',
     })
 
-    const { data, error }: { data: TaskData[]|ProjectData[]|HabitData[]|HabitEntryData[]|FinancialAccountData[]|FinancialTransactionData[]|ShoppingListData[]|ShoppingItemData[]|PantryItemData[]|MealPlanData[]|PlannedMealData[]|FocusSessionData[]|RecipeData[] | null; error: PostgrestError | null } = await this.client
+    const { data, error } = await this.client
       .from('projects')
       .insert(payload)
       .select()
@@ -282,7 +282,7 @@ class SupabaseAdapter {
     const userId = this.requireUserId()
     const payload = this.sanitize(updates)
 
-    const { data, error }: { data: TaskData[]|ProjectData[]|HabitData[]|HabitEntryData[]|FinancialAccountData[]|FinancialTransactionData[]|ShoppingListData[]|ShoppingItemData[]|PantryItemData[]|MealPlanData[]|PlannedMealData[]|FocusSessionData[]|RecipeData[] | null; error: PostgrestError | null } = await this.client
+    const { data, error } = await this.client
       .from('projects')
       .update(payload)
       .eq('id', id)
@@ -309,7 +309,7 @@ class SupabaseAdapter {
   // ===== Habits =====
   async getHabits(): Promise<HabitData[]> {
     const userId = this.requireUserId()
-    const { data, error }: { data: TaskData[]|ProjectData[]|HabitData[]|HabitEntryData[]|FinancialAccountData[]|FinancialTransactionData[]|ShoppingListData[]|ShoppingItemData[]|PantryItemData[]|MealPlanData[]|PlannedMealData[]|FocusSessionData[]|RecipeData[] | null; error: PostgrestError | null } = await this.client
+    const { data, error } = await this.client
       .from('habits')
       .select('*')
       .eq('user_id', userId)
@@ -331,7 +331,7 @@ class SupabaseAdapter {
       current_progress: habit.current_progress ?? 0,
     })
 
-    const { data, error }: { data: TaskData[]|ProjectData[]|HabitData[]|HabitEntryData[]|FinancialAccountData[]|FinancialTransactionData[]|ShoppingListData[]|ShoppingItemData[]|PantryItemData[]|MealPlanData[]|PlannedMealData[]|FocusSessionData[]|RecipeData[] | null; error: PostgrestError | null } = await this.client
+    const { data, error } = await this.client
       .from('habits')
       .insert(payload)
       .select()
@@ -349,7 +349,7 @@ class SupabaseAdapter {
     this.requireUserId()
     const value = entry.value ?? 1
 
-    const { data, error }: { data: TaskData[]|ProjectData[]|HabitData[]|HabitEntryData[]|FinancialAccountData[]|FinancialTransactionData[]|ShoppingListData[]|ShoppingItemData[]|PantryItemData[]|MealPlanData[]|PlannedMealData[]|FocusSessionData[]|RecipeData[] | null; error: PostgrestError | null } = await this.client
+    const { data, error } = await this.client
       .rpc('upsert_habit_entry', {
         p_habit_id: habitId,
         p_date: String(entry.date), // ensure date string YYYY-MM-DD
@@ -367,7 +367,7 @@ class SupabaseAdapter {
     const userId = this.requireUserId()
     const payload = this.sanitize(updates)
 
-    const { data, error }: { data: TaskData[]|ProjectData[]|HabitData[]|HabitEntryData[]|FinancialAccountData[]|FinancialTransactionData[]|ShoppingListData[]|ShoppingItemData[]|PantryItemData[]|MealPlanData[]|PlannedMealData[]|FocusSessionData[]|RecipeData[] | null; error: PostgrestError | null } = await this.client
+    const { data, error } = await this.client
       .from('habits')
       .update(payload)
       .eq('id', habitId)
@@ -394,7 +394,7 @@ class SupabaseAdapter {
 
   async getHabitEntryForDate(habitId: string, date: string): Promise<{ id: string; value: number } | null> {
     const userId = this.requireUserId()
-    const { data, error }: { data: TaskData[]|ProjectData[]|HabitData[]|HabitEntryData[]|FinancialAccountData[]|FinancialTransactionData[]|ShoppingListData[]|ShoppingItemData[]|PantryItemData[]|MealPlanData[]|PlannedMealData[]|FocusSessionData[]|RecipeData[] | null; error: PostgrestError | null } = await this.client
+    const { data, error } = await this.client
       .from('habit_entries')
       .select('id, value')
       .eq('habit_id', habitId)
@@ -430,7 +430,7 @@ class SupabaseAdapter {
   // ===== Finance =====
   async getFinancialAccounts(): Promise<FinancialAccountData[]> {
     const userId = this.requireUserId()
-    const { data, error }: { data: TaskData[]|ProjectData[]|HabitData[]|HabitEntryData[]|FinancialAccountData[]|FinancialTransactionData[]|ShoppingListData[]|ShoppingItemData[]|PantryItemData[]|MealPlanData[]|PlannedMealData[]|FocusSessionData[]|RecipeData[] | null; error: PostgrestError | null } = await this.client
+    const { data, error } = await this.client
       .from('financial_accounts')
       .select('*')
       .eq('user_id', userId)
@@ -442,7 +442,7 @@ class SupabaseAdapter {
 
   async getFinancialTransactions(): Promise<FinancialTransactionData[]> {
     const userId = this.requireUserId()
-    const { data, error }: { data: TaskData[]|ProjectData[]|HabitData[]|HabitEntryData[]|FinancialAccountData[]|FinancialTransactionData[]|ShoppingListData[]|ShoppingItemData[]|PantryItemData[]|MealPlanData[]|PlannedMealData[]|FocusSessionData[]|RecipeData[] | null; error: PostgrestError | null } = await this.client
+    const { data, error } = await this.client
       .from('financial_transactions')
       .select('*')
       .eq('user_id', userId)
@@ -461,7 +461,7 @@ class SupabaseAdapter {
       user_id: userId,
     })
 
-    const { data, error }: { data: TaskData[]|ProjectData[]|HabitData[]|HabitEntryData[]|FinancialAccountData[]|FinancialTransactionData[]|ShoppingListData[]|ShoppingItemData[]|PantryItemData[]|MealPlanData[]|PlannedMealData[]|FocusSessionData[]|RecipeData[] | null; error: PostgrestError | null } = await this.client
+    const { data, error } = await this.client
       .from('financial_transactions')
       .insert(payload)
       .select()
@@ -479,7 +479,7 @@ class SupabaseAdapter {
     const userId = this.requireUserId()
     const payload = this.sanitize(updates)
 
-    const { data, error }: { data: TaskData[]|ProjectData[]|HabitData[]|HabitEntryData[]|FinancialAccountData[]|FinancialTransactionData[]|ShoppingListData[]|ShoppingItemData[]|PantryItemData[]|MealPlanData[]|PlannedMealData[]|FocusSessionData[]|RecipeData[] | null; error: PostgrestError | null } = await this.client
+    const { data, error } = await this.client
       .from('financial_transactions')
       .update(payload)
       .eq('id', id)
@@ -495,7 +495,7 @@ class SupabaseAdapter {
   // ===== Shopping =====
   async getShoppingLists(): Promise<ShoppingListData[]> {
     const userId = this.requireUserId()
-    const { data, error }: { data: TaskData[]|ProjectData[]|HabitData[]|HabitEntryData[]|FinancialAccountData[]|FinancialTransactionData[]|ShoppingListData[]|ShoppingItemData[]|PantryItemData[]|MealPlanData[]|PlannedMealData[]|FocusSessionData[]|RecipeData[] | null; error: PostgrestError | null } = await this.client
+    const { data, error } = await this.client
       .from('shopping_lists')
       .select('*')
       .eq('user_id', userId)
@@ -515,7 +515,7 @@ class SupabaseAdapter {
       status: list.status ?? 'active',
     })
 
-    const { data, error }: { data: TaskData[]|ProjectData[]|HabitData[]|HabitEntryData[]|FinancialAccountData[]|FinancialTransactionData[]|ShoppingListData[]|ShoppingItemData[]|PantryItemData[]|MealPlanData[]|PlannedMealData[]|FocusSessionData[]|RecipeData[] | null; error: PostgrestError | null } = await this.client
+    const { data, error } = await this.client
       .from('shopping_lists')
       .insert(payload)
       .select()
@@ -530,7 +530,7 @@ class SupabaseAdapter {
     const userId = this.requireUserId()
     await this.assertShoppingListOwnership(listId, userId)
 
-    const { data, error }: { data: TaskData[]|ProjectData[]|HabitData[]|HabitEntryData[]|FinancialAccountData[]|FinancialTransactionData[]|ShoppingListData[]|ShoppingItemData[]|PantryItemData[]|MealPlanData[]|PlannedMealData[]|FocusSessionData[]|RecipeData[] | null; error: PostgrestError | null } = await this.client
+    const { data, error } = await this.client
       .from('shopping_items')
       .select('*')
       .eq('shopping_list_id', listId)
@@ -552,7 +552,7 @@ class SupabaseAdapter {
       is_purchased: item.is_purchased ?? false,
     })
 
-    const { data, error }: { data: TaskData[]|ProjectData[]|HabitData[]|HabitEntryData[]|FinancialAccountData[]|FinancialTransactionData[]|ShoppingListData[]|ShoppingItemData[]|PantryItemData[]|MealPlanData[]|PlannedMealData[]|FocusSessionData[]|RecipeData[] | null; error: PostgrestError | null } = await this.client
+    const { data, error } = await this.client
       .from('shopping_items')
       .insert(payload)
       .select()
@@ -571,7 +571,7 @@ class SupabaseAdapter {
     await this.assertShoppingItemOwnership(itemId, userId)
     const payload = this.sanitize(updates)
 
-    const { data, error }: { data: TaskData[]|ProjectData[]|HabitData[]|HabitEntryData[]|FinancialAccountData[]|FinancialTransactionData[]|ShoppingListData[]|ShoppingItemData[]|PantryItemData[]|MealPlanData[]|PlannedMealData[]|FocusSessionData[]|RecipeData[] | null; error: PostgrestError | null } = await this.client
+    const { data, error } = await this.client
       .from('shopping_items')
       .update(payload)
       .eq('id', itemId)
@@ -587,7 +587,7 @@ class SupabaseAdapter {
     const userId = this.requireUserId()
     await this.assertShoppingItemOwnership(itemId, userId)
 
-    const { data, error }: { data: TaskData[]|ProjectData[]|HabitData[]|HabitEntryData[]|FinancialAccountData[]|FinancialTransactionData[]|ShoppingListData[]|ShoppingItemData[]|PantryItemData[]|MealPlanData[]|PlannedMealData[]|FocusSessionData[]|RecipeData[] | null; error: PostgrestError | null } = await this.client
+    const { data, error } = await this.client
       .from('shopping_items')
       .delete()
       .eq('id', itemId)
@@ -602,7 +602,7 @@ class SupabaseAdapter {
   // ===== Pantry =====
   async getPantryItems(): Promise<PantryItemData[]> {
     const userId = this.requireUserId()
-    const { data, error }: { data: TaskData[]|ProjectData[]|HabitData[]|HabitEntryData[]|FinancialAccountData[]|FinancialTransactionData[]|ShoppingListData[]|ShoppingItemData[]|PantryItemData[]|MealPlanData[]|PlannedMealData[]|FocusSessionData[]|RecipeData[] | null; error: PostgrestError | null } = await this.client
+    const { data, error } = await this.client
       .from('pantry_items')
       .select('*')
       .eq('user_id', userId)
@@ -621,7 +621,7 @@ class SupabaseAdapter {
       user_id: userId,
     })
 
-    const { data, error }: { data: TaskData[]|ProjectData[]|HabitData[]|HabitEntryData[]|FinancialAccountData[]|FinancialTransactionData[]|ShoppingListData[]|ShoppingItemData[]|PantryItemData[]|MealPlanData[]|PlannedMealData[]|FocusSessionData[]|RecipeData[] | null; error: PostgrestError | null } = await this.client
+    const { data, error } = await this.client
       .from('pantry_items')
       .insert(payload)
       .select()
@@ -639,7 +639,7 @@ class SupabaseAdapter {
     const userId = this.requireUserId()
     const payload = this.sanitize(updates)
 
-    const { data, error }: { data: TaskData[]|ProjectData[]|HabitData[]|HabitEntryData[]|FinancialAccountData[]|FinancialTransactionData[]|ShoppingListData[]|ShoppingItemData[]|PantryItemData[]|MealPlanData[]|PlannedMealData[]|FocusSessionData[]|RecipeData[] | null; error: PostgrestError | null } = await this.client
+    const { data, error } = await this.client
       .from('pantry_items')
       .update(payload)
       .eq('id', id)
@@ -654,7 +654,7 @@ class SupabaseAdapter {
 
   async deletePantryItem(id: string): Promise<PantryItemData> {
     const userId = this.requireUserId()
-    const { data, error }: { data: TaskData[]|ProjectData[]|HabitData[]|HabitEntryData[]|FinancialAccountData[]|FinancialTransactionData[]|ShoppingListData[]|ShoppingItemData[]|PantryItemData[]|MealPlanData[]|PlannedMealData[]|FocusSessionData[]|RecipeData[] | null; error: PostgrestError | null } = await this.client
+    const { data, error } = await this.client
       .from('pantry_items')
       .delete()
       .eq('id', id)
@@ -670,7 +670,7 @@ class SupabaseAdapter {
   // ===== Meal planning =====
   async getMealPlans(): Promise<MealPlanData[]> {
     const userId = this.requireUserId()
-    const { data, error }: { data: TaskData[]|ProjectData[]|HabitData[]|HabitEntryData[]|FinancialAccountData[]|FinancialTransactionData[]|ShoppingListData[]|ShoppingItemData[]|PantryItemData[]|MealPlanData[]|PlannedMealData[]|FocusSessionData[]|RecipeData[] | null; error: PostgrestError | null } = await this.client
+    const { data, error } = await this.client
       .from('meal_plans')
       .select('*, planned_meals(*)')
       .eq('user_id', userId)
@@ -705,7 +705,7 @@ class SupabaseAdapter {
     }
 
     // Insert new plan
-    const { data, error }: { data: TaskData[]|ProjectData[]|HabitData[]|HabitEntryData[]|FinancialAccountData[]|FinancialTransactionData[]|ShoppingListData[]|ShoppingItemData[]|PantryItemData[]|MealPlanData[]|PlannedMealData[]|FocusSessionData[]|RecipeData[] | null; error: PostgrestError | null } = await this.client
+    const { data, error } = await this.client
       .from('meal_plans')
       .insert(payload)
       .select('*, planned_meals(*)')
@@ -720,7 +720,7 @@ class SupabaseAdapter {
     await this.assertMealPlanOwnership(id, userId)
     const payload = this.sanitize(updates)
 
-    const { data, error }: { data: TaskData[]|ProjectData[]|HabitData[]|HabitEntryData[]|FinancialAccountData[]|FinancialTransactionData[]|ShoppingListData[]|ShoppingItemData[]|PantryItemData[]|MealPlanData[]|PlannedMealData[]|FocusSessionData[]|RecipeData[] | null; error: PostgrestError | null } = await this.client
+    const { data, error } = await this.client
       .from('meal_plans')
       .update(payload)
       .eq('id', id)
@@ -753,7 +753,7 @@ class SupabaseAdapter {
     await this.assertMealPlanOwnership(meal.meal_plan_id, userId)
     const payload = this.sanitize(meal)
 
-    const { data, error }: { data: TaskData[]|ProjectData[]|HabitData[]|HabitEntryData[]|FinancialAccountData[]|FinancialTransactionData[]|ShoppingListData[]|ShoppingItemData[]|PantryItemData[]|MealPlanData[]|PlannedMealData[]|FocusSessionData[]|RecipeData[] | null; error: PostgrestError | null } = await this.client
+    const { data, error } = await this.client
       .from('planned_meals')
       .insert(payload)
       .select()
@@ -772,7 +772,7 @@ class SupabaseAdapter {
     await this.assertPlannedMealOwnership(id, userId)
     const payload = this.sanitize(updates)
 
-    const { data, error }: { data: TaskData[]|ProjectData[]|HabitData[]|HabitEntryData[]|FinancialAccountData[]|FinancialTransactionData[]|ShoppingListData[]|ShoppingItemData[]|PantryItemData[]|MealPlanData[]|PlannedMealData[]|FocusSessionData[]|RecipeData[] | null; error: PostgrestError | null } = await this.client
+    const { data, error } = await this.client
       .from('planned_meals')
       .update(payload)
       .eq('id', id)
@@ -799,7 +799,7 @@ class SupabaseAdapter {
   // ===== Focus sessions =====
   async getFocusSessions(): Promise<FocusSessionData[]> {
     const userId = this.requireUserId()
-    const { data, error }: { data: TaskData[]|ProjectData[]|HabitData[]|HabitEntryData[]|FinancialAccountData[]|FinancialTransactionData[]|ShoppingListData[]|ShoppingItemData[]|PantryItemData[]|MealPlanData[]|PlannedMealData[]|FocusSessionData[]|RecipeData[] | null; error: PostgrestError | null } = await this.client
+    const { data, error } = await this.client
       .from('focus_sessions')
       .select('*')
       .eq('user_id', userId)
@@ -820,7 +820,7 @@ class SupabaseAdapter {
       started_at: session.started_at ?? new Date().toISOString(),
     })
 
-    const { data, error }: { data: TaskData[]|ProjectData[]|HabitData[]|HabitEntryData[]|FinancialAccountData[]|FinancialTransactionData[]|ShoppingListData[]|ShoppingItemData[]|PantryItemData[]|MealPlanData[]|PlannedMealData[]|FocusSessionData[]|RecipeData[] | null; error: PostgrestError | null } = await this.client
+    const { data, error } = await this.client
       .from('focus_sessions')
       .insert(payload)
       .select()
@@ -835,7 +835,7 @@ class SupabaseAdapter {
     const userId = this.requireUserId()
     const payload = this.sanitize(updates)
 
-    const { data, error }: { data: TaskData[]|ProjectData[]|HabitData[]|HabitEntryData[]|FinancialAccountData[]|FinancialTransactionData[]|ShoppingListData[]|ShoppingItemData[]|PantryItemData[]|MealPlanData[]|PlannedMealData[]|FocusSessionData[]|RecipeData[] | null; error: PostgrestError | null } = await this.client
+    const { data, error } = await this.client
       .from('focus_sessions')
       .update(payload)
       .eq('id', id)
@@ -851,7 +851,7 @@ class SupabaseAdapter {
   // ===== Recipes =====
   async getRecipes(): Promise<RecipeData[]> {
     const userId = this.requireUserId()
-    const { data, error }: { data: TaskData[]|ProjectData[]|HabitData[]|HabitEntryData[]|FinancialAccountData[]|FinancialTransactionData[]|ShoppingListData[]|ShoppingItemData[]|PantryItemData[]|MealPlanData[]|PlannedMealData[]|FocusSessionData[]|RecipeData[] | null; error: PostgrestError | null } = await this.client
+    const { data, error } = await this.client
       .from('recipes')
       .select('*')
       .eq('user_id', userId)
@@ -893,7 +893,6 @@ class SupabaseAdapter {
         recipeAny.instructions !== undefined && typeof recipeAny.instructions === 'string'
           ? recipeAny.instructions
           : undefined,
-      ingredients: recipeAny.ingredients !== undefined ? (recipeAny.ingredients as string[]) : undefined,
       tags: Array.isArray(recipeAny.tags) ? (recipeAny.tags as string[]) : undefined,
       source_url:
         recipeAny.source_url && typeof recipeAny.source_url === 'string'
@@ -934,7 +933,7 @@ class SupabaseAdapter {
     if (typeof safe.video_thumbnail === 'string') safe.video_thumbnail = safe.video_thumbnail.slice(0, 255)
     const payload = this.sanitize(safe)
 
-    const { data, error }: { data: TaskData[]|ProjectData[]|HabitData[]|HabitEntryData[]|FinancialAccountData[]|FinancialTransactionData[]|ShoppingListData[]|ShoppingItemData[]|PantryItemData[]|MealPlanData[]|PlannedMealData[]|FocusSessionData[]|RecipeData[] | null; error: PostgrestError | null } = await this.client
+    const { data, error } = await this.client
       .from('recipes')
       .update(payload)
       .eq('id', id)
@@ -1083,6 +1082,7 @@ class SupabaseAdapter {
       content: row.content,
       tags: row.tags ?? [],
       category: row.category ?? undefined,
+      noteType: 'note' as const,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
     }))
@@ -1106,6 +1106,7 @@ class SupabaseAdapter {
       content: data.content,
       tags: data.tags ?? [],
       category: data.category ?? undefined,
+      noteType: 'note' as const,
       createdAt: new Date(data.created_at),
       updatedAt: new Date(data.updated_at),
     }
@@ -1136,6 +1137,7 @@ class SupabaseAdapter {
       content: data.content,
       tags: data.tags ?? [],
       category: data.category ?? undefined,
+      noteType: 'note' as const,
       createdAt: new Date(data.created_at),
       updatedAt: new Date(data.updated_at),
     }
@@ -1172,6 +1174,7 @@ class SupabaseAdapter {
       content: data.content,
       tags: data.tags ?? [],
       category: data.category ?? undefined,
+      noteType: 'note' as const,
       createdAt: new Date(data.created_at),
       updatedAt: new Date(data.updated_at),
     }
@@ -2148,8 +2151,9 @@ class SupabaseAdapter {
     if (userId) {
       const { error } = await this.client
         .from('tasks')
-        .select('id', { head: true, limit: 1 })
+        .select('id', { head: true })
         .eq('user_id', userId)
+        .limit(1)
 
       if (error) throw new Error(error.message)
     }

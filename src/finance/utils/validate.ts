@@ -23,10 +23,13 @@ export async function validateGoalInput(input: GoalInput): Promise<GoalInput> {
     name: z.string().min(1),
     targetAmount: z.number().nonnegative(),
     currentAmount: z.number().nonnegative(),
+    startingAmount: z.number().nonnegative(),
     dueDateISO: z.string(),
     type: z.enum(['savings', 'debt']),
     linkedCategoryId: z.string().optional(),
+    linkedAccountId: z.string().optional(),
+    trackNetworth: z.boolean().optional(),
   });
-  return schema.parse(input);
+  return schema.parse(input) as GoalInput;
 }
 

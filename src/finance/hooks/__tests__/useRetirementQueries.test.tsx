@@ -44,6 +44,7 @@ const mockRetirementAccounts: RetirementAccountWithStats[] = [
     totalValue: 50000,
     totalVested: 50000,
     totalYTDContributions: 13000,
+    remainingEmployeeRoom: 13000,
     latestGains: 5000,
     latestRateOfReturn: 10,
     createdAt: new Date().toISOString(),
@@ -184,6 +185,8 @@ describe('Retirement React Query Hooks', () => {
         employerMatchType: 'percentage',
         employerContributionsYTD: 3000,
         hasVestingSchedule: false,
+        vestingPercentage: 100,
+        unvestedBalance: 0,
       };
 
       result.current.mutate(metadata);
@@ -211,7 +214,10 @@ describe('Retirement React Query Hooks', () => {
         currentYearContributions: 0,
         contributionYear: 2024,
         hasEmployerMatch: false,
+        employerContributionsYTD: 0,
         hasVestingSchedule: false,
+        vestingPercentage: 100,
+        unvestedBalance: 0,
       };
 
       result.current.mutate(metadata);
@@ -239,7 +245,10 @@ describe('Retirement React Query Hooks', () => {
         currentYearContributions: 0,
         contributionYear: 2024,
         hasEmployerMatch: false,
+        employerContributionsYTD: 0,
         hasVestingSchedule: false,
+        vestingPercentage: 100,
+        unvestedBalance: 0,
       };
 
       result.current.mutate(metadata);

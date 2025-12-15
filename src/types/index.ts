@@ -225,26 +225,30 @@ export interface Recipe {
   id: string;
   name: string;
   description?: string;
-  ingredients: Ingredient[];
-  instructions: string[];
-  prepTime: number;
-  cookTime: number;
-  servings: number;
-  difficulty: 'easy' | 'medium' | 'hard';
-  tags: string[];
-  rating?: number;
-  notes?: string;
-  image?: string;
-  isFavorite?: boolean;
-  calories?: number;
   cuisine?: string;
+  difficulty?: 'easy' | 'medium' | 'hard';
+  prepTime?: number;
+  cookTime?: number;
+  servings?: number;
+  calories?: number;
+  instructions: string[];
+  ingredients: Array<{
+    name: string;
+    amount?: string;
+    unit?: string;
+  }>;
+  tags?: string[];
+  isFavorite?: boolean;
   dietaryRestrictions?: string[];
-  nutritionInfo?: Record<string, number>;
-  flowChart?: RecipeFlowStep[];
-  sourceType?: 'youtube' | 'manual';
+  nutritionInfo?: Record<string, unknown>;
+  sourceType?: 'manual' | 'url' | 'ai' | 'youtube';
   sourceUrl?: string;
   authorName?: string;
   videoThumbnail?: string;
+  image?: string;
+  rating?: number;
+  notes?: string;
+  flowChart?: unknown[];
   createdAt: Date;
 }
 
@@ -290,12 +294,13 @@ export interface PantryItem {
   name: string;
   quantity: number;
   unit?: string;
-  category: 'produce' | 'dairy' | 'meat' | 'pantry' | 'other';
+  category: 'produce' | 'dairy' | 'meat' | 'pantry' | 'bakery' | 'other';
   location?: string;
   expirationDate?: Date;
   notes?: string;
   isLowStock?: boolean;
   lowStockThreshold?: number;
+  createdAt: Date;
   updatedAt: Date;
 }
 

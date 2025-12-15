@@ -44,7 +44,7 @@ const BudgetBulkEditor: React.FC<BudgetBulkEditorProps> = ({
   // Initialize rows when modal opens
   useEffect(() => {
     if (isOpen && categories.length > 0) {
-      logger.debug('[BudgetBulkEditor] Initializing rows for categories', { count: categories.length });
+      logger.debug('Finance', '[BudgetBulkEditor] Initializing rows for categories', { count: categories.length });
 
       const initialRows: CategoryBudgetRow[] = categories.map((category) => {
         const recommendation = calculateBudgetRecommendation(transactions, category.id, 3);
@@ -126,7 +126,7 @@ const BudgetBulkEditor: React.FC<BudgetBulkEditorProps> = ({
 
     try {
       setSaving(true);
-      logger.debug('[BudgetBulkEditor] Saving budgets', { count: budgetsToSave.length });
+      logger.debug('Finance', '[BudgetBulkEditor] Saving budgets', { count: budgetsToSave.length });
       await onSave(budgetsToSave);
       onClose();
     } catch (err) {

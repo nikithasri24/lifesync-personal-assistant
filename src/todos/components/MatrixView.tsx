@@ -27,7 +27,7 @@ export function MatrixView({
   );
 
   // Helper to get due date from either dueDate or due_date
-  const getDueDate = (task: Task) => task.due_date || task.dueDate;
+  const getDueDate = (task: Task) => task.dueDate;
 
   const matrix: EisenhowerMatrix = {
     urgentImportant: {

@@ -49,7 +49,7 @@ export const useTasks = (): UseTasksReturn => {
       setProjects(projectsData)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load data')
-      logger.error('Error loading data:', { err });
+      logger.error('Tasks', 'Error loading data', { error: err });
     } finally {
       setLoading(false)
     }
@@ -57,9 +57,9 @@ export const useTasks = (): UseTasksReturn => {
 
   // Handle real-time task updates
   const handleTaskChange = useCallback((payload: {
-    eventType: 'INSERT' | 'UPDATE' | 'DELETE';
+    eventType: string;
     new: Task;
-    old: Task
+    old?: Task
   }) => {
     const { eventType, new: newRecord, old: oldRecord } = payload
 
@@ -75,16 +75,18 @@ export const useTasks = (): UseTasksReturn => {
         break
 
       case 'DELETE':
-        setTasks(prev => prev.filter(task => task.id !== oldRecord.id))
+        if (oldRecord) {
+          setTasks(prev => prev.filter(task => task.id !== oldRecord.id))
+        }
         break
     }
   }, [])
 
   // Handle real-time project updates
   const handleProjectChange = useCallback((payload: {
-    eventType: 'INSERT' | 'UPDATE' | 'DELETE';
+    eventType: string;
     new: Project;
-    old: Project
+    old?: Project
   }) => {
     const { eventType, new: newRecord, old: oldRecord } = payload
 
@@ -100,7 +102,9 @@ export const useTasks = (): UseTasksReturn => {
         break
 
       case 'DELETE':
-        setProjects(prev => prev.filter(project => project.id !== oldRecord.id))
+        if (oldRecord) {
+          setProjects(prev => prev.filter(project => project.id !== oldRecord.id))
+        }
         break
     }
   }, [])
@@ -110,13 +114,13 @@ export const useTasks = (): UseTasksReturn => {
     void loadData(); // Explicitly mark as void to silence no-floating-promises
 
     // Subscribe to real-time updates
-    const taskUnsub = db.subscribeToTasks(TEMP_USER_ID, handleTaskChange);
-    const projectUnsub = db.subscribeToProjects(TEMP_USER_ID, handleProjectChange);
+    db.subscribeToTasks(TEMP_USER_ID, handleTaskChange);
+    db.subscribeToProjects(TEMP_USER_ID, handleProjectChange);
 
     // Cleanup on unmount
     return () => {
-      taskUnsub();
-      projectUnsub();
+      db.unsubscribeFromTasks();
+      db.unsubscribeFromProjects();
     }
   }, [loadData, handleTaskChange, handleProjectChange])
 

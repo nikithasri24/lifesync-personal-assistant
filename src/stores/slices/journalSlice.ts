@@ -52,7 +52,7 @@ export const createJournalSlice: StateCreator<
       const entries = await getJournalEntries();
       set({ journalEntries: entries, journalLoaded: true, journalLoading: false });
     } catch (error) {
-      logger.error('Journal', error as Error, { context: 'loadJournal' });
+      logger.error('Journal', 'Operation failed', { error, context: 'loadJournal' });
       set({ journalLoading: false });
       throw error;
     }
@@ -65,7 +65,7 @@ export const createJournalSlice: StateCreator<
       set((state) => ({ journalEntries: [entry, ...state.journalEntries] }));
       return entry;
     } catch (error) {
-      logger.error('Journal', error as Error, { context: 'addJournalEntry' });
+      logger.error('Journal', 'Operation failed', { error, context: 'addJournalEntry' });
       throw error;
     }
   },
@@ -81,7 +81,7 @@ export const createJournalSlice: StateCreator<
       }));
       return updatedEntry;
     } catch (error) {
-      logger.error('Journal', error as Error, { context: 'updateJournalEntry' });
+      logger.error('Journal', 'Operation failed', { error, context: 'updateJournalEntry' });
       throw error;
     }
   },
@@ -94,7 +94,7 @@ export const createJournalSlice: StateCreator<
         journalEntries: state.journalEntries.filter((e) => e.id !== id),
       }));
     } catch (error) {
-      logger.error('Journal', error as Error, { context: 'deleteJournalEntry' });
+      logger.error('Journal', 'Operation failed', { error, context: 'deleteJournalEntry' });
       throw error;
     }
   },
@@ -105,7 +105,7 @@ export const createJournalSlice: StateCreator<
       const entries = await getJournalEntries(filters);
       return entries;
     } catch (error) {
-      logger.error('Journal', error as Error, { context: 'searchJournalEntries' });
+      logger.error('Journal', 'Operation failed', { error, context: 'searchJournalEntries' });
       throw error;
     }
   },

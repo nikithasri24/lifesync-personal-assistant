@@ -163,10 +163,10 @@ function buildHabitInsertPayload(
     description: input.description ?? undefined,
     category: input.category ?? undefined,
     frequency: input.frequency ?? 'daily',
-    target_value: input.targetValue ?? null,
+    target_value: input.targetValue ?? undefined,
     unit: input.unit ?? undefined,
-    goal_mode: input.goalMode ?? null,
-    goal_target: input.goalTarget ?? null,
+    goal_mode: input.goalMode ?? undefined,
+    goal_target: input.goalTarget ?? undefined,
     goal_unit: input.goalUnit ?? undefined,
     current_progress: 0,
     color: input.color ?? undefined,
@@ -174,7 +174,7 @@ function buildHabitInsertPayload(
     streak_count: 0,
     best_streak: 0,
     is_active: input.isActive ?? true,
-    reminder_time: input.reminderTime ?? null,
+    reminder_time: input.reminderTime ?? undefined,
     reminder_enabled: input.reminderEnabled ?? false,
   });
 }
@@ -349,13 +349,13 @@ export function useCreateHabitMutation(): ReturnType<typeof useMutation<Habit, E
 
   return useMutation({
     mutationFn: async (input: Partial<HabitInput>) => {
-      logger.debug('Habits', 'Habits', 'Creating habit', { name: input.name });
+      logger.debug('Habits', 'Creating habit', { name: input.name });
       const payload = buildHabitInsertPayload(input);
       const created = await createHabit(payload);
       return mapHabitDataToHabit(created);
     },
     onMutate: async (input) => {
-      logger.debug('Habits', 'Habits', 'Optimistic update: create habit', { name: input.name });
+      logger.debug('Habits', 'Optimistic update: create habit', { name: input.name });
       // Cancel outgoing queries
       await queryClient.cancelQueries({ queryKey: habitsKeys.lists() });
 
@@ -393,14 +393,14 @@ export function useCreateHabitMutation(): ReturnType<typeof useMutation<Habit, E
       return { previousHabits };
     },
     onError: (err: Error, input, context) => {
-      logger.error('Habits', 'Habits', 'Failed to create habit', { error: err.message, name: input.name });
+      logger.error('Habits', 'Failed to create habit', { error: err.message, name: input.name });
       // Rollback on error
       if (context?.previousHabits) {
         queryClient.setQueryData(habitsKeys.list(), context.previousHabits);
       }
     },
     onSuccess: (newHabit) => {
-      logger.info('Habits', 'Habits', 'Habit created successfully', { id: newHabit.id, name: newHabit.name });
+      logger.info('Habits', 'Habit created successfully', { id: newHabit.id, name: newHabit.name });
       // Replace temp habit with real one
       queryClient.setQueryData<Habit[]>(habitsKeys.list(), (old) => {
         if (!old) return [newHabit];
@@ -420,13 +420,13 @@ export function useUpdateHabitMutation(): ReturnType<typeof useMutation<Habit, E
 
   return useMutation({
     mutationFn: async ({ habitId, updates }: { habitId: string; updates: HabitUpdate }) => {
-      logger.debug('Habits', 'Habits', 'Updating habit', { habitId, updates });
+      logger.debug('Habits', 'Updating habit', { habitId, updates });
       const payload = buildHabitUpdatePayload(updates);
       const updated = await updateHabit(habitId, payload);
       return mapHabitDataToHabit(updated);
     },
     onMutate: async ({ habitId, updates }) => {
-      logger.debug('Habits', 'Habits', 'Optimistic update: habit', { habitId, updates });
+      logger.debug('Habits', 'Optimistic update: habit', { habitId, updates });
       // Cancel outgoing queries
       await queryClient.cancelQueries({ queryKey: habitsKeys.lists() });
 
@@ -446,14 +446,14 @@ export function useUpdateHabitMutation(): ReturnType<typeof useMutation<Habit, E
       return { previousHabits };
     },
     onError: (err: Error, { habitId }, context) => {
-      logger.error('Habits', 'Habits', 'Failed to update habit', { error: err.message, habitId });
+      logger.error('Habits', 'Failed to update habit', { error: err.message, habitId });
       // Rollback on error
       if (context?.previousHabits) {
         queryClient.setQueryData(habitsKeys.list(), context.previousHabits);
       }
     },
     onSuccess: (updatedHabit) => {
-      logger.info('Habits', 'Habits', 'Habit updated successfully', { id: updatedHabit.id, name: updatedHabit.name });
+      logger.info('Habits', 'Habit updated successfully', { id: updatedHabit.id, name: updatedHabit.name });
       // Update with server response
       queryClient.setQueryData<Habit[]>(habitsKeys.list(), (old) => {
         if (!old) return [updatedHabit];
@@ -473,12 +473,12 @@ export function useDeleteHabitMutation(): ReturnType<typeof useMutation<string, 
 
   return useMutation({
     mutationFn: async (habitId: string) => {
-      logger.debug('Habits', 'Habits', 'Deleting habit', { habitId });
+      logger.debug('Habits', 'Deleting habit', { habitId });
       await deleteHabit(habitId);
       return habitId;
     },
     onMutate: async (habitId) => {
-      logger.debug('Habits', 'Habits', 'Optimistic update: delete habit', { habitId });
+      logger.debug('Habits', 'Optimistic update: delete habit', { habitId });
       // Cancel outgoing queries
       await queryClient.cancelQueries({ queryKey: habitsKeys.lists() });
 
@@ -494,14 +494,14 @@ export function useDeleteHabitMutation(): ReturnType<typeof useMutation<string, 
       return { previousHabits };
     },
     onError: (err: Error, habitId, context) => {
-      logger.error('Habits', 'Habits', 'Failed to delete habit', { error: err.message, habitId });
+      logger.error('Habits', 'Failed to delete habit', { error: err.message, habitId });
       // Rollback on error
       if (context?.previousHabits) {
         queryClient.setQueryData(habitsKeys.list(), context.previousHabits);
       }
     },
     onSuccess: (habitId) => {
-      logger.info('Habits', 'Habits', 'Habit deleted successfully', { id: habitId });
+      logger.info('Habits', 'Habit deleted successfully', { id: habitId });
       // Remove entries cache
       queryClient.removeQueries({ queryKey: habitsKeys.entries(habitId) });
       // Invalidate to ensure consistency
@@ -519,13 +519,13 @@ export function useLogHabitMutation(): ReturnType<typeof useMutation<HabitEntry,
 
   return useMutation({
     mutationFn: async (input: HabitEntryInput) => {
-      logger.debug('Habits', 'Habits', 'Logging habit entry', { habitId: input.habitId, date: input.date });
+      logger.debug('Habits', 'Logging habit entry', { habitId: input.habitId, date: input.date });
       const payload = buildHabitEntryInsertPayload(input);
       const created = await createHabitEntry(payload);
       return mapHabitEntryDataToHabitEntry(created);
     },
     onMutate: async (input) => {
-      logger.debug('Habits', 'Habits', 'Optimistic update: log habit entry', { habitId: input.habitId });
+      logger.debug('Habits', 'Optimistic update: log habit entry', { habitId: input.habitId });
       // Cancel outgoing queries
       await queryClient.cancelQueries({ queryKey: habitsKeys.entries(input.habitId) });
 
@@ -551,14 +551,14 @@ export function useLogHabitMutation(): ReturnType<typeof useMutation<HabitEntry,
       return { previousEntries };
     },
     onError: (err: Error, input, context) => {
-      logger.error('Habits', 'Habits', 'Failed to log habit entry', { error: err.message, habitId: input.habitId });
+      logger.error('Habits', 'Failed to log habit entry', { error: err.message, habitId: input.habitId });
       // Rollback on error
       if (context?.previousEntries) {
         queryClient.setQueryData(habitsKeys.entries(input.habitId), context.previousEntries);
       }
     },
     onSuccess: (newEntry) => {
-      logger.info('Habits', 'Habits', 'Habit entry logged successfully', { id: newEntry.id, habitId: newEntry.habitId });
+      logger.info('Habits', 'Habit entry logged successfully', { id: newEntry.id, habitId: newEntry.habitId });
       // Replace temp entry with real one
       queryClient.setQueryData<HabitEntry[]>(habitsKeys.entries(newEntry.habitId), (old) => {
         if (!old) return [newEntry];
@@ -579,13 +579,13 @@ export function useUpdateHabitEntryMutation(): ReturnType<typeof useMutation<Hab
 
   return useMutation({
     mutationFn: async ({ entryId, updates }: { entryId: string; habitId: string; updates: HabitEntryUpdate }) => {
-      logger.debug('Habits', 'Habits', 'Updating habit entry', { entryId, updates });
+      logger.debug('Habits', 'Updating habit entry', { entryId, updates });
       const payload = buildHabitEntryUpdatePayload(updates);
       const updated = await updateHabitEntry(entryId, payload);
       return mapHabitEntryDataToHabitEntry(updated);
     },
     onMutate: async ({ entryId, habitId, updates }) => {
-      logger.debug('Habits', 'Habits', 'Optimistic update: habit entry', { entryId, updates });
+      logger.debug('Habits', 'Optimistic update: habit entry', { entryId, updates });
       // Cancel outgoing queries
       await queryClient.cancelQueries({ queryKey: habitsKeys.entries(habitId) });
 
@@ -605,14 +605,14 @@ export function useUpdateHabitEntryMutation(): ReturnType<typeof useMutation<Hab
       return { previousEntries };
     },
     onError: (err: Error, { entryId, habitId }, context) => {
-      logger.error('Habits', 'Habits', 'Failed to update habit entry', { error: err.message, entryId });
+      logger.error('Habits', 'Failed to update habit entry', { error: err.message, entryId });
       // Rollback on error
       if (context?.previousEntries) {
         queryClient.setQueryData(habitsKeys.entries(habitId), context.previousEntries);
       }
     },
     onSuccess: (updatedEntry) => {
-      logger.info('Habits', 'Habits', 'Habit entry updated successfully', { id: updatedEntry.id });
+      logger.info('Habits', 'Habit entry updated successfully', { id: updatedEntry.id });
       // Update with server response
       queryClient.setQueryData<HabitEntry[]>(habitsKeys.entries(updatedEntry.habitId), (old) => {
         if (!old) return [updatedEntry];
@@ -630,12 +630,12 @@ export function useDeleteHabitEntryMutation(): ReturnType<typeof useMutation<str
 
   return useMutation({
     mutationFn: async ({ entryId, habitId }: { entryId: string; habitId: string }) => {
-      logger.debug('Habits', 'Habits', 'Deleting habit entry', { entryId, habitId });
+      logger.debug('Habits', 'Deleting habit entry', { entryId, habitId });
       await deleteHabitEntry(entryId, habitId);
       return entryId;
     },
     onMutate: async ({ entryId, habitId }) => {
-      logger.debug('Habits', 'Habits', 'Optimistic update: delete habit entry', { entryId });
+      logger.debug('Habits', 'Optimistic update: delete habit entry', { entryId });
       // Cancel outgoing queries
       await queryClient.cancelQueries({ queryKey: habitsKeys.entries(habitId) });
 
@@ -651,14 +651,14 @@ export function useDeleteHabitEntryMutation(): ReturnType<typeof useMutation<str
       return { previousEntries };
     },
     onError: (err: Error, { entryId, habitId }, context) => {
-      logger.error('Habits', 'Habits', 'Failed to delete habit entry', { error: err.message, entryId });
+      logger.error('Habits', 'Failed to delete habit entry', { error: err.message, entryId });
       // Rollback on error
       if (context?.previousEntries) {
         queryClient.setQueryData(habitsKeys.entries(habitId), context.previousEntries);
       }
     },
     onSuccess: (entryId, { habitId }) => {
-      logger.info('Habits', 'Habits', 'Habit entry deleted successfully', { id: entryId });
+      logger.info('Habits', 'Habit entry deleted successfully', { id: entryId });
       // Invalidate habit to update streaks
       void queryClient.invalidateQueries({ queryKey: habitsKeys.list() });
       void queryClient.invalidateQueries({ queryKey: habitsKeys.analytics() });

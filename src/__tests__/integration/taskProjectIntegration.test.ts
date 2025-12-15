@@ -74,8 +74,12 @@ describe('Task-Project Integration', () => {
 
     // Create project
     const project = await projectsAPI.createProject({
-      title: mockProject.title,
+      name: mockProject.title,
       description: mockProject.description,
+      status: 'active' as const,
+      priority: 'medium' as const,
+      tags: [],
+      progress: 0,
     });
 
     expect(project).toBeDefined();
@@ -97,11 +101,11 @@ describe('Task-Project Integration', () => {
     const task = await tasksAPI.createTask({
       title: mockTask.title,
       description: mockTask.description,
-      projectId: project.id,
+      project_id: project.id,
     });
 
     expect(task).toBeDefined();
-    expect(task.projectId).toBe(project.id);
+    expect(task.project_id).toBe(project.id);
   });
 
   test('should show project tasks', async () => {
@@ -122,7 +126,7 @@ describe('Task-Project Integration', () => {
     expect(tasks).toBeDefined();
     expect(Array.isArray(tasks)).toBe(true);
     expect(tasks.length).toBeGreaterThan(0);
-    expect(tasks[0].projectId).toBe(mockProject.id);
+    expect(tasks[0].project_id).toBe(mockProject.id);
   });
 
   test('should update project progress when task completes', async () => {
@@ -145,7 +149,7 @@ describe('Task-Project Integration', () => {
       eq: vi.fn().mockReturnThis(),
       select: vi.fn().mockReturnThis(),
       single: vi.fn().mockResolvedValue({
-        data: { ...mockTask, status: 'completed' },
+        data: { ...mockTask, status: 'done' },
         error: null,
       }),
     };
@@ -173,15 +177,15 @@ describe('Task-Project Integration', () => {
 
     // Complete a task
     const updatedTask = await tasksAPI.updateTask(mockTask.id, {
-      status: 'completed',
+      status: 'done',
     });
 
-    expect(updatedTask.status).toBe('completed');
+    expect(updatedTask.status).toBe('done');
 
     // In a real implementation, this would trigger a project progress update
     // For now, we're just testing that the mechanism works
     const tasks = await tasksAPI.getTasks({ projectId: mockProject.id });
-    const completedTasks = tasks.filter((t) => t.status === 'completed').length;
+    const completedTasks = tasks.filter((t) => t.status === 'done').length;
     const progress = Math.round((completedTasks / tasks.length) * 100);
 
     const updatedProject = await projectsAPI.updateProject(mockProject.id, {
@@ -206,9 +210,9 @@ describe('Task-Project Integration', () => {
     (supabase.from as any).mockReturnValue(mockQuery);
 
     const updatedTask = await tasksAPI.updateTask(mockTask.id, {
-      projectId: undefined,
+      project_id: null,
     });
 
-    expect(updatedTask.projectId).toBeUndefined();
+    expect(updatedTask.project_id).toBeNull();
   });
 });

@@ -3,7 +3,7 @@
  * A button with built-in loading state and double-click prevention
  */
 
-import React, { ButtonHTMLAttributes } from 'react';
+import React, { type ButtonHTMLAttributes } from 'react';
 import { Loader2 } from 'lucide-react';
 
 interface LoadingButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {

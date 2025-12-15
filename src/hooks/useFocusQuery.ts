@@ -34,19 +34,19 @@ export function useCreateFocusSession(): UseMutationResult<
 
   return useMutation({
     mutationFn: async (session: Omit<FocusSessionData, 'id' | 'created_at' | 'updated_at'>) => {
-      logger.debug('Focus', 'Creating focus session', { type: session.preset, duration: session.duration });
+      logger.debug('Focus', 'Creating focus session', { type: session.type, duration: session.duration_minutes });
       const result = await createFocusSession(session);
       return result;
     },
     onSuccess: (newSession) => {
-      logger.info('Focus', 'Focus session created successfully', { id: newSession.id ?? 'unknown', type: newSession.preset });
+      logger.info('Focus', 'Focus session created successfully', { id: newSession.id ?? 'unknown', type: newSession.type });
       queryClient.setQueryData<FocusSessionData[]>(focusKeys.sessions(), (old) => {
         if (!old) return [newSession];
         return [...old, newSession];
       });
     },
     onError: (error: Error, session) => {
-      logger.error('Focus', 'Failed to create focus session', { error: error.message, type: session.preset });
+      logger.error('Focus', 'Failed to create focus session', { error: error.message, type: session.type });
     },
   });
 }
@@ -117,7 +117,7 @@ export function useActiveFocusSession(): {
   const { data: sessions, isLoading } = useFocusSessions();
 
   const activeSession = sessions?.find(
-    (session) => session.status === 'active' || session.status === 'paused'
+    (session) => session.status === 'in-progress'
   );
 
   return {

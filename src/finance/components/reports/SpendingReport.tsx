@@ -21,8 +21,8 @@ export interface SpendingReportProps {
 }
 
 const SpendingReport: React.FC<SpendingReportProps> = ({
-  _transactions,
-  _categories,
+
+
   dateRange,
   metrics,
 }) => {

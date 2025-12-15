@@ -60,11 +60,13 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
     }
   }, [task]);
 
-  if (!isOpen || !task) return null;
+  if (!isOpen || !task || !task.id) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(task.id, formData);
+    if (task.id) {
+      onSave(task.id, formData);
+    }
   };
 
   const handleAddTag = () => {
@@ -195,13 +197,13 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
               </label>
               <input
                 type="number"
-                value={formData.estimated_time || 0}
+                value={formData.estimated_time ?? 0}
                 onChange={(e) => setFormData({ ...formData, estimated_time: parseInt(e.target.value) || 0 })}
                 min="0"
                 step="15"
                 className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              {formData.estimated_time > 0 && (
+              {formData.estimated_time != null && formData.estimated_time > 0 && (
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                   {formatTimeEstimate(formData.estimated_time)}
                 </p>
@@ -312,12 +314,12 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
           {/* Actions */}
           <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-700">
             <div>
-              {onDelete && (
+              {onDelete && task.id && (
                 <button
                   type="button"
                   onClick={() => {
                     if (window.confirm('Are you sure you want to delete this task?')) {
-                      onDelete(task.id);
+                      onDelete(task.id!);
                       onClose();
                     }
                   }}

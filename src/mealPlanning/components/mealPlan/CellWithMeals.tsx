@@ -6,21 +6,21 @@
 import React, { useRef } from 'react';
 import { Plus } from 'lucide-react';
 import type { PlannedMeal, Recipe } from '../../../types';
-import MealItem from './MealItem';
+import { MealItem } from './MealItem';
 
 export interface CellWithMealsProps {
   dateKey: string;
   mealType: string;
   dayMeals: PlannedMeal[];
   recipes: Recipe[];
-  onShowRecipeForm: (initialName: string, onSave: (recipe: Recipe) => void) => void;
+  onShowRecipeForm: (initialName: string, onSave: (recipe: Omit<Recipe, 'id' | 'createdAt'>) => void) => void;
   onShowSimpleEdit: (recipe: Recipe, onSave: (updates: Partial<Recipe>) => void) => void;
   renderAddControl: (triggerRef: React.MutableRefObject<(() => void) | null>) => React.ReactNode;
 }
 
 export const CellWithMeals: React.FC<CellWithMealsProps> = ({
-  _dateKey,
-  _mealType,
+  dateKey: _dateKey,
+  mealType: _mealType,
   dayMeals,
   recipes,
   onShowRecipeForm,

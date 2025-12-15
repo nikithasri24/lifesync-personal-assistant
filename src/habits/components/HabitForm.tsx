@@ -25,7 +25,7 @@ export function HabitForm({
   onDraftChange,
   onSubmit,
   onClear,
-}: HabitFormProps): JSX.Element {
+}: HabitFormProps) {
   return (
     <form onSubmit={onSubmit} className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
       <h2 className="text-lg font-semibold text-slate-900">Add a habit</h2>

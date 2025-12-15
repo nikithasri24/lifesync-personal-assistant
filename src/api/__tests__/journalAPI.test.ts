@@ -120,10 +120,10 @@ describe('journalAPI', () => {
 
       (supabase!.from as any).mockReturnValue(mockQuery);
 
-      const filters: JournalEntryFilters = { moods: ['happy', 'excited'] };
+      const filters: JournalEntryFilters = { moods: ['excellent', 'good'] };
       await getJournalEntries(filters);
 
-      expect(mockQuery.in).toHaveBeenCalledWith('mood', ['happy', 'excited']);
+      expect(mockQuery.in).toHaveBeenCalledWith('mood', ['excellent', 'good']);
     });
 
     it('should apply date range filters', async () => {

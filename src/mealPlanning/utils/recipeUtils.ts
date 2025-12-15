@@ -169,7 +169,7 @@ export async function fetchRecipeFromGoogle(mealName: string): Promise<Omit<Reci
       nutritionInfo: undefined,
     };
   } catch (error) {
-    logger.warn('RecipeUtils', 'Failed to fetch recipe from Google. Using scaffold:', error);
+    logger.warn('RecipeUtils', 'Failed to fetch recipe from Google. Using scaffold', { error: error as Error });
     return scaffold(mealName);
   }
 }

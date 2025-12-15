@@ -3,7 +3,7 @@ import type { Recipe } from '../../types';
 
 export interface RecipeFormModal {
   initialName: string;
-  onSave: (recipe: Recipe) => void;
+  onSave: (recipe: Omit<Recipe, 'id' | 'createdAt'>) => void;
 }
 
 export interface SimpleEditModal {
@@ -16,7 +16,7 @@ export function useMealFormModals(): {
   simpleEditModal: SimpleEditModal | null;
   editingRecipeId: string | null;
   viewingRecipeId: string | null;
-  openRecipeForm: (initialName: string, onSave: (recipe: Recipe) => void) => void;
+  openRecipeForm: (initialName: string, onSave: (recipe: Omit<Recipe, 'id' | 'createdAt'>) => void) => void;
   closeRecipeForm: () => void;
   openSimpleEdit: (recipe: Recipe, onSave: (updates: Partial<Recipe>) => void) => void;
   closeSimpleEdit: () => void;
@@ -50,7 +50,7 @@ export function useMealFormModals(): {
   const [showGroceryList, setShowGroceryList] = useState(false);
   const [showCopyWeek, setShowCopyWeek] = useState(false);
 
-  const openRecipeForm = (initialName: string, onSave: (recipe: Recipe) => void): void => {
+  const openRecipeForm = (initialName: string, onSave: (recipe: Omit<Recipe, 'id' | 'createdAt'>) => void): void => {
     setRecipeFormModal({ initialName, onSave });
   };
 

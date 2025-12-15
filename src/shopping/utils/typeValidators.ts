@@ -22,6 +22,17 @@ export const SHOPPING_CATEGORIES = [
 
 export type ShoppingCategory = typeof SHOPPING_CATEGORIES[number];
 
+// Pantry category types (subset of shopping categories)
+export const PANTRY_CATEGORIES = [
+  'produce',
+  'dairy',
+  'meat',
+  'pantry',
+  'other',
+] as const;
+
+export type PantryCategory = typeof PANTRY_CATEGORIES[number];
+
 // Priority types
 export const SHOPPING_PRIORITIES = ['low', 'medium', 'high'] as const;
 
@@ -43,6 +54,13 @@ export type PantrySort = typeof PANTRY_SORTS[number];
  * @returns A valid shopping category
  */
 export const validateCategory = createEnumValidator(SHOPPING_CATEGORIES, 'other');
+
+/**
+ * Validates and returns a pantry category
+ * @param value - The value to validate
+ * @returns A valid pantry category
+ */
+export const validatePantryCategory = createEnumValidator(PANTRY_CATEGORIES, 'other');
 
 /**
  * Validates and returns a shopping priority

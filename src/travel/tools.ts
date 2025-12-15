@@ -32,7 +32,7 @@ const createTripDefinition: ToolDefinition = {
         name: { type: 'string', description: 'Trip name - required' },
         destination_countries: {
           type: 'array',
-          items: { type: 'string' },
+          items: { type: 'string', description: 'Country name' },
           description: 'List of destination countries - required',
         },
         start_date: { type: 'string', description: 'Start date in YYYY-MM-DD format - required' },
@@ -45,7 +45,7 @@ const createTripDefinition: ToolDefinition = {
         budget: { type: 'number', description: 'Trip budget - optional' },
         travelers: {
           type: 'array',
-          items: { type: 'string' },
+          items: { type: 'string', description: 'Traveler name' },
           description: 'List of traveler names - optional',
         },
       },
@@ -67,7 +67,7 @@ const addToItineraryDefinition: ToolDefinition = {
         location: { type: 'string', description: 'Location for this day - required' },
         activities: {
           type: 'array',
-          items: { type: 'string' },
+          items: { type: 'string', description: 'Activity name' },
           description: 'List of activities - optional',
         },
         accommodations: { type: 'string', description: 'Where staying - optional' },
@@ -173,7 +173,7 @@ async function executeCreateTrip(args: Record<string, unknown>): Promise<ToolRes
       data: trip,
     };
   } catch (error) {
-    logger.error('TravelTools', error as Error, { context: 'executeCreateTrip' });
+    logger.error('TravelTools', 'Operation failed', { error, context: 'executeCreateTrip' });
     return { success: false, error: (error as Error).message };
   }
 }
@@ -197,7 +197,7 @@ async function executeAddToItinerary(args: Record<string, unknown>): Promise<Too
       data: tripDay,
     };
   } catch (error) {
-    logger.error('TravelTools', error as Error, { context: 'executeAddToItinerary' });
+    logger.error('TravelTools', 'Operation failed', { error, context: 'executeAddToItinerary' });
     return { success: false, error: (error as Error).message };
   }
 }
@@ -225,7 +225,7 @@ async function executeCheckVisaRequirements(args: Record<string, unknown>): Prom
       };
     }
   } catch (error) {
-    logger.error('TravelTools', error as Error, { context: 'executeCheckVisaRequirements' });
+    logger.error('TravelTools', 'Operation failed', { error, context: 'executeCheckVisaRequirements' });
     return { success: false, error: (error as Error).message };
   }
 }
@@ -244,7 +244,7 @@ async function executeCreatePackingList(args: Record<string, unknown>): Promise<
       data: list,
     };
   } catch (error) {
-    logger.error('TravelTools', error as Error, { context: 'executeCreatePackingList' });
+    logger.error('TravelTools', 'Operation failed', { error, context: 'executeCreatePackingList' });
     return { success: false, error: (error as Error).message };
   }
 }
@@ -267,7 +267,7 @@ async function executeAddTravelDocument(args: Record<string, unknown>): Promise<
       data: document,
     };
   } catch (error) {
-    logger.error('TravelTools', error as Error, { context: 'executeAddTravelDocument' });
+    logger.error('TravelTools', 'Operation failed', { error, context: 'executeAddTravelDocument' });
     return { success: false, error: (error as Error).message };
   }
 }
@@ -283,7 +283,7 @@ async function executeGetTripBudgetSummary(args: Record<string, unknown>): Promi
       data: summary,
     };
   } catch (error) {
-    logger.error('TravelTools', error as Error, { context: 'executeGetTripBudgetSummary' });
+    logger.error('TravelTools', 'Operation failed', { error, context: 'executeGetTripBudgetSummary' });
     return { success: false, error: (error as Error).message };
   }
 }

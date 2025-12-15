@@ -5,33 +5,31 @@ import type { ShoppingItem } from '../types';
  * Create a shopping item from a pantry item for replenishment
  * @param pantryItem - The pantry item to convert
  * @param quantityNeeded - The quantity needed
- * @returns A partial shopping item object ready to be added
+ * @returns A shopping item object ready to be added (without id, createdAt, updatedAt)
  */
 export function createShoppingItemFromPantry(
   pantryItem: PantryItem,
   quantityNeeded: number
-): Partial<ShoppingItem> {
+): Omit<ShoppingItem, 'id' | 'createdAt' | 'updatedAt'> {
+  // Map pantry category to shopping category (pantry has fewer categories)
+  const categoryMap: Record<PantryItem['category'], ShoppingItem['category']> = {
+    produce: 'produce',
+    dairy: 'dairy',
+    meat: 'meat',
+    pantry: 'pantry',
+    bakery: 'bakery',
+    other: 'other',
+  };
+
   return {
     name: pantryItem.name,
     quantity: quantityNeeded,
     unit: pantryItem.unit,
-    category: pantryItem.category as ShoppingItem['category'],
-    subcategory: undefined,
+    category: categoryMap[pantryItem.category] ?? 'other',
     priority: 'medium',
     purchased: false,
-    price: undefined,
-    estimatedPrice: undefined,
-    aisle: undefined,
-    brand: undefined,
-    size: undefined,
     notes: pantryItem.notes,
-    imageUrl: undefined,
-    nutritionInfo: undefined,
     tags: ['from:pantry', 'reason:replenish'],
-    addedBy: undefined,
-    purchasedAt: undefined,
-    purchasedBy: undefined,
-    assignedStore: undefined,
     bestStores: [],
   };
 }

@@ -151,11 +151,14 @@ export function AddItemModal({
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="">AI will decide</option>
-                {stores.map(store => (
-                  <option key={store.id} value={store.id}>
-                    {STORE_TYPES[store.type]} {store.name}
-                  </option>
-                ))}
+                {stores.map(store => {
+                  const storeType = STORE_TYPES.find(st => st.value === store.type);
+                  return (
+                    <option key={store.id} value={store.id}>
+                      {storeType?.icon} {store.name}
+                    </option>
+                  );
+                })}
               </select>
             </div>
           </div>

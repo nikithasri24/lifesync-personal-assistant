@@ -183,7 +183,7 @@ describe('RecipeCard', () => {
   });
 
   it('does not toggle favorite when recipe has no id', () => {
-    const recipeWithoutId = { ...mockRecipe, id: undefined } as Recipe;
+    const recipeWithoutId = { ...mockRecipe, id: undefined } as unknown as Recipe;
     const { container } = render(<RecipeCard {...defaultProps} recipe={recipeWithoutId} />, { wrapper: createWrapper() });
 
     const favoriteButton = screen.getByRole('button', { name: /favorites/ });

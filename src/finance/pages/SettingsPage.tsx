@@ -2,6 +2,7 @@ import React, { type ChangeEvent } from 'react';
 import { Card } from '../components/Card';
 import { Button } from '../ui/Button';
 import { getFinanceAPI } from '../data';
+import type { GoalInput, TransactionInput } from '../types';
 
 interface ImportData {
   goals?: Record<string, unknown>[];
@@ -34,12 +35,14 @@ const SettingsPage: React.FC = () => {
 
       if (Array.isArray(data.goals)) {
         for (const g of data.goals) {
-          await api.upsertGoal({ ...g, id: undefined });
+          const { id: _id, ...goalWithoutId } = g;
+          await api.upsertGoal(goalWithoutId as GoalInput);
         }
       }
       if (Array.isArray(data.transactions)) {
         for (const t of data.transactions) {
-          await api.upsertTransaction({ ...t, id: undefined });
+          const { id: _id, ...txnWithoutId } = t;
+          await api.upsertTransaction(txnWithoutId as TransactionInput);
         }
       }
 

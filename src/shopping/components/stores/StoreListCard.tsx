@@ -8,7 +8,7 @@ interface StoreListCardProps {
   store: Store;
 }
 
-export function StoreListCard({ list, store }: StoreListCardProps): JSX.Element {
+export function StoreListCard({ list, store }: StoreListCardProps) {
   return (
     <div className="bg-white rounded-lg border shadow-sm">
       <div className="p-4 border-b" style={{ backgroundColor: `${store.color}10` }}>

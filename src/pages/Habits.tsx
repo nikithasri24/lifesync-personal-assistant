@@ -15,8 +15,7 @@
  * - Draft state for creating/editing habits
  */
 
-import React, { useMemo, useState } from 'react';
-import type { FormEvent } from 'react';
+import React, { type ReactElement, useMemo, useState, type FormEvent } from 'react';
 import { Toast } from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { SkeletonCard } from '../components/LoadingSpinner';
@@ -146,7 +145,7 @@ const Habits: React.FC = () => {
         showToast('Habit created successfully', 'success');
       },
       onError: (error) => {
-        logger.error('[Habits] Failed to add habit', { error });
+        logger.error('Habits', error);
         showToast('Unable to save the habit right now. Please try again.', 'error');
       },
     });
@@ -212,7 +211,7 @@ const Habits: React.FC = () => {
         showToast('Streak and history reset', 'success');
       },
       onError: (error) => {
-        logger.error('[Habits] Failed to reset history', { error });
+        logger.error('Habits', error);
         showToast('Unable to reset history. Please try again.', 'error');
       },
     });
@@ -257,7 +256,7 @@ const Habits: React.FC = () => {
           showToast('Habit updated successfully', 'success');
         },
         onError: (error) => {
-          logger.error('[Habits] Failed to update habit', { error });
+          logger.error('Habits', error);
           showToast('Saving changes failed. Please try again.', 'error');
         },
       }
@@ -276,7 +275,7 @@ const Habits: React.FC = () => {
           showToast('Habit completed!', 'success');
         },
         onError: (error) => {
-          logger.error('[Habits] Failed to complete habit', { error });
+          logger.error('Habits', error);
           showToast('Could not record the completion. Please try again.', 'error');
         },
       }
@@ -289,7 +288,7 @@ const Habits: React.FC = () => {
         showToast('Habit deleted', 'success');
       },
       onError: (error) => {
-        logger.error('[Habits] Failed to delete habit', { error });
+        logger.error('Habits', error);
         showToast('Deleting the habit failed. Please try again.', 'error');
       },
     });

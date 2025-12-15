@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { PantryActionButtons } from '../PantryActionButtons';
-import type { PantryItem } from '../../../types';
+import type { PantryItem } from '@/types';
 
 describe('PantryActionButtons', () => {
   const mockPantryItems: PantryItem[] = [
@@ -125,8 +125,8 @@ describe('PantryActionButtons', () => {
   it('renders all filter options', () => {
     render(<PantryActionButtons {...defaultProps} />);
 
-    const filterSelect = screen.getByTitle('Filter');
-    const options = Array.from(filterSelect.options).map((opt) => opt.value);
+    const filterSelect = screen.getByTitle('Filter') as HTMLSelectElement;
+    const options = Array.from(filterSelect.options).map((opt) => (opt as HTMLOptionElement).value);
 
     expect(options).toEqual(['all', 'soon', 'expired', 'low']);
   });
@@ -134,8 +134,8 @@ describe('PantryActionButtons', () => {
   it('renders all sort options', () => {
     render(<PantryActionButtons {...defaultProps} />);
 
-    const sortSelect = screen.getByTitle('Sort');
-    const options = Array.from(sortSelect.options).map((opt) => opt.value);
+    const sortSelect = screen.getByTitle('Sort') as HTMLSelectElement;
+    const options = Array.from(sortSelect.options).map((opt) => (opt as HTMLOptionElement).value);
 
     expect(options).toEqual(['expiry', 'name']);
   });
@@ -171,14 +171,14 @@ describe('PantryActionButtons', () => {
   it('has correct selected value for filter dropdown', () => {
     render(<PantryActionButtons {...defaultProps} pantryFilter="low" />);
 
-    const filterSelect = screen.getByTitle('Filter');
+    const filterSelect = screen.getByTitle('Filter') as HTMLSelectElement;
     expect(filterSelect.value).toBe('low');
   });
 
   it('has correct selected value for sort dropdown', () => {
     render(<PantryActionButtons {...defaultProps} pantrySort="name" />);
 
-    const sortSelect = screen.getByTitle('Sort');
+    const sortSelect = screen.getByTitle('Sort') as HTMLSelectElement;
     expect(sortSelect.value).toBe('name');
   });
 });

@@ -127,9 +127,11 @@ describe('validate utilities', () => {
   describe('validateGoalInput', () => {
     it('should validate valid goal input', async () => {
       const input = {
+        id: 'goal-1',
         name: 'Emergency Fund',
         targetAmount: 10000,
         currentAmount: 5000,
+        startingAmount: 0,
         dueDateISO: '2026-01-01',
         type: 'savings' as const,
       };
@@ -145,6 +147,7 @@ describe('validate utilities', () => {
         name: 'Emergency Fund',
         targetAmount: 10000,
         currentAmount: 5000,
+        startingAmount: 0,
         dueDateISO: '2026-01-01',
         type: 'savings' as const,
         linkedCategoryId: 'cat-1',
@@ -157,9 +160,11 @@ describe('validate utilities', () => {
 
     it('should validate debt type goal', async () => {
       const input = {
+        id: 'goal-2',
         name: 'Pay off credit card',
         targetAmount: 5000,
         currentAmount: 2000,
+        startingAmount: 5000,
         dueDateISO: '2026-01-01',
         type: 'debt' as const,
       };
@@ -171,9 +176,11 @@ describe('validate utilities', () => {
 
     it('should throw on invalid goal type', async () => {
       const input = {
+        id: 'goal-3',
         name: 'Test Goal',
         targetAmount: 10000,
         currentAmount: 5000,
+        startingAmount: 0,
         dueDateISO: '2026-01-01',
         type: 'invalid' as any,
       };
@@ -183,9 +190,11 @@ describe('validate utilities', () => {
 
     it('should throw on missing required field (name)', async () => {
       const input = {
+        id: 'goal-4',
         name: '',
         targetAmount: 10000,
         currentAmount: 5000,
+        startingAmount: 0,
         dueDateISO: '2026-01-01',
         type: 'savings' as const,
       };
@@ -195,9 +204,11 @@ describe('validate utilities', () => {
 
     it('should throw on negative target amount', async () => {
       const input = {
+        id: 'goal-5',
         name: 'Test Goal',
         targetAmount: -1000,
         currentAmount: 0,
+        startingAmount: 0,
         dueDateISO: '2026-01-01',
         type: 'savings' as const,
       };
@@ -207,9 +218,11 @@ describe('validate utilities', () => {
 
     it('should throw on negative current amount', async () => {
       const input = {
+        id: 'goal-6',
         name: 'Test Goal',
         targetAmount: 10000,
         currentAmount: -100,
+        startingAmount: 0,
         dueDateISO: '2026-01-01',
         type: 'savings' as const,
       };
@@ -219,9 +232,11 @@ describe('validate utilities', () => {
 
     it('should accept zero amounts', async () => {
       const input = {
+        id: 'goal-7',
         name: 'New Goal',
         targetAmount: 0,
         currentAmount: 0,
+        startingAmount: 0,
         dueDateISO: '2026-01-01',
         type: 'savings' as const,
       };
@@ -234,9 +249,11 @@ describe('validate utilities', () => {
 
     it('should throw on invalid date format', async () => {
       const input = {
+        id: 'goal-8',
         name: 'Test Goal',
         targetAmount: 10000,
         currentAmount: 5000,
+        startingAmount: 0,
         dueDateISO: 'invalid-date',
         type: 'savings' as const,
       };
@@ -248,9 +265,11 @@ describe('validate utilities', () => {
 
     it('should accept current amount greater than target', async () => {
       const input = {
+        id: 'goal-9',
         name: 'Exceeded Goal',
         targetAmount: 10000,
         currentAmount: 12000,
+        startingAmount: 0,
         dueDateISO: '2026-01-01',
         type: 'savings' as const,
       };

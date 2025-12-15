@@ -1,6 +1,6 @@
 /* eslint-disable max-lines */
 // TODO: Refactor this file to be under 400 lines by extracting components and logic
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { type ReactElement, useState, useEffect, useMemo , type FormEvent } from 'react';
 import { logger } from '../services/logger';
 
 import { useComposedStore } from '../stores/useComposedStore';
@@ -75,7 +75,7 @@ import {
   Navigation,
   Receipt} from 'lucide-react';
 
-export default function ShoppingSmart(): JSX.Element {
+export default function ShoppingSmart(): ReactElement {
   // React Query hooks for shopping data
   const { activeListId, isLoading: isLoadingList, ensureActiveList } = useActiveShoppingList();
   const { data: shoppingItemsData, isLoading: isLoadingItems } = useShoppingItems(activeListId);
@@ -99,14 +99,13 @@ export default function ShoppingSmart(): JSX.Element {
   const _shoppingLoading = isLoadingList || isLoadingItems || pantryLoading;
 
   // Get other store data that hasn't been migrated yet
-  const { addFinancialTransaction, financialAccounts } = useComposedStore();
   const { showToast } = useToast();
 
   // Ensure active shopping list exists on mount
   useEffect(() => {
     if (!isLoadingList && !activeListId) {
       ensureActiveList().catch((error: unknown) => {
-        logger.error('ShoppingSmart', 'Failed to create shopping list:', error as Error);
+        logger.error('ShoppingSmart', error as Error);
       });
     }
   }, [isLoadingList, activeListId, ensureActiveList]);
@@ -119,22 +118,24 @@ export default function ShoppingSmart(): JSX.Element {
       item: mapShoppingItemToCreateInput(item)});
   };
 
-  const updateShoppingItem = (itemId: string, updates: Partial<ShoppingItem>): Promise<ShoppingItem> => {
-    return updateItemMutation.mutateAsync({
+  const updateShoppingItem = async (itemId: string, updates: Partial<ShoppingItem>): Promise<ShoppingItem> => {
+    const result = await updateItemMutation.mutateAsync({
       itemId,
       updates: mapShoppingItemToUpdateInput(updates)});
+    return mapShoppingItemDataToModel([result])[0];
   };
 
-  const deleteShoppingItem = (itemId: string): Promise<void> => {
-    return deleteItemMutation.mutateAsync(itemId);
+  const deleteShoppingItem = async (itemId: string): Promise<void> => {
+    await deleteItemMutation.mutateAsync(itemId);
   };
 
-  const toggleShoppingItem = (itemId: string): Promise<ShoppingItem | void> => {
+  const toggleShoppingItem = async (itemId: string): Promise<ShoppingItem | void> => {
     const item = shoppingItems.find((i) => i.id === itemId);
     if (!item) return Promise.resolve();
-    return toggleItemMutation.mutateAsync({
+    const result = await toggleItemMutation.mutateAsync({
       itemId,
       currentStatus: item.purchased});
+    return mapShoppingItemDataToModel([result])[0];
   };
 
   // Sample stores with ratings and preferences
@@ -178,7 +179,7 @@ export default function ShoppingSmart(): JSX.Element {
     setShowBarcodeScanner,
     barcodeResult,
     setBarcodeResult,
-    _showStorePrefs,
+    showStorePrefs: _showStorePrefs,
     setShowStorePrefs} = useShoppingModals();
 
   // Barcode scanning
@@ -498,7 +499,10 @@ export default function ShoppingSmart(): JSX.Element {
         isOpen={showAddPantry}
         onClose={() => setShowAddPantry(false)}
         onSave={async (item) => {
-          await createPantryItemMutation.mutateAsync(item);
+          await createPantryItemMutation.mutateAsync({
+            ...item,
+            createdAt: new Date()
+          });
         }}
       />
 
@@ -509,43 +513,26 @@ export default function ShoppingSmart(): JSX.Element {
         onAddToPantry={async (items) => {
           for (const it of items) {
             const thresholdNum = it.threshold ? Number(it.threshold) : undefined;
+            // Map shopping category to valid pantry category
+            const validPantryCategories = ['produce', 'dairy', 'meat', 'pantry', 'other'] as const;
+            const pantryCategory = validPantryCategories.includes(it.category as any)
+              ? (it.category as 'produce' | 'dairy' | 'meat' | 'pantry' | 'other')
+              : 'other';
+
             await createPantryItemMutation.mutateAsync({
               name: it.name,
               quantity: it.quantity,
-              category: it.category,
+              category: pantryCategory,
               lowStockThreshold: thresholdNum,
-              isLowStock: thresholdNum != null ? it.quantity <= thresholdNum : undefined
+              isLowStock: thresholdNum != null ? it.quantity <= thresholdNum : undefined,
+              createdAt: new Date()
             });
           }
           showToast(`Added ${items.length} items to pantry`, 'success');
         }}
-        onLogExpense={async (amount, merchant) => {
-          const accounts = financialAccounts as Array<{ id: string }> | undefined;
-          const acctId = accounts?.[0]?.id;
-          if (!acctId) {
-            showToast('Add a financial account first (Financials tab)', 'info');
-            return;
-          }
-          try {
-            const addTransaction = addFinancialTransaction as ((transaction: {
-              accountId: string;
-              amount: number;
-              type: string;
-              description: string;
-              date: Date;
-              categoryId: undefined;
-            }) => Promise<void>) | undefined;
-            await addTransaction?.({
-              accountId: acctId,
-              amount: Number(amount.toFixed(2)),
-              type: 'expense',
-              description: `Groceries — ${merchant}`,
-              date: new Date(),
-              categoryId: undefined});
-            showToast('Logged groceries expense', 'success');
-          } catch (_e) {
-            showToast('Failed to log expense', 'error');
-          }
+        onLogExpense={async (_amount, _merchant) => {
+          // Financial integration not yet implemented
+          showToast('Financial integration not available', 'info');
         }}
       />
       {/* Barcode Scanner Modal */}

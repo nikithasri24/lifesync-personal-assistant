@@ -63,8 +63,9 @@ export const CreateGoalModal: React.FC<CreateGoalModalProps> = ({
                 value={newGoal.target?.value ?? ''}
                 onChange={(e) => onUpdateGoal({
                   target: {
-                    ...newGoal.target ?? {},
-                    value: parseInt(e.target.value) || 0
+                    metric: newGoal.target?.metric ?? 'sessions',
+                    value: parseInt(e.target.value) || 0,
+                    unit: newGoal.target?.unit ?? 'sessions'
                   }
                 })}
                 className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
@@ -80,7 +81,8 @@ export const CreateGoalModal: React.FC<CreateGoalModalProps> = ({
                 value={newGoal.target?.unit ?? 'minutes'}
                 onChange={(e) => onUpdateGoal({
                   target: {
-                    ...newGoal.target ?? {},
+                    metric: newGoal.target?.metric ?? 'sessions',
+                    value: newGoal.target?.value ?? 0,
                     unit: e.target.value
                   }
                 })}

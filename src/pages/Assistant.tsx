@@ -5,10 +5,16 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Mic, MicOff, Send, Sparkles, Trash2, VolumeX } from 'lucide-react';
 import { useConversationalVoice } from '../hooks/useConversationalVoice';
 import { useAuth } from '../hooks/useAuth';
-import type { ConversationMessage } from '../services/conversationEngine';
 import { logger } from '../services/logger';
 
-export default function Assistant(): JSX.Element {
+interface ConversationMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  functionCalls?: Array<{ name: string; [key: string]: unknown }>;
+  timestamp?: Date;
+}
+
+export default function Assistant() {
   const { user } = useAuth();
   const {
     isListening,
@@ -37,7 +43,7 @@ export default function Assistant(): JSX.Element {
   // Update messages from conversation history
   useEffect(() => {
     const interval = setInterval(() => {
-      setMessages(getMessages());
+      setMessages(getMessages() as ConversationMessage[]);
     }, 500);
 
     return () => clearInterval(interval);
@@ -54,7 +60,7 @@ export default function Assistant(): JSX.Element {
     try {
       await sendTextMessage(message);
     } catch (error) {
-      logger.error('Failed to send message:', { error });
+      logger.error('Assistant', error as Error, { context: 'send message failed' });
     }
   };
 
@@ -181,7 +187,7 @@ export default function Assistant(): JSX.Element {
 
                 {msg.functionCalls && msg.functionCalls.length > 0 && (
                   <div className="mt-3 pt-3 border-t border-slate-200/50 space-y-1">
-                    {msg.functionCalls.map((fc, j) => (
+                    {msg.functionCalls.map((fc: { name: string }, j: number) => (
                       <div key={j} className="text-xs opacity-75">
                         ✓ {fc.name.replace(/_/g, ' ')}
                       </div>

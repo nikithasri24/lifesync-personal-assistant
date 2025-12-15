@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { type ReactNode } from 'react';
 
 type Column<T> = {
   key: keyof T | string;
@@ -31,7 +31,7 @@ export function DataTable<T extends { id: string }>({ columns, rows, getKey }: P
             <tr key={getKey ? getKey(r) : r.id} className="border-t">
               {columns.map((c) => (
                 <td key={String(c.key)} className={`px-3 py-2 ${c.className ?? ''}`}>
-                  {c.render ? c.render(r) : (r as Record<string, unknown>)[c.key]}
+                  {c.render ? c.render(r) : ((r as Record<string, unknown>)[String(c.key)] as ReactNode)}
                 </td>
               ))}
             </tr>

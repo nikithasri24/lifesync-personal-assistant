@@ -19,13 +19,15 @@ describe('Skincare AI Tools', () => {
         name: 'Vitamin C Serum',
         brand: 'The Ordinary',
         category: 'serum' as const,
-        user_id: mockUserId,
-        in_use: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        userId: mockUserId,
+        currentlyUsing: true,
+        usageTime: [],
+        keyIngredients: ['Ascorbic Acid'],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       };
 
-      vi.mocked(skincareAPI.createSkincareProduct).mockResolvedValue(mockProduct);
+      vi.mocked(skincareAPI.createSkincareProduct).mockResolvedValue(mockProduct as any);
 
       const tool = skincareTools.find((t) => t.definition.function.name === 'add_skincare_product');
       expect(tool).toBeDefined();
@@ -40,8 +42,8 @@ describe('Skincare AI Tools', () => {
       );
 
       expect(result.success).toBe(true);
-      expect(result.product).toBeDefined();
-      expect(result.product?.name).toBe('Vitamin C Serum');
+      expect(result.data).toBeDefined();
+      expect((result.data as any)?.name).toBe('Vitamin C Serum');
       expect(skincareAPI.createSkincareProduct).toHaveBeenCalledWith(
         expect.objectContaining({
           name: 'Vitamin C Serum',
@@ -92,7 +94,8 @@ describe('Skincare AI Tools', () => {
       const mockLog = {
         id: 'log-1',
         date: '2025-01-15',
-        overall_condition: 4,
+        overall_condition: 4 as 4,
+        concerns: ['dryness'],
         notes: 'Skin looking good',
         user_id: mockUserId,
         created_at: new Date().toISOString(),
@@ -113,8 +116,8 @@ describe('Skincare AI Tools', () => {
       );
 
       expect(result.success).toBe(true);
-      expect(result.log).toBeDefined();
-      expect(result.log?.overall_condition).toBe(4);
+      expect(result.data).toBeDefined();
+      expect((result.data as any)?.overall_condition).toBe(4);
       expect(skincareAPI.createSkinConditionLog).toHaveBeenCalledWith(
         expect.objectContaining({
           date: '2025-01-15',
@@ -201,9 +204,9 @@ describe('Skincare AI Tools', () => {
       );
 
       expect(result.success).toBe(true);
-      expect(result.routine).toBeDefined();
-      expect(result.routine?.steps).toBeDefined();
-      expect(Array.isArray(result.routine?.steps)).toBe(true);
+      expect(result.data).toBeDefined();
+      expect((result.data as any)?.steps).toBeDefined();
+      expect(Array.isArray((result.data as any)?.steps)).toBe(true);
     });
 
     it('should get evening routine suggestion', async () => {
@@ -318,10 +321,10 @@ describe('Skincare AI Tools', () => {
       const result = await tool!.execute({}, mockUserId);
 
       expect(result.success).toBe(true);
-      expect(result.stats).toBeDefined();
-      expect(result.stats?.total_products).toBe(10);
-      expect(result.stats?.products_in_use).toBe(7);
-      expect(result.stats?.average_condition).toBe(4.2);
+      expect(result.data).toBeDefined();
+      expect((result.data as any)?.totalProducts).toBe(10);
+      expect((result.data as any)?.productsInUse).toBe(7);
+      expect((result.data as any)?.averageCondition).toBe(4.2);
     });
 
     it('should handle API errors', async () => {

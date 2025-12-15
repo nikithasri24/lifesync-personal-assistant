@@ -28,7 +28,7 @@ export class CreateTaskCommand implements Command {
   }
 
   async execute(): Promise<void> {
-    logger.debug('[CreateTaskCommand] Executing', { title: this.taskData.title });
+    logger.debug('Tasks', '[CreateTaskCommand] Executing', { title: this.taskData.title });
     const created = await createTask(this.taskData);
     this.createdTaskId = created.id as string;
     await queryClient.invalidateQueries({ queryKey: ['tasks'] });
@@ -38,7 +38,7 @@ export class CreateTaskCommand implements Command {
     if (!this.createdTaskId) {
       throw new Error('Cannot undo: task was not created');
     }
-    logger.debug('[CreateTaskCommand] Undoing', { taskId: this.createdTaskId });
+    logger.debug('Tasks', '[CreateTaskCommand] Undoing', { taskId: this.createdTaskId });
     await deleteTask(this.createdTaskId);
     await queryClient.invalidateQueries({ queryKey: ['tasks'] });
   }
@@ -70,7 +70,7 @@ export class UpdateTaskCommand implements Command {
   }
 
   async execute(): Promise<void> {
-    logger.debug('[UpdateTaskCommand] Executing', { taskId: this.taskId, updates: this.updates });
+    logger.debug('Tasks', '[UpdateTaskCommand] Executing', { taskId: this.taskId, updates: this.updates });
     await updateTask(this.taskId, this.updates);
     await queryClient.invalidateQueries({ queryKey: ['tasks'] });
   }
@@ -79,7 +79,7 @@ export class UpdateTaskCommand implements Command {
     if (!this.previousState) {
       throw new Error('Cannot undo: previous state not stored');
     }
-    logger.debug('[UpdateTaskCommand] Undoing', { taskId: this.taskId, previousState: this.previousState });
+    logger.debug('Tasks', '[UpdateTaskCommand] Undoing', { taskId: this.taskId, previousState: this.previousState });
     await updateTask(this.taskId, this.previousState);
     await queryClient.invalidateQueries({ queryKey: ['tasks'] });
   }
@@ -102,13 +102,13 @@ export class DeleteTaskCommand implements Command {
   }
 
   async execute(): Promise<void> {
-    logger.debug('[DeleteTaskCommand] Executing', { taskId: this.task.id });
+    logger.debug('Tasks', '[DeleteTaskCommand] Executing', { taskId: this.task.id });
     await deleteTask(this.task.id as string);
     await queryClient.invalidateQueries({ queryKey: ['tasks'] });
   }
 
   async undo(): Promise<void> {
-    logger.debug('[DeleteTaskCommand] Undoing', { taskId: this.task.id });
+    logger.debug('Tasks', '[DeleteTaskCommand] Undoing', { taskId: this.task.id });
     // Recreate the task with the same data (except timestamps)
     const { id, created_at, updated_at, ...taskData } = this.task;
     await createTask(taskData);
@@ -141,14 +141,14 @@ export class MoveTaskCommand implements Command {
   }
 
   async execute(): Promise<void> {
-    logger.debug('[MoveTaskCommand] Executing', { taskId: this.taskId, newDate: this.newDate });
+    logger.debug('Tasks', '[MoveTaskCommand] Executing', { taskId: this.taskId, newDate: this.newDate });
     await updateTask(this.taskId, { due_date: this.newDate });
     // Invalidate React Query cache to refresh UI
     await queryClient.invalidateQueries({ queryKey: ['tasks'] });
   }
 
   async undo(): Promise<void> {
-    logger.debug('[MoveTaskCommand] Undoing', { taskId: this.taskId, previousDate: this.previousDate });
+    logger.debug('Tasks', '[MoveTaskCommand] Undoing', { taskId: this.taskId, previousDate: this.previousDate });
     await updateTask(this.taskId, { due_date: this.previousDate });
     // Invalidate React Query cache to refresh UI
     await queryClient.invalidateQueries({ queryKey: ['tasks'] });
@@ -192,17 +192,17 @@ export class ChangeTaskCategoryCommand implements Command {
 
     this.newStatus = updates.status ?? currentTask.status;
     this.newPriority = updates.priority ?? currentTask.priority;
-    this.newDueDate = updates.due_date !== undefined ? updates.due_date : currentTask.due_date;
+    this.newDueDate = updates.due_date !== undefined ? updates.due_date : (currentTask.due_date ?? null);
     this.newSidebarSection = updates.sidebar_section ?? currentTask.sidebar_section ?? null;
 
     this.previousStatus = currentTask.status;
     this.previousPriority = currentTask.priority;
-    this.previousDueDate = currentTask.due_date;
+    this.previousDueDate = currentTask.due_date ?? null;
     this.previousSidebarSection = currentTask.sidebar_section ?? null;
   }
 
   async execute(): Promise<void> {
-    logger.debug('[ChangeTaskCategoryCommand] Executing', { taskId: this.taskId });
+    logger.debug('Tasks', '[ChangeTaskCategoryCommand] Executing', { taskId: this.taskId });
     await updateTask(this.taskId, {
       status: this.newStatus,
       priority: this.newPriority,
@@ -214,7 +214,7 @@ export class ChangeTaskCategoryCommand implements Command {
   }
 
   async undo(): Promise<void> {
-    logger.debug('[ChangeTaskCategoryCommand] Undoing', { taskId: this.taskId });
+    logger.debug('Tasks', '[ChangeTaskCategoryCommand] Undoing', { taskId: this.taskId });
     await updateTask(this.taskId, {
       status: this.previousStatus,
       priority: this.previousPriority,
