@@ -1,13 +1,6 @@
 import type { ReactElement } from 'react';
-import {
-  CheckSquare,
-  Target,
-  FileText,
-  TrendingUp,
-} from 'lucide-react';
 import { useComposedStore } from '../stores/useComposedStore';
-import { format, isToday, addDays } from 'date-fns';
-import { SkeletonCard } from '../components/LoadingSpinner';
+import { format } from 'date-fns';
 import { useState, useEffect } from 'react';
 import { Toast } from '../components/Toast';
 import { useToast } from '../hooks/useToast';
@@ -20,6 +13,7 @@ import type { Task } from '../lib/supabase';
 import type { Habit, Note, JournalEntry } from '../types';
 
 // Layout components
+import { DashboardLoadingState } from '../dashboard/components/DashboardLoadingState';
 import { WelcomeBanner } from '../dashboard/components/WelcomeBanner';
 import { StatsGrid } from '../dashboard/components/StatsGrid';
 import { TodayTasksSection } from '../dashboard/components/TodayTasksSection';
@@ -27,6 +21,9 @@ import { TodayHabitsSection } from '../dashboard/components/TodayHabitsSection';
 import { RecentNotesSection } from '../dashboard/components/RecentNotesSection';
 import { WeeklyOverview } from '../dashboard/components/WeeklyOverview';
 import { UpcomingDeadlines } from '../dashboard/components/UpcomingDeadlines';
+
+// Hooks
+import { useDashboardData } from '../dashboard/hooks/useDashboardData';
 
 interface TasksQueryResult {
   data: Task[];
@@ -132,113 +129,27 @@ export default function Dashboard(): ReactElement {
     return () => clearTimeout(timer);
   }, []);
 
-  const todayTodos = tasks.filter((task: Task): boolean =>
-    task.status !== 'done' && !task.deleted &&
-    !!task.due_date &&
-    isToday(new Date(task.due_date))
+  // Use dashboard data hook for all data transformations
+  const dashboardData = useDashboardData(
+    tasks,
+    habits,
+    habitEntries,
+    notes,
+    journalEntries,
+    setActiveView
   );
 
-  const upcomingTodos = tasks.filter((task: Task): boolean =>
-    task.status !== 'done' && !task.deleted &&
-    !!task.due_date &&
-    new Date(task.due_date) > new Date() &&
-    new Date(task.due_date) <= addDays(new Date(), 7)
-  );
-
-  // Calculate habit progress for today
-  const todayKey = format(new Date(), 'yyyy-MM-dd');
-  const habitsWithProgress = habits.map((habit: Habit) => {
-    const todayCompletions = habitEntries.filter(
-      entry => entry.habit_id === habit.id && entry.date === todayKey
-    ).length;
-    const targetCount = habit.targetCount ?? 1;
-    const isComplete = todayCompletions >= targetCount;
-
-    return {
-      ...habit,
-      todayCompletions,
-      targetCount,
-      isComplete
-    };
-  });
-
-  // Show incomplete habits first, then limit to 5
-  const todayHabits = habitsWithProgress
-    .filter(h => !h.isComplete)
-    .slice(0, 5);
-
-  const recentNotes = notes
-    .sort((a: Note, b: Note): number => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-    .slice(0, 5);
-
-  const thisWeekJournalEntries = journalEntries.filter((entry: JournalEntry): boolean => {
-    const entryDate = new Date(entry.createdAt);
-    const weekAgo = new Date();
-    weekAgo.setDate(weekAgo.getDate() - 7);
-    return entryDate >= weekAgo;
-  });
-
-  const completedTodosThisWeek = tasks.filter((task: Task): boolean => {
-    if (task.status !== 'done' || task.deleted) return false;
-    const completedDate = task.completed_at ? new Date(task.completed_at) : (task.created_at ? new Date(task.created_at) : null);
-    if (!completedDate) return false;
-    const weekAgo = new Date();
-    weekAgo.setDate(weekAgo.getDate() - 7);
-    return completedDate >= weekAgo;
-  });
-
-  const statsCards: Array<{
-    title: string;
-    value: number | string;
-    icon: typeof CheckSquare;
-    color: string;
-    onClick: () => void;
-  }> = [
-    {
-      title: 'Today\'s Tasks',
-      value: todayTodos.length,
-      icon: CheckSquare,
-      color: 'bg-blue-500',
-      onClick: (): void => setActiveView('scheduler')
-    },
-    {
-      title: 'Pending Habits',
-      value: todayHabits.length,
-      icon: Target,
-      color: 'bg-green-500',
-      onClick: (): void => setActiveView('habits')
-    },
-    {
-      title: 'Total Notes',
-      value: notes.length,
-      icon: FileText,
-      color: 'bg-purple-500',
-      onClick: (): void => setActiveView('notes')
-    },
-    {
-      title: 'Week\'s Progress',
-      value: `${completedTodosThisWeek.length} tasks`,
-      icon: TrendingUp,
-      color: 'bg-orange-500',
-      onClick: (): void => setActiveView('scheduler')
-    }
-  ];
+  const {
+    todayTodos,
+    upcomingTodos,
+    todayHabits,
+    recentNotes,
+    thisWeekJournalEntries,
+    statsCards,
+  } = dashboardData;
 
   if (isLoading || tasksLoading) {
-    return (
-      <div className="space-y-8">
-        <SkeletonCard className="h-32" />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <SkeletonCard key={i} className="h-24" />
-          ))}
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <SkeletonCard className="h-80" />
-          <SkeletonCard className="h-80" />
-        </div>
-      </div>
-    );
+    return <DashboardLoadingState />;
   }
 
   return (
