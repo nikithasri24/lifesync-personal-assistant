@@ -21,6 +21,7 @@ import { logger } from '../services/logger';
 
 // Import layout components
 import { LifeGoalsHeader } from '../goals/components/layout/LifeGoalsHeader';
+import { LifeGoalsLoadingState } from '../goals/components/layout/LifeGoalsLoadingState';
 import { StatsCards } from '../goals/components/layout/StatsCards';
 import { TabNavigation } from '../goals/components/layout/TabNavigation';
 import { GoalList } from '../goals/components/layout/GoalList';
@@ -226,12 +227,7 @@ const LifeGoals: React.FC = () => {
   };
 
   if (loading) {
-    return (
-      <div className="mx-auto flex max-w-5xl flex-col items-center justify-center gap-4 p-6 min-h-[400px]">
-        <div className="h-12 w-12 animate-spin rounded-full border-4 border-indigo-500 border-t-transparent" />
-        <p className="text-sm text-slate-600">Loading your goals...</p>
-      </div>
-    );
+    return <LifeGoalsLoadingState />;
   }
 
   return (
