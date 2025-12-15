@@ -12,12 +12,9 @@ import { MOCK_STORES } from '../shopping/fixtures/mockStores';
 import { ShoppingHeader } from '../shopping/components/layout/ShoppingHeader';
 import { ViewTabs } from '../shopping/components/layout/ViewTabs';
 import { ShoppingModals } from '../shopping/components/layout/ShoppingModals';
-import { MasterListView, DistributeView, StoreListsView } from '../shopping/components/views';
-import { PantryActionButtons } from '../shopping/components/pantry/PantryActionButtons';
-import { PantryTable } from '../shopping/components/pantry/PantryTable';
-import { useVoiceInput, useBarcodeScanner, useStoreSuggestions, usePantryManagement, useItemForm, useShoppingModals, usePantryActions } from '../shopping/hooks';
+import { MasterListView, DistributeView, StoreListsView, PantryView } from '../shopping/components/views';
+import { useVoiceInput, useBarcodeScanner, useStoreSuggestions, useItemForm, useShoppingModals } from '../shopping/hooks';
 import { smartRecommendStores } from '../shopping/utils/storeUtils';
-import { createShoppingItemFromPantry } from '../shopping/utils/pantryUtils';
 import {
   useActiveShoppingList,
   useShoppingItems,
@@ -202,25 +199,6 @@ export default function ShoppingSmart(): ReactElement {
 
   // Location-based suggestions using custom hook
   const { userLocation, getUserLocation, findNearbyStoresForItem } = useStoreSuggestions(stores);
-
-  // Pantry management using custom hook
-  const {
-    pantryFilter,
-    setPantryFilter,
-    pantrySort,
-    setPantrySort,
-    editingPantryId,
-    editPantry,
-    setEditPantry,
-    startEditingPantry,
-    cancelEditing,
-    replenishId,
-    startReplenish,
-    cancelReplenish,
-    pantrySortedFiltered} = usePantryManagement(pantryItems);
-
-  // Pantry bulk actions using custom hook
-  const { addLowStockToShopping, addExpiredToShopping } = usePantryActions(pantryItems, addShoppingItem);
 
   // Heuristic parser to extract item lines from receipt text with auto-categorization
 
@@ -417,81 +395,17 @@ export default function ShoppingSmart(): ReactElement {
 
       {/* Pantry View */}
       {activeView === 'pantry' && (
-        <div className="bg-white rounded-xl shadow-sm border p-4 mt-4">
-          <div className="flex items-center justify-between mb-4">
-            <h4 className="text-lg font-semibold">Pantry</h4>
-            <PantryActionButtons
-              pantryItems={pantryItems}
-              pantryFilter={pantryFilter}
-              pantrySort={pantrySort}
-              onFilterChange={setPantryFilter}
-              onSortChange={setPantrySort}
-              onAddLowStock={async () => {
-                const count = await addLowStockToShopping();
-                showToast(`Added ${count} low-stock items to shopping`, 'success');
-              }}
-              onAddExpired={async () => {
-                const count = await addExpiredToShopping();
-                showToast(`Moved ${count} expired items to shopping`, 'info');
-              }}
-              onAddItem={() => setShowAddPantry(true)}
-              onScanReceipt={() => setShowScanReceipt(true)}
-            />
-          </div>
-
-          <PantryTable
-            items={pantrySortedFiltered}
-            editingItemId={editingPantryId}
-            editData={editPantry}
-            replenishId={replenishId}
-            onEditChange={(updates) => setEditPantry(s => ({ ...s, ...updates }))}
-            onSaveEdit={(itemId) => {
-              const qty = Number(editPantry.qty) || 0;
-              const exp = editPantry.exp ? new Date(editPantry.exp) : undefined;
-              void updatePantryItemMutation.mutateAsync({
-                itemId,
-                updates: {
-                  quantity: qty,
-                  unit: editPantry.unit !== '' ? editPantry.unit : undefined,
-                  expirationDate: exp,
-                  isLowStock: editPantry.low,
-                  lowStockThreshold: editPantry.threshold ? Number(editPantry.threshold) : undefined
-                }
-              }).then(() => {
-                cancelEditing();
-              });
-            }}
-            onCancelEdit={cancelEditing}
-            onStartEdit={startEditingPantry}
-            onStartReplenish={startReplenish}
-            onReplenish={async (targetQuantity) => {
-              const item = pantryItems.find(x => x.id === replenishId);
-              if (!item) return;
-
-              const need = Math.max(0, targetQuantity - (item.quantity || 0));
-              if (need <= 0) {
-                showToast('Already at or above target', 'info');
-                cancelReplenish();
-                return;
-              }
-
-              const shoppingItem = createShoppingItemFromPantry(item, need);
-              await addShoppingItem({ ...shoppingItem, tags: ['from:pantry', 'reason:replenish'] });
-              showToast(`Added ${need} ${item.unit ?? ''} of ${item.name} to shopping`, 'success');
-              cancelReplenish();
-            }}
-            onCancelReplenish={cancelReplenish}
-            onAddToShopping={(item: PantryItemType) => {
-              const qty = (item.lowStockThreshold != null && item.quantity < item.lowStockThreshold)
-                ? (item.lowStockThreshold - item.quantity)
-                : item.quantity ?? 1;
-              const shoppingItem = createShoppingItemFromPantry(item, qty);
-              void addShoppingItem(shoppingItem);
-              showToast(`Added ${item.name} to shopping`, 'success');
-            }}
-            onDelete={(itemId) => void deletePantryItemMutation.mutate(itemId)}
-          />
-        </div>
+        <PantryView
+          pantryItems={pantryItems}
+          onAddItem={() => setShowAddPantry(true)}
+          onScanReceipt={() => setShowScanReceipt(true)}
+          onAddToShopping={addShoppingItem}
+          onUpdateItem={async (itemId, updates) => {
+            await updatePantryItemMutation.mutateAsync({ itemId, updates });
+          }}
+          onDeleteItem={(itemId) => { void deletePantryItemMutation.mutate(itemId); }}
+          onShowToast={showToast}
+        />
       )}
 
       <ShoppingModals
