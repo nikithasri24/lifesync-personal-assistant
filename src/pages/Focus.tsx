@@ -1,11 +1,12 @@
 import { useEffect, useState, useRef } from 'react';
-import { Play, Pause, RotateCcw } from 'lucide-react';
 import { logger } from '../services/logger';
 import {
   useActiveFocusSession,
   useCreateFocusSession,
   useUpdateFocusSession,
 } from '../hooks/useFocusQuery';
+import { FocusHeader } from '../focus/components/layout/FocusHeader';
+import { FocusTimerDisplay } from '../focus/components/layout/FocusTimerDisplay';
 
 const Focus: React.FC = () => {
   const [seconds, setSeconds] = useState(25 * 60);
@@ -44,9 +45,6 @@ const Focus: React.FC = () => {
       }
     }
   }, [seconds, active, updateSession]);
-
-  const minutesDisplay = String(Math.floor(seconds / 60)).padStart(2, '0');
-  const secondsDisplay = String(seconds % 60).padStart(2, '0');
 
   const handlePlayPause = async (): Promise<void> => {
     if (!active) {
@@ -109,36 +107,13 @@ const Focus: React.FC = () => {
 
   return (
     <div className="mx-auto flex max-w-lg flex-col gap-6 p-6 text-center">
-      <header className="space-y-2">
-        <h1 className="text-2xl font-semibold text-slate-900">Focus timer</h1>
-        <p className="text-sm text-slate-600">
-          A lightweight Pomodoro timer to help you carve out distraction-free sessions. Hit start and stay in flow.
-        </p>
-      </header>
-
-      <div className="flex flex-col items-center gap-6 rounded-2xl border border-indigo-100 bg-indigo-50/60 p-10 shadow-sm">
-        <div className="font-mono text-5xl font-bold text-indigo-700">
-          {minutesDisplay}:{secondsDisplay}
-        </div>
-        <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={() => void handlePlayPause()}
-            className="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500"
-          >
-            {active ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-            {active ? 'Pause' : 'Start'}
-          </button>
-          <button
-            type="button"
-            onClick={() => void handleReset()}
-            className="inline-flex items-center gap-2 rounded-full border border-indigo-200 px-4 py-2 text-sm font-medium text-indigo-600 transition hover:bg-white"
-          >
-            <RotateCcw className="h-4 w-4" />
-            Reset
-          </button>
-        </div>
-      </div>
+      <FocusHeader />
+      <FocusTimerDisplay
+        seconds={seconds}
+        active={active}
+        onPlayPause={() => void handlePlayPause()}
+        onReset={() => void handleReset()}
+      />
     </div>
   );
 };
