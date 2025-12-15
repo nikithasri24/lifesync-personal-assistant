@@ -19,11 +19,14 @@ import { useUndoRedo } from '../contexts/UndoRedoContext';
 // Components
 import { CalendarHeader } from '../calendar/components/CalendarHeader';
 import { CalendarSidebar } from '../calendar/components/CalendarSidebar';
-import { SkeletonCard } from '../components/LoadingSpinner';
 import { TaskEditModal } from '../scheduler/components/TaskEditModal';
 import { EventModal } from '../components/calendar/EventModal';
 import { EventCard } from '../components/calendar/EventCard';
 import { QuickScheduleModal } from '../components/calendar/QuickScheduleModal';
+import { CalendarLoadingState } from '../calendar/components/layout/CalendarLoadingState';
+import { WeekDayHeaders } from '../calendar/components/layout/WeekDayHeaders';
+import { MonthViewPlaceholder } from '../calendar/components/layout/MonthViewPlaceholder';
+import { DayViewPlaceholder } from '../calendar/components/layout/DayViewPlaceholder';
 
 // Types
 import type { Task } from '../lib/supabase';
@@ -384,13 +387,7 @@ const Calendar: React.FC = () => {
 
   // Loading state
   if (isLoading) {
-    return (
-      <div className="flex h-screen bg-white dark:bg-slate-900">
-        <div className="flex-1 flex items-center justify-center">
-          <SkeletonCard count={3} />
-        </div>
-      </div>
-    );
+    return <CalendarLoadingState />;
   }
 
   return (
@@ -445,29 +442,7 @@ const Calendar: React.FC = () => {
           {calendarState.view === 'week' && (
             <div className="flex-1 overflow-auto">
               <div className="min-w-max">
-                {/* Day headers */}
-                <div className="sticky top-0 z-10 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
-                  <div className="flex">
-                    <div className="w-20 border-r border-slate-200 dark:border-slate-700 flex-shrink-0" />
-                    {calendarState.weekDays.map((day, i) => (
-                      <div
-                        key={i}
-                        className="flex-1 min-w-[140px] max-w-[140px] text-center py-3 border-r border-slate-200 dark:border-slate-700 last:border-r-0"
-                      >
-                        <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-                          {day.dayName}
-                        </div>
-                        <div
-                          className={`text-2xl font-semibold mx-auto w-12 h-12 flex items-center justify-center rounded-full ${
-                            day.isToday ? 'bg-blue-500 text-white' : 'text-slate-900 dark:text-slate-100'
-                          }`}
-                        >
-                          {day.dayNumber}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <WeekDayHeaders weekDays={calendarState.weekDays} />
 
                 {/* All-day events section */}
                 <div className="flex border-b border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">
@@ -645,22 +620,10 @@ const Calendar: React.FC = () => {
           )}
 
           {/* Month View */}
-          {calendarState.view === 'month' && (
-            <div className="flex-1 p-4">
-              <div className="text-center text-slate-500">
-                Month view coming soon
-              </div>
-            </div>
-          )}
+          {calendarState.view === 'month' && <MonthViewPlaceholder />}
 
           {/* Day View */}
-          {calendarState.view === 'day' && (
-            <div className="flex-1 p-4">
-              <div className="text-center text-slate-500">
-                Day view coming soon
-              </div>
-            </div>
-          )}
+          {calendarState.view === 'day' && <DayViewPlaceholder />}
         </div>
       </div>
 
