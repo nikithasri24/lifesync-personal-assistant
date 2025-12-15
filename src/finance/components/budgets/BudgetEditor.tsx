@@ -120,8 +120,6 @@ const BudgetEditor: React.FC<BudgetEditorProps> = ({
     }
   };
 
-  const _selectedCategory = categories.find((c) => c.id === categoryId);
-
   // Format month display
   const monthDisplay = new Date(`${month}-01`).toLocaleDateString('en-US', {
     month: 'long',

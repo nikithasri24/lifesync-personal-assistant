@@ -85,10 +85,6 @@ export default function DebtPayoffCalculator() {
   const totalMinimumPayments = debts.reduce((sum, debt) => sum + debt.minimumPayment, 0);
   const weightedAverageRate = debts.length > 0 ?
     debts.reduce((sum, debt) => sum + (debt.interestRate * debt.balance), 0) / totalDebt : 0;
-  const _highestRateDebt = debts.length > 0
-    ? debts.reduce((highest, debt) =>
-        debt.interestRate > highest.interestRate ? debt : highest, debts[0])
-    : { interestRate: 0 };
 
   return (
     <div className="space-y-6">

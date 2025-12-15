@@ -256,7 +256,6 @@ export function calculateCompoundInterest(
   }>;
 } {
   const monthlyRate = annualReturnRate / 12 / 100;
-  const _months = years * 12;
 
   const yearByYear: Array<{
     year: number;
@@ -270,7 +269,6 @@ export function calculateCompoundInterest(
 
   for (let year = 1; year <= years; year++) {
     const startBalance = balance;
-    const _startContributions = totalContributed;
 
     for (let month = 1; month <= 12; month++) {
       balance = balance * (1 + monthlyRate) + monthlyContribution;
@@ -278,7 +276,6 @@ export function calculateCompoundInterest(
     }
 
     const yearContributions = monthlyContribution * 12;
-    const _yearGains = balance - startBalance - yearContributions;
 
     yearByYear.push({
       year,
@@ -485,8 +482,6 @@ export function calculateRequiredSavings(
   }
 
   // Calculate future value of current savings
-  const _futureValueOfCurrent = currentSavings * Math.pow(1 + annualReturnRate / 100, years);
-
   const totalContributions = requiredMonthlySavings * months;
   const totalGrowth = goalAmount - currentSavings - totalContributions;
 

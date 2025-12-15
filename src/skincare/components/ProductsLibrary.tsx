@@ -40,15 +40,6 @@ const ProductsLibrary: React.FC<ProductsLibraryProps> = ({
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
-  // Group by category
-  const _productsByCategory = filteredProducts.reduce((acc, product) => {
-    if (!acc[product.category]) {
-      acc[product.category] = [];
-    }
-    acc[product.category].push(product);
-    return acc;
-  }, {} as Record<string, SkincareProduct[]>);
-
   const categories: ProductCategory[] = [
     'cleanser',
     'toner',

@@ -47,9 +47,8 @@ const SettingsPage: React.FC = () => {
       }
 
       // Import complete
-    } catch (e: unknown) {
-      // Log error silently
-      const _errorMessage = e instanceof Error ? e.message : 'Unknown error';
+    } catch {
+      // Silently ignore errors
     }
   }, [json]);
 

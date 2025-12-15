@@ -31,18 +31,6 @@ vi.mock('../../../stores/useAppStore', () => ({
   }),
 }));
 
-const _createWrapper = () => {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: { retry: false },
-      mutations: { retry: false },
-    },
-  });
-  return ({ children }: { children: React.ReactNode }) => (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-  );
-};
-
 describe('ShoppingSmart Components - Smoke Tests', () => {
   it('placeholder test - components will be added', () => {
     expect(true).toBe(true);

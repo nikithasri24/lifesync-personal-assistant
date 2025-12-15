@@ -37,7 +37,6 @@ export const calculateDebtStrategy = (
 ): StrategyComparison => {
   const totalMinimums = debts.reduce((sum, debt) => sum + debt.minimumPayment, 0);
   const totalExtraPayment = extraPayment;
-  const _totalAvailable = totalMinimums + totalExtraPayment;
 
   const sortedDebts = [...debts];
 
@@ -52,7 +51,7 @@ export const calculateDebtStrategy = (
   let maxMonths = 0;
   let remainingExtra = totalExtraPayment;
 
-  const _debtPayoffs = sortedDebts.map(debt => {
+  sortedDebts.forEach(debt => {
     let paymentAmount = debt.minimumPayment;
 
     if (remainingExtra > 0) {
@@ -67,8 +66,6 @@ export const calculateDebtStrategy = (
     totalInterestPaid += totalInterest;
     totalPayments += totalPaid;
     maxMonths = Math.max(maxMonths, schedule.length);
-
-    return { debt, schedule, totalInterest, totalPaid };
   });
 
   return {
