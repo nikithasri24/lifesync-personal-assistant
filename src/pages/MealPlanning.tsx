@@ -26,6 +26,8 @@ import { useWeekNavigation } from '../mealPlanning/hooks/useWeekNavigation';
 import { useRecipeImport } from '../mealPlanning/hooks/useRecipeImport';
 import { useGroceryList } from '../mealPlanning/hooks/useGroceryList';
 import { useMultiCellSelection } from '../mealPlanning/hooks/useMultiCellSelection';
+import { useRecipeFiltering } from '../mealPlanning/hooks/useRecipeFiltering';
+import { useWeekCopy } from '../mealPlanning/hooks/useWeekCopy';
 
 // Import components
 import RecipeCard from '../mealPlanning/components/recipe/RecipeCard';
@@ -232,22 +234,16 @@ const MealPlanning: React.FC = () => {
     showToast
   );
 
-  // Copy week state
-  const [copyTargetWeek, setCopyTargetWeek] = useState<Date>(addDays(weekNav.currentWeekStart, 7));
+  // Recipe filtering hook
+  const recipeFiltering = useRecipeFiltering(recipes);
 
-  // Recipe search/filter state
-  const [recipeSearchQuery, _setRecipeSearchQuery] = useState('');
-  const [showFavoritesOnly, _setShowFavoritesOnly] = useState(false);
+  // Week copy hook
+  const weekCopy = useWeekCopy(addDays(weekNav.currentWeekStart, 7));
 
   // Cleanup old drafts on mount
   useEffect(() => {
     cleanupOldDrafts();
   }, []);
-
-  // Update copy target when week changes
-  useEffect(() => {
-    setCopyTargetWeek(addDays(weekNav.currentWeekStart, 7));
-  }, [weekNav.currentWeekStart]);
 
   const plannedMeals = useMemo(() => weekNav.activePlan?.meals ?? [], [weekNav.activePlan?.meals]);
   const mealsByDate: Record<string, PlannedMeal[]> = useMemo(() => {
@@ -262,28 +258,6 @@ const MealPlanning: React.FC = () => {
   }, [plannedMeals]);
 
   const isLoading = mealPlansLoading || weekNav.isEnsuringPlan;
-
-  // Filter recipes
-  const filteredRecipes = useMemo(() => {
-    let result = recipes;
-
-    if (showFavoritesOnly) {
-      result = result.filter((recipe) => recipe.isFavorite === true);
-    }
-
-    if (recipeSearchQuery.trim()) {
-      const query = recipeSearchQuery.toLowerCase().trim();
-      result = result.filter((recipe) => {
-        if (recipe.name.toLowerCase().includes(query)) return true;
-        if (recipe.tags?.some((tag: string) => tag.toLowerCase().includes(query))) return true;
-        if (recipe.cuisine?.toLowerCase().includes(query)) return true;
-        if (recipe.difficulty?.toLowerCase().includes(query)) return true;
-        return false;
-      });
-    }
-
-    return result;
-  }, [recipes, recipeSearchQuery, showFavoritesOnly]);
 
   // Handle URL import
   const handleImportRecipe = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
@@ -356,56 +330,11 @@ const MealPlanning: React.FC = () => {
   // Copy week handler
   const handleCopyWeek = async (): Promise<void> => {
     try {
-      let targetPlan = mealPlans.find((p) =>
-        isSameWeek(ensureDate(p.weekStartDate), copyTargetWeek, { weekStartsOn })
-      );
-
-      if (!targetPlan) {
-        const newPlan = await createMealPlanMutation.mutateAsync({
-          weekStartDate: copyTargetWeek,
-          name: 'Meal plan',
-          weekStartsOn,
-        });
-        targetPlan = newPlan;
-      }
-
-      if (!targetPlan) {
-        showToast('Failed to create target week plan', 'error');
-        return;
-      }
-
-      const daysDiff = Math.floor(
-        (copyTargetWeek.getTime() - weekNav.currentWeekStart.getTime()) / (1000 * 60 * 60 * 24)
-      );
-
-      const copyPromises = plannedMeals.map((meal) => {
-        const originalDate = ensureDate(meal.date);
-        const newDate = addDays(originalDate, daysDiff);
-
-        return createPlannedMealMutation.mutateAsync({
-          planId: targetPlan.id,
-          meal: {
-            date: newDate,
-            mealType: meal.mealType,
-            recipeId: meal.recipeId,
-            customMeal: meal.customMeal,
-            servings: meal.servings ?? 4,
-            peopleCount: meal.peopleCount ?? meal.servings ?? 4,
-            status: 'planned',
-            notes: meal.notes,
-            preparedAt: undefined,
-            consumedAt: undefined,
-          },
-        });
-      });
-
-      await Promise.all(copyPromises);
-      showToast(`Copied ${plannedMeals.length} meals to target week`, 'success');
+      await weekCopy.copyWeek(plannedMeals, weekNav.currentWeekStart, mealPlans, weekStartsOn, showToast);
       modalState.setShowCopyWeek(false);
-      weekNav.goToWeek(copyTargetWeek);
+      weekNav.goToWeek(weekCopy.copyTargetWeek);
     } catch (error) {
       logger.error('MealPlanning', 'Failed to copy week:', { error: error instanceof Error ? error.message : String(error) });
-      showToast('Failed to copy meals', 'error');
     }
   };
 
@@ -535,12 +464,12 @@ const MealPlanning: React.FC = () => {
 
       {/* Saved recipes */}
       <SavedRecipesSection
-        recipes={filteredRecipes}
+        recipes={recipeFiltering.filteredRecipes}
         allRecipesCount={recipes.length}
-        showFavoritesOnly={showFavoritesOnly}
-        onToggleFavorites={() => _setShowFavoritesOnly(!showFavoritesOnly)}
-        searchQuery={recipeSearchQuery}
-        onSearchChange={_setRecipeSearchQuery}
+        showFavoritesOnly={recipeFiltering.showFavoritesOnly}
+        onToggleFavorites={recipeFiltering.toggleFavoritesOnly}
+        searchQuery={recipeFiltering.searchQuery}
+        onSearchChange={recipeFiltering.setSearchQuery}
         onDeleteAll={deleteAllRecipesMutation.mutateAsync}
         onViewRecipe={modalState.openRecipeView}
         onEditRecipe={modalState.openRecipeEdit}
@@ -576,8 +505,8 @@ const MealPlanning: React.FC = () => {
         isOpen={modalState.showCopyWeek}
         onClose={() => modalState.setShowCopyWeek(false)}
         sourceWeekStart={weekNav.currentWeekStart}
-        targetWeekStart={copyTargetWeek}
-        onTargetWeekChange={(d) => setCopyTargetWeek(startOfWeek(d, { weekStartsOn }))}
+        targetWeekStart={weekCopy.copyTargetWeek}
+        onTargetWeekChange={(d) => weekCopy.setCopyTargetWeek(startOfWeek(d, { weekStartsOn }))}
         mealCount={plannedMeals.length}
         weekStartsOn={weekStartsOn}
         onCopy={handleCopyWeek}
