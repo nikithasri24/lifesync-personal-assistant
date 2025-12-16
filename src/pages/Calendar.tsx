@@ -266,6 +266,18 @@ const Calendar: React.FC = () => {
     setEditingTask(null);
   };
 
+  // Smart scheduling handler - schedules a task to a specific time slot
+  const handleScheduleTask = (taskId: string, start: Date, _end: Date) => {
+    const dateStr = format(start, 'yyyy-MM-dd');
+    updateTaskMutation.mutate({
+      id: taskId,
+      updates: {
+        due_date: dateStr,
+        status: 'scheduled',
+      },
+    });
+  };
+
   // Event modal handlers
   const handleEventClick = (event: CalendarEvent) => {
     setEditingEvent(event);
@@ -411,6 +423,7 @@ const Calendar: React.FC = () => {
         onDragOver={handleDragOver}
         onDropInUnscheduled={handleDropInUnscheduled}
         onDropInCategory={handleDropInCategory}
+        onScheduleTask={handleScheduleTask}
       />
 
       {/* Main Calendar Area */}
