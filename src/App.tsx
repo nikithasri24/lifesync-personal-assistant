@@ -5,6 +5,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import LoadingSpinner from './components/LoadingSpinner';
 import { AuthGate } from './components/AuthGate';
 import { UndoRedoButtons } from './components/UndoRedoButtons';
+import { QuickCapture } from './components/inbox';
 
 // Lazy load all page components for route-based code splitting
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -94,6 +95,8 @@ function App(): React.ReactElement {
         </Suspense>
         {/* Global undo/redo buttons */}
         <UndoRedoButtons />
+        {/* Quick Capture FAB */}
+        <QuickCapture variant="floating" />
       </Layout>
     </AuthGate>
   );
