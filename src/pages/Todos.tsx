@@ -136,10 +136,12 @@ export default function Todos(): React.ReactElement {
 
   const handleScheduleTask = useCallback((taskId: string, start: Date, _end: Date) => {
     const dateStr = format(start, 'yyyy-MM-dd');
+    const timeStr = format(start, 'HH:mm'); // Extract time in HH:MM format
     updateTaskMutation.mutate({
       id: taskId,
       updates: {
         due_date: dateStr,
+        scheduled_time: timeStr,
         status: 'scheduled' as const,
       },
     });

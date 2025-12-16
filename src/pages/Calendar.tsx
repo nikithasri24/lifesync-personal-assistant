@@ -127,13 +127,31 @@ const Calendar: React.FC = () => {
 
     const target = e.currentTarget as HTMLElement;
     const dataDate = target.getAttribute('data-date');
+    const dataHour = target.getAttribute('data-hour');
     const finalDate = dataDate ? parseISO(dataDate) : date;
 
     if (!draggedTask) return;
 
+    // Calculate exact time from drop position within the cell
+    const rect = target.getBoundingClientRect();
+    const offsetY = e.clientY - rect.top;
+    const cellHeight = rect.height; // Each cell is 64px (h-16)
+
+    // Calculate minutes within the hour based on drop position
+    // Top of cell = 0 min, bottom = 60 min
+    const minutesInHour = Math.floor((offsetY / cellHeight) * 60);
+    // Round to nearest 15 minutes for cleaner scheduling
+    const roundedMinutes = Math.round(minutesInHour / 15) * 15;
+    const clampedMinutes = Math.min(45, Math.max(0, roundedMinutes));
+
+    const hour = dataHour ? parseInt(dataHour, 10) : 9;
+    const scheduledTime = `${hour.toString().padStart(2, '0')}:${clampedMinutes.toString().padStart(2, '0')}`;
+
     const dateString = format(finalDate, 'yyyy-MM-dd');
     const updates: Partial<Task> = {
       due_date: dateString,
+      scheduled_time: scheduledTime,
+      status: 'scheduled' as const,
       sidebar_section: null,
     };
 
@@ -269,10 +287,12 @@ const Calendar: React.FC = () => {
   // Smart scheduling handler - schedules a task to a specific time slot
   const handleScheduleTask = (taskId: string, start: Date, _end: Date) => {
     const dateStr = format(start, 'yyyy-MM-dd');
+    const timeStr = format(start, 'HH:mm'); // Extract time in HH:MM format
     updateTaskMutation.mutate({
       id: taskId,
       updates: {
         due_date: dateStr,
+        scheduled_time: timeStr,
         status: 'scheduled',
       },
     });
@@ -568,33 +588,53 @@ const Calendar: React.FC = () => {
                             {/* Timed tasks */}
                             {events.tasks
                               .filter(task => {
-                                // Simple time check - show in hour slot if task has no specific time
-                                return slot.hour === 9; // Default to 9 AM for tasks without time
+                                // Parse scheduled_time (HH:MM) or default to 9 AM
+                                const taskHour = task.scheduled_time
+                                  ? parseInt(task.scheduled_time.split(':')[0], 10)
+                                  : 9;
+                                return taskHour === slot.hour;
                               })
-                              .map((task) => (
-                                <div
-                                  key={task.id}
-                                  draggable
-                                  onDragStart={(e) => { e.stopPropagation(); handleDragStart(task, e); }}
-                                  onDragEnd={handleDragEnd}
-                                  onClick={(e) => { e.stopPropagation(); handleTaskClick(task); }}
-                                  className="absolute inset-x-1 top-1 p-1.5 rounded shadow-sm bg-indigo-100 dark:bg-indigo-900/30 border-l-2 border-indigo-500 cursor-move hover:shadow-md transition-shadow z-10"
-                                >
-                                  <div className="flex items-start gap-1">
-                                    <GripVertical className="w-3 h-3 text-indigo-500 flex-shrink-0" />
-                                    <div className="flex-1 min-w-0">
-                                      <p className="text-[10px] font-medium text-indigo-900 dark:text-indigo-100 truncate">
-                                        {task.title}
-                                      </p>
-                                      {task.estimated_time && (
-                                        <p className="text-[9px] text-indigo-600 dark:text-indigo-300">
-                                          {Math.round(task.estimated_time / 60)}h
+                              .map((task) => {
+                                // Calculate vertical position based on minutes
+                                const taskMinutes = task.scheduled_time
+                                  ? parseInt(task.scheduled_time.split(':')[1], 10)
+                                  : 0;
+                                const topOffset = (taskMinutes / 60) * 64; // 64px = h-16 cell height
+
+                                // Calculate task height based on estimated_time
+                                const durationMinutes = task.estimated_time || 30;
+                                const taskHeight = Math.max(24, (durationMinutes / 60) * 64); // Minimum 24px
+
+                                return (
+                                  <div
+                                    key={task.id}
+                                    draggable
+                                    onDragStart={(e) => { e.stopPropagation(); handleDragStart(task, e); }}
+                                    onDragEnd={handleDragEnd}
+                                    onClick={(e) => { e.stopPropagation(); handleTaskClick(task); }}
+                                    style={{
+                                      top: `${topOffset}px`,
+                                      height: `${taskHeight}px`,
+                                    }}
+                                    className="absolute inset-x-1 p-1 rounded shadow-sm bg-indigo-100 dark:bg-indigo-900/30 border-l-2 border-indigo-500 cursor-move hover:shadow-md transition-shadow z-10 overflow-hidden"
+                                  >
+                                    <div className="flex items-start gap-1 h-full">
+                                      <GripVertical className="w-3 h-3 text-indigo-500 flex-shrink-0 mt-0.5" />
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-[10px] font-medium text-indigo-900 dark:text-indigo-100 truncate leading-tight">
+                                          {task.title}
                                         </p>
-                                      )}
+                                        {task.scheduled_time && (
+                                          <p className="text-[9px] text-indigo-600 dark:text-indigo-300">
+                                            {task.scheduled_time}
+                                            {task.estimated_time && ` • ${task.estimated_time}m`}
+                                          </p>
+                                        )}
+                                      </div>
                                     </div>
                                   </div>
-                                </div>
-                              ))}
+                                );
+                              })}
 
                             {/* Timed events */}
                             {events.events

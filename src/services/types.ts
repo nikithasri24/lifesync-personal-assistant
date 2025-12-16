@@ -17,6 +17,7 @@ export interface TaskData {
   estimated_time?: number | null;
   actual_time?: number | null;
   due_date?: string | null;
+  scheduled_time?: string | null; // HH:MM format for exact scheduling on calendar
   tags?: string[] | null;
   category?: 'work' | 'personal' | 'learning' | 'creative' | 'health' | 'other' | null;
   notes?: string | null;
