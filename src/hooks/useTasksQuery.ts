@@ -24,6 +24,7 @@ import {
   deleteProject,
 } from '@/api/tasksAPI';
 import { logger } from '@/services/logger';
+import { recordTaskCompletion } from '@/services/gamification';
 
 // =====================================================
 // TASKS QUERY HOOKS
@@ -105,7 +106,7 @@ export function useUpdateTask(): UseMutationResult<
   TaskData,
   Error,
   { id: string; updates: Partial<TaskData> },
-  { previousTasks?: TaskData[]; previousTask?: TaskData }
+  { previousTasks?: TaskData[]; previousTask?: TaskData; wasCompleted?: boolean }
 > {
   const queryClient = useQueryClient();
 
@@ -127,6 +128,9 @@ export function useUpdateTask(): UseMutationResult<
       const previousTasks = queryClient.getQueryData<TaskData[]>(queryKeys.tasks.lists());
       const previousTask = queryClient.getQueryData<TaskData>(queryKeys.tasks.detail(id));
 
+      // Track if this is a completion (status changing to 'done')
+      const wasCompleted = updates.status === 'done' && previousTask?.status !== 'done';
+
       // Optimistically update task lists
       queryClient.setQueryData<TaskData[]>(
         queryKeys.tasks.lists(),
@@ -146,10 +150,26 @@ export function useUpdateTask(): UseMutationResult<
       }
 
       // Return context with previous values for rollback
-      return { previousTasks, previousTask };
+      return { previousTasks, previousTask, wasCompleted };
     },
-    onSuccess: (updatedTask) => {
+    onSuccess: (updatedTask, _variables, context) => {
       logger.info('Tasks', 'Task updated successfully', { id: updatedTask.id, title: updatedTask.title });
+
+      // Record gamification points if task was just completed
+      if (context?.wasCompleted && updatedTask.id) {
+        // Map task priority to gamification priority (high/urgent/important -> high)
+        const taskPriority = updatedTask.priority;
+        const gamificationPriority: 'low' | 'medium' | 'high' =
+          taskPriority === 'high' || taskPriority === 'urgent' || taskPriority === 'important'
+            ? 'high'
+            : taskPriority === 'low'
+              ? 'low'
+              : 'medium';
+
+        recordTaskCompletion(updatedTask.id, gamificationPriority).catch((err) => {
+          logger.error('Gamification', err instanceof Error ? err : new Error(String(err)));
+        });
+      }
 
       // Update with server response (in case server modified the data)
       queryClient.setQueryData(

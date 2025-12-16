@@ -24,6 +24,7 @@ import {
   deleteAllHabitEntries,
 } from '@/api/habitsAPI';
 import { logger } from '@/services/logger';
+import { recordHabitCompletion } from '@/services/gamification';
 
 // =====================================================
 // HABITS QUERY HOOKS
@@ -282,6 +283,11 @@ export function useCreateHabitEntry(): UseMutationResult<
     },
     onSuccess: (newEntry) => {
       logger.info('Habits', 'Habit entry created successfully', { id: newEntry.id, habitId: newEntry.habit_id });
+
+      // Record gamification points for habit completion
+      recordHabitCompletion(newEntry.habit_id, 0).catch((err) => {
+        logger.error('Gamification', err instanceof Error ? err : new Error(String(err)));
+      });
 
       // Replace optimistic entry with real server data
       queryClient.setQueryData<HabitEntryData[]>(

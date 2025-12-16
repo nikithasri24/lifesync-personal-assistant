@@ -21,6 +21,7 @@ import { TodayHabitsSection } from '../dashboard/components/TodayHabitsSection';
 import { RecentNotesSection } from '../dashboard/components/RecentNotesSection';
 import { WeeklyOverview } from '../dashboard/components/WeeklyOverview';
 import { UpcomingDeadlines } from '../dashboard/components/UpcomingDeadlines';
+import { GamificationWidget } from '../components/gamification';
 
 // Hooks
 import { useDashboardData } from '../dashboard/hooks/useDashboardData';
@@ -157,7 +158,10 @@ export default function Dashboard(): ReactElement {
     <div className="space-y-6 sm:space-y-8">
       <Toast toast={toast} onDismiss={dismissToast} />
 
-      <WelcomeBanner />
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <WelcomeBanner />
+        <GamificationWidget variant="compact" />
+      </div>
 
       <StatsGrid cards={statsCards} />
 
