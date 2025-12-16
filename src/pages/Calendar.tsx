@@ -634,14 +634,14 @@ const Calendar: React.FC = () => {
                                     }}
                                     className="absolute inset-x-1 p-1 rounded shadow-sm bg-indigo-100 dark:bg-indigo-900/30 border-l-2 border-indigo-500 cursor-move hover:shadow-md transition-shadow z-10 overflow-hidden"
                                   >
-                                    <div className="flex items-start gap-1 h-full">
+                                    <div className="flex items-start gap-1 h-full overflow-hidden">
                                       <GripVertical className="w-3 h-3 text-indigo-500 flex-shrink-0 mt-0.5" />
-                                      <div className="flex-1 min-w-0">
-                                        <p className="text-[10px] font-medium text-indigo-900 dark:text-indigo-100 truncate leading-tight">
+                                      <div className="flex-1 min-w-0 overflow-hidden">
+                                        <p className="text-[10px] font-medium text-indigo-900 dark:text-indigo-100 leading-tight break-words line-clamp-2">
                                           {task.title}
                                         </p>
                                         {task.scheduled_time && (
-                                          <p className="text-[9px] text-indigo-600 dark:text-indigo-300">
+                                          <p className="text-[9px] text-indigo-600 dark:text-indigo-300 truncate">
                                             {task.scheduled_time}
                                             {task.estimated_time && ` • ${task.estimated_time}m`}
                                           </p>
