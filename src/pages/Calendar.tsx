@@ -125,15 +125,19 @@ const Calendar: React.FC = () => {
     e.preventDefault();
     e.stopPropagation();
 
-    const target = e.currentTarget as HTMLElement;
-    const dataDate = target.getAttribute('data-date');
-    const dataHour = target.getAttribute('data-hour');
-    const finalDate = dataDate ? parseISO(dataDate) : date;
-
     if (!draggedTask) return;
 
+    // Find the time slot element - use currentTarget (the element with the handler)
+    // which should have data-date and data-hour attributes
+    const timeSlotElement = e.currentTarget as HTMLElement;
+    const dataDate = timeSlotElement.getAttribute('data-date');
+    const dataHour = timeSlotElement.getAttribute('data-hour');
+
+    // Parse the date from the data attribute or use the passed date
+    const finalDate = dataDate ? parseISO(dataDate) : date;
+
     // Calculate exact time from drop position within the cell
-    const rect = target.getBoundingClientRect();
+    const rect = timeSlotElement.getBoundingClientRect();
     const offsetY = e.clientY - rect.top;
     const cellHeight = rect.height; // Each cell is 64px (h-16)
 
@@ -144,10 +148,23 @@ const Calendar: React.FC = () => {
     const roundedMinutes = Math.round(minutesInHour / 15) * 15;
     const clampedMinutes = Math.min(45, Math.max(0, roundedMinutes));
 
-    const hour = dataHour ? parseInt(dataHour, 10) : 9;
+    // Get hour from data attribute, default to 9 if not found
+    const hour = dataHour !== null ? parseInt(dataHour, 10) : 9;
     const scheduledTime = `${hour.toString().padStart(2, '0')}:${clampedMinutes.toString().padStart(2, '0')}`;
 
     const dateString = format(finalDate, 'yyyy-MM-dd');
+
+    console.log('[Calendar] Drop detected:', {
+      dataDate,
+      dataHour,
+      hour,
+      offsetY,
+      cellHeight,
+      clampedMinutes,
+      scheduledTime,
+      dateString
+    });
+
     const updates: Partial<Task> = {
       due_date: dateString,
       scheduled_time: scheduledTime,

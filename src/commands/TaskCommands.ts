@@ -166,10 +166,12 @@ export class ChangeTaskCategoryCommand implements Command {
   private newStatus: Task['status'];
   private newPriority: Task['priority'];
   private newDueDate: string | null;
+  private newScheduledTime: string | null;
   private newSidebarSection: Task['sidebar_section'];
   private previousStatus: Task['status'];
   private previousPriority: Task['priority'];
   private previousDueDate: string | null;
+  private previousScheduledTime: string | null;
   private previousSidebarSection: Task['sidebar_section'];
   private taskTitle: string;
 
@@ -180,6 +182,7 @@ export class ChangeTaskCategoryCommand implements Command {
       status?: Task['status'];
       priority?: Task['priority'];
       due_date?: string | null;
+      scheduled_time?: string | null;
       sidebar_section?: Task['sidebar_section'];
     },
     currentTask: Task
@@ -193,11 +196,13 @@ export class ChangeTaskCategoryCommand implements Command {
     this.newStatus = updates.status ?? currentTask.status;
     this.newPriority = updates.priority ?? currentTask.priority;
     this.newDueDate = updates.due_date !== undefined ? updates.due_date : (currentTask.due_date ?? null);
+    this.newScheduledTime = updates.scheduled_time !== undefined ? updates.scheduled_time : (currentTask.scheduled_time ?? null);
     this.newSidebarSection = updates.sidebar_section ?? currentTask.sidebar_section ?? null;
 
     this.previousStatus = currentTask.status;
     this.previousPriority = currentTask.priority;
     this.previousDueDate = currentTask.due_date ?? null;
+    this.previousScheduledTime = currentTask.scheduled_time ?? null;
     this.previousSidebarSection = currentTask.sidebar_section ?? null;
   }
 
@@ -207,6 +212,7 @@ export class ChangeTaskCategoryCommand implements Command {
       status: this.newStatus,
       priority: this.newPriority,
       due_date: this.newDueDate,
+      scheduled_time: this.newScheduledTime,
       sidebar_section: this.newSidebarSection,
     });
     // Invalidate React Query cache to refresh UI
@@ -219,6 +225,7 @@ export class ChangeTaskCategoryCommand implements Command {
       status: this.previousStatus,
       priority: this.previousPriority,
       due_date: this.previousDueDate,
+      scheduled_time: this.previousScheduledTime,
       sidebar_section: this.previousSidebarSection,
     });
     // Invalidate React Query cache to refresh UI
