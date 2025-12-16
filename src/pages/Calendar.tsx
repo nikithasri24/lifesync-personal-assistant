@@ -3,8 +3,8 @@
  * Refactored to use extracted hooks and components
  */
 
-import React, { useState, useMemo } from 'react';
-import { format, parseISO, isSameDay, addDays } from 'date-fns';
+import React, { useState, useMemo, useEffect } from 'react';
+import { format, parseISO, isSameDay, addDays, isToday } from 'date-fns';
 import { CheckCircle2, Target, GripVertical } from 'lucide-react';
 
 // Hooks
@@ -70,6 +70,18 @@ const Calendar: React.FC = () => {
   const [eventModalInitialDate, setEventModalInitialDate] = useState<Date | null>(null);
   const [showQuickSchedule, setShowQuickSchedule] = useState(false);
   const [quickScheduleDate, setQuickScheduleDate] = useState<Date | null>(null);
+
+  // Current time indicator state
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Update current time every minute
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // Update every minute
+
+    return () => clearInterval(timer);
+  }, []);
 
   const isLoading = tasksLoading || habitsLoading || entriesLoading || eventsLoading;
 
@@ -571,7 +583,7 @@ const Calendar: React.FC = () => {
                 {/* Time slots */}
                 <div className="flex">
                   {/* Time labels */}
-                  <div className="w-20 flex-shrink-0">
+                  <div className="w-20 flex-shrink-0 relative">
                     {calendarState.timeSlots.map((slot) => (
                       <div
                         key={slot.hour}
@@ -581,14 +593,58 @@ const Calendar: React.FC = () => {
                         {slot.label}
                       </div>
                     ))}
+
+                    {/* Current time label indicator */}
+                    {(() => {
+                      const firstSlotHour = calendarState.timeSlots[0]?.hour ?? 6;
+                      const currentHour = currentTime.getHours();
+                      const currentMinute = currentTime.getMinutes();
+                      const currentTimeTop = ((currentHour - firstSlotHour) * 64) + ((currentMinute / 60) * 64);
+                      const timeLabel = format(currentTime, 'h:mm a');
+
+                      if (currentTimeTop >= 0) {
+                        return (
+                          <div
+                            className="absolute right-0 z-20 pointer-events-none transform -translate-y-1/2"
+                            style={{ top: `${currentTimeTop}px` }}
+                          >
+                            <span className="text-[10px] font-semibold text-red-500 bg-white dark:bg-slate-900 px-1 rounded">
+                              {timeLabel}
+                            </span>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
                   </div>
 
                   {/* Day columns */}
                   {calendarState.weekDays.map((day) => {
                     const events = getEventsForDay(day.date);
 
+                    // Calculate current time indicator position (only for today)
+                    const showCurrentTimeIndicator = isToday(day.date);
+                    const currentHour = currentTime.getHours();
+                    const currentMinute = currentTime.getMinutes();
+                    // Each hour is 64px (h-16), starting from first time slot (6 AM = index 0)
+                    const firstSlotHour = calendarState.timeSlots[0]?.hour ?? 6;
+                    const currentTimeTop = ((currentHour - firstSlotHour) * 64) + ((currentMinute / 60) * 64);
+
                     return (
-                      <div key={day.date.toISOString()} className="flex-1 min-w-[140px] max-w-[140px] border-r border-slate-200 dark:border-slate-700 last:border-r-0">
+                      <div key={day.date.toISOString()} className="flex-1 min-w-[140px] max-w-[140px] border-r border-slate-200 dark:border-slate-700 last:border-r-0 relative">
+                        {/* Current time indicator */}
+                        {showCurrentTimeIndicator && currentTimeTop >= 0 && (
+                          <div
+                            className="absolute left-0 right-0 z-20 pointer-events-none"
+                            style={{ top: `${currentTimeTop}px` }}
+                          >
+                            <div className="flex items-center">
+                              <div className="w-2 h-2 rounded-full bg-red-500 -ml-1" />
+                              <div className="flex-1 h-0.5 bg-red-500" />
+                            </div>
+                          </div>
+                        )}
+
                         {calendarState.timeSlots.map((slot) => (
                           <div
                             key={slot.hour}
