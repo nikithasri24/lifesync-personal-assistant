@@ -15,7 +15,8 @@
  * - Ephemeral state (expanded tasks, pomodoro timer) - useTaskExpansion, usePomodoro
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
+import { format } from 'date-fns';
 import { useApiHealth } from '../hooks/useApiHealth';
 import {
   useTasks,
@@ -128,6 +129,21 @@ export default function Todos(): React.ReactElement {
     apiTasks,
     projects
   );
+
+  // ============================================================================
+  // Smart Scheduling Handler
+  // ============================================================================
+
+  const handleScheduleTask = useCallback((taskId: string, start: Date, _end: Date) => {
+    const dateStr = format(start, 'yyyy-MM-dd');
+    updateTaskMutation.mutate({
+      id: taskId,
+      updates: {
+        due_date: dateStr,
+        status: 'scheduled' as const,
+      },
+    });
+  }, [updateTaskMutation]);
 
   // ============================================================================
   // Computed Values - Filtered and View-Specific Tasks
@@ -254,6 +270,7 @@ export default function Todos(): React.ReactElement {
                 onCancelSubtaskForm={modals.closeSubtaskForm}
                 pomodoroTimer={pomodoro.pomodoroTimer}
                 onStartPomodoro={pomodoro.startPomodoro}
+                onScheduleTask={handleScheduleTask}
                 createTaskMutation={{
                   isPending: createTaskMutation.isPending,
                   isError: createTaskMutation.isError,
