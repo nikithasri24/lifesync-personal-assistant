@@ -104,14 +104,14 @@ export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
   // Get suggested slots from the suggestion result
   const suggestedSlots = suggestions?.suggestedSlots || [];
 
-  // Group tasks by priority
-  const allTasks = [...unscheduledTasks, ...categorizedTasks.todo, ...categorizedTasks.backlog];
+  // Group unscheduled tasks by priority (use unscheduledTasks only to avoid duplicates)
   const tasksByPriority = {
-    urgent: allTasks.filter(t => t.priority === 'urgent'),
-    high: allTasks.filter(t => t.priority === 'high'),
-    medium: allTasks.filter(t => t.priority === 'medium' || !t.priority),
-    low: allTasks.filter(t => t.priority === 'low'),
+    urgent: unscheduledTasks.filter(t => t.priority === 'urgent'),
+    high: unscheduledTasks.filter(t => t.priority === 'high'),
+    medium: unscheduledTasks.filter(t => t.priority === 'medium' || !t.priority),
+    low: unscheduledTasks.filter(t => t.priority === 'low'),
   };
+  const totalUnscheduled = unscheduledTasks.length;
 
   const handleTaskClick = useCallback((task: Task) => {
     if (selectedTask?.id === task.id) {
@@ -285,7 +285,7 @@ export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
               Schedule Tasks
             </h3>
             <span className="ml-auto text-[9px] text-slate-500 bg-slate-100 dark:bg-slate-700 px-1.5 rounded-full">
-              {allTasks.length}
+              {totalUnscheduled}
             </span>
           </div>
           {selectedTask && (
@@ -308,7 +308,7 @@ export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
           {renderPrioritySection('medium', tasksByPriority.medium)}
           {renderPrioritySection('low', tasksByPriority.low)}
 
-          {allTasks.length === 0 && (
+          {totalUnscheduled === 0 && (
             <div className="text-center py-4">
               <CheckSquare className="w-6 h-6 mx-auto text-slate-300 dark:text-slate-600 mb-1" />
               <p className="text-[9px] text-slate-500 dark:text-slate-400">
