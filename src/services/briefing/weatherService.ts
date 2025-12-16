@@ -38,14 +38,33 @@ function mapWeatherCondition(weatherId: number): WeatherData['condition'] {
   return 'partly_cloudy';
 }
 
+// Demo weather data for when API key is not configured
+function getDemoWeather(unit: 'C' | 'F'): WeatherData {
+  const temp = unit === 'F' ? 68 : 20;
+  const high = unit === 'F' ? 72 : 22;
+  const low = unit === 'F' ? 58 : 14;
+  return {
+    location: 'Demo Location',
+    temperature: temp,
+    temperatureUnit: unit,
+    condition: 'partly_cloudy',
+    conditionText: 'partly cloudy (demo)',
+    humidity: 55,
+    high,
+    low,
+    icon: '02d',
+  };
+}
+
 export async function fetchWeather(
   lat: number,
   lng: number,
   unit: 'C' | 'F' = 'F'
 ): Promise<WeatherData | null> {
   if (!OPENWEATHERMAP_API_KEY) {
-    logger.warn('WeatherService', 'OpenWeatherMap API key not configured');
-    return null;
+    logger.warn('WeatherService', 'OpenWeatherMap API key not configured - using demo data');
+    // Return demo weather so the UI shows something
+    return getDemoWeather(unit);
   }
 
   try {

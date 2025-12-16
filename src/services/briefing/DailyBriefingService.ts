@@ -28,12 +28,41 @@ function getDayOfWeek(): string {
   return format(new Date(), 'EEEE');
 }
 
+// Get user's current location via browser geolocation
+async function getCurrentLocation(): Promise<{ lat: number; lng: number } | null> {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) {
+      resolve(null);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        resolve({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+      },
+      () => {
+        // On error or denied, return null
+        resolve(null);
+      },
+      { timeout: 5000, maximumAge: 300000 } // 5s timeout, cache for 5 min
+    );
+  });
+}
+
 export async function generateDailyBriefing(
   options: Partial<BriefingOptions> = {}
 ): Promise<DailyBriefing> {
   const opts = { ...DEFAULT_BRIEFING_OPTIONS, ...options };
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
+
+  // Auto-detect location if not provided and weather is enabled
+  let weatherLocation = opts.weatherLocation;
+  if (opts.includeWeather && !weatherLocation) {
+    weatherLocation = await getCurrentLocation() ?? undefined;
+  }
 
   const today = format(new Date(), 'yyyy-MM-dd');
   const todayStart = `${today}T00:00:00`;
@@ -80,9 +109,9 @@ export async function generateDailyBriefing(
         .eq('user_id', user.id)
         .single(),
 
-      // Weather (if location provided)
-      opts.includeWeather && opts.weatherLocation
-        ? fetchWeather(opts.weatherLocation.lat, opts.weatherLocation.lng, opts.temperatureUnit)
+      // Weather (if location available)
+      opts.includeWeather && weatherLocation
+        ? fetchWeather(weatherLocation.lat, weatherLocation.lng, opts.temperatureUnit)
         : Promise.resolve(null),
     ]);
 
