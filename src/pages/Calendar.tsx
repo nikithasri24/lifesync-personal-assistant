@@ -635,13 +635,40 @@ const Calendar: React.FC = () => {
                         {/* Current time indicator - red line showing "now" */}
                         {showCurrentTimeIndicator && currentTimeTop >= 0 && (
                           <div
-                            className="absolute inset-x-0 z-50 pointer-events-none"
-                            style={{ top: `${currentTimeTop}px` }}
+                            className="absolute z-50 pointer-events-none"
+                            style={{
+                              top: `${currentTimeTop}px`,
+                              left: 0,
+                              right: 0,
+                            }}
                           >
                             {/* Red line spanning full width */}
-                            <div className="absolute inset-x-0 top-1/2 h-[2px] bg-red-500 -translate-y-1/2" />
+                            <div
+                              style={{
+                                position: 'absolute',
+                                left: 0,
+                                right: 0,
+                                height: '2px',
+                                backgroundColor: '#ef4444',
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                              }}
+                            />
                             {/* Red dot at the start */}
-                            <div className="absolute -left-1.5 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-red-500 border-2 border-white dark:border-slate-900 shadow-sm" />
+                            <div
+                              style={{
+                                position: 'absolute',
+                                left: '-6px',
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                width: '12px',
+                                height: '12px',
+                                borderRadius: '50%',
+                                backgroundColor: '#ef4444',
+                                border: '2px solid white',
+                                boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                              }}
+                            />
                           </div>
                         )}
 
