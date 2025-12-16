@@ -631,16 +631,16 @@ const Calendar: React.FC = () => {
                     const currentTimeTop = ((currentHour - firstSlotHour) * 64) + ((currentMinute / 60) * 64);
 
                     return (
-                      <div key={day.date.toISOString()} className="flex-1 min-w-[140px] max-w-[140px] border-r border-slate-200 dark:border-slate-700 last:border-r-0 relative">
-                        {/* Current time indicator */}
+                      <div key={day.date.toISOString()} className="flex-1 min-w-[140px] max-w-[140px] border-r border-slate-200 dark:border-slate-700 last:border-r-0 relative overflow-visible">
+                        {/* Current time indicator - red line showing "now" */}
                         {showCurrentTimeIndicator && currentTimeTop >= 0 && (
                           <div
-                            className="absolute left-0 right-0 z-20 pointer-events-none"
+                            className="absolute left-0 right-0 z-50 pointer-events-none"
                             style={{ top: `${currentTimeTop}px` }}
                           >
                             <div className="flex items-center">
-                              <div className="w-2 h-2 rounded-full bg-red-500 -ml-1" />
-                              <div className="flex-1 h-0.5 bg-red-500" />
+                              <div className="w-3 h-3 rounded-full bg-red-500 border-2 border-white dark:border-slate-900 shadow-sm -ml-1.5" />
+                              <div className="flex-1 h-[2px] bg-red-500 shadow-sm" />
                             </div>
                           </div>
                         )}
