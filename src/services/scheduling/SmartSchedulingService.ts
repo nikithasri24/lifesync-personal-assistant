@@ -15,9 +15,10 @@ import type {
 import { DEFAULT_SCHEDULING_PREFS } from './types';
 
 /**
- * Get energy level for a given hour
+ * Get energy level for a given hour or Date
  */
-function getEnergyLevel(hour: number, prefs: UserSchedulingPrefs): EnergyLevel {
+export function getEnergyLevel(timeOrHour: Date | number, prefs: UserSchedulingPrefs): EnergyLevel {
+  const hour = typeof timeOrHour === 'number' ? timeOrHour : timeOrHour.getHours();
   if (hour >= prefs.peakEnergyStart && hour < prefs.peakEnergyEnd) {
     return 'peak';
   }
