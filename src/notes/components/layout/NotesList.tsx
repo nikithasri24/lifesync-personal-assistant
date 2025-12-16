@@ -1,10 +1,6 @@
 import React from 'react';
 import NoteCard from '../../../components/lists/NoteCard';
-
-interface Note {
-  id: string;
-  [key: string]: unknown;
-}
+import type { Note } from '../../../types';
 
 interface NotesListProps {
   notes?: Note[];

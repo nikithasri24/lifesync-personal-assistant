@@ -1,16 +1,15 @@
 import React from 'react';
 import { TrendingUp, CheckSquare, Target, Flame } from 'lucide-react';
 
-interface HabitStat {
+interface HabitStatInput {
   name: string;
   streak: number;
-  [key: string]: unknown;
 }
 
 interface KeyMetricsGridProps {
   totalProductivityScore: number;
   avgDailyScore: number;
-  bestHabit: HabitStat | null;
+  bestHabit: HabitStatInput | null;
   todoCompletionRate: number;
   completedTodos: number;
   totalTodos: number;

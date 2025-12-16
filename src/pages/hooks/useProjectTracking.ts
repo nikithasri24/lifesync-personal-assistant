@@ -1,5 +1,13 @@
 import type { Project } from '../../projects/hooks/useProjectsQuery';
-import type { ProjectFormData, ProjectStats } from '../../projects/types';
+import type { ProjectFormData } from '../../projects/types';
+
+// Stats type expected by ProjectsHeader
+interface SimpleProjectStats {
+  total: number;
+  active: number;
+  completed: number;
+  onHold: number;
+}
 
 // Project tracking hook stub
 export function useProjectTracking() {
@@ -23,12 +31,11 @@ export function useProjectTracking() {
     projectMetrics: [] as never[],
     filteredProjects: [] as Project[],
     stats: {
-      totalProjects: 0,
-      activeProjects: 0,
-      completedProjects: 0,
-      totalTasks: 0,
-      completedTasks: 0,
-    } as ProjectStats,
+      total: 0,
+      active: 0,
+      completed: 0,
+      onHold: 0,
+    } as SimpleProjectStats,
     handleCreateProject: async () => {},
     handleUpdateProject: async () => {},
     handleDeleteProject: async (_id: string) => {},

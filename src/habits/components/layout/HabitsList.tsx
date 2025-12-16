@@ -1,7 +1,9 @@
 import React, { type FormEvent } from 'react';
 import { HabitCard } from '../HabitCard';
-import type { Habit } from '../../types';
+import type { HabitData } from '../../../services/types';
 import type { HabitDraft } from '../../types';
+
+type Habit = HabitData;
 
 interface HabitWithStats {
   habit: Habit;

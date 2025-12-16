@@ -127,9 +127,10 @@ CREATE INDEX IF NOT EXISTS idx_goals_track_networth
   WHERE track_networth = true;
 
 -- Index for querying goals by due date (find upcoming deadlines)
+-- Note: Removed CURRENT_DATE predicate as it's not immutable
 CREATE INDEX IF NOT EXISTS idx_goals_due_date
   ON goals(user_id, due_date)
-  WHERE due_date >= CURRENT_DATE;
+  WHERE due_date IS NOT NULL;
 
 -- Index for active goals sorted by creation date
 CREATE INDEX IF NOT EXISTS idx_goals_created_at

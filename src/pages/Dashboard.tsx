@@ -145,6 +145,7 @@ export default function Dashboard(): ReactElement {
     todayHabits,
     recentNotes,
     thisWeekJournalEntries,
+    completedTodosThisWeek,
     statsCards,
   } = dashboardData;
 

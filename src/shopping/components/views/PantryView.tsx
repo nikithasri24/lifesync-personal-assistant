@@ -15,7 +15,7 @@ interface PantryViewProps {
   onScanReceipt: () => void;
   onAddToShopping: (item: Omit<ShoppingItem, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   onUpdateItem: (itemId: string, updates: Partial<PantryItem>) => Promise<void>;
-  onDeleteItem: (itemId: string) => Promise<void>;
+  onDeleteItem: (itemId: string) => void;
   onShowToast: (message: string, type: 'success' | 'info' | 'error') => void;
 }
 

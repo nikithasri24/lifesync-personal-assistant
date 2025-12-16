@@ -1,17 +1,16 @@
 import React, { type ReactElement } from 'react';
 import { Flame } from 'lucide-react';
 
-interface HabitStat {
-  id: string;
+interface HabitStatItem {
+  id?: string;
   name: string;
   color?: string;
   streak: number;
   totalCompletions: number;
-  [key: string]: unknown;
 }
 
 interface HabitStreaksSectionProps {
-  habitStats: HabitStat[];
+  habitStats: HabitStatItem[];
 }
 
 /**
@@ -32,8 +31,8 @@ export function HabitStreaksSection({
         ) : (
           habitStats
             .sort((a, b): number => b.streak - a.streak)
-            .map((habit): ReactElement => (
-              <div key={habit.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            .map((habit, index): ReactElement => (
+              <div key={habit.id ?? `habit-${index}`} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                 <div className="flex items-center space-x-3">
                   <div
                     className="w-3 h-3 rounded-full"

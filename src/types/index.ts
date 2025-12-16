@@ -285,6 +285,7 @@ export interface UserStats {
   totalGoalsCompleted: number;
 }
 export * from './travel';
+export * from './infrastructure';
 
 // ==================== Health & Period Tracking Types ====================
 

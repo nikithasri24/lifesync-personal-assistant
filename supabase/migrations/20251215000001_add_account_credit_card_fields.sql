@@ -166,11 +166,12 @@ BEGIN
   END IF;
 
   -- Verify account types constraint includes retirement accounts
+  -- Note: pg_constraint.consrc was removed in PostgreSQL 12+, using pg_get_constraintdef instead
   SELECT COUNT(*)
   INTO type_count
   FROM pg_constraint
   WHERE conname = 'accounts_type_check'
-    AND consrc LIKE '%401k%';
+    AND pg_get_constraintdef(oid) LIKE '%401k%';
 
   IF type_count > 0 OR EXISTS (
     SELECT 1 FROM pg_constraint

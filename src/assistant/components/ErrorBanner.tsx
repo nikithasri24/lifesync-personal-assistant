@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface ErrorBannerProps {
-  error: string;
+  error: string | null;
 }
 
 /**

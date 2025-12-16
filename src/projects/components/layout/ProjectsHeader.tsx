@@ -19,6 +19,15 @@ export function ProjectsHeader({
   stats,
   onCreateClick,
 }: ProjectsHeaderProps): React.ReactElement {
+  // Transform stats to match ProjectStats component expectations
+  const projectStats = {
+    totalProjects: stats.total,
+    activeProjects: stats.active,
+    completedProjects: stats.completed,
+    totalTasks: 0, // Not available from simple stats
+    completedTasks: 0, // Not available from simple stats
+  };
+
   return (
     <div className="mb-8">
       <div className="flex items-center justify-between">
@@ -37,7 +46,7 @@ export function ProjectsHeader({
         </button>
       </div>
 
-      <ProjectStats stats={stats} />
+      <ProjectStats stats={projectStats} />
     </div>
   );
 }

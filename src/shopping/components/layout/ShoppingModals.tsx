@@ -1,7 +1,8 @@
 import React from 'react';
 import { AddItemModal, EditItemModal, BarcodeScannerModal, ReceiptScanningModal, AddPantryItemModal, StoreSuggestionsModal } from '../modals';
 import type { ShoppingItem, Store as StoreType } from '../../types';
-import type { PantryItem as PantryItemType } from '../../../mealPlanning/hooks/useMealPlanningQuery';
+import type { PantryItem } from '../../../types';
+import type { Coordinates } from '../../services/locationService';
 
 interface FormData {
   name: string;
@@ -19,7 +20,16 @@ interface ShoppingModalsProps {
   // Add Pantry Modal
   showAddPantry: boolean;
   onAddPantryClose: () => void;
-  onAddPantrySave: (item: Omit<PantryItemType, 'id' | 'updatedAt'>) => Promise<void>;
+  onAddPantrySave: (item: {
+    name: string;
+    quantity: number;
+    unit?: string;
+    category: PantryItem['category'];
+    expirationDate?: Date;
+    location?: string;
+    lowStockThreshold?: number;
+    isLowStock?: boolean;
+  }) => Promise<void>;
 
   // Scan Receipt Modal
   showScanReceipt: boolean;
@@ -36,8 +46,8 @@ interface ShoppingModalsProps {
   showBarcodeScanner: boolean;
   isScanning: boolean;
   barcodeResult: string | null;
-  captureMessage: string;
-  videoRef: React.RefObject<HTMLVideoElement>;
+  captureMessage: string | null;
+  videoRef: React.RefObject<HTMLVideoElement | null>;
   onBarcodeScannerClose: () => void;
   onBarcodeCapture: () => void;
   onBarcodeStop: () => void;
@@ -61,8 +71,8 @@ interface ShoppingModalsProps {
   // Store Suggestions Modal
   showLocationSuggestions: boolean;
   selectedItemForSuggestions: ShoppingItem | null;
-  userLocation: GeolocationCoordinates | null;
-  nearbyStores: Array<{ store: StoreType; distance: number }>;
+  userLocation: Coordinates | null;
+  nearbyStores: StoreType[];
   onStoreSuggestionsClose: () => void;
   onGetLocation: () => void;
   onAssignStore: (storeId: string) => void;

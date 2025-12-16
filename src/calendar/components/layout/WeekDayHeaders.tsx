@@ -1,11 +1,5 @@
 import React from 'react';
-
-interface WeekDay {
-  date: Date;
-  dayName: string;
-  dayNumber: number;
-  isToday: boolean;
-}
+import type { WeekDay } from '../../hooks/useCalendarState';
 
 interface WeekDayHeadersProps {
   weekDays: WeekDay[];

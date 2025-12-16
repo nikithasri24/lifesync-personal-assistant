@@ -3,6 +3,7 @@ import { format, isToday, addDays } from 'date-fns';
 import { CheckSquare, Target, FileText, TrendingUp } from 'lucide-react';
 import type { Task } from '../../lib/supabase';
 import type { Habit, Note, JournalEntry } from '../../types';
+import type { ViewKey } from '../../stores/slices/uiSlice';
 
 interface HabitEntry {
   habit_id: string;
@@ -43,7 +44,7 @@ export function useDashboardData(
   habitEntries: HabitEntry[],
   notes: Note[],
   journalEntries: JournalEntry[],
-  setActiveView: (view: string) => void
+  setActiveView: (view: ViewKey) => void
 ): DashboardData {
   const todayTodos = useMemo(
     () =>

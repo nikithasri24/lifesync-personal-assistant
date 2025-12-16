@@ -3,7 +3,7 @@ import DatePickerPopover from '../../../components/DatePickerPopover';
 
 interface MealPlanToolbarProps {
   currentWeekStart: Date;
-  weekStartsOn: number;
+  weekStartsOn: 0 | 1;
   onWeekChange: (date: Date) => void;
   onPreviousWeek: () => void;
   onThisWeek: () => void;

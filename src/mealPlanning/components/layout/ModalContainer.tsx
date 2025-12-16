@@ -6,17 +6,8 @@ import { QuickRecipeModal } from '../modals/QuickRecipeModal';
 import { SimpleRecipeEditModal } from '../modals/SimpleRecipeEditModal';
 import { RecipeEditModal } from '../modals/RecipeEditModal';
 import { RecipeViewModal } from '../modals/RecipeViewModal';
-import type { GroceryItem } from '../../hooks/useGroceryList';
-
-interface RecipeFormModal {
-  initialName: string;
-  onSave: (recipeId: string) => Promise<void>;
-}
-
-interface SimpleEditModal {
-  recipe: Recipe;
-  onSave: (updates: Partial<Recipe>) => Promise<void>;
-}
+import type { GroceryItem, GroceryItemStatus } from '../../hooks/useGroceryList';
+import type { RecipeFormModal, SimpleEditModal } from '../../hooks/useMealFormModals';
 
 interface ModalContainerProps {
   // Grocery list modal
@@ -28,8 +19,8 @@ interface ModalContainerProps {
   inCartItems: GroceryItem[];
   purchasedItems: GroceryItem[];
   weekStartDate: Date;
-  updateItemStatus: (itemName: string, status: string) => void;
-  getStatusColor: (status: string) => string;
+  updateItemStatus: (itemId: string, status: GroceryItemStatus) => void;
+  getStatusColor: (status: GroceryItemStatus) => string;
   onCopyCart: () => void;
 
   // Copy week modal

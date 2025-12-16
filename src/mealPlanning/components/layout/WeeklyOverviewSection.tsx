@@ -1,21 +1,21 @@
 import React from 'react';
 import { CalendarDays, Loader2 } from 'lucide-react';
 import { WeeklyGrid } from './WeeklyGrid';
-import type { PlannedMeal, Recipe, MealPlan } from '../../../types';
+import type { PlannedMeal, Recipe, MealPlanWeek } from '../../../types';
 
 interface WeeklyOverviewSectionProps {
   isLoading: boolean;
   weekDays: Date[];
   mealsByDate: Record<string, PlannedMeal[]>;
   recipes: Recipe[];
-  activePlan: MealPlan | null;
+  activePlan: MealPlanWeek | null;
   selectedCells: Set<string>;
-  makeCellKey: (date: Date, mealType: string) => string;
-  onCellClick: (date: Date, mealType: string, event: React.MouseEvent) => void;
-  onShowRecipeForm: (initialName: string, onSave: (recipeId: string) => Promise<void>) => void;
-  onShowSimpleEdit: (recipe: Recipe, onSave: (updates: Partial<Recipe>) => Promise<void>) => void;
-  createPlannedMeal: (data: { planId: string; meal: any }) => Promise<void>;
-  updatePlannedMeal: (data: { mealId: string; updates: any }) => Promise<void>;
+  makeCellKey: (dateKey: string, mealType: string) => string;
+  onCellClick: (dateKey: string, mealType: string, e: React.MouseEvent) => void;
+  onShowRecipeForm: (initialName: string, onSave: (recipe: Omit<Recipe, 'id' | 'createdAt'>) => void) => void;
+  onShowSimpleEdit: (recipe: Recipe, onSave: (updates: Partial<Recipe>) => void) => void;
+  createPlannedMeal: (data: { planId: string; meal: unknown }) => Promise<unknown>;
+  updatePlannedMeal: (data: { mealId: string; updates: unknown }) => Promise<unknown>;
 }
 
 /**

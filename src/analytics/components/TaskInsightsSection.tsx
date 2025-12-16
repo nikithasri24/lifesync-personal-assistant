@@ -1,16 +1,15 @@
 import React from 'react';
 import { Award } from 'lucide-react';
 
-interface Todo {
-  estimated_time?: number;
-  priority?: string;
-  [key: string]: unknown;
+interface TodoItem {
+  estimated_time?: number | null;
+  priority?: 'low' | 'medium' | 'high' | 'urgent' | 'important';
 }
 
 interface TaskInsightsSectionProps {
   completedTodos: number;
   todoCompletionRate: number;
-  todos: Todo[];
+  todos: TodoItem[];
 }
 
 /**

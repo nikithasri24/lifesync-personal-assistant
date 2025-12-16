@@ -1,11 +1,13 @@
 import { useState, useCallback, useEffect } from 'react';
 import { addDays, isSameWeek } from 'date-fns';
 import { ensureDate } from '../utils';
-import type { PlannedMeal, MealPlan } from '../../types';
+import type { PlannedMeal, MealPlanWeek } from '../../types';
 import {
   useCreateMealPlanMutation,
   useCreatePlannedMealMutation,
 } from './useMealPlanningQuery';
+
+type WeekStartDay = 0 | 1;
 
 export interface UseWeekCopyReturn {
   copyTargetWeek: Date;
@@ -14,8 +16,8 @@ export interface UseWeekCopyReturn {
   copyWeek: (
     sourceMeals: PlannedMeal[],
     sourceWeekStart: Date,
-    mealPlans: MealPlan[],
-    weekStartsOn: number,
+    mealPlans: MealPlanWeek[],
+    weekStartsOn: WeekStartDay,
     showToast: (message: string, type: 'success' | 'error') => void
   ) => Promise<void>;
 }
@@ -39,8 +41,8 @@ export function useWeekCopy(initialTargetWeek: Date): UseWeekCopyReturn {
     async (
       sourceMeals: PlannedMeal[],
       sourceWeekStart: Date,
-      mealPlans: MealPlan[],
-      weekStartsOn: number,
+      mealPlans: MealPlanWeek[],
+      weekStartsOn: WeekStartDay,
       showToast: (message: string, type: 'success' | 'error') => void
     ) => {
       setIsCopying(true);

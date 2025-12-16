@@ -15,6 +15,7 @@ import { useCalendarState } from '../calendar/hooks/useCalendarState';
 import { useCalendarTasks } from '../calendar/hooks/useCalendarTasks';
 import { isMultiDayTask, getTaskSpanDays, taskAppearsOnDate, getTaskSpanPosition } from '../calendar/hooks';
 import { useUndoRedo } from '../contexts/UndoRedoContext';
+import { useProjectsQuery } from '../projects/hooks/useProjectsQuery';
 
 // Components
 import { CalendarHeader } from '../calendar/components/CalendarHeader';
@@ -43,6 +44,7 @@ const Calendar: React.FC = () => {
   const { data: habits = [], isLoading: habitsLoading } = useHabits({ isActive: true });
   const { data: habitEntries = [], isLoading: entriesLoading } = useHabitEntries();
   const { data: calendarEvents = [], isLoading: eventsLoading } = useCalendarEvents();
+  const { data: projects = [] } = useProjectsQuery();
 
   // Mutations
   const updateTaskMutation = useUpdateTask();
@@ -592,7 +594,7 @@ const Calendar: React.FC = () => {
                                   key={event.id}
                                   event={event}
                                   onClick={() => handleEventClick(event)}
-                                  onDragStart={(e) => handleEventDragStart(event, e)}
+                                  onDragStart={handleEventDragStart}
                                   onDragEnd={handleEventDragEnd}
                                 />
                               ))}
@@ -628,34 +630,41 @@ const Calendar: React.FC = () => {
       </div>
 
       {/* Modals */}
-      {showEditModal && (
-        <TaskEditModal
-          task={editingTask}
-          onSave={handleSaveTask}
-          onDelete={handleDeleteTask}
-          onClose={handleCloseEditModal}
-        />
-      )}
+      <TaskEditModal
+        task={editingTask}
+        projects={projects.map(p => ({
+          id: p.id,
+          name: p.name,
+          description: p.description,
+          color: p.color,
+          status: p.status,
+          icon: p.icon,
+          created_at: p.createdAt.toISOString(),
+          updated_at: p.updatedAt?.toISOString(),
+        }))}
+        isOpen={showEditModal}
+        onSave={handleSaveTask}
+        onDelete={handleDeleteTask}
+        onClose={handleCloseEditModal}
+      />
 
-      {showEventModal && (
-        <EventModal
-          event={editingEvent}
-          initialDate={eventModalInitialDate}
-          onSave={handleSaveEvent}
-          onDelete={handleDeleteEvent}
-          onClose={handleCloseEventModal}
-        />
-      )}
+      <EventModal
+        event={editingEvent}
+        isOpen={showEventModal}
+        initialDate={eventModalInitialDate}
+        onSave={handleSaveEvent}
+        onDelete={handleDeleteEvent}
+        onClose={handleCloseEventModal}
+      />
 
-      {showQuickSchedule && quickScheduleDate && (
-        <QuickScheduleModal
-          date={quickScheduleDate}
-          tasks={unscheduledTasks}
-          onScheduleTask={handleQuickScheduleTask}
-          onCreateNew={handleQuickCreateNew}
-          onClose={() => setShowQuickSchedule(false)}
-        />
-      )}
+      <QuickScheduleModal
+        isOpen={showQuickSchedule}
+        selectedDate={quickScheduleDate}
+        unscheduledTasks={unscheduledTasks}
+        onScheduleTask={handleQuickScheduleTask}
+        onCreateNew={handleQuickCreateNew}
+        onClose={() => setShowQuickSchedule(false)}
+      />
     </div>
   );
 };

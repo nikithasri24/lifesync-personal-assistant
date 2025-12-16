@@ -11,7 +11,7 @@ interface StoreWithDistance extends Store {
 export function useStoreSuggestions(stores: Store[]): {
   userLocation: Coordinates | null;
   getUserLocation: () => Promise<void>;
-  findNearbyStoresForItem: (item: ShoppingItem) => StoreWithDistance[];
+  findNearbyStoresForItem: (item: ShoppingItem) => Store[];
 } {
   const [userLocation, setUserLocation] = useState<Coordinates | null>(null);
 
