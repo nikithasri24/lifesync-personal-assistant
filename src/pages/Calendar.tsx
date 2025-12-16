@@ -635,13 +635,13 @@ const Calendar: React.FC = () => {
                         {/* Current time indicator - red line showing "now" */}
                         {showCurrentTimeIndicator && currentTimeTop >= 0 && (
                           <div
-                            className="absolute left-0 right-0 z-50 pointer-events-none"
+                            className="absolute inset-x-0 z-50 pointer-events-none"
                             style={{ top: `${currentTimeTop}px` }}
                           >
-                            <div className="flex items-center">
-                              <div className="w-3 h-3 rounded-full bg-red-500 border-2 border-white dark:border-slate-900 shadow-sm -ml-1.5" />
-                              <div className="flex-1 h-[2px] bg-red-500 shadow-sm" />
-                            </div>
+                            {/* Red line spanning full width */}
+                            <div className="absolute inset-x-0 top-1/2 h-[2px] bg-red-500 -translate-y-1/2" />
+                            {/* Red dot at the start */}
+                            <div className="absolute -left-1.5 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-red-500 border-2 border-white dark:border-slate-900 shadow-sm" />
                           </div>
                         )}
 
