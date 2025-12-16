@@ -133,8 +133,9 @@ const Calendar: React.FC = () => {
     const dataDate = timeSlotElement.getAttribute('data-date');
     const dataHour = timeSlotElement.getAttribute('data-hour');
 
-    // Parse the date from the data attribute or use the passed date
-    const finalDate = dataDate ? parseISO(dataDate) : date;
+    // Use the data-date directly to avoid timezone issues with parseISO
+    // data-date is already in 'yyyy-MM-dd' format
+    const dateString = dataDate || format(date, 'yyyy-MM-dd');
 
     // Calculate exact time from drop position within the cell
     const rect = timeSlotElement.getBoundingClientRect();
@@ -151,8 +152,6 @@ const Calendar: React.FC = () => {
     // Get hour from data attribute, default to 9 if not found
     const hour = dataHour !== null ? parseInt(dataHour, 10) : 9;
     const scheduledTime = `${hour.toString().padStart(2, '0')}:${clampedMinutes.toString().padStart(2, '0')}`;
-
-    const dateString = format(finalDate, 'yyyy-MM-dd');
 
     console.log('[Calendar] Drop detected:', {
       dataDate,
