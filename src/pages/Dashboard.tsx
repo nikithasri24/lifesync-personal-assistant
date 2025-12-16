@@ -22,6 +22,7 @@ import { RecentNotesSection } from '../dashboard/components/RecentNotesSection';
 import { WeeklyOverview } from '../dashboard/components/WeeklyOverview';
 import { UpcomingDeadlines } from '../dashboard/components/UpcomingDeadlines';
 import { GamificationWidget } from '../components/gamification';
+import { MorningBriefing } from '../components/briefing';
 
 // Hooks
 import { useDashboardData } from '../dashboard/hooks/useDashboardData';
@@ -163,7 +164,13 @@ export default function Dashboard(): ReactElement {
         <GamificationWidget variant="compact" />
       </div>
 
-      <StatsGrid cards={statsCards} />
+      {/* Morning Briefing - Full width on mobile, side by side with stats on larger screens */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <MorningBriefing className="xl:col-span-1" />
+        <div className="xl:col-span-2">
+          <StatsGrid cards={statsCards} />
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <TodayTasksSection
