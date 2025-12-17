@@ -167,7 +167,11 @@ export default function Dashboard(): ReactElement {
 
       {/* Morning Briefing & Smart Scheduler */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <MorningBriefing className="xl:col-span-1" />
+        <MorningBriefing
+          className="xl:col-span-1"
+          onCompleteTask={completeTask}
+          onCompleteHabit={completeHabitSafely}
+        />
         <div className="xl:col-span-2 space-y-6">
           <StatsGrid cards={statsCards} />
           <SmartScheduler className="hidden xl:block" />

@@ -92,18 +92,6 @@ const Calendar: React.FC = () => {
     // Tasks (including multi-day tasks that span this date)
     const dayTasks = tasks.filter(task => taskAppearsOnDate(task, date));
 
-    // Debug: Log task filtering (only once)
-    if (dateKey === format(new Date(), 'yyyy-MM-dd') && !window._calendarDebugLogged) {
-      window._calendarDebugLogged = true;
-      const tasksWithDates = tasks.filter(t => t.due_date);
-      console.log('[Calendar] Tasks debug:', {
-        todayKey: dateKey,
-        totalTasks: tasks.length,
-        tasksWithDueDate: tasksWithDates.length,
-        dueDates: tasksWithDates.slice(0, 5).map(t => ({ title: t.title, due_date: t.due_date, scheduled_time: t.scheduled_time })),
-      });
-    }
-
     // Separate all-day tasks (high priority or starred tasks are treated as all-day)
     const allDayTasks = dayTasks.filter(task =>
       task.priority === 'urgent' || task.starred || (task.estimated_time ?? 0) >= 240 // 4+ hours
