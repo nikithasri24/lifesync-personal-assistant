@@ -139,37 +139,13 @@ const Calendar: React.FC = () => {
 
     if (!draggedTask) return;
 
-    // Get drop coordinates
-    const dropX = e.clientX;
-    const dropY = e.clientY;
-
-    // Hide the dragged element temporarily to find what's underneath
-    const draggedElement = e.target as HTMLElement;
-    const originalDisplay = draggedElement.style.display;
-    draggedElement.style.display = 'none';
-
-    // Find the actual element at the drop point (now that dragged element is hidden)
-    const elementAtPoint = document.elementFromPoint(dropX, dropY) as HTMLElement;
-
-    // Restore the dragged element
-    draggedElement.style.display = originalDisplay;
-
-    // Find the time slot element by traversing up from the element at drop point
-    let timeSlotElement = elementAtPoint;
-    while (timeSlotElement && !timeSlotElement.getAttribute('data-date')) {
-      timeSlotElement = timeSlotElement.parentElement as HTMLElement;
-    }
-
-    // Fallback to currentTarget if we couldn't find the time slot
-    if (!timeSlotElement || !timeSlotElement.getAttribute('data-date')) {
-      timeSlotElement = e.currentTarget as HTMLElement;
-    }
-
+    // Use the currentTarget - this is the element with the drop handler attached
+    // which is the time slot cell with data-date and data-hour attributes
+    const timeSlotElement = e.currentTarget as HTMLElement;
     const dataDate = timeSlotElement.getAttribute('data-date');
     const dataHour = timeSlotElement.getAttribute('data-hour');
 
     // Use the data-date directly to avoid timezone issues with parseISO
-    // data-date is already in 'yyyy-MM-dd' format
     const dateString = dataDate || format(date, 'yyyy-MM-dd');
 
     // Calculate exact time from drop position within the cell
@@ -178,26 +154,18 @@ const Calendar: React.FC = () => {
     const cellHeight = rect.height; // Each cell is 64px (h-16)
 
     // Calculate minutes within the hour based on drop position
-    // Top of cell = 0 min, bottom = 60 min
     const minutesInHour = Math.floor((offsetY / cellHeight) * 60);
-    // Round to nearest 15 minutes for cleaner scheduling
     const roundedMinutes = Math.round(minutesInHour / 15) * 15;
     const clampedMinutes = Math.min(45, Math.max(0, roundedMinutes));
 
-    // Get hour from data attribute, default to 9 if not found
+    // Get hour from data attribute
     const hour = dataHour !== null ? parseInt(dataHour, 10) : 9;
     const scheduledTime = `${hour.toString().padStart(2, '0')}:${clampedMinutes.toString().padStart(2, '0')}`;
 
     console.log('[Calendar] Drop detected:', {
-      dropX,
-      dropY,
-      elementAtPoint: elementAtPoint?.tagName,
       dataDate,
       dataHour,
       hour,
-      offsetY,
-      cellHeight,
-      clampedMinutes,
       scheduledTime,
       dateString
     });
