@@ -156,9 +156,9 @@ export function MorningBriefing({ className = '', onCompleteTask, onCompleteHabi
 
   if (isLoading) {
     return (
-      <div className={`bg-blue-600 rounded-xl p-6 text-white border-4 border-blue-800 ${className}`}>
+      <div className={`card ${className}`}>
         <div className="flex items-center justify-center h-32">
-          <Loader2 className="w-8 h-8 animate-spin text-white" />
+          <Loader2 className="w-8 h-8 animate-spin text-accent" />
         </div>
       </div>
     );
@@ -166,21 +166,21 @@ export function MorningBriefing({ className = '', onCompleteTask, onCompleteHabi
 
   if (error || !briefing) {
     return (
-      <div className={`bg-red-600 rounded-xl p-6 text-white border-4 border-red-800 ${className}`}>
-        <p className="text-center text-white font-bold text-lg">Unable to load briefing</p>
+      <div className={`card border-2 border-red-300 ${className}`}>
+        <p className="text-center text-primary font-bold text-lg">Unable to load briefing</p>
       </div>
     );
   }
 
   return (
-    <div className={`bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 rounded-xl p-6 text-white shadow-2xl border-4 border-blue-800 ${className}`}>
+    <div className={`card ${className}`}>
       {/* Header */}
       <div className="flex justify-between items-start mb-4">
         <div>
-          <h2 className="text-3xl font-black text-white drop-shadow-lg animate-fade-in">
+          <h2 className="text-2xl font-bold text-primary font-display animate-fade-in">
             {briefing.greeting}! ✨
           </h2>
-          <p className="text-blue-100 font-bold text-lg">
+          <p className="text-secondary font-medium text-base">
             {briefing.dayOfWeek}, {format(new Date(), 'MMMM d')}
           </p>
         </div>
@@ -189,8 +189,8 @@ export function MorningBriefing({ className = '', onCompleteTask, onCompleteHabi
             onClick={handleSpeak}
             className={`p-2.5 rounded-full transition-all duration-300 ${
               isSpeaking
-                ? 'bg-white/30 animate-pulse'
-                : 'hover:bg-white/20 hover:scale-110'
+                ? 'bg-blue-500 text-white animate-pulse'
+                : 'bg-tertiary hover:bg-blue-100 text-primary'
             }`}
             title={isSpeaking ? 'Stop reading' : 'Read briefing aloud'}
           >
@@ -205,15 +205,15 @@ export function MorningBriefing({ className = '', onCompleteTask, onCompleteHabi
 
       {/* Weather */}
       {briefing.weather && (
-        <div className="flex items-center gap-3 mb-4 bg-blue-700 rounded-lg p-3 border-2 border-blue-900">
+        <div className="flex items-center gap-3 mb-4 bg-gradient-to-r from-blue-50 to-sky-50 rounded-xl p-4 border border-blue-200">
           <span className="text-4xl">{getWeatherEmoji(briefing.weather.condition)}</span>
           <div>
-            <p className="font-black text-xl text-white">
+            <p className="font-bold text-xl text-primary">
               {briefing.weather.temperature}°{briefing.weather.temperatureUnit}
             </p>
-            <p className="text-sm text-blue-100 font-semibold capitalize">{briefing.weather.conditionText}</p>
+            <p className="text-sm text-secondary font-medium capitalize">{briefing.weather.conditionText}</p>
           </div>
-          <div className="ml-auto text-right text-sm text-blue-100 font-semibold">
+          <div className="ml-auto text-right text-sm text-secondary font-medium">
             <p>H: {briefing.weather.high}° L: {briefing.weather.low}°</p>
             <p>{briefing.weather.location}</p>
           </div>
@@ -278,10 +278,10 @@ export function MorningBriefing({ className = '', onCompleteTask, onCompleteHabi
 
       {/* Current Streak */}
       {briefing.currentStreak > 0 && (
-        <div className="flex items-center justify-center gap-2 mt-4 pt-4 border-t-2 border-white/20">
-          <div className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-500 px-4 py-2 rounded-full">
+        <div className="flex items-center justify-center gap-2 mt-4 pt-4 border-t border-gray-200">
+          <div className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-500 px-4 py-2 rounded-full shadow-lg">
             <Flame className="w-5 h-5 text-yellow-200 animate-pulse" />
-            <span className="font-black text-white text-lg">{briefing.currentStreak} day streak</span>
+            <span className="font-bold text-white text-lg">{briefing.currentStreak} day streak</span>
             <Flame className="w-5 h-5 text-yellow-200 animate-pulse" />
           </div>
         </div>
@@ -290,7 +290,7 @@ export function MorningBriefing({ className = '', onCompleteTask, onCompleteHabi
       {/* Level Badge */}
       {briefing.level > 1 && (
         <div className="flex items-center justify-center mt-3">
-          <span className="text-sm font-bold text-blue-200">
+          <span className="text-sm font-medium text-secondary">
             Level {briefing.level} • Keep going! 🚀
           </span>
         </div>
@@ -302,32 +302,32 @@ export function MorningBriefing({ className = '', onCompleteTask, onCompleteHabi
 // Helper Components
 function StatCard({ icon, value, label }: { icon: React.ReactNode; value: number; label: string }) {
   return (
-    <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 text-center border border-white/20 hover:bg-white/20 transition-colors">
-      <div className="flex items-center justify-center gap-1 mb-1 text-white">
+    <div className="bg-tertiary rounded-xl p-3 text-center hover:shadow-md transition-all duration-200">
+      <div className="flex items-center justify-center gap-1 mb-1 text-accent">
         {icon}
-        <span className="text-2xl font-black text-white">{value}</span>
+        <span className="text-2xl font-bold text-primary">{value}</span>
       </div>
-      <p className="text-sm text-blue-100 font-bold">{label}</p>
+      <p className="text-sm text-secondary font-medium">{label}</p>
     </div>
   );
 }
 
 function InsightCard({ icon, text, type }: { icon: React.ReactNode; text: string; type: 'tip' | 'warning' | 'success' }) {
-  const bgColors = {
-    tip: 'bg-indigo-500/30 border-indigo-400/50',
-    warning: 'bg-orange-500/30 border-orange-400/50',
-    success: 'bg-green-500/30 border-green-400/50',
+  const styles = {
+    tip: 'bg-blue-50 border-blue-200 text-blue-700',
+    warning: 'bg-amber-50 border-amber-200 text-amber-700',
+    success: 'bg-green-50 border-green-200 text-green-700',
   };
   const iconColors = {
-    tip: 'text-indigo-200',
-    warning: 'text-orange-200',
-    success: 'text-green-200',
+    tip: 'text-blue-500',
+    warning: 'text-amber-500',
+    success: 'text-green-500',
   };
   return (
-    <div className={`flex items-center gap-3 rounded-lg p-3 border ${bgColors[type]} backdrop-blur-sm`}>
+    <div className={`flex items-center gap-3 rounded-xl p-3 border ${styles[type]}`}>
       <div className={iconColors[type]}>{icon}</div>
-      <p className="text-sm text-white font-medium flex-1">{text}</p>
-      <Lightbulb className="w-4 h-4 text-yellow-300 opacity-60" />
+      <p className="text-sm font-medium flex-1">{text}</p>
+      <Lightbulb className="w-4 h-4 text-yellow-500" />
     </div>
   );
 }
@@ -335,8 +335,8 @@ function InsightCard({ icon, text, type }: { icon: React.ReactNode; text: string
 function Section({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="mt-4">
-      <div className="flex items-center gap-2 mb-2 text-base font-black text-white">
-        {icon}
+      <div className="flex items-center gap-2 mb-2 text-base font-semibold text-primary">
+        <span className="text-accent">{icon}</span>
         <span>{title}</span>
       </div>
       <div className="space-y-2">{children}</div>
@@ -347,10 +347,10 @@ function Section({ title, icon, children }: { title: string; icon: React.ReactNo
 function EventItem({ event }: { event: BriefingEvent }) {
   const time = event.isAllDay ? 'All day' : format(parseISO(event.startTime), 'h:mm a');
   return (
-    <div className="flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-lg p-2 border border-white/20 hover:bg-white/20 transition-colors">
-      <div className="w-14 text-sm text-center font-black text-white bg-white/10 rounded px-2 py-1">{time}</div>
-      <div className="flex-1 truncate text-sm text-white font-bold">{event.title}</div>
-      {event.location && <span className="text-xs text-blue-100 font-semibold truncate max-w-20">📍 {event.location}</span>}
+    <div className="flex items-center gap-3 bg-tertiary rounded-xl p-3 hover:shadow-md transition-all duration-200">
+      <div className="w-16 text-xs text-center font-semibold text-blue-700 bg-blue-100 rounded-lg px-2 py-1.5 border border-blue-200">{time}</div>
+      <div className="flex-1 truncate text-sm text-primary font-medium">{event.title}</div>
+      {event.location && <span className="text-xs text-secondary truncate max-w-24">📍 {event.location}</span>}
     </div>
   );
 }
@@ -362,37 +362,45 @@ interface TaskItemProps {
 }
 
 function TaskItem({ task, onComplete, isCompleting }: TaskItemProps) {
-  const priorityColors = {
-    urgent: 'bg-red-400',
-    high: 'bg-orange-400',
-    medium: 'bg-yellow-400',
-    low: 'bg-green-400',
+  const priorityBadges = {
+    urgent: 'bg-red-100 text-red-700 border-red-200',
+    high: 'bg-orange-100 text-orange-700 border-orange-200',
+    medium: 'bg-yellow-100 text-yellow-700 border-yellow-200',
+    low: 'bg-green-100 text-green-700 border-green-200',
+  };
+  const priorityDots = {
+    urgent: 'bg-red-500',
+    high: 'bg-orange-500',
+    medium: 'bg-yellow-500',
+    low: 'bg-green-500',
   };
   return (
-    <div className="flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-lg p-2 border border-white/20 hover:bg-white/20 transition-colors group">
+    <div className="flex items-center gap-3 bg-tertiary rounded-xl p-3 hover:shadow-md transition-all duration-200 group">
       {onComplete ? (
         <button
           onClick={onComplete}
           disabled={isCompleting}
-          className="w-6 h-6 rounded-full border-2 border-white/50 flex items-center justify-center hover:bg-green-500 hover:border-green-500 transition-colors disabled:opacity-50"
+          className="w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center hover:bg-green-500 hover:border-green-500 transition-colors disabled:opacity-50"
         >
           {isCompleting ? (
-            <Loader2 className="w-3 h-3 animate-spin" />
+            <Loader2 className="w-3 h-3 animate-spin text-gray-500" />
           ) : (
-            <CheckCircle2 className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <CheckCircle2 className="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
           )}
         </button>
       ) : (
-        <div className={`w-3 h-3 rounded-full ${priorityColors[task.priority]}`} />
+        <div className={`w-3 h-3 rounded-full ${priorityDots[task.priority]}`} />
       )}
-      <div className="flex-1 truncate text-sm text-white font-bold">
-        {task.isOverdue && <span className="text-red-300 mr-1">⚠️</span>}
+      <div className="flex-1 truncate text-sm text-primary font-medium">
+        {task.isOverdue && <span className="text-red-500 mr-1">⚠️</span>}
         {task.title}
       </div>
       <div className="flex items-center gap-2">
-        <span className={`w-2 h-2 rounded-full ${priorityColors[task.priority]}`} title={task.priority} />
+        <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium border ${priorityBadges[task.priority]}`}>
+          {task.priority}
+        </span>
         {task.estimatedMinutes && (
-          <span className="text-xs text-blue-100 font-semibold">{task.estimatedMinutes}m</span>
+          <span className="text-xs text-secondary font-medium">{task.estimatedMinutes}m</span>
         )}
       </div>
     </div>
@@ -407,7 +415,7 @@ interface HabitItemProps {
 
 function HabitItem({ habit, onComplete, isCompleting }: HabitItemProps) {
   return (
-    <div className="flex items-center gap-3 bg-orange-500/20 backdrop-blur-sm rounded-lg p-2 border border-orange-400/30 hover:bg-orange-500/30 transition-colors group">
+    <div className="flex items-center gap-3 bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl p-3 border border-orange-200 hover:shadow-md transition-all duration-200 group">
       {onComplete ? (
         <button
           onClick={onComplete}
@@ -415,9 +423,9 @@ function HabitItem({ habit, onComplete, isCompleting }: HabitItemProps) {
           className="w-6 h-6 rounded-full border-2 border-orange-300 flex items-center justify-center hover:bg-green-500 hover:border-green-500 transition-colors disabled:opacity-50"
         >
           {isCompleting ? (
-            <Loader2 className="w-3 h-3 animate-spin" />
+            <Loader2 className="w-3 h-3 animate-spin text-orange-500" />
           ) : (
-            <CheckCircle2 className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <CheckCircle2 className="w-3 h-3 text-orange-400 opacity-0 group-hover:opacity-100 transition-opacity" />
           )}
         </button>
       ) : (
@@ -425,8 +433,8 @@ function HabitItem({ habit, onComplete, isCompleting }: HabitItemProps) {
           <Flame className="w-3 h-3 text-white" />
         </div>
       )}
-      <div className="flex-1 truncate text-sm text-white font-bold">{habit.name}</div>
-      <div className="flex items-center gap-1 text-orange-200 text-xs font-semibold">
+      <div className="flex-1 truncate text-sm text-primary font-medium">{habit.name}</div>
+      <div className="flex items-center gap-1 rounded-full bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-700 border border-orange-200">
         <Flame className="w-3 h-3" />
         <span>{habit.currentStreak}</span>
       </div>
