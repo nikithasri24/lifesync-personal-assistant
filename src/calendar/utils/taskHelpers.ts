@@ -2,8 +2,18 @@
  * Task helper utilities for calendar
  */
 
-import { isSameDay, parseISO, addDays } from 'date-fns';
+import { isSameDay, addDays } from 'date-fns';
 import type { Task } from '../../lib/supabase';
+
+/**
+ * Parse a date string (YYYY-MM-DD) into a local Date object
+ * This avoids timezone issues with parseISO which creates UTC dates
+ */
+const parseDateLocal = (dateStr: string): Date => {
+  // Parse YYYY-MM-DD format into local date
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day); // month is 0-indexed
+};
 
 /**
  * Check if a task is multi-day (estimated time >= 8 hours)
@@ -26,23 +36,27 @@ export const getTaskSpanDays = (task: Task): number => {
  */
 export const taskAppearsOnDate = (task: Task, date: Date): boolean => {
   if (!task.due_date) return false;
-  const taskDate = typeof task.due_date === 'string' ? parseISO(task.due_date) : task.due_date;
-  
+
+  // Use local date parsing to avoid timezone issues
+  const taskDate = typeof task.due_date === 'string'
+    ? parseDateLocal(task.due_date)
+    : task.due_date;
+
   if (!isMultiDayTask(task)) {
     return isSameDay(taskDate, date);
   }
-  
+
   // For multi-day tasks, check if date falls within the span
   const spanDays = getTaskSpanDays(task);
   const startDate = addDays(taskDate, -(spanDays - 1)); // Task ends on due_date
-  
+
   for (let i = 0; i < spanDays; i++) {
     const checkDate = addDays(startDate, i);
     if (isSameDay(checkDate, date)) {
       return true;
     }
   }
-  
+
   return false;
 };
 
@@ -54,15 +68,19 @@ export const getTaskSpanPosition = (
   date: Date
 ): { position: number; totalDays: number; isFirst: boolean; isLast: boolean } => {
   if (!task.due_date) return { position: -1, totalDays: 1, isFirst: true, isLast: true };
-  const taskDate = typeof task.due_date === 'string' ? parseISO(task.due_date) : task.due_date;
-  
+
+  // Use local date parsing to avoid timezone issues
+  const taskDate = typeof task.due_date === 'string'
+    ? parseDateLocal(task.due_date)
+    : task.due_date;
+
   if (!isMultiDayTask(task)) {
     return { position: 0, totalDays: 1, isFirst: true, isLast: true };
   }
-  
+
   const totalDays = getTaskSpanDays(task);
   const startDate = addDays(taskDate, -(totalDays - 1));
-  
+
   // Find which day of the span this date is
   for (let i = 0; i < totalDays; i++) {
     const checkDate = addDays(startDate, i);
@@ -75,7 +93,7 @@ export const getTaskSpanPosition = (
       };
     }
   }
-  
+
   return { position: -1, totalDays, isFirst: false, isLast: false };
 };
 
