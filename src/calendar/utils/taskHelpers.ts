@@ -6,12 +6,14 @@ import { isSameDay, addDays } from 'date-fns';
 import type { Task } from '../../lib/supabase';
 
 /**
- * Parse a date string (YYYY-MM-DD) into a local Date object
- * This avoids timezone issues with parseISO which creates UTC dates
+ * Parse a date string into a local Date object (date only, ignoring time/timezone)
+ * This avoids timezone issues where UTC dates shift to previous day in local time
+ * Handles both 'YYYY-MM-DD' and ISO timestamp formats like '2025-12-17T00:00:00+00:00'
  */
 const parseDateLocal = (dateStr: string): Date => {
-  // Parse YYYY-MM-DD format into local date
-  const [year, month, day] = dateStr.split('-').map(Number);
+  // Extract just the date part (YYYY-MM-DD) from the string
+  const datePart = dateStr.split('T')[0];
+  const [year, month, day] = datePart.split('-').map(Number);
   return new Date(year, month - 1, day); // month is 0-indexed
 };
 
