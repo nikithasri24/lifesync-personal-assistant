@@ -158,28 +158,28 @@ interface ResultsSectionProps {
 
 function ResultsSection({ result, isExpanded, onToggle }: ResultsSectionProps) {
   return (
-    <div className="border-t border-gray-200 pt-4 mt-4">
+    <div className="border-t border-slate-200 pt-4 mt-4">
       {/* Summary */}
       <button
         onClick={onToggle}
         className="w-full flex items-center justify-between text-left"
       >
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-1 text-green-600">
-            <CheckCircle className="w-4 h-4" />
-            <span className="text-sm font-medium">{result.totalScheduled} scheduled</span>
+          <div className="flex items-center gap-1">
+            <CheckCircle className="w-4 h-4 text-green-600" />
+            <span className="text-sm font-medium text-green-700">{result.totalScheduled} scheduled</span>
           </div>
           {result.totalUnscheduled > 0 && (
-            <div className="flex items-center gap-1 text-amber-600">
-              <AlertCircle className="w-4 h-4" />
-              <span className="text-sm font-medium">{result.totalUnscheduled} couldn't fit</span>
+            <div className="flex items-center gap-1">
+              <AlertCircle className="w-4 h-4 text-amber-600" />
+              <span className="text-sm font-medium text-amber-700">{result.totalUnscheduled} couldn't fit</span>
             </div>
           )}
         </div>
         {isExpanded ? (
-          <ChevronUp className="w-5 h-5 text-muted" />
+          <ChevronUp className="w-5 h-5 text-slate-500" />
         ) : (
-          <ChevronDown className="w-5 h-5 text-muted" />
+          <ChevronDown className="w-5 h-5 text-slate-500" />
         )}
       </button>
 
@@ -189,20 +189,20 @@ function ResultsSection({ result, isExpanded, onToggle }: ResultsSectionProps) {
           {/* Scheduled Tasks */}
           {result.scheduled.length > 0 && (
             <div>
-              <h4 className="text-xs font-semibold text-secondary uppercase mb-2">
+              <h4 className="text-xs font-semibold text-slate-500 uppercase mb-2">
                 Scheduled for Today
               </h4>
               <div className="space-y-2">
                 {result.scheduled.map(item => (
                   <div
                     key={item.taskId}
-                    className="flex items-center gap-3 p-2 bg-green-50 border border-green-200 rounded-lg"
+                    className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-xl"
                   >
-                    <Calendar className="w-4 h-4 text-green-600" />
-                    <span className="text-sm text-primary flex-1 truncate">
+                    <Calendar className="w-4 h-4 text-green-600 flex-shrink-0" />
+                    <span className="text-sm font-medium text-green-800 flex-1 truncate">
                       {item.taskTitle}
                     </span>
-                    <div className="flex items-center gap-1 text-xs text-green-700">
+                    <div className="flex items-center gap-1 text-xs font-medium text-green-700 bg-green-100 px-2 py-1 rounded-lg">
                       <Clock className="w-3 h-3" />
                       {format(item.start, 'h:mm a')}
                     </div>
@@ -215,20 +215,20 @@ function ResultsSection({ result, isExpanded, onToggle }: ResultsSectionProps) {
           {/* Unscheduled Tasks */}
           {result.unscheduled.length > 0 && (
             <div>
-              <h4 className="text-xs font-semibold text-secondary uppercase mb-2">
+              <h4 className="text-xs font-semibold text-slate-500 uppercase mb-2">
                 Couldn't Schedule
               </h4>
               <div className="space-y-2">
                 {result.unscheduled.map(item => (
                   <div
                     key={item.taskId}
-                    className="flex items-center gap-3 p-2 bg-amber-50 border border-amber-200 rounded-lg"
+                    className="flex items-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl"
                   >
-                    <AlertCircle className="w-4 h-4 text-amber-600" />
-                    <span className="text-sm text-primary flex-1 truncate">
+                    <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                    <span className="text-sm font-medium text-amber-800 flex-1 truncate">
                       {item.taskTitle}
                     </span>
-                    <span className="text-xs text-amber-700">{item.reason}</span>
+                    <span className="text-xs font-medium text-amber-700 bg-amber-100 px-2 py-1 rounded-lg">{item.reason}</span>
                   </div>
                 ))}
               </div>
