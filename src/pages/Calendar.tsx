@@ -139,12 +139,20 @@ const Calendar: React.FC = () => {
 
     if (!draggedTask) return;
 
-    // Use the element directly under the mouse cursor
+    // Get drop coordinates
     const dropX = e.clientX;
     const dropY = e.clientY;
 
-    // Find the actual element at the drop point
+    // Hide the dragged element temporarily to find what's underneath
+    const draggedElement = e.target as HTMLElement;
+    const originalDisplay = draggedElement.style.display;
+    draggedElement.style.display = 'none';
+
+    // Find the actual element at the drop point (now that dragged element is hidden)
     const elementAtPoint = document.elementFromPoint(dropX, dropY) as HTMLElement;
+
+    // Restore the dragged element
+    draggedElement.style.display = originalDisplay;
 
     // Find the time slot element by traversing up from the element at drop point
     let timeSlotElement = elementAtPoint;
