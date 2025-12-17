@@ -139,9 +139,15 @@ const Calendar: React.FC = () => {
 
     if (!draggedTask) return;
 
-    // Find the time slot element by looking for data-date and data-hour attributes
-    // Start from the drop target and traverse up if needed
-    let timeSlotElement = e.target as HTMLElement;
+    // Use the element directly under the mouse cursor
+    const dropX = e.clientX;
+    const dropY = e.clientY;
+
+    // Find the actual element at the drop point
+    const elementAtPoint = document.elementFromPoint(dropX, dropY) as HTMLElement;
+
+    // Find the time slot element by traversing up from the element at drop point
+    let timeSlotElement = elementAtPoint;
     while (timeSlotElement && !timeSlotElement.getAttribute('data-date')) {
       timeSlotElement = timeSlotElement.parentElement as HTMLElement;
     }
@@ -175,6 +181,9 @@ const Calendar: React.FC = () => {
     const scheduledTime = `${hour.toString().padStart(2, '0')}:${clampedMinutes.toString().padStart(2, '0')}`;
 
     console.log('[Calendar] Drop detected:', {
+      dropX,
+      dropY,
+      elementAtPoint: elementAtPoint?.tagName,
       dataDate,
       dataHour,
       hour,
