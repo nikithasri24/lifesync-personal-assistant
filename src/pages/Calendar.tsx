@@ -139,9 +139,18 @@ const Calendar: React.FC = () => {
 
     if (!draggedTask) return;
 
-    // Find the time slot element - use currentTarget (the element with the handler)
-    // which should have data-date and data-hour attributes
-    const timeSlotElement = e.currentTarget as HTMLElement;
+    // Find the time slot element by looking for data-date and data-hour attributes
+    // Start from the drop target and traverse up if needed
+    let timeSlotElement = e.target as HTMLElement;
+    while (timeSlotElement && !timeSlotElement.getAttribute('data-date')) {
+      timeSlotElement = timeSlotElement.parentElement as HTMLElement;
+    }
+
+    // Fallback to currentTarget if we couldn't find the time slot
+    if (!timeSlotElement || !timeSlotElement.getAttribute('data-date')) {
+      timeSlotElement = e.currentTarget as HTMLElement;
+    }
+
     const dataDate = timeSlotElement.getAttribute('data-date');
     const dataHour = timeSlotElement.getAttribute('data-hour');
 
