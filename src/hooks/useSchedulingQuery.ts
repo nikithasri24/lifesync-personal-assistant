@@ -169,3 +169,123 @@ export function useFreeSlots(date: Date, minDurationMinutes: number = 15) {
   });
 }
 
+/**
+ * Result of auto-scheduling operation
+ */
+export interface AutoScheduleResult {
+  scheduled: Array<{
+    taskId: string;
+    taskTitle: string;
+    start: Date;
+    end: Date;
+  }>;
+  unscheduled: Array<{
+    taskId: string;
+    taskTitle: string;
+    reason: string;
+  }>;
+  totalScheduled: number;
+  totalUnscheduled: number;
+}
+
+/**
+ * Hook to auto-schedule multiple tasks for a day
+ */
+export function useAutoScheduleMutation() {
+  const queryClient = useQueryClient();
+  const { data: prefs = DEFAULT_SCHEDULING_PREFS } = useSchedulingPreferences();
+
+  return useMutation({
+    mutationFn: async ({
+      tasks,
+      date,
+    }: {
+      tasks: Array<{
+        id: string;
+        title: string;
+        priority: 'urgent' | 'high' | 'medium' | 'low';
+        estimatedMinutes: number;
+        complexity?: 'deep_work' | 'shallow' | 'routine';
+      }>;
+      date: Date;
+    }): Promise<AutoScheduleResult> => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const dateKey = format(date, 'yyyy-MM-dd');
+
+      // Fetch existing events for the day
+      const { data: events } = await supabase
+        .from('calendar_events')
+        .select('start_date, start_time, end_date, end_time')
+        .eq('user_id', user.id)
+        .eq('start_date', dateKey);
+
+      const mappedEvents = (events || []).map(e => ({
+        start: parseISO(`${e.start_date}T${e.start_time || '00:00'}`),
+        end: parseISO(`${e.end_date || e.start_date}T${e.end_time || '23:59'}`),
+      }));
+
+      // Run the auto-scheduling algorithm
+      const schedule = autoScheduleDay(tasks, mappedEvents, date, prefs);
+
+      const scheduled: AutoScheduleResult['scheduled'] = [];
+      const unscheduled: AutoScheduleResult['unscheduled'] = [];
+
+      // Update each scheduled task in the database
+      for (const task of tasks) {
+        const slot = schedule.get(task.id);
+        if (slot) {
+          const timeStr = format(slot.start, 'HH:mm');
+
+          // Update task in database
+          const { error } = await supabase
+            .from('tasks')
+            .update({
+              due_date: dateKey,
+              scheduled_time: timeStr,
+              status: 'scheduled',
+            })
+            .eq('id', task.id)
+            .eq('user_id', user.id);
+
+          if (!error) {
+            scheduled.push({
+              taskId: task.id,
+              taskTitle: task.title,
+              start: slot.start,
+              end: slot.end,
+            });
+          } else {
+            unscheduled.push({
+              taskId: task.id,
+              taskTitle: task.title,
+              reason: 'Database update failed',
+            });
+          }
+        } else {
+          unscheduled.push({
+            taskId: task.id,
+            taskTitle: task.title,
+            reason: 'No available time slot',
+          });
+        }
+      }
+
+      return {
+        scheduled,
+        unscheduled,
+        totalScheduled: scheduled.length,
+        totalUnscheduled: unscheduled.length,
+      };
+    },
+    onSuccess: (_, variables) => {
+      // Invalidate relevant queries
+      const dateKey = format(variables.date, 'yyyy-MM-dd');
+      queryClient.invalidateQueries({ queryKey: schedulingKeys.daySchedule(dateKey) });
+      queryClient.invalidateQueries({ queryKey: schedulingKeys.freeSlots(dateKey) });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    },
+  });
+}
+

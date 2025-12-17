@@ -7,4 +7,5 @@ export { TimeBlockView } from './TimeBlockView';
 export { TaskPicker } from './TaskPicker';
 export { SmartSchedulerPanel } from './SmartSchedulerPanel';
 export { SmartSchedulePopover } from './SmartSchedulePopover';
+export { PlanMyDay } from './PlanMyDay';
 

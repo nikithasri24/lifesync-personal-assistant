@@ -23,7 +23,7 @@ import { WeeklyOverview } from '../dashboard/components/WeeklyOverview';
 import { UpcomingDeadlines } from '../dashboard/components/UpcomingDeadlines';
 import { GamificationWidget } from '../components/gamification';
 import { MorningBriefing } from '../components/briefing';
-import { SmartScheduler } from '../components/scheduling';
+import { SmartScheduler, PlanMyDay } from '../components/scheduling';
 
 // Hooks
 import { useDashboardData } from '../dashboard/hooks/useDashboardData';
@@ -167,18 +167,21 @@ export default function Dashboard(): ReactElement {
 
       {/* Morning Briefing & Smart Scheduler */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <MorningBriefing
-          className="xl:col-span-1"
-          onCompleteTask={completeTask}
-          onCompleteHabit={completeHabitSafely}
-        />
+        <div className="xl:col-span-1 space-y-6">
+          <MorningBriefing
+            onCompleteTask={completeTask}
+            onCompleteHabit={completeHabitSafely}
+          />
+          <PlanMyDay className="hidden xl:block" />
+        </div>
         <div className="xl:col-span-2 space-y-6">
           <StatsGrid cards={statsCards} />
           <SmartScheduler className="hidden xl:block" />
         </div>
       </div>
 
-      {/* Smart Scheduler - visible on mobile/tablet below briefing */}
+      {/* Plan My Day & Smart Scheduler - visible on mobile/tablet below briefing */}
+      <PlanMyDay className="xl:hidden" />
       <SmartScheduler className="xl:hidden" />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
