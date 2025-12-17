@@ -37,8 +37,9 @@ export function useSchedulingPreferences() {
         .from('user_preferences')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
+      // maybeSingle returns null if no row found, without throwing 406 error
       if (error || !data) return DEFAULT_SCHEDULING_PREFS;
 
       // Map database fields to our type
