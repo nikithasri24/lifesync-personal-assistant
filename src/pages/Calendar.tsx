@@ -5,7 +5,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { format, parseISO, isSameDay, addDays, isToday } from 'date-fns';
-import { CheckCircle2, Target, GripVertical } from 'lucide-react';
+import { CheckCircle2, Target } from 'lucide-react';
 
 // Hooks
 import { useTasks, useUpdateTask, useDeleteTask } from '../hooks/useTasksQuery';
@@ -714,23 +714,20 @@ const Calendar: React.FC = () => {
                                     style={{
                                       top: `${topOffset}px`,
                                       height: `${taskHeight}px`,
+                                      left: '2px',
+                                      right: '2px',
+                                      maxWidth: 'calc(100% - 4px)',
                                     }}
-                                    className="absolute inset-x-1 p-1 rounded shadow-sm bg-indigo-100 dark:bg-indigo-900/30 border-l-2 border-indigo-500 cursor-move hover:shadow-md transition-shadow z-10 overflow-hidden"
+                                    className="absolute px-1.5 py-0.5 rounded-sm bg-blue-500 dark:bg-blue-600 cursor-pointer hover:bg-blue-600 dark:hover:bg-blue-500 transition-colors z-10 overflow-hidden"
                                   >
-                                    <div className="flex items-start gap-1 h-full overflow-hidden">
-                                      <GripVertical className="w-3 h-3 text-indigo-500 flex-shrink-0 mt-0.5" />
-                                      <div className="flex-1 min-w-0 overflow-hidden">
-                                        <p className="text-[10px] font-medium text-indigo-900 dark:text-indigo-100 leading-tight break-words line-clamp-2">
-                                          {task.title}
-                                        </p>
-                                        {task.scheduled_time && (
-                                          <p className="text-[9px] text-indigo-600 dark:text-indigo-300 truncate">
-                                            {task.scheduled_time}
-                                            {task.estimated_time && ` • ${task.estimated_time}m`}
-                                          </p>
-                                        )}
-                                      </div>
-                                    </div>
+                                    <p className="text-[11px] font-medium text-white leading-tight truncate whitespace-nowrap overflow-hidden text-ellipsis">
+                                      {task.title}
+                                    </p>
+                                    {taskHeight >= 32 && task.scheduled_time && (
+                                      <p className="text-[10px] text-blue-100 truncate whitespace-nowrap overflow-hidden">
+                                        {task.scheduled_time}
+                                      </p>
+                                    )}
                                   </div>
                                 );
                               })}
