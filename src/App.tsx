@@ -6,6 +6,7 @@ import LoadingSpinner from './components/LoadingSpinner';
 import { AuthGate } from './components/AuthGate';
 import { UndoRedoButtons } from './components/UndoRedoButtons';
 import { QuickCapture } from './components/inbox';
+import { useReminderChecker } from './hooks/useReminders';
 
 // Lazy load all page components for route-based code splitting
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -30,6 +31,9 @@ const TaskScheduler = lazy(() => import('./pages/TaskScheduler'));
 
 function App(): React.ReactElement {
   const { activeView } = useComposedStore();
+
+  // Start reminder checking when app loads
+  useReminderChecker(true);
 
   const renderPage = (): React.ReactElement => {
     switch (activeView) {

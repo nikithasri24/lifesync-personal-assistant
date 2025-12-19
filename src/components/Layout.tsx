@@ -29,6 +29,7 @@ import ThemeToggle from './ThemeToggle';
 import VoiceLauncher from './VoiceLauncher';
 import PremiumLogo from './PremiumLogo';
 import ModeSwitch, { useAppMode } from './ModeSwitch';
+import { NotificationBell } from './notifications';
 import clsx from 'clsx';
 
 const navigation = [
@@ -272,6 +273,7 @@ export default function Layout({ children }: LayoutProps) {
                   })}
                 </div>
               </div>
+              <NotificationBell />
               <ModeSwitch />
               <VoiceLauncher />
             </div>

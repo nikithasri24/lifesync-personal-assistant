@@ -12,6 +12,7 @@ import { useVoice } from '@/hooks/useVoice';
 import { useTasks, useUpdateTask } from '@/hooks/useTasksQuery';
 import { useFreeSlots, useSchedulingPreferences } from '@/hooks/useSchedulingQuery';
 import { suggestTimesForTask, DEFAULT_SCHEDULING_PREFS } from '@/services/scheduling';
+import { reminderService } from '@/services/reminders';
 import type { TaskData } from '@/services/types';
 import type { ScoredTimeSlot } from '@/services/scheduling';
 import {
@@ -269,6 +270,20 @@ export function MorningBriefing({ className = '', onCompleteTask, onCompleteHabi
             status: 'scheduled',
           },
         });
+
+        // Schedule a reminder 15 minutes before the task
+        try {
+          await reminderService.scheduleTaskReminder(
+            selection.taskId,
+            selection.taskTitle,
+            selection.selectedSlot!.start,
+            15 // 15 minutes before
+          );
+        } catch (reminderErr) {
+          console.warn('Failed to schedule reminder:', reminderErr);
+          // Don't fail the whole operation if reminder fails
+        }
+
         scheduled++;
       } catch (err) {
         console.error('Failed to schedule task:', selection.taskId, err);
