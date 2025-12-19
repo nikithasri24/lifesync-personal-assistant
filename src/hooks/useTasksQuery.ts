@@ -189,7 +189,7 @@ export function useUpdateTask(): UseMutationResult<
           logger.error('Gamification', err instanceof Error ? err : new Error(String(err)));
         });
 
-        // Check for tasks that are now unblocked
+        // Check for tasks that are now unblocked and move them to todo
         const allTasks = queryClient.getQueryData<TaskData[]>(queryKeys.tasks.lists()) || [];
         const unblockedTasks = getTasksToUnblock(updatedTask.id, allTasks);
 
@@ -199,8 +199,35 @@ export function useUpdateTask(): UseMutationResult<
             unblockedTasks: unblockedTasks.map(t => t.title)
           });
 
-          // Could show a toast notification here in the future
-          // For now, the UI will automatically update to show unblocked status
+          // Update unblocked tasks to 'todo' status so they appear in backlog/todo
+          unblockedTasks.forEach(unblockedTask => {
+            if (unblockedTask.id && unblockedTask.status !== 'todo' && unblockedTask.status !== 'in_progress') {
+              // Update in database
+              updateTask(unblockedTask.id, {
+                status: 'todo',
+                is_blocked: false
+              }).then(() => {
+                logger.info('Tasks', `Task "${unblockedTask.title}" moved to todo after being unblocked`);
+              }).catch(err => {
+                logger.error('Tasks', `Failed to update unblocked task: ${err}`);
+              });
+            }
+          });
+
+          // Optimistically update the cache
+          queryClient.setQueryData<TaskData[]>(
+            queryKeys.tasks.lists(),
+            (old) => {
+              if (!old) return old;
+              return old.map(task => {
+                const isUnblocked = unblockedTasks.some(ut => ut.id === task.id);
+                if (isUnblocked && task.status !== 'todo' && task.status !== 'in_progress') {
+                  return { ...task, status: 'todo' as const, is_blocked: false };
+                }
+                return task;
+              });
+            }
+          );
         }
       }
 
