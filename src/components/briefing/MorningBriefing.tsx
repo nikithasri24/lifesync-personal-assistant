@@ -11,7 +11,7 @@ import type { DailyBriefing, BriefingEvent, BriefingTask, BriefingHabit } from '
 import { useVoice } from '@/hooks/useVoice';
 import { useTasks } from '@/hooks/useTasksQuery';
 import { useAutoScheduleMutation } from '@/hooks/useSchedulingQuery';
-import type { Task } from '@/types/task';
+import type { TaskData } from '@/services/types';
 import {
   Calendar,
   CheckCircle2,
@@ -125,12 +125,12 @@ export function MorningBriefing({ className = '', onCompleteTask, onCompleteHabi
   // Get tasks that need planning today: due today OR overdue (not scheduled, not done)
   const tasksNeedingPlan = useMemo(() => {
     const today = startOfDay(new Date());
-    return (allTasks as Task[]).filter(task => {
+    return (allTasks as TaskData[]).filter(task => {
       if (task.deleted || task.archived) return false;
       if (task.status === 'done' || task.status === 'scheduled') return false;
-      if (!task.dueDate) return false; // Only tasks WITH a due date
+      if (!task.due_date) return false; // Only tasks WITH a due date
 
-      const dueDate = startOfDay(new Date(task.dueDate));
+      const dueDate = startOfDay(new Date(task.due_date));
       return isToday(dueDate) || isBefore(dueDate, today); // Due today or overdue
     }).slice(0, 5); // Max 5 tasks to show
   }, [allTasks]);
@@ -154,12 +154,12 @@ export function MorningBriefing({ className = '', onCompleteTask, onCompleteHabi
     if (selectedForPlan.size === 0) return;
 
     const tasksToSchedule = tasksNeedingPlan
-      .filter(t => selectedForPlan.has(t.id))
+      .filter(t => t.id && selectedForPlan.has(t.id))
       .map(task => ({
-        id: task.id,
+        id: task.id!,
         title: task.title,
-        priority: task.priority as 'urgent' | 'high' | 'medium' | 'low',
-        estimatedMinutes: task.estimatedTime || 30,
+        priority: (task.priority || 'medium') as 'urgent' | 'high' | 'medium' | 'low',
+        estimatedMinutes: task.estimated_time || 30,
         complexity: task.priority === 'urgent' || task.priority === 'high' ? 'deep_work' as const : 'shallow' as const,
       }));
 
@@ -334,12 +334,13 @@ export function MorningBriefing({ className = '', onCompleteTask, onCompleteHabi
 
           <div className="space-y-2">
             {tasksNeedingPlan.map(task => {
-              const isOverdue = task.dueDate && isBefore(new Date(task.dueDate), startOfDay(new Date()));
+              if (!task.id) return null;
+              const isOverdue = task.due_date && isBefore(new Date(task.due_date), startOfDay(new Date()));
               const isSelected = selectedForPlan.has(task.id);
               return (
                 <button
                   key={task.id}
-                  onClick={() => toggleTaskSelection(task.id)}
+                  onClick={() => toggleTaskSelection(task.id!)}
                   className={`w-full flex items-center gap-3 p-2.5 rounded-lg text-left transition-all ${
                     isSelected
                       ? 'bg-purple-100 border-2 border-purple-400'
@@ -361,12 +362,12 @@ export function MorningBriefing({ className = '', onCompleteTask, onCompleteHabi
                         task.priority === 'high' ? 'bg-orange-100 text-orange-700' :
                         'bg-slate-100 text-slate-600'
                       }`}>
-                        {task.priority}
+                        {task.priority || 'medium'}
                       </span>
                       {isOverdue && (
                         <span className="text-xs text-red-600 font-medium">Overdue</span>
                       )}
-                      <span className="text-xs text-slate-500">~{task.estimatedTime || 30}m</span>
+                      <span className="text-xs text-slate-500">~{task.estimated_time || 30}m</span>
                     </div>
                   </div>
                 </button>
