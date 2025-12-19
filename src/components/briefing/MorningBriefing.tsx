@@ -175,16 +175,28 @@ export function MorningBriefing({ className = '', onCompleteTask, onCompleteHabi
     const selectedTasks = tasksNeedingPlan.filter(t => t.id && selectedForPlan.has(t.id));
     if (selectedTasks.length === 0) return;
 
+    const now = new Date();
+
     const selections: TaskSlotSelection[] = selectedTasks.map(task => {
       const taskMinutes = task.estimated_time || 30;
 
-      // Filter free slots that are long enough for this task
-      const validSlots = freeSlots.filter(slot => slot.durationMinutes >= taskMinutes);
+      // Filter free slots that are long enough for this task AND in the future
+      const validSlots = freeSlots.filter(slot => {
+        // Slot must be long enough
+        if (slot.durationMinutes < taskMinutes) return false;
+        // Slot end must be in the future (at least enough time to complete the task)
+        if (slot.end <= now) return false;
+        return true;
+      });
 
       // Generate multiple start time options within each valid slot (every 30 min)
       const slotOptions: ScoredTimeSlot[] = [];
       for (const slot of validSlots) {
-        let currentStart = new Date(slot.start);
+        // Start from now (rounded up to next 15 min) or slot start, whichever is later
+        const roundedNow = new Date(now);
+        roundedNow.setMinutes(Math.ceil(roundedNow.getMinutes() / 15) * 15, 0, 0);
+
+        let currentStart = new Date(Math.max(slot.start.getTime(), roundedNow.getTime()));
         const slotEnd = new Date(slot.end);
 
         // Generate options every 30 minutes within this slot
@@ -212,15 +224,15 @@ export function MorningBriefing({ className = '', onCompleteTask, onCompleteHabi
         }
       }
 
-      // Sort by score (prefer peak energy times)
-      slotOptions.sort((a, b) => b.score - a.score);
+      // Sort by time (earliest first since we're late in the day)
+      slotOptions.sort((a, b) => a.start.getTime() - b.start.getTime());
 
       return {
         taskId: task.id!,
         taskTitle: task.title,
         estimatedMinutes: taskMinutes,
         suggestedSlots: slotOptions.slice(0, 5), // Top 5 options
-        selectedSlot: slotOptions[0] || null, // Pre-select best slot
+        selectedSlot: slotOptions[0] || null, // Pre-select earliest available slot
       };
     });
 
