@@ -150,19 +150,29 @@ class PushNotificationService {
       console.log('[PushService] Subscribed:', subscription);
       this.subscription = subscription;
 
-      // Save subscription to backend
+      // Save subscription directly to database (no Edge Function needed)
       const { data: session } = await supabase.auth.getSession();
       if (session?.session) {
-        const response = await supabase.functions.invoke('push-subscribe', {
-          body: {
-            subscription: subscription.toJSON(),
+        const subscriptionJson = subscription.toJSON();
+        const { error } = await supabase
+          .from('push_subscriptions')
+          .upsert({
+            user_id: session.session.user.id,
+            endpoint: subscriptionJson.endpoint,
+            p256dh: subscriptionJson.keys?.p256dh,
+            auth: subscriptionJson.keys?.auth,
             device_name: deviceName,
             platform: 'web',
-          },
-        });
+            is_active: true,
+            updated_at: new Date().toISOString(),
+          }, {
+            onConflict: 'endpoint',
+          });
 
-        if (response.error) {
-          console.error('[PushService] Failed to save subscription:', response.error);
+        if (error) {
+          console.error('[PushService] Failed to save subscription:', error);
+        } else {
+          console.log('[PushService] Subscription saved to database');
         }
       }
 
@@ -192,13 +202,14 @@ class PushNotificationService {
       await this.subscription.unsubscribe();
       this.subscription = null;
 
-      // Remove from backend
+      // Remove from database
       const { data: session } = await supabase.auth.getSession();
       if (session?.session) {
-        await supabase.functions.invoke('push-subscribe', {
-          method: 'DELETE',
-          body: { endpoint },
-        });
+        await supabase
+          .from('push_subscriptions')
+          .update({ is_active: false })
+          .eq('endpoint', endpoint)
+          .eq('user_id', session.session.user.id);
       }
 
       console.log('[PushService] Unsubscribed');
