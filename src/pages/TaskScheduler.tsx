@@ -520,6 +520,7 @@ const TaskScheduler: React.FC = () => {
       <TaskEditModal
         task={editingTask}
         projects={apiProjects}
+        allTasks={apiTasks}
         isOpen={showEditModal}
         onClose={handleCloseEditModal}
         onSave={handleSaveTask}

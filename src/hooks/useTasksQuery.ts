@@ -26,6 +26,25 @@ import {
 import { logger } from '@/services/logger';
 import { recordTaskCompletion } from '@/services/gamification';
 
+/**
+ * Get tasks that would be unblocked when a task is completed
+ */
+function getTasksToUnblock(completedTaskId: string, allTasks: TaskData[]): TaskData[] {
+  return allTasks.filter(task => {
+    if (!task.depends_on?.includes(completedTaskId)) return false;
+    if (task.status === 'done' || task.deleted) return false;
+
+    // Check if this is the only blocking dependency
+    const otherBlockingDeps = task.depends_on.filter(depId => {
+      if (depId === completedTaskId) return false;
+      const depTask = allTasks.find(t => t.id === depId);
+      return depTask && depTask.status !== 'done';
+    });
+
+    return otherBlockingDeps.length === 0;
+  });
+}
+
 // =====================================================
 // TASKS QUERY HOOKS
 // =====================================================
@@ -169,6 +188,20 @@ export function useUpdateTask(): UseMutationResult<
         recordTaskCompletion(updatedTask.id, gamificationPriority).catch((err) => {
           logger.error('Gamification', err instanceof Error ? err : new Error(String(err)));
         });
+
+        // Check for tasks that are now unblocked
+        const allTasks = queryClient.getQueryData<TaskData[]>(queryKeys.tasks.lists()) || [];
+        const unblockedTasks = getTasksToUnblock(updatedTask.id, allTasks);
+
+        if (unblockedTasks.length > 0) {
+          logger.info('Tasks', 'Tasks unblocked by completion', {
+            completedTask: updatedTask.title,
+            unblockedTasks: unblockedTasks.map(t => t.title)
+          });
+
+          // Could show a toast notification here in the future
+          // For now, the UI will automatically update to show unblocked status
+        }
       }
 
       // Update with server response (in case server modified the data)

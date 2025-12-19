@@ -15,7 +15,9 @@ import {
   ChevronDown,
   ChevronRight,
   CalendarDays,
-  CalendarClock
+  CalendarClock,
+  Lock,
+  Link2
 } from 'lucide-react';
 import { format, isToday } from 'date-fns';
 import type { Task, Project, PomodoroTimer } from '../types';
@@ -164,10 +166,21 @@ export function TaskRow({
 
           {/* Priority flag */}
           {task.priority !== 'low' && PRIORITY_FLAGS[task.priority]}
+
+          {/* Dependency indicator */}
+          {task.dependsOn && task.dependsOn.length > 0 && (
+            <span
+              className="flex items-center gap-1 px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400"
+              title={`Depends on ${task.dependsOn.length} task(s)`}
+            >
+              <Lock size={12} />
+              <span className="text-xs font-medium">{task.dependsOn.length}</span>
+            </span>
+          )}
         </div>
 
         {/* Task metadata */}
-        {(Boolean(task.description) || Boolean(task.dueDate) || Boolean(project) || task.tags.length > 0) && (
+        {(Boolean(task.description) || Boolean(task.dueDate) || Boolean(project) || task.tags.length > 0 || (task.dependsOn && task.dependsOn.length > 0)) && (
           <div className="flex items-center space-x-4 text-xs text-gray-500 dark:text-slate-400 ml-2">
             {task.description && (
               <span className="truncate max-w-xs text-gray-600 dark:text-slate-400">

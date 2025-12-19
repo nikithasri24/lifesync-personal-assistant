@@ -19,10 +19,13 @@ import {
 import { format } from 'date-fns';
 import type { ScheduledTask } from '../types';
 import type { TaskData, ProjectData } from '../../services/types';
+import { DependencySelector, DependencyIndicator } from '../../components/dependencies';
 
 interface TaskEditModalProps {
   task: ScheduledTask | null;
   projects: ProjectData[];
+  /** All tasks for dependency selection */
+  allTasks?: TaskData[];
   isOpen: boolean;
   onClose: () => void;
   onSave: (taskId: string, updates: Partial<TaskData>) => void;
@@ -33,6 +36,7 @@ interface TaskEditModalProps {
 export const TaskEditModal: React.FC<TaskEditModalProps> = ({
   task,
   projects,
+  allTasks = [],
   isOpen,
   onClose,
   onSave,
@@ -56,6 +60,7 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
         tags: task.tags || [],
         starred: task.starred || false,
         category: task.category,
+        depends_on: task.depends_on || [],
       });
     }
   }, [task]);
@@ -310,6 +315,25 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
               Star this task
             </label>
           </div>
+
+          {/* Dependencies */}
+          {allTasks.length > 0 && (
+            <DependencySelector
+              currentTaskId={task.id}
+              selectedDependencies={formData.depends_on || []}
+              allTasks={allTasks}
+              onChange={(deps) => setFormData({ ...formData, depends_on: deps })}
+            />
+          )}
+
+          {/* Dependency Status Indicator */}
+          {task && allTasks.length > 0 && (formData.depends_on?.length ?? 0) > 0 && (
+            <DependencyIndicator
+              task={{ ...task, depends_on: formData.depends_on } as TaskData}
+              allTasks={allTasks}
+              variant="detailed"
+            />
+          )}
 
           {/* Actions */}
           <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-700">
