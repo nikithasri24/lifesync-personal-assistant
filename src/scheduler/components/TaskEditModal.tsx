@@ -67,8 +67,8 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
 
   if (!isOpen || !task || !task.id) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (e?: React.FormEvent) => {
+    e?.preventDefault();
     if (task.id) {
       onSave(task.id, formData);
     }
@@ -334,46 +334,47 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
               variant="detailed"
             />
           )}
+        </form>
 
-          {/* Actions */}
-          <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-700">
-            <div>
-              {onDelete && task.id && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (window.confirm('Are you sure you want to delete this task?')) {
-                      onDelete(task.id!);
-                      onClose();
-                    }
-                  }}
-                  className="flex items-center gap-2 px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg font-medium transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Delete
-                </button>
-              )}
-            </div>
-
-            <div className="flex gap-3">
+        {/* Actions - Fixed Footer */}
+        <div className="flex items-center justify-between p-6 border-t border-slate-200 dark:border-slate-700 flex-shrink-0 bg-white dark:bg-slate-800">
+          <div>
+            {onDelete && task.id && (
               <button
                 type="button"
-                onClick={onClose}
-                className="px-6 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg font-medium transition-colors"
+                onClick={() => {
+                  if (window.confirm('Are you sure you want to delete this task?')) {
+                    onDelete(task.id!);
+                    onClose();
+                  }
+                }}
+                className="flex items-center gap-2 px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg font-medium transition-colors"
               >
-                Cancel
+                <Trash2 className="w-4 h-4" />
+                Delete
               </button>
-              <button
-                type="submit"
-                disabled={isSaving}
-                className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg font-medium shadow-sm transition-colors"
-              >
-                <Save className="w-4 h-4" />
-                {isSaving ? 'Saving...' : 'Save Changes'}
-              </button>
-            </div>
+            )}
           </div>
-        </form>
+
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-6 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg font-medium transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={isSaving}
+              className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg font-medium shadow-sm transition-colors"
+            >
+              <Save className="w-4 h-4" />
+              {isSaving ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
