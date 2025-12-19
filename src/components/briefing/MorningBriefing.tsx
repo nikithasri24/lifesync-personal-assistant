@@ -1,14 +1,17 @@
 /**
  * Morning Briefing Component
- * Displays daily summary with weather, schedule, tasks, and habits
+ * Displays daily summary with weather, schedule, tasks, habits, and Plan Today
  */
 
 import React, { useState, useCallback, useMemo } from 'react';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, isToday, isBefore, startOfDay } from 'date-fns';
 import { useDailyBriefing } from '@/hooks/useBriefingQuery';
 import { getWeatherEmoji } from '@/services/briefing';
 import type { DailyBriefing, BriefingEvent, BriefingTask, BriefingHabit } from '@/services/briefing';
 import { useVoice } from '@/hooks/useVoice';
+import { useTasks } from '@/hooks/useTasksQuery';
+import { useAutoScheduleMutation } from '@/hooks/useSchedulingQuery';
+import type { Task } from '@/types/task';
 import {
   Calendar,
   CheckCircle2,
@@ -26,6 +29,9 @@ import {
   Moon,
   Sun,
   Zap,
+  Play,
+  Check,
+  Target,
 } from 'lucide-react';
 
 interface MorningBriefingProps {
@@ -106,11 +112,71 @@ function generateInsights(briefing: DailyBriefing): { icon: React.ReactNode; tex
 
 export function MorningBriefing({ className = '', onCompleteTask, onCompleteHabit }: MorningBriefingProps) {
   const { data: briefing, isLoading, error } = useDailyBriefing();
+  const { data: allTasks = [] } = useTasks();
+  const autoScheduleMutation = useAutoScheduleMutation();
   const { speak, supported: speechSupported } = useVoice();
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [completingItems, setCompletingItems] = useState<Set<string>>(new Set());
+  const [selectedForPlan, setSelectedForPlan] = useState<Set<string>>(new Set());
+  const [planResult, setPlanResult] = useState<{ scheduled: number; failed: number } | null>(null);
 
   const insights = useMemo(() => briefing ? generateInsights(briefing) : [], [briefing]);
+
+  // Get tasks that need planning today: due today OR overdue (not scheduled, not done)
+  const tasksNeedingPlan = useMemo(() => {
+    const today = startOfDay(new Date());
+    return (allTasks as Task[]).filter(task => {
+      if (task.deleted || task.archived) return false;
+      if (task.status === 'done' || task.status === 'scheduled') return false;
+      if (!task.dueDate) return false; // Only tasks WITH a due date
+
+      const dueDate = startOfDay(new Date(task.dueDate));
+      return isToday(dueDate) || isBefore(dueDate, today); // Due today or overdue
+    }).slice(0, 5); // Max 5 tasks to show
+  }, [allTasks]);
+
+  // Toggle task selection for planning
+  const toggleTaskSelection = useCallback((taskId: string) => {
+    setSelectedForPlan(prev => {
+      const next = new Set(prev);
+      if (next.has(taskId)) {
+        next.delete(taskId);
+      } else {
+        next.add(taskId);
+      }
+      return next;
+    });
+    setPlanResult(null); // Clear previous result
+  }, []);
+
+  // Handle Plan My Day action
+  const handlePlanToday = useCallback(async () => {
+    if (selectedForPlan.size === 0) return;
+
+    const tasksToSchedule = tasksNeedingPlan
+      .filter(t => selectedForPlan.has(t.id))
+      .map(task => ({
+        id: task.id,
+        title: task.title,
+        priority: task.priority as 'urgent' | 'high' | 'medium' | 'low',
+        estimatedMinutes: task.estimatedTime || 30,
+        complexity: task.priority === 'urgent' || task.priority === 'high' ? 'deep_work' as const : 'shallow' as const,
+      }));
+
+    try {
+      const result = await autoScheduleMutation.mutateAsync({
+        tasks: tasksToSchedule,
+        date: new Date(),
+      });
+      setPlanResult({
+        scheduled: result.totalScheduled,
+        failed: result.totalUnscheduled,
+      });
+      setSelectedForPlan(new Set()); // Clear selections after scheduling
+    } catch (err) {
+      console.error('Failed to plan day:', err);
+    }
+  }, [selectedForPlan, tasksNeedingPlan, autoScheduleMutation]);
 
   const handleSpeak = useCallback(async () => {
     if (!briefing?.voiceScript) return;
@@ -233,6 +299,92 @@ export function MorningBriefing({ className = '', onCompleteTask, onCompleteHabi
           {insights.map((insight, idx) => (
             <InsightCard key={idx} {...insight} />
           ))}
+        </div>
+      )}
+
+      {/* Plan Today Section */}
+      {tasksNeedingPlan.length > 0 && (
+        <div className="mb-4 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-xl">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Target className="w-5 h-5 text-purple-600" />
+              <h4 className="font-semibold text-purple-900">Plan Today</h4>
+            </div>
+            <button
+              onClick={handlePlanToday}
+              disabled={selectedForPlan.size === 0 || autoScheduleMutation.isPending}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1.5 transition-all ${
+                selectedForPlan.size === 0
+                  ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                  : 'bg-purple-600 text-white hover:bg-purple-700 hover:shadow-md'
+              }`}
+            >
+              {autoScheduleMutation.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Play className="w-4 h-4" />
+              )}
+              Schedule {selectedForPlan.size > 0 ? `(${selectedForPlan.size})` : ''}
+            </button>
+          </div>
+
+          <p className="text-xs text-purple-700 mb-3">
+            Select tasks to auto-schedule into your free time slots:
+          </p>
+
+          <div className="space-y-2">
+            {tasksNeedingPlan.map(task => {
+              const isOverdue = task.dueDate && isBefore(new Date(task.dueDate), startOfDay(new Date()));
+              const isSelected = selectedForPlan.has(task.id);
+              return (
+                <button
+                  key={task.id}
+                  onClick={() => toggleTaskSelection(task.id)}
+                  className={`w-full flex items-center gap-3 p-2.5 rounded-lg text-left transition-all ${
+                    isSelected
+                      ? 'bg-purple-100 border-2 border-purple-400'
+                      : 'bg-white border border-purple-200 hover:border-purple-300'
+                  }`}
+                >
+                  <div className={`w-5 h-5 rounded-md flex items-center justify-center transition-all ${
+                    isSelected ? 'bg-purple-600' : 'border-2 border-purple-300'
+                  }`}>
+                    {isSelected && <Check className="w-3 h-3 text-white" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-medium truncate ${isSelected ? 'text-purple-900' : 'text-slate-700'}`}>
+                      {task.title}
+                    </p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className={`text-xs px-1.5 py-0.5 rounded ${
+                        task.priority === 'urgent' ? 'bg-red-100 text-red-700' :
+                        task.priority === 'high' ? 'bg-orange-100 text-orange-700' :
+                        'bg-slate-100 text-slate-600'
+                      }`}>
+                        {task.priority}
+                      </span>
+                      {isOverdue && (
+                        <span className="text-xs text-red-600 font-medium">Overdue</span>
+                      )}
+                      <span className="text-xs text-slate-500">~{task.estimatedTime || 30}m</span>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Result feedback */}
+          {planResult && (
+            <div className={`mt-3 p-2 rounded-lg text-sm font-medium ${
+              planResult.failed === 0
+                ? 'bg-green-100 text-green-700'
+                : 'bg-amber-100 text-amber-700'
+            }`}>
+              ✓ {planResult.scheduled} task{planResult.scheduled !== 1 ? 's' : ''} scheduled
+              {planResult.failed > 0 && ` • ${planResult.failed} couldn't fit`}
+            </div>
+          )}
         </div>
       )}
 
