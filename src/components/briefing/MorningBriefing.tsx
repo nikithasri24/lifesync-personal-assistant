@@ -4,14 +4,16 @@
  */
 
 import React, { useState, useCallback, useMemo } from 'react';
-import { format, parseISO, isToday, isBefore, startOfDay } from 'date-fns';
+import { format, parseISO, isToday, isBefore, startOfDay, addMinutes } from 'date-fns';
 import { useDailyBriefing } from '@/hooks/useBriefingQuery';
 import { getWeatherEmoji } from '@/services/briefing';
 import type { DailyBriefing, BriefingEvent, BriefingTask, BriefingHabit } from '@/services/briefing';
 import { useVoice } from '@/hooks/useVoice';
-import { useTasks } from '@/hooks/useTasksQuery';
-import { useAutoScheduleMutation } from '@/hooks/useSchedulingQuery';
+import { useTasks, useUpdateTask } from '@/hooks/useTasksQuery';
+import { useFreeSlots, useSchedulingPreferences } from '@/hooks/useSchedulingQuery';
+import { suggestTimesForTask, DEFAULT_SCHEDULING_PREFS } from '@/services/scheduling';
 import type { TaskData } from '@/services/types';
+import type { ScoredTimeSlot } from '@/services/scheduling';
 import {
   Calendar,
   CheckCircle2,
@@ -32,6 +34,9 @@ import {
   Play,
   Check,
   Target,
+  ChevronLeft,
+  Battery,
+  BatteryLow,
 } from 'lucide-react';
 
 interface MorningBriefingProps {
@@ -110,14 +115,30 @@ function generateInsights(briefing: DailyBriefing): { icon: React.ReactNode; tex
   return insights.slice(0, 2); // Max 2 insights
 }
 
+// Type for slot selection state
+interface TaskSlotSelection {
+  taskId: string;
+  taskTitle: string;
+  estimatedMinutes: number;
+  suggestedSlots: ScoredTimeSlot[];
+  selectedSlot: ScoredTimeSlot | null;
+}
+
 export function MorningBriefing({ className = '', onCompleteTask, onCompleteHabit }: MorningBriefingProps) {
   const { data: briefing, isLoading, error } = useDailyBriefing();
   const { data: allTasks = [] } = useTasks();
-  const autoScheduleMutation = useAutoScheduleMutation();
+  const { data: freeSlots = [] } = useFreeSlots(new Date(), 15);
+  const { data: prefs = DEFAULT_SCHEDULING_PREFS } = useSchedulingPreferences();
+  const updateTask = useUpdateTask();
   const { speak, supported: speechSupported } = useVoice();
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [completingItems, setCompletingItems] = useState<Set<string>>(new Set());
+
+  // Plan Today state
   const [selectedForPlan, setSelectedForPlan] = useState<Set<string>>(new Set());
+  const [planStep, setPlanStep] = useState<'select' | 'slots' | 'done'>('select');
+  const [slotSelections, setSlotSelections] = useState<TaskSlotSelection[]>([]);
+  const [isScheduling, setIsScheduling] = useState(false);
   const [planResult, setPlanResult] = useState<{ scheduled: number; failed: number } | null>(null);
 
   const insights = useMemo(() => briefing ? generateInsights(briefing) : [], [briefing]);
@@ -149,34 +170,92 @@ export function MorningBriefing({ className = '', onCompleteTask, onCompleteHabi
     setPlanResult(null); // Clear previous result
   }, []);
 
-  // Handle Plan My Day action
-  const handlePlanToday = useCallback(async () => {
-    if (selectedForPlan.size === 0) return;
+  // Step 1: Find available slots for selected tasks
+  const handleFindSlots = useCallback(() => {
+    const selectedTasks = tasksNeedingPlan.filter(t => t.id && selectedForPlan.has(t.id));
+    if (selectedTasks.length === 0) return;
 
-    const tasksToSchedule = tasksNeedingPlan
-      .filter(t => t.id && selectedForPlan.has(t.id))
-      .map(task => ({
+    // Convert free slots to event format for suggestTimesForTask
+    const events = freeSlots.length > 0 ? [] : []; // We'll use the raw computation
+
+    const selections: TaskSlotSelection[] = selectedTasks.map(task => {
+      const taskInfo = {
         id: task.id!,
         title: task.title,
         priority: (task.priority || 'medium') as 'urgent' | 'high' | 'medium' | 'low',
         estimatedMinutes: task.estimated_time || 30,
-        complexity: task.priority === 'urgent' || task.priority === 'high' ? 'deep_work' as const : 'shallow' as const,
-      }));
+      };
 
-    try {
-      const result = await autoScheduleMutation.mutateAsync({
-        tasks: tasksToSchedule,
-        date: new Date(),
-      });
-      setPlanResult({
-        scheduled: result.totalScheduled,
-        failed: result.totalUnscheduled,
-      });
-      setSelectedForPlan(new Set()); // Clear selections after scheduling
-    } catch (err) {
-      console.error('Failed to plan day:', err);
+      const suggestion = suggestTimesForTask(taskInfo, { date: new Date(), events }, prefs, 3);
+
+      return {
+        taskId: task.id!,
+        taskTitle: task.title,
+        estimatedMinutes: task.estimated_time || 30,
+        suggestedSlots: suggestion.suggestedSlots,
+        selectedSlot: suggestion.bestSlot, // Pre-select best slot
+      };
+    });
+
+    setSlotSelections(selections);
+    setPlanStep('slots');
+  }, [tasksNeedingPlan, selectedForPlan, freeSlots, prefs]);
+
+  // Step 2: Select a slot for a task
+  const handleSelectSlot = useCallback((taskId: string, slot: ScoredTimeSlot) => {
+    setSlotSelections(prev => prev.map(sel =>
+      sel.taskId === taskId ? { ...sel, selectedSlot: slot } : sel
+    ));
+  }, []);
+
+  // Step 3: Confirm and schedule all tasks
+  const handleConfirmSchedule = useCallback(async () => {
+    const tasksWithSlots = slotSelections.filter(s => s.selectedSlot);
+    if (tasksWithSlots.length === 0) return;
+
+    setIsScheduling(true);
+    let scheduled = 0;
+    let failed = 0;
+
+    for (const selection of tasksWithSlots) {
+      try {
+        const dateKey = format(new Date(), 'yyyy-MM-dd');
+        const timeStr = format(selection.selectedSlot!.start, 'HH:mm');
+
+        await updateTask.mutateAsync({
+          id: selection.taskId,
+          updates: {
+            due_date: dateKey,
+            scheduled_time: timeStr,
+            status: 'scheduled',
+          },
+        });
+        scheduled++;
+      } catch (err) {
+        console.error('Failed to schedule task:', selection.taskId, err);
+        failed++;
+      }
     }
-  }, [selectedForPlan, tasksNeedingPlan, autoScheduleMutation]);
+
+    setPlanResult({ scheduled, failed });
+    setPlanStep('done');
+    setIsScheduling(false);
+    setSelectedForPlan(new Set());
+    setSlotSelections([]);
+  }, [slotSelections, updateTask]);
+
+  // Go back to task selection
+  const handleBackToSelect = useCallback(() => {
+    setPlanStep('select');
+    setSlotSelections([]);
+  }, []);
+
+  // Reset after done
+  const handleReset = useCallback(() => {
+    setPlanStep('select');
+    setPlanResult(null);
+    setSelectedForPlan(new Set());
+  }, []);
 
   const handleSpeak = useCallback(async () => {
     if (!briefing?.voiceScript) return;
@@ -302,89 +381,166 @@ export function MorningBriefing({ className = '', onCompleteTask, onCompleteHabi
         </div>
       )}
 
-      {/* Plan Today Section */}
-      {tasksNeedingPlan.length > 0 && (
+      {/* Plan Today Section - 3-step scheduling flow */}
+      {(tasksNeedingPlan.length > 0 || planStep === 'slots' || planStep === 'done') && (
         <div className="mb-4 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-xl">
+          {/* Header */}
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <Target className="w-5 h-5 text-purple-600" />
-              <h4 className="font-semibold text-purple-900">Plan Today</h4>
-            </div>
-            <button
-              onClick={handlePlanToday}
-              disabled={selectedForPlan.size === 0 || autoScheduleMutation.isPending}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1.5 transition-all ${
-                selectedForPlan.size === 0
-                  ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                  : 'bg-purple-600 text-white hover:bg-purple-700 hover:shadow-md'
-              }`}
-            >
-              {autoScheduleMutation.isPending ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Play className="w-4 h-4" />
-              )}
-              Schedule {selectedForPlan.size > 0 ? `(${selectedForPlan.size})` : ''}
-            </button>
-          </div>
-
-          <p className="text-xs text-purple-700 mb-3">
-            Select tasks to auto-schedule into your free time slots:
-          </p>
-
-          <div className="space-y-2">
-            {tasksNeedingPlan.map(task => {
-              if (!task.id) return null;
-              const isOverdue = task.due_date && isBefore(new Date(task.due_date), startOfDay(new Date()));
-              const isSelected = selectedForPlan.has(task.id);
-              return (
-                <button
-                  key={task.id}
-                  onClick={() => toggleTaskSelection(task.id!)}
-                  className={`w-full flex items-center gap-3 p-2.5 rounded-lg text-left transition-all ${
-                    isSelected
-                      ? 'bg-purple-100 border-2 border-purple-400'
-                      : 'bg-white border border-purple-200 hover:border-purple-300'
-                  }`}
-                >
-                  <div className={`w-5 h-5 rounded-md flex items-center justify-center transition-all ${
-                    isSelected ? 'bg-purple-600' : 'border-2 border-purple-300'
-                  }`}>
-                    {isSelected && <Check className="w-3 h-3 text-white" />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-medium truncate ${isSelected ? 'text-purple-900' : 'text-slate-700'}`}>
-                      {task.title}
-                    </p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className={`text-xs px-1.5 py-0.5 rounded ${
-                        task.priority === 'urgent' ? 'bg-red-100 text-red-700' :
-                        task.priority === 'high' ? 'bg-orange-100 text-orange-700' :
-                        'bg-slate-100 text-slate-600'
-                      }`}>
-                        {task.priority || 'medium'}
-                      </span>
-                      {isOverdue && (
-                        <span className="text-xs text-red-600 font-medium">Overdue</span>
-                      )}
-                      <span className="text-xs text-slate-500">~{task.estimated_time || 30}m</span>
-                    </div>
-                  </div>
+              {planStep === 'slots' && (
+                <button onClick={handleBackToSelect} className="p-1 hover:bg-purple-100 rounded">
+                  <ChevronLeft className="w-4 h-4 text-purple-600" />
                 </button>
-              );
-            })}
+              )}
+              <Target className="w-5 h-5 text-purple-600" />
+              <h4 className="font-semibold text-purple-900">
+                {planStep === 'select' ? 'Plan Today' : planStep === 'slots' ? 'Choose Time Slots' : 'Scheduled!'}
+              </h4>
+            </div>
+
+            {/* Step 1: Find Slots button */}
+            {planStep === 'select' && tasksNeedingPlan.length > 0 && (
+              <button
+                onClick={handleFindSlots}
+                disabled={selectedForPlan.size === 0}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1.5 transition-all ${
+                  selectedForPlan.size === 0
+                    ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                    : 'bg-purple-600 text-white hover:bg-purple-700 hover:shadow-md'
+                }`}
+              >
+                <Clock className="w-4 h-4" />
+                Find Slots {selectedForPlan.size > 0 ? `(${selectedForPlan.size})` : ''}
+              </button>
+            )}
+
+            {/* Step 2: Confirm button */}
+            {planStep === 'slots' && (
+              <button
+                onClick={handleConfirmSchedule}
+                disabled={isScheduling || slotSelections.every(s => !s.selectedSlot)}
+                className="px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1.5 bg-green-600 text-white hover:bg-green-700 transition-all disabled:bg-gray-300 disabled:cursor-not-allowed"
+              >
+                {isScheduling ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                Confirm Schedule
+              </button>
+            )}
           </div>
 
-          {/* Result feedback */}
-          {planResult && (
-            <div className={`mt-3 p-2 rounded-lg text-sm font-medium ${
-              planResult.failed === 0
-                ? 'bg-green-100 text-green-700'
-                : 'bg-amber-100 text-amber-700'
-            }`}>
-              ✓ {planResult.scheduled} task{planResult.scheduled !== 1 ? 's' : ''} scheduled
-              {planResult.failed > 0 && ` • ${planResult.failed} couldn't fit`}
+          {/* Step 1: Task Selection */}
+          {planStep === 'select' && tasksNeedingPlan.length > 0 && (
+            <>
+              <p className="text-xs text-purple-700 mb-3">
+                Select tasks, then choose when to schedule them:
+              </p>
+              <div className="space-y-2">
+                {tasksNeedingPlan.map(task => {
+                  if (!task.id) return null;
+                  const isOverdue = task.due_date && isBefore(new Date(task.due_date), startOfDay(new Date()));
+                  const isSelected = selectedForPlan.has(task.id);
+                  return (
+                    <button
+                      key={task.id}
+                      onClick={() => toggleTaskSelection(task.id!)}
+                      className={`w-full flex items-center gap-3 p-2.5 rounded-lg text-left transition-all ${
+                        isSelected
+                          ? 'bg-purple-100 border-2 border-purple-400'
+                          : 'bg-white border border-purple-200 hover:border-purple-300'
+                      }`}
+                    >
+                      <div className={`w-5 h-5 rounded-md flex items-center justify-center transition-all ${
+                        isSelected ? 'bg-purple-600' : 'border-2 border-purple-300'
+                      }`}>
+                        {isSelected && <Check className="w-3 h-3 text-white" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm font-medium truncate ${isSelected ? 'text-purple-900' : 'text-slate-700'}`}>
+                          {task.title}
+                        </p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className={`text-xs px-1.5 py-0.5 rounded ${
+                            task.priority === 'urgent' ? 'bg-red-100 text-red-700' :
+                            task.priority === 'high' ? 'bg-orange-100 text-orange-700' :
+                            'bg-slate-100 text-slate-600'
+                          }`}>
+                            {task.priority || 'medium'}
+                          </span>
+                          {isOverdue && <span className="text-xs text-red-600 font-medium">Overdue</span>}
+                          <span className="text-xs text-slate-500">~{task.estimated_time || 30}m</span>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
+
+          {/* Step 2: Slot Selection */}
+          {planStep === 'slots' && (
+            <div className="space-y-4">
+              {slotSelections.map(selection => (
+                <div key={selection.taskId} className="bg-white rounded-lg p-3 border border-purple-200">
+                  <p className="text-sm font-medium text-slate-800 mb-2 truncate">{selection.taskTitle}</p>
+                  <p className="text-xs text-slate-500 mb-2">~{selection.estimatedMinutes}m • Pick a time:</p>
+
+                  {selection.suggestedSlots.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {selection.suggestedSlots.map((slot, idx) => {
+                        const isSelected = selection.selectedSlot?.start.getTime() === slot.start.getTime();
+                        const endTime = addMinutes(slot.start, selection.estimatedMinutes);
+                        return (
+                          <button
+                            key={idx}
+                            onClick={() => handleSelectSlot(selection.taskId, slot)}
+                            className={`px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${
+                              isSelected
+                                ? 'bg-purple-600 text-white ring-2 ring-purple-300'
+                                : 'bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200'
+                            }`}
+                          >
+                            {slot.energyLevel === 'peak' && <Zap className="w-3 h-3" />}
+                            {slot.energyLevel === 'moderate' && <Battery className="w-3 h-3" />}
+                            {slot.energyLevel === 'low' && <BatteryLow className="w-3 h-3" />}
+                            {format(slot.start, 'h:mm a')} - {format(endTime, 'h:mm a')}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-amber-600">No available slots found for this task</p>
+                  )}
+                </div>
+              ))}
             </div>
+          )}
+
+          {/* Step 3: Done */}
+          {planStep === 'done' && planResult && (
+            <div className="text-center py-4">
+              <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium ${
+                planResult.failed === 0
+                  ? 'bg-green-100 text-green-700'
+                  : 'bg-amber-100 text-amber-700'
+              }`}>
+                <CheckCircle2 className="w-5 h-5" />
+                {planResult.scheduled} task{planResult.scheduled !== 1 ? 's' : ''} scheduled!
+                {planResult.failed > 0 && ` • ${planResult.failed} couldn't be scheduled`}
+              </div>
+              <button
+                onClick={handleReset}
+                className="block mx-auto mt-3 text-sm text-purple-600 hover:underline"
+              >
+                Done
+              </button>
+            </div>
+          )}
+
+          {/* No tasks message */}
+          {planStep === 'select' && tasksNeedingPlan.length === 0 && (
+            <p className="text-sm text-purple-600 text-center py-2">
+              ✨ No tasks due today that need scheduling!
+            </p>
           )}
         </div>
       )}
