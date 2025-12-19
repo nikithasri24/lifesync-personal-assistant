@@ -70,6 +70,8 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (task.id) {
+      console.log('[TaskEditModal] Saving task with formData:', formData);
+      console.log('[TaskEditModal] depends_on value:', formData.depends_on);
       onSave(task.id, formData);
     }
   };
@@ -98,10 +100,10 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" style={{ overflow: 'hidden' }}>
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-2xl flex flex-col" style={{ maxHeight: 'calc(100vh - 2rem)', height: 'auto' }}>
         {/* Header - Sticky */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700 flex-shrink-0">
+        <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700" style={{ flexShrink: 0 }}>
           <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Edit Task</h2>
           <button
             onClick={onClose}
@@ -112,7 +114,7 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
         </div>
 
         {/* Form - Scrollable */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto flex-1 min-h-0">
+        <form onSubmit={handleSubmit} className="p-6 space-y-6" style={{ overflowY: 'auto', flex: '1 1 auto', minHeight: 0 }}>
           {/* Title */}
           <div>
             <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
@@ -337,7 +339,7 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
         </form>
 
         {/* Actions - Fixed Footer */}
-        <div className="flex items-center justify-between p-6 border-t border-slate-200 dark:border-slate-700 flex-shrink-0 bg-white dark:bg-slate-800">
+        <div className="flex items-center justify-between p-6 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800" style={{ flexShrink: 0 }}>
           <div>
             {onDelete && task.id && (
               <button

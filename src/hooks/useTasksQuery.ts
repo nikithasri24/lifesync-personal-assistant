@@ -191,7 +191,22 @@ export function useUpdateTask(): UseMutationResult<
 
         // Check for tasks that are now unblocked and move them to todo
         const allTasks = queryClient.getQueryData<TaskData[]>(queryKeys.tasks.lists()) || [];
+
+        // Debug: Log all tasks with dependencies
+        const tasksWithDeps = allTasks.filter(t => t.depends_on && t.depends_on.length > 0);
+        logger.info('Tasks', 'DEBUG: Tasks with dependencies', {
+          completedTaskId: updatedTask.id,
+          tasksWithDeps: tasksWithDeps.map(t => ({
+            id: t.id,
+            title: t.title,
+            depends_on: t.depends_on,
+            status: t.status,
+            includesCompletedTask: t.depends_on?.includes(updatedTask.id!)
+          }))
+        });
+
         const unblockedTasks = getTasksToUnblock(updatedTask.id, allTasks);
+        logger.info('Tasks', 'DEBUG: Unblocked tasks found', { count: unblockedTasks.length, tasks: unblockedTasks.map(t => t.title) });
 
         if (unblockedTasks.length > 0) {
           logger.info('Tasks', 'Tasks unblocked by completion', {
@@ -201,13 +216,21 @@ export function useUpdateTask(): UseMutationResult<
 
           // Update unblocked tasks to 'todo' status so they appear in backlog/todo
           unblockedTasks.forEach(unblockedTask => {
-            if (unblockedTask.id && unblockedTask.status !== 'todo' && unblockedTask.status !== 'in_progress') {
-              // Update in database
+            logger.info('Tasks', 'DEBUG: Processing unblocked task', {
+              id: unblockedTask.id,
+              title: unblockedTask.title,
+              currentStatus: unblockedTask.status
+            });
+
+            if (unblockedTask.id) {
+              // Update in database - always update to ensure is_blocked is false
               updateTask(unblockedTask.id, {
                 status: 'todo',
                 is_blocked: false
               }).then(() => {
                 logger.info('Tasks', `Task "${unblockedTask.title}" moved to todo after being unblocked`);
+                // Invalidate to refresh
+                queryClient.invalidateQueries({ queryKey: queryKeys.tasks.lists() });
               }).catch(err => {
                 logger.error('Tasks', `Failed to update unblocked task: ${err}`);
               });
@@ -221,7 +244,7 @@ export function useUpdateTask(): UseMutationResult<
               if (!old) return old;
               return old.map(task => {
                 const isUnblocked = unblockedTasks.some(ut => ut.id === task.id);
-                if (isUnblocked && task.status !== 'todo' && task.status !== 'in_progress') {
+                if (isUnblocked) {
                   return { ...task, status: 'todo' as const, is_blocked: false };
                 }
                 return task;
