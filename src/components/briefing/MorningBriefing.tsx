@@ -175,25 +175,52 @@ export function MorningBriefing({ className = '', onCompleteTask, onCompleteHabi
     const selectedTasks = tasksNeedingPlan.filter(t => t.id && selectedForPlan.has(t.id));
     if (selectedTasks.length === 0) return;
 
-    // Convert free slots to event format for suggestTimesForTask
-    const events = freeSlots.length > 0 ? [] : []; // We'll use the raw computation
-
     const selections: TaskSlotSelection[] = selectedTasks.map(task => {
-      const taskInfo = {
-        id: task.id!,
-        title: task.title,
-        priority: (task.priority || 'medium') as 'urgent' | 'high' | 'medium' | 'low',
-        estimatedMinutes: task.estimated_time || 30,
-      };
+      const taskMinutes = task.estimated_time || 30;
 
-      const suggestion = suggestTimesForTask(taskInfo, { date: new Date(), events }, prefs, 3);
+      // Filter free slots that are long enough for this task
+      const validSlots = freeSlots.filter(slot => slot.durationMinutes >= taskMinutes);
+
+      // Generate multiple start time options within each valid slot (every 30 min)
+      const slotOptions: ScoredTimeSlot[] = [];
+      for (const slot of validSlots) {
+        let currentStart = new Date(slot.start);
+        const slotEnd = new Date(slot.end);
+
+        // Generate options every 30 minutes within this slot
+        while (addMinutes(currentStart, taskMinutes) <= slotEnd && slotOptions.length < 6) {
+          const hour = currentStart.getHours();
+          // Determine energy level based on time of day
+          let energyLevel: 'peak' | 'moderate' | 'low' = 'moderate';
+          if (hour >= prefs.peakEnergyStart && hour < prefs.peakEnergyEnd) {
+            energyLevel = 'peak';
+          } else if (hour >= prefs.lowEnergyStart && hour < prefs.lowEnergyEnd) {
+            energyLevel = 'low';
+          }
+
+          slotOptions.push({
+            start: new Date(currentStart),
+            end: addMinutes(currentStart, taskMinutes),
+            durationMinutes: taskMinutes,
+            score: energyLevel === 'peak' ? 90 : energyLevel === 'moderate' ? 70 : 50,
+            reasons: [energyLevel === 'peak' ? 'Peak energy time' : energyLevel === 'low' ? 'Low energy time' : 'Good time'],
+            energyLevel,
+            conflicts: [],
+          });
+
+          currentStart = addMinutes(currentStart, 30); // Next option 30 min later
+        }
+      }
+
+      // Sort by score (prefer peak energy times)
+      slotOptions.sort((a, b) => b.score - a.score);
 
       return {
         taskId: task.id!,
         taskTitle: task.title,
-        estimatedMinutes: task.estimated_time || 30,
-        suggestedSlots: suggestion.suggestedSlots,
-        selectedSlot: suggestion.bestSlot, // Pre-select best slot
+        estimatedMinutes: taskMinutes,
+        suggestedSlots: slotOptions.slice(0, 5), // Top 5 options
+        selectedSlot: slotOptions[0] || null, // Pre-select best slot
       };
     });
 
