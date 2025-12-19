@@ -205,7 +205,7 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
                 value={formData.estimated_time ?? 0}
                 onChange={(e) => setFormData({ ...formData, estimated_time: parseInt(e.target.value) || 0 })}
                 min="0"
-                step="15"
+                step="5"
                 className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               {formData.estimated_time != null && formData.estimated_time > 0 && (
