@@ -19,9 +19,19 @@
     "prepare": "husky install",
     "validate": "npm run typecheck && npm run lint && npm test -- --run",
     "api:start": "node server/dist/index.js",
-    "start": "concurrently \"npm run api:start\" \"npm run dev\" --names \"API,UI\" --prefix-colors \"blue,magenta\""
+    "start": "concurrently \"npm run api:start\" \"npm run dev\" --names \"API,UI\" --prefix-colors \"blue,magenta\"",
+    "cap:sync": "npx cap sync",
+    "cap:ios": "npx cap open ios",
+    "cap:android": "npx cap open android",
+    "cap:build": "npm run build && npx cap sync",
+    "cap:build:ios": "npm run build && npx cap sync ios && npx cap open ios",
+    "cap:build:android": "npm run build && npx cap sync android && npx cap open android"
   },
   "dependencies": {
+    "@capacitor/android": "^8.0.0",
+    "@capacitor/cli": "^8.0.0",
+    "@capacitor/core": "^8.0.0",
+    "@capacitor/ios": "^8.0.0",
     "@headlessui/react": "^2.2.7",
     "@supabase/supabase-js": "^2.57.4",
     "@tailwindcss/typography": "^0.5.19",
