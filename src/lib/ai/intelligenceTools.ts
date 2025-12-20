@@ -440,6 +440,72 @@ async function executeGetSmartSuggestions(
 }
 
 // =====================================================
+// QUICK CAPTURE TOOL
+// =====================================================
+
+const quickCaptureDefinition: ToolDefinition = {
+  type: 'function',
+  function: {
+    name: 'quick_capture',
+    description: 'Capture a thought, idea, reminder, or note to the inbox for later processing. Use for "remind me to...", "note to self...", "I need to remember...", "add to my inbox...", or any quick capture request.',
+    parameters: {
+      type: 'object',
+      properties: {
+        content: {
+          type: 'string',
+          description: 'The content to capture (required)'
+        },
+        source: {
+          type: 'string',
+          enum: ['voice', 'manual'],
+          description: 'Source of the capture. Default: voice'
+        }
+      },
+      required: ['content']
+    }
+  }
+};
+
+async function executeQuickCapture(
+  args: Record<string, unknown>,
+  userId: string
+): Promise<ToolResult> {
+  try {
+    const content = args.content as string;
+    const source = (args.source as string) || 'voice';
+
+    // Import dynamically to avoid circular dependencies
+    const { createInboxItem } = await import('@/services/inbox');
+
+    const item = await createInboxItem({
+      content,
+      source: source as 'voice' | 'manual',
+    });
+
+    logger.info('IntelligenceTools', 'Quick capture via AI', {
+      itemId: item.id,
+      suggestedType: item.suggested_type,
+    });
+
+    return {
+      success: true,
+      data: {
+        message: `Captured to inbox: "${content}"`,
+        itemId: item.id,
+        suggestedType: item.suggested_type,
+        suggestedPriority: item.suggested_priority,
+      },
+    };
+  } catch (error) {
+    logger.error('IntelligenceTools', error as Error, { context: 'executeQuickCapture' });
+    return {
+      success: false,
+      error: `Failed to capture: ${(error as Error).message}`,
+    };
+  }
+}
+
+// =====================================================
 // EXPORTED TOOLS
 // =====================================================
 
@@ -459,6 +525,10 @@ export const intelligenceTools: Tool[] = [
   {
     definition: getSmartSuggestionsDefinition,
     execute: executeGetSmartSuggestions
+  },
+  {
+    definition: quickCaptureDefinition,
+    execute: executeQuickCapture
   }
 ];
 
