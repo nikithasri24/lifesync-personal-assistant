@@ -4,7 +4,7 @@
  * Functions for transforming API data to local application format
  */
 
-import type { TaskData, ProjectData } from '../../services/types';
+import type { TaskData, Project as ApiProject } from '../../services/types';
 import type { Task, Project } from '../types';
 
 /**
@@ -66,21 +66,27 @@ export function transformApiTasks(apiTasks: TaskData[]): Task[] {
 /**
  * Transform API projects to local Project format
  *
- * @param apiProjects - Projects from the API
+ * @param apiProjects - Projects from the API (new Project type with enhanced fields)
  * @returns Transformed projects in local format
  */
-export function transformApiProjects(apiProjects: ProjectData[]): Project[] {
+export function transformApiProjects(apiProjects: ApiProject[]): Project[] {
   return apiProjects.map(project => {
     // Validate required fields
     if (!project.id) {
       throw new Error('Project ID is required');
     }
 
-    // Ensure status is valid
-    const status: 'active' | 'completed' | 'on_hold' =
-      project.status === 'active' || project.status === 'completed' || project.status === 'on_hold'
-        ? project.status
-        : 'active';
+    // Map API status to local status
+    // API: 'planning' | 'active' | 'on-hold' | 'completed' | 'archived'
+    // Local: 'active' | 'completed' | 'on_hold'
+    let status: 'active' | 'completed' | 'on_hold' = 'active';
+    if (project.status === 'completed' || project.status === 'archived') {
+      status = 'completed';
+    } else if (project.status === 'on-hold') {
+      status = 'on_hold';
+    } else if (project.status === 'active' || project.status === 'planning') {
+      status = 'active';
+    }
 
     return {
       id: project.id,

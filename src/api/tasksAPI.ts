@@ -1,10 +1,11 @@
 /**
- * Tasks and Projects API
- * CRUD operations for tasks and projects with Supabase
+ * Tasks API
+ * CRUD operations for tasks with Supabase
+ * Note: Project operations are in projectsAPI.ts
  */
 
 import { supabase } from '../lib/supabase';
-import type { TaskData, ProjectData } from '../services/types';
+import type { TaskData } from '../services/types';
 
 // =====================================================
 // TASKS CRUD OPERATIONS
@@ -145,105 +146,5 @@ export async function restoreTask(id: string): Promise<TaskData> {
   return updateTask(id, { deleted: false, deleted_at: null });
 }
 
-// =====================================================
-// PROJECTS CRUD OPERATIONS
-// =====================================================
-
-/**
- * Get all projects for the current user
- */
-export async function getProjects(filters?: {
-  status?: ProjectData['status'];
-}): Promise<ProjectData[]> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
-  let query = supabase
-    .from('projects')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false });
-
-  if (filters?.status) {
-    query = query.eq('status', filters.status);
-  }
-
-  const { data, error } = await query;
-
-  if (error) throw error;
-  return (data ?? []) as ProjectData[];
-}
-
-/**
- * Get a single project by ID
- */
-export async function getProject(id: string): Promise<ProjectData> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
-  const response = await supabase
-    .from('projects')
-    .select('*')
-    .eq('id', id)
-    .eq('user_id', user.id)
-    .single();
-
-  if (response.error) throw response.error;
-  if (!response.data) throw new Error('Project not found');
-  return response.data as ProjectData;
-}
-
-/**
- * Create a new project
- */
-export async function createProject(project: Omit<ProjectData, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<ProjectData> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
-  const response = await supabase
-    .from('projects')
-    .insert({
-      user_id: user.id,
-      ...project,
-    })
-    .select()
-    .single();
-
-  if (response.error) throw response.error;
-  return response.data as ProjectData;
-}
-
-/**
- * Update an existing project
- */
-export async function updateProject(id: string, updates: Partial<ProjectData>): Promise<ProjectData> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
-  const response = await supabase
-    .from('projects')
-    .update(updates)
-    .eq('id', id)
-    .eq('user_id', user.id)
-    .select()
-    .single();
-
-  if (response.error) throw response.error;
-  return response.data as ProjectData;
-}
-
-/**
- * Delete a project
- */
-export async function deleteProject(id: string): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
-  const { error } = await supabase
-    .from('projects')
-    .delete()
-    .eq('id', id)
-    .eq('user_id', user.id);
-
-  if (error) throw error;
-}
+// NOTE: Project CRUD operations are in projectsAPI.ts
+// Use projectsAPI.ts for all project-related operations

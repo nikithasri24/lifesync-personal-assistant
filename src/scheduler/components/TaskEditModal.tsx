@@ -18,13 +18,19 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import type { ScheduledTask } from '../types';
-import type { TaskData, ProjectData } from '../../services/types';
+import type { TaskData } from '../../services/types';
 import { DependencySelector, DependencyIndicator } from '../../components/dependencies';
 import { RecurrenceSelector } from '../../components/recurrence';
 
+/** Minimal project interface for TaskEditModal - only needs id and name for dropdown */
+interface ProjectOption {
+  id: string;
+  name: string;
+}
+
 interface TaskEditModalProps {
   task: ScheduledTask | null;
-  projects: ProjectData[];
+  projects: ProjectOption[];
   /** All tasks for dependency selection */
   allTasks?: TaskData[];
   isOpen: boolean;
