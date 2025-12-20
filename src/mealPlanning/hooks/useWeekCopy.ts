@@ -5,7 +5,7 @@ import type { PlannedMeal, MealPlanWeek } from '../../types';
 import {
   useCreateMealPlanMutation,
   useCreatePlannedMealMutation,
-} from './useMealPlanningQuery';
+} from '@/hooks/useMealPlanningQuery';
 
 type WeekStartDay = 0 | 1;
 

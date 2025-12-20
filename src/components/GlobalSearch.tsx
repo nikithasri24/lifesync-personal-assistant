@@ -6,7 +6,7 @@ import { useHabits } from '../hooks/useHabitsQuery';
 import { useTasks } from '../hooks/useTasksQuery';
 import { useNotes } from '../hooks/useNotesQuery';
 import { useJournalEntries } from '../hooks/useJournalQuery';
-import { useRecipesQuery } from '../mealPlanning/hooks/useMealPlanningQuery';
+import { useRecipesQuery } from '@/hooks/useMealPlanningQuery';
 import { useActiveShoppingList, useShoppingItems } from '../hooks/useShoppingQuery';
 import type { HabitData, ShoppingItemData, ShoppingListData, TaskData } from '../services/types';
 import type { Note, JournalEntry, Recipe, Ingredient } from '../types';

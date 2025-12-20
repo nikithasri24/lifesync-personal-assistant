@@ -9,7 +9,7 @@ import { Button } from '../ui/Button';
 import { logger } from '../../services/logger';
 import { useToast } from '../../hooks/useToast';
 import type { Account, AccountType } from '../types';
-import { useUpsertAccountMutation, useDeleteAccountMutation } from '../hooks/useFinanceQuery';
+import { useUpsertAccountMutation, useDeleteAccountMutation } from '@/hooks/useFinanceQuery';
 
 interface AccountModalProps {
   account?: Account;

@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { logger } from '../../services/logger';
 import type { MealPlanWeek } from '../../types';
-import type { Recipe } from './useMealPlanningQuery';
+import type { Recipe } from '@/hooks/useMealPlanningQuery';
 
 export type CellKey = string; // format: "yyyy-MM-dd:mealType"
 

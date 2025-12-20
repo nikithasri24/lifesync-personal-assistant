@@ -8,7 +8,7 @@ import React from 'react';
 import { Button } from '../ui/Button';
 import { logger } from '../../services/logger';
 import { useToast } from '../../hooks/useToast';
-import { useUpsertTransactionMutation, useAccountsQuery, useCategoriesQuery } from '../hooks/useFinanceQuery';
+import { useUpsertTransactionMutation, useAccountsQuery, useCategoriesQuery } from '@/hooks/useFinanceQuery';
 
 interface QuickAddTransactionProps {
   onClose: () => void;

@@ -15,7 +15,7 @@ import {
   updateConnection,
   deleteConnection,
   setModulePermission,
-} from '../api/connectionsAPI';
+} from '@/shared/api/connectionsAPI';
 import type {
   ConnectionWithUser,
   PendingInvitation,
@@ -25,7 +25,7 @@ import type {
   ProfileConnection,
   ShareableModule,
   ModulePermissionLevel,
-} from '../types/connections';
+} from '@/shared/types/connections';
 
 // Response type for invitations query
 type InvitationsResponse = {

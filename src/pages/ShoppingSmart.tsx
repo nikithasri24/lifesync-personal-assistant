@@ -27,7 +27,7 @@ import {
   useCreatePantryItemMutation,
   useUpdatePantryItemMutation,
   useDeletePantryItemMutation,
-  type PantryItem as PantryItemType} from '../mealPlanning/hooks/useMealPlanningQuery';
+  type PantryItem as PantryItemType} from '@/hooks/useMealPlanningQuery';
 import {
   Plus,
   ShoppingCart,

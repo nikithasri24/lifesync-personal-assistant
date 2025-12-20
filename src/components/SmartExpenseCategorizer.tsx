@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { Brain, Zap, CheckCircle, AlertTriangle, EyeOff, RefreshCw, Filter, Search, TrendingUp, Calendar, Lightbulb, Target } from 'lucide-react';
-import { useTransactionsQuery, useUpsertTransactionMutation } from '../finance/hooks/useFinanceQuery';
+import { useTransactionsQuery, useUpsertTransactionMutation } from '@/hooks/useFinanceQuery';
 import { expenseCategorizationEngine, type CategorySuggestion } from '../services/expenseCategorizationEngine';
 import type { FinancialTransactionData } from '../services/types';
 import { logger } from '../services/logger';

@@ -10,7 +10,7 @@ import { getWeatherEmoji } from '@/services/briefing';
 import type { DailyBriefing, BriefingEvent, BriefingTask, BriefingHabit } from '@/services/briefing';
 import { useVoice } from '@/hooks/useVoice';
 import { useTasks, useUpdateTask } from '@/hooks/useTasksQuery';
-import { useFreeSlots, useSchedulingPreferences } from '@/hooks/useSchedulingQuery';
+import { useScheduleFreeSlots, useSchedulingPreferences } from '@/hooks/useSchedulingQuery';
 import { suggestTimesForTask, DEFAULT_SCHEDULING_PREFS } from '@/services/scheduling';
 import { reminderService } from '@/services/reminders';
 import type { TaskData } from '@/services/types';
@@ -128,7 +128,7 @@ interface TaskSlotSelection {
 export function MorningBriefing({ className = '', onCompleteTask, onCompleteHabit }: MorningBriefingProps) {
   const { data: briefing, isLoading, error } = useDailyBriefing();
   const { data: allTasks = [] } = useTasks();
-  const { data: freeSlots = [] } = useFreeSlots(new Date(), 15);
+  const { data: freeSlots = [] } = useScheduleFreeSlots(new Date(), 15);
   const { data: prefs = DEFAULT_SCHEDULING_PREFS } = useSchedulingPreferences();
   const updateTask = useUpdateTask();
   const { speak, supported: speechSupported } = useVoice();

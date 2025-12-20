@@ -2,7 +2,7 @@
  * Project Helper Functions
  */
 
-import type { Project } from '../hooks/useProjectsQuery';
+import type { Project } from '@/hooks/useProjectsQuery';
 import type { Task } from '@/types/task';
 import type { ProjectMetrics, ProjectStats, ProjectFormData } from '../types';
 

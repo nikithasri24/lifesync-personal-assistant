@@ -13,7 +13,7 @@ import {
   projectNetWorth,
   calculateCompoundInterest,
 } from '../utils/calculations';
-import { useAccountsQuery, useTransactionsQuery, useGoalsQuery } from '../hooks/useFinanceQuery';
+import { useAccountsQuery, useTransactionsQuery, useGoalsQuery } from '@/hooks/useFinanceQuery';
 import {
   calculateProjectionMetrics,
   calculateGoalProjections,

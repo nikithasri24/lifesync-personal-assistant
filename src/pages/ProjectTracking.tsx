@@ -1,6 +1,6 @@
 import React from 'react';
 import { useProjectTracking } from './hooks/useProjectTracking';
-import type { Project } from '../projects/hooks/useProjectsQuery';
+import type { Project } from '@/hooks/useProjectsQuery';
 import { ProjectFormModal, DeleteConfirmModal } from './components/ProjectModals';
 import { ProjectsLoadingState } from '../projects/components/layout/ProjectsLoadingState';
 import { ProjectsHeader } from '../projects/components/layout/ProjectsHeader';

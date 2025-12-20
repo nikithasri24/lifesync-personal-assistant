@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { Circle, CheckCircle, Clock } from 'lucide-react';
-import type { Project } from '../hooks/useProjectsQuery';
+import type { Project } from '@/hooks/useProjectsQuery';
 import { STATUS_CONFIG } from '../constants';
 
 interface StatusBadgeProps {

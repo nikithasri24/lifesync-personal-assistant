@@ -9,7 +9,7 @@ import {
   useCreateLifeDreamMutation,
   useUpdateLifeDreamMutation,
   useDeleteLifeDreamMutation,
-} from '../goals/hooks/useLifeGoalsQuery';
+} from '@/hooks/useLifeGoalsQuery';
 import type {
   LifeGoal,
   LifeGoalWithMilestones,

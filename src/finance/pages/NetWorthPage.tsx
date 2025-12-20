@@ -8,7 +8,7 @@ import { TrendingUp, TrendingDown, DollarSign, PieChart, BarChart3 } from 'lucid
 import { Card } from '../components/Card';
 import { ChartLazy } from '../components/ChartLazy';
 import { formatCurrency } from '../utils/currency';
-import { useNetWorthQuery, useAccountsQuery, useLoansQuery } from '../hooks/useFinanceQuery';
+import { useNetWorthQuery, useAccountsQuery, useLoansQuery } from '@/hooks/useFinanceQuery';
 import type { Account } from '../types';
 
 const NetWorthPage: React.FC = () => {

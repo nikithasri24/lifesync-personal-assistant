@@ -10,7 +10,7 @@ import {
   useAcceptInvitationMutation,
   useRejectInvitationMutation,
   useDeleteConnectionMutation,
-} from '../shared/hooks/useConnectionsQuery';
+} from '@/hooks/useConnectionsQuery';
 import { ConnectionsList } from '../shared/components/ConnectionsList';
 import NewConnectionForm from '../shared/components/NewConnectionForm';
 import { InvitationsPanel } from '../shared/components/InvitationsPanel';

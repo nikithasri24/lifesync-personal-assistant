@@ -17,7 +17,7 @@ import {
   useCreateMealPlanMutation,
   useCreatePlannedMealMutation,
   useUpdatePlannedMealMutation,
-} from '../mealPlanning/hooks/useMealPlanningQuery';
+} from '@/hooks/useMealPlanningQuery';
 
 // Import hooks
 import { useMealFormModals } from '../mealPlanning/hooks/useMealFormModals';

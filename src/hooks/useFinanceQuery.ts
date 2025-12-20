@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient, type UseQueryOptions, type UseQueryResult, type UseMutationResult } from '@tanstack/react-query';
-import { getFinanceAPI } from '../data';
+import { getFinanceAPI } from '@/finance/data';
 import type {
   Institution,
   Account,
@@ -31,7 +31,7 @@ import type {
   PendingTransaction,
   RetirementAccountWithStats,
   RetirementAccountMetadataInput,
-} from '../types';
+} from '@/finance/types';
 import { logger } from '@/services/logger';
 
 // ==================== Query Keys ====================

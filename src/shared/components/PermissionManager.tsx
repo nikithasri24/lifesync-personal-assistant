@@ -12,7 +12,7 @@ import {
   type ModulePermissionLevel,
   MODULE_CONFIGS,
 } from '../types/connections';
-import { useUpdatePermissionMutation } from '../hooks/useConnectionsQuery';
+import { useUpdatePermissionMutation } from '@/hooks/useConnectionsQuery';
 
 interface PermissionManagerProps {
   connectionId: string;

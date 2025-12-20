@@ -1,7 +1,7 @@
 import React from 'react';
 import { X } from 'lucide-react';
 import type { ProjectFormData } from '../../projects/types';
-import type { Project } from '../../projects/hooks/useProjectsQuery';
+import type { Project } from '@/hooks/useProjectsQuery';
 
 interface ProjectFormModalProps {
   showCreateModal: boolean;

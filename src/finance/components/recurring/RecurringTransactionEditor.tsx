@@ -6,7 +6,7 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import type { RecurringTransaction, RecurringTransactionInput, RecurringFrequency } from '../../types';
-import { useAccountsQuery, useCategoriesQuery } from '../../hooks/useFinanceQuery';
+import { useAccountsQuery, useCategoriesQuery } from '@/hooks/useFinanceQuery';
 
 interface RecurringTransactionEditorProps {
   recurring?: RecurringTransaction;

@@ -5,7 +5,7 @@
 
 import type { Task } from '@/types/task';
 import type { FocusSession as StoreFocusSession } from '../../../../types';
-import type { Project as StoreProject } from '../../../../projects/hooks/useProjectsQuery';
+import type { Project as StoreProject } from '@/hooks/useProjectsQuery';
 import type { TaskView, ProjectView, SubTask } from '../types';
 import { mapStatusToView, mapCategoryIdToView } from './statusMappers';
 

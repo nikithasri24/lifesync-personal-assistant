@@ -1,7 +1,7 @@
 import React from 'react';
 import { Edit2, Trash2, CheckCircle, Circle, ChevronDown, ChevronRight } from 'lucide-react';
 import { StatusBadge } from '../StatusBadge';
-import type { Project } from '../../hooks/useProjectsQuery';
+import type { Project } from '@/hooks/useProjectsQuery';
 import type { Task } from '@/types/task';
 
 interface ProjectMetrics {

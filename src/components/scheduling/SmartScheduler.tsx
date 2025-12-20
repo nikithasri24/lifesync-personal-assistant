@@ -9,7 +9,7 @@ import {
   Clock, Zap, Battery, BatteryLow, Calendar, ChevronLeft, ChevronRight,
   Sparkles, CheckCircle, AlertCircle
 } from 'lucide-react';
-import { useDaySchedule, useTaskSchedulingSuggestions, useFreeSlots } from '../../hooks/useSchedulingQuery';
+import { useDaySchedule, useTaskSchedulingSuggestions, useScheduleFreeSlots } from '../../hooks/useSchedulingQuery';
 import type { ScoredTimeSlot, EnergyLevel } from '../../services/scheduling';
 
 interface SmartSchedulerProps {
@@ -44,7 +44,7 @@ export function SmartScheduler({ task, onSchedule, className = '' }: SmartSchedu
     task || null,
     selectedDate
   );
-  const { data: freeSlots = [] } = useFreeSlots(selectedDate, task?.estimatedMinutes || 15);
+  const { data: freeSlots = [] } = useScheduleFreeSlots(selectedDate, task?.estimatedMinutes || 15);
 
   const handlePrevDay = () => setSelectedDate(d => addDays(d, -1));
   const handleNextDay = () => setSelectedDate(d => addDays(d, 1));

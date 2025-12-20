@@ -9,7 +9,7 @@ import React, { useState } from 'react';
 import {
   useTransactionsQuery,
   useCategoriesQuery,
-  useAccountsQuery} from '../hooks/useFinanceQuery';
+  useAccountsQuery} from '@/hooks/useFinanceQuery';
 import { getTimePeriodRange, getPreviousPeriodRange, type TimePeriod } from '../utils/timePeriodUtils';
 import { useFinanceMetrics, type FinanceMetrics } from '../hooks/useFinanceMetrics';
 import type { Transaction } from '../types';

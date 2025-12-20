@@ -148,7 +148,7 @@ export function useTaskSchedulingSuggestions(
  * - schedule_blocks
  * - scheduled tasks
  */
-export function useFreeSlots(date: Date, minDurationMinutes: number = 15) {
+export function useScheduleFreeSlots(date: Date, minDurationMinutes: number = 15) {
   const dateKey = format(date, 'yyyy-MM-dd');
   const { data: prefs = DEFAULT_SCHEDULING_PREFS } = useSchedulingPreferences();
 

@@ -6,7 +6,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { format, addMinutes, setHours, setMinutes, startOfDay, differenceInMinutes } from 'date-fns';
 import { Clock, Zap, Battery, BatteryLow, GripVertical, X } from 'lucide-react';
-import { useDaySchedule, useFreeSlots, useSchedulingPreferences } from '../../hooks/useSchedulingQuery';
+import { useDaySchedule, useScheduleFreeSlots, useSchedulingPreferences } from '../../hooks/useSchedulingQuery';
 import { getEnergyLevel, DEFAULT_SCHEDULING_PREFS } from '../../services/scheduling';
 import type { EnergyLevel, TimeSlot } from '../../services/scheduling';
 
@@ -56,7 +56,7 @@ export function TimeBlockView({
   className = '',
 }: TimeBlockViewProps) {
   const { data: prefs = DEFAULT_SCHEDULING_PREFS } = useSchedulingPreferences();
-  const { data: freeSlots = [] } = useFreeSlots(date, 15);
+  const { data: freeSlots = [] } = useScheduleFreeSlots(date, 15);
   
   const timelineRef = useRef<HTMLDivElement>(null);
   const [draggingBlock, setDraggingBlock] = useState<string | null>(null);

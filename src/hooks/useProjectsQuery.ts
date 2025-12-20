@@ -5,8 +5,8 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '../../services/apiClient';
-import type { ProjectData } from '../../services/types';
+import { apiClient } from '@/services/apiClient';
+import type { ProjectData } from '@/services/types';
 import { logger } from '@/services/logger';
 
 // ==================== Types ====================
@@ -393,10 +393,10 @@ export function useCreateMilestoneMutation(): ReturnType<typeof useMutation<Proj
 }
 
 /**
- * Update a milestone
+ * Update a project milestone
  * Note: Requires API endpoint implementation
  */
-export function useUpdateMilestoneMutation(): ReturnType<typeof useMutation<ProjectMilestone, Error, { milestoneId: string; projectId: string; updates: MilestoneUpdate }, unknown>> {
+export function useUpdateProjectMilestoneMutation(): ReturnType<typeof useMutation<ProjectMilestone, Error, { milestoneId: string; projectId: string; updates: MilestoneUpdate }, unknown>> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -418,10 +418,10 @@ export function useUpdateMilestoneMutation(): ReturnType<typeof useMutation<Proj
 }
 
 /**
- * Delete a milestone
+ * Delete a project milestone
  * Note: Requires API endpoint implementation
  */
-export function useDeleteMilestoneMutation(): ReturnType<typeof useMutation<void, Error, { milestoneId: string; projectId: string }, unknown>> {
+export function useDeleteProjectMilestoneMutation(): ReturnType<typeof useMutation<void, Error, { milestoneId: string; projectId: string }, unknown>> {
   const queryClient = useQueryClient();
 
   return useMutation({

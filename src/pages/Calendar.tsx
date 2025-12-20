@@ -15,7 +15,7 @@ import { useCalendarState } from '../calendar/hooks/useCalendarState';
 import { useCalendarTasks } from '../calendar/hooks/useCalendarTasks';
 import { isMultiDayTask, getTaskSpanDays, taskAppearsOnDate, getTaskSpanPosition } from '../calendar/hooks';
 import { useUndoRedo } from '../contexts/UndoRedoContext';
-import { useProjectsQuery } from '../projects/hooks/useProjectsQuery';
+import { useProjectsQuery } from '@/hooks/useProjectsQuery';
 
 // Components
 import { CalendarHeader } from '../calendar/components/CalendarHeader';

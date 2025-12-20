@@ -13,7 +13,7 @@ import {
   useCategoriesQuery,
   useBudgetsQuery,
   useGoalsQuery,
-} from '../hooks/useFinanceQuery';
+} from '@/hooks/useFinanceQuery';
 import { logger } from '@/services/logger';
 import type { Transaction, Account } from '../types';
 import { Pencil, Plus } from 'lucide-react';

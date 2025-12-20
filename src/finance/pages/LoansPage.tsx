@@ -14,7 +14,7 @@ import {
   useUpsertLoanMutation,
   useDeleteLoanMutation,
   useUpsertLoanPaymentMutation,
-} from '../hooks/useFinanceQuery';
+} from '@/hooks/useFinanceQuery';
 import { formatCurrency } from '../utils/currency';
 import { calculateInterestPaidToDate, calculatePrincipalPaidToDate } from '../utils/loanCalculations';
 import { logger } from '../../services/logger';

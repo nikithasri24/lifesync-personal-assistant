@@ -7,11 +7,11 @@
  */
 
 import React, { useMemo } from 'react';
-import { useTasksQuery } from '../../../tasks/hooks/useTasksQuery';
-import { useProjectsQuery } from '../../../projects/hooks/useProjectsQuery';
+import { useTasks } from '@/hooks/useTasksQuery';
+import { useProjectsQuery, type Project } from '@/hooks/useProjectsQuery';
 import type { TaskFocusIntegrationProps, TaskView, ProjectView } from './types';
 import type { Task } from '@/types/task';
-import type { Project } from '../../../projects/hooks/useProjectsQuery';
+import { transformApiTasks } from '@/todos/utils/taskTransformers';
 import { transformTaskToView, transformProjectToView, filterTasks, sortTasks } from './utils';
 import { useFocusAggregate, useTaskFocusState } from './hooks';
 import {
@@ -28,15 +28,13 @@ export const TaskFocusIntegration: React.FC<TaskFocusIntegrationProps> = ({
   activeFocusSession
 }) => {
   // Data queries
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
-  const tasksQueryResult = useTasksQuery();
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-  const storeTasksData = tasksQueryResult.data as Task[] | undefined;
+  const { data: storeTasksData } = useTasks();
   const { data: storeProjectsData } = useProjectsQuery();
 
   // Safely memoize the data with proper type guards
+  // Transform TaskData[] to Task[] for UI consumption
   const storeTasks = useMemo<Task[]>(() => {
-    return Array.isArray(storeTasksData) ? storeTasksData : [];
+    return Array.isArray(storeTasksData) ? transformApiTasks(storeTasksData) : [];
   }, [storeTasksData]);
 
   const storeProjects = useMemo<Project[]>(() => {

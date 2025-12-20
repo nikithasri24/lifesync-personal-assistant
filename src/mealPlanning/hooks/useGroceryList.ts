@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { logger } from '../../services/logger';
 import type { PlannedMeal } from '../../types';
-import type { Recipe } from './useMealPlanningQuery';
+import type { Recipe } from '@/hooks/useMealPlanningQuery';
 
 export type GroceryItemStatus = 'needed' | 'at_home' | 'in_cart' | 'purchased';
 

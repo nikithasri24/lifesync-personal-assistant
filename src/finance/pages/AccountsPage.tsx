@@ -4,7 +4,7 @@ import { Button } from '../ui/Button';
 import { Dialog } from '../ui/Dialog';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
-import { useAccountsQuery, useInstitutionsQuery, useUpsertAccountMutation } from '../hooks/useFinanceQuery';
+import { useAccountsQuery, useInstitutionsQuery, useUpsertAccountMutation } from '@/hooks/useFinanceQuery';
 import { formatCurrency } from '../utils/currency';
 import type { Account, AccountType } from '../types';
 import { logger } from '../../services/logger';

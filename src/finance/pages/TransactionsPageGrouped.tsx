@@ -19,7 +19,7 @@ import {
   useCategoriesQuery,
   useBudgetsQuery,
   useBudgetTemplatesQuery,
-} from '../hooks/useFinanceQuery';
+} from '@/hooks/useFinanceQuery';
 import { useGroupedTransactions } from '../hooks/useGroupedTransactions';
 import { useBudgetSummary } from '../hooks/useBudgetSummary';
 import { formatCurrency } from '../utils/currency';

@@ -18,7 +18,7 @@ import {
   getStreakHistory,
   getGoalTemplates,
   createGoalFromTemplate,
-} from '../api/lifeGoalsAPI';
+} from '@/goals/api/lifeGoalsAPI';
 import type {
   LifeGoal,
   LifeDream,
@@ -33,7 +33,7 @@ import type {
   LifeGoalCheckin,
   LifeGoalStreakEntry,
   LifeGoalTemplate,
-} from '../types/lifeGoals';
+} from '@/goals/types/lifeGoals';
 import { logger } from '@/services/logger';
 
 // ==================== Query Keys ====================
@@ -360,7 +360,7 @@ export function useAddMilestoneMutation(): UseMutationResult<LifeGoalMilestone, 
   });
 }
 
-export function useUpdateMilestoneMutation(): UseMutationResult<LifeGoalMilestone, Error, { milestoneId: string; goalId: string; updates: { isCompleted?: boolean; title?: string; description?: string; targetDate?: string } }, unknown> {
+export function useUpdateGoalMilestoneMutation(): UseMutationResult<LifeGoalMilestone, Error, { milestoneId: string; goalId: string; updates: { isCompleted?: boolean; title?: string; description?: string; targetDate?: string } }, unknown> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -387,7 +387,7 @@ export function useUpdateMilestoneMutation(): UseMutationResult<LifeGoalMileston
   });
 }
 
-export function useDeleteMilestoneMutation(): UseMutationResult<void, Error, { milestoneId: string; goalId: string }, unknown> {
+export function useDeleteGoalMilestoneMutation(): UseMutationResult<void, Error, { milestoneId: string; goalId: string }, unknown> {
   const queryClient = useQueryClient();
 
   return useMutation({

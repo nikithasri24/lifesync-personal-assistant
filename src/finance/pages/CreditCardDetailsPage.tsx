@@ -15,7 +15,7 @@ import {
   useCategoryBonusesQuery,
   useWelcomeBonusesQuery,
   useCardOffersQuery
-} from '../hooks/useFinanceQuery';
+} from '@/hooks/useFinanceQuery';
 
 interface CreditCardDetailsPageProps {
   accountId: string;

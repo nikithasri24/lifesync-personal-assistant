@@ -11,14 +11,14 @@
 /* eslint-disable max-lines */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '../../services/apiClient';
+import { apiClient } from '@/services/apiClient';
 import { startOfWeek, format as formatDate } from 'date-fns';
 import type {
   RecipeData,
   MealPlanData,
   PlannedMealData,
   PantryItemData,
-} from '../../services/types';
+} from '@/services/types';
 import { logger } from '@/services/logger';
 
 // ==================== Types ====================
@@ -94,7 +94,7 @@ export interface MealPlanWeek {
 }
 
 // Re-export PantryItem from central types to avoid duplicate type definitions
-import type { PantryItem } from '../../types';
+import type { PantryItem } from '@/types';
 export type { PantryItem };
 
 export type RecipeInput = Omit<Recipe, 'id' | 'createdAt'>;

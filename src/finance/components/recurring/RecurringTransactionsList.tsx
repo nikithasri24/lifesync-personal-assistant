@@ -10,7 +10,7 @@ import {
   useRecurringTransactionsQuery,
   useUpsertRecurringTransactionMutation,
   useDeleteRecurringTransactionMutation,
-} from '../../hooks/useFinanceQuery';
+} from '@/hooks/useFinanceQuery';
 import { RecurringTransactionEditor } from './RecurringTransactionEditor';
 import { formatCurrency } from '../../utils/currency';
 

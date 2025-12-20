@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, type ReactElement } from 'react';
 import { Loader2 } from 'lucide-react';
 import { logger } from '../../../services/logger';
 import type { Recipe, Ingredient } from '../../../types';
-import { useUpdateRecipeMutation } from '../../hooks/useMealPlanningQuery';
+import { useUpdateRecipeMutation } from '@/hooks/useMealPlanningQuery';
 
 interface RecipeEditModalProps {
   recipe: Recipe;

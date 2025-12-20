@@ -1,4 +1,4 @@
-import type { Project } from '../../projects/hooks/useProjectsQuery';
+import type { Project } from '@/hooks/useProjectsQuery';
 import type { ProjectFormData } from '../../projects/types';
 
 // Stats type expected by ProjectsHeader

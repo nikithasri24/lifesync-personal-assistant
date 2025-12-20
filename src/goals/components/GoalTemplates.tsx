@@ -5,7 +5,7 @@
 
 import React, { useState } from 'react';
 import { Target, Zap, Clock, Tag, TrendingUp, Award, BookOpen, X } from 'lucide-react';
-import { useGoalTemplatesQuery, useCreateGoalFromTemplateMutation } from '../hooks/useLifeGoalsQuery';
+import { useGoalTemplatesQuery, useCreateGoalFromTemplateMutation } from '@/hooks/useLifeGoalsQuery';
 import type { LifeGoalWithMilestones } from '../types/lifeGoals';
 import { logger } from '../../services/logger';
 

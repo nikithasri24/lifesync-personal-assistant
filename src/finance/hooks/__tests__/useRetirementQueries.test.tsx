@@ -7,7 +7,7 @@ import {
   useRetirementAccountQuery,
   useUpsertRetirementAccountMetadataMutation,
   useDeleteRetirementAccountMetadataMutation,
-} from '../useFinanceQuery';
+} from '@/hooks/useFinanceQuery';
 import type { RetirementAccountWithStats, RetirementAccountMetadataInput } from '../../types';
 
 // Mock the API

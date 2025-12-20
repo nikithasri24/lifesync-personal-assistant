@@ -11,7 +11,7 @@ import {
   useRetirementAccountQuery,
   useUpsertRetirementAccountMetadataMutation,
   useDeleteRetirementAccountMetadataMutation,
-} from '../hooks/useFinanceQuery';
+} from '@/hooks/useFinanceQuery';
 import { RetirementDashboard } from '../components/retirement';
 import RetirementAccountEditor from '../components/retirement/RetirementAccountEditor';
 import type { Account, RetirementAccountWithStats, RetirementAccountMetadataInput } from '../types';

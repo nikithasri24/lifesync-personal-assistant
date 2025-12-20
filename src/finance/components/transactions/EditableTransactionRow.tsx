@@ -8,7 +8,7 @@ import { Edit2, Save, X, Trash2 } from 'lucide-react';
 import type { Transaction, Category } from '../../types';
 import { formatCurrency } from '../../utils/currency';
 import { logger } from '../../../services/logger';
-import { useUpsertTransactionMutation, useDeleteTransactionMutation } from '../../hooks/useFinanceQuery';
+import { useUpsertTransactionMutation, useDeleteTransactionMutation } from '@/hooks/useFinanceQuery';
 
 interface EditableTransactionRowProps {
   transaction: Transaction;
