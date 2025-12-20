@@ -202,6 +202,162 @@ export const queryKeys = {
     },
     budget: (tripId: string) => [...queryKeys.travel.all, 'budget', tripId] as const,
   },
+
+  // Bills
+  bills: {
+    all: ['bills'] as const,
+    lists: () => [...queryKeys.bills.all, 'list'] as const,
+    list: (filters?: QueryFilters) => [...queryKeys.bills.lists(), filters] as const,
+    details: () => [...queryKeys.bills.all, 'detail'] as const,
+    detail: (id: string) => [...queryKeys.bills.details(), id] as const,
+    upcoming: (days?: number) => [...queryKeys.bills.all, 'upcoming', days] as const,
+  },
+
+  // Briefing
+  briefing: {
+    all: ['briefing'] as const,
+    daily: (date?: string) => [...queryKeys.briefing.all, 'daily', date] as const,
+    weekly: (weekStart?: string) => [...queryKeys.briefing.all, 'weekly', weekStart] as const,
+  },
+
+  // Connections
+  connections: {
+    all: ['connections'] as const,
+    lists: () => [...queryKeys.connections.all, 'list'] as const,
+    list: (filters?: QueryFilters) => [...queryKeys.connections.lists(), filters] as const,
+    details: () => [...queryKeys.connections.all, 'detail'] as const,
+    detail: (id: string) => [...queryKeys.connections.details(), id] as const,
+    pending: () => [...queryKeys.connections.all, 'pending'] as const,
+  },
+
+  // Focus Sessions
+  focus: {
+    all: ['focus'] as const,
+    sessions: {
+      all: () => [...queryKeys.focus.all, 'sessions'] as const,
+      lists: () => [...queryKeys.focus.sessions.all(), 'list'] as const,
+      list: (filters?: QueryFilters) => [...queryKeys.focus.sessions.lists(), filters] as const,
+      details: () => [...queryKeys.focus.sessions.all(), 'detail'] as const,
+      detail: (id: string) => [...queryKeys.focus.sessions.details(), id] as const,
+    },
+    stats: (period?: string) => [...queryKeys.focus.all, 'stats', period] as const,
+    active: () => [...queryKeys.focus.all, 'active'] as const,
+  },
+
+  // Gamification
+  gamification: {
+    all: ['gamification'] as const,
+    profile: () => [...queryKeys.gamification.all, 'profile'] as const,
+    achievements: () => [...queryKeys.gamification.all, 'achievements'] as const,
+    leaderboard: () => [...queryKeys.gamification.all, 'leaderboard'] as const,
+    streaks: () => [...queryKeys.gamification.all, 'streaks'] as const,
+  },
+
+  // Important Dates
+  importantDates: {
+    all: ['importantDates'] as const,
+    lists: () => [...queryKeys.importantDates.all, 'list'] as const,
+    list: (filters?: QueryFilters) => [...queryKeys.importantDates.lists(), filters] as const,
+    details: () => [...queryKeys.importantDates.all, 'detail'] as const,
+    detail: (id: string) => [...queryKeys.importantDates.details(), id] as const,
+    upcoming: (days?: number) => [...queryKeys.importantDates.all, 'upcoming', days] as const,
+  },
+
+  // Inbox
+  inbox: {
+    all: ['inbox'] as const,
+    lists: () => [...queryKeys.inbox.all, 'list'] as const,
+    list: (filters?: QueryFilters) => [...queryKeys.inbox.lists(), filters] as const,
+    details: () => [...queryKeys.inbox.all, 'detail'] as const,
+    detail: (id: string) => [...queryKeys.inbox.details(), id] as const,
+    unprocessed: () => [...queryKeys.inbox.all, 'unprocessed'] as const,
+  },
+
+  // Life Goals
+  lifeGoals: {
+    all: ['lifeGoals'] as const,
+    lists: () => [...queryKeys.lifeGoals.all, 'list'] as const,
+    list: (filters?: QueryFilters) => [...queryKeys.lifeGoals.lists(), filters] as const,
+    details: () => [...queryKeys.lifeGoals.all, 'detail'] as const,
+    detail: (id: string) => [...queryKeys.lifeGoals.details(), id] as const,
+    byCategory: (category: string) => [...queryKeys.lifeGoals.all, 'category', category] as const,
+  },
+
+  // Meal Planning
+  mealPlanning: {
+    all: ['mealPlanning'] as const,
+    plans: {
+      all: () => [...queryKeys.mealPlanning.all, 'plans'] as const,
+      lists: () => [...queryKeys.mealPlanning.plans.all(), 'list'] as const,
+      list: (filters?: QueryFilters) => [...queryKeys.mealPlanning.plans.lists(), filters] as const,
+      details: () => [...queryKeys.mealPlanning.plans.all(), 'detail'] as const,
+      detail: (id: string) => [...queryKeys.mealPlanning.plans.details(), id] as const,
+      week: (weekStart: string) => [...queryKeys.mealPlanning.plans.all(), 'week', weekStart] as const,
+    },
+    recipes: {
+      all: () => [...queryKeys.mealPlanning.all, 'recipes'] as const,
+      lists: () => [...queryKeys.mealPlanning.recipes.all(), 'list'] as const,
+      list: (filters?: QueryFilters) => [...queryKeys.mealPlanning.recipes.lists(), filters] as const,
+      details: () => [...queryKeys.mealPlanning.recipes.all(), 'detail'] as const,
+      detail: (id: string) => [...queryKeys.mealPlanning.recipes.details(), id] as const,
+    },
+    pantry: {
+      all: () => [...queryKeys.mealPlanning.all, 'pantry'] as const,
+      lists: () => [...queryKeys.mealPlanning.pantry.all(), 'list'] as const,
+      list: (filters?: QueryFilters) => [...queryKeys.mealPlanning.pantry.lists(), filters] as const,
+    },
+  },
+
+  // Nutrition
+  nutrition: {
+    all: ['nutrition'] as const,
+    logs: {
+      all: () => [...queryKeys.nutrition.all, 'logs'] as const,
+      lists: () => [...queryKeys.nutrition.logs.all(), 'list'] as const,
+      list: (filters?: QueryFilters) => [...queryKeys.nutrition.logs.lists(), filters] as const,
+      today: () => [...queryKeys.nutrition.logs.all(), 'today'] as const,
+      week: (weekStart?: string) => [...queryKeys.nutrition.logs.all(), 'week', weekStart] as const,
+    },
+    goals: () => [...queryKeys.nutrition.all, 'goals'] as const,
+    stats: (period?: string) => [...queryKeys.nutrition.all, 'stats', period] as const,
+  },
+
+  // Projects
+  projects: {
+    all: ['projects'] as const,
+    lists: () => [...queryKeys.projects.all, 'list'] as const,
+    list: (filters?: QueryFilters) => [...queryKeys.projects.lists(), filters] as const,
+    details: () => [...queryKeys.projects.all, 'detail'] as const,
+    detail: (id: string) => [...queryKeys.projects.details(), id] as const,
+    milestones: (projectId: string) => [...queryKeys.projects.all, 'milestones', projectId] as const,
+    analytics: () => [...queryKeys.projects.all, 'analytics'] as const,
+  },
+
+  // Scheduling
+  scheduling: {
+    all: ['scheduling'] as const,
+    blocks: {
+      all: () => [...queryKeys.scheduling.all, 'blocks'] as const,
+      lists: () => [...queryKeys.scheduling.blocks.all(), 'list'] as const,
+      list: (filters?: QueryFilters) => [...queryKeys.scheduling.blocks.lists(), filters] as const,
+      forDate: (date: string) => [...queryKeys.scheduling.blocks.all(), 'date', date] as const,
+    },
+    freeSlots: (date: string) => [...queryKeys.scheduling.all, 'freeSlots', date] as const,
+    preferences: () => [...queryKeys.scheduling.all, 'preferences'] as const,
+  },
+
+  // Shopping
+  shopping: {
+    all: ['shopping'] as const,
+    lists: {
+      all: () => [...queryKeys.shopping.all, 'lists'] as const,
+      lists: () => [...queryKeys.shopping.lists.all(), 'list'] as const,
+      list: (filters?: QueryFilters) => [...queryKeys.shopping.lists.lists(), filters] as const,
+      details: () => [...queryKeys.shopping.lists.all(), 'detail'] as const,
+      detail: (id: string) => [...queryKeys.shopping.lists.details(), id] as const,
+    },
+    items: (listId: string) => [...queryKeys.shopping.all, 'items', listId] as const,
+  },
 } as const;
 
 /**
