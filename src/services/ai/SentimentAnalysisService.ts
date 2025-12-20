@@ -1,9 +1,11 @@
 /**
  * Sentiment Analysis Service
  * Analyzes mood and sentiment from journal entries and text content
+ *
+ * ARCHITECTURE: Uses API layer for all data access (no direct Supabase calls)
  */
 
-import { supabase } from '@/lib/supabase';
+import { getJournalEntries } from '@/api/journalAPI';
 import { logger } from '@/services/logger';
 import { format, subDays, parseISO } from 'date-fns';
 
@@ -125,16 +127,11 @@ class SentimentAnalysisService {
    * Get journal insights for a user
    */
   async getJournalInsights(userId: string, days = 30): Promise<JournalInsights> {
-    const startDate = format(subDays(new Date(), days), 'yyyy-MM-dd');
+    // Use API layer instead of direct Supabase
+    const startDate = subDays(new Date(), days);
+    const entries = await getJournalEntries({ startDate });
 
-    const { data: entries } = await supabase
-      .from('journal_entries')
-      .select('id, content, mood, created_at')
-      .eq('user_id', userId)
-      .gte('created_at', startDate)
-      .order('created_at', { ascending: true });
-
-    if (!entries || entries.length === 0) {
+    if (entries.length === 0) {
       return {
         averageSentiment: 0,
         sentimentTrend: 'stable',
@@ -147,8 +144,8 @@ class SentimentAnalysisService {
 
     // Analyze each entry
     const analyses = entries.map(entry => ({
-      date: format(parseISO(entry.created_at), 'yyyy-MM-dd'),
-      analysis: this.analyzeSentiment(entry.content || ''),
+      date: format(parseISO(entry.created_at!), 'yyyy-MM-dd'),
+      analysis: this.analyzeSentiment(entry.content ?? ''),
       mood: entry.mood,
     }));
 
