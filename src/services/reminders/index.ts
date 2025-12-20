@@ -4,6 +4,6 @@
  */
 
 export { reminderService } from './ReminderService';
+export { smartReminderService } from './SmartReminderService';
 export type { ScheduleReminderParams } from './ReminderService';
 export * from './types';
-
