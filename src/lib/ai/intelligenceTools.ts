@@ -981,6 +981,90 @@ async function executeAnalyzeSentiment(
 }
 
 // =====================================================
+// RECALL MEMORY TOOL
+// =====================================================
+
+const recallMemoryDefinition: ToolDefinition = {
+  type: 'function',
+  function: {
+    name: 'recall_memory',
+    description: 'Recall past conversations and context. Use for "what did I mention about...", "last time we talked about...", "remember when I said...".',
+    parameters: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description: 'Topic or keyword to search for in past conversations'
+        },
+        mode: {
+          type: 'string',
+          enum: ['search', 'context'],
+          description: 'Mode: search for specific topic, or context for recent conversation context. Default: search'
+        }
+      },
+      required: []
+    }
+  }
+};
+
+async function executeRecallMemory(
+  args: Record<string, unknown>,
+  userId: string
+): Promise<ToolResult> {
+  try {
+    const query = args.query as string | undefined;
+    const mode = (args.mode as string) || 'search';
+
+    const { contextualMemoryService } = await import('@/services/ai/ContextualMemoryService');
+
+    if (mode === 'context' || !query) {
+      // Get recent conversation context
+      const context = await contextualMemoryService.getConversationContext(userId, 14);
+
+      logger.info('IntelligenceTools', 'Recall memory (context) via AI', {
+        topicCount: context.recentTopics.length,
+      });
+
+      return {
+        success: true,
+        data: {
+          recentTopics: context.recentTopics,
+          mentionedEntities: context.mentionedEntities.slice(0, 5),
+          emotionalContext: context.emotionalContext,
+          lastMentioned: context.lastMentioned,
+        },
+      };
+    }
+
+    // Search for specific topic
+    const result = await contextualMemoryService.searchMemories(userId, query, 5);
+
+    logger.info('IntelligenceTools', 'Recall memory (search) via AI', {
+      query,
+      resultCount: result.memories.length,
+    });
+
+    return {
+      success: true,
+      data: {
+        memories: result.memories.map(m => ({
+          date: m.date,
+          topic: m.topic,
+          summary: m.summary,
+        })),
+        relevantContext: result.relevantContext,
+      },
+    };
+  } catch (error) {
+    logger.error('IntelligenceTools', error as Error, { context: 'executeRecallMemory' });
+    return {
+      success: false,
+      error: `Failed to recall memory: ${(error as Error).message}`,
+    };
+  }
+}
+
+// =====================================================
 // BILLS DUE TOOL
 // =====================================================
 
@@ -1180,6 +1264,10 @@ export const intelligenceTools: Tool[] = [
   {
     definition: analyzeSentimentDefinition,
     execute: executeAnalyzeSentiment
+  },
+  {
+    definition: recallMemoryDefinition,
+    execute: executeRecallMemory
   }
 ];
 
