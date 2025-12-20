@@ -39,7 +39,9 @@ export interface TaskData {
   is_blocked?: boolean | null;
   reminder?: string | null;
   attachments?: string[] | null;
-  assigned_to?: string | null;
+  assigned_to?: string | null; // User ID of the person this task is assigned to
+  assigned_by?: string | null; // User ID of the person who assigned this task
+  assigned_at?: string | null; // When the task was assigned
   // Recurrence fields
   recurrence_pattern?: 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom' | null;
   recurrence_interval?: number | null; // e.g., every 2 weeks

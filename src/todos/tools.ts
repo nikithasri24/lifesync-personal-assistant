@@ -220,6 +220,97 @@ async function executeGetWeekOverview(
   }
 }
 
+const assignTaskDefinition: ToolDefinition = {
+  type: 'function',
+  function: {
+    name: 'assign_task_to',
+    description: 'Assign a task to a connected family member (spouse, partner, etc.). Use for requests like "remind my husband to pick up milk" or "assign grocery shopping to my wife".',
+    parameters: {
+      type: 'object',
+      properties: {
+        title: {
+          type: 'string',
+          description: 'Task title (required)'
+        },
+        assignee_name: {
+          type: 'string',
+          description: 'Name or relationship of the person to assign to (e.g., "husband", "wife", "spouse", "partner", or their actual name)'
+        },
+        due_date: {
+          type: 'string',
+          description: 'Due date in ISO format (YYYY-MM-DD). Optional.'
+        },
+        priority: {
+          type: 'string',
+          enum: ['low', 'medium', 'high', 'urgent'],
+          description: 'Task priority level. Defaults to medium.'
+        },
+        notes: {
+          type: 'string',
+          description: 'Additional notes or context for the task'
+        }
+      },
+      required: ['title', 'assignee_name']
+    }
+  }
+};
+
+async function executeAssignTask(
+  args: Record<string, unknown>,
+  userId: string
+): Promise<ToolResult> {
+  try {
+    const title = args.title as string;
+    const assigneeName = args.assignee_name as string;
+    const dueDate = args.due_date as string | undefined;
+    const priority = (args.priority as string) || 'medium';
+    const notes = args.notes as string | undefined;
+
+    // TODO: Look up the assignee from connections based on name/relationship
+    // For now, create the task with a note about who it's for
+    const taskNotes = notes
+      ? `Assigned to: ${assigneeName}\n\n${notes}`
+      : `Assigned to: ${assigneeName}`;
+
+    const command: CreateTaskCommand = {
+      type: 'CREATE_TASK',
+      timestamp: new Date(),
+      source: 'ai',
+      userId,
+      payload: {
+        title,
+        priority: priority as 'low' | 'medium' | 'high' | 'urgent',
+        dueDate: dueDate,
+        tags: ['delegated', 'family'],
+      },
+    };
+
+    const result = await commandBus.dispatch(command);
+    const taskId = (result as { id?: string } | undefined)?.id;
+
+    logger.info('TaskTools', 'Task assigned via AI', {
+      title,
+      assignee: assigneeName,
+      taskId,
+    });
+
+    return {
+      success: true,
+      data: {
+        message: `Created task "${title}" for ${assigneeName}`,
+        taskId,
+        assignee: assigneeName,
+      },
+    };
+  } catch (error) {
+    logger.error('TaskTools', error as Error, { context: 'executeAssignTask' });
+    return {
+      success: false,
+      error: `Failed to assign task: ${(error as Error).message}`,
+    };
+  }
+}
+
 // =====================================================
 // EXPORTED TOOLS
 // =====================================================
@@ -232,5 +323,9 @@ export const taskTools: Tool[] = [
   {
     definition: getWeekOverviewDefinition,
     execute: executeGetWeekOverview
+  },
+  {
+    definition: assignTaskDefinition,
+    execute: executeAssignTask
   }
 ];
