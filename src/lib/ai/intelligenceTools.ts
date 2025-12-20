@@ -582,6 +582,102 @@ async function executeGetUpcomingDates(
 }
 
 // =====================================================
+// GET MY PATTERNS TOOL
+// =====================================================
+
+const getMyPatternsDefinition: ToolDefinition = {
+  type: 'function',
+  function: {
+    name: 'get_my_patterns',
+    description: 'Analyze user behavior patterns over time. Use for "what are my productivity patterns?", "when am I most productive?", "what are my habits like?", "analyze my behavior".',
+    parameters: {
+      type: 'object',
+      properties: {
+        days: {
+          type: 'number',
+          description: 'Number of days to analyze. Default: 30'
+        },
+        focus: {
+          type: 'string',
+          enum: ['all', 'productivity', 'habits', 'spending'],
+          description: 'Which patterns to focus on. Default: all'
+        }
+      },
+      required: []
+    }
+  }
+};
+
+async function executeGetMyPatterns(
+  args: Record<string, unknown>,
+  userId: string
+): Promise<ToolResult> {
+  try {
+    const days = (args.days as number) || 30;
+    const focus = (args.focus as string) || 'all';
+
+    const { userPatternService } = await import('@/services/ai/UserPatternService');
+
+    const analysis = await userPatternService.getFullAnalysis(userId, days);
+
+    logger.info('IntelligenceTools', 'Get my patterns via AI', {
+      days,
+      focus,
+      insightCount: analysis.insights.length,
+    });
+
+    // Filter based on focus
+    let data: Record<string, unknown> = {
+      insights: analysis.insights,
+      analyzedDays: analysis.analyzedDays,
+    };
+
+    if (focus === 'all' || focus === 'productivity') {
+      data.productivity = {
+        peakHours: analysis.productivity.peakHours.slice(0, 3).map(h => ({
+          hour: h.hour,
+          percentage: h.percentage,
+        })),
+        peakDays: analysis.productivity.peakDays.slice(0, 3).map(d => ({
+          day: d.day,
+          percentage: d.percentage,
+        })),
+        averageTasksPerDay: analysis.productivity.averageTasksPerDay,
+        taskCompletionRate: analysis.productivity.taskCompletionRate,
+      };
+    }
+
+    if (focus === 'all' || focus === 'habits') {
+      data.habits = analysis.habits.slice(0, 5).map(h => ({
+        name: h.habitName,
+        completionRate: h.completionRate,
+        preferredDays: h.preferredDays,
+      }));
+    }
+
+    if (focus === 'all' || focus === 'spending') {
+      data.spending = {
+        highSpendingDays: analysis.spending.highSpendingDays,
+        weekdayAvg: analysis.spending.averageWeekdaySpending,
+        weekendAvg: analysis.spending.averageWeekendSpending,
+        topCategories: analysis.spending.topCategories.slice(0, 3),
+      };
+    }
+
+    return {
+      success: true,
+      data,
+    };
+  } catch (error) {
+    logger.error('IntelligenceTools', error as Error, { context: 'executeGetMyPatterns' });
+    return {
+      success: false,
+      error: `Failed to analyze patterns: ${(error as Error).message}`,
+    };
+  }
+}
+
+// =====================================================
 // BILLS DUE TOOL
 // =====================================================
 
@@ -761,6 +857,10 @@ export const intelligenceTools: Tool[] = [
   {
     definition: getUpcomingDatesDefinition,
     execute: executeGetUpcomingDates
+  },
+  {
+    definition: getMyPatternsDefinition,
+    execute: executeGetMyPatterns
   }
 ];
 
