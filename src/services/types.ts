@@ -47,6 +47,11 @@ export interface TaskData {
   recurrence_end_date?: string | null; // when recurrence should stop
   recurrence_count?: number | null; // max occurrences (alternative to end_date)
   parent_recurring_id?: string | null; // link to the original recurring task template
+  // Location fields for errands and location-based reminders
+  location_name?: string | null; // e.g., "Costco", "Target", "Home Depot"
+  location_address?: string | null; // Full address
+  location_coordinates?: { lat: number; lng: number } | null; // GPS coordinates
+  is_errand?: boolean | null; // Mark as errand for location-based reminders
 }
 
 /**
