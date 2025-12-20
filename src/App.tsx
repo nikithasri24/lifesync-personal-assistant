@@ -11,6 +11,7 @@ import { useHabitReminders, useStreakProtectionAlerts } from './hooks/useHabitRe
 import { useBillReminders } from './hooks/useBillReminders';
 import { useImportantDateReminders } from './hooks/useImportantDateReminders';
 import { useTaskReminders } from './hooks/useTaskReminders';
+import { useProactiveNotifications } from './hooks/useProactiveNotifications';
 
 // Lazy load all page components for route-based code splitting
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -54,6 +55,9 @@ function App(): React.ReactElement {
 
   // Auto-create reminders for scheduled tasks
   useTaskReminders(true);
+
+  // Proactive AI notifications (streak risks, busy periods, goal deadlines)
+  useProactiveNotifications({ enabled: true, checkIntervalMs: 60 * 60 * 1000 });
 
   const renderPage = (): React.ReactElement => {
     switch (activeView) {

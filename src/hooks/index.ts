@@ -19,6 +19,7 @@ export * from './useOptimization';
 export * from './usePlatform';
 export * from './usePushNotifications';
 export * from './useReminders';
+export * from './useProactiveNotifications';
 export * from './useResponsiveMap';
 export * from './useTheme';
 export * from './useToast';
