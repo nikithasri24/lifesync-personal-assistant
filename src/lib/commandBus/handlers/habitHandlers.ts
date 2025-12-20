@@ -1,10 +1,11 @@
 /**
  * Habit Command Handlers
- * 
+ *
  * Handles all habit-related commands through the command bus.
+ * Uses the API layer for data access.
  */
 
-import { supabase } from '@/lib/supabase';
+import * as habitsAPI from '@/api/habitsAPI';
 import { logger } from '@/services/logger';
 import { format } from 'date-fns';
 import type {
@@ -20,39 +21,39 @@ import type {
  */
 export async function handleCreateHabit(command: CreateHabitCommand): Promise<CommandResult> {
   const { payload } = command;
-  
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return { success: false, error: 'Not authenticated' };
-  }
 
-  const { data, error } = await supabase
-    .from('habits')
-    .insert({
-      user_id: user.id,
+  try {
+    // Map command frequency to HabitData frequency
+    // Command supports: 'daily' | 'weekly' | 'custom'
+    // HabitData supports: 'daily' | 'weekly' | 'monthly'
+    // Map 'custom' to 'daily' as default
+    const frequencyMap: Record<string, 'daily' | 'weekly' | 'monthly'> = {
+      daily: 'daily',
+      weekly: 'weekly',
+      custom: 'daily', // custom maps to daily
+    };
+    const frequency = frequencyMap[payload.frequency] || 'daily';
+
+    const data = await habitsAPI.createHabit({
       name: payload.name,
       description: payload.description,
-      frequency: payload.frequency || 'daily',
-      target_days: payload.targetDays,
+      frequency,
       reminder_time: payload.reminderTime,
       category: payload.category,
       is_active: true,
-      current_streak: 0,
-      longest_streak: 0,
-    })
-    .select()
-    .single();
+      streak_count: 0,
+      best_streak: 0,
+    });
 
-  if (error) {
+    return {
+      success: true,
+      data,
+      message: `Habit "${payload.name}" created`,
+    };
+  } catch (error) {
     logger.error('HabitHandlers', 'Failed to create habit', { error });
-    return { success: false, error: error.message };
+    return { success: false, error: (error as Error).message };
   }
-
-  return {
-    success: true,
-    data,
-    message: `Habit "${payload.name}" created`,
-  };
 }
 
 /**
@@ -60,52 +61,28 @@ export async function handleCreateHabit(command: CreateHabitCommand): Promise<Co
  */
 export async function handleLogHabit(command: LogHabitCommand): Promise<CommandResult> {
   const { payload } = command;
-  
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return { success: false, error: 'Not authenticated' };
-  }
 
-  const logDate = payload.date || format(new Date(), 'yyyy-MM-dd');
+  try {
+    const logDate = payload.date || format(new Date(), 'yyyy-MM-dd');
 
-  // Check if already logged today
-  const { data: existing } = await supabase
-    .from('habit_logs')
-    .select('id')
-    .eq('habit_id', payload.habitId)
-    .eq('user_id', user.id)
-    .eq('log_date', logDate)
-    .maybeSingle();
-
-  if (existing) {
-    return { success: false, error: 'Habit already logged for this date' };
-  }
-
-  // Log the habit
-  const { data, error } = await supabase
-    .from('habit_logs')
-    .insert({
+    // Use createHabitEntry which handles duplicate checking via upsert
+    // HabitEntryData uses 'value' field (1 = completed) instead of 'completed' boolean
+    const data = await habitsAPI.createHabitEntry({
       habit_id: payload.habitId,
-      user_id: user.id,
-      log_date: logDate,
+      date: logDate,
+      value: 1, // 1 indicates completed
       notes: payload.notes,
-    })
-    .select()
-    .single();
+    });
 
-  if (error) {
+    return {
+      success: true,
+      data,
+      message: 'Habit logged',
+    };
+  } catch (error) {
     logger.error('HabitHandlers', 'Failed to log habit', { error });
-    return { success: false, error: error.message };
+    return { success: false, error: (error as Error).message };
   }
-
-  // Update streak (simplified - full logic would check consecutive days)
-  await supabase.rpc('increment_habit_streak', { habit_id: payload.habitId });
-
-  return {
-    success: true,
-    data,
-    message: 'Habit logged',
-  };
 }
 
 /**
@@ -113,40 +90,29 @@ export async function handleLogHabit(command: LogHabitCommand): Promise<CommandR
  */
 export async function handleUpdateHabit(command: UpdateHabitCommand): Promise<CommandResult> {
   const { payload } = command;
-  
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return { success: false, error: 'Not authenticated' };
-  }
 
-  // Map camelCase to snake_case
-  const updates: Record<string, unknown> = {};
-  if (payload.updates.name !== undefined) updates.name = payload.updates.name;
-  if (payload.updates.description !== undefined) updates.description = payload.updates.description;
-  if (payload.updates.frequency !== undefined) updates.frequency = payload.updates.frequency;
-  if (payload.updates.targetDays !== undefined) updates.target_days = payload.updates.targetDays;
-  if (payload.updates.reminderTime !== undefined) updates.reminder_time = payload.updates.reminderTime;
-  if (payload.updates.category !== undefined) updates.category = payload.updates.category;
-  if (payload.updates.isActive !== undefined) updates.is_active = payload.updates.isActive;
+  try {
+    // Map camelCase to snake_case for API layer
+    const updates: Record<string, unknown> = {};
+    if (payload.updates.name !== undefined) updates.name = payload.updates.name;
+    if (payload.updates.description !== undefined) updates.description = payload.updates.description;
+    if (payload.updates.frequency !== undefined) updates.frequency = payload.updates.frequency;
+    if (payload.updates.targetDays !== undefined) updates.target_days = payload.updates.targetDays;
+    if (payload.updates.reminderTime !== undefined) updates.reminder_time = payload.updates.reminderTime;
+    if (payload.updates.category !== undefined) updates.category = payload.updates.category;
+    if (payload.updates.isActive !== undefined) updates.is_active = payload.updates.isActive;
 
-  const { data, error } = await supabase
-    .from('habits')
-    .update(updates)
-    .eq('id', payload.id)
-    .eq('user_id', user.id)
-    .select()
-    .single();
+    const data = await habitsAPI.updateHabit(payload.id, updates);
 
-  if (error) {
+    return {
+      success: true,
+      data,
+      message: 'Habit updated',
+    };
+  } catch (error) {
     logger.error('HabitHandlers', 'Failed to update habit', { error });
-    return { success: false, error: error.message };
+    return { success: false, error: (error as Error).message };
   }
-
-  return {
-    success: true,
-    data,
-    message: 'Habit updated',
-  };
 }
 
 /**
@@ -154,27 +120,18 @@ export async function handleUpdateHabit(command: UpdateHabitCommand): Promise<Co
  */
 export async function handleDeleteHabit(command: DeleteHabitCommand): Promise<CommandResult> {
   const { payload } = command;
-  
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return { success: false, error: 'Not authenticated' };
-  }
 
-  const { error } = await supabase
-    .from('habits')
-    .delete()
-    .eq('id', payload.id)
-    .eq('user_id', user.id);
+  try {
+    await habitsAPI.deleteHabit(payload.id);
 
-  if (error) {
+    return {
+      success: true,
+      message: 'Habit deleted',
+    };
+  } catch (error) {
     logger.error('HabitHandlers', 'Failed to delete habit', { error });
-    return { success: false, error: error.message };
+    return { success: false, error: (error as Error).message };
   }
-
-  return {
-    success: true,
-    message: 'Habit deleted',
-  };
 }
 
 /**

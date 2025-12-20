@@ -1,10 +1,11 @@
 /**
  * Task Command Handlers
- * 
+ *
  * Handles all task-related commands through the command bus.
+ * Uses the API layer for data access.
  */
 
-import { supabase } from '@/lib/supabase';
+import * as tasksAPI from '@/api/tasksAPI';
 import { logger } from '@/services/logger';
 import type {
   CommandResult,
@@ -20,41 +21,37 @@ import type {
  */
 export async function handleCreateTask(command: CreateTaskCommand): Promise<CommandResult> {
   const { payload } = command;
-  
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return { success: false, error: 'Not authenticated' };
-  }
 
-  const { data, error } = await supabase
-    .from('tasks')
-    .insert({
-      user_id: user.id,
+  try {
+    // Validate category is one of the allowed values
+    const validCategories = ['work', 'personal', 'learning', 'creative', 'health', 'other'] as const;
+    const category = payload.category && validCategories.includes(payload.category as typeof validCategories[number])
+      ? payload.category as typeof validCategories[number]
+      : undefined;
+
+    const data = await tasksAPI.createTask({
       title: payload.title,
       description: payload.description,
       priority: payload.priority || 'medium',
       due_date: payload.dueDate,
       estimated_time: payload.estimatedTime,
-      category: payload.category,
+      category,
       tags: payload.tags,
       depends_on: payload.depends_on,
       status: 'todo',
       deleted: false,
       archived: false,
-    })
-    .select()
-    .single();
+    });
 
-  if (error) {
+    return {
+      success: true,
+      data,
+      message: `Task "${payload.title}" created`,
+    };
+  } catch (error) {
     logger.error('TaskHandlers', 'Failed to create task', { error });
-    return { success: false, error: error.message };
+    return { success: false, error: (error as Error).message };
   }
-
-  return {
-    success: true,
-    data,
-    message: `Task "${payload.title}" created`,
-  };
 }
 
 /**
@@ -62,43 +59,32 @@ export async function handleCreateTask(command: CreateTaskCommand): Promise<Comm
  */
 export async function handleUpdateTask(command: UpdateTaskCommand): Promise<CommandResult> {
   const { payload } = command;
-  
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return { success: false, error: 'Not authenticated' };
-  }
 
-  // Map camelCase to snake_case
-  const updates: Record<string, unknown> = {};
-  if (payload.updates.title !== undefined) updates.title = payload.updates.title;
-  if (payload.updates.description !== undefined) updates.description = payload.updates.description;
-  if (payload.updates.priority !== undefined) updates.priority = payload.updates.priority;
-  if (payload.updates.status !== undefined) updates.status = payload.updates.status;
-  if (payload.updates.dueDate !== undefined) updates.due_date = payload.updates.dueDate;
-  if (payload.updates.scheduledTime !== undefined) updates.scheduled_time = payload.updates.scheduledTime;
-  if (payload.updates.estimatedTime !== undefined) updates.estimated_time = payload.updates.estimatedTime;
-  if (payload.updates.category !== undefined) updates.category = payload.updates.category;
-  if (payload.updates.tags !== undefined) updates.tags = payload.updates.tags;
-  if (payload.updates.depends_on !== undefined) updates.depends_on = payload.updates.depends_on;
+  try {
+    // Map camelCase to snake_case for API layer
+    const updates: Record<string, unknown> = {};
+    if (payload.updates.title !== undefined) updates.title = payload.updates.title;
+    if (payload.updates.description !== undefined) updates.description = payload.updates.description;
+    if (payload.updates.priority !== undefined) updates.priority = payload.updates.priority;
+    if (payload.updates.status !== undefined) updates.status = payload.updates.status;
+    if (payload.updates.dueDate !== undefined) updates.due_date = payload.updates.dueDate;
+    if (payload.updates.scheduledTime !== undefined) updates.scheduled_time = payload.updates.scheduledTime;
+    if (payload.updates.estimatedTime !== undefined) updates.estimated_time = payload.updates.estimatedTime;
+    if (payload.updates.category !== undefined) updates.category = payload.updates.category;
+    if (payload.updates.tags !== undefined) updates.tags = payload.updates.tags;
+    if (payload.updates.depends_on !== undefined) updates.depends_on = payload.updates.depends_on;
 
-  const { data, error } = await supabase
-    .from('tasks')
-    .update(updates)
-    .eq('id', payload.id)
-    .eq('user_id', user.id)
-    .select()
-    .single();
+    const data = await tasksAPI.updateTask(payload.id, updates);
 
-  if (error) {
+    return {
+      success: true,
+      data,
+      message: 'Task updated',
+    };
+  } catch (error) {
     logger.error('TaskHandlers', 'Failed to update task', { error });
-    return { success: false, error: error.message };
+    return { success: false, error: (error as Error).message };
   }
-
-  return {
-    success: true,
-    data,
-    message: 'Task updated',
-  };
 }
 
 /**
@@ -106,27 +92,18 @@ export async function handleUpdateTask(command: UpdateTaskCommand): Promise<Comm
  */
 export async function handleDeleteTask(command: DeleteTaskCommand): Promise<CommandResult> {
   const { payload } = command;
-  
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return { success: false, error: 'Not authenticated' };
-  }
 
-  const { error } = await supabase
-    .from('tasks')
-    .update({ deleted: true })
-    .eq('id', payload.id)
-    .eq('user_id', user.id);
+  try {
+    await tasksAPI.deleteTask(payload.id);
 
-  if (error) {
+    return {
+      success: true,
+      message: 'Task deleted',
+    };
+  } catch (error) {
     logger.error('TaskHandlers', 'Failed to delete task', { error });
-    return { success: false, error: error.message };
+    return { success: false, error: (error as Error).message };
   }
-
-  return {
-    success: true,
-    message: 'Task deleted',
-  };
 }
 
 /**
@@ -134,30 +111,19 @@ export async function handleDeleteTask(command: DeleteTaskCommand): Promise<Comm
  */
 export async function handleCompleteTask(command: CompleteTaskCommand): Promise<CommandResult> {
   const { payload } = command;
-  
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return { success: false, error: 'Not authenticated' };
-  }
 
-  const { data, error } = await supabase
-    .from('tasks')
-    .update({ status: 'done' })
-    .eq('id', payload.id)
-    .eq('user_id', user.id)
-    .select()
-    .single();
+  try {
+    const data = await tasksAPI.updateTask(payload.id, { status: 'done' });
 
-  if (error) {
+    return {
+      success: true,
+      data,
+      message: 'Task completed',
+    };
+  } catch (error) {
     logger.error('TaskHandlers', 'Failed to complete task', { error });
-    return { success: false, error: error.message };
+    return { success: false, error: (error as Error).message };
   }
-
-  return {
-    success: true,
-    data,
-    message: `Task completed`,
-  };
 }
 
 /**
@@ -165,34 +131,23 @@ export async function handleCompleteTask(command: CompleteTaskCommand): Promise<
  */
 export async function handleScheduleTask(command: ScheduleTaskCommand): Promise<CommandResult> {
   const { payload } = command;
-  
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return { success: false, error: 'Not authenticated' };
-  }
 
-  const { data, error } = await supabase
-    .from('tasks')
-    .update({
+  try {
+    const data = await tasksAPI.updateTask(payload.id, {
       due_date: payload.date,
       scheduled_time: payload.time,
       status: 'scheduled',
-    })
-    .eq('id', payload.id)
-    .eq('user_id', user.id)
-    .select()
-    .single();
+    });
 
-  if (error) {
+    return {
+      success: true,
+      data,
+      message: `Task scheduled for ${payload.date} at ${payload.time}`,
+    };
+  } catch (error) {
     logger.error('TaskHandlers', 'Failed to schedule task', { error });
-    return { success: false, error: error.message };
+    return { success: false, error: (error as Error).message };
   }
-
-  return {
-    success: true,
-    data,
-    message: `Task scheduled for ${payload.date} at ${payload.time}`,
-  };
 }
 
 /**
