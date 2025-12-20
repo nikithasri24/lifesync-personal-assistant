@@ -9,6 +9,9 @@ export * from './habitsAPI';
 export * from './goalsAPI';
 export * from './lifeGoalsAPI';
 
+// Analytics
+export * from './analyticsAPI';
+
 // Content APIs
 export * from './notesAPI';
 export * from './journalAPI';

@@ -2,9 +2,16 @@
  * ContextAggregator Service
  * Gathers all relevant user data for AI context
  * Provides rich context for smarter AI responses
+ *
+ * ARCHITECTURE: Uses API layer for all data access (no direct Supabase calls)
  */
 
-import { supabase } from '@/lib/supabase';
+import { getTasks } from '@/api/tasksAPI';
+import { getHabits, getHabitEntriesForDate } from '@/api/habitsAPI';
+import { getCalendarEvents } from '@/api/calendarAPI';
+import { getFocusSessions } from '@/api/focusAPI';
+import { getJournalEntries } from '@/api/journalAPI';
+import { getAnalyticsDaily } from '@/api/analyticsAPI';
 
 export interface TodaysContext {
   // Tasks
@@ -110,21 +117,17 @@ class ContextAggregator {
   }
 
   private async fetchTasksContext(userId: string, today: string) {
-    const { data: tasks } = await supabase
-      .from('tasks')
-      .select('id, title, status, priority, due_date')
-      .eq('user_id', userId)
-      .gte('created_at', `${today}T00:00:00`)
-      .or(`due_date.lte.${today}`);
+    // Use API layer instead of direct Supabase
+    const allTasks = await getTasks({ deleted: false, archived: false });
 
-    const allTasks = tasks || [];
     const completed = allTasks.filter(t => t.status === 'completed').length;
-    const overdue = allTasks.filter(t => 
+    const overdue = allTasks.filter(t =>
       t.due_date && t.due_date < today && t.status !== 'completed'
     ).length;
     const highPriority = allTasks
       .filter(t => t.priority === 'high' && t.status !== 'completed')
-      .slice(0, 5);
+      .slice(0, 5)
+      .map(t => ({ id: t.id!, title: t.title, due_date: t.due_date }));
 
     return {
       total: allTasks.length,
@@ -135,24 +138,17 @@ class ContextAggregator {
   }
 
   private async fetchHabitsContext(userId: string, today: string) {
-    const { data: habits } = await supabase
-      .from('habits')
-      .select('id, name, current_streak')
-      .eq('user_id', userId)
-      .eq('is_active', true);
+    // Use API layer instead of direct Supabase
+    const allHabits = await getHabits({ isActive: true });
+    const entries = await getHabitEntriesForDate(today);
 
-    const { data: entries } = await supabase
-      .from('habit_entries')
-      .select('habit_id')
-      .eq('date', today);
+    const completedIds = new Set(entries.map(e => e.habit_id));
 
-    const completedIds = new Set((entries || []).map(e => e.habit_id));
-    const allHabits = habits || [];
-    
     // Streaks at risk: habits with streak > 0 not completed today
     const streaksAtRisk = allHabits
-      .filter(h => h.current_streak > 0 && !completedIds.has(h.id))
-      .slice(0, 5);
+      .filter(h => (h.current_streak ?? 0) > 0 && !completedIds.has(h.id!))
+      .slice(0, 5)
+      .map(h => ({ id: h.id!, name: h.name, current_streak: h.current_streak ?? 0 }));
 
     return {
       due: allHabits.length,
@@ -162,55 +158,46 @@ class ContextAggregator {
   }
 
   private async fetchEventsContext(userId: string, today: string) {
-    const { data: events } = await supabase
-      .from('calendar_events')
-      .select('id, title, start_time, end_time, location')
-      .eq('user_id', userId)
-      .gte('start_time', `${today}T00:00:00`)
-      .lte('start_time', `${today}T23:59:59`)
-      .order('start_time');
+    // Use API layer instead of direct Supabase
+    const startDate = new Date(`${today}T00:00:00`);
+    const endDate = new Date(`${today}T23:59:59`);
 
-    return (events || []).slice(0, 10);
+    const events = await getCalendarEvents({ startDate, endDate });
+
+    return events.slice(0, 10).map(e => ({
+      id: e.id!,
+      title: e.title,
+      start_time: e.start_time,
+      end_time: e.end_time,
+      location: e.location,
+    }));
   }
 
   private async fetchFocusContext(userId: string, today: string) {
-    const { data: sessions } = await supabase
-      .from('focus_sessions')
-      .select('duration')
-      .eq('user_id', userId)
-      .gte('started_at', `${today}T00:00:00`);
+    // Use API layer instead of direct Supabase
+    const startDate = new Date(`${today}T00:00:00`);
+    const sessions = await getFocusSessions({ startDate });
 
-    const allSessions = sessions || [];
-    const minutesToday = allSessions.reduce((sum, s) => sum + (s.duration || 0), 0);
+    const minutesToday = sessions.reduce((sum, s) => sum + (s.duration ?? 0), 0);
 
     return {
-      sessionsToday: allSessions.length,
+      sessionsToday: sessions.length,
       minutesToday,
       currentStreak: 0, // TODO: Calculate from consecutive days
     };
   }
 
   private async fetchWellnessContext(userId: string, today: string) {
-    const { data: moods } = await supabase
-      .from('mood_entries')
-      .select('mood, energy')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(1);
+    // Use API layer instead of direct Supabase
+    const startDate = new Date(`${today}T00:00:00`);
+    const journals = await getJournalEntries({ startDate });
 
-    const { data: journals } = await supabase
-      .from('journal_entries')
-      .select('id')
-      .eq('user_id', userId)
-      .gte('created_at', `${today}T00:00:00`)
-      .limit(1);
-
-    const latestMood = moods?.[0];
-
+    // TODO: Add mood tracking API when available
+    // For now, return default values
     return {
-      latestMood: latestMood?.mood,
-      latestEnergy: latestMood?.energy,
-      journalEntryToday: (journals?.length || 0) > 0,
+      latestMood: undefined,
+      latestEnergy: undefined,
+      journalEntryToday: journals.length > 0,
     };
   }
 
@@ -218,17 +205,11 @@ class ContextAggregator {
    * Get user patterns from historical data
    */
   async getUserPatterns(userId: string): Promise<UserPatterns> {
-    // Get analytics from the last 30 days
+    // Use API layer instead of direct Supabase
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const { data: analytics } = await supabase
-      .from('analytics_daily')
-      .select('*')
-      .eq('user_id', userId)
-      .gte('date', thirtyDaysAgo.toISOString().split('T')[0]);
-
-    const days = analytics || [];
+    const days = await getAnalyticsDaily({ startDate: thirtyDaysAgo });
 
     if (days.length === 0) {
       return {
@@ -281,23 +262,19 @@ class ContextAggregator {
       this.getUserPatterns(userId),
     ]);
 
-    // Get upcoming events for next 7 days
+    // Use API layer instead of direct Supabase
     const nextWeek = new Date();
     nextWeek.setDate(nextWeek.getDate() + 7);
 
-    const { data: upcomingEvents } = await supabase
-      .from('calendar_events')
-      .select('title, start_time')
-      .eq('user_id', userId)
-      .gte('start_time', new Date().toISOString())
-      .lte('start_time', nextWeek.toISOString())
-      .order('start_time')
-      .limit(10);
+    const upcomingEvents = await getCalendarEvents({
+      startDate: new Date(),
+      endDate: nextWeek,
+    });
 
     return {
       today,
       patterns,
-      upcomingEvents: (upcomingEvents || []).map(e => ({
+      upcomingEvents: upcomingEvents.slice(0, 10).map(e => ({
         title: e.title,
         date: e.start_time,
       })),
