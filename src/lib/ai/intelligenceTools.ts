@@ -1572,6 +1572,80 @@ async function executeNutritionTracking(
 }
 
 // =====================================================
+// VISION BOARD TOOL
+// =====================================================
+
+const visionBoardDefinition: ToolDefinition = {
+  type: 'function',
+  function: {
+    name: 'vision_board',
+    description: 'View and manage vision board with dreams and goals. Use for "show my vision board", "what are my dreams?", "what am I working towards?".',
+    parameters: {
+      type: 'object',
+      properties: {
+        action: {
+          type: 'string',
+          enum: ['get_board', 'get_summary', 'get_by_category'],
+          description: 'Action to perform. Default: get_summary'
+        },
+        category: {
+          type: 'string',
+          description: 'Filter by category (career, health, travel, etc.)'
+        }
+      },
+      required: []
+    }
+  }
+};
+
+async function executeVisionBoard(
+  args: Record<string, unknown>,
+  userId: string
+): Promise<ToolResult> {
+  try {
+    const action = (args.action as string) || 'get_summary';
+    const { visionBoardService } = await import('@/services/visionBoard');
+
+    if (action === 'get_summary') {
+      const summary = await visionBoardService.getSummary(userId);
+      return {
+        success: true,
+        data: summary,
+      };
+    }
+
+    if (action === 'get_board') {
+      const items = await visionBoardService.getVisionBoard(userId);
+      const category = args.category as string;
+      const filtered = category
+        ? items.filter(i => i.category === category)
+        : items;
+
+      return {
+        success: true,
+        data: { items: filtered },
+      };
+    }
+
+    if (action === 'get_by_category') {
+      const categories = await visionBoardService.getVisionBoardByCategory(userId);
+      return {
+        success: true,
+        data: { categories },
+      };
+    }
+
+    return { success: false, error: `Unknown action: ${action}` };
+  } catch (error) {
+    logger.error('IntelligenceTools', error as Error, { context: 'executeVisionBoard' });
+    return {
+      success: false,
+      error: `Failed to get vision board: ${(error as Error).message}`,
+    };
+  }
+}
+
+// =====================================================
 // EXPORTED TOOLS
 // =====================================================
 
@@ -1643,6 +1717,10 @@ export const intelligenceTools: Tool[] = [
   {
     definition: nutritionTrackingDefinition,
     execute: executeNutritionTracking
+  },
+  {
+    definition: visionBoardDefinition,
+    execute: executeVisionBoard
   }
 ];
 
