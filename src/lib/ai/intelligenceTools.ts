@@ -1428,6 +1428,150 @@ async function executeGetInsights(
 }
 
 // =====================================================
+// NUTRITION TRACKING TOOL
+// =====================================================
+
+const nutritionTrackingDefinition: ToolDefinition = {
+  type: 'function',
+  function: {
+    name: 'nutrition_tracking',
+    description: 'Log food, track calories/macros, set nutrition goals. Use for "I ate...", "log my breakfast", "how many calories today?", "set my calorie goal".',
+    parameters: {
+      type: 'object',
+      properties: {
+        action: {
+          type: 'string',
+          enum: ['log_food', 'get_today', 'get_week', 'set_goal', 'get_goal'],
+          description: 'Action to perform'
+        },
+        food_name: {
+          type: 'string',
+          description: 'Name of food for log_food action'
+        },
+        meal_type: {
+          type: 'string',
+          enum: ['breakfast', 'lunch', 'dinner', 'snack'],
+          description: 'Meal type for log_food action'
+        },
+        calories: {
+          type: 'number',
+          description: 'Calories for log_food action'
+        },
+        protein_g: {
+          type: 'number',
+          description: 'Protein in grams'
+        },
+        carbs_g: {
+          type: 'number',
+          description: 'Carbs in grams'
+        },
+        fat_g: {
+          type: 'number',
+          description: 'Fat in grams'
+        },
+        calories_target: {
+          type: 'number',
+          description: 'Daily calorie target for set_goal action'
+        },
+        goal_type: {
+          type: 'string',
+          enum: ['lose', 'maintain', 'gain'],
+          description: 'Goal type for set_goal action'
+        }
+      },
+      required: ['action']
+    }
+  }
+};
+
+async function executeNutritionTracking(
+  args: Record<string, unknown>,
+  userId: string
+): Promise<ToolResult> {
+  try {
+    const action = args.action as string;
+    const { nutritionService } = await import('@/services/nutrition');
+
+    if (action === 'log_food') {
+      const foodName = args.food_name as string;
+      const mealType = (args.meal_type as 'breakfast' | 'lunch' | 'dinner' | 'snack') || 'snack';
+      const calories = (args.calories as number) || 0;
+
+      if (!foodName) {
+        return { success: false, error: 'Missing food_name' };
+      }
+
+      const entry = await nutritionService.logFood(userId, {
+        custom_food_name: foodName,
+        quantity: 1,
+        meal_type: mealType,
+        calories,
+        protein_g: (args.protein_g as number) || 0,
+        carbs_g: (args.carbs_g as number) || 0,
+        fat_g: (args.fat_g as number) || 0,
+      });
+
+      return {
+        success: !!entry,
+        data: { message: `Logged ${foodName} (${calories} cal) for ${mealType}`, entry },
+      };
+    }
+
+    if (action === 'get_today') {
+      const progress = await nutritionService.getTodayProgress(userId);
+      return {
+        success: true,
+        data: progress,
+      };
+    }
+
+    if (action === 'get_week') {
+      const weekly = await nutritionService.getWeeklyNutrition(userId);
+      return {
+        success: true,
+        data: { days: weekly },
+      };
+    }
+
+    if (action === 'set_goal') {
+      const caloriesTarget = args.calories_target as number;
+      if (!caloriesTarget) {
+        return { success: false, error: 'Missing calories_target' };
+      }
+
+      const goal = await nutritionService.setGoal(userId, {
+        calories_target: caloriesTarget,
+        protein_target_g: args.protein_g as number,
+        carbs_target_g: args.carbs_g as number,
+        fat_target_g: args.fat_g as number,
+        goal_type: args.goal_type as 'lose' | 'maintain' | 'gain',
+      });
+
+      return {
+        success: !!goal,
+        data: { message: `Set daily calorie goal to ${caloriesTarget}`, goal },
+      };
+    }
+
+    if (action === 'get_goal') {
+      const goal = await nutritionService.getActiveGoal(userId);
+      return {
+        success: true,
+        data: goal || { message: 'No active nutrition goal set' },
+      };
+    }
+
+    return { success: false, error: `Unknown action: ${action}` };
+  } catch (error) {
+    logger.error('IntelligenceTools', error as Error, { context: 'executeNutritionTracking' });
+    return {
+      success: false,
+      error: `Failed to track nutrition: ${(error as Error).message}`,
+    };
+  }
+}
+
+// =====================================================
 // EXPORTED TOOLS
 // =====================================================
 
@@ -1495,6 +1639,10 @@ export const intelligenceTools: Tool[] = [
   {
     definition: getInsightsDefinition,
     execute: executeGetInsights
+  },
+  {
+    definition: nutritionTrackingDefinition,
+    execute: executeNutritionTracking
   }
 ];
 
