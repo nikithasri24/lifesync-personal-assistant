@@ -440,6 +440,80 @@ async function executeGetSmartSuggestions(
 }
 
 // =====================================================
+// PLAN MY WEEK TOOL
+// =====================================================
+
+const planMyWeekDefinition: ToolDefinition = {
+  type: 'function',
+  function: {
+    name: 'plan_my_week',
+    description: 'Get an overview of the upcoming week with events, tasks, goals, and planning suggestions. Use for "plan my week", "what does my week look like?", "help me plan next week".',
+    parameters: {
+      type: 'object',
+      properties: {
+        weekOffset: {
+          type: 'number',
+          description: 'Week offset from current week. 0 = this week, 1 = next week. Default: 0'
+        }
+      },
+      required: []
+    }
+  }
+};
+
+async function executePlanMyWeek(
+  args: Record<string, unknown>,
+  userId: string
+): Promise<ToolResult> {
+  try {
+    const weekOffset = (args.weekOffset as number) || 0;
+
+    const { getWeeklyOverview, getPlanningsuggestions } = await import('@/services/planning');
+
+    const overview = await getWeeklyOverview(weekOffset);
+    const suggestions = await getPlanningsuggestions();
+
+    logger.info('IntelligenceTools', 'Plan my week via AI', {
+      weekOffset,
+      eventCount: overview.eventCount,
+      tasksDue: overview.tasksDue.length,
+    });
+
+    return {
+      success: true,
+      data: {
+        weekStart: overview.weekStart,
+        weekEnd: overview.weekEnd,
+        summary: {
+          events: overview.eventCount,
+          tasksDue: overview.tasksDue.length,
+          tasksOverdue: overview.tasksOverdue.length,
+          unscheduledTasks: overview.unscheduledTasks.length,
+          activeGoals: overview.activeGoals.length,
+          billsDue: overview.billsDue.length,
+          workload: overview.estimatedWorkload,
+        },
+        busyDays: overview.busyDays,
+        warnings: overview.warnings,
+        suggestions,
+        topTasks: overview.tasksDue.slice(0, 5).map(t => ({
+          title: t.title,
+          dueDate: t.dueDate,
+          priority: t.priority,
+        })),
+        goalCheckIns: overview.goalCheckIns,
+      },
+    };
+  } catch (error) {
+    logger.error('IntelligenceTools', error as Error, { context: 'executePlanMyWeek' });
+    return {
+      success: false,
+      error: `Failed to plan week: ${(error as Error).message}`,
+    };
+  }
+}
+
+// =====================================================
 // BILLS DUE TOOL
 // =====================================================
 
@@ -611,6 +685,10 @@ export const intelligenceTools: Tool[] = [
   {
     definition: getBillsDueDefinition,
     execute: executeGetBillsDue
+  },
+  {
+    definition: planMyWeekDefinition,
+    execute: executePlanMyWeek
   }
 ];
 
