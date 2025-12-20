@@ -1,0 +1,345 @@
+/**
+ * Prediction Service
+ * Generates proactive predictions and suggestions based on user data
+ */
+
+import { supabase } from '@/lib/supabase';
+import { logger } from '@/services/logger';
+import { format, addDays, startOfWeek, endOfWeek, differenceInDays, parseISO } from 'date-fns';
+
+export type PredictionType = 
+  | 'busy_period'
+  | 'streak_at_risk'
+  | 'budget_warning'
+  | 'goal_deadline'
+  | 'bill_due'
+  | 'birthday_upcoming'
+  | 'low_energy_predicted'
+  | 'routine_reminder';
+
+export type PredictionPriority = 'high' | 'medium' | 'low';
+
+export interface Prediction {
+  id: string;
+  type: PredictionType;
+  priority: PredictionPriority;
+  title: string;
+  message: string;
+  suggestedAction?: string;
+  actionType?: 'create_task' | 'block_time' | 'send_reminder' | 'view_details';
+  actionPayload?: Record<string, unknown>;
+  expiresAt?: string;
+  createdAt: string;
+}
+
+export interface PredictionContext {
+  userId: string;
+  today: Date;
+  lookAheadDays: number;
+}
+
+class PredictionService {
+  /**
+   * Generate all predictions for a user
+   */
+  async generatePredictions(userId: string, lookAheadDays = 7): Promise<Prediction[]> {
+    const context: PredictionContext = {
+      userId,
+      today: new Date(),
+      lookAheadDays,
+    };
+
+    logger.info('PredictionService', 'Generating predictions', { userId, lookAheadDays });
+
+    const predictions: Prediction[] = [];
+
+    // Run all prediction generators in parallel
+    const [
+      busyPeriods,
+      streakRisks,
+      goalDeadlines,
+      billsDue,
+      birthdaysUpcoming,
+    ] = await Promise.all([
+      this.predictBusyPeriods(context),
+      this.predictStreakRisks(context),
+      this.predictGoalDeadlines(context),
+      this.predictBillsDue(context),
+      this.predictBirthdaysUpcoming(context),
+    ]);
+
+    predictions.push(...busyPeriods, ...streakRisks, ...goalDeadlines, ...billsDue, ...birthdaysUpcoming);
+
+    // Sort by priority
+    const priorityOrder = { high: 0, medium: 1, low: 2 };
+    predictions.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+
+    return predictions;
+  }
+
+  /**
+   * Predict busy periods based on calendar and tasks
+   */
+  private async predictBusyPeriods(ctx: PredictionContext): Promise<Prediction[]> {
+    const predictions: Prediction[] = [];
+    const endDate = addDays(ctx.today, ctx.lookAheadDays);
+
+    // Get events for the period
+    const { data: events } = await supabase
+      .from('calendar_events')
+      .select('start_time')
+      .eq('user_id', ctx.userId)
+      .gte('start_time', ctx.today.toISOString())
+      .lte('start_time', endDate.toISOString());
+
+    // Get tasks due in the period
+    const { data: tasks } = await supabase
+      .from('tasks')
+      .select('due_date')
+      .eq('user_id', ctx.userId)
+      .eq('status', 'pending')
+      .gte('due_date', format(ctx.today, 'yyyy-MM-dd'))
+      .lte('due_date', format(endDate, 'yyyy-MM-dd'));
+
+    // Count items per day
+    const dayLoad: Record<string, number> = {};
+    
+    (events || []).forEach(e => {
+      const day = format(parseISO(e.start_time), 'yyyy-MM-dd');
+      dayLoad[day] = (dayLoad[day] || 0) + 1;
+    });
+
+    (tasks || []).forEach(t => {
+      if (t.due_date) {
+        dayLoad[t.due_date] = (dayLoad[t.due_date] || 0) + 1;
+      }
+    });
+
+    // Find busy days (5+ items)
+    const busyDays = Object.entries(dayLoad)
+      .filter(([, count]) => count >= 5)
+      .map(([day]) => day);
+
+    if (busyDays.length > 0) {
+      predictions.push({
+        id: `busy-${Date.now()}`,
+        type: 'busy_period',
+        priority: 'medium',
+        title: 'Busy period ahead',
+        message: `You have ${busyDays.length} busy day(s) coming up with 5+ items each`,
+        suggestedAction: 'Block some self-care time?',
+        actionType: 'block_time',
+        createdAt: new Date().toISOString(),
+      });
+    }
+
+    return predictions;
+  }
+
+  /**
+   * Predict habit streaks at risk
+   */
+  private async predictStreakRisks(ctx: PredictionContext): Promise<Prediction[]> {
+    const predictions: Prediction[] = [];
+    const today = format(ctx.today, 'yyyy-MM-dd');
+
+    // Get habits with streaks
+    const { data: habits } = await supabase
+      .from('habits')
+      .select('id, name, current_streak')
+      .eq('user_id', ctx.userId)
+      .eq('is_active', true)
+      .gt('current_streak', 0);
+
+    // Check which haven't been completed today
+    const { data: todayEntries } = await supabase
+      .from('habit_entries')
+      .select('habit_id')
+      .eq('date', today);
+
+    const completedIds = new Set((todayEntries || []).map(e => e.habit_id));
+
+    (habits || []).forEach(habit => {
+      if (!completedIds.has(habit.id) && habit.current_streak >= 7) {
+        predictions.push({
+          id: `streak-${habit.id}`,
+          type: 'streak_at_risk',
+          priority: habit.current_streak >= 30 ? 'high' : 'medium',
+          title: `${habit.name} streak at risk!`,
+          message: `Your ${habit.current_streak}-day streak will break if not completed today`,
+          suggestedAction: 'Complete now',
+          actionType: 'view_details',
+          actionPayload: { habitId: habit.id },
+          createdAt: new Date().toISOString(),
+        });
+      }
+    });
+
+    return predictions;
+  }
+
+  /**
+   * Predict goal deadlines approaching
+   */
+  private async predictGoalDeadlines(ctx: PredictionContext): Promise<Prediction[]> {
+    const predictions: Prediction[] = [];
+    const endDate = addDays(ctx.today, ctx.lookAheadDays);
+
+    const { data: goals } = await supabase
+      .from('goals')
+      .select('id, title, target_date, progress')
+      .eq('user_id', ctx.userId)
+      .eq('status', 'active')
+      .gte('target_date', format(ctx.today, 'yyyy-MM-dd'))
+      .lte('target_date', format(endDate, 'yyyy-MM-dd'));
+
+    (goals || []).forEach(goal => {
+      const daysUntil = differenceInDays(parseISO(goal.target_date), ctx.today);
+      const progress = goal.progress || 0;
+
+      if (daysUntil <= 3 && progress < 80) {
+        predictions.push({
+          id: `goal-${goal.id}`,
+          type: 'goal_deadline',
+          priority: 'high',
+          title: `Goal deadline in ${daysUntil} day(s)`,
+          message: `"${goal.title}" is ${progress}% complete with ${daysUntil} day(s) left`,
+          suggestedAction: 'Focus on this goal',
+          actionType: 'view_details',
+          actionPayload: { goalId: goal.id },
+          createdAt: new Date().toISOString(),
+        });
+      } else if (daysUntil <= 7 && progress < 50) {
+        predictions.push({
+          id: `goal-${goal.id}`,
+          type: 'goal_deadline',
+          priority: 'medium',
+          title: `Goal deadline approaching`,
+          message: `"${goal.title}" is only ${progress}% complete with ${daysUntil} day(s) left`,
+          suggestedAction: 'Review progress',
+          actionType: 'view_details',
+          actionPayload: { goalId: goal.id },
+          createdAt: new Date().toISOString(),
+        });
+      }
+    });
+
+    return predictions;
+  }
+
+  /**
+   * Predict bills due soon
+   */
+  private async predictBillsDue(ctx: PredictionContext): Promise<Prediction[]> {
+    const predictions: Prediction[] = [];
+    const endDate = addDays(ctx.today, ctx.lookAheadDays);
+
+    const { data: bills } = await supabase
+      .from('recurring_bills')
+      .select('id, name, amount, due_date, is_auto_pay')
+      .eq('user_id', ctx.userId)
+      .eq('is_active', true)
+      .gte('due_date', format(ctx.today, 'yyyy-MM-dd'))
+      .lte('due_date', format(endDate, 'yyyy-MM-dd'));
+
+    (bills || []).filter(b => !b.is_auto_pay).forEach(bill => {
+      const daysUntil = differenceInDays(parseISO(bill.due_date), ctx.today);
+
+      predictions.push({
+        id: `bill-${bill.id}`,
+        type: 'bill_due',
+        priority: daysUntil <= 2 ? 'high' : 'medium',
+        title: `${bill.name} due in ${daysUntil} day(s)`,
+        message: `$${bill.amount.toFixed(2)} due on ${bill.due_date}`,
+        suggestedAction: 'Mark as paid',
+        actionType: 'view_details',
+        actionPayload: { billId: bill.id },
+        createdAt: new Date().toISOString(),
+      });
+    });
+
+    return predictions;
+  }
+
+  /**
+   * Predict upcoming birthdays/anniversaries
+   */
+  private async predictBirthdaysUpcoming(ctx: PredictionContext): Promise<Prediction[]> {
+    const predictions: Prediction[] = [];
+
+    // Use the RPC function if available, otherwise query directly
+    const { data: dates } = await supabase
+      .from('important_dates')
+      .select('id, person_name, date_type, month, day, year')
+      .eq('user_id', ctx.userId)
+      .eq('is_active', true);
+
+    const thisYear = ctx.today.getFullYear();
+
+    (dates || []).forEach(date => {
+      let nextOccurrence = new Date(thisYear, date.month - 1, date.day);
+      if (nextOccurrence < ctx.today) {
+        nextOccurrence = new Date(thisYear + 1, date.month - 1, date.day);
+      }
+
+      const daysUntil = differenceInDays(nextOccurrence, ctx.today);
+
+      if (daysUntil <= ctx.lookAheadDays && daysUntil >= 0) {
+        const age = date.year ? thisYear - date.year + (nextOccurrence.getFullYear() > thisYear ? 1 : 0) : null;
+        const ageStr = age ? ` (turning ${age})` : '';
+
+        predictions.push({
+          id: `date-${date.id}`,
+          type: 'birthday_upcoming',
+          priority: daysUntil <= 3 ? 'high' : 'medium',
+          title: `${date.person_name}'s ${date.date_type}${ageStr}`,
+          message: daysUntil === 0 ? 'Today!' : `In ${daysUntil} day(s)`,
+          suggestedAction: 'Plan celebration',
+          actionType: 'view_details',
+          actionPayload: { dateId: date.id },
+          createdAt: new Date().toISOString(),
+        });
+      }
+    });
+
+    return predictions;
+  }
+
+  /**
+   * Get smart suggestions based on predictions and patterns
+   */
+  async getSmartSuggestions(userId: string): Promise<string[]> {
+    const predictions = await this.generatePredictions(userId, 7);
+    const suggestions: string[] = [];
+
+    // Convert predictions to suggestions
+    const highPriority = predictions.filter(p => p.priority === 'high');
+    if (highPriority.length > 0) {
+      suggestions.push(`You have ${highPriority.length} urgent item(s) to address`);
+    }
+
+    const streakRisks = predictions.filter(p => p.type === 'streak_at_risk');
+    if (streakRisks.length > 0) {
+      suggestions.push(`${streakRisks.length} habit streak(s) at risk today`);
+    }
+
+    const busyPeriods = predictions.filter(p => p.type === 'busy_period');
+    if (busyPeriods.length > 0) {
+      suggestions.push('Consider blocking self-care time this week');
+    }
+
+    const billsDue = predictions.filter(p => p.type === 'bill_due');
+    if (billsDue.length > 0) {
+      const total = billsDue.reduce((sum, p) => {
+        const amount = (p.actionPayload as Record<string, unknown>)?.amount as number || 0;
+        return sum + amount;
+      }, 0);
+      suggestions.push(`${billsDue.length} bill(s) due soon`);
+    }
+
+    return suggestions;
+  }
+}
+
+export const predictionService = new PredictionService();
+

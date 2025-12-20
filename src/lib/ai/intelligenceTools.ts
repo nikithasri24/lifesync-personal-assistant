@@ -678,6 +678,72 @@ async function executeGetMyPatterns(
 }
 
 // =====================================================
+// GET PREDICTIONS TOOL
+// =====================================================
+
+const getPredictionsDefinition: ToolDefinition = {
+  type: 'function',
+  function: {
+    name: 'get_predictions',
+    description: 'Get proactive predictions and suggestions. Use for "what should I focus on?", "any warnings?", "what\'s coming up that I should know about?", "give me suggestions".',
+    parameters: {
+      type: 'object',
+      properties: {
+        daysAhead: {
+          type: 'number',
+          description: 'Number of days to look ahead. Default: 7'
+        }
+      },
+      required: []
+    }
+  }
+};
+
+async function executeGetPredictions(
+  args: Record<string, unknown>,
+  userId: string
+): Promise<ToolResult> {
+  try {
+    const daysAhead = (args.daysAhead as number) || 7;
+
+    const { predictionService } = await import('@/services/ai/PredictionService');
+
+    const predictions = await predictionService.generatePredictions(userId, daysAhead);
+    const suggestions = await predictionService.getSmartSuggestions(userId);
+
+    logger.info('IntelligenceTools', 'Get predictions via AI', {
+      daysAhead,
+      predictionCount: predictions.length,
+    });
+
+    return {
+      success: true,
+      data: {
+        predictions: predictions.slice(0, 10).map(p => ({
+          type: p.type,
+          priority: p.priority,
+          title: p.title,
+          message: p.message,
+          suggestedAction: p.suggestedAction,
+        })),
+        suggestions,
+        summary: {
+          total: predictions.length,
+          highPriority: predictions.filter(p => p.priority === 'high').length,
+          mediumPriority: predictions.filter(p => p.priority === 'medium').length,
+        },
+      },
+    };
+  } catch (error) {
+    logger.error('IntelligenceTools', error as Error, { context: 'executeGetPredictions' });
+    return {
+      success: false,
+      error: `Failed to get predictions: ${(error as Error).message}`,
+    };
+  }
+}
+
+// =====================================================
 // BILLS DUE TOOL
 // =====================================================
 
@@ -861,6 +927,10 @@ export const intelligenceTools: Tool[] = [
   {
     definition: getMyPatternsDefinition,
     execute: executeGetMyPatterns
+  },
+  {
+    definition: getPredictionsDefinition,
+    execute: executeGetPredictions
   }
 ];
 
