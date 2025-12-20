@@ -1501,7 +1501,7 @@ async function executeNutritionTracking(
         return { success: false, error: 'Missing food_name' };
       }
 
-      const entry = await nutritionService.logFood(userId, {
+      const entry = await nutritionService.logFood({
         custom_food_name: foodName,
         quantity: 1,
         meal_type: mealType,
@@ -1518,7 +1518,7 @@ async function executeNutritionTracking(
     }
 
     if (action === 'get_today') {
-      const progress = await nutritionService.getTodayProgress(userId);
+      const progress = await nutritionService.getTodayProgress();
       return {
         success: true,
         data: progress,
@@ -1526,7 +1526,7 @@ async function executeNutritionTracking(
     }
 
     if (action === 'get_week') {
-      const weekly = await nutritionService.getWeeklyNutrition(userId);
+      const weekly = await nutritionService.getWeeklyNutrition();
       return {
         success: true,
         data: { days: weekly },
@@ -1539,7 +1539,7 @@ async function executeNutritionTracking(
         return { success: false, error: 'Missing calories_target' };
       }
 
-      const goal = await nutritionService.setGoal(userId, {
+      const goal = await nutritionService.setGoal({
         calories_target: caloriesTarget,
         protein_target_g: args.protein_g as number,
         carbs_target_g: args.carbs_g as number,
@@ -1554,7 +1554,7 @@ async function executeNutritionTracking(
     }
 
     if (action === 'get_goal') {
-      const goal = await nutritionService.getActiveGoal(userId);
+      const goal = await nutritionService.getActiveGoal();
       return {
         success: true,
         data: goal || { message: 'No active nutrition goal set' },

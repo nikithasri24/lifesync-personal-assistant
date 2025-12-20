@@ -1,66 +1,72 @@
 /**
  * Important Dates Service
- * Manages birthdays, anniversaries, and other important dates
+ * Business logic for birthdays, anniversaries, and other important dates
+ *
+ * This service uses the API layer for data access and provides
+ * higher-level business logic operations.
  */
 
-import { supabase } from '@/lib/supabase';
+import { format, differenceInDays, getYear } from 'date-fns';
+import * as importantDatesAPI from '@/api/importantDatesAPI';
 import { logger } from '@/services/logger';
-import { addDays, format, parseISO, differenceInDays, getYear, setYear } from 'date-fns';
-import type { 
-  ImportantDate, UpcomingDate, CreateImportantDateInput, 
-  UpdateImportantDateInput, DatesSummary 
+import type {
+  ImportantDate, UpcomingDate, CreateImportantDateInput,
+  UpdateImportantDateInput, DatesSummary
 } from './types';
 
+// =====================================================
+// RE-EXPORT API FUNCTIONS
+// These are pure CRUD operations delegated to the API layer
+// =====================================================
+
+export const getImportantDates = importantDatesAPI.getImportantDates;
+export const updateImportantDate = importantDatesAPI.updateImportantDate;
+export const deleteImportantDate = importantDatesAPI.deleteImportantDate;
+
+// =====================================================
+// BUSINESS LOGIC FUNCTIONS
+// These provide higher-level operations with business logic
+// =====================================================
+
 /**
- * Get all important dates for the current user
+ * Create a new important date with logging
  */
-export async function getImportantDates(activeOnly = true): Promise<ImportantDate[]> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+export async function createImportantDate(input: CreateImportantDateInput): Promise<ImportantDate> {
+  const result = await importantDatesAPI.createImportantDate(input);
 
-  let query = supabase
-    .from('important_dates')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('month', { ascending: true })
-    .order('day', { ascending: true });
+  logger.info('ImportantDatesService', 'Created important date', {
+    personName: input.person_name,
+    type: input.date_type
+  });
 
-  if (activeOnly) {
-    query = query.eq('is_active', true);
-  }
-
-  const { data, error } = await query;
-  if (error) throw error;
-  return data || [];
+  return result;
 }
 
 /**
  * Get upcoming important dates within the specified number of days
+ * Business logic: calculates days until, age, and next occurrence
  */
 export async function getUpcomingDates(daysAhead = 30): Promise<UpcomingDate[]> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
-  const dates = await getImportantDates(true);
+  const dates = await importantDatesAPI.getImportantDates(true);
   const today = new Date();
   const thisYear = getYear(today);
-  
+
   const upcoming: UpcomingDate[] = [];
 
   for (const date of dates) {
     // Create date for this year
     let nextOccurrence = new Date(thisYear, date.month - 1, date.day);
-    
+
     // If already passed this year, use next year
     if (nextOccurrence < today) {
       nextOccurrence = new Date(thisYear + 1, date.month - 1, date.day);
     }
 
     const daysUntil = differenceInDays(nextOccurrence, today);
-    
+
     if (daysUntil <= daysAhead) {
       const age = date.year ? thisYear - date.year + (nextOccurrence.getFullYear() > thisYear ? 1 : 0) : null;
-      
+
       upcoming.push({
         ...date,
         days_until: daysUntil,
@@ -82,83 +88,11 @@ export async function getDatesThisWeek(): Promise<UpcomingDate[]> {
 }
 
 /**
- * Create a new important date
- */
-export async function createImportantDate(input: CreateImportantDateInput): Promise<ImportantDate> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
-  const { data, error } = await supabase
-    .from('important_dates')
-    .insert({
-      user_id: user.id,
-      person_name: input.person_name,
-      relationship: input.relationship,
-      date_type: input.date_type,
-      month: input.month,
-      day: input.day,
-      year: input.year,
-      reminder_days_before: input.reminder_days_before || [7, 1],
-      notes: input.notes,
-      gift_ideas: input.gift_ideas,
-      celebration_notes: input.celebration_notes,
-    })
-    .select()
-    .single();
-
-  if (error) throw error;
-  
-  logger.info('ImportantDatesService', 'Created important date', { 
-    personName: input.person_name, 
-    type: input.date_type 
-  });
-  
-  return data;
-}
-
-/**
- * Update an important date
- */
-export async function updateImportantDate(
-  id: string, 
-  input: UpdateImportantDateInput
-): Promise<ImportantDate> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
-  const { data, error } = await supabase
-    .from('important_dates')
-    .update(input)
-    .eq('id', id)
-    .eq('user_id', user.id)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
-}
-
-/**
- * Delete an important date
- */
-export async function deleteImportantDate(id: string): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
-  const { error } = await supabase
-    .from('important_dates')
-    .delete()
-    .eq('id', id)
-    .eq('user_id', user.id);
-
-  if (error) throw error;
-}
-
-/**
  * Get summary of important dates
+ * Business logic: aggregates data from the API layer
  */
 export async function getDatesSummary(): Promise<DatesSummary> {
-  const allDates = await getImportantDates(true);
+  const allDates = await importantDatesAPI.getImportantDates(true);
   const upcomingThisWeek = await getDatesThisWeek();
   const upcomingThisMonth = await getUpcomingDates(30);
 

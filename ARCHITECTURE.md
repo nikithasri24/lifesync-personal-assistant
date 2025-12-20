@@ -306,3 +306,67 @@ export async function createTask(task) {
 
 ✅ **Do**: Follow the layer boundaries strictly
 
+## Service Layer Migration Status
+
+Services should use the API layer for data access, not direct Supabase calls.
+
+### ✅ Compliant Services
+- `src/services/scheduling/SmartSchedulingService.ts` - Uses API layer
+
+### 🔄 Services Needing Migration
+The following services currently access Supabase directly and should be migrated:
+
+| Service | API Module to Use |
+|---------|-------------------|
+| `ai/ContextAggregator.ts` | `tasksAPI`, `habitsAPI`, `calendarAPI`, `focusAPI` |
+| `ai/ContextualMemoryService.ts` | Create `memoryAPI.ts` |
+| `ai/LifeCoachService.ts` | `tasksAPI`, `habitsAPI`, `goalsAPI` |
+| `ai/PredictionService.ts` | `tasksAPI`, `habitsAPI`, `calendarAPI` |
+| `ai/SentimentAnalysisService.ts` | `journalAPI` |
+| `ai/UserPatternService.ts` | `tasksAPI`, `habitsAPI`, `focusAPI` |
+| `automation/AutomationEngine.ts` | Create `automationAPI.ts` |
+| `bills/BillService.ts` | `billsAPI` |
+| `briefing/DailyBriefingService.ts` | `tasksAPI`, `habitsAPI`, `calendarAPI` |
+| `dates/ImportantDatesService.ts` | `importantDatesAPI` |
+| `gamification/GamificationService.ts` | `gamificationAPI` |
+| `inbox/InboxService.ts` | `inboxAPI` |
+| `location/LocationService.ts` | Create `locationAPI.ts` |
+| `nutrition/NutritionService.ts` | `nutritionAPI` |
+| `planning/WeeklyPlanningService.ts` | `tasksAPI`, `habitsAPI`, `calendarAPI` |
+| `reminders/ReminderService.ts` | Create `remindersAPI.ts` |
+| `reminders/SmartReminderService.ts` | Create `remindersAPI.ts` |
+| `scheduler/ScheduleEngine.ts` | `schedulerAPI`, `calendarAPI` |
+| `visionBoard/VisionBoardService.ts` | Create `visionBoardAPI.ts` |
+
+### Migration Pattern
+
+When migrating a service:
+
+1. **Check if API module exists** in `src/api/`
+2. **Create API module if needed** with pure CRUD functions
+3. **Update service imports** to use API module instead of supabase
+4. **Remove supabase import** from service
+5. **Test** to ensure functionality is preserved
+
+Example migration:
+```typescript
+// BEFORE (direct Supabase)
+import { supabase } from '@/lib/supabase';
+
+class MyService {
+  async getData() {
+    const { data } = await supabase.from('my_table').select('*');
+    return data;
+  }
+}
+
+// AFTER (using API layer)
+import { getMyData } from '@/api/myAPI';
+
+class MyService {
+  async getData() {
+    return getMyData();
+  }
+}
+```
+

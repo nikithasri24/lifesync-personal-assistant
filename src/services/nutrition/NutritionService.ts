@@ -1,63 +1,28 @@
 /**
  * Nutrition Service
- * Handles food logging, calorie/macro tracking, and nutrition goals
+ * Business logic for food logging, calorie/macro tracking, and nutrition goals
+ *
+ * This service uses the API layer for data access and provides
+ * higher-level business logic operations.
  */
 
-import { supabase } from '@/lib/supabase';
+import { format, subDays } from 'date-fns';
+import * as nutritionAPI from '@/api/nutritionAPI';
 import { logger } from '@/services/logger';
-import { format, subDays, startOfDay, endOfDay } from 'date-fns';
+
+// Re-export types from API
+export type {
+  FoodItem,
+  FoodLogEntry,
+  NutritionGoal,
+  MealType,
+  GoalType,
+  LogFoodInput
+} from '@/api/nutritionAPI';
 
 // ============================================================================
-// Types
+// Additional Types for Business Logic
 // ============================================================================
-
-export interface FoodItem {
-  id: string;
-  user_id: string | null;
-  name: string;
-  brand?: string;
-  serving_size: number;
-  serving_unit: string;
-  calories: number;
-  protein_g: number;
-  carbs_g: number;
-  fat_g: number;
-  fiber_g?: number;
-  sugar_g?: number;
-  sodium_mg?: number;
-  category?: string;
-  barcode?: string;
-  is_verified: boolean;
-}
-
-export interface FoodLogEntry {
-  id: string;
-  user_id: string;
-  food_item_id?: string;
-  custom_food_name?: string;
-  quantity: number;
-  meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack';
-  logged_date: string;
-  logged_time?: string;
-  calories: number;
-  protein_g: number;
-  carbs_g: number;
-  fat_g: number;
-  notes?: string;
-  food_item?: FoodItem;
-}
-
-export interface NutritionGoal {
-  id: string;
-  user_id: string;
-  calories_target: number;
-  protein_target_g: number;
-  carbs_target_g: number;
-  fat_target_g: number;
-  fiber_target_g: number;
-  goal_type: 'lose' | 'maintain' | 'gain';
-  is_active: boolean;
-}
 
 export interface DailyNutrition {
   date: string;
@@ -66,10 +31,10 @@ export interface DailyNutrition {
   carbs_g: number;
   fat_g: number;
   meals: {
-    breakfast: FoodLogEntry[];
-    lunch: FoodLogEntry[];
-    dinner: FoodLogEntry[];
-    snack: FoodLogEntry[];
+    breakfast: nutritionAPI.FoodLogEntry[];
+    lunch: nutritionAPI.FoodLogEntry[];
+    dinner: nutritionAPI.FoodLogEntry[];
+    snack: nutritionAPI.FoodLogEntry[];
   };
 }
 
@@ -79,110 +44,90 @@ export interface DailyNutrition {
 
 class NutritionService {
   // --------------------------------------------------------------------------
-  // Food Items
+  // Delegated API Functions
   // --------------------------------------------------------------------------
 
-  async searchFoods(query: string, userId: string): Promise<FoodItem[]> {
-    const { data, error } = await supabase
-      .from('food_items')
-      .select('*')
-      .or(`user_id.is.null,user_id.eq.${userId}`)
-      .ilike('name', `%${query}%`)
-      .limit(20);
-
-    if (error) {
+  async searchFoods(query: string): Promise<nutritionAPI.FoodItem[]> {
+    try {
+      return await nutritionAPI.searchFoods(query);
+    } catch (error) {
       logger.error('NutritionService', 'Failed to search foods', { error });
       return [];
     }
-
-    return data || [];
   }
 
-  async createCustomFood(userId: string, food: Omit<FoodItem, 'id' | 'user_id' | 'is_verified'>): Promise<FoodItem | null> {
-    const { data, error } = await supabase
-      .from('food_items')
-      .insert({ ...food, user_id: userId, is_verified: false })
-      .select()
-      .single();
-
-    if (error) {
+  async createCustomFood(
+    food: Omit<nutritionAPI.FoodItem, 'id' | 'user_id' | 'is_custom' | 'created_at'>
+  ): Promise<nutritionAPI.FoodItem | null> {
+    try {
+      return await nutritionAPI.createFoodItem(food);
+    } catch (error) {
       logger.error('NutritionService', 'Failed to create food', { error });
       return null;
     }
-
-    return data;
   }
 
-  // --------------------------------------------------------------------------
-  // Food Logging
-  // --------------------------------------------------------------------------
-
-  async logFood(
-    userId: string,
-    entry: {
-      food_item_id?: string;
-      custom_food_name?: string;
-      quantity: number;
-      meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack';
-      logged_date?: string;
-      calories: number;
-      protein_g?: number;
-      carbs_g?: number;
-      fat_g?: number;
-      notes?: string;
-    }
-  ): Promise<FoodLogEntry | null> {
-    const { data, error } = await supabase
-      .from('food_log')
-      .insert({
-        user_id: userId,
-        food_item_id: entry.food_item_id,
-        custom_food_name: entry.custom_food_name,
-        quantity: entry.quantity,
-        meal_type: entry.meal_type,
-        logged_date: entry.logged_date || format(new Date(), 'yyyy-MM-dd'),
-        logged_time: format(new Date(), 'HH:mm:ss'),
-        calories: entry.calories,
-        protein_g: entry.protein_g || 0,
-        carbs_g: entry.carbs_g || 0,
-        fat_g: entry.fat_g || 0,
-        notes: entry.notes,
-      })
-      .select()
-      .single();
-
-    if (error) {
+  async logFood(entry: nutritionAPI.LogFoodInput): Promise<nutritionAPI.FoodLogEntry | null> {
+    try {
+      const result = await nutritionAPI.logFood(entry);
+      logger.info('NutritionService', 'Food logged', { meal: entry.meal_type, calories: entry.calories });
+      return result;
+    } catch (error) {
       logger.error('NutritionService', 'Failed to log food', { error });
       return null;
     }
-
-    logger.info('NutritionService', 'Food logged', { meal: entry.meal_type, calories: entry.calories });
-    return data;
   }
 
   async deleteLogEntry(entryId: string): Promise<boolean> {
-    const { error } = await supabase.from('food_log').delete().eq('id', entryId);
-    return !error;
+    try {
+      await nutritionAPI.deleteLogEntry(entryId);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
-  async getDailyLog(userId: string, date: string): Promise<FoodLogEntry[]> {
-    const { data, error } = await supabase
-      .from('food_log')
-      .select('*, food_item:food_items(*)')
-      .eq('user_id', userId)
-      .eq('logged_date', date)
-      .order('logged_time', { ascending: true });
-
-    if (error) {
+  async getDailyLog(date: string): Promise<nutritionAPI.FoodLogEntry[]> {
+    try {
+      return await nutritionAPI.getDailyLog(date);
+    } catch (error) {
       logger.error('NutritionService', 'Failed to get daily log', { error });
       return [];
     }
-
-    return data || [];
   }
 
-  async getDailyNutrition(userId: string, date: string): Promise<DailyNutrition> {
-    const entries = await this.getDailyLog(userId, date);
+  async getActiveGoal(): Promise<nutritionAPI.NutritionGoal | null> {
+    try {
+      return await nutritionAPI.getActiveGoal();
+    } catch (error) {
+      logger.error('NutritionService', 'Failed to get goal', { error });
+      return null;
+    }
+  }
+
+  async setGoal(goal: {
+    calories_target: number;
+    protein_target_g?: number;
+    carbs_target_g?: number;
+    fat_target_g?: number;
+    goal_type?: 'lose' | 'maintain' | 'gain';
+  }): Promise<nutritionAPI.NutritionGoal | null> {
+    try {
+      const result = await nutritionAPI.setNutritionGoal(goal);
+      logger.info('NutritionService', 'Goal set', { calories: goal.calories_target });
+      return result;
+    } catch (error) {
+      logger.error('NutritionService', 'Failed to set goal', { error });
+      return null;
+    }
+  }
+
+  /**
+   * Get daily nutrition summary with meal breakdown
+   * Business logic: aggregates entries by meal type and calculates totals
+   */
+  async getDailyNutrition(date: string): Promise<DailyNutrition> {
+    const entries = await this.getDailyLog(date);
 
     const meals = {
       breakfast: entries.filter(e => e.meal_type === 'breakfast'),
@@ -204,88 +149,32 @@ class NutritionService {
     return { date, ...totals, meals };
   }
 
-  async getWeeklyNutrition(userId: string): Promise<DailyNutrition[]> {
+  /**
+   * Get weekly nutrition summary
+   * Business logic: aggregates daily nutrition for the past 7 days
+   */
+  async getWeeklyNutrition(): Promise<DailyNutrition[]> {
     const results: DailyNutrition[] = [];
     for (let i = 6; i >= 0; i--) {
       const date = format(subDays(new Date(), i), 'yyyy-MM-dd');
-      results.push(await this.getDailyNutrition(userId, date));
+      results.push(await this.getDailyNutrition(date));
     }
     return results;
   }
 
-  // --------------------------------------------------------------------------
-  // Nutrition Goals
-  // --------------------------------------------------------------------------
-
-  async getActiveGoal(userId: string): Promise<NutritionGoal | null> {
-    const { data, error } = await supabase
-      .from('nutrition_goals')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('is_active', true)
-      .single();
-
-    if (error && error.code !== 'PGRST116') {
-      logger.error('NutritionService', 'Failed to get goal', { error });
-    }
-
-    return data;
-  }
-
-  async setGoal(
-    userId: string,
-    goal: {
-      calories_target: number;
-      protein_target_g?: number;
-      carbs_target_g?: number;
-      fat_target_g?: number;
-      goal_type?: 'lose' | 'maintain' | 'gain';
-    }
-  ): Promise<NutritionGoal | null> {
-    // Deactivate existing goals
-    await supabase
-      .from('nutrition_goals')
-      .update({ is_active: false })
-      .eq('user_id', userId)
-      .eq('is_active', true);
-
-    // Create new goal
-    const { data, error } = await supabase
-      .from('nutrition_goals')
-      .insert({
-        user_id: userId,
-        calories_target: goal.calories_target,
-        protein_target_g: goal.protein_target_g || 50,
-        carbs_target_g: goal.carbs_target_g || 250,
-        fat_target_g: goal.fat_target_g || 65,
-        goal_type: goal.goal_type || 'maintain',
-        is_active: true,
-      })
-      .select()
-      .single();
-
-    if (error) {
-      logger.error('NutritionService', 'Failed to set goal', { error });
-      return null;
-    }
-
-    logger.info('NutritionService', 'Goal set', { calories: goal.calories_target });
-    return data;
-  }
-
-  // --------------------------------------------------------------------------
-  // Progress Tracking
-  // --------------------------------------------------------------------------
-
-  async getTodayProgress(userId: string): Promise<{
+  /**
+   * Get today's progress against goals
+   * Business logic: compares consumed vs target and calculates remaining
+   */
+  async getTodayProgress(): Promise<{
     consumed: { calories: number; protein_g: number; carbs_g: number; fat_g: number };
-    goal: NutritionGoal | null;
+    goal: nutritionAPI.NutritionGoal | null;
     remaining: { calories: number; protein_g: number; carbs_g: number; fat_g: number };
   }> {
     const today = format(new Date(), 'yyyy-MM-dd');
     const [daily, goal] = await Promise.all([
-      this.getDailyNutrition(userId, today),
-      this.getActiveGoal(userId),
+      this.getDailyNutrition(today),
+      this.getActiveGoal(),
     ]);
 
     const consumed = {
@@ -309,4 +198,3 @@ class NutritionService {
 }
 
 export const nutritionService = new NutritionService();
-
