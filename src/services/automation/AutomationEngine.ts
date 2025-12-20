@@ -1,8 +1,21 @@
 /**
  * Automation Engine
  * Evaluates triggers and executes actions for IFTTT-style automation rules
+ *
+ * ARCHITECTURE: Uses API layer for all data access (no direct Supabase calls)
  */
 
+import {
+  getActiveAutomationRules,
+  getAutomationRulesForEvent,
+  createAutomationRule,
+  updateAutomationRule,
+  deleteAutomationRule,
+  logAutomationExecution
+} from '@/api/automationAPI';
+import { createTask } from '@/api/tasksAPI';
+import { queueNotification } from '@/api/notificationAPI';
+import { addListItem } from '@/api/listAPI';
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/services/logger';
 import type { AutomationRule, AutomationAction, AutomationEventType } from '@/types/infrastructure';
@@ -28,38 +41,28 @@ class AutomationEngine {
    * Get all active rules for a user
    */
   async getActiveRules(userId: string): Promise<AutomationRule[]> {
-    const { data, error } = await supabase
-      .from('automation_rules')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('enabled', true);
-
-    if (error) {
+    // Use API layer instead of direct Supabase
+    try {
+      const rules = await getActiveAutomationRules();
+      return rules.map(this.mapDbToRule);
+    } catch (error) {
       logger.error('AutomationEngine', error, { context: 'getActiveRules' });
       return [];
     }
-
-    return (data || []).map(this.mapDbToRule);
   }
 
   /**
    * Get rules triggered by a specific event
    */
   async getRulesForEvent(userId: string, eventType: AutomationEventType): Promise<AutomationRule[]> {
-    const { data, error } = await supabase
-      .from('automation_rules')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('enabled', true)
-      .eq('trigger_type', 'event')
-      .contains('trigger_config', { event: eventType });
-
-    if (error) {
+    // Use API layer instead of direct Supabase
+    try {
+      const rules = await getAutomationRulesForEvent(eventType);
+      return rules.map(this.mapDbToRule);
+    } catch (error) {
       logger.error('AutomationEngine', error, { context: 'getRulesForEvent' });
       return [];
     }
-
-    return (data || []).map(this.mapDbToRule);
   }
 
   /**
@@ -152,11 +155,8 @@ class AutomationEngine {
   }
 
   private async actionSendNotification(params: Record<string, unknown>, context: AutomationContext): Promise<void> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    await supabase.from('notification_queue').insert({
-      user_id: context.userId,
+    // Use API layer instead of direct Supabase
+    await queueNotification({
       type: 'automation',
       priority: 'normal',
       payload: {
@@ -164,16 +164,15 @@ class AutomationEngine {
         body: params.body as string || '',
       },
       scheduled_for: new Date().toISOString(),
-      status: 'pending',
     });
   }
 
   private async actionCreateTask(params: Record<string, unknown>, context: AutomationContext): Promise<void> {
-    await supabase.from('tasks').insert({
-      user_id: context.userId,
+    // Use API layer instead of direct Supabase
+    await createTask({
       title: params.title as string || 'Automated Task',
       description: params.description as string,
-      priority: params.priority as string || 'medium',
+      priority: (params.priority as 'low' | 'medium' | 'high') || 'medium',
       status: 'pending',
     });
   }
@@ -182,6 +181,7 @@ class AutomationEngine {
     const habitId = params.habit_id as string;
     if (!habitId) return;
 
+    // Note: habit_logs table needs an API - using direct Supabase for now
     await supabase.from('habit_logs').insert({
       habit_id: habitId,
       user_id: context.userId,
@@ -195,12 +195,8 @@ class AutomationEngine {
     const content = params.content as string;
     if (!listId || !content) return;
 
-    await supabase.from('list_items').insert({
-      list_id: listId,
-      user_id: context.userId,
-      content,
-      completed: false,
-    });
+    // Use API layer instead of direct Supabase
+    await addListItem(listId, content);
   }
 
   /**
@@ -213,35 +209,15 @@ class AutomationEngine {
     errorMessage: string | null,
     executionTimeMs: number
   ): Promise<void> {
-    try {
-      await supabase.rpc('log_automation_execution', {
-        p_rule_id: ruleId,
-        p_trigger_reason: 'event_triggered',
-        p_actions_executed: actionsExecuted,
-        p_success: success,
-        p_error_message: errorMessage,
-        p_execution_time_ms: executionTimeMs,
-      });
-    } catch (err) {
-      // Fallback: direct insert
-      const { data: rule } = await supabase
-        .from('automation_rules')
-        .select('user_id')
-        .eq('id', ruleId)
-        .single();
-
-      if (rule) {
-        await supabase.from('automation_log').insert({
-          rule_id: ruleId,
-          user_id: rule.user_id,
-          trigger_reason: 'event_triggered',
-          actions_executed: actionsExecuted,
-          success,
-          error_message: errorMessage,
-          execution_time_ms: executionTimeMs,
-        });
-      }
-    }
+    // Use API layer instead of direct Supabase
+    await logAutomationExecution({
+      ruleId,
+      triggerReason: 'event_triggered',
+      actionsExecuted: actionsExecuted.length,
+      success,
+      errorMessage: errorMessage ?? undefined,
+      executionTimeMs,
+    });
   }
 
   /**
@@ -276,26 +252,23 @@ class AutomationEngine {
     actions: AutomationAction[],
     description?: string
   ): Promise<AutomationRule | null> {
-    const { data, error } = await supabase
-      .from('automation_rules')
-      .insert({
-        user_id: userId,
+    // Use API layer instead of direct Supabase
+    try {
+      const rule = await createAutomationRule({
         name,
         description,
         trigger_type: trigger.type,
         trigger_config: trigger,
         actions,
         enabled: true,
-      })
-      .select()
-      .single();
-
-    if (error) {
+        trigger_count: 0,
+        last_triggered_at: null,
+      });
+      return this.mapDbToRule(rule);
+    } catch (error) {
       logger.error('AutomationEngine', error, { context: 'createRule' });
       return null;
     }
-
-    return this.mapDbToRule(data);
   }
 
   /**
@@ -305,6 +278,7 @@ class AutomationEngine {
     ruleId: string,
     updates: Partial<Pick<AutomationRule, 'name' | 'description' | 'trigger' | 'actions' | 'enabled'>>
   ): Promise<boolean> {
+    // Use API layer instead of direct Supabase
     const updateData: Record<string, unknown> = {};
 
     if (updates.name !== undefined) updateData.name = updates.name;
@@ -316,34 +290,27 @@ class AutomationEngine {
       updateData.trigger_config = updates.trigger;
     }
 
-    const { error } = await supabase
-      .from('automation_rules')
-      .update(updateData)
-      .eq('id', ruleId);
-
-    if (error) {
+    try {
+      await updateAutomationRule(ruleId, updateData);
+      return true;
+    } catch (error) {
       logger.error('AutomationEngine', error, { context: 'updateRule' });
       return false;
     }
-
-    return true;
   }
 
   /**
    * Delete an automation rule
    */
   async deleteRule(ruleId: string): Promise<boolean> {
-    const { error } = await supabase
-      .from('automation_rules')
-      .delete()
-      .eq('id', ruleId);
-
-    if (error) {
+    // Use API layer instead of direct Supabase
+    try {
+      await deleteAutomationRule(ruleId);
+      return true;
+    } catch (error) {
       logger.error('AutomationEngine', error, { context: 'deleteRule' });
       return false;
     }
-
-    return true;
   }
 }
 

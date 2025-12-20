@@ -38,6 +38,9 @@ export * from './mealPlanningAPI';
 export * from './schedulerAPI';
 export * from './inboxAPI';
 export * from './importantDatesAPI';
+export * from './automationAPI';
+export * from './notificationAPI';
+export * from './listAPI';
 
 // Gamification
 export * from './gamificationAPI';
