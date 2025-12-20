@@ -1,9 +1,14 @@
 /**
  * User Pattern Service
  * Analyzes historical data to identify recurring patterns in user behavior
+ *
+ * ARCHITECTURE: Uses API layer for all data access (no direct Supabase calls)
  */
 
-import { supabase } from '@/lib/supabase';
+import { getTasks } from '@/api/tasksAPI';
+import { getHabits, getHabitEntries } from '@/api/habitsAPI';
+import { getFocusSessions } from '@/api/focusAPI';
+import { getFinancialTransactions } from '@/api/financeAPI';
 import { logger } from '@/services/logger';
 import { format, subDays, getDay, getHours, parseISO } from 'date-fns';
 
@@ -60,29 +65,22 @@ class UserPatternService {
    * Analyze task completion patterns
    */
   async analyzeProductivityPatterns(userId: string, days = 30): Promise<ProductivityPattern> {
-    const startDate = format(subDays(new Date(), days), 'yyyy-MM-dd');
+    // Use API layer instead of direct Supabase
+    const startDateObj = subDays(new Date(), days);
+    const startDate = format(startDateObj, 'yyyy-MM-dd');
 
-    // Get completed tasks with completion time
-    const { data: tasks } = await supabase
-      .from('tasks')
-      .select('id, completed_at, created_at')
-      .eq('user_id', userId)
-      .eq('status', 'completed')
-      .gte('completed_at', startDate)
-      .not('completed_at', 'is', null);
+    const allTasks = await getTasks({ status: 'completed' });
+    const tasks = allTasks.filter(t =>
+      t.completed_at && new Date(t.completed_at) >= startDateObj
+    );
 
-    // Get focus sessions
-    const { data: focusSessions } = await supabase
-      .from('focus_sessions')
-      .select('started_at, duration')
-      .eq('user_id', userId)
-      .gte('started_at', startDate);
+    const focusSessions = await getFocusSessions({ startDate: startDateObj });
 
     // Analyze hour patterns
     const hourCounts: Record<number, number> = {};
     const dayCounts: Record<number, number> = {};
-    
-    (tasks || []).forEach(task => {
+
+    tasks.forEach(task => {
       if (task.completed_at) {
         const date = parseISO(task.completed_at);
         const hour = getHours(date);
@@ -92,8 +90,8 @@ class UserPatternService {
       }
     });
 
-    const totalTasks = tasks?.length || 0;
-    
+    const totalTasks = tasks.length;
+
     // Convert to patterns
     const peakHours: TimePattern[] = Object.entries(hourCounts)
       .map(([hour, count]) => ({
@@ -114,21 +112,22 @@ class UserPatternService {
       .sort((a, b) => b.count - a.count);
 
     // Calculate averages
-    const focusMinutes = (focusSessions || []).reduce((sum, s) => sum + (s.duration || 0), 0);
-    
-    // Get total tasks created in period
-    const { count: totalCreated } = await supabase
-      .from('tasks')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', userId)
-      .gte('created_at', startDate);
+    const focusMinutes = focusSessions.reduce((sum, s) => sum + (s.duration ?? 0), 0);
+
+    // Get all tasks for completion rate
+    const allTasksInPeriod = await getTasks({ deleted: false, archived: false });
+    const tasksCreatedInPeriod = allTasksInPeriod.filter(t =>
+      t.created_at && new Date(t.created_at) >= startDateObj
+    );
 
     return {
       peakHours,
       peakDays,
       averageTasksPerDay: Math.round((totalTasks / days) * 10) / 10,
       averageFocusMinutes: Math.round(focusMinutes / days),
-      taskCompletionRate: totalCreated ? Math.round((totalTasks / totalCreated) * 100) : 0,
+      taskCompletionRate: tasksCreatedInPeriod.length > 0
+        ? Math.round((totalTasks / tasksCreatedInPeriod.length) * 100)
+        : 0,
     };
   }
 
@@ -136,26 +135,17 @@ class UserPatternService {
    * Analyze habit patterns
    */
   async analyzeHabitPatterns(userId: string, days = 30): Promise<HabitPattern[]> {
+    // Use API layer instead of direct Supabase
     const startDate = format(subDays(new Date(), days), 'yyyy-MM-dd');
+    const endDate = format(new Date(), 'yyyy-MM-dd');
 
-    // Get habits
-    const { data: habits } = await supabase
-      .from('habits')
-      .select('id, name, current_streak')
-      .eq('user_id', userId)
-      .eq('is_active', true);
+    const habits = await getHabits({ isActive: true });
+    if (habits.length === 0) return [];
 
-    if (!habits || habits.length === 0) return [];
-
-    // Get habit entries
-    const { data: entries } = await supabase
-      .from('habit_entries')
-      .select('habit_id, date, completed_at')
-      .in('habit_id', habits.map(h => h.id))
-      .gte('date', startDate);
+    const entries = await getHabitEntries({ startDate, endDate });
 
     const patterns: HabitPattern[] = habits.map(habit => {
-      const habitEntries = (entries || []).filter(e => e.habit_id === habit.id);
+      const habitEntries = entries.filter(e => e.habit_id === habit.id);
       
       // Analyze preferred days
       const dayCount: Record<number, number> = {};
@@ -173,7 +163,7 @@ class UserPatternService {
         habitId: habit.id,
         habitName: habit.name,
         preferredDays,
-        averageStreak: habit.current_streak || 0,
+        averageStreak: habit.current_streak ?? 0,
         completionRate: Math.round((habitEntries.length / days) * 100),
       };
     });
@@ -185,17 +175,15 @@ class UserPatternService {
    * Analyze spending patterns
    */
   async analyzeSpendingPatterns(userId: string, days = 30): Promise<SpendingPattern> {
+    // Use API layer instead of direct Supabase
     const startDate = format(subDays(new Date(), days), 'yyyy-MM-dd');
 
-    // Get transactions
-    const { data: transactions } = await supabase
-      .from('transactions')
-      .select('amount, category, date')
-      .eq('user_id', userId)
-      .eq('type', 'expense')
-      .gte('date', startDate);
+    const transactions = await getFinancialTransactions({
+      type: 'expense',
+      startDate,
+    });
 
-    if (!transactions || transactions.length === 0) {
+    if (transactions.length === 0) {
       return {
         highSpendingDays: [],
         averageWeekdaySpending: 0,
@@ -209,12 +197,12 @@ class UserPatternService {
     const categorySpending: Record<string, number> = {};
 
     transactions.forEach(t => {
-      const day = getDay(parseISO(t.date));
+      const day = getDay(parseISO(t.date!));
       if (!daySpending[day]) daySpending[day] = [];
-      daySpending[day].push(t.amount);
+      daySpending[day].push(t.amount ?? 0);
 
-      const category = t.category || 'other';
-      categorySpending[category] = (categorySpending[category] || 0) + t.amount;
+      const category = t.category ?? 'other';
+      categorySpending[category] = (categorySpending[category] || 0) + (t.amount ?? 0);
     });
 
     // Calculate weekday vs weekend
@@ -237,7 +225,7 @@ class UserPatternService {
       day: DAY_NAMES[parseInt(dayIndex)],
       avg: amounts.reduce((sum, a) => sum + a, 0) / amounts.length,
     }));
-    const overallAvg = transactions.reduce((sum, t) => sum + t.amount, 0) / transactions.length;
+    const overallAvg = transactions.reduce((sum, t) => sum + (t.amount ?? 0), 0) / transactions.length;
     const highSpendingDays = avgByDay
       .filter(d => d.avg > overallAvg * 1.3)
       .map(d => d.day);
