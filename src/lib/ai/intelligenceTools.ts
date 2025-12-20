@@ -5,6 +5,7 @@
  */
 
 import type { Tool, ToolDefinition, ToolResult } from './toolRegistry';
+import type { AutomationEventType, AutomationActionType } from '@/types/infrastructure';
 import { contextAggregator } from '@/services/ai/ContextAggregator';
 import { logger } from '@/services/logger';
 import { format, startOfWeek, endOfWeek, subDays } from 'date-fns';
@@ -1209,6 +1210,146 @@ async function executeQuickCapture(
 }
 
 // =====================================================
+// MANAGE AUTOMATION TOOL
+// =====================================================
+
+const manageAutomationDefinition: ToolDefinition = {
+  type: 'function',
+  function: {
+    name: 'manage_automation',
+    description: 'Create, list, or manage automation rules. Use for "when I complete a task, remind me to...", "create a rule that...", "show my automations".',
+    parameters: {
+      type: 'object',
+      properties: {
+        action: {
+          type: 'string',
+          enum: ['list', 'create', 'enable', 'disable', 'delete'],
+          description: 'Action to perform. Default: list'
+        },
+        rule_id: {
+          type: 'string',
+          description: 'Rule ID for enable/disable/delete actions'
+        },
+        name: {
+          type: 'string',
+          description: 'Name for new rule (required for create)'
+        },
+        trigger_event: {
+          type: 'string',
+          enum: ['task_completed', 'habit_logged', 'habit_missed', 'focus_ended', 'streak_milestone'],
+          description: 'Event that triggers the rule (for create)'
+        },
+        action_type: {
+          type: 'string',
+          enum: ['send_notification', 'create_task', 'log_habit'],
+          description: 'Action to perform when triggered (for create)'
+        },
+        action_params: {
+          type: 'object',
+          description: 'Parameters for the action (for create)'
+        }
+      },
+      required: []
+    }
+  }
+};
+
+async function executeManageAutomation(
+  args: Record<string, unknown>,
+  userId: string
+): Promise<ToolResult> {
+  try {
+    const action = (args.action as string) || 'list';
+    const { automationEngine } = await import('@/services/automation');
+
+    if (action === 'list') {
+      const rules = await automationEngine.getActiveRules(userId);
+
+      return {
+        success: true,
+        data: {
+          rules: rules.map(r => ({
+            id: r.id,
+            name: r.name,
+            trigger: r.trigger.type,
+            enabled: r.enabled,
+            triggerCount: r.trigger_count,
+          })),
+          count: rules.length,
+        },
+      };
+    }
+
+    if (action === 'create') {
+      const name = args.name as string;
+      const triggerEvent = args.trigger_event as string;
+      const actionType = args.action_type as string;
+      const actionParams = (args.action_params as Record<string, unknown>) || {};
+
+      if (!name || !triggerEvent || !actionType) {
+        return {
+          success: false,
+          error: 'Missing required fields: name, trigger_event, action_type',
+        };
+      }
+
+      const rule = await automationEngine.createRule(
+        userId,
+        name,
+        { type: 'event', event: triggerEvent as AutomationEventType },
+        [{ type: actionType as AutomationActionType, params: actionParams }]
+      );
+
+      if (!rule) {
+        return { success: false, error: 'Failed to create rule' };
+      }
+
+      return {
+        success: true,
+        data: {
+          message: `Created automation: "${name}"`,
+          ruleId: rule.id,
+        },
+      };
+    }
+
+    if (action === 'enable' || action === 'disable') {
+      const ruleId = args.rule_id as string;
+      if (!ruleId) {
+        return { success: false, error: 'Missing rule_id' };
+      }
+
+      const success = await automationEngine.updateRule(ruleId, { enabled: action === 'enable' });
+      return {
+        success,
+        data: { message: success ? `Rule ${action}d` : 'Failed to update rule' },
+      };
+    }
+
+    if (action === 'delete') {
+      const ruleId = args.rule_id as string;
+      if (!ruleId) {
+        return { success: false, error: 'Missing rule_id' };
+      }
+
+      const success = await automationEngine.deleteRule(ruleId);
+      return {
+        success,
+        data: { message: success ? 'Rule deleted' : 'Failed to delete rule' },
+      };
+    }
+
+    return { success: false, error: `Unknown action: ${action}` };
+  } catch (error) {
+    logger.error('IntelligenceTools', error as Error, { context: 'executeManageAutomation' });
+    return {
+      success: false,
+      error: `Failed to manage automation: ${(error as Error).message}`,
+    };
+  }
+}
+
+// =====================================================
 // EXPORTED TOOLS
 // =====================================================
 
@@ -1268,6 +1409,10 @@ export const intelligenceTools: Tool[] = [
   {
     definition: recallMemoryDefinition,
     execute: executeRecallMemory
+  },
+  {
+    definition: manageAutomationDefinition,
+    execute: executeManageAutomation
   }
 ];
 
