@@ -14,6 +14,7 @@ import {
   rejectConnection,
   updateConnection,
   deleteConnection,
+  setModulePermission,
 } from '../api/connectionsAPI';
 import type {
   ConnectionWithUser,
@@ -22,6 +23,8 @@ import type {
   AcceptConnectionInput,
   UpdateConnectionInput,
   ProfileConnection,
+  ShareableModule,
+  ModulePermissionLevel,
 } from '../types/connections';
 
 // Response type for invitations query
@@ -212,6 +215,40 @@ export function useUpdateConnectionMutation() {
         }
       );
       // Invalidate to refetch with full ConnectionWithUser data
+      void queryClient.invalidateQueries({ queryKey: connectionsKeys.connections() });
+    },
+    onError: (error: Error) => {
+      logger.error('Shared', error);
+    },
+  });
+}
+
+/**
+ * Update module permission for a connection
+ */
+export function useUpdatePermissionMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: {
+      connectionId: string;
+      module: ShareableModule;
+      permissionLevel: ModulePermissionLevel;
+      settings?: Record<string, unknown>;
+    }) => {
+      logger.debug('Shared', 'Updating permission', {
+        connectionId: input.connectionId,
+        module: input.module,
+        level: input.permissionLevel,
+      });
+      return await setModulePermission(input);
+    },
+    onSuccess: (permission) => {
+      logger.info('Shared', 'Permission updated', {
+        module: permission.module,
+        level: permission.permissionLevel,
+      });
+      // Invalidate connections to refetch with updated permissions
       void queryClient.invalidateQueries({ queryKey: connectionsKeys.connections() });
     },
     onError: (error: Error) => {
