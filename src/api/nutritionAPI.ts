@@ -47,6 +47,9 @@ export interface FoodLogEntry {
   carbs_g: number;
   fat_g: number;
   notes?: string;
+  image_url?: string;
+  ai_analyzed?: boolean;
+  ai_confidence?: number;
   created_at: string;
 }
 
@@ -73,6 +76,9 @@ export interface LogFoodInput {
   carbs_g?: number;
   fat_g?: number;
   notes?: string;
+  image_url?: string;
+  ai_analyzed?: boolean;
+  ai_confidence?: number;
 }
 
 // =====================================================
@@ -152,6 +158,9 @@ export async function logFood(input: LogFoodInput): Promise<FoodLogEntry> {
       carbs_g: input.carbs_g || 0,
       fat_g: input.fat_g || 0,
       notes: input.notes,
+      image_url: input.image_url,
+      ai_analyzed: input.ai_analyzed || false,
+      ai_confidence: input.ai_confidence,
     })
     .select()
     .single();

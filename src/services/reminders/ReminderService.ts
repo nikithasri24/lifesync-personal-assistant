@@ -20,7 +20,7 @@ export interface ScheduleReminderParams {
   body: string;
   scheduledFor: Date;
   priority?: ReminderPriority;
-  entityType?: 'task' | 'event' | 'habit' | 'goal';
+  entityType?: 'task' | 'event' | 'habit' | 'goal' | 'bill' | 'important_date';
   entityId?: string;
   actions?: { action: string; title: string }[];
 }

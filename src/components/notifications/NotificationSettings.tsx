@@ -19,8 +19,10 @@ import {
   X,
   Check,
   Loader2,
+  Save,
 } from 'lucide-react';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { useReminderPreferences, useUpdateReminderPreferences } from '@/hooks/useReminderPreferences';
 import { DEFAULT_REMINDER_PREFS, type ReminderPreferences } from '@/services/reminders';
 
 interface NotificationSettingsProps {
@@ -85,11 +87,21 @@ function SettingRow({
 
 export function NotificationSettings({ isOpen, onClose }: NotificationSettingsProps) {
   const { isSubscribed, isSupported, subscribe, unsubscribe, isLoading, showTestNotification } = usePushNotifications();
+  const { data: savedPrefs, isLoading: isLoadingPrefs } = useReminderPreferences();
+  const updatePrefs = useUpdateReminderPreferences();
   const [prefs, setPrefs] = useState<ReminderPreferences>(DEFAULT_REMINDER_PREFS);
-  const [isSaving, setIsSaving] = useState(false);
-  
+  const [hasChanges, setHasChanges] = useState(false);
+
+  // Load saved preferences when they're fetched
+  useEffect(() => {
+    if (savedPrefs) {
+      setPrefs(savedPrefs);
+    }
+  }, [savedPrefs]);
+
   const updatePref = <K extends keyof ReminderPreferences>(key: K, value: ReminderPreferences[K]) => {
     setPrefs(prev => ({ ...prev, [key]: value }));
+    setHasChanges(true);
   };
 
   const handleTogglePush = async () => {
@@ -98,6 +110,20 @@ export function NotificationSettings({ isOpen, onClose }: NotificationSettingsPr
     } else {
       await subscribe('LifeSync Web');
     }
+  };
+
+  const handleSave = async () => {
+    await updatePrefs.mutateAsync(prefs);
+    setHasChanges(false);
+  };
+
+  const handleClose = () => {
+    // Reset to saved if there are unsaved changes
+    if (hasChanges && savedPrefs) {
+      setPrefs(savedPrefs);
+      setHasChanges(false);
+    }
+    onClose();
   };
 
   if (!isOpen) return null;
@@ -110,13 +136,30 @@ export function NotificationSettings({ isOpen, onClose }: NotificationSettingsPr
           <div className="flex items-center gap-2">
             <Bell className="w-5 h-5 text-blue-600" />
             <h2 className="font-semibold text-slate-800">Notification Settings</h2>
+            {isLoadingPrefs && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            {hasChanges && (
+              <button
+                onClick={handleSave}
+                disabled={updatePrefs.isPending}
+                className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg disabled:opacity-50"
+              >
+                {updatePrefs.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Save className="w-4 h-4" />
+                )}
+                Save
+              </button>
+            )}
+            <button
+              onClick={handleClose}
+              className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
         
         {/* Content */}

@@ -11,5 +11,11 @@ export * from './types/connections';
 export { default as ConnectionsList } from './components/ConnectionsList';
 export { default as InvitationsPanel } from './components/InvitationsPanel';
 export { default as NewConnectionForm } from './components/NewConnectionForm';
-// TODO: Implement PermissionManager component
-// export { default as PermissionManager } from './components/PermissionManager';
+export { default as PermissionManager } from './components/PermissionManager';
+export { default as SharedDashboard } from './components/SharedDashboard';
+
+// Hooks
+export { useSharedDataQuery } from './hooks/useSharedDataQuery';
+
+// Services
+export * from './services/SharedDataProvider';

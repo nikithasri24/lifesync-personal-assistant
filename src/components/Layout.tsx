@@ -20,7 +20,8 @@ import {
   Plane,
   Map,
   MessageCircle,
-  LayoutGrid
+  LayoutGrid,
+  Utensils
 } from 'lucide-react';
 import { useComposedStore } from '../stores/useComposedStore';
 import { useToast } from '../hooks/useToast';
@@ -49,6 +50,7 @@ const navigation = [
   { name: 'Finances', icon: DollarSign, view: 'finances' as const, section: 'personal' },
   { name: 'Shopping', icon: ShoppingCart, view: 'shopping' as const, section: 'personal' },
   { name: 'Meals', icon: ChefHat, view: 'meals' as const, section: 'personal' },
+  { name: 'Nutrition', icon: Utensils, view: 'nutrition' as const, section: 'wellbeing' },
   { name: 'Goals', icon: Trophy, view: 'goals' as const, section: 'personal' },
   { name: 'Shared', icon: Users, view: 'shared' as const, section: 'personal' },
 ];
@@ -256,6 +258,7 @@ export default function Layout({ children }: LayoutProps) {
                   {activeView === 'finances' && 'Track income, expenses, and budgets'}
                   {activeView === 'shopping' && 'Smart grocery management'}
                   {activeView === 'meals' && 'Weekly meal planning'}
+                  {activeView === 'nutrition' && 'Track your meals and nutrition'}
                   {activeView === 'goals' && 'Achieve your dreams'}
                   {activeView === 'shared' && 'Collaborate and share'}
                 </p>

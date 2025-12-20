@@ -7,6 +7,10 @@ import { AuthGate } from './components/AuthGate';
 import { UndoRedoButtons } from './components/UndoRedoButtons';
 import { QuickCapture } from './components/inbox';
 import { useReminderChecker } from './hooks/useReminders';
+import { useHabitReminders, useStreakProtectionAlerts } from './hooks/useHabitReminders';
+import { useBillReminders } from './hooks/useBillReminders';
+import { useImportantDateReminders } from './hooks/useImportantDateReminders';
+import { useTaskReminders } from './hooks/useTaskReminders';
 
 // Lazy load all page components for route-based code splitting
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -19,6 +23,7 @@ const Journal = lazy(() => import('./pages/Journal'));
 const LifeGoals = lazy(() => import('./pages/LifeGoals'));
 const ShoppingSmart = lazy(() => import('./pages/ShoppingSmart'));
 const MealPlanning = lazy(() => import('./pages/MealPlanning'));
+const Nutrition = lazy(() => import('./pages/Nutrition'));
 const ProjectTracking = lazy(() => import('./pages/ProjectTracking'));
 const Shared = lazy(() => import('./pages/Shared'));
 const Travel = lazy(() => import('./pages/Travel'));
@@ -34,6 +39,21 @@ function App(): React.ReactElement {
 
   // Start reminder checking when app loads
   useReminderChecker(true);
+
+  // Schedule habit reminders for the day
+  useHabitReminders(true);
+
+  // Schedule streak protection alerts for habits at risk
+  useStreakProtectionAlerts(true);
+
+  // Schedule bill payment reminders
+  useBillReminders(true);
+
+  // Schedule important date reminders (birthdays, anniversaries)
+  useImportantDateReminders(true);
+
+  // Auto-create reminders for scheduled tasks
+  useTaskReminders(true);
 
   const renderPage = (): React.ReactElement => {
     switch (activeView) {
@@ -71,6 +91,8 @@ function App(): React.ReactElement {
         return <ShoppingSmart />;
       case 'meals':
         return <MealPlanning />;
+      case 'nutrition':
+        return <Nutrition />;
       case 'shared':
         return <Shared />;
       case 'skincare':

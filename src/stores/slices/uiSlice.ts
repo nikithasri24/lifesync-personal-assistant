@@ -24,6 +24,7 @@ export type ViewKey =
   | 'mood'
   | 'calendar'
   | 'meals'
+  | 'nutrition'
   | 'shopping'
   | 'travel'
   | 'personal'

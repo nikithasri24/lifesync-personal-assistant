@@ -3,4 +3,5 @@
  */
 
 export * from './NutritionService';
-
+export * from './FoodPhotoService';
+export * from './OpenFoodFactsService';
