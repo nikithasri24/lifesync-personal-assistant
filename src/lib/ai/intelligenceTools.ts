@@ -834,6 +834,71 @@ async function executeLifeCoach(
 }
 
 // =====================================================
+// AUTO-CATEGORIZE TOOL
+// =====================================================
+
+const autoCategorizeDefinition: ToolDefinition = {
+  type: 'function',
+  function: {
+    name: 'auto_categorize',
+    description: 'Automatically categorize content (tasks, expenses, notes). Use when user adds items without explicit category.',
+    parameters: {
+      type: 'object',
+      properties: {
+        content: {
+          type: 'string',
+          description: 'The content to categorize'
+        },
+        type: {
+          type: 'string',
+          enum: ['task', 'expense', 'note', 'inbox_item'],
+          description: 'Type of content to categorize'
+        }
+      },
+      required: ['content', 'type']
+    }
+  }
+};
+
+async function executeAutoCategorize(
+  args: Record<string, unknown>,
+  userId: string
+): Promise<ToolResult> {
+  try {
+    const content = args.content as string;
+    const type = args.type as 'task' | 'expense' | 'note' | 'inbox_item';
+
+    const { autoCategorizationService } = await import('@/services/ai/AutoCategorizationService');
+
+    const result = autoCategorizationService.categorize(content, type);
+    const priority = autoCategorizationService.suggestPriority(content);
+
+    logger.info('IntelligenceTools', 'Auto-categorize via AI', {
+      type,
+      category: result.category,
+      confidence: result.confidence,
+    });
+
+    return {
+      success: true,
+      data: {
+        category: result.category,
+        confidence: result.confidence,
+        subcategory: result.subcategory,
+        tags: result.tags,
+        suggestedPriority: priority,
+      },
+    };
+  } catch (error) {
+    logger.error('IntelligenceTools', error as Error, { context: 'executeAutoCategorize' });
+    return {
+      success: false,
+      error: `Failed to categorize: ${(error as Error).message}`,
+    };
+  }
+}
+
+// =====================================================
 // BILLS DUE TOOL
 // =====================================================
 
@@ -1025,6 +1090,10 @@ export const intelligenceTools: Tool[] = [
   {
     definition: lifeCoachDefinition,
     execute: executeLifeCoach
+  },
+  {
+    definition: autoCategorizeDefinition,
+    execute: executeAutoCategorize
   }
 ];
 
