@@ -440,6 +440,84 @@ async function executeGetSmartSuggestions(
 }
 
 // =====================================================
+// BILLS DUE TOOL
+// =====================================================
+
+const getBillsDueDefinition: ToolDefinition = {
+  type: 'function',
+  function: {
+    name: 'get_bills_due',
+    description: 'Get upcoming bills and their due dates. Use for "what bills are due this week?", "any bills coming up?", "how much do I owe this month?"',
+    parameters: {
+      type: 'object',
+      properties: {
+        timeframe: {
+          type: 'string',
+          enum: ['this_week', 'upcoming', 'all'],
+          description: 'Timeframe for bills. Default: this_week'
+        }
+      },
+      required: []
+    }
+  }
+};
+
+async function executeGetBillsDue(
+  args: Record<string, unknown>,
+  userId: string
+): Promise<ToolResult> {
+  try {
+    const timeframe = (args.timeframe as string) || 'this_week';
+
+    // Import dynamically to avoid circular dependencies
+    const { getBillsDueThisWeek, getUpcomingBills, getBills, getBillSummary } = await import('@/services/bills');
+
+    let bills;
+    if (timeframe === 'this_week') {
+      bills = await getBillsDueThisWeek();
+    } else if (timeframe === 'upcoming') {
+      bills = await getUpcomingBills();
+    } else {
+      bills = await getBills(true);
+    }
+
+    const summary = await getBillSummary();
+
+    logger.info('IntelligenceTools', 'Bills due query via AI', {
+      timeframe,
+      billCount: bills.length,
+    });
+
+    return {
+      success: true,
+      data: {
+        bills: bills.map(b => ({
+          name: b.name,
+          amount: b.amount,
+          dueDate: b.due_date,
+          isAutoPay: b.is_auto_pay,
+          category: b.category,
+        })),
+        summary: {
+          totalMonthly: summary.totalMonthly,
+          overdueCount: summary.overdueCount,
+          subscriptionTotal: summary.subscriptionTotal,
+        },
+        message: bills.length === 0
+          ? 'No bills due in this timeframe.'
+          : `You have ${bills.length} bill(s) ${timeframe === 'this_week' ? 'due this week' : 'upcoming'}.`,
+      },
+    };
+  } catch (error) {
+    logger.error('IntelligenceTools', error as Error, { context: 'executeGetBillsDue' });
+    return {
+      success: false,
+      error: `Failed to get bills: ${(error as Error).message}`,
+    };
+  }
+}
+
+// =====================================================
 // QUICK CAPTURE TOOL
 // =====================================================
 
@@ -529,6 +607,10 @@ export const intelligenceTools: Tool[] = [
   {
     definition: quickCaptureDefinition,
     execute: executeQuickCapture
+  },
+  {
+    definition: getBillsDueDefinition,
+    execute: executeGetBillsDue
   }
 ];
 
