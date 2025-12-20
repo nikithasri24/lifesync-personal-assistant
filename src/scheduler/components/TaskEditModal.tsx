@@ -20,6 +20,7 @@ import { format } from 'date-fns';
 import type { ScheduledTask } from '../types';
 import type { TaskData, ProjectData } from '../../services/types';
 import { DependencySelector, DependencyIndicator } from '../../components/dependencies';
+import { RecurrenceSelector } from '../../components/recurrence';
 
 interface TaskEditModalProps {
   task: ScheduledTask | null;
@@ -61,6 +62,9 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
         starred: task.starred || false,
         category: task.category,
         depends_on: task.depends_on || [],
+        recurrence_pattern: task.recurrence_pattern || 'none',
+        recurrence_interval: task.recurrence_interval || 1,
+        recurrence_days: task.recurrence_days || [],
       });
     }
   }, [task]);
@@ -336,6 +340,21 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
               variant="detailed"
             />
           )}
+
+          {/* Recurrence */}
+          <RecurrenceSelector
+            value={{
+              pattern: (formData.recurrence_pattern as 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom') || 'none',
+              interval: formData.recurrence_interval || 1,
+              days: formData.recurrence_days || [],
+            }}
+            onChange={(config) => setFormData({
+              ...formData,
+              recurrence_pattern: config.pattern,
+              recurrence_interval: config.interval,
+              recurrence_days: config.days,
+            })}
+          />
         </form>
 
         {/* Actions - Fixed Footer */}

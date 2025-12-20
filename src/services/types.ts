@@ -40,6 +40,13 @@ export interface TaskData {
   reminder?: string | null;
   attachments?: string[] | null;
   assigned_to?: string | null;
+  // Recurrence fields
+  recurrence_pattern?: 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom' | null;
+  recurrence_interval?: number | null; // e.g., every 2 weeks
+  recurrence_days?: number[] | null; // for weekly: [0,1,2,3,4,5,6] (Sun-Sat), for monthly: [1,15] (days of month)
+  recurrence_end_date?: string | null; // when recurrence should stop
+  recurrence_count?: number | null; // max occurrences (alternative to end_date)
+  parent_recurring_id?: string | null; // link to the original recurring task template
 }
 
 /**
