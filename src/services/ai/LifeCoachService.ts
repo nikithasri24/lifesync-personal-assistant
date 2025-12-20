@@ -1,9 +1,15 @@
 /**
  * Life Coach Service
  * Provides personalized coaching insights, weekly check-ins, and motivational support
+ *
+ * ARCHITECTURE: Uses API layer for all data access (no direct Supabase calls)
  */
 
-import { supabase } from '@/lib/supabase';
+import { getTasks } from '@/api/tasksAPI';
+import { getHabits, getHabitEntries } from '@/api/habitsAPI';
+import { getGoals } from '@/api/goalsAPI';
+import { getFocusSessions } from '@/api/focusAPI';
+import { getJournalEntries } from '@/api/journalAPI';
 import { logger } from '@/services/logger';
 import { format, subDays, subWeeks, startOfWeek, endOfWeek } from 'date-fns';
 
@@ -108,59 +114,40 @@ class LifeCoachService {
   }
 
   private async getTasksData(userId: string, start: Date, end: Date) {
-    const { data } = await supabase
-      .from('tasks')
-      .select('id, status, completed_at, created_at')
-      .eq('user_id', userId)
-      .gte('created_at', start.toISOString())
-      .lte('created_at', end.toISOString());
-    return data || [];
+    // Use API layer instead of direct Supabase
+    const tasks = await getTasks({ deleted: false, archived: false });
+
+    // Filter by date range
+    return tasks.filter(t => {
+      const createdAt = new Date(t.created_at!);
+      return createdAt >= start && createdAt <= end;
+    });
   }
 
   private async getHabitsData(userId: string, start: Date, end: Date) {
-    const { data: habits } = await supabase
-      .from('habits')
-      .select('id, name, current_streak')
-      .eq('user_id', userId)
-      .eq('is_active', true);
+    // Use API layer instead of direct Supabase
+    const habits = await getHabits({ isActive: true });
+    const entries = await getHabitEntries({
+      startDate: format(start, 'yyyy-MM-dd'),
+      endDate: format(end, 'yyyy-MM-dd'),
+    });
 
-    const { data: entries } = await supabase
-      .from('habit_entries')
-      .select('habit_id, date')
-      .in('habit_id', (habits || []).map(h => h.id))
-      .gte('date', format(start, 'yyyy-MM-dd'))
-      .lte('date', format(end, 'yyyy-MM-dd'));
-
-    return { habits: habits || [], entries: entries || [] };
+    return { habits, entries };
   }
 
   private async getGoalsData(userId: string) {
-    const { data } = await supabase
-      .from('goals')
-      .select('id, title, progress, status')
-      .eq('user_id', userId)
-      .eq('status', 'active');
-    return data || [];
+    // Use API layer instead of direct Supabase
+    return await getGoals({ status: 'active' });
   }
 
   private async getFocusData(userId: string, start: Date, end: Date) {
-    const { data } = await supabase
-      .from('focus_sessions')
-      .select('duration')
-      .eq('user_id', userId)
-      .gte('started_at', start.toISOString())
-      .lte('started_at', end.toISOString());
-    return data || [];
+    // Use API layer instead of direct Supabase
+    return await getFocusSessions({ startDate: start, endDate: end });
   }
 
   private async getJournalData(userId: string, start: Date, end: Date) {
-    const { data } = await supabase
-      .from('journal_entries')
-      .select('id, mood, created_at')
-      .eq('user_id', userId)
-      .gte('created_at', start.toISOString())
-      .lte('created_at', end.toISOString());
-    return data || [];
+    // Use API layer instead of direct Supabase
+    return await getJournalEntries({ startDate: start, endDate: end });
   }
 
   private calculateProductivityScore(
