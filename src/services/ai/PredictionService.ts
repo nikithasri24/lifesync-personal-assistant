@@ -1,9 +1,16 @@
 /**
  * Prediction Service
  * Generates proactive predictions and suggestions based on user data
+ *
+ * ARCHITECTURE: Uses API layer for all data access (no direct Supabase calls)
  */
 
-import { supabase } from '@/lib/supabase';
+import { getTasks } from '@/api/tasksAPI';
+import { getHabits, getHabitEntriesForDate } from '@/api/habitsAPI';
+import { getGoals } from '@/api/goalsAPI';
+import { getCalendarEvents } from '@/api/calendarAPI';
+import { getBills } from '@/api/billsAPI';
+import { getImportantDates } from '@/api/importantDatesAPI';
 import { logger } from '@/services/logger';
 import { format, addDays, startOfWeek, endOfWeek, differenceInDays, parseISO } from 'date-fns';
 
@@ -84,32 +91,28 @@ class PredictionService {
     const predictions: Prediction[] = [];
     const endDate = addDays(ctx.today, ctx.lookAheadDays);
 
-    // Get events for the period
-    const { data: events } = await supabase
-      .from('calendar_events')
-      .select('start_time')
-      .eq('user_id', ctx.userId)
-      .gte('start_time', ctx.today.toISOString())
-      .lte('start_time', endDate.toISOString());
+    // Use API layer instead of direct Supabase
+    const events = await getCalendarEvents({
+      startDate: ctx.today,
+      endDate,
+    });
 
-    // Get tasks due in the period
-    const { data: tasks } = await supabase
-      .from('tasks')
-      .select('due_date')
-      .eq('user_id', ctx.userId)
-      .eq('status', 'pending')
-      .gte('due_date', format(ctx.today, 'yyyy-MM-dd'))
-      .lte('due_date', format(endDate, 'yyyy-MM-dd'));
+    const tasks = await getTasks({ status: 'pending' });
+    const tasksInRange = tasks.filter(t => {
+      if (!t.due_date) return false;
+      const dueDate = new Date(t.due_date);
+      return dueDate >= ctx.today && dueDate <= endDate;
+    });
 
     // Count items per day
     const dayLoad: Record<string, number> = {};
-    
-    (events || []).forEach(e => {
+
+    events.forEach(e => {
       const day = format(parseISO(e.start_time), 'yyyy-MM-dd');
       dayLoad[day] = (dayLoad[day] || 0) + 1;
     });
 
-    (tasks || []).forEach(t => {
+    tasksInRange.forEach(t => {
       if (t.due_date) {
         dayLoad[t.due_date] = (dayLoad[t.due_date] || 0) + 1;
       }
@@ -143,30 +146,22 @@ class PredictionService {
     const predictions: Prediction[] = [];
     const today = format(ctx.today, 'yyyy-MM-dd');
 
-    // Get habits with streaks
-    const { data: habits } = await supabase
-      .from('habits')
-      .select('id, name, current_streak')
-      .eq('user_id', ctx.userId)
-      .eq('is_active', true)
-      .gt('current_streak', 0);
+    // Use API layer instead of direct Supabase
+    const habits = await getHabits({ isActive: true });
+    const habitsWithStreaks = habits.filter(h => (h.current_streak ?? 0) > 0);
 
-    // Check which haven't been completed today
-    const { data: todayEntries } = await supabase
-      .from('habit_entries')
-      .select('habit_id')
-      .eq('date', today);
+    const todayEntries = await getHabitEntriesForDate(today);
+    const completedIds = new Set(todayEntries.map(e => e.habit_id));
 
-    const completedIds = new Set((todayEntries || []).map(e => e.habit_id));
-
-    (habits || []).forEach(habit => {
-      if (!completedIds.has(habit.id) && habit.current_streak >= 7) {
+    habitsWithStreaks.forEach(habit => {
+      if (!completedIds.has(habit.id!) && (habit.current_streak ?? 0) >= 7) {
+        const streak = habit.current_streak ?? 0;
         predictions.push({
           id: `streak-${habit.id}`,
           type: 'streak_at_risk',
-          priority: habit.current_streak >= 30 ? 'high' : 'medium',
+          priority: streak >= 30 ? 'high' : 'medium',
           title: `${habit.name} streak at risk!`,
-          message: `Your ${habit.current_streak}-day streak will break if not completed today`,
+          message: `Your ${streak}-day streak will break if not completed today`,
           suggestedAction: 'Complete now',
           actionType: 'view_details',
           actionPayload: { habitId: habit.id },
@@ -185,17 +180,17 @@ class PredictionService {
     const predictions: Prediction[] = [];
     const endDate = addDays(ctx.today, ctx.lookAheadDays);
 
-    const { data: goals } = await supabase
-      .from('goals')
-      .select('id, title, target_date, progress')
-      .eq('user_id', ctx.userId)
-      .eq('status', 'active')
-      .gte('target_date', format(ctx.today, 'yyyy-MM-dd'))
-      .lte('target_date', format(endDate, 'yyyy-MM-dd'));
+    // Use API layer instead of direct Supabase
+    const goals = await getGoals({ status: 'active' });
+    const goalsInRange = goals.filter(g => {
+      if (!g.target_date) return false;
+      const targetDate = new Date(g.target_date);
+      return targetDate >= ctx.today && targetDate <= endDate;
+    });
 
-    (goals || []).forEach(goal => {
-      const daysUntil = differenceInDays(parseISO(goal.target_date), ctx.today);
-      const progress = goal.progress || 0;
+    goalsInRange.forEach(goal => {
+      const daysUntil = differenceInDays(parseISO(goal.target_date!), ctx.today);
+      const progress = goal.progress ?? 0;
 
       if (daysUntil <= 3 && progress < 80) {
         predictions.push({
@@ -234,23 +229,23 @@ class PredictionService {
     const predictions: Prediction[] = [];
     const endDate = addDays(ctx.today, ctx.lookAheadDays);
 
-    const { data: bills } = await supabase
-      .from('recurring_bills')
-      .select('id, name, amount, due_date, is_auto_pay')
-      .eq('user_id', ctx.userId)
-      .eq('is_active', true)
-      .gte('due_date', format(ctx.today, 'yyyy-MM-dd'))
-      .lte('due_date', format(endDate, 'yyyy-MM-dd'));
+    // Use API layer instead of direct Supabase
+    const bills = await getBills({ isActive: true });
+    const billsInRange = bills.filter(b => {
+      if (!b.due_date || b.is_auto_pay) return false;
+      const dueDate = new Date(b.due_date);
+      return dueDate >= ctx.today && dueDate <= endDate;
+    });
 
-    (bills || []).filter(b => !b.is_auto_pay).forEach(bill => {
-      const daysUntil = differenceInDays(parseISO(bill.due_date), ctx.today);
+    billsInRange.forEach(bill => {
+      const daysUntil = differenceInDays(parseISO(bill.due_date!), ctx.today);
 
       predictions.push({
         id: `bill-${bill.id}`,
         type: 'bill_due',
         priority: daysUntil <= 2 ? 'high' : 'medium',
         title: `${bill.name} due in ${daysUntil} day(s)`,
-        message: `$${bill.amount.toFixed(2)} due on ${bill.due_date}`,
+        message: `$${(bill.amount ?? 0).toFixed(2)} due on ${bill.due_date}`,
         suggestedAction: 'Mark as paid',
         actionType: 'view_details',
         actionPayload: { billId: bill.id },
@@ -267,16 +262,12 @@ class PredictionService {
   private async predictBirthdaysUpcoming(ctx: PredictionContext): Promise<Prediction[]> {
     const predictions: Prediction[] = [];
 
-    // Use the RPC function if available, otherwise query directly
-    const { data: dates } = await supabase
-      .from('important_dates')
-      .select('id, person_name, date_type, month, day, year')
-      .eq('user_id', ctx.userId)
-      .eq('is_active', true);
+    // Use API layer instead of direct Supabase
+    const dates = await getImportantDates({ isActive: true });
 
     const thisYear = ctx.today.getFullYear();
 
-    (dates || []).forEach(date => {
+    dates.forEach(date => {
       let nextOccurrence = new Date(thisYear, date.month - 1, date.day);
       if (nextOccurrence < ctx.today) {
         nextOccurrence = new Date(thisYear + 1, date.month - 1, date.day);
