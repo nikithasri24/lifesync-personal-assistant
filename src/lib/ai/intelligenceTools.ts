@@ -899,6 +899,88 @@ async function executeAutoCategorize(
 }
 
 // =====================================================
+// SENTIMENT ANALYSIS TOOL
+// =====================================================
+
+const analyzeSentimentDefinition: ToolDefinition = {
+  type: 'function',
+  function: {
+    name: 'analyze_sentiment',
+    description: 'Analyze mood and sentiment from journal entries. Use for "how have I been feeling?", "what are my emotional patterns?", "analyze my mood".',
+    parameters: {
+      type: 'object',
+      properties: {
+        text: {
+          type: 'string',
+          description: 'Optional specific text to analyze. If not provided, analyzes recent journal entries.'
+        },
+        days: {
+          type: 'number',
+          description: 'Number of days to analyze. Default: 30'
+        }
+      },
+      required: []
+    }
+  }
+};
+
+async function executeAnalyzeSentiment(
+  args: Record<string, unknown>,
+  userId: string
+): Promise<ToolResult> {
+  try {
+    const text = args.text as string | undefined;
+    const days = (args.days as number) || 30;
+
+    const { sentimentAnalysisService } = await import('@/services/ai/SentimentAnalysisService');
+
+    if (text) {
+      // Analyze specific text
+      const result = sentimentAnalysisService.analyzeSentiment(text);
+
+      logger.info('IntelligenceTools', 'Analyze sentiment (text) via AI', {
+        sentiment: result.sentiment,
+      });
+
+      return {
+        success: true,
+        data: {
+          sentiment: result.sentiment,
+          score: result.score,
+          emotions: result.emotions,
+          keywords: result.keywords,
+        },
+      };
+    }
+
+    // Analyze journal entries
+    const insights = await sentimentAnalysisService.getJournalInsights(userId, days);
+
+    logger.info('IntelligenceTools', 'Analyze sentiment (journal) via AI', {
+      trend: insights.sentimentTrend,
+      avgSentiment: insights.averageSentiment,
+    });
+
+    return {
+      success: true,
+      data: {
+        averageSentiment: insights.averageSentiment,
+        trend: insights.sentimentTrend,
+        dominantEmotions: insights.dominantEmotions,
+        recommendations: insights.recommendations,
+        moodTrends: insights.moodTrends.slice(-7), // Last 7 days
+      },
+    };
+  } catch (error) {
+    logger.error('IntelligenceTools', error as Error, { context: 'executeAnalyzeSentiment' });
+    return {
+      success: false,
+      error: `Failed to analyze sentiment: ${(error as Error).message}`,
+    };
+  }
+}
+
+// =====================================================
 // BILLS DUE TOOL
 // =====================================================
 
@@ -1094,6 +1176,10 @@ export const intelligenceTools: Tool[] = [
   {
     definition: autoCategorizeDefinition,
     execute: executeAutoCategorize
+  },
+  {
+    definition: analyzeSentimentDefinition,
+    execute: executeAnalyzeSentiment
   }
 ];
 
