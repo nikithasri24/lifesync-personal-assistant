@@ -163,6 +163,11 @@ export async function deleteCalendarEvent(id: string): Promise<void> {
 
 /**
  * Find free time slots between events
+ *
+ * @deprecated Use scheduleEngine.findFreeSlots() from src/services/scheduler instead.
+ * This function only considers calendar_events. The ScheduleEngine considers ALL sources:
+ * calendar_events, schedule_blocks, and scheduled tasks.
+ *
  * @param date - Date to search for free slots
  * @param durationMinutes - Minimum duration required in minutes
  * @returns Promise<Array<{ start: string; end: string }>> - Array of free time slots

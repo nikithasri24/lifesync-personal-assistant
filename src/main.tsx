@@ -5,6 +5,10 @@ import App from './App.tsx'
 import { AuthProvider } from './providers/AuthProvider'
 import { QueryProvider } from './providers/QueryProvider'
 import { UndoRedoProvider } from './contexts/UndoRedoContext'
+import { initializeCommandBus } from './lib/commandBus'
+
+// Initialize the command bus with all handlers and middleware
+initializeCommandBus();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

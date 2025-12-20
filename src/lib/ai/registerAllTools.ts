@@ -12,6 +12,7 @@ import { logger } from '@/services/logger';
 import { taskTools } from '@/todos/tools';
 import { habitTools } from '@/habits/tools';
 import { goalTools } from '@/goals/tools';
+import { schedulerTools } from '@/scheduler/tools';
 import { intelligenceTools } from './intelligenceTools';
 
 // Import additional tools as they're created
@@ -38,6 +39,7 @@ export function registerAllTools(): void {
     ...taskTools,
     ...habitTools,
     ...goalTools,
+    ...schedulerTools,
     ...intelligenceTools,
     // Add more tools here as they're created
   ]);

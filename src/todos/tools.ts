@@ -2,12 +2,14 @@
  * Tasks AI Tools
  *
  * AI tools for task management (create, get, update, complete, overview)
+ * Uses CommandBus for unified action dispatch
  */
 
 import type { Tool, ToolDefinition, ToolResult } from '@/lib/ai/toolRegistry';
-import { createTask, getTasks } from '@/api/tasksAPI';
+import { getTasks } from '@/api/tasksAPI';
+import { commandBus, type CreateTaskCommand } from '@/lib/commandBus';
 import { logger } from '@/services/logger';
-import { startOfWeek, addDays, isSameDay } from 'date-fns';
+import { addDays, isSameDay } from 'date-fns';
 import type { TaskData } from '@/services/types';
 
 // =====================================================
@@ -63,7 +65,7 @@ const getWeekOverviewDefinition: ToolDefinition = {
 // =====================================================
 
 /**
- * Create a new task
+ * Create a new task via CommandBus
  */
 async function executeCreateTask(
   args: Record<string, unknown>,
@@ -72,7 +74,7 @@ async function executeCreateTask(
   try {
     const title = args.title as string;
     const dueDate = args.due_date as string | undefined;
-    const priority = (args.priority as TaskData['priority']) ?? 'medium';
+    const priority = (args.priority as 'low' | 'medium' | 'high' | 'urgent') ?? 'medium';
     const estimatedHours = args.estimated_hours as number | undefined;
 
     // Validate required fields
@@ -83,32 +85,41 @@ async function executeCreateTask(
       };
     }
 
-    logger.info('TaskTools', 'Creating task', {
+    logger.info('TaskTools', 'Creating task via CommandBus', {
       title,
       priority,
       dueDate,
       estimatedHours
     });
 
-    const task = await createTask({
-      title: title.trim(),
-      due_date: dueDate,
-      priority,
-      status: 'todo',
-      deleted: false,
-      archived: false,
-      starred: false
-    });
+    // Dispatch command through CommandBus
+    const command: CreateTaskCommand = {
+      type: 'CREATE_TASK',
+      timestamp: new Date(),
+      source: 'ai',
+      payload: {
+        title: title.trim(),
+        dueDate,
+        priority,
+        estimatedTime: estimatedHours ? estimatedHours * 60 : undefined, // Convert hours to minutes
+      }
+    };
 
-    logger.info('TaskTools', 'Task created successfully', {
-      taskId: task.id,
-      title: task.title
-    });
+    const result = await commandBus.dispatch(command);
+
+    if (!result.success) {
+      return {
+        success: false,
+        error: result.error || 'Failed to create task'
+      };
+    }
+
+    const task = result.data as TaskData;
 
     return {
       success: true,
       task_id: task.id,
-      message: `Task "${task.title}" created successfully`,
+      message: result.message || `Task "${task.title}" created successfully`,
       task: {
         id: task.id,
         title: task.title,

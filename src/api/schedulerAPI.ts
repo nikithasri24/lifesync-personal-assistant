@@ -149,6 +149,11 @@ export async function deleteScheduleBlock(id: string): Promise<void> {
 
 /**
  * Find free time slots in a given date range
+ *
+ * @deprecated Use scheduleEngine.findFreeSlots() from src/services/scheduler instead.
+ * This function only considers schedule_blocks. The ScheduleEngine considers ALL sources:
+ * calendar_events, schedule_blocks, and scheduled tasks.
+ *
  * @param date - Date string in YYYY-MM-DD format
  * @param duration - Minimum duration required in minutes
  * @returns Promise<Array<{ start: string; end: string }>> - Array of free time slots
