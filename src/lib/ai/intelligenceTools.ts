@@ -1350,6 +1350,84 @@ async function executeManageAutomation(
 }
 
 // =====================================================
+// GET INSIGHTS TOOL
+// =====================================================
+
+const getInsightsDefinition: ToolDefinition = {
+  type: 'function',
+  function: {
+    name: 'get_insights',
+    description: 'Get comprehensive insights and analytics. Use for "how am I doing?", "give me my weekly report", "what are my trends?", "show my analytics".',
+    parameters: {
+      type: 'object',
+      properties: {
+        timeframe: {
+          type: 'string',
+          enum: ['week', 'month', 'quarter'],
+          description: 'Timeframe for insights. Default: week'
+        },
+        focus: {
+          type: 'string',
+          enum: ['all', 'productivity', 'habits', 'finance', 'wellness'],
+          description: 'Area to focus on. Default: all'
+        }
+      },
+      required: []
+    }
+  }
+};
+
+async function executeGetInsights(
+  args: Record<string, unknown>,
+  userId: string
+): Promise<ToolResult> {
+  try {
+    const timeframe = (args.timeframe as string) || 'week';
+    const focus = (args.focus as string) || 'all';
+
+    const days = timeframe === 'quarter' ? 90 : timeframe === 'month' ? 30 : 7;
+    const startDate = format(subDays(new Date(), days), 'yyyy-MM-dd');
+    const endDate = format(new Date(), 'yyyy-MM-dd');
+    const dateRange = { startDate, endDate };
+
+    const { getProductivityAnalytics, getFinanceAnalytics, getWellbeingAnalytics } = await import('@/services/analytics');
+
+    const insights: Record<string, unknown> = { timeframe, focus };
+
+    if (focus === 'all' || focus === 'productivity') {
+      insights.productivity = await getProductivityAnalytics(dateRange);
+    }
+    if (focus === 'all' || focus === 'finance') {
+      insights.finance = await getFinanceAnalytics(dateRange);
+    }
+    if (focus === 'all' || focus === 'wellness') {
+      insights.wellness = await getWellbeingAnalytics(dateRange);
+    }
+    if (focus === 'all' || focus === 'habits') {
+      const context = await contextAggregator.getTodaysContext(userId);
+      insights.habits = {
+        completedToday: context.habits.completed,
+        dueToday: context.habits.due,
+        streaksAtRisk: context.habits.streaksAtRisk,
+      };
+    }
+
+    logger.info('IntelligenceTools', 'Get insights via AI', { timeframe, focus });
+
+    return {
+      success: true,
+      data: insights,
+    };
+  } catch (error) {
+    logger.error('IntelligenceTools', error as Error, { context: 'executeGetInsights' });
+    return {
+      success: false,
+      error: `Failed to get insights: ${(error as Error).message}`,
+    };
+  }
+}
+
+// =====================================================
 // EXPORTED TOOLS
 // =====================================================
 
@@ -1413,6 +1491,10 @@ export const intelligenceTools: Tool[] = [
   {
     definition: manageAutomationDefinition,
     execute: executeManageAutomation
+  },
+  {
+    definition: getInsightsDefinition,
+    execute: executeGetInsights
   }
 ];
 
