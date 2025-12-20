@@ -370,3 +370,85 @@ class MyService {
 }
 ```
 
+## Type Definitions
+
+### Type Layers
+
+The codebase uses two layers of types to separate database concerns from UI concerns:
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                         UI LAYER TYPES                              │
+│   src/types/*.ts                                                    │
+│   - camelCase naming (TypeScript convention)                        │
+│   - Date objects for dates                                          │
+│   - Required booleans with defaults                                 │
+│   - Non-nullable arrays                                             │
+└──────────────────────────────────────────────────────────────────────┘
+                               ▲
+                               │ Mapped by hooks/services
+                               │
+┌─────────────────────────────────────────────────────────────────────┐
+│                         DB LAYER TYPES                              │
+│   src/services/types.ts                                             │
+│   - snake_case naming (PostgreSQL convention)                       │
+│   - ISO strings for dates                                           │
+│   - Optional fields with null                                       │
+│   - Matches Supabase schema exactly                                 │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Type File Locations
+
+| Location | Purpose | Naming |
+|----------|---------|--------|
+| `src/services/types.ts` | Database/API layer types | snake_case, `*Data` suffix |
+| `src/types/*.ts` | UI layer types | camelCase |
+| `src/types/task.ts` | Canonical Task type | UI layer |
+| `src/types/index.ts` | Re-exports and shared types | UI layer |
+| `src/lib/commandBus/types.ts` | Command/Event types | Domain-specific |
+| `src/lib/location/types.ts` | Location provider types | Provider-specific |
+
+### Type Naming Conventions
+
+- **DB types**: `TaskData`, `HabitData`, `ProjectData` (snake_case fields)
+- **UI types**: `Task`, `Habit`, `Project` (camelCase fields)
+- **Input types**: `TaskInput`, `ProjectInput` (for create operations)
+- **Update types**: `TaskUpdate`, `ProjectUpdate` (for update operations)
+- **Filter types**: `TaskFilters`, `HabitFilters` (for query parameters)
+
+### Example: Task Types
+
+```typescript
+// src/services/types.ts - DB layer
+export interface TaskData {
+  id?: string;
+  user_id?: string;
+  title: string;
+  due_date?: string | null;  // ISO string
+  created_at?: string;
+}
+
+// src/types/task.ts - UI layer
+export interface Task {
+  id: string;
+  title: string;
+  dueDate?: Date;           // Date object
+  createdAt: Date;
+}
+```
+
+### Domain-Specific Types
+
+Some domains have their own type files for complex types:
+
+- `src/components/focus/tasks/types.ts` - TaskView, ProjectView (view models)
+- `src/services/gamification/types.ts` - Achievement, Level definitions
+- `src/services/scheduling/types.ts` - TimeSlot, SchedulePreferences
+
+These are acceptable when:
+1. Types are only used within that domain
+2. Types are view models specific to a component
+3. Types are internal implementation details
+```
+

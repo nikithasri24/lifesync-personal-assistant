@@ -1,29 +1,16 @@
-export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent'
-export type TaskStatus = 'todo' | 'in-progress' | 'waiting' | 'scheduled' | 'done'
-
-export type TaskCategory = 'work' | 'personal' | 'learning' | 'creative' | 'health' | 'other'
-
-export interface SubTask {
-  id: string
-  title: string
-  description?: string
-  status?: TaskStatus
-  completed?: boolean
-  estimatedTime?: number
-  actualTime?: number
-}
-
-export interface FollowUpTask {
-  id: string
-  title: string
-  description?: string
-  priority?: TaskPriority
-  daysAfter?: number
-  triggerCondition?: 'immediate' | 'delayed' | 'manual'
-  category?: string
-  estimatedTime?: number
-  tags?: string[]
-}
+// Re-export canonical task types from task.ts
+export type {
+  TaskPriority,
+  TaskStatus,
+  TaskCategory,
+  SubTask,
+  FollowUpTask,
+  Task,
+  TaskInput,
+  TaskUpdate,
+  TaskFilters,
+  TaskAnalytics,
+} from './task';
 
 // TodoItem has been deprecated and removed. Use Task from '@/types/task' instead.
 // Migration: task.completed → task.status === 'done'
