@@ -12,6 +12,9 @@ export * from './lifeGoalsAPI';
 // Analytics
 export * from './analyticsAPI';
 
+// Conversations
+export * from './conversationsAPI';
+
 // Content APIs
 export * from './notesAPI';
 export * from './journalAPI';

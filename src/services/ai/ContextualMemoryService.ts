@@ -2,9 +2,11 @@
  * Contextual Memory Service
  * Enables AI to remember and reference past conversations
  * "Last week you mentioned stress about the project - how did that go?"
+ *
+ * ARCHITECTURE: Uses API layer for all data access (no direct Supabase calls)
  */
 
-import { supabase } from '@/lib/supabase';
+import { getConversations } from '@/api/conversationsAPI';
 import { logger } from '@/services/logger';
 import { format, subDays, parseISO } from 'date-fns';
 import type { Conversation, ConversationMessage } from '@/types/infrastructure';
@@ -87,22 +89,16 @@ class ContextualMemoryService {
    * Get recent conversation context for a user
    */
   async getConversationContext(userId: string, days = 7): Promise<ConversationContext> {
+    // Use API layer instead of direct Supabase
     const startDate = subDays(new Date(), days);
-
-    const { data: conversations } = await supabase
-      .from('conversations')
-      .select('messages, summary, created_at')
-      .eq('user_id', userId)
-      .gte('created_at', startDate.toISOString())
-      .order('created_at', { ascending: false })
-      .limit(20);
+    const conversations = await getConversations({ startDate, limit: 20 });
 
     const recentTopics: Set<string> = new Set();
     const mentionedEntities: { type: string; name: string }[] = [];
     const lastMentioned: Record<string, string> = {};
     let emotionalContext: string | null = null;
 
-    (conversations || []).forEach(conv => {
+    conversations.forEach(conv => {
       const messages = conv.messages as ConversationMessage[];
       const date = format(parseISO(conv.created_at), 'yyyy-MM-dd');
 
@@ -141,17 +137,13 @@ class ContextualMemoryService {
    * Search memories by topic or keyword
    */
   async searchMemories(userId: string, query: string, limit = 5): Promise<MemorySearchResult> {
-    const { data: conversations } = await supabase
-      .from('conversations')
-      .select('id, messages, summary, created_at')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(50);
+    // Use API layer instead of direct Supabase
+    const conversations = await getConversations({ limit: 50 });
 
     const queryLower = query.toLowerCase();
     const memories: MemoryItem[] = [];
 
-    (conversations || []).forEach(conv => {
+    conversations.forEach(conv => {
       const messages = conv.messages as ConversationMessage[];
       const userMessages = messages.filter(m => m.role === 'user');
       
