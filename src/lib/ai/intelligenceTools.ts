@@ -744,6 +744,96 @@ async function executeGetPredictions(
 }
 
 // =====================================================
+// LIFE COACH TOOL
+// =====================================================
+
+const lifeCoachDefinition: ToolDefinition = {
+  type: 'function',
+  function: {
+    name: 'life_coach',
+    description: 'Get personalized coaching insights and weekly check-in. Use for "how am I doing?", "give me a weekly review", "coach me", "what should I improve?", "celebrate my wins".',
+    parameters: {
+      type: 'object',
+      properties: {
+        question: {
+          type: 'string',
+          description: 'Specific coaching question. If not provided, returns weekly check-in.'
+        },
+        mode: {
+          type: 'string',
+          enum: ['check_in', 'coaching'],
+          description: 'Mode: check_in for weekly summary, coaching for specific advice. Default: check_in'
+        }
+      },
+      required: []
+    }
+  }
+};
+
+async function executeLifeCoach(
+  args: Record<string, unknown>,
+  userId: string
+): Promise<ToolResult> {
+  try {
+    const question = args.question as string | undefined;
+    const mode = (args.mode as string) || 'check_in';
+
+    const { lifeCoachService } = await import('@/services/ai/LifeCoachService');
+
+    if (mode === 'coaching' && question) {
+      const response = await lifeCoachService.getCoachingResponse(userId, question);
+
+      logger.info('IntelligenceTools', 'Life coach response via AI', { mode, question });
+
+      return {
+        success: true,
+        data: {
+          message: response.message,
+          insights: response.insights,
+          suggestedActions: response.suggestedActions,
+        },
+      };
+    }
+
+    // Default: weekly check-in
+    const checkIn = await lifeCoachService.generateWeeklyCheckIn(userId);
+
+    logger.info('IntelligenceTools', 'Weekly check-in via AI', {
+      overallScore: checkIn.overallScore,
+      winsCount: checkIn.wins.length,
+    });
+
+    return {
+      success: true,
+      data: {
+        period: `${checkIn.weekStart} to ${checkIn.weekEnd}`,
+        scores: {
+          overall: checkIn.overallScore,
+          productivity: checkIn.productivityScore,
+          habits: checkIn.habitScore,
+          wellness: checkIn.wellnessScore,
+          balance: checkIn.balanceScore,
+        },
+        wins: checkIn.wins,
+        improvements: checkIn.improvements,
+        advice: checkIn.advice.map(a => ({
+          category: a.category,
+          title: a.title,
+          message: a.message,
+        })),
+        encouragement: checkIn.encouragement,
+      },
+    };
+  } catch (error) {
+    logger.error('IntelligenceTools', error as Error, { context: 'executeLifeCoach' });
+    return {
+      success: false,
+      error: `Failed to get coaching: ${(error as Error).message}`,
+    };
+  }
+}
+
+// =====================================================
 // BILLS DUE TOOL
 // =====================================================
 
@@ -931,6 +1021,10 @@ export const intelligenceTools: Tool[] = [
   {
     definition: getPredictionsDefinition,
     execute: executeGetPredictions
+  },
+  {
+    definition: lifeCoachDefinition,
+    execute: executeLifeCoach
   }
 ];
 
