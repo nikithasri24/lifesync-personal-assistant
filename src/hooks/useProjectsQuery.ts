@@ -5,34 +5,14 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '@/services/apiClient';
-import type { ProjectData } from '@/services/types';
+import * as projectsAPI from '@/api/projectsAPI';
+import type { Project, ProjectMilestone } from '@/services/types';
 import { logger } from '@/services/logger';
 
 // ==================== Types ====================
 
-export interface Project {
-  id: string;
-  name: string;
-  description?: string;
-  color: string;
-  status: 'active' | 'completed' | 'on_hold';
-  icon: string;
-  createdAt: Date;
-  updatedAt?: Date;
-}
-
-export interface ProjectMilestone {
-  id: string;
-  projectId: string;
-  title: string;
-  description?: string;
-  targetDate?: Date;
-  completed: boolean;
-  completedDate?: Date;
-  orderIndex: number;
-  createdAt?: Date;
-}
+// Re-export types from services/types for convenience
+export type { Project, ProjectMilestone } from '@/services/types';
 
 export interface ProjectAnalytics {
   total: number;
@@ -46,10 +26,10 @@ export interface ProjectAnalytics {
   completedMilestones: number;
 }
 
-export type ProjectInput = Omit<Project, 'id' | 'createdAt' | 'updatedAt'>;
-export type ProjectUpdate = Partial<Omit<Project, 'id' | 'createdAt' | 'updatedAt'>>;
-export type MilestoneInput = Omit<ProjectMilestone, 'id' | 'projectId' | 'createdAt'>;
-export type MilestoneUpdate = Partial<Omit<ProjectMilestone, 'id' | 'projectId' | 'createdAt'>>;
+export type ProjectInput = Omit<Project, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'milestones'>;
+export type ProjectUpdate = Partial<ProjectInput>;
+export type MilestoneInput = Omit<ProjectMilestone, 'id' | 'project_id' | 'created_at'>;
+export type MilestoneUpdate = Partial<Omit<ProjectMilestone, 'id' | 'project_id' | 'created_at'>>;
 
 // ==================== Query Keys ====================
 
@@ -64,55 +44,6 @@ export const projectsKeys = {
   analytics: () => [...projectsKeys.all, 'analytics'] as const,
 };
 
-// ==================== Mappers ====================
-
-const toDate = (value?: string | Date | null): Date | undefined => {
-  if (!value) return undefined;
-  if (value instanceof Date) return value;
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? undefined : parsed;
-};
-
-const sanitize = <T extends Record<string, unknown>>(payload: T): T => {
-  const entries = Object.entries(payload).filter(([, value]) => value !== undefined);
-  return Object.fromEntries(entries) as T;
-};
-
-function mapProjectDataToProject(data: ProjectData): Project {
-  return {
-    id: data.id ?? crypto.randomUUID(),
-    name: data.name,
-    description: data.description ?? undefined,
-    color: data.color ?? '#6366f1',
-    status: (data.status as Project['status']) ?? 'active',
-    icon: data.icon ?? '📁',
-    createdAt: toDate(data.created_at) ?? new Date(),
-    updatedAt: toDate(data.updated_at),
-  };
-}
-
-function buildProjectInsertPayload(
-  input: ProjectInput
-): Omit<ProjectData, 'id' | 'created_at' | 'updated_at'> {
-  return sanitize({
-    name: input.name,
-    description: input.description ?? undefined,
-    color: input.color ?? '#6366f1',
-    status: input.status ?? 'active',
-    icon: input.icon ?? '📁',
-  });
-}
-
-function buildProjectUpdatePayload(updates: ProjectUpdate): Partial<ProjectData> {
-  return sanitize({
-    name: updates.name,
-    description: updates.description,
-    color: updates.color,
-    status: updates.status,
-    icon: updates.icon,
-  });
-}
-
 // ==================== Queries ====================
 
 /**
@@ -121,10 +52,7 @@ function buildProjectUpdatePayload(updates: ProjectUpdate): Partial<ProjectData>
 export function useProjectsQuery(): ReturnType<typeof useQuery<Project[]>> {
   return useQuery({
     queryKey: projectsKeys.list(),
-    queryFn: async (): Promise<Project[]> => {
-      const data = await apiClient.getProjects();
-      return data.map(mapProjectDataToProject);
-    },
+    queryFn: () => projectsAPI.getProjects(),
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 }
@@ -133,22 +61,9 @@ export function useProjectsQuery(): ReturnType<typeof useQuery<Project[]>> {
  * Fetch a single project by ID
  */
 export function useProjectQuery(projectId: string | undefined): ReturnType<typeof useQuery<Project>> {
-  const queryClient = useQueryClient();
-
   return useQuery({
     queryKey: projectsKeys.detail(projectId ?? ''),
-    queryFn: (): Project => {
-      // Try to get from cache first
-      const cachedProjects = queryClient.getQueryData<Project[]>(projectsKeys.list());
-      if (cachedProjects) {
-        const cached = cachedProjects.find(p => p.id === projectId);
-        if (cached) return cached;
-      }
-
-      // If not in cache, we'd need a getProject endpoint
-      // For now, return from cached list or throw
-      throw new Error('Project not found in cache and no single-project endpoint available');
-    },
+    queryFn: () => projectsAPI.getProject(projectId!),
     enabled: !!projectId,
     staleTime: 1000 * 60 * 5,
   });
@@ -165,9 +80,7 @@ export function useCreateProjectMutation(): ReturnType<typeof useMutation<Projec
   return useMutation({
     mutationFn: async (input: ProjectInput) => {
       logger.debug('Projects', 'Creating project', { name: input.name, status: input.status });
-      const payload = buildProjectInsertPayload(input);
-      const created = await apiClient.createProject(payload);
-      return mapProjectDataToProject(created);
+      return projectsAPI.createProject(input);
     },
     onMutate: async (input) => {
       logger.debug('Projects', 'Optimistic update: create project', { name: input.name });
@@ -180,11 +93,18 @@ export function useCreateProjectMutation(): ReturnType<typeof useMutation<Projec
       // Optimistically add new project
       const optimisticProject: Project = {
         id: `temp-${Date.now()}`,
-        ...input,
-        color: input.color ?? '#6366f1',
-        icon: input.icon ?? '📁',
-        status: input.status ?? 'active',
-        createdAt: new Date(),
+        user_id: 'temp',
+        name: input.name,
+        description: input.description,
+        status: input.status ?? 'planning',
+        priority: input.priority ?? 'medium',
+        start_date: input.start_date,
+        target_date: input.target_date,
+        tags: input.tags ?? [],
+        color: input.color,
+        progress: input.progress ?? 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       };
 
       queryClient.setQueryData<Project[]>(projectsKeys.list(), (old) => {
@@ -221,9 +141,7 @@ export function useUpdateProjectMutation(): ReturnType<typeof useMutation<Projec
   return useMutation({
     mutationFn: async ({ projectId, updates }: { projectId: string; updates: ProjectUpdate }) => {
       logger.debug('Projects', 'Updating project', { projectId, updates });
-      const payload = buildProjectUpdatePayload(updates);
-      const updated = await apiClient.updateProject(projectId, payload);
-      return mapProjectDataToProject(updated);
+      return projectsAPI.updateProject(projectId, updates);
     },
     onMutate: async ({ projectId, updates }) => {
       logger.debug('Projects', 'Optimistic update: project', { projectId, updates });
@@ -238,7 +156,7 @@ export function useUpdateProjectMutation(): ReturnType<typeof useMutation<Projec
         if (!old) return [];
         return old.map((p) =>
           p.id === projectId
-            ? { ...p, ...updates, updatedAt: new Date() }
+            ? { ...p, ...updates, updated_at: new Date().toISOString() }
             : p
         );
       });
@@ -272,7 +190,7 @@ export function useDeleteProjectMutation(): ReturnType<typeof useMutation<string
   return useMutation({
     mutationFn: async (projectId: string) => {
       logger.debug('Projects', 'Deleting project', { projectId });
-      await apiClient.deleteProject(projectId);
+      await projectsAPI.deleteProject(projectId);
       return projectId;
     },
     onMutate: async (projectId) => {
@@ -331,7 +249,7 @@ export function useProjectStats(): { data: { total: number; active: number; comp
     total: projects.length,
     active: projects.filter(p => p.status === 'active').length,
     completed: projects.filter(p => p.status === 'completed').length,
-    onHold: projects.filter(p => p.status === 'on_hold').length,
+    onHold: projects.filter(p => p.status === 'on-hold').length,
   };
 
   return { data: stats, isLoading };
@@ -351,7 +269,7 @@ export function useProjectAnalyticsQuery(): ReturnType<typeof useQuery<ProjectAn
         total: projects.length,
         active: projects.filter(p => p.status === 'active').length,
         completed: projects.filter(p => p.status === 'completed').length,
-        onHold: projects.filter(p => p.status === 'on_hold').length,
+        onHold: projects.filter(p => p.status === 'on-hold').length,
         totalTasks: 0, // Would need API endpoint
         completedTasks: 0, // Would need API endpoint
         averageProgress: 0, // Would need API endpoint

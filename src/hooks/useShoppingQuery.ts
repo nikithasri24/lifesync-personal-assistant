@@ -202,7 +202,7 @@ export function useUpdateShoppingItem(): UseMutationResult<
 }
 
 export function useDeleteShoppingItem(): UseMutationResult<
-  ShoppingItemData,
+  void,
   Error,
   string,
   { listId?: string; previousItems?: ShoppingItemData[] }
@@ -212,8 +212,7 @@ export function useDeleteShoppingItem(): UseMutationResult<
   return useMutation({
     mutationFn: async (itemId: string) => {
       logger.debug('Shopping', 'Deleting shopping item', { itemId });
-      const result = await deleteShoppingItem(itemId);
-      return result;
+      await deleteShoppingItem(itemId);
     },
     onMutate: async (itemId) => {
       logger.debug('Shopping', 'Optimistic update: delete shopping item', { itemId });

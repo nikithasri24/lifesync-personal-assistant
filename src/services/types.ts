@@ -342,6 +342,7 @@ export interface Project {
   completed_date?: string;
   tags: string[];
   color?: string;
+  icon?: string;
   progress: number; // 0-100
   milestones?: ProjectMilestone[];
   team_members?: string[]; // for shared projects

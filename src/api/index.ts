@@ -23,6 +23,10 @@ export * from './nutritionAPI';
 
 // Finance & Bills
 export * from './billsAPI';
+export * from './financeAPI';
+
+// Meal Planning
+export * from './mealPlanningAPI';
 
 // Productivity APIs
 export * from './schedulerAPI';

@@ -1,6 +1,6 @@
 import type { StateCreator } from 'zustand';
 import type { FinancialAccountData, FinancialTransactionData } from '@/services/types';
-import { apiClient } from '@/services/apiClient';
+import * as financeAPI from '@/api/financeAPI';
 
 type TransactionInput = Omit<FinancialTransactionData, 'id' | 'created_at' | 'updated_at'>;
 
@@ -36,7 +36,7 @@ export const createFinanceSlice: StateCreator<FinanceSlice, [], [], FinanceSlice
     if (get().accountsLoading) return;
     set({ accountsLoading: true, accountsError: null });
     try {
-      const accounts = await apiClient.getFinancialAccounts();
+      const accounts = await financeAPI.getFinancialAccounts();
       set({ accounts, accountsLoaded: true, accountsLoading: false });
     } catch (error) {
       set({
@@ -51,7 +51,7 @@ export const createFinanceSlice: StateCreator<FinanceSlice, [], [], FinanceSlice
     if (get().transactionsLoading) return;
     set({ transactionsLoading: true, transactionsError: null });
     try {
-      const transactions = await apiClient.getFinancialTransactions();
+      const transactions = await financeAPI.getFinancialTransactions();
       set({ transactions, transactionsLoaded: true, transactionsLoading: false });
     } catch (error) {
       set({
@@ -63,13 +63,13 @@ export const createFinanceSlice: StateCreator<FinanceSlice, [], [], FinanceSlice
   },
 
   addTransaction: async (tx) => {
-    const created = await apiClient.createFinancialTransaction(tx);
+    const created = await financeAPI.createFinancialTransaction(tx);
     set((state) => ({ transactions: [created, ...state.transactions] }));
     return created;
   },
 
   updateTransaction: async (id, updates) => {
-    const updated = await apiClient.updateFinancialTransaction(id, updates);
+    const updated = await financeAPI.updateFinancialTransaction(id, updates);
     set((state) => ({
       transactions: state.transactions.map((t) => (t.id === id ? { ...t, ...updated } : t)),
     }));

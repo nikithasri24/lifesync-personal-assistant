@@ -1,6 +1,6 @@
 import type { StateCreator } from 'zustand';
 import type { MealPlanData, PlannedMealData } from '@/services/types';
-import { apiClient } from '@/services/apiClient';
+import * as mealPlanningAPI from '@/api/mealPlanningAPI';
 
 type MealPlanInput = Omit<MealPlanData, 'id' | 'created_at' | 'updated_at' | 'planned_meals' | 'user_id'>;
 type PlannedMealInput = Omit<PlannedMealData, 'id' | 'created_at' | 'updated_at'>;
@@ -32,7 +32,7 @@ export const createMealsSlice: StateCreator<MealsSlice, [], [], MealsSlice> = (s
     if (get().mealPlansLoading) return;
     set({ mealPlansLoading: true, mealPlansError: null });
     try {
-      const mealPlans = await apiClient.getMealPlans();
+      const mealPlans = await mealPlanningAPI.getMealPlans();
       set({ mealPlans, mealPlansLoaded: true, mealPlansLoading: false });
     } catch (error) {
       set({
@@ -44,13 +44,13 @@ export const createMealsSlice: StateCreator<MealsSlice, [], [], MealsSlice> = (s
   },
 
   addMealPlan: async (plan) => {
-    const created = await apiClient.createMealPlan(plan);
+    const created = await mealPlanningAPI.createMealPlan(plan);
     set((state) => ({ mealPlans: [created, ...state.mealPlans] }));
     return created;
   },
 
   updateMealPlan: async (id, updates) => {
-    const updated = await apiClient.updateMealPlan(id, updates);
+    const updated = await mealPlanningAPI.updateMealPlan(id, updates);
     set((state) => ({
       mealPlans: state.mealPlans.map((plan) => (plan.id === id ? { ...plan, ...updated } : plan)),
     }));
@@ -58,14 +58,14 @@ export const createMealsSlice: StateCreator<MealsSlice, [], [], MealsSlice> = (s
   },
 
   deleteMealPlan: async (id) => {
-    await apiClient.deleteMealPlan(id);
+    await mealPlanningAPI.deleteMealPlan(id);
     set((state) => ({
       mealPlans: state.mealPlans.filter((plan) => plan.id !== id),
     }));
   },
 
   addPlannedMeal: async (meal) => {
-    const created = await apiClient.createPlannedMeal(meal);
+    const created = await mealPlanningAPI.createPlannedMeal(meal);
     set((state) => {
       const planId = created.meal_plan_id;
       return {
@@ -80,7 +80,7 @@ export const createMealsSlice: StateCreator<MealsSlice, [], [], MealsSlice> = (s
   },
 
   updatePlannedMeal: async (id, updates) => {
-    const updated = await apiClient.updatePlannedMeal(id, updates);
+    const updated = await mealPlanningAPI.updatePlannedMeal(id, updates);
     set((state) => ({
       mealPlans: state.mealPlans.map((plan) =>
         plan.planned_meals?.some((meal) => meal.id === id)
@@ -95,7 +95,7 @@ export const createMealsSlice: StateCreator<MealsSlice, [], [], MealsSlice> = (s
   },
 
   deletePlannedMeal: async (id) => {
-    await apiClient.deletePlannedMeal(id);
+    await mealPlanningAPI.deletePlannedMeal(id);
     set((state) => ({
       mealPlans: state.mealPlans.map((plan) => ({
         ...plan,

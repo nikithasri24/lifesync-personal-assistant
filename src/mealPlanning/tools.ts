@@ -5,7 +5,7 @@
  */
 
 import type { Tool, ToolDefinition, ToolResult } from '@/lib/ai/toolRegistry';
-import { apiClient } from '@/services/apiClient';
+import * as mealPlanningAPI from '@/api/mealPlanningAPI';
 import { logger } from '@/services/logger';
 import type { RecipeData, PantryItemData } from '@/services/types';
 
@@ -112,10 +112,10 @@ async function executeSuggestMeal(
     logger.info('MealTools', 'Suggesting meal', { mealType });
 
     // Get pantry items to suggest meals based on available ingredients
-    const pantryItems = await apiClient.getPantryItems();
+    const pantryItems = await mealPlanningAPI.getPantryItems();
 
     // Get saved recipes
-    const allRecipes = await apiClient.getRecipes();
+    const allRecipes = await mealPlanningAPI.getRecipes();
 
     // Filter recipes by tags if applicable
     const categoryRecipes = allRecipes.filter(recipe =>
@@ -209,7 +209,7 @@ async function executeGetRecipes(
 
     logger.info('MealTools', 'Getting recipes', { category, searchTerm });
 
-    let recipes = await apiClient.getRecipes();
+    let recipes = await mealPlanningAPI.getRecipes();
 
     // Apply filters
     if (category) {
@@ -288,7 +288,7 @@ async function executeAddRecipe(
       servings
     });
 
-    const recipe = await apiClient.createRecipe({
+    const recipe = await mealPlanningAPI.createRecipe({
       name: name.trim(),
       description,
       prep_time: prepTime,

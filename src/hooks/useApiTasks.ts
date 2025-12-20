@@ -3,8 +3,7 @@
 // wrapper while the app transitions fully to the store-centric APIs.
 
 import { useCallback, useMemo, useState } from 'react';
-import type { TaskData, ProjectData } from '../services/apiClient';
-import type { Project as StoreProject } from '../services/types';
+import type { TaskData, ProjectData, Project as StoreProject } from '../services/types';
 import { useComposedStore } from '../stores/useComposedStore';
 import type { TaskInput } from '../stores/slices/tasksSlice';
 

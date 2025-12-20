@@ -11,7 +11,7 @@
 /* eslint-disable max-lines */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '@/services/apiClient';
+import * as mealPlanningAPI from '@/api/mealPlanningAPI';
 import { startOfWeek, format as formatDate } from 'date-fns';
 import type {
   RecipeData,
@@ -473,7 +473,7 @@ export function useRecipesQuery(options?: { enabled?: boolean }): ReturnType<typ
   return useQuery({
     queryKey: mealPlanningKeys.recipesList(),
     queryFn: async () => {
-      const data = await apiClient.getRecipes();
+      const data = await mealPlanningAPI.getRecipes();
       return data.map(mapRecipeDataToRecipe);
     },
     staleTime: 1000 * 60 * 10, // 10 minutes
@@ -516,7 +516,7 @@ export function useCreateRecipeMutation(): ReturnType<typeof useMutation<Recipe,
   return useMutation({
     mutationFn: async (input: RecipeInput) => {
       const payload = buildRecipeInsertPayload(input) as Omit<RecipeData, 'id' | 'created_at' | 'updated_at'>;
-      const created = await apiClient.createRecipe(payload);
+      const created = await mealPlanningAPI.createRecipe(payload);
       return mapRecipeDataToRecipe(created);
     },
     onMutate: async (input) => {
@@ -562,7 +562,7 @@ export function useUpdateRecipeMutation(): ReturnType<typeof useMutation<Recipe,
   return useMutation({
     mutationFn: async ({ recipeId, updates }: { recipeId: string; updates: RecipeUpdate }) => {
       const payload = buildRecipeUpdatePayload(updates) as Partial<RecipeData>;
-      const updated = await apiClient.updateRecipe(recipeId, payload);
+      const updated = await mealPlanningAPI.updateRecipe(recipeId, payload);
       return mapRecipeDataToRecipe(updated);
     },
     onMutate: async ({ recipeId, updates }) => {
@@ -599,7 +599,7 @@ export function useDeleteRecipeMutation(): ReturnType<typeof useMutation<string,
 
   return useMutation({
     mutationFn: async (recipeId: string) => {
-      await apiClient.deleteRecipe(recipeId);
+      await mealPlanningAPI.deleteRecipe(recipeId);
       return recipeId;
     },
     onMutate: async (recipeId) => {
@@ -638,7 +638,7 @@ export function useDeleteAllRecipesMutation(): ReturnType<typeof useMutation<voi
       // Delete sequentially to avoid rate limits
       for (const recipe of recipes) {
         try {
-          await apiClient.deleteRecipe(recipe.id);
+          await mealPlanningAPI.deleteRecipe(recipe.id);
         } catch (e) {
           logger.warn('MealPlanning', 'Failed to delete recipe', { recipeId: recipe.id, error: e });
         }
@@ -673,7 +673,7 @@ export function useMealPlansQuery(options?: { enabled?: boolean }): ReturnType<t
   return useQuery({
     queryKey: mealPlanningKeys.mealPlansList(),
     queryFn: async () => {
-      const data = await apiClient.getMealPlans();
+      const data = await mealPlanningAPI.getMealPlans();
       return data.map(mapMealPlanDataToMealPlanWeek);
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
@@ -728,7 +728,7 @@ export function useMealPlanForWeek(weekStartDate: Date, weekStartsOn: 0 | 1 = 0)
       // If not found, create new plan
       const payload = buildMealPlanInsertPayload(weekStart, 'Meal plan');
       try {
-        const created = await apiClient.createMealPlan(payload);
+        const created = await mealPlanningAPI.createMealPlan(payload);
         const plan = mapMealPlanDataToMealPlanWeek(created);
 
         // Update the meal plans list cache
@@ -777,7 +777,7 @@ export function useCreateMealPlanMutation(): ReturnType<typeof useMutation<MealP
     mutationFn: async (input: { weekStartDate: Date; name: string; weekStartsOn?: 0 | 1 }) => {
       const weekStart = startOfWeek(input.weekStartDate, { weekStartsOn: input.weekStartsOn ?? 0 });
       const payload = buildMealPlanInsertPayload(weekStart, input.name);
-      const created = await apiClient.createMealPlan(payload);
+      const created = await mealPlanningAPI.createMealPlan(payload);
       return mapMealPlanDataToMealPlanWeek(created);
     },
     onMutate: async (input) => {
@@ -830,7 +830,7 @@ export function useUpdateMealPlanMutation(): ReturnType<typeof useMutation<MealP
   return useMutation({
     mutationFn: async ({ mealPlanId, updates }: { mealPlanId: string; updates: MealPlanUpdate }) => {
       const payload = buildMealPlanUpdatePayload(updates);
-      const updated = await apiClient.updateMealPlan(mealPlanId, payload);
+      const updated = await mealPlanningAPI.updateMealPlan(mealPlanId, payload);
       return mapMealPlanDataToMealPlanWeek(updated);
     },
     onMutate: async ({ mealPlanId, updates }) => {
@@ -875,7 +875,7 @@ export function useDeleteMealPlanMutation(): ReturnType<typeof useMutation<strin
 
   return useMutation({
     mutationFn: async (mealPlanId: string) => {
-      await apiClient.deleteMealPlan(mealPlanId);
+      await mealPlanningAPI.deleteMealPlan(mealPlanId);
       return mealPlanId;
     },
     onMutate: async (mealPlanId) => {
@@ -912,7 +912,7 @@ export function useCreatePlannedMealMutation(): ReturnType<typeof useMutation<Pl
   return useMutation({
     mutationFn: async ({ planId, meal }: { planId: string; meal: PlannedMealInput }) => {
       const payload = buildPlannedMealInsertPayload(planId, meal) as Omit<PlannedMealData, 'id' | 'created_at' | 'updated_at'>;
-      const created = await apiClient.createPlannedMeal(payload);
+      const created = await mealPlanningAPI.createPlannedMeal(payload);
       return mapPlannedMealDataToPlannedMeal(created);
     },
     onMutate: async ({ planId, meal }) => {
@@ -969,7 +969,7 @@ export function useUpdatePlannedMealMutation(): ReturnType<typeof useMutation<{ 
   return useMutation({
     mutationFn: async ({ mealId, updates }: { mealId: string; updates: PlannedMealUpdate }) => {
       const payload = buildPlannedMealUpdatePayload(updates) as Partial<PlannedMealData>;
-      await apiClient.updatePlannedMeal(mealId, payload);
+      await mealPlanningAPI.updatePlannedMeal(mealId, payload);
       return { mealId, updates };
     },
     onMutate: async ({ mealId, updates }) => {
@@ -1009,7 +1009,7 @@ export function useDeletePlannedMealMutation(): ReturnType<typeof useMutation<st
 
   return useMutation({
     mutationFn: async (mealId: string) => {
-      await apiClient.deletePlannedMeal(mealId);
+      await mealPlanningAPI.deletePlannedMeal(mealId);
       return mealId;
     },
     onMutate: async (mealId) => {
@@ -1047,7 +1047,7 @@ export function usePantryItemsQuery(options?: { enabled?: boolean }): ReturnType
   return useQuery({
     queryKey: mealPlanningKeys.pantryList(),
     queryFn: async () => {
-      const data = await apiClient.getPantryItems();
+      const data = await mealPlanningAPI.getPantryItems();
       return data.map(mapPantryItemDataToPantryItem);
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
@@ -1066,7 +1066,7 @@ export function useCreatePantryItemMutation(): ReturnType<typeof useMutation<Pan
   return useMutation({
     mutationFn: async (input: PantryItemInput) => {
       const payload = buildPantryItemInsertPayload(input) as Omit<PantryItemData, 'id' | 'created_at' | 'updated_at' | 'user_id'>;
-      const created = await apiClient.createPantryItem(payload);
+      const created = await mealPlanningAPI.createPantryItem(payload);
       return mapPantryItemDataToPantryItem(created);
     },
     onMutate: async (input) => {
@@ -1110,7 +1110,7 @@ export function useUpdatePantryItemMutation(): ReturnType<typeof useMutation<Pan
   return useMutation({
     mutationFn: async ({ itemId, updates }: { itemId: string; updates: PantryItemUpdate }) => {
       const payload = buildPantryItemUpdatePayload(updates);
-      const updated = await apiClient.updatePantryItem(itemId, payload);
+      const updated = await mealPlanningAPI.updatePantryItem(itemId, payload);
       return mapPantryItemDataToPantryItem(updated);
     },
     onMutate: async ({ itemId, updates }) => {
@@ -1151,7 +1151,7 @@ export function useDeletePantryItemMutation(): ReturnType<typeof useMutation<str
 
   return useMutation({
     mutationFn: async (itemId: string) => {
-      await apiClient.deletePantryItem(itemId);
+      await mealPlanningAPI.deletePantryItem(itemId);
       return itemId;
     },
     onMutate: async (itemId) => {

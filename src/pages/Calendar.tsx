@@ -782,8 +782,8 @@ const Calendar: React.FC = () => {
           color: p.color,
           status: p.status,
           icon: p.icon,
-          created_at: p.createdAt.toISOString(),
-          updated_at: p.updatedAt?.toISOString(),
+          created_at: p.created_at,
+          updated_at: p.updated_at,
         }))}
         isOpen={showEditModal}
         onSave={handleSaveTask}

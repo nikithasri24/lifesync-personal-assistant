@@ -3,16 +3,17 @@
  */
 
 import type { Task } from '@/types/task';
+import type { Project } from '@/services/types';
 
 export type ViewMode = 'grid' | 'list';
-export type StatusFilter = 'all' | 'active' | 'completed' | 'on_hold';
+export type StatusFilter = 'all' | 'active' | 'completed' | 'on-hold' | 'planning' | 'archived';
 
 export type ProjectFormData = {
   name: string;
   description: string;
   color: string;
   icon: string;
-  status: 'active' | 'completed' | 'on_hold';
+  status: Project['status'];
 };
 
 export type ProjectMetrics = {

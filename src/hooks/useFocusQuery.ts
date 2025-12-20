@@ -20,7 +20,7 @@ export const focusKeys = {
 export function useFocusSessions(): UseQueryResult<FocusSessionData[], Error> {
   return useQuery({
     queryKey: focusKeys.sessions(),
-    queryFn: getFocusSessions,
+    queryFn: () => getFocusSessions(),
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 }
