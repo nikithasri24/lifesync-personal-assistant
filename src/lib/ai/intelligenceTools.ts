@@ -514,6 +514,74 @@ async function executePlanMyWeek(
 }
 
 // =====================================================
+// UPCOMING BIRTHDAYS/ANNIVERSARIES TOOL
+// =====================================================
+
+const getUpcomingDatesDefinition: ToolDefinition = {
+  type: 'function',
+  function: {
+    name: 'get_upcoming_dates',
+    description: 'Get upcoming birthdays, anniversaries, and other important dates. Use for "any birthdays coming up?", "whose birthday is this month?", "upcoming anniversaries".',
+    parameters: {
+      type: 'object',
+      properties: {
+        daysAhead: {
+          type: 'number',
+          description: 'Number of days to look ahead. Default: 30'
+        }
+      },
+      required: []
+    }
+  }
+};
+
+async function executeGetUpcomingDates(
+  args: Record<string, unknown>,
+  userId: string
+): Promise<ToolResult> {
+  try {
+    const daysAhead = (args.daysAhead as number) || 30;
+
+    const { getUpcomingDates, getDatesSummary } = await import('@/services/dates');
+
+    const upcoming = await getUpcomingDates(daysAhead);
+    const summary = await getDatesSummary();
+
+    logger.info('IntelligenceTools', 'Get upcoming dates via AI', {
+      daysAhead,
+      count: upcoming.length,
+    });
+
+    return {
+      success: true,
+      data: {
+        upcoming: upcoming.map(d => ({
+          personName: d.person_name,
+          type: d.date_type,
+          date: `${d.month}/${d.day}`,
+          daysUntil: d.days_until,
+          age: d.age,
+          relationship: d.relationship,
+          giftIdeas: d.gift_ideas,
+        })),
+        summary: {
+          totalDates: summary.totalDates,
+          upcomingThisWeek: summary.upcomingThisWeek.length,
+          upcomingThisMonth: summary.upcomingThisMonth.length,
+          byType: summary.byType,
+        },
+      },
+    };
+  } catch (error) {
+    logger.error('IntelligenceTools', error as Error, { context: 'executeGetUpcomingDates' });
+    return {
+      success: false,
+      error: `Failed to get upcoming dates: ${(error as Error).message}`,
+    };
+  }
+}
+
+// =====================================================
 // BILLS DUE TOOL
 // =====================================================
 
@@ -689,6 +757,10 @@ export const intelligenceTools: Tool[] = [
   {
     definition: planMyWeekDefinition,
     execute: executePlanMyWeek
+  },
+  {
+    definition: getUpcomingDatesDefinition,
+    execute: executeGetUpcomingDates
   }
 ];
 
