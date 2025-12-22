@@ -598,3 +598,214 @@ export const selectCalendar = (state: ComposedStore): Pick<
   navigateNext: state.navigateNext,
   navigatePrevious: state.navigatePrevious,
 });
+
+export const selectScheduler = (state: ComposedStore): Pick<
+  ComposedStore,
+  | 'schedulerViewMode'
+  | 'schedulerSelectedDate'
+  | 'schedulerFilterCategory'
+  | 'schedulerFilterBlockType'
+  | 'schedulerShowCompleted'
+  | 'schedulerTimeFormat'
+  | 'schedulerSelectedBlock'
+  | 'schedulerDraggedBlock'
+  | 'setSchedulerViewMode'
+  | 'setSchedulerSelectedDate'
+  | 'setSchedulerFilterCategory'
+  | 'setSchedulerFilterBlockType'
+  | 'setSchedulerShowCompleted'
+  | 'setSchedulerTimeFormat'
+  | 'setSchedulerSelectedBlock'
+  | 'setSchedulerDraggedBlock'
+  | 'resetSchedulerFilters'
+> => ({
+  schedulerViewMode: state.schedulerViewMode,
+  schedulerSelectedDate: state.schedulerSelectedDate,
+  schedulerFilterCategory: state.schedulerFilterCategory,
+  schedulerFilterBlockType: state.schedulerFilterBlockType,
+  schedulerShowCompleted: state.schedulerShowCompleted,
+  schedulerTimeFormat: state.schedulerTimeFormat,
+  schedulerSelectedBlock: state.schedulerSelectedBlock,
+  schedulerDraggedBlock: state.schedulerDraggedBlock,
+  setSchedulerViewMode: state.setSchedulerViewMode,
+  setSchedulerSelectedDate: state.setSchedulerSelectedDate,
+  setSchedulerFilterCategory: state.setSchedulerFilterCategory,
+  setSchedulerFilterBlockType: state.setSchedulerFilterBlockType,
+  setSchedulerShowCompleted: state.setSchedulerShowCompleted,
+  setSchedulerTimeFormat: state.setSchedulerTimeFormat,
+  setSchedulerSelectedBlock: state.setSchedulerSelectedBlock,
+  setSchedulerDraggedBlock: state.setSchedulerDraggedBlock,
+  resetSchedulerFilters: state.resetSchedulerFilters,
+});
+
+export const selectLifeGoals = (state: ComposedStore): Pick<
+  ComposedStore,
+  | 'lifeGoalsViewMode'
+  | 'lifeGoalsFilterCategory'
+  | 'lifeGoalsFilterStatus'
+  | 'lifeGoalsFilterTimeframe'
+  | 'lifeGoalsSortBy'
+  | 'lifeGoalsSortOrder'
+  | 'lifeGoalsShowArchived'
+  | 'lifeGoalsSelectedGoal'
+  | 'lifeGoalsShowMilestones'
+  | 'setLifeGoalsViewMode'
+  | 'setLifeGoalsFilterCategory'
+  | 'setLifeGoalsFilterStatus'
+  | 'setLifeGoalsFilterTimeframe'
+  | 'setLifeGoalsSortBy'
+  | 'setLifeGoalsSortOrder'
+  | 'setLifeGoalsShowArchived'
+  | 'setLifeGoalsSelectedGoal'
+  | 'setLifeGoalsShowMilestones'
+  | 'resetLifeGoalsFilters'
+> => ({
+  lifeGoalsViewMode: state.lifeGoalsViewMode,
+  lifeGoalsFilterCategory: state.lifeGoalsFilterCategory,
+  lifeGoalsFilterStatus: state.lifeGoalsFilterStatus,
+  lifeGoalsFilterTimeframe: state.lifeGoalsFilterTimeframe,
+  lifeGoalsSortBy: state.lifeGoalsSortBy,
+  lifeGoalsSortOrder: state.lifeGoalsSortOrder,
+  lifeGoalsShowArchived: state.lifeGoalsShowArchived,
+  lifeGoalsSelectedGoal: state.lifeGoalsSelectedGoal,
+  lifeGoalsShowMilestones: state.lifeGoalsShowMilestones,
+  setLifeGoalsViewMode: state.setLifeGoalsViewMode,
+  setLifeGoalsFilterCategory: state.setLifeGoalsFilterCategory,
+  setLifeGoalsFilterStatus: state.setLifeGoalsFilterStatus,
+  setLifeGoalsFilterTimeframe: state.setLifeGoalsFilterTimeframe,
+  setLifeGoalsSortBy: state.setLifeGoalsSortBy,
+  setLifeGoalsSortOrder: state.setLifeGoalsSortOrder,
+  setLifeGoalsShowArchived: state.setLifeGoalsShowArchived,
+  setLifeGoalsSelectedGoal: state.setLifeGoalsSelectedGoal,
+  setLifeGoalsShowMilestones: state.setLifeGoalsShowMilestones,
+  resetLifeGoalsFilters: state.resetLifeGoalsFilters,
+});
+
+export const selectTravel = (state: ComposedStore): Pick<
+  ComposedStore,
+  | 'travelViewMode'
+  | 'travelFilterStatus'
+  | 'travelFilterDestination'
+  | 'travelFilterDateRange'
+  | 'travelSortBy'
+  | 'travelSortOrder'
+  | 'travelShowArchived'
+  | 'travelSelectedTrip'
+  | 'travelSelectedTab'
+  | 'setTravelViewMode'
+  | 'setTravelFilterStatus'
+  | 'setTravelFilterDestination'
+  | 'setTravelFilterDateRange'
+  | 'setTravelSortBy'
+  | 'setTravelSortOrder'
+  | 'setTravelShowArchived'
+  | 'setTravelSelectedTrip'
+  | 'setTravelSelectedTab'
+  | 'resetTravelFilters'
+> => ({
+  travelViewMode: state.travelViewMode,
+  travelFilterStatus: state.travelFilterStatus,
+  travelFilterDestination: state.travelFilterDestination,
+  travelFilterDateRange: state.travelFilterDateRange,
+  travelSortBy: state.travelSortBy,
+  travelSortOrder: state.travelSortOrder,
+  travelShowArchived: state.travelShowArchived,
+  travelSelectedTrip: state.travelSelectedTrip,
+  travelSelectedTab: state.travelSelectedTab,
+  setTravelViewMode: state.setTravelViewMode,
+  setTravelFilterStatus: state.setTravelFilterStatus,
+  setTravelFilterDestination: state.setTravelFilterDestination,
+  setTravelFilterDateRange: state.setTravelFilterDateRange,
+  setTravelSortBy: state.setTravelSortBy,
+  setTravelSortOrder: state.setTravelSortOrder,
+  setTravelShowArchived: state.setTravelShowArchived,
+  setTravelSelectedTrip: state.setTravelSelectedTrip,
+  setTravelSelectedTab: state.setTravelSelectedTab,
+  resetTravelFilters: state.resetTravelFilters,
+});
+
+export const selectSkincare = (state: ComposedStore): Pick<
+  ComposedStore,
+  | 'skincareViewMode'
+  | 'skincareFilterCategory'
+  | 'skincareFilterBrand'
+  | 'skincareFilterSkinType'
+  | 'skincareSortBy'
+  | 'skincareSortOrder'
+  | 'skincareShowExpired'
+  | 'skincareSelectedProduct'
+  | 'skincareSelectedTab'
+  | 'setSkincareViewMode'
+  | 'setSkincareFilterCategory'
+  | 'setSkincareFilterBrand'
+  | 'setSkincareFilterSkinType'
+  | 'setSkincareSortBy'
+  | 'setSkincareSortOrder'
+  | 'setSkincareShowExpired'
+  | 'setSkincareSelectedProduct'
+  | 'setSkincareSelectedTab'
+  | 'resetSkincareFilters'
+> => ({
+  skincareViewMode: state.skincareViewMode,
+  skincareFilterCategory: state.skincareFilterCategory,
+  skincareFilterBrand: state.skincareFilterBrand,
+  skincareFilterSkinType: state.skincareFilterSkinType,
+  skincareSortBy: state.skincareSortBy,
+  skincareSortOrder: state.skincareSortOrder,
+  skincareShowExpired: state.skincareShowExpired,
+  skincareSelectedProduct: state.skincareSelectedProduct,
+  skincareSelectedTab: state.skincareSelectedTab,
+  setSkincareViewMode: state.setSkincareViewMode,
+  setSkincareFilterCategory: state.setSkincareFilterCategory,
+  setSkincareFilterBrand: state.setSkincareFilterBrand,
+  setSkincareFilterSkinType: state.setSkincareFilterSkinType,
+  setSkincareSortBy: state.setSkincareSortBy,
+  setSkincareSortOrder: state.setSkincareSortOrder,
+  setSkincareShowExpired: state.setSkincareShowExpired,
+  setSkincareSelectedProduct: state.setSkincareSelectedProduct,
+  setSkincareSelectedTab: state.setSkincareSelectedTab,
+  resetSkincareFilters: state.resetSkincareFilters,
+});
+
+export const selectNationalParks = (state: ComposedStore): Pick<
+  ComposedStore,
+  | 'parksViewMode'
+  | 'parksFilterState'
+  | 'parksFilterVisited'
+  | 'parksFilterActivities'
+  | 'parksSearchQuery'
+  | 'parksSortBy'
+  | 'parksSortOrder'
+  | 'parksSelectedPark'
+  | 'parksSelectedTab'
+  | 'setParksViewMode'
+  | 'setParksFilterState'
+  | 'setParksFilterVisited'
+  | 'setParksFilterActivities'
+  | 'setParksSearchQuery'
+  | 'setParksSortBy'
+  | 'setParksSortOrder'
+  | 'setParksSelectedPark'
+  | 'setParksSelectedTab'
+  | 'resetParksFilters'
+> => ({
+  parksViewMode: state.parksViewMode,
+  parksFilterState: state.parksFilterState,
+  parksFilterVisited: state.parksFilterVisited,
+  parksFilterActivities: state.parksFilterActivities,
+  parksSearchQuery: state.parksSearchQuery,
+  parksSortBy: state.parksSortBy,
+  parksSortOrder: state.parksSortOrder,
+  parksSelectedPark: state.parksSelectedPark,
+  parksSelectedTab: state.parksSelectedTab,
+  setParksViewMode: state.setParksViewMode,
+  setParksFilterState: state.setParksFilterState,
+  setParksFilterVisited: state.setParksFilterVisited,
+  setParksFilterActivities: state.setParksFilterActivities,
+  setParksSearchQuery: state.setParksSearchQuery,
+  setParksSortBy: state.setParksSortBy,
+  setParksSortOrder: state.setParksSortOrder,
+  setParksSelectedPark: state.setParksSelectedPark,
+  setParksSelectedTab: state.setParksSelectedTab,
+  resetParksFilters: state.resetParksFilters,
+});

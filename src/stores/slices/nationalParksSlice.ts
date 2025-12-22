@@ -1,212 +1,90 @@
 /**
- * National Parks Slice
- * Manages national parks data and visited parks tracking
+ * National Parks Zustand Slice - UI STATE ONLY
+ *
+ * ⚠️ DEPRECATED: Server state removed - use React Query hooks instead
+ * 
+ * This slice now contains ONLY UI state (view modes, filters, search, etc.)
+ * All server data (parks, visited parks, stats, CRUD operations) should use React Query.
+ *
+ * ✅ Use React Query hooks from @/hooks/useNationalParksQuery.ts (if exists) or create them:
+ * - useNationalParksQuery() - Get all national parks
+ * - useNationalParkQuery(id) - Get single park
+ * - useSearchParksQuery(query) - Search parks
+ * - useVisitedParksQuery() - Get visited parks
+ * - useAddVisitedParkMutation() - Mark park as visited
+ * - useUpdateVisitedParkMutation() - Update visit details
+ * - useDeleteVisitedParkMutation() - Remove visit
+ * - useIsParkVisitedQuery(parkId) - Check if park is visited
+ * - useVisitStatsQuery() - Get visit statistics
+ *
+ * Additional React Query Features:
+ * - Park recommendations
+ * - Trip planning integration
+ * - Weather and seasonal info
+ * - Photo gallery management
+ *
+ * Benefits of React Query:
+ * - Better parks data caching and synchronization
+ * - Optimistic updates for visit tracking
+ * - Automatic invalidation when visits change
+ * - Proper separation: Server state (React Query) vs UI state (Zustand)
  */
 
-import type { StateCreator } from 'zustand';
-import type { NationalPark } from '@/types/nationalParks';
-import type { VisitedParkData } from '@/api/nationalParksAPI';
-import {
-  getParks,
-  getPark,
-  searchParks,
-  getVisitedParks,
-  addVisitedPark as apiAddVisitedPark,
-  updateVisitedPark as apiUpdateVisitedPark,
-  deleteVisitedPark as apiDeleteVisitedPark,
-  isParkVisited as apiIsParkVisited,
-  getVisitStats,
-} from '@/api/nationalParksAPI';
-import { logger } from '@/services/logger';
+import { type StateCreator } from 'zustand';
 
 export interface NationalParksSlice {
-  // State
-  parks: NationalPark[];
-  visitedParks: VisitedParkData[];
-  parksLoaded: boolean;
-  parksLoading: boolean;
-  parksError: string | null;
-  visitedParksLoaded: boolean;
+  // UI State only - no server data!
+  parksViewMode: 'grid' | 'list' | 'map';
+  parksFilterState: string | null;
+  parksFilterVisited: 'all' | 'visited' | 'not_visited';
+  parksFilterActivities: string[];
+  parksSearchQuery: string;
+  parksSortBy: 'name' | 'state' | 'visit_date' | 'rating';
+  parksSortOrder: 'asc' | 'desc';
+  parksSelectedPark: string | null;
+  parksSelectedTab: 'info' | 'visits' | 'photos' | 'stats';
 
-  // Parks Actions
-  loadParks: (filters?: Parameters<typeof getParks>[0]) => Promise<void>;
-  searchParks: (query: string, filters?: Omit<Parameters<typeof getParks>[0], 'searchQuery'>) => Promise<NationalPark[]>;
-  getParkById: (id: string) => NationalPark | undefined;
-
-  // Visited Parks Actions
-  loadVisitedParks: () => Promise<void>;
-  addVisitedPark: (
-    parkId: string,
-    data: {
-      visitDate: Date | string;
-      notes?: string;
-      rating?: number;
-      photos?: string[];
-    }
-  ) => Promise<VisitedParkData>;
-  updateVisitedPark: (
-    id: string,
-    updates: Partial<{
-      visitDate: Date | string;
-      notes: string;
-      rating: number;
-      photos: string[];
-    }>
-  ) => Promise<VisitedParkData>;
-  deleteVisitedPark: (id: string) => Promise<void>;
-  isParkVisited: (parkId: string) => Promise<boolean>;
-  getVisitStatistics: () => ReturnType<typeof getVisitStats>;
+  // UI Actions
+  setParksViewMode: (mode: 'grid' | 'list' | 'map') => void;
+  setParksFilterState: (state: string | null) => void;
+  setParksFilterVisited: (filter: 'all' | 'visited' | 'not_visited') => void;
+  setParksFilterActivities: (activities: string[]) => void;
+  setParksSearchQuery: (query: string) => void;
+  setParksSortBy: (sortBy: 'name' | 'state' | 'visit_date' | 'rating') => void;
+  setParksSortOrder: (order: 'asc' | 'desc') => void;
+  setParksSelectedPark: (parkId: string | null) => void;
+  setParksSelectedTab: (tab: 'info' | 'visits' | 'photos' | 'stats') => void;
+  resetParksFilters: () => void;
 }
 
-export const createNationalParksSlice: StateCreator<
-  NationalParksSlice,
-  [],
-  [],
-  NationalParksSlice
-> = (set, get) => ({
-  // Initial state
-  parks: [],
-  visitedParks: [],
-  parksLoaded: false,
-  parksLoading: false,
-  parksError: null,
-  visitedParksLoaded: false,
+export const createNationalParksSlice: StateCreator<NationalParksSlice, [], [], NationalParksSlice> = (set) => ({
+  // Initial UI state
+  parksViewMode: 'grid',
+  parksFilterState: null,
+  parksFilterVisited: 'all',
+  parksFilterActivities: [],
+  parksSearchQuery: '',
+  parksSortBy: 'name',
+  parksSortOrder: 'asc',
+  parksSelectedPark: null,
+  parksSelectedTab: 'info',
 
-  // Load all parks
-  loadParks: async (filters): Promise<void> => {
-    if (get().parksLoading) return;
-
-    set({ parksLoading: true, parksError: null });
-    try {
-      const parks = await getParks(filters);
-      set({ parks, parksLoaded: true, parksLoading: false });
-      logger.info('NationalParksSlice', 'Parks loaded', { count: parks.length });
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Failed to load parks';
-      set({ parksError: errorMessage, parksLoading: false });
-      logger.error('NationalParksSlice', 'Operation failed', { error, context: 'loadParks' });
-      throw error;
-    }
-  },
-
-  // Search parks
-  searchParks: async (query, filters): Promise<NationalPark[]> => {
-    try {
-      const results = await searchParks(query, filters);
-      logger.info('NationalParksSlice', 'Parks search completed', {
-        query,
-        resultCount: results.length,
-      });
-      return results;
-    } catch (error) {
-      logger.error('NationalParksSlice', 'Operation failed', { error, context: 'searchParks', query });
-      throw error;
-    }
-  },
-
-  // Get park by ID
-  getParkById: (id: string): NationalPark | undefined => {
-    return get().parks.find((park) => park.id === id);
-  },
-
-  // Load visited parks
-  loadVisitedParks: async (): Promise<void> => {
-    try {
-      const visitedParks = await getVisitedParks();
-      set({ visitedParks, visitedParksLoaded: true });
-      logger.info('NationalParksSlice', 'Visited parks loaded', {
-        count: visitedParks.length,
-      });
-    } catch (error) {
-      logger.error('NationalParksSlice', 'Operation failed', { error, context: 'loadVisitedParks' });
-      throw error;
-    }
-  },
-
-  // Add visited park
-  addVisitedPark: async (parkId, data): Promise<VisitedParkData> => {
-    try {
-      const visitedPark = await apiAddVisitedPark(parkId, data);
-      const currentVisitedParks = get().visitedParks;
-      set({ visitedParks: [visitedPark, ...currentVisitedParks] });
-      logger.info('NationalParksSlice', 'Visited park added', { parkId });
-      return visitedPark;
-    } catch (error) {
-      logger.error('NationalParksSlice', 'Operation failed', { error,
-        context: 'addVisitedPark',
-        parkId,
-      });
-      throw error;
-    }
-  },
-
-  // Update visited park
-  updateVisitedPark: async (id, updates): Promise<VisitedParkData> => {
-    try {
-      const updatedPark = await apiUpdateVisitedPark(id, updates);
-      const currentVisitedParks = get().visitedParks;
-      set({
-        visitedParks: currentVisitedParks.map((park) =>
-          park.id === id ? updatedPark : park
-        ),
-      });
-      logger.info('NationalParksSlice', 'Visited park updated', { id });
-      return updatedPark;
-    } catch (error) {
-      logger.error('NationalParksSlice', 'Operation failed', { error,
-        context: 'updateVisitedPark',
-        id,
-      });
-      throw error;
-    }
-  },
-
-  // Delete visited park
-  deleteVisitedPark: async (id: string): Promise<void> => {
-    try {
-      await apiDeleteVisitedPark(id);
-      const currentVisitedParks = get().visitedParks;
-      set({ visitedParks: currentVisitedParks.filter((park) => park.id !== id) });
-      logger.info('NationalParksSlice', 'Visited park deleted', { id });
-    } catch (error) {
-      logger.error('NationalParksSlice', 'Operation failed', { error,
-        context: 'deleteVisitedPark',
-        id,
-      });
-      throw error;
-    }
-  },
-
-  // Check if park is visited
-  isParkVisited: async (parkId: string): Promise<boolean> => {
-    try {
-      const isVisited = await apiIsParkVisited(parkId);
-      logger.info('NationalParksSlice', 'Park visit check completed', {
-        parkId,
-        isVisited,
-      });
-      return isVisited;
-    } catch (error) {
-      logger.error('NationalParksSlice', 'Operation failed', { error,
-        context: 'isParkVisited',
-        parkId,
-      });
-      throw error;
-    }
-  },
-
-  // Get visit statistics
-  getVisitStatistics: async () => {
-    try {
-      const stats = await getVisitStats();
-      logger.info('NationalParksSlice', 'Visit stats retrieved', {
-        totalVisited: stats.totalVisited,
-      });
-      return stats;
-    } catch (error) {
-      logger.error('NationalParksSlice', 'Operation failed', { error, context: 'getVisitStatistics' });
-      throw error;
-    }
-  },
+  // UI Actions
+  setParksViewMode: (mode) => set({ parksViewMode: mode }),
+  setParksFilterState: (state) => set({ parksFilterState: state }),
+  setParksFilterVisited: (filter) => set({ parksFilterVisited: filter }),
+  setParksFilterActivities: (activities) => set({ parksFilterActivities: activities }),
+  setParksSearchQuery: (query) => set({ parksSearchQuery: query }),
+  setParksSortBy: (sortBy) => set({ parksSortBy: sortBy }),
+  setParksSortOrder: (order) => set({ parksSortOrder: order }),
+  setParksSelectedPark: (parkId) => set({ parksSelectedPark: parkId }),
+  setParksSelectedTab: (tab) => set({ parksSelectedTab: tab }),
+  resetParksFilters: () =>
+    set({
+      parksFilterState: null,
+      parksFilterVisited: 'all',
+      parksFilterActivities: [],
+      parksSearchQuery: '',
+      parksSelectedPark: null,
+    }),
 });

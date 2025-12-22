@@ -1,105 +1,89 @@
 /**
- * Life Goals Slice
- * Manages long-term life goals state and operations
+ * Life Goals Zustand Slice - UI STATE ONLY
+ *
+ * ⚠️ DEPRECATED: Server state removed - use React Query hooks instead
+ * 
+ * This slice now contains ONLY UI state (view modes, filters, etc.)
+ * All server data (life goals, loading states, CRUD operations) should use React Query.
+ *
+ * ✅ Use React Query hooks from @/hooks/useLifeGoalsQuery.ts:
+ * - useLifeGoalsQuery() - Get all life goals
+ * - useLifeGoalQuery(id) - Get single life goal
+ * - useCreateLifeGoalMutation() - Create life goal
+ * - useUpdateLifeGoalMutation() - Update life goal
+ * - useDeleteLifeGoalMutation() - Delete life goal
+ * - useLifeGoalMilestonesQuery(goalId) - Get milestones for a goal
+ * - useCreateMilestoneMutation() - Create milestone
+ * - useUpdateMilestoneMutation() - Update milestone
+ *
+ * Additional React Query Features:
+ * - Progress tracking hooks
+ * - Vision board integration
+ * - Goal templates and categories
+ * - Achievement tracking
+ *
+ * Benefits of React Query:
+ * - Better life goals data caching and synchronization
+ * - Optimistic updates for progress tracking
+ * - Automatic invalidation when goals change
+ * - Proper separation: Server state (React Query) vs UI state (Zustand)
  */
 
-import type { StateCreator } from 'zustand';
-import type { LifeGoal } from '@/services/types';
-import {
-  getLifeGoals,
-  createLifeGoal as apiCreateLifeGoal,
-  updateLifeGoal as apiUpdateLifeGoal,
-  deleteLifeGoal as apiDeleteLifeGoal,
-} from '@/api/lifeGoalsAPI';
-import { logger } from '@/services/logger';
+import { type StateCreator } from 'zustand';
 
 export interface LifeGoalsSlice {
-  // State
-  lifeGoals: LifeGoal[];
-  lifeGoalsLoaded: boolean;
-  lifeGoalsLoading: boolean;
-  lifeGoalsError: string | null;
+  // UI State only - no server data!
+  lifeGoalsViewMode: 'grid' | 'list' | 'timeline' | 'vision_board';
+  lifeGoalsFilterCategory: string | null;
+  lifeGoalsFilterStatus: 'all' | 'active' | 'completed' | 'on_hold';
+  lifeGoalsFilterTimeframe: 'all' | '1_year' | '5_years' | '10_years' | 'lifetime';
+  lifeGoalsSortBy: 'created_at' | 'target_date' | 'progress' | 'title';
+  lifeGoalsSortOrder: 'asc' | 'desc';
+  lifeGoalsShowArchived: boolean;
+  lifeGoalsSelectedGoal: string | null;
+  lifeGoalsShowMilestones: boolean;
 
-  // Actions
-  loadLifeGoals: (filters?: Parameters<typeof getLifeGoals>[0]) => Promise<void>;
-  addLifeGoal: (goal: Omit<LifeGoal, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<LifeGoal>;
-  updateLifeGoal: (id: string, updates: Partial<LifeGoal>) => Promise<LifeGoal>;
-  deleteLifeGoal: (id: string) => Promise<void>;
-  getLifeGoalById: (id: string) => LifeGoal | undefined;
+  // UI Actions
+  setLifeGoalsViewMode: (mode: 'grid' | 'list' | 'timeline' | 'vision_board') => void;
+  setLifeGoalsFilterCategory: (category: string | null) => void;
+  setLifeGoalsFilterStatus: (status: 'all' | 'active' | 'completed' | 'on_hold') => void;
+  setLifeGoalsFilterTimeframe: (timeframe: 'all' | '1_year' | '5_years' | '10_years' | 'lifetime') => void;
+  setLifeGoalsSortBy: (sortBy: 'created_at' | 'target_date' | 'progress' | 'title') => void;
+  setLifeGoalsSortOrder: (order: 'asc' | 'desc') => void;
+  setLifeGoalsShowArchived: (show: boolean) => void;
+  setLifeGoalsSelectedGoal: (goalId: string | null) => void;
+  setLifeGoalsShowMilestones: (show: boolean) => void;
+  resetLifeGoalsFilters: () => void;
 }
 
-export const createLifeGoalsSlice: StateCreator<LifeGoalsSlice, [], [], LifeGoalsSlice> = (
-  set,
-  get
-) => ({
-  // Initial state
-  lifeGoals: [],
-  lifeGoalsLoaded: false,
-  lifeGoalsLoading: false,
-  lifeGoalsError: null,
+export const createLifeGoalsSlice: StateCreator<LifeGoalsSlice, [], [], LifeGoalsSlice> = (set) => ({
+  // Initial UI state
+  lifeGoalsViewMode: 'grid',
+  lifeGoalsFilterCategory: null,
+  lifeGoalsFilterStatus: 'all',
+  lifeGoalsFilterTimeframe: 'all',
+  lifeGoalsSortBy: 'created_at',
+  lifeGoalsSortOrder: 'desc',
+  lifeGoalsShowArchived: false,
+  lifeGoalsSelectedGoal: null,
+  lifeGoalsShowMilestones: true,
 
-  // Load all life goals
-  loadLifeGoals: async (filters): Promise<void> => {
-    if (get().lifeGoalsLoading) return;
-
-    set({ lifeGoalsLoading: true, lifeGoalsError: null });
-    try {
-      const goals = await getLifeGoals(filters);
-      set({ lifeGoals: goals, lifeGoalsLoaded: true, lifeGoalsLoading: false });
-      logger.info('LifeGoalsSlice', 'Life goals loaded', { count: goals.length });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to load life goals';
-      logger.error('LifeGoalsSlice', 'Operation failed', { error, context: 'loadLifeGoals' });
-      set({
-        lifeGoalsError: errorMessage,
-        lifeGoalsLoading: false,
-      });
-      throw error;
-    }
-  },
-
-  // Add a new life goal
-  addLifeGoal: async (goal): Promise<LifeGoal> => {
-    try {
-      const created = await apiCreateLifeGoal(goal);
-      set((state) => ({ lifeGoals: [created, ...state.lifeGoals] }));
-      logger.info('LifeGoalsSlice', 'Life goal created', { id: created.id, title: created.title });
-      return created;
-    } catch (error) {
-      logger.error('LifeGoalsSlice', 'Operation failed', { error, context: 'addLifeGoal' });
-      throw error;
-    }
-  },
-
-  // Update a life goal
-  updateLifeGoal: async (id, updates): Promise<LifeGoal> => {
-    try {
-      const updated = await apiUpdateLifeGoal(id, updates);
-      set((state) => ({
-        lifeGoals: state.lifeGoals.map((g) => (g.id === id ? updated : g)),
-      }));
-      logger.info('LifeGoalsSlice', 'Life goal updated', { id });
-      return updated;
-    } catch (error) {
-      logger.error('LifeGoalsSlice', 'Operation failed', { error, context: 'updateLifeGoal', id });
-      throw error;
-    }
-  },
-
-  // Delete a life goal
-  deleteLifeGoal: async (id): Promise<void> => {
-    try {
-      await apiDeleteLifeGoal(id);
-      set((state) => ({
-        lifeGoals: state.lifeGoals.filter((g) => g.id !== id),
-      }));
-      logger.info('LifeGoalsSlice', 'Life goal deleted', { id });
-    } catch (error) {
-      logger.error('LifeGoalsSlice', 'Operation failed', { error, context: 'deleteLifeGoal', id });
-      throw error;
-    }
-  },
-
-  // Get life goal by ID
-  getLifeGoalById: (id) => get().lifeGoals.find((g) => g.id === id),
+  // UI Actions
+  setLifeGoalsViewMode: (mode) => set({ lifeGoalsViewMode: mode }),
+  setLifeGoalsFilterCategory: (category) => set({ lifeGoalsFilterCategory: category }),
+  setLifeGoalsFilterStatus: (status) => set({ lifeGoalsFilterStatus: status }),
+  setLifeGoalsFilterTimeframe: (timeframe) => set({ lifeGoalsFilterTimeframe: timeframe }),
+  setLifeGoalsSortBy: (sortBy) => set({ lifeGoalsSortBy: sortBy }),
+  setLifeGoalsSortOrder: (order) => set({ lifeGoalsSortOrder: order }),
+  setLifeGoalsShowArchived: (show) => set({ lifeGoalsShowArchived: show }),
+  setLifeGoalsSelectedGoal: (goalId) => set({ lifeGoalsSelectedGoal: goalId }),
+  setLifeGoalsShowMilestones: (show) => set({ lifeGoalsShowMilestones: show }),
+  resetLifeGoalsFilters: () =>
+    set({
+      lifeGoalsFilterCategory: null,
+      lifeGoalsFilterStatus: 'all',
+      lifeGoalsFilterTimeframe: 'all',
+      lifeGoalsShowArchived: false,
+      lifeGoalsSelectedGoal: null,
+    }),
 });
