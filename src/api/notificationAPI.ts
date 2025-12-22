@@ -4,6 +4,7 @@
  */
 
 import { supabase } from '../lib/supabase';
+import { apiCall, requireAuth } from './apiWrapper';
 
 export interface NotificationQueueItem {
   id?: string;
@@ -22,14 +23,18 @@ export interface NotificationQueueItem {
 export async function queueNotification(
   notification: Omit<NotificationQueueItem, 'id' | 'user_id' | 'created_at' | 'sent_at'>
 ): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { error } = await supabase.from('notification_queue').insert({
-    user_id: user.id,
-    ...notification,
-  });
+      const { error } = await supabase.from('notification_queue').insert({
+        user_id: user.id,
+        ...notification,
+      });
 
-  if (error) throw error;
+      if (error) throw error;
+    },
+    { domain: 'NotificationAPI', operation: 'queueNotification', data: { type: notification.type } }
+  );
 }
 

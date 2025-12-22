@@ -8,6 +8,7 @@
 
 import { supabase } from '../lib/supabase';
 import { logger } from '../services/logger';
+import { apiCall, requireAuth, handleSupabaseResponse } from './apiWrapper';
 import type {
   ImportantDate,
   CreateImportantDateInput,
@@ -32,58 +33,61 @@ export type {
  * Get all important dates for the current user
  */
 export async function getImportantDates(activeOnly = true): Promise<ImportantDate[]> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  let query = supabase
-    .from('important_dates')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('month', { ascending: true })
-    .order('day', { ascending: true });
+      let query = supabase
+        .from('important_dates')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('month', { ascending: true })
+        .order('day', { ascending: true });
 
-  if (activeOnly) {
-    query = query.eq('is_active', true);
-  }
+      if (activeOnly) {
+        query = query.eq('is_active', true);
+      }
 
-  const { data, error } = await query;
-  if (error) {
-    logger.error('ImportantDatesAPI', 'Failed to get important dates', { error });
-    throw error;
-  }
-  return (data || []) as ImportantDate[];
+      const { data, error } = await query;
+      if (error) throw error;
+      return (data || []) as ImportantDate[];
+    },
+    { domain: 'ImportantDatesAPI', operation: 'getImportantDates', data: { activeOnly } }
+  );
 }
 
 /**
  * Create a new important date
  */
 export async function createImportantDate(input: CreateImportantDateInput): Promise<ImportantDate> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { data, error } = await supabase
-    .from('important_dates')
-    .insert({
-      user_id: user.id,
-      person_name: input.person_name,
-      relationship: input.relationship,
-      date_type: input.date_type,
-      month: input.month,
-      day: input.day,
-      year: input.year,
-      reminder_days_before: input.reminder_days_before || [7, 1],
-      notes: input.notes,
-      gift_ideas: input.gift_ideas,
-      celebration_notes: input.celebration_notes,
-    })
-    .select()
-    .single();
+      const result = await supabase
+        .from('important_dates')
+        .insert({
+          user_id: user.id,
+          person_name: input.person_name,
+          relationship: input.relationship,
+          date_type: input.date_type,
+          month: input.month,
+          day: input.day,
+          year: input.year,
+          reminder_days_before: input.reminder_days_before || [7, 1],
+          notes: input.notes,
+          gift_ideas: input.gift_ideas,
+          celebration_notes: input.celebration_notes,
+        })
+        .select()
+        .single();
 
-  if (error) {
-    logger.error('ImportantDatesAPI', 'Failed to create important date', { error });
-    throw error;
-  }
-  return data as ImportantDate;
+      const data = handleSupabaseResponse(result, 'Important Date');
+      logger.info('ImportantDatesAPI', 'Important date created', { person_name: input.person_name });
+      return data as ImportantDate;
+    },
+    { domain: 'ImportantDatesAPI', operation: 'createImportantDate', data: { person_name: input.person_name } }
+  );
 }
 
 /**
@@ -93,40 +97,44 @@ export async function updateImportantDate(
   id: string,
   updates: UpdateImportantDateInput
 ): Promise<ImportantDate> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { data, error } = await supabase
-    .from('important_dates')
-    .update(updates)
-    .eq('id', id)
-    .eq('user_id', user.id)
-    .select()
-    .single();
+      const result = await supabase
+        .from('important_dates')
+        .update(updates)
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .select()
+        .single();
 
-  if (error) {
-    logger.error('ImportantDatesAPI', 'Failed to update important date', { error });
-    throw error;
-  }
-  return data as ImportantDate;
+      const data = handleSupabaseResponse(result, 'Important Date', id);
+      logger.info('ImportantDatesAPI', 'Important date updated', { id });
+      return data as ImportantDate;
+    },
+    { domain: 'ImportantDatesAPI', operation: 'updateImportantDate', data: { id } }
+  );
 }
 
 /**
  * Delete an important date
  */
 export async function deleteImportantDate(id: string): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { error } = await supabase
-    .from('important_dates')
-    .delete()
-    .eq('id', id)
-    .eq('user_id', user.id);
+      const { error } = await supabase
+        .from('important_dates')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
 
-  if (error) {
-    logger.error('ImportantDatesAPI', 'Failed to delete important date', { error });
-    throw error;
-  }
+      if (error) throw error;
+      logger.info('ImportantDatesAPI', 'Important date deleted', { id });
+    },
+    { domain: 'ImportantDatesAPI', operation: 'deleteImportantDate', data: { id } }
+  );
 }
 

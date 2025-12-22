@@ -4,6 +4,7 @@
  */
 
 import { supabase } from '../lib/supabase';
+import { apiCall, requireAuth } from './apiWrapper';
 
 export interface PushSubscription {
   id?: string;
@@ -22,14 +23,19 @@ export interface PushSubscription {
 export async function upsertPushSubscription(
   subscription: Omit<PushSubscription, 'id' | 'created_at' | 'updated_at'>
 ): Promise<void> {
-  const { error } = await supabase
-    .from('push_subscriptions')
-    .upsert({
-      ...subscription,
-      updated_at: new Date().toISOString(),
-    });
+  return apiCall(
+    async () => {
+      const { error } = await supabase
+        .from('push_subscriptions')
+        .upsert({
+          ...subscription,
+          updated_at: new Date().toISOString(),
+        });
 
-  if (error) throw error;
+      if (error) throw error;
+    },
+    { domain: 'PushSubscriptionsAPI', operation: 'upsertPushSubscription', data: { endpoint: subscription.endpoint } }
+  );
 }
 
 /**
@@ -39,32 +45,41 @@ export async function deactivatePushSubscription(
   endpoint: string,
   userId: string
 ): Promise<void> {
-  const { error } = await supabase
-    .from('push_subscriptions')
-    .update({ 
-      is_active: false,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('endpoint', endpoint)
-    .eq('user_id', userId);
+  return apiCall(
+    async () => {
+      const { error } = await supabase
+        .from('push_subscriptions')
+        .update({
+          is_active: false,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('endpoint', endpoint)
+        .eq('user_id', userId);
 
-  if (error) throw error;
+      if (error) throw error;
+    },
+    { domain: 'PushSubscriptionsAPI', operation: 'deactivatePushSubscription', data: { endpoint, userId } }
+  );
 }
 
 /**
  * Get active push subscriptions for current user
  */
 export async function getActivePushSubscriptions(): Promise<PushSubscription[]> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { data, error } = await supabase
-    .from('push_subscriptions')
-    .select('*')
-    .eq('user_id', user.id)
-    .eq('is_active', true);
+      const { data, error } = await supabase
+        .from('push_subscriptions')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_active', true);
 
-  if (error) throw error;
-  return data as PushSubscription[];
+      if (error) throw error;
+      return data as PushSubscription[];
+    },
+    { domain: 'PushSubscriptionsAPI', operation: 'getActivePushSubscriptions' }
+  );
 }
 

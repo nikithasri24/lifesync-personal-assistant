@@ -4,6 +4,7 @@
  */
 
 import { supabase } from '../lib/supabase';
+import { apiCall, requireAuth } from './apiWrapper';
 
 export interface ListItem {
   id?: string;
@@ -22,16 +23,20 @@ export async function addListItem(
   listId: string,
   content: string
 ): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { error } = await supabase.from('list_items').insert({
-    list_id: listId,
-    user_id: user.id,
-    content,
-    completed: false,
-  });
+      const { error } = await supabase.from('list_items').insert({
+        list_id: listId,
+        user_id: user.id,
+        content,
+        completed: false,
+      });
 
-  if (error) throw error;
+      if (error) throw error;
+    },
+    { domain: 'ListAPI', operation: 'addListItem', data: { listId, content } }
+  );
 }
 
