@@ -42,6 +42,7 @@ export * from './automationAPI';
 export * from './notificationAPI';
 export * from './listAPI';
 export * from './userSettingsAPI';
+export * from './pushSubscriptionsAPI';
 
 // Gamification
 export * from './gamificationAPI';
