@@ -5,6 +5,7 @@
 
 import { supabase } from '../lib/supabase';
 import type { MealPlanData, PlannedMealData, RecipeData, PantryItemData } from '../services/types';
+import { apiCall, requireAuth, handleSupabaseResponse } from './apiWrapper';
 
 // =====================================================
 // MEAL PLANS CRUD OPERATIONS
@@ -14,36 +15,43 @@ import type { MealPlanData, PlannedMealData, RecipeData, PantryItemData } from '
  * Get all meal plans for the current user
  */
 export async function getMealPlans(): Promise<MealPlanData[]> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { data, error } = await supabase
-    .from('meal_plans')
-    .select('*, planned_meals(*)')
-    .eq('user_id', user.id)
-    .order('week_start_date', { ascending: false });
+      const { data, error } = await supabase
+        .from('meal_plans')
+        .select('*, planned_meals(*)')
+        .eq('user_id', user.id)
+        .order('week_start_date', { ascending: false });
 
-  if (error) throw error;
-  return (data ?? []) as MealPlanData[];
+      if (error) throw error;
+      return (data ?? []) as MealPlanData[];
+    },
+    { domain: 'MealPlanningAPI', operation: 'getMealPlans' }
+  );
 }
 
 /**
  * Get a single meal plan by ID
  */
 export async function getMealPlan(id: string): Promise<MealPlanData> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { data, error } = await supabase
-    .from('meal_plans')
-    .select('*, planned_meals(*)')
-    .eq('id', id)
-    .eq('user_id', user.id)
-    .single();
+      const result = await supabase
+        .from('meal_plans')
+        .select('*, planned_meals(*)')
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .single();
 
-  if (error) throw error;
-  if (!data) throw new Error('Meal plan not found');
-  return data as MealPlanData;
+      const data = handleSupabaseResponse(result, 'Meal Plan', id);
+      return data as MealPlanData;
+    },
+    { domain: 'MealPlanningAPI', operation: 'getMealPlan', data: { id } }
+  );
 }
 
 /**
@@ -52,33 +60,36 @@ export async function getMealPlan(id: string): Promise<MealPlanData> {
 export async function createMealPlan(
   plan: Omit<MealPlanData, 'id' | 'created_at' | 'updated_at' | 'planned_meals' | 'user_id'>
 ): Promise<MealPlanData> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  // Check if a plan already exists for this week
-  const { data: existing } = await supabase
-    .from('meal_plans')
-    .select('*, planned_meals(*)')
-    .eq('user_id', user.id)
-    .eq('week_start_date', plan.week_start_date)
-    .limit(1);
+      // Check if a plan already exists for this week
+      const { data: existing } = await supabase
+        .from('meal_plans')
+        .select('*, planned_meals(*)')
+        .eq('user_id', user.id)
+        .eq('week_start_date', plan.week_start_date)
+        .limit(1);
 
-  if (existing && existing.length > 0) {
-    return existing[0] as MealPlanData;
-  }
+      if (existing && existing.length > 0) {
+        return existing[0] as MealPlanData;
+      }
 
-  const { data, error } = await supabase
-    .from('meal_plans')
-    .insert({
-      user_id: user.id,
-      ...plan,
-    })
-    .select('*, planned_meals(*)')
-    .single();
+      const result = await supabase
+        .from('meal_plans')
+        .insert({
+          user_id: user.id,
+          ...plan,
+        })
+        .select('*, planned_meals(*)')
+        .single();
 
-  if (error) throw error;
-  if (!data) throw new Error('Failed to create meal plan');
-  return data as MealPlanData;
+      const data = handleSupabaseResponse(result, 'Meal Plan');
+      return data as MealPlanData;
+    },
+    { domain: 'MealPlanningAPI', operation: 'createMealPlan', data: { week_start_date: plan.week_start_date } }
+  );
 }
 
 /**
@@ -88,36 +99,43 @@ export async function updateMealPlan(
   id: string,
   updates: Partial<MealPlanData>
 ): Promise<MealPlanData> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { data, error } = await supabase
-    .from('meal_plans')
-    .update(updates)
-    .eq('id', id)
-    .eq('user_id', user.id)
-    .select('*, planned_meals(*)')
-    .single();
+      const result = await supabase
+        .from('meal_plans')
+        .update(updates)
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .select('*, planned_meals(*)')
+        .single();
 
-  if (error) throw error;
-  if (!data) throw new Error('Meal plan not found or update failed');
-  return data as MealPlanData;
+      const data = handleSupabaseResponse(result, 'Meal Plan', id);
+      return data as MealPlanData;
+    },
+    { domain: 'MealPlanningAPI', operation: 'updateMealPlan', data: { id } }
+  );
 }
 
 /**
  * Delete a meal plan
  */
 export async function deleteMealPlan(id: string): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { error } = await supabase
-    .from('meal_plans')
-    .delete()
-    .eq('id', id)
-    .eq('user_id', user.id);
+      const { error } = await supabase
+        .from('meal_plans')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
 
-  if (error) throw error;
+      if (error) throw error;
+    },
+    { domain: 'MealPlanningAPI', operation: 'deleteMealPlan', data: { id } }
+  );
 }
 
 // =====================================================
@@ -130,28 +148,31 @@ export async function deleteMealPlan(id: string): Promise<void> {
 export async function createPlannedMeal(
   meal: Omit<PlannedMealData, 'id' | 'created_at' | 'updated_at'>
 ): Promise<PlannedMealData> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  // Verify meal plan ownership
-  const { data: plan, error: planError } = await supabase
-    .from('meal_plans')
-    .select('id')
-    .eq('id', meal.meal_plan_id)
-    .eq('user_id', user.id)
-    .single();
+      // Verify meal plan ownership
+      const { data: plan, error: planError } = await supabase
+        .from('meal_plans')
+        .select('id')
+        .eq('id', meal.meal_plan_id)
+        .eq('user_id', user.id)
+        .single();
 
-  if (planError || !plan) throw new Error('Meal plan not found or access denied');
+      if (planError || !plan) throw new Error('Meal plan not found or access denied');
 
-  const { data, error } = await supabase
-    .from('planned_meals')
-    .insert(meal)
-    .select()
-    .single();
+      const result = await supabase
+        .from('planned_meals')
+        .insert(meal)
+        .select()
+        .single();
 
-  if (error) throw error;
-  if (!data) throw new Error('Failed to create planned meal');
-  return data as PlannedMealData;
+      const data = handleSupabaseResponse(result, 'Planned Meal');
+      return data as PlannedMealData;
+    },
+    { domain: 'MealPlanningAPI', operation: 'createPlannedMeal', data: { meal_plan_id: meal.meal_plan_id } }
+  );
 }
 
 /**
@@ -161,28 +182,37 @@ export async function updatePlannedMeal(
   id: string,
   updates: Partial<PlannedMealData>
 ): Promise<PlannedMealData> {
-  const { data, error } = await supabase
-    .from('planned_meals')
-    .update(updates)
-    .eq('id', id)
-    .select()
-    .single();
+  return apiCall(
+    async () => {
+      const result = await supabase
+        .from('planned_meals')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
 
-  if (error) throw error;
-  if (!data) throw new Error('Planned meal not found or update failed');
-  return data as PlannedMealData;
+      const data = handleSupabaseResponse(result, 'Planned Meal', id);
+      return data as PlannedMealData;
+    },
+    { domain: 'MealPlanningAPI', operation: 'updatePlannedMeal', data: { id } }
+  );
 }
 
 /**
  * Delete a planned meal
  */
 export async function deletePlannedMeal(id: string): Promise<void> {
-  const { error } = await supabase
-    .from('planned_meals')
-    .delete()
-    .eq('id', id);
+  return apiCall(
+    async () => {
+      const { error } = await supabase
+        .from('planned_meals')
+        .delete()
+        .eq('id', id);
 
-  if (error) throw error;
+      if (error) throw error;
+    },
+    { domain: 'MealPlanningAPI', operation: 'deletePlannedMeal', data: { id } }
+  );
 }
 
 // =====================================================
@@ -193,17 +223,21 @@ export async function deletePlannedMeal(id: string): Promise<void> {
  * Get all recipes for the current user
  */
 export async function getRecipes(): Promise<RecipeData[]> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { data, error } = await supabase
-    .from('recipes')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false });
+      const { data, error } = await supabase
+        .from('recipes')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
 
-  if (error) throw error;
-  return (data ?? []) as RecipeData[];
+      if (error) throw error;
+      return (data ?? []) as RecipeData[];
+    },
+    { domain: 'MealPlanningAPI', operation: 'getRecipes' }
+  );
 }
 
 /**
@@ -212,21 +246,24 @@ export async function getRecipes(): Promise<RecipeData[]> {
 export async function createRecipe(
   recipe: Omit<RecipeData, 'id' | 'created_at' | 'updated_at'>
 ): Promise<RecipeData> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { data, error } = await supabase
-    .from('recipes')
-    .insert({
-      user_id: user.id,
-      ...recipe,
-    })
-    .select()
-    .single();
+      const result = await supabase
+        .from('recipes')
+        .insert({
+          user_id: user.id,
+          ...recipe,
+        })
+        .select()
+        .single();
 
-  if (error) throw error;
-  if (!data) throw new Error('Failed to create recipe');
-  return data as RecipeData;
+      const data = handleSupabaseResponse(result, 'Recipe');
+      return data as RecipeData;
+    },
+    { domain: 'MealPlanningAPI', operation: 'createRecipe', data: { name: recipe.name } }
+  );
 }
 
 /**
@@ -236,36 +273,43 @@ export async function updateRecipe(
   id: string,
   updates: Partial<RecipeData>
 ): Promise<RecipeData> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { data, error } = await supabase
-    .from('recipes')
-    .update(updates)
-    .eq('id', id)
-    .eq('user_id', user.id)
-    .select()
-    .single();
+      const result = await supabase
+        .from('recipes')
+        .update(updates)
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .select()
+        .single();
 
-  if (error) throw error;
-  if (!data) throw new Error('Recipe not found or update failed');
-  return data as RecipeData;
+      const data = handleSupabaseResponse(result, 'Recipe', id);
+      return data as RecipeData;
+    },
+    { domain: 'MealPlanningAPI', operation: 'updateRecipe', data: { id } }
+  );
 }
 
 /**
  * Delete a recipe
  */
 export async function deleteRecipe(id: string): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { error } = await supabase
-    .from('recipes')
-    .delete()
-    .eq('id', id)
-    .eq('user_id', user.id);
+      const { error } = await supabase
+        .from('recipes')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
 
-  if (error) throw error;
+      if (error) throw error;
+    },
+    { domain: 'MealPlanningAPI', operation: 'deleteRecipe', data: { id } }
+  );
 }
 
 // =====================================================
@@ -276,17 +320,21 @@ export async function deleteRecipe(id: string): Promise<void> {
  * Get all pantry items for the current user
  */
 export async function getPantryItems(): Promise<PantryItemData[]> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { data, error } = await supabase
-    .from('pantry_items')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false });
+      const { data, error } = await supabase
+        .from('pantry_items')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
 
-  if (error) throw error;
-  return (data ?? []) as PantryItemData[];
+      if (error) throw error;
+      return (data ?? []) as PantryItemData[];
+    },
+    { domain: 'MealPlanningAPI', operation: 'getPantryItems' }
+  );
 }
 
 /**
@@ -295,21 +343,24 @@ export async function getPantryItems(): Promise<PantryItemData[]> {
 export async function createPantryItem(
   item: Omit<PantryItemData, 'id' | 'created_at' | 'updated_at' | 'user_id'>
 ): Promise<PantryItemData> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { data, error } = await supabase
-    .from('pantry_items')
-    .insert({
-      user_id: user.id,
-      ...item,
-    })
-    .select()
-    .single();
+      const result = await supabase
+        .from('pantry_items')
+        .insert({
+          user_id: user.id,
+          ...item,
+        })
+        .select()
+        .single();
 
-  if (error) throw error;
-  if (!data) throw new Error('Failed to create pantry item');
-  return data as PantryItemData;
+      const data = handleSupabaseResponse(result, 'Pantry Item');
+      return data as PantryItemData;
+    },
+    { domain: 'MealPlanningAPI', operation: 'createPantryItem', data: { name: item.name } }
+  );
 }
 
 /**
@@ -319,35 +370,42 @@ export async function updatePantryItem(
   id: string,
   updates: Partial<PantryItemData>
 ): Promise<PantryItemData> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { data, error } = await supabase
-    .from('pantry_items')
-    .update(updates)
-    .eq('id', id)
-    .eq('user_id', user.id)
-    .select()
-    .single();
+      const result = await supabase
+        .from('pantry_items')
+        .update(updates)
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .select()
+        .single();
 
-  if (error) throw error;
-  if (!data) throw new Error('Pantry item not found or update failed');
-  return data as PantryItemData;
+      const data = handleSupabaseResponse(result, 'Pantry Item', id);
+      return data as PantryItemData;
+    },
+    { domain: 'MealPlanningAPI', operation: 'updatePantryItem', data: { id } }
+  );
 }
 
 /**
  * Delete a pantry item
  */
 export async function deletePantryItem(id: string): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { error } = await supabase
-    .from('pantry_items')
-    .delete()
-    .eq('id', id)
-    .eq('user_id', user.id);
+      const { error } = await supabase
+        .from('pantry_items')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
 
-  if (error) throw error;
+      if (error) throw error;
+    },
+    { domain: 'MealPlanningAPI', operation: 'deletePantryItem', data: { id } }
+  );
 }
 
