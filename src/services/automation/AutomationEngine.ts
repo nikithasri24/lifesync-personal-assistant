@@ -16,7 +16,7 @@ import {
 import { createTask } from '@/api/tasksAPI';
 import { queueNotification } from '@/api/notificationAPI';
 import { addListItem } from '@/api/listAPI';
-import { supabase } from '@/lib/supabase';
+import { createHabitEntry } from '@/api/habitsAPI';
 import { logger } from '@/services/logger';
 import type { AutomationRule, AutomationAction, AutomationEventType } from '@/types/infrastructure';
 
@@ -181,11 +181,11 @@ class AutomationEngine {
     const habitId = params.habit_id as string;
     if (!habitId) return;
 
-    // Note: habit_logs table needs an API - using direct Supabase for now
-    await supabase.from('habit_logs').insert({
+    // Use API layer instead of direct Supabase
+    const today = new Date().toISOString().split('T')[0];
+    await createHabitEntry({
       habit_id: habitId,
-      user_id: context.userId,
-      completed_at: new Date().toISOString(),
+      date: today,
       value: params.value as number || 1,
     });
   }
