@@ -1,146 +1,85 @@
 /**
- * Tasks Zustand Slice
+ * Tasks Zustand Slice - UI STATE ONLY
  *
- * MIGRATION STATUS: React Query hooks available
- * - New React Query hooks: /src/tasks/hooks/useTasksQuery.ts
- * - Recommended: Use React Query hooks for new features
- * - This slice is maintained for backward compatibility
+ * ⚠️ DEPRECATED: Server state removed - use React Query hooks instead
+ * 
+ * This slice now contains ONLY UI state (view modes, filters, etc.)
+ * All server data (tasks, loading states, CRUD operations) should use React Query.
  *
- * Migration Guide:
- * - Replace `loadTasks()` with `useTasksQuery()`
- * - Replace `addTask()` with `useCreateTaskMutation()`
- * - Replace `updateTask()` with `useUpdateTaskMutation()`
- * - Replace `softDeleteTask()` with `useDeleteTaskMutation()`
- * - Replace `restoreTask()` with `useRestoreTaskMutation()`
- * - Replace `hardDeleteTask()` with `usePermanentlyDeleteTaskMutation()`
+ * ✅ Use React Query hooks from @/hooks/useTasksQuery.ts:
+ * - useTasks() - Get all tasks
+ * - useTask(id) - Get single task
+ * - useCreateTaskMutation() - Create task
+ * - useUpdateTaskMutation() - Update task
+ * - useDeleteTaskMutation() - Delete task
+ * - useRestoreTaskMutation() - Restore task
+ * - usePermanentlyDeleteTaskMutation() - Permanently delete task
  *
  * Benefits of React Query:
  * - Automatic caching and background refetching
  * - Optimistic updates with automatic rollback on error
  * - Better loading and error states
  * - Automatic request deduplication
+ * - Proper separation: Server state (React Query) vs UI state (Zustand)
  */
 
 import type { StateCreator } from 'zustand';
-import type { TaskData } from '@/services/types';
-import {
-  createTask,
-  deleteTask,
-  getTask,
-  getTasks,
-  permanentlyDeleteTask,
-  restoreTask,
-  updateTask,
-} from '@/api/tasksAPI';
-import { logger } from '@/services/logger';
-
-export type TaskInput = Omit<
-  TaskData,
-  'id' | 'user_id' | 'deleted' | 'deleted_at' | 'created_at' | 'updated_at'
->;
 
 export interface TasksSlice {
-  tasks: TaskData[];
-  tasksLoaded: boolean;
-  tasksLoading: boolean;
-  tasksError: string | null;
+  // UI State only - no server data!
+  tasksViewMode: 'list' | 'kanban' | 'calendar';
+  tasksFilterStatus: 'all' | 'active' | 'completed' | 'deleted';
+  tasksFilterPriority: 'all' | 'low' | 'medium' | 'high';
+  tasksSortBy: 'due_date' | 'priority' | 'created_at' | 'title';
+  tasksSortOrder: 'asc' | 'desc';
+  tasksShowArchived: boolean;
+  tasksShowStarred: boolean;
+  tasksSelectedCategory: string | null;
+  tasksSelectedProject: string | null;
 
-  loadTasks: (filters?: Parameters<typeof getTasks>[0]) => Promise<void>;
-  addTask: (task: TaskInput) => Promise<TaskData>;
-  updateTask: (id: string, updates: Partial<TaskData>) => Promise<TaskData>;
-  softDeleteTask: (id: string) => Promise<void>;
-  restoreTask: (id: string) => Promise<TaskData>;
-  hardDeleteTask: (id: string) => Promise<void>;
-  getTaskById: (id: string) => TaskData | undefined;
+  // UI Actions
+  setTasksViewMode: (mode: 'list' | 'kanban' | 'calendar') => void;
+  setTasksFilterStatus: (status: 'all' | 'active' | 'completed' | 'deleted') => void;
+  setTasksFilterPriority: (priority: 'all' | 'low' | 'medium' | 'high') => void;
+  setTasksSortBy: (sortBy: 'due_date' | 'priority' | 'created_at' | 'title') => void;
+  setTasksSortOrder: (order: 'asc' | 'desc') => void;
+  setTasksShowArchived: (show: boolean) => void;
+  setTasksShowStarred: (show: boolean) => void;
+  setTasksSelectedCategory: (category: string | null) => void;
+  setTasksSelectedProject: (projectId: string | null) => void;
+  resetTasksFilters: () => void;
 }
 
-export const createTasksSlice: StateCreator<TasksSlice, [], [], TasksSlice> = (
-  set,
-  get
-) => ({
-  tasks: [],
-  tasksLoaded: false,
-  tasksLoading: false,
-  tasksError: null,
+export const createTasksSlice: StateCreator<TasksSlice, [], [], TasksSlice> = (set) => ({
+  // Initial UI state
+  tasksViewMode: 'list',
+  tasksFilterStatus: 'all',
+  tasksFilterPriority: 'all',
+  tasksSortBy: 'due_date',
+  tasksSortOrder: 'asc',
+  tasksShowArchived: false,
+  tasksShowStarred: false,
+  tasksSelectedCategory: null,
+  tasksSelectedProject: null,
 
-  loadTasks: async (filters) => {
-    if (get().tasksLoading) return;
-
-    set({ tasksLoading: true, tasksError: null });
-    try {
-      const tasks = await getTasks(filters);
-      set({ tasks, tasksLoaded: true, tasksLoading: false });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to load tasks';
-      set({ tasksError: message, tasksLoading: false });
-      logger.error('Tasks', 'Operation failed', { error, context: 'loadTasks' });
-      throw error;
-    }
-  },
-
-  addTask: async (task) => {
-    try {
-      const created = await createTask(task);
-      set((state) => ({ tasks: [created, ...state.tasks] }));
-      return created;
-    } catch (error) {
-      logger.error('Tasks', 'Operation failed', { error, context: 'addTask' });
-      throw error;
-    }
-  },
-
-  updateTask: async (id, updates) => {
-    try {
-      const updated = await updateTask(id, updates);
-      set((state) => ({
-        tasks: state.tasks.map((t) => (t.id === id ? { ...t, ...updated } : t)),
-      }));
-      return updated;
-    } catch (error) {
-      logger.error('Tasks', 'Operation failed', { error, context: 'updateTask', taskId: id });
-      throw error;
-    }
-  },
-
-  softDeleteTask: async (id) => {
-    try {
-      await deleteTask(id);
-      set((state) => ({
-        tasks: state.tasks.map((t) =>
-          t.id === id ? { ...t, deleted: true, deleted_at: new Date().toISOString() } : t
-        ),
-      }));
-    } catch (error) {
-      logger.error('Tasks', 'Operation failed', { error, context: 'softDeleteTask', taskId: id });
-      throw error;
-    }
-  },
-
-  restoreTask: async (id) => {
-    try {
-      const restored = await restoreTask(id);
-      const latest = restored ?? (await getTask(id));
-      set((state) => ({
-        tasks: state.tasks.map((t) =>
-          t.id === id ? { ...t, ...latest, deleted: false, deleted_at: null } : t
-        ),
-      }));
-      return latest;
-    } catch (error) {
-      logger.error('Tasks', 'Operation failed', { error, context: 'restoreTask', taskId: id });
-      throw error;
-    }
-  },
-
-  hardDeleteTask: async (id) => {
-    try {
-      await permanentlyDeleteTask(id);
-      set((state) => ({ tasks: state.tasks.filter((t) => t.id !== id) }));
-    } catch (error) {
-      logger.error('Tasks', 'Operation failed', { error, context: 'hardDeleteTask', taskId: id });
-      throw error;
-    }
-  },
-
-  getTaskById: (id) => get().tasks.find((t) => t.id === id),
+  // UI Actions
+  setTasksViewMode: (mode) => set({ tasksViewMode: mode }),
+  setTasksFilterStatus: (status) => set({ tasksFilterStatus: status }),
+  setTasksFilterPriority: (priority) => set({ tasksFilterPriority: priority }),
+  setTasksSortBy: (sortBy) => set({ tasksSortBy: sortBy }),
+  setTasksSortOrder: (order) => set({ tasksSortOrder: order }),
+  setTasksShowArchived: (show) => set({ tasksShowArchived: show }),
+  setTasksShowStarred: (show) => set({ tasksShowStarred: show }),
+  setTasksSelectedCategory: (category) => set({ tasksSelectedCategory: category }),
+  setTasksSelectedProject: (projectId) => set({ tasksSelectedProject: projectId }),
+  resetTasksFilters: () =>
+    set({
+      tasksFilterStatus: 'all',
+      tasksFilterPriority: 'all',
+      tasksShowArchived: false,
+      tasksShowStarred: false,
+      tasksSelectedCategory: null,
+      tasksSelectedProject: null,
+    }),
 });
+
