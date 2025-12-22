@@ -2,8 +2,17 @@
  * ConversationPersistenceService
  * Handles saving and loading AI conversations to/from Supabase
  * Enables contextual memory across sessions
+ *
+ * ARCHITECTURE: Uses API layer for all data access (no direct Supabase calls)
  */
 
+import {
+  getConversations,
+  getConversation,
+  createConversation,
+  updateConversation,
+  addMessageToConversation
+} from '@/api/conversationsAPI';
 import { supabase } from '@/lib/supabase';
 import type { Conversation, ConversationMessage } from '@/types/infrastructure';
 
@@ -32,48 +41,47 @@ class ConversationPersistenceService {
    */
   async startSession(userId: string): Promise<string> {
     this.currentSessionId = this.generateSessionId();
-    
-    const { data, error } = await supabase
-      .from('conversations')
-      .insert({
-        user_id: userId,
+
+    // Use API layer instead of direct Supabase
+    try {
+      const conversation = await createConversation({
         session_id: this.currentSessionId,
         messages: [],
         message_count: 0,
-      })
-      .select('id')
-      .single();
+      });
 
-    if (error) {
+      this.currentConversationId = conversation.id;
+      console.log('[ConversationPersistence] Started session:', this.currentSessionId);
+
+      return this.currentSessionId;
+    } catch (error) {
       console.error('[ConversationPersistence] Failed to start session:', error);
       throw error;
     }
-
-    this.currentConversationId = data.id;
-    console.log('[ConversationPersistence] Started session:', this.currentSessionId);
-    
-    return this.currentSessionId;
   }
 
   /**
    * Resume an existing session
    */
   async resumeSession(sessionId: string): Promise<Conversation | null> {
-    const { data, error } = await supabase
-      .from('conversations')
-      .select('*')
-      .eq('session_id', sessionId)
-      .single();
+    // Use API layer instead of direct Supabase
+    try {
+      const conversations = await getConversations();
+      const conversation = conversations.find(c => c.session_id === sessionId);
 
-    if (error) {
+      if (!conversation) {
+        console.error('[ConversationPersistence] Session not found:', sessionId);
+        return null;
+      }
+
+      this.currentSessionId = sessionId;
+      this.currentConversationId = conversation.id;
+
+      return conversation as Conversation;
+    } catch (error) {
       console.error('[ConversationPersistence] Failed to resume session:', error);
       return null;
     }
-
-    this.currentSessionId = sessionId;
-    this.currentConversationId = data.id;
-    
-    return data as Conversation;
   }
 
   /**
@@ -85,43 +93,21 @@ class ConversationPersistenceService {
       return;
     }
 
-    // Append message to the messages array
-    const { error } = await supabase.rpc('append_conversation_message', {
-      p_conversation_id: this.currentConversationId,
-      p_message: message,
-    });
-
-    if (error) {
-      // Fallback: fetch, append, update
-      console.warn('[ConversationPersistence] RPC failed, using fallback:', error);
-      await this.addMessageFallback(message);
+    // Use API layer instead of direct Supabase
+    try {
+      await addMessageToConversation(this.currentConversationId, message);
+    } catch (error) {
+      console.error('[ConversationPersistence] Failed to add message:', error);
     }
   }
 
   /**
    * Fallback method to add message (fetch, append, update)
+   * @deprecated - Now handled by API layer
    */
   private async addMessageFallback(message: ConversationMessage): Promise<void> {
-    if (!this.currentConversationId) return;
-
-    const { data: current } = await supabase
-      .from('conversations')
-      .select('messages, message_count')
-      .eq('id', this.currentConversationId)
-      .single();
-
-    if (!current) return;
-
-    const messages = [...(current.messages || []), message];
-    
-    await supabase
-      .from('conversations')
-      .update({
-        messages,
-        message_count: messages.length,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', this.currentConversationId);
+    // This method is deprecated - API layer handles this
+    await this.addMessage(message);
   }
 
   /**
@@ -131,19 +117,25 @@ class ConversationPersistenceService {
     userId: string,
     limit: number = 10
   ): Promise<ConversationSummary[]> {
-    const { data, error } = await supabase
-      .from('conversations')
-      .select('id, session_id, message_count, summary, created_at, updated_at')
-      .eq('user_id', userId)
-      .order('updated_at', { ascending: false })
-      .limit(limit);
-
-    if (error) {
+    // Use API layer instead of direct Supabase
+    try {
+      const conversations = await getConversations();
+      // Sort by updated_at and limit
+      return conversations
+        .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+        .slice(0, limit)
+        .map(c => ({
+          id: c.id,
+          session_id: c.session_id,
+          message_count: c.message_count,
+          summary: c.summary ?? null,
+          created_at: c.created_at,
+          updated_at: c.updated_at,
+        }));
+    } catch (error) {
       console.error('[ConversationPersistence] Failed to get recent:', error);
       return [];
     }
-
-    return data as ConversationSummary[];
   }
 
   /**
@@ -154,31 +146,30 @@ class ConversationPersistenceService {
     query: string,
     limit: number = 10
   ): Promise<Conversation[]> {
-    const { data, error } = await supabase
-      .rpc('search_conversations', {
-        p_user_id: userId,
-        p_search_query: query,
-        p_limit: limit,
+    // Use API layer instead of direct Supabase
+    // Note: RPC function search_conversations needs to be added to API layer
+    // For now, do client-side filtering
+    try {
+      const conversations = await getConversations();
+      const filtered = conversations.filter(c => {
+        const messagesText = JSON.stringify(c.messages).toLowerCase();
+        return messagesText.includes(query.toLowerCase());
       });
-
-    if (error) {
+      return filtered.slice(0, limit) as Conversation[];
+    } catch (error) {
       console.error('[ConversationPersistence] Search failed:', error);
       return [];
     }
-
-    return data as Conversation[];
   }
 
   /**
    * Update conversation summary
    */
   async updateSummary(conversationId: string, summary: string): Promise<void> {
-    const { error } = await supabase
-      .from('conversations')
-      .update({ summary })
-      .eq('id', conversationId);
-
-    if (error) {
+    // Use API layer instead of direct Supabase
+    try {
+      await updateConversation(conversationId, { summary });
+    } catch (error) {
       console.error('[ConversationPersistence] Failed to update summary:', error);
     }
   }
@@ -189,12 +180,10 @@ class ConversationPersistenceService {
   async saveContextSnapshot(context: Record<string, unknown>): Promise<void> {
     if (!this.currentConversationId) return;
 
-    const { error } = await supabase
-      .from('conversations')
-      .update({ context_snapshot: context })
-      .eq('id', this.currentConversationId);
-
-    if (error) {
+    // Use API layer instead of direct Supabase
+    try {
+      await updateConversation(this.currentConversationId, { context_snapshot: context });
+    } catch (error) {
       console.error('[ConversationPersistence] Failed to save context:', error);
     }
   }
