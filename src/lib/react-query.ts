@@ -6,6 +6,8 @@
  */
 
 import { QueryClient } from '@tanstack/react-query';
+import { logger } from '@/services/logger';
+import { parseToLifeSyncError, isRetryableError, isAuthError } from '@/lib/errors';
 
 /**
  * Type for filters used in query keys
@@ -21,7 +23,7 @@ interface PageData {
 }
 
 /**
- * Create Query Client with sensible defaults
+ * Create Query Client with sensible defaults and global error handling
  */
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -34,10 +36,22 @@ export const queryClient = new QueryClient({
       // 10 minutes
       gcTime: 10 * 60 * 1000,
 
-      // Retry failed requests
-      retry: 1,
+      // Retry failed requests based on error type
+      retry: (failureCount, error) => {
+        // Don't retry auth errors
+        if (isAuthError(error)) {
+          return false;
+        }
 
-      // Retry delay
+        // Retry retryable errors up to 2 times
+        if (isRetryableError(error) && failureCount < 2) {
+          return true;
+        }
+
+        return false;
+      },
+
+      // Retry delay with exponential backoff
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
 
       // Refetch on window focus (disabled by default, enable per-query if needed)
@@ -48,13 +62,45 @@ export const queryClient = new QueryClient({
 
       // Refetch on mount (only if stale)
       refetchOnMount: true,
+
+      // Global error handler for queries
+      onError: (error) => {
+        const lifeSyncError = parseToLifeSyncError(error);
+        logger.error('ReactQuery', lifeSyncError, {
+          code: lifeSyncError.code,
+          statusCode: lifeSyncError.statusCode,
+          context: lifeSyncError.context,
+        });
+      },
     },
     mutations: {
-      // Retry failed mutations once
-      retry: 1,
+      // Retry failed mutations based on error type
+      retry: (failureCount, error) => {
+        // Don't retry auth errors or validation errors
+        if (isAuthError(error)) {
+          return false;
+        }
+
+        // Retry retryable errors once
+        if (isRetryableError(error) && failureCount < 1) {
+          return true;
+        }
+
+        return false;
+      },
 
       // Retry delay for mutations
       retryDelay: 1000,
+
+      // Global error handler for mutations
+      onError: (error) => {
+        const lifeSyncError = parseToLifeSyncError(error);
+        logger.error('ReactQuery:Mutation', lifeSyncError, {
+          code: lifeSyncError.code,
+          statusCode: lifeSyncError.statusCode,
+          context: lifeSyncError.context,
+        });
+      },
     },
   },
 });
