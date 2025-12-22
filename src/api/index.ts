@@ -41,6 +41,7 @@ export * from './importantDatesAPI';
 export * from './automationAPI';
 export * from './notificationAPI';
 export * from './listAPI';
+export * from './userSettingsAPI';
 
 // Gamification
 export * from './gamificationAPI';

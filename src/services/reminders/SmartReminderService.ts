@@ -1,6 +1,6 @@
 /**
  * SmartReminderService
- * 
+ *
  * Intelligent reminder features:
  * - Adaptive timing based on user patterns
  * - Context-aware reminders (location, time of day, current activity)
@@ -8,9 +8,11 @@
  * - Do Not Disturb awareness
  * - Priority-based filtering
  * - Streak protection alerts
+ *
+ * ARCHITECTURE: Uses API layer for all data access (no direct Supabase calls)
  */
 
-import { supabase } from '@/lib/supabase';
+import { getUserSettings, getNotificationQueueCount } from '@/api/userSettingsAPI';
 import { reminderService, type ScheduleReminderParams } from './ReminderService';
 import {
   format,
@@ -61,17 +63,14 @@ class SmartReminderService {
   async getPreferences(): Promise<ReminderPreferences | null> {
     if (this.preferences) return this.preferences;
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return null;
-
-    const { data } = await supabase
-      .from('user_settings')
-      .select('reminder_preferences')
-      .eq('user_id', user.id)
-      .single();
-
-    this.preferences = data?.reminder_preferences ?? this.getDefaultPreferences();
-    return this.preferences;
+    // Use API layer instead of direct Supabase
+    try {
+      const settings = await getUserSettings();
+      this.preferences = (settings?.reminder_preferences as ReminderPreferences) ?? this.getDefaultPreferences();
+      return this.preferences;
+    } catch (error) {
+      return this.getDefaultPreferences();
+    }
   }
 
   private getDefaultPreferences(): ReminderPreferences {
@@ -151,19 +150,17 @@ class SmartReminderService {
   }
 
   private async getRecentNotificationCount(): Promise<number> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return 0;
-
+    // Use API layer instead of direct Supabase
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
 
-    const { count } = await supabase
-      .from('notification_queue')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .eq('status', 'sent')
-      .gte('sent_at', oneHourAgo.toISOString());
-
-    return count || 0;
+    try {
+      return await getNotificationQueueCount({
+        status: 'sent',
+        since: oneHourAgo.toISOString(),
+      });
+    } catch (error) {
+      return 0;
+    }
   }
 
   /**
