@@ -1,6 +1,8 @@
 /**
  * LocationService - High-level location intelligence service
  * Provides commute estimation, location-based reminders, and errand suggestions
+ *
+ * ARCHITECTURE: Uses API layer for all data access (no direct Supabase calls)
  */
 
 import { getLocationProvider } from '@/lib/location';
@@ -12,7 +14,7 @@ import type {
   LocationPreferences,
   ErrandTask,
 } from '@/lib/location/types';
-import { supabase } from '@/lib/supabase';
+import { getUserPreferences, updateUserPreferences } from '@/api/userSettingsAPI';
 
 class LocationService {
   private preferences: LocationPreferences | null = null;
@@ -24,30 +26,26 @@ class LocationService {
   async getPreferences(): Promise<LocationPreferences> {
     if (this.preferences) return this.preferences;
 
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) {
+    // Use API layer instead of direct Supabase
+    try {
+      const data = await getUserPreferences();
+
+      if (data) {
+        this.preferences = {
+          homeLocation: data.home_location as SavedLocation | null,
+          workLocation: data.work_location as SavedLocation | null,
+          savedLocations: (data.saved_locations as SavedLocation[]) ?? [],
+          commuteMode: 'driving',
+          defaultCommuteMinutes: 30,
+        };
+      } else {
+        this.preferences = this.getDefaultPreferences();
+      }
+
+      return this.preferences;
+    } catch (error) {
       return this.getDefaultPreferences();
     }
-
-    const { data } = await supabase
-      .from('user_preferences')
-      .select('home_location, work_location, saved_locations')
-      .eq('user_id', userData.user.id)
-      .single();
-
-    if (data) {
-      this.preferences = {
-        homeLocation: data.home_location as SavedLocation | null,
-        workLocation: data.work_location as SavedLocation | null,
-        savedLocations: (data.saved_locations as SavedLocation[]) ?? [],
-        commuteMode: 'driving',
-        defaultCommuteMinutes: 30,
-      };
-    } else {
-      this.preferences = this.getDefaultPreferences();
-    }
-
-    return this.preferences;
   }
 
   private getDefaultPreferences(): LocationPreferences {
@@ -228,35 +226,24 @@ class LocationService {
    * Save a location to user preferences
    */
   async saveLocation(location: SavedLocation): Promise<void> {
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) return;
-
+    // Use API layer instead of direct Supabase
     const prefs = await this.getPreferences();
 
     if (location.type === 'home') {
-      await supabase
-        .from('user_preferences')
-        .upsert({
-          user_id: userData.user.id,
-          home_location: location,
-        });
+      await updateUserPreferences({
+        home_location: location as unknown as Record<string, unknown>,
+      });
       this.preferences = { ...prefs, homeLocation: location };
     } else if (location.type === 'work') {
-      await supabase
-        .from('user_preferences')
-        .upsert({
-          user_id: userData.user.id,
-          work_location: location,
-        });
+      await updateUserPreferences({
+        work_location: location as unknown as Record<string, unknown>,
+      });
       this.preferences = { ...prefs, workLocation: location };
     } else {
       const updatedLocations = [...prefs.savedLocations.filter((l) => l.id !== location.id), location];
-      await supabase
-        .from('user_preferences')
-        .upsert({
-          user_id: userData.user.id,
-          saved_locations: updatedLocations,
-        });
+      await updateUserPreferences({
+        saved_locations: updatedLocations as unknown as Record<string, unknown>[],
+      });
       this.preferences = { ...prefs, savedLocations: updatedLocations };
     }
   }
@@ -265,18 +252,13 @@ class LocationService {
    * Remove a saved location
    */
   async removeLocation(locationId: string): Promise<void> {
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) return;
-
+    // Use API layer instead of direct Supabase
     const prefs = await this.getPreferences();
     const updatedLocations = prefs.savedLocations.filter((l) => l.id !== locationId);
 
-    await supabase
-      .from('user_preferences')
-      .upsert({
-        user_id: userData.user.id,
-        saved_locations: updatedLocations,
-      });
+    await updateUserPreferences({
+      saved_locations: updatedLocations as unknown as Record<string, unknown>[],
+    });
 
     this.preferences = { ...prefs, savedLocations: updatedLocations };
   }
