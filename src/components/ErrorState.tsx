@@ -1,14 +1,15 @@
 import React from 'react';
-import { 
-  AlertTriangle, 
-  RefreshCw, 
-  WifiOff, 
-  FileX, 
+import {
+  AlertTriangle,
+  RefreshCw,
+  WifiOff,
+  FileX,
   Database,
   Bug,
   Shield,
   Frown
 } from 'lucide-react';
+import { parseToLifeSyncError, LifeSyncError } from '@/lib/errors';
 
 interface ErrorStateProps {
   type?: 'network' | 'notFound' | 'database' | 'permission' | 'generic' | 'validation';
@@ -17,6 +18,7 @@ interface ErrorStateProps {
   onRetry?: () => void;
   retryText?: string;
   className?: string;
+  error?: unknown; // Accept any error and parse it
 }
 
 const errorConfig = {
@@ -71,31 +73,76 @@ const errorConfig = {
 };
 
 export default function ErrorState({
-  type = 'generic',
+  type,
   title,
   message,
   onRetry,
   retryText = 'Try Again',
-  className = ''
+  className = '',
+  error
 }: ErrorStateProps): React.JSX.Element {
-  const config = errorConfig[type];
+  // Parse error if provided
+  let parsedError: LifeSyncError | null = null;
+  let errorType = type ?? 'generic';
+  let errorTitle = title;
+  let errorMessage = message;
+  let canRetry = !!onRetry;
+
+  if (error) {
+    parsedError = parseToLifeSyncError(error);
+
+    // Determine error type from LifeSyncError
+    if (!type) {
+      switch (parsedError.code) {
+        case 'NETWORK_ERROR':
+          errorType = 'network';
+          break;
+        case 'NOT_FOUND':
+          errorType = 'notFound';
+          break;
+        case 'DATABASE_ERROR':
+        case 'SERVER_ERROR':
+          errorType = 'database';
+          break;
+        case 'AUTHORIZATION_ERROR':
+        case 'AUTH_ERROR':
+          errorType = 'permission';
+          break;
+        case 'VALIDATION_ERROR':
+          errorType = 'validation';
+          break;
+        default:
+          errorType = 'generic';
+      }
+    }
+
+    // Use error's user message if no custom message provided
+    if (!message) {
+      errorMessage = parsedError.userMessage;
+    }
+
+    // Use error's canRetry flag
+    canRetry = parsedError.canRetry && !!onRetry;
+  }
+
+  const config = errorConfig[errorType];
   const Icon = config.icon;
 
   return (
     <div className={`flex flex-col items-center justify-center p-8 text-center ${className}`}>
-      <div className={`p-4 rounded-full ${config.bgColor} ${config.borderColor} border-2 mb-4`}>
-        <Icon className={`w-8 h-8 ${config.color}`} />
+      <div className={`p-4 rounded-full ${config.bgColor} dark:bg-opacity-20 ${config.borderColor} dark:border-opacity-50 border-2 mb-4`}>
+        <Icon className={`w-8 h-8 ${config.color} dark:opacity-90`} />
       </div>
-      
-      <h3 className="text-lg font-semibold text-gray-900 mb-2">
-        {title ?? config.title}
+
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+        {errorTitle ?? config.title}
       </h3>
 
-      <p className="text-gray-600 mb-6 max-w-sm">
-        {message ?? config.message}
+      <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-sm">
+        {errorMessage ?? config.message}
       </p>
-      
-      {onRetry && (
+
+      {canRetry && onRetry && (
         <button
           onClick={onRetry}
           className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
@@ -156,18 +203,18 @@ export function EmptyState({
 }): React.JSX.Element {
   return (
     <div className={`flex flex-col items-center justify-center p-12 text-center ${className}`}>
-      <div className="p-4 rounded-full bg-gray-100 mb-4">
-        <Icon className="w-12 h-12 text-gray-400" />
+      <div className="p-4 rounded-full bg-gray-100 dark:bg-slate-800 mb-4">
+        <Icon className="w-12 h-12 text-gray-400 dark:text-gray-500" />
       </div>
-      
-      <h3 className="text-xl font-semibold text-gray-900 mb-2">
+
+      <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
         {title}
       </h3>
-      
-      <p className="text-gray-600 mb-6 max-w-sm">
+
+      <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-sm">
         {message}
       </p>
-      
+
       {action && (
         <button
           onClick={action}
