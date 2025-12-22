@@ -125,46 +125,68 @@ export const selectUI = (state: ComposedStore): Pick<
 
 export const selectNotes = (state: ComposedStore): Pick<
   ComposedStore,
-  | 'notes'
-  | 'notesLoaded'
-  | 'notesLoading'
-  | 'loadNotes'
-  | 'addNote'
-  | 'updateNote'
-  | 'deleteNote'
-  | 'getNoteById'
+  | 'notesViewMode'
+  | 'notesFilterCategory'
+  | 'notesSortBy'
+  | 'notesSortOrder'
+  | 'notesSearchQuery'
+  | 'notesShowArchived'
+  | 'setNotesViewMode'
+  | 'setNotesFilterCategory'
+  | 'setNotesSortBy'
+  | 'setNotesSortOrder'
+  | 'setNotesSearchQuery'
+  | 'setNotesShowArchived'
+  | 'resetNotesFilters'
 > => ({
-  notes: state.notes,
-  notesLoaded: state.notesLoaded,
-  notesLoading: state.notesLoading,
-  loadNotes: state.loadNotes,
-  addNote: state.addNote,
-  updateNote: state.updateNote,
-  deleteNote: state.deleteNote,
-  getNoteById: state.getNoteById,
+  notesViewMode: state.notesViewMode,
+  notesFilterCategory: state.notesFilterCategory,
+  notesSortBy: state.notesSortBy,
+  notesSortOrder: state.notesSortOrder,
+  notesSearchQuery: state.notesSearchQuery,
+  notesShowArchived: state.notesShowArchived,
+  setNotesViewMode: state.setNotesViewMode,
+  setNotesFilterCategory: state.setNotesFilterCategory,
+  setNotesSortBy: state.setNotesSortBy,
+  setNotesSortOrder: state.setNotesSortOrder,
+  setNotesSearchQuery: state.setNotesSearchQuery,
+  setNotesShowArchived: state.setNotesShowArchived,
+  resetNotesFilters: state.resetNotesFilters,
 });
 
 export const selectJournal = (state: ComposedStore): Pick<
   ComposedStore,
-  | 'journalEntries'
-  | 'journalLoaded'
-  | 'journalLoading'
-  | 'loadJournal'
-  | 'addJournalEntry'
-  | 'updateJournalEntry'
-  | 'deleteJournalEntry'
-  | 'searchJournalEntries'
-  | 'getJournalEntryById'
+  | 'journalViewMode'
+  | 'journalFilterMood'
+  | 'journalFilterDateRange'
+  | 'journalSortBy'
+  | 'journalSortOrder'
+  | 'journalSearchQuery'
+  | 'journalSelectedDate'
+  | 'setJournalViewMode'
+  | 'setJournalFilterMood'
+  | 'setJournalFilterDateRange'
+  | 'setJournalSortBy'
+  | 'setJournalSortOrder'
+  | 'setJournalSearchQuery'
+  | 'setJournalSelectedDate'
+  | 'resetJournalFilters'
 > => ({
-  journalEntries: state.journalEntries,
-  journalLoaded: state.journalLoaded,
-  journalLoading: state.journalLoading,
-  loadJournal: state.loadJournal,
-  addJournalEntry: state.addJournalEntry,
-  updateJournalEntry: state.updateJournalEntry,
-  deleteJournalEntry: state.deleteJournalEntry,
-  searchJournalEntries: state.searchJournalEntries,
-  getJournalEntryById: state.getJournalEntryById,
+  journalViewMode: state.journalViewMode,
+  journalFilterMood: state.journalFilterMood,
+  journalFilterDateRange: state.journalFilterDateRange,
+  journalSortBy: state.journalSortBy,
+  journalSortOrder: state.journalSortOrder,
+  journalSearchQuery: state.journalSearchQuery,
+  journalSelectedDate: state.journalSelectedDate,
+  setJournalViewMode: state.setJournalViewMode,
+  setJournalFilterMood: state.setJournalFilterMood,
+  setJournalFilterDateRange: state.setJournalFilterDateRange,
+  setJournalSortBy: state.setJournalSortBy,
+  setJournalSortOrder: state.setJournalSortOrder,
+  setJournalSearchQuery: state.setJournalSearchQuery,
+  setJournalSelectedDate: state.setJournalSelectedDate,
+  resetJournalFilters: state.resetJournalFilters,
 });
 
 export const selectTasks = (state: ComposedStore): Pick<
@@ -336,44 +358,64 @@ export const selectFinance = (state: ComposedStore): Pick<
 
 export const selectGoals = (state: ComposedStore): Pick<
   ComposedStore,
-  | 'goals'
-  | 'goalsLoaded'
-  | 'goalsLoading'
-  | 'loadGoals'
-  | 'addGoal'
-  | 'updateGoal'
-  | 'deleteGoal'
-  | 'getGoalById'
+  | 'goalsViewMode'
+  | 'goalsFilterStatus'
+  | 'goalsFilterCategory'
+  | 'goalsFilterTimeframe'
+  | 'goalsSortBy'
+  | 'goalsSortOrder'
+  | 'goalsShowArchived'
+  | 'goalsSelectedGoal'
+  | 'setGoalsViewMode'
+  | 'setGoalsFilterStatus'
+  | 'setGoalsFilterCategory'
+  | 'setGoalsFilterTimeframe'
+  | 'setGoalsSortBy'
+  | 'setGoalsSortOrder'
+  | 'setGoalsShowArchived'
+  | 'setGoalsSelectedGoal'
+  | 'resetGoalsFilters'
 > => ({
-  goals: state.goals,
-  goalsLoaded: state.goalsLoaded,
-  goalsLoading: state.goalsLoading,
-  loadGoals: state.loadGoals,
-  addGoal: state.addGoal,
-  updateGoal: state.updateGoal,
-  deleteGoal: state.deleteGoal,
-  getGoalById: state.getGoalById,
+  goalsViewMode: state.goalsViewMode,
+  goalsFilterStatus: state.goalsFilterStatus,
+  goalsFilterCategory: state.goalsFilterCategory,
+  goalsFilterTimeframe: state.goalsFilterTimeframe,
+  goalsSortBy: state.goalsSortBy,
+  goalsSortOrder: state.goalsSortOrder,
+  goalsShowArchived: state.goalsShowArchived,
+  goalsSelectedGoal: state.goalsSelectedGoal,
+  setGoalsViewMode: state.setGoalsViewMode,
+  setGoalsFilterStatus: state.setGoalsFilterStatus,
+  setGoalsFilterCategory: state.setGoalsFilterCategory,
+  setGoalsFilterTimeframe: state.setGoalsFilterTimeframe,
+  setGoalsSortBy: state.setGoalsSortBy,
+  setGoalsSortOrder: state.setGoalsSortOrder,
+  setGoalsShowArchived: state.setGoalsShowArchived,
+  setGoalsSelectedGoal: state.setGoalsSelectedGoal,
+  resetGoalsFilters: state.resetGoalsFilters,
 });
 
 export const selectDreams = (state: ComposedStore): Pick<
   ComposedStore,
-  | 'dreams'
-  | 'dreamsLoaded'
-  | 'dreamsLoading'
-  | 'loadDreams'
-  | 'addDream'
-  | 'updateDream'
-  | 'deleteDream'
-  | 'getDreamById'
+  | 'dreamsViewMode'
+  | 'dreamsFilterCategory'
+  | 'dreamsSortBy'
+  | 'dreamsSortOrder'
+  | 'setDreamsViewMode'
+  | 'setDreamsFilterCategory'
+  | 'setDreamsSortBy'
+  | 'setDreamsSortOrder'
+  | 'resetDreamsFilters'
 > => ({
-  dreams: state.dreams,
-  dreamsLoaded: state.dreamsLoaded,
-  dreamsLoading: state.dreamsLoading,
-  loadDreams: state.loadDreams,
-  addDream: state.addDream,
-  updateDream: state.updateDream,
-  deleteDream: state.deleteDream,
-  getDreamById: state.getDreamById,
+  dreamsViewMode: state.dreamsViewMode,
+  dreamsFilterCategory: state.dreamsFilterCategory,
+  dreamsSortBy: state.dreamsSortBy,
+  dreamsSortOrder: state.dreamsSortOrder,
+  setDreamsViewMode: state.setDreamsViewMode,
+  setDreamsFilterCategory: state.setDreamsFilterCategory,
+  setDreamsSortBy: state.setDreamsSortBy,
+  setDreamsSortOrder: state.setDreamsSortOrder,
+  resetDreamsFilters: state.resetDreamsFilters,
 });
 
 export const selectProjects = (state: ComposedStore): Pick<

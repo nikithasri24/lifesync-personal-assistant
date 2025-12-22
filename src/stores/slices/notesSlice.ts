@@ -1,93 +1,66 @@
 /**
- * Notes Slice
+ * Notes Zustand Slice - UI STATE ONLY
  *
- * Manages notes state and operations
+ * ⚠️ DEPRECATED: Server state removed - use React Query hooks instead
+ * 
+ * This slice now contains ONLY UI state (view modes, filters, etc.)
+ * All server data (notes, loading states, CRUD operations) should use React Query.
+ *
+ * ✅ Use React Query hooks from @/hooks/useNotesQuery.ts:
+ * - useNotes() - Get all notes
+ * - useNote(id) - Get single note
+ * - useCreateNote() - Create note
+ * - useUpdateNote() - Update note
+ * - useDeleteNote() - Delete note
+ *
+ * Benefits of React Query:
+ * - Automatic caching and background refetching
+ * - Optimistic updates with automatic rollback on error
+ * - Better loading and error states
+ * - Proper separation: Server state (React Query) vs UI state (Zustand)
  */
 
 import { type StateCreator } from 'zustand';
-import type { Note } from '@/types';
-import type { CreateNoteInput, UpdateNoteInput } from '@/api/notesAPI';
-import { logger } from '@/services/logger';
 
 export interface NotesSlice {
-  // State
-  notes: Note[];
-  notesLoaded: boolean;
-  notesLoading: boolean;
+  // UI State only - no server data!
+  notesViewMode: 'grid' | 'list';
+  notesFilterCategory: string | null;
+  notesSortBy: 'created_at' | 'updated_at' | 'title';
+  notesSortOrder: 'asc' | 'desc';
+  notesSearchQuery: string;
+  notesShowArchived: boolean;
 
-  // Actions
-  loadNotes: () => Promise<void>;
-  addNote: (input: CreateNoteInput) => Promise<Note>;
-  updateNote: (id: string, updates: UpdateNoteInput) => Promise<Note>;
-  deleteNote: (id: string) => Promise<void>;
-  getNoteById: (id: string) => Note | undefined;
+  // UI Actions
+  setNotesViewMode: (mode: 'grid' | 'list') => void;
+  setNotesFilterCategory: (category: string | null) => void;
+  setNotesSortBy: (sortBy: 'created_at' | 'updated_at' | 'title') => void;
+  setNotesSortOrder: (order: 'asc' | 'desc') => void;
+  setNotesSearchQuery: (query: string) => void;
+  setNotesShowArchived: (show: boolean) => void;
+  resetNotesFilters: () => void;
 }
 
-export const createNotesSlice: StateCreator<NotesSlice, [], [], NotesSlice> = (
-  set,
-  get
-) => ({
-  // Initial state
-  notes: [],
-  notesLoaded: false,
-  notesLoading: false,
+export const createNotesSlice: StateCreator<NotesSlice, [], [], NotesSlice> = (set) => ({
+  // Initial UI state
+  notesViewMode: 'grid',
+  notesFilterCategory: null,
+  notesSortBy: 'updated_at',
+  notesSortOrder: 'desc',
+  notesSearchQuery: '',
+  notesShowArchived: false,
 
-  // Actions
-  loadNotes: async () => {
-    if (get().notesLoaded || get().notesLoading) return;
-
-    set({ notesLoading: true });
-    try {
-      const { getNotes } = await import('@/api/notesAPI');
-      const notes = await getNotes();
-      set({ notes, notesLoaded: true, notesLoading: false });
-    } catch (error) {
-      logger.error('Notes', 'Operation failed', { error, context: 'loadNotes' });
-      set({ notesLoading: false });
-      throw error;
-    }
-  },
-
-  addNote: async (input) => {
-    try {
-      const { createNote } = await import('@/api/notesAPI');
-      const note = await createNote(input);
-      set((state) => ({ notes: [...state.notes, note] }));
-      return note;
-    } catch (error) {
-      logger.error('Notes', 'Operation failed', { error, context: 'addNote' });
-      throw error;
-    }
-  },
-
-  updateNote: async (id, updates) => {
-    try {
-      const { updateNote } = await import('@/api/notesAPI');
-      const updatedNote = await updateNote(id, updates);
-      set((state) => ({
-        notes: state.notes.map((n) => (n.id === id ? updatedNote : n)),
-      }));
-      return updatedNote;
-    } catch (error) {
-      logger.error('Notes', 'Operation failed', { error, context: 'updateNote', noteId: id });
-      throw error;
-    }
-  },
-
-  deleteNote: async (id) => {
-    try {
-      const { deleteNote } = await import('@/api/notesAPI');
-      await deleteNote(id);
-      set((state) => ({
-        notes: state.notes.filter((n) => n.id !== id),
-      }));
-    } catch (error) {
-      logger.error('Notes', 'Operation failed', { error, context: 'deleteNote', noteId: id });
-      throw error;
-    }
-  },
-
-  getNoteById: (id) => {
-    return get().notes.find((n) => n.id === id);
-  },
+  // UI Actions
+  setNotesViewMode: (mode) => set({ notesViewMode: mode }),
+  setNotesFilterCategory: (category) => set({ notesFilterCategory: category }),
+  setNotesSortBy: (sortBy) => set({ notesSortBy: sortBy }),
+  setNotesSortOrder: (order) => set({ notesSortOrder: order }),
+  setNotesSearchQuery: (query) => set({ notesSearchQuery: query }),
+  setNotesShowArchived: (show) => set({ notesShowArchived: show }),
+  resetNotesFilters: () =>
+    set({
+      notesFilterCategory: null,
+      notesSearchQuery: '',
+      notesShowArchived: false,
+    }),
 });
