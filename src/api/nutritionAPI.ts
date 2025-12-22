@@ -6,6 +6,7 @@
 import { supabase } from '../lib/supabase';
 import { logger } from '../services/logger';
 import { format } from 'date-fns';
+import { apiCall, requireAuth, handleSupabaseResponse } from './apiWrapper';
 
 // =====================================================
 // TYPES
@@ -89,21 +90,22 @@ export interface LogFoodInput {
  * Search for food items
  */
 export async function searchFoods(query: string): Promise<FoodItem[]> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { data, error } = await supabase
-    .from('food_items')
-    .select('*')
-    .or(`user_id.is.null,user_id.eq.${user.id}`)
-    .ilike('name', `%${query}%`)
-    .limit(20);
+      const { data, error } = await supabase
+        .from('food_items')
+        .select('*')
+        .or(`user_id.is.null,user_id.eq.${user.id}`)
+        .ilike('name', `%${query}%`)
+        .limit(20);
 
-  if (error) {
-    logger.error('NutritionAPI', 'Failed to search foods', { error });
-    throw error;
-  }
-  return data as FoodItem[];
+      if (error) throw error;
+      return data as FoodItem[];
+    },
+    { domain: 'NutritionAPI', operation: 'searchFoods', data: { query } }
+  );
 }
 
 /**
@@ -112,24 +114,26 @@ export async function searchFoods(query: string): Promise<FoodItem[]> {
 export async function createFoodItem(
   input: Omit<FoodItem, 'id' | 'user_id' | 'is_custom' | 'created_at'>
 ): Promise<FoodItem> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { data, error } = await supabase
-    .from('food_items')
-    .insert({
-      user_id: user.id,
-      ...input,
-      is_custom: true,
-    })
-    .select()
-    .single();
+      const result = await supabase
+        .from('food_items')
+        .insert({
+          user_id: user.id,
+          ...input,
+          is_custom: true,
+        })
+        .select()
+        .single();
 
-  if (error) {
-    logger.error('NutritionAPI', 'Failed to create food item', { error });
-    throw error;
-  }
-  return data as FoodItem;
+      const data = handleSupabaseResponse(result, 'Food Item');
+      logger.info('NutritionAPI', 'Food item created', { name: input.name });
+      return data as FoodItem;
+    },
+    { domain: 'NutritionAPI', operation: 'createFoodItem', data: { name: input.name } }
+  );
 }
 
 // =====================================================
@@ -140,76 +144,81 @@ export async function createFoodItem(
  * Log a food entry
  */
 export async function logFood(input: LogFoodInput): Promise<FoodLogEntry> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { data, error } = await supabase
-    .from('food_log')
-    .insert({
-      user_id: user.id,
-      food_item_id: input.food_item_id,
-      custom_food_name: input.custom_food_name,
-      quantity: input.quantity,
-      meal_type: input.meal_type,
-      logged_date: input.logged_date || format(new Date(), 'yyyy-MM-dd'),
-      logged_time: format(new Date(), 'HH:mm:ss'),
-      calories: input.calories,
-      protein_g: input.protein_g || 0,
-      carbs_g: input.carbs_g || 0,
-      fat_g: input.fat_g || 0,
-      notes: input.notes,
-      image_url: input.image_url,
-      ai_analyzed: input.ai_analyzed || false,
-      ai_confidence: input.ai_confidence,
-    })
-    .select()
-    .single();
+      const result = await supabase
+        .from('food_log')
+        .insert({
+          user_id: user.id,
+          food_item_id: input.food_item_id,
+          custom_food_name: input.custom_food_name,
+          quantity: input.quantity,
+          meal_type: input.meal_type,
+          logged_date: input.logged_date || format(new Date(), 'yyyy-MM-dd'),
+          logged_time: format(new Date(), 'HH:mm:ss'),
+          calories: input.calories,
+          protein_g: input.protein_g || 0,
+          carbs_g: input.carbs_g || 0,
+          fat_g: input.fat_g || 0,
+          notes: input.notes,
+          image_url: input.image_url,
+          ai_analyzed: input.ai_analyzed || false,
+          ai_confidence: input.ai_confidence,
+        })
+        .select()
+        .single();
 
-  if (error) {
-    logger.error('NutritionAPI', 'Failed to log food', { error });
-    throw error;
-  }
-  return data as FoodLogEntry;
+      const data = handleSupabaseResponse(result, 'Food Log Entry');
+      logger.info('NutritionAPI', 'Food logged', { meal_type: input.meal_type });
+      return data as FoodLogEntry;
+    },
+    { domain: 'NutritionAPI', operation: 'logFood', data: { meal_type: input.meal_type } }
+  );
 }
 
 /**
  * Get food log for a specific date
  */
 export async function getDailyLog(date: string): Promise<FoodLogEntry[]> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { data, error } = await supabase
-    .from('food_log')
-    .select('*')
-    .eq('user_id', user.id)
-    .eq('logged_date', date)
-    .order('logged_time', { ascending: true });
+      const { data, error } = await supabase
+        .from('food_log')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('logged_date', date)
+        .order('logged_time', { ascending: true });
 
-  if (error) {
-    logger.error('NutritionAPI', 'Failed to get daily log', { error });
-    throw error;
-  }
-  return data as FoodLogEntry[];
+      if (error) throw error;
+      return data as FoodLogEntry[];
+    },
+    { domain: 'NutritionAPI', operation: 'getDailyLog', data: { date } }
+  );
 }
 
 /**
  * Delete a food log entry
  */
 export async function deleteLogEntry(id: string): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { error } = await supabase
-    .from('food_log')
-    .delete()
-    .eq('id', id)
-    .eq('user_id', user.id);
+      const { error } = await supabase
+        .from('food_log')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
 
-  if (error) {
-    logger.error('NutritionAPI', 'Failed to delete log entry', { error });
-    throw error;
-  }
+      if (error) throw error;
+      logger.info('NutritionAPI', 'Food log entry deleted', { id });
+    },
+    { domain: 'NutritionAPI', operation: 'deleteLogEntry', data: { id } }
+  );
 }
 
 // =====================================================
@@ -220,21 +229,24 @@ export async function deleteLogEntry(id: string): Promise<void> {
  * Get active nutrition goal
  */
 export async function getActiveGoal(): Promise<NutritionGoal | null> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { data, error } = await supabase
-    .from('nutrition_goals')
-    .select('*')
-    .eq('user_id', user.id)
-    .eq('is_active', true)
-    .single();
+      const { data, error } = await supabase
+        .from('nutrition_goals')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .single();
 
-  if (error && error.code !== 'PGRST116') {
-    logger.error('NutritionAPI', 'Failed to get active goal', { error });
-    throw error;
-  }
-  return data as NutritionGoal | null;
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
+      return data as NutritionGoal | null;
+    },
+    { domain: 'NutritionAPI', operation: 'getActiveGoal' }
+  );
 }
 
 /**
@@ -247,35 +259,37 @@ export async function setNutritionGoal(goal: {
   fat_target_g?: number;
   goal_type?: GoalType;
 }): Promise<NutritionGoal> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  // Deactivate existing goals
-  await supabase
-    .from('nutrition_goals')
-    .update({ is_active: false })
-    .eq('user_id', user.id)
-    .eq('is_active', true);
+      // Deactivate existing goals
+      await supabase
+        .from('nutrition_goals')
+        .update({ is_active: false })
+        .eq('user_id', user.id)
+        .eq('is_active', true);
 
-  // Create new goal
-  const { data, error } = await supabase
-    .from('nutrition_goals')
-    .insert({
-      user_id: user.id,
-      calories_target: goal.calories_target,
-      protein_target_g: goal.protein_target_g || 50,
-      carbs_target_g: goal.carbs_target_g || 250,
-      fat_target_g: goal.fat_target_g || 65,
-      goal_type: goal.goal_type || 'maintain',
-      is_active: true,
-    })
-    .select()
-    .single();
+      // Create new goal
+      const result = await supabase
+        .from('nutrition_goals')
+        .insert({
+          user_id: user.id,
+          calories_target: goal.calories_target,
+          protein_target_g: goal.protein_target_g || 50,
+          carbs_target_g: goal.carbs_target_g || 250,
+          fat_target_g: goal.fat_target_g || 65,
+          goal_type: goal.goal_type || 'maintain',
+          is_active: true,
+        })
+        .select()
+        .single();
 
-  if (error) {
-    logger.error('NutritionAPI', 'Failed to set nutrition goal', { error });
-    throw error;
-  }
-  return data as NutritionGoal;
+      const data = handleSupabaseResponse(result, 'Nutrition Goal');
+      logger.info('NutritionAPI', 'Nutrition goal set', { calories_target: goal.calories_target });
+      return data as NutritionGoal;
+    },
+    { domain: 'NutritionAPI', operation: 'setNutritionGoal', data: { calories_target: goal.calories_target } }
+  );
 }
 

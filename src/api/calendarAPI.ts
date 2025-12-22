@@ -6,6 +6,7 @@
 import { supabase } from '../lib/supabase';
 import type { CalendarEvent } from '../services/types';
 import { logger } from '../services/logger';
+import { apiCall, requireAuth, handleSupabaseResponse } from './apiWrapper';
 
 // =====================================================
 // CALENDAR EVENTS CRUD OPERATIONS
@@ -22,36 +23,35 @@ export async function getCalendarEvents(filters?: {
   endDate?: string;
   type?: CalendarEvent['type'];
 }): Promise<CalendarEvent[]> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  let query = supabase
-    .from('calendar_events')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('start_date', { ascending: true });
+      let query = supabase
+        .from('calendar_events')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('start_date', { ascending: true });
 
-  // Apply filters
-  if (filters) {
-    if (filters.startDate) {
-      query = query.gte('start_date', filters.startDate);
-    }
-    if (filters.endDate) {
-      query = query.lte('start_date', filters.endDate);
-    }
-    if (filters.type) {
-      query = query.eq('type', filters.type);
-    }
-  }
+      // Apply filters
+      if (filters) {
+        if (filters.startDate) {
+          query = query.gte('start_date', filters.startDate);
+        }
+        if (filters.endDate) {
+          query = query.lte('start_date', filters.endDate);
+        }
+        if (filters.type) {
+          query = query.eq('type', filters.type);
+        }
+      }
 
-  const { data, error } = await query;
-
-  if (error) {
-    logger.error('CalendarAPI', error, { context: 'getCalendarEvents', filters });
-    throw error;
-  }
-
-  return (data ?? []) as CalendarEvent[];
+      const { data, error } = await query;
+      if (error) throw error;
+      return (data ?? []) as CalendarEvent[];
+    },
+    { domain: 'CalendarAPI', operation: 'getCalendarEvents', data: { filters } }
+  );
 }
 
 /**
@@ -61,22 +61,22 @@ export async function getCalendarEvents(filters?: {
  * @throws Error if event not found or user not authenticated
  */
 export async function getCalendarEvent(id: string): Promise<CalendarEvent> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { data, error } = await supabase
-    .from('calendar_events')
-    .select('*')
-    .eq('id', id)
-    .eq('user_id', user.id)
-    .single();
+      const result = await supabase
+        .from('calendar_events')
+        .select('*')
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .single();
 
-  if (error) {
-    logger.error('CalendarAPI', error, { context: 'getCalendarEvent', id });
-    throw error;
-  }
-
-  return data as CalendarEvent;
+      const data = handleSupabaseResponse(result, 'Calendar Event', id);
+      return data as CalendarEvent;
+    },
+    { domain: 'CalendarAPI', operation: 'getCalendarEvent', data: { id } }
+  );
 }
 
 /**
@@ -88,22 +88,22 @@ export async function getCalendarEvent(id: string): Promise<CalendarEvent> {
 export async function createCalendarEvent(
   event: Omit<CalendarEvent, 'id' | 'user_id' | 'created_at' | 'updated_at'>
 ): Promise<CalendarEvent> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { data, error } = await supabase
-    .from('calendar_events')
-    .insert({ ...event, user_id: user.id })
-    .select()
-    .single();
+      const result = await supabase
+        .from('calendar_events')
+        .insert({ ...event, user_id: user.id })
+        .select()
+        .single();
 
-  if (error) {
-    logger.error('CalendarAPI', error, { context: 'createCalendarEvent', event });
-    throw error;
-  }
-
-  logger.info('CalendarAPI', 'Calendar event created', { id: data.id, title: data.title });
-  return data as CalendarEvent;
+      const data = handleSupabaseResponse(result, 'Calendar Event');
+      logger.info('CalendarAPI', 'Calendar event created', { id: data.id, title: data.title });
+      return data as CalendarEvent;
+    },
+    { domain: 'CalendarAPI', operation: 'createCalendarEvent', data: { title: event.title } }
+  );
 }
 
 /**
@@ -117,24 +117,24 @@ export async function updateCalendarEvent(
   id: string,
   updates: Partial<CalendarEvent>
 ): Promise<CalendarEvent> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { data, error } = await supabase
-    .from('calendar_events')
-    .update({ ...updates, updated_at: new Date().toISOString() })
-    .eq('id', id)
-    .eq('user_id', user.id)
-    .select()
-    .single();
+      const result = await supabase
+        .from('calendar_events')
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .select()
+        .single();
 
-  if (error) {
-    logger.error('CalendarAPI', error, { context: 'updateCalendarEvent', id, updates });
-    throw error;
-  }
-
-  logger.info('CalendarAPI', 'Calendar event updated', { id });
-  return data as CalendarEvent;
+      const data = handleSupabaseResponse(result, 'Calendar Event', id);
+      logger.info('CalendarAPI', 'Calendar event updated', { id });
+      return data as CalendarEvent;
+    },
+    { domain: 'CalendarAPI', operation: 'updateCalendarEvent', data: { id } }
+  );
 }
 
 /**
@@ -144,21 +144,21 @@ export async function updateCalendarEvent(
  * @throws Error if deletion fails or user not authenticated
  */
 export async function deleteCalendarEvent(id: string): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { error } = await supabase
-    .from('calendar_events')
-    .delete()
-    .eq('id', id)
-    .eq('user_id', user.id);
+      const { error } = await supabase
+        .from('calendar_events')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
 
-  if (error) {
-    logger.error('CalendarAPI', error, { context: 'deleteCalendarEvent', id });
-    throw error;
-  }
-
-  logger.info('CalendarAPI', 'Calendar event deleted', { id });
+      if (error) throw error;
+      logger.info('CalendarAPI', 'Calendar event deleted', { id });
+    },
+    { domain: 'CalendarAPI', operation: 'deleteCalendarEvent', data: { id } }
+  );
 }
 
 /**
