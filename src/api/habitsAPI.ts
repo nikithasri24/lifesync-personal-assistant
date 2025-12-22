@@ -5,6 +5,7 @@
 
 import { supabase } from '../lib/supabase';
 import type { HabitData, HabitEntryData } from '../services/types';
+import { apiCall, requireAuth, handleSupabaseResponse } from './apiWrapper';
 
 // =====================================================
 // HABITS CRUD OPERATIONS
@@ -17,66 +18,73 @@ export async function getHabits(filters?: {
   category?: string;
   isActive?: boolean;
 }): Promise<HabitData[]> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  let query = supabase
-    .from('habits')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false });
+      let query = supabase
+        .from('habits')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
 
-  // Apply filters
-  if (filters) {
-    if (filters.category) query = query.eq('category', filters.category);
-    if (filters.isActive !== undefined) query = query.eq('is_active', filters.isActive);
-  }
+      // Apply filters
+      if (filters) {
+        if (filters.category) query = query.eq('category', filters.category);
+        if (filters.isActive !== undefined) query = query.eq('is_active', filters.isActive);
+      }
 
-  const { data, error } = await query;
+      const { data, error } = await query;
 
-  if (error) throw error;
-  if (!data) throw new Error('Failed to retrieve habits');
-  return data as HabitData[];
+      if (error) throw error;
+      return (data ?? []) as HabitData[];
+    },
+    { domain: 'HabitsAPI', operation: 'getHabits', data: { filters } }
+  );
 }
 
 /**
  * Get a single habit by ID
  */
 export async function getHabit(id: string): Promise<HabitData> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const result = await supabase
-    .from('habits')
-    .select('*')
-    .eq('id', id)
-    .eq('user_id', user.id)
-    .single();
+      const result = await supabase
+        .from('habits')
+        .select('*')
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .single();
 
-  if (result.error) throw result.error;
-  if (!result.data) throw new Error('Habit not found');
-  return result.data as unknown as HabitData;
+      return handleSupabaseResponse(result, 'Habit', id) as unknown as HabitData;
+    },
+    { domain: 'HabitsAPI', operation: 'getHabit', data: { id } }
+  );
 }
 
 /**
  * Create a new habit
  */
 export async function createHabit(habit: Omit<HabitData, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<HabitData> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const result = await supabase
-    .from('habits')
-    .insert({
-      user_id: user.id,
-      ...habit,
-    })
-    .select()
-    .single();
+      const result = await supabase
+        .from('habits')
+        .insert({
+          user_id: user.id,
+          ...habit,
+        })
+        .select()
+        .single();
 
-  if (result.error) throw result.error;
-  if (!result.data) throw new Error('Failed to create habit');
-  return result.data as unknown as HabitData;
+      return handleSupabaseResponse(result, 'Habit') as unknown as HabitData;
+    },
+    { domain: 'HabitsAPI', operation: 'createHabit', data: { name: habit.name } }
+  );
 }
 
 /**
