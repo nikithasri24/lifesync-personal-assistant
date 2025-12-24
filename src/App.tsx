@@ -1,7 +1,8 @@
 import { lazy, Suspense } from 'react';
-import { useComposedStore } from './stores/useComposedStore';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { RouteErrorBoundary } from './components/RouteErrorBoundary';
 import LoadingSpinner from './components/LoadingSpinner';
 import { AuthGate } from './components/AuthGate';
 import { UndoRedoButtons } from './components/UndoRedoButtons';
@@ -12,6 +13,8 @@ import { useBillReminders } from './hooks/useBillReminders';
 import { useImportantDateReminders } from './hooks/useImportantDateReminders';
 import { useTaskReminders } from './hooks/useTaskReminders';
 import { useProactiveNotifications } from './hooks/useProactiveNotifications';
+import { useRoutePerformance } from './hooks/useRoutePerformance';
+import { useWebVitals } from './hooks/useWebVitals';
 
 // Lazy load all page components for route-based code splitting
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -34,9 +37,18 @@ const Finances = lazy(() => import('./pages/Finances'));
 const Skincare = lazy(() => import('./pages/Skincare'));
 const Assistant = lazy(() => import('./pages/Assistant'));
 const TaskScheduler = lazy(() => import('./pages/TaskScheduler'));
+const DesignDemo = lazy(() => import('./pages/DesignDemo'));
 
 function App(): React.ReactElement {
-  const { activeView } = useComposedStore();
+  // Performance monitoring
+  useRoutePerformance();
+
+  // Web Vitals tracking (production performance metrics)
+  useWebVitals({
+    enabled: true,
+    reportToAnalytics: !import.meta.env.DEV,
+    logToConsole: import.meta.env.DEV
+  });
 
   // Start reminder checking when app loads
   useReminderChecker(true);
@@ -59,57 +71,6 @@ function App(): React.ReactElement {
   // Proactive AI notifications (streak risks, busy periods, goal deadlines)
   useProactiveNotifications({ enabled: true, checkIntervalMs: 60 * 60 * 1000 });
 
-  const renderPage = (): React.ReactElement => {
-    switch (activeView) {
-      case 'dashboard':
-        return <Dashboard />;
-      case 'calendar':
-        return <Calendar />;
-      case 'focus':
-        return <Focus />;
-      case 'habits':
-        return <Habits />;
-      case 'todos':
-        return <Todos />;
-      case 'notes':
-        return <Notes />;
-      case 'projects':
-        return (
-          <ErrorBoundary>
-            <ProjectTracking />
-          </ErrorBoundary>
-        );
-      case 'journal':
-        return <Journal />;
-      case 'goals':
-        return <LifeGoals />;
-      case 'travel':
-        return <Travel />;
-      case 'visa':
-        return <VisaPage />;
-      case 'trip-planner':
-        return <TripPlanner />;
-      case 'finances':
-        return <Finances />;
-      case 'shopping':
-        return <ShoppingSmart />;
-      case 'meals':
-        return <MealPlanning />;
-      case 'nutrition':
-        return <Nutrition />;
-      case 'shared':
-        return <Shared />;
-      case 'skincare':
-        return <Skincare />;
-      case 'assistant':
-        return <Assistant />;
-      case 'scheduler':
-        return <TaskScheduler />;
-      default:
-        return <Dashboard />;
-    }
-  };
-
   return (
     <AuthGate>
       <Layout>
@@ -121,7 +82,41 @@ function App(): React.ReactElement {
             </div>
           </div>
         }>
-          {renderPage()}
+          <Routes>
+            {/* Main Routes */}
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/assistant" element={<Assistant />} />
+            <Route path="/calendar" element={<Calendar />} />
+            <Route path="/scheduler" element={<TaskScheduler />} />
+            <Route path="/focus" element={<Focus />} />
+
+            {/* Design Demo */}
+            <Route path="/design-demo" element={<DesignDemo />} />
+
+            {/* Productivity Routes */}
+            <Route path="/habits" element={<Habits />} />
+            <Route path="/todos" element={<Todos />} />
+            <Route path="/notes" element={<Notes />} />
+            <Route path="/projects" element={<ProjectTracking />} />
+
+            {/* Wellbeing Routes */}
+            <Route path="/journal" element={<Journal />} />
+            <Route path="/skincare" element={<Skincare />} />
+
+            {/* Personal Routes */}
+            <Route path="/goals" element={<LifeGoals />} />
+            <Route path="/travel" element={<Travel />} />
+            <Route path="/travel/visa" element={<VisaPage />} />
+            <Route path="/travel/trip-planner" element={<TripPlanner />} />
+            <Route path="/finances/*" element={<Finances />} />
+            <Route path="/shopping" element={<ShoppingSmart />} />
+            <Route path="/meals" element={<MealPlanning />} />
+            <Route path="/nutrition" element={<Nutrition />} />
+            <Route path="/shared" element={<Shared />} />
+
+            {/* Catch-all: redirect to dashboard */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
         </Suspense>
         {/* Global undo/redo buttons */}
         <UndoRedoButtons />
