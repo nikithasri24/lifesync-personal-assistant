@@ -26,53 +26,50 @@ export const StatCard: React.FC<StatCardProps> = ({
   subtitle,
   icon: Icon,
   trend,
-  gradient = 'from-blue-500/20 to-purple-500/20',
+  gradient = 'from-[var(--color-primary-500)]/10 to-[var(--color-secondary-500)]/10',
   onClick,
 }) => {
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      whileHover={{ scale: 1.03, y: -4 }}
-      transition={{ duration: 0.2 }}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -4 }}
+      transition={{ duration: 0.3, ease: 'easeOut' }}
       onClick={onClick}
       className={`
         relative overflow-hidden
-        bg-gradient-to-br ${gradient}
-        backdrop-blur-sm
-        rounded-2xl p-6
-        border border-white/10
-        shadow-lg
+        bg-white dark:bg-gray-800
+        rounded-xl p-6
+        border border-gray-200 dark:border-gray-700
+        shadow-sm hover:shadow-md
         ${onClick ? 'cursor-pointer' : ''}
         transition-all duration-300
       `}
     >
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-5">
-        <div className="absolute inset-0 bg-gradient-to-br from-white to-transparent" />
-      </div>
+      {/* Subtle gradient overlay */}
+      <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-50`} />
 
       {/* Content */}
       <div className="relative z-10">
         {/* Header */}
-        <div className="flex items-start justify-between mb-3">
-          <p className="text-sm font-medium text-[var(--text-secondary)] opacity-80">
+        <div className="flex items-start justify-between mb-4">
+          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
             {title}
           </p>
           {Icon && (
-            <div className="p-2 rounded-xl bg-white/10 backdrop-blur-sm">
-              <Icon className="h-5 w-5 text-[var(--text-primary)]" />
+            <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700/50">
+              <Icon className="h-5 w-5 text-gray-700 dark:text-gray-300" />
             </div>
           )}
         </div>
 
         {/* Value */}
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           transition={{ delay: 0.1 }}
         >
-          <p className="text-3xl font-bold text-[var(--text-primary)] mb-1">
+          <p className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
             {value}
           </p>
         </motion.div>
@@ -80,15 +77,15 @@ export const StatCard: React.FC<StatCardProps> = ({
         {/* Footer */}
         <div className="flex items-center justify-between mt-3">
           {subtitle && (
-            <p className="text-xs text-[var(--text-secondary)] opacity-70">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
               {subtitle}
             </p>
           )}
-          
+
           {trend && (
             <div className={`
               flex items-center gap-1 text-xs font-semibold
-              ${trend.isPositive ? 'text-emerald-500' : 'text-red-500'}
+              ${trend.isPositive ? 'text-green-600 dark:text-green-500' : 'text-red-600 dark:text-red-500'}
             `}>
               <span>{trend.isPositive ? '↑' : '↓'}</span>
               <span>{Math.abs(trend.value)}%</span>
@@ -96,19 +93,6 @@ export const StatCard: React.FC<StatCardProps> = ({
           )}
         </div>
       </div>
-
-      {/* Shine Effect */}
-      <motion.div
-        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
-        initial={{ x: '-100%' }}
-        animate={{ x: '100%' }}
-        transition={{
-          repeat: Infinity,
-          duration: 3,
-          ease: 'linear',
-          repeatDelay: 5,
-        }}
-      />
     </motion.div>
   );
 };

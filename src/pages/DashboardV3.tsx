@@ -15,11 +15,16 @@ import type { Task } from '../lib/supabase';
 import type { Habit, Note, JournalEntry } from '../types';
 
 // V2 Components
-import { WelcomeBannerV2, DashboardLoadingStateV2 } from '../dashboard/components/v2';
+import {
+  WelcomeBannerV2,
+  DashboardLoadingStateV2,
+  StatsGridV2,
+  QuickActionButtonV2,
+  ProgressRingV2
+} from '../dashboard/components/v2';
 import { Card, StatCard } from '../components/v2';
 
 // Existing components (will migrate these next)
-import { StatsGrid } from '../dashboard/components/StatsGrid';
 import { TodayTasksSection } from '../dashboard/components/TodayTasksSection';
 import { TodayHabitsSection } from '../dashboard/components/TodayHabitsSection';
 import { RecentNotesSection } from '../dashboard/components/RecentNotesSection';
@@ -184,6 +189,9 @@ export default function DashboardV3(): ReactElement {
         <GamificationWidget variant="compact" />
       </div>
 
+      {/* Stats Grid - V2 Design */}
+      <StatsGridV2 />
+
       {/* Morning Briefing & Smart Scheduler */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <MorningBriefing
@@ -192,7 +200,6 @@ export default function DashboardV3(): ReactElement {
           onCompleteHabit={completeHabitSafely}
         />
         <div className="xl:col-span-2 space-y-6">
-          <StatsGrid cards={statsCards} />
           <SmartScheduler className="hidden xl:block" />
         </div>
       </div>
