@@ -18,6 +18,7 @@ import { useWebVitals } from './hooks/useWebVitals';
 
 // Lazy load all page components for route-based code splitting
 const Dashboard = lazy(() => import('./pages/Dashboard'));
+const DashboardV3 = lazy(() => import('./pages/DashboardV3'));
 const Calendar = lazy(() => import('./pages/Calendar'));
 const Focus = lazy(() => import('./pages/Focus'));
 const Habits = lazy(() => import('./pages/Habits'));
@@ -85,6 +86,7 @@ function App(): React.ReactElement {
           <Routes>
             {/* Main Routes */}
             <Route path="/" element={<Dashboard />} />
+            <Route path="/dashboard-v3" element={<DashboardV3 />} />
             <Route path="/assistant" element={<Assistant />} />
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/scheduler" element={<TaskScheduler />} />
