@@ -241,8 +241,8 @@ export function parseToLifeSyncError(error: unknown): LifeSyncError {
       );
     }
 
-    // Not found errors
-    if (err.code === '404' || err.status === 404 || err.code === '42P01') {
+    // Not found errors (including table not found)
+    if (err.code === '404' || err.status === 404 || err.code === '42P01' || err.code === 'PGRST205') {
       return new NotFoundError(
         'Resource',
         undefined,

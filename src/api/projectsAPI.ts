@@ -26,11 +26,8 @@ export async function getProjects(filters?: {
 
       let query = supabase
         .from('projects')
-        .select(`
-          *,
-          milestones:project_milestones(*)
-        `)
-        .or(`user_id.eq.${user.id},team_members.cs.{${user.id}}`)
+        .select('*')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       // Apply filters
@@ -71,12 +68,9 @@ export async function getProject(id: string): Promise<Project> {
 
       const { data, error } = await supabase
         .from('projects')
-        .select(`
-          *,
-          milestones:project_milestones(*)
-        `)
+        .select('*')
         .eq('id', id)
-        .or(`user_id.eq.${user.id},team_members.cs.{${user.id}}`)
+        .eq('user_id', user.id)
         .single();
 
       if (error) throw error;
@@ -123,10 +117,7 @@ export async function createProject(
       const { data, error } = await supabase
         .from('projects')
         .insert(sanitizedProject)
-        .select(`
-          *,
-          milestones:project_milestones(*)
-        `)
+        .select('*')
         .single();
 
       if (error) throw error;
@@ -156,11 +147,8 @@ export async function updateProject(
         .from('projects')
         .update(sanitizedUpdates)
         .eq('id', id)
-        .or(`user_id.eq.${user.id},team_members.cs.{${user.id}}`)
-        .select(`
-          *,
-          milestones:project_milestones(*)
-        `)
+        .eq('user_id', user.id)
+        .select('*')
         .single();
 
       if (error) throw error;
@@ -214,7 +202,7 @@ export async function getProjectMilestones(projectId: string): Promise<ProjectMi
         .from('projects')
         .select('id')
         .eq('id', projectId)
-        .or(`user_id.eq.${user.id},team_members.cs.{${user.id}}`)
+        .eq('user_id', user.id)
         .single();
 
       if (!project) throw new Error('Project not found or access denied');
@@ -247,7 +235,7 @@ export async function createMilestone(
         .from('projects')
         .select('id')
         .eq('id', milestone.project_id)
-        .or(`user_id.eq.${user.id},team_members.cs.{${user.id}}`)
+        .eq('user_id', user.id)
         .single();
 
       if (!project) throw new Error('Project not found or access denied');
@@ -347,7 +335,7 @@ export async function getProjectTasks(projectId: string): Promise<string[]> {
         .from('projects')
         .select('id')
         .eq('id', projectId)
-        .or(`user_id.eq.${user.id},team_members.cs.{${user.id}}`)
+        .eq('user_id', user.id)
         .single();
 
       if (!project) throw new Error('Project not found or access denied');
@@ -381,7 +369,7 @@ export async function linkTaskToProject(
           .from('projects')
           .select('id')
           .eq('id', projectId)
-          .or(`user_id.eq.${user.id},team_members.cs.{${user.id}}`)
+          .eq('user_id', user.id)
           .single(),
         supabase
           .from('tasks')

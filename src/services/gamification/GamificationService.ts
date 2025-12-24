@@ -221,7 +221,7 @@ export async function recordTaskCompletion(taskId: string, priority: 'low' | 'me
       tasks_completed: profile.tasksCompleted + 1,
     });
   } catch (error) {
-    logger.error('Gamification', error);
+    logger.error('Gamification', error instanceof Error ? error : String(error));
   }
 
   await awardXp(xp, `Completed task`, 'task', taskId);
@@ -245,7 +245,7 @@ export async function recordHabitCompletion(habitId: string, streakDays: number 
       habits_completed: profile.habitsCompleted + 1,
     });
   } catch (error) {
-    logger.error('Gamification', error);
+    logger.error('Gamification', error instanceof Error ? error : String(error));
   }
 
   await awardXp(xp, `Completed habit (${streakDays} day streak)`, 'habit', habitId);
@@ -263,7 +263,7 @@ export async function recordGoalAchieved(goalId: string): Promise<void> {
       goals_achieved: profile.goalsAchieved + 1,
     });
   } catch (error) {
-    logger.error('Gamification', error);
+    logger.error('Gamification', error instanceof Error ? error : String(error));
   }
 
   await awardXp(POINT_VALUES.GOAL_ACHIEVED, 'Achieved a goal!', 'goal', goalId);

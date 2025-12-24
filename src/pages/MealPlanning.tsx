@@ -1,5 +1,5 @@
 /* eslint-disable max-lines */
-import React, { type ReactElement, useEffect, useMemo, useState , type FormEvent } from 'react';
+import React, { type ReactElement, useEffect, useMemo, useState, useCallback, type FormEvent } from 'react';
 import { logger } from '../services/logger';
 import { createPortal } from 'react-dom';
 import { addDays, format, isSameWeek, startOfWeek, isSameDay } from 'date-fns';
@@ -94,26 +94,31 @@ const MealPlanning: React.FC = () => {
   const { showToast } = useToast();
 
   // Wrapper functions to adapt mutation signatures (defined early for hook dependencies)
-  const createPlannedMealWrapper = async (data: { planId: string; meal: any }): Promise<void> => {
+  // Wrapped in useCallback to prevent infinite loops
+  const createPlannedMealWrapper = useCallback(async (data: { planId: string; meal: any }): Promise<void> => {
     await createPlannedMealMutation.mutateAsync(data);
-  };
+  }, [createPlannedMealMutation]);
 
-  const updatePlannedMealWrapper = async (data: { mealId: string; updates: any }): Promise<void> => {
+  const updatePlannedMealWrapper = useCallback(async (data: { mealId: string; updates: any }): Promise<void> => {
     await updatePlannedMealMutation.mutateAsync(data);
-  };
+  }, [updatePlannedMealMutation]);
 
-  const createRecipeWrapper = async (recipe: Partial<Recipe>): Promise<Recipe> => {
+  const createRecipeWrapper = useCallback(async (recipe: Partial<Recipe>): Promise<Recipe> => {
     return await createRecipeMutation.mutateAsync(recipe as any);
-  };
+  }, [createRecipeMutation]);
 
   // Custom hooks
   const modalState = useMealFormModals();
   const weekNav = useWeekNavigation(weekStartsOn, mealPlans);
   const recipeImport = useRecipeImport();
+
+  // Memoize the grocery storage key to prevent infinite loops
+  const groceryStorageKey = useMemo(() => toKey(weekNav.currentWeekStart), [weekNav.currentWeekStart]);
+
   const groceryState = useGroceryList(
     weekNav.activePlan?.meals ?? [],
     recipes,
-    toKey(weekNav.currentWeekStart)
+    groceryStorageKey
   );
   const multiCellSelection = useMultiCellSelection(
     recipes,
@@ -126,8 +131,9 @@ const MealPlanning: React.FC = () => {
   // Recipe filtering hook
   const recipeFiltering = useRecipeFiltering(recipes);
 
-  // Week copy hook
-  const weekCopy = useWeekCopy(addDays(weekNav.currentWeekStart, 7));
+  // Week copy hook - memoize the initial target week to prevent infinite loops
+  const initialCopyTargetWeek = useMemo(() => addDays(weekNav.currentWeekStart, 7), [weekNav.currentWeekStart]);
+  const weekCopy = useWeekCopy(initialCopyTargetWeek);
 
   // Cleanup old drafts on mount
   useEffect(() => {

@@ -1,9 +1,18 @@
 /**
  * ReminderService
  * Manages scheduling, displaying, and processing reminders
+ *
+ * ARCHITECTURE: Uses API layer for all data access (no direct Supabase calls)
  */
 
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import {
+  queueNotification,
+  getUpcomingReminders,
+  getDueReminders,
+  cancelReminder as cancelReminderAPI,
+  markReminderSent,
+  type NotificationQueueItem as NotificationQueueItemAPI,
+} from '@/api/notificationAPI';
 import { pushNotificationService } from '@/services/pushNotificationService';
 import { format, addMinutes, subMinutes, isAfter, isBefore, parseISO } from 'date-fns';
 import type {
@@ -33,43 +42,29 @@ class ReminderService {
    * Schedule a reminder to be sent at a specific time
    */
   async scheduleReminder(params: ScheduleReminderParams): Promise<string | null> {
-    const { data: session } = await supabase.auth.getSession();
-    if (!session?.session?.user) {
-      console.error('[ReminderService] No authenticated user');
-      return null;
-    }
-
-    const userId = session.session.user.id;
-
     try {
-      const { data, error } = await supabase
-        .from('notification_queue')
-        .insert({
-          user_id: userId,
-          type: this.mapReminderTypeToDbType(params.type),
-          priority: params.priority || 'normal',
-          payload: {
-            title: params.title,
-            body: params.body,
-            icon: '/icons/icon-192x192.png',
-            data: {
-              type: params.type,
-              entityType: params.entityType,
-              entityId: params.entityId,
-            },
-            actions: params.actions,
-          },
-          scheduled_for: params.scheduledFor.toISOString(),
-          entity_type: params.entityType,
-          entity_id: params.entityId,
-          status: 'pending',
-        })
-        .select('id')
-        .single();
+      // Map priority: 'urgent' -> 'high' for API compatibility
+      const apiPriority = params.priority === 'urgent' ? 'high' : (params.priority || 'normal');
 
-      if (error) throw error;
-      console.log('[ReminderService] Scheduled reminder:', data?.id);
-      return data?.id || null;
+      const result = await queueNotification({
+        type: this.mapReminderTypeToDbType(params.type),
+        priority: apiPriority as 'low' | 'normal' | 'high',
+        payload: {
+          title: params.title,
+          body: params.body,
+          icon: '/icons/icon-192x192.png',
+          data: {
+            type: params.type,
+            entityType: params.entityType,
+            entityId: params.entityId,
+          },
+          actions: params.actions,
+        },
+        scheduled_for: params.scheduledFor.toISOString(),
+      });
+
+      console.log('[ReminderService] Scheduled reminder:', result.id);
+      return result.id;
     } catch (error) {
       console.error('[ReminderService] Failed to schedule reminder:', error);
       return null;
@@ -81,12 +76,7 @@ class ReminderService {
    */
   async cancelReminder(reminderId: string): Promise<boolean> {
     try {
-      const { error } = await supabase
-        .from('notification_queue')
-        .update({ status: 'cancelled' })
-        .eq('id', reminderId);
-
-      if (error) throw error;
+      await cancelReminderAPI(reminderId);
       return true;
     } catch (error) {
       console.error('[ReminderService] Failed to cancel reminder:', error);
@@ -160,20 +150,9 @@ class ReminderService {
    * Get pending reminders for a user
    */
   async getPendingReminders(): Promise<NotificationQueueItem[]> {
-    const { data: session } = await supabase.auth.getSession();
-    if (!session?.session?.user) return [];
-
     try {
-      const { data, error } = await supabase
-        .from('notification_queue')
-        .select('*')
-        .eq('user_id', session.session.user.id)
-        .eq('status', 'pending')
-        .order('scheduled_for', { ascending: true })
-        .limit(50);
-
-      if (error) throw error;
-      return data || [];
+      const reminders = await getUpcomingReminders();
+      return reminders as NotificationQueueItem[];
     } catch (error) {
       console.error('[ReminderService] Failed to get pending reminders:', error);
       return [];
@@ -184,21 +163,9 @@ class ReminderService {
    * Get reminders due to be shown (scheduled_for <= now)
    */
   async getDueReminders(): Promise<NotificationQueueItem[]> {
-    const { data: session } = await supabase.auth.getSession();
-    if (!session?.session?.user) return [];
-
     try {
-      const { data, error } = await supabase
-        .from('notification_queue')
-        .select('*')
-        .eq('user_id', session.session.user.id)
-        .eq('status', 'pending')
-        .lte('scheduled_for', new Date().toISOString())
-        .order('scheduled_for', { ascending: true })
-        .limit(10);
-
-      if (error) throw error;
-      return data || [];
+      const reminders = await getDueReminders();
+      return reminders as NotificationQueueItem[];
     } catch (error) {
       console.error('[ReminderService] Failed to get due reminders:', error);
       return [];
@@ -210,15 +177,7 @@ class ReminderService {
    */
   async markAsSent(reminderId: string): Promise<boolean> {
     try {
-      const { error } = await supabase
-        .from('notification_queue')
-        .update({
-          status: 'sent',
-          sent_at: new Date().toISOString(),
-        })
-        .eq('id', reminderId);
-
-      if (error) throw error;
+      await markReminderSent(reminderId);
       return true;
     } catch (error) {
       console.error('[ReminderService] Failed to mark as sent:', error);

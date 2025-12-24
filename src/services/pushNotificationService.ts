@@ -7,6 +7,7 @@
 
 import { upsertPushSubscription, deactivatePushSubscription } from '@/api/pushSubscriptionsAPI';
 import { supabase } from '@/lib/supabase';
+import { logger } from '@/services/logger';
 
 // VAPID public key from environment
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY;
@@ -74,7 +75,7 @@ class PushNotificationService {
         this.subscription = subscription || null;
       }
     } catch (error) {
-      console.error('[PushService] Error getting status:', error);
+      logger.error('PushService', error as Error, { operation: 'getStatus' });
     }
 
     return {
@@ -90,7 +91,7 @@ class PushNotificationService {
    */
   async initialize(): Promise<boolean> {
     if (!this.isSupported()) {
-      console.warn('[PushService] Push notifications not supported');
+      logger.warn('PushService', 'Push notifications not supported');
       return false;
     }
 
@@ -99,15 +100,15 @@ class PushNotificationService {
       this.registration = await navigator.serviceWorker.register('/sw-push.js', {
         scope: '/',
       });
-      console.log('[PushService] Service worker registered');
+      logger.info('PushService', 'Service worker registered');
 
       // Wait for service worker to be ready
       await navigator.serviceWorker.ready;
-      console.log('[PushService] Service worker ready');
+      logger.info('PushService', 'Service worker ready');
 
       return true;
     } catch (error) {
-      console.error('[PushService] Failed to initialize:', error);
+      logger.error('PushService', error as Error, { operation: 'initialize' });
       return false;
     }
   }
@@ -121,7 +122,7 @@ class PushNotificationService {
     }
 
     const permission = await Notification.requestPermission();
-    console.log('[PushService] Permission:', permission);
+    logger.info('PushService', 'Permission requested', { permission });
     return permission;
   }
 
@@ -134,12 +135,12 @@ class PushNotificationService {
     }
 
     if (!this.registration) {
-      console.error('[PushService] No service worker registration');
+      logger.error('PushService', 'No service worker registration');
       return null;
     }
 
     if (!VAPID_PUBLIC_KEY) {
-      console.error('[PushService] VAPID public key not configured');
+      logger.error('PushService', 'VAPID public key not configured');
       return null;
     }
 
@@ -150,7 +151,7 @@ class PushNotificationService {
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
       });
 
-      console.log('[PushService] Subscribed:', subscription);
+      logger.debug('PushService', 'Subscribed to push notifications', { endpoint: subscription.endpoint });
       this.subscription = subscription;
 
       // Save subscription using API layer instead of direct Supabase
@@ -165,16 +166,15 @@ class PushNotificationService {
             auth: subscriptionJson.keys?.auth,
             is_active: true,
           });
+          logger.info('PushService', 'Subscription saved to database');
         } catch (error) {
-          console.error('[PushService] Failed to save subscription:', error);
-        } else {
-          console.log('[PushService] Subscription saved to database');
+          logger.error('PushService', error as Error, { operation: 'saveSubscription' });
         }
       }
 
       return subscription;
     } catch (error) {
-      console.error('[PushService] Failed to subscribe:', error);
+      logger.error('PushService', error as Error, { operation: 'subscribe' });
       return null;
     }
   }
@@ -204,10 +204,10 @@ class PushNotificationService {
         await deactivatePushSubscription(endpoint, session.session.user.id);
       }
 
-      console.log('[PushService] Unsubscribed');
+      logger.info('PushService', 'Unsubscribed from push notifications');
       return true;
     } catch (error) {
-      console.error('[PushService] Failed to unsubscribe:', error);
+      logger.error('PushService', error as Error, { operation: 'unsubscribe' });
       return false;
     }
   }
@@ -224,12 +224,12 @@ class PushNotificationService {
     }
 
     if (!this.registration) {
-      console.error('[PushService] No service worker registration');
+      logger.error('PushService', 'No service worker registration');
       return;
     }
 
     if (Notification.permission !== 'granted') {
-      console.warn('[PushService] Notification permission not granted');
+      logger.warn('PushService', 'Notification permission not granted');
       return;
     }
 

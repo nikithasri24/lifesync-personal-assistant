@@ -144,7 +144,7 @@ class SentimentAnalysisService {
 
     // Analyze each entry
     const analyses = entries.map(entry => ({
-      date: format(parseISO(entry.created_at!), 'yyyy-MM-dd'),
+      date: format(entry.createdAt, 'yyyy-MM-dd'),
       analysis: this.analyzeSentiment(entry.content ?? ''),
       mood: entry.mood,
     }));

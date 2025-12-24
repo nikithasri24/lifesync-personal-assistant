@@ -66,7 +66,7 @@ class SmartReminderService {
     // Use API layer instead of direct Supabase
     try {
       const settings = await getUserSettings();
-      this.preferences = (settings?.reminder_preferences as ReminderPreferences) ?? this.getDefaultPreferences();
+      this.preferences = (settings?.reminder_preferences as unknown as ReminderPreferences) ?? this.getDefaultPreferences();
       return this.preferences;
     } catch (error) {
       return this.getDefaultPreferences();

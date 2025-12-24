@@ -12,6 +12,8 @@ import { getFocusSessions } from '@/api/focusAPI';
 import { getJournalEntries } from '@/api/journalAPI';
 import { logger } from '@/services/logger';
 import { format, subDays, subWeeks, startOfWeek, endOfWeek } from 'date-fns';
+import type { JournalEntry, Goal } from '@/types';
+import type { TaskData, HabitData, HabitEntryData, FocusSessionData } from '@/services/types';
 
 export interface CoachingInsight {
   category: 'productivity' | 'habits' | 'wellness' | 'goals' | 'balance';
@@ -137,12 +139,16 @@ class LifeCoachService {
 
   private async getGoalsData(userId: string) {
     // Use API layer instead of direct Supabase
-    return await getGoals({ status: 'active' });
+    const allGoals = await getGoals();
+    return allGoals.filter(g => g.status === 'in-progress');
   }
 
   private async getFocusData(userId: string, start: Date, end: Date) {
     // Use API layer instead of direct Supabase
-    return await getFocusSessions({ startDate: start, endDate: end });
+    return await getFocusSessions({
+      startDate: format(start, 'yyyy-MM-dd'),
+      endDate: format(end, 'yyyy-MM-dd')
+    });
   }
 
   private async getJournalData(userId: string, start: Date, end: Date) {
@@ -151,20 +157,20 @@ class LifeCoachService {
   }
 
   private calculateProductivityScore(
-    tasks: { status: string }[],
-    focusSessions: { duration: number }[]
+    tasks: TaskData[],
+    focusSessions: FocusSessionData[]
   ): number {
-    const completed = tasks.filter(t => t.status === 'completed').length;
+    const completed = tasks.filter(t => t.status === 'done').length;
     const total = tasks.length;
     const taskScore = total > 0 ? (completed / total) * 100 : 50;
 
-    const focusMinutes = focusSessions.reduce((sum, s) => sum + (s.duration || 0), 0);
+    const focusMinutes = focusSessions.reduce((sum, s) => sum + (s.duration_minutes || 0), 0);
     const focusScore = Math.min(100, (focusMinutes / 300) * 100); // 5 hours = 100%
 
     return Math.round((taskScore * 0.6 + focusScore * 0.4));
   }
 
-  private calculateHabitScore(data: { habits: { id: string }[]; entries: { habit_id: string }[] }): number {
+  private calculateHabitScore(data: { habits: HabitData[]; entries: HabitEntryData[] }): number {
     const { habits, entries } = data;
     if (habits.length === 0) return 50;
 
@@ -175,14 +181,26 @@ class LifeCoachService {
     return Math.round((actualEntries / maxEntries) * 100);
   }
 
-  private calculateWellnessScore(journals: { mood?: number }[]): number {
+  private calculateWellnessScore(journals: JournalEntry[]): number {
     if (journals.length === 0) return 50;
 
-    const moods = journals.filter(j => j.mood != null).map(j => j.mood as number);
+    // Map mood strings to numbers
+    const moodMap: Record<string, number> = {
+      'excellent': 5,
+      'good': 4,
+      'neutral': 3,
+      'bad': 2,
+      'terrible': 1
+    };
+
+    const moods = journals
+      .filter(j => j.mood != null)
+      .map(j => moodMap[j.mood] || 3);
+
     if (moods.length === 0) return 50;
 
     const avgMood = moods.reduce((sum, m) => sum + m, 0) / moods.length;
-    return Math.round((avgMood / 5) * 100); // Assuming 1-5 scale
+    return Math.round((avgMood / 5) * 100); // Convert to 0-100 scale
   }
 
   private calculateBalanceScore(productivity: number, habits: number, wellness: number): number {
@@ -197,39 +215,39 @@ class LifeCoachService {
   }
 
   private identifyWins(
-    tasks: { status: string }[],
-    habits: { habits: { current_streak?: number; name: string }[]; entries: unknown[] },
-    goals: { progress: number; title: string }[],
-    focusSessions: { duration: number }[]
+    tasks: TaskData[],
+    habits: { habits: HabitData[]; entries: HabitEntryData[] },
+    goals: Goal[],
+    focusSessions: FocusSessionData[]
   ): string[] {
     const wins: string[] = [];
 
-    const completed = tasks.filter(t => t.status === 'completed').length;
+    const completed = tasks.filter(t => t.status === 'done').length;
     if (completed >= 10) wins.push(`Completed ${completed} tasks this week!`);
 
-    const longStreaks = habits.habits.filter(h => (h.current_streak || 0) >= 7);
-    longStreaks.forEach(h => wins.push(`${h.name}: ${h.current_streak}-day streak!`));
+    const longStreaks = habits.habits.filter(h => (h.streak_count || 0) >= 7);
+    longStreaks.forEach(h => wins.push(`${h.name}: ${h.streak_count}-day streak!`));
 
     const highProgress = goals.filter(g => g.progress >= 80);
     highProgress.forEach(g => wins.push(`"${g.title}" is ${g.progress}% complete!`));
 
-    const focusMinutes = focusSessions.reduce((sum, s) => sum + (s.duration || 0), 0);
+    const focusMinutes = focusSessions.reduce((sum, s) => sum + (s.duration_minutes || 0), 0);
     if (focusMinutes >= 300) wins.push(`${Math.round(focusMinutes / 60)} hours of focused work!`);
 
     return wins.slice(0, 5);
   }
 
   private identifyImprovements(
-    tasks: { status: string }[],
-    habits: { habits: { name: string }[]; entries: { habit_id: string }[] },
-    focusSessions: { duration: number }[]
+    tasks: TaskData[],
+    habits: { habits: HabitData[]; entries: HabitEntryData[] },
+    focusSessions: FocusSessionData[]
   ): string[] {
     const improvements: string[] = [];
 
-    const pending = tasks.filter(t => t.status === 'pending').length;
+    const pending = tasks.filter(t => t.status === 'todo' || t.status === 'in_progress').length;
     if (pending > 10) improvements.push(`${pending} tasks still pending - consider prioritizing`);
 
-    const focusMinutes = focusSessions.reduce((sum, s) => sum + (s.duration || 0), 0);
+    const focusMinutes = focusSessions.reduce((sum, s) => sum + (s.duration_minutes || 0), 0);
     if (focusMinutes < 60) improvements.push('Try scheduling more focus time');
 
     // Find habits with low completion
@@ -239,7 +257,7 @@ class LifeCoachService {
     });
 
     habits.habits.forEach(h => {
-      const completions = habitCompletions[h.name] || 0;
+      const completions = habitCompletions[h.id || ''] || 0;
       if (completions < 3) {
         improvements.push(`${h.name} needs more consistency`);
       }

@@ -54,8 +54,8 @@ async function getIncomingPermissions(): Promise<ConnectionPermission[]> {
       id,
       requester_id,
       receiver_id,
-      requester_user:users!profile_connections_requester_id_fkey(id, email, full_name, avatar_url),
-      receiver_user:users!profile_connections_receiver_id_fkey(id, email, full_name, avatar_url)
+      requester_user:profiles!profile_connections_requester_id_fkey(id, email, full_name, avatar_url),
+      receiver_user:profiles!profile_connections_receiver_id_fkey(id, email, full_name, avatar_url)
     `)
     .eq('status', 'active')
     .or(`requester_id.eq.${user.id},receiver_id.eq.${user.id}`);

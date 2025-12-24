@@ -5,7 +5,7 @@
 
 import { supabase } from '../lib/supabase';
 import { apiCall, requireAuth, handleSupabaseResponse } from './apiWrapper';
-import type { AutomationRule, AutomationEventType } from '../services/types';
+import type { AutomationRule, AutomationEventType } from '../types/infrastructure';
 
 /**
  * Get all active automation rules for the current user
@@ -64,8 +64,8 @@ export async function createAutomationRule(
       const result = await supabase
         .from('automation_rules')
         .insert({
-          user_id: user.id,
           ...rule,
+          user_id: user.id, // Override to ensure correct user
         })
         .select()
         .single();

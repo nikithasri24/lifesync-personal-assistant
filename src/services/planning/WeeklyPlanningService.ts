@@ -41,15 +41,19 @@ export async function getWeeklyOverview(weekOffset = 0): Promise<WeeklyOverview>
 
   // Filter events for the target week
   const eventsInWeek = allEvents.filter(e => {
+    if (!e.start_time) return false;
     const startTime = parseISO(e.start_time);
     return startTime >= targetWeekStart && startTime <= targetWeekEnd;
-  }).sort((a, b) => parseISO(a.start_time).getTime() - parseISO(b.start_time).getTime());
+  }).sort((a, b) => {
+    if (!a.start_time || !b.start_time) return 0;
+    return parseISO(a.start_time).getTime() - parseISO(b.start_time).getTime();
+  });
 
-  // Filter tasks for pending status
-  const pendingTasks = allTasks.filter(t => t.status === 'pending');
+  // Filter tasks for todo/in_progress status (not 'pending' which doesn't exist)
+  const pendingTasks = allTasks.filter(t => t.status === 'todo' || t.status === 'in_progress');
 
-  // Filter goals for active status
-  const activeGoals = allGoals.filter(g => g.status === 'active');
+  // Filter goals for in-progress status (not 'active' which doesn't exist)
+  const activeGoals = allGoals.filter(g => g.status === 'in-progress');
 
   // Filter habits for active status
   const activeHabits = allHabits.filter(h => h.is_active);
@@ -65,8 +69,8 @@ export async function getWeeklyOverview(weekOffset = 0): Promise<WeeklyOverview>
   const events: WeekEvent[] = eventsInWeek.map(e => ({
     id: e.id,
     title: e.title,
-    date: format(parseISO(e.start_time), 'yyyy-MM-dd'),
-    startTime: e.all_day ? undefined : format(parseISO(e.start_time), 'HH:mm'),
+    date: e.start_time ? format(parseISO(e.start_time), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
+    startTime: e.all_day || !e.start_time ? undefined : format(parseISO(e.start_time), 'HH:mm'),
     endTime: e.all_day || !e.end_time ? undefined : format(parseISO(e.end_time), 'HH:mm'),
     isAllDay: e.all_day || false,
   }));
@@ -87,12 +91,12 @@ export async function getWeeklyOverview(weekOffset = 0): Promise<WeeklyOverview>
 
   pendingTasks.forEach(t => {
     const task: WeekTask = {
-      id: t.id,
+      id: t.id || '',
       title: t.title,
-      dueDate: t.due_date,
+      dueDate: t.due_date || undefined,
       priority: t.priority || 'medium',
-      estimatedHours: t.estimated_hours,
-      category: t.category,
+      estimatedHours: t.estimated_time ? t.estimated_time / 60 : undefined, // Convert minutes to hours
+      category: t.category || undefined,
     };
 
     if (!t.due_date) {
@@ -112,7 +116,7 @@ export async function getWeeklyOverview(weekOffset = 0): Promise<WeeklyOverview>
     id: g.id,
     title: g.title,
     progress: g.progress || 0,
-    targetDate: g.target_date,
+    targetDate: g.targetDate ? format(g.targetDate, 'yyyy-MM-dd') : undefined,
     category: g.category,
   }));
 
@@ -130,23 +134,23 @@ export async function getWeeklyOverview(weekOffset = 0): Promise<WeeklyOverview>
 
   // Process habits
   const habitsToMaintain: WeekHabit[] = activeHabits.map(h => ({
-    id: h.id,
+    id: h.id || '',
     name: h.name,
-    currentStreak: h.current_streak || 0,
+    currentStreak: h.streak_count || 0,
     frequency: h.frequency || 'daily',
     completedThisWeek: 0, // Would need habit_logs query
-    targetThisWeek: h.target_count || 7,
+    targetThisWeek: h.target_value || 7,
   }));
 
   const streaksAtRisk = habitsToMaintain.filter(h => h.currentStreak >= 7);
 
   // Process bills
   const billsDue: WeekBill[] = billsInWeek.map(b => ({
-    id: b.id,
+    id: b.id || '',
     name: b.name,
     amount: b.amount,
-    dueDate: b.due_date,
-    isAutoPay: b.is_auto_pay,
+    dueDate: b.due_date || '',
+    isAutoPay: b.is_auto_pay || false,
   }));
 
   // Calculate workload
@@ -200,8 +204,8 @@ export async function getWeeklyReview(weekOffset = -1): Promise<WeeklyReview> {
 
   // Filter completed tasks for the target week
   const completedTasks = allTasks.filter(t => {
-    if (t.status !== 'completed' || !t.completed_at) return false;
-    const completedAt = parseISO(t.completed_at);
+    if (t.status !== 'done' || !t.updated_at) return false; // 'done' not 'completed', use updated_at as proxy for completion
+    const completedAt = parseISO(t.updated_at);
     return completedAt >= targetWeekStart && completedAt <= targetWeekEnd;
   });
 

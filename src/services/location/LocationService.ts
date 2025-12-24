@@ -32,9 +32,9 @@ class LocationService {
 
       if (data) {
         this.preferences = {
-          homeLocation: data.home_location as SavedLocation | null,
-          workLocation: data.work_location as SavedLocation | null,
-          savedLocations: (data.saved_locations as SavedLocation[]) ?? [],
+          homeLocation: (data.home_location as unknown as SavedLocation) || null,
+          workLocation: (data.work_location as unknown as SavedLocation) || null,
+          savedLocations: ((data.saved_locations as unknown as SavedLocation[]) ?? []),
           commuteMode: 'driving',
           defaultCommuteMinutes: 30,
         };

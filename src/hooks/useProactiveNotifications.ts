@@ -128,10 +128,12 @@ export function useProactiveNotifications(options: ProactiveNotificationOptions 
     if (!enabled || !user?.id) return;
 
     // Run immediately on mount
-    generateNotifications();
+    void generateNotifications();
 
     // Set up interval
-    intervalRef.current = setInterval(generateNotifications, checkIntervalMs);
+    intervalRef.current = setInterval(() => {
+      void generateNotifications();
+    }, checkIntervalMs);
 
     return () => {
       if (intervalRef.current) {
@@ -139,7 +141,8 @@ export function useProactiveNotifications(options: ProactiveNotificationOptions 
         intervalRef.current = null;
       }
     };
-  }, [enabled, user?.id, checkIntervalMs, generateNotifications]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enabled, user?.id, checkIntervalMs]);
 
   return { generateNotifications };
 }

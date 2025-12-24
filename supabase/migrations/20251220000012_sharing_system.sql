@@ -116,54 +116,62 @@ ALTER TABLE connection_invitations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE module_permissions ENABLE ROW LEVEL SECURITY;
 
 -- Profile Connections: Users can see connections they're part of
+DROP POLICY IF EXISTS "Users can view own connections" ON profile_connections;
 CREATE POLICY "Users can view own connections"
   ON profile_connections FOR SELECT
   USING (auth.uid() = requester_id OR auth.uid() = receiver_id);
 
+DROP POLICY IF EXISTS "Users can create connection requests" ON profile_connections;
 CREATE POLICY "Users can create connection requests"
   ON profile_connections FOR INSERT
   WITH CHECK (auth.uid() = requester_id);
 
+DROP POLICY IF EXISTS "Users can update own connections" ON profile_connections;
 CREATE POLICY "Users can update own connections"
   ON profile_connections FOR UPDATE
   USING (auth.uid() = requester_id OR auth.uid() = receiver_id);
 
+DROP POLICY IF EXISTS "Users can delete own connections" ON profile_connections;
 CREATE POLICY "Users can delete own connections"
   ON profile_connections FOR DELETE
   USING (auth.uid() = requester_id OR auth.uid() = receiver_id);
 
 -- Connection Invitations: Visible to connection participants
+DROP POLICY IF EXISTS "Users can view invitations for their connections" ON connection_invitations;
 CREATE POLICY "Users can view invitations for their connections"
   ON connection_invitations FOR SELECT
   USING (
     EXISTS (
-      SELECT 1 FROM profile_connections 
-      WHERE id = connection_invitations.connection_id 
+      SELECT 1 FROM profile_connections
+      WHERE id = connection_invitations.connection_id
       AND (requester_id = auth.uid() OR receiver_id = auth.uid())
     )
   );
 
+DROP POLICY IF EXISTS "Requesters can create invitations" ON connection_invitations;
 CREATE POLICY "Requesters can create invitations"
   ON connection_invitations FOR INSERT
   WITH CHECK (
     EXISTS (
-      SELECT 1 FROM profile_connections 
-      WHERE id = connection_invitations.connection_id 
+      SELECT 1 FROM profile_connections
+      WHERE id = connection_invitations.connection_id
       AND requester_id = auth.uid()
     )
   );
 
 -- Module Permissions: Users manage their own permissions
+DROP POLICY IF EXISTS "Users can view permissions for their connections" ON module_permissions;
 CREATE POLICY "Users can view permissions for their connections"
   ON module_permissions FOR SELECT
   USING (
     EXISTS (
-      SELECT 1 FROM profile_connections 
-      WHERE id = module_permissions.connection_id 
+      SELECT 1 FROM profile_connections
+      WHERE id = module_permissions.connection_id
       AND (requester_id = auth.uid() OR receiver_id = auth.uid())
     )
   );
 
+DROP POLICY IF EXISTS "Users can manage their own permissions" ON module_permissions;
 CREATE POLICY "Users can manage their own permissions"
   ON module_permissions FOR ALL
   USING (user_id = auth.uid());

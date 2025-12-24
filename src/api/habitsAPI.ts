@@ -177,6 +177,13 @@ export async function getHabitEntriesForHabit(habitId: string): Promise<HabitEnt
 }
 
 /**
+ * Get all habit entries for a specific date
+ */
+export async function getHabitEntriesForDate(date: string): Promise<HabitEntryData[]> {
+  return getHabitEntries({ startDate: date, endDate: date });
+}
+
+/**
  * Create a habit entry (log completion)
  */
 export async function createHabitEntry(entry: Omit<HabitEntryData, 'id' | 'created_at'>): Promise<HabitEntryData> {

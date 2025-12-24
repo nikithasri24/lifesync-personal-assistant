@@ -63,15 +63,7 @@ export const queryClient = new QueryClient({
       // Refetch on mount (only if stale)
       refetchOnMount: true,
 
-      // Global error handler for queries
-      onError: (error) => {
-        const lifeSyncError = parseToLifeSyncError(error);
-        logger.error('ReactQuery', lifeSyncError, {
-          code: lifeSyncError.code,
-          statusCode: lifeSyncError.statusCode,
-          context: lifeSyncError.context,
-        });
-      },
+      // Note: Global error handler removed - use throwOnError or individual query error handlers instead
     },
     mutations: {
       // Retry failed mutations based on error type

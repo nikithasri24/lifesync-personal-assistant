@@ -69,12 +69,12 @@ class UserPatternService {
     const startDateObj = subDays(new Date(), days);
     const startDate = format(startDateObj, 'yyyy-MM-dd');
 
-    const allTasks = await getTasks({ status: 'completed' });
+    const allTasks = await getTasks({ deleted: false, archived: false });
     const tasks = allTasks.filter(t =>
-      t.completed_at && new Date(t.completed_at) >= startDateObj
+      t.status === 'done' && t.updated_at && new Date(t.updated_at) >= startDateObj
     );
 
-    const focusSessions = await getFocusSessions({ startDate: startDateObj });
+    const focusSessions = await getFocusSessions({ startDate });
 
     // Analyze hour patterns
     const hourCounts: Record<number, number> = {};
@@ -112,7 +112,7 @@ class UserPatternService {
       .sort((a, b) => b.count - a.count);
 
     // Calculate averages
-    const focusMinutes = focusSessions.reduce((sum, s) => sum + (s.duration ?? 0), 0);
+    const focusMinutes = focusSessions.reduce((sum, s) => sum + (s.duration_minutes ?? 0), 0);
 
     // Get all tasks for completion rate
     const allTasksInPeriod = await getTasks({ deleted: false, archived: false });
@@ -139,14 +139,15 @@ class UserPatternService {
     const startDate = format(subDays(new Date(), days), 'yyyy-MM-dd');
     const endDate = format(new Date(), 'yyyy-MM-dd');
 
-    const habits = await getHabits({ isActive: true });
+    const allHabits = await getHabits();
+    const habits = allHabits.filter(h => h.is_active);
     if (habits.length === 0) return [];
 
     const entries = await getHabitEntries({ startDate, endDate });
 
     const patterns: HabitPattern[] = habits.map(habit => {
       const habitEntries = entries.filter(e => e.habit_id === habit.id);
-      
+
       // Analyze preferred days
       const dayCount: Record<number, number> = {};
       habitEntries.forEach(entry => {
@@ -160,10 +161,10 @@ class UserPatternService {
         .map(([dayIndex]) => DAY_NAMES[parseInt(dayIndex)]);
 
       return {
-        habitId: habit.id,
+        habitId: habit.id || '',
         habitName: habit.name,
         preferredDays,
-        averageStreak: habit.current_streak ?? 0,
+        averageStreak: habit.streak_count ?? 0,
         completionRate: Math.round((habitEntries.length / days) * 100),
       };
     });
@@ -201,7 +202,7 @@ class UserPatternService {
       if (!daySpending[day]) daySpending[day] = [];
       daySpending[day].push(t.amount ?? 0);
 
-      const category = t.category ?? 'other';
+      const category = t.category_id ?? 'other';
       categorySpending[category] = (categorySpending[category] || 0) + (t.amount ?? 0);
     });
 

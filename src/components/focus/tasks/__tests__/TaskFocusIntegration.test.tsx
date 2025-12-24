@@ -149,17 +149,20 @@ const sampleProjects: Project[] = [
 
 beforeEach(() => {
   act(() => {
-    useComposedStore.setState({
-      tasks: sampleTasks.map(task => ({ ...task })),
-      projects: sampleProjects.map(project => ({ ...project })),
-      sessions: []
-    })
+    // tasks, projects, and sessions slices removed - now using React Query
+    // useComposedStore.setState({
+    //   tasks: sampleTasks.map(task => ({ ...task })),
+    //   projects: sampleProjects.map(project => ({ ...project })),
+    //   sessions: []
+    // })
   })
 })
 
 afterEach(() => {
   act(() => {
-    useComposedStore.setState({ tasks: [], projects: [], sessions: [] })
+    // useComposedStore.setState({
+    //   tasks: [], projects: [], sessions: []
+    // })
   })
 })
 

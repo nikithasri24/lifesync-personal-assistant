@@ -1,11 +1,21 @@
-// Legacy API-friendly hook backed by the shared Zustand store.
+// Legacy API-friendly hook backed by React Query.
 // Components that still expect raw TaskData/ProjectData can keep using this
-// wrapper while the app transitions fully to the store-centric APIs.
+// wrapper while the app transitions fully to React Query hooks.
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import type { TaskData, ProjectData, Project as StoreProject } from '../services/types';
-import { useComposedStore } from '../stores/useComposedStore';
-import type { TaskInput } from '../stores/slices/tasksSlice';
+import {
+  useTasks,
+  useCreateTask,
+  useUpdateTask,
+  useDeleteTask,
+  useRestoreTask,
+  usePermanentlyDeleteTask,
+  useProjects,
+  useCreateProject,
+  useUpdateProject,
+  useDeleteProject,
+} from './useTasksQuery';
 
 export interface UseApiTasksReturn {
   tasks: TaskData[];
@@ -28,26 +38,6 @@ export interface UseApiTasksReturn {
   // Utility functions
   refreshData: () => Promise<void>;
 }
-
-// Convert TaskData input to TaskInput for the store (strip system fields)
-const toTaskInput = (
-  task: Omit<TaskData, 'id' | 'created_at' | 'updated_at'>,
-): TaskInput => ({
-  title: task.title,
-  description: task.description,
-  status: task.status,
-  priority: task.priority,
-  estimated_time: task.estimated_time,
-  actual_time: task.actual_time,
-  due_date: task.due_date,
-  tags: task.tags,
-  category: task.category,
-  notes: task.notes,
-  starred: task.starred,
-  archived: task.archived,
-  project_id: task.project_id,
-  parent_id: task.parent_id,
-});
 
 // Map StoreProject status to ProjectData status
 const mapProjectStatus = (status: StoreProject['status']): ProjectData['status'] => {
@@ -92,161 +82,94 @@ const mapProjectToProjectData = (project: StoreProject): ProjectData => ({
 });
 
 export const useApiTasks = (): UseApiTasksReturn => {
-  const {
-    tasks: storeTasks,
-    projects: storeProjects,
-    tasksLoading,
-    projectsLoading,
-    addTask,
-    updateTask: updateTaskInStore,
-    softDeleteTask,
-    restoreTask: restoreTaskInStore,
-    hardDeleteTask,
-    addProject: addProjectToStore,
-    updateProject: updateProjectInStore,
-    deleteProject: deleteProjectFromStore,
-  } = useComposedStore();
+  // Use React Query hooks
+  const { data: tasksData = [], isLoading: tasksLoading, error: tasksError } = useTasks();
+  const { data: projectsData = [], isLoading: projectsLoading, error: projectsError } = useProjects();
 
-  const [error, setError] = useState<string | null>(null);
-  const [refreshing, setRefreshing] = useState<boolean>(false);
+  const createTaskMutation = useCreateTask();
+  const updateTaskMutation = useUpdateTask();
+  const deleteTaskMutation = useDeleteTask();
+  const restoreTaskMutation = useRestoreTask();
+  const permanentlyDeleteTaskMutation = usePermanentlyDeleteTask();
 
-  // Store already uses TaskData, so just return it directly
+  const createProjectMutation = useCreateProject();
+  const updateProjectMutation = useUpdateProject();
+  const deleteProjectMutation = useDeleteProject();
+
+  // Map tasks data
   const tasks = useMemo((): TaskData[] => {
-    if (!storeTasks || !Array.isArray(storeTasks)) return [];
-    return storeTasks;
-  }, [storeTasks]);
+    return tasksData;
+  }, [tasksData]);
 
+  // Map projects data
   const projects = useMemo((): ProjectData[] => {
-    if (!storeProjects || !Array.isArray(storeProjects)) return [];
     try {
-      return storeProjects.map(mapProjectToProjectData);
+      return projectsData.map(mapProjectToProjectData);
     } catch {
       return [];
     }
-  }, [storeProjects]);
+  }, [projectsData]);
+
+  // Combine errors
+  const error = tasksError?.message || projectsError?.message || null;
 
   const createTask = useCallback(async (taskData: Omit<TaskData, 'id' | 'created_at' | 'updated_at'>): Promise<void> => {
-    setError(null);
-    try {
-      await addTask(toTaskInput(taskData));
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      setError(message);
-      throw new Error(message);
-    }
-  }, [addTask]);
+    await createTaskMutation.mutateAsync(taskData);
+  }, [createTaskMutation]);
 
   const updateTask = useCallback(async (id: string, updates: Partial<TaskData>): Promise<void> => {
-    setError(null);
-    try {
-      await updateTaskInStore(id, updates);
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      setError(message);
-      throw new Error(message);
-    }
-  }, [updateTaskInStore]);
+    await updateTaskMutation.mutateAsync({ id, updates });
+  }, [updateTaskMutation]);
 
   const deleteTask = useCallback(async (id: string): Promise<void> => {
-    setError(null);
-    try {
-      await softDeleteTask(id);
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      setError(message);
-      throw new Error(message);
-    }
-  }, [softDeleteTask]);
+    await deleteTaskMutation.mutateAsync(id);
+  }, [deleteTaskMutation]);
 
   const restoreTask = useCallback(async (id: string): Promise<void> => {
-    setError(null);
-    try {
-      await restoreTaskInStore(id);
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      setError(message);
-      throw new Error(message);
-    }
-  }, [restoreTaskInStore]);
+    await restoreTaskMutation.mutateAsync(id);
+  }, [restoreTaskMutation]);
 
   const permanentlyDeleteTask = useCallback(async (id: string): Promise<void> => {
-    setError(null);
-    try {
-      await hardDeleteTask(id);
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      setError(message);
-      throw new Error(message);
-    }
-  }, [hardDeleteTask]);
+    await permanentlyDeleteTaskMutation.mutateAsync(id);
+  }, [permanentlyDeleteTaskMutation]);
 
   const createProject = useCallback(async (projectData: Omit<ProjectData, 'id' | 'created_at' | 'updated_at'>): Promise<void> => {
-    setError(null);
-    try {
-      await addProjectToStore({
-        name: projectData.name,
-        description: projectData.description ?? undefined,
-        color: projectData.color ?? '#6366f1',
-        status: mapProjectDataStatusToStore(projectData.status),
-        priority: 'medium',
-        tags: [],
-        progress: 0,
-      });
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      setError(message);
-      throw new Error(message);
-    }
-  }, [addProjectToStore]);
+    await createProjectMutation.mutateAsync({
+      name: projectData.name,
+      description: projectData.description ?? undefined,
+      color: projectData.color ?? '#6366f1',
+      status: mapProjectDataStatusToStore(projectData.status),
+      priority: 'medium',
+      tags: [],
+      progress: 0,
+    });
+  }, [createProjectMutation]);
 
   const updateProject = useCallback(async (id: string, updates: Partial<ProjectData>): Promise<void> => {
-    setError(null);
-    try {
-      await updateProjectInStore(id, {
+    await updateProjectMutation.mutateAsync({
+      id,
+      updates: {
         name: updates.name,
         description: updates.description ?? undefined,
         color: updates.color ?? undefined,
         status: updates.status ? mapProjectDataStatusToStore(updates.status) : undefined,
-      });
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      setError(message);
-      throw new Error(message);
-    }
-  }, [updateProjectInStore]);
+      },
+    });
+  }, [updateProjectMutation]);
 
   const deleteProject = useCallback(async (id: string): Promise<void> => {
-    setError(null);
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-      await deleteProjectFromStore(id);
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      setError(message);
-      throw new Error(message);
-    }
-  }, [deleteProjectFromStore]);
+    await deleteProjectMutation.mutateAsync(id);
+  }, [deleteProjectMutation]);
 
   const refreshData = useCallback(async (): Promise<void> => {
-    setRefreshing(true);
-    setError(null);
-    try {
-      // TODO: This hook is deprecated - data is now in React Query
-      // Components should use React Query's refetch() instead
-      // For now, this is a no-op
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      setError(message);
-      throw new Error(message);
-    } finally {
-      setRefreshing(false);
-    }
+    // No-op: React Query handles refetching automatically
+    // Components should use React Query's refetch() if needed
   }, []);
 
   return {
     tasks,
     projects,
-    loading: (tasksLoading === true) || (projectsLoading === true) || refreshing,
+    loading: tasksLoading || projectsLoading,
     error,
     createTask,
     updateTask,

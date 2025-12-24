@@ -39,5 +39,53 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 4173,
     strictPort: true,
-  }
+  },
+  build: {
+    // Enable source maps for production debugging
+    sourcemap: true,
+
+    // Optimize chunk splitting
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Vendor chunks
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'query-vendor': ['@tanstack/react-query'],
+          'supabase-vendor': ['@supabase/supabase-js'],
+
+          // UI library chunks
+          'ui-vendor': ['lucide-react', '@headlessui/react'],
+
+          // Chart libraries (lazy loaded)
+          'charts': ['recharts'],
+
+          // Map libraries (lazy loaded)
+          'maps': ['leaflet', 'react-leaflet'],
+
+          // Finance module
+          'finance': [
+            './src/finance/pages/DashboardPage',
+            './src/finance/pages/AccountsPage',
+            './src/finance/pages/TransactionsPageGrouped',
+            './src/finance/pages/RecurringPage',
+            './src/finance/pages/NetWorthPage',
+            './src/finance/pages/GoalsPage',
+            './src/finance/pages/LoansPage',
+            './src/finance/pages/RetirementPage',
+            './src/finance/pages/ProjectionsPage',
+            './src/finance/pages/CalculatorsPage',
+            './src/finance/pages/CreditCardsPage',
+            './src/finance/pages/InsurancePage',
+            './src/finance/pages/SettingsPage',
+          ],
+        },
+      },
+    },
+
+    // Chunk size warnings
+    chunkSizeWarningLimit: 1000, // 1MB
+
+    // Minification
+    minify: 'esbuild', // Use esbuild for faster builds
+  },
 })

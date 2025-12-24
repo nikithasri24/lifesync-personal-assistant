@@ -26,8 +26,8 @@ import { EventCard } from '../components/calendar/EventCard';
 import { QuickScheduleModal } from '../components/calendar/QuickScheduleModal';
 import { CalendarLoadingState } from '../calendar/components/layout/CalendarLoadingState';
 import { WeekDayHeaders } from '../calendar/components/layout/WeekDayHeaders';
-import { MonthViewPlaceholder } from '../calendar/components/layout/MonthViewPlaceholder';
-import { DayViewPlaceholder } from '../calendar/components/layout/DayViewPlaceholder';
+import { MonthView } from '../calendar/components/layout/MonthView';
+import { DayView } from '../calendar/components/layout/DayView';
 
 // Types
 import type { Task } from '../lib/supabase';
@@ -765,10 +765,45 @@ const Calendar: React.FC = () => {
           )}
 
           {/* Month View */}
-          {calendarState.view === 'month' && <MonthViewPlaceholder />}
+          {calendarState.view === 'month' && (
+            <MonthView
+              currentDate={calendarState.currentDate}
+              tasks={tasks}
+              events={calendarEvents}
+              onDateClick={(date) => {
+                calendarState.setCurrentDate(date);
+                calendarState.setView('day');
+              }}
+              onTaskClick={handleTaskClick}
+              onEventClick={handleEventClick}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+            />
+          )}
 
           {/* Day View */}
-          {calendarState.view === 'day' && <DayViewPlaceholder />}
+          {calendarState.view === 'day' && (
+            <DayView
+              date={calendarState.currentDate}
+              tasks={tasks}
+              events={calendarEvents}
+              currentTime={currentTime}
+              onTaskClick={handleTaskClick}
+              onEventClick={handleEventClick}
+              onCellClick={(date, hour) => {
+                const newDate = new Date(date);
+                newDate.setHours(hour, 0, 0, 0);
+                setEventModalInitialDate(newDate);
+                setShowEventModal(true);
+              }}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+              onEventDragStart={handleEventDragStart}
+              onEventDragEnd={handleEventDragEnd}
+            />
+          )}
         </div>
       </div>
 

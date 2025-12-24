@@ -1,9 +1,15 @@
 /**
  * Vision Board Service
  * Manages visual goal representation and inspiration images
+ *
+ * ARCHITECTURE: Uses API layer for all data access (no direct Supabase calls)
  */
 
-import { supabase } from '@/lib/supabase';
+import {
+  getUserLifeDreams,
+  updateLifeDream,
+} from '@/goals/api/lifeGoalsAPI';
+import type { LifeDream } from '@/goals/types/lifeGoals';
 import { logger } from '@/services/logger';
 
 // ============================================================================
@@ -39,31 +45,31 @@ class VisionBoardService {
    * Get all vision board items (dreams with images)
    */
   async getVisionBoard(userId: string): Promise<VisionBoardItem[]> {
-    const { data: dreams, error } = await supabase
-      .from('life_dreams')
-      .select('*')
-      .eq('user_id', userId)
-      .not('vision_board_images', 'is', null)
-      .order('priority', { ascending: true });
+    try {
+      const dreams = await getUserLifeDreams();
 
-    if (error) {
+      // Filter for dreams with vision board images
+      const dreamsWithImages = dreams.filter(dream =>
+        dream.visionBoardImages && dream.visionBoardImages.length > 0
+      );
+
+      return dreamsWithImages.map(dream => ({
+        id: dream.id,
+        type: 'dream' as const,
+        title: dream.title,
+        description: dream.description,
+        category: dream.category || 'other',
+        images: dream.visionBoardImages || [],
+        notes: dream.visionBoardNotes,
+        status: dream.status,
+        priority: dream.priority,
+        target_date: dream.estimatedTimeframe,
+        created_at: dream.createdAt,
+      }));
+    } catch (error) {
       logger.error('VisionBoardService', 'Failed to get vision board', { error });
       return [];
     }
-
-    return (dreams || []).map(dream => ({
-      id: dream.id,
-      type: 'dream' as const,
-      title: dream.title,
-      description: dream.description,
-      category: dream.category || 'other',
-      images: dream.vision_board_images || [],
-      notes: dream.vision_board_notes,
-      status: dream.status,
-      priority: dream.priority,
-      target_date: dream.estimated_timeframe,
-      created_at: dream.created_at,
-    }));
   }
 
   /**
@@ -104,78 +110,70 @@ class VisionBoardService {
    * Add image to a dream's vision board
    */
   async addImage(dreamId: string, imageUrl: string): Promise<boolean> {
-    const { data: dream, error: fetchError } = await supabase
-      .from('life_dreams')
-      .select('vision_board_images')
-      .eq('id', dreamId)
-      .single();
+    try {
+      // Get all dreams to find the current one
+      const dreams = await getUserLifeDreams();
+      const dream = dreams.find(d => d.id === dreamId);
 
-    if (fetchError) {
-      logger.error('VisionBoardService', 'Failed to fetch dream', { error: fetchError });
-      return false;
-    }
+      if (!dream) {
+        logger.error('VisionBoardService', 'Dream not found', { dreamId });
+        return false;
+      }
 
-    const currentImages = dream?.vision_board_images || [];
-    const { error } = await supabase
-      .from('life_dreams')
-      .update({ vision_board_images: [...currentImages, imageUrl] })
-      .eq('id', dreamId);
+      const currentImages = dream.visionBoardImages || [];
+      await updateLifeDream(dreamId, {
+        visionBoardImages: [...currentImages, imageUrl],
+      });
 
-    if (error) {
+      logger.info('VisionBoardService', 'Image added to vision board', { dreamId });
+      return true;
+    } catch (error) {
       logger.error('VisionBoardService', 'Failed to add image', { error });
       return false;
     }
-
-    logger.info('VisionBoardService', 'Image added to vision board', { dreamId });
-    return true;
   }
 
   /**
    * Remove image from a dream's vision board
    */
   async removeImage(dreamId: string, imageUrl: string): Promise<boolean> {
-    const { data: dream, error: fetchError } = await supabase
-      .from('life_dreams')
-      .select('vision_board_images')
-      .eq('id', dreamId)
-      .single();
+    try {
+      // Get all dreams to find the current one
+      const dreams = await getUserLifeDreams();
+      const dream = dreams.find(d => d.id === dreamId);
 
-    if (fetchError) {
-      logger.error('VisionBoardService', 'Failed to fetch dream', { error: fetchError });
-      return false;
-    }
+      if (!dream) {
+        logger.error('VisionBoardService', 'Dream not found', { dreamId });
+        return false;
+      }
 
-    const currentImages = dream?.vision_board_images || [];
-    const updatedImages = currentImages.filter((img: string) => img !== imageUrl);
+      const currentImages = dream.visionBoardImages || [];
+      const updatedImages = currentImages.filter((img: string) => img !== imageUrl);
 
-    const { error } = await supabase
-      .from('life_dreams')
-      .update({ vision_board_images: updatedImages })
-      .eq('id', dreamId);
+      await updateLifeDream(dreamId, {
+        visionBoardImages: updatedImages,
+      });
 
-    if (error) {
+      return true;
+    } catch (error) {
       logger.error('VisionBoardService', 'Failed to remove image', { error });
       return false;
     }
-
-    return true;
   }
 
   /**
    * Update vision board notes for a dream
    */
   async updateNotes(dreamId: string, notes: string): Promise<boolean> {
-    const { error } = await supabase
-      .from('life_dreams')
-      .update({ vision_board_notes: notes })
-      .eq('id', dreamId);
-
-    if (error) {
+    try {
+      await updateLifeDream(dreamId, {
+        visionBoardNotes: notes,
+      });
+      return true;
+    } catch (error) {
       logger.error('VisionBoardService', 'Failed to update notes', { error });
       return false;
     }
-
-    return true;
   }
 
   /**

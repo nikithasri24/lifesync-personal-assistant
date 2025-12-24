@@ -25,7 +25,14 @@ export function useWeekNavigation(
 
   // Re-align current week when weekStartsOn changes
   useEffect(() => {
-    setCurrentWeekStart((prev: Date) => startOfWeek(prev, { weekStartsOn }));
+    setCurrentWeekStart((prev: Date) => {
+      const newWeekStart = startOfWeek(prev, { weekStartsOn });
+      // Only update if the week start actually changed
+      if (newWeekStart.getTime() === prev.getTime()) {
+        return prev;
+      }
+      return newWeekStart;
+    });
   }, [weekStartsOn]);
 
   // Find existing plan for current week

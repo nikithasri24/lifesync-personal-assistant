@@ -233,16 +233,28 @@ export async function getActiveGoal(): Promise<NutritionGoal | null> {
     async () => {
       const user = await requireAuth();
 
+      // Use maybeSingle() instead of single() to avoid 406 errors
+      // maybeSingle() returns null if no rows, single() throws error
       const { data, error } = await supabase
         .from('nutrition_goals')
         .select('*')
         .eq('user_id', user.id)
         .eq('is_active', true)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
-        throw error;
+      if (error) {
+        // Log the error for debugging
+        logger.warn('NutritionAPI', 'Error fetching nutrition goal', {
+          code: error.code,
+          message: error.message,
+          hint: error.hint,
+          details: error.details
+        });
+
+        // Return null instead of throwing to prevent app crashes
+        return null;
       }
+
       return data as NutritionGoal | null;
     },
     { domain: 'NutritionAPI', operation: 'getActiveGoal' }

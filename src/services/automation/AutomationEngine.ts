@@ -44,9 +44,9 @@ class AutomationEngine {
     // Use API layer instead of direct Supabase
     try {
       const rules = await getActiveAutomationRules();
-      return rules.map(this.mapDbToRule);
+      return rules; // API already returns AutomationRule[]
     } catch (error) {
-      logger.error('AutomationEngine', error, { context: 'getActiveRules' });
+      logger.error('AutomationEngine', error instanceof Error ? error : String(error), { context: 'getActiveRules' });
       return [];
     }
   }
@@ -58,9 +58,9 @@ class AutomationEngine {
     // Use API layer instead of direct Supabase
     try {
       const rules = await getAutomationRulesForEvent(eventType);
-      return rules.map(this.mapDbToRule);
+      return rules; // API already returns AutomationRule[]
     } catch (error) {
-      logger.error('AutomationEngine', error, { context: 'getRulesForEvent' });
+      logger.error('AutomationEngine', error instanceof Error ? error : String(error), { context: 'getRulesForEvent' });
       return [];
     }
   }
@@ -173,7 +173,7 @@ class AutomationEngine {
       title: params.title as string || 'Automated Task',
       description: params.description as string,
       priority: (params.priority as 'low' | 'medium' | 'high') || 'medium',
-      status: 'pending',
+      status: 'todo',
     });
   }
 
@@ -255,18 +255,18 @@ class AutomationEngine {
     // Use API layer instead of direct Supabase
     try {
       const rule = await createAutomationRule({
+        user_id: userId,
         name,
         description,
-        trigger_type: trigger.type,
-        trigger_config: trigger,
+        trigger,
         actions,
         enabled: true,
         trigger_count: 0,
         last_triggered_at: null,
       });
-      return this.mapDbToRule(rule);
+      return rule; // API already returns AutomationRule
     } catch (error) {
-      logger.error('AutomationEngine', error, { context: 'createRule' });
+      logger.error('AutomationEngine', error instanceof Error ? error : String(error), { context: 'createRule' });
       return null;
     }
   }
@@ -294,7 +294,7 @@ class AutomationEngine {
       await updateAutomationRule(ruleId, updateData);
       return true;
     } catch (error) {
-      logger.error('AutomationEngine', error, { context: 'updateRule' });
+      logger.error('AutomationEngine', error instanceof Error ? error : String(error), { context: 'updateRule' });
       return false;
     }
   }
@@ -308,7 +308,7 @@ class AutomationEngine {
       await deleteAutomationRule(ruleId);
       return true;
     } catch (error) {
-      logger.error('AutomationEngine', error, { context: 'deleteRule' });
+      logger.error('AutomationEngine', error instanceof Error ? error : String(error), { context: 'deleteRule' });
       return false;
     }
   }

@@ -12,6 +12,7 @@ import { getCalendarEvents } from '@/api/calendarAPI';
 import { getFocusSessions } from '@/api/focusAPI';
 import { getJournalEntries } from '@/api/journalAPI';
 import { getAnalyticsDaily } from '@/api/analyticsAPI';
+import { format, addDays } from 'date-fns';
 
 export interface TodaysContext {
   // Tasks
@@ -120,14 +121,14 @@ class ContextAggregator {
     // Use API layer instead of direct Supabase
     const allTasks = await getTasks({ deleted: false, archived: false });
 
-    const completed = allTasks.filter(t => t.status === 'completed').length;
+    const completed = allTasks.filter(t => t.status === 'done').length;
     const overdue = allTasks.filter(t =>
-      t.due_date && t.due_date < today && t.status !== 'completed'
+      t.due_date && t.due_date < today && t.status !== 'done'
     ).length;
     const highPriority = allTasks
-      .filter(t => t.priority === 'high' && t.status !== 'completed')
+      .filter(t => t.priority === 'high' && t.status !== 'done')
       .slice(0, 5)
-      .map(t => ({ id: t.id!, title: t.title, due_date: t.due_date }));
+      .map(t => ({ id: t.id!, title: t.title, due_date: t.due_date || undefined }));
 
     return {
       total: allTasks.length,
@@ -146,9 +147,9 @@ class ContextAggregator {
 
     // Streaks at risk: habits with streak > 0 not completed today
     const streaksAtRisk = allHabits
-      .filter(h => (h.current_streak ?? 0) > 0 && !completedIds.has(h.id!))
+      .filter(h => (h.streak_count ?? 0) > 0 && !completedIds.has(h.id!))
       .slice(0, 5)
-      .map(h => ({ id: h.id!, name: h.name, current_streak: h.current_streak ?? 0 }));
+      .map(h => ({ id: h.id!, name: h.name, current_streak: h.streak_count ?? 0 }));
 
     return {
       due: allHabits.length,
@@ -159,26 +160,23 @@ class ContextAggregator {
 
   private async fetchEventsContext(userId: string, today: string) {
     // Use API layer instead of direct Supabase
-    const startDate = new Date(`${today}T00:00:00`);
-    const endDate = new Date(`${today}T23:59:59`);
-
-    const events = await getCalendarEvents({ startDate, endDate });
+    const events = await getCalendarEvents({ startDate: today, endDate: today });
 
     return events.slice(0, 10).map(e => ({
       id: e.id!,
       title: e.title,
-      start_time: e.start_time,
-      end_time: e.end_time,
-      location: e.location,
+      start_time: e.start_time || '',
+      end_time: e.end_time || '',
+      location: e.location || undefined,
     }));
   }
 
   private async fetchFocusContext(userId: string, today: string) {
     // Use API layer instead of direct Supabase
-    const startDate = new Date(`${today}T00:00:00`);
+    const startDate = today; // API expects string
     const sessions = await getFocusSessions({ startDate });
 
-    const minutesToday = sessions.reduce((sum, s) => sum + (s.duration ?? 0), 0);
+    const minutesToday = sessions.reduce((sum, s) => sum + (s.duration_minutes ?? 0), 0);
 
     return {
       sessionsToday: sessions.length,
@@ -233,12 +231,12 @@ class ContextAggregator {
 
     const moodDays = days.filter(d => d.wellness_mood_avg != null);
     const avgMood = moodDays.length > 0
-      ? moodDays.reduce((sum, d) => sum + d.wellness_mood_avg, 0) / moodDays.length
+      ? moodDays.reduce((sum, d) => sum + (d.wellness_mood_avg || 0), 0) / moodDays.length
       : null;
 
     const energyDays = days.filter(d => d.wellness_energy_avg != null);
     const avgEnergy = energyDays.length > 0
-      ? energyDays.reduce((sum, d) => sum + d.wellness_energy_avg, 0) / energyDays.length
+      ? energyDays.reduce((sum, d) => sum + (d.wellness_energy_avg || 0), 0) / energyDays.length
       : null;
 
     return {
@@ -267,8 +265,8 @@ class ContextAggregator {
     nextWeek.setDate(nextWeek.getDate() + 7);
 
     const upcomingEvents = await getCalendarEvents({
-      startDate: new Date(),
-      endDate: nextWeek,
+      startDate: format(new Date(), 'yyyy-MM-dd'),
+      endDate: format(nextWeek, 'yyyy-MM-dd'),
     });
 
     return {
@@ -276,7 +274,7 @@ class ContextAggregator {
       patterns,
       upcomingEvents: upcomingEvents.slice(0, 10).map(e => ({
         title: e.title,
-        date: e.start_time,
+        date: e.start_time || '',
       })),
       timestamp: new Date().toISOString(),
     };

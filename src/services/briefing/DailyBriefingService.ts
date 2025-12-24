@@ -1,9 +1,14 @@
 /**
  * Daily Briefing Service
  * Generates personalized morning briefings with schedule, tasks, habits, and weather
+ *
+ * ARCHITECTURE: Uses API layer for all data access (no direct Supabase calls)
  */
 
-import { supabase } from '@/lib/supabase';
+import { getCalendarEvents } from '@/api/calendarAPI';
+import { getTasks } from '@/api/tasksAPI';
+import { getHabits, getHabitEntriesForDate } from '@/api/habitsAPI';
+import { getUserGamification } from '@/api/gamificationAPI';
 import { logger } from '@/services/logger';
 import { format, isToday, isBefore, parseISO, differenceInHours } from 'date-fns';
 import { fetchWeather, getWeatherEmoji } from './weatherService';
@@ -55,8 +60,6 @@ export async function generateDailyBriefing(
   options: Partial<BriefingOptions> = {}
 ): Promise<DailyBriefing> {
   const opts = { ...DEFAULT_BRIEFING_OPTIONS, ...options };
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
 
   // Auto-detect location if not provided and weather is enabled
   let weatherLocation = opts.weatherLocation;
@@ -65,49 +68,24 @@ export async function generateDailyBriefing(
   }
 
   const today = format(new Date(), 'yyyy-MM-dd');
-  const todayStart = `${today}T00:00:00`;
-  const todayEnd = `${today}T23:59:59`;
 
-  // Fetch all data in parallel
-  const [eventsResult, tasksResult, habitsResult, entriesResult, gamificationResult, weatherResult] = 
+  // Fetch all data in parallel using API layer
+  const [allEvents, allTasks, allHabits, habitEntries, gamificationStats, weatherResult] =
     await Promise.all([
       // Calendar events for today
-      supabase
-        .from('calendar_events')
-        .select('id, title, start_date, end_date, location, all_day, type')
-        .eq('user_id', user.id)
-        .gte('start_date', todayStart)
-        .lte('start_date', todayEnd)
-        .order('start_date'),
+      getCalendarEvents(),
 
-      // Tasks due today or overdue
-      supabase
-        .from('tasks')
-        .select('id, title, priority, due_date, estimated_time, status')
-        .eq('user_id', user.id)
-        .neq('status', 'done')
-        .eq('deleted', false)
-        .or(`due_date.eq.${today},due_date.lt.${today}`),
+      // All tasks (we'll filter for today/overdue)
+      getTasks(),
 
       // Active habits
-      supabase
-        .from('habits')
-        .select('id, name, current_streak')
-        .eq('user_id', user.id)
-        .eq('is_active', true),
+      getHabits(),
 
       // Today's habit entries
-      supabase
-        .from('habit_entries')
-        .select('habit_id')
-        .eq('date', today),
+      getHabitEntriesForDate(today),
 
       // Gamification stats
-      supabase
-        .from('user_gamification')
-        .select('total_xp, level, current_streak')
-        .eq('user_id', user.id)
-        .single(),
+      getUserGamification().catch(() => null),
 
       // Weather (if location available)
       opts.includeWeather && weatherLocation
@@ -115,58 +93,95 @@ export async function generateDailyBriefing(
         : Promise.resolve(null),
     ]);
 
-  // Process events
-  const events: BriefingEvent[] = (eventsResult.data || [])
-    .slice(0, opts.maxEvents)
-    .map((e) => ({
-      id: e.id,
-      title: e.title,
-      startTime: e.start_date,
-      endTime: e.end_date,
-      location: e.location,
-      isAllDay: e.all_day || false,
-      type: e.type || 'event',
-    }));
+  // Filter events for today
+  const todayStart = `${today}T00:00:00`;
+  const todayEnd = `${today}T23:59:59`;
+  const todayEvents = (allEvents || []).filter((e) =>
+    e.start_date >= todayStart && e.start_date <= todayEnd
+  );
 
-  const totalEvents = eventsResult.data?.length || 0;
+  // Process events
+  const events: BriefingEvent[] = todayEvents
+    .slice(0, opts.maxEvents)
+    .map((e) => {
+      // Map event types to briefing types
+      // CalendarEvent has: 'event' | 'meeting' | 'reminder' | 'birthday' | 'holiday'
+      // BriefingEvent has: 'meeting' | 'appointment' | 'event' | 'reminder'
+      let briefingType: 'meeting' | 'appointment' | 'event' | 'reminder' = 'event';
+      if (e.type === 'meeting' || e.type === 'reminder') {
+        briefingType = e.type;
+      } else if (e.type === 'birthday' || e.type === 'holiday') {
+        briefingType = 'event';
+      }
+
+      return {
+        id: e.id,
+        title: e.title,
+        startTime: e.start_date,
+        endTime: e.end_date,
+        location: e.location || undefined,
+        isAllDay: e.all_day || false,
+        type: briefingType,
+      };
+    });
+
+  const totalEvents = todayEvents.length;
   const firstEventTime = events[0]?.startTime;
   const busyHours = events.reduce((sum, e) => {
     if (e.isAllDay) return sum;
     return sum + differenceInHours(parseISO(e.endTime), parseISO(e.startTime));
   }, 0);
 
+  // Filter tasks for today or overdue (not done, not deleted, with id)
+  const tasksForBriefing = (allTasks || []).filter((t) =>
+    t.id &&
+    t.status !== 'done' &&
+    !t.deleted &&
+    t.due_date &&
+    (t.due_date === today || isBefore(parseISO(t.due_date), new Date()))
+  );
+
   // Process tasks
-  const allTasks = tasksResult.data || [];
-  const priorityTasks: BriefingTask[] = allTasks
+  const priorityTasks: BriefingTask[] = tasksForBriefing
     .sort((a, b) => {
       const priorityOrder = { urgent: 0, high: 1, medium: 2, low: 3 };
-      return (priorityOrder[a.priority as keyof typeof priorityOrder] || 2) - 
+      return (priorityOrder[a.priority as keyof typeof priorityOrder] || 2) -
              (priorityOrder[b.priority as keyof typeof priorityOrder] || 2);
     })
     .slice(0, opts.maxTasks)
-    .map((t) => ({
-      id: t.id,
-      title: t.title,
-      priority: t.priority || 'medium',
-      dueTime: t.due_date,
-      estimatedMinutes: t.estimated_time,
-      isOverdue: t.due_date ? isBefore(parseISO(t.due_date), new Date()) && !isToday(parseISO(t.due_date)) : false,
-    }));
+    .map((t) => {
+      // Map priority: 'important' -> 'high' for briefing compatibility
+      let briefingPriority: 'low' | 'medium' | 'high' | 'urgent' = 'medium';
+      if (t.priority === 'low' || t.priority === 'medium' || t.priority === 'high' || t.priority === 'urgent') {
+        briefingPriority = t.priority;
+      } else if (t.priority === 'important') {
+        briefingPriority = 'high';
+      }
 
-  const overdueTasks = allTasks.filter(
+      return {
+        id: t.id!,
+        title: t.title,
+        priority: briefingPriority,
+        dueTime: t.due_date || undefined,
+        estimatedMinutes: t.estimated_time || undefined,
+        isOverdue: t.due_date ? isBefore(parseISO(t.due_date), new Date()) && !isToday(parseISO(t.due_date)) : false,
+      };
+    });
+
+  const overdueTasks = tasksForBriefing.filter(
     (t) => t.due_date && isBefore(parseISO(t.due_date), new Date()) && !isToday(parseISO(t.due_date))
   ).length;
 
-  // Process habits
-  const completedHabitIds = new Set((entriesResult.data || []).map((e) => e.habit_id));
-  const allHabits = habitsResult.data || [];
-  const habitsToComplete: BriefingHabit[] = allHabits
+  // Process habits (filter for active only)
+  const activeHabits = (allHabits || []).filter((h) => h.is_active && h.id);
+  const completedHabitIds = new Set((habitEntries || []).map((e) => e.habit_id));
+  const habitsToComplete: BriefingHabit[] = activeHabits
     .map((h) => ({
-      id: h.id,
+      id: h.id!,
       name: h.name,
-      currentStreak: h.current_streak || 0,
-      isAtRisk: (h.current_streak || 0) > 0 && !completedHabitIds.has(h.id),
-      isCompleted: completedHabitIds.has(h.id),
+      currentStreak: h.streak_count || 0,
+      isAtRisk: (h.streak_count || 0) > 0 && !completedHabitIds.has(h.id!),
+      isCompleted: completedHabitIds.has(h.id!),
     }))
     .filter((h) => !h.isCompleted)
     .slice(0, opts.maxHabits);
@@ -174,7 +189,7 @@ export async function generateDailyBriefing(
   const streaksAtRisk = habitsToComplete.filter((h) => h.isAtRisk).length;
 
   // Gamification
-  const gamification = gamificationResult.data || { total_xp: 0, level: 1, current_streak: 0 };
+  const gamification = gamificationStats || { total_xp: 0, current_level: 1, current_streak: 0 };
 
   // Generate voice script
   const voiceScript = generateVoiceScript({
@@ -198,13 +213,13 @@ export async function generateDailyBriefing(
     firstEventTime,
     busyHours,
     priorityTasks,
-    totalTasksDue: allTasks.length,
+    totalTasksDue: tasksForBriefing.length,
     overdueTasks,
     habitsToComplete,
     streaksAtRisk,
     currentStreak: gamification.current_streak || 0,
     xpToday: 0, // Would need to query today's transactions
-    level: gamification.level || 1,
+    level: gamification.current_level || 1,
     voiceScript,
   };
 }

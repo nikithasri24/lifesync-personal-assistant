@@ -93,21 +93,22 @@ class PredictionService {
 
     // Use API layer instead of direct Supabase
     const events = await getCalendarEvents({
-      startDate: ctx.today,
-      endDate,
+      startDate: format(ctx.today, 'yyyy-MM-dd'),
+      endDate: format(endDate, 'yyyy-MM-dd'),
     });
 
-    const tasks = await getTasks({ status: 'pending' });
+    const tasks = await getTasks({ deleted: false, archived: false });
     const tasksInRange = tasks.filter(t => {
       if (!t.due_date) return false;
       const dueDate = new Date(t.due_date);
-      return dueDate >= ctx.today && dueDate <= endDate;
+      return (t.status === 'todo' || t.status === 'in_progress') && dueDate >= ctx.today && dueDate <= endDate;
     });
 
     // Count items per day
     const dayLoad: Record<string, number> = {};
 
     events.forEach(e => {
+      if (!e.start_time) return;
       const day = format(parseISO(e.start_time), 'yyyy-MM-dd');
       dayLoad[day] = (dayLoad[day] || 0) + 1;
     });
@@ -147,15 +148,16 @@ class PredictionService {
     const today = format(ctx.today, 'yyyy-MM-dd');
 
     // Use API layer instead of direct Supabase
-    const habits = await getHabits({ isActive: true });
-    const habitsWithStreaks = habits.filter(h => (h.current_streak ?? 0) > 0);
+    const habits = await getHabits();
+    const activeHabits = habits.filter(h => h.is_active);
+    const habitsWithStreaks = activeHabits.filter(h => (h.streak_count ?? 0) > 0);
 
     const todayEntries = await getHabitEntriesForDate(today);
     const completedIds = new Set(todayEntries.map(e => e.habit_id));
 
     habitsWithStreaks.forEach(habit => {
-      if (!completedIds.has(habit.id!) && (habit.current_streak ?? 0) >= 7) {
-        const streak = habit.current_streak ?? 0;
+      if (!completedIds.has(habit.id!) && (habit.streak_count ?? 0) >= 7) {
+        const streak = habit.streak_count ?? 0;
         predictions.push({
           id: `streak-${habit.id}`,
           type: 'streak_at_risk',
@@ -181,15 +183,16 @@ class PredictionService {
     const endDate = addDays(ctx.today, ctx.lookAheadDays);
 
     // Use API layer instead of direct Supabase
-    const goals = await getGoals({ status: 'active' });
-    const goalsInRange = goals.filter(g => {
-      if (!g.target_date) return false;
-      const targetDate = new Date(g.target_date);
+    const goals = await getGoals();
+    const activeGoals = goals.filter(g => g.status === 'in-progress');
+    const goalsInRange = activeGoals.filter(g => {
+      if (!g.targetDate) return false;
+      const targetDate = g.targetDate;
       return targetDate >= ctx.today && targetDate <= endDate;
     });
 
     goalsInRange.forEach(goal => {
-      const daysUntil = differenceInDays(parseISO(goal.target_date!), ctx.today);
+      const daysUntil = differenceInDays(goal.targetDate, ctx.today);
       const progress = goal.progress ?? 0;
 
       if (daysUntil <= 3 && progress < 80) {
@@ -230,8 +233,9 @@ class PredictionService {
     const endDate = addDays(ctx.today, ctx.lookAheadDays);
 
     // Use API layer instead of direct Supabase
-    const bills = await getBills({ isActive: true });
-    const billsInRange = bills.filter(b => {
+    const bills = await getBills();
+    const activeBills = bills.filter(b => b.is_active);
+    const billsInRange = activeBills.filter(b => {
       if (!b.due_date || b.is_auto_pay) return false;
       const dueDate = new Date(b.due_date);
       return dueDate >= ctx.today && dueDate <= endDate;
@@ -263,11 +267,12 @@ class PredictionService {
     const predictions: Prediction[] = [];
 
     // Use API layer instead of direct Supabase
-    const dates = await getImportantDates({ isActive: true });
+    const dates = await getImportantDates();
+    const activeDates = dates.filter(d => d.is_active);
 
     const thisYear = ctx.today.getFullYear();
 
-    dates.forEach(date => {
+    activeDates.forEach(date => {
       let nextOccurrence = new Date(thisYear, date.month - 1, date.day);
       if (nextOccurrence < ctx.today) {
         nextOccurrence = new Date(thisYear + 1, date.month - 1, date.day);
