@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import {
   Home,
   Target,
@@ -32,28 +33,44 @@ import PremiumLogo from './PremiumLogo';
 import ModeSwitch, { useAppMode } from './ModeSwitch';
 import { NotificationBell } from './notifications';
 import clsx from 'clsx';
+import type { ViewKey } from '../stores/slices/uiSlice';
 
 const navigation = [
-  { name: 'Dashboard', icon: Home, view: 'dashboard' as const, section: 'main' },
-  { name: 'AI Assistant', icon: MessageCircle, view: 'assistant' as const, section: 'main' },
-  { name: 'Calendar', icon: Calendar, view: 'calendar' as const, section: 'main' },
-  { name: 'Task Scheduler', icon: LayoutGrid, view: 'scheduler' as const, section: 'main' },
-  { name: 'Focus', icon: Timer, view: 'focus' as const, section: 'main' },
-  { name: 'Habits', icon: Target, view: 'habits' as const, section: 'productivity' },
-  { name: 'Notes', icon: FileText, view: 'notes' as const, section: 'productivity' },
-  { name: 'Projects', icon: FolderOpen, view: 'projects' as const, section: 'productivity' },
-  { name: 'Journal', icon: BookOpen, view: 'journal' as const, section: 'wellbeing' },
-  { name: 'Skincare', icon: Sparkles, view: 'skincare' as const, section: 'wellbeing' },
-  { name: 'Travel', icon: MapPin, view: 'travel' as const, section: 'personal' },
-  { name: 'Visa Calculator', icon: Plane, view: 'visa' as const, section: 'personal' },
-  { name: 'Trip Planner', icon: Map, view: 'trip-planner' as const, section: 'personal' },
-  { name: 'Finances', icon: DollarSign, view: 'finances' as const, section: 'personal' },
-  { name: 'Shopping', icon: ShoppingCart, view: 'shopping' as const, section: 'personal' },
-  { name: 'Meals', icon: ChefHat, view: 'meals' as const, section: 'personal' },
-  { name: 'Nutrition', icon: Utensils, view: 'nutrition' as const, section: 'wellbeing' },
-  { name: 'Goals', icon: Trophy, view: 'goals' as const, section: 'personal' },
-  { name: 'Shared', icon: Users, view: 'shared' as const, section: 'personal' },
+  { name: 'Dashboard', icon: Home, view: 'dashboard' as const, path: '/', section: 'main' },
+  { name: 'AI Assistant', icon: MessageCircle, view: 'assistant' as const, path: '/assistant', section: 'main' },
+  { name: 'Calendar', icon: Calendar, view: 'calendar' as const, path: '/calendar', section: 'main' },
+  { name: 'Task Scheduler', icon: LayoutGrid, view: 'scheduler' as const, path: '/scheduler', section: 'main' },
+  { name: 'Focus', icon: Timer, view: 'focus' as const, path: '/focus', section: 'main' },
+  { name: 'Habits', icon: Target, view: 'habits' as const, path: '/habits', section: 'productivity' },
+  { name: 'Tasks', icon: Target, view: 'todos' as const, path: '/todos', section: 'productivity' },
+  { name: 'Notes', icon: FileText, view: 'notes' as const, path: '/notes', section: 'productivity' },
+  { name: 'Projects', icon: FolderOpen, view: 'projects' as const, path: '/projects', section: 'productivity' },
+  { name: 'Journal', icon: BookOpen, view: 'journal' as const, path: '/journal', section: 'wellbeing' },
+  { name: 'Skincare', icon: Sparkles, view: 'skincare' as const, path: '/skincare', section: 'wellbeing' },
+  { name: 'Travel', icon: MapPin, view: 'travel' as const, path: '/travel', section: 'personal' },
+  { name: 'Visa Calculator', icon: Plane, view: 'visa' as const, path: '/travel/visa', section: 'personal' },
+  { name: 'Trip Planner', icon: Map, view: 'trip-planner' as const, path: '/travel/trip-planner', section: 'personal' },
+  { name: 'Finances', icon: DollarSign, view: 'finances' as const, path: '/finances', section: 'personal' },
+  { name: 'Shopping', icon: ShoppingCart, view: 'shopping' as const, path: '/shopping', section: 'personal' },
+  { name: 'Meals', icon: ChefHat, view: 'meals' as const, path: '/meals', section: 'personal' },
+  { name: 'Nutrition', icon: Utensils, view: 'nutrition' as const, path: '/nutrition', section: 'wellbeing' },
+  { name: 'Goals', icon: Trophy, view: 'goals' as const, path: '/goals', section: 'personal' },
+  { name: 'Shared', icon: Users, view: 'shared' as const, path: '/shared', section: 'personal' },
 ];
+
+// Helper function to get ViewKey from pathname
+const getViewFromPath = (pathname: string): ViewKey => {
+  const item = navigation.find(nav => nav.path === pathname);
+  if (item) return item.view;
+
+  // Handle nested routes
+  if (pathname.startsWith('/travel/visa')) return 'visa';
+  if (pathname.startsWith('/travel/trip-planner')) return 'trip-planner';
+  if (pathname.startsWith('/travel')) return 'travel';
+  if (pathname.startsWith('/finances')) return 'finances';
+
+  return 'dashboard';
+};
 
 const navigationSections = {
   main: { label: 'Main', items: navigation.filter(item => item.section === 'main') },
@@ -67,19 +84,16 @@ interface LayoutProps {
 }
 
 export default function Layout({ children }: LayoutProps) {
-  const { activeView, setActiveView, sidebarCollapsed, setSidebarCollapsed } = useComposedStore();
+  const location = useLocation();
+  const { sidebarCollapsed, setSidebarCollapsed } = useComposedStore();
   const { toast, dismissToast } = useToast();
   const { mode } = useAppMode();
 
+  // Derive activeView from current URL path
+  const activeView = getViewFromPath(location.pathname);
+
   // In voice mode and on assistant page, show full-screen assistant
   const isVoiceModeAssistant = mode === 'voice' && activeView === 'assistant';
-
-  // Auto-switch to assistant view when entering voice mode
-  React.useEffect(() => {
-    if (mode === 'voice' && activeView !== 'assistant') {
-      setActiveView('assistant');
-    }
-  }, [mode, activeView, setActiveView]);
 
   // Voice mode: full-screen assistant without navigation
   if (isVoiceModeAssistant) {
@@ -109,7 +123,7 @@ export default function Layout({ children }: LayoutProps) {
       {/* Premium Sidebar */}
       <aside
         className={clsx(
-          'bg-primary/95 backdrop-blur-xl border-r border-primary/10 transition-all duration-300 ease-out z-50',
+          'bg-white dark:bg-[#0f1419] backdrop-blur-xl border-r border-gray-200 dark:border-gray-800 transition-all duration-300 ease-out z-50 shadow-lg',
           sidebarCollapsed ? 'w-16 lg:w-20' : 'w-72 sm:w-80 lg:w-80',
           'fixed lg:relative inset-y-0 left-0',
           !sidebarCollapsed ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
@@ -126,13 +140,13 @@ export default function Layout({ children }: LayoutProps) {
 
         {/* Elegant Header */}
         <div
-          className="flex items-center justify-between px-4 sm:px-6 border-b border-primary/10"
+          className="flex items-center justify-between px-4 sm:px-6 border-b border-gray-200 dark:border-gray-800"
           style={{ height: '5rem', minHeight: '5rem', flexShrink: 0 }}
         >
           <PremiumLogo collapsed={sidebarCollapsed} />
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="p-2 sm:p-2.5 rounded-lg sm:rounded-xl bg-tertiary/50 hover:bg-accent-primary hover:text-white transition-all duration-300 text-secondary hover:scale-105 active:scale-95"
+            className="p-2 sm:p-2.5 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white transition-all duration-200 text-gray-700 dark:text-gray-300 hover:scale-105 active:scale-95"
             aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
             {sidebarCollapsed ? <Menu size={16} /> : <X size={16} />}
@@ -155,57 +169,62 @@ export default function Layout({ children }: LayoutProps) {
             {Object.entries(navigationSections).map(([sectionKey, section]) => (
               <div key={sectionKey}>
                 {!sidebarCollapsed && (
-                  <h3 className="text-xs font-semibold text-muted uppercase tracking-wider mb-4 px-3">
+                  <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-500 uppercase tracking-wider mb-3 px-3">
                     {section.label}
                   </h3>
                 )}
 
                 <ul className="space-y-1" style={{ listStyle: 'none' }}>
-                  {section.items.map((item, _index) => (
-                    <li key={item.name} style={{ listStyle: 'none' }}>
-                      <button
-                        onClick={() => setActiveView(item.view)}
-                        className={clsx(
-                          'w-full flex items-center px-3 py-3 rounded-xl text-sm font-medium transition-all duration-300 group relative',
-                          'hover:scale-[1.02] active:scale-[0.98]',
-                          activeView === item.view
-                            ? 'bg-accent-gradient text-white shadow-lg shadow-accent-primary/25'
-                            : 'text-black hover:bg-tertiary/50 hover:text-black'
-                        )}
-                        aria-current={activeView === item.view ? 'page' : undefined}
-                        title={sidebarCollapsed ? item.name : undefined}
-                      >
-                        <item.icon
+                  {section.items.map((item, _index) => {
+                    const isActive = location.pathname === item.path ||
+                                   (item.path !== '/' && location.pathname.startsWith(item.path));
+
+                    return (
+                      <li key={item.name} style={{ listStyle: 'none' }}>
+                        <Link
+                          to={item.path}
+                          style={{ textDecoration: 'none' }}
                           className={clsx(
-                            'flex-shrink-0 transition-all duration-300',
-                            sidebarCollapsed ? 'mx-auto' : 'mr-3',
-                            activeView === item.view
-                              ? 'text-white'
-                              : 'text-tertiary group-hover:text-accent-primary'
+                            'w-full flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group relative',
+                            isActive
+                              ? 'bg-blue-500 dark:bg-blue-600 text-white shadow-sm'
+                              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
                           )}
-                          size={20}
-                          aria-hidden="true"
-                        />
-
-                        {!sidebarCollapsed && (
-                          <>
-                            <span className="transition-all duration-300 flex-1 text-left">
-                              {item.name}
-                            </span>
-
-                            {activeView === item.view && (
-                              <ChevronRight
-                                size={16}
-                                className="text-white/80 transition-all duration-300"
-                              />
+                          aria-current={isActive ? 'page' : undefined}
+                          title={sidebarCollapsed ? item.name : undefined}
+                        >
+                          <item.icon
+                            className={clsx(
+                              'flex-shrink-0 transition-all duration-200',
+                              sidebarCollapsed ? 'mx-auto' : 'mr-3',
+                              isActive
+                                ? 'text-white'
+                                : 'text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white'
                             )}
-                          </>
-                        )}
+                            size={20}
+                            aria-hidden="true"
+                          />
 
-                        {sidebarCollapsed && <span className="sr-only">{item.name}</span>}
-                      </button>
-                    </li>
-                  ))}
+                          {!sidebarCollapsed && (
+                            <>
+                              <span className="transition-all duration-300 flex-1 text-left">
+                                {item.name}
+                              </span>
+
+                              {isActive && (
+                                <ChevronRight
+                                  size={16}
+                                  className="text-white/80 transition-all duration-300"
+                                />
+                              )}
+                            </>
+                          )}
+
+                          {sidebarCollapsed && <span className="sr-only">{item.name}</span>}
+                        </Link>
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             ))}
@@ -214,7 +233,7 @@ export default function Layout({ children }: LayoutProps) {
 
         {/* Footer with theme toggle */}
         <div
-          className="p-4 border-t border-primary/10"
+          className="p-4 border-t border-gray-200 dark:border-gray-800"
           style={{
             flexShrink: 0,
             minHeight: 'fit-content'
@@ -227,23 +246,23 @@ export default function Layout({ children }: LayoutProps) {
       {/* Elegant Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Premium Header */}
-        <header className="bg-primary/50 backdrop-blur-sm border-b border-primary/10 px-8 py-6">
+        <header className="bg-[var(--bg-secondary)] backdrop-blur-sm border-b border-[var(--border-primary)] px-8 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-6">
               {/* Mobile menu button */}
               <button
                 onClick={() => setSidebarCollapsed(false)}
-                className="lg:hidden p-2.5 rounded-xl bg-tertiary/50 hover:bg-accent-primary hover:text-white transition-all duration-300 text-secondary"
+                className="lg:hidden p-2.5 rounded-xl bg-[var(--color-primary-100)]/30 dark:bg-[var(--color-primary-800)]/30 hover:bg-[var(--color-primary-500)] hover:text-white transition-all duration-300 text-[var(--color-primary-700)] dark:text-white"
                 aria-label="Open sidebar"
               >
                 <Menu size={20} />
               </button>
 
               <div className="flex flex-col">
-                <h2 className="text-2xl font-bold text-primary font-display leading-tight">
+                <h2 className="text-2xl font-bold text-[var(--text-primary)] font-display leading-tight">
                   {activeView === 'todos' ? 'Tasks' : activeView.charAt(0).toUpperCase() + activeView.slice(1)}
                 </h2>
-                <p className="text-sm text-tertiary font-medium">
+                <p className="text-sm text-[var(--text-secondary)] font-medium">
                   {activeView === 'dashboard' && 'Your productivity overview'}
                   {activeView === 'calendar' && 'Events and scheduling'}
                   {activeView === 'todos' && 'Manage your tasks'}
