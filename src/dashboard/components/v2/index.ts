@@ -8,4 +8,7 @@ export { LoadingSkeletonV2, DashboardLoadingStateV2 } from './LoadingSkeletonV2'
 export { StatsGridV2 } from './StatsGridV2';
 export { ProgressRingV2 } from './ProgressRingV2';
 export { QuickActionButtonV2 } from './QuickActionButtonV2';
+export { QuickActionsGridV2 } from './QuickActionsGridV2';
+export { ActionCardV2 } from './ActionCardV2';
+export { ButtonGroupV2 } from './ButtonGroupV2';
 

@@ -20,7 +20,10 @@ import {
   DashboardLoadingStateV2,
   StatsGridV2,
   QuickActionButtonV2,
-  ProgressRingV2
+  ProgressRingV2,
+  QuickActionsGridV2,
+  ActionCardV2,
+  ButtonGroupV2
 } from '../dashboard/components/v2';
 import { Card, StatCard } from '../components/v2';
 
@@ -191,6 +194,9 @@ export default function DashboardV3(): ReactElement {
 
       {/* Stats Grid - V2 Design */}
       <StatsGridV2 />
+
+      {/* Quick Actions - V2 Design */}
+      <QuickActionsGridV2 />
 
       {/* Morning Briefing & Smart Scheduler */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
