@@ -19,11 +19,6 @@ import {
   WelcomeBannerV2,
   DashboardLoadingStateV2,
   StatsGridV2,
-  QuickActionButtonV2,
-  ProgressRingV2,
-  QuickActionsGridV2,
-  ActionCardV2,
-  ButtonGroupV2,
   TodayTasksSectionV2,
   TodayHabitsSectionV2,
   RecentNotesSectionV2,
@@ -33,7 +28,6 @@ import {
   MorningBriefingV2,
   SmartSchedulerV2
 } from '../dashboard/components/v2';
-import { Card, StatCard } from '../components/v2';
 
 // All components migrated to V2!
 
@@ -194,9 +188,6 @@ export default function DashboardV3(): ReactElement {
 
       {/* Stats Grid - V2 Design */}
       <StatsGridV2 />
-
-      {/* Quick Actions - V2 Design */}
-      <QuickActionsGridV2 />
 
       {/* Morning Briefing & Smart Scheduler - V2 Design */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
