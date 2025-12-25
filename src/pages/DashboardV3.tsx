@@ -25,14 +25,14 @@ import {
   ActionCardV2,
   ButtonGroupV2,
   TodayTasksSectionV2,
-  TodayHabitsSectionV2
+  TodayHabitsSectionV2,
+  RecentNotesSectionV2,
+  WeeklyOverviewV2,
+  UpcomingDeadlinesV2
 } from '../dashboard/components/v2';
 import { Card, StatCard } from '../components/v2';
 
 // Existing components (will migrate these next)
-import { RecentNotesSection } from '../dashboard/components/RecentNotesSection';
-import { WeeklyOverview } from '../dashboard/components/WeeklyOverview';
-import { UpcomingDeadlines } from '../dashboard/components/UpcomingDeadlines';
 import { GamificationWidget } from '../components/gamification';
 import { MorningBriefing } from '../components/briefing';
 import { SmartScheduler } from '../components/scheduling';
@@ -231,20 +231,20 @@ export default function DashboardV3(): ReactElement {
           completedHabits={completedHabits}
         />
 
-        <RecentNotesSection
+        <RecentNotesSectionV2
           notes={recentNotes}
           onViewAll={() => setActiveView('notes')}
         />
 
-        <WeeklyOverview
+        <WeeklyOverviewV2
           completedTasks={completedTodosThisWeek.length}
           journalEntries={thisWeekJournalEntries.length}
           totalHabits={habits.length}
         />
       </div>
 
-      {/* Upcoming Deadlines */}
-      <UpcomingDeadlines
+      {/* Upcoming Deadlines - V2 Design */}
+      <UpcomingDeadlinesV2
         tasks={upcomingTodos}
         onComplete={completeTask}
         completingTask={completingTask}

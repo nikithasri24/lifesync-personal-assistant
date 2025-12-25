@@ -17,4 +17,8 @@ export { TaskCardV2 } from './TaskCardV2';
 export { HabitCardV2 } from './HabitCardV2';
 export { TodayTasksSectionV2 } from './TodayTasksSectionV2';
 export { TodayHabitsSectionV2 } from './TodayHabitsSectionV2';
+export { NoteCardV2 } from './NoteCardV2';
+export { RecentNotesSectionV2 } from './RecentNotesSectionV2';
+export { WeeklyOverviewV2 } from './WeeklyOverviewV2';
+export { UpcomingDeadlinesV2 } from './UpcomingDeadlinesV2';
 
