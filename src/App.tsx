@@ -17,8 +17,7 @@ import { useRoutePerformance } from './hooks/useRoutePerformance';
 import { useWebVitals } from './hooks/useWebVitals';
 
 // Lazy load all page components for route-based code splitting
-const Dashboard = lazy(() => import('./pages/Dashboard'));
-const DashboardV3 = lazy(() => import('./pages/DashboardV3'));
+const Dashboard = lazy(() => import('./pages/DashboardV3'));
 const Calendar = lazy(() => import('./pages/Calendar'));
 const Focus = lazy(() => import('./pages/Focus'));
 const Habits = lazy(() => import('./pages/Habits'));
@@ -38,7 +37,6 @@ const Finances = lazy(() => import('./pages/Finances'));
 const Skincare = lazy(() => import('./pages/Skincare'));
 const Assistant = lazy(() => import('./pages/Assistant'));
 const TaskScheduler = lazy(() => import('./pages/TaskScheduler'));
-const DesignDemo = lazy(() => import('./pages/DesignDemo'));
 
 function App(): React.ReactElement {
   // Performance monitoring
@@ -86,14 +84,10 @@ function App(): React.ReactElement {
           <Routes>
             {/* Main Routes */}
             <Route path="/" element={<Dashboard />} />
-            <Route path="/dashboard-v3" element={<DashboardV3 />} />
             <Route path="/assistant" element={<Assistant />} />
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/scheduler" element={<TaskScheduler />} />
             <Route path="/focus" element={<Focus />} />
-
-            {/* Design Demo */}
-            <Route path="/design-demo" element={<DesignDemo />} />
 
             {/* Productivity Routes */}
             <Route path="/habits" element={<Habits />} />
