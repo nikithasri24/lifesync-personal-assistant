@@ -81,19 +81,19 @@ export const QuickActionsGridV2: React.FC<QuickActionsGridV2Props> = ({ classNam
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.4, delay: 0.4 }}
       >
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
           Quick Actions
         </h2>
-        
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-4">
           {actions.map((action, index) => (
             <motion.div
               key={action.label}
-              initial={{ opacity: 0, scale: 0.8 }}
+              initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: index * 0.05, duration: 0.3 }}
+              transition={{ delay: 0.5 + index * 0.04, duration: 0.3 }}
             >
               <QuickActionButtonV2
                 icon={action.icon}

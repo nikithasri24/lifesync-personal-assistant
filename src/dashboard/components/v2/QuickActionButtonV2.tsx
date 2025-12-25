@@ -49,28 +49,29 @@ export const QuickActionButtonV2: React.FC<QuickActionButtonV2Props> = ({
     <motion.button
       onClick={onClick}
       disabled={disabled}
-      whileHover={{ scale: disabled ? 1 : 1.02 }}
-      whileTap={{ scale: disabled ? 1 : 0.98 }}
+      whileHover={{ scale: disabled ? 1 : 1.05 }}
+      whileTap={{ scale: disabled ? 1 : 0.95 }}
       className={`
-        flex flex-col items-center gap-3 p-4 rounded-xl
+        flex flex-col items-center gap-2.5 p-4 rounded-xl
         ${styles.bg} ${styles.hover}
         border border-gray-200 dark:border-gray-700
         transition-all duration-200
         ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
         group
+        min-h-[100px]
       `}
     >
       <div className={`
-        p-3 rounded-lg
+        p-2.5 rounded-lg
         bg-white dark:bg-gray-800
         shadow-sm
         transition-transform duration-200
         group-hover:scale-110
       `}>
-        <Icon className={`h-6 w-6 ${styles.icon}`} />
+        <Icon className={`h-5 w-5 ${styles.icon}`} />
       </div>
-      
-      <span className={`text-sm font-medium ${styles.text}`}>
+
+      <span className={`text-xs font-medium ${styles.text} text-center`}>
         {label}
       </span>
     </motion.button>

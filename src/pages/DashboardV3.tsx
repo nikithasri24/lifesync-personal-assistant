@@ -169,7 +169,7 @@ export default function DashboardV3(): ReactElement {
   }
 
   return (
-    <div className="space-y-6 sm:space-y-8">
+    <div className="space-y-8">
       <Toast toast={toast} onDismiss={dismissToast} />
 
       {/* Floating Theme Toggle */}

@@ -69,49 +69,54 @@ export const StatsGridV2: React.FC<StatsGridV2Props> = ({ className = '' }) => {
     );
   }
 
+  const statCards = [
+    {
+      title: "Tasks Today",
+      value: stats.tasks,
+      subtitle: `${stats.completedTasks} completed`,
+      icon: CheckCircle2,
+      gradient: "from-[var(--color-primary-500)]/10 to-[var(--color-primary-600)]/10",
+      trend: { value: 12, isPositive: true },
+    },
+    {
+      title: "Habit Completion",
+      value: `${stats.habits}%`,
+      subtitle: "Daily progress",
+      icon: Target,
+      gradient: "from-[var(--color-accent-500)]/10 to-[var(--color-accent-600)]/10",
+      trend: { value: 8, isPositive: true },
+    },
+    {
+      title: "Net Worth",
+      value: `$${(stats.balance / 1000).toFixed(1)}K`,
+      subtitle: "Total balance",
+      icon: DollarSign,
+      gradient: "from-[var(--color-secondary-500)]/10 to-[var(--color-secondary-600)]/10",
+      trend: { value: 5, isPositive: true },
+    },
+    {
+      title: "Health Score",
+      value: "85%",
+      subtitle: "This week",
+      icon: Heart,
+      gradient: "from-amber-500/10 to-orange-500/10",
+      trend: { value: 3, isPositive: true },
+    },
+  ];
+
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-      className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 ${className}`}
-    >
-      <StatCard
-        title="Tasks Today"
-        value={stats.tasks}
-        subtitle={`${stats.completedTasks} completed`}
-        icon={CheckCircle2}
-        gradient="from-[var(--color-primary-500)]/10 to-[var(--color-primary-600)]/10"
-        trend={{ value: 12, isPositive: true }}
-      />
-
-      <StatCard
-        title="Habit Completion"
-        value={`${stats.habits}%`}
-        subtitle="Daily progress"
-        icon={Target}
-        gradient="from-[var(--color-accent-500)]/10 to-[var(--color-accent-600)]/10"
-        trend={{ value: 8, isPositive: true }}
-      />
-
-      <StatCard
-        title="Net Worth"
-        value={`$${(stats.balance / 1000).toFixed(1)}K`}
-        subtitle="Total balance"
-        icon={DollarSign}
-        gradient="from-[var(--color-secondary-500)]/10 to-[var(--color-secondary-600)]/10"
-        trend={{ value: 5, isPositive: true }}
-      />
-
-      <StatCard
-        title="Health Score"
-        value="85%"
-        subtitle="This week"
-        icon={Heart}
-        gradient="from-amber-500/10 to-orange-500/10"
-        trend={{ value: 3, isPositive: true }}
-      />
-    </motion.div>
+    <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 ${className}`}>
+      {statCards.map((card, index) => (
+        <motion.div
+          key={card.title}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: index * 0.1, duration: 0.4 }}
+        >
+          <StatCard {...card} />
+        </motion.div>
+      ))}
+    </div>
   );
 };
 
