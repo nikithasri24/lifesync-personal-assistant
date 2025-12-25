@@ -52,7 +52,11 @@ export class WebLocationProvider extends LocationProvider {
           this.lastKnownLocation = coords;
           resolve(coords);
         },
-        () => {
+        (error) => {
+          // Only log non-timeout errors to avoid console noise
+          if (error.code !== error.TIMEOUT && error.code !== error.POSITION_UNAVAILABLE) {
+            console.warn('[WebLocationProvider] Location error:', error.message);
+          }
           resolve(null);
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
@@ -78,7 +82,11 @@ export class WebLocationProvider extends LocationProvider {
         this.checkGeofences(coords);
       },
       (error) => {
-        this.notifyError(new Error(error.message));
+        // Only notify for permission denied errors, not transient location failures
+        if (error.code === error.PERMISSION_DENIED) {
+          this.notifyError(new Error('Location permission denied'));
+        }
+        // Silently ignore POSITION_UNAVAILABLE and TIMEOUT to reduce console noise
       },
       {
         enableHighAccuracy: options?.enableHighAccuracy ?? true,

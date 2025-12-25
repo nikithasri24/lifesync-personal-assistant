@@ -47,11 +47,19 @@ async function getCurrentLocation(): Promise<{ lat: number; lng: number } | null
           lng: position.coords.longitude,
         });
       },
-      () => {
-        // On error or denied, return null
+      (error) => {
+        // Silently handle location errors - briefing works without location
+        // Only log permission errors for debugging
+        if (error.code === error.PERMISSION_DENIED) {
+          console.debug('[DailyBriefing] Location permission denied');
+        }
         resolve(null);
       },
-      { timeout: 5000, maximumAge: 300000 } // 5s timeout, cache for 5 min
+      {
+        timeout: 5000,
+        maximumAge: 300000, // 5s timeout, cache for 5 min
+        enableHighAccuracy: false, // Use low accuracy for briefing to avoid errors
+      }
     );
   });
 }

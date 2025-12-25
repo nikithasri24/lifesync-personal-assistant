@@ -28,6 +28,11 @@ export default defineConfig({
     host: '0.0.0.0', // Listen on all interfaces
     port: 5173,
     strictPort: true,
+    hmr: {
+      // Fix WebSocket connection issues
+      clientPort: 5173,
+      host: 'localhost',
+    },
     proxy: {
       '/api': {
         target: 'http://localhost:3001',

@@ -77,7 +77,9 @@ export class NativeLocationProvider extends LocationProvider {
         lat: position.coords.latitude,
         lng: position.coords.longitude,
       };
-    } catch {
+    } catch (error) {
+      // Log error for debugging but don't throw
+      console.warn('[NativeLocationProvider] Could not get location:', error);
       return null;
     }
   }
@@ -97,7 +99,12 @@ export class NativeLocationProvider extends LocationProvider {
       },
       (position, err) => {
         if (err) {
-          this.notifyError(err);
+          // Only notify for critical errors, not transient location failures
+          const errorMessage = err.message || String(err);
+          if (errorMessage.includes('permission') || errorMessage.includes('denied')) {
+            this.notifyError(new Error('Location permission denied'));
+          }
+          // Silently ignore kCLErrorLocationUnknown and other transient errors
           return;
         }
         if (position) {
