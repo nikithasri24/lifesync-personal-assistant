@@ -1,5 +1,7 @@
 import React from 'react';
-import { Plus, Sparkles } from 'lucide-react';
+import { Plus, Sparkles, Target } from 'lucide-react';
+import { PageHeaderV2 } from '../../../components/v2';
+import { Button } from '../../../components/v2';
 
 interface GoalsHeaderProps {
   onNewGoal: () => void;
@@ -7,33 +9,34 @@ interface GoalsHeaderProps {
 }
 
 /**
- * Header for Goals & Dreams page with action buttons
+ * Header for Goals & Dreams page with action buttons - V2 Design
  */
 export function GoalsHeader({ onNewGoal, onNewDream }: GoalsHeaderProps): React.ReactElement {
   return (
-    <header className="flex flex-wrap items-center justify-between gap-4">
-      <div>
-        <h1 className="text-2xl font-semibold text-slate-900">Goals & Dreams</h1>
-        <p className="text-sm text-slate-600">Track meaningful progress and celebrate future aspirations.</p>
-      </div>
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={onNewGoal}
-          className="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500"
-        >
-          <Plus className="h-4 w-4" />
-          New goal
-        </button>
-        <button
-          type="button"
-          onClick={onNewDream}
-          className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-        >
-          <Sparkles className="h-4 w-4" />
-          New dream
-        </button>
-      </div>
-    </header>
+    <PageHeaderV2
+      title="Goals & Dreams"
+      subtitle="Track meaningful progress and celebrate future aspirations."
+      icon={Target}
+      actions={
+        <div className="flex gap-2">
+          <Button
+            variant="primary"
+            size="md"
+            onClick={onNewGoal}
+          >
+            <Plus className="h-4 w-4" />
+            New goal
+          </Button>
+          <Button
+            variant="secondary"
+            size="md"
+            onClick={onNewDream}
+          >
+            <Sparkles className="h-4 w-4" />
+            New dream
+          </Button>
+        </div>
+      }
+    />
   );
 }

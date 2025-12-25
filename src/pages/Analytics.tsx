@@ -3,6 +3,7 @@ import { useHabits, useHabitEntries } from '../hooks/useHabitsQuery';
 import { useTasks } from '../hooks/useTasksQuery';
 import { useJournalEntries } from '../hooks/useJournalQuery';
 import type { HabitData, HabitEntryData, TaskData } from '../services/types';
+import { PageLayoutV2 } from '../components/v2';
 import { AnalyticsHeader } from '../analytics/components/AnalyticsHeader';
 import { KeyMetricsGrid } from '../analytics/components/KeyMetricsGrid';
 import { WeeklyProductivityChart } from '../analytics/components/WeeklyProductivityChart';
@@ -154,7 +155,7 @@ export default function Analytics() {
     : 0;
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <PageLayoutV2 maxWidth="xl" spacing="normal">
       <AnalyticsHeader />
 
       <KeyMetricsGrid
@@ -179,6 +180,6 @@ export default function Analytics() {
       </div>
 
       <MoodTrendsSection journalEntries={journalEntries} />
-    </div>
+    </PageLayoutV2>
   );
 }

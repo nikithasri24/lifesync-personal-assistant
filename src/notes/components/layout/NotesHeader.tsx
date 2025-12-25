@@ -1,15 +1,16 @@
 import React from 'react';
+import { FileText } from 'lucide-react';
+import { PageHeaderV2 } from '../../../components/v2';
 
 /**
- * Header for Notes page
+ * Header for Notes page - V2 Design
  */
 export function NotesHeader(): React.ReactElement {
   return (
-    <header className="flex flex-col gap-2">
-      <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Notes & Lists</h1>
-      <p className="text-sm text-slate-600 dark:text-slate-400">
-        Capture quick notes or create trackable lists for movies, books, places, and more.
-      </p>
-    </header>
+    <PageHeaderV2
+      title="Notes & Lists"
+      subtitle="Capture quick notes or create trackable lists for movies, books, places, and more."
+      icon={FileText}
+    />
   );
 }

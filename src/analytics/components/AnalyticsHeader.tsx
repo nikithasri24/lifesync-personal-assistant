@@ -1,13 +1,16 @@
 import React from 'react';
+import { BarChart3 } from 'lucide-react';
+import { PageHeaderV2 } from '../../components/v2';
 
 /**
- * Header for Analytics page
+ * Header for Analytics page - V2 Design
  */
 export function AnalyticsHeader(): React.ReactElement {
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-gray-900">Analytics Dashboard</h1>
-      <p className="text-gray-600">Track your productivity and habit performance</p>
-    </div>
+    <PageHeaderV2
+      title="Analytics Dashboard"
+      subtitle="Track your productivity and habit performance"
+      icon={BarChart3}
+    />
   );
 }

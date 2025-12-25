@@ -8,6 +8,7 @@
 import { type FormEvent, useState } from 'react';
 import { useNotes, useCreateNote, useDeleteNote } from '../hooks/useNotesQuery';
 import type { NoteType } from '../types';
+import { PageLayoutV2 } from '../components/v2';
 import { NotesErrorState } from '../notes/components/layout/NotesErrorState';
 import { NotesLoadingState } from '../notes/components/layout/NotesLoadingState';
 import { NotesHeader } from '../notes/components/layout/NotesHeader';
@@ -66,7 +67,7 @@ const Notes: React.FC = () => {
   }
 
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-6 p-6">
+    <PageLayoutV2 maxWidth="lg" spacing="normal">
       <NotesHeader />
 
       <CreateNoteForm
@@ -84,7 +85,7 @@ const Notes: React.FC = () => {
       />
 
       <NotesList notes={notes} onDelete={handleDelete} />
-    </div>
+    </PageLayoutV2>
   );
 };
 

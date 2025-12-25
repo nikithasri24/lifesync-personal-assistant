@@ -27,6 +27,7 @@ import {
   mapGoalDraftToCreateInput,
   mapDreamDraftToCreateInput,
 } from '../goals/services/goalHelpers';
+import { PageLayoutV2 } from '../components/v2';
 import { GoalsHeader } from '../goals/components/layout/GoalsHeader';
 import { GoalsStatsGrid } from '../goals/components/layout/GoalsStatsGrid';
 import { GoalsTabSwitcher } from '../goals/components/layout/GoalsTabSwitcher';
@@ -126,7 +127,7 @@ const Goals: React.FC = () => {
   };
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-6 p-6">
+    <PageLayoutV2 maxWidth="xl" spacing="normal">
       <GoalsHeader
         onNewGoal={() => {
           setShowGoalForm(true);
@@ -189,7 +190,7 @@ const Goals: React.FC = () => {
           }}
         />
       )}
-    </div>
+    </PageLayoutV2>
   );
 };
 
