@@ -28,14 +28,14 @@ import {
   TodayHabitsSectionV2,
   RecentNotesSectionV2,
   WeeklyOverviewV2,
-  UpcomingDeadlinesV2
+  UpcomingDeadlinesV2,
+  GamificationWidgetV2,
+  MorningBriefingV2,
+  SmartSchedulerV2
 } from '../dashboard/components/v2';
 import { Card, StatCard } from '../components/v2';
 
-// Existing components (will migrate these next)
-import { GamificationWidget } from '../components/gamification';
-import { MorningBriefing } from '../components/briefing';
-import { SmartScheduler } from '../components/scheduling';
+// All components migrated to V2!
 
 // Hooks
 import { useDashboardData } from '../dashboard/hooks/useDashboardData';
@@ -189,7 +189,7 @@ export default function DashboardV3(): ReactElement {
       {/* Welcome Banner - V2 Design */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <WelcomeBannerV2 />
-        <GamificationWidget variant="compact" />
+        <GamificationWidgetV2 variant="compact" />
       </div>
 
       {/* Stats Grid - V2 Design */}
@@ -198,20 +198,20 @@ export default function DashboardV3(): ReactElement {
       {/* Quick Actions - V2 Design */}
       <QuickActionsGridV2 />
 
-      {/* Morning Briefing & Smart Scheduler */}
+      {/* Morning Briefing & Smart Scheduler - V2 Design */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <MorningBriefing
+        <MorningBriefingV2
           className="xl:col-span-1"
           onCompleteTask={completeTask}
           onCompleteHabit={completeHabitSafely}
         />
         <div className="xl:col-span-2 space-y-6">
-          <SmartScheduler className="hidden xl:block" />
+          <SmartSchedulerV2 className="hidden xl:block" />
         </div>
       </div>
 
-      {/* Smart Scheduler - visible on mobile/tablet below briefing */}
-      <SmartScheduler className="xl:hidden" />
+      {/* Smart Scheduler - visible on mobile/tablet below briefing - V2 Design */}
+      <SmartSchedulerV2 className="xl:hidden" />
 
       {/* Main Content Grid - V2 Design */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
