@@ -23,13 +23,13 @@ import {
   ProgressRingV2,
   QuickActionsGridV2,
   ActionCardV2,
-  ButtonGroupV2
+  ButtonGroupV2,
+  TodayTasksSectionV2,
+  TodayHabitsSectionV2
 } from '../dashboard/components/v2';
 import { Card, StatCard } from '../components/v2';
 
 // Existing components (will migrate these next)
-import { TodayTasksSection } from '../dashboard/components/TodayTasksSection';
-import { TodayHabitsSection } from '../dashboard/components/TodayHabitsSection';
 import { RecentNotesSection } from '../dashboard/components/RecentNotesSection';
 import { WeeklyOverview } from '../dashboard/components/WeeklyOverview';
 import { UpcomingDeadlines } from '../dashboard/components/UpcomingDeadlines';
@@ -213,16 +213,16 @@ export default function DashboardV3(): ReactElement {
       {/* Smart Scheduler - visible on mobile/tablet below briefing */}
       <SmartScheduler className="xl:hidden" />
 
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
-        <TodayTasksSection
+      {/* Main Content Grid - V2 Design */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <TodayTasksSectionV2
           tasks={todayTodos}
           onViewAll={() => setActiveView('scheduler')}
           onComplete={completeTask}
           completingTask={completingTask}
         />
 
-        <TodayHabitsSection
+        <TodayHabitsSectionV2
           habits={todayHabits}
           hasAnyHabits={habits.length > 0}
           onViewAll={() => setActiveView('habits')}
