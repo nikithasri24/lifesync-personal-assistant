@@ -90,8 +90,15 @@ export const VoiceAssistant: React.FC<Props> = ({ open, onClose }) => {
 
   React.useEffect(() => {
     if (!open) return
-    if (supported) start()
+    console.log('[VoiceAssistant] Modal opened, supported:', supported)
+    if (supported) {
+      console.log('[VoiceAssistant] Starting voice recognition...')
+      start()
+    } else {
+      console.error('[VoiceAssistant] Voice not supported in this browser')
+    }
     return () => {
+      console.log('[VoiceAssistant] Modal closed, cleaning up...')
       try { window.speechSynthesis?.cancel?.() } catch { /* Ignore cancel errors */ }
       stop()
     }

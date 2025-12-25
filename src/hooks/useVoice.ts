@@ -67,8 +67,12 @@ export function useVoice(initialLang = 'en-US', options?: Options): UseVoice {
 
   const start = useCallback(async (): Promise<void> => {
     const provider = providerRef.current;
-    if (!provider || !provider.isSupported()) return;
+    if (!provider || !provider.isSupported()) {
+      console.error('[useVoice] Cannot start - provider not available or not supported');
+      return;
+    }
 
+    console.log('[useVoice] Starting voice recognition...');
     setError(undefined);
 
     try {
@@ -77,15 +81,23 @@ export function useVoice(initialLang = 'en-US', options?: Options): UseVoice {
         continuous: true,
         interimResults: true,
         onResult: handleResult,
-        onStart: () => setListening(true),
-        onEnd: () => setListening(false),
+        onStart: () => {
+          console.log('[useVoice] Voice recognition started');
+          setListening(true);
+        },
+        onEnd: () => {
+          console.log('[useVoice] Voice recognition ended');
+          setListening(false);
+        },
         onError: (err) => {
+          console.error('[useVoice] Voice recognition error:', err);
           setError(err);
           setListening(false);
         },
       });
     } catch (e: unknown) {
       const err = e as Error;
+      console.error('[useVoice] Failed to start voice recognition:', err.message);
       setError(err.message || 'speech_start_failed');
       setListening(false);
     }
