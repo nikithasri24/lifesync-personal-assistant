@@ -1,44 +1,24 @@
 import React, { useState } from 'react';
 import { Plus, CheckCircle2, Circle, Trash2, Calendar, Trophy } from 'lucide-react';
-import type { LifeGoal, LifeGoalMilestone, CreateMilestoneInput } from '../types/lifeGoals';
-import { addMilestone, updateMilestone, deleteMilestone } from '../api/lifeGoalsAPI';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { LifeGoal, CreateMilestoneInput } from '../types/lifeGoals';
+import { useLifeGoalQuery, useAddMilestoneMutation, useUpdateGoalMilestoneMutation, useDeleteGoalMilestoneMutation } from '@/hooks/useLifeGoalsQuery';
 
 interface GoalMilestonesProps {
   goal: LifeGoal;
-  milestones?: LifeGoalMilestone[];
-  onMilestonesUpdated?: (goal: LifeGoal, milestones: LifeGoalMilestone[]) => void;
 }
 
-export function GoalMilestones({ goal, milestones = [], onMilestonesUpdated }: GoalMilestonesProps): React.ReactElement {
+export function GoalMilestones({ goal }: GoalMilestonesProps): React.ReactElement {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newMilestone, setNewMilestone] = useState({ title: '', description: '', targetDate: '' });
-  const queryClient = useQueryClient();
+
+  // Fetch goal with milestones
+  const { data: goalWithMilestones } = useLifeGoalQuery(goal.id);
+  const milestones = goalWithMilestones?.milestones ?? [];
 
   // Mutations
-  const addMilestoneMutation = useMutation({
-    mutationFn: (input: CreateMilestoneInput) => addMilestone(input),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['lifeGoals'] });
-      setShowAddForm(false);
-      setNewMilestone({ title: '', description: '', targetDate: '' });
-    },
-  });
-
-  const toggleMilestoneMutation = useMutation({
-    mutationFn: ({ id, isCompleted }: { id: string; isCompleted: boolean }) =>
-      updateMilestone(id, { isCompleted }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['lifeGoals'] });
-    },
-  });
-
-  const deleteMilestoneMutation = useMutation({
-    mutationFn: (id: string) => deleteMilestone(id),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['lifeGoals'] });
-    },
-  });
+  const addMilestoneMutation = useAddMilestoneMutation();
+  const toggleMilestoneMutation = useUpdateGoalMilestoneMutation();
+  const deleteMilestoneMutation = useDeleteGoalMilestoneMutation();
 
   const handleAddMilestone = (): void => {
     if (!newMilestone.title.trim()) return;
@@ -51,19 +31,25 @@ export function GoalMilestones({ goal, milestones = [], onMilestonesUpdated }: G
       orderIndex: milestones.length,
     };
 
-    addMilestoneMutation.mutate(input);
+    addMilestoneMutation.mutate(input, {
+      onSuccess: () => {
+        setShowAddForm(false);
+        setNewMilestone({ title: '', description: '', targetDate: '' });
+      },
+    });
   };
 
-  const handleToggleMilestone = (milestone: LifeGoalMilestone): void => {
+  const handleToggleMilestone = (milestoneId: string, isCompleted: boolean): void => {
     toggleMilestoneMutation.mutate({
-      id: milestone.id,
-      isCompleted: !milestone.isCompleted,
+      milestoneId,
+      goalId: goal.id,
+      updates: { isCompleted },
     });
   };
 
   const handleDeleteMilestone = (milestoneId: string): void => {
     if (confirm('Are you sure you want to delete this milestone?')) {
-      deleteMilestoneMutation.mutate(milestoneId);
+      deleteMilestoneMutation.mutate({ milestoneId, goalId: goal.id });
     }
   };
 
@@ -172,7 +158,7 @@ export function GoalMilestones({ goal, milestones = [], onMilestonesUpdated }: G
               >
                 <button
                   type="button"
-                  onClick={() => handleToggleMilestone(milestone)}
+                  onClick={() => handleToggleMilestone(milestone.id, !milestone.isCompleted)}
                   className="mt-0.5 flex-shrink-0"
                 >
                   {milestone.isCompleted ? (

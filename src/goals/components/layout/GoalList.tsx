@@ -1,6 +1,6 @@
 import React, { type ReactElement } from 'react';
 import { Target, CheckCircle2, Trash2, Edit3, TrendingUp } from 'lucide-react';
-import type { LifeGoal, LifeGoalMilestone } from '../../types/lifeGoals';
+import type { LifeGoal } from '../../types/lifeGoals';
 import { GoalMilestones } from '../GoalMilestones';
 import { GoalStreaks } from '../GoalStreaks';
 import { GoalCheckins } from '../GoalCheckins';
@@ -17,7 +17,6 @@ const EmptyState: React.FC<{ label: string; icon?: React.ReactNode }> = ({ label
 interface GoalListProps {
   goals: LifeGoal[];
   expandedGoalId: string | null;
-  goalMilestones: Record<string, LifeGoalMilestone[]>;
   editingProgress: string | null;
   progressValue: number;
   onMarkComplete: (goalId: string) => void;
@@ -26,7 +25,6 @@ interface GoalListProps {
   onUpdateProgress: (goalId: string) => void;
   onCancelEditProgress: () => void;
   onExpandGoal: (goalId: string) => void;
-  onMilestonesUpdated: (goal: LifeGoal, milestones: LifeGoalMilestone[]) => void;
   onSetProgressValue: (value: number) => void;
 }
 
@@ -36,7 +34,6 @@ interface GoalListProps {
 export function GoalList({
   goals,
   expandedGoalId,
-  goalMilestones,
   editingProgress,
   progressValue,
   onMarkComplete,
@@ -45,7 +42,6 @@ export function GoalList({
   onUpdateProgress,
   onCancelEditProgress,
   onExpandGoal,
-  onMilestonesUpdated,
   onSetProgressValue,
 }: GoalListProps): ReactElement {
   if (goals.length === 0) {
@@ -56,8 +52,6 @@ export function GoalList({
     <ul className="space-y-3">
       {goals.map((goal) => {
         const isExpanded = expandedGoalId === goal.id;
-        const milestonesForGoal = goalMilestones[goal.id] ?? [];
-        const hasMilestones = milestonesForGoal.length > 0;
 
         return (
           <li key={goal.id} className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
@@ -154,24 +148,18 @@ export function GoalList({
               {goal.targetDate && (
                 <span>Target: {new Date(goal.targetDate).toLocaleDateString()}</span>
               )}
-              {(hasMilestones || goal.templateId) && (
-                <button
-                  onClick={() => onExpandGoal(goal.id)}
-                  className="ml-auto text-indigo-600 hover:text-indigo-700 font-medium"
-                >
-                  {isExpanded ? '▼ Hide milestones' : `▶ Show milestones${hasMilestones ? ` (${milestonesForGoal.length})` : ''}`}
-                </button>
-              )}
+              <button
+                onClick={() => onExpandGoal(goal.id)}
+                className="ml-auto text-indigo-600 hover:text-indigo-700 font-medium"
+              >
+                {isExpanded ? '▼ Hide details' : '▶ Show details'}
+              </button>
             </div>
 
             {/* Milestones section */}
             {isExpanded && (
               <>
-                <GoalMilestones
-                  goal={goal}
-                  milestones={milestonesForGoal}
-                  onMilestonesUpdated={onMilestonesUpdated}
-                />
+                <GoalMilestones goal={goal} />
                 {/* Streaks section */}
                 {goal.streakEnabled && (
                   <GoalStreaks

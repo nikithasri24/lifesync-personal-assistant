@@ -11,9 +11,7 @@ import {
   useDeleteLifeDreamMutation,
 } from '@/hooks/useLifeGoalsQuery';
 import type {
-  LifeGoal,
   LifeGoalWithMilestones,
-  LifeGoalMilestone,
 } from '../goals/types/lifeGoals';
 import GoalTemplates from '../goals/components/GoalTemplates';
 import GoalGamification from '../goals/components/GoalGamification';
@@ -73,7 +71,6 @@ const LifeGoals: React.FC = () => {
   const [editingProgress, setEditingProgress] = useState<string | null>(null);
   const [progressValue, setProgressValue] = useState<number>(0);
   const [expandedGoalId, setExpandedGoalId] = useState<string | null>(null);
-  const [goalMilestones, setGoalMilestones] = useState<Record<string, LifeGoalMilestone[]>>({});
 
   const goalStats = useMemo(() => {
     const completed = goals.filter((goal) => goal.status === 'completed').length;
@@ -207,10 +204,7 @@ const LifeGoals: React.FC = () => {
     setProgressValue(currentProgress);
   };
 
-  const handleGoalCreatedFromTemplate = (goal: LifeGoalWithMilestones): void => {
-    if (goal.milestones && goal.milestones.length > 0) {
-      setGoalMilestones(prev => ({ ...prev, [goal.id]: goal.milestones ?? [] }));
-    }
+  const handleGoalCreatedFromTemplate = (_goal: LifeGoalWithMilestones): void => {
     setShowTemplates(false);
   };
 
@@ -220,10 +214,6 @@ const LifeGoals: React.FC = () => {
       return;
     }
     setExpandedGoalId(goalId);
-  };
-
-  const handleMilestonesUpdated = (goal: LifeGoal, milestones: LifeGoalMilestone[]): void => {
-    setGoalMilestones(prev => ({ ...prev, [goal.id]: milestones }));
   };
 
   if (loading) {
@@ -253,7 +243,6 @@ const LifeGoals: React.FC = () => {
           <GoalList
             goals={goals}
             expandedGoalId={expandedGoalId}
-            goalMilestones={goalMilestones}
             editingProgress={editingProgress}
             progressValue={progressValue}
             onMarkComplete={handleMarkGoalComplete}
@@ -262,7 +251,6 @@ const LifeGoals: React.FC = () => {
             onUpdateProgress={handleUpdateProgress}
             onCancelEditProgress={handleCancelEditProgress}
             onExpandGoal={handleExpandGoal}
-            onMilestonesUpdated={handleMilestonesUpdated}
             onSetProgressValue={setProgressValue}
           />
         )}
