@@ -34,6 +34,10 @@ import {
 
 // Hooks
 import { useDashboardData } from '../dashboard/hooks/useDashboardData';
+import { useTaskModals } from '../todos/hooks/useTaskModals';
+import { useCreateTask, useProjects } from '../hooks/useTasksQuery';
+import { parseQuickAdd } from '../todos/services/taskHelpers';
+import { QuickAddForm } from '../todos/components';
 
 interface TasksQueryResult {
   data: Task[];
@@ -72,6 +76,11 @@ export default function DashboardV3(): ReactElement {
   const habitEntriesQuery = useHabitEntries();
   const notesQuery = useNotes();
   const journalQuery = useJournalEntries();
+  const { data: projects = [] } = useProjects();
+
+  // Task modals and mutations
+  const modals = useTaskModals();
+  const createTaskMutation = useCreateTask();
 
   const tasks: Task[] = (tasksQuery as TasksQueryResult).data ?? [];
   const tasksLoading: boolean = (tasksQuery as TasksQueryResult).isLoading ?? false;
@@ -223,11 +232,54 @@ export default function DashboardV3(): ReactElement {
       {/* Smart Scheduler - visible on mobile/tablet below briefing - V2 Design */}
       <SmartSchedulerV2 className="xl:hidden" />
 
+      {/* Quick Add Modal */}
+      {modals.showQuickAdd && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-2xl border border-gray-200 dark:border-gray-700 max-w-md w-full mx-4">
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Add New Task</h3>
+            <QuickAddForm
+              value={modals.quickAddText}
+              onChange={modals.setQuickAddText}
+              onSubmit={() => {
+                if (!modals.quickAddText.trim()) return;
+
+                const parsed = parseQuickAdd(modals.quickAddText, projects);
+
+                createTaskMutation.mutate(
+                  {
+                    title: parsed.title,
+                    description: '',
+                    priority: parsed.priority || 'medium',
+                    status: 'todo',
+                    estimated_time: 25,
+                    actual_time: 0,
+                    due_date: parsed.dueDate ? parsed.dueDate.toISOString() : null,
+                    project_id: parsed.projectId ?? null,
+                    tags: parsed.tags,
+                    category: 'work',
+                  },
+                  {
+                    onSuccess: () => {
+                      modals.setQuickAddText('');
+                      modals.closeQuickAdd();
+                    },
+                  }
+                );
+              }}
+              onCancel={modals.closeQuickAdd}
+              isLoading={createTaskMutation.isPending}
+              autoFocus
+            />
+          </div>
+        </div>
+      )}
+
       {/* Main Content Grid - V2 Design */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <TodayTasksSectionV2
           tasks={todayTodos}
           onViewAll={() => navigate('/scheduler')}
+          onAddTask={modals.openQuickAdd}
           onComplete={completeTask}
           completingTask={completingTask}
         />

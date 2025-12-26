@@ -14,6 +14,7 @@ export type UseVoice = VoiceState & {
   stop: () => void
   toggle: () => void
   clear: () => void
+  clearError: () => void
   setLang: (lang: string) => void
   speak: (text: string, opts?: { rate?: number; pitch?: number; lang?: string }) => Promise<void>
   requestPermission: () => Promise<boolean>
@@ -65,53 +66,52 @@ export function useVoice(initialLang = 'en-US', options?: Options): UseVoice {
     }
   }, [options]);
 
-  const start = useCallback(async (): Promise<void> => {
+  const start = useCallback((): void => {
     const provider = providerRef.current;
     if (!provider || !provider.isSupported()) {
       console.error('[useVoice] Cannot start - provider not available or not supported');
+      setError('Voice recognition not supported');
       return;
     }
 
     console.log('[useVoice] Starting voice recognition...');
+    // Clear any previous errors
     setError(undefined);
 
-    try {
-      await provider.startListening({
-        lang,
-        continuous: true,
-        interimResults: true,
-        onResult: handleResult,
-        onStart: () => {
-          console.log('[useVoice] Voice recognition started');
-          setListening(true);
-        },
-        onEnd: () => {
-          console.log('[useVoice] Voice recognition ended');
-          setListening(false);
-        },
-        onError: (err) => {
-          console.error('[useVoice] Voice recognition error:', err);
-          setError(err);
-          setListening(false);
-        },
-      });
-    } catch (e: unknown) {
+    // Start listening asynchronously
+    provider.startListening({
+      lang,
+      continuous: true,
+      interimResults: true,
+      onResult: handleResult,
+      onStart: () => {
+        console.log('[useVoice] Voice recognition started');
+        setListening(true);
+      },
+      onEnd: () => {
+        console.log('[useVoice] Voice recognition ended');
+        setListening(false);
+      },
+      onError: (err) => {
+        console.error('[useVoice] Voice recognition error:', err);
+        setError(err);
+        setListening(false);
+      },
+    }).catch((e: unknown) => {
       const err = e as Error;
       console.error('[useVoice] Failed to start voice recognition:', err.message);
       setError(err.message || 'speech_start_failed');
       setListening(false);
-    }
+    });
   }, [lang, handleResult]);
 
-  const stop = useCallback(async (): Promise<void> => {
+  const stop = useCallback((): void => {
     const provider = providerRef.current;
     if (!provider) return;
 
-    try {
-      await provider.stopListening();
-    } catch {
+    provider.stopListening().catch(() => {
       // Ignore stop errors
-    }
+    });
     setListening(false);
   }, []);
 
@@ -124,6 +124,11 @@ export function useVoice(initialLang = 'en-US', options?: Options): UseVoice {
   }, [listening, start, stop]);
 
   const clear = useCallback((): void => setTranscript(''), []);
+
+  const clearError = useCallback((): void => {
+    console.log('[useVoice] Clearing error state');
+    setError(undefined);
+  }, []);
 
   const speak = useCallback(async (
     text: string,
@@ -156,11 +161,12 @@ export function useVoice(initialLang = 'en-US', options?: Options): UseVoice {
       stop,
       toggle,
       clear,
+      clearError,
       setLang,
       speak,
       requestPermission
     }),
-    [supported, listening, transcript, lang, error, start, stop, toggle, clear, setLang, speak, requestPermission]
+    [supported, listening, transcript, lang, error, start, stop, toggle, clear, clearError, setLang, speak, requestPermission]
   );
 }
 

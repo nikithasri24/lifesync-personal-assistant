@@ -13,6 +13,7 @@ import { TaskCardV2 } from './TaskCardV2';
 export interface TodayTasksSectionV2Props {
   tasks: Task[];
   onViewAll: () => void;
+  onAddTask: () => void;
   onComplete: (taskId: string) => void;
   completingTask: string | null;
 }
@@ -20,6 +21,7 @@ export interface TodayTasksSectionV2Props {
 export const TodayTasksSectionV2: React.FC<TodayTasksSectionV2Props> = ({
   tasks,
   onViewAll,
+  onAddTask,
   onComplete,
   completingTask,
 }) => {
@@ -44,7 +46,7 @@ export const TodayTasksSectionV2: React.FC<TodayTasksSectionV2Props> = ({
             title="No tasks for today"
             description="You're all caught up! Create a task or enjoy your free time."
             actionLabel="Add Your First Task"
-            onAction={onViewAll}
+            onAction={onAddTask}
             variant="primary"
           />
         ) : (

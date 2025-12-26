@@ -4,6 +4,7 @@ import { Play, Pause, RotateCcw } from 'lucide-react';
 interface FocusTimerDisplayProps {
   seconds: number;
   active: boolean;
+  isPaused: boolean;
   onPlayPause: () => void;
   onReset: () => void;
 }
@@ -14,6 +15,7 @@ interface FocusTimerDisplayProps {
 export function FocusTimerDisplay({
   seconds,
   active,
+  isPaused,
   onPlayPause,
   onReset,
 }: FocusTimerDisplayProps): React.ReactElement {
@@ -32,7 +34,7 @@ export function FocusTimerDisplay({
           className="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500"
         >
           {active ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-          {active ? 'Pause' : 'Start'}
+          {active ? 'Pause' : isPaused ? 'Resume' : 'Start'}
         </button>
         <button
           type="button"

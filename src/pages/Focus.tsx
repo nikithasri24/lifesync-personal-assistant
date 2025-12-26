@@ -11,6 +11,7 @@ import { FocusTimerDisplay } from '../focus/components/layout/FocusTimerDisplay'
 const Focus: React.FC = () => {
   const [seconds, setSeconds] = useState(25 * 60);
   const [active, setActive] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const sessionIdRef = useRef<string | null>(null);
   const startTimeRef = useRef<Date | null>(null);
 
@@ -48,24 +49,29 @@ const Focus: React.FC = () => {
 
   const handlePlayPause = async (): Promise<void> => {
     if (!active) {
-      // Starting a new session
+      // Starting or resuming a session
       setActive(true);
-      startTimeRef.current = new Date();
+      setIsPaused(false);
 
-      try {
-        const newSession = await createSession.mutateAsync({
-          type: 'pomodoro',
-          duration_minutes: Math.floor(seconds / 60),
-          started_at: new Date().toISOString(),
-          status: 'in-progress',
-        });
-        sessionIdRef.current = newSession.id ?? null;
-      } catch (error) {
-        logger.error('Focus', error as Error, { context: 'create session failed' });
+      // Only create a new session if we don't have one (first start)
+      if (!sessionIdRef.current) {
+        startTimeRef.current = new Date();
+        try {
+          const newSession = await createSession.mutateAsync({
+            type: 'pomodoro',
+            duration_minutes: Math.floor(seconds / 60),
+            started_at: new Date().toISOString(),
+            status: 'in-progress',
+          });
+          sessionIdRef.current = newSession.id ?? null;
+        } catch (error) {
+          logger.error('Focus', error as Error, { context: 'create session failed' });
+        }
       }
     } else {
       // Pausing the session
       setActive(false);
+      setIsPaused(true);
 
       if (sessionIdRef.current) {
         try {
@@ -84,6 +90,7 @@ const Focus: React.FC = () => {
 
   const handleReset = async (): Promise<void> => {
     setActive(false);
+    setIsPaused(false);
     setSeconds(25 * 60);
 
     // Cancel the current session if exists
@@ -111,6 +118,7 @@ const Focus: React.FC = () => {
       <FocusTimerDisplay
         seconds={seconds}
         active={active}
+        isPaused={isPaused}
         onPlayPause={() => void handlePlayPause()}
         onReset={() => void handleReset()}
       />

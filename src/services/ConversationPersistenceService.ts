@@ -30,10 +30,11 @@ class ConversationPersistenceService {
   private currentConversationId: string | null = null;
 
   /**
-   * Generate a new session ID
+   * Generate a new session ID (UUID v4)
    */
   generateSessionId(): string {
-    return `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    // Generate a proper UUID v4
+    return crypto.randomUUID();
   }
 
   /**

@@ -16,7 +16,7 @@ import {
   FolderOpen,
   AlignLeft,
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, addDays, addWeeks } from 'date-fns';
 import type { ScheduledTask } from '../types';
 import type { TaskData } from '../../services/types';
 import { DependencySelector, DependencyIndicator } from '../../components/dependencies';
@@ -53,9 +53,15 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
   const [formData, setFormData] = useState<Partial<TaskData>>({});
   const [tagInput, setTagInput] = useState('');
 
-  // Initialize form data when task changes
+  // Debug: Log formData changes
   useEffect(() => {
-    if (task) {
+    console.log('[TaskEditModal] formData.due_date:', formData.due_date);
+  }, [formData.due_date]);
+
+  // Initialize form data when modal opens or task ID changes (not on every task prop change)
+  useEffect(() => {
+    if (task && isOpen) {
+      console.log('[TaskEditModal] Initializing form data for task:', task.id);
       setFormData({
         title: task.title,
         description: task.description || '',
@@ -73,7 +79,7 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
         recurrence_days: task.recurrence_days || [],
       });
     }
-  }, [task]);
+  }, [task?.id, isOpen]); // Only re-initialize when task ID or modal open state changes
 
   if (!isOpen || !task || !task.id) return null;
 
@@ -199,12 +205,63 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
                 <Calendar className="w-4 h-4 inline mr-1" />
                 Due Date
               </label>
-              <input
-                type="date"
-                value={formData.due_date ? format(new Date(formData.due_date), 'yyyy-MM-dd') : ''}
-                onChange={(e) => setFormData({ ...formData, due_date: e.target.value || null })}
-                className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+              <div className="space-y-2">
+                <div className="relative">
+                  <input
+                    type="date"
+                    value={formData.due_date ? (
+                      // If already in YYYY-MM-DD format, use directly; otherwise format it
+                      typeof formData.due_date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(formData.due_date)
+                        ? formData.due_date
+                        : format(new Date(formData.due_date), 'yyyy-MM-dd')
+                    ) : ''}
+                    onChange={(e) => {
+                      console.log('[TaskEditModal] Date changed:', e.target.value);
+                      setFormData({ ...formData, due_date: e.target.value || null });
+                    }}
+                    className="w-full px-4 py-2 pr-10 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                    style={{ colorScheme: 'light dark' }}
+                  />
+                  {formData.due_date && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setFormData({ ...formData, due_date: null });
+                      }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 z-10"
+                      title="Clear date"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+                {/* Quick date shortcuts */}
+                <div className="flex gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, due_date: format(new Date(), 'yyyy-MM-dd') })}
+                    className="px-2 py-1 text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded hover:bg-slate-200 dark:hover:bg-slate-700"
+                  >
+                    Today
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, due_date: format(addDays(new Date(), 1), 'yyyy-MM-dd') })}
+                    className="px-2 py-1 text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded hover:bg-slate-200 dark:hover:bg-slate-700"
+                  >
+                    Tomorrow
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, due_date: format(addWeeks(new Date(), 1), 'yyyy-MM-dd') })}
+                    className="px-2 py-1 text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded hover:bg-slate-200 dark:hover:bg-slate-700"
+                  >
+                    Next Week
+                  </button>
+                </div>
+              </div>
             </div>
 
             <div>

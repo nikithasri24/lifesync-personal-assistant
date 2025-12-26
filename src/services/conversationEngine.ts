@@ -82,33 +82,24 @@ export class ConversationEngine {
   }
 
   /**
-   * Build system message with current context
+   * Build system message with current context (optimized for token efficiency)
    */
   private buildSystemMessage(): string {
     let systemMessage = SYSTEM_PROMPT;
 
     if (this.context) {
-      const { today, patterns, upcomingEvents } = this.context;
+      const { today, patterns } = this.context;
 
-      systemMessage += `\n\n## Current Context (${new Date().toLocaleDateString()})
+      // Compact context - only essential info
+      systemMessage += `\n\nToday: ${today.tasks.completed}/${today.tasks.total} tasks, ${today.habits.completed}/${today.habits.due} habits, ${today.focus.minutesToday}min focus`;
 
-### Today's Overview:
-- Tasks: ${today.tasks.completed}/${today.tasks.total} completed, ${today.tasks.overdue} overdue
-- Habits: ${today.habits.completed}/${today.habits.due} completed
-- Focus: ${today.focus.minutesToday} minutes across ${today.focus.sessionsToday} sessions
-- Events today: ${today.events.length > 0 ? today.events.map(e => e.title).join(', ') : 'None'}
-
-### User Patterns:
-- Average ${patterns.avgTasksPerDay} tasks/day
-- Average ${patterns.avgFocusMinutes} minutes focus/day
-- Habit completion rate: ${patterns.habitCompletionRate}%`;
-
-      if (upcomingEvents.length > 0) {
-        systemMessage += `\n\n### Upcoming Events:\n${upcomingEvents.slice(0, 5).map(e => `- ${e.title}`).join('\n')}`;
+      // Only add warnings if critical
+      if (today.tasks.overdue > 0) {
+        systemMessage += `, ${today.tasks.overdue} overdue`;
       }
 
       if (today.habits.streaksAtRisk.length > 0) {
-        systemMessage += `\n\n⚠️ Streaks at risk: ${today.habits.streaksAtRisk.map(h => h.name).join(', ')}`;
+        systemMessage += `\n⚠️ Streaks at risk: ${today.habits.streaksAtRisk.slice(0, 3).map(h => h.name).join(', ')}`;
       }
     }
 
@@ -116,10 +107,53 @@ export class ConversationEngine {
   }
 
   /**
-   * Convert tool definitions to function format for LLM
+   * Convert tool definitions to function format for LLM (filtered by relevance)
    */
-  private getToolFunctions(): FunctionDefinition[] {
-    return toolRegistry.getDefinitions().map(tool => ({
+  private getToolFunctions(userMessage?: string): FunctionDefinition[] {
+    const allDefinitions = toolRegistry.getDefinitions();
+
+    // If no message or few tools, return all
+    if (!userMessage || allDefinitions.length <= 10) {
+      return allDefinitions.map(tool => ({
+        name: tool.function.name,
+        description: tool.function.description,
+        parameters: tool.function.parameters
+      }));
+    }
+
+    // Filter tools based on keywords to reduce token usage
+    const messageLower = userMessage.toLowerCase();
+    const keywords = {
+      task: ['task', 'todo', 'complete', 'finish', 'done', 'add'],
+      habit: ['habit', 'streak', 'routine'],
+      goal: ['goal', 'objective', 'target'],
+      schedule: ['schedule', 'calendar', 'event', 'meeting'],
+    };
+
+    // Determine relevant categories
+    const relevantCategories = new Set<string>();
+    for (const [category, words] of Object.entries(keywords)) {
+      if (words.some(word => messageLower.includes(word))) {
+        relevantCategories.add(category);
+      }
+    }
+
+    // If no category detected, include task and habit (most common)
+    if (relevantCategories.size === 0) {
+      relevantCategories.add('task');
+      relevantCategories.add('habit');
+    }
+
+    // Filter tools
+    const filtered = allDefinitions.filter(tool => {
+      const toolName = tool.function.name.toLowerCase();
+      return Array.from(relevantCategories).some(cat => toolName.includes(cat));
+    });
+
+    // Return filtered or all if filter is too restrictive
+    const result = filtered.length > 0 ? filtered : allDefinitions.slice(0, 10);
+
+    return result.map(tool => ({
       name: tool.function.name,
       description: tool.function.description,
       parameters: tool.function.parameters
@@ -149,20 +183,20 @@ export class ConversationEngine {
     const functionCalls: ChatResponse['functionCalls'] = [];
 
     try {
-      // Build messages for LLM
+      // Build messages for LLM (keep fewer messages to reduce token usage)
       const llmMessages: Message[] = [
         { role: 'system', content: this.buildSystemMessage() },
-        ...this.messages.slice(-10) // Keep last 10 messages for context
+        ...this.messages.slice(-6) // Keep last 6 messages for context (reduced from 10)
       ];
 
-      // Get available tools
-      const functions = this.getToolFunctions();
+      // Get available tools (filtered by user message to reduce tokens)
+      const functions = this.getToolFunctions(userMessage);
 
-      // Call LLM
+      // Call LLM with reduced token limits to avoid rate limits
       let response = await smartChat(llmMessages, {
         functions: functions.length > 0 ? functions : undefined,
         temperature: 0.7,
-        maxTokens: 1000
+        maxTokens: 500 // Reduced from 1000 to stay within limits
       });
 
       // Handle function calls (tool use)
@@ -199,16 +233,16 @@ export class ConversationEngine {
           name: 'tool_result'
         });
 
-        // Continue conversation with tool result
+        // Continue conversation with tool result (keep fewer messages)
         const continueMessages: Message[] = [
           { role: 'system', content: this.buildSystemMessage() },
-          ...this.messages.slice(-12)
+          ...this.messages.slice(-8) // Reduced from 12
         ];
 
         response = await smartChat(continueMessages, {
           functions,
           temperature: 0.7,
-          maxTokens: 1000
+          maxTokens: 500 // Reduced from 1000
         });
       }
 
