@@ -75,10 +75,29 @@ const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = ({ className = '' })
       .filter(Boolean) as SkincareProduct[];
   };
 
-  // Format products list for display
-  const formatProductsList = (products: SkincareProduct[]) => {
-    if (products.length === 0) return 'Rest day';
-    return products.map((p) => p.name).join(' + ');
+  // Render products list as vertical list
+  const renderProductsList = (products: SkincareProduct[]) => {
+    if (products.length === 0) {
+      return (
+        <p className="text-sm text-gray-500 italic">Rest day - no products scheduled</p>
+      );
+    }
+
+    return (
+      <ol className="space-y-2">
+        {products.map((product, idx) => (
+          <li key={product.id} className="flex items-start gap-2 text-sm">
+            <span className="text-gray-400 font-medium min-w-[20px]">{idx + 1}.</span>
+            <div className="flex-1">
+              <p className="text-gray-900 font-medium">{product.name}</p>
+              {product.brand && (
+                <p className="text-xs text-gray-500">{product.brand}</p>
+              )}
+            </div>
+          </li>
+        ))}
+      </ol>
+    );
   };
 
   // Handle creating a new routine
@@ -243,30 +262,31 @@ const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = ({ className = '' })
                   <div className="flex items-center gap-2">
                     <Sun className="h-5 w-5 text-amber-500" />
                     <p className="text-sm font-bold text-gray-900 uppercase tracking-wider">
-                      MORNING:
+                      MORNING
                     </p>
                   </div>
-                  {amRoutines.length > 0 ? (
-                    <button
-                      onClick={() => handleEditRoutine(amRoutines[0])}
-                      className="p-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
-                      title="Edit morning routine"
-                    >
-                      <Edit2 className="h-4 w-4 text-gray-700" />
-                    </button>
-                  ) : (
+                  <div className="flex items-center gap-1">
+                    {amRoutines.length > 0 && (
+                      <button
+                        onClick={() => handleEditRoutine(amRoutines[0])}
+                        className="p-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
+                        title="Edit morning routine"
+                      >
+                        <Edit2 className="h-4 w-4 text-gray-700" />
+                      </button>
+                    )}
                     <button
                       onClick={() => handleCreateRoutine(dayOfWeek, 'AM')}
                       className="p-1.5 rounded-lg bg-emerald-100 hover:bg-emerald-200 transition-colors"
-                      title="Add morning routine"
+                      title={amRoutines.length > 0 ? "Add another morning routine" : "Add morning routine"}
                     >
                       <Plus className="h-4 w-4 text-emerald-700" />
                     </button>
-                  )}
+                  </div>
                 </div>
-                <p className="text-base text-gray-900 leading-relaxed">
-                  {formatProductsList(amProducts)}
-                </p>
+                <div className="bg-amber-50 rounded-lg p-3 border border-amber-100">
+                  {renderProductsList(amProducts)}
+                </div>
               </div>
 
               {/* Night Routine */}

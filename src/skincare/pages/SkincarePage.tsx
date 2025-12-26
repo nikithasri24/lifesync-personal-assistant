@@ -4,15 +4,17 @@
  */
 
 import React from 'react';
-import { Sparkles, Package, Sun, Moon, Check, Plus, Edit } from 'lucide-react';
+import { Sparkles, Package, Sun, Moon, Check, Plus, Edit, Calendar, Grid3x3 } from 'lucide-react';
 import SkincareCalendar from '../components/SkincareCalendar';
 import ProductsLibrary from '../components/ProductsLibrary';
 import ProductFormModal from '../components/ProductFormModal';
 import RoutineEditorModal from '../components/RoutineEditorModal';
+import WeeklyPlannerView from '../components/WeeklyPlannerView';
+import WeeklyGridView from '../components/WeeklyGridView';
 import { skincareAPI } from '../data';
 import type { SkincareProduct, SkincareProductInput, SkincareRoutine, SkincareRoutineInput, SkincareLog } from '../types';
 
-type ViewType = 'journal' | 'products';
+type ViewType = 'journal' | 'products' | 'weekly' | 'grid';
 
 const SkincarePage: React.FC = () => {
   const [view, setView] = React.useState<ViewType>('journal');
@@ -293,6 +295,28 @@ const SkincarePage: React.FC = () => {
           Journal
         </button>
         <button
+          onClick={() => setView('grid')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+            view === 'grid'
+              ? 'bg-gray-900 text-white'
+              : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+          }`}
+        >
+          <Grid3x3 className="h-5 w-5" />
+          Week View
+        </button>
+        <button
+          onClick={() => setView('weekly')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+            view === 'weekly'
+              ? 'bg-gray-900 text-white'
+              : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+          }`}
+        >
+          <Calendar className="h-5 w-5" />
+          Cards
+        </button>
+        <button
           onClick={() => setView('products')}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
             view === 'products'
@@ -397,6 +421,10 @@ const SkincarePage: React.FC = () => {
             </div>
           </div>
         </div>
+      ) : view === 'grid' ? (
+        <WeeklyGridView />
+      ) : view === 'weekly' ? (
+        <WeeklyPlannerView />
       ) : (
         <ProductsLibrary
           products={products}
