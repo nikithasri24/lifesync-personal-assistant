@@ -215,13 +215,29 @@ export async function createConnection(input: CreateConnectionInput): Promise<Pr
   // Type assertion for the database response
   const connection = connectionResponse.data as DbConnection;
 
+  // Get user's default privacy preferences if no proposed permissions provided
+  let proposedPermissions = input.proposedPermissions ?? {};
+
+  if (Object.keys(proposedPermissions).length === 0) {
+    // Fetch user's default privacy settings
+    const { data: userPrefs } = await supabase
+      .from('user_preferences')
+      .select('default_sharing_permissions')
+      .eq('user_id', user.id)
+      .single();
+
+    if (userPrefs?.default_sharing_permissions) {
+      proposedPermissions = userPrefs.default_sharing_permissions as Record<ShareableModule, ModulePermissionLevel>;
+    }
+  }
+
   // Create invitation
   const { error: invitationError } = await supabase
     .from('connection_invitations')
     .insert({
       connection_id: connection.id,
       message: input.message,
-      proposed_permissions: input.proposedPermissions ?? {},
+      proposed_permissions: proposedPermissions,
     });
 
   if (invitationError) throw invitationError;
@@ -271,10 +287,26 @@ export async function acceptConnection(input: AcceptConnectionInput): Promise<Pr
   // Type assertion for the database response
   const connection = response.data as DbConnection;
 
-  // Set initial permissions if provided
-  if (input.permissions) {
+  // Set initial permissions
+  let permissionsToSet = input.permissions ?? {};
+
+  // If no permissions provided, use user's default privacy settings
+  if (Object.keys(permissionsToSet).length === 0) {
+    const { data: userPrefs } = await supabase
+      .from('user_preferences')
+      .select('default_sharing_permissions')
+      .eq('user_id', user.id)
+      .single();
+
+    if (userPrefs?.default_sharing_permissions) {
+      permissionsToSet = userPrefs.default_sharing_permissions as Partial<Record<ShareableModule, ModulePermissionLevel>>;
+    }
+  }
+
+  // Apply permissions
+  if (Object.keys(permissionsToSet).length > 0) {
     await Promise.all(
-      Object.entries(input.permissions).map(([module, level]) =>
+      Object.entries(permissionsToSet).map(([module, level]) =>
         setModulePermission({
           connectionId: input.connectionId,
           module: module as ShareableModule,
