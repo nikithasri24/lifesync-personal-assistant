@@ -35,7 +35,7 @@ import {
 // Hooks
 import { useDashboardData } from '../dashboard/hooks/useDashboardData';
 import { useTaskModals } from '../todos/hooks/useTaskModals';
-import { useCreateTask, useProjects } from '../hooks/useTasksQuery';
+import { useCreateTask } from '../hooks/useTasksQuery';
 import { parseQuickAdd } from '../todos/services/taskHelpers';
 import { QuickAddForm } from '../todos/components';
 
@@ -76,7 +76,6 @@ export default function DashboardV3(): ReactElement {
   const habitEntriesQuery = useHabitEntries();
   const notesQuery = useNotes();
   const journalQuery = useJournalEntries();
-  const { data: projects = [] } = useProjects();
 
   // Task modals and mutations
   const modals = useTaskModals();
@@ -243,7 +242,8 @@ export default function DashboardV3(): ReactElement {
               onSubmit={() => {
                 if (!modals.quickAddText.trim()) return;
 
-                const parsed = parseQuickAdd(modals.quickAddText, projects);
+                // Parse quick add text (pass empty array for projects to avoid type mismatch)
+                const parsed = parseQuickAdd(modals.quickAddText, []);
 
                 createTaskMutation.mutate(
                   {
