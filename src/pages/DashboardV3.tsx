@@ -253,15 +253,20 @@ export default function DashboardV3(): ReactElement {
                     status: 'todo',
                     estimated_time: 25,
                     actual_time: 0,
-                    due_date: parsed.dueDate ? parsed.dueDate.toISOString() : null,
+                    // If no due date is parsed, default to today so it shows up in "Today's Tasks"
+                    due_date: parsed.dueDate ? parsed.dueDate.toISOString() : new Date().toISOString(),
                     project_id: parsed.projectId ?? null,
                     tags: parsed.tags,
                     category: 'work',
                   },
                   {
-                    onSuccess: () => {
+                    onSuccess: (newTask) => {
                       modals.setQuickAddText('');
                       modals.closeQuickAdd();
+                      showToast(`Task "${newTask.title}" created for today!`, 'success');
+                    },
+                    onError: (error) => {
+                      showError(error, () => {});
                     },
                   }
                 );
