@@ -37,7 +37,6 @@ const Finances = lazy(() => import('./pages/Finances'));
 const Skincare = lazy(() => import('./pages/Skincare'));
 const Assistant = lazy(() => import('./pages/Assistant'));
 const TaskScheduler = lazy(() => import('./pages/TaskScheduler'));
-const PrivacySettings = lazy(() => import('./pages/PrivacySettings'));
 
 function App(): React.ReactElement {
   // Performance monitoring
@@ -110,9 +109,6 @@ function App(): React.ReactElement {
             <Route path="/meals" element={<MealPlanning />} />
             <Route path="/nutrition" element={<Nutrition />} />
             <Route path="/shared" element={<Shared />} />
-
-            {/* Settings Routes */}
-            <Route path="/settings/privacy" element={<PrivacySettings />} />
 
             {/* Catch-all: redirect to dashboard */}
             <Route path="*" element={<Navigate to="/" replace />} />

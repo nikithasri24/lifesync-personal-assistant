@@ -57,7 +57,6 @@ const navigation = [
   { name: 'Nutrition', icon: Utensils, view: 'nutrition' as const, path: '/nutrition', section: 'wellbeing' },
   { name: 'Goals', icon: Trophy, view: 'goals' as const, path: '/goals', section: 'personal' },
   { name: 'Shared', icon: Users, view: 'shared' as const, path: '/shared', section: 'personal' },
-  { name: 'Privacy Settings', icon: Shield, view: 'privacy-settings' as const, path: '/settings/privacy', section: 'settings' },
 ];
 
 // Helper function to get ViewKey from pathname
@@ -70,7 +69,6 @@ const getViewFromPath = (pathname: string): ViewKey => {
   if (pathname.startsWith('/travel/trip-planner')) return 'trip-planner';
   if (pathname.startsWith('/travel')) return 'travel';
   if (pathname.startsWith('/finances')) return 'finances';
-  if (pathname.startsWith('/settings/privacy')) return 'privacy-settings';
 
   return 'dashboard';
 };
@@ -80,7 +78,6 @@ const navigationSections = {
   productivity: { label: 'Productivity', items: navigation.filter(item => item.section === 'productivity') },
   wellbeing: { label: 'Wellbeing', items: navigation.filter(item => item.section === 'wellbeing') },
   personal: { label: 'Personal', items: navigation.filter(item => item.section === 'personal') },
-  settings: { label: 'Settings', items: navigation.filter(item => item.section === 'settings') },
 };
 
 interface LayoutProps {
