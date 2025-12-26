@@ -3,7 +3,6 @@ import { format, isToday, addDays } from 'date-fns';
 import { CheckSquare, Target, FileText, TrendingUp } from 'lucide-react';
 import type { Task } from '../../lib/supabase';
 import type { Habit, Note, JournalEntry } from '../../types';
-import type { ViewKey } from '../../stores/slices/uiSlice';
 
 interface HabitEntry {
   habit_id: string;
@@ -44,7 +43,7 @@ export function useDashboardData(
   habitEntries: HabitEntry[],
   notes: Note[],
   journalEntries: JournalEntry[],
-  setActiveView: (view: ViewKey) => void
+  navigate: (path: string) => void
 ): DashboardData {
   const todayTodos = useMemo(
     () =>
@@ -140,31 +139,31 @@ export function useDashboardData(
         value: todayTodos.length,
         icon: CheckSquare,
         color: 'bg-blue-500',
-        onClick: (): void => setActiveView('scheduler'),
+        onClick: (): void => navigate('/scheduler'),
       },
       {
         title: 'Pending Habits',
         value: todayHabits.length,
         icon: Target,
         color: 'bg-green-500',
-        onClick: (): void => setActiveView('habits'),
+        onClick: (): void => navigate('/habits'),
       },
       {
         title: 'Total Notes',
         value: notes.length,
         icon: FileText,
         color: 'bg-purple-500',
-        onClick: (): void => setActiveView('notes'),
+        onClick: (): void => navigate('/notes'),
       },
       {
         title: "Week's Progress",
         value: `${completedTodosThisWeek.length} tasks`,
         icon: TrendingUp,
         color: 'bg-orange-500',
-        onClick: (): void => setActiveView('scheduler'),
+        onClick: (): void => navigate('/scheduler'),
       },
     ],
-    [todayTodos, todayHabits, notes, completedTodosThisWeek, setActiveView]
+    [todayTodos, todayHabits, notes, completedTodosThisWeek, navigate]
   );
 
   return {

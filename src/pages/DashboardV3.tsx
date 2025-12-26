@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Sun, Moon } from 'lucide-react';
 import { useComposedStore } from '../stores/useComposedStore';
@@ -62,7 +63,7 @@ interface JournalQueryResult {
  * - All existing functionality maintained
  */
 export default function DashboardV3(): ReactElement {
-  const { setActiveView } = useComposedStore();
+  const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
 
   // React Query hooks for all data sources
@@ -78,6 +79,24 @@ export default function DashboardV3(): ReactElement {
   const habitEntries = (habitEntriesQuery as { data: Array<{ habit_id: string; date: string; value?: number }> }).data ?? [];
   const notes: Note[] = (notesQuery as NotesQueryResult).data ?? [];
   const journalEntries: JournalEntry[] = (journalQuery as JournalQueryResult).data ?? [];
+
+  // Debug: Log the query state
+  logger.debug('DashboardV3', 'habitEntriesQuery state', {
+    isLoading: habitEntriesQuery.isLoading,
+    isFetching: habitEntriesQuery.isFetching,
+    dataLength: habitEntriesQuery.data?.length,
+    dataUpdatedAt: habitEntriesQuery.dataUpdatedAt,
+  });
+
+  // Debug: Log habit entries when they change
+  useEffect(() => {
+    const todayKey = format(new Date(), 'yyyy-MM-dd');
+    logger.debug('DashboardV3', 'Habit entries updated', {
+      totalEntries: habitEntries.length,
+      todayEntries: habitEntries.filter(e => e.date === todayKey).length,
+      entries: habitEntries.filter(e => e.date === todayKey)
+    });
+  }, [habitEntries]);
 
   const updateTaskMutation = useUpdateTask();
   const createHabitEntryMutation = useCreateHabitEntry();
@@ -145,7 +164,7 @@ export default function DashboardV3(): ReactElement {
     habitEntries,
     notes,
     journalEntries,
-    setActiveView
+    navigate
   );
 
   const {
@@ -208,7 +227,7 @@ export default function DashboardV3(): ReactElement {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <TodayTasksSectionV2
           tasks={todayTodos}
-          onViewAll={() => setActiveView('scheduler')}
+          onViewAll={() => navigate('/scheduler')}
           onComplete={completeTask}
           completingTask={completingTask}
         />
@@ -216,7 +235,7 @@ export default function DashboardV3(): ReactElement {
         <TodayHabitsSectionV2
           habits={todayHabits}
           hasAnyHabits={habits.length > 0}
-          onViewAll={() => setActiveView('habits')}
+          onViewAll={() => navigate('/habits')}
           onComplete={completeHabitSafely}
           completingHabit={completingHabit}
           completedHabits={completedHabits}
@@ -224,7 +243,7 @@ export default function DashboardV3(): ReactElement {
 
         <RecentNotesSectionV2
           notes={recentNotes}
-          onViewAll={() => setActiveView('notes')}
+          onViewAll={() => navigate('/notes')}
         />
 
         <WeeklyOverviewV2
