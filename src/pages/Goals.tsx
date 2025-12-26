@@ -122,6 +122,16 @@ const Goals: React.FC = () => {
     });
   };
 
+  const handleUndoDreamAchieved = (dreamId: string): void => {
+    updateDreamMutation.mutate({
+      id: dreamId,
+      updates: {
+        status: 'in-progress',
+        achievedAt: undefined,
+      },
+    });
+  };
+
   const handleDeleteDream = (dreamId: string): void => {
     deleteDreamMutation.mutate(dreamId);
   };
@@ -160,6 +170,7 @@ const Goals: React.FC = () => {
             isLoading={dreamsLoading}
             error={dreamsError}
             onMarkAchieved={handleMarkDreamAchieved}
+            onUndoAchieved={handleUndoDreamAchieved}
             onDelete={handleDeleteDream}
             isUpdating={updateDreamMutation.isPending}
             isDeleting={deleteDreamMutation.isPending}

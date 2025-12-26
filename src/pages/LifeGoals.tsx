@@ -163,7 +163,24 @@ const LifeGoals: React.FC = () => {
     try {
       await updateDreamMutation.mutateAsync({
         dreamId,
-        updates: { status: 'achieved' },
+        updates: {
+          status: 'achieved',
+          achievedAt: new Date().toISOString(),
+        },
+      });
+    } catch (error) {
+      logger.error('LifeGoals', error as Error);
+    }
+  };
+
+  const handleUndoDreamAchieved = async (dreamId: string): Promise<void> => {
+    try {
+      await updateDreamMutation.mutateAsync({
+        dreamId,
+        updates: {
+          status: 'in-progress',
+          achievedAt: undefined,
+        },
       });
     } catch (error) {
       logger.error('LifeGoals', error as Error);
@@ -258,6 +275,7 @@ const LifeGoals: React.FC = () => {
           <DreamList
             dreams={dreams}
             onMarkAchieved={handleMarkDreamAchieved}
+            onUndoAchieved={handleUndoDreamAchieved}
             onDelete={handleDeleteDream}
           />
         )}
