@@ -75,7 +75,18 @@ export function PermissionManager({
     onClose?.();
   };
 
-  const modules = Object.values(MODULE_CONFIGS);
+  // Group modules by category
+  const modulesByCategory = {
+    productivity: Object.values(MODULE_CONFIGS).filter(m =>
+      ['habits', 'todos', 'notes', 'projects'].includes(m.module)
+    ),
+    wellbeing: Object.values(MODULE_CONFIGS).filter(m =>
+      ['journal', 'mood', 'period', 'skincare', 'nutrition'].includes(m.module)
+    ),
+    personal: Object.values(MODULE_CONFIGS).filter(m =>
+      ['travel', 'visa', 'trip-planner', 'finances', 'shopping', 'meals', 'goals'].includes(m.module)
+    ),
+  };
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 max-w-2xl w-full">
@@ -98,39 +109,50 @@ export function PermissionManager({
         )}
       </div>
 
-      <div className="space-y-3 max-h-[60vh] overflow-y-auto">
-        {modules.map(config => (
-          <div
-            key={config.module}
-            className="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-700/50"
-          >
-            <div className="flex-1">
-              <h3 className="font-medium text-slate-900 dark:text-white">
-                {config.label}
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                {config.description}
-              </p>
-            </div>
-
-            <div className="flex gap-1">
-              {config.supportedLevels.map(level => (
-                <button
-                  key={level}
-                  onClick={() => handlePermissionChange(config.module, level)}
-                  className={`
-                    px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5
-                    transition-all duration-200
-                    ${permissions[config.module] === level
-                      ? PERMISSION_COLORS[level]
-                      : 'bg-slate-100 text-slate-400 dark:bg-slate-600 dark:text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-500'
-                    }
-                  `}
-                  title={PERMISSION_LABELS[level]}
+      <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2">
+        {Object.entries(modulesByCategory).map(([category, modules]) => (
+          <div key={category}>
+            <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3 px-1">
+              {category === 'productivity' && '📊 Productivity'}
+              {category === 'wellbeing' && '💚 Wellbeing'}
+              {category === 'personal' && '🌟 Personal'}
+            </h3>
+            <div className="space-y-2">
+              {modules.map(config => (
+                <div
+                  key={config.module}
+                  className="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                 >
-                  {PERMISSION_ICONS[level]}
-                  <span className="hidden sm:inline">{PERMISSION_LABELS[level]}</span>
-                </button>
+                  <div className="flex-1 min-w-0 mr-4">
+                    <h4 className="font-medium text-slate-900 dark:text-white text-sm">
+                      {config.label}
+                    </h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                      {config.description}
+                    </p>
+                  </div>
+
+                  <div className="flex gap-1 flex-shrink-0">
+                    {config.supportedLevels.map(level => (
+                      <button
+                        key={level}
+                        onClick={() => handlePermissionChange(config.module, level)}
+                        className={`
+                          px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5
+                          transition-all duration-200
+                          ${permissions[config.module] === level
+                            ? PERMISSION_COLORS[level]
+                            : 'bg-slate-100 text-slate-400 dark:bg-slate-600 dark:text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-500'
+                          }
+                        `}
+                        title={PERMISSION_LABELS[level]}
+                      >
+                        {PERMISSION_ICONS[level]}
+                        <span className="hidden sm:inline">{PERMISSION_LABELS[level]}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           </div>

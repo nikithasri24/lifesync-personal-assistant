@@ -35,6 +35,7 @@ export type ShareableModule =
   | 'finances'
   | 'shopping'
   | 'meals'
+  | 'nutrition'
   | 'goals'
   | 'habits'
   | 'todos'
@@ -291,6 +292,15 @@ export const MODULE_CONFIGS: Record<ShareableModule, ModulePermissionConfig> = {
     label: 'Skincare',
     description: 'Skincare routine and products',
     icon: 'Sparkles',
+    defaultLevel: 'none',
+    supportedLevels: ['none', 'view'],
+    hasSettings: false,
+  },
+  nutrition: {
+    module: 'nutrition',
+    label: 'Nutrition',
+    description: 'Nutrition tracking and meal analysis',
+    icon: 'Utensils',
     defaultLevel: 'none',
     supportedLevels: ['none', 'view'],
     hasSettings: false,
