@@ -227,13 +227,12 @@ export async function createConnection(input: CreateConnectionInput): Promise<Pr
   }
 
   // Try to find receiver by email using RPC function
-  const receiverResponse = await supabase
-    .rpc('lookup_user_by_email', { user_email: input.receiverEmail })
-    .single();
+  const { data: receiverData, error: lookupError } = await supabase
+    .rpc('lookup_user_by_email', { user_email: input.receiverEmail });
 
   // If user exists, create a normal connection
-  if (receiverResponse.data && !receiverResponse.error) {
-    const receiver = receiverResponse.data as DbUserLookup;
+  if (receiverData && !lookupError) {
+    const receiver = receiverData as DbUserLookup;
 
     // Create connection
     const connectionResponse = await supabase
