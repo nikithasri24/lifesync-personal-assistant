@@ -264,6 +264,7 @@ export async function createConnection(input: CreateConnectionInput): Promise<Pr
     if (invitationError) throw invitationError;
 
     // Send email notification to receiver
+    // Note: Email function is optional - invitation still works without it
     try {
       const userEmail = user.email ?? '';
       const fullName = user.user_metadata?.full_name as string | undefined;
@@ -275,8 +276,8 @@ export async function createConnection(input: CreateConnectionInput): Promise<Pr
         message: input.message,
       });
     } catch (emailError) {
-      logger.error('ConnectionsAPI', 'Failed to send invitation email', { error: emailError });
-      // Don't fail the invitation if email fails
+      // Silently ignore email errors - the invitation is already created
+      // Email function may not be deployed or configured
     }
 
     return mapDbToConnection(connection);
@@ -333,6 +334,7 @@ export async function createConnection(input: CreateConnectionInput): Promise<Pr
     if (!pendingInvitation) throw new Error('Failed to create pending invitation');
 
     // Send email invitation to join LifeSync
+    // Note: Email function is optional - invitation still works without it
     try {
       const userEmail = user.email ?? '';
       const fullName = user.user_metadata?.full_name as string | undefined;
@@ -344,8 +346,8 @@ export async function createConnection(input: CreateConnectionInput): Promise<Pr
         message: input.message,
       });
     } catch (emailError) {
-      logger.error('ConnectionsAPI', 'Failed to send invitation email', { error: emailError });
-      // Don't fail the invitation if email fails
+      // Silently ignore email errors - the invitation is already created
+      // Email function may not be deployed or configured
     }
 
     // Return a mock connection object for pending invitations
