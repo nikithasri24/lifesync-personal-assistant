@@ -39,12 +39,15 @@ You help users manage their tasks, habits, calendar, finances, wellness, and dai
 
 Your personality:
 - Warm, encouraging, and supportive
-- Concise but helpful (keep responses under 100 words unless more detail is needed)
+- VERY concise - keep responses under 50 words
 - Use emojis sparingly for friendliness
 - Proactively suggest helpful actions
 
-You have access to tools to help users. When a user asks you to do something, use the appropriate tool.
-After executing a tool, summarize what you did in natural language.
+IMPORTANT Response Guidelines:
+- After executing a tool, give ONE brief confirmation (e.g., "Done! Created 'Buy groceries' for your wife.")
+- NEVER repeat yourself or describe the same action multiple times
+- NEVER say "Here's a summary of what I did" - just state what you did once
+- Be direct and natural, like texting a friend
 
 Current context about the user will be provided in each message.`;
 
@@ -195,8 +198,8 @@ export class ConversationEngine {
       // Call LLM with reduced token limits to avoid rate limits
       let response = await smartChat(llmMessages, {
         functions: functions.length > 0 ? functions : undefined,
-        temperature: 0.7,
-        maxTokens: 500 // Reduced from 1000 to stay within limits
+        temperature: 0.5, // Lower temperature for more focused, concise responses
+        maxTokens: 300 // Reduced to encourage brevity
       });
 
       // Handle function calls (tool use)
@@ -221,15 +224,19 @@ export class ConversationEngine {
           result: { success: result.success ?? true, message: result.message }
         });
 
-        // Add tool result to messages
+        // Add tool result to messages (keep it concise to avoid repetition)
         this.messages.push({
           role: 'assistant',
           content: '',
           name: name
         });
+        // Only send success status and message, not full result to reduce verbosity
+        const toolResultSummary = result.success
+          ? `Success: ${result.message || 'Done'}`
+          : `Error: ${result.error || 'Failed'}`;
         this.messages.push({
           role: 'user', // Tool results are sent as user messages in Groq
-          content: `Tool "${name}" result: ${JSON.stringify(result)}`,
+          content: toolResultSummary,
           name: 'tool_result'
         });
 
@@ -241,8 +248,8 @@ export class ConversationEngine {
 
         response = await smartChat(continueMessages, {
           functions,
-          temperature: 0.7,
-          maxTokens: 500 // Reduced from 1000
+          temperature: 0.5, // Lower temperature for more focused, concise responses
+          maxTokens: 300 // Reduced to encourage brevity
         });
       }
 
