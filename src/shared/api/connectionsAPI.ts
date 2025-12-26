@@ -281,22 +281,55 @@ export async function createConnection(input: CreateConnectionInput): Promise<Pr
 
     return mapDbToConnection(connection);
   } else {
-    // User doesn't exist yet - create a pending email invitation
-    const { data: pendingInvitation, error: pendingError } = await supabase
+    // User doesn't exist yet - create or update a pending email invitation
+    // First, check if an invitation already exists
+    const { data: existingInvitation } = await supabase
       .from('pending_email_invitations')
-      .insert({
-        inviter_id: user.id,
-        invitee_email: input.receiverEmail.toLowerCase(),
-        relationship: input.relationship,
-        inviter_label: input.label,
-        message: input.message,
-        proposed_permissions: input.proposedPermissions ?? {},
-        status: 'pending',
-      })
-      .select()
-      .single();
+      .select('*')
+      .eq('inviter_id', user.id)
+      .eq('invitee_email', input.receiverEmail.toLowerCase())
+      .eq('status', 'pending')
+      .maybeSingle();
 
-    if (pendingError) throw pendingError;
+    let pendingInvitation;
+
+    if (existingInvitation) {
+      // Update existing invitation
+      const { data: updated, error: updateError } = await supabase
+        .from('pending_email_invitations')
+        .update({
+          relationship: input.relationship,
+          inviter_label: input.label,
+          message: input.message,
+          proposed_permissions: input.proposedPermissions ?? {},
+          expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // Reset expiry to 30 days
+        })
+        .eq('id', existingInvitation.id)
+        .select()
+        .single();
+
+      if (updateError) throw updateError;
+      pendingInvitation = updated;
+    } else {
+      // Create new invitation
+      const { data: created, error: createError } = await supabase
+        .from('pending_email_invitations')
+        .insert({
+          inviter_id: user.id,
+          invitee_email: input.receiverEmail.toLowerCase(),
+          relationship: input.relationship,
+          inviter_label: input.label,
+          message: input.message,
+          proposed_permissions: input.proposedPermissions ?? {},
+          status: 'pending',
+        })
+        .select()
+        .single();
+
+      if (createError) throw createError;
+      pendingInvitation = created;
+    }
+
     if (!pendingInvitation) throw new Error('Failed to create pending invitation');
 
     // Send email invitation to join LifeSync
