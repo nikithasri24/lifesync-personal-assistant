@@ -35,7 +35,8 @@ export type ViewKey =
   | 'assistant'
   | 'scheduler'
   | 'trip-planner'
-  | 'shared';
+  | 'shared'
+  | 'privacy-settings';
 
 export interface UISlice {
   // State

@@ -22,7 +22,8 @@ import {
   Map,
   MessageCircle,
   LayoutGrid,
-  Utensils
+  Utensils,
+  Shield
 } from 'lucide-react';
 import { useComposedStore } from '../stores/useComposedStore';
 import { useToast } from '../hooks/useToast';
@@ -56,6 +57,7 @@ const navigation = [
   { name: 'Nutrition', icon: Utensils, view: 'nutrition' as const, path: '/nutrition', section: 'wellbeing' },
   { name: 'Goals', icon: Trophy, view: 'goals' as const, path: '/goals', section: 'personal' },
   { name: 'Shared', icon: Users, view: 'shared' as const, path: '/shared', section: 'personal' },
+  { name: 'Privacy Settings', icon: Shield, view: 'privacy-settings' as const, path: '/settings/privacy', section: 'settings' },
 ];
 
 // Helper function to get ViewKey from pathname
@@ -68,6 +70,7 @@ const getViewFromPath = (pathname: string): ViewKey => {
   if (pathname.startsWith('/travel/trip-planner')) return 'trip-planner';
   if (pathname.startsWith('/travel')) return 'travel';
   if (pathname.startsWith('/finances')) return 'finances';
+  if (pathname.startsWith('/settings/privacy')) return 'privacy-settings';
 
   return 'dashboard';
 };
@@ -77,6 +80,7 @@ const navigationSections = {
   productivity: { label: 'Productivity', items: navigation.filter(item => item.section === 'productivity') },
   wellbeing: { label: 'Wellbeing', items: navigation.filter(item => item.section === 'wellbeing') },
   personal: { label: 'Personal', items: navigation.filter(item => item.section === 'personal') },
+  settings: { label: 'Settings', items: navigation.filter(item => item.section === 'settings') },
 };
 
 interface LayoutProps {
@@ -280,6 +284,7 @@ export default function Layout({ children }: LayoutProps) {
                   {activeView === 'nutrition' && 'Track your meals and nutrition'}
                   {activeView === 'goals' && 'Achieve your dreams'}
                   {activeView === 'shared' && 'Collaborate and share'}
+                  {activeView === 'privacy-settings' && 'Control your data sharing preferences'}
                 </p>
               </div>
             </div>
