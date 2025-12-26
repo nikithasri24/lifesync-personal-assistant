@@ -169,6 +169,48 @@ export async function getPendingInvitations(): Promise<{
     }
   });
 
+  // Also get pending email invitations (to users who haven't signed up yet)
+  const { data: emailInvitations } = await supabase
+    .from('pending_email_invitations')
+    .select('*')
+    .eq('inviter_id', user.id)
+    .eq('status', 'pending');
+
+  if (emailInvitations) {
+    emailInvitations.forEach((inv) => {
+      sent.push({
+        invitation: {
+          id: inv.id,
+          connectionId: '', // No connection yet
+          message: inv.message ?? undefined,
+          proposedPermissions: (inv.proposed_permissions as Record<ShareableModule, ModulePermissionLevel>) ?? {},
+          createdAt: inv.created_at,
+          expiresAt: inv.expires_at,
+        },
+        connection: {
+          id: inv.id,
+          userId: user.id,
+          connectedUserId: '', // No user ID yet
+          relationship: inv.relationship as ConnectionRelationship,
+          status: 'pending' as ConnectionStatus,
+          label: inv.inviter_label ?? undefined,
+          connectedUserEmail: inv.invitee_email,
+          connectedUserName: inv.invitee_email, // Use email as name
+          connectedUserAvatar: undefined,
+          createdAt: inv.created_at,
+          acceptedAt: undefined,
+          isPending: true,
+        },
+        fromUser: {
+          id: user.id,
+          email: user.email ?? '',
+          fullName: user.user_metadata?.full_name as string | undefined,
+          avatarUrl: user.user_metadata?.avatar_url as string | undefined,
+        },
+      });
+    });
+  }
+
   return { sent, received };
 }
 
@@ -179,70 +221,118 @@ export async function createConnection(input: CreateConnectionInput): Promise<Pr
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
-  // Find receiver by email using RPC function
+  // Check if trying to connect to yourself
+  if (input.receiverEmail.toLowerCase() === user.email?.toLowerCase()) {
+    throw new Error('You cannot connect with yourself');
+  }
+
+  // Try to find receiver by email using RPC function
   const receiverResponse = await supabase
     .rpc('lookup_user_by_email', { user_email: input.receiverEmail })
     .single();
 
-  if (receiverResponse.error ?? !receiverResponse.data) {
-    throw new Error('User not found with that email');
-  }
+  // If user exists, create a normal connection
+  if (receiverResponse.data && !receiverResponse.error) {
+    const receiver = receiverResponse.data as DbUserLookup;
 
-  // Type assertion for the RPC response
-  const receiver = receiverResponse.data as DbUserLookup;
+    // Create connection
+    const connectionResponse = await supabase
+      .from('profile_connections')
+      .insert({
+        requester_id: user.id,
+        receiver_id: receiver.user_id,
+        relationship: input.relationship,
+        requester_label: input.label,
+        status: 'pending',
+      })
+      .select()
+      .single();
 
-  // Check if trying to connect to yourself
-  if (receiver.user_id === user.id) {
-    throw new Error('You cannot connect with yourself');
-  }
+    if (connectionResponse.error) throw connectionResponse.error;
+    if (!connectionResponse.data) throw new Error('Failed to create connection');
 
-  // Create connection
-  const connectionResponse = await supabase
-    .from('profile_connections')
-    .insert({
-      requester_id: user.id,
-      receiver_id: receiver.user_id,
+    const connection = connectionResponse.data as DbConnection;
+
+    // Create invitation
+    const { error: invitationError } = await supabase
+      .from('connection_invitations')
+      .insert({
+        connection_id: connection.id,
+        message: input.message,
+        proposed_permissions: input.proposedPermissions ?? {},
+      });
+
+    if (invitationError) throw invitationError;
+
+    // Send email notification to receiver
+    try {
+      const userEmail = user.email ?? '';
+      const fullName = user.user_metadata?.full_name as string | undefined;
+      await sendInvitationEmail({
+        to: receiver.email,
+        fromEmail: userEmail,
+        fromName: fullName,
+        relationship: input.relationship,
+        message: input.message,
+      });
+    } catch (emailError) {
+      logger.error('ConnectionsAPI', 'Failed to send invitation email', { error: emailError });
+      // Don't fail the invitation if email fails
+    }
+
+    return mapDbToConnection(connection);
+  } else {
+    // User doesn't exist yet - create a pending email invitation
+    const { data: pendingInvitation, error: pendingError } = await supabase
+      .from('pending_email_invitations')
+      .insert({
+        inviter_id: user.id,
+        invitee_email: input.receiverEmail.toLowerCase(),
+        relationship: input.relationship,
+        inviter_label: input.label,
+        message: input.message,
+        proposed_permissions: input.proposedPermissions ?? {},
+        status: 'pending',
+      })
+      .select()
+      .single();
+
+    if (pendingError) throw pendingError;
+    if (!pendingInvitation) throw new Error('Failed to create pending invitation');
+
+    // Send email invitation to join LifeSync
+    try {
+      const userEmail = user.email ?? '';
+      const fullName = user.user_metadata?.full_name as string | undefined;
+      await sendInvitationEmail({
+        to: input.receiverEmail,
+        fromEmail: userEmail,
+        fromName: fullName,
+        relationship: input.relationship,
+        message: input.message,
+      });
+    } catch (emailError) {
+      logger.error('ConnectionsAPI', 'Failed to send invitation email', { error: emailError });
+      // Don't fail the invitation if email fails
+    }
+
+    // Return a mock connection object for pending invitations
+    // This will show in the UI as "Invitation Sent"
+    return {
+      id: pendingInvitation.id,
+      userId: user.id,
+      connectedUserId: '', // No user ID yet
       relationship: input.relationship,
-      requester_label: input.label,
       status: 'pending',
-    })
-    .select()
-    .single();
-
-  if (connectionResponse.error) throw connectionResponse.error;
-  if (!connectionResponse.data) throw new Error('Failed to create connection');
-
-  // Type assertion for the database response
-  const connection = connectionResponse.data as DbConnection;
-
-  // Create invitation
-  const { error: invitationError } = await supabase
-    .from('connection_invitations')
-    .insert({
-      connection_id: connection.id,
-      message: input.message,
-      proposed_permissions: input.proposedPermissions ?? {},
-    });
-
-  if (invitationError) throw invitationError;
-
-  // Send email notification to receiver
-  try {
-    const userEmail = user.email ?? '';
-    const fullName = user.user_metadata?.full_name as string | undefined;
-    await sendInvitationEmail({
-      to: receiver.email,
-      fromEmail: userEmail,
-      fromName: fullName,
-      relationship: input.relationship,
-      message: input.message,
-    });
-  } catch (emailError) {
-    logger.error('ConnectionsAPI', 'Failed to send invitation email', { error: emailError });
-    // Don't fail the invitation if email fails
+      label: input.label,
+      connectedUserEmail: input.receiverEmail,
+      connectedUserName: input.receiverEmail, // Use email as name for now
+      connectedUserAvatar: undefined,
+      createdAt: pendingInvitation.created_at,
+      acceptedAt: undefined,
+      isPending: true,
+    };
   }
-
-  return mapDbToConnection(connection);
 }
 
 /**
