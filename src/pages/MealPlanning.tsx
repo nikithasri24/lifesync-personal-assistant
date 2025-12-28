@@ -112,6 +112,24 @@ const MealPlanning: React.FC = () => {
   const weekNav = useWeekNavigation(weekStartsOn, mealPlans);
   const recipeImport = useRecipeImport();
 
+  // Auto-create meal plan if missing for current week
+  useEffect(() => {
+    if (!weekNav.activePlan && !mealPlansLoading && !weekNav.isEnsuringPlan) {
+      console.log('[MealPlanning] No active plan found, creating one...');
+      void createMealPlanMutation.mutateAsync({
+        weekStartDate: weekNav.currentWeekStart,
+        name: 'Meal Plan',
+        weekStartsOn,
+      }).then(() => {
+        console.log('[MealPlanning] Meal plan created successfully!');
+        showToast('Meal plan created for this week', 'success');
+      }).catch((error) => {
+        console.error('[MealPlanning] Failed to create meal plan:', error);
+        showToast('Failed to create meal plan', 'error');
+      });
+    }
+  }, [weekNav.activePlan, weekNav.currentWeekStart, weekNav.isEnsuringPlan, mealPlansLoading, createMealPlanMutation, weekStartsOn, showToast]);
+
   // Memoize the grocery storage key to prevent infinite loops
   const groceryStorageKey = useMemo(() => toKey(weekNav.currentWeekStart), [weekNav.currentWeekStart]);
 
@@ -140,9 +158,14 @@ const MealPlanning: React.FC = () => {
     cleanupOldDrafts();
   }, []);
 
-  const plannedMeals = useMemo(() => weekNav.activePlan?.meals ?? [], [weekNav.activePlan?.meals]);
+  const plannedMeals = useMemo(() => {
+    const meals = weekNav.activePlan?.meals ?? [];
+    console.log('[MealPlanning] Planned meals:', meals.length, meals);
+    return meals;
+  }, [weekNav.activePlan?.meals]);
+
   const mealsByDate: Record<string, PlannedMeal[]> = useMemo(() => {
-    return plannedMeals.reduce<Record<string, PlannedMeal[]>>((acc, meal) => {
+    const result = plannedMeals.reduce<Record<string, PlannedMeal[]>>((acc, meal) => {
       const key = toKey(ensureDate(meal.date));
       if (!acc[key]) {
         acc[key] = [];
@@ -150,6 +173,8 @@ const MealPlanning: React.FC = () => {
       acc[key].push(meal);
       return acc;
     }, {});
+    console.log('[MealPlanning] Meals by date:', result);
+    return result;
   }, [plannedMeals]);
 
   const isLoading = mealPlansLoading || weekNav.isEnsuringPlan;
@@ -209,7 +234,12 @@ const MealPlanning: React.FC = () => {
 
       {/* Multi-cell selection toolbar */}
       {multiCellSelection.isSelectionMode && multiCellSelection.selectedCells.size > 0 && (
-        <SelectionToolbar
+        <>
+          {console.log('[MealPlanning] Showing SelectionToolbar:', {
+            isSelectionMode: multiCellSelection.isSelectionMode,
+            selectedCount: multiCellSelection.selectedCells.size
+          })}
+          <SelectionToolbar
           selectedCount={multiCellSelection.selectedCells.size}
           query={multiCellSelection.multiCellQuery}
           onQueryChange={multiCellSelection.setMultiCellQuery}
@@ -221,8 +251,10 @@ const MealPlanning: React.FC = () => {
           showList={multiCellSelection.showMultiCellList}
           onShowListChange={multiCellSelection.setShowMultiCellList}
           onAddMeal={multiCellSelection.addMealToSelectedCells}
+          onDeleteMeals={multiCellSelection.deleteMealsFromSelectedCells}
           onClearSelection={multiCellSelection.clearSelection}
         />
+        </>
       )}
 
       {/* Weekly overview */}
@@ -239,6 +271,11 @@ const MealPlanning: React.FC = () => {
         onShowSimpleEdit={modalState.openSimpleEdit}
         createPlannedMeal={createPlannedMealWrapper}
         updatePlannedMeal={updatePlannedMealWrapper}
+        sharedInputValue={multiCellSelection.sharedInputValue}
+        setSharedInputValue={multiCellSelection.setSharedInputValue}
+        isAnySelectedCellEditing={multiCellSelection.isAnySelectedCellEditing}
+        setIsAnySelectedCellEditing={multiCellSelection.setIsAnySelectedCellEditing}
+        addMealToSelectedCells={multiCellSelection.addMealToSelectedCells}
       />
 
       {/* Import sections */}

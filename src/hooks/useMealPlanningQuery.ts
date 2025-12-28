@@ -269,6 +269,10 @@ function mapPlannedMealDataToPlannedMeal(data: PlannedMealData): PlannedMeal {
     ? new Date(Number(data.date.slice(0, 4)), Number(data.date.slice(5, 7)) - 1, Number(data.date.slice(8, 10)))
     : toDate(data.date);
 
+  const originalDate = data.original_date && data.original_date.length === 10
+    ? new Date(Number(data.original_date.slice(0, 4)), Number(data.original_date.slice(5, 7)) - 1, Number(data.original_date.slice(8, 10)))
+    : toDate(data.original_date);
+
   return {
     id: data.id ?? crypto.randomUUID(),
     mealPlanId: data.meal_plan_id ?? 'unknown',
@@ -282,6 +286,14 @@ function mapPlannedMealDataToPlannedMeal(data: PlannedMealData): PlannedMeal {
     notes: data.notes ?? undefined,
     preparedAt: toDate(data.prepared_at),
     consumedAt: toDate(data.consumed_at),
+
+    // Substitution and backlog tracking
+    actualFoodLogId: data.actual_food_log_id ?? undefined,
+    substitutedWith: data.substituted_with ?? undefined,
+    isPostponed: data.is_postponed ?? false,
+    postponedReason: data.postponed_reason ?? undefined,
+    originalDate: originalDate ?? undefined,
+
     createdAt: toDate(data.created_at) ?? new Date(),
   };
 }
@@ -674,7 +686,22 @@ export function useMealPlansQuery(options?: { enabled?: boolean }): ReturnType<t
     queryKey: mealPlanningKeys.mealPlansList(),
     queryFn: async () => {
       const data = await mealPlanningAPI.getMealPlans();
-      return data.map(mapMealPlanDataToMealPlanWeek);
+      console.log('[useMealPlansQuery] ⚠️ Raw API data:', {
+        planCount: data.length,
+        firstPlanId: data[0]?.id,
+        firstPlanPlannedMeals: data[0]?.planned_meals,
+        plannedMealsCount: data[0]?.planned_meals?.length ?? 0
+      });
+
+      const mapped = data.map(mapMealPlanDataToMealPlanWeek);
+      console.log('[useMealPlansQuery] ⚠️ Mapped data:', {
+        planCount: mapped.length,
+        firstPlanId: mapped[0]?.id,
+        firstPlanMeals: mapped[0]?.meals?.length ?? 0,
+        allMealsCount: mapped.reduce((sum, plan) => sum + (plan.meals?.length ?? 0), 0)
+      });
+
+      return mapped;
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
     enabled: options?.enabled ?? true,
@@ -1031,6 +1058,90 @@ export function useDeletePlannedMealMutation(): ReturnType<typeof useMutation<st
         queryClient.setQueryData(mealPlanningKeys.mealPlansList(), context.previousPlans);
       }
       logger.error('MealPlanning', 'Error deleting planned meal', { error: err });
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: mealPlanningKeys.mealPlansList() });
+    },
+  });
+}
+
+/**
+ * Postpone a planned meal to backlog
+ */
+export function usePostponePlannedMealMutation(): ReturnType<typeof useMutation<PlannedMeal, Error, { mealId: string; reason?: string }, { previousPlans: MealPlanWeek[] | undefined }>> {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ mealId, reason }: { mealId: string; reason?: string }) => {
+      const data = await mealPlanningAPI.postponePlannedMeal(mealId, reason);
+      return mapPlannedMealDataToPlannedMeal(data);
+    },
+    onMutate: async ({ mealId, reason }) => {
+      await queryClient.cancelQueries({ queryKey: mealPlanningKeys.mealPlansList() });
+      const previousPlans = queryClient.getQueryData<MealPlanWeek[]>(mealPlanningKeys.mealPlansList());
+
+      // Optimistically update the meal status
+      queryClient.setQueryData<MealPlanWeek[]>(mealPlanningKeys.mealPlansList(), (old) => {
+        if (!old) return [];
+        return old.map((plan) => ({
+          ...plan,
+          meals: plan.meals.map((m) =>
+            m.id === mealId
+              ? { ...m, status: 'postponed' as const, isPostponed: true, postponedReason: reason, originalDate: m.originalDate || m.date }
+              : m
+          ),
+        }));
+      });
+
+      return { previousPlans };
+    },
+    onError: (err, variables, context) => {
+      if (context?.previousPlans) {
+        queryClient.setQueryData(mealPlanningKeys.mealPlansList(), context.previousPlans);
+      }
+      logger.error('MealPlanning', 'Error postponing planned meal', { error: err });
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: mealPlanningKeys.mealPlansList() });
+    },
+  });
+}
+
+/**
+ * Reschedule a postponed meal to a new date
+ */
+export function useReschedulePlannedMealMutation(): ReturnType<typeof useMutation<PlannedMeal, Error, { mealId: string; newDate: Date; newMealType?: string }, { previousPlans: MealPlanWeek[] | undefined }>> {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ mealId, newDate, newMealType }: { mealId: string; newDate: Date; newMealType?: string }) => {
+      const data = await mealPlanningAPI.reschedulePlannedMeal(mealId, newDate, newMealType);
+      return mapPlannedMealDataToPlannedMeal(data);
+    },
+    onMutate: async ({ mealId, newDate, newMealType }) => {
+      await queryClient.cancelQueries({ queryKey: mealPlanningKeys.mealPlansList() });
+      const previousPlans = queryClient.getQueryData<MealPlanWeek[]>(mealPlanningKeys.mealPlansList());
+
+      // Optimistically update the meal
+      queryClient.setQueryData<MealPlanWeek[]>(mealPlanningKeys.mealPlansList(), (old) => {
+        if (!old) return [];
+        return old.map((plan) => ({
+          ...plan,
+          meals: plan.meals.map((m) =>
+            m.id === mealId
+              ? { ...m, date: newDate, mealType: newMealType || m.mealType, status: 'planned' as const, isPostponed: false, postponedReason: undefined }
+              : m
+          ),
+        }));
+      });
+
+      return { previousPlans };
+    },
+    onError: (err, variables, context) => {
+      if (context?.previousPlans) {
+        queryClient.setQueryData(mealPlanningKeys.mealPlansList(), context.previousPlans);
+      }
+      logger.error('MealPlanning', 'Error rescheduling planned meal', { error: err });
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: mealPlanningKeys.mealPlansList() });

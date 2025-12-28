@@ -227,10 +227,18 @@ export interface PlannedMealData {
   servings?: number;
   custom_meal?: string;
   people_count?: number;
-  status?: 'planned' | 'prepped' | 'cooked' | 'eaten';
+  status?: 'planned' | 'prepped' | 'cooked' | 'eaten' | 'substituted' | 'postponed';
   notes?: string;
   prepared_at?: string;
   consumed_at?: string;
+
+  // Substitution and backlog tracking
+  actual_food_log_id?: string;
+  substituted_with?: string;
+  is_postponed?: boolean;
+  postponed_reason?: string;
+  original_date?: string;
+
   created_at?: string;
   updated_at?: string;
 }

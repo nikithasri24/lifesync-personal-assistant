@@ -29,11 +29,24 @@ export const CellWithMeals: React.FC<CellWithMealsProps> = ({
 }) => {
   const triggerRef = useRef<(() => void) | null>(null);
 
+  // Deduplicate meals by ID to prevent duplicate key warnings
+  const uniqueMeals = React.useMemo(() => {
+    const seen = new Set<string>();
+    return dayMeals.filter((meal) => {
+      if (seen.has(meal.id)) {
+        console.warn('[CellWithMeals] Duplicate meal ID detected:', meal.id);
+        return false;
+      }
+      seen.add(meal.id);
+      return true;
+    });
+  }, [dayMeals]);
+
   return (
     <>
-      <div className="space-y-1 relative" style={{ zIndex: 10 }}>
+      <div className="space-y-1 relative" style={{ zIndex: 20, position: 'relative' }}>
         <ul className="space-y-1">
-          {dayMeals.map((meal) => (
+          {uniqueMeals.map((meal) => (
             <MealItem
               key={meal.id}
               meal={meal}
@@ -43,14 +56,18 @@ export const CellWithMeals: React.FC<CellWithMealsProps> = ({
             />
           ))}
         </ul>
-        {renderAddControl(triggerRef)}
+        {/* Hidden AddMealControl - only used to connect triggerRef */}
+        <div className="hidden">
+          {renderAddControl(triggerRef)}
+        </div>
       </div>
       {/* Hover overlay to add more meals */}
-      <div className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity pointer-events-none group-hover/cell:pointer-events-auto" style={{ zIndex: 1 }}>
+      <div className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity pointer-events-none group-hover/cell:pointer-events-auto" style={{ zIndex: 5 }}>
         <div className="absolute bottom-2 left-2 right-2 flex justify-center">
           <button
             type="button"
             onClick={(e) => {
+              // Stop propagation to prevent cell selection when adding a meal
               e.stopPropagation();
               triggerRef.current?.();
             }}
@@ -58,10 +75,10 @@ export const CellWithMeals: React.FC<CellWithMealsProps> = ({
               e.stopPropagation();
               e.preventDefault();
             }}
-            className="text-xs text-slate-400 hover:text-indigo-600 flex items-center gap-1 bg-white/90 backdrop-blur-sm px-2 py-1 rounded shadow-sm border border-slate-200"
+            className="text-xs text-slate-400 hover:text-indigo-600 flex items-center gap-1 bg-white/90 backdrop-blur-sm px-2 py-1 rounded shadow-sm border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/90 transition-colors"
           >
             <Plus className="w-3 h-3" />
-            <span className="text-[10px] font-medium">Add</span>
+            <span className="text-[10px] font-medium">Add another</span>
           </button>
         </div>
       </div>

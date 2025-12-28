@@ -1,5 +1,6 @@
 import React, { type ReactElement } from 'react';
 import { createPortal } from 'react-dom';
+import { Trash2 } from 'lucide-react';
 
 interface SelectionToolbarProps {
   selectedCount: number;
@@ -13,6 +14,7 @@ interface SelectionToolbarProps {
   showList: boolean;
   onShowListChange: (show: boolean) => void;
   onAddMeal: (recipeId: string, customMeal?: string) => Promise<void>;
+  onDeleteMeals: () => Promise<void>;
   onClearSelection: () => void;
 }
 
@@ -128,6 +130,7 @@ export function SelectionToolbar({
   showList,
   onShowListChange,
   onAddMeal,
+  onDeleteMeals,
   onClearSelection,
 }: SelectionToolbarProps): ReactElement {
   return (
@@ -179,6 +182,15 @@ export function SelectionToolbar({
                 document.body
               )}
           </div>
+          <button
+            type="button"
+            onClick={() => void onDeleteMeals()}
+            className="rounded-md border border-red-300 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-100 transition flex items-center gap-2"
+            title="Delete all meals from selected cells"
+          >
+            <Trash2 className="w-4 h-4" />
+            Delete Meals
+          </button>
           <button
             type="button"
             onClick={onClearSelection}

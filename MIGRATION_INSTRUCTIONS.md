@@ -1,6 +1,65 @@
 # 🚀 How to Apply Database Migrations
 
-## Quick Steps
+## 🆕 LATEST: Meal Substitution & Backlog Feature (2025-12-27)
+
+### Apply This Migration Now! ⚡
+
+1. **Open Supabase Dashboard**
+   - Go to https://supabase.com/dashboard
+   - Select your LifeSync project
+
+2. **Open SQL Editor**
+   - Click on "SQL Editor" in the left sidebar
+   - Click "New Query"
+
+3. **Copy the Migration File**
+   - Open: `supabase/migrations/20251227000001_meal_substitution_and_backlog.sql`
+   - Copy the entire contents (Cmd+A, Cmd+C)
+
+4. **Paste and Run**
+   - Paste into the SQL Editor
+   - Click "Run" button (or press Cmd+Enter)
+
+5. **Check Results**
+   - You should see verification results at the bottom
+   - Should show 6 rows (5 new columns in planned_meals + 1 in food_log)
+
+6. **Done!** 🎉
+   - Refresh your app (Cmd+Shift+R)
+   - Test the new Swap Meal feature!
+
+---
+
+## What This Migration Adds
+
+### ✅ New Features:
+- **Swap Meal** - Log what you actually ate instead of planned meal
+- **Postpone to Backlog** - Keep meals for later
+- **Nutrition Integration** - Auto-log substitutions to food tracker
+- **Backlog View** - See all postponed meals in one place
+
+### ✅ Database Changes:
+- Adds 5 new columns to `planned_meals` table
+- Adds 1 new column to `food_log` table
+- Updates status enum to include 'substituted' and 'postponed'
+- Creates indexes for fast queries
+
+---
+
+## Testing the New Feature
+
+1. **Refresh your browser** (Cmd+Shift+R)
+2. **Go to Meal Planning** page
+3. **Hover over any meal** → See the 🔄 Swap button
+4. **Click Swap** → Modal opens
+5. **Enter what you ate** (e.g., "Restaurant burger")
+6. **Choose "Postpone to backlog"**
+7. **Click "Save Changes"**
+8. **Scroll down** → See the meal in the Backlog section!
+
+---
+
+## Previous Migrations (For Reference)
 
 ### Option 1: Supabase Dashboard (Recommended - Easy!)
 

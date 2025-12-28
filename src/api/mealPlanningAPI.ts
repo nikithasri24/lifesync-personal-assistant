@@ -215,6 +215,78 @@ export async function deletePlannedMeal(id: string): Promise<void> {
   );
 }
 
+/**
+ * Postpone a planned meal to backlog
+ */
+export async function postponePlannedMeal(
+  id: string,
+  reason?: string
+): Promise<PlannedMealData> {
+  return apiCall(
+    async () => {
+      // Get the current meal to save its original date
+      const { data: currentMeal } = await supabase
+        .from('planned_meals')
+        .select('date, original_date')
+        .eq('id', id)
+        .single();
+
+      const result = await supabase
+        .from('planned_meals')
+        .update({
+          status: 'postponed',
+          is_postponed: true,
+          postponed_reason: reason,
+          original_date: currentMeal?.original_date || currentMeal?.date, // Preserve original date
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+      const data = handleSupabaseResponse(result, 'Planned Meal', id);
+      return data as PlannedMealData;
+    },
+    { domain: 'MealPlanningAPI', operation: 'postponePlannedMeal', data: { id, reason } }
+  );
+}
+
+/**
+ * Reschedule a postponed meal to a new date
+ */
+export async function reschedulePlannedMeal(
+  id: string,
+  newDate: Date,
+  newMealType?: string
+): Promise<PlannedMealData> {
+  return apiCall(
+    async () => {
+      const dateStr = newDate.toISOString().split('T')[0];
+
+      const updates: Partial<PlannedMealData> = {
+        date: dateStr,
+        status: 'planned',
+        is_postponed: false,
+        postponed_reason: undefined,
+      };
+
+      if (newMealType) {
+        updates.meal_type = newMealType;
+      }
+
+      const result = await supabase
+        .from('planned_meals')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      const data = handleSupabaseResponse(result, 'Planned Meal', id);
+      return data as PlannedMealData;
+    },
+    { domain: 'MealPlanningAPI', operation: 'reschedulePlannedMeal', data: { id, newDate } }
+  );
+}
+
 // =====================================================
 // RECIPES CRUD OPERATIONS
 // =====================================================

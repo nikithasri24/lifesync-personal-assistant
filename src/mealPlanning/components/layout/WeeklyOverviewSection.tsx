@@ -16,6 +16,11 @@ interface WeeklyOverviewSectionProps {
   onShowSimpleEdit: (recipe: Recipe, onSave: (updates: Partial<Recipe>) => void) => void;
   createPlannedMeal: (data: { planId: string; meal: unknown }) => Promise<unknown>;
   updatePlannedMeal: (data: { mealId: string; updates: unknown }) => Promise<unknown>;
+  sharedInputValue?: string;
+  setSharedInputValue?: (value: string) => void;
+  isAnySelectedCellEditing?: boolean;
+  setIsAnySelectedCellEditing?: (editing: boolean) => void;
+  addMealToSelectedCells?: (recipeId: string, customMeal?: string) => Promise<void>;
 }
 
 /**
@@ -34,6 +39,11 @@ export function WeeklyOverviewSection({
   onShowSimpleEdit,
   createPlannedMeal,
   updatePlannedMeal,
+  sharedInputValue,
+  setSharedInputValue,
+  isAnySelectedCellEditing,
+  setIsAnySelectedCellEditing,
+  addMealToSelectedCells,
 }: WeeklyOverviewSectionProps): React.ReactElement {
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm order-1">
@@ -62,6 +72,11 @@ export function WeeklyOverviewSection({
           onShowSimpleEdit={onShowSimpleEdit}
           createPlannedMeal={createPlannedMeal}
           updatePlannedMeal={updatePlannedMeal}
+          sharedInputValue={sharedInputValue}
+          setSharedInputValue={setSharedInputValue}
+          isAnySelectedCellEditing={isAnySelectedCellEditing}
+          setIsAnySelectedCellEditing={setIsAnySelectedCellEditing}
+          addMealToSelectedCells={addMealToSelectedCells}
         />
       )}
     </section>

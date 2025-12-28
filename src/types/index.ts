@@ -223,7 +223,7 @@ export interface MealColumn {
   order: number;
 }
 
-export type MealStatus = 'planned' | 'prepped' | 'cooked' | 'eaten';
+export type MealStatus = 'planned' | 'prepped' | 'cooked' | 'eaten' | 'substituted' | 'postponed';
 
 export interface PlannedMeal {
   id: string;
@@ -236,6 +236,14 @@ export interface PlannedMeal {
   peopleCount: number;
   status: MealStatus;
   notes?: string;
+
+  // Substitution and backlog tracking
+  actualFoodLogId?: string;      // Link to food_log entry for what was actually eaten
+  substitutedWith?: string;       // Quick note of what was eaten instead
+  isPostponed?: boolean;          // Whether this meal is in the backlog
+  postponedReason?: string;       // Reason for postponing
+  originalDate?: Date;            // Original scheduled date before postponing
+
   createdAt: Date;
 }
 

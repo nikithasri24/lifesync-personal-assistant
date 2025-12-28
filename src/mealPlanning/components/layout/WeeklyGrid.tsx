@@ -1,10 +1,11 @@
-import React, { type ReactElement } from 'react';
+import React, { type ReactElement, useMemo } from 'react';
 import { format, isSameDay } from 'date-fns';
 import { ChefHat } from 'lucide-react';
 import type { PlannedMeal, Recipe } from '../../../types';
 import { toKey, parseLocalDateKey } from '../../utils';
 import CellWithMeals from '../mealPlan/CellWithMeals';
 import AddMealControl from '../mealPlan/AddMealControl';
+import { MealBacklogSection } from './MealBacklogSection';
 
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack'];
 
@@ -34,6 +35,11 @@ interface WeeklyGridProps {
     };
   }) => Promise<unknown>;
   updatePlannedMeal: (data: { mealId: string; updates: { date: Date; mealType: string } }) => Promise<unknown>;
+  sharedInputValue?: string;
+  setSharedInputValue?: (value: string) => void;
+  isAnySelectedCellEditing?: boolean;
+  setIsAnySelectedCellEditing?: (editing: boolean) => void;
+  addMealToSelectedCells?: (recipeId: string, customMeal?: string) => Promise<void>;
 }
 
 /**
@@ -51,6 +57,11 @@ export function WeeklyGrid({
   onShowSimpleEdit,
   createPlannedMeal,
   updatePlannedMeal,
+  sharedInputValue,
+  setSharedInputValue,
+  isAnySelectedCellEditing,
+  setIsAnySelectedCellEditing,
+  addMealToSelectedCells,
 }: WeeklyGridProps): ReactElement {
   return (
     <div className="mt-6">
@@ -93,7 +104,7 @@ export function WeeklyGrid({
                 return (
                   <div
                     key={`${key}-${mealType}`}
-                    className={`relative p-3 border-b border-l border-r border-slate-200 overflow-hidden cursor-pointer transition-colors ${
+                    className={`relative p-3 border-b border-l border-r border-slate-200 cursor-pointer transition-colors ${
                       isSelected ? 'bg-indigo-100 border-indigo-400 ring-2 ring-indigo-400' : ''
                     } ${hasContent ? 'bg-amber-50/30' : ''}`}
                     onClick={(e) => onCellClick(key, mealType, e)}
@@ -172,11 +183,18 @@ export function WeeklyGrid({
                   >
                     {highlight && <div className="absolute inset-y-0 left-0 w-1 bg-indigo-300" aria-hidden />}
                     {hasContent && (
-                      <div className="absolute top-1 right-1 z-10">
+                      <div className="absolute top-1 right-1 z-10" style={{ pointerEvents: 'none' }}>
                         <ChefHat className="w-4 h-4 text-amber-600" />
                       </div>
                     )}
-                    <div className="h-full overflow-auto space-y-2 group/cell relative">
+                    <div
+                      className="h-full space-y-2 group/cell relative"
+                      style={{ overflow: 'visible' }}
+                      onClick={(e) => {
+                        // Allow clicks to bubble up to parent cell
+                        // Don't stop propagation here
+                      }}
+                    >
                       {dayMeals.length > 0 ? (
                         <CellWithMeals
                           dateKey={key}
@@ -187,16 +205,103 @@ export function WeeklyGrid({
                           onShowSimpleEdit={onShowSimpleEdit}
                           renderAddControl={(triggerRef) => (
                             <AddMealControl
+                              key={`add-control-trigger-${key}-${mealType}`}
                               dateKey={key}
                               mealType={mealType}
                               showByDefault={false}
                               compact={true}
                               triggerRef={triggerRef}
+                              isSelected={isSelected}
+                              sharedInputValue={sharedInputValue}
+                              setSharedInputValue={setSharedInputValue}
+                              isAnySelectedCellEditing={isAnySelectedCellEditing}
+                              setIsAnySelectedCellEditing={setIsAnySelectedCellEditing}
+                              onAddMeal={(mealName) => {
+                                // If multiple cells are selected, add to all
+                                if (isSelected && selectedCells.size > 1 && addMealToSelectedCells) {
+                                  console.log('[AddMeal] Adding to all selected cells:', selectedCells.size);
+                                  void addMealToSelectedCells('', mealName);
+                                  return;
+                                }
+
+                                // Otherwise, add to just this cell
+                                if (!activePlan) {
+                                  console.error('[AddMeal] No active plan found!');
+                                  return;
+                                }
+                                console.log('[AddMeal] Creating meal:', {
+                                  planId: activePlan.id,
+                                  date: parseLocalDateKey(key),
+                                  mealType,
+                                  customMeal: mealName,
+                                });
+                                void createPlannedMeal({
+                                  planId: activePlan.id,
+                                  meal: {
+                                    date: parseLocalDateKey(key),
+                                    mealType,
+                                    customMeal: mealName,
+                                    servings: 2,
+                                    peopleCount: 2,
+                                    status: 'planned',
+                                  },
+                                }).then(() => {
+                                  console.log('[AddMeal] Meal created successfully!');
+                                }).catch((error) => {
+                                  console.error('[AddMeal] Failed to create meal:', error);
+                                });
+                              }}
                             />
                           )}
                         />
                       ) : (
-                        <AddMealControl dateKey={key} mealType={mealType} showByDefault={true} compact={false} />
+                        <AddMealControl
+                          key={`add-control-empty-${key}-${mealType}`}
+                          dateKey={key}
+                          mealType={mealType}
+                          showByDefault={true}
+                          compact={false}
+                          isSelected={isSelected}
+                          sharedInputValue={sharedInputValue}
+                          setSharedInputValue={setSharedInputValue}
+                          isAnySelectedCellEditing={isAnySelectedCellEditing}
+                          setIsAnySelectedCellEditing={setIsAnySelectedCellEditing}
+                          onAddMeal={(mealName) => {
+                            // If multiple cells are selected, add to all
+                            if (isSelected && selectedCells.size > 1 && addMealToSelectedCells) {
+                              console.log('[AddMeal] Adding to all selected cells:', selectedCells.size);
+                              void addMealToSelectedCells('', mealName);
+                              return;
+                            }
+
+                            // Otherwise, add to just this cell
+                            if (!activePlan) {
+                              console.error('[AddMeal] No active plan found!');
+                              return;
+                            }
+                            console.log('[AddMeal] Creating meal:', {
+                              planId: activePlan.id,
+                              date: parseLocalDateKey(key),
+                              mealType,
+                              customMeal: mealName,
+                            });
+                            void createPlannedMeal({
+                              planId: activePlan.id,
+                              meal: {
+                                date: parseLocalDateKey(key),
+                                mealType,
+                                customMeal: mealName,
+                                servings: 2,
+                                peopleCount: 2,
+                                status: 'planned',
+                              },
+                            }).then(() => {
+                              console.log('[AddMeal] Meal created successfully!');
+                            }).catch((error) => {
+                              console.error('[AddMeal] Failed to create meal:', error);
+                            });
+                          }}
+                        />
                       )}
                     </div>
                   </div>
@@ -206,6 +311,24 @@ export function WeeklyGrid({
           );
         })}
       </div>
+
+      {/* Meal Backlog Section */}
+      {(() => {
+        const postponedMeals = useMemo(() => {
+          return activePlan?.meals?.filter((m) => m.isPostponed) || [];
+        }, [activePlan?.meals]);
+
+        return (
+          <MealBacklogSection
+            postponedMeals={postponedMeals}
+            recipes={recipes}
+            onReschedule={(meal) => {
+              // TODO: Implement reschedule functionality
+              console.log('[WeeklyGrid] Reschedule meal:', meal);
+            }}
+          />
+        );
+      })()}
     </div>
   );
 }
