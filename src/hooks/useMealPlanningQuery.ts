@@ -686,22 +686,7 @@ export function useMealPlansQuery(options?: { enabled?: boolean }): ReturnType<t
     queryKey: mealPlanningKeys.mealPlansList(),
     queryFn: async () => {
       const data = await mealPlanningAPI.getMealPlans();
-      console.log('[useMealPlansQuery] ⚠️ Raw API data:', {
-        planCount: data.length,
-        firstPlanId: data[0]?.id,
-        firstPlanPlannedMeals: data[0]?.planned_meals,
-        plannedMealsCount: data[0]?.planned_meals?.length ?? 0
-      });
-
-      const mapped = data.map(mapMealPlanDataToMealPlanWeek);
-      console.log('[useMealPlansQuery] ⚠️ Mapped data:', {
-        planCount: mapped.length,
-        firstPlanId: mapped[0]?.id,
-        firstPlanMeals: mapped[0]?.meals?.length ?? 0,
-        allMealsCount: mapped.reduce((sum, plan) => sum + (plan.meals?.length ?? 0), 0)
-      });
-
-      return mapped;
+      return data.map(mapMealPlanDataToMealPlanWeek);
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
     enabled: options?.enabled ?? true,

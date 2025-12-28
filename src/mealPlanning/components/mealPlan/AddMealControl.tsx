@@ -43,21 +43,11 @@ export function AddMealControl({
   const effectiveValue = (isSelected && isAnySelectedCellEditing) ? (sharedInputValue || '') : mealName;
   const effectiveIsEditing = isSelected ? (isEditing || isAnySelectedCellEditing || false) : isEditing;
 
-  console.log('[AddMealControl] Render:', {
-    mealType,
-    isEditing,
-    isSelected,
-    isAnySelectedCellEditing,
-    effectiveIsEditing,
-    effectiveValue
-  });
-
   // Reset local editing state when cell is deselected (only in multi-cell mode)
   useEffect(() => {
     // Only reset if we were previously selected and now we're not
     // This prevents resetting when starting to edit a non-selected cell
     if (!isSelected && isAnySelectedCellEditing && isEditing) {
-      console.log('[AddMealControl] Resetting editing state because cell deselected in multi-cell mode');
       setIsEditing(false);
       setMealName('');
     }
@@ -187,19 +177,11 @@ export function AddMealControl({
     <button
       type="button"
       onClick={(e) => {
-        console.log('[AddMealControl] Button clicked!', {
-          hasTriggerRef: !!triggerRef?.current,
-          isSelected,
-          mealType
-        });
-
         // Don't stop propagation - let the cell handle selection
         // The cell click handler will select the cell
         if (triggerRef?.current) {
-          console.log('[AddMealControl] Calling triggerRef');
           triggerRef.current();
         } else {
-          console.log('[AddMealControl] Setting isEditing to true');
           setIsEditing(true);
           if (isSelected && setIsAnySelectedCellEditing) {
             setIsAnySelectedCellEditing(true);

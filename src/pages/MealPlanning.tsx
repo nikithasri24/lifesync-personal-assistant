@@ -234,12 +234,7 @@ const MealPlanning: React.FC = () => {
 
       {/* Multi-cell selection toolbar */}
       {multiCellSelection.isSelectionMode && multiCellSelection.selectedCells.size > 0 && (
-        <>
-          {console.log('[MealPlanning] Showing SelectionToolbar:', {
-            isSelectionMode: multiCellSelection.isSelectionMode,
-            selectedCount: multiCellSelection.selectedCells.size
-          })}
-          <SelectionToolbar
+        <SelectionToolbar
           selectedCount={multiCellSelection.selectedCells.size}
           query={multiCellSelection.multiCellQuery}
           onQueryChange={multiCellSelection.setMultiCellQuery}
@@ -254,7 +249,6 @@ const MealPlanning: React.FC = () => {
           onDeleteMeals={multiCellSelection.deleteMealsFromSelectedCells}
           onClearSelection={multiCellSelection.clearSelection}
         />
-        </>
       )}
 
       {/* Weekly overview */}

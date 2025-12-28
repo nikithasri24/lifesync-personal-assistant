@@ -74,20 +74,11 @@ export function useMultiCellSelection(
   const handleCellClick = (dateKey: string, mealType: string, event: React.MouseEvent): void => {
     const cellKey = makeCellKey(dateKey, mealType);
 
-    console.log('[MultiCellSelection] Cell clicked:', {
-      cellKey,
-      metaKey: event.metaKey,
-      ctrlKey: event.ctrlKey,
-      target: (event.target as HTMLElement).tagName,
-    });
-
     if (event.metaKey || event.ctrlKey) {
-      console.log('[MultiCellSelection] Cmd/Ctrl detected - toggling selection');
       setIsSelectionMode(true);
       setSelectedCells((prev) => {
         const next = new Set(prev);
         if (next.has(cellKey)) {
-          console.log('[MultiCellSelection] Deselecting cell:', cellKey);
           next.delete(cellKey);
           // If we're deselecting and no cells remain, exit editing mode
           if (next.size === 0) {
@@ -95,7 +86,6 @@ export function useMultiCellSelection(
             setSharedInputValue('');
           }
         } else {
-          console.log('[MultiCellSelection] Selecting cell:', cellKey);
           next.add(cellKey);
           // Automatically enter editing mode when selecting cells
           setIsAnySelectedCellEditing(true);
@@ -103,7 +93,6 @@ export function useMultiCellSelection(
         if (next.size === 0) {
           setIsSelectionMode(false);
         }
-        console.log('[MultiCellSelection] Total selected:', next.size);
         return next;
       });
     }
