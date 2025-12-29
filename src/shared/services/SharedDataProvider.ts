@@ -41,6 +41,12 @@ export interface SharedItem {
 
 export type SharedData = Partial<Record<ShareableModule, SharedItem[]>>;
 
+interface PermissionSettings {
+  includeIds?: string[];
+  excludeIds?: string[];
+  limit?: number;
+}
+
 interface ConnectionPermission {
   connectionId: string;
   userId: string;
@@ -48,6 +54,7 @@ interface ConnectionPermission {
   avatarUrl?: string;
   module: ShareableModule;
   permissionLevel: ModulePermissionLevel;
+  settings?: PermissionSettings;
 }
 
 interface ProfileConnectionRow {
@@ -63,6 +70,7 @@ interface ModulePermissionRow {
   module: string;
   permission_level: string;
   user_id: string;
+  settings?: PermissionSettings | null;
 }
 
 /**
@@ -148,7 +156,7 @@ async function getIncomingPermissions(): Promise<ConnectionPermission[]> {
 
   const { data: permissions, error: permissionsError } = await supabase
     .from('module_permissions')
-    .select('connection_id, module, permission_level, user_id')
+    .select('connection_id, module, permission_level, user_id, settings')
     .in('connection_id', connectionIds)
     .neq('permission_level', 'none');
 
@@ -183,6 +191,7 @@ async function getIncomingPermissions(): Promise<ConnectionPermission[]> {
       avatarUrl: connectionInfo.avatarUrl,
       module: perm.module as ShareableModule,
       permissionLevel: perm.permission_level as ModulePermissionLevel,
+      settings: perm.settings ?? undefined,
     });
   }
 
@@ -193,7 +202,8 @@ async function fetchModuleData(
   module: ShareableModule,
   userId: string,
   userName: string,
-  avatarUrl?: string
+  avatarUrl?: string,
+  settings?: PermissionSettings
 ): Promise<SharedItem[]> {
   const tableMappings: Partial<Record<ShareableModule, string>> = {
     meals: 'meal_plans',
@@ -220,10 +230,14 @@ async function fetchModuleData(
     .from(table)
     .select('*')
     .eq('user_id', userId)
-    .limit(20);
+    .limit(settings?.limit ?? 20);
 
   if (module === 'mood' && table === 'journal_entries') {
     query = query.not('mood', 'is', null);
+  }
+
+  if (settings?.includeIds && settings.includeIds.length > 0) {
+    query = query.in('id', settings.includeIds);
   }
 
   const { data, error } = await query;
@@ -233,7 +247,14 @@ async function fetchModuleData(
     return [];
   }
 
-  return (data || []).map((item: Record<string, unknown>) => ({
+  const filtered = (data || []).filter((item: Record<string, unknown>) => {
+    if (settings?.excludeIds && settings.excludeIds.length > 0) {
+      return !settings.excludeIds.includes(item.id as string);
+    }
+    return true;
+  });
+
+  return filtered.map((item: Record<string, unknown>) => ({
     ...item,
     id: item.id as string,
     sharedBy: {
@@ -262,7 +283,8 @@ export async function fetchSharedDashboardData(): Promise<SharedData> {
             module as ShareableModule,
             perm.userId,
             perm.userName,
-            perm.avatarUrl
+            perm.avatarUrl,
+            perm.settings
           )
         )
       );

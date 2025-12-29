@@ -52,6 +52,7 @@ describe('Shared Data Integration', () => {
         module: 'todos',
         permission_level: 'view',
         user_id: 'user-2',
+        settings: { includeIds: ['task-1'] },
       },
       {
         connection_id: 'conn-1',
@@ -70,7 +71,10 @@ describe('Shared Data Integration', () => {
     const tableData: Record<string, unknown[]> = {
       profile_connections: connections,
       module_permissions: permissions,
-      tasks: [{ id: 'task-1', title: 'Shared task' }],
+      tasks: [
+        { id: 'task-1', title: 'Shared task' },
+        { id: 'task-2', title: 'Hidden task' },
+      ],
       meal_plans: [{ id: 'meal-1', name: 'Shared meal' }],
       goals: [{ id: 'goal-1', title: 'Owner goal' }],
     };
@@ -94,6 +98,7 @@ describe('Shared Data Integration', () => {
     const result = await fetchSharedDashboardData();
 
     expect(result.todos?.[0]?.title).toBe('Shared task');
+    expect(result.todos?.find((item) => item.title === 'Hidden task')).toBeUndefined();
     expect(result.todos?.[0]?.sharedBy.name).toBe('Friend User');
     expect(result.meals?.[0]?.name).toBe('Shared meal');
     expect(result.meals?.[0]?.sharedBy.name).toBe('Friend User');
