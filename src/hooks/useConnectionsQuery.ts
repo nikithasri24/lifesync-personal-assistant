@@ -8,6 +8,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { logger } from '@/services/logger';
 import {
   getUserConnections,
+  getConnectionPermissions,
   getPendingInvitations,
   createConnection,
   acceptConnection,
@@ -18,6 +19,7 @@ import {
 } from '@/shared/api/connectionsAPI';
 import type {
   ConnectionWithUser,
+  ConnectionWithPermissions,
   PendingInvitation,
   CreateConnectionInput,
   AcceptConnectionInput,
@@ -48,13 +50,19 @@ export const connectionsKeys = {
  * Fetch all active connections for current user
  */
 export function useConnectionsQuery() {
-  return useQuery({
+  return useQuery<ConnectionWithPermissions[]>({
     queryKey: connectionsKeys.connections(),
     queryFn: async () => {
       logger.debug('Shared', 'Fetching user connections');
       const connections = await getUserConnections();
-      logger.info('Shared', 'Connections loaded', { count: connections.length });
-      return connections;
+      const withPermissions = await Promise.all(
+        connections.map(async (connection) => {
+          const permissions = await getConnectionPermissions(connection.id);
+          return { ...connection, ...permissions };
+        })
+      );
+      logger.info('Shared', 'Connections loaded', { count: withPermissions.length });
+      return withPermissions;
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
   });

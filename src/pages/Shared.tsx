@@ -41,15 +41,13 @@ const Shared: React.FC = () => {
     // React Query auto-refetches invitations
   };
 
-  const handleInvitationAccepted = (): void => {
-    // NOTE: Once InvitationsPanel is implemented, it should pass invitationId
-    // and call: acceptInvitation(invitationId);
+  const handleInvitationAccepted = (connectionId: string): void => {
+    acceptInvitation({ connectionId });
     setActiveTab('connections');
   };
 
-  const handleInvitationRejected = (): void => {
-    // NOTE: Once InvitationsPanel is implemented, it should pass invitationId
-    // and call: rejectInvitation(invitationId);
+  const handleInvitationRejected = (connectionId: string): void => {
+    rejectInvitation(connectionId);
   };
 
   const handleConnectionDeleted = (connectionId: string): void => {

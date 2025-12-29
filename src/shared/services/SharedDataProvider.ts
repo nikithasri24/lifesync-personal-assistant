@@ -6,6 +6,7 @@
  */
 
 import { supabase } from '@/lib/supabase';
+import { logger } from '@/services/logger';
 import type { ShareableModule, ModulePermissionLevel } from '../types/connections';
 
 interface SharedDataContext {
@@ -22,6 +23,46 @@ interface SharedDataResult<T> {
     data: T[];
     context: SharedDataContext;
   }[];
+}
+
+export interface SharedItem {
+  id: string;
+  name?: string;
+  title?: string;
+  description?: string;
+  sharedBy: {
+    id: string;
+    name: string;
+    avatarUrl?: string;
+  };
+  createdAt?: string;
+  [key: string]: unknown;
+}
+
+export type SharedData = Partial<Record<ShareableModule, SharedItem[]>>;
+
+interface ConnectionPermission {
+  connectionId: string;
+  userId: string;
+  userName: string;
+  avatarUrl?: string;
+  module: ShareableModule;
+  permissionLevel: ModulePermissionLevel;
+}
+
+interface ProfileConnectionRow {
+  id: string;
+  requester_id: string;
+  receiver_id: string;
+  requester_user?: { id: string; email: string; full_name?: string; avatar_url?: string } | { id: string; email: string; full_name?: string; avatar_url?: string }[];
+  receiver_user?: { id: string; email: string; full_name?: string; avatar_url?: string } | { id: string; email: string; full_name?: string; avatar_url?: string }[];
+}
+
+interface ModulePermissionRow {
+  connection_id: string;
+  module: string;
+  permission_level: string;
+  user_id: string;
 }
 
 /**
@@ -78,6 +119,149 @@ export async function getModulePermissions(
   }
   
   return contexts;
+}
+
+async function getIncomingPermissions(): Promise<ConnectionPermission[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data: connections, error: connError } = await supabase
+    .from('profile_connections')
+    .select(`
+      id,
+      requester_id,
+      receiver_id,
+      requester_user:profiles!profile_connections_requester_id_fkey(id, email, full_name, avatar_url),
+      receiver_user:profiles!profile_connections_receiver_id_fkey(id, email, full_name, avatar_url)
+    `)
+    .eq('status', 'active')
+    .or(`requester_id.eq.${user.id},receiver_id.eq.${user.id}`);
+
+  if (connError || !connections) {
+    logger.error('SharedData', new Error(`Failed to fetch connections: ${connError?.message}`));
+    return [];
+  }
+
+  const connectionRows = connections as ProfileConnectionRow[];
+  const connectionIds = connectionRows.map((conn) => conn.id);
+  if (connectionIds.length === 0) return [];
+
+  const { data: permissions, error: permissionsError } = await supabase
+    .from('module_permissions')
+    .select('connection_id, module, permission_level, user_id')
+    .in('connection_id', connectionIds)
+    .neq('permission_level', 'none');
+
+  if (permissionsError) {
+    logger.error('SharedData', new Error(`Failed to fetch permissions: ${permissionsError.message}`));
+    return [];
+  }
+
+  const connectionMap = new Map<string, { otherUserId: string; otherUserName: string; avatarUrl?: string }>();
+  for (const conn of connectionRows) {
+    const isRequester = conn.requester_id === user.id;
+    const otherUserId = isRequester ? conn.receiver_id : conn.requester_id;
+    const rawUser = isRequester ? conn.receiver_user : conn.requester_user;
+    const otherUser = Array.isArray(rawUser) ? rawUser[0] : rawUser;
+    if (!otherUser) continue;
+    connectionMap.set(conn.id, {
+      otherUserId,
+      otherUserName: otherUser.full_name || otherUser.email || 'Unknown',
+      avatarUrl: otherUser.avatar_url ?? undefined,
+    });
+  }
+
+  const incoming: ConnectionPermission[] = [];
+  for (const perm of (permissions || []) as ModulePermissionRow[]) {
+    const connectionInfo = connectionMap.get(perm.connection_id);
+    if (!connectionInfo) continue;
+    if (perm.user_id !== connectionInfo.otherUserId) continue;
+    incoming.push({
+      connectionId: perm.connection_id,
+      userId: connectionInfo.otherUserId,
+      userName: connectionInfo.otherUserName,
+      avatarUrl: connectionInfo.avatarUrl,
+      module: perm.module as ShareableModule,
+      permissionLevel: perm.permission_level as ModulePermissionLevel,
+    });
+  }
+
+  return incoming;
+}
+
+async function fetchModuleData(
+  module: ShareableModule,
+  userId: string,
+  userName: string,
+  avatarUrl?: string
+): Promise<SharedItem[]> {
+  const tableMappings: Partial<Record<ShareableModule, string>> = {
+    meals: 'meal_plans',
+    shopping: 'shopping_lists',
+    todos: 'tasks',
+    goals: 'goals',
+    habits: 'habits',
+    notes: 'notes',
+    travel: 'visited_countries',
+  };
+
+  const table = tableMappings[module];
+  if (!table) return [];
+
+  const { data, error } = await supabase
+    .from(table)
+    .select('*')
+    .eq('user_id', userId)
+    .limit(20);
+
+  if (error) {
+    logger.warn('SharedData', `Failed to fetch ${module} data: ${error.message}`);
+    return [];
+  }
+
+  return (data || []).map((item: Record<string, unknown>) => ({
+    ...item,
+    id: item.id as string,
+    sharedBy: {
+      id: userId,
+      name: userName,
+      avatarUrl,
+    },
+  }));
+}
+
+export async function fetchSharedDashboardData(): Promise<SharedData> {
+  const permissions = await getIncomingPermissions();
+  const sharedData: SharedData = {};
+
+  const moduleGroups = permissions.reduce((acc, perm) => {
+    if (!acc[perm.module]) acc[perm.module] = [];
+    acc[perm.module].push(perm);
+    return acc;
+  }, {} as Record<ShareableModule, ConnectionPermission[]>);
+
+  await Promise.all(
+    Object.entries(moduleGroups).map(async ([module, perms]) => {
+      const items = await Promise.all(
+        perms.map((perm) =>
+          fetchModuleData(
+            module as ShareableModule,
+            perm.userId,
+            perm.userName,
+            perm.avatarUrl
+          )
+        )
+      );
+      sharedData[module as ShareableModule] = items.flat();
+    })
+  );
+
+  logger.info('SharedData', 'Shared data loaded', {
+    modules: Object.keys(sharedData).length,
+    totalItems: Object.values(sharedData).flat().length,
+  });
+
+  return sharedData;
 }
 
 /**
@@ -174,4 +358,3 @@ export async function fetchSharedShoppingLists() {
 export async function fetchSharedFinances() {
   return fetchSharedData('transactions', 'finances');
 }
-
