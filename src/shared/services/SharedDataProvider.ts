@@ -202,17 +202,31 @@ async function fetchModuleData(
     goals: 'goals',
     habits: 'habits',
     notes: 'notes',
-    travel: 'visited_countries',
+    projects: 'projects',
+    journal: 'journal_entries',
+    mood: 'journal_entries',
+    travel: 'visited_locations',
+    visa: 'user_visas',
+    'trip-planner': 'trips',
+    finances: 'finance_transactions',
+    nutrition: 'food_log',
+    skincare: 'skincare_products',
   };
 
   const table = tableMappings[module];
   if (!table) return [];
 
-  const { data, error } = await supabase
+  let query = supabase
     .from(table)
     .select('*')
     .eq('user_id', userId)
     .limit(20);
+
+  if (module === 'mood' && table === 'journal_entries') {
+    query = query.not('mood', 'is', null);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     logger.warn('SharedData', `Failed to fetch ${module} data: ${error.message}`);

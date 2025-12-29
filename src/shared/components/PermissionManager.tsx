@@ -81,7 +81,7 @@ export function PermissionManager({
       ['habits', 'todos', 'notes', 'projects'].includes(m.module)
     ),
     wellbeing: Object.values(MODULE_CONFIGS).filter(m =>
-      ['journal', 'mood', 'period', 'skincare', 'nutrition'].includes(m.module)
+      ['journal', 'mood', 'skincare', 'nutrition'].includes(m.module)
     ),
     personal: Object.values(MODULE_CONFIGS).filter(m =>
       ['travel', 'visa', 'trip-planner', 'finances', 'shopping', 'meals', 'goals'].includes(m.module)

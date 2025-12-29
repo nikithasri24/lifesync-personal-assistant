@@ -79,7 +79,7 @@ CREATE TABLE IF NOT EXISTS module_permissions (
   module TEXT NOT NULL
     CHECK (module IN ('travel', 'visa', 'trip-planner', 'finances', 'shopping', 'meals', 
                       'goals', 'habits', 'todos', 'notes', 'projects', 'journal', 'mood', 
-                      'period', 'skincare', 'nutrition')),
+                      'skincare', 'nutrition')),
   
   -- Permission level
   permission_level TEXT NOT NULL DEFAULT 'none'
@@ -175,4 +175,3 @@ DROP POLICY IF EXISTS "Users can manage their own permissions" ON module_permiss
 CREATE POLICY "Users can manage their own permissions"
   ON module_permissions FOR ALL
   USING (user_id = auth.uid());
-

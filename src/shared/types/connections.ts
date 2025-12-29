@@ -43,7 +43,6 @@ export type ShareableModule =
   | 'projects'
   | 'journal'
   | 'mood'
-  | 'period'
   | 'skincare';
 
 // =====================================================
@@ -276,15 +275,6 @@ export const MODULE_CONFIGS: Record<ShareableModule, ModulePermissionConfig> = {
     icon: 'Smile',
     defaultLevel: 'none',
     supportedLevels: ['none', 'view'],
-    hasSettings: false,
-  },
-  period: {
-    module: 'period',
-    label: 'Period',
-    description: 'Menstrual cycle tracking',
-    icon: 'Droplets',
-    defaultLevel: 'none',
-    supportedLevels: ['none'],
     hasSettings: false,
   },
   skincare: {

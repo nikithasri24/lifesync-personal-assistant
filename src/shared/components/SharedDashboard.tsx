@@ -5,19 +5,29 @@
  * Displays meals, shopping lists, tasks, habits, and other shared data.
  */
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Users,
   Utensils,
   ShoppingCart,
   CheckSquare,
   Target,
-  Calendar,
+  BookOpen,
+  FileText,
+  FolderOpen,
+  MapPin,
+  Plane,
+  Map,
+  DollarSign,
+  Trophy,
+  Smile,
+  Sparkles,
   Loader2,
   ChevronDown,
   ChevronRight,
 } from 'lucide-react';
 import type { ConnectionWithUser, ShareableModule } from '../types/connections';
+import { MODULE_CONFIGS } from '../types/connections';
 import { useSharedDataQuery } from '../hooks/useSharedDataQuery';
 
 interface SharedDashboardProps {
@@ -31,17 +41,58 @@ interface ModuleSection {
   color: string;
 }
 
-const VISIBLE_MODULES: ModuleSection[] = [
-  { module: 'meals', label: 'Meal Plans', icon: <Utensils className="w-5 h-5" />, color: 'text-orange-500' },
-  { module: 'shopping', label: 'Shopping Lists', icon: <ShoppingCart className="w-5 h-5" />, color: 'text-green-500' },
-  { module: 'todos', label: 'Tasks', icon: <CheckSquare className="w-5 h-5" />, color: 'text-blue-500' },
-  { module: 'goals', label: 'Goals', icon: <Target className="w-5 h-5" />, color: 'text-purple-500' },
-  { module: 'habits', label: 'Habits', icon: <Calendar className="w-5 h-5" />, color: 'text-indigo-500' },
-];
+const MODULE_ICONS: Record<ShareableModule, React.ReactNode> = {
+  travel: <MapPin className="w-5 h-5" />,
+  visa: <Plane className="w-5 h-5" />,
+  'trip-planner': <Map className="w-5 h-5" />,
+  finances: <DollarSign className="w-5 h-5" />,
+  shopping: <ShoppingCart className="w-5 h-5" />,
+  meals: <Utensils className="w-5 h-5" />,
+  nutrition: <Utensils className="w-5 h-5" />,
+  goals: <Trophy className="w-5 h-5" />,
+  habits: <Target className="w-5 h-5" />,
+  todos: <CheckSquare className="w-5 h-5" />,
+  notes: <FileText className="w-5 h-5" />,
+  projects: <FolderOpen className="w-5 h-5" />,
+  journal: <BookOpen className="w-5 h-5" />,
+  mood: <Smile className="w-5 h-5" />,
+  skincare: <Sparkles className="w-5 h-5" />,
+};
+
+const MODULE_COLORS: Record<ShareableModule, string> = {
+  meals: 'text-orange-500',
+  shopping: 'text-green-500',
+  todos: 'text-blue-500',
+  goals: 'text-purple-500',
+  habits: 'text-indigo-500',
+  travel: 'text-emerald-500',
+  visa: 'text-sky-500',
+  'trip-planner': 'text-teal-500',
+  finances: 'text-lime-500',
+  nutrition: 'text-amber-500',
+  notes: 'text-slate-500',
+  projects: 'text-cyan-500',
+  journal: 'text-rose-500',
+  mood: 'text-yellow-500',
+  skincare: 'text-pink-500',
+};
 
 export function SharedDashboard({ connections }: SharedDashboardProps): React.ReactElement {
   const [expandedModules, setExpandedModules] = useState<Set<ShareableModule>>(new Set(['meals', 'todos']));
   const { data: sharedData, isLoading } = useSharedDataQuery();
+  const moduleSections = useMemo(() => {
+    const data = sharedData ?? {};
+    const availableModules = new Set(Object.keys(data) as ShareableModule[]);
+
+    return Object.values(MODULE_CONFIGS)
+      .filter((config) => availableModules.has(config.module))
+      .map((config) => ({
+        module: config.module,
+        label: config.label,
+        icon: MODULE_ICONS[config.module] ?? <Users className="w-5 h-5" />,
+        color: MODULE_COLORS[config.module] ?? 'text-slate-500',
+      }));
+  }, [sharedData]);
 
   const toggleModule = (module: ShareableModule) => {
     setExpandedModules(prev => {
@@ -74,6 +125,20 @@ export function SharedDashboard({ connections }: SharedDashboardProps): React.Re
       <div className="flex items-center justify-center py-12">
         <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
         <span className="ml-3 text-slate-600 dark:text-slate-400">Loading shared data...</span>
+      </div>
+    );
+  }
+
+  if (!sharedData || moduleSections.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <Users className="w-16 h-16 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
+        <h3 className="text-lg font-medium text-slate-700 dark:text-slate-300 mb-2">
+          No shared items yet
+        </h3>
+        <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+          Your connections haven't shared any items with you yet.
+        </p>
       </div>
     );
   }
@@ -113,7 +178,7 @@ export function SharedDashboard({ connections }: SharedDashboardProps): React.Re
       </div>
 
       {/* Module sections */}
-      {VISIBLE_MODULES.map(({ module, label, icon, color }) => {
+      {moduleSections.map(({ module, label, icon, color }) => {
         const isExpanded = expandedModules.has(module);
         const moduleData = sharedData?.[module] || [];
 
@@ -179,118 +244,62 @@ interface SharedModuleContentProps {
 }
 
 function SharedModuleContent({ module, data }: SharedModuleContentProps): React.ReactElement {
-  // Render different layouts based on module type
-  switch (module) {
-    case 'meals':
-      return (
-        <div className="grid gap-3 sm:grid-cols-2">
-          {data.map((item) => (
-            <div
-              key={item.id}
-              className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg"
-            >
-              <Utensils className="w-5 h-5 text-orange-500 flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-slate-900 dark:text-white text-sm truncate">
-                  {item.name || item.title || 'Meal'}
-                </p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Shared by {item.sharedBy.name}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      );
+  const icon = MODULE_ICONS[module] ?? <Users className="w-5 h-5" />;
+  const iconColor = MODULE_COLORS[module] ?? 'text-slate-500';
 
-    case 'shopping':
-      return (
-        <div className="space-y-2">
-          {data.map((item) => (
-            <div
-              key={item.id}
-              className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg"
-            >
-              <ShoppingCart className="w-5 h-5 text-green-500 flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-slate-900 dark:text-white text-sm truncate">
-                  {item.name || 'Shopping List'}
-                </p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {item.sharedBy.name} • {(item as SharedItem & { items_count?: number }).items_count || 0} items
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      );
+  const getTitle = (item: SharedItem): string => {
+    const record = item as Record<string, unknown>;
+    switch (module) {
+      case 'travel':
+        return (record.country_name as string) || (record.city_name as string) || (record.state_name as string) || (record.region_name as string) || (record.island_name as string) || item.title || item.name || 'Location';
+      case 'visa':
+        return (record.country_name as string) || item.title || item.name || 'Visa';
+      case 'trip-planner':
+        return (record.name as string) || item.title || 'Trip';
+      case 'finances':
+        return (record.description as string) || (record.merchant_name as string) || item.title || item.name || 'Transaction';
+      case 'nutrition':
+        return (record.custom_food_name as string) || item.title || item.name || 'Food Log';
+      case 'skincare':
+        return (record.name as string) || item.title || 'Skincare Item';
+      case 'notes':
+      case 'journal':
+        return (record.title as string) || (record.content as string) || item.name || 'Entry';
+      case 'mood':
+        return (record.mood as string) ? `Mood: ${record.mood as string}` : 'Mood Entry';
+      default:
+        return item.title || item.name || 'Item';
+    }
+  };
 
-    case 'todos':
-      return (
-        <div className="space-y-2">
-          {data.map((item) => (
-            <div
-              key={item.id}
-              className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg"
-            >
-              <CheckSquare className="w-5 h-5 text-blue-500 flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-slate-900 dark:text-white text-sm truncate">
-                  {item.title || item.name || 'Task'}
-                </p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Assigned by {item.sharedBy.name}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      );
+  const getSubtitle = (item: SharedItem): string => {
+    const record = item as Record<string, unknown>;
+    if (module === 'shopping' && typeof record.items_count === 'number') {
+      return `${item.sharedBy.name} • ${record.items_count} items`;
+    }
+    return `Shared by ${item.sharedBy.name}`;
+  };
 
-    case 'goals':
-      return (
-        <div className="space-y-2">
-          {data.map((item) => (
-            <div
-              key={item.id}
-              className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg"
-            >
-              <Target className="w-5 h-5 text-purple-500 flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-slate-900 dark:text-white text-sm truncate">
-                  {item.title || item.name || 'Goal'}
-                </p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {item.sharedBy.name}
-                </p>
-              </div>
-            </div>
-          ))}
+  return (
+    <div className="space-y-2">
+      {data.map((item) => (
+        <div
+          key={item.id}
+          className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg"
+        >
+          <span className={`${iconColor} flex-shrink-0`}>{icon}</span>
+          <div className="flex-1 min-w-0">
+            <p className="font-medium text-slate-900 dark:text-white text-sm truncate">
+              {getTitle(item)}
+            </p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              {getSubtitle(item)}
+            </p>
+          </div>
         </div>
-      );
-
-    default:
-      return (
-        <div className="space-y-2">
-          {data.map((item) => (
-            <div
-              key={item.id}
-              className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg"
-            >
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-slate-900 dark:text-white text-sm truncate">
-                  {item.title || item.name || 'Item'}
-                </p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Shared by {item.sharedBy.name}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      );
-  }
+      ))}
+    </div>
+  );
 }
 
 export default SharedDashboard;
-
