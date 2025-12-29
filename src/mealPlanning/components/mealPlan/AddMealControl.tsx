@@ -114,7 +114,7 @@ export function AddMealControl({
   if (effectiveIsEditing) {
     return (
       <div
-        className="flex items-center gap-2 p-2 bg-white border-2 border-indigo-400 rounded-lg shadow-sm animate-in fade-in duration-200"
+        className="flex items-center gap-2 p-2 bg-slate-100 border-2 border-indigo-400 rounded-lg animate-in fade-in duration-200"
         onClick={(e) => {
           // Stop propagation when editing to prevent cell deselection
           e.stopPropagation();
@@ -138,7 +138,7 @@ export function AddMealControl({
             }, 200);
           }}
           placeholder={`e.g., Scrambled eggs, Oatmeal...`}
-          className="flex-1 min-w-0 px-3 py-1.5 text-sm border-0 bg-slate-50 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white placeholder:text-slate-400"
+          className="flex-1 min-w-0 px-3 py-1.5 text-sm border-0 bg-slate-50 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-slate-100 placeholder:text-slate-400"
         />
         <button
           type="button"
@@ -188,28 +188,13 @@ export function AddMealControl({
           }
         }
       }}
-      className={`
-        group/add-btn w-full text-left rounded-lg transition-all duration-200
-        ${compact
-          ? 'p-1.5 text-xs'
-          : 'p-3 text-sm'
-        }
-        ${showByDefault
-          ? 'border-2 border-dashed border-indigo-300 bg-indigo-50/50 hover:bg-indigo-100 hover:border-indigo-400'
-          : 'border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300'
-        }
-      `}
+      className="group/add-btn w-full text-left py-1.5 px-2 transition-all duration-200 hover:bg-slate-100 rounded"
     >
       <div className="flex items-center gap-2">
-        <Plus className={`${compact ? 'w-3 h-3' : 'w-4 h-4'} text-indigo-600 group-hover/add-btn:scale-110 transition-transform`} />
-        <span className={`font-medium ${showByDefault ? 'text-indigo-700' : 'text-slate-600'} group-hover/add-btn:text-indigo-800`}>
-          Add {mealType || 'meal'}
+        <Plus className="w-3.5 h-3.5 text-slate-400 group-hover/add-btn:text-slate-600 transition-colors" />
+        <span className="text-sm text-slate-500 group-hover/add-btn:text-slate-700 transition-colors">
+          Add meal
         </span>
-        {showByDefault && (
-          <span className="ml-auto text-xs text-indigo-500 opacity-75">
-            Click to add
-          </span>
-        )}
       </div>
     </button>
   );

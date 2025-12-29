@@ -1,6 +1,6 @@
 import React, { type ReactElement, useMemo } from 'react';
 import { format, isSameDay } from 'date-fns';
-import { ChefHat } from 'lucide-react';
+import { ChefHat, Coffee, Sun, Moon, Cookie } from 'lucide-react';
 import type { PlannedMeal, Recipe } from '../../../types';
 import { toKey, parseLocalDateKey } from '../../utils';
 import CellWithMeals from '../mealPlan/CellWithMeals';
@@ -8,6 +8,13 @@ import AddMealControl from '../mealPlan/AddMealControl';
 import { MealBacklogSection } from './MealBacklogSection';
 
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack'];
+
+const MEAL_TYPE_CONFIG = {
+  breakfast: { icon: Coffee, gradient: 'from-amber-400 to-orange-500' },
+  lunch: { icon: Sun, gradient: 'from-emerald-400 to-teal-500' },
+  dinner: { icon: Moon, gradient: 'from-indigo-400 to-purple-500' },
+  snack: { icon: Cookie, gradient: 'from-pink-400 to-rose-500' },
+};
 
 interface WeeklyGridProps {
   weekDays: Date[];
@@ -43,7 +50,7 @@ interface WeeklyGridProps {
 }
 
 /**
- * Weekly meal planning grid component
+ * Weekly meal planning grid component - Redesigned with modern card-based layout
  */
 export function WeeklyGrid({
   weekDays,
@@ -64,137 +71,162 @@ export function WeeklyGrid({
   addMealToSelectedCells,
 }: WeeklyGridProps): ReactElement {
   return (
-    <div className="mt-6">
-      <div className="overflow-x-auto">
-        {/* Header row */}
-        <div className="grid" style={{ gridTemplateColumns: `140px repeat(4, minmax(160px, 1fr))` }}>
-          <div className="p-3 border-b border-r border-slate-200 sticky left-0 bg-white z-20" />
-          {MEAL_TYPES.map((mealType) => (
-            <div
-              key={mealType}
-              className="p-3 border-b border-r border-slate-200 text-sm font-semibold text-slate-900 bg-white text-center capitalize"
-            >
-              {mealType}
-            </div>
-          ))}
-        </div>
-        {/* Day rows */}
-        {weekDays.map((d) => {
-          const key = toKey(d);
-          const today = new Date();
-          const highlight = isSameDay(d, today);
-          return (
-            <div key={key} className="grid" style={{ gridTemplateColumns: `140px repeat(4, minmax(160px, 1fr))` }}>
-              {/* Day label */}
-              <div
-                className={`relative p-3 border-b border-r border-slate-200 bg-slate-50 text-sm font-medium text-slate-800 flex flex-col justify-center sticky left-0 z-10`}
+    <div className="mt-6 overflow-x-auto">
+      <table className="w-full border-collapse rounded-lg overflow-hidden border border-slate-200">
+        {/* Table header */}
+        <thead>
+          <tr className="border-b-2 border-slate-200">
+            <th className="sticky left-0 z-20 bg-slate-50 text-slate-900 p-3 text-left text-sm font-semibold border-r border-slate-200 min-w-[120px]">
+              Date
+            </th>
+            {MEAL_TYPES.map((mealType) => {
+              const config = MEAL_TYPE_CONFIG[mealType as keyof typeof MEAL_TYPE_CONFIG];
+              const Icon = config.icon;
+              return (
+                <th
+                  key={mealType}
+                  className="p-3 text-left text-sm font-semibold text-slate-900 bg-slate-50 min-w-[220px]"
+                >
+                  <div className="flex items-center gap-2">
+                    <Icon className="w-4 h-4 text-slate-600" />
+                    <span className="capitalize">{mealType}</span>
+                  </div>
+                </th>
+              );
+            })}
+          </tr>
+        </thead>
+
+        {/* Table body */}
+        <tbody>
+          {weekDays.map((d, dayIndex) => {
+            const key = toKey(d);
+            const today = new Date();
+            const isToday = isSameDay(d, today);
+
+            return (
+              <tr
+                key={key}
+                className={`border-b border-slate-200 ${
+                  isToday ? 'bg-indigo-50/20' : ''
+                }`}
               >
-                {highlight && (
-                  <div className="absolute inset-y-0 left-0 w-1 bg-indigo-500 rounded-r-sm" aria-hidden />
-                )}
-                <div className={highlight ? 'text-indigo-700 font-semibold' : ''}>{format(d, 'EEE')}</div>
-                <div className="text-xs text-slate-500">{format(d, 'MMM d')}</div>
-              </div>
-              {MEAL_TYPES.map((mealType) => {
-                const dayMeals = (mealsByDate[key] ?? []).filter((m) => m.mealType === mealType);
-                const cellKey = makeCellKey(key, mealType);
-                const isSelected = selectedCells.has(cellKey);
-                const hasContent = dayMeals.length > 0;
+                {/* Date column */}
+                <td
+                  className={`sticky left-0 z-10 border-r-2 border-slate-200 p-4 font-medium ${
+                    isToday ? 'bg-indigo-100/30' : 'bg-slate-50/50'
+                  }`}
+                >
+                  <div className="text-sm font-bold text-slate-900">
+                    {format(d, 'EEE')}
+                  </div>
+                  <div className="text-xs text-slate-600">
+                    {format(d, 'MMM d')}
+                  </div>
+                  {isToday && (
+                    <div className="text-xs font-semibold text-indigo-600 mt-1">
+                      Today
+                    </div>
+                  )}
+                </td>
 
-                return (
-                  <div
-                    key={`${key}-${mealType}`}
-                    className={`relative p-3 border-b border-l border-r border-slate-200 cursor-pointer transition-colors ${
-                      isSelected ? 'bg-indigo-100 border-indigo-400 ring-2 ring-indigo-400' : ''
-                    } ${hasContent ? 'bg-amber-50/30' : ''}`}
-                    onClick={(e) => onCellClick(key, mealType, e)}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={(e) => {
-                      void (async (): Promise<void> => {
-                        if (!activePlan) return;
-                        const optionName = e.dataTransfer.getData('text/meal-option');
-                        if (optionName) {
-                          await createPlannedMeal({
-                            planId: activePlan.id,
-                            meal: {
-                              date: parseLocalDateKey(key),
-                              mealType,
-                              recipeId: undefined,
-                              customMeal: optionName,
-                              servings: 4,
-                              peopleCount: 4,
-                              status: 'planned',
-                              notes: undefined,
-                              preparedAt: undefined,
-                              consumedAt: undefined,
-                            },
-                          });
-                          return;
-                        }
+                {/* Meal type columns */}
+                {MEAL_TYPES.map((mealType) => {
+                  const dayMeals = (mealsByDate[key] ?? []).filter((m) => m.mealType === mealType);
+                  const cellKey = makeCellKey(key, mealType);
+                  const isSelected = selectedCells.has(cellKey);
+                  const hasContent = dayMeals.length > 0;
+                  const hasEatenMeal = dayMeals.some((m) => m.status === 'eaten');
+                  const config = MEAL_TYPE_CONFIG[mealType as keyof typeof MEAL_TYPE_CONFIG];
+                  const highlight = isSelected && selectedCells.size > 1;
 
-                        const recipeDragged = e.dataTransfer.getData('text/recipe-id');
-                        if (recipeDragged) {
-                          await createPlannedMeal({
-                            planId: activePlan.id,
-                            meal: {
-                              date: parseLocalDateKey(key),
-                              mealType,
-                              recipeId: recipeDragged,
-                              customMeal: undefined,
-                              servings: 4,
-                              peopleCount: 4,
-                              status: 'planned',
-                              notes: undefined,
-                              preparedAt: undefined,
-                              consumedAt: undefined,
-                            },
-                          });
-                          return;
-                        }
+                  return (
+                    <td
+                      key={`${key}-${mealType}`}
+                      className={`p-3 align-top cursor-pointer transition-all relative ${
+                        isSelected
+                          ? 'ring-4 ring-inset ring-indigo-400 bg-indigo-50/30'
+                          : 'hover:bg-slate-100/50'
+                      }`}
+                      onClick={(e) => onCellClick(key, mealType, e)}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={(e) => {
+                        void (async (): Promise<void> => {
+                          if (!activePlan) return;
+                          const optionName = e.dataTransfer.getData('text/meal-option');
+                          if (optionName) {
+                            await createPlannedMeal({
+                              planId: activePlan.id,
+                              meal: {
+                                date: parseLocalDateKey(key),
+                                mealType,
+                                recipeId: undefined,
+                                customMeal: optionName,
+                                servings: 4,
+                                peopleCount: 4,
+                                status: 'planned',
+                                notes: undefined,
+                                preparedAt: undefined,
+                                consumedAt: undefined,
+                              },
+                            });
+                            return;
+                          }
 
-                        const mealId = e.dataTransfer.getData('text/meal-id');
-                        if (!mealId) return;
-                        if (e.altKey) {
-                          const source = activePlan.meals?.find((m) => m.id === mealId);
-                          if (!source) return;
-                          await createPlannedMeal({
-                            planId: activePlan.id,
-                            meal: {
-                              date: parseLocalDateKey(key),
-                              mealType,
-                              recipeId: source.recipeId,
-                              customMeal: source.customMeal,
-                              servings: source.servings ?? 4,
-                              peopleCount: source.peopleCount ?? source.servings ?? 4,
-                              status: 'planned',
-                              notes: undefined,
-                              preparedAt: undefined,
-                              consumedAt: undefined,
-                            },
-                          });
-                        } else {
-                          await updatePlannedMeal({
-                            mealId,
-                            updates: { date: parseLocalDateKey(key), mealType },
-                          });
-                        }
-                      })();
-                    }}
-                  >
-                    {highlight && <div className="absolute inset-y-0 left-0 w-1 bg-indigo-300" aria-hidden />}
-                    {hasContent && (
-                      <div className="absolute top-1 right-1 z-10" style={{ pointerEvents: 'none' }}>
-                        <ChefHat className="w-4 h-4 text-amber-600" />
-                      </div>
-                    )}
-                    <div
-                      className="h-full space-y-2 group/cell relative"
-                      style={{ overflow: 'visible' }}
-                      onClick={(e) => {
-                        // Allow clicks to bubble up to parent cell
-                        // Don't stop propagation here
+                          const recipeDragged = e.dataTransfer.getData('text/recipe-id');
+                          if (recipeDragged) {
+                            await createPlannedMeal({
+                              planId: activePlan.id,
+                              meal: {
+                                date: parseLocalDateKey(key),
+                                mealType,
+                                recipeId: recipeDragged,
+                                customMeal: undefined,
+                                servings: 4,
+                                peopleCount: 4,
+                                status: 'planned',
+                                notes: undefined,
+                                preparedAt: undefined,
+                                consumedAt: undefined,
+                              },
+                            });
+                            return;
+                          }
+
+                          const mealId = e.dataTransfer.getData('text/meal-id');
+                          if (!mealId) return;
+                          if (e.altKey) {
+                            const source = activePlan.meals?.find((m) => m.id === mealId);
+                            if (!source) return;
+                            await createPlannedMeal({
+                              planId: activePlan.id,
+                              meal: {
+                                date: parseLocalDateKey(key),
+                                mealType,
+                                recipeId: source.recipeId,
+                                customMeal: source.customMeal,
+                                servings: source.servings ?? 4,
+                                peopleCount: source.peopleCount ?? source.servings ?? 4,
+                                status: 'planned',
+                                notes: undefined,
+                                preparedAt: undefined,
+                                consumedAt: undefined,
+                              },
+                            });
+                          } else {
+                            await updatePlannedMeal({
+                              mealId,
+                              updates: { date: parseLocalDateKey(key), mealType },
+                            });
+                          }
+                        })();
                       }}
                     >
+                      {highlight && <div className="absolute inset-y-0 left-0 w-1 bg-indigo-500" aria-hidden />}
+                      <div
+                        className="min-h-[100px] group/cell relative"
+                        style={{ overflow: 'visible' }}
+                      >
                       {dayMeals.length > 0 ? (
                         <CellWithMeals
                           dateKey={key}
@@ -229,13 +261,7 @@ export function WeeklyGrid({
                                   console.error('[AddMeal] No active plan found!');
                                   return;
                                 }
-                                console.log('[AddMeal] Creating meal:', {
-                                  planId: activePlan.id,
-                                  date: parseLocalDateKey(key),
-                                  mealType,
-                                  customMeal: mealName,
-                                });
-                                void createPlannedMeal({
+                                const mealData = {
                                   planId: activePlan.id,
                                   meal: {
                                     date: parseLocalDateKey(key),
@@ -245,10 +271,14 @@ export function WeeklyGrid({
                                     peopleCount: 2,
                                     status: 'planned',
                                   },
-                                }).then(() => {
-                                  console.log('[AddMeal] Meal created successfully!');
+                                };
+                                console.log('[AddMeal] ⚠️ About to call createPlannedMeal with:', mealData);
+                                console.log('[AddMeal] ⚠️ customMeal value:', mealName);
+                                console.log('[AddMeal] ⚠️ createPlannedMeal function:', typeof createPlannedMeal);
+                                void createPlannedMeal(mealData).then(() => {
+                                  console.log('[AddMeal] ✅ Meal created successfully!');
                                 }).catch((error) => {
-                                  console.error('[AddMeal] Failed to create meal:', error);
+                                  console.error('[AddMeal] ❌ Failed to create meal:', error);
                                 });
                               }}
                             />
@@ -303,14 +333,15 @@ export function WeeklyGrid({
                           }}
                         />
                       )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          );
-        })}
-      </div>
+                      </div>
+                    </td>
+                  );
+                })}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
 
       {/* Meal Backlog Section */}
       {(() => {

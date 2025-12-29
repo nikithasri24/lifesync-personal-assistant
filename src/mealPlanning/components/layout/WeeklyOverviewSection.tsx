@@ -46,9 +46,9 @@ export function WeeklyOverviewSection({
   addMealToSelectedCells,
 }: WeeklyOverviewSectionProps): React.ReactElement {
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm order-1">
-      <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
-        <CalendarDays className="h-5 w-5 text-sky-500" />
+    <section className="rounded-lg border border-slate-200 p-6 order-1">
+      <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900 mb-4">
+        <CalendarDays className="h-5 w-5 text-indigo-600" />
         Weekly overview
       </h2>
 

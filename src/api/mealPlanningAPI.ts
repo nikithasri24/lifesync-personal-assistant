@@ -26,6 +26,13 @@ export async function getMealPlans(): Promise<MealPlanData[]> {
         .order('week_start_date', { ascending: false });
 
       if (error) throw error;
+
+      console.log('[mealPlanningAPI.getMealPlans] ⚠️ Raw data from Supabase:', data);
+      if (data && data.length > 0 && data[0].planned_meals) {
+        console.log('[mealPlanningAPI.getMealPlans] ⚠️ First planned meal:', data[0].planned_meals[0]);
+        console.log('[mealPlanningAPI.getMealPlans] ⚠️ First planned meal custom_meal:', data[0].planned_meals[0]?.custom_meal);
+      }
+
       return (data ?? []) as MealPlanData[];
     },
     { domain: 'MealPlanningAPI', operation: 'getMealPlans' }
@@ -150,6 +157,9 @@ export async function createPlannedMeal(
 ): Promise<PlannedMealData> {
   return apiCall(
     async () => {
+      console.log('[mealPlanningAPI.createPlannedMeal] ⚠️ Received meal payload:', meal);
+      console.log('[mealPlanningAPI.createPlannedMeal] ⚠️ custom_meal value:', meal.custom_meal);
+
       const user = await requireAuth();
 
       // Verify meal plan ownership
@@ -162,11 +172,16 @@ export async function createPlannedMeal(
 
       if (planError || !plan) throw new Error('Meal plan not found or access denied');
 
+      console.log('[mealPlanningAPI.createPlannedMeal] ⚠️ About to insert into Supabase:', meal);
+
       const result = await supabase
         .from('planned_meals')
         .insert(meal)
         .select()
         .single();
+
+      console.log('[mealPlanningAPI.createPlannedMeal] ⚠️ Supabase result:', result);
+      console.log('[mealPlanningAPI.createPlannedMeal] ⚠️ Returned custom_meal:', result.data?.custom_meal);
 
       const data = handleSupabaseResponse(result, 'Planned Meal');
       return data as PlannedMealData;

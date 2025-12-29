@@ -51,7 +51,7 @@ WHERE NOT EXISTS (
 
 -- 6. Test RLS policy as current user
 -- This simulates what the app sees
-SELECT 
+SELECT
   pm.id,
   pm.meal_plan_id,
   pm.custom_meal,
@@ -64,4 +64,21 @@ WHERE EXISTS (
   AND mp.user_id = auth.uid()
 )
 LIMIT 10;
+
+-- 7. Find broken meals (NULL custom_meal AND NULL recipe_id)
+SELECT
+  pm.id,
+  pm.custom_meal,
+  pm.recipe_id,
+  pm.date,
+  pm.meal_type,
+  pm.status
+FROM planned_meals pm
+WHERE pm.custom_meal IS NULL AND pm.recipe_id IS NULL
+ORDER BY pm.created_at DESC;
+
+-- 8. DELETE broken meals (NULL custom_meal AND NULL recipe_id)
+-- CAUTION: This will permanently delete these meals!
+-- Uncomment the line below to execute the deletion:
+-- DELETE FROM planned_meals WHERE custom_meal IS NULL AND recipe_id IS NULL;
 

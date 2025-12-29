@@ -273,7 +273,7 @@ function mapPlannedMealDataToPlannedMeal(data: PlannedMealData): PlannedMeal {
     ? new Date(Number(data.original_date.slice(0, 4)), Number(data.original_date.slice(5, 7)) - 1, Number(data.original_date.slice(8, 10)))
     : toDate(data.original_date);
 
-  return {
+  const mapped = {
     id: data.id ?? crypto.randomUUID(),
     mealPlanId: data.meal_plan_id ?? 'unknown',
     date: d ?? new Date(),
@@ -296,6 +296,15 @@ function mapPlannedMealDataToPlannedMeal(data: PlannedMealData): PlannedMeal {
 
     createdAt: toDate(data.created_at) ?? new Date(),
   };
+
+  if (!mapped.customMeal && !mapped.recipeId) {
+    console.log('[mapPlannedMealDataToPlannedMeal] ⚠️ Meal with no name detected!');
+    console.log('[mapPlannedMealDataToPlannedMeal] ⚠️ Input data:', data);
+    console.log('[mapPlannedMealDataToPlannedMeal] ⚠️ data.custom_meal:', data.custom_meal);
+    console.log('[mapPlannedMealDataToPlannedMeal] ⚠️ Mapped customMeal:', mapped.customMeal);
+  }
+
+  return mapped;
 }
 
 function mapMealPlanDataToMealPlanWeek(data: MealPlanData): MealPlanWeek {
@@ -435,12 +444,17 @@ function buildPlannedMealUpdatePayload(updates: PlannedMealUpdate) {
   return sanitize({
     date: updates.date ? formatDate(updates.date, 'yyyy-MM-dd') : undefined,
     meal_type: updates.mealType,
-    recipe_id: updates.recipeId && updates.recipeId.trim() !== '' ? updates.recipeId : null,
-    custom_meal: updates.customMeal && updates.customMeal.trim() !== '' ? updates.customMeal : null,
+    recipe_id: updates.recipeId !== undefined ? (updates.recipeId && updates.recipeId.trim() !== '' ? updates.recipeId : null) : undefined,
+    custom_meal: updates.customMeal !== undefined ? (updates.customMeal && updates.customMeal.trim() !== '' ? updates.customMeal : null) : undefined,
     servings: updates.servings,
     people_count: updates.peopleCount,
     status: updates.status,
     notes: updates.notes,
+    actual_food_log_id: updates.actualFoodLogId,
+    substituted_with: updates.substitutedWith,
+    is_postponed: updates.isPostponed,
+    postponed_reason: updates.postponedReason,
+    original_date: updates.originalDate ? formatDate(updates.originalDate, 'yyyy-MM-dd') : undefined,
     prepared_at: updates.preparedAt ? updates.preparedAt.toISOString() : undefined,
     consumed_at: updates.consumedAt ? updates.consumedAt.toISOString() : undefined,
   });
@@ -923,8 +937,11 @@ export function useCreatePlannedMealMutation(): ReturnType<typeof useMutation<Pl
 
   return useMutation({
     mutationFn: async ({ planId, meal }: { planId: string; meal: PlannedMealInput }) => {
+      console.log('[useCreatePlannedMealMutation] Input meal:', meal);
       const payload = buildPlannedMealInsertPayload(planId, meal) as Omit<PlannedMealData, 'id' | 'created_at' | 'updated_at'>;
+      console.log('[useCreatePlannedMealMutation] Payload to send:', payload);
       const created = await mealPlanningAPI.createPlannedMeal(payload);
+      console.log('[useCreatePlannedMealMutation] Created meal from API:', created);
       return mapPlannedMealDataToPlannedMeal(created);
     },
     onMutate: async ({ planId, meal }) => {

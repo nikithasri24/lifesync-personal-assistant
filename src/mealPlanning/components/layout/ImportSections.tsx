@@ -49,7 +49,7 @@ export function ImportSections({
   saveImportedRecipe,
 }: ImportSectionsProps): ReactElement {
   return (
-    <section className="grid gap-6 lg:grid-cols-2">
+    <section className="grid gap-4 lg:grid-cols-2">
       {/* Video to Recipe (YouTube) */}
       <form
         onSubmit={(e) => {
@@ -58,39 +58,36 @@ export function ImportSections({
         }}
         className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
       >
-        <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
+        <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900 mb-4">
           <Youtube className="h-5 w-5 text-rose-600" />
-          Video to Recipe
+          Video to recipe
         </h2>
-        <p className="mt-1 text-sm text-slate-600">
-          Paste a YouTube link. We'll extract the title, thumbnail, ingredients and steps from the description.
-        </p>
-        <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-          <input
-            value={recipeImport.videoUrl}
-            onChange={(e) => recipeImport.setVideoUrl(e.target.value)}
-            placeholder="https://www.youtube.com/watch?v=..."
-            className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
-          />
-          <select
-            value={recipeImport.videoLang}
-            onChange={(e) => recipeImport.setVideoLang(e.target.value)}
-            className="rounded-lg border border-slate-300 px-2 py-2 text-sm focus:border-indigo-500 focus:outline-none"
-            title="Caption language"
-          >
-            <option value="en">English</option>
-            <option value="es">Spanish</option>
-            <option value="fr">French</option>
-            <option value="de">German</option>
-            <option value="it">Italian</option>
-            <option value="pt">Portuguese</option>
-            <option value="hi">Hindi</option>
-            <option value="ja">Japanese</option>
-          </select>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <input
+              value={recipeImport.videoUrl}
+              onChange={(e) => recipeImport.setVideoUrl(e.target.value)}
+              placeholder="https://www.youtube.com/watch?v=..."
+              className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200"
+            />
+            <select
+              value={recipeImport.videoLang}
+              onChange={(e) => recipeImport.setVideoLang(e.target.value)}
+              className="rounded-lg border border-slate-300 px-2 py-2 text-sm focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200"
+              title="Caption language"
+            >
+              <option value="en">English</option>
+              <option value="es">Spanish</option>
+              <option value="fr">French</option>
+              <option value="de">German</option>
+              <option value="it">Italian</option>
+              <option value="pt">Portuguese</option>
+              <option value="hi">Hindi</option>
+              <option value="ja">Japanese</option>
+            </select>
           <button
             type="submit"
             disabled={recipeImport.isVideoImporting}
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-rose-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-rose-500 disabled:opacity-60"
+            className="inline-flex items-center justify-center gap-2 rounded-md bg-rose-600 hover:bg-rose-500 px-3 py-2 text-sm font-medium text-white transition disabled:opacity-60"
           >
             {recipeImport.isVideoImporting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -126,24 +123,21 @@ export function ImportSections({
 
       {/* Clip from URL */}
       <form onSubmit={(e) => void handleImportRecipe(e)} className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
+        <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900 mb-4">
           <CalendarDays className="h-5 w-5 text-indigo-600" />
           Clip from URL
         </h2>
-        <p className="mt-1 text-sm text-slate-600">
-          Paste a recipe link. We'll fetch title, image, ingredients and steps.
-        </p>
-        <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+        <div className="flex flex-col gap-3 sm:flex-row">
           <input
             value={recipeImport.importUrl}
             onChange={(e) => recipeImport.setImportUrl(e.target.value)}
             placeholder="https://example.com/recipe/..."
-            className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
+            className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
           />
           <button
             type="submit"
             disabled={recipeImport.isImporting}
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:opacity-60"
+            className="inline-flex items-center justify-center gap-2 rounded-md bg-indigo-600 hover:bg-indigo-500 px-3 py-2 text-sm font-medium text-white transition disabled:opacity-60"
           >
             {recipeImport.isImporting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -172,13 +166,10 @@ export function ImportSections({
         }}
         className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
       >
-        <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
+        <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900 mb-4">
           <ChefHat className="h-5 w-5 text-amber-600" />
-          Paste Text
+          Paste text
         </h2>
-        <p className="mt-1 text-sm text-slate-600">
-          Paste any recipe text. We'll extract ingredients and directions heuristically.
-        </p>
         <div className="mt-3 grid gap-3">
           <input
             value={recipeImport.textTitle}
@@ -204,7 +195,7 @@ export function ImportSections({
           <button
             type="submit"
             disabled={recipeImport.isTextParsing}
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:opacity-60"
+            className="inline-flex items-center justify-center gap-2 rounded-md bg-amber-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-amber-500 disabled:opacity-60"
           >
             {recipeImport.isTextParsing ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -216,7 +207,7 @@ export function ImportSections({
           <button
             type="button"
             onClick={recipeImport.clearTextImport}
-            className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+            className="rounded-md border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
           >
             Clear
           </button>

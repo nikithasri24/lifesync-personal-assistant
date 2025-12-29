@@ -75,7 +75,7 @@ export const CellWithMeals: React.FC<CellWithMealsProps> = ({
               e.stopPropagation();
               e.preventDefault();
             }}
-            className="text-xs text-slate-400 hover:text-indigo-600 flex items-center gap-1 bg-white/90 backdrop-blur-sm px-2 py-1 rounded shadow-sm border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/90 transition-colors"
+            className="text-xs text-slate-600 hover:text-indigo-600 flex items-center gap-1 bg-slate-100/90 backdrop-blur-sm px-2 py-1 rounded border border-slate-300 hover:border-indigo-400 hover:bg-indigo-100/90 transition-colors"
           >
             <Plus className="w-3 h-3" />
             <span className="text-[10px] font-medium">Add another</span>

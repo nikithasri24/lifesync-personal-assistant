@@ -96,6 +96,7 @@ const MealPlanning: React.FC = () => {
   // Wrapper functions to adapt mutation signatures (defined early for hook dependencies)
   // Wrapped in useCallback to prevent infinite loops
   const createPlannedMealWrapper = useCallback(async (data: { planId: string; meal: any }): Promise<void> => {
+    console.log('[MealPlanning] createPlannedMealWrapper called with:', data);
     await createPlannedMealMutation.mutateAsync(data);
   }, [createPlannedMealMutation]);
 
