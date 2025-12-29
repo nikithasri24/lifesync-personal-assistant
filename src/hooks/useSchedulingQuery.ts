@@ -3,16 +3,17 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { format, parseISO, startOfDay, addMinutes } from 'date-fns';
-import { supabase } from '../lib/supabase';
+import { endOfDay, format, isAfter, isBefore, parseISO, startOfDay } from 'date-fns';
+import { getCalendarEvents } from '../api/calendarAPI';
+import { getTasksByIds, updateTask } from '../api/tasksAPI';
+import { getUserPreferences } from '../api/userSettingsAPI';
 import {
   suggestTimesForTask,
-  autoScheduleDay,
   getDaySchedule,
-  findFreeSlots,
   DEFAULT_SCHEDULING_PREFS
 } from '../services/scheduling';
 import { scheduleEngine } from '../services/scheduler';
+import type { TaskData } from '../services/types';
 import type { UserSchedulingPrefs, SchedulingSuggestion, DaySchedule } from '../services/scheduling';
 
 // Query keys
@@ -24,6 +25,16 @@ export const schedulingKeys = {
   freeSlots: (date: string) => [...schedulingKeys.all, 'freeSlots', date] as const,
 };
 
+function clampEventToDay(start: Date, end: Date, date: Date): { start: Date; end: Date } | null {
+  const dayStart = startOfDay(date);
+  const dayEnd = endOfDay(date);
+  const clampedStart = isBefore(start, dayStart) ? dayStart : start;
+  const clampedEnd = isAfter(end, dayEnd) ? dayEnd : end;
+
+  if (!isBefore(clampedStart, clampedEnd)) return null;
+  return { start: clampedStart, end: clampedEnd };
+}
+
 /**
  * Hook to get user's scheduling preferences
  */
@@ -31,33 +42,27 @@ export function useSchedulingPreferences() {
   return useQuery({
     queryKey: schedulingKeys.preferences(),
     queryFn: async (): Promise<UserSchedulingPrefs> => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return DEFAULT_SCHEDULING_PREFS;
+      try {
+        const data = await getUserPreferences();
+        if (!data) return DEFAULT_SCHEDULING_PREFS;
 
-      const { data, error } = await supabase
-        .from('user_preferences')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      // maybeSingle returns null if no row found, without throwing 406 error
-      if (error || !data) return DEFAULT_SCHEDULING_PREFS;
-
-      // Map database fields to our type
-      return {
-        workHoursStart: parseInt(data.work_hours_start?.split(':')[0] || '9'),
-        workHoursEnd: parseInt(data.work_hours_end?.split(':')[0] || '17'),
-        workDays: data.work_days || [1, 2, 3, 4, 5],
-        peakEnergyStart: parseInt(data.peak_energy_start?.split(':')[0] || '9'),
-        peakEnergyEnd: parseInt(data.peak_energy_end?.split(':')[0] || '12'),
-        lowEnergyStart: parseInt(data.low_energy_start?.split(':')[0] || '14'),
-        lowEnergyEnd: parseInt(data.low_energy_end?.split(':')[0] || '15'),
-        preferDeepWorkMorning: true,
-        maxMeetingsPerDay: data.max_tasks_per_day || 8,
-        lunchBlockStart: 12,
-        lunchBlockEnd: 13,
-        bufferBetweenTasks: 5,
-      };
+        return {
+          workHoursStart: parseInt(data.work_hours_start?.split(':')[0] || '9'),
+          workHoursEnd: parseInt(data.work_hours_end?.split(':')[0] || '17'),
+          workDays: data.work_days || [1, 2, 3, 4, 5],
+          peakEnergyStart: parseInt(data.peak_energy_start?.split(':')[0] || '9'),
+          peakEnergyEnd: parseInt(data.peak_energy_end?.split(':')[0] || '12'),
+          lowEnergyStart: parseInt(data.low_energy_start?.split(':')[0] || '14'),
+          lowEnergyEnd: parseInt(data.low_energy_end?.split(':')[0] || '15'),
+          preferDeepWorkMorning: true,
+          maxMeetingsPerDay: data.max_tasks_per_day || 8,
+          lunchBlockStart: 12,
+          lunchBlockEnd: 13,
+          bufferBetweenTasks: 5,
+        };
+      } catch {
+        return DEFAULT_SCHEDULING_PREFS;
+      }
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
@@ -73,27 +78,25 @@ export function useDaySchedule(date: Date) {
   return useQuery({
     queryKey: schedulingKeys.daySchedule(dateKey),
     queryFn: async (): Promise<DaySchedule> => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      try {
+        const events = await scheduleEngine.getAllEventsForDay(date);
+        const mappedEvents = events.map(event => ({
+          id: event.id,
+          title: event.title,
+          start: event.start,
+          end: event.end,
+          type:
+            event.type === 'schedule_block'
+              ? 'block'
+              : event.type === 'scheduled_task'
+                ? 'task'
+                : 'event',
+        }));
+
+        return getDaySchedule(date, mappedEvents, prefs);
+      } catch {
         return getDaySchedule(date, [], prefs);
       }
-
-      // Fetch calendar events for the day
-      const { data: events } = await supabase
-        .from('calendar_events')
-        .select('id, title, start_date, start_time, end_date, end_time')
-        .eq('user_id', user.id)
-        .eq('start_date', dateKey);
-
-      // Convert to Date objects
-      const mappedEvents = (events || []).map(e => ({
-        id: e.id,
-        title: e.title,
-        start: parseISO(`${e.start_date}T${e.start_time || '00:00'}`),
-        end: parseISO(`${e.end_date || e.start_date}T${e.end_time || '23:59'}`),
-      }));
-
-      return getDaySchedule(date, mappedEvents, prefs);
     },
     enabled: !!date,
   });
@@ -119,23 +122,20 @@ export function useTaskSchedulingSuggestions(
     queryKey: schedulingKeys.suggestions(task?.id || '', dateKey),
     queryFn: async (): Promise<SchedulingSuggestion | null> => {
       if (!task) return null;
+      try {
+        const events = await getCalendarEvents({ startDate: dateKey, endDate: dateKey });
+        const mappedEvents = events
+          .map(e => {
+            const start = parseISO(`${e.start_date}T${e.start_time || '00:00'}`);
+            const end = parseISO(`${e.end_date || e.start_date}T${e.end_time || '23:59'}`);
+            return clampEventToDay(start, end, date);
+          })
+          .filter((event): event is { start: Date; end: Date } => event !== null);
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return null;
-
-      // Fetch existing events
-      const { data: events } = await supabase
-        .from('calendar_events')
-        .select('start_date, start_time, end_date, end_time')
-        .eq('user_id', user.id)
-        .eq('start_date', dateKey);
-
-      const mappedEvents = (events || []).map(e => ({
-        start: parseISO(`${e.start_date}T${e.start_time || '00:00'}`),
-        end: parseISO(`${e.end_date || e.start_date}T${e.end_time || '23:59'}`),
-      }));
-
-      return suggestTimesForTask(task, { date, events: mappedEvents }, prefs);
+        return suggestTimesForTask(task, { date, events: mappedEvents }, prefs);
+      } catch {
+        return null;
+      }
     },
     enabled: !!task?.id && !!date,
   });
@@ -176,6 +176,12 @@ export interface AutoScheduleResult {
     taskTitle: string;
     reason: string;
   }>;
+  conflicts: Array<{
+    event1Title: string;
+    event2Title: string;
+    overlapMinutes: number;
+    suggestedResolution: 'move_earlier' | 'move_later' | 'shorten' | 'reschedule';
+  }>;
   totalScheduled: number;
   totalUnscheduled: number;
 }
@@ -206,9 +212,6 @@ export function useAutoScheduleMutation() {
       }>;
       date: Date;
     }): Promise<AutoScheduleResult> => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-
       const dateKey = format(date, 'yyyy-MM-dd');
 
       // Use the unified ScheduleEngine.planDay() which considers ALL sources
@@ -218,38 +221,67 @@ export function useAutoScheduleMutation() {
       const unscheduled: AutoScheduleResult['unscheduled'] = [];
       const taskMap = new Map(tasks.map(t => [t.id, t]));
 
+      const previousById = new Map<string, Partial<TaskData>>();
+
+      const previousRows = await getTasksByIds(dayPlan.scheduledItems.map(item => item.taskId));
+      for (const row of previousRows) {
+        if (!row.id) continue;
+        previousById.set(row.id, {
+          due_date: row.due_date ?? null,
+          scheduled_start: row.scheduled_start ?? null,
+          scheduled_end: row.scheduled_end ?? null,
+          status: row.status,
+        });
+      }
+
+      const updatedIds: string[] = [];
+      let hasUpdateFailure = false;
+
       // Update each scheduled task in the database
       for (const item of dayPlan.scheduledItems) {
         const task = taskMap.get(item.taskId);
         if (!task) continue;
 
-        const timeStr = format(item.start, 'HH:mm');
+        const scheduledStart = item.start.toISOString();
+        const scheduledEnd = item.end.toISOString();
 
-        // Update task in database
-        const { error } = await supabase
-          .from('tasks')
-          .update({
+        try {
+          await updateTask(item.taskId, {
             due_date: dateKey,
-            scheduled_time: timeStr,
+            scheduled_start: scheduledStart,
+            scheduled_end: scheduledEnd,
             status: 'scheduled',
-          })
-          .eq('id', item.taskId)
-          .eq('user_id', user.id);
-
-        if (!error) {
+          });
+          updatedIds.push(item.taskId);
           scheduled.push({
             taskId: item.taskId,
             taskTitle: task.title,
             start: item.start,
             end: item.end,
           });
-        } else {
+        } catch {
+          hasUpdateFailure = true;
           unscheduled.push({
             taskId: item.taskId,
             taskTitle: task.title,
             reason: 'Database update failed',
           });
         }
+      }
+
+      if (hasUpdateFailure && updatedIds.length > 0) {
+        for (const taskId of updatedIds) {
+          const previous = previousById.get(taskId);
+          if (!previous) continue;
+          try {
+            await updateTask(taskId, previous);
+          } catch {
+            // Ignore rollback errors to avoid masking the original failure
+          }
+        }
+
+        scheduled.length = 0;
+        unscheduled.length = 0;
       }
 
       // Add unscheduled tasks from the plan
@@ -259,14 +291,33 @@ export function useAutoScheduleMutation() {
           unscheduled.push({
             taskId,
             taskTitle: task.title,
-            reason: 'No available time slot',
+            reason: dayPlan.unscheduledReasons?.[taskId] || 'No available time slot',
           });
+        }
+      }
+
+      if (hasUpdateFailure && updatedIds.length > 0) {
+        for (const taskId of updatedIds) {
+          const task = taskMap.get(taskId);
+          if (task) {
+            unscheduled.push({
+              taskId,
+              taskTitle: task.title,
+              reason: 'Rolled back due to update failure',
+            });
+          }
         }
       }
 
       return {
         scheduled,
         unscheduled,
+        conflicts: dayPlan.conflicts.map(conflict => ({
+          event1Title: conflict.event1.title,
+          event2Title: conflict.event2.title,
+          overlapMinutes: conflict.overlapMinutes,
+          suggestedResolution: conflict.suggestedResolution,
+        })),
         totalScheduled: scheduled.length,
         totalUnscheduled: unscheduled.length,
       };
@@ -280,4 +331,3 @@ export function useAutoScheduleMutation() {
     },
   });
 }
-

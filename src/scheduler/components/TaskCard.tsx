@@ -43,7 +43,12 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   onQuickEdit,
   className = '',
 }) => {
-  const isOverdue = task.due_date && isPast(new Date(task.due_date)) && task.status !== 'done';
+  const scheduleDate = task.scheduled_start
+    ? new Date(task.scheduled_start)
+    : task.due_date
+      ? new Date(task.due_date)
+      : null;
+  const isOverdue = scheduleDate ? isPast(scheduleDate) && task.status !== 'done' : false;
   const hasComments = (task.comments?.length || 0) > 0;
   const hasAttachments = (task.attachments?.length || 0) > 0;
   const hasDependencies = (task.dependencies?.length || 0) > 0;
@@ -180,14 +185,14 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           </div>
         )}
 
-        {/* Metadata Row 1: Due date, Estimate, Priority */}
+        {/* Metadata Row 1: Scheduled/Due date, Estimate, Priority */}
         <div className="flex items-center gap-3 text-xs text-gray-700 dark:text-gray-300 font-medium mb-2">
-          {/* Due Date */}
-          {task.due_date && (
+          {/* Scheduled/Due Date */}
+          {scheduleDate && (
             <div className={`flex items-center gap-1 ${isOverdue ? 'text-red-600 dark:text-red-400 font-bold' : ''}`}>
               <Calendar className="w-3 h-3" />
-              <span title={format(new Date(task.due_date), 'PPP')}>
-                {formatDistanceToNow(new Date(task.due_date), { addSuffix: true })}
+              <span title={format(scheduleDate, 'PPP')}>
+                {formatDistanceToNow(scheduleDate, { addSuffix: true })}
               </span>
             </div>
           )}

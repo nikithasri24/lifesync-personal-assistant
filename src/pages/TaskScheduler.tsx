@@ -43,6 +43,7 @@ import {
   useUpdateTask,
   useDeleteTask,
 } from '../hooks/useTasksQuery';
+import { useScheduleBlocks, useCreateScheduleBlock, useUpdateScheduleBlock, useDeleteScheduleBlock } from '../hooks/useScheduleBlocksQuery';
 import {
   useTaskModals,
   useTaskExpansion,
@@ -59,7 +60,8 @@ import type {
   TeamMember,
   Milestone,
 } from '../scheduler/types';
-import type { TaskData } from '../services/types';
+import type { TaskData, ScheduleBlock } from '../services/types';
+import { ScheduleBlockModal } from '../components/scheduleBlocks/ScheduleBlockModal';
 
 // Utilities
 import { transformApiTasks, transformApiProjects } from '../todos/utils';
@@ -82,6 +84,9 @@ const TaskScheduler: React.FC = () => {
   const [editingTask, setEditingTask] = useState<ScheduledTask | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [createTaskColumnId, setCreateTaskColumnId] = useState<string | null>(null);
+  const [showScheduleBlockModal, setShowScheduleBlockModal] = useState(false);
+  const [scheduleBlockInitialDate, setScheduleBlockInitialDate] = useState<Date | null>(null);
+  const [editingScheduleBlock, setEditingScheduleBlock] = useState<ScheduleBlock | null>(null);
 
   // ============================================================================
   // React Query Hooks - Server State
@@ -89,6 +94,14 @@ const TaskScheduler: React.FC = () => {
 
   const { data: apiTasks = [], isLoading: tasksLoading, error: tasksError } = useTasks();
   const { data: apiProjects = [], isLoading: projectsLoading } = useProjects();
+  const todayKey = new Date().toISOString().split('T')[0];
+  const { data: scheduleBlocks = [], isLoading: blocksLoading } = useScheduleBlocks({
+    startDate: todayKey,
+    endDate: todayKey,
+  });
+  const createScheduleBlockMutation = useCreateScheduleBlock();
+  const updateScheduleBlockMutation = useUpdateScheduleBlock();
+  const deleteScheduleBlockMutation = useDeleteScheduleBlock();
 
   const createTaskMutation = useCreateTask();
   const updateTaskMutation = useUpdateTask();
@@ -96,7 +109,14 @@ const TaskScheduler: React.FC = () => {
 
   // Note: API health check disabled - using Supabase instead of REST API
   // const apiHealth = useApiHealth(15000);
-  const isLoading = tasksLoading || projectsLoading;
+  const isLoading = tasksLoading || projectsLoading || blocksLoading;
+
+  const scheduleBlockStyles: Record<ScheduleBlock['type'], string> = {
+    task: 'bg-emerald-100 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-100',
+    event: 'bg-slate-100 text-slate-900 dark:bg-slate-700/60 dark:text-slate-100',
+    focus: 'bg-purple-100 text-purple-900 dark:bg-purple-900/40 dark:text-purple-100',
+    break: 'bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-100',
+  };
 
   // ============================================================================
   // Data Transformation
@@ -229,6 +249,7 @@ const TaskScheduler: React.FC = () => {
   const backlogTasks = useMemo(() => {
     return filteredTasks.filter(task =>
       task.status === 'todo' &&
+      !task.scheduled_start &&
       !task.due_date &&
       (task.priority === 'low' || task.priority === 'medium')
     ).map(t => t.id).filter((id): id is string => id !== undefined);
@@ -350,6 +371,33 @@ const TaskScheduler: React.FC = () => {
     setEditingTask(null);
   };
 
+  const handleCreateScheduleBlock = () => {
+    setScheduleBlockInitialDate(new Date());
+    setEditingScheduleBlock(null);
+    setShowScheduleBlockModal(true);
+  };
+
+  const handleScheduleBlockClick = (block: ScheduleBlock) => {
+    setEditingScheduleBlock(block);
+    setScheduleBlockInitialDate(new Date(`${block.date}T${block.start_time}`));
+    setShowScheduleBlockModal(true);
+  };
+
+  const handleSaveScheduleBlock = (
+    input: Omit<ScheduleBlock, 'id' | 'user_id' | 'created_at' | 'updated_at'>,
+    id?: string
+  ) => {
+    if (id) {
+      updateScheduleBlockMutation.mutate({ id, updates: input });
+      return;
+    }
+    createScheduleBlockMutation.mutate(input);
+  };
+
+  const handleDeleteScheduleBlock = (id: string) => {
+    deleteScheduleBlockMutation.mutate(id);
+  };
+
   const handleTaskDrop = (result: { taskId: string; sourceColumn: string; targetColumn: string; newStatus?: string }) => {
     const task = scheduledTasks.find(t => t.id === result.taskId);
     if (!task || !result.newStatus) return;
@@ -409,6 +457,7 @@ const TaskScheduler: React.FC = () => {
           pomodoroTimer={pomodoro.pomodoroTimer}
           onTogglePomodoro={pomodoro.togglePomodoro}
           onCreateTask={() => handleCreateTask()}
+          onCreateBlock={handleCreateScheduleBlock}
           importantTaskCount={filteredTasks.filter(t => t.status !== 'done' && t.priority === 'important').length}
         />
 
@@ -498,6 +547,34 @@ const TaskScheduler: React.FC = () => {
           inProgressTasks={filteredTasks.filter(t => t.status === 'in_progress').length}
           completedTasks={filteredTasks.filter(t => t.status === 'done').length}
         />
+
+        {/* Today's Schedule Blocks */}
+        {scheduleBlocks.length > 0 && (
+          <div className="px-6 pb-4">
+            <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">
+              Today&#39;s Blocks
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {scheduleBlocks.map((block) => {
+                const label = block.title || `${block.type[0].toUpperCase()}${block.type.slice(1)}`;
+                const className = scheduleBlockStyles[block.type] || 'bg-slate-100 text-slate-900';
+                return (
+                  <div
+                    key={block.id}
+                    onClick={() => handleScheduleBlockClick(block)}
+                    className={`px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap cursor-pointer ${className}`}
+                    title={label}
+                  >
+                    <div className="text-[10px] opacity-80">
+                      {block.start_time}–{block.end_time}
+                    </div>
+                    <div className="text-[11px] font-semibold">{label}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Main Content - Board View Only */}
@@ -526,6 +603,15 @@ const TaskScheduler: React.FC = () => {
         onSave={handleSaveTask}
         onDelete={handleDeleteTask}
         isSaving={updateTaskMutation.isPending || deleteTaskMutation.isPending}
+      />
+
+      <ScheduleBlockModal
+        isOpen={showScheduleBlockModal}
+        onClose={() => setShowScheduleBlockModal(false)}
+        initialStart={scheduleBlockInitialDate}
+        block={editingScheduleBlock}
+        onSave={handleSaveScheduleBlock}
+        onDelete={handleDeleteScheduleBlock}
       />
     </div>
   );

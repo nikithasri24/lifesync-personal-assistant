@@ -52,7 +52,8 @@ export interface UpdateTaskCommand extends BaseCommand {
       priority: 'low' | 'medium' | 'high' | 'urgent';
       status: 'todo' | 'in_progress' | 'done' | 'scheduled';
       dueDate: string;
-      scheduledTime: string;
+      scheduledStart: string;
+      scheduledEnd: string;
       estimatedTime: number;
       category: string;
       tags: string[];
@@ -75,8 +76,8 @@ export interface ScheduleTaskCommand extends BaseCommand {
   type: 'SCHEDULE_TASK';
   payload: {
     id: string;
-    date: string;
-    time: string;
+    scheduledStart: string;
+    scheduledEnd: string;
   };
 }
 
@@ -311,4 +312,3 @@ export type CommandMiddleware = (
 export type CommandHandler<T extends Command = Command> = (
   command: T
 ) => Promise<CommandResult>;
-

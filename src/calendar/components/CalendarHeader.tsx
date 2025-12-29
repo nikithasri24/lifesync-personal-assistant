@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { format } from 'date-fns';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus } from 'lucide-react';
 import type { CalendarView, WeekDay } from '../hooks/useCalendarState';
 
 interface CalendarHeaderProps {
@@ -16,6 +16,7 @@ interface CalendarHeaderProps {
   onNext: () => void;
   onViewChange: (view: CalendarView) => void;
   onNewEvent: () => void;
+  onNewBlock: () => void;
 }
 
 export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
@@ -27,6 +28,7 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
   onNext,
   onViewChange,
   onNewEvent,
+  onNewBlock,
 }) => {
   const dateDisplay = view === 'day'
     ? format(currentDate, 'EEEE, MMMM d, yyyy')
@@ -99,14 +101,23 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
           </button>
         </div>
 
-        {/* New Event Button */}
-        <button
-          onClick={onNewEvent}
-          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors text-sm font-medium"
-        >
-          <CalendarIcon className="w-4 h-4" />
-          New Event
-        </button>
+        {/* New Event + Block Buttons */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onNewBlock}
+            className="flex items-center gap-2 px-3 py-2 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-200 rounded-lg transition-colors text-sm font-medium"
+          >
+            <Plus className="w-4 h-4" />
+            New Block
+          </button>
+          <button
+            onClick={onNewEvent}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors text-sm font-medium"
+          >
+            <CalendarIcon className="w-4 h-4" />
+            New Event
+          </button>
+        </div>
       </div>
     </div>
   );

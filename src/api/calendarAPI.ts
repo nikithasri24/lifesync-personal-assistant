@@ -4,9 +4,13 @@
  */
 
 import { supabase } from '../lib/supabase';
+import { format, parseISO } from 'date-fns';
 import type { CalendarEvent } from '../services/types';
 import { logger } from '../services/logger';
 import { apiCall, requireAuth, handleSupabaseResponse } from './apiWrapper';
+import { scheduleEngine } from '../services/scheduler';
+import { DEFAULT_SCHEDULING_PREFS } from '../services/scheduling/types';
+import { fetchCalendarEvents } from './calendarData';
 
 // =====================================================
 // CALENDAR EVENTS CRUD OPERATIONS
@@ -23,35 +27,7 @@ export async function getCalendarEvents(filters?: {
   endDate?: string;
   type?: CalendarEvent['type'];
 }): Promise<CalendarEvent[]> {
-  return apiCall(
-    async () => {
-      const user = await requireAuth();
-
-      let query = supabase
-        .from('calendar_events')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('start_date', { ascending: true });
-
-      // Apply filters
-      if (filters) {
-        if (filters.startDate) {
-          query = query.gte('start_date', filters.startDate);
-        }
-        if (filters.endDate) {
-          query = query.lte('start_date', filters.endDate);
-        }
-        if (filters.type) {
-          query = query.eq('type', filters.type);
-        }
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      return (data ?? []) as CalendarEvent[];
-    },
-    { domain: 'CalendarAPI', operation: 'getCalendarEvents', data: { filters } }
-  );
+  return fetchCalendarEvents(filters);
 }
 
 /**
@@ -177,67 +153,11 @@ export async function findFreeSlots(
   date: string,
   durationMinutes: number
 ): Promise<Array<{ start: string; end: string }>> {
-  const events = await getCalendarEvents({
-    startDate: date,
-    endDate: date,
-  });
+  const day = parseISO(date);
+  const slots = await scheduleEngine.findFreeSlots(day, DEFAULT_SCHEDULING_PREFS, durationMinutes);
 
-  // Filter to only events with specific times (not all-day)
-  const timedEvents = events.filter((e) => !e.all_day && e.start_time && e.end_time);
-
-  // Define work hours (9 AM to 6 PM by default)
-  const workStart = '09:00';
-  const workEnd = '18:00';
-
-  const freeSlots: Array<{ start: string; end: string }> = [];
-
-  if (timedEvents.length === 0) {
-    freeSlots.push({ start: workStart, end: workEnd });
-    return freeSlots;
-  }
-
-  // Sort events by start time
-  const sortedEvents = timedEvents.sort((a, b) =>
-    (a.start_time || '').localeCompare(b.start_time || '')
-  );
-
-  // Check gap before first event
-  const firstStart = sortedEvents[0].start_time || workStart;
-  if (firstStart > workStart) {
-    const gap = calculateMinutes(workStart, firstStart);
-    if (gap >= durationMinutes) {
-      freeSlots.push({ start: workStart, end: firstStart });
-    }
-  }
-
-  // Check gaps between events
-  for (let i = 0; i < sortedEvents.length - 1; i++) {
-    const currentEnd = sortedEvents[i].end_time || '';
-    const nextStart = sortedEvents[i + 1].start_time || '';
-    if (currentEnd && nextStart) {
-      const gap = calculateMinutes(currentEnd, nextStart);
-      if (gap >= durationMinutes) {
-        freeSlots.push({ start: currentEnd, end: nextStart });
-      }
-    }
-  }
-
-  // Check gap after last event
-  const lastEvent = sortedEvents[sortedEvents.length - 1];
-  const lastEnd = lastEvent.end_time || workEnd;
-  if (lastEnd < workEnd) {
-    const gap = calculateMinutes(lastEnd, workEnd);
-    if (gap >= durationMinutes) {
-      freeSlots.push({ start: lastEnd, end: workEnd });
-    }
-  }
-
-  return freeSlots;
-}
-
-// Helper function to calculate minutes between two times
-function calculateMinutes(start: string, end: string): number {
-  const [startHour, startMin] = start.split(':').map(Number);
-  const [endHour, endMin] = end.split(':').map(Number);
-  return endHour * 60 + endMin - (startHour * 60 + startMin);
+  return slots.map(slot => ({
+    start: format(slot.start, 'HH:mm'),
+    end: format(slot.end, 'HH:mm'),
+  }));
 }

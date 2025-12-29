@@ -3,46 +3,13 @@
  * Suggests optimal times for tasks based on energy patterns, calendar, and preferences
  */
 
-import {
-  addMinutes, setHours, setMinutes, isBefore, isAfter,
-  startOfDay, endOfDay, format, isWithinInterval
-} from 'date-fns';
+import { addMinutes } from 'date-fns';
+import { scheduleEngine } from '../scheduler';
 import type {
   TimeSlot, ScoredTimeSlot, SchedulingSuggestion,
-  UserSchedulingPrefs, SchedulingContext, EnergyLevel, TaskComplexity,
-  DaySchedule
+  UserSchedulingPrefs, TaskComplexity, DaySchedule
 } from './types';
 import { DEFAULT_SCHEDULING_PREFS } from './types';
-
-/**
- * Get energy level for a given hour or Date
- */
-export function getEnergyLevel(timeOrHour: Date | number, prefs: UserSchedulingPrefs): EnergyLevel {
-  const hour = typeof timeOrHour === 'number' ? timeOrHour : timeOrHour.getHours();
-  if (hour >= prefs.peakEnergyStart && hour < prefs.peakEnergyEnd) {
-    return 'peak';
-  }
-  if (hour >= prefs.lowEnergyStart && hour < prefs.lowEnergyEnd) {
-    return 'low';
-  }
-  return 'moderate';
-}
-
-/**
- * Check if a time is within working hours
- */
-function isWorkingHour(date: Date, prefs: UserSchedulingPrefs): boolean {
-  const hour = date.getHours();
-  const dayOfWeek = date.getDay();
-
-  if (!prefs.workDays.includes(dayOfWeek)) return false;
-  if (hour < prefs.workHoursStart || hour >= prefs.workHoursEnd) return false;
-
-  // Skip lunch block
-  if (hour >= prefs.lunchBlockStart && hour < prefs.lunchBlockEnd) return false;
-
-  return true;
-}
 
 /**
  * Find free time slots for a given day
@@ -53,77 +20,7 @@ export function findFreeSlots(
   prefs: UserSchedulingPrefs = DEFAULT_SCHEDULING_PREFS,
   minDurationMinutes: number = 15
 ): TimeSlot[] {
-  const slots: TimeSlot[] = [];
-  const dayStart = setMinutes(setHours(startOfDay(date), prefs.workHoursStart), 0);
-  const dayEnd = setMinutes(setHours(startOfDay(date), prefs.workHoursEnd), 0);
-
-  // Sort events by start time
-  const sortedEvents = [...events].sort((a, b) => a.start.getTime() - b.start.getTime());
-
-  let currentTime = dayStart;
-
-  for (const event of sortedEvents) {
-    // Skip events outside working hours
-    if (isAfter(event.end, dayStart) && isBefore(event.start, dayEnd)) {
-      const eventStart = isBefore(event.start, dayStart) ? dayStart : event.start;
-
-      // Free slot before this event
-      if (isBefore(currentTime, eventStart)) {
-        const duration = (eventStart.getTime() - currentTime.getTime()) / 60000;
-        if (duration >= minDurationMinutes && isWorkingHour(currentTime, prefs)) {
-          slots.push({
-            start: new Date(currentTime),
-            end: new Date(eventStart),
-            durationMinutes: Math.floor(duration),
-          });
-        }
-      }
-
-      // Move current time to after this event
-      if (isAfter(event.end, currentTime)) {
-        currentTime = new Date(event.end);
-      }
-    }
-  }
-
-  // Free slot after last event
-  if (isBefore(currentTime, dayEnd)) {
-    const duration = (dayEnd.getTime() - currentTime.getTime()) / 60000;
-    if (duration >= minDurationMinutes && isWorkingHour(currentTime, prefs)) {
-      slots.push({
-        start: new Date(currentTime),
-        end: new Date(dayEnd),
-        durationMinutes: Math.floor(duration),
-      });
-    }
-  }
-
-  // Filter out lunch block from slots
-  return slots.flatMap(slot => {
-    const lunchStart = setMinutes(setHours(startOfDay(date), prefs.lunchBlockStart), 0);
-    const lunchEnd = setMinutes(setHours(startOfDay(date), prefs.lunchBlockEnd), 0);
-
-    // If slot doesn't overlap lunch, return as-is
-    if (isAfter(slot.start, lunchEnd) || isBefore(slot.end, lunchStart)) {
-      return [slot];
-    }
-
-    // Split around lunch
-    const result: TimeSlot[] = [];
-    if (isBefore(slot.start, lunchStart)) {
-      const duration = (lunchStart.getTime() - slot.start.getTime()) / 60000;
-      if (duration >= minDurationMinutes) {
-        result.push({ start: slot.start, end: lunchStart, durationMinutes: Math.floor(duration) });
-      }
-    }
-    if (isAfter(slot.end, lunchEnd)) {
-      const duration = (slot.end.getTime() - lunchEnd.getTime()) / 60000;
-      if (duration >= minDurationMinutes) {
-        result.push({ start: lunchEnd, end: slot.end, durationMinutes: Math.floor(duration) });
-      }
-    }
-    return result;
-  });
+  return scheduleEngine.calculateFreeSlots(date, events, prefs, minDurationMinutes);
 }
 
 /**
@@ -136,46 +33,11 @@ export function scoreTimeSlot(
   complexity: TaskComplexity = 'shallow',
   prefs: UserSchedulingPrefs = DEFAULT_SCHEDULING_PREFS
 ): ScoredTimeSlot {
-  let score = 50; // Base score
-  const reasons: string[] = [];
-  const hour = slot.start.getHours();
-  const energyLevel = getEnergyLevel(hour, prefs);
-
-  // Check if slot is long enough
-  if (slot.durationMinutes < taskDuration) {
-    return { ...slot, score: 0, reasons: ['Slot too short'], energyLevel, conflicts: [] };
-  }
-
-  // Energy alignment scoring
-  if (complexity === 'deep_work') {
-    if (energyLevel === 'peak') {
-      score += 30;
-      reasons.push('Peak energy for deep work');
-    } else if (energyLevel === 'low') {
-      score -= 20;
-      reasons.push('Low energy period - not ideal for deep work');
-    }
-  } else if (complexity === 'routine') {
-    if (energyLevel === 'low') {
-      score += 15;
-      reasons.push('Good time for routine tasks');
-    }
-  }
-
-  // Priority scoring - urgent tasks get morning slots
-  if (taskPriority === 'urgent' && hour < 11) {
-    score += 20;
-    reasons.push('Morning slot for urgent task');
-  }
-
-  // Prefer starting at clean times (on the hour or half hour)
-  const minutes = slot.start.getMinutes();
-  if (minutes === 0 || minutes === 30) {
-    score += 5;
-    reasons.push('Clean start time');
-  }
-
-  return { ...slot, score: Math.min(100, Math.max(0, score)), reasons, energyLevel, conflicts: [] };
+  return scheduleEngine.scoreSlot(
+    slot,
+    { priority: taskPriority, estimatedMinutes: taskDuration, complexity },
+    prefs
+  );
 }
 
 /**
@@ -197,7 +59,12 @@ export function suggestTimesForTask(
   prefs: UserSchedulingPrefs = DEFAULT_SCHEDULING_PREFS,
   maxSuggestions: number = 5
 ): SchedulingSuggestion {
-  const freeSlots = findFreeSlots(context.date, context.events, prefs, task.estimatedMinutes);
+  const freeSlots = scheduleEngine.calculateFreeSlots(
+    context.date,
+    context.events,
+    prefs,
+    task.estimatedMinutes
+  );
 
   if (freeSlots.length === 0) {
     return {
@@ -212,7 +79,7 @@ export function suggestTimesForTask(
 
   // Score all slots
   const scoredSlots = freeSlots
-    .map(slot => scoreTimeSlot(slot, task.priority, task.estimatedMinutes, task.complexity, prefs))
+    .map(slot => scheduleEngine.scoreSlot(slot, task, prefs))
     .filter(slot => slot.score > 0)
     .sort((a, b) => b.score - a.score)
     .slice(0, maxSuggestions);
@@ -235,11 +102,9 @@ export function getDaySchedule(
   events: Array<{ id: string; title: string; start: Date; end: Date; type?: string }>,
   prefs: UserSchedulingPrefs = DEFAULT_SCHEDULING_PREFS
 ): DaySchedule {
-  const dayStart = setMinutes(setHours(startOfDay(date), prefs.workHoursStart), 0);
-  const dayEnd = setMinutes(setHours(startOfDay(date), prefs.workHoursEnd), 0);
   const totalWorkMinutes = (prefs.workHoursEnd - prefs.workHoursStart - (prefs.lunchBlockEnd - prefs.lunchBlockStart)) * 60;
 
-  const freeSlots = findFreeSlots(date, events, prefs);
+  const freeSlots = scheduleEngine.calculateFreeSlots(date, events, prefs);
   const totalFreeMinutes = freeSlots.reduce((sum, slot) => sum + slot.durationMinutes, 0);
   const busyMinutes = totalWorkMinutes - totalFreeMinutes;
 
@@ -288,23 +153,23 @@ export function autoScheduleDay(
   const allEvents = [...existingEvents];
 
   for (const task of sortedTasks) {
-    const suggestion = suggestTimesForTask(
-      task,
-      { date, events: allEvents },
-      prefs,
-      1
-    );
+    const freeSlots = scheduleEngine.calculateFreeSlots(date, allEvents, prefs, task.estimatedMinutes);
+    const scoredSlots = freeSlots
+      .map(slot => scheduleEngine.scoreSlot(slot, task, prefs))
+      .filter(slot => slot.score > 0)
+      .sort((a, b) => b.score - a.score);
+    const bestSlot = scoredSlots[0];
 
-    if (suggestion.bestSlot) {
-      const taskEnd = addMinutes(suggestion.bestSlot.start, task.estimatedMinutes + prefs.bufferBetweenTasks);
+    if (bestSlot) {
+      const taskEnd = addMinutes(bestSlot.start, task.estimatedMinutes + prefs.bufferBetweenTasks);
       schedule.set(task.id, {
-        start: suggestion.bestSlot.start,
+        start: bestSlot.start,
         end: taskEnd,
       });
 
       // Add to events so next task sees this as busy
       allEvents.push({
-        start: suggestion.bestSlot.start,
+        start: bestSlot.start,
         end: taskEnd,
       });
     }

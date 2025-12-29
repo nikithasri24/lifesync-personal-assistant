@@ -68,6 +68,8 @@ export interface Task {
   estimatedTime?: number;
   actualTime?: number;
   dueDate?: Date;
+  scheduledStart?: Date;
+  scheduledEnd?: Date;
   category?: 'work' | 'personal' | 'learning' | 'creative' | 'health' | 'other';
   notes?: string;
   parentId?: string;

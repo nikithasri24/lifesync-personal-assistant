@@ -55,6 +55,50 @@ export async function getTasks(filters?: {
 }
 
 /**
+ * Get tasks by ID list
+ */
+export async function getTasksByIds(ids: string[]): Promise<TaskData[]> {
+  return apiCall(
+    async () => {
+      if (ids.length === 0) return [];
+      const user = await requireAuth();
+
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('*')
+        .in('id', ids)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      return (data ?? []) as TaskData[];
+    },
+    { domain: 'TasksAPI', operation: 'getTasksByIds', data: { count: ids.length } }
+  );
+}
+
+/**
+ * Get scheduled tasks for a specific date
+ */
+export async function getScheduledTasksForDate(date: string): Promise<TaskData[]> {
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
+
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('user_id', user.id)
+        .gte('scheduled_start', `${date}T00:00:00`)
+        .lt('scheduled_start', `${date}T23:59:59`);
+
+      if (error) throw error;
+      return (data ?? []) as TaskData[];
+    },
+    { domain: 'TasksAPI', operation: 'getScheduledTasksForDate', data: { date } }
+  );
+}
+
+/**
  * Get a single task by ID
  */
 export async function getTask(id: string): Promise<TaskData> {

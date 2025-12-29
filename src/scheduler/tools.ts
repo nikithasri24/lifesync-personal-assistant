@@ -385,7 +385,9 @@ async function executeScheduleTaskOptimally(args: Record<string, unknown>): Prom
 
     const bestSlot = scoredSlots[0];
     const startTime = format(bestSlot.start, 'HH:mm');
-    const endTime = format(addMinutes(bestSlot.start, durationMinutes), 'HH:mm');
+    const scheduledStart = bestSlot.start.toISOString();
+    const scheduledEndDate = addMinutes(bestSlot.start, durationMinutes);
+    const endTime = format(scheduledEndDate, 'HH:mm');
 
     // If auto_schedule is true, update the task
     if (autoSchedule) {
@@ -393,7 +395,8 @@ async function executeScheduleTaskOptimally(args: Record<string, unknown>): Prom
         .from('tasks')
         .update({
           due_date: dateStr,
-          scheduled_time: startTime,
+          scheduled_start: scheduledStart,
+          scheduled_end: scheduledEndDate.toISOString(),
           status: 'scheduled',
         })
         .eq('id', taskId)

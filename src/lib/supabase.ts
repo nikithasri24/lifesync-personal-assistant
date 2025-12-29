@@ -77,6 +77,8 @@ CREATE TABLE tasks (
   estimated_time INTEGER DEFAULT 25,
   actual_time INTEGER DEFAULT 0,
   due_date TIMESTAMPTZ,
+  scheduled_start TIMESTAMPTZ,
+  scheduled_end TIMESTAMPTZ,
   tags TEXT[] DEFAULT '{}',
   created_at TIMESTAMPTZ DEFAULT NOW(),
   completed_at TIMESTAMPTZ,

@@ -24,6 +24,15 @@ export interface UserPreferences {
   home_location?: Record<string, unknown>;
   work_location?: Record<string, unknown>;
   saved_locations?: Record<string, unknown>[];
+  // Scheduling preferences (stored in user_preferences)
+  work_hours_start?: string | null;
+  work_hours_end?: string | null;
+  work_days?: number[] | null;
+  peak_energy_start?: string | null;
+  peak_energy_end?: string | null;
+  low_energy_start?: string | null;
+  low_energy_end?: string | null;
+  max_tasks_per_day?: number | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -155,4 +164,3 @@ export async function updateUserPreferences(
     { domain: 'UserSettingsAPI', operation: 'updateUserPreferences' }
   );
 }
-

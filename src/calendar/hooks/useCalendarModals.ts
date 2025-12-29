@@ -35,7 +35,7 @@ export const useCalendarModals = (
     const scheduledTask: ScheduledTask = {
       ...task,
       // ScheduledTask-specific fields can be added here if needed
-      scheduledStart: task.due_date || undefined,
+      scheduledStart: task.scheduled_start || undefined,
     };
 
     setEditingTask(scheduledTask);
@@ -182,4 +182,3 @@ export const useCalendarModals = (
     handleQuickCreateNew,
   };
 };
-

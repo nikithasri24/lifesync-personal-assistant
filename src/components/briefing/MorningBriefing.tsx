@@ -260,13 +260,12 @@ export function MorningBriefing({ className = '', onCompleteTask, onCompleteHabi
     for (const selection of tasksWithSlots) {
       try {
         const dateKey = format(new Date(), 'yyyy-MM-dd');
-        const timeStr = format(selection.selectedSlot!.start, 'HH:mm');
-
         await updateTask.mutateAsync({
           id: selection.taskId,
           updates: {
             due_date: dateKey,
-            scheduled_time: timeStr,
+            scheduled_start: selection.selectedSlot!.start.toISOString(),
+            scheduled_end: selection.selectedSlot!.end.toISOString(),
             status: 'scheduled',
           },
         });
@@ -804,4 +803,3 @@ function HabitItem({ habit, onComplete, isCompleting }: HabitItemProps) {
     </div>
   );
 }
-

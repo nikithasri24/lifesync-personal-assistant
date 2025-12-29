@@ -5,18 +5,20 @@
  */
 
 import React, { useRef, useEffect } from 'react';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import type { Task } from '@/lib/supabase';
-import type { CalendarEvent } from '@/services/types';
+import type { CalendarEvent, ScheduleBlock } from '@/services/types';
 import { EventCard } from '@/components/calendar/EventCard';
 
 interface DayViewProps {
   date: Date;
   tasks: Task[];
   events: CalendarEvent[];
+  scheduleBlocks: ScheduleBlock[];
   currentTime: Date;
   onTaskClick: (task: Task) => void;
   onEventClick: (event: CalendarEvent) => void;
+  onScheduleBlockClick: (block: ScheduleBlock) => void;
   onCellClick: (date: Date, hour: number) => void;
   onDragStart: (task: Task, e: React.DragEvent) => void;
   onDragEnd: (e: React.DragEvent) => void;
@@ -33,9 +35,11 @@ export function DayView({
   date,
   tasks,
   events,
+  scheduleBlocks,
   currentTime,
   onTaskClick,
   onEventClick,
+  onScheduleBlockClick,
   onCellClick,
   onDragStart,
   onDragEnd,
@@ -71,9 +75,22 @@ export function DayView({
   // Filter events for this day
   const dayEvents = events.filter(e => e.start_date === dateKey && !e.all_day);
   const allDayEvents = events.filter(e => e.start_date === dateKey && e.all_day);
+  const dayScheduleBlocks = scheduleBlocks.filter(block => block.date === dateKey);
+
+  const scheduleBlockStyles: Record<ScheduleBlock['type'], string> = {
+    task: 'bg-emerald-200/70 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-100',
+    event: 'bg-slate-200/80 text-slate-900 dark:bg-slate-700/60 dark:text-slate-100',
+    focus: 'bg-purple-200/70 text-purple-900 dark:bg-purple-900/40 dark:text-purple-100',
+    break: 'bg-amber-200/70 text-amber-900 dark:bg-amber-900/40 dark:text-amber-100',
+  };
 
   // Filter tasks for this day
-  const dayTasks = tasks.filter(t => t.due_date === dateKey);
+  const dayTasks = tasks.filter(t => {
+    if (t.scheduled_start) {
+      return format(parseISO(t.scheduled_start), 'yyyy-MM-dd') === dateKey;
+    }
+    return t.due_date === dateKey;
+  });
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
@@ -122,6 +139,30 @@ export function DayView({
 
                 {/* Events and tasks for this hour */}
                 <div className="ml-16 mr-2 mt-2 space-y-1">
+                  {/* Schedule blocks */}
+                  {dayScheduleBlocks
+                    .filter(block => parseInt(block.start_time.split(':')[0], 10) === hour)
+                    .map(block => {
+                      const blockLabel = block.title || `${block.type[0].toUpperCase()}${block.type.slice(1)}`;
+                      const blockClass = scheduleBlockStyles[block.type] || 'bg-slate-200/70 text-slate-900';
+                      const timeLabel = `${block.start_time}–${block.end_time}`;
+
+                      return (
+                        <div
+                          key={block.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onScheduleBlockClick(block);
+                          }}
+                          className={`px-2 py-1 rounded-sm text-[10px] font-medium cursor-pointer ${blockClass}`}
+                          title={`${blockLabel} (${timeLabel})`}
+                        >
+                          <div className="font-semibold">{blockLabel}</div>
+                          <div className="text-[9px] opacity-80">{timeLabel}</div>
+                        </div>
+                      );
+                    })}
+
                   {/* Events */}
                   {dayEvents
                     .filter(e => {
@@ -143,11 +184,16 @@ export function DayView({
                   {/* Tasks */}
                   {dayTasks
                     .filter(t => {
-                      if (!t.scheduled_time) return index === 0; // Show unscheduled tasks at first hour
-                      const taskHour = parseInt(t.scheduled_time.split(':')[0]);
-                      return taskHour === hour;
+                      if (!t.scheduled_start) return index === 0; // Show unscheduled tasks at first hour
+                      const taskStart = parseISO(t.scheduled_start);
+                      return taskStart.getHours() === hour;
                     })
-                    .map(task => (
+                    .map(task => {
+                      const taskStart = parseISO(task.scheduled_start as string);
+                      const taskTimeLabel = format(taskStart, 'HH:mm');
+                      const hasTimeLabel = !!task.scheduled_start;
+
+                      return (
                       <div
                         key={task.id}
                         draggable
@@ -161,10 +207,10 @@ export function DayView({
                         }`}
                         title={task.title}
                       >
-                        {task.scheduled_time && <span className="font-medium">{task.scheduled_time}</span>}
+                        {hasTimeLabel && <span className="font-medium">{taskTimeLabel}</span>}
                         {' '}{task.title}
                       </div>
-                    ))}
+                    )})}
                 </div>
               </div>
             );
@@ -187,4 +233,3 @@ export function DayView({
     </div>
   );
 }
-

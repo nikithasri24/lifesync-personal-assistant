@@ -4,13 +4,14 @@
  */
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { format, parseISO, isSameDay, addDays, isToday } from 'date-fns';
+import { format, parseISO, isSameDay, addDays, isToday, addMinutes } from 'date-fns';
 import { CheckCircle2, Target } from 'lucide-react';
 
 // Hooks
 import { useTasks, useUpdateTask, useDeleteTask } from '../hooks/useTasksQuery';
 import { useHabits, useHabitEntries } from '../hooks/useHabitsQuery';
 import { useCalendarEvents, useCreateCalendarEvent, useUpdateCalendarEvent, useDeleteCalendarEvent } from '../hooks/useCalendarQuery';
+import { useScheduleBlocks, useCreateScheduleBlock, useUpdateScheduleBlock, useDeleteScheduleBlock } from '../hooks/useScheduleBlocksQuery';
 import { useCalendarState } from '../calendar/hooks/useCalendarState';
 import { useCalendarTasks } from '../calendar/hooks/useCalendarTasks';
 import { isMultiDayTask, getTaskSpanDays, taskAppearsOnDate, getTaskSpanPosition } from '../calendar/hooks';
@@ -24,6 +25,7 @@ import { TaskEditModal } from '../scheduler/components/TaskEditModal';
 import { EventModal } from '../components/calendar/EventModal';
 import { EventCard } from '../components/calendar/EventCard';
 import { QuickScheduleModal } from '../components/calendar/QuickScheduleModal';
+import { ScheduleBlockModal } from '../components/scheduleBlocks/ScheduleBlockModal';
 import { CalendarLoadingState } from '../calendar/components/layout/CalendarLoadingState';
 import { WeekDayHeaders } from '../calendar/components/layout/WeekDayHeaders';
 import { MonthView } from '../calendar/components/layout/MonthView';
@@ -34,6 +36,7 @@ import type { Task } from '../lib/supabase';
 import type { Habit } from '../types';
 import type { CalendarEvent } from '../services/types';
 import type { ScheduledTask } from '../scheduler/types';
+import type { ScheduleBlock } from '../services/types';
 
 // Commands
 import { ChangeTaskCategoryCommand } from '../commands/TaskCommands';
@@ -52,11 +55,41 @@ const Calendar: React.FC = () => {
   const createEventMutation = useCreateCalendarEvent();
   const updateEventMutation = useUpdateCalendarEvent();
   const deleteEventMutation = useDeleteCalendarEvent();
+  const createScheduleBlockMutation = useCreateScheduleBlock();
+  const updateScheduleBlockMutation = useUpdateScheduleBlock();
+  const deleteScheduleBlockMutation = useDeleteScheduleBlock();
 
   // Hooks
   const calendarState = useCalendarState();
+  const scheduleFilters = useMemo(() => {
+    if (calendarState.view === 'week' && calendarState.weekDays.length > 0) {
+      return {
+        startDate: format(calendarState.weekDays[0].date, 'yyyy-MM-dd'),
+        endDate: format(calendarState.weekDays[calendarState.weekDays.length - 1].date, 'yyyy-MM-dd'),
+      };
+    }
+
+    if (calendarState.view === 'month' && calendarState.monthGridDays.length > 0) {
+      return {
+        startDate: format(calendarState.monthGridDays[0].date, 'yyyy-MM-dd'),
+        endDate: format(calendarState.monthGridDays[calendarState.monthGridDays.length - 1].date, 'yyyy-MM-dd'),
+      };
+    }
+
+    return {
+      startDate: format(calendarState.currentDate, 'yyyy-MM-dd'),
+      endDate: format(calendarState.currentDate, 'yyyy-MM-dd'),
+    };
+  }, [calendarState.view, calendarState.weekDays, calendarState.monthGridDays, calendarState.currentDate]);
+  const { data: scheduleBlocks = [], isLoading: blocksLoading } = useScheduleBlocks(scheduleFilters);
   const { categorizedTasks, unscheduledTasks } = useCalendarTasks(tasks);
   const { executeCommand } = useUndoRedo();
+  const scheduleBlockStyles: Record<ScheduleBlock['type'], string> = {
+    task: 'bg-emerald-200/70 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-100',
+    event: 'bg-slate-200/80 text-slate-900 dark:bg-slate-700/60 dark:text-slate-100',
+    focus: 'bg-purple-200/70 text-purple-900 dark:bg-purple-900/40 dark:text-purple-100',
+    break: 'bg-amber-200/70 text-amber-900 dark:bg-amber-900/40 dark:text-amber-100',
+  };
 
   // Local state for drag & drop
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
@@ -70,6 +103,9 @@ const Calendar: React.FC = () => {
   const [eventModalInitialDate, setEventModalInitialDate] = useState<Date | null>(null);
   const [showQuickSchedule, setShowQuickSchedule] = useState(false);
   const [quickScheduleDate, setQuickScheduleDate] = useState<Date | null>(null);
+  const [showScheduleBlockModal, setShowScheduleBlockModal] = useState(false);
+  const [scheduleBlockInitialDate, setScheduleBlockInitialDate] = useState<Date | null>(null);
+  const [editingScheduleBlock, setEditingScheduleBlock] = useState<ScheduleBlock | null>(null);
 
   // Current time indicator state
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -83,7 +119,7 @@ const Calendar: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
-  const isLoading = tasksLoading || habitsLoading || entriesLoading || eventsLoading;
+  const isLoading = tasksLoading || habitsLoading || entriesLoading || eventsLoading || blocksLoading;
 
   // Get events for a specific day
   const getEventsForDay = (date: Date) => {
@@ -117,7 +153,16 @@ const Calendar: React.FC = () => {
       dayHabitCompletions.some(entry => entry.habit_id === habit.id)
     );
 
-    return { tasks: timedTasks, allDayTasks, events: timedEvents, allDayEvents, habits: completedHabits };
+    const dayScheduleBlocks = scheduleBlocks.filter(block => block.date === dateKey);
+
+    return {
+      tasks: timedTasks,
+      allDayTasks,
+      events: timedEvents,
+      allDayEvents,
+      habits: completedHabits,
+      scheduleBlocks: dayScheduleBlocks,
+    };
   };
 
   // Drag and drop handlers
@@ -170,9 +215,13 @@ const Calendar: React.FC = () => {
       dateString
     });
 
+    const scheduledStart = parseISO(`${dateString}T${scheduledTime}`);
+    const scheduledEnd = addMinutes(scheduledStart, draggedTask.estimated_time || 30);
+
     const updates: Partial<Task> = {
       due_date: dateString,
-      scheduled_time: scheduledTime,
+      scheduled_start: scheduledStart.toISOString(),
+      scheduled_end: scheduledEnd.toISOString(),
       status: 'scheduled' as const,
       sidebar_section: null,
     };
@@ -203,6 +252,8 @@ const Calendar: React.FC = () => {
 
     const updates: Partial<Task> = {
       due_date: null,
+      scheduled_start: null,
+      scheduled_end: null,
       sidebar_section: null,
     };
 
@@ -307,14 +358,14 @@ const Calendar: React.FC = () => {
   };
 
   // Smart scheduling handler - schedules a task to a specific time slot
-  const handleScheduleTask = (taskId: string, start: Date, _end: Date) => {
+  const handleScheduleTask = (taskId: string, start: Date, end: Date) => {
     const dateStr = format(start, 'yyyy-MM-dd');
-    const timeStr = format(start, 'HH:mm'); // Extract time in HH:MM format
     updateTaskMutation.mutate({
       id: taskId,
       updates: {
         due_date: dateStr,
-        scheduled_time: timeStr,
+        scheduled_start: start.toISOString(),
+        scheduled_end: end.toISOString(),
         status: 'scheduled',
       },
     });
@@ -394,7 +445,17 @@ const Calendar: React.FC = () => {
     const target = e.target as HTMLElement;
     if (target.closest('[draggable="true"]') || target.closest('button')) return;
 
-    setQuickScheduleDate(date);
+    const cell = e.currentTarget as HTMLElement;
+    const hourAttr = cell.getAttribute('data-hour');
+    const dateWithTime = new Date(date);
+    if (hourAttr) {
+      const hour = Number(hourAttr);
+      if (!Number.isNaN(hour)) {
+        dateWithTime.setHours(hour, 0, 0, 0);
+      }
+    }
+
+    setQuickScheduleDate(dateWithTime);
     setShowQuickSchedule(true);
   };
 
@@ -424,6 +485,33 @@ const Calendar: React.FC = () => {
     setEditingEvent(null);
     setShowEventModal(true);
     setShowQuickSchedule(false);
+  };
+
+  const handleQuickCreateBlock = (date: Date) => {
+    setScheduleBlockInitialDate(date);
+    setEditingScheduleBlock(null);
+    setShowScheduleBlockModal(true);
+  };
+
+  const handleScheduleBlockClick = (block: ScheduleBlock) => {
+    setEditingScheduleBlock(block);
+    setScheduleBlockInitialDate(parseISO(`${block.date}T${block.start_time}`));
+    setShowScheduleBlockModal(true);
+  };
+
+  const handleSaveScheduleBlock = (
+    input: Omit<ScheduleBlock, 'id' | 'user_id' | 'created_at' | 'updated_at'>,
+    id?: string
+  ) => {
+    if (id) {
+      updateScheduleBlockMutation.mutate({ id, updates: input });
+      return;
+    }
+    createScheduleBlockMutation.mutate(input);
+  };
+
+  const handleDeleteScheduleBlock = (id: string) => {
+    deleteScheduleBlockMutation.mutate(id);
   };
 
   // Auto-scroll to current time on mount
@@ -493,6 +581,7 @@ const Calendar: React.FC = () => {
             }
             onViewChange={calendarState.setView}
             onNewEvent={() => handleNewEvent()}
+            onNewBlock={() => handleQuickCreateBlock(calendarState.currentDate)}
           />
 
           {/* Week View */}
@@ -678,25 +767,55 @@ const Calendar: React.FC = () => {
                               day.isToday ? 'bg-blue-50/10 dark:bg-blue-900/5' : ''
                             }`}
                           >
+                            {/* Schedule blocks */}
+                            {events.scheduleBlocks
+                              .filter(block => parseInt(block.start_time.split(':')[0], 10) === slot.hour)
+                              .map((block) => {
+                                const blockStart = parseISO(`${block.date}T${block.start_time}`);
+                                const blockEnd = parseISO(`${block.date}T${block.end_time}`);
+                                const durationMinutes = Math.max(1, Math.round((blockEnd.getTime() - blockStart.getTime()) / 60000));
+                                const topOffset = (blockStart.getMinutes() / 60) * 64;
+                                const blockHeight = Math.max(16, (durationMinutes / 60) * 64);
+                                const blockLabel = block.title || `${block.type[0].toUpperCase()}${block.type.slice(1)}`;
+                                const blockClass = scheduleBlockStyles[block.type] || 'bg-slate-200/70 text-slate-900';
+
+                                return (
+                                  <div
+                                    key={block.id}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleScheduleBlockClick(block);
+                                    }}
+                                    style={{
+                                      top: `${topOffset}px`,
+                                      height: `${blockHeight}px`,
+                                      left: '2px',
+                                      right: '2px',
+                                      maxWidth: 'calc(100% - 4px)',
+                                    }}
+                                    className={`absolute px-1.5 py-0.5 rounded-sm text-[10px] font-medium z-0 overflow-hidden cursor-pointer ${blockClass}`}
+                                    title={blockLabel}
+                                  >
+                                    {blockLabel}
+                                  </div>
+                                );
+                              })}
+
                             {/* Timed tasks */}
                             {events.tasks
                               .filter(task => {
-                                // Parse scheduled_time (HH:MM) or default to 9 AM
-                                const taskHour = task.scheduled_time
-                                  ? parseInt(task.scheduled_time.split(':')[0], 10)
-                                  : 9;
-                                return taskHour === slot.hour;
+                                if (!task.scheduled_start) return false;
+                                const taskStart = parseISO(task.scheduled_start);
+                                return taskStart.getHours() === slot.hour;
                               })
                               .map((task) => {
-                                // Calculate vertical position based on minutes
-                                const taskMinutes = task.scheduled_time
-                                  ? parseInt(task.scheduled_time.split(':')[1], 10)
-                                  : 0;
+                                const taskStart = parseISO(task.scheduled_start as string);
+                                const taskMinutes = taskStart.getMinutes();
                                 const topOffset = (taskMinutes / 60) * 64; // 64px = h-16 cell height
 
-                                // Calculate task height based on estimated_time
                                 const durationMinutes = task.estimated_time || 30;
                                 const taskHeight = Math.max(24, (durationMinutes / 60) * 64); // Minimum 24px
+                                const taskTimeLabel = format(taskStart, 'HH:mm');
 
                                 return (
                                   <div
@@ -717,9 +836,9 @@ const Calendar: React.FC = () => {
                                     <p className="text-[11px] font-medium text-white leading-tight truncate whitespace-nowrap overflow-hidden text-ellipsis">
                                       {task.title}
                                     </p>
-                                    {taskHeight >= 32 && task.scheduled_time && (
+                                    {taskHeight >= 32 && (
                                       <p className="text-[10px] text-blue-100 truncate whitespace-nowrap overflow-hidden">
-                                        {task.scheduled_time}
+                                        {taskTimeLabel}
                                       </p>
                                     )}
                                   </div>
@@ -787,9 +906,11 @@ const Calendar: React.FC = () => {
               date={calendarState.currentDate}
               tasks={tasks}
               events={calendarEvents}
+              scheduleBlocks={scheduleBlocks}
               currentTime={currentTime}
               onTaskClick={handleTaskClick}
               onEventClick={handleEventClick}
+              onScheduleBlockClick={handleScheduleBlockClick}
               onCellClick={(date, hour) => {
                 const newDate = new Date(date);
                 newDate.setHours(hour, 0, 0, 0);
@@ -841,7 +962,17 @@ const Calendar: React.FC = () => {
         unscheduledTasks={unscheduledTasks}
         onScheduleTask={handleQuickScheduleTask}
         onCreateNew={handleQuickCreateNew}
+        onCreateBlock={handleQuickCreateBlock}
         onClose={() => setShowQuickSchedule(false)}
+      />
+
+      <ScheduleBlockModal
+        isOpen={showScheduleBlockModal}
+        onClose={() => setShowScheduleBlockModal(false)}
+        initialStart={scheduleBlockInitialDate}
+        block={editingScheduleBlock}
+        onSave={handleSaveScheduleBlock}
+        onDelete={handleDeleteScheduleBlock}
       />
     </div>
   );

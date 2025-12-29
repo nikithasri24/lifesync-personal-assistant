@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Filter, Timer, Plus } from 'lucide-react';
+import { Search, Filter, Timer, Plus, Calendar } from 'lucide-react';
 
 interface PomodoroTimer {
   taskId: string | null;
@@ -15,6 +15,7 @@ interface TaskSchedulerHeaderProps {
   pomodoroTimer: PomodoroTimer;
   onTogglePomodoro: () => void;
   onCreateTask: () => void;
+  onCreateBlock: () => void;
   importantTaskCount: number;
 }
 
@@ -29,6 +30,7 @@ export function TaskSchedulerHeader({
   pomodoroTimer,
   onTogglePomodoro,
   onCreateTask,
+  onCreateBlock,
   importantTaskCount,
 }: TaskSchedulerHeaderProps): React.ReactElement {
   return (
@@ -80,13 +82,22 @@ export function TaskSchedulerHeader({
         )}
 
         {/* Create Task Button */}
-        <button
-          onClick={onCreateTask}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          New Task
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onCreateBlock}
+            className="flex items-center gap-2 px-3 py-2 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-200 rounded-lg font-medium hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition-colors"
+          >
+            <Calendar className="w-4 h-4" />
+            New Block
+          </button>
+          <button
+            onClick={onCreateTask}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            New Task
+          </button>
+        </div>
       </div>
 
       {/* Priority Stats Row */}

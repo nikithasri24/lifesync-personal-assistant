@@ -112,8 +112,8 @@ describe('Calendar API', () => {
       endDate: '2025-01-31',
     });
 
-    expect(mockQuery.gte).toHaveBeenCalledWith('start_date', '2025-01-01');
     expect(mockQuery.lte).toHaveBeenCalledWith('start_date', '2025-01-31');
+    expect(mockQuery.gte).toHaveBeenCalledWith('end_date', '2025-01-01');
   });
 
   it('should update calendar event', async () => {

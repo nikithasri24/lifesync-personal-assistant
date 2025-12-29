@@ -234,6 +234,33 @@ function ResultsSection({ result, isExpanded, onToggle }: ResultsSectionProps) {
               </div>
             </div>
           )}
+
+          {/* Conflicts */}
+          {result.conflicts.length > 0 && (
+            <div>
+              <h4 className="text-xs font-semibold text-slate-500 uppercase mb-2">
+                Conflicts Detected
+              </h4>
+              <div className="space-y-2">
+                {result.conflicts.map((conflict, index) => (
+                  <div
+                    key={`${conflict.event1Title}-${conflict.event2Title}-${index}`}
+                    className="flex items-start gap-3 p-3 bg-rose-50 border border-rose-200 rounded-xl"
+                  >
+                    <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-rose-800 truncate">
+                        {conflict.event1Title} vs {conflict.event2Title}
+                      </p>
+                      <p className="text-xs text-rose-700 mt-1">
+                        Overlap: {conflict.overlapMinutes} min · Suggested: {conflict.suggestedResolution.replace('_', ' ')}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -266,4 +293,3 @@ function getPriorityColor(priority: string): string {
       return 'text-blue-500';
   }
 }
-

@@ -182,6 +182,13 @@ export const queryKeys = {
     detail: (id: string) => [...queryKeys.calendar.details(), id] as const,
   },
 
+  // Schedule Blocks
+  scheduleBlocks: {
+    all: ['schedule-blocks'] as const,
+    lists: () => [...queryKeys.scheduleBlocks.all, 'list'] as const,
+    list: (filters?: QueryFilters) => [...queryKeys.scheduleBlocks.lists(), filters] as const,
+  },
+
   // Skincare
   skincare: {
     all: ['skincare'] as const,

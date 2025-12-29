@@ -134,14 +134,14 @@ export default function Todos(): React.ReactElement {
   // Smart Scheduling Handler
   // ============================================================================
 
-  const handleScheduleTask = useCallback((taskId: string, start: Date, _end: Date) => {
+  const handleScheduleTask = useCallback((taskId: string, start: Date, end: Date) => {
     const dateStr = format(start, 'yyyy-MM-dd');
-    const timeStr = format(start, 'HH:mm'); // Extract time in HH:MM format
     updateTaskMutation.mutate({
       id: taskId,
       updates: {
         due_date: dateStr,
-        scheduled_time: timeStr,
+        scheduled_start: start.toISOString(),
+        scheduled_end: end.toISOString(),
         status: 'scheduled' as const,
       },
     });

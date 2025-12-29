@@ -15,9 +15,11 @@ import {
   createCalendarEvent,
   updateCalendarEvent,
   deleteCalendarEvent,
-  findFreeSlots,
 } from '@/api/calendarAPI';
 import { logger } from '@/services/logger';
+import { scheduleEngine } from '@/services/scheduler';
+import { DEFAULT_SCHEDULING_PREFS } from '@/services/scheduling/types';
+import { format, parseISO } from 'date-fns';
 
 // =====================================================
 // CALENDAR EVENTS QUERY HOOKS
@@ -58,7 +60,14 @@ export function useCalendarEvent(id: string | null): UseQueryResult<CalendarEven
 export function useCalendarFreeSlots(date: string, durationMinutes: number, enabled = true): UseQueryResult<Array<{ start: string; end: string }>, Error> {
   return useQuery({
     queryKey: [...queryKeys.calendar.all, 'freeSlots', date, durationMinutes] as const,
-    queryFn: () => findFreeSlots(date, durationMinutes),
+    queryFn: async () => {
+      const day = parseISO(date);
+      const slots = await scheduleEngine.findFreeSlots(day, DEFAULT_SCHEDULING_PREFS, durationMinutes);
+      return slots.map(slot => ({
+        start: format(slot.start, 'HH:mm'),
+        end: format(slot.end, 'HH:mm'),
+      }));
+    },
     enabled,
     ...queryOptions.user,
   });

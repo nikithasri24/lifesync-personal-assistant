@@ -37,20 +37,32 @@ export const getTaskSpanDays = (task: Task): number => {
  * Check if a task appears on a specific date
  */
 export const taskAppearsOnDate = (task: Task, date: Date): boolean => {
-  if (!task.due_date) return false;
+  const rawStart = task.scheduled_start || task.due_date;
+  if (!rawStart) return false;
 
   // Use local date parsing to avoid timezone issues
-  const taskDate = typeof task.due_date === 'string'
-    ? parseDateLocal(task.due_date)
-    : task.due_date;
+  const taskStartDate = typeof rawStart === 'string'
+    ? parseDateLocal(rawStart)
+    : rawStart;
+
+  const rawEnd = task.scheduled_end || null;
+  const taskEndDate = rawEnd
+    ? (typeof rawEnd === 'string' ? parseDateLocal(rawEnd) : rawEnd)
+    : null;
+
+  if (taskEndDate) {
+    const start = taskStartDate <= taskEndDate ? taskStartDate : taskEndDate;
+    const end = taskStartDate <= taskEndDate ? taskEndDate : taskStartDate;
+    return date >= start && date <= end;
+  }
 
   if (!isMultiDayTask(task)) {
-    return isSameDay(taskDate, date);
+    return isSameDay(taskStartDate, date);
   }
 
   // For multi-day tasks, check if date falls within the span
   const spanDays = getTaskSpanDays(task);
-  const startDate = addDays(taskDate, -(spanDays - 1)); // Task ends on due_date
+  const startDate = addDays(taskStartDate, -(spanDays - 1)); // Task ends on start date if no end
 
   for (let i = 0; i < spanDays; i++) {
     const checkDate = addDays(startDate, i);
@@ -69,19 +81,42 @@ export const getTaskSpanPosition = (
   task: Task,
   date: Date
 ): { position: number; totalDays: number; isFirst: boolean; isLast: boolean } => {
-  if (!task.due_date) return { position: -1, totalDays: 1, isFirst: true, isLast: true };
+  const rawStart = task.scheduled_start || task.due_date;
+  if (!rawStart) return { position: -1, totalDays: 1, isFirst: true, isLast: true };
 
   // Use local date parsing to avoid timezone issues
-  const taskDate = typeof task.due_date === 'string'
-    ? parseDateLocal(task.due_date)
-    : task.due_date;
+  const taskStartDate = typeof rawStart === 'string'
+    ? parseDateLocal(rawStart)
+    : rawStart;
+
+  const rawEnd = task.scheduled_end || null;
+  const taskEndDate = rawEnd
+    ? (typeof rawEnd === 'string' ? parseDateLocal(rawEnd) : rawEnd)
+    : null;
+
+  if (taskEndDate) {
+    const start = taskStartDate <= taskEndDate ? taskStartDate : taskEndDate;
+    const end = taskStartDate <= taskEndDate ? taskEndDate : taskStartDate;
+    if (date < start || date > end) {
+      return { position: -1, totalDays: 1, isFirst: false, isLast: false };
+    }
+
+    const totalDays = Math.max(1, Math.round((end.getTime() - start.getTime()) / (24 * 60 * 60 * 1000)) + 1);
+    const position = Math.round((date.getTime() - start.getTime()) / (24 * 60 * 60 * 1000));
+    return {
+      position,
+      totalDays,
+      isFirst: position === 0,
+      isLast: position === totalDays - 1,
+    };
+  }
 
   if (!isMultiDayTask(task)) {
     return { position: 0, totalDays: 1, isFirst: true, isLast: true };
   }
 
   const totalDays = getTaskSpanDays(task);
-  const startDate = addDays(taskDate, -(totalDays - 1));
+  const startDate = addDays(taskStartDate, -(totalDays - 1));
 
   // Find which day of the span this date is
   for (let i = 0; i < totalDays; i++) {
@@ -98,4 +133,3 @@ export const getTaskSpanPosition = (
 
   return { position: -1, totalDays, isFirst: false, isLast: false };
 };
-

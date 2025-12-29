@@ -10,16 +10,18 @@
  */
 
 import { 
-  addMinutes, setHours, setMinutes, isBefore, isAfter,
+  addMinutes, endOfDay, setHours, setMinutes, isBefore, isAfter,
   startOfDay, format, parseISO 
 } from 'date-fns';
-import { supabase } from '../../lib/supabase';
 import { logger } from '../logger';
-import type { TaskData, ScheduleBlock } from '../types';
+import { fetchCalendarEvents } from '@/api/calendarData';
+import { getScheduleBlocksForDate } from '@/api/schedulerAPI';
+import { getScheduledTasksForDate } from '@/api/tasksAPI';
 import type {
   TimeSlot, ScoredTimeSlot, UserSchedulingPrefs, EnergyLevel, TaskComplexity
 } from '../scheduling/types';
-import { DEFAULT_SCHEDULING_PREFS, getEnergyLevel } from '../scheduling';
+import { DEFAULT_SCHEDULING_PREFS } from '../scheduling/types';
+import { getEnergyLevel } from '../scheduling/energy';
 
 // =====================================================
 // TYPES
@@ -52,6 +54,7 @@ export interface DayPlan {
   }>;
   conflicts: ScheduleConflict[];
   unscheduledTasks: string[];
+  unscheduledReasons?: Record<string, string>;
   totalFreeMinutes: number;
 }
 
@@ -60,44 +63,40 @@ export interface DayPlan {
 // =====================================================
 
 export class ScheduleEngine {
-  private userId: string | null = null;
-
-  /**
-   * Initialize the engine with user context
-   */
-  async initialize(): Promise<void> {
-    const { data: { user } } = await supabase.auth.getUser();
-    this.userId = user?.id || null;
-  }
-
   /**
    * Get ALL events for a day from all sources:
    * - calendar_events
    * - schedule_blocks
-   * - scheduled tasks (tasks with scheduled_time)
+   * - scheduled tasks (tasks with scheduled_start/scheduled_end)
    */
   async getAllEventsForDay(date: Date): Promise<ScheduleEvent[]> {
-    if (!this.userId) await this.initialize();
-    if (!this.userId) return [];
-
     const dateKey = format(date, 'yyyy-MM-dd');
     const events: ScheduleEvent[] = [];
 
     try {
-      // 1. Calendar events
-      const { data: calendarEvents } = await supabase
-        .from('calendar_events')
-        .select('id, title, start_date, start_time, end_date, end_time')
-        .eq('user_id', this.userId)
-        .eq('start_date', dateKey);
+      // 1. Calendar events (including multi-day)
+      const calendarEvents = await fetchCalendarEvents({
+        startDate: dateKey,
+        endDate: dateKey,
+      });
+
+      const dayStart = startOfDay(date);
+      const dayEnd = endOfDay(date);
 
       for (const e of calendarEvents || []) {
         if (e.start_time && e.end_time) {
+          const eventStart = parseISO(`${e.start_date}T${e.start_time}`);
+          const eventEnd = parseISO(`${e.end_date || e.start_date}T${e.end_time}`);
+          const clampedStart = isBefore(eventStart, dayStart) ? dayStart : eventStart;
+          const clampedEnd = isAfter(eventEnd, dayEnd) ? dayEnd : eventEnd;
+
+          if (!isBefore(clampedStart, clampedEnd)) continue;
+
           events.push({
             id: e.id,
             title: e.title || 'Event',
-            start: parseISO(`${e.start_date}T${e.start_time}`),
-            end: parseISO(`${e.end_date || e.start_date}T${e.end_time}`),
+            start: clampedStart,
+            end: clampedEnd,
             type: 'calendar_event',
             source: 'calendar_events',
           });
@@ -105,11 +104,7 @@ export class ScheduleEngine {
       }
 
       // 2. Schedule blocks
-      const { data: blocks } = await supabase
-        .from('schedule_blocks')
-        .select('id, title, date, start_time, end_time')
-        .eq('user_id', this.userId)
-        .eq('date', dateKey);
+      const blocks = await getScheduleBlocksForDate(dateKey);
 
       for (const b of blocks || []) {
         events.push({
@@ -122,23 +117,20 @@ export class ScheduleEngine {
         });
       }
 
-      // 3. Scheduled tasks (tasks with scheduled_time)
-      const { data: tasks } = await supabase
-        .from('tasks')
-        .select('id, title, scheduled_time, estimated_time')
-        .eq('user_id', this.userId)
-        .gte('scheduled_time', `${dateKey}T00:00:00`)
-        .lt('scheduled_time', `${dateKey}T23:59:59`);
+      // 3. Scheduled tasks (tasks with scheduled_start/scheduled_end)
+      const tasks = await getScheduledTasksForDate(dateKey);
 
       for (const t of tasks || []) {
-        if (t.scheduled_time) {
-          const start = parseISO(t.scheduled_time);
-          const duration = t.estimated_time || 30;
+        if (t.scheduled_start) {
+          const start = parseISO(t.scheduled_start);
+          const end = t.scheduled_end
+            ? parseISO(t.scheduled_end)
+            : addMinutes(start, t.estimated_time || 30);
           events.push({
             id: t.id,
             title: t.title || 'Task',
             start,
-            end: addMinutes(start, duration),
+            end,
             type: 'scheduled_task',
             source: 'tasks',
           });
@@ -176,6 +168,10 @@ export class ScheduleEngine {
     minDurationMinutes: number = 15
   ): TimeSlot[] {
     const slots: TimeSlot[] = [];
+    const dayOfWeek = date.getDay();
+    if (!prefs.workDays.includes(dayOfWeek)) {
+      return slots;
+    }
     const dayStart = setMinutes(setHours(startOfDay(date), prefs.workHoursStart), 0);
     const dayEnd = setMinutes(setHours(startOfDay(date), prefs.workHoursEnd), 0);
 
@@ -187,14 +183,6 @@ export class ScheduleEngine {
     for (const event of sortedEvents) {
       // Skip events outside work hours
       if (isAfter(event.start, dayEnd) || isBefore(event.end, dayStart)) continue;
-
-      // Skip lunch block if configured
-      const hour = event.start.getHours();
-      if (prefs.lunchBlockStart && prefs.lunchBlockEnd) {
-        if (hour >= prefs.lunchBlockStart && hour < prefs.lunchBlockEnd) {
-          continue;
-        }
-      }
 
       // If there's a gap before this event, it's a free slot
       if (isBefore(currentTime, event.start)) {
@@ -221,18 +209,34 @@ export class ScheduleEngine {
       }
     }
 
-    // Filter out lunch block from free slots
+    // Remove lunch block from free slots
     if (prefs.lunchBlockStart && prefs.lunchBlockEnd) {
       const lunchStart = setMinutes(setHours(startOfDay(date), prefs.lunchBlockStart), 0);
       const lunchEnd = setMinutes(setHours(startOfDay(date), prefs.lunchBlockEnd), 0);
 
-      return slots.filter(slot => {
-        // Exclude slots entirely within lunch
-        if (!isBefore(slot.start, lunchStart) && isBefore(slot.start, lunchEnd)) {
-          return false;
+      const adjusted: TimeSlot[] = [];
+      for (const slot of slots) {
+        if (isBefore(slot.end, lunchStart) || isAfter(slot.start, lunchEnd)) {
+          adjusted.push(slot);
+          continue;
         }
-        return true;
-      });
+
+        if (isBefore(slot.start, lunchStart)) {
+          const durationMinutes = Math.round((lunchStart.getTime() - slot.start.getTime()) / 60000);
+          if (durationMinutes >= minDurationMinutes) {
+            adjusted.push({ start: slot.start, end: lunchStart, durationMinutes });
+          }
+        }
+
+        if (isAfter(slot.end, lunchEnd)) {
+          const durationMinutes = Math.round((slot.end.getTime() - lunchEnd.getTime()) / 60000);
+          if (durationMinutes >= minDurationMinutes) {
+            adjusted.push({ start: lunchEnd, end: slot.end, durationMinutes });
+          }
+        }
+      }
+
+      return adjusted;
     }
 
     return slots;
@@ -284,8 +288,7 @@ export class ScheduleEngine {
   /**
    * Detect conflicts in a day's schedule
    */
-  async detectConflicts(date: Date): Promise<ScheduleConflict[]> {
-    const events = await this.getAllEventsForDay(date);
+  private computeConflicts(events: ScheduleEvent[]): ScheduleConflict[] {
     const conflicts: ScheduleConflict[] = [];
 
     for (let i = 0; i < events.length; i++) {
@@ -312,6 +315,14 @@ export class ScheduleEngine {
     return conflicts;
   }
 
+  async detectConflicts(date: Date, events?: ScheduleEvent[]): Promise<ScheduleConflict[]> {
+    if (events) {
+      return this.computeConflicts(events);
+    }
+    const dayEvents = await this.getAllEventsForDay(date);
+    return this.computeConflicts(dayEvents);
+  }
+
   /**
    * Auto-schedule tasks for a day
    * Uses topological sort for dependencies and energy-based slot selection
@@ -330,17 +341,30 @@ export class ScheduleEngine {
   ): Promise<DayPlan> {
     const events = await this.getAllEventsForDay(date);
     const scheduled: DayPlan['scheduledItems'] = [];
+    const unscheduledSet = new Set<string>();
     const unscheduledTasks: string[] = [];
+    const unscheduledReasons: Record<string, string> = {};
     let allEvents = [...events];
 
     // Sort tasks by priority (urgent first) and dependencies
-    const sortedTasks = this.topologicalSort(tasks);
+    const { sortedTasks, cyclicTaskIds } = this.topologicalSort(tasks);
+    for (const taskId of cyclicTaskIds) {
+      if (!unscheduledSet.has(taskId)) {
+        unscheduledSet.add(taskId);
+        unscheduledTasks.push(taskId);
+        unscheduledReasons[taskId] = 'Dependency cycle detected';
+      }
+    }
 
     for (const task of sortedTasks) {
       const freeSlots = this.calculateFreeSlots(date, allEvents, prefs, task.estimatedMinutes);
 
       if (freeSlots.length === 0) {
-        unscheduledTasks.push(task.id);
+        if (!unscheduledSet.has(task.id)) {
+          unscheduledSet.add(task.id);
+          unscheduledTasks.push(task.id);
+          unscheduledReasons[task.id] = 'No available time slot';
+        }
         continue;
       }
 
@@ -364,15 +388,19 @@ export class ScheduleEngine {
         allEvents.push({ id: task.id, title: task.title, start: bestSlot.start, end, type: 'scheduled_task', source: 'planned' });
         allEvents.sort((a, b) => a.start.getTime() - b.start.getTime());
       } else {
-        unscheduledTasks.push(task.id);
+        if (!unscheduledSet.has(task.id)) {
+          unscheduledSet.add(task.id);
+          unscheduledTasks.push(task.id);
+          unscheduledReasons[task.id] = 'No suitable slot found';
+        }
       }
     }
 
-    const conflicts = await this.detectConflicts(date);
+    const conflicts = this.computeConflicts(allEvents);
     const finalFreeSlots = this.calculateFreeSlots(date, allEvents, prefs);
     const totalFreeMinutes = finalFreeSlots.reduce((sum, s) => sum + s.durationMinutes, 0);
 
-    return { date, scheduledItems: scheduled, conflicts, unscheduledTasks, totalFreeMinutes };
+    return { date, scheduledItems: scheduled, conflicts, unscheduledTasks, unscheduledReasons, totalFreeMinutes };
   }
 
   /**
@@ -381,7 +409,7 @@ export class ScheduleEngine {
    */
   private topologicalSort<T extends { id: string; priority: string; depends_on?: string[] }>(
     tasks: T[]
-  ): T[] {
+  ): { sortedTasks: T[]; cyclicTaskIds: string[] } {
     const graph = new Map<string, string[]>();
     const inDegree = new Map<string, number>();
     const taskMap = new Map(tasks.map(t => [t.id, t]));
@@ -422,7 +450,11 @@ export class ScheduleEngine {
       }
     }
 
-    return sorted;
+    const cyclicTaskIds = tasks
+      .filter(task => !sorted.some(sortedTask => sortedTask.id === task.id))
+      .map(task => task.id);
+
+    return { sortedTasks: sorted, cyclicTaskIds };
   }
 
   private priorityValue(priority: string): number {
@@ -433,4 +465,3 @@ export class ScheduleEngine {
 
 // Singleton instance
 export const scheduleEngine = new ScheduleEngine();
-

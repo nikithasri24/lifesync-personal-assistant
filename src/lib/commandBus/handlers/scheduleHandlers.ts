@@ -153,18 +153,20 @@ export async function handlePlanDay(command: PlanDayCommand): Promise<CommandRes
     // Update scheduled tasks using API layer
     const scheduled: Array<{ taskId: string; title: string; time: string }> = [];
     for (const item of dayPlan.scheduledItems) {
-      const timeStr = format(item.start, 'HH:mm');
+      const scheduledStart = item.start.toISOString();
+      const scheduledEnd = item.end.toISOString();
       try {
         await tasksAPI.updateTask(item.taskId, {
           due_date: payload.date,
-          scheduled_time: timeStr,
+          scheduled_start: scheduledStart,
+          scheduled_end: scheduledEnd,
           status: 'scheduled',
         });
         const task = tasks.find(t => t.id === item.taskId);
         scheduled.push({
           taskId: item.taskId,
           title: task?.title || 'Unknown',
-          time: timeStr,
+          time: format(item.start, 'HH:mm'),
         });
       } catch {
         // Continue with other tasks if one fails
@@ -197,4 +199,3 @@ export const scheduleHandlers = {
   DELETE_SCHEDULE_BLOCK: handleDeleteScheduleBlock,
   PLAN_DAY: handlePlanDay,
 };
-

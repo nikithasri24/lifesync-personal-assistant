@@ -68,6 +68,8 @@ export function SmartSchedulerPanel({ className = '', initialDate }: SmartSchedu
       id: taskId,
       updates: {
         due_date: dateStr,
+        scheduled_start: start.toISOString(),
+        scheduled_end: end.toISOString(),
         status: 'scheduled',
       },
     });
@@ -180,4 +182,3 @@ export function SmartSchedulerPanel({ className = '', initialDate }: SmartSchedu
 }
 
 export default SmartSchedulerPanel;
-

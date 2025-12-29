@@ -122,25 +122,6 @@ export function useCompleteTaskCommand() {
 }
 
 /**
- * Hook to schedule a task via CommandBus
- */
-export function useScheduleTaskCommand() {
-  const mutation = useCommand();
-
-  return {
-    ...mutation,
-    scheduleTask: (taskId: string, date: string, time: string) => {
-      return mutation.mutateAsync({
-        type: 'SCHEDULE_TASK',
-        timestamp: new Date(),
-        source: 'ui',
-        payload: { id: taskId, date, time },
-      } as Command);
-    },
-  };
-}
-
-/**
  * Hook to plan a day via CommandBus
  */
 export function usePlanDayCommand() {
@@ -181,4 +162,3 @@ export function useLogHabitCommand() {
     },
   };
 }
-

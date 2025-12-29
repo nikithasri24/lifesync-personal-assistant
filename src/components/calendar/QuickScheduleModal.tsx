@@ -10,6 +10,7 @@ interface QuickScheduleModalProps {
   unscheduledTasks: Task[];
   onScheduleTask: (taskId: string, date: Date) => void;
   onCreateNew: (date: Date) => void;
+  onCreateBlock?: (date: Date) => void;
 }
 
 export const QuickScheduleModal: React.FC<QuickScheduleModalProps> = ({
@@ -19,6 +20,7 @@ export const QuickScheduleModal: React.FC<QuickScheduleModalProps> = ({
   unscheduledTasks,
   onScheduleTask,
   onCreateNew,
+  onCreateBlock,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -36,6 +38,13 @@ export const QuickScheduleModal: React.FC<QuickScheduleModalProps> = ({
 
   const handleCreateNew = () => {
     onCreateNew(selectedDate);
+    onClose();
+    setSearchQuery('');
+  };
+
+  const handleCreateBlock = () => {
+    if (!onCreateBlock) return;
+    onCreateBlock(selectedDate);
     onClose();
     setSearchQuery('');
   };
@@ -93,6 +102,15 @@ export const QuickScheduleModal: React.FC<QuickScheduleModalProps> = ({
               <Plus className="w-4 h-4" />
               Create new task on this date
             </button>
+            {onCreateBlock && (
+              <button
+                onClick={handleCreateBlock}
+                className="mt-2 w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 rounded-lg transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                Create schedule block
+              </button>
+            )}
           </div>
 
           {/* Task List */}

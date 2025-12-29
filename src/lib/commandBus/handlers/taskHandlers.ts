@@ -7,6 +7,7 @@
 
 import * as tasksAPI from '@/api/tasksAPI';
 import { logger } from '@/services/logger';
+import { addMinutes, format, parseISO } from 'date-fns';
 import type {
   CommandResult,
   CreateTaskCommand,
@@ -68,7 +69,8 @@ export async function handleUpdateTask(command: UpdateTaskCommand): Promise<Comm
     if (payload.updates.priority !== undefined) updates.priority = payload.updates.priority;
     if (payload.updates.status !== undefined) updates.status = payload.updates.status;
     if (payload.updates.dueDate !== undefined) updates.due_date = payload.updates.dueDate;
-    if (payload.updates.scheduledTime !== undefined) updates.scheduled_time = payload.updates.scheduledTime;
+    if (payload.updates.scheduledStart !== undefined) updates.scheduled_start = payload.updates.scheduledStart;
+    if (payload.updates.scheduledEnd !== undefined) updates.scheduled_end = payload.updates.scheduledEnd;
     if (payload.updates.estimatedTime !== undefined) updates.estimated_time = payload.updates.estimatedTime;
     if (payload.updates.category !== undefined) updates.category = payload.updates.category;
     if (payload.updates.tags !== undefined) updates.tags = payload.updates.tags;
@@ -133,16 +135,22 @@ export async function handleScheduleTask(command: ScheduleTaskCommand): Promise<
   const { payload } = command;
 
   try {
+    const scheduledStartDate = parseISO(payload.scheduledStart);
+    const scheduledEndDate = payload.scheduledEnd ? parseISO(payload.scheduledEnd) : addMinutes(scheduledStartDate, 30);
+    const scheduledStart = scheduledStartDate.toISOString();
+    const scheduledEnd = scheduledEndDate.toISOString();
+    const dueDate = format(scheduledStartDate, 'yyyy-MM-dd');
     const data = await tasksAPI.updateTask(payload.id, {
-      due_date: payload.date,
-      scheduled_time: payload.time,
+      due_date: dueDate,
+      scheduled_start: scheduledStart,
+      scheduled_end: scheduledEnd,
       status: 'scheduled',
     });
 
     return {
       success: true,
       data,
-      message: `Task scheduled for ${payload.date} at ${payload.time}`,
+      message: `Task scheduled for ${dueDate}`,
     };
   } catch (error) {
     logger.error('TaskHandlers', 'Failed to schedule task', { error });
@@ -160,4 +168,3 @@ export const taskHandlers = {
   COMPLETE_TASK: handleCompleteTask,
   SCHEDULE_TASK: handleScheduleTask,
 };
-

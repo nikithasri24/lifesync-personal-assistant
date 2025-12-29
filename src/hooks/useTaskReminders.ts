@@ -1,6 +1,6 @@
 /**
  * useTaskReminders Hook
- * Auto-creates reminders when tasks have a scheduled_time or due_date
+ * Auto-creates reminders when tasks have a scheduled_start or due_date
  */
 
 import { useEffect, useRef } from 'react';
@@ -13,7 +13,7 @@ import type { TaskData } from '@/services/types';
 import { isAfter, parseISO, startOfDay, isSameDay, addMinutes, isToday } from 'date-fns';
 
 /**
- * Get tasks with scheduled times for today and upcoming
+ * Get tasks with scheduled starts for today and upcoming
  */
 async function getScheduledTasks(): Promise<TaskData[]> {
   const { data: { user } } = await supabase.auth.getUser();
@@ -27,8 +27,8 @@ async function getScheduledTasks(): Promise<TaskData[]> {
     .eq('user_id', user.id)
     .neq('status', 'done')
     .eq('deleted', false)
-    .or(`scheduled_time.not.is.null,due_date.gte.${today}`)
-    .order('scheduled_time', { ascending: true, nullsFirst: false });
+    .or(`scheduled_start.not.is.null,due_date.gte.${today}`)
+    .order('scheduled_start', { ascending: true, nullsFirst: false });
 
   if (error) {
     console.error('Error fetching scheduled tasks:', error);
@@ -40,7 +40,7 @@ async function getScheduledTasks(): Promise<TaskData[]> {
 
 /**
  * Hook to auto-create reminders for scheduled tasks
- * Schedules reminders 15 minutes before the scheduled_time
+ * Schedules reminders 15 minutes before the scheduled_start
  */
 export function useTaskReminders(enabled: boolean = true) {
   const scheduledRef = useRef<Set<string>>(new Set());
@@ -78,9 +78,9 @@ export function useTaskReminders(enabled: boolean = true) {
         let reminderTriggerTime: Date | null = null;
         let reminderType: 'task_upcoming' | 'task_due' = 'task_upcoming';
         
-        // Priority 1: scheduled_time (specific time today)
-        if (task.scheduled_time) {
-          const scheduledTime = parseISO(task.scheduled_time);
+        // Priority 1: scheduled_start (specific time today)
+        if (task.scheduled_start) {
+          const scheduledTime = parseISO(task.scheduled_start);
           if (isToday(scheduledTime) && isAfter(scheduledTime, now)) {
             reminderTriggerTime = scheduledTime;
             reminderType = 'task_upcoming';
@@ -120,4 +120,3 @@ export function useTaskReminders(enabled: boolean = true) {
     scheduleReminders();
   }, [enabled, tasks, prefs?.taskRemindersEnabled]);
 }
-
