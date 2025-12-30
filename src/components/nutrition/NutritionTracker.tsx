@@ -17,6 +17,7 @@ import { foodPhotoService, type FoodAnalysisResult } from '@/services/nutrition/
 import type { NutritionInfo } from '@/services/nutrition/OpenFoodFactsService';
 import type { MealType } from '@/api/nutritionAPI';
 import ErrorState from '@/components/ErrorState';
+import { parseServingGrams } from './servingUtils';
 
 type ActivePanel = 'none' | 'photo' | 'search' | 'barcode' | 'detail';
 
@@ -111,24 +112,19 @@ export function NutritionTracker(): React.ReactElement {
     servingType: 'grams' | 'serving',
     mealType: MealType
   ) => {
-    const multiplier = servingType === 'grams' ? quantity / 100 : quantity;
+    const servingGrams = servingType === 'serving' ? parseServingGrams(product.servingSize) : null;
+    const multiplier = servingType === 'grams'
+      ? quantity / 100
+      : ((servingGrams ?? 100) / 100) * quantity;
     await logFoodMutation.mutateAsync({
       custom_food_name: product.brand ? `${product.name} (${product.brand})` : product.name,
       quantity: servingType === 'grams' ? quantity : quantity,
       meal_type: mealType,
       logged_date: dateStr,
-      calories: servingType === 'grams'
-        ? Math.round(product.caloriesPer100g * multiplier)
-        : Math.round((product.caloriesPerServing ?? product.caloriesPer100g) * quantity),
-      protein_g: servingType === 'grams'
-        ? Math.round(product.proteinPer100g * multiplier)
-        : Math.round(product.proteinPer100g * quantity),
-      carbs_g: servingType === 'grams'
-        ? Math.round(product.carbsPer100g * multiplier)
-        : Math.round(product.carbsPer100g * quantity),
-      fat_g: servingType === 'grams'
-        ? Math.round(product.fatPer100g * multiplier)
-        : Math.round(product.fatPer100g * quantity),
+      calories: Math.round(product.caloriesPer100g * multiplier),
+      protein_g: Math.round(product.proteinPer100g * multiplier),
+      carbs_g: Math.round(product.carbsPer100g * multiplier),
+      fat_g: Math.round(product.fatPer100g * multiplier),
       image_url: product.imageUrl,
     });
     setSelectedProduct(null);

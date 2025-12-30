@@ -22,12 +22,20 @@ export interface NutritionEstimate {
   estimated_grams?: number;
   brand?: string;
   packaged?: boolean;
+  count?: number;
   source: NutritionSource;
+  matchConfidence?: number;
   matchedProduct?: {
     name: string;
     brand?: string;
     barcode: string;
     servingSize?: string;
+  };
+  matchedNutrition?: {
+    caloriesPer100g: number;
+    proteinPer100g: number;
+    carbsPer100g: number;
+    fatPer100g: number;
   };
 }
 
@@ -91,10 +99,10 @@ class NutritionAnalyzer {
 
     const totals = items.reduce(
       (acc, item) => ({
-        calories: acc.calories + item.calories,
-        protein: acc.protein + item.protein_g,
-        carbs: acc.carbs + item.carbs_g,
-        fat: acc.fat + item.fat_g,
+        calories: acc.calories + item.calories * (item.count ?? 1),
+        protein: acc.protein + item.protein_g * (item.count ?? 1),
+        carbs: acc.carbs + item.carbs_g * (item.count ?? 1),
+        fat: acc.fat + item.fat_g * (item.count ?? 1),
       }),
       { calories: 0, protein: 0, carbs: 0, fat: 0 }
     );
@@ -189,22 +197,26 @@ Be conservative with estimates. If uncertain, use lower confidence scores.`,
           if (!match || match.caloriesPer100g <= 0) {
             return { ...item, source: 'vision' as const };
           }
-
-          const grams = item.estimated_grams ?? 100;
-          const multiplier = grams / 100;
+          const matchConfidence = this.scoreMatch(item, match);
+          if (matchConfidence < 0.3) {
+            return { ...item, source: 'vision' as const };
+          }
 
           return {
             ...item,
-            calories: Math.round(match.caloriesPer100g * multiplier),
-            protein_g: Math.round(match.proteinPer100g * multiplier),
-            carbs_g: Math.round(match.carbsPer100g * multiplier),
-            fat_g: Math.round(match.fatPer100g * multiplier),
-            source: 'openfoodfacts' as const,
+            source: 'vision' as const,
+            matchConfidence,
             matchedProduct: {
               name: match.name,
               brand: match.brand,
               barcode: match.barcode,
               servingSize: match.servingSize,
+            },
+            matchedNutrition: {
+              caloriesPer100g: match.caloriesPer100g,
+              proteinPer100g: match.proteinPer100g,
+              carbsPer100g: match.carbsPer100g,
+              fatPer100g: match.fatPer100g,
             },
           };
         } catch (error) {
@@ -223,31 +235,45 @@ Be conservative with estimates. If uncertain, use lower confidence scores.`,
   private mergeSimilarItems(
     items: z.infer<typeof VisionSchema>['items']
   ): z.infer<typeof VisionSchema>['items'] {
-    const merged = new Map<string, z.infer<typeof VisionSchema>['items'][number]>();
+    const merged = new Map<string, z.infer<typeof VisionSchema>['items'][number] & { count: number }>();
 
     for (const item of items) {
       const key = `${item.brand ?? ''}|${item.name}`.trim().toLowerCase();
       const existing = merged.get(key);
 
       if (!existing) {
-        merged.set(key, { ...item });
+        merged.set(key, { ...item, count: 1 });
         continue;
       }
 
       merged.set(key, {
         ...existing,
-        calories: existing.calories + item.calories,
-        protein_g: existing.protein_g + item.protein_g,
-        carbs_g: existing.carbs_g + item.carbs_g,
-        fat_g: existing.fat_g + item.fat_g,
-        fiber_g: (existing.fiber_g ?? 0) + (item.fiber_g ?? 0),
-        estimated_grams: (existing.estimated_grams ?? 0) + (item.estimated_grams ?? 0),
+        calories: (existing.calories + item.calories) / (existing.count + 1),
+        protein_g: (existing.protein_g + item.protein_g) / (existing.count + 1),
+        carbs_g: (existing.carbs_g + item.carbs_g) / (existing.count + 1),
+        fat_g: (existing.fat_g + item.fat_g) / (existing.count + 1),
+        fiber_g: ((existing.fiber_g ?? 0) + (item.fiber_g ?? 0)) / (existing.count + 1),
+        estimated_grams: ((existing.estimated_grams ?? 0) + (item.estimated_grams ?? 0)) / (existing.count + 1),
         packaged: existing.packaged || item.packaged,
         confidence: Math.max(existing.confidence, item.confidence),
+        count: existing.count + 1,
       });
     }
 
     return Array.from(merged.values());
+  }
+
+  private scoreMatch(
+    item: z.infer<typeof VisionSchema>['items'][number],
+    match: { name: string; brand?: string }
+  ): number {
+    const itemTokens = new Set(item.name.toLowerCase().split(/\s+/).filter(Boolean));
+    const matchTokens = new Set(match.name.toLowerCase().split(/\s+/).filter(Boolean));
+    const overlap = [...itemTokens].filter((token) => matchTokens.has(token)).length;
+    const union = new Set([...itemTokens, ...matchTokens]).size || 1;
+    const baseScore = overlap / union;
+    const brandBoost = item.brand && match.brand && item.brand.toLowerCase() === match.brand.toLowerCase() ? 0.2 : 0;
+    return Math.min(1, baseScore + brandBoost);
   }
 }
 

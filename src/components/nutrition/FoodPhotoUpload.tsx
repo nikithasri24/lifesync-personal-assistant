@@ -198,7 +198,10 @@ export function FoodPhotoUpload({ onAnalysisComplete, onCancel }: FoodPhotoUploa
             </div>
             {analysisResult.items.length > 1 && (
               <div className="text-xs text-gray-500 pt-1">
-                Detected: {analysisResult.items.map(i => i.name).join(', ')}
+                Detected:{' '}
+                {analysisResult.items
+                  .map((item) => item.count && item.count > 1 ? `${item.name} x${item.count}` : item.name)
+                  .join(', ')}
               </div>
             )}
           </div>
@@ -219,4 +222,3 @@ export function FoodPhotoUpload({ onAnalysisComplete, onCancel }: FoodPhotoUploa
     </div>
   );
 }
-

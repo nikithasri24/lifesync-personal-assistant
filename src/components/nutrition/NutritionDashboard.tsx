@@ -26,10 +26,10 @@ export function NutritionDashboard(): React.ReactElement {
   
   const [showGoalSettings, setShowGoalSettings] = useState(false);
   const [goalForm, setGoalForm] = useState({
-    calories: goal?.calories_target || 2000,
-    protein: goal?.protein_target_g || 150,
-    carbs: goal?.carbs_target_g || 200,
-    fat: goal?.fat_target_g || 65,
+    calories: 2000,
+    protein: 150,
+    carbs: 200,
+    fat: 65,
   });
 
   // Calculate today's totals
@@ -79,7 +79,18 @@ export function NutritionDashboard(): React.ReactElement {
       <div className="bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl p-6 text-white">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold opacity-90">Today's Nutrition</h3>
-          <button onClick={() => setShowGoalSettings(true)} className="p-2 bg-white/20 rounded-lg hover:bg-white/30">
+          <button
+            onClick={() => {
+              setGoalForm({
+                calories: goal?.calories_target || 2000,
+                protein: goal?.protein_target_g || 150,
+                carbs: goal?.carbs_target_g || 200,
+                fat: goal?.fat_target_g || 65,
+              });
+              setShowGoalSettings(true);
+            }}
+            className="p-2 bg-white/20 rounded-lg hover:bg-white/30"
+          >
             <Settings className="w-5 h-5" />
           </button>
         </div>

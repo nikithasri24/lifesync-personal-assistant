@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import { X, Minus, Plus, Flame, Check, Loader2 } from 'lucide-react';
 import type { NutritionInfo } from '@/services/nutrition/OpenFoodFactsService';
 import type { MealType } from '@/api/nutritionAPI';
+import { parseServingGrams } from './servingUtils';
 
 interface FoodDetailProps {
   product: NutritionInfo;
@@ -33,19 +34,14 @@ export function FoodDetail({ product, mealType: initialMealType, onLog, onBack }
   const [selectedMeal, setSelectedMeal] = useState<MealType>(initialMealType);
   const [isLogging, setIsLogging] = useState(false);
 
-  const gramsMultiplier = servingType === 'grams' ? quantity / 100 : quantity;
-  const calories = servingType === 'grams'
-    ? Math.round(product.caloriesPer100g * gramsMultiplier)
-    : Math.round((product.caloriesPerServing ?? product.caloriesPer100g) * quantity);
-  const protein = servingType === 'grams'
-    ? Math.round(product.proteinPer100g * gramsMultiplier)
-    : Math.round(product.proteinPer100g * quantity);
-  const carbs = servingType === 'grams'
-    ? Math.round(product.carbsPer100g * gramsMultiplier)
-    : Math.round(product.carbsPer100g * quantity);
-  const fat = servingType === 'grams'
-    ? Math.round(product.fatPer100g * gramsMultiplier)
-    : Math.round(product.fatPer100g * quantity);
+  const servingGrams = servingType === 'serving' ? parseServingGrams(product.servingSize) : null;
+  const gramsMultiplier = servingType === 'grams'
+    ? quantity / 100
+    : ((servingGrams ?? 100) / 100) * quantity;
+  const calories = Math.round(product.caloriesPer100g * gramsMultiplier);
+  const protein = Math.round(product.proteinPer100g * gramsMultiplier);
+  const carbs = Math.round(product.carbsPer100g * gramsMultiplier);
+  const fat = Math.round(product.fatPer100g * gramsMultiplier);
 
   const handleLog = async () => {
     setIsLogging(true);

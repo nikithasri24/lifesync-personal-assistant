@@ -28,6 +28,8 @@ export function GoalCheckins({ goal }: GoalCheckinsProps): React.ReactElement {
     wins: '',
     nextActions: '',
   });
+  const [progressUpdateError, setProgressUpdateError] = useState<string | null>(null);
+  const [pendingProgressUpdate, setPendingProgressUpdate] = useState<number | null>(null);
 
   const queryClient = useQueryClient();
   const updateGoalMutation = useUpdateLifeGoalMutation();
@@ -46,10 +48,23 @@ export function GoalCheckins({ goal }: GoalCheckinsProps): React.ReactElement {
       void queryClient.invalidateQueries({ queryKey: lifeGoalsKeys.goals() });
       void queryClient.invalidateQueries({ queryKey: lifeGoalsKeys.goal(goal.id) });
       if (input.progressUpdate !== undefined && input.progressUpdate !== goal.progress) {
-        updateGoalMutation.mutate({
-          goalId: goal.id,
-          updates: { progress: input.progressUpdate },
-        });
+        const progressValue = input.progressUpdate;
+        updateGoalMutation.mutate(
+          {
+            goalId: goal.id,
+            updates: { progress: progressValue },
+          },
+          {
+            onError: (error) => {
+              setProgressUpdateError(error.message);
+              setPendingProgressUpdate(progressValue);
+            },
+            onSuccess: () => {
+              setProgressUpdateError(null);
+              setPendingProgressUpdate(null);
+            },
+          }
+        );
       }
       setShowAddForm(false);
       setNewCheckin({
@@ -102,6 +117,26 @@ export function GoalCheckins({ goal }: GoalCheckinsProps): React.ReactElement {
           Add Check-in
         </button>
       </div>
+      {progressUpdateError && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-700">
+          Progress update failed. The check-in was saved, but the goal progress is out of sync.
+          {pendingProgressUpdate !== null && (
+            <button
+              type="button"
+              onClick={() => {
+                updateGoalMutation.mutate({
+                  goalId: goal.id,
+                  updates: { progress: pendingProgressUpdate },
+                });
+                setProgressUpdateError(null);
+              }}
+              className="ml-2 font-medium text-amber-800 hover:underline"
+            >
+              Retry
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Add check-in form */}
       {showAddForm && (

@@ -21,7 +21,7 @@ export function BarcodeScanner({ onProductFound, onCancel }: BarcodeScannerProps
   const [error, setError] = useState<string | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const supportsBarcodeDetector = 'BarcodeDetector' in window;
+  const supportsBarcodeDetector = typeof window !== 'undefined' && 'BarcodeDetector' in window;
 
   useEffect(() => {
     startCamera();
@@ -71,7 +71,12 @@ export function BarcodeScanner({ onProductFound, onCancel }: BarcodeScannerProps
     ctx.drawImage(video, 0, 0);
 
     try {
-      const detector = new BarcodeDetector({
+      const Detector = window.BarcodeDetector;
+      if (!Detector) {
+        setError('Auto-scan not supported on this device. Please enter the barcode manually.');
+        return;
+      }
+      const detector = new Detector({
         formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'qr_code'],
       });
       const results = await detector.detect(canvas);

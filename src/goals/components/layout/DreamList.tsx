@@ -13,7 +13,7 @@ const EmptyState: React.FC<{ label: string }> = ({ label }) => (
 
 interface DreamListProps {
   dreams: LifeDream[];
-  onMarkAchieved: (dreamId: string) => void;
+  onMarkAchieved: (dreamId: string, previousStatus: LifeDream['status']) => void;
   onUndoAchieved: (dreamId: string) => void;
   onDelete: (dreamId: string) => void;
 }
@@ -66,7 +66,7 @@ export function DreamList({ dreams, onMarkAchieved, onUndoAchieved, onDelete }: 
                   <button
                     type="button"
                     onClick={() => {
-                      onMarkAchieved(dream.id);
+                      onMarkAchieved(dream.id, dream.status);
                     }}
                     className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-600 transition hover:bg-indigo-100"
                   >

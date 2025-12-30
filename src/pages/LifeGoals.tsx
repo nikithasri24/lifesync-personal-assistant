@@ -12,6 +12,7 @@ import {
 } from '@/hooks/useLifeGoalsQuery';
 import type {
   LifeGoalWithMilestones,
+  DreamStatus,
 } from '../goals/types/lifeGoals';
 import GoalTemplates from '../goals/components/GoalTemplates';
 import GoalGamification from '../goals/components/GoalGamification';
@@ -169,8 +170,9 @@ const LifeGoals: React.FC = () => {
     }
   };
 
-  const handleMarkDreamAchieved = async (dreamId: string): Promise<void> => {
+  const handleMarkDreamAchieved = async (dreamId: string, previousStatus: DreamStatus): Promise<void> => {
     try {
+      window.localStorage.setItem(`life_dream_previous_status:${dreamId}`, previousStatus);
       await updateDreamMutation.mutateAsync({
         dreamId,
         updates: {
@@ -185,10 +187,13 @@ const LifeGoals: React.FC = () => {
 
   const handleUndoDreamAchieved = async (dreamId: string): Promise<void> => {
     try {
+      const storedStatus = window.localStorage.getItem(`life_dream_previous_status:${dreamId}`) as DreamStatus | null;
+      const nextStatus: DreamStatus = storedStatus ?? 'dreaming';
+      window.localStorage.removeItem(`life_dream_previous_status:${dreamId}`);
       await updateDreamMutation.mutateAsync({
         dreamId,
         updates: {
-          status: 'dreaming',
+          status: nextStatus,
           achievedAt: undefined,
         },
       });
