@@ -135,7 +135,7 @@ export function useUpdateShoppingItem(): UseMutationResult<
   ShoppingItemData,
   Error,
   { itemId: string; updates: Partial<ShoppingItemData> },
-  { listId?: string; previousItems?: ShoppingItemData[] }
+  { listId?: string | null; previousItems?: ShoppingItemData[]; invalidateAll?: boolean }
 > {
   const queryClient = useQueryClient();
 
@@ -165,7 +165,9 @@ export function useUpdateShoppingItem(): UseMutationResult<
         }
       }
 
-      if (!listId) return {};
+      if (!listId) {
+        return { listId: null, invalidateAll: true };
+      }
 
       // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: shoppingKeys.items(listId) });
@@ -185,6 +187,8 @@ export function useUpdateShoppingItem(): UseMutationResult<
       // Rollback on error
       if (context?.listId && context?.previousItems) {
         queryClient.setQueryData(shoppingKeys.items(context.listId), context.previousItems);
+      } else if (context?.invalidateAll) {
+        void queryClient.invalidateQueries({ queryKey: [...shoppingKeys.all, 'items'] });
       }
     },
     onSuccess: (updatedItem, { itemId }, context) => {
@@ -198,6 +202,8 @@ export function useUpdateShoppingItem(): UseMutationResult<
             return old.map((item) => (item.id === itemId ? updatedItem : item));
           }
         );
+      } else if (context?.invalidateAll) {
+        void queryClient.invalidateQueries({ queryKey: [...shoppingKeys.all, 'items'] });
       }
     },
   });
@@ -207,7 +213,7 @@ export function useDeleteShoppingItem(): UseMutationResult<
   void,
   Error,
   string,
-  { listId?: string; previousItems?: ShoppingItemData[] }
+  { listId?: string | null; previousItems?: ShoppingItemData[]; invalidateAll?: boolean }
 > {
   const queryClient = useQueryClient();
 
@@ -236,7 +242,9 @@ export function useDeleteShoppingItem(): UseMutationResult<
         }
       }
 
-      if (!listId) return {};
+      if (!listId) {
+        return { listId: null, invalidateAll: true };
+      }
 
       // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: shoppingKeys.items(listId) });
@@ -254,10 +262,15 @@ export function useDeleteShoppingItem(): UseMutationResult<
       // Rollback on error
       if (context?.listId && context?.previousItems) {
         queryClient.setQueryData(shoppingKeys.items(context.listId), context.previousItems);
+      } else if (context?.invalidateAll) {
+        void queryClient.invalidateQueries({ queryKey: [...shoppingKeys.all, 'items'] });
       }
     },
-    onSuccess: (_, itemId) => {
+    onSuccess: (_, itemId, context) => {
       logger.info('Shopping', 'Shopping item deleted successfully', { id: itemId });
+      if (context?.invalidateAll) {
+        void queryClient.invalidateQueries({ queryKey: [...shoppingKeys.all, 'items'] });
+      }
     },
   });
 }
