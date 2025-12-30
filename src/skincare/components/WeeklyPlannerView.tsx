@@ -316,9 +316,9 @@ const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = ({ className = '' })
                     </button>
                   )}
                 </div>
-                <p className="text-base text-gray-900 leading-relaxed">
-                  {formatProductsList(pmProducts)}
-                </p>
+                <div className="text-base text-gray-900 leading-relaxed">
+                  {renderProductsList(pmProducts)}
+                </div>
               </div>
 
               {/* Decorative corner accent */}

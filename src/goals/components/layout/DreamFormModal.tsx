@@ -1,17 +1,14 @@
 import React, { type FormEvent } from 'react';
 import { Sparkles } from 'lucide-react';
-import type { DreamCategory, DreamPriority, DreamStatus } from '../../types/lifeGoals';
+import type { DreamCategory, DreamPriority } from '../../types/lifeGoals';
 
 const DREAM_CATEGORIES: DreamCategory[] = ['travel', 'experiences', 'possessions', 'achievements', 'relationships', 'lifestyle'];
 const DREAM_PRIORITIES: DreamPriority[] = ['someday', 'within-5-years', 'within-10-years', 'lifetime'];
-const DREAM_STATUSES: DreamStatus[] = ['dreaming', 'planning', 'in-progress', 'achieved', 'no-longer-interested'];
-
 export type DreamDraft = {
   title: string;
   description: string;
   category: DreamCategory;
   priority: DreamPriority;
-  status: DreamStatus;
   estimatedCost: string;
   estimatedTimeframe: string;
 };
@@ -80,18 +77,6 @@ export function DreamFormModal({
           >
             {DREAM_PRIORITIES.map((priority) => (
               <option key={priority} value={priority}>{priority}</option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium text-slate-700">Status</span>
-          <select
-            value={dreamDraft.status}
-            onChange={(event) => onDraftChange({ ...dreamDraft, status: event.target.value as DreamStatus })}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
-          >
-            {DREAM_STATUSES.map((status) => (
-              <option key={status} value={status}>{status}</option>
             ))}
           </select>
         </label>

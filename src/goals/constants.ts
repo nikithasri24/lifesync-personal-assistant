@@ -34,11 +34,3 @@ export const DREAM_PRIORITIES: LifeDream['priority'][] = [
   'within-10-years',
   'lifetime'
 ];
-
-export const DREAM_STATUSES: LifeDream['status'][] = [
-  'dreaming',
-  'planning',
-  'in-progress',
-  'achieved',
-  'no-longer-interested'
-];

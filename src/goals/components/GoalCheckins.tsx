@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, MessageSquare, TrendingUp, AlertCircle, Lightbulb, Target } from 'lucide-react';
 import type { LifeGoal, LifeGoalCheckin, CreateCheckinInput, CheckinMood } from '../types/lifeGoals';
 import { createCheckin, getGoalCheckins } from '../api/lifeGoalsAPI';
+import { lifeGoalsKeys, useUpdateLifeGoalMutation } from '@/hooks/useLifeGoalsQuery';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 interface GoalCheckinsProps {
@@ -28,19 +29,27 @@ export function GoalCheckins({ goal }: GoalCheckinsProps): React.ReactElement {
   });
 
   const queryClient = useQueryClient();
+  const updateGoalMutation = useUpdateLifeGoalMutation();
 
   // Fetch check-ins
   const { data: checkins = [], isLoading } = useQuery({
-    queryKey: ['goalCheckins', goal.id],
+    queryKey: lifeGoalsKeys.checkins(goal.id),
     queryFn: () => getGoalCheckins(goal.id),
   });
 
   // Create check-in mutation
   const createCheckinMutation = useMutation({
     mutationFn: (input: CreateCheckinInput) => createCheckin(input),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['goalCheckins', goal.id] });
-      void queryClient.invalidateQueries({ queryKey: ['lifeGoals'] });
+    onSuccess: (_, input) => {
+      void queryClient.invalidateQueries({ queryKey: lifeGoalsKeys.checkins(goal.id) });
+      void queryClient.invalidateQueries({ queryKey: lifeGoalsKeys.goals() });
+      void queryClient.invalidateQueries({ queryKey: lifeGoalsKeys.goal(goal.id) });
+      if (input.progressUpdate !== undefined && input.progressUpdate !== goal.progress) {
+        updateGoalMutation.mutate({
+          goalId: goal.id,
+          updates: { progress: input.progressUpdate },
+        });
+      }
       setShowAddForm(false);
       setNewCheckin({
         progressUpdate: goal.progress,

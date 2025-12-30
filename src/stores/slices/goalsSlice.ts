@@ -6,8 +6,7 @@
  * This slice now contains ONLY UI state (view modes, filters, etc.)
  * All server data (goals, dreams, loading states, CRUD operations) should use React Query.
  *
- * ✅ Use React Query hooks from @/hooks/useGoalsQuery.ts and @/hooks/useLifeGoalsQuery.ts:
- * - useGoalsQuery() - Get all goals (simplified)
+ * ✅ Use React Query hooks from @/hooks/useLifeGoalsQuery.ts:
  * - useLifeGoalsQuery() - Get all life goals (full-featured)
  * - useLifeDreamsQuery() - Get all life dreams
  * - useCreateGoalMutation() - Create goal

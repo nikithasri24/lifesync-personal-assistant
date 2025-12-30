@@ -32,7 +32,8 @@ export async function getUserLocation(): Promise<Coordinates | null> {
   } catch (error) {
     // Only log permission errors, not transient location failures
     if (error instanceof GeolocationPositionError && error.code === error.PERMISSION_DENIED) {
-      logger.error('LocationService', error as Error, { context: 'Location permission denied.' });
+      const permissionError = new Error(error.message);
+      logger.error('LocationService', permissionError, { context: 'Location permission denied.' });
     }
     // Silently return null for other errors to avoid console noise
     return null;

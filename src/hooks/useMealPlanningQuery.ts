@@ -20,6 +20,7 @@ import type {
   PantryItemData,
 } from '@/services/types';
 import { logger } from '@/services/logger';
+import type { MealStatus } from '@/types';
 
 // ==================== Types ====================
 
@@ -73,8 +74,13 @@ export interface PlannedMeal {
   date: Date;
   servings: number;
   peopleCount: number;
-  status: 'planned' | 'prepped' | 'cooked' | 'eaten';
+  status: MealStatus;
   notes?: string;
+  actualFoodLogId?: string;
+  substitutedWith?: string;
+  isPostponed?: boolean;
+  postponedReason?: string;
+  originalDate?: Date;
   preparedAt?: Date;
   consumedAt?: Date;
   createdAt: Date;

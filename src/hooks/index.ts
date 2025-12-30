@@ -32,7 +32,6 @@ export * from './useTasksQuery';
 export * from './useProjectsQuery';
 
 // Goals & Habits
-export * from './useGoalsQuery';
 export * from './useLifeGoalsQuery';
 export * from './useHabitsQuery';
 

@@ -122,12 +122,13 @@ export class ScheduleEngine {
 
       for (const t of tasks || []) {
         if (t.scheduled_start) {
+          const taskId = t.id ?? `task-${t.title ?? 'task'}-${t.scheduled_start}`;
           const start = parseISO(t.scheduled_start);
           const end = t.scheduled_end
             ? parseISO(t.scheduled_end)
             : addMinutes(start, t.estimated_time || 30);
           events.push({
-            id: t.id,
+            id: taskId,
             title: t.title || 'Task',
             start,
             end,

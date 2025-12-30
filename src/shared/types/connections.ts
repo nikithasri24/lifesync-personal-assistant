@@ -55,12 +55,19 @@ export interface ProfileConnection {
   receiverId: string;
   relationship: ConnectionRelationship;
   status: ConnectionStatus;
+  userId?: string;
+  connectedUserId?: string;
   requesterLabel?: string;  // Custom nickname from requester's perspective
   receiverLabel?: string;   // Custom nickname from receiver's perspective
+  label?: string;
+  connectedUserEmail?: string;
+  connectedUserName?: string;
+  connectedUserAvatar?: string;
   notes?: string;
   createdAt: string;
   acceptedAt?: string;
   updatedAt: string;
+  isPending?: boolean;
 }
 
 export interface ModulePermission {

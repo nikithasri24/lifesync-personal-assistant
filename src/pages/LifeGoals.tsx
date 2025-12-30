@@ -43,7 +43,6 @@ const createDreamDraft = (): DreamDraft => ({
   description: '',
   category: 'travel',
   priority: 'someday',
-  status: 'dreaming',
   estimatedCost: '',
   estimatedTimeframe: '',
 });
@@ -178,7 +177,7 @@ const LifeGoals: React.FC = () => {
       await updateDreamMutation.mutateAsync({
         dreamId,
         updates: {
-          status: 'in-progress',
+          status: 'dreaming',
           achievedAt: undefined,
         },
       });

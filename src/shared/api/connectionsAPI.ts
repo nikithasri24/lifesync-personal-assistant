@@ -189,16 +189,20 @@ export async function getPendingInvitations(): Promise<{
         },
         connection: {
           id: inv.id,
+          requesterId: user.id,
+          receiverId: '',
           userId: user.id,
-          connectedUserId: '', // No user ID yet
+          connectedUserId: '',
           relationship: inv.relationship as ConnectionRelationship,
           status: 'pending' as ConnectionStatus,
+          requesterLabel: inv.inviter_label ?? undefined,
           label: inv.inviter_label ?? undefined,
           connectedUserEmail: inv.invitee_email,
           connectedUserName: inv.invitee_email, // Use email as name
           connectedUserAvatar: undefined,
           createdAt: inv.created_at,
           acceptedAt: undefined,
+          updatedAt: inv.created_at,
           isPending: true,
         },
         fromUser: {
@@ -354,16 +358,20 @@ export async function createConnection(input: CreateConnectionInput): Promise<Pr
     // This will show in the UI as "Invitation Sent"
     return {
       id: pendingInvitation.id,
+      requesterId: user.id,
+      receiverId: '',
       userId: user.id,
-      connectedUserId: '', // No user ID yet
+      connectedUserId: '',
       relationship: input.relationship,
       status: 'pending',
+      requesterLabel: input.label,
       label: input.label,
       connectedUserEmail: input.receiverEmail,
       connectedUserName: input.receiverEmail, // Use email as name for now
       connectedUserAvatar: undefined,
       createdAt: pendingInvitation.created_at,
       acceptedAt: undefined,
+      updatedAt: pendingInvitation.created_at,
       isPending: true,
     };
   }
