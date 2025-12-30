@@ -953,7 +953,7 @@ export function useDeleteMealPlanMutation(): ReturnType<typeof useMutation<strin
 /**
  * Add a planned meal to a meal plan
  */
-export function useCreatePlannedMealMutation(): ReturnType<typeof useMutation<PlannedMeal, Error, { planId: string; meal: PlannedMealInput }, { previousPlans: MealPlanWeek[] | undefined }>> {
+export function useCreatePlannedMealMutation(): ReturnType<typeof useMutation<PlannedMeal, Error, { planId: string; meal: PlannedMealInput }, { previousPlans: MealPlanWeek[] | undefined; optimisticId?: string }>> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -966,8 +966,9 @@ export function useCreatePlannedMealMutation(): ReturnType<typeof useMutation<Pl
       await queryClient.cancelQueries({ queryKey: mealPlanningKeys.mealPlansList() });
       const previousPlans = queryClient.getQueryData<MealPlanWeek[]>(mealPlanningKeys.mealPlansList());
 
+      const optimisticId = `temp-${Date.now()}`;
       const optimisticMeal: PlannedMeal = {
-        id: `temp-${Date.now()}`,
+        id: optimisticId,
         mealPlanId: planId,
         ...meal,
         createdAt: new Date(),
@@ -982,7 +983,7 @@ export function useCreatePlannedMealMutation(): ReturnType<typeof useMutation<Pl
         );
       });
 
-      return { previousPlans };
+      return { previousPlans, optimisticId };
     },
     onError: (err, variables, context) => {
       if (context?.previousPlans) {
@@ -990,14 +991,16 @@ export function useCreatePlannedMealMutation(): ReturnType<typeof useMutation<Pl
       }
       logger.error('MealPlanning', 'Error creating planned meal', { error: err });
     },
-    onSuccess: (newMeal) => {
+    onSuccess: (newMeal, _variables, context) => {
       queryClient.setQueryData<MealPlanWeek[]>(mealPlanningKeys.mealPlansList(), (old) => {
         if (!old) return [];
         return old.map((plan) =>
           plan.id === newMeal.mealPlanId
             ? {
                 ...plan,
-                meals: plan.meals.map((m) => (m.id.startsWith('temp-') ? newMeal : m)),
+                meals: context?.optimisticId
+                  ? plan.meals.map((m) => (m.id === context.optimisticId ? newMeal : m))
+                  : plan.meals,
                 updatedAt: new Date(),
               }
             : plan
