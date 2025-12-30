@@ -45,6 +45,7 @@ interface PermissionSettings {
   includeIds?: string[];
   excludeIds?: string[];
   limit?: number;
+  offset?: number;
 }
 
 interface ConnectionPermission {
@@ -226,11 +227,14 @@ async function fetchModuleData(
   const table = tableMappings[module];
   if (!table) return [];
 
+  const limit = settings?.limit ?? 20;
+  const offset = settings?.offset ?? 0;
+
   let query = supabase
     .from(table)
     .select('*')
     .eq('user_id', userId)
-    .limit(settings?.limit ?? 20);
+    .range(offset, Math.max(offset + limit - 1, offset));
 
   if (module === 'mood' && table === 'journal_entries') {
     query = query.not('mood', 'is', null);
@@ -238,6 +242,16 @@ async function fetchModuleData(
 
   if (settings?.includeIds && settings.includeIds.length > 0) {
     query = query.in('id', settings.includeIds);
+  }
+
+  if (table === 'tasks') {
+    query = query.order('updated_at', { ascending: false });
+  } else if (table === 'shopping_lists' || table === 'meal_plans' || table === 'goals') {
+    query = query.order('created_at', { ascending: false });
+  } else if (table === 'journal_entries' || table === 'notes') {
+    query = query.order('date', { ascending: false });
+  } else {
+    query = query.order('updated_at', { ascending: false });
   }
 
   const { data, error } = await query;
