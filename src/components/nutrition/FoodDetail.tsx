@@ -11,7 +11,12 @@ import type { MealType } from '@/api/nutritionAPI';
 interface FoodDetailProps {
   product: NutritionInfo;
   mealType: MealType;
-  onLog: (product: NutritionInfo, quantity: number, servingType: 'grams' | 'serving') => Promise<void>;
+  onLog: (
+    product: NutritionInfo,
+    quantity: number,
+    servingType: 'grams' | 'serving',
+    mealType: MealType
+  ) => Promise<void>;
   onBack: () => void;
 }
 
@@ -28,16 +33,24 @@ export function FoodDetail({ product, mealType: initialMealType, onLog, onBack }
   const [selectedMeal, setSelectedMeal] = useState<MealType>(initialMealType);
   const [isLogging, setIsLogging] = useState(false);
 
-  const multiplier = servingType === 'grams' ? quantity / 100 : quantity;
-  const calories = Math.round(product.caloriesPer100g * (servingType === 'grams' ? multiplier : 1) * quantity / (servingType === 'grams' ? quantity : 1));
-  const protein = Math.round(product.proteinPer100g * multiplier);
-  const carbs = Math.round(product.carbsPer100g * multiplier);
-  const fat = Math.round(product.fatPer100g * multiplier);
+  const gramsMultiplier = servingType === 'grams' ? quantity / 100 : quantity;
+  const calories = servingType === 'grams'
+    ? Math.round(product.caloriesPer100g * gramsMultiplier)
+    : Math.round((product.caloriesPerServing ?? product.caloriesPer100g) * quantity);
+  const protein = servingType === 'grams'
+    ? Math.round(product.proteinPer100g * gramsMultiplier)
+    : Math.round(product.proteinPer100g * quantity);
+  const carbs = servingType === 'grams'
+    ? Math.round(product.carbsPer100g * gramsMultiplier)
+    : Math.round(product.carbsPer100g * quantity);
+  const fat = servingType === 'grams'
+    ? Math.round(product.fatPer100g * gramsMultiplier)
+    : Math.round(product.fatPer100g * quantity);
 
   const handleLog = async () => {
     setIsLogging(true);
     try {
-      await onLog(product, quantity, servingType);
+      await onLog(product, quantity, servingType, selectedMeal);
     } finally {
       setIsLogging(false);
     }
@@ -150,4 +163,3 @@ export function FoodDetail({ product, mealType: initialMealType, onLog, onBack }
     </div>
   );
 }
-
