@@ -187,10 +187,34 @@ export async function updateShoppingItem(
 ): Promise<ShoppingItemData> {
   return apiCall(
     async () => {
+      const user = await requireAuth();
+
+      const { data: item, error: itemError } = await supabase
+        .from('shopping_items')
+        .select('shopping_list_id')
+        .eq('id', itemId)
+        .single();
+
+      if (itemError || !item?.shopping_list_id) {
+        throw new Error('Shopping item not found');
+      }
+
+      const { data: list, error: listError } = await supabase
+        .from('shopping_lists')
+        .select('id')
+        .eq('id', item.shopping_list_id)
+        .eq('user_id', user.id)
+        .single();
+
+      if (listError || !list) {
+        throw new Error('Shopping item not found or access denied');
+      }
+
       const result = await supabase
         .from('shopping_items')
         .update(updates)
         .eq('id', itemId)
+        .eq('shopping_list_id', item.shopping_list_id)
         .select()
         .single();
 
@@ -207,10 +231,34 @@ export async function updateShoppingItem(
 export async function deleteShoppingItem(itemId: string): Promise<void> {
   return apiCall(
     async () => {
+      const user = await requireAuth();
+
+      const { data: item, error: itemError } = await supabase
+        .from('shopping_items')
+        .select('shopping_list_id')
+        .eq('id', itemId)
+        .single();
+
+      if (itemError || !item?.shopping_list_id) {
+        throw new Error('Shopping item not found');
+      }
+
+      const { data: list, error: listError } = await supabase
+        .from('shopping_lists')
+        .select('id')
+        .eq('id', item.shopping_list_id)
+        .eq('user_id', user.id)
+        .single();
+
+      if (listError || !list) {
+        throw new Error('Shopping item not found or access denied');
+      }
+
       const { error } = await supabase
         .from('shopping_items')
         .delete()
-        .eq('id', itemId);
+        .eq('id', itemId)
+        .eq('shopping_list_id', item.shopping_list_id);
 
       if (error) throw error;
     },

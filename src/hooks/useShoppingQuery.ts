@@ -69,7 +69,7 @@ export function useCreateShoppingItem(): UseMutationResult<
   ShoppingItemData,
   Error,
   { listId: string; item: Omit<ShoppingItemData, 'id' | 'shopping_list_id' | 'created_at' | 'updated_at'> },
-  { previousItems?: ShoppingItemData[] }
+  { previousItems?: ShoppingItemData[]; optimisticId?: string }
 > {
   const queryClient = useQueryClient();
 
@@ -96,9 +96,10 @@ export function useCreateShoppingItem(): UseMutationResult<
       );
 
       // Optimistically update
+      const optimisticId = `temp-${Date.now()}`;
       const optimisticItem: ShoppingItemData = {
         ...item,
-        id: `temp-${Date.now()}`,
+        id: optimisticId,
         shopping_list_id: listId,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -109,7 +110,7 @@ export function useCreateShoppingItem(): UseMutationResult<
         return [...old, optimisticItem];
       });
 
-      return { previousItems };
+      return { previousItems, optimisticId };
     },
     onError: (err: Error, { listId, item }, context) => {
       logger.error('Shopping', 'Failed to create shopping item', { error: err.message, listId, name: item.name });
@@ -118,12 +119,13 @@ export function useCreateShoppingItem(): UseMutationResult<
         queryClient.setQueryData(shoppingKeys.items(listId), context.previousItems);
       }
     },
-    onSuccess: (newItem, { listId }) => {
+    onSuccess: (newItem, { listId }, context) => {
       logger.info('Shopping', 'Shopping item created successfully', { id: newItem.id, listId, name: newItem.name });
       // Replace optimistic item with real one
       queryClient.setQueryData<ShoppingItemData[]>(shoppingKeys.items(listId), (old) => {
         if (!old) return [newItem];
-        return old.map((item) => (item.id?.startsWith('temp-') ? newItem : item));
+        if (!context?.optimisticId) return old;
+        return old.map((item) => (item.id === context.optimisticId ? newItem : item));
       });
     },
   });

@@ -206,14 +206,6 @@ export default function ShoppingSmart(): ReactElement {
     setActiveView('stores');
   };
 
-  // Auto-populate distribute tab when master list changes
-  useEffect(() => {
-    if (shoppingItems.length > 0) {
-      distributeItemsToStores();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shoppingItems]);
-
   // Voice input handler
   const handleVoiceInput = (): void => {
     startVoiceInput((transcript) => {
