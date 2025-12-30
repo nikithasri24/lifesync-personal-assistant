@@ -319,12 +319,27 @@ function mapMealPlanDataToMealPlanWeek(data: MealPlanData): MealPlanWeek {
     ? new Date(Number(wsd.slice(0, 4)), Number(wsd.slice(5, 7)) - 1, Number(wsd.slice(8, 10)))
     : toDate(wsd);
 
+  const mealTypeOrder: Record<string, number> = {
+    breakfast: 0,
+    lunch: 1,
+    dinner: 2,
+    snack: 3,
+  };
+
   return {
     id: data.id ?? crypto.randomUUID(),
     name: data.name,
     weekStartDate: weekStart ?? new Date(),
     mealColumns: normaliseMealColumns(data.meal_columns),
-    meals: (data.planned_meals ?? []).map(mapPlannedMealDataToPlannedMeal),
+    meals: (data.planned_meals ?? [])
+      .map(mapPlannedMealDataToPlannedMeal)
+      .sort((a, b) => {
+        const dateDiff = a.date.getTime() - b.date.getTime();
+        if (dateDiff !== 0) return dateDiff;
+        const mealOrderDiff = (mealTypeOrder[a.mealType] ?? 99) - (mealTypeOrder[b.mealType] ?? 99);
+        if (mealOrderDiff !== 0) return mealOrderDiff;
+        return a.createdAt.getTime() - b.createdAt.getTime();
+      }),
     notes: data.notes ?? undefined,
     shoppingListGenerated: data.shopping_list_generated ?? false,
     totalEstimatedCost: data.total_estimated_cost ?? undefined,
@@ -943,11 +958,8 @@ export function useCreatePlannedMealMutation(): ReturnType<typeof useMutation<Pl
 
   return useMutation({
     mutationFn: async ({ planId, meal }: { planId: string; meal: PlannedMealInput }) => {
-      console.log('[useCreatePlannedMealMutation] Input meal:', meal);
       const payload = buildPlannedMealInsertPayload(planId, meal) as Omit<PlannedMealData, 'id' | 'created_at' | 'updated_at'>;
-      console.log('[useCreatePlannedMealMutation] Payload to send:', payload);
       const created = await mealPlanningAPI.createPlannedMeal(payload);
-      console.log('[useCreatePlannedMealMutation] Created meal from API:', created);
       return mapPlannedMealDataToPlannedMeal(created);
     },
     onMutate: async ({ planId, meal }) => {

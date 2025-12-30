@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { addDays, format, isSameWeek, startOfWeek, isSameDay } from 'date-fns';
 import { ChefHat, Plus, Save, Heart, Youtube, Search, X } from 'lucide-react';
 import DatePickerPopover from '../components/DatePickerPopover';
+import ErrorState from '../components/ErrorState';
 import { useComposedStore } from '../stores/useComposedStore';
 import { useToast } from '../hooks/useToast';
 import type { PlannedMeal, Recipe } from '../types';
@@ -80,8 +81,17 @@ const cleanupOldDrafts = (): void => {
 
 const MealPlanning: React.FC = () => {
   // React Query hooks
-  const { data: recipes = [] } = useRecipesQuery();
-  const { data: mealPlans = [], isLoading: mealPlansLoading } = useMealPlansQuery();
+  const {
+    data: recipes = [],
+    error: recipesError,
+    refetch: refetchRecipes,
+  } = useRecipesQuery();
+  const {
+    data: mealPlans = [],
+    isLoading: mealPlansLoading,
+    error: mealPlansError,
+    refetch: refetchMealPlans,
+  } = useMealPlansQuery();
   const createRecipeMutation = useCreateRecipeMutation();
   const createPlannedMealMutation = useCreatePlannedMealMutation();
   const updatePlannedMealMutation = useUpdatePlannedMealMutation();
@@ -96,7 +106,6 @@ const MealPlanning: React.FC = () => {
   // Wrapper functions to adapt mutation signatures (defined early for hook dependencies)
   // Wrapped in useCallback to prevent infinite loops
   const createPlannedMealWrapper = useCallback(async (data: { planId: string; meal: any }): Promise<void> => {
-    console.log('[MealPlanning] createPlannedMealWrapper called with:', data);
     await createPlannedMealMutation.mutateAsync(data);
   }, [createPlannedMealMutation]);
 
@@ -108,6 +117,22 @@ const MealPlanning: React.FC = () => {
     return await createRecipeMutation.mutateAsync(recipe as any);
   }, [createRecipeMutation]);
 
+  if (recipesError || mealPlansError) {
+    return (
+      <div className="mx-auto flex max-w-6xl flex-col gap-4 sm:gap-6 p-3 sm:p-6">
+        <ErrorState
+          title="Unable to load meal planning data"
+          message="Meal plans or recipes could not be loaded. Please try again."
+          error={recipesError ?? mealPlansError}
+          onRetry={() => {
+            void refetchRecipes();
+            void refetchMealPlans();
+          }}
+        />
+      </div>
+    );
+  }
+
   // Custom hooks
   const modalState = useMealFormModals();
   const weekNav = useWeekNavigation(weekStartsOn, mealPlans);
@@ -116,16 +141,14 @@ const MealPlanning: React.FC = () => {
   // Auto-create meal plan if missing for current week
   useEffect(() => {
     if (!weekNav.activePlan && !mealPlansLoading && !weekNav.isEnsuringPlan) {
-      console.log('[MealPlanning] No active plan found, creating one...');
       void createMealPlanMutation.mutateAsync({
         weekStartDate: weekNav.currentWeekStart,
         name: 'Meal Plan',
         weekStartsOn,
       }).then(() => {
-        console.log('[MealPlanning] Meal plan created successfully!');
         showToast('Meal plan created for this week', 'success');
       }).catch((error) => {
-        console.error('[MealPlanning] Failed to create meal plan:', error);
+        logger.error('MealPlanning', 'Failed to create meal plan', { error });
         showToast('Failed to create meal plan', 'error');
       });
     }
@@ -161,7 +184,6 @@ const MealPlanning: React.FC = () => {
 
   const plannedMeals = useMemo(() => {
     const meals = weekNav.activePlan?.meals ?? [];
-    console.log('[MealPlanning] Planned meals:', meals.length, meals);
     return meals;
   }, [weekNav.activePlan?.meals]);
 
@@ -174,7 +196,6 @@ const MealPlanning: React.FC = () => {
       acc[key].push(meal);
       return acc;
     }, {});
-    console.log('[MealPlanning] Meals by date:', result);
     return result;
   }, [plannedMeals]);
 

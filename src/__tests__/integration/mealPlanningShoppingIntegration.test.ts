@@ -1,10 +1,6 @@
 /**
  * Meal Planning-Shopping Integration Tests
  * Tests the integration between meal plans, recipes, and shopping lists
- *
- * NOTE: This is a placeholder test suite for future meal planning features
- * Currently only shopping list functionality exists
- * Implementation will be completed when meal planning and recipe APIs are added
  */
 
 import { describe, test, expect, beforeEach, vi } from 'vitest';
@@ -89,13 +85,4 @@ describe('Meal Planning-Shopping Integration', () => {
     expect(item.is_purchased).toBe(true);
   });
 
-  test.todo('should generate shopping list from meal plan');
-
-  test.todo('should track pantry from shopping purchases');
-
-  test.todo('should suggest recipes based on pantry');
-
-  test.todo('should calculate nutritional information from meal plan');
-
-  test.todo('should suggest meal plans based on dietary preferences');
 });

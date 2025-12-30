@@ -29,24 +29,11 @@ export const CellWithMeals: React.FC<CellWithMealsProps> = ({
 }) => {
   const triggerRef = useRef<(() => void) | null>(null);
 
-  // Deduplicate meals by ID to prevent duplicate key warnings
-  const uniqueMeals = React.useMemo(() => {
-    const seen = new Set<string>();
-    return dayMeals.filter((meal) => {
-      if (seen.has(meal.id)) {
-        console.warn('[CellWithMeals] Duplicate meal ID detected:', meal.id);
-        return false;
-      }
-      seen.add(meal.id);
-      return true;
-    });
-  }, [dayMeals]);
-
   return (
     <>
       <div className="space-y-1 relative" style={{ zIndex: 20, position: 'relative' }}>
         <ul className="space-y-1">
-          {uniqueMeals.map((meal) => (
+          {dayMeals.map((meal) => (
             <MealItem
               key={meal.id}
               meal={meal}

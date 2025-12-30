@@ -4,6 +4,7 @@ import type { PlannedMeal, Recipe } from '../../../types';
 import { LogMealButton } from '../../../components/nutrition/LogMealButton';
 import { useUpdatePlannedMealMutation, useDeletePlannedMealMutation } from '../../../hooks/useMealPlanningQuery';
 import { SwapMealModal } from './SwapMealModal';
+import { logger } from '../../../services/logger';
 
 // Meal type color mapping
 const MEAL_TYPE_COLORS = {
@@ -24,25 +25,11 @@ export const MealItem: React.FC<MealItemProps> = ({ meal, recipes, onShowRecipeF
   const recipe = recipes.find(r => r.id === meal.recipeId);
   const mealName = recipe?.name || meal.customMeal || 'Unnamed meal';
   const calories = recipe?.calories ? recipe.calories * (meal.servings || 1) : null;
+  const isRecipeMeal = !!(recipe && meal.recipeId);
 
   // Get color based on meal type
   const mealType = meal.mealType as keyof typeof MEAL_TYPE_COLORS;
   const colors = MEAL_TYPE_COLORS[mealType] || MEAL_TYPE_COLORS.breakfast;
-
-  // Debug: Log meal data if showing "Unnamed meal"
-  if (mealName === 'Unnamed meal') {
-    console.log('[MealItem] Unnamed meal detected:', {
-      mealId: meal.id,
-      recipeId: meal.recipeId,
-      customMeal: meal.customMeal,
-      customMealType: typeof meal.customMeal,
-      customMealValue: JSON.stringify(meal.customMeal),
-      hasRecipe: !!recipe,
-      recipeName: recipe?.name,
-      allMealKeys: Object.keys(meal),
-      fullMeal: meal
-    });
-  }
 
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState(mealName);
@@ -71,23 +58,13 @@ export const MealItem: React.FC<MealItemProps> = ({ meal, recipes, onShowRecipeF
       return;
     }
 
-    console.log('[MealItem] Saving meal:', {
-      mealId: meal.id,
-      oldName: mealName,
-      newName: editedName.trim(),
-      customMeal: meal.customMeal,
-      recipeId: meal.recipeId,
-    });
-
     try {
       await updateMealMutation.mutateAsync({
         mealId: meal.id,
         updates: { customMeal: editedName.trim() },
       });
-      console.log('[MealItem] Meal updated successfully!');
       setIsEditing(false);
     } catch (error) {
-      console.error('[MealItem] Failed to update meal:', error);
       setEditedName(mealName);
       setIsEditing(false);
     }
@@ -103,7 +80,7 @@ export const MealItem: React.FC<MealItemProps> = ({ meal, recipes, onShowRecipeF
       try {
         await deleteMealMutation.mutateAsync(meal.id);
       } catch (error) {
-        console.error('[MealItem] Failed to delete meal:', error);
+        logger.error('MealItem', 'Failed to delete meal', { error });
       }
     }
   };
@@ -118,7 +95,7 @@ export const MealItem: React.FC<MealItemProps> = ({ meal, recipes, onShowRecipeF
         },
       });
     } catch (error) {
-      console.error('[MealItem] Failed to undo log:', error);
+      logger.error('MealItem', 'Failed to undo log', { error });
     }
   };
 
@@ -204,7 +181,7 @@ export const MealItem: React.FC<MealItemProps> = ({ meal, recipes, onShowRecipeF
         <button
           type="button"
           onClick={(e) => {
-            if (isEaten) return; // Don't allow editing eaten meals
+            if (isEaten || isRecipeMeal) return; // Don't allow editing eaten or recipe-based meals
             // Prevent cell selection when clicking to edit
             if (!e.metaKey && !e.ctrlKey) {
               e.stopPropagation();
@@ -212,8 +189,8 @@ export const MealItem: React.FC<MealItemProps> = ({ meal, recipes, onShowRecipeF
             setIsEditing(true);
           }}
           className="flex-1 min-w-0 text-left"
-          title={isEaten ? 'Meal logged' : 'Click to edit'}
-          disabled={isEaten}
+          title={isEaten ? 'Meal logged' : isRecipeMeal ? 'Edit the recipe in Saved Recipes' : 'Click to edit'}
+          disabled={isEaten || isRecipeMeal}
         >
           <span className={`text-sm font-medium ${isEaten ? 'text-green-600 line-through' : 'text-slate-900'}`}>
             {mealName}

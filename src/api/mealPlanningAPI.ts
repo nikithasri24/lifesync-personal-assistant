@@ -23,15 +23,11 @@ export async function getMealPlans(): Promise<MealPlanData[]> {
         .from('meal_plans')
         .select('*, planned_meals(*)')
         .eq('user_id', user.id)
-        .order('week_start_date', { ascending: false });
+        .order('week_start_date', { ascending: false })
+        .order('date', { foreignTable: 'planned_meals', ascending: true })
+        .order('created_at', { foreignTable: 'planned_meals', ascending: true });
 
       if (error) throw error;
-
-      console.log('[mealPlanningAPI.getMealPlans] ⚠️ Raw data from Supabase:', data);
-      if (data && data.length > 0 && data[0].planned_meals) {
-        console.log('[mealPlanningAPI.getMealPlans] ⚠️ First planned meal:', data[0].planned_meals[0]);
-        console.log('[mealPlanningAPI.getMealPlans] ⚠️ First planned meal custom_meal:', data[0].planned_meals[0]?.custom_meal);
-      }
 
       return (data ?? []) as MealPlanData[];
     },
@@ -52,6 +48,8 @@ export async function getMealPlan(id: string): Promise<MealPlanData> {
         .select('*, planned_meals(*)')
         .eq('id', id)
         .eq('user_id', user.id)
+        .order('date', { foreignTable: 'planned_meals', ascending: true })
+        .order('created_at', { foreignTable: 'planned_meals', ascending: true })
         .single();
 
       const data = handleSupabaseResponse(result, 'Meal Plan', id);
@@ -157,9 +155,6 @@ export async function createPlannedMeal(
 ): Promise<PlannedMealData> {
   return apiCall(
     async () => {
-      console.log('[mealPlanningAPI.createPlannedMeal] ⚠️ Received meal payload:', meal);
-      console.log('[mealPlanningAPI.createPlannedMeal] ⚠️ custom_meal value:', meal.custom_meal);
-
       const user = await requireAuth();
 
       // Verify meal plan ownership
@@ -172,16 +167,11 @@ export async function createPlannedMeal(
 
       if (planError || !plan) throw new Error('Meal plan not found or access denied');
 
-      console.log('[mealPlanningAPI.createPlannedMeal] ⚠️ About to insert into Supabase:', meal);
-
       const result = await supabase
         .from('planned_meals')
         .insert(meal)
         .select()
         .single();
-
-      console.log('[mealPlanningAPI.createPlannedMeal] ⚠️ Supabase result:', result);
-      console.log('[mealPlanningAPI.createPlannedMeal] ⚠️ Returned custom_meal:', result.data?.custom_meal);
 
       const data = handleSupabaseResponse(result, 'Planned Meal');
       return data as PlannedMealData;
@@ -495,4 +485,3 @@ export async function deletePantryItem(id: string): Promise<void> {
     { domain: 'MealPlanningAPI', operation: 'deletePantryItem', data: { id } }
   );
 }
-
