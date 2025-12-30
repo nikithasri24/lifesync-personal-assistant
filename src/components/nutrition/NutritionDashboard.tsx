@@ -8,11 +8,20 @@ import { format, subDays } from 'date-fns';
 import { TrendingUp, Target, Flame, Beef, Wheat, Droplet, Settings } from 'lucide-react';
 import { MacroProgressBar } from './MacroProgressBar';
 import { useDailyLogQuery, useNutritionGoalQuery, useSetNutritionGoalMutation } from '@/hooks/useNutritionQuery';
+import ErrorState from '@/components/ErrorState';
 
 export function NutritionDashboard(): React.ReactElement {
   const today = format(new Date(), 'yyyy-MM-dd');
-  const { data: dailyLog = [] } = useDailyLogQuery(today);
-  const { data: goal } = useNutritionGoalQuery();
+  const {
+    data: dailyLog = [],
+    error: dailyLogError,
+    refetch: refetchDailyLog,
+  } = useDailyLogQuery(today);
+  const {
+    data: goal,
+    error: goalError,
+    refetch: refetchGoal,
+  } = useNutritionGoalQuery();
   const setGoalMutation = useSetNutritionGoalMutation();
   
   const [showGoalSettings, setShowGoalSettings] = useState(false);
@@ -51,6 +60,18 @@ export function NutritionDashboard(): React.ReactElement {
     });
     setShowGoalSettings(false);
   };
+
+  if (dailyLogError || goalError) {
+    return (
+      <ErrorState
+        error={dailyLogError ?? goalError}
+        onRetry={() => {
+          void refetchDailyLog();
+          void refetchGoal();
+        }}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -157,4 +178,3 @@ export function NutritionDashboard(): React.ReactElement {
     </div>
   );
 }
-

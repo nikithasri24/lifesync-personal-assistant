@@ -16,6 +16,7 @@ import { useDailyLogQuery, useLogFoodMutation, useDeleteLogEntryMutation, useNut
 import { foodPhotoService, type FoodAnalysisResult } from '@/services/nutrition/FoodPhotoService';
 import type { NutritionInfo } from '@/services/nutrition/OpenFoodFactsService';
 import type { MealType } from '@/api/nutritionAPI';
+import ErrorState from '@/components/ErrorState';
 
 type ActivePanel = 'none' | 'photo' | 'search' | 'barcode' | 'detail';
 
@@ -36,8 +37,17 @@ export function NutritionTracker(): React.ReactElement {
   const [selectedProduct, setSelectedProduct] = useState<NutritionInfo | null>(null);
 
   const dateStr = format(selectedDate, 'yyyy-MM-dd');
-  const { data: dailyLog = [], isLoading } = useDailyLogQuery(dateStr);
-  const { data: goal } = useNutritionGoalQuery();
+  const {
+    data: dailyLog = [],
+    isLoading,
+    error: dailyLogError,
+    refetch: refetchDailyLog,
+  } = useDailyLogQuery(dateStr);
+  const {
+    data: goal,
+    error: goalError,
+    refetch: refetchGoal,
+  } = useNutritionGoalQuery();
   const logFoodMutation = useLogFoodMutation();
   const deleteLogMutation = useDeleteLogEntryMutation();
 
@@ -153,6 +163,16 @@ export function NutritionTracker(): React.ReactElement {
         </div>
       </div>
 
+      {dailyLogError || goalError ? (
+        <ErrorState
+          error={dailyLogError ?? goalError}
+          onRetry={() => {
+            void refetchDailyLog();
+            void refetchGoal();
+          }}
+        />
+      ) : (
+        <>
       {/* Progress overview */}
       {goal && (
         <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
@@ -301,7 +321,8 @@ export function NutritionTracker(): React.ReactElement {
           ))}
         </div>
       )}
+        </>
+      )}
     </div>
   );
 }
-

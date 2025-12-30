@@ -4,34 +4,14 @@
  */
 
 import { supabase } from '@/lib/supabase';
-import { smartChat } from '@/lib/providers/factory';
 import { logger } from '@/services/logger';
-import type { Message } from '@/lib/providers/interfaces';
+import { nutritionAnalyzer, type FoodAnalysisResult, type NutritionEstimate } from './NutritionAnalyzer';
 
 // ============================================================================
 // Types
 // ============================================================================
 
-export interface NutritionEstimate {
-  name: string;
-  calories: number;
-  protein_g: number;
-  carbs_g: number;
-  fat_g: number;
-  fiber_g?: number;
-  serving_size?: string;
-  confidence: number; // 0.0 - 1.0
-}
-
-export interface FoodAnalysisResult {
-  items: NutritionEstimate[];
-  totalCalories: number;
-  totalProtein: number;
-  totalCarbs: number;
-  totalFat: number;
-  description: string;
-  confidence: number;
-}
+export type { NutritionEstimate, FoodAnalysisResult };
 
 const FOOD_PHOTOS_BUCKET = 'food-photos';
 
@@ -91,75 +71,14 @@ class FoodPhotoService {
    */
   async analyzePhoto(imageDataUrl: string): Promise<FoodAnalysisResult> {
     try {
-      const messages: Message[] = [
-        {
-          role: 'system',
-          content: `You are a nutrition expert analyzing food photos. Identify all food items visible and estimate their nutritional content.
-
-Respond in JSON format ONLY with this exact structure:
-{
-  "items": [
-    {
-      "name": "food item name",
-      "calories": number,
-      "protein_g": number,
-      "carbs_g": number,
-      "fat_g": number,
-      "fiber_g": number (optional),
-      "serving_size": "estimated portion size",
-      "confidence": number between 0.0 and 1.0
-    }
-  ],
-  "description": "brief description of what you see",
-  "confidence": overall confidence between 0.0 and 1.0
-}
-
-Be conservative with estimates. If uncertain, use lower confidence scores.`,
-        },
-        {
-          role: 'user',
-          content: `Analyze this food photo and estimate the nutrition:\n\n[Image: ${imageDataUrl.substring(0, 100)}...]`,
-        },
-      ];
-
-      const response = await smartChat(messages, {
-        temperature: 0.3,
-        maxTokens: 1000,
-      });
-
-      // Parse the JSON response
-      const content = response.content.trim();
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        throw new Error('Failed to parse AI response as JSON');
-      }
-
-      const parsed = JSON.parse(jsonMatch[0]) as FoodAnalysisResult;
-
-      // Calculate totals
-      const totals = parsed.items.reduce(
-        (acc, item) => ({
-          calories: acc.calories + item.calories,
-          protein: acc.protein + item.protein_g,
-          carbs: acc.carbs + item.carbs_g,
-          fat: acc.fat + item.fat_g,
-        }),
-        { calories: 0, protein: 0, carbs: 0, fat: 0 }
-      );
-
+      const result = await nutritionAnalyzer.analyzePhoto(imageDataUrl);
       logger.info('FoodPhotoService', 'Photo analyzed', {
-        itemCount: parsed.items.length,
-        totalCalories: totals.calories,
-        confidence: parsed.confidence,
+        itemCount: result.items.length,
+        totalCalories: result.totalCalories,
+        confidence: result.confidence,
       });
 
-      return {
-        ...parsed,
-        totalCalories: totals.calories,
-        totalProtein: totals.protein,
-        totalCarbs: totals.carbs,
-        totalFat: totals.fat,
-      };
+      return result;
     } catch (error) {
       logger.error('FoodPhotoService', 'Failed to analyze photo', { error });
       throw error;
@@ -168,4 +87,3 @@ Be conservative with estimates. If uncertain, use lower confidence scores.`,
 }
 
 export const foodPhotoService = new FoodPhotoService();
-
