@@ -189,10 +189,34 @@ export async function updatePlannedMeal(
 ): Promise<PlannedMealData> {
   return apiCall(
     async () => {
+      const user = await requireAuth();
+
+      const { data: item, error: itemError } = await supabase
+        .from('planned_meals')
+        .select('meal_plan_id')
+        .eq('id', id)
+        .single();
+
+      if (itemError || !item?.meal_plan_id) {
+        throw new Error('Planned meal not found');
+      }
+
+      const { data: plan, error: planError } = await supabase
+        .from('meal_plans')
+        .select('id')
+        .eq('id', item.meal_plan_id)
+        .eq('user_id', user.id)
+        .single();
+
+      if (planError || !plan) {
+        throw new Error('Planned meal not found or access denied');
+      }
+
       const result = await supabase
         .from('planned_meals')
         .update(updates)
         .eq('id', id)
+        .eq('meal_plan_id', item.meal_plan_id)
         .select()
         .single();
 
@@ -209,10 +233,34 @@ export async function updatePlannedMeal(
 export async function deletePlannedMeal(id: string): Promise<void> {
   return apiCall(
     async () => {
+      const user = await requireAuth();
+
+      const { data: item, error: itemError } = await supabase
+        .from('planned_meals')
+        .select('meal_plan_id')
+        .eq('id', id)
+        .single();
+
+      if (itemError || !item?.meal_plan_id) {
+        throw new Error('Planned meal not found');
+      }
+
+      const { data: plan, error: planError } = await supabase
+        .from('meal_plans')
+        .select('id')
+        .eq('id', item.meal_plan_id)
+        .eq('user_id', user.id)
+        .single();
+
+      if (planError || !plan) {
+        throw new Error('Planned meal not found or access denied');
+      }
+
       const { error } = await supabase
         .from('planned_meals')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('meal_plan_id', item.meal_plan_id);
 
       if (error) throw error;
     },
@@ -229,12 +277,29 @@ export async function postponePlannedMeal(
 ): Promise<PlannedMealData> {
   return apiCall(
     async () => {
+      const user = await requireAuth();
+
       // Get the current meal to save its original date
       const { data: currentMeal } = await supabase
         .from('planned_meals')
-        .select('date, original_date')
+        .select('date, original_date, meal_plan_id')
         .eq('id', id)
         .single();
+
+      if (!currentMeal?.meal_plan_id) {
+        throw new Error('Planned meal not found');
+      }
+
+      const { data: plan, error: planError } = await supabase
+        .from('meal_plans')
+        .select('id')
+        .eq('id', currentMeal.meal_plan_id)
+        .eq('user_id', user.id)
+        .single();
+
+      if (planError || !plan) {
+        throw new Error('Planned meal not found or access denied');
+      }
 
       const result = await supabase
         .from('planned_meals')
@@ -245,6 +310,7 @@ export async function postponePlannedMeal(
           original_date: currentMeal?.original_date || currentMeal?.date, // Preserve original date
         })
         .eq('id', id)
+        .eq('meal_plan_id', currentMeal.meal_plan_id)
         .select()
         .single();
 
@@ -265,6 +331,29 @@ export async function reschedulePlannedMeal(
 ): Promise<PlannedMealData> {
   return apiCall(
     async () => {
+      const user = await requireAuth();
+
+      const { data: item, error: itemError } = await supabase
+        .from('planned_meals')
+        .select('meal_plan_id')
+        .eq('id', id)
+        .single();
+
+      if (itemError || !item?.meal_plan_id) {
+        throw new Error('Planned meal not found');
+      }
+
+      const { data: plan, error: planError } = await supabase
+        .from('meal_plans')
+        .select('id')
+        .eq('id', item.meal_plan_id)
+        .eq('user_id', user.id)
+        .single();
+
+      if (planError || !plan) {
+        throw new Error('Planned meal not found or access denied');
+      }
+
       const dateStr = newDate.toISOString().split('T')[0];
 
       const updates: Partial<PlannedMealData> = {
@@ -282,6 +371,7 @@ export async function reschedulePlannedMeal(
         .from('planned_meals')
         .update(updates)
         .eq('id', id)
+        .eq('meal_plan_id', item.meal_plan_id)
         .select()
         .single();
 
