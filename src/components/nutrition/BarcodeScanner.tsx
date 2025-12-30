@@ -21,6 +21,7 @@ export function BarcodeScanner({ onProductFound, onCancel }: BarcodeScannerProps
   const [error, setError] = useState<string | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const supportsBarcodeDetector = 'BarcodeDetector' in window;
 
   useEffect(() => {
     startCamera();
@@ -55,6 +56,10 @@ export function BarcodeScanner({ onProductFound, onCancel }: BarcodeScannerProps
 
   const captureAndDecode = async () => {
     if (!videoRef.current || !canvasRef.current) return;
+    if (!supportsBarcodeDetector) {
+      setError('Auto-scan not supported on this device. Please enter the barcode manually.');
+      return;
+    }
 
     const canvas = canvasRef.current;
     const video = videoRef.current;
@@ -65,9 +70,19 @@ export function BarcodeScanner({ onProductFound, onCancel }: BarcodeScannerProps
     canvas.height = video.videoHeight;
     ctx.drawImage(video, 0, 0);
 
-    // For now, we'll use manual entry. For production, integrate a barcode library
-    // like @AugustinSorel/react-barcode-scanner or quagga2
-    setError('Auto-scan not available. Please enter barcode manually below.');
+    try {
+      const detector = new BarcodeDetector({
+        formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'qr_code'],
+      });
+      const results = await detector.detect(canvas);
+      if (results.length > 0) {
+        await lookupBarcode(results[0].rawValue);
+        return;
+      }
+      setError('No barcode detected. Try again or enter manually.');
+    } catch (err) {
+      setError('Failed to scan barcode. Please enter it manually.');
+    }
   };
 
   const lookupBarcode = async (barcode: string) => {
@@ -170,4 +185,3 @@ export function BarcodeScanner({ onProductFound, onCancel }: BarcodeScannerProps
     </div>
   );
 }
-
