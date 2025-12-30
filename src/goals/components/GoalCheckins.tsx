@@ -4,6 +4,7 @@ import type { LifeGoal, LifeGoalCheckin, CreateCheckinInput, CheckinMood } from 
 import { createCheckin, getGoalCheckins } from '../api/lifeGoalsAPI';
 import { lifeGoalsKeys, useUpdateLifeGoalMutation } from '@/hooks/useLifeGoalsQuery';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import ErrorState from '@/components/ErrorState';
 
 interface GoalCheckinsProps {
   goal: LifeGoal;
@@ -32,7 +33,7 @@ export function GoalCheckins({ goal }: GoalCheckinsProps): React.ReactElement {
   const updateGoalMutation = useUpdateLifeGoalMutation();
 
   // Fetch check-ins
-  const { data: checkins = [], isLoading } = useQuery({
+  const { data: checkins = [], isLoading, error } = useQuery({
     queryKey: lifeGoalsKeys.checkins(goal.id),
     queryFn: () => getGoalCheckins(goal.id),
   });
@@ -229,6 +230,13 @@ export function GoalCheckins({ goal }: GoalCheckinsProps): React.ReactElement {
           <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent"></div>
           <p className="mt-2 text-sm text-slate-600">Loading check-ins...</p>
         </div>
+      ) : error ? (
+        <ErrorState
+          error={error}
+          onRetry={() => {
+            void queryClient.invalidateQueries({ queryKey: lifeGoalsKeys.checkins(goal.id) });
+          }}
+        />
       ) : checkins.length === 0 ? (
         <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
           <MessageSquare className="mx-auto h-8 w-8 text-slate-400" />
@@ -237,7 +245,7 @@ export function GoalCheckins({ goal }: GoalCheckinsProps): React.ReactElement {
         </div>
       ) : (
         <ul className="space-y-3">
-          {checkins
+          {[...checkins]
             .sort((a, b) => new Date(b.checkInDate).getTime() - new Date(a.checkInDate).getTime())
             .map((checkin) => {
               const moodOption = MOOD_OPTIONS.find((m) => m.value === checkin.mood);

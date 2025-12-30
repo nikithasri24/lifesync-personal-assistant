@@ -145,7 +145,7 @@ export function GoalMilestones({ goal }: GoalMilestonesProps): React.ReactElemen
         </div>
       ) : (
         <ul className="space-y-2">
-          {milestones
+          {[...milestones]
             .sort((a, b) => a.orderIndex - b.orderIndex)
             .map((milestone) => (
               <li

@@ -12,7 +12,7 @@ export type GoalDraft = {
   priority: GoalPriority;
   targetDate: string;
   streakEnabled: boolean;
-  streakFrequency: 'daily' | 'weekly';
+  streakFrequency: 'daily' | 'weekly' | 'monthly';
   streakTarget: string;
 };
 
@@ -102,9 +102,9 @@ export function GoalFormModal({
               onChange={(e) => onDraftChange({ ...goalDraft, streakEnabled: e.target.checked })}
               className="rounded border-slate-300"
             />
-            <span className="font-medium text-slate-700">Enable daily streak tracking</span>
+            <span className="font-medium text-slate-700">Enable streak tracking</span>
           </label>
-          <p className="text-xs text-slate-500 mt-1 ml-6">Track daily progress with check-ins and earn XP for consistency</p>
+          <p className="text-xs text-slate-500 mt-1 ml-6">Track progress with check-ins and earn XP for consistency</p>
 
           {goalDraft.streakEnabled && (
             <div className="mt-3 ml-6 grid gap-3 sm:grid-cols-2">
@@ -112,11 +112,12 @@ export function GoalFormModal({
                 <span className="font-medium text-slate-700">Frequency</span>
                 <select
                   value={goalDraft.streakFrequency}
-                  onChange={(e) => onDraftChange({ ...goalDraft, streakFrequency: e.target.value as 'daily' | 'weekly' })}
+                  onChange={(e) => onDraftChange({ ...goalDraft, streakFrequency: e.target.value as 'daily' | 'weekly' | 'monthly' })}
                   className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
                 >
                   <option value="daily">Daily</option>
                   <option value="weekly">Weekly</option>
+                  <option value="monthly">Monthly</option>
                 </select>
               </label>
               <label className="flex flex-col gap-1 text-sm">

@@ -16,6 +16,7 @@ import type {
 import GoalTemplates from '../goals/components/GoalTemplates';
 import GoalGamification from '../goals/components/GoalGamification';
 import { logger } from '../services/logger';
+import ErrorState from '../components/ErrorState';
 
 // Import layout components
 import { LifeGoalsHeader } from '../goals/components/layout/LifeGoalsHeader';
@@ -49,8 +50,18 @@ const createDreamDraft = (): DreamDraft => ({
 
 const LifeGoals: React.FC = () => {
   // React Query hooks
-  const { data: goals = [], isLoading: goalsLoading } = useLifeGoalsQuery();
-  const { data: dreams = [], isLoading: dreamsLoading } = useLifeDreamsQuery();
+  const {
+    data: goals = [],
+    isLoading: goalsLoading,
+    error: goalsError,
+    refetch: refetchGoals,
+  } = useLifeGoalsQuery();
+  const {
+    data: dreams = [],
+    isLoading: dreamsLoading,
+    error: dreamsError,
+    refetch: refetchDreams,
+  } = useLifeDreamsQuery();
   const createGoalMutation = useCreateLifeGoalMutation();
   const updateGoalMutation = useUpdateLifeGoalMutation();
   const deleteGoalMutation = useDeleteLifeGoalMutation();
@@ -234,6 +245,20 @@ const LifeGoals: React.FC = () => {
 
   if (loading) {
     return <LifeGoalsLoadingState />;
+  }
+
+  if (goalsError || dreamsError) {
+    return (
+      <div className="mx-auto flex max-w-5xl flex-col gap-6 p-6">
+        <ErrorState
+          error={goalsError ?? dreamsError}
+          onRetry={() => {
+            void refetchGoals();
+            void refetchDreams();
+          }}
+        />
+      </div>
+    );
   }
 
   return (
