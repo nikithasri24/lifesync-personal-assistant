@@ -50,7 +50,7 @@ export function StoreListCard({ list, store }: StoreListCardProps) {
         <div className="mt-4 pt-3 border-t flex items-center justify-between">
           <div className="text-sm text-gray-600">
             <MapPin size={12} className="inline mr-1" />
-            {store.distance} miles
+            {store.distance != null ? `${store.distance} miles` : 'Distance unknown'}
           </div>
           <div className="text-sm font-semibold text-green-600">
             ${list.totalEstimatedCost?.toFixed(2)}

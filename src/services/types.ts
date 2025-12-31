@@ -165,6 +165,38 @@ export interface ShoppingListData {
   updated_at?: string;
 }
 
+export interface StoreData {
+  id?: string;
+  user_id?: string;
+  name: string;
+  type: 'grocery' | 'wholesale' | 'specialty' | 'organic' | 'international' | 'pharmacy';
+  address?: string;
+  phone?: string;
+  website?: string;
+  logo?: string;
+  color?: string;
+  coordinates?: { lat: number; lng: number } | null;
+  preferences?: {
+    priceRating?: number;
+    qualityRating?: number;
+    cleanlinessRating?: number;
+    serviceRating?: number;
+    overallRating?: number;
+  } | null;
+  specialties?: string[];
+  best_for?: string[];
+  avg_prices?: Record<string, number>;
+  distance?: number;
+  last_visited?: string;
+  favorite?: boolean;
+  hours?: Record<string, { open: string; close: string } | null> | null;
+  has_delivery?: boolean;
+  has_pickup?: boolean;
+  delivery_fee?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface ShoppingItemData {
   id?: string;
   shopping_list_id: string;

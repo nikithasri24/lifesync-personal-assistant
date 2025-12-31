@@ -49,6 +49,7 @@ export * from './useInboxQuery';
 export * from './useMealPlanningQuery';
 export * from './useNutritionQuery';
 export * from './useShoppingQuery';
+export * from './useStoresQuery';
 export * from './useSkincareQuery';
 export * from './useTravelQuery';
 

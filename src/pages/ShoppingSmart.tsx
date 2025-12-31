@@ -8,7 +8,6 @@ import { useToast } from '../hooks/useToast';
 import type { ShoppingItem, Store as StoreType, ShoppingList } from '../shopping/types';
 import { distributeItemsToStores as distributeItems, type DistributionStrategy } from '../shopping/services/storeDistribution';
 import { mapShoppingItemDataToModel, mapShoppingItemToCreateInput, mapShoppingItemToUpdateInput } from '../shopping/services/shoppingMappers';
-import { MOCK_STORES } from '../shopping/fixtures/mockStores';
 import { ShoppingHeader } from '../shopping/components/layout/ShoppingHeader';
 import { ViewTabs } from '../shopping/components/layout/ViewTabs';
 import { ShoppingModals } from '../shopping/components/layout/ShoppingModals';
@@ -22,6 +21,7 @@ import {
   useUpdateShoppingItem,
   useDeleteShoppingItem,
   useToggleShoppingItem} from '../hooks/useShoppingQuery';
+import { useStoresQuery } from '../hooks/useStoresQuery';
 import {
   usePantryItemsQuery,
   useCreatePantryItemMutation,
@@ -133,8 +133,7 @@ export default function ShoppingSmart(): ReactElement {
     return mapShoppingItemDataToModel([result])[0];
   };
 
-  // Sample stores with ratings and preferences
-  const [stores] = useState<StoreType[]>(MOCK_STORES);
+  const { data: stores = [] } = useStoresQuery();
 
   // Store-specific lists (auto-generated from master list)
   const [storeLists, setStoreLists] = useState<ShoppingList[]>([]);
