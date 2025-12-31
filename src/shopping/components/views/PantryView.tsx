@@ -4,10 +4,12 @@
  */
 
 import React, { useState, useMemo, type ReactElement } from 'react';
-import {  Plus, Receipt } from 'lucide-react';
-import {  format, differenceInCalendarDays } from 'date-fns';
+import { Plus, Receipt } from 'lucide-react';
+import { format, differenceInCalendarDays } from 'date-fns';
 import type { PantryItem } from '../../../types';
 import type { ShoppingItem } from '../../types';
+import { usePantryActions } from '../../hooks/usePantryActions';
+import { exportPantryToCsv, downloadCsv } from '../../utils/pantryUtils';
 
 interface PantryViewProps {
   pantryItems: PantryItem[];
@@ -57,6 +59,7 @@ export function PantryView({
   }>({ qty: '0', unit: '', exp: '', low: false, threshold: '' });
   const [replenishId, setReplenishId] = useState<string | null>(null);
   const [replenishTarget, setReplenishTarget] = useState<string>('');
+  const { addLowStockToShopping, addExpiredToShopping } = usePantryActions(pantryItems, onAddToShopping);
 
   const pantrySortedFiltered = useMemo((): PantryItem[] => {
     let items: PantryItem[] = [...pantryItems];
@@ -82,102 +85,18 @@ export function PantryView({
   }, [pantryItems, pantryFilter, pantrySort]);
 
   const handleAddLowStockToShopping = async (): Promise<void> => {
-    const lows: PantryItem[] = pantryItems.filter((p: PantryItem): boolean => p.isLowStock === true && (p.lowStockThreshold ?? 0) > 0);
-    for (const p of lows) {
-      const target: number = p.lowStockThreshold ?? 0;
-      const need: number = Math.max(0, target - (p.quantity ?? 0)) || 1;
-      await onAddToShopping({
-        name: p.name,
-        quantity: need,
-        unit: p.unit,
-        category: p.category,
-        subcategory: undefined,
-        priority: 'medium',
-        purchased: false,
-        price: undefined,
-        estimatedPrice: undefined,
-        aisle: undefined,
-        brand: undefined,
-        size: undefined,
-        notes: p.notes,
-        imageUrl: undefined,
-        nutritionInfo: undefined,
-        tags: ['from:pantry'],
-        addedBy: undefined,
-        purchasedAt: undefined,
-        purchasedBy: undefined,
-        assignedStore: undefined,
-        bestStores: [],
-      });
-    }
-    onShowToast(`Added ${lows.length} low-stock items to shopping`, 'success');
+    const count = await addLowStockToShopping();
+    onShowToast(`Added ${count} low-stock items to shopping`, 'success');
   };
 
   const handleMoveExpiredToShopping = async (): Promise<void> => {
-    const now = new Date();
-    const expired: PantryItem[] = pantryItems.filter(
-      (p: PantryItem): boolean => p.expirationDate !== undefined && p.expirationDate.getTime() < now.getTime()
-    );
-    for (const p of expired) {
-      const qty: number = p.quantity !== undefined && p.quantity > 0 ? p.quantity : 1;
-      await onAddToShopping({
-        name: p.name,
-        quantity: qty,
-        unit: p.unit,
-        category: p.category,
-        subcategory: undefined,
-        priority: 'medium',
-        purchased: false,
-        price: undefined,
-        estimatedPrice: undefined,
-        aisle: undefined,
-        brand: undefined,
-        size: undefined,
-        notes: p.notes,
-        imageUrl: undefined,
-        nutritionInfo: undefined,
-        tags: ['from:pantry', 'reason:expired'],
-        addedBy: undefined,
-        purchasedAt: undefined,
-        purchasedBy: undefined,
-        assignedStore: undefined,
-        bestStores: [],
-      });
-    }
-    onShowToast(`Moved ${expired.length} expired items to shopping`, 'info');
+    const count = await addExpiredToShopping();
+    onShowToast(`Moved ${count} expired items to shopping`, 'info');
   };
 
   const handleExportCSV = (): void => {
-    const headers: string[] = [
-      'Name',
-      'Quantity',
-      'Unit',
-      'Category',
-      'Expiration',
-      'LowStock',
-      'Threshold',
-      'Location',
-    ];
-    const rows: string[][] = pantryItems.map((p: PantryItem): string[] => [
-      p.name,
-      String(p.quantity ?? ''),
-      p.unit ?? '',
-      p.category,
-      p.expirationDate !== undefined ? format(p.expirationDate, 'yyyy-MM-dd') : '',
-      p.isLowStock === true ? 'yes' : 'no',
-      p.lowStockThreshold != null ? String(p.lowStockThreshold) : '',
-      p.location ?? '',
-    ]);
-    const csv: string = [headers, ...rows]
-      .map((r: string[]): string => r.map((v: string): string => `"${String(v).replace(/"/g, '""')}"`).join(','))
-      .join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `pantry-${format(new Date(), 'yyyyMMdd-HHmmss')}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const csv = exportPantryToCsv(pantryItems);
+    downloadCsv(csv, `pantry-${format(new Date(), 'yyyyMMdd-HHmmss')}.csv`);
   };
 
   const handleSaveEdit = async (p: PantryItem): Promise<void> => {

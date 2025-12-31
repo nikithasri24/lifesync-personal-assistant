@@ -134,53 +134,65 @@ export function useCreateShoppingItem(): UseMutationResult<
 export function useUpdateShoppingItem(): UseMutationResult<
   ShoppingItemData,
   Error,
-  { itemId: string; updates: Partial<ShoppingItemData> },
+  { itemId: string; updates: Partial<ShoppingItemData>; listId?: string | null },
   { listId?: string | null; previousItems?: ShoppingItemData[]; invalidateAll?: boolean }
 > {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ itemId, updates }: { itemId: string; updates: Partial<ShoppingItemData> }) => {
+    mutationFn: async ({
+      itemId,
+      updates,
+    }: {
+      itemId: string;
+      updates: Partial<ShoppingItemData>;
+    }) => {
       logger.debug('Shopping', 'Updating shopping item', { itemId, updates });
       const result = await updateShoppingItem(itemId, updates);
       return result;
     },
-    onMutate: async ({ itemId, updates }) => {
+    onMutate: async ({ itemId, updates, listId }) => {
       logger.debug('Shopping', 'Optimistic update: shopping item', { itemId, updates });
-      // Find which list this item belongs to by searching all item queries
-      const queryCache = queryClient.getQueryCache();
-      const itemQueries = queryCache.findAll({
-        queryKey: [...shoppingKeys.all, 'items'],
-      });
-
-      let listId: string | null = null;
+      let resolvedListId = listId ?? null;
       let previousItems: ShoppingItemData[] | undefined;
 
-      for (const query of itemQueries) {
-        const data = query.state.data as ShoppingItemData[] | undefined;
-        if (data?.some((item) => item.id === itemId)) {
-          listId = data.find((item) => item.id === itemId)?.shopping_list_id ?? null;
-          previousItems = data;
-          break;
+      if (resolvedListId) {
+        previousItems = queryClient.getQueryData<ShoppingItemData[]>(
+          shoppingKeys.items(resolvedListId)
+        );
+      } else {
+        // Find which list this item belongs to by searching all item queries
+        const queryCache = queryClient.getQueryCache();
+        const itemQueries = queryCache.findAll({
+          queryKey: [...shoppingKeys.all, 'items'],
+        });
+
+        for (const query of itemQueries) {
+          const data = query.state.data as ShoppingItemData[] | undefined;
+          if (data?.some((item) => item.id === itemId)) {
+            resolvedListId = data.find((item) => item.id === itemId)?.shopping_list_id ?? null;
+            previousItems = data;
+            break;
+          }
         }
       }
 
-      if (!listId) {
+      if (!resolvedListId) {
         return { listId: null, invalidateAll: true };
       }
 
       // Cancel outgoing refetches
-      await queryClient.cancelQueries({ queryKey: shoppingKeys.items(listId) });
+      await queryClient.cancelQueries({ queryKey: shoppingKeys.items(resolvedListId) });
 
       // Optimistically update
-      queryClient.setQueryData<ShoppingItemData[]>(shoppingKeys.items(listId), (old) => {
+      queryClient.setQueryData<ShoppingItemData[]>(shoppingKeys.items(resolvedListId), (old) => {
         if (!old) return old;
         return old.map((item) =>
           item.id === itemId ? { ...item, ...updates, updated_at: new Date().toISOString() } : item
         );
       });
 
-      return { listId, previousItems };
+      return { listId: resolvedListId, previousItems };
     },
     onError: (err: Error, { itemId }, context) => {
       logger.error('Shopping', 'Failed to update shopping item', { error: err.message, itemId });
@@ -212,50 +224,56 @@ export function useUpdateShoppingItem(): UseMutationResult<
 export function useDeleteShoppingItem(): UseMutationResult<
   void,
   Error,
-  string,
+  { itemId: string; listId?: string | null },
   { listId?: string | null; previousItems?: ShoppingItemData[]; invalidateAll?: boolean }
 > {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (itemId: string) => {
+    mutationFn: async ({ itemId }: { itemId: string }) => {
       logger.debug('Shopping', 'Deleting shopping item', { itemId });
       await deleteShoppingItem(itemId);
     },
-    onMutate: async (itemId) => {
+    onMutate: async ({ itemId, listId }) => {
       logger.debug('Shopping', 'Optimistic update: delete shopping item', { itemId });
-      // Find which list this item belongs to
-      const queryCache = queryClient.getQueryCache();
-      const itemQueries = queryCache.findAll({
-        queryKey: [...shoppingKeys.all, 'items'],
-      });
-
-      let listId: string | null = null;
+      let resolvedListId = listId ?? null;
       let previousItems: ShoppingItemData[] | undefined;
 
-      for (const query of itemQueries) {
-        const data = query.state.data as ShoppingItemData[] | undefined;
-        if (data?.some((item) => item.id === itemId)) {
-          listId = data.find((item) => item.id === itemId)?.shopping_list_id ?? null;
-          previousItems = data;
-          break;
+      if (resolvedListId) {
+        previousItems = queryClient.getQueryData<ShoppingItemData[]>(
+          shoppingKeys.items(resolvedListId)
+        );
+      } else {
+        // Find which list this item belongs to
+        const queryCache = queryClient.getQueryCache();
+        const itemQueries = queryCache.findAll({
+          queryKey: [...shoppingKeys.all, 'items'],
+        });
+
+        for (const query of itemQueries) {
+          const data = query.state.data as ShoppingItemData[] | undefined;
+          if (data?.some((item) => item.id === itemId)) {
+            resolvedListId = data.find((item) => item.id === itemId)?.shopping_list_id ?? null;
+            previousItems = data;
+            break;
+          }
         }
       }
 
-      if (!listId) {
+      if (!resolvedListId) {
         return { listId: null, invalidateAll: true };
       }
 
       // Cancel outgoing refetches
-      await queryClient.cancelQueries({ queryKey: shoppingKeys.items(listId) });
+      await queryClient.cancelQueries({ queryKey: shoppingKeys.items(resolvedListId) });
 
       // Optimistically remove
-      queryClient.setQueryData<ShoppingItemData[]>(shoppingKeys.items(listId), (old) => {
+      queryClient.setQueryData<ShoppingItemData[]>(shoppingKeys.items(resolvedListId), (old) => {
         if (!old) return old;
         return old.filter((item) => item.id !== itemId);
       });
 
-      return { listId, previousItems };
+      return { listId: resolvedListId, previousItems };
     },
     onError: (err: Error, itemId, context) => {
       logger.error('Shopping', 'Failed to delete shopping item', { error: err.message, itemId });
@@ -280,15 +298,24 @@ export function useDeleteShoppingItem(): UseMutationResult<
 export function useToggleShoppingItem(): UseMutationResult<
   ShoppingItemData,
   Error,
-  { itemId: string; currentStatus: boolean }
+  { itemId: string; currentStatus: boolean; listId?: string | null }
 > {
   const updateMutation = useUpdateShoppingItem();
 
   return useMutation({
-    mutationFn: async ({ itemId, currentStatus }: { itemId: string; currentStatus: boolean }) => {
+    mutationFn: async ({
+      itemId,
+      currentStatus,
+      listId,
+    }: {
+      itemId: string;
+      currentStatus: boolean;
+      listId?: string | null;
+    }) => {
       return updateMutation.mutateAsync({
         itemId,
         updates: { is_purchased: !currentStatus },
+        listId,
       });
     },
   });

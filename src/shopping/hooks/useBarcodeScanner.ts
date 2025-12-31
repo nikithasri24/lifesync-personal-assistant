@@ -39,9 +39,13 @@ export function useBarcodeScanner(
 
   const lookupProduct = async (barcode: string): Promise<ProductInfo> => {
     try {
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), 4000);
       const resp = await fetch(`/api/barcode/lookup?code=${encodeURIComponent(barcode)}`, {
         headers: { Accept: 'application/json' },
+        signal: controller.signal,
       });
+      window.clearTimeout(timeoutId);
       if (!resp.ok) throw new Error('lookup failed');
       const data = (await resp.json()) as {
         name?: string;

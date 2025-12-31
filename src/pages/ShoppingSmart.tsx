@@ -116,12 +116,14 @@ export default function ShoppingSmart(): ReactElement {
   const updateShoppingItem = async (itemId: string, updates: Partial<ShoppingItem>): Promise<ShoppingItem> => {
     const result = await updateItemMutation.mutateAsync({
       itemId,
-      updates: mapShoppingItemToUpdateInput(updates)});
+      updates: mapShoppingItemToUpdateInput(updates),
+      listId: activeListId,
+    });
     return mapShoppingItemDataToModel([result])[0];
   };
 
   const deleteShoppingItem = async (itemId: string): Promise<void> => {
-    await deleteItemMutation.mutateAsync(itemId);
+    await deleteItemMutation.mutateAsync({ itemId, listId: activeListId });
   };
 
   const toggleShoppingItem = async (itemId: string): Promise<ShoppingItem | void> => {
@@ -129,7 +131,9 @@ export default function ShoppingSmart(): ReactElement {
     if (!item) return Promise.resolve();
     const result = await toggleItemMutation.mutateAsync({
       itemId,
-      currentStatus: item.purchased});
+      currentStatus: item.purchased,
+      listId: activeListId,
+    });
     return mapShoppingItemDataToModel([result])[0];
   };
 
