@@ -204,7 +204,6 @@ export interface Recipe {
   nutritionInfo?: Record<string, unknown>;
   sourceType?: 'manual' | 'url' | 'ai' | 'youtube';
   sourceUrl?: string;
-  authorName?: string;
   videoThumbnail?: string;
   image?: string;
   rating?: number;

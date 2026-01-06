@@ -24,12 +24,12 @@
   --bg-gradient: linear-gradient(135deg, #fafbfc 0%, #f5f7fa 100%);
   
   /* Text Colors - Perfect Hierarchy */
-  --text-primary: #0f172a;
-  --text-secondary: #334155;
-  --text-tertiary: #64748b;
+  --text-primary: #ffffff;
+  --text-secondary: #f1f5f9;
+  --text-tertiary: #cbd5e1;
   --text-muted: #94a3b8;
-  --text-inverse: #ffffff;
-  --text-accent: #6366f1;
+  --text-inverse: #0f172a;
+  --text-accent: #a5b4fc;
   
   /* Border Colors - Subtle & Refined */
   --border-primary: #e2e8f0;
@@ -175,25 +175,25 @@ body {
 input,
 textarea,
 select {
-  color: var(--text-primary);
+  color: #ffffff !important;
   background-color: inherit;
 }
 
 .dark input,
 .dark textarea,
 .dark select {
-  color: var(--text-primary);
+  color: #ffffff !important;
 }
 
 input::placeholder,
 textarea::placeholder {
-  color: var(--text-tertiary);
+  color: #cbd5e1 !important;
   opacity: 0.8;
 }
 
 .dark input::placeholder,
 .dark textarea::placeholder {
-  color: var(--text-tertiary);
+  color: #cbd5e1 !important;
 }
 
 /* Beautiful Scrollbar */

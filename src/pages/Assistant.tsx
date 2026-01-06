@@ -1,5 +1,5 @@
-// Conversational AI Assistant Page - ChatGPT-style Interface
-// Mobile-first design with voice and text input
+// Conversational AI Assistant Page - Modern Redesigned Interface
+// Beautiful, engaging design with voice and text input
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useConversationalVoice } from '../hooks/useConversationalVoice';
@@ -95,42 +95,50 @@ export default function Assistant() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-br from-slate-50 via-orange-50 to-slate-50">
-      <AssistantHeader
-        isListening={isListening}
-        isThinking={isThinking}
-        isSpeaking={isSpeaking}
-        onClearHistory={handleClearHistory}
-      />
-
-      {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4">
-        <div className="max-w-4xl mx-auto space-y-4 h-full">
-          {messages.length === 0 && !isThinking && (
-            <EmptyConversationState onSuggestionClick={handleSuggestionClick} />
-          )}
-
-          <MessagesList
-            messages={messages}
-            isThinking={isThinking}
-            transcript={transcript}
-          />
-
-          <div ref={messagesEndRef} />
-        </div>
+    <div className="flex flex-col h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 relative overflow-hidden">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-gradient-to-br from-indigo-200/30 to-purple-200/30 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-gradient-to-br from-pink-200/30 to-orange-200/30 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
       </div>
 
-      <ErrorBanner error={error} />
+      <div className="relative z-10 flex flex-col h-full">
+        <AssistantHeader
+          isListening={isListening}
+          isThinking={isThinking}
+          isSpeaking={isSpeaking}
+          onClearHistory={handleClearHistory}
+        />
 
-      <ConversationInput
-        textInput={textInput}
-        isListening={isListening}
-        isSpeaking={isSpeaking}
-        onTextChange={setTextInput}
-        onTextSubmit={handleTextSubmit}
-        onVoiceToggle={handleVoiceToggle}
-        onStopSpeaking={stopSpeaking}
-      />
+        {/* Messages Area */}
+        <div className="flex-1 overflow-y-auto px-4 py-6">
+          <div className="max-w-4xl mx-auto space-y-6">
+            {messages.length === 0 && !isThinking && (
+              <EmptyConversationState onSuggestionClick={handleSuggestionClick} />
+            )}
+
+            <MessagesList
+              messages={messages}
+              isThinking={isThinking}
+              transcript={transcript}
+            />
+
+            <div ref={messagesEndRef} />
+          </div>
+        </div>
+
+        <ErrorBanner error={error} />
+
+        <ConversationInput
+          textInput={textInput}
+          isListening={isListening}
+          isSpeaking={isSpeaking}
+          onTextChange={setTextInput}
+          onTextSubmit={handleTextSubmit}
+          onVoiceToggle={handleVoiceToggle}
+          onStopSpeaking={stopSpeaking}
+        />
+      </div>
     </div>
   );
 }

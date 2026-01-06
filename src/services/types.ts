@@ -343,7 +343,6 @@ export interface RecipeData {
   nutrition_info?: Record<string, number>;
   source_type?: string;
   source_url?: string;
-  author_name?: string;
   video_thumbnail?: string;
   created_at?: string;
   updated_at?: string;

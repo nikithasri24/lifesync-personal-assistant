@@ -46,7 +46,6 @@ export interface Recipe {
   nutritionInfo?: Record<string, unknown>;
   sourceType?: 'manual' | 'url' | 'ai' | 'youtube';
   sourceUrl?: string;
-  authorName?: string;
   videoThumbnail?: string;
   image?: string;
   rating?: number;
@@ -259,7 +258,6 @@ function mapRecipeDataToRecipe(data: RecipeData): Recipe {
     nutritionInfo: data.nutrition_info ?? undefined,
     sourceType: (data.source_type as Recipe['sourceType']) ?? undefined,
     sourceUrl: data.source_url ?? undefined,
-    authorName: data.author_name ?? undefined,
     videoThumbnail: data.video_thumbnail ?? undefined,
     image: data.video_thumbnail ?? undefined,
     rating: undefined,
@@ -387,10 +385,6 @@ function buildRecipeInsertPayload(input: RecipeInput) {
     is_favorite: input.isFavorite ?? false,
     dietary_restrictions: input.dietaryRestrictions ?? [],
     nutrition_info: input.nutritionInfo ?? null,
-    source_type: input.sourceType ?? null,
-    source_url: input.sourceUrl ?? null,
-    author_name: input.authorName ?? null,
-    video_thumbnail: input.videoThumbnail ?? null,
   });
 }
 
@@ -416,10 +410,6 @@ function buildRecipeUpdatePayload(updates: RecipeUpdate) {
     is_favorite: updates.isFavorite,
     dietary_restrictions: updates.dietaryRestrictions,
     nutrition_info: updates.nutritionInfo,
-    source_type: updates.sourceType,
-    source_url: updates.sourceUrl,
-    author_name: updates.authorName,
-    video_thumbnail: updates.videoThumbnail,
   });
 }
 
