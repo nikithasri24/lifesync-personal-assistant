@@ -15,7 +15,8 @@ import { DEFAULT_SCHEDULING_PREFS } from '@/services/scheduling';
 import type { ScheduleBlock } from '@/services/types';
 import { logger } from '@/services/logger';
 import { format, parseISO, addMinutes } from 'date-fns';
-import { supabase } from '@/lib/supabase';
+import { getTask, updateTask } from '@/api/tasksAPI';
+import { requireAuth } from '@/api/apiWrapper';
 
 // =====================================================
 // TOOL DEFINITIONS
@@ -336,22 +337,17 @@ async function executeFindFreeTime(args: Record<string, unknown>): Promise<ToolR
 
 async function executeScheduleTaskOptimally(args: Record<string, unknown>): Promise<ToolResult> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: 'Not authenticated' };
+    await requireAuth();
 
     const taskId = args.task_id as string;
     const dateStr = (args.date as string) || format(new Date(), 'yyyy-MM-dd');
     const date = parseISO(dateStr);
 
-    // Fetch the task
-    const { data: task, error: taskError } = await supabase
-      .from('tasks')
-      .select('*')
-      .eq('id', taskId)
-      .eq('user_id', user.id)
-      .single();
-
-    if (taskError || !task) {
+    // Fetch the task using API layer
+    let task;
+    try {
+      task = await getTask(taskId);
+    } catch {
       return { success: false, error: 'Task not found' };
     }
 
@@ -389,21 +385,17 @@ async function executeScheduleTaskOptimally(args: Record<string, unknown>): Prom
     const scheduledEndDate = addMinutes(bestSlot.start, durationMinutes);
     const endTime = format(scheduledEndDate, 'HH:mm');
 
-    // If auto_schedule is true, update the task
+    // If auto_schedule is true, update the task using API layer
     if (autoSchedule) {
-      const { error: updateError } = await supabase
-        .from('tasks')
-        .update({
+      try {
+        await updateTask(taskId, {
           due_date: dateStr,
           scheduled_start: scheduledStart,
           scheduled_end: scheduledEndDate.toISOString(),
           status: 'scheduled',
-        })
-        .eq('id', taskId)
-        .eq('user_id', user.id);
-
-      if (updateError) {
-        return { success: false, error: 'Failed to schedule task: ' + updateError.message };
+        });
+      } catch (updateError) {
+        return { success: false, error: 'Failed to schedule task: ' + (updateError as Error).message };
       }
 
       logger.info('SchedulerTools', 'Task scheduled optimally', { taskId, date: dateStr, time: startTime });

@@ -1,38 +1,15 @@
 /**
  * useHabitReminders Hook
  * Schedules daily reminders for habits with reminder_enabled = true
+ * Uses API layer for all database access
  */
 
 import { useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase';
+import { getHabitsWithReminders, getHabitsWithStreaks, checkHabitCompletionForDate } from '@/api/habitsAPI';
 import { queryKeys } from '@/lib/react-query';
 import { smartReminderService } from '@/services/reminders/SmartReminderService';
-import type { HabitData } from '@/services/types';
 import { setHours, setMinutes, isAfter, startOfDay, addDays } from 'date-fns';
-
-/**
- * Get habits with reminders enabled
- */
-async function getHabitsWithReminders(): Promise<HabitData[]> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return [];
-
-  const { data, error } = await supabase
-    .from('habits')
-    .select('*')
-    .eq('user_id', user.id)
-    .eq('is_active', true)
-    .eq('reminder_enabled', true)
-    .not('reminder_time', 'is', null);
-
-  if (error) {
-    console.error('Error fetching habits with reminders:', error);
-    return [];
-  }
-
-  return (data || []) as HabitData[];
-}
 
 /**
  * Parse time string (HH:mm or HH:mm:ss) to Date for today
@@ -112,21 +89,7 @@ export function useHabitReminders(enabled: boolean = true) {
 export function useStreakProtectionAlerts(enabled: boolean = true) {
   const { data: habits } = useQuery({
     queryKey: [...queryKeys.habits.all, 'streak-protection'],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return [];
-
-      // Get habits with active streaks
-      const { data, error } = await supabase
-        .from('habits')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('is_active', true)
-        .gte('streak_count', 3); // Only protect streaks >= 3 days
-
-      if (error) return [];
-      return (data || []) as HabitData[];
-    },
+    queryFn: () => getHabitsWithStreaks(3), // Only protect streaks >= 3 days
     enabled,
     staleTime: 60 * 60 * 1000, // 1 hour
   });
@@ -135,18 +98,14 @@ export function useStreakProtectionAlerts(enabled: boolean = true) {
     if (!enabled || !habits || habits.length === 0) return;
 
     const scheduleAlerts = async () => {
+      const today = new Date().toISOString().split('T')[0];
+
       for (const habit of habits) {
-        // Check if habit was completed today
-        const today = new Date().toISOString().split('T')[0];
-        const { data: entry } = await supabase
-          .from('habit_entries')
-          .select('id')
-          .eq('habit_id', habit.id)
-          .eq('date', today)
-          .maybeSingle();
+        // Check if habit was completed today using API
+        const isCompleted = await checkHabitCompletionForDate(habit.id!, today);
 
         // If not completed, schedule streak protection alert
-        if (!entry) {
+        if (!isCompleted) {
           await smartReminderService.scheduleStreakProtectionAlert(
             habit.id!,
             habit.name,
@@ -159,4 +118,3 @@ export function useStreakProtectionAlerts(enabled: boolean = true) {
     scheduleAlerts();
   }, [enabled, habits]);
 }
-

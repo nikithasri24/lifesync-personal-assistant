@@ -5,7 +5,7 @@
 
 import React from 'react';
 import LeafletTravelMapV2 from '../components/LeafletTravelMapV2';
-import { travelAPI } from '../data';
+import { travelAPI } from '../api/data';
 import type { VisitStatus, VisitedLocation } from '../types';
 import { nationalParks, getParksByState } from '../data/nationalParks';
 import { islands, getIslandsByState } from '../data/islands';

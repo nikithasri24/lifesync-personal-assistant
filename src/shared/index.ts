@@ -17,5 +17,5 @@ export { default as SharedDashboard } from './components/SharedDashboard';
 // Hooks
 export { useSharedDataQuery } from './hooks/useSharedDataQuery';
 
-// Services
-export * from './services/SharedDataProvider';
+// Services (now in api folder)
+export * from './api/SharedDataProvider';

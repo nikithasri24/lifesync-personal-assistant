@@ -5,8 +5,8 @@
  * from connections based on module permissions.
  */
 
-import { supabase } from '@/lib/supabase';
-import { logger } from '@/services/logger';
+import { supabase } from '../../lib/supabase';
+import { logger } from '../../services/logger';
 import type { ShareableModule, ModulePermissionLevel } from '../types/connections';
 
 interface SharedDataContext {

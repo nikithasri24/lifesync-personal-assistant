@@ -5,7 +5,7 @@
 
 import React, { useState, useRef, useCallback } from 'react';
 import { Camera, Upload, X, Loader2, Sparkles, RotateCcw } from 'lucide-react';
-import { foodPhotoService, type FoodAnalysisResult } from '@/services/nutrition/FoodPhotoService';
+import { foodPhotoService, type FoodAnalysisResult } from '@/services/nutrition/api/FoodPhotoService';
 
 interface FoodPhotoUploadProps {
   onAnalysisComplete: (result: FoodAnalysisResult, imageUrl: string) => void;

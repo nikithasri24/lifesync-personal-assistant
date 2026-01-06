@@ -8,12 +8,10 @@
 
 import {
   getConversations,
-  getConversation,
   createConversation,
   updateConversation,
   addMessageToConversation
 } from '@/api/conversationsAPI';
-import { supabase } from '@/lib/supabase';
 import type { Conversation, ConversationMessage } from '@/types/infrastructure';
 
 export interface ConversationSummary {

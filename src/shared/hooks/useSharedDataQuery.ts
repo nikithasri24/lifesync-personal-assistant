@@ -7,7 +7,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import type { ShareableModule } from '../types/connections';
-import { fetchSharedDashboardData, type SharedData } from '../services/SharedDataProvider';
+import { fetchSharedDashboardData, type SharedData } from '../api/SharedDataProvider';
 
 const sharedDataKeys = {
   all: ['shared-data'] as const,

@@ -5,31 +5,22 @@
 
 import { useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase';
+import { getImportantDates } from '@/api/importantDatesAPI';
 import { queryKeys } from '@/lib/react-query';
 import { reminderService } from '@/services/reminders';
 import type { ImportantDate } from '@/services/dates/types';
 import { addDays, setMonth, setDate, isAfter, isBefore, startOfDay, differenceInDays, getYear, addYears } from 'date-fns';
 
 /**
- * Get active important dates
+ * Get active important dates using the API layer
  */
 async function getActiveImportantDates(): Promise<ImportantDate[]> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return [];
-
-  const { data, error } = await supabase
-    .from('important_dates')
-    .select('*')
-    .eq('user_id', user.id)
-    .eq('is_active', true);
-
-  if (error) {
+  try {
+    return await getImportantDates(true);
+  } catch (error) {
     console.error('Error fetching important dates:', error);
     return [];
   }
-
-  return (data || []) as ImportantDate[];
 }
 
 /**

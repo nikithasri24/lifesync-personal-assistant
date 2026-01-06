@@ -11,7 +11,7 @@ import ProductFormModal from '../components/ProductFormModal';
 import RoutineEditorModal from '../components/RoutineEditorModal';
 import WeeklyPlannerView from '../components/WeeklyPlannerView';
 import WeeklyGridView from '../components/WeeklyGridView';
-import { skincareAPI } from '../data';
+import { skincareAPI } from '../api/data';
 import type { SkincareProduct, SkincareProductInput, SkincareRoutine, SkincareRoutineInput, SkincareLog } from '../types';
 
 type ViewType = 'journal' | 'products' | 'weekly' | 'grid';

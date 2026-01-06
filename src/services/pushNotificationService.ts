@@ -6,7 +6,7 @@
  */
 
 import { upsertPushSubscription, deactivatePushSubscription } from '@/api/pushSubscriptionsAPI';
-import { supabase } from '@/lib/supabase';
+import { requireAuth } from '@/api/apiWrapper';
 import { logger } from '@/services/logger';
 
 // VAPID public key from environment
@@ -154,22 +154,20 @@ class PushNotificationService {
       logger.debug('PushService', 'Subscribed to push notifications', { endpoint: subscription.endpoint });
       this.subscription = subscription;
 
-      // Save subscription using API layer instead of direct Supabase
-      const { data: session } = await supabase.auth.getSession();
-      if (session?.session) {
+      // Save subscription using API layer
+      try {
+        const user = await requireAuth();
         const subscriptionJson = subscription.toJSON();
-        try {
-          await upsertPushSubscription({
-            user_id: session.session.user.id,
-            endpoint: subscriptionJson.endpoint || '',
-            p256dh: subscriptionJson.keys?.p256dh,
-            auth: subscriptionJson.keys?.auth,
-            is_active: true,
-          });
-          logger.info('PushService', 'Subscription saved to database');
-        } catch (error) {
-          logger.error('PushService', error as Error, { operation: 'saveSubscription' });
-        }
+        await upsertPushSubscription({
+          user_id: user.id,
+          endpoint: subscriptionJson.endpoint || '',
+          p256dh: subscriptionJson.keys?.p256dh,
+          auth: subscriptionJson.keys?.auth,
+          is_active: true,
+        });
+        logger.info('PushService', 'Subscription saved to database');
+      } catch (error) {
+        logger.error('PushService', error as Error, { operation: 'saveSubscription' });
       }
 
       return subscription;
@@ -198,10 +196,12 @@ class PushNotificationService {
       await this.subscription.unsubscribe();
       this.subscription = null;
 
-      // Remove from database using API layer instead of direct Supabase
-      const { data: session } = await supabase.auth.getSession();
-      if (session?.session) {
-        await deactivatePushSubscription(endpoint, session.session.user.id);
+      // Remove from database using API layer
+      try {
+        const user = await requireAuth();
+        await deactivatePushSubscription(endpoint, user.id);
+      } catch {
+        // User may not be authenticated, that's ok
       }
 
       logger.info('PushService', 'Unsubscribed from push notifications');

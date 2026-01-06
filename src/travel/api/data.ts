@@ -2,7 +2,7 @@
  * Travel data layer - Supabase integration
  */
 
-import { supabase } from '../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import type {
   VisitedLocation,
   VisitedLocationInput,
@@ -14,7 +14,7 @@ import type {
   JournalEntryInput,
   WorldMapData,
   TravelStats,
-} from './types';
+} from '../types';
 
 // Helper functions for case conversion
 function toCamelCase<T>(obj: unknown): T {

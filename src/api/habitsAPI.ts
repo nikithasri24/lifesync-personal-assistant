@@ -311,6 +311,77 @@ export async function deleteAllHabitEntries(habitId: string): Promise<void> {
 }
 
 // =====================================================
+// REMINDER-SPECIFIC QUERIES
+// =====================================================
+
+/**
+ * Get habits with reminders enabled
+ * Used by useHabitReminders hook
+ */
+export async function getHabitsWithReminders(): Promise<HabitData[]> {
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
+
+      const { data, error } = await supabase
+        .from('habits')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .eq('reminder_enabled', true)
+        .not('reminder_time', 'is', null);
+
+      if (error) throw error;
+      return (data ?? []) as HabitData[];
+    },
+    { domain: 'HabitsAPI', operation: 'getHabitsWithReminders' }
+  );
+}
+
+/**
+ * Get habits with active streaks for streak protection alerts
+ * @param minStreak - Minimum streak count to include (default: 3)
+ */
+export async function getHabitsWithStreaks(minStreak: number = 3): Promise<HabitData[]> {
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
+
+      const { data, error } = await supabase
+        .from('habits')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .gte('streak_count', minStreak);
+
+      if (error) throw error;
+      return (data ?? []) as HabitData[];
+    },
+    { domain: 'HabitsAPI', operation: 'getHabitsWithStreaks', data: { minStreak } }
+  );
+}
+
+/**
+ * Check if a habit was completed on a specific date
+ */
+export async function checkHabitCompletionForDate(habitId: string, date: string): Promise<boolean> {
+  return apiCall(
+    async () => {
+      const { data, error } = await supabase
+        .from('habit_entries')
+        .select('id')
+        .eq('habit_id', habitId)
+        .eq('date', date)
+        .maybeSingle();
+
+      if (error) throw error;
+      return !!data;
+    },
+    { domain: 'HabitsAPI', operation: 'checkHabitCompletionForDate', data: { habitId, date } }
+  );
+}
+
+// =====================================================
 // HELPER FUNCTIONS
 // =====================================================
 

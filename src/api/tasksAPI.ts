@@ -211,5 +211,53 @@ export async function restoreTask(id: string): Promise<TaskData> {
   return updateTask(id, { deleted: false, deleted_at: null });
 }
 
+/**
+ * Get tasks for reminder scheduling
+ * Returns active tasks with scheduled_start or upcoming due_date
+ */
+export async function getTasksForReminders(options?: {
+  includeScheduled?: boolean;
+  includeDueToday?: boolean;
+  daysAhead?: number;
+}): Promise<TaskData[]> {
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
+      const today = new Date().toISOString().split('T')[0];
+      const daysAhead = options?.daysAhead ?? 7;
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + daysAhead);
+      const futureDateStr = futureDate.toISOString().split('T')[0];
+
+      let query = supabase
+        .from('tasks')
+        .select('*')
+        .eq('user_id', user.id)
+        .neq('status', 'done')
+        .eq('deleted', false);
+
+      // Build OR conditions for scheduled_start and due_date
+      const conditions: string[] = [];
+      if (options?.includeScheduled !== false) {
+        conditions.push('scheduled_start.not.is.null');
+      }
+      if (options?.includeDueToday !== false) {
+        conditions.push(`due_date.gte.${today},due_date.lte.${futureDateStr}`);
+      }
+
+      if (conditions.length > 0) {
+        query = query.or(conditions.join(','));
+      }
+
+      query = query.order('scheduled_start', { ascending: true, nullsFirst: false });
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return (data ?? []) as TaskData[];
+    },
+    { domain: 'TasksAPI', operation: 'getTasksForReminders', data: { options } }
+  );
+}
+
 // NOTE: Project CRUD operations are in projectsAPI.ts
 // Use projectsAPI.ts for all project-related operations

@@ -3,9 +3,9 @@
  * Handles photo upload to Supabase Storage and AI-powered nutrition analysis
  */
 
-import { supabase } from '@/lib/supabase';
-import { logger } from '@/services/logger';
-import { nutritionAnalyzer, type FoodAnalysisResult, type NutritionEstimate } from './NutritionAnalyzer';
+import { supabase } from '../../../lib/supabase';
+import { logger } from '../../logger';
+import { nutritionAnalyzer, type FoodAnalysisResult, type NutritionEstimate } from '../NutritionAnalyzer';
 
 // ============================================================================
 // Types

@@ -1,42 +1,16 @@
 /**
  * useTaskReminders Hook
  * Auto-creates reminders when tasks have a scheduled_start or due_date
+ * Uses API layer for all database access
  */
 
 import { useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase';
+import { getTasksForReminders } from '@/api/tasksAPI';
 import { queryKeys } from '@/lib/react-query';
 import { reminderService } from '@/services/reminders';
 import { useReminderPreferences } from './useReminderPreferences';
-import type { TaskData } from '@/services/types';
-import { isAfter, parseISO, startOfDay, isSameDay, addMinutes, isToday } from 'date-fns';
-
-/**
- * Get tasks with scheduled starts for today and upcoming
- */
-async function getScheduledTasks(): Promise<TaskData[]> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return [];
-
-  const today = startOfDay(new Date()).toISOString().split('T')[0];
-
-  const { data, error } = await supabase
-    .from('tasks')
-    .select('*')
-    .eq('user_id', user.id)
-    .neq('status', 'done')
-    .eq('deleted', false)
-    .or(`scheduled_start.not.is.null,due_date.gte.${today}`)
-    .order('scheduled_start', { ascending: true, nullsFirst: false });
-
-  if (error) {
-    console.error('Error fetching scheduled tasks:', error);
-    return [];
-  }
-
-  return (data || []) as TaskData[];
-}
+import { isAfter, parseISO, startOfDay, isSameDay, isToday } from 'date-fns';
 
 /**
  * Hook to auto-create reminders for scheduled tasks
@@ -49,7 +23,7 @@ export function useTaskReminders(enabled: boolean = true) {
 
   const { data: tasks } = useQuery({
     queryKey: [...queryKeys.tasks.all, 'with-schedule'],
-    queryFn: getScheduledTasks,
+    queryFn: () => getTasksForReminders({ includeScheduled: true, includeDueToday: true, daysAhead: 1 }),
     enabled: enabled && prefs?.taskRemindersEnabled !== false,
     staleTime: 60 * 1000, // 1 minute
     refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes

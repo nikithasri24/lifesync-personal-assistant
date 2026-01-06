@@ -2,7 +2,7 @@
  * Skincare data layer - Supabase integration
  */
 
-import { supabase } from '../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import type {
   SkincareProduct,
   SkincareProductInput,
@@ -18,7 +18,7 @@ import type {
   SkinObservationsResponse,
   SkincareStreak,
   RoutineSummary,
-} from './types';
+} from '../types';
 
 // Helper function to convert snake_case to camelCase
 function toCamelCase<T>(obj: unknown): T {

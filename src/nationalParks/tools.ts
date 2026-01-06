@@ -6,7 +6,7 @@
 
 import type { Tool, ToolDefinition, ToolResult } from '@/lib/ai/toolRegistry';
 import { nationalParks, type NationalPark } from '@/travel/data/nationalParks';
-import { travelAPI } from '@/travel/data';
+import { travelAPI } from '@/travel/api/data';
 import { logger } from '@/services/logger';
 
 // =====================================================

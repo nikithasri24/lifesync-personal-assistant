@@ -4,8 +4,8 @@
 // Types
 export * from './types';
 
-// Data
-export * from './data';
+// Data/API
+export * from './api/data';
 
 // Components
 export { default as ProductFormModal } from './components/ProductFormModal';

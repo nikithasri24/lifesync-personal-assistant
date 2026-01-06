@@ -13,7 +13,7 @@ import { BarcodeScanner } from './BarcodeScanner';
 import { FoodSearch } from './FoodSearch';
 import { FoodDetail } from './FoodDetail';
 import { useDailyLogQuery, useLogFoodMutation, useDeleteLogEntryMutation, useNutritionGoalQuery } from '@/hooks/useNutritionQuery';
-import { foodPhotoService, type FoodAnalysisResult } from '@/services/nutrition/FoodPhotoService';
+import { foodPhotoService, type FoodAnalysisResult } from '@/services/nutrition/api/FoodPhotoService';
 import type { NutritionInfo } from '@/services/nutrition/OpenFoodFactsService';
 import type { MealType } from '@/api/nutritionAPI';
 import ErrorState from '@/components/ErrorState';

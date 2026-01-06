@@ -306,37 +306,73 @@ export async function createTask(task) {
 
 ✅ **Do**: Follow the layer boundaries strictly
 
+## ESLint Enforcement
+
+The architecture is enforced via ESLint rules in `eslint.config.js`:
+
+### Supabase Import Restriction
+
+The `no-restricted-imports` rule prevents direct Supabase client imports outside allowed locations:
+
+**Allowed locations**:
+- `src/api/**/*.ts` - API layer (primary data access)
+- `src/lib/**/*.ts` - Infrastructure layer
+- `src/providers/AuthProvider.tsx` - Auth provider
+- `src/components/AuthGate.tsx` - Auth gate
+
+**Exempted (legacy, to be migrated)**:
+- `src/goals/api/**/*.ts`
+- `src/shared/api/**/*.ts`
+- `src/travel/api/**/*.ts`
+- `src/shared/services/SharedDataProvider.ts`
+- `src/services/nutrition/FoodPhotoService.ts` (uses Supabase Storage)
+- `src/hooks/useImportantDateReminders.ts`
+
+**Note**: Type imports (`import type { Task } from '@/lib/supabase'`) are always allowed.
+
+### Current Status
+
+The rule is set to `warn` during migration. Once all violations are fixed, change to `error`:
+
+```javascript
+// eslint.config.js
+'no-restricted-imports': [
+  'error', // Change from 'warn' to 'error' when migration is complete
+  { ... }
+]
+```
+
 ## Service Layer Migration Status
 
 Services should use the API layer for data access, not direct Supabase calls.
 
-### ✅ Compliant Services
-- `src/services/scheduling/SmartSchedulingService.ts` - Uses API layer
+### ✅ Migrated (Compliant)
+- `src/services/analytics.ts` - Uses `analyticsAPI`
+- `src/services/pushNotificationService.ts` - Uses `pushSubscriptionsAPI`
+- `src/services/ConversationPersistenceService.ts` - Uses `conversationsAPI`
+- `src/hooks/useHabitReminders.ts` - Uses `habitsAPI`
+- `src/hooks/useTaskReminders.ts` - Uses `tasksAPI`
+- `src/hooks/useBillReminders.ts` - Uses `billsAPI`
+- `src/hooks/useReminderPreferences.ts` - Uses `userSettingsAPI`
 
-### 🔄 Services Needing Migration
-The following services currently access Supabase directly and should be migrated:
+### 🗑️ Deleted (Deprecated)
+- `src/services/database.ts` - Replaced by API layer
+- `src/hooks/useTasks.ts` - Replaced by `useTasksQuery.ts`
+- `src/skincare/data.ts` - Replaced by `skincareAPI.ts`
+- `src/travel/data.ts` - Replaced by `travelAPI.ts`
 
-| Service | API Module to Use |
-|---------|-------------------|
-| `ai/ContextAggregator.ts` | `tasksAPI`, `habitsAPI`, `calendarAPI`, `focusAPI` |
-| `ai/ContextualMemoryService.ts` | Create `memoryAPI.ts` |
-| `ai/LifeCoachService.ts` | `tasksAPI`, `habitsAPI`, `goalsAPI` |
-| `ai/PredictionService.ts` | `tasksAPI`, `habitsAPI`, `calendarAPI` |
-| `ai/SentimentAnalysisService.ts` | `journalAPI` |
-| `ai/UserPatternService.ts` | `tasksAPI`, `habitsAPI`, `focusAPI` |
-| `automation/AutomationEngine.ts` | Create `automationAPI.ts` |
-| `bills/BillService.ts` | `billsAPI` |
-| `briefing/DailyBriefingService.ts` | `tasksAPI`, `habitsAPI`, `calendarAPI` |
-| `dates/ImportantDatesService.ts` | `importantDatesAPI` |
-| `gamification/GamificationService.ts` | `gamificationAPI` |
-| `inbox/InboxService.ts` | `inboxAPI` |
-| `location/LocationService.ts` | Create `locationAPI.ts` |
-| `nutrition/NutritionService.ts` | `nutritionAPI` |
-| `planning/WeeklyPlanningService.ts` | `tasksAPI`, `habitsAPI`, `calendarAPI` |
-| `reminders/ReminderService.ts` | Create `remindersAPI.ts` |
-| `reminders/SmartReminderService.ts` | Create `remindersAPI.ts` |
-| `scheduler/ScheduleEngine.ts` | `schedulerAPI`, `calendarAPI` |
-| `visionBoard/VisionBoardService.ts` | Create `visionBoardAPI.ts` |
+### 🔄 Remaining Violations (To Be Migrated)
+The following files still access Supabase directly:
+
+| File | Status | Notes |
+|------|--------|-------|
+| `src/shared/services/SharedDataProvider.ts` | Exempted | Complex cross-user sharing logic |
+| `src/services/nutrition/FoodPhotoService.ts` | Exempted | Uses Supabase Storage (not DB) |
+| `src/hooks/useImportantDateReminders.ts` | Exempted | Needs `importantDatesAPI` functions |
+| `src/goals/api/lifeGoalsAPI.ts` | Legacy | Should move to `src/api/` |
+| `src/shared/api/connectionsAPI.ts` | Legacy | Should move to `src/api/` |
+| `src/travel/api/tripAPI.ts` | Legacy | Should move to `src/api/` |
+| `src/travel/api/passportAPI.ts` | Legacy | Should move to `src/api/` |
 
 ### Migration Pattern
 

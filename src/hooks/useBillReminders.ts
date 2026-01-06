@@ -1,36 +1,16 @@
 /**
  * useBillReminders Hook
  * Schedules reminders for upcoming bill payments based on reminder_days_before
+ * Uses API layer for all database access
  */
 
 import { useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase';
+import { getBills } from '@/api/billsAPI';
 import { queryKeys } from '@/lib/react-query';
 import { reminderService } from '@/services/reminders';
 import type { RecurringBill } from '@/services/bills/types';
 import { addDays, isBefore, isAfter, startOfDay, differenceInDays, parseISO, setDate, addMonths } from 'date-fns';
-
-/**
- * Get active bills with their next due dates
- */
-async function getActiveBillsWithDueDates(): Promise<RecurringBill[]> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return [];
-
-  const { data, error } = await supabase
-    .from('recurring_bills')
-    .select('*')
-    .eq('user_id', user.id)
-    .eq('is_active', true);
-
-  if (error) {
-    console.error('Error fetching bills:', error);
-    return [];
-  }
-
-  return (data || []) as RecurringBill[];
-}
 
 /**
  * Calculate the next due date for a bill
@@ -105,7 +85,7 @@ export function useBillReminders(enabled: boolean = true) {
 
   const { data: bills } = useQuery({
     queryKey: [...queryKeys.bills.all, 'with-reminders'],
-    queryFn: getActiveBillsWithDueDates,
+    queryFn: () => getBills(true), // Get active bills only
     enabled,
     staleTime: 30 * 60 * 1000, // 30 minutes
     refetchInterval: 60 * 60 * 1000, // Refetch every hour

@@ -164,3 +164,72 @@ export async function updateUserPreferences(
     { domain: 'UserSettingsAPI', operation: 'updateUserPreferences' }
   );
 }
+
+// =====================================================
+// REMINDER PREFERENCES
+// =====================================================
+
+export interface ReminderPreferencesDB {
+  notifications_enabled: boolean;
+  push_enabled: boolean;
+  notification_types: {
+    habits: boolean;
+    tasks: boolean;
+    calendar: boolean;
+    bills: boolean;
+    ai_suggestions: boolean;
+    location_reminders: boolean;
+    morning_briefing: boolean;
+    weekly_report: boolean;
+  };
+  quiet_hours_enabled: boolean;
+  quiet_hours_start: string;
+  quiet_hours_end: string;
+}
+
+/**
+ * Get reminder preferences for the current user
+ */
+export async function getReminderPreferences(): Promise<ReminderPreferencesDB | null> {
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
+
+      const { data, error } = await supabase
+        .from('user_preferences')
+        .select('notifications_enabled, push_enabled, notification_types, quiet_hours_enabled, quiet_hours_start, quiet_hours_end')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data as ReminderPreferencesDB | null;
+    },
+    { domain: 'UserSettingsAPI', operation: 'getReminderPreferences' }
+  );
+}
+
+/**
+ * Update reminder preferences for the current user
+ */
+export async function updateReminderPreferences(
+  preferences: Partial<ReminderPreferencesDB>
+): Promise<void> {
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
+
+      const { error } = await supabase
+        .from('user_preferences')
+        .upsert({
+          user_id: user.id,
+          ...preferences,
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'user_id',
+        });
+
+      if (error) throw error;
+    },
+    { domain: 'UserSettingsAPI', operation: 'updateReminderPreferences' }
+  );
+}

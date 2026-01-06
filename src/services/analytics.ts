@@ -1,9 +1,20 @@
 /**
  * Analytics Service
  * Aggregates data from multiple features to provide insights
+ * Uses API layer for all database access
  */
 
-import { supabase } from '../lib/supabase';
+import {
+  getTasksForAnalytics,
+  getHabitEntriesForAnalytics,
+  getHabitsCount,
+  getFocusSessionsForAnalytics,
+  getJournalEntriesForAnalytics,
+  getProjectsForAnalytics,
+  getTransactionsForAnalytics,
+  getBudgetsTotalForAnalytics,
+  type DateRange,
+} from '../api/analyticsAPI';
 import { logger } from './logger';
 
 export interface ProductivityAnalytics {
@@ -35,86 +46,41 @@ export interface WellbeingAnalytics {
 /**
  * Get productivity analytics for a date range
  */
-export async function getProductivityAnalytics(dateRange: {
-  startDate: string;
-  endDate: string;
-}): Promise<ProductivityAnalytics> {
+export async function getProductivityAnalytics(dateRange: DateRange): Promise<ProductivityAnalytics> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Not authenticated');
+    // Fetch all data in parallel using API layer
+    const [tasks, habitEntries, habitsTotal, focusSessions, journalEntries, projects] = await Promise.all([
+      getTasksForAnalytics(dateRange),
+      getHabitEntriesForAnalytics(dateRange),
+      getHabitsCount(),
+      getFocusSessionsForAnalytics(dateRange),
+      getJournalEntriesForAnalytics(dateRange),
+      getProjectsForAnalytics(dateRange),
+    ]);
 
-    // Fetch tasks data
-    const { data: tasks } = await supabase
-      .from('tasks')
-      .select('status, completed_at')
-      .eq('user_id', user.id)
-      .gte('created_at', dateRange.startDate)
-      .lte('created_at', dateRange.endDate);
+    const tasksTotal = tasks.length;
+    const tasksCompleted = tasks.filter(
+      (t) =>
+        t.status === 'done' &&
+        t.completed_at &&
+        t.completed_at >= dateRange.startDate &&
+        t.completed_at <= dateRange.endDate
+    ).length;
 
-    const tasksTotal = tasks?.length || 0;
-    const tasksCompleted =
-      tasks?.filter(
-        (t) =>
-          t.status === 'done' &&
-          t.completed_at &&
-          t.completed_at >= dateRange.startDate &&
-          t.completed_at <= dateRange.endDate
-      ).length || 0;
+    const habitsCompleted = habitEntries.length;
 
-    // Fetch habits data
-    const { data: habits } = await supabase
-      .from('habits')
-      .select('id')
-      .eq('user_id', user.id);
+    const focusMinutes = focusSessions.reduce(
+      (sum, s) => sum + (s.actual_duration_seconds ? s.actual_duration_seconds / 60 : s.duration_minutes),
+      0
+    );
 
-    const { data: habitEntries } = await supabase
-      .from('habit_entries')
-      .select('*')
-      .in('habit_id', habits?.map((h) => h.id) || [])
-      .gte('date', dateRange.startDate)
-      .lte('date', dateRange.endDate);
-
-    const habitsTotal = habits?.length || 0;
-    const habitsCompleted = habitEntries?.length || 0;
-
-    // Fetch focus sessions
-    const { data: focusSessions } = await supabase
-      .from('focus_sessions')
-      .select('duration_minutes, actual_duration_seconds, status')
-      .eq('user_id', user.id)
-      .eq('status', 'completed')
-      .gte('started_at', dateRange.startDate)
-      .lte('started_at', dateRange.endDate);
-
-    const focusMinutes =
-      focusSessions?.reduce(
-        (sum, s) => sum + (s.actual_duration_seconds ? s.actual_duration_seconds / 60 : s.duration_minutes),
-        0
-      ) || 0;
-
-    // Fetch journal entries
-    const { data: journalEntries } = await supabase
-      .from('journal_entries')
-      .select('id')
-      .eq('user_id', user.id)
-      .gte('created_at', dateRange.startDate)
-      .lte('created_at', dateRange.endDate);
-
-    // Fetch projects with progress
-    const { data: projects } = await supabase
-      .from('projects')
-      .select('progress, updated_at')
-      .eq('user_id', user.id)
-      .gte('updated_at', dateRange.startDate)
-      .lte('updated_at', dateRange.endDate);
-
-    const projectsProgressed = projects?.filter((p) => p.progress > 0).length || 0;
+    const projectsProgressed = projects.filter((p) => p.progress > 0).length;
 
     // Calculate productivity score (0-100)
     const taskScore = tasksTotal > 0 ? (tasksCompleted / tasksTotal) * 30 : 0;
-    const habitScore = habitsTotal > 0 ? Math.min((habitsCompleted / (habitsTotal * 7)) * 30, 30) : 0; // assume weekly target
-    const focusScore = Math.min((focusMinutes / 120) * 20, 20); // 120 min = max score
-    const journalScore = Math.min((journalEntries?.length || 0) / 7 * 20, 20); // 7 entries = max score
+    const habitScore = habitsTotal > 0 ? Math.min((habitsCompleted / (habitsTotal * 7)) * 30, 30) : 0;
+    const focusScore = Math.min((focusMinutes / 120) * 20, 20);
+    const journalScore = Math.min((journalEntries.length / 7) * 20, 20);
 
     const productivityScore = Math.round(taskScore + habitScore + focusScore + journalScore);
 
@@ -124,7 +90,7 @@ export async function getProductivityAnalytics(dateRange: {
       habitsCompleted,
       habitsTotal,
       focusMinutes: Math.round(focusMinutes),
-      journalEntries: journalEntries?.length || 0,
+      journalEntries: journalEntries.length,
       projectsProgressed,
       productivityScore,
     };
@@ -137,48 +103,31 @@ export async function getProductivityAnalytics(dateRange: {
 /**
  * Get finance analytics for a date range
  */
-export async function getFinanceAnalytics(dateRange: {
-  startDate: string;
-  endDate: string;
-}): Promise<FinanceAnalytics> {
+export async function getFinanceAnalytics(dateRange: DateRange): Promise<FinanceAnalytics> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Not authenticated');
+    // Fetch data in parallel using API layer
+    const [transactions, totalBudget] = await Promise.all([
+      getTransactionsForAnalytics(dateRange),
+      getBudgetsTotalForAnalytics(),
+    ]);
 
-    // Fetch transactions
-    const { data: transactions } = await supabase
-      .from('transactions')
-      .select('type, amount, category_id, categories(name)')
-      .eq('user_id', user.id)
-      .gte('date', dateRange.startDate)
-      .lte('date', dateRange.endDate);
+    const totalSpending = transactions
+      .filter((t) => t.type === 'expense')
+      .reduce((sum, t) => sum + t.amount, 0);
 
-    const totalSpending =
-      transactions
-        ?.filter((t) => t.type === 'expense')
-        .reduce((sum, t) => sum + t.amount, 0) || 0;
-
-    const totalIncome =
-      transactions
-        ?.filter((t) => t.type === 'income')
-        .reduce((sum, t) => sum + t.amount, 0) || 0;
+    const totalIncome = transactions
+      .filter((t) => t.type === 'income')
+      .reduce((sum, t) => sum + t.amount, 0);
 
     // Group by category
     const spendingByCategory: Record<string, number> = {};
     transactions
-      ?.filter((t) => t.type === 'expense')
+      .filter((t) => t.type === 'expense')
       .forEach((t) => {
-        const category = (t.categories as { name?: string } | null)?.name || 'Uncategorized';
+        const category = t.category_name || 'Uncategorized';
         spendingByCategory[category] = (spendingByCategory[category] || 0) + t.amount;
       });
 
-    // Calculate budget compliance (simplified)
-    const { data: budgets } = await supabase
-      .from('budgets')
-      .select('amount')
-      .eq('user_id', user.id);
-
-    const totalBudget = budgets?.reduce((sum, b) => sum + b.amount, 0) || 0;
     const budgetCompliance = totalBudget > 0 ? Math.max(0, (1 - totalSpending / totalBudget) * 100) : 100;
 
     return {
@@ -197,26 +146,16 @@ export async function getFinanceAnalytics(dateRange: {
 /**
  * Get wellbeing analytics for a date range
  */
-export async function getWellbeingAnalytics(dateRange: {
-  startDate: string;
-  endDate: string;
-}): Promise<WellbeingAnalytics> {
+export async function getWellbeingAnalytics(dateRange: DateRange): Promise<WellbeingAnalytics> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Not authenticated');
+    // Fetch journal entries using API layer
+    const journalEntries = await getJournalEntriesForAnalytics(dateRange);
 
-    // Fetch journal entries with moods
-    const { data: journalEntries } = await supabase
-      .from('journal_entries')
-      .select('date, mood')
-      .eq('user_id', user.id)
-      .gte('date', dateRange.startDate)
-      .lte('date', dateRange.endDate)
-      .not('mood', 'is', null)
-      .order('date', { ascending: true });
+    // Filter entries with mood
+    const entriesWithMood = journalEntries.filter(e => e.mood !== null);
 
     // Calculate average mood (assuming mood is 1-5)
-    const moodValues = journalEntries?.map((e) => {
+    const moodValues = entriesWithMood.map((e) => {
       const mood = e.mood;
       if (typeof mood === 'number') return mood;
       // Map string moods to numbers
@@ -227,8 +166,8 @@ export async function getWellbeingAnalytics(dateRange: {
         good: 4,
         great: 5,
       };
-      return moodMap[mood?.toLowerCase() || ''] || 3;
-    }) || [];
+      return moodMap[String(mood).toLowerCase()] || 3;
+    });
 
     const averageMood =
       moodValues.length > 0
@@ -236,19 +175,18 @@ export async function getWellbeingAnalytics(dateRange: {
         : 3;
 
     // Build mood trend
-    const moodTrend =
-      journalEntries?.map((e) => ({
-        date: e.date,
-        mood: typeof e.mood === 'number' ? e.mood : 3,
-      })) || [];
+    const moodTrend = entriesWithMood.map((e) => ({
+      date: e.date,
+      mood: typeof e.mood === 'number' ? e.mood : 3,
+    }));
 
     // Calculate wellbeing score
-    const moodScore = (averageMood / 5) * 50; // 50% from mood
-    const journalScore = Math.min((journalEntries?.length || 0) / 7 * 50, 50); // 50% from journal consistency
+    const moodScore = (averageMood / 5) * 50;
+    const journalScore = Math.min((entriesWithMood.length / 7) * 50, 50);
     const wellbeingScore = Math.round(moodScore + journalScore);
 
     // Calculate journal streak
-    const journalStreak = calculateJournalStreak(journalEntries?.map((e) => e.date) || []);
+    const journalStreak = calculateJournalStreak(entriesWithMood.map((e) => e.date));
 
     return {
       averageMood: Math.round(averageMood * 10) / 10,

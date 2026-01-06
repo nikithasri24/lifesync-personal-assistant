@@ -5,7 +5,7 @@
 
 import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { supabase } from '../../lib/supabase';
-import { fetchSharedDashboardData } from '../../shared/services/SharedDataProvider';
+import { fetchSharedDashboardData } from '../../shared/api/SharedDataProvider';
 
 vi.mock('../../lib/supabase', () => ({
   supabase: {

@@ -8,8 +8,8 @@ export * from './api/tripAPI';
 // Types
 export * from './types';
 
-// Data
-export * from './data';
+// Data/API
+export * from './api/data';
 
 // Main components
 export { default as CountryStatusModal } from './components/CountryStatusModal';

@@ -1,31 +1,17 @@
 /**
  * useReminderPreferences Hook
  * Manages reminder/notification preferences with database persistence
+ * Uses API layer for all database access
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase';
+import {
+  getReminderPreferences,
+  updateReminderPreferences,
+  type ReminderPreferencesDB,
+} from '@/api/userSettingsAPI';
 import { queryKeys } from '@/lib/react-query';
 import { DEFAULT_REMINDER_PREFS, type ReminderPreferences } from '@/services/reminders';
-
-// We'll use a subset of user_preferences for reminder settings
-interface ReminderPreferencesDB {
-  notifications_enabled: boolean;
-  push_enabled: boolean;
-  notification_types: {
-    habits: boolean;
-    tasks: boolean;
-    calendar: boolean;
-    bills: boolean;
-    ai_suggestions: boolean;
-    location_reminders: boolean;
-    morning_briefing: boolean;
-    weekly_report: boolean;
-  };
-  quiet_hours_enabled: boolean;
-  quiet_hours_start: string; // TIME format from DB
-  quiet_hours_end: string;
-}
 
 /**
  * Convert DB format to ReminderPreferences
@@ -80,17 +66,12 @@ export function useReminderPreferences() {
   return useQuery({
     queryKey: [...queryKeys.scheduling.preferences(), 'reminders'],
     queryFn: async (): Promise<ReminderPreferences> => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return DEFAULT_REMINDER_PREFS;
-
-      const { data, error } = await supabase
-        .from('user_preferences')
-        .select('notifications_enabled, push_enabled, notification_types, quiet_hours_enabled, quiet_hours_start, quiet_hours_end')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (error || !data) return DEFAULT_REMINDER_PREFS;
-      return dbToPreferences(data as ReminderPreferencesDB);
+      try {
+        const data = await getReminderPreferences();
+        return dbToPreferences(data);
+      } catch {
+        return DEFAULT_REMINDER_PREFS;
+      }
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
@@ -104,26 +85,11 @@ export function useUpdateReminderPreferences() {
 
   return useMutation({
     mutationFn: async (prefs: ReminderPreferences): Promise<void> => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-
       const dbPrefs = preferencesToDb(prefs);
-
-      const { error } = await supabase
-        .from('user_preferences')
-        .upsert({
-          user_id: user.id,
-          ...dbPrefs,
-          updated_at: new Date().toISOString(),
-        }, {
-          onConflict: 'user_id',
-        });
-
-      if (error) throw error;
+      await updateReminderPreferences(dbPrefs);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.scheduling.preferences() });
     },
   });
 }
-
