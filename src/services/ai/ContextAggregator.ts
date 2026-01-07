@@ -3,14 +3,10 @@
  * Gathers all relevant user data for AI context
  * Provides rich context for smarter AI responses
  *
- * ARCHITECTURE: Uses API layer for all data access (no direct Supabase calls)
+ * ARCHITECTURE: Uses cache accessor for data access (benefits from React Query cache)
  */
 
-import { getTasks } from '@/api/tasksAPI';
-import { getHabits, getHabitEntriesForDate } from '@/api/habitsAPI';
-import { getCalendarEvents } from '@/api/calendarAPI';
-import { getFocusSessions } from '@/api/focusAPI';
-import { getJournalEntries } from '@/api/journalAPI';
+import { cacheAccessor } from '@/lib/cacheAccessor';
 import { getAnalyticsDaily } from '@/api/analyticsAPI';
 import { format, addDays } from 'date-fns';
 
@@ -117,9 +113,9 @@ class ContextAggregator {
     };
   }
 
-  private async fetchTasksContext(userId: string, today: string) {
-    // Use API layer instead of direct Supabase
-    const allTasks = await getTasks({ deleted: false, archived: false });
+  private async fetchTasksContext(_userId: string, today: string) {
+    // Use cache accessor (benefits from React Query cache)
+    const allTasks = await cacheAccessor.getTasks({ deleted: false, archived: false });
 
     const completed = allTasks.filter(t => t.status === 'done').length;
     const overdue = allTasks.filter(t =>
@@ -138,10 +134,10 @@ class ContextAggregator {
     };
   }
 
-  private async fetchHabitsContext(userId: string, today: string) {
-    // Use API layer instead of direct Supabase
-    const allHabits = await getHabits({ isActive: true });
-    const entries = await getHabitEntriesForDate(today);
+  private async fetchHabitsContext(_userId: string, today: string) {
+    // Use cache accessor (benefits from React Query cache)
+    const allHabits = await cacheAccessor.getHabits({ isActive: true });
+    const entries = await cacheAccessor.getHabitEntriesForDate(today);
 
     const completedIds = new Set(entries.map(e => e.habit_id));
 
@@ -158,9 +154,9 @@ class ContextAggregator {
     };
   }
 
-  private async fetchEventsContext(userId: string, today: string) {
-    // Use API layer instead of direct Supabase
-    const events = await getCalendarEvents({ startDate: today, endDate: today });
+  private async fetchEventsContext(_userId: string, today: string) {
+    // Use cache accessor (benefits from React Query cache)
+    const events = await cacheAccessor.getCalendarEvents({ startDate: today, endDate: today });
 
     return events.slice(0, 10).map(e => ({
       id: e.id!,
@@ -171,10 +167,10 @@ class ContextAggregator {
     }));
   }
 
-  private async fetchFocusContext(userId: string, today: string) {
-    // Use API layer instead of direct Supabase
+  private async fetchFocusContext(_userId: string, today: string) {
+    // Use cache accessor (benefits from React Query cache)
     const startDate = today; // API expects string
-    const sessions = await getFocusSessions({ startDate });
+    const sessions = await cacheAccessor.getFocusSessions({ startDate });
 
     const minutesToday = sessions.reduce((sum, s) => sum + (s.duration_minutes ?? 0), 0);
 
@@ -185,10 +181,10 @@ class ContextAggregator {
     };
   }
 
-  private async fetchWellnessContext(userId: string, today: string) {
-    // Use API layer instead of direct Supabase
+  private async fetchWellnessContext(_userId: string, today: string) {
+    // Use cache accessor (benefits from React Query cache)
     const startDate = new Date(`${today}T00:00:00`);
-    const journals = await getJournalEntries({ startDate });
+    const journals = await cacheAccessor.getJournalEntries({ startDate });
 
     // TODO: Add mood tracking API when available
     // For now, return default values
@@ -260,11 +256,11 @@ class ContextAggregator {
       this.getUserPatterns(userId),
     ]);
 
-    // Use API layer instead of direct Supabase
+    // Use cache accessor (benefits from React Query cache)
     const nextWeek = new Date();
     nextWeek.setDate(nextWeek.getDate() + 7);
 
-    const upcomingEvents = await getCalendarEvents({
+    const upcomingEvents = await cacheAccessor.getCalendarEvents({
       startDate: format(new Date(), 'yyyy-MM-dd'),
       endDate: format(nextWeek, 'yyyy-MM-dd'),
     });

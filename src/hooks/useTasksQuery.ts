@@ -27,6 +27,7 @@ import {
 } from '@/api/projectsAPI';
 import { logger } from '@/services/logger';
 import { recordTaskCompletion } from '@/services/gamification';
+import { dataEvents } from '@/lib/dataEvents';
 import { addDays, addWeeks, addMonths, addYears, format, getDay, setDay, parseISO } from 'date-fns';
 
 /**
@@ -206,16 +207,16 @@ export function useCreateTask(): UseMutationResult<TaskData, Error, Omit<TaskDat
     onSuccess: (newTask) => {
       logger.info('Tasks', 'Task created successfully', { id: newTask.id, title: newTask.title });
 
-      // Invalidate all task lists
-      void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.lists() });
-
-      // Optimistically add to cache
+      // Optimistically add to cache for immediate UI response
       queryClient.setQueryData<TaskData[]>(
         queryKeys.tasks.lists(),
         (old) => {
           return old ? [newTask, ...old] : [newTask];
         }
       );
+
+      // Emit event - DataSyncProvider handles cache invalidation
+      dataEvents.emit('task:created', { taskId: newTask.id!, task: newTask });
     },
     onError: (error: Error) => {
       logger.error('Tasks', 'Failed to create task', { error: error.message });
@@ -388,6 +389,21 @@ export function useUpdateTask(): UseMutationResult<
           );
         }
       );
+
+      // Emit appropriate event based on what changed
+      if (context?.wasCompleted) {
+        dataEvents.emit('task:completed', {
+          taskId: updatedTask.id!,
+          task: updatedTask,
+          changes: _variables.updates,
+        });
+      } else {
+        dataEvents.emit('task:updated', {
+          taskId: updatedTask.id!,
+          task: updatedTask,
+          changes: _variables.updates,
+        });
+      }
     },
     onError: (error: Error, { id }, context) => {
       logger.error('Tasks', 'Failed to update task - rolling back', { error: error.message, id });
@@ -399,11 +415,6 @@ export function useUpdateTask(): UseMutationResult<
       if (context?.previousTask) {
         queryClient.setQueryData(queryKeys.tasks.detail(id), context.previousTask);
       }
-    },
-    // Always refetch after success or error to ensure we're in sync with server
-    onSettled: (_data, _error, { id }) => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.lists() });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.detail(id) });
     },
   });
 }
@@ -423,10 +434,7 @@ export function useDeleteTask(): UseMutationResult<void, Error, string, unknown>
     onSuccess: (_data, deletedId) => {
       logger.info('Tasks', 'Task deleted successfully', { id: deletedId });
 
-      // Invalidate all task lists
-      void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.lists() });
-
-      // Mark as deleted in cache (soft delete)
+      // Mark as deleted in cache (soft delete) for immediate UI response
       queryClient.setQueryData<TaskData[]>(
         queryKeys.tasks.lists(),
         (old) => {
@@ -437,6 +445,9 @@ export function useDeleteTask(): UseMutationResult<void, Error, string, unknown>
           );
         }
       );
+
+      // Emit event - DataSyncProvider handles cache invalidation
+      dataEvents.emit('task:deleted', { taskId: deletedId, permanent: false });
     },
     onError: (error: Error, id) => {
       logger.error('Tasks', 'Failed to delete task', { error: error.message, id });
@@ -459,19 +470,19 @@ export function usePermanentlyDeleteTask(): UseMutationResult<void, Error, strin
     onSuccess: (_data, deletedId) => {
       logger.info('Tasks', 'Task permanently deleted', { id: deletedId });
 
-      // Invalidate all task lists
-      void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.lists() });
-
       // Remove from cache
       queryClient.removeQueries({ queryKey: queryKeys.tasks.detail(deletedId) });
 
-      // Optimistically remove from list caches
+      // Optimistically remove from list caches for immediate UI response
       queryClient.setQueryData<TaskData[]>(
         queryKeys.tasks.lists(),
         (old) => {
           return old?.filter((task) => task.id !== deletedId);
         }
       );
+
+      // Emit event - DataSyncProvider handles cache invalidation
+      dataEvents.emit('task:deleted', { taskId: deletedId, permanent: true });
     },
     onError: (error: Error, id) => {
       logger.error('Tasks', 'Failed to permanently delete task', { error: error.message, id });
@@ -494,10 +505,7 @@ export function useRestoreTask(): UseMutationResult<TaskData, Error, string, unk
     onSuccess: (restoredTask) => {
       logger.info('Tasks', 'Task restored successfully', { id: restoredTask.id, title: restoredTask.title });
 
-      // Invalidate all task lists
-      void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.lists() });
-
-      // Update in cache
+      // Update in cache for immediate UI response
       queryClient.setQueryData<TaskData[]>(
         queryKeys.tasks.lists(),
         (old) => {
@@ -506,6 +514,9 @@ export function useRestoreTask(): UseMutationResult<TaskData, Error, string, unk
           );
         }
       );
+
+      // Emit event - DataSyncProvider handles cache invalidation
+      dataEvents.emit('task:restored', { taskId: restoredTask.id!, task: restoredTask });
     },
     onError: (error: Error, id) => {
       logger.error('Tasks', 'Failed to restore task', { error: error.message, id });

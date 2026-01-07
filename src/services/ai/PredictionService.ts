@@ -2,13 +2,10 @@
  * Prediction Service
  * Generates proactive predictions and suggestions based on user data
  *
- * ARCHITECTURE: Uses API layer for all data access (no direct Supabase calls)
+ * ARCHITECTURE: Uses cache accessor for data access (benefits from React Query cache)
  */
 
-import { getTasks } from '@/api/tasksAPI';
-import { getHabits, getHabitEntriesForDate } from '@/api/habitsAPI';
-import { getGoals } from '@/api/goalsAPI';
-import { getCalendarEvents } from '@/api/calendarAPI';
+import { cacheAccessor } from '@/lib/cacheAccessor';
 import { getBills } from '@/api/billsAPI';
 import { getImportantDates } from '@/api/importantDatesAPI';
 import { logger } from '@/services/logger';
@@ -91,13 +88,13 @@ class PredictionService {
     const predictions: Prediction[] = [];
     const endDate = addDays(ctx.today, ctx.lookAheadDays);
 
-    // Use API layer instead of direct Supabase
-    const events = await getCalendarEvents({
+    // Use cache accessor (benefits from React Query cache)
+    const events = await cacheAccessor.getCalendarEvents({
       startDate: format(ctx.today, 'yyyy-MM-dd'),
       endDate: format(endDate, 'yyyy-MM-dd'),
     });
 
-    const tasks = await getTasks({ deleted: false, archived: false });
+    const tasks = await cacheAccessor.getTasks({ deleted: false, archived: false });
     const tasksInRange = tasks.filter(t => {
       if (!t.due_date) return false;
       const dueDate = new Date(t.due_date);
@@ -147,12 +144,12 @@ class PredictionService {
     const predictions: Prediction[] = [];
     const today = format(ctx.today, 'yyyy-MM-dd');
 
-    // Use API layer instead of direct Supabase
-    const habits = await getHabits();
+    // Use cache accessor (benefits from React Query cache)
+    const habits = await cacheAccessor.getHabits();
     const activeHabits = habits.filter(h => h.is_active);
     const habitsWithStreaks = activeHabits.filter(h => (h.streak_count ?? 0) > 0);
 
-    const todayEntries = await getHabitEntriesForDate(today);
+    const todayEntries = await cacheAccessor.getHabitEntriesForDate(today);
     const completedIds = new Set(todayEntries.map(e => e.habit_id));
 
     habitsWithStreaks.forEach(habit => {
@@ -182,8 +179,8 @@ class PredictionService {
     const predictions: Prediction[] = [];
     const endDate = addDays(ctx.today, ctx.lookAheadDays);
 
-    // Use API layer instead of direct Supabase
-    const goals = await getGoals();
+    // Use cache accessor (benefits from React Query cache)
+    const goals = await cacheAccessor.getGoals();
     const activeGoals = goals.filter(g => g.status === 'in-progress');
     const goalsInRange = activeGoals.filter(g => {
       if (!g.targetDate) return false;

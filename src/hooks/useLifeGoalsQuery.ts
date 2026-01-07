@@ -19,6 +19,7 @@ import {
   getGoalTemplates,
   createGoalFromTemplate,
 } from '@/goals/api/lifeGoalsAPI';
+import { dataEvents } from '@/lib/dataEvents';
 import type {
   LifeGoal,
   LifeDream,
@@ -146,6 +147,9 @@ export function useCreateLifeGoalMutation(): UseMutationResult<LifeGoal, Error, 
         if (!old) return [newGoal];
         return old.map((goal) => (goal.id.startsWith('temp-') ? newGoal : goal));
       });
+
+      // Emit event - DataSyncProvider handles cache invalidation
+      dataEvents.emit('goal:created', { goalId: newGoal.id });
     },
   });
 }
@@ -210,6 +214,9 @@ export function useUpdateLifeGoalMutation(): UseMutationResult<LifeGoal, Error, 
         if (!old) return old;
         return { ...old, ...updatedGoal };
       });
+
+      // Emit event - DataSyncProvider handles cache invalidation
+      dataEvents.emit('goal:updated', { goalId });
     },
   });
 }
@@ -247,6 +254,9 @@ export function useDeleteLifeGoalMutation(): UseMutationResult<void, Error, stri
     onSuccess: (_, goalId) => {
       logger.info('Goals', 'Life goal deleted successfully', { id: goalId });
       queryClient.removeQueries({ queryKey: lifeGoalsKeys.goal(goalId) });
+
+      // Emit event - DataSyncProvider handles cache invalidation
+      dataEvents.emit('goal:deleted', { goalId });
     },
   });
 }
@@ -377,9 +387,14 @@ export function useUpdateGoalMilestoneMutation(): UseMutationResult<LifeGoalMile
       const result = await updateMilestone(milestoneId, updates);
       return result;
     },
-    onSuccess: (milestone, { goalId }) => {
+    onSuccess: (milestone, { goalId, updates }) => {
       logger.info('Goals', 'Milestone updated successfully', { id: milestone.id, goalId });
       void queryClient.invalidateQueries({ queryKey: lifeGoalsKeys.goal(goalId) });
+
+      // Emit milestone completion event if completed
+      if (updates.isCompleted) {
+        dataEvents.emit('goal:milestone-completed', { goalId, milestoneId: milestone.id });
+      }
     },
     onError: (error: Error, { milestoneId, goalId }) => {
       logger.error('Goals', 'Failed to update milestone', { error: error.message, milestoneId, goalId });

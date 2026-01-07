@@ -2,14 +2,10 @@
  * Life Coach Service
  * Provides personalized coaching insights, weekly check-ins, and motivational support
  *
- * ARCHITECTURE: Uses API layer for all data access (no direct Supabase calls)
+ * ARCHITECTURE: Uses cache accessor for data access (benefits from React Query cache)
  */
 
-import { getTasks } from '@/api/tasksAPI';
-import { getHabits, getHabitEntries } from '@/api/habitsAPI';
-import { getGoals } from '@/api/goalsAPI';
-import { getFocusSessions } from '@/api/focusAPI';
-import { getJournalEntries } from '@/api/journalAPI';
+import { cacheAccessor } from '@/lib/cacheAccessor';
 import { logger } from '@/services/logger';
 import { format, subDays, subWeeks, startOfWeek, endOfWeek } from 'date-fns';
 import type { JournalEntry, Goal } from '@/types';
@@ -115,9 +111,9 @@ class LifeCoachService {
     };
   }
 
-  private async getTasksData(userId: string, start: Date, end: Date) {
-    // Use API layer instead of direct Supabase
-    const tasks = await getTasks({ deleted: false, archived: false });
+  private async getTasksData(_userId: string, start: Date, end: Date) {
+    // Use cache accessor (benefits from React Query cache)
+    const tasks = await cacheAccessor.getTasks({ deleted: false, archived: false });
 
     // Filter by date range
     return tasks.filter(t => {
@@ -126,10 +122,10 @@ class LifeCoachService {
     });
   }
 
-  private async getHabitsData(userId: string, start: Date, end: Date) {
-    // Use API layer instead of direct Supabase
-    const habits = await getHabits({ isActive: true });
-    const entries = await getHabitEntries({
+  private async getHabitsData(_userId: string, start: Date, end: Date) {
+    // Use cache accessor (benefits from React Query cache)
+    const habits = await cacheAccessor.getHabits({ isActive: true });
+    const entries = await cacheAccessor.getHabitEntries({
       startDate: format(start, 'yyyy-MM-dd'),
       endDate: format(end, 'yyyy-MM-dd'),
     });
@@ -137,23 +133,23 @@ class LifeCoachService {
     return { habits, entries };
   }
 
-  private async getGoalsData(userId: string) {
-    // Use API layer instead of direct Supabase
-    const allGoals = await getGoals();
+  private async getGoalsData(_userId: string) {
+    // Use cache accessor (benefits from React Query cache)
+    const allGoals = await cacheAccessor.getGoals();
     return allGoals.filter(g => g.status === 'in-progress');
   }
 
-  private async getFocusData(userId: string, start: Date, end: Date) {
-    // Use API layer instead of direct Supabase
-    return await getFocusSessions({
+  private async getFocusData(_userId: string, start: Date, end: Date) {
+    // Use cache accessor (benefits from React Query cache)
+    return await cacheAccessor.getFocusSessions({
       startDate: format(start, 'yyyy-MM-dd'),
       endDate: format(end, 'yyyy-MM-dd')
     });
   }
 
-  private async getJournalData(userId: string, start: Date, end: Date) {
-    // Use API layer instead of direct Supabase
-    return await getJournalEntries({ startDate: start, endDate: end });
+  private async getJournalData(_userId: string, start: Date, end: Date) {
+    // Use cache accessor (benefits from React Query cache)
+    return await cacheAccessor.getJournalEntries({ startDate: start, endDate: end });
   }
 
   private calculateProductivityScore(

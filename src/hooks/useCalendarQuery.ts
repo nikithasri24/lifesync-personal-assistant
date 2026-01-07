@@ -17,6 +17,7 @@ import {
   deleteCalendarEvent,
 } from '@/api/calendarAPI';
 import { logger } from '@/services/logger';
+import { dataEvents } from '@/lib/dataEvents';
 import { scheduleEngine } from '@/services/scheduler';
 import { DEFAULT_SCHEDULING_PREFS } from '@/services/scheduling/types';
 import { format, parseISO } from 'date-fns';
@@ -97,16 +98,16 @@ export function useCreateCalendarEvent(): UseMutationResult<
     onSuccess: (newEvent) => {
       logger.info('Calendar', 'Calendar event created successfully', { id: newEvent.id, title: newEvent.title });
 
-      // Invalidate all calendar event lists
-      void queryClient.invalidateQueries({ queryKey: queryKeys.calendar.lists() });
-
-      // Optimistically add to cache
+      // Optimistically add to cache for immediate UI response
       queryClient.setQueryData<CalendarEvent[]>(
         queryKeys.calendar.lists(),
         (old) => {
           return old ? [...old, newEvent].sort((a, b) => a.start_date.localeCompare(b.start_date)) : [newEvent];
         }
       );
+
+      // Emit event - DataSyncProvider handles cache invalidation
+      dataEvents.emit('calendar:created', { eventId: newEvent.id!, date: newEvent.start_date });
     },
     onError: (error: Error) => {
       logger.error('Calendar', 'Failed to create calendar event', { error: error.message });
@@ -181,6 +182,9 @@ export function useUpdateCalendarEvent(): UseMutationResult<
           );
         }
       );
+
+      // Emit event - DataSyncProvider handles cache invalidation
+      dataEvents.emit('calendar:updated', { eventId: updatedEvent.id!, date: updatedEvent.start_date });
     },
     onError: (error: Error, { id }, context) => {
       logger.error('Calendar', 'Failed to update calendar event', { error: error.message, id });
@@ -192,11 +196,6 @@ export function useUpdateCalendarEvent(): UseMutationResult<
       if (context?.previousEvent) {
         queryClient.setQueryData(queryKeys.calendar.detail(id), context.previousEvent);
       }
-    },
-    // Always refetch after success or error to ensure we're in sync with server
-    onSettled: (_data, _error, { id }) => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.calendar.lists() });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.calendar.detail(id) });
     },
   });
 }
@@ -215,19 +214,19 @@ export function useDeleteCalendarEvent(): UseMutationResult<void, Error, string,
     onSuccess: (_data, deletedId) => {
       logger.info('Calendar', 'Calendar event deleted successfully', { id: deletedId });
 
-      // Invalidate all calendar event lists
-      void queryClient.invalidateQueries({ queryKey: queryKeys.calendar.lists() });
-
       // Remove from cache
       queryClient.removeQueries({ queryKey: queryKeys.calendar.detail(deletedId) });
 
-      // Optimistically remove from list caches
+      // Optimistically remove from list caches for immediate UI response
       queryClient.setQueryData<CalendarEvent[]>(
         queryKeys.calendar.lists(),
         (old) => {
           return old?.filter((event) => event.id !== deletedId);
         }
       );
+
+      // Emit event - DataSyncProvider handles cache invalidation
+      dataEvents.emit('calendar:deleted', { eventId: deletedId });
     },
     onError: (error: Error, id) => {
       logger.error('Calendar', 'Failed to delete calendar event', { error: error.message, id });

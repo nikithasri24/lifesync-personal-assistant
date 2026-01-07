@@ -2,12 +2,10 @@
  * Daily Briefing Service
  * Generates personalized morning briefings with schedule, tasks, habits, and weather
  *
- * ARCHITECTURE: Uses API layer for all data access (no direct Supabase calls)
+ * ARCHITECTURE: Uses cache accessor for data access (benefits from React Query cache)
  */
 
-import { getCalendarEvents } from '@/api/calendarAPI';
-import { getTasks } from '@/api/tasksAPI';
-import { getHabits, getHabitEntriesForDate } from '@/api/habitsAPI';
+import { cacheAccessor } from '@/lib/cacheAccessor';
 import { getUserGamification } from '@/api/gamificationAPI';
 import { logger } from '@/services/logger';
 import { format, isToday, isBefore, parseISO, differenceInHours } from 'date-fns';
@@ -77,20 +75,20 @@ export async function generateDailyBriefing(
 
   const today = format(new Date(), 'yyyy-MM-dd');
 
-  // Fetch all data in parallel using API layer
+  // Fetch all data in parallel using cache accessor (benefits from React Query cache)
   const [allEvents, allTasks, allHabits, habitEntries, gamificationStats, weatherResult] =
     await Promise.all([
       // Calendar events for today
-      getCalendarEvents(),
+      cacheAccessor.getCalendarEvents(),
 
       // All tasks (we'll filter for today/overdue)
-      getTasks(),
+      cacheAccessor.getTasks(),
 
       // Active habits
-      getHabits(),
+      cacheAccessor.getHabits(),
 
       // Today's habit entries
-      getHabitEntriesForDate(today),
+      cacheAccessor.getHabitEntriesForDate(today),
 
       // Gamification stats
       getUserGamification().catch(() => null),

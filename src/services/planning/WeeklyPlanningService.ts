@@ -2,40 +2,36 @@
  * Weekly Planning Service
  * Analyzes upcoming week and generates planning suggestions
  *
- * ARCHITECTURE: Uses API layer for all data access (no direct Supabase calls)
+ * ARCHITECTURE: Uses cache accessor for data access (benefits from React Query cache)
  */
 
-import { getTasks } from '@/api/tasksAPI';
-import { getCalendarEvents } from '@/api/calendarAPI';
-import { getGoals } from '@/api/goalsAPI';
-import { getHabits } from '@/api/habitsAPI';
+import { cacheAccessor } from '@/lib/cacheAccessor';
 import { getBills } from '@/api/billsAPI';
-import { getFocusSessions } from '@/api/focusAPI';
 import { logger } from '@/services/logger';
-import { 
-  startOfWeek, endOfWeek, addWeeks, format, parseISO, 
-  differenceInDays, isWithinInterval, subWeeks 
+import {
+  startOfWeek, endOfWeek, addWeeks, format, parseISO,
+  differenceInDays, isWithinInterval, subWeeks
 } from 'date-fns';
-import type { 
-  WeeklyOverview, WeeklyReview, WeekEvent, WeekTask, 
-  WeekGoal, WeekHabit, WeekBill, GoalCheckIn 
+import type {
+  WeeklyOverview, WeeklyReview, WeekEvent, WeekTask,
+  WeekGoal, WeekHabit, WeekBill, GoalCheckIn
 } from './types';
 
 /**
  * Get overview of the upcoming week
  */
 export async function getWeeklyOverview(weekOffset = 0): Promise<WeeklyOverview> {
-  // Use API layer instead of direct Supabase
+  // Use cache accessor (benefits from React Query cache)
   const today = new Date();
   const targetWeekStart = startOfWeek(addWeeks(today, weekOffset), { weekStartsOn: 0 });
   const targetWeekEnd = endOfWeek(targetWeekStart, { weekStartsOn: 0 });
 
-  // Fetch all data in parallel using API layer
+  // Fetch all data in parallel using cache accessor
   const [allEvents, allTasks, allGoals, allHabits, allBills] = await Promise.all([
-    getCalendarEvents(),
-    getTasks(),
-    getGoals(),
-    getHabits(),
+    cacheAccessor.getCalendarEvents(),
+    cacheAccessor.getTasks(),
+    cacheAccessor.getGoals(),
+    cacheAccessor.getHabits(),
     getBills(),
   ]);
 
@@ -191,15 +187,15 @@ export async function getWeeklyOverview(weekOffset = 0): Promise<WeeklyOverview>
  * Get weekly review for the past week
  */
 export async function getWeeklyReview(weekOffset = -1): Promise<WeeklyReview> {
-  // Use API layer instead of direct Supabase
+  // Use cache accessor (benefits from React Query cache)
   const today = new Date();
   const targetWeekStart = startOfWeek(addWeeks(today, weekOffset), { weekStartsOn: 0 });
   const targetWeekEnd = endOfWeek(targetWeekStart, { weekStartsOn: 0 });
 
-  // Fetch all data using API layer
+  // Fetch all data using cache accessor
   const [allTasks, allFocusSessions] = await Promise.all([
-    getTasks(),
-    getFocusSessions(),
+    cacheAccessor.getTasks(),
+    cacheAccessor.getFocusSessions(),
   ]);
 
   // Filter completed tasks for the target week

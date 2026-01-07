@@ -146,6 +146,7 @@ export function useUpdateShoppingItem(): UseMutationResult<
     }: {
       itemId: string;
       updates: Partial<ShoppingItemData>;
+      listId?: string | null;
     }) => {
       logger.debug('Shopping', 'Updating shopping item', { itemId, updates });
       const result = await updateShoppingItem(itemId, updates);
@@ -230,7 +231,7 @@ export function useDeleteShoppingItem(): UseMutationResult<
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ itemId }: { itemId: string }) => {
+    mutationFn: async ({ itemId }: { itemId: string; listId?: string | null }) => {
       logger.debug('Shopping', 'Deleting shopping item', { itemId });
       await deleteShoppingItem(itemId);
     },

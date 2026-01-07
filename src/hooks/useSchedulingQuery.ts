@@ -13,6 +13,7 @@ import {
   DEFAULT_SCHEDULING_PREFS
 } from '../services/scheduling';
 import { scheduleEngine } from '../services/scheduler';
+import { dataEvents } from '../lib/dataEvents';
 import type { TaskData } from '../services/types';
 import type { UserSchedulingPrefs, SchedulingSuggestion, DaySchedule } from '../services/scheduling';
 
@@ -322,12 +323,14 @@ export function useAutoScheduleMutation() {
         totalUnscheduled: unscheduled.length,
       };
     },
-    onSuccess: (_, variables) => {
-      // Invalidate relevant queries
+    onSuccess: (result, variables) => {
       const dateKey = format(variables.date, 'yyyy-MM-dd');
-      queryClient.invalidateQueries({ queryKey: schedulingKeys.daySchedule(dateKey) });
-      queryClient.invalidateQueries({ queryKey: schedulingKeys.freeSlots(dateKey) });
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+
+      // Emit event - DataSyncProvider handles cache invalidation
+      dataEvents.emit('schedule:auto-scheduled', {
+        date: dateKey,
+        taskIds: result.scheduled.map((s) => s.taskId),
+      });
     },
   });
 }

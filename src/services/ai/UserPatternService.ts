@@ -2,12 +2,10 @@
  * User Pattern Service
  * Analyzes historical data to identify recurring patterns in user behavior
  *
- * ARCHITECTURE: Uses API layer for all data access (no direct Supabase calls)
+ * ARCHITECTURE: Uses cache accessor for data access (benefits from React Query cache)
  */
 
-import { getTasks } from '@/api/tasksAPI';
-import { getHabits, getHabitEntries } from '@/api/habitsAPI';
-import { getFocusSessions } from '@/api/focusAPI';
+import { cacheAccessor } from '@/lib/cacheAccessor';
 import { getFinancialTransactions } from '@/api/financeAPI';
 import { logger } from '@/services/logger';
 import { format, subDays, getDay, getHours, parseISO } from 'date-fns';
@@ -64,17 +62,17 @@ class UserPatternService {
   /**
    * Analyze task completion patterns
    */
-  async analyzeProductivityPatterns(userId: string, days = 30): Promise<ProductivityPattern> {
-    // Use API layer instead of direct Supabase
+  async analyzeProductivityPatterns(_userId: string, days = 30): Promise<ProductivityPattern> {
+    // Use cache accessor (benefits from React Query cache)
     const startDateObj = subDays(new Date(), days);
     const startDate = format(startDateObj, 'yyyy-MM-dd');
 
-    const allTasks = await getTasks({ deleted: false, archived: false });
+    const allTasks = await cacheAccessor.getTasks({ deleted: false, archived: false });
     const tasks = allTasks.filter(t =>
       t.status === 'done' && t.updated_at && new Date(t.updated_at) >= startDateObj
     );
 
-    const focusSessions = await getFocusSessions({ startDate });
+    const focusSessions = await cacheAccessor.getFocusSessions({ startDate });
 
     // Analyze hour patterns
     const hourCounts: Record<number, number> = {};
@@ -115,7 +113,7 @@ class UserPatternService {
     const focusMinutes = focusSessions.reduce((sum, s) => sum + (s.duration_minutes ?? 0), 0);
 
     // Get all tasks for completion rate
-    const allTasksInPeriod = await getTasks({ deleted: false, archived: false });
+    const allTasksInPeriod = await cacheAccessor.getTasks({ deleted: false, archived: false });
     const tasksCreatedInPeriod = allTasksInPeriod.filter(t =>
       t.created_at && new Date(t.created_at) >= startDateObj
     );
@@ -134,16 +132,16 @@ class UserPatternService {
   /**
    * Analyze habit patterns
    */
-  async analyzeHabitPatterns(userId: string, days = 30): Promise<HabitPattern[]> {
-    // Use API layer instead of direct Supabase
+  async analyzeHabitPatterns(_userId: string, days = 30): Promise<HabitPattern[]> {
+    // Use cache accessor (benefits from React Query cache)
     const startDate = format(subDays(new Date(), days), 'yyyy-MM-dd');
     const endDate = format(new Date(), 'yyyy-MM-dd');
 
-    const allHabits = await getHabits();
+    const allHabits = await cacheAccessor.getHabits();
     const habits = allHabits.filter(h => h.is_active);
     if (habits.length === 0) return [];
 
-    const entries = await getHabitEntries({ startDate, endDate });
+    const entries = await cacheAccessor.getHabitEntries({ startDate, endDate });
 
     const patterns: HabitPattern[] = habits.map(habit => {
       const habitEntries = entries.filter(e => e.habit_id === habit.id);

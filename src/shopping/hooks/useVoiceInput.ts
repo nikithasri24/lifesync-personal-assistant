@@ -15,7 +15,7 @@ interface UseVoiceInputReturn {
 
 export function useVoiceInput(): UseVoiceInputReturn {
   const [isListening, setIsListening] = useState(false);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<ISpeechRecognition | null>(null);
 
   const startVoiceInput = useCallback((onResult: (transcript: string) => void) => {
     if (!window.webkitSpeechRecognition) {
@@ -56,7 +56,9 @@ export function useVoiceInput(): UseVoiceInputReturn {
       try {
         recognition.stop();
       } catch (error) {
-        logger.error('useVoiceInput', 'Failed to stop speech recognition', error as Error);
+        logger.error('useVoiceInput', 'Failed to stop speech recognition', {
+          error: error instanceof Error ? error.message : String(error),
+        });
       }
       recognitionRef.current = null;
     }
