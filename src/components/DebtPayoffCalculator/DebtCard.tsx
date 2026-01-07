@@ -18,7 +18,7 @@ export default function DebtCard({
   schedule,
   onEdit,
   onDelete
-}: DebtCardProps): JSX.Element {
+}: DebtCardProps) {
   const payoffMonths = schedule.length;
   const totalInterest = schedule.reduce((sum, payment) => sum + payment.interest, 0);
 

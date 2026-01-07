@@ -1,15 +1,23 @@
-import { useEffect, useRef, lazy, Suspense } from 'react';
-import { useRealAppStore } from './stores/useRealAppStore';
+import { lazy, Suspense } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { RouteErrorBoundary } from './components/RouteErrorBoundary';
 import LoadingSpinner from './components/LoadingSpinner';
 import { AuthGate } from './components/AuthGate';
-import { useAuth } from './hooks/useAuth';
-import { isSupabaseConfigured } from './lib/supabase';
-import { logger } from './services/logger';
+import { UndoRedoButtons } from './components/UndoRedoButtons';
+import { QuickCapture } from './components/inbox';
+import { useReminderChecker } from './hooks/useReminders';
+import { useHabitReminders, useStreakProtectionAlerts } from './hooks/useHabitReminders';
+import { useBillReminders } from './hooks/useBillReminders';
+import { useImportantDateReminders } from './hooks/useImportantDateReminders';
+import { useTaskReminders } from './hooks/useTaskReminders';
+import { useProactiveNotifications } from './hooks/useProactiveNotifications';
+import { useRoutePerformance } from './hooks/useRoutePerformance';
+import { useWebVitals } from './hooks/useWebVitals';
 
 // Lazy load all page components for route-based code splitting
-const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Dashboard = lazy(() => import('./pages/DashboardV3'));
 const Calendar = lazy(() => import('./pages/Calendar'));
 const Focus = lazy(() => import('./pages/Focus'));
 const Habits = lazy(() => import('./pages/Habits'));
@@ -19,6 +27,7 @@ const Journal = lazy(() => import('./pages/Journal'));
 const LifeGoals = lazy(() => import('./pages/LifeGoals'));
 const ShoppingSmart = lazy(() => import('./pages/ShoppingSmart'));
 const MealPlanning = lazy(() => import('./pages/MealPlanning'));
+const Nutrition = lazy(() => import('./pages/Nutrition'));
 const ProjectTracking = lazy(() => import('./pages/ProjectTracking'));
 const Shared = lazy(() => import('./pages/Shared'));
 const Travel = lazy(() => import('./pages/Travel'));
@@ -30,109 +39,36 @@ const Assistant = lazy(() => import('./pages/Assistant'));
 const TaskScheduler = lazy(() => import('./pages/TaskScheduler'));
 
 function App(): React.ReactElement {
-  const { activeView, loading, initializeData } = useRealAppStore();
-  const { user, loading: authLoading } = useAuth();
-  const initializedFor = useRef<string | null>(null);
+  // Performance monitoring
+  useRoutePerformance();
 
-  useEffect(() => {
-    if (!isSupabaseConfigured) {
-      return;
-    }
+  // Web Vitals tracking (production performance metrics)
+  useWebVitals({
+    enabled: true,
+    reportToAnalytics: !import.meta.env.DEV,
+    logToConsole: import.meta.env.DEV
+  });
 
-    if (!authLoading && !user) {
-      initializedFor.current = null;
-    }
-  }, [user, authLoading]);
+  // Start reminder checking when app loads
+  useReminderChecker(true);
 
-  // Initialize data from Supabase database only
-  useEffect(() => {
-    // Only proceed if Supabase is configured
-    if (!isSupabaseConfigured) {
-      logger.warn('App', '🔄 Supabase not configured. Please configure environment variables.');
-      return;
-    }
+  // Schedule habit reminders for the day
+  useHabitReminders(true);
 
-    if (authLoading || !user) {
-      return;
-    }
+  // Schedule streak protection alerts for habits at risk
+  useStreakProtectionAlerts(true);
 
-    if (initializedFor.current === user.id) {
-      return;
-    }
+  // Schedule bill payment reminders
+  useBillReminders(true);
 
-    initializedFor.current = user.id;
+  // Schedule important date reminders (birthdays, anniversaries)
+  useImportantDateReminders(true);
 
-    // Initialize data
-    void (async (): Promise<void> => {
-      try {
-        await initializeData();
-        logger.debug('App', '🔄 Initialized LifeSync data for Supabase user');
-      } catch (error) {
-        logger.error('App', 'Failed to initialize data:', { error });
-      }
-    })();
-  }, [initializeData, user, authLoading]);
+  // Auto-create reminders for scheduled tasks
+  useTaskReminders(true);
 
-  // Show loading spinner while initializing
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <LoadingSpinner />
-          <p className="mt-4 text-muted">Loading LifeSync...</p>
-        </div>
-      </div>
-    );
-  }
-
-  const renderPage = (): React.ReactElement => {
-    switch (activeView) {
-      case 'dashboard':
-        return <Dashboard />;
-      case 'calendar':
-        return <Calendar />;
-      case 'focus':
-        return <Focus />;
-      case 'habits':
-        return <Habits />;
-      case 'todos':
-        return <Todos />;
-      case 'notes':
-        return <Notes />;
-      case 'projects':
-        return (
-          <ErrorBoundary>
-            <ProjectTracking />
-          </ErrorBoundary>
-        );
-      case 'journal':
-        return <Journal />;
-      case 'goals':
-        return <LifeGoals />;
-      case 'travel':
-        return <Travel />;
-      case 'visa':
-        return <VisaPage />;
-      case 'trip-planner':
-        return <TripPlanner />;
-      case 'finances':
-        return <Finances />;
-      case 'shopping':
-        return <ShoppingSmart />;
-      case 'meals':
-        return <MealPlanning />;
-      case 'shared':
-        return <Shared />;
-      case 'skincare':
-        return <Skincare />;
-      case 'assistant':
-        return <Assistant />;
-      case 'scheduler':
-        return <TaskScheduler />;
-      default:
-        return <Dashboard />;
-    }
-  };
+  // Proactive AI notifications (streak risks, busy periods, goal deadlines)
+  useProactiveNotifications({ enabled: true, checkIntervalMs: 60 * 60 * 1000 });
 
   return (
     <AuthGate>
@@ -145,8 +81,43 @@ function App(): React.ReactElement {
             </div>
           </div>
         }>
-          {renderPage()}
+          <Routes>
+            {/* Main Routes */}
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/assistant" element={<Assistant />} />
+            <Route path="/calendar" element={<Calendar />} />
+            <Route path="/scheduler" element={<TaskScheduler />} />
+            <Route path="/focus" element={<Focus />} />
+
+            {/* Productivity Routes */}
+            <Route path="/habits" element={<Habits />} />
+            <Route path="/todos" element={<Todos />} />
+            <Route path="/notes" element={<Notes />} />
+            <Route path="/projects" element={<ProjectTracking />} />
+
+            {/* Wellbeing Routes */}
+            <Route path="/journal" element={<Journal />} />
+            <Route path="/skincare" element={<Skincare />} />
+
+            {/* Personal Routes */}
+            <Route path="/goals" element={<LifeGoals />} />
+            <Route path="/travel" element={<Travel />} />
+            <Route path="/travel/visa" element={<VisaPage />} />
+            <Route path="/travel/trip-planner" element={<TripPlanner />} />
+            <Route path="/finances/*" element={<Finances />} />
+            <Route path="/shopping" element={<ShoppingSmart />} />
+            <Route path="/meals" element={<MealPlanning />} />
+            <Route path="/nutrition" element={<Nutrition />} />
+            <Route path="/shared" element={<Shared />} />
+
+            {/* Catch-all: redirect to dashboard */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
         </Suspense>
+        {/* Global undo/redo buttons */}
+        <UndoRedoButtons />
+        {/* Quick Capture FAB */}
+        <QuickCapture variant="floating" />
       </Layout>
     </AuthGate>
   );

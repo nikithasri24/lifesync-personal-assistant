@@ -1,202 +1,187 @@
 /**
- * Permission Manager Component
- * Manage granular permissions for each module in a connection
+ * PermissionManager Component
+ *
+ * Allows users to configure per-module sharing permissions for a connection.
+ * Used in the Shared page to control what data is shared with each connection.
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { Shield, Lock, Eye, Users, Sparkles } from 'lucide-react';
+import React, { useState } from 'react';
+import { Check, X, Eye, Edit, Merge, Lock } from 'lucide-react';
 import {
-  getConnectionPermissions,
-  setModulePermission,
-} from '../api/connectionsAPI';
-import type {
-  ConnectionWithUser,
-  ModulePermission,
-  ShareableModule,
-  ModulePermissionLevel,
+  type ShareableModule,
+  type ModulePermissionLevel,
+  MODULE_CONFIGS,
 } from '../types/connections';
-import { MODULE_CONFIGS, PERMISSION_LEVEL_INFO } from '../types/connections';
-import { logger } from '../../services/logger';
+import { useUpdatePermissionMutation } from '@/hooks/useConnectionsQuery';
 
 interface PermissionManagerProps {
-  connection: ConnectionWithUser;
+  connectionId: string;
+  connectionName: string;
+  currentPermissions: Record<ShareableModule, ModulePermissionLevel>;
+  onClose?: () => void;
 }
 
-const PermissionManager: React.FC<PermissionManagerProps> = ({ connection }) => {
-  const [myPermissions, setMyPermissions] = useState<ModulePermission[]>([]);
-  const [theirPermissions, setTheirPermissions] = useState<ModulePermission[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [updating, setUpdating] = useState<string | null>(null);
+const PERMISSION_ICONS: Record<ModulePermissionLevel, React.ReactNode> = {
+  none: <Lock className="w-4 h-4" />,
+  view: <Eye className="w-4 h-4" />,
+  collaborate: <Edit className="w-4 h-4" />,
+  merged: <Merge className="w-4 h-4" />,
+};
 
-  const loadPermissions = useCallback(async (): Promise<void> => {
-    try {
-      setLoading(true);
-      const { myPermissions: mine, theirPermissions: theirs } = await getConnectionPermissions(connection.id);
-      setMyPermissions(mine);
-      setTheirPermissions(theirs);
-    } catch (error: unknown) {
-      logger.error('Error loading permissions:', { error });
-    } finally {
-      setLoading(false);
-    }
-  }, [connection.id]);
+const PERMISSION_LABELS: Record<ModulePermissionLevel, string> = {
+  none: 'No Access',
+  view: 'View Only',
+  collaborate: 'Can Edit',
+  merged: 'Merged',
+};
 
-  useEffect(() => {
-    void loadPermissions();
-  }, [loadPermissions]);
+const PERMISSION_COLORS: Record<ModulePermissionLevel, string> = {
+  none: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400',
+  view: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
+  collaborate: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
+  merged: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
+};
 
-  const handlePermissionChange = async (
+export function PermissionManager({
+  connectionId,
+  connectionName,
+  currentPermissions,
+  onClose,
+}: PermissionManagerProps): React.ReactElement {
+  const [permissions, setPermissions] = useState(currentPermissions);
+  const [hasChanges, setHasChanges] = useState(false);
+  const { mutate: updatePermission, isPending } = useUpdatePermissionMutation();
+
+  const handlePermissionChange = (
     module: ShareableModule,
     level: ModulePermissionLevel
-  ): Promise<void> => {
-    try {
-      setUpdating(module);
-      await setModulePermission({
-        connectionId: connection.id,
-        module,
-        permissionLevel: level,
-      });
-      await loadPermissions();
-    } catch (error: unknown) {
-      logger.error('Error updating permission:', { error });
-      void logger.error('Failed to update permission');
-    } finally {
-      setUpdating(null);
-    }
+  ) => {
+    setPermissions(prev => ({ ...prev, [module]: level }));
+    setHasChanges(true);
   };
 
-  const getMyPermissionLevel = (module: ShareableModule): ModulePermissionLevel => {
-    const permission = myPermissions.find(p => p.module === module);
-    return permission?.permissionLevel ?? 'none';
+  const handleSave = () => {
+    // Update each changed permission
+    Object.entries(permissions).forEach(([module, level]) => {
+      if (currentPermissions[module as ShareableModule] !== level) {
+        updatePermission({
+          connectionId,
+          module: module as ShareableModule,
+          permissionLevel: level,
+        });
+      }
+    });
+    setHasChanges(false);
+    onClose?.();
   };
 
-  const getTheirPermissionLevel = (module: ShareableModule): ModulePermissionLevel => {
-    const permission = theirPermissions.find(p => p.module === module);
-    return permission?.permissionLevel ?? 'none';
+  // Group modules by category
+  const modulesByCategory = {
+    productivity: Object.values(MODULE_CONFIGS).filter(m =>
+      ['habits', 'todos', 'notes', 'projects'].includes(m.module)
+    ),
+    wellbeing: Object.values(MODULE_CONFIGS).filter(m =>
+      ['journal', 'mood', 'skincare', 'nutrition'].includes(m.module)
+    ),
+    personal: Object.values(MODULE_CONFIGS).filter(m =>
+      ['travel', 'visa', 'trip-planner', 'finances', 'shopping', 'meals', 'goals'].includes(m.module)
+    ),
   };
-
-  const getLevelIcon = (level: ModulePermissionLevel): React.ReactNode => {
-    switch (level) {
-      case 'none':
-        return <Lock className="h-4 w-4" />;
-      case 'view':
-        return <Eye className="h-4 w-4" />;
-      case 'collaborate':
-        return <Users className="h-4 w-4" />;
-      case 'merged':
-        return <Sparkles className="h-4 w-4" />;
-      default:
-        return <Lock className="h-4 w-4" />; // Exhaustive check
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="text-center py-8">
-        <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
-      </div>
-    );
-  }
-
-  const displayName = connection.myLabel ?? connection.otherUser.fullName ?? connection.otherUser.email;
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2 mb-4">
-        <Shield className="h-5 w-5 text-indigo-600" />
-        <h4 className="text-sm font-semibold text-slate-900">
-          Module Permissions
-        </h4>
+    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 max-w-2xl w-full">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
+            Sharing with {connectionName}
+          </h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+            Control what data {connectionName} can access
+          </p>
+        </div>
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        )}
       </div>
 
-      <p className="text-xs text-slate-600 mb-4">
-        Control what {displayName} can access in each module. Changes take effect immediately.
-      </p>
+      <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2">
+        {Object.entries(modulesByCategory).map(([category, modules]) => (
+          <div key={category}>
+            <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3 px-1">
+              {category === 'productivity' && '📊 Productivity'}
+              {category === 'wellbeing' && '💚 Wellbeing'}
+              {category === 'personal' && '🌟 Personal'}
+            </h3>
+            <div className="space-y-2">
+              {modules.map(config => (
+                <div
+                  key={config.module}
+                  className="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                >
+                  <div className="flex-1 min-w-0 mr-4">
+                    <h4 className="font-medium text-slate-900 dark:text-white text-sm">
+                      {config.label}
+                    </h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                      {config.description}
+                    </p>
+                  </div>
 
-      <div className="space-y-2">
-        {Object.values(MODULE_CONFIGS).map((config) => {
-          const myLevel = getMyPermissionLevel(config.module);
-          const theirLevel = getTheirPermissionLevel(config.module);
-          const isUpdating = updating === config.module;
-
-          return (
-            <div
-              key={config.module}
-              className="bg-white border border-slate-200 rounded-lg p-4"
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex-1">
-                  <h5 className="text-sm font-semibold text-slate-900">{config.label}</h5>
-                  <p className="text-xs text-slate-500 mt-0.5">{config.description}</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                {/* What I'm sharing with them */}
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-2">
-                    You → {displayName}
-                  </label>
-                  <div className="space-y-1">
-                    {config.supportedLevels.map((level) => {
-                      const levelInfo = PERMISSION_LEVEL_INFO[level];
-                      const isSelected = myLevel === level;
-
-                      return (
-                        <button
-                          key={level}
-                          onClick={() => void handlePermissionChange(config.module, level)}
-                          disabled={isUpdating}
-                          className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-all
-                            ${isSelected
-                              ? `bg-${levelInfo.color}-50 border-2 border-${levelInfo.color}-300 text-${levelInfo.color}-900`
-                              : 'bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100'
-                            }
-                            ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        >
-                          <div className={isSelected ? `text-${levelInfo.color}-600` : 'text-slate-400'}>
-                            {getLevelIcon(level)}
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-xs font-medium">{levelInfo.label}</p>
-                          </div>
-                          {isSelected && (
-                            <div className={`w-2 h-2 rounded-full bg-${levelInfo.color}-600`} />
-                          )}
-                        </button>
-                      );
-                    })}
+                  <div className="flex gap-1 flex-shrink-0">
+                    {config.supportedLevels.map(level => (
+                      <button
+                        key={level}
+                        onClick={() => handlePermissionChange(config.module, level)}
+                        className={`
+                          px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5
+                          transition-all duration-200
+                          ${permissions[config.module] === level
+                            ? PERMISSION_COLORS[level]
+                            : 'bg-slate-100 text-slate-400 dark:bg-slate-600 dark:text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-500'
+                          }
+                        `}
+                        title={PERMISSION_LABELS[level]}
+                      >
+                        {PERMISSION_ICONS[level]}
+                        <span className="hidden sm:inline">{PERMISSION_LABELS[level]}</span>
+                      </button>
+                    ))}
                   </div>
                 </div>
-
-                {/* What they're sharing with me */}
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-2">
-                    {displayName} → You
-                  </label>
-                  <div className={`px-3 py-2 rounded-lg bg-${PERMISSION_LEVEL_INFO[theirLevel].color}-50 border border-${PERMISSION_LEVEL_INFO[theirLevel].color}-200`}>
-                    <div className="flex items-center gap-2">
-                      <div className={`text-${PERMISSION_LEVEL_INFO[theirLevel].color}-600`}>
-                        {getLevelIcon(theirLevel)}
-                      </div>
-                      <div>
-                        <p className={`text-xs font-medium text-${PERMISSION_LEVEL_INFO[theirLevel].color}-900`}>
-                          {PERMISSION_LEVEL_INFO[theirLevel].label}
-                        </p>
-                        <p className={`text-xs text-${PERMISSION_LEVEL_INFO[theirLevel].color}-700 mt-0.5`}>
-                          {PERMISSION_LEVEL_INFO[theirLevel].description}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              ))}
             </div>
-          );
-        })}
+          </div>
+        ))}
       </div>
+
+      {hasChanges && (
+        <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-200 dark:border-slate-600">
+          <button
+            onClick={() => {
+              setPermissions(currentPermissions);
+              setHasChanges(false);
+            }}
+            className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={isPending}
+            className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg flex items-center gap-2 disabled:opacity-50"
+          >
+            <Check className="w-4 h-4" />
+            Save Changes
+          </button>
+        </div>
+      )}
     </div>
   );
-};
+}
 
 export default PermissionManager;

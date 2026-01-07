@@ -190,7 +190,6 @@ export function parseTextToRecipe(text: string, title?: string): Omit<Recipe, 'i
     flowChart: undefined,
     sourceType: 'manual',
     sourceUrl: undefined,
-    authorName: undefined,
     videoThumbnail: undefined,
   };
 }

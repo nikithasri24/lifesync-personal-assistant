@@ -19,7 +19,7 @@ export const InsurancePolicyForm: React.FC<InsurancePolicyFormProps> = ({
   onSave,
   onCancel,
 }) => {
-  logger.debug('InsurancePolicyForm rendered', { policy, showingForm: true });
+  logger.debug('InsurancePolicyForm', 'Form rendered', { policy, showingForm: true });
 
   const [formData, setFormData] = React.useState<InsurancePolicyInput>({
     policyName: policy?.policyName ?? '',

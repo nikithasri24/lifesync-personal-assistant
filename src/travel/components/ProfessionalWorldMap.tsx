@@ -1,9 +1,11 @@
 /**
  * ProfessionalWorldMap - Using react-svg-worldmap for accurate country boundaries
+ * NOTE: This component requires 'react-svg-worldmap' package to be installed
+ * Run: npm install react-svg-worldmap
  */
 
 import React from 'react';
-import WorldMap from 'react-svg-worldmap';
+// import WorldMap from 'react-svg-worldmap';  // TODO: Install package
 import type { VisitStatus } from '../types';
 
 type ProfessionalWorldMapProps = {
@@ -21,10 +23,10 @@ type ClickEvent = {
 
 const ProfessionalWorldMap: React.FC<ProfessionalWorldMapProps> = ({
   visitedCountries,
-  onCountryClick,
+  onCountryClick: _onCountryClick,
 }) => {
   // Convert our visited countries to the format expected by react-svg-worldmap
-  const mapData = Object.entries(visitedCountries).map(([code, status]) => {
+  const _mapData = Object.entries(visitedCountries).map(([code, status]) => {
     // Assign values based on status for color coding
     let value = 0;
     switch (status) {
@@ -48,7 +50,7 @@ const ProfessionalWorldMap: React.FC<ProfessionalWorldMapProps> = ({
     };
   });
 
-  const getCountryColor = (country: CountryData, _countryValue: number): string => {
+  const _getCountryColor = (country: CountryData, _countryValue: number): string => {
     const code = country?.country?.toUpperCase();
     const status = code ? visitedCountries[code] : undefined;
 
@@ -66,9 +68,9 @@ const ProfessionalWorldMap: React.FC<ProfessionalWorldMapProps> = ({
     }
   };
 
-  const handleCountryClick = (_event: ClickEvent, countryCode: string): void => {
+  const _handleCountryClick = (_event: ClickEvent, countryCode: string): void => {
     const code = countryCode.toUpperCase();
-    onCountryClick(code);
+    _onCountryClick(code);
   };
 
   return (
@@ -81,7 +83,7 @@ const ProfessionalWorldMap: React.FC<ProfessionalWorldMapProps> = ({
       </div>
 
       <div className="relative bg-blue-50 rounded-lg p-4">
-        <WorldMap
+        {/* <WorldMap
           color="#3B82F6"
           title=""
           value-suffix="countries"
@@ -93,7 +95,13 @@ const ProfessionalWorldMap: React.FC<ProfessionalWorldMapProps> = ({
           strokeOpacity={0.3}
           onClickFunction={handleCountryClick}
           styleFunction={getCountryColor}
-        />
+        /> */}
+        <div className="flex items-center justify-center h-96 text-gray-500">
+          <div className="text-center">
+            <p className="text-lg mb-2">Map component not available</p>
+            <p className="text-sm">Install react-svg-worldmap package to enable this feature</p>
+          </div>
+        </div>
       </div>
 
       <div className="mt-4 flex items-center justify-center gap-6 text-sm">

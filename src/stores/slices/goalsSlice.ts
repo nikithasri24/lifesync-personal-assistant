@@ -1,22 +1,20 @@
 /**
- * Goals Zustand Slice
+ * Goals Zustand Slice - UI STATE ONLY
  *
- * MIGRATION STATUS: React Query hooks available
- * - New React Query hooks:
- *   - /src/goals/hooks/useGoalsQuery.ts (simplified API)
- *   - /src/goals/hooks/useLifeGoalsQuery.ts (full-featured API)
- * - Recommended: Use React Query hooks for new features
- * - This slice is maintained for backward compatibility
+ * ⚠️ DEPRECATED: Server state removed - use React Query hooks instead
+ * 
+ * This slice now contains ONLY UI state (view modes, filters, etc.)
+ * All server data (goals, dreams, loading states, CRUD operations) should use React Query.
  *
- * Migration Guide:
- * - Replace `loadGoals()` with `useGoalsQuery()` or `useLifeGoalsQuery()`
- * - Replace `addGoal()` with `useCreateGoalMutation()`
- * - Replace `updateGoal()` with `useUpdateGoalMutation()`
- * - Replace `deleteGoal()` with `useDeleteGoalMutation()`
- * - Replace `loadDreams()` with `useLifeDreamsQuery()`
- * - Replace `addDream()` with `useCreateLifeDreamMutation()`
- * - Replace `updateDream()` with `useUpdateLifeDreamMutation()`
- * - Replace `deleteDream()` with `useDeleteLifeDreamMutation()`
+ * ✅ Use React Query hooks from @/hooks/useLifeGoalsQuery.ts:
+ * - useLifeGoalsQuery() - Get all life goals (full-featured)
+ * - useLifeDreamsQuery() - Get all life dreams
+ * - useCreateGoalMutation() - Create goal
+ * - useUpdateGoalMutation() - Update goal
+ * - useDeleteGoalMutation() - Delete goal
+ * - useCreateLifeDreamMutation() - Create dream
+ * - useUpdateLifeDreamMutation() - Update dream
+ * - useDeleteLifeDreamMutation() - Delete dream
  *
  * Additional React Query Features:
  * - Milestone management hooks
@@ -29,174 +27,89 @@
  * - Optimistic updates for progress tracking
  * - Automatic XP calculation updates
  * - Streak management with automatic invalidation
+ * - Proper separation: Server state (React Query) vs UI state (Zustand)
  */
 
 import { type StateCreator } from 'zustand';
-import type {
-  LifeGoal,
-  LifeDream,
-  CreateLifeGoalInput,
-  UpdateLifeGoalInput,
-  CreateLifeDreamInput,
-  UpdateLifeDreamInput,
-} from '@/goals/types/lifeGoals';
-import { logger } from '@/services/logger';
 
 export interface GoalsSlice {
-  // State - Goals
-  goals: LifeGoal[];
-  goalsLoaded: boolean;
-  goalsLoading: boolean;
+  // UI State only - no server data!
+  goalsViewMode: 'grid' | 'list' | 'timeline';
+  goalsFilterStatus: 'all' | 'active' | 'completed' | 'on_hold';
+  goalsFilterCategory: string | null;
+  goalsFilterTimeframe: 'all' | 'short_term' | 'long_term';
+  goalsSortBy: 'created_at' | 'target_date' | 'progress' | 'title';
+  goalsSortOrder: 'asc' | 'desc';
+  goalsShowArchived: boolean;
+  goalsSelectedGoal: string | null;
 
-  // State - Dreams
-  dreams: LifeDream[];
-  dreamsLoaded: boolean;
-  dreamsLoading: boolean;
+  // Dreams UI State
+  dreamsViewMode: 'grid' | 'list';
+  dreamsFilterCategory: string | null;
+  dreamsSortBy: 'created_at' | 'title';
+  dreamsSortOrder: 'asc' | 'desc';
 
-  // Actions - Goals
-  loadGoals: () => Promise<void>;
-  addGoal: (input: CreateLifeGoalInput) => Promise<LifeGoal>;
-  updateGoal: (id: string, updates: UpdateLifeGoalInput) => Promise<LifeGoal>;
-  deleteGoal: (id: string) => Promise<void>;
-  getGoalById: (id: string) => LifeGoal | undefined;
+  // UI Actions - Goals
+  setGoalsViewMode: (mode: 'grid' | 'list' | 'timeline') => void;
+  setGoalsFilterStatus: (status: 'all' | 'active' | 'completed' | 'on_hold') => void;
+  setGoalsFilterCategory: (category: string | null) => void;
+  setGoalsFilterTimeframe: (timeframe: 'all' | 'short_term' | 'long_term') => void;
+  setGoalsSortBy: (sortBy: 'created_at' | 'target_date' | 'progress' | 'title') => void;
+  setGoalsSortOrder: (order: 'asc' | 'desc') => void;
+  setGoalsShowArchived: (show: boolean) => void;
+  setGoalsSelectedGoal: (goalId: string | null) => void;
+  resetGoalsFilters: () => void;
 
-  // Actions - Dreams
-  loadDreams: () => Promise<void>;
-  addDream: (input: CreateLifeDreamInput) => Promise<LifeDream>;
-  updateDream: (id: string, updates: UpdateLifeDreamInput) => Promise<LifeDream>;
-  deleteDream: (id: string) => Promise<void>;
-  getDreamById: (id: string) => LifeDream | undefined;
+  // UI Actions - Dreams
+  setDreamsViewMode: (mode: 'grid' | 'list') => void;
+  setDreamsFilterCategory: (category: string | null) => void;
+  setDreamsSortBy: (sortBy: 'created_at' | 'title') => void;
+  setDreamsSortOrder: (order: 'asc' | 'desc') => void;
+  resetDreamsFilters: () => void;
 }
 
-export const createGoalsSlice: StateCreator<GoalsSlice, [], [], GoalsSlice> = (
-  set,
-  get
-) => ({
-  // Initial state - Goals
-  goals: [],
-  goalsLoaded: false,
-  goalsLoading: false,
+export const createGoalsSlice: StateCreator<GoalsSlice, [], [], GoalsSlice> = (set) => ({
+  // Initial UI state - Goals
+  goalsViewMode: 'grid',
+  goalsFilterStatus: 'all',
+  goalsFilterCategory: null,
+  goalsFilterTimeframe: 'all',
+  goalsSortBy: 'created_at',
+  goalsSortOrder: 'desc',
+  goalsShowArchived: false,
+  goalsSelectedGoal: null,
 
-  // Initial state - Dreams
-  dreams: [],
-  dreamsLoaded: false,
-  dreamsLoading: false,
+  // Initial UI state - Dreams
+  dreamsViewMode: 'grid',
+  dreamsFilterCategory: null,
+  dreamsSortBy: 'created_at',
+  dreamsSortOrder: 'desc',
 
-  // Actions - Goals
-  loadGoals: async (): Promise<void> => {
-    if (get().goalsLoaded || get().goalsLoading) return;
+  // UI Actions - Goals
+  setGoalsViewMode: (mode) => set({ goalsViewMode: mode }),
+  setGoalsFilterStatus: (status) => set({ goalsFilterStatus: status }),
+  setGoalsFilterCategory: (category) => set({ goalsFilterCategory: category }),
+  setGoalsFilterTimeframe: (timeframe) => set({ goalsFilterTimeframe: timeframe }),
+  setGoalsSortBy: (sortBy) => set({ goalsSortBy: sortBy }),
+  setGoalsSortOrder: (order) => set({ goalsSortOrder: order }),
+  setGoalsShowArchived: (show) => set({ goalsShowArchived: show }),
+  setGoalsSelectedGoal: (goalId) => set({ goalsSelectedGoal: goalId }),
+  resetGoalsFilters: () =>
+    set({
+      goalsFilterStatus: 'all',
+      goalsFilterCategory: null,
+      goalsFilterTimeframe: 'all',
+      goalsShowArchived: false,
+      goalsSelectedGoal: null,
+    }),
 
-    set({ goalsLoading: true });
-    try {
-      const { getUserLifeGoals } = await import('@/goals/api/lifeGoalsAPI');
-      const goals = await getUserLifeGoals();
-      set({ goals, goalsLoaded: true, goalsLoading: false });
-    } catch (error) {
-      logger.error('Goals', error as Error, { context: 'loadGoals' });
-      set({ goalsLoading: false });
-      throw error;
-    }
-  },
-
-  addGoal: async (input: CreateLifeGoalInput): Promise<LifeGoal> => {
-    try {
-      const { createLifeGoal } = await import('@/goals/api/lifeGoalsAPI');
-      const goal = await createLifeGoal(input);
-      set((state) => ({ goals: [...state.goals, goal] }));
-      return goal;
-    } catch (error) {
-      logger.error('Goals', error as Error, { context: 'addGoal' });
-      throw error;
-    }
-  },
-
-  updateGoal: async (id: string, updates: UpdateLifeGoalInput): Promise<LifeGoal> => {
-    try {
-      const { updateLifeGoal } = await import('@/goals/api/lifeGoalsAPI');
-      const updatedGoal = await updateLifeGoal(id, updates);
-      set((state) => ({
-        goals: state.goals.map((g) => (g.id === id ? updatedGoal : g)),
-      }));
-      return updatedGoal;
-    } catch (error) {
-      logger.error('Goals', error as Error, { context: 'updateGoal' });
-      throw error;
-    }
-  },
-
-  deleteGoal: async (id: string): Promise<void> => {
-    try {
-      const { deleteLifeGoal } = await import('@/goals/api/lifeGoalsAPI');
-      await deleteLifeGoal(id);
-      set((state) => ({
-        goals: state.goals.filter((g) => g.id !== id),
-      }));
-    } catch (error) {
-      logger.error('Goals', error as Error, { context: 'deleteGoal' });
-      throw error;
-    }
-  },
-
-  getGoalById: (id: string): LifeGoal | undefined => {
-    return get().goals.find((g) => g.id === id);
-  },
-
-  // Actions - Dreams
-  loadDreams: async (): Promise<void> => {
-    if (get().dreamsLoaded || get().dreamsLoading) return;
-
-    set({ dreamsLoading: true });
-    try {
-      const { getUserLifeDreams } = await import('@/goals/api/lifeGoalsAPI');
-      const dreams = await getUserLifeDreams();
-      set({ dreams, dreamsLoaded: true, dreamsLoading: false });
-    } catch (error) {
-      logger.error('Dreams', error as Error, { context: 'loadDreams' });
-      set({ dreamsLoading: false });
-      throw error;
-    }
-  },
-
-  addDream: async (input: CreateLifeDreamInput): Promise<LifeDream> => {
-    try {
-      const { createLifeDream } = await import('@/goals/api/lifeGoalsAPI');
-      const dream = await createLifeDream(input);
-      set((state) => ({ dreams: [...state.dreams, dream] }));
-      return dream;
-    } catch (error) {
-      logger.error('Dreams', error as Error, { context: 'addDream' });
-      throw error;
-    }
-  },
-
-  updateDream: async (id: string, updates: UpdateLifeDreamInput): Promise<LifeDream> => {
-    try {
-      const { updateLifeDream } = await import('@/goals/api/lifeGoalsAPI');
-      const updatedDream = await updateLifeDream(id, updates);
-      set((state) => ({
-        dreams: state.dreams.map((d) => (d.id === id ? updatedDream : d)),
-      }));
-      return updatedDream;
-    } catch (error) {
-      logger.error('Dreams', error as Error, { context: 'updateDream' });
-      throw error;
-    }
-  },
-
-  deleteDream: async (id: string): Promise<void> => {
-    try {
-      const { deleteLifeDream } = await import('@/goals/api/lifeGoalsAPI');
-      await deleteLifeDream(id);
-      set((state) => ({
-        dreams: state.dreams.filter((d) => d.id !== id),
-      }));
-    } catch (error) {
-      logger.error('Dreams', error as Error, { context: 'deleteDream' });
-      throw error;
-    }
-  },
-
-  getDreamById: (id: string): LifeDream | undefined => {
-    return get().dreams.find((d) => d.id === id);
-  },
+  // UI Actions - Dreams
+  setDreamsViewMode: (mode) => set({ dreamsViewMode: mode }),
+  setDreamsFilterCategory: (category) => set({ dreamsFilterCategory: category }),
+  setDreamsSortBy: (sortBy) => set({ dreamsSortBy: sortBy }),
+  setDreamsSortOrder: (order) => set({ dreamsSortOrder: order }),
+  resetDreamsFilters: () =>
+    set({
+      dreamsFilterCategory: null,
+    }),
 });

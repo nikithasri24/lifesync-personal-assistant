@@ -6,10 +6,10 @@
 
 import React from 'react';
 import { Button } from '../ui/Button';
-import { getFinanceAPI } from '../data';
 import { logger } from '../../services/logger';
 import { useToast } from '../../hooks/useToast';
-import type { Account } from '../types';
+import type { Account, AccountType } from '../types';
+import { useUpsertAccountMutation, useDeleteAccountMutation } from '@/hooks/useFinanceQuery';
 
 interface AccountModalProps {
   account?: Account;
@@ -18,8 +18,9 @@ interface AccountModalProps {
 }
 
 export const AccountModal: React.FC<AccountModalProps> = ({ account, onClose, onSuccess }) => {
-  const [loading, setLoading] = React.useState(false);
   const { showToast } = useToast();
+  const upsertAccountMutation = useUpsertAccountMutation();
+  const deleteAccountMutation = useDeleteAccountMutation();
   const [formData, setFormData] = React.useState({
     name: account?.name ?? '',
     type: account?.type ?? 'checking',
@@ -30,11 +31,9 @@ export const AccountModal: React.FC<AccountModalProps> = ({ account, onClose, on
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
-    setLoading(true);
 
     try {
-      const api = await getFinanceAPI();
-      await api.upsertAccount({
+      await upsertAccountMutation.mutateAsync({
         id: account?.id,
         name: formData.name,
         type: formData.type,
@@ -48,10 +47,8 @@ export const AccountModal: React.FC<AccountModalProps> = ({ account, onClose, on
       onSuccess();
       onClose();
     } catch (error: unknown) {
-      logger.error('Failed to save account:', { error });
+      logger.error('AccountModal', error instanceof Error ? error : new Error(String(error)), { context: 'handleSubmit' });
       showToast('Failed to save account. Check console for details.', 'error');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -62,18 +59,14 @@ export const AccountModal: React.FC<AccountModalProps> = ({ account, onClose, on
       return;
     }
 
-    setLoading(true);
     try {
-      const api = await getFinanceAPI();
-      await api.deleteAccount(account.id);
+      await deleteAccountMutation.mutateAsync(account.id);
       showToast('Account deleted successfully!', 'success');
       onSuccess();
       onClose();
     } catch (error: unknown) {
-      logger.error('Failed to delete account:', { error });
+      logger.error('AccountModal', error instanceof Error ? error : new Error(String(error)), { context: 'handleDelete', accountId: account.id });
       showToast('Failed to delete account. Check console for details.', 'error');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -115,7 +108,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({ account, onClose, on
               </label>
               <select
                 value={formData.type}
-                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, type: e.target.value as AccountType })}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
                 required
               >
@@ -158,22 +151,22 @@ export const AccountModal: React.FC<AccountModalProps> = ({ account, onClose, on
         {/* Footer */}
         <div className="p-6 border-t border-slate-200 flex justify-between items-center">
           <div className="flex gap-2">
-            <Button variant="ghost" onClick={onClose} disabled={loading}>
+            <Button variant="ghost" onClick={onClose} disabled={upsertAccountMutation.isPending || deleteAccountMutation.isPending}>
               Cancel
             </Button>
             {isEditing && (
               <Button
                 variant="ghost"
                 onClick={handleDelete}
-                disabled={loading}
+                disabled={upsertAccountMutation.isPending || deleteAccountMutation.isPending}
                 className="text-rose-600 hover:bg-rose-50"
               >
-                Delete
+                {deleteAccountMutation.isPending ? 'Deleting...' : 'Delete'}
               </Button>
             )}
           </div>
-          <Button onClick={(e) => { void handleSubmit(e); }} disabled={loading}>
-            {loading ? 'Saving...' : isEditing ? 'Update Account' : 'Create Account'}
+          <Button onClick={(e) => { void handleSubmit(e); }} disabled={upsertAccountMutation.isPending || deleteAccountMutation.isPending}>
+            {upsertAccountMutation.isPending ? 'Saving...' : isEditing ? 'Update Account' : 'Create Account'}
           </Button>
         </div>
       </div>

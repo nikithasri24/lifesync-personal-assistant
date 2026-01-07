@@ -61,7 +61,7 @@ export function HabitCard({
   onResetToday,
   onResetHistory,
   onDelete,
-}: HabitCardProps): JSX.Element {
+}: HabitCardProps) {
   const [showStreakVisualization, setShowStreakVisualization] = useState(false);
 
   return (
@@ -72,11 +72,11 @@ export function HabitCard({
             <p className="font-semibold text-slate-900">{habit.name}</p>
             {hasReachedTarget ? (
               <span className="rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-semibold text-green-600 border border-green-200">
-                Completed today{targetCount > 1 ? ` (${todayCompletions}/${targetCount})` : ''}
+                Completed {habit.frequency === 'weekly' ? 'this week' : habit.frequency === 'monthly' ? 'this month' : 'today'}{targetCount > 1 ? ` (${todayCompletions}/${targetCount})` : ''}
               </span>
             ) : (
               <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600 border border-slate-200">
-                Today {todayCompletions}/{targetCount}
+                {habit.frequency === 'weekly' ? 'This week' : habit.frequency === 'monthly' ? 'This month' : 'Today'} {todayCompletions}/{targetCount}
               </span>
             )}
           </div>
@@ -94,7 +94,12 @@ export function HabitCard({
             }`}
           >
             <CheckCircle2 className="h-4 w-4" />
-            {hasReachedTarget ? 'Completed today' : isCompletingHabit ? 'Saving...' : 'Complete today'}
+            {hasReachedTarget
+              ? `Completed ${habit.frequency === 'weekly' ? 'this week' : habit.frequency === 'monthly' ? 'this month' : 'today'}`
+              : isCompletingHabit
+                ? 'Saving...'
+                : `Complete ${habit.frequency === 'weekly' ? 'this week' : habit.frequency === 'monthly' ? 'this month' : 'today'}`
+            }
           </button>
           <button
             type="button"
@@ -123,10 +128,10 @@ export function HabitCard({
               data-testid={`habit-reset-today-${habit.id}`}
               disabled={isResettingToday}
               className="inline-flex items-center gap-1 rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-600 transition hover:bg-slate-100 disabled:opacity-50"
-              title="Clear today's completion"
+              title={`Clear ${habit.frequency === 'weekly' ? 'this week\'s' : habit.frequency === 'monthly' ? 'this month\'s' : 'today\'s'} completion`}
             >
               <RefreshCcw className="h-4 w-4" />
-              {isResettingToday ? 'Resetting...' : 'Reset today'}
+              {isResettingToday ? 'Resetting...' : `Reset ${habit.frequency === 'weekly' ? 'this week' : habit.frequency === 'monthly' ? 'this month' : 'today'}`}
             </button>
             <button
               type="button"

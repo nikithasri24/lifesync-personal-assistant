@@ -8,8 +8,7 @@ import { geoPath, geoNaturalEarth1 } from 'd3-geo';
 import { feature } from 'topojson-client';
 import { ZoomIn, ZoomOut, Maximize2, Search, X } from 'lucide-react';
 import type { VisitStatus } from '../types';
-import type { Topology, GeometryCollection, Feature, Geometry } from 'topojson-specification';
-import { logger } from '../../services/logger';
+import type { Topology, GeometryCollection } from 'topojson-specification';
 
 type RealisticMapViewProps = {
   visitedCountries: Record<string, VisitStatus>;
@@ -22,17 +21,12 @@ interface CountryProperties {
   iso_a3: string;
 }
 
-interface CountryFeature extends Feature {
+interface CountryFeature {
+  type: 'Feature';
   id: string;
   properties: CountryProperties;
-  geometry: Geometry;
+  geometry: any;
 }
-
-type TooltipState = {
-  x: number;
-  y: number;
-  name: string
-} | null;
 
 const RealisticMapView: React.FC<RealisticMapViewProps> = ({
   visitedCountries,
@@ -41,7 +35,7 @@ const RealisticMapView: React.FC<RealisticMapViewProps> = ({
   const [countries, setCountries] = React.useState<CountryFeature[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [hoveredCountry, setHoveredCountry] = React.useState<string | null>(null);
-  const [tooltip, setTooltip] = React.useState<TooltipState>(null);
+  const [tooltip, setTooltip] = React.useState<{ x: number; y: number; name: string } | null>(null);
   const [searchQuery, setSearchQuery] = React.useState('');
   const [zoom, setZoom] = React.useState(1);
   const [pan, setPan] = React.useState({ x: 0, y: 0 });
@@ -60,7 +54,7 @@ const RealisticMapView: React.FC<RealisticMapViewProps> = ({
 
   // Load real world map data
   React.useEffect(() => {
-    const loadMapData = async (): Promise<void> => {
+    const loadMapData = async () => {
       try {
         setLoading(true);
 
@@ -73,26 +67,26 @@ const RealisticMapView: React.FC<RealisticMapViewProps> = ({
         const geoJsonFeatures = feature(topology, countriesGeometry);
 
         // Type assertion for features
-        const countryFeatures: CountryFeature[] = geoJsonFeatures.features.map((f): CountryFeature => ({
+        const countryFeatures = geoJsonFeatures.features.map((f: any) => ({
           type: 'Feature' as const,
-          id: f.id as string,
+          id: f.id,
           properties: {
-            name: (f.properties.name ?? 'Unknown') as string,
-            iso_a2: (f.properties.iso_a2 ?? '') as string,
-            iso_a3: (f.properties.iso_a3 ?? '') as string,
+            name: f.properties.name || 'Unknown',
+            iso_a2: f.properties.iso_a2 || '',
+            iso_a3: f.properties.iso_a3 || '',
           },
-          geometry: f.geometry as Geometry,
+          geometry: f.geometry,
         }));
 
         setCountries(countryFeatures);
         setLoading(false);
       } catch (error) {
-        logger.error('Error loading map data', { error });
+        console.error('Error loading map data:', error);
         setLoading(false);
       }
     };
 
-    void loadMapData();
+    loadMapData();
   }, []);
 
   // Filter for search
@@ -127,15 +121,15 @@ const RealisticMapView: React.FC<RealisticMapViewProps> = ({
     }
   };
 
-  const handleZoomIn = (): void => setZoom(prev => Math.min(prev * 1.5, 8));
-  const handleZoomOut = (): void => setZoom(prev => Math.max(prev / 1.5, 1));
-  const handleReset = (): void => {
+  const handleZoomIn = () => setZoom(prev => Math.min(prev * 1.5, 8));
+  const handleZoomOut = () => setZoom(prev => Math.max(prev / 1.5, 1));
+  const handleReset = () => {
     setZoom(1);
     setPan({ x: 0, y: 0 });
     setSearchQuery('');
   };
 
-  const handleCountryMouseMove = (e: React.MouseEvent, countryName: string): void => {
+  const handleCountryMouseMove = (e: React.MouseEvent, countryName: string) => {
     const svg = svgRef.current;
     if (svg) {
       const rect = svg.getBoundingClientRect();
@@ -149,7 +143,7 @@ const RealisticMapView: React.FC<RealisticMapViewProps> = ({
 
   // Keyboard shortcuts
   React.useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent): void => {
+    const handleKeyPress = (e: KeyboardEvent) => {
       if (e.key === '/' && e.metaKey) {
         e.preventDefault();
         searchInputRef.current?.focus();
@@ -168,12 +162,12 @@ const RealisticMapView: React.FC<RealisticMapViewProps> = ({
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, []);
 
-  const stats = React.useMemo(() => ({
+  const stats = {
     visited: Object.values(visitedCountries).filter(s => s === 'visited').length,
     lived: Object.values(visitedCountries).filter(s => s === 'lived').length,
     transit: Object.values(visitedCountries).filter(s => s === 'transit').length,
     wishlist: Object.values(visitedCountries).filter(s => s === 'wishlist').length,
-  }), [visitedCountries]);
+  };
 
   if (loading) {
     return (
@@ -306,7 +300,7 @@ const RealisticMapView: React.FC<RealisticMapViewProps> = ({
               const countryCode = country.properties.iso_a2;
               const isHovered = hoveredCountry === countryCode;
               const isSearchMatch = filteredCountries.some(c => c.properties.iso_a2 === countryCode);
-              const path = pathGenerator(country);
+              const path = pathGenerator(country.geometry);
 
               if (!path) return null;
 

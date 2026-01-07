@@ -10,7 +10,14 @@ export type AccountType =
   | 'credit'
   | 'brokerage'
   | 'loan'
-  | 'investment';
+  | 'investment'
+  | '401k'
+  | '403b'
+  | 'traditional_ira'
+  | 'roth_ira'
+  | 'sep_ira'
+  | 'simple_ira'
+  | 'hsa';
 
 export type RewardsType = 'points' | 'miles' | 'cashback';
 
@@ -466,3 +473,145 @@ export type LoanInput = Omit<Loan, 'id' | 'createdAt' | 'updatedAt' | 'totalPaid
 export type LoanPaymentInput = Omit<LoanPayment, 'id' | 'createdAt'> & {
   id?: string;
 };
+
+// ============================================================================
+// RETIREMENT ACCOUNT TYPES
+// ============================================================================
+
+export type RetirementAccountType = Extract<AccountType, '401k' | '403b' | 'traditional_ira' | 'roth_ira' | 'sep_ira' | 'simple_ira' | 'hsa'>;
+
+export type TaxTreatment = 'pre_tax' | 'post_tax' | 'tax_exempt';
+export type VestingScheduleType = 'immediate' | 'cliff' | 'graded';
+export type EmployerMatchType = 'percentage' | 'fixed' | 'tiered';
+export type ContributionType = 'employee' | 'employer' | 'rollover' | 'catch_up';
+
+export interface InvestmentAllocation {
+  stocks?: number; // Percentage
+  bonds?: number;
+  cash?: number;
+  international?: number;
+  realEstate?: number;
+  commodities?: number;
+  other?: number;
+  // Can add specific fund allocations
+  funds?: Array<{
+    name: string;
+    ticker?: string;
+    percentage: number;
+  }>;
+}
+
+export interface RetirementAccountMetadata {
+  id: string;
+  accountId: string;
+
+  // Tax Treatment
+  taxTreatment: TaxTreatment;
+
+  // Contribution Limits
+  annualContributionLimit: number;
+  catchUpLimit?: number;
+  currentYearContributions: number;
+  contributionYear: number;
+
+  // Employer Match
+  hasEmployerMatch: boolean;
+  employerMatchPercentage?: number;
+  employerMatchLimit?: number; // Percentage of salary
+  employerMatchType?: EmployerMatchType;
+  employerContributionsYTD: number;
+
+  // Vesting
+  hasVestingSchedule: boolean;
+  vestingScheduleType?: VestingScheduleType;
+  vestingCliffYears?: number;
+  vestingGradedYears?: number;
+  vestingPercentage: number;
+  unvestedBalance: number;
+
+  // Investment Allocation
+  allocation?: InvestmentAllocation;
+
+  // HSA-specific
+  isFamilyCoverage?: boolean;
+
+  // Metadata
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RetirementContribution {
+  id: string;
+  retirementAccountId: string;
+  contributionDate: string; // ISO date
+  amount: number;
+  contributionType: ContributionType;
+  contributionYear: number;
+  transactionId?: string;
+  notes?: string;
+  createdAt: string;
+}
+
+export interface RetirementPerformance {
+  id: string;
+  retirementAccountId: string;
+  snapshotDate: string; // ISO date
+  balance: number;
+  totalContributions: number;
+  totalGains: number;
+  rateOfReturn?: number; // Annualized percentage
+  allocationSnapshot?: InvestmentAllocation;
+  createdAt: string;
+}
+
+export interface RetirementAccountWithStats extends RetirementAccountMetadata {
+  accountName: string;
+  accountBalance: number;
+  accountType?: RetirementAccountType;
+  remainingEmployeeRoom: number;
+  totalYTDContributions: number;
+  vestedBalance: number;
+  totalValue?: number;
+  totalVested?: number;
+  latestGains?: number;
+  latestReturnRate?: number;
+  latestRateOfReturn?: number;
+}
+
+export interface ContributionRoom {
+  employeeRoom: number;
+  employerRoom: number;
+  totalLimit: number;
+  isOver50: boolean;
+}
+
+// Input types for creation/updates
+export type RetirementAccountMetadataInput = Omit<RetirementAccountMetadata, 'id' | 'createdAt' | 'updatedAt'> & {
+  id?: string;
+};
+
+export type RetirementContributionInput = Omit<RetirementContribution, 'id' | 'createdAt'> & {
+  id?: string;
+};
+
+export type RetirementPerformanceInput = Omit<RetirementPerformance, 'id' | 'createdAt'> & {
+  id?: string;
+};
+
+// Utility type for account with retirement metadata
+export interface RetirementAccount extends Account {
+  retirementMetadata?: RetirementAccountWithStats;
+}
+
+// Helper constants for 2024 contribution limits
+export const CONTRIBUTION_LIMITS_2024 = {
+  '401k': { base: 23000, catchUp: 7500 },
+  '403b': { base: 23000, catchUp: 7500 },
+  'traditional_ira': { base: 7000, catchUp: 1000 },
+  'roth_ira': { base: 7000, catchUp: 1000 },
+  'sep_ira': { base: 69000, catchUp: 0 },
+  'simple_ira': { base: 16000, catchUp: 3500 },
+  'hsa_individual': { base: 4150, catchUp: 1000 },
+  'hsa_family': { base: 8300, catchUp: 1000 },
+} as const;

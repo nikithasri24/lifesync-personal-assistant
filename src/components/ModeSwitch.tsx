@@ -38,7 +38,7 @@ export function useAppMode() {
   return { mode, setMode, toggleMode };
 }
 
-export default function ModeSwitch({ className, onModeChange }: ModeSwitchProps): JSX.Element {
+export default function ModeSwitch({ className, onModeChange }: ModeSwitchProps) {
   const { mode, toggleMode } = useAppMode();
   const [showHint, setShowHint] = useState(false);
 

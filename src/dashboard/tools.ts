@@ -71,7 +71,7 @@ async function wasHabitCompletedToday(habitId: string): Promise<boolean> {
     const today = startOfDay(new Date()).toISOString().split('T')[0];
     return entries.some(entry => entry.date === today);
   } catch (error) {
-    logger.error('DashboardTools', error as Error, {
+    logger.error('DashboardTools', 'Operation failed', { error,
       context: 'wasHabitCompletedToday',
       habitId
     });
@@ -135,15 +135,15 @@ async function executeGetDashboardSummary(
     );
 
     // Check habits completed today
-    const habitsCompletedToday = [];
+    const habitsCompletedToday: typeof habits = [];
     for (const habit of habits) {
       if (habit.id && await wasHabitCompletedToday(habit.id)) {
         habitsCompletedToday.push(habit);
       }
     }
 
-    // Active goals
-    const activeGoals = goals.filter(goal => goal.status === 'active');
+    // Active goals (in-progress or not-started)
+    const activeGoals = goals.filter(goal => goal.status === 'in-progress' || goal.status === 'not-started');
 
     // Recent notes (last 5)
     const recentNotes = notes.slice(0, 5);
@@ -199,7 +199,7 @@ async function executeGetDashboardSummary(
       message: 'Dashboard summary generated'
     };
   } catch (error) {
-    logger.error('DashboardTools', error as Error, {
+    logger.error('DashboardTools', 'Operation failed', { error,
       operation: 'get_dashboard_summary'
     });
 
@@ -272,7 +272,7 @@ async function executeGetQuickStats(
       message: `Today: ${todayTasks.length} tasks, ${habits.length - habitsCompletedCount} habits to complete`
     };
   } catch (error) {
-    logger.error('DashboardTools', error as Error, {
+    logger.error('DashboardTools', 'Operation failed', { error,
       operation: 'get_quick_stats'
     });
 
@@ -331,7 +331,6 @@ async function executeGetRecentActivity(
       entry.createdAt && new Date(entry.createdAt) >= cutoffDate
     ).map(j => ({
       id: j.id,
-      date: j.date,
       mood: j.mood,
       created_at: j.createdAt
     }));
@@ -360,7 +359,7 @@ async function executeGetRecentActivity(
       message: `Recent activity for last ${days} days`
     };
   } catch (error) {
-    logger.error('DashboardTools', error as Error, {
+    logger.error('DashboardTools', 'Operation failed', { error,
       operation: 'get_recent_activity',
       args
     });

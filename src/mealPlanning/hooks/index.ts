@@ -10,3 +10,9 @@ export type { GroceryItem, GroceryItemStatus } from './useGroceryList';
 
 export { useMultiCellSelection } from './useMultiCellSelection';
 export type { CellKey } from './useMultiCellSelection';
+
+export { useRecipeFiltering } from './useRecipeFiltering';
+export type { UseRecipeFilteringReturn } from './useRecipeFiltering';
+
+export { useWeekCopy } from './useWeekCopy';
+export type { UseWeekCopyReturn } from './useWeekCopy';

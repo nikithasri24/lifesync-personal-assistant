@@ -1,10 +1,6 @@
 /**
  * Meal Planning-Shopping Integration Tests
  * Tests the integration between meal plans, recipes, and shopping lists
- *
- * NOTE: This is a placeholder test suite for future meal planning features
- * Currently only shopping list functionality exists
- * Implementation will be completed when meal planning and recipe APIs are added
  */
 
 import { describe, test, expect, beforeEach, vi } from 'vitest';
@@ -60,46 +56,33 @@ describe('Meal Planning-Shopping Integration', () => {
     (supabase.from as any).mockReturnValue(mockQuery);
 
     const list = await shoppingAPI.createShoppingList({
-      title: mockShoppingList.title,
-      items: mockShoppingList.items,
+      name: mockShoppingList.title,
     });
 
     expect(list).toBeDefined();
-    expect(list.items).toHaveLength(2);
+    // Items are stored in a separate table, not directly on the list
   });
 
-  test('should update shopping list items', async () => {
-    const updatedItems = [
-      ...mockShoppingList.items,
-      { id: 'item-3', name: 'Broccoli', quantity: 1, unit: 'bunch', checked: false },
-    ];
-
+  test('should update shopping item', async () => {
     const mockQuery = {
       update: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
       select: vi.fn().mockReturnThis(),
       single: vi.fn().mockResolvedValue({
-        data: { ...mockShoppingList, items: updatedItems },
+        data: { id: 'item-1', name: 'Chicken Breast', quantity: 3, is_purchased: true },
         error: null,
       }),
     };
 
     (supabase.from as any).mockReturnValue(mockQuery);
 
-    const list = await shoppingAPI.updateShoppingList(mockShoppingList.id, {
-      items: updatedItems,
+    const item = await shoppingAPI.updateShoppingItem('item-1', {
+      quantity: 3,
+      is_purchased: true,
     });
 
-    expect(list.items).toHaveLength(3);
+    expect(item.quantity).toBe(3);
+    expect(item.is_purchased).toBe(true);
   });
 
-  test.todo('should generate shopping list from meal plan');
-
-  test.todo('should track pantry from shopping purchases');
-
-  test.todo('should suggest recipes based on pantry');
-
-  test.todo('should calculate nutritional information from meal plan');
-
-  test.todo('should suggest meal plans based on dietary preferences');
 });

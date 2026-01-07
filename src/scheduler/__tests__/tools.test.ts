@@ -39,7 +39,7 @@ describe('Scheduler AI Tools', () => {
       );
 
       expect(result.success).toBe(true);
-      expect(result.schedule_block?.title).toBe('Deep Work');
+      expect((result.schedule_block as any)?.title).toBe('Deep Work');
     });
   });
 

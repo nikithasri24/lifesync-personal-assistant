@@ -56,11 +56,12 @@ export function distributeItemsToStores(options: DistributeItemsOptions): Shoppi
     if (!store) return;
 
     const totalCost = items.reduce((sum, item) => sum + (item.estimatedPrice ?? 0), 0);
+    const distanceLabel = store.distance != null ? `${store.distance}mi` : 'distance unknown';
 
     storeLists.push({
       id: `store-${storeId}`,
       name: store.name,
-      description: `${items.length} items • $${totalCost.toFixed(2)} • ${store.distance}mi`,
+      description: `${items.length} items • $${totalCost.toFixed(2)} • ${distanceLabel}`,
       type: 'store-specific',
       color: store.color,
       storeId: storeId,

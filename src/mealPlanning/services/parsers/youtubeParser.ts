@@ -257,7 +257,6 @@ export async function fetchYoutubeRecipe(url: string, lang: string = 'en'): Prom
       const recipeTags: string[] = [...(aiData.tags ?? []), 'video', 'youtube', 'ai-extracted'];
       const recipeImage: string | undefined = snippet.thumbnails?.medium?.url ?? snippet.thumbnails?.default?.url ?? undefined;
       const recipeCuisine: string = aiData.cuisine ?? 'other';
-      const recipeAuthorName: string | undefined = snippet.channelTitle;
       const recipeVideoThumbnail: string | undefined = snippet.thumbnails?.high?.url ?? snippet.thumbnails?.medium?.url;
 
       return {
@@ -279,9 +278,8 @@ export async function fetchYoutubeRecipe(url: string, lang: string = 'en'): Prom
         dietaryRestrictions: [],
         nutritionInfo: undefined,
         flowChart: undefined,
-        sourceType: 'video',
+        sourceType: 'youtube',
         sourceUrl: url,
-        authorName: recipeAuthorName,
         videoThumbnail: recipeVideoThumbnail,
       };
     }
@@ -313,7 +311,6 @@ export async function fetchYoutubeRecipe(url: string, lang: string = 'en'): Prom
   const fallbackName: string = snippet.title ?? 'YouTube Recipe';
   const fallbackDescription: string = snippet.description?.split('\n')[0] ?? '';
   const fallbackImage: string | undefined = snippet.thumbnails?.medium?.url ?? snippet.thumbnails?.default?.url ?? undefined;
-  const fallbackAuthorName: string | undefined = snippet.channelTitle;
   const fallbackVideoThumbnail: string | undefined = snippet.thumbnails?.high?.url ?? snippet.thumbnails?.medium?.url;
 
   return {
@@ -335,9 +332,8 @@ export async function fetchYoutubeRecipe(url: string, lang: string = 'en'): Prom
     dietaryRestrictions: [],
     nutritionInfo: undefined,
     flowChart: undefined,
-    sourceType: 'video',
+    sourceType: 'youtube',
     sourceUrl: url,
-    authorName: fallbackAuthorName,
     videoThumbnail: fallbackVideoThumbnail,
   };
 }

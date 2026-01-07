@@ -3,14 +3,14 @@
  * Converts between store and view representations
  */
 
-import type { TodoItem } from '../../../../types';
+import type { Task } from '@/types/task';
 import type { TaskStatusView, TaskView } from '../types';
 
-export const mapStatusToView = (status: TodoItem['status']): TaskStatusView => {
+export const mapStatusToView = (status: Task['status']): TaskStatusView => {
   switch (status) {
     case 'done':
       return 'completed';
-    case 'in-progress':
+    case 'in_progress':
       return 'in_progress';
     case 'waiting':
     case 'scheduled':

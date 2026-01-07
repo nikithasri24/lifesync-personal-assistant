@@ -3,17 +3,18 @@
  * Converts store models to view models
  */
 
-import type { TodoItem, FocusSession as StoreFocusSession } from '../../../../types';
-import type { Project as StoreProject } from '../../../../projects/hooks/useProjectsQuery';
+import type { Task } from '@/types/task';
+import type { FocusSession as StoreFocusSession } from '../../../../types';
+import type { Project as StoreProject } from '@/hooks/useProjectsQuery';
 import type { TaskView, ProjectView, SubTask } from '../types';
 import { mapStatusToView, mapCategoryIdToView } from './statusMappers';
 
 export const transformTaskToView = (
-  todo: TodoItem,
+  task: Task,
   focusAggregate: Map<string, { duration: number; sessions: string[] }>
 ): TaskView => {
-  const aggregate = focusAggregate.get(todo.id);
-  const subtasks: SubTask[] = (todo.subtasks ?? []).map((sub) => ({
+  const aggregate = focusAggregate.get(task.id);
+  const subtasks: SubTask[] = (task.subtasks ?? []).map((sub) => ({
     id: sub.id,
     title: sub.title,
     completed: sub.completed ?? sub.status === 'done',
@@ -22,23 +23,23 @@ export const transformTaskToView = (
   }));
 
   return {
-    id: todo.id,
-    title: todo.title,
-    description: todo.description,
-    projectId: todo.projectId,
-    status: mapStatusToView(todo.status),
-    underlyingStatus: todo.status,
-    priority: todo.priority,
-    estimatedTime: todo.estimatedTime,
-    actualTime: aggregate?.duration ?? todo.actualTime ?? 0,
-    dueDate: todo.dueDate,
-    tags: todo.tags ?? [],
-    createdAt: todo.createdAt,
-    completedAt: todo.completedAt,
+    id: task.id,
+    title: task.title,
+    description: task.description,
+    projectId: task.projectId,
+    status: mapStatusToView(task.status),
+    underlyingStatus: task.status,
+    priority: task.priority,
+    estimatedTime: task.estimatedTime,
+    actualTime: aggregate?.duration ?? task.actualTime ?? 0,
+    dueDate: task.dueDate,
+    tags: task.tags ?? [],
+    createdAt: task.createdAt,
+    completedAt: task.completedAt,
     difficulty: 3,
-    category: mapCategoryIdToView(todo.categoryId),
+    category: mapCategoryIdToView(task.category),
     subtasks,
-    notes: todo.notes
+    notes: task.notes
   };
 };
 
@@ -57,9 +58,9 @@ export const transformProjectToView = (
     name: project.name,
     description: project.description,
     color: project.color ?? '#6366f1',
-    status: project.status === 'on_hold' ? 'on-hold' : (project.status as ProjectView['status']) ?? 'active',
-    startDate: undefined,
-    endDate: undefined,
+    status: (project.status as ProjectView['status']) ?? 'active',
+    startDate: project.start_date ? new Date(project.start_date) : undefined,
+    endDate: project.target_date ? new Date(project.target_date) : undefined,
     estimatedHours: Math.round((totalEstimatedMinutes / 60) * 10) / 10,
     actualHours: Math.round((totalActualMinutes / 60) * 10) / 10,
     tasks: associatedTasks.map(task => task.id),

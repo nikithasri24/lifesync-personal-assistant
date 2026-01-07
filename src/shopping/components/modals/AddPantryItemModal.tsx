@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
-import type { ShoppingItem } from '../../types';
-import { validateCategory } from '../../utils/typeValidators';
+import type { PantryItem } from '../../../types';
+import { validatePantryCategory } from '../../utils/typeValidators';
 
 interface AddPantryItemModalProps {
   isOpen: boolean;
@@ -10,7 +10,7 @@ interface AddPantryItemModalProps {
     name: string;
     quantity: number;
     unit?: string;
-    category: ShoppingItem['category'];
+    category: PantryItem['category'];
     expirationDate?: Date;
     location?: string;
     lowStockThreshold?: number;
@@ -23,7 +23,7 @@ export function AddPantryItemModal({ isOpen, onClose, onSave }: AddPantryItemMod
     name: '',
     quantity: '1',
     unit: '',
-    category: 'pantry' as ShoppingItem['category'],
+    category: 'pantry' as PantryItem['category'],
     expiration: ''
   });
   const [pantryFormLocation, setPantryFormLocation] = useState('');
@@ -95,7 +95,7 @@ export function AddPantryItemModal({ isOpen, onClose, onSave }: AddPantryItemMod
               <span className="text-gray-700">Category</span>
               <select
                 value={pantryForm.category}
-                onChange={(e) => setPantryForm(s => ({ ...s, category: validateCategory(e.target.value) }))}
+                onChange={(e) => setPantryForm(s => ({ ...s, category: validatePantryCategory(e.target.value) }))}
                 className="rounded border border-gray-300 px-2 py-1"
               >
                 <option value="produce">Produce</option>

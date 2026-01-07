@@ -1,297 +1,317 @@
-// Conversational AI Engine using Groq (FREE)
-// ChatGPT-style conversation with function calling for your life management app
+/**
+ * Conversation Engine
+ *
+ * Full-featured AI conversation engine with:
+ * - LLM integration via GroqProvider
+ * - Tool execution via ToolRegistry
+ * - Conversation persistence via ConversationPersistenceService
+ * - Rich context via ContextAggregator
+ */
 
-import Groq from 'groq-sdk';
+import { smartChat } from '@/lib/providers/factory';
 import { toolRegistry } from '@/lib/ai/toolRegistry';
-import { taskTools } from '@/todos/tools';
-import { financeTools } from '@/finance/tools';
-import { habitTools } from '@/habits/tools';
-import { goalTools } from '@/goals/tools';
-import { shoppingTools } from '@/shopping/tools';
-import { mealTools } from '@/mealPlanning/tools';
-import { journalTools } from '@/journal/tools';
-import { projectTools } from '@/projects/tools';
-import { focusTools } from '@/focus/tools';
-import { schedulerTools } from '@/scheduler/tools';
-import { analyticsTools } from '@/analytics/tools';
-import { lifeGoalsTools } from '@/lifeGoals/tools';
-import { calendarTools } from '@/calendar/tools';
-import { skincareTools } from '@/skincare/tools';
-import { travelTools } from '@/travel/tools';
-import { notesTools } from '@/notes/tools';
-import { nationalParksTools } from '@/nationalParks/tools';
-import { dashboardTools } from '@/dashboard/tools';
-import { apiClient } from './apiClient';
+import { conversationPersistenceService } from './ConversationPersistenceService';
+import { contextAggregator, type AggregatedContext } from './ai/ContextAggregator';
 import { logger } from './logger';
+import type { Message, FunctionDefinition } from '@/lib/providers/interfaces';
 
-// Types for function arguments and results
-type FunctionArgs = Record<string, unknown>;
+// Ensure all tools are registered when ConversationEngine is imported
+import '@/lib/ai/registerAllTools';
 
-interface FunctionResult {
-  success?: boolean;
-  message?: string;
-  error?: string;
-  [key: string]: unknown;
+interface FunctionCallResult {
+  name: string;
+  arguments: Record<string, unknown>;
+  result: { success: boolean; message?: string };
 }
 
-const groq = new Groq({
-  apiKey: ((import.meta.env.VITE_GROQ_API_KEY as string | undefined) ?? (import.meta.env.GROQ_API_KEY as string | undefined)) ?? '',
-  dangerouslyAllowBrowser: true // OK for demo; use server proxy in production
-});
-
-// Register all tools on module initialization
-function initializeTools(): void {
-  toolRegistry.register([
-    ...taskTools,
-    ...financeTools,
-    ...habitTools,
-    ...goalTools,
-    ...shoppingTools,
-    ...mealTools,
-    ...journalTools,
-    ...projectTools,
-    ...focusTools,
-    ...schedulerTools,
-    ...analyticsTools,
-    ...lifeGoalsTools,
-    ...calendarTools,
-    ...skincareTools,
-    ...travelTools,
-    ...notesTools,
-    ...nationalParksTools,
-    ...dashboardTools
-  ]);
-
-  logger.info('ConversationEngine', 'Tools registered', {
-    totalTools: toolRegistry.count(),
-    toolNames: toolRegistry.getToolNames()
-  });
+interface ChatResponse {
+  response: string;
+  functionCalls?: FunctionCallResult[];
 }
 
-// Initialize tools when module loads
-initializeTools();
-
-// Get user context for better AI responses
-async function getUserContext(): Promise<string> {
-  try {
-    // For now, return minimal context
-    // This can be expanded later with more user data
-    const context = {
-      current_time: new Date().toISOString()
-    };
-
-    return JSON.stringify(context, null, 2);
-  } catch (_error) {
-    return '{}';
-  }
-}
-
-export interface ConversationMessage {
+interface HistoryEntry {
   role: 'user' | 'assistant';
-  content: string;
-  timestamp?: Date;
-  functionCalls?: Array<{ name: string; args: FunctionArgs; result: FunctionResult }>;
+  text: string;
 }
+
+const SYSTEM_PROMPT = `You are Maya, a friendly and helpful AI personal assistant for LifeSync.
+You help users manage their tasks, habits, calendar, finances, wellness, and daily life.
+
+Your personality:
+- Warm, encouraging, and supportive
+- VERY concise - keep responses under 50 words
+- Use emojis sparingly for friendliness
+- Proactively suggest helpful actions
+
+IMPORTANT Response Guidelines:
+- After executing a tool, give ONE brief confirmation (e.g., "Done! Created 'Buy groceries' for your wife.")
+- NEVER repeat yourself or describe the same action multiple times
+- NEVER say "Here's a summary of what I did" - just state what you did once
+- Be direct and natural, like texting a friend
+
+Current context about the user will be provided in each message.`;
 
 export class ConversationEngine {
-  private messages: ConversationMessage[] = [];
   private userId: string;
+  private history: HistoryEntry[] = [];
+  private messages: Message[] = [];
+  private sessionStarted: boolean = false;
+  private context: AggregatedContext | null = null;
 
   constructor(userId: string) {
     this.userId = userId;
   }
 
-  async chat(userMessage: string): Promise<{
-    response: string;
-    functionCalls?: Array<{ name: string; args: FunctionArgs; result: FunctionResult }>;
-  }> {
-    // Add user message to history
-    this.messages.push({
-      role: 'user',
-      content: userMessage,
-      timestamp: new Date()
-    });
-
-    // Build messages for Groq (only keep last 10 for context)
-    const recentMessages = this.messages.slice(-10).map(m => ({
-      role: m.role,
-      content: m.content
-    }));
-
-    // Get user context
-    const context = await getUserContext();
-
-    // Get all registered tools
-    const allTools = toolRegistry.getDefinitions();
-
-    // System prompt with dynamic tool listing
-    const toolSummary = toolRegistry.getSummary();
-    const systemMessage = `You are a helpful AI assistant managing the user's personal life. You have access to their tasks, projects, finances, goals, habits, meals, shopping, journal, and travel plans.
-
-Current Context:
-${context}
-
-Available Tools (${allTools.length} total):
-${toolRegistry.getToolNames().join(', ')}
-
-Guidelines:
-- Be conversational and natural, like ChatGPT
-- IMPORTANT: Voice input may have recognition errors (e.g., "Whiteman C" instead of "Vitamin C"). Always search for similar habit names before creating new ones.
-- When a habit name doesn't match exactly, check for similar names (fuzzy matching) and ask for confirmation
-- Ask clarifying questions when you need more information
-- Use functions to actually perform actions (don't just say you'll do something)
-- Be proactive and suggest helpful actions
-- Keep responses concise but warm (max 2-3 sentences)
-- When recording expenses, always ask for the category if not provided
-- Suggest budgets when you notice spending patterns
-- Help connect goals to concrete plans
-
-Examples:
-User: "I just spent 5 bucks on coffee"
-You: "Got it! I'll record that. By the way, you've spent $47 on coffee this month. Want me to set a budget?"
-
-User: "I want to save 10k for Japan"
-You: "Awesome goal! When are you planning to go? I'll help create a savings plan and break it down into steps."`;
+  /**
+   * Initialize the session and load context
+   */
+  async initialize(): Promise<void> {
+    if (this.sessionStarted) return;
 
     try {
-      const completion = await groq.chat.completions.create({
-        model: 'llama-3.1-8b-instant',
-        messages: [
-          { role: 'system', content: systemMessage },
-          ...recentMessages
-        ],
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
-        tools: allTools as any,
-        tool_choice: 'auto',
-        temperature: 0.5,
-        max_tokens: 1024,
-      });
+      // Start a new conversation session
+      await conversationPersistenceService.startSession(this.userId);
 
-      const response = completion.choices[0]?.message;
+      // Load rich context
+      this.context = await contextAggregator.getAggregatedContext(this.userId);
 
-      if (!response) {
-        throw new Error('No response from AI');
-      }
-
-      // Handle function calls
-      const functionCalls: Array<{ name: string; args: FunctionArgs; result: FunctionResult }> = [];
-
-      if (response.tool_calls && response.tool_calls.length > 0) {
-        // Execute all function calls
-        for (const toolCall of response.tool_calls) {
-          const functionName: string = toolCall.function.name;
-          const functionArgs = JSON.parse(toolCall.function.arguments) as FunctionArgs;
-
-          let result: FunctionResult;
-
-          // Execute tool using ToolRegistry
-          if (toolRegistry.has(functionName)) {
-            result = await toolRegistry.execute(
-              functionName,
-              functionArgs as Record<string, unknown>,
-              this.userId
-            );
-          } else {
-            // Unknown tool
-            result = {
-              success: false,
-              error: `Unknown tool: ${functionName}`
-            };
-          }
-
-          functionCalls.push({
-            name: functionName,
-            args: functionArgs,
-            result
-          });
-        }
-
-        // Get final response after function execution
-        const followUp = await groq.chat.completions.create({
-          model: 'llama-3.1-8b-instant',
-          messages: [
-            { role: 'system', content: systemMessage },
-            ...recentMessages,
-            {
-              role: 'assistant',
-              content: response.content ?? '',
-              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
-              tool_calls: response.tool_calls as any
-            },
-            {
-              role: 'tool',
-              content: JSON.stringify(functionCalls.map(fc => fc.result)),
-              tool_call_id: response.tool_calls[0].id
-            }
-          ],
-          temperature: 0.5,
-          max_tokens: 512,
-        });
-
-        const finalResponse = followUp.choices[0]?.message?.content ?? 'Done!';
-
-        // Add to history
-        this.messages.push({
-          role: 'assistant',
-          content: finalResponse,
-          timestamp: new Date(),
-          functionCalls
-        });
-
-        return {
-          response: finalResponse,
-          functionCalls
-        };
-      }
-
-      // No function calls, just text response
-      const textResponse = response.content ?? 'I can help you with that!';
-
-      this.messages.push({
-        role: 'assistant',
-        content: textResponse,
-        timestamp: new Date()
-      });
-
-      return { response: textResponse };
-
-    } catch (error: unknown) {
-      // Log detailed error information - GROQ SDK errors have special structure
-      if (error instanceof Error) {
-        logger.error('ConversationEngine', error, {
-          message: error.message,
-          stack: error.stack,
-          name: error.name
-        });
-      } else if (typeof error === 'object' && error !== null) {
-        // Try to extract GROQ API error details
-        const errObj = error as Record<string, unknown>;
-        logger.error('ConversationEngine', new Error('GROQ API Error'), {
-          status: errObj.status,
-          message: errObj.message,
-          error: JSON.stringify(error, null, 2)
-        });
-      } else {
-        logger.error('ConversationEngine', new Error('Unknown Error'), { error });
-      }
-
-      // Fallback response
-      const fallback = "Sorry, I'm having trouble connecting right now. Please try again.";
-      this.messages.push({
-        role: 'assistant',
-        content: fallback,
-        timestamp: new Date()
-      });
-
-      return { response: fallback };
+      this.sessionStarted = true;
+      logger.info('ConversationEngine', 'Session initialized', { userId: this.userId });
+    } catch (error) {
+      logger.error('ConversationEngine', error as Error, { context: 'initialize' });
+      // Continue without persistence/context on error
+      this.sessionStarted = true;
     }
   }
 
-  getHistory(): ConversationMessage[] {
-    return this.messages;
+  /**
+   * Build system message with current context (optimized for token efficiency)
+   */
+  private buildSystemMessage(): string {
+    let systemMessage = SYSTEM_PROMPT;
+
+    if (this.context) {
+      const { today, patterns } = this.context;
+
+      // Compact context - only essential info
+      systemMessage += `\n\nToday: ${today.tasks.completed}/${today.tasks.total} tasks, ${today.habits.completed}/${today.habits.due} habits, ${today.focus.minutesToday}min focus`;
+
+      // Only add warnings if critical
+      if (today.tasks.overdue > 0) {
+        systemMessage += `, ${today.tasks.overdue} overdue`;
+      }
+
+      if (today.habits.streaksAtRisk.length > 0) {
+        systemMessage += `\n⚠️ Streaks at risk: ${today.habits.streaksAtRisk.slice(0, 3).map(h => h.name).join(', ')}`;
+      }
+    }
+
+    return systemMessage;
+  }
+
+  /**
+   * Convert tool definitions to function format for LLM (filtered by relevance)
+   */
+  private getToolFunctions(userMessage?: string): FunctionDefinition[] {
+    const allDefinitions = toolRegistry.getDefinitions();
+
+    // If no message or few tools, return all
+    if (!userMessage || allDefinitions.length <= 10) {
+      return allDefinitions.map(tool => ({
+        name: tool.function.name,
+        description: tool.function.description,
+        parameters: tool.function.parameters
+      }));
+    }
+
+    // Filter tools based on keywords to reduce token usage
+    const messageLower = userMessage.toLowerCase();
+    const keywords = {
+      task: ['task', 'todo', 'complete', 'finish', 'done', 'add'],
+      habit: ['habit', 'streak', 'routine'],
+      goal: ['goal', 'objective', 'target'],
+      schedule: ['schedule', 'calendar', 'event', 'meeting'],
+    };
+
+    // Determine relevant categories
+    const relevantCategories = new Set<string>();
+    for (const [category, words] of Object.entries(keywords)) {
+      if (words.some(word => messageLower.includes(word))) {
+        relevantCategories.add(category);
+      }
+    }
+
+    // If no category detected, include task and habit (most common)
+    if (relevantCategories.size === 0) {
+      relevantCategories.add('task');
+      relevantCategories.add('habit');
+    }
+
+    // Filter tools
+    const filtered = allDefinitions.filter(tool => {
+      const toolName = tool.function.name.toLowerCase();
+      return Array.from(relevantCategories).some(cat => toolName.includes(cat));
+    });
+
+    // Return filtered or all if filter is too restrictive
+    const result = filtered.length > 0 ? filtered : allDefinitions.slice(0, 10);
+
+    return result.map(tool => ({
+      name: tool.function.name,
+      description: tool.function.description,
+      parameters: tool.function.parameters
+    }));
+  }
+
+  /**
+   * Process a user message and return the AI response
+   */
+  async chat(userMessage: string): Promise<ChatResponse> {
+    // Ensure session is initialized
+    if (!this.sessionStarted) {
+      await this.initialize();
+    }
+
+    // Add user message to history
+    this.history.push({ role: 'user', text: userMessage });
+    this.messages.push({ role: 'user', content: userMessage });
+
+    // Persist user message
+    await conversationPersistenceService.addMessage({
+      role: 'user',
+      content: userMessage,
+      timestamp: new Date().toISOString()
+    });
+
+    const functionCalls: ChatResponse['functionCalls'] = [];
+
+    try {
+      // Build messages for LLM (keep fewer messages to reduce token usage)
+      const llmMessages: Message[] = [
+        { role: 'system', content: this.buildSystemMessage() },
+        ...this.messages.slice(-6) // Keep last 6 messages for context (reduced from 10)
+      ];
+
+      // Get available tools (filtered by user message to reduce tokens)
+      const functions = this.getToolFunctions(userMessage);
+
+      // Call LLM with reduced token limits to avoid rate limits
+      let response = await smartChat(llmMessages, {
+        functions: functions.length > 0 ? functions : undefined,
+        temperature: 0.5, // Lower temperature for more focused, concise responses
+        maxTokens: 300 // Reduced to encourage brevity
+      });
+
+      // Handle function calls (tool use)
+      while (response.functionCall) {
+        const { name, arguments: argsString } = response.functionCall;
+
+        // Parse arguments from JSON string
+        let parsedArgs: Record<string, unknown> = {};
+        try {
+          parsedArgs = JSON.parse(argsString) as Record<string, unknown>;
+        } catch {
+          logger.warn('ConversationEngine', `Failed to parse tool arguments: ${argsString}`);
+        }
+
+        logger.info('ConversationEngine', `Tool call: ${name}`, { args: parsedArgs });
+
+        // Execute the tool
+        const result = await toolRegistry.execute(name, parsedArgs, this.userId);
+        functionCalls.push({
+          name,
+          arguments: parsedArgs,
+          result: { success: result.success ?? true, message: result.message }
+        });
+
+        // Add tool result to messages (keep it concise to avoid repetition)
+        this.messages.push({
+          role: 'assistant',
+          content: '',
+          name: name
+        });
+        // Only send success status and message, not full result to reduce verbosity
+        const toolResultSummary = result.success
+          ? `Success: ${result.message || 'Done'}`
+          : `Error: ${result.error || 'Failed'}`;
+        this.messages.push({
+          role: 'user', // Tool results are sent as user messages in Groq
+          content: toolResultSummary,
+          name: 'tool_result'
+        });
+
+        // Continue conversation with tool result (keep fewer messages)
+        const continueMessages: Message[] = [
+          { role: 'system', content: this.buildSystemMessage() },
+          ...this.messages.slice(-8) // Reduced from 12
+        ];
+
+        response = await smartChat(continueMessages, {
+          functions,
+          temperature: 0.5, // Lower temperature for more focused, concise responses
+          maxTokens: 300 // Reduced to encourage brevity
+        });
+      }
+
+      const assistantMessage = response.content || "I'm sorry, I couldn't process that request.";
+
+      // Add assistant response to history
+      this.history.push({ role: 'assistant', text: assistantMessage });
+      this.messages.push({ role: 'assistant', content: assistantMessage });
+
+      // Persist assistant message
+      await conversationPersistenceService.addMessage({
+        role: 'assistant',
+        content: assistantMessage,
+        timestamp: new Date().toISOString(),
+        tool_calls: functionCalls.length > 0 ? functionCalls : undefined
+      });
+
+      return {
+        response: assistantMessage,
+        functionCalls
+      };
+
+    } catch (error) {
+      logger.error('ConversationEngine', error as Error, { context: 'chat' });
+
+      const errorMessage = "I'm having trouble processing your request. Please try again.";
+      this.history.push({ role: 'assistant', text: errorMessage });
+
+      return {
+        response: errorMessage,
+        functionCalls
+      };
+    }
+  }
+
+  /**
+   * Legacy method - use chat() instead
+   */
+  async processMessage(message: string): Promise<string> {
+    const result = await this.chat(message);
+    return result.response;
+  }
+
+  getHistory(): HistoryEntry[] {
+    return this.history;
   }
 
   clearHistory(): void {
+    this.history = [];
     this.messages = [];
+    conversationPersistenceService.endSession();
+    this.sessionStarted = false;
+  }
+
+  /**
+   * Refresh context (useful after user actions)
+   */
+  async refreshContext(): Promise<void> {
+    try {
+      this.context = await contextAggregator.getAggregatedContext(this.userId);
+    } catch (error) {
+      logger.error('ConversationEngine', error as Error, { context: 'refreshContext' });
+    }
   }
 }

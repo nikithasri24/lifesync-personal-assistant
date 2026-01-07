@@ -1,140 +1,177 @@
-/**
- * Connections List Component
- * Displays all active connections with permission management
- */
-
 import React, { useState } from 'react';
-import { User, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
-import { deleteConnection } from '../api/connectionsAPI';
-import type { ConnectionWithUser } from '../types/connections';
-import { RELATIONSHIP_INFO } from '../types/connections';
-import PermissionManager from './PermissionManager';
-import { logger } from '../../services/logger';
+import {
+  Users,
+  Settings,
+  Trash2,
+  Heart,
+  UserCircle,
+  X
+} from 'lucide-react';
+import type {
+  ConnectionWithUser,
+  ShareableModule,
+  ModulePermissionLevel,
+  ConnectionRelationship
+} from '../types/connections';
+import { PermissionManager } from './PermissionManager';
+import { MODULE_CONFIGS } from '../types/connections';
 
 interface ConnectionsListProps {
   connections: ConnectionWithUser[];
-  onConnectionDeleted: () => void;
+  onConnectionDeleted?: (connectionId: string) => void;
 }
 
-const ConnectionsList: React.FC<ConnectionsListProps> = ({
+const RELATIONSHIP_ICONS: Record<ConnectionRelationship, React.ReactNode> = {
+  spouse: <Heart className="w-4 h-4 text-pink-500" />,
+  partner: <Heart className="w-4 h-4 text-rose-400" />,
+  friend: <Users className="w-4 h-4 text-blue-500" />,
+  family: <Users className="w-4 h-4 text-green-500" />,
+  roommate: <Users className="w-4 h-4 text-orange-500" />,
+  colleague: <Users className="w-4 h-4 text-slate-500" />,
+  other: <UserCircle className="w-4 h-4 text-gray-500" />,
+};
+
+const RELATIONSHIP_COLORS: Record<ConnectionRelationship, string> = {
+  spouse: 'bg-pink-100 text-pink-700 dark:bg-pink-900 dark:text-pink-300',
+  partner: 'bg-rose-100 text-rose-700 dark:bg-rose-900 dark:text-rose-300',
+  friend: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
+  family: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
+  roommate: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300',
+  colleague: 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300',
+  other: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
+};
+
+export function ConnectionsList({
   connections,
-  onConnectionDeleted,
-}) => {
-  const [expandedConnectionId, setExpandedConnectionId] = useState<string | null>(null);
+  onConnectionDeleted
+}: ConnectionsListProps): React.ReactElement {
+  const [editingConnection, setEditingConnection] = useState<ConnectionWithUser | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const handleDelete = async (connectionId: string, userName: string): Promise<void> => {
-    const confirmDelete = (): boolean => {
-      // eslint-disable-next-line no-alert
-      const userResponse = window.confirm(`Are you sure you want to remove ${userName}? This will delete all shared permissions.`);
-      logger.info(`Delete connection confirmation: ${userResponse}`);
-      return userResponse;
-    };
-
-    if (!confirmDelete()) {
-      return;
+  // Build current permissions from the connection's myPermissions array
+  const buildCurrentPermissions = (
+    conn: ConnectionWithUser
+  ): Record<ShareableModule, ModulePermissionLevel> => {
+    const defaults: Record<ShareableModule, ModulePermissionLevel> = {} as Record<ShareableModule, ModulePermissionLevel>;
+    Object.keys(MODULE_CONFIGS).forEach((module) => {
+      defaults[module as ShareableModule] = 'none';
+    });
+    // Use connection's myPermissions if available
+    const connWithPerms = conn as ConnectionWithUser & { myPermissions?: Array<{ module: ShareableModule; permissionLevel: ModulePermissionLevel }> };
+    if (connWithPerms.myPermissions) {
+      connWithPerms.myPermissions.forEach((p) => {
+        defaults[p.module] = p.permissionLevel;
+      });
     }
-
-    try {
-      setDeletingId(connectionId);
-      await deleteConnection(connectionId);
-      onConnectionDeleted();
-    } catch (error) {
-      logger.error('Error deleting connection:', { error });
-      logger.warn('Failed to delete connection');
-    } finally {
-      setDeletingId(null);
-    }
+    return defaults;
   };
 
-  const toggleExpanded = (connectionId: string): void => {
-    setExpandedConnectionId(prev => prev === connectionId ? null : connectionId);
+  const handleDelete = (connectionId: string) => {
+    setDeletingId(connectionId);
+    onConnectionDeleted?.(connectionId);
+    setDeletingId(null);
   };
 
   if (connections.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-slate-300 bg-white p-12 text-center text-slate-500">
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-50 text-indigo-500">
-          <User className="h-6 w-6" />
-        </div>
-        <p className="text-sm font-medium">No connections yet</p>
-        <p className="text-xs text-slate-400">Start by adding a connection to share your data</p>
+      <div className="text-center py-12">
+        <Users className="w-16 h-16 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
+        <h3 className="text-lg font-medium text-slate-700 dark:text-slate-300 mb-2">
+          No connections yet
+        </h3>
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          Add a connection to start sharing data with family, friends, or colleagues.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-3">
-      {connections.map((connection) => {
-        const relationshipInfo = RELATIONSHIP_INFO[connection.relationship];
-        const isExpanded = expandedConnectionId === connection.id;
-        const displayName = connection.myLabel ?? connection.otherUser.fullName ?? connection.otherUser.email;
-
-        return (
+    <>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {connections.map((connection) => (
           <div
             key={connection.id}
-            className="rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden"
+            className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-4 hover:shadow-md transition-shadow"
           >
-            {/* Connection Header */}
-            <div className="p-4 flex items-center justify-between">
-              <div className="flex items-center gap-3 flex-1">
-                {/* Avatar */}
-                <div className="h-12 w-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg">
-                  {displayName.charAt(0).toUpperCase()}
-                </div>
-
-                {/* Info */}
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-semibold text-slate-900">{displayName}</h3>
-                    <span
-                      className={`px-2 py-0.5 rounded-full text-xs font-medium bg-${relationshipInfo.color}-100 text-${relationshipInfo.color}-700`}
-                    >
-                      {relationshipInfo.label}
-                    </span>
+            {/* Header with avatar and name */}
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center gap-3">
+                {connection.otherUser.avatarUrl ? (
+                  <img
+                    src={connection.otherUser.avatarUrl}
+                    alt={connection.otherUser.fullName || 'User'}
+                    className="w-12 h-12 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white font-semibold text-lg">
+                    {(connection.otherUser.fullName || connection.otherUser.email || '?')[0].toUpperCase()}
                   </div>
-                  <p className="text-sm text-slate-500">{connection.otherUser.email}</p>
-                  {connection.notes && (
-                    <p className="text-xs text-slate-400 mt-1 italic">{connection.notes}</p>
-                  )}
+                )}
+                <div>
+                  <h3 className="font-semibold text-slate-900 dark:text-white">
+                    {connection.myLabel || connection.otherUser.fullName || connection.otherUser.email}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {connection.otherUser.email}
+                  </p>
                 </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => toggleExpanded(connection.id)}
-                  className="p-2 rounded-lg hover:bg-slate-100 transition-colors"
-                  title="Manage permissions"
-                >
-                  {isExpanded ? (
-                    <ChevronUp className="h-5 w-5 text-slate-600" />
-                  ) : (
-                    <ChevronDown className="h-5 w-5 text-slate-600" />
-                  )}
-                </button>
-                <button
-                  onClick={() => void handleDelete(connection.id, displayName)}
-                  disabled={deletingId === connection.id}
-                  className="p-2 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50"
-                  title="Remove connection"
-                >
-                  <Trash2 className="h-5 w-5 text-red-600" />
-                </button>
               </div>
             </div>
 
-            {/* Permission Manager (expanded) */}
-            {isExpanded && (
-              <div className="border-t border-slate-200 bg-slate-50 p-4">
-                <PermissionManager connection={connection} />
-              </div>
-            )}
+            {/* Relationship badge */}
+            <div className="flex items-center gap-2 mb-4">
+              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${RELATIONSHIP_COLORS[connection.relationship]}`}>
+                {RELATIONSHIP_ICONS[connection.relationship]}
+                {connection.relationship.charAt(0).toUpperCase() + connection.relationship.slice(1)}
+              </span>
+              <span className="text-xs text-slate-400 dark:text-slate-500">
+                Connected {new Date(connection.acceptedAt || connection.createdAt).toLocaleDateString()}
+              </span>
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => setEditingConnection(connection)}
+                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 rounded-lg transition-colors"
+              >
+                <Settings className="w-4 h-4" />
+                Sharing
+              </button>
+              <button
+                onClick={() => handleDelete(connection.id)}
+                disabled={deletingId === connection.id}
+                className="px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-lg transition-colors disabled:opacity-50"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
           </div>
-        );
-      })}
-    </div>
+        ))}
+      </div>
+
+      {/* Permission Manager Modal */}
+      {editingConnection && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="relative max-h-[90vh] overflow-auto">
+            <button
+              onClick={() => setEditingConnection(null)}
+              className="absolute top-4 right-4 p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg z-10"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <PermissionManager
+              connectionId={editingConnection.id}
+              connectionName={editingConnection.myLabel || editingConnection.otherUser.fullName || editingConnection.otherUser.email}
+              currentPermissions={buildCurrentPermissions(editingConnection)}
+              onClose={() => setEditingConnection(null)}
+            />
+          </div>
+        </div>
+      )}
+    </>
   );
-};
+}
 
 export default ConnectionsList;

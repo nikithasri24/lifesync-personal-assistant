@@ -144,7 +144,7 @@ export interface ActivityEntry {
   userName: string;
   type: ActivityType;
   description: string;
-  changes?: Record<string, { old: any; new: any }>;
+  changes?: Record<string, { old: unknown; new: unknown }>;
   timestamp: string;
 }
 
@@ -388,7 +388,7 @@ export interface DragDropResult {
 export interface BulkAction {
   type: 'update_status' | 'update_priority' | 'assign' | 'delete' | 'move_to_milestone';
   taskIds: string[];
-  value: any;
+  value: string | number | boolean | null;
 }
 
 export interface TaskUpdate {

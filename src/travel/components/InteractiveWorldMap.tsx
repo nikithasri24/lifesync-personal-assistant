@@ -14,7 +14,7 @@ type InteractiveWorldMapProps = {
 
 const InteractiveWorldMap: React.FC<InteractiveWorldMapProps> = ({
   visitedCountries,
-  _onCountryClick,
+  onCountryClick: _onCountryClick,
 }) => {
   const [_hoveredCountry, _setHoveredCountry] = React.useState<string | null>(null);
 
@@ -47,7 +47,7 @@ const InteractiveWorldMap: React.FC<InteractiveWorldMapProps> = ({
         // For now, we'll use a simpler approach
         logger.info('InteractiveWorldMap', 'Map data loaded', data);
       })
-      .catch(err => logger.error('InteractiveWorldMap', 'Error loading map:', err));
+      .catch(err => logger.error('InteractiveWorldMap', 'Error loading map', { error: err instanceof Error ? err.message : String(err) }));
   }, []);
 
   return (

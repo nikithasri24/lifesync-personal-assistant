@@ -5,7 +5,6 @@
 
 import React from 'react';
 import type { VisitStatus } from '../types';
-import { logger } from '../../services/logger';
 
 type SVGWorldMapProps = {
   visitedCountries: Record<string, VisitStatus>;
@@ -13,7 +12,8 @@ type SVGWorldMapProps = {
 };
 
 interface CountryGeo {
-  code: string;
+  id?: string;
+  code?: string;
   name: string;
   path: string;
 }
@@ -22,7 +22,7 @@ const SVGWorldMap: React.FC<SVGWorldMapProps> = ({ visitedCountries, onCountryCl
   const [hoveredCountry, setHoveredCountry] = React.useState<string | null>(null);
   const [tooltip, setTooltip] = React.useState<{ x: number; y: number; name: string } | null>(null);
   const [countries, setCountries] = React.useState<CountryGeo[]>([]);
-  const [_loading, setLoading] = React.useState(true);
+  const [loading, setLoading] = React.useState(true);
 
   const getCountryFill = (countryCode: string, isHovered: boolean): string => {
     const status = visitedCountries[countryCode];
@@ -46,7 +46,7 @@ const SVGWorldMap: React.FC<SVGWorldMapProps> = ({ visitedCountries, onCountryCl
     }
   };
 
-  const handleMouseMove = (e: React.MouseEvent, countryName: string): void => {
+  const handleMouseMove = (e: React.MouseEvent, countryName: string) => {
     const svg = e.currentTarget.closest('svg');
     if (svg) {
       const rect = svg.getBoundingClientRect();
@@ -60,25 +60,25 @@ const SVGWorldMap: React.FC<SVGWorldMapProps> = ({ visitedCountries, onCountryCl
 
   // Fetch real world map data
   React.useEffect(() => {
-    const fetchMapData = async (): Promise<void> => {
+    const fetchMapData = async () => {
       try {
         // Using Natural Earth low-resolution world map data
         const response = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json');
-        const _topology: unknown = await response.json();
+        const topology = await response.json();
 
         // Convert TopoJSON to GeoJSON and generate SVG paths
         // For now, we'll use a simplified static dataset
         setCountries(getStaticCountryPaths());
         setLoading(false);
       } catch (error) {
-        logger.error('Error loading map data:', { error });
+        console.error('Error loading map data:', error);
         // Fallback to static paths
         setCountries(getStaticCountryPaths());
         setLoading(false);
       }
     };
 
-    void fetchMapData();
+    fetchMapData();
   }, []);
 
   // Improved static country paths with more realistic shapes
@@ -303,17 +303,18 @@ const SVGWorldMap: React.FC<SVGWorldMapProps> = ({ visitedCountries, onCountryCl
         {/* Countries */}
         <g>
           {countries.map((country) => {
-            const isHovered = hoveredCountry === country.code;
+            const countryCode = country.code ?? country.id ?? '';
+            const isHovered = hoveredCountry === countryCode;
             return (
               <path
-                key={country.code}
+                key={countryCode}
                 d={country.path}
-                fill={getCountryFill(country.code, isHovered)}
+                fill={getCountryFill(countryCode, isHovered)}
                 stroke="#FFFFFF"
                 strokeWidth="1.5"
                 className="cursor-pointer transition-all duration-150"
-                onClick={() => onCountryClick(country.code)}
-                onMouseEnter={() => setHoveredCountry(country.code)}
+                onClick={() => onCountryClick(countryCode)}
+                onMouseEnter={() => setHoveredCountry(countryCode)}
                 onMouseLeave={() => {
                   setHoveredCountry(null);
                   setTooltip(null);

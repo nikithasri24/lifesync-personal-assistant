@@ -91,16 +91,16 @@ export const GoalEditor: React.FC<GoalEditorProps> = ({
     try {
       setSaving(true);
       await onSave({
-        id: form.id,
-        name: form.name,
-        targetAmount: form.targetAmount,
+        ...(form.id ? { id: form.id } : {}),
+        name: form.name ?? '',
+        targetAmount: form.targetAmount ?? 0,
         currentAmount: form.currentAmount ?? 0,
         startingAmount: 0, // Always start from 0
-        dueDateISO: form.dueDateISO,
+        dueDateISO: form.dueDateISO ?? '',
         type: form.type ?? 'savings',
         linkedAccountId: form.linkedAccountId,
         trackNetworth: form.trackNetworth,
-      });
+      } as GoalInput);
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save goal');

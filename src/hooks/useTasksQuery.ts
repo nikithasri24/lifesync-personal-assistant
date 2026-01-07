@@ -7,7 +7,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { UseQueryResult, UseMutationResult } from '@tanstack/react-query';
-import type { TaskData, ProjectData } from '../services/types';
+import type { TaskData, Project } from '../services/types';
 import { queryKeys, queryOptions } from '@/lib/react-query';
 import {
   getTasks,
@@ -17,13 +17,139 @@ import {
   deleteTask,
   permanentlyDeleteTask,
   restoreTask,
+} from '@/api/tasksAPI';
+import {
   getProjects,
   getProject,
   createProject,
   updateProject,
   deleteProject,
-} from '@/api/tasksAPI';
+} from '@/api/projectsAPI';
 import { logger } from '@/services/logger';
+import { recordTaskCompletion } from '@/services/gamification';
+import { dataEvents } from '@/lib/dataEvents';
+import { addDays, addWeeks, addMonths, addYears, format, getDay, setDay, parseISO } from 'date-fns';
+
+/**
+ * Calculate the next occurrence date for a recurring task
+ */
+function calculateNextOccurrence(task: TaskData): string | null {
+  if (!task.recurrence_pattern || task.recurrence_pattern === 'none') {
+    return null;
+  }
+
+  const baseDate = task.due_date ? parseISO(task.due_date) : new Date();
+  const interval = task.recurrence_interval || 1;
+
+  let nextDate: Date;
+
+  switch (task.recurrence_pattern) {
+    case 'daily':
+      nextDate = addDays(baseDate, interval);
+      break;
+    case 'weekly':
+      if (task.recurrence_days && task.recurrence_days.length > 0) {
+        // Find the next day in the recurrence_days array
+        const currentDay = getDay(baseDate);
+        const sortedDays = [...task.recurrence_days].sort((a, b) => a - b);
+
+        // Find next day in current week
+        const nextDayInWeek = sortedDays.find(d => d > currentDay);
+        if (nextDayInWeek !== undefined) {
+          nextDate = setDay(baseDate, nextDayInWeek);
+        } else {
+          // Move to next week and get first day
+          nextDate = addWeeks(setDay(baseDate, sortedDays[0]), interval);
+        }
+      } else {
+        nextDate = addWeeks(baseDate, interval);
+      }
+      break;
+    case 'monthly':
+      nextDate = addMonths(baseDate, interval);
+      break;
+    case 'yearly':
+      nextDate = addYears(baseDate, interval);
+      break;
+    default:
+      return null;
+  }
+
+  return format(nextDate, 'yyyy-MM-dd');
+}
+
+/**
+ * Create the next occurrence of a recurring task
+ */
+async function createNextRecurringTask(
+  completedTask: TaskData,
+  createTaskFn: (task: Omit<TaskData, 'id'>) => Promise<TaskData>
+): Promise<TaskData | null> {
+  const nextDueDate = calculateNextOccurrence(completedTask);
+  if (!nextDueDate) return null;
+
+  // Check if we've reached the end date or count limit
+  if (completedTask.recurrence_end_date) {
+    const endDate = parseISO(completedTask.recurrence_end_date);
+    const nextDate = parseISO(nextDueDate);
+    if (nextDate > endDate) {
+      logger.info('Tasks', 'Recurring task reached end date, not creating next occurrence');
+      return null;
+    }
+  }
+
+  // Create the next task instance
+  const nextTask: Omit<TaskData, 'id'> = {
+    title: completedTask.title,
+    description: completedTask.description,
+    status: 'todo',
+    priority: completedTask.priority,
+    due_date: nextDueDate,
+    estimated_time: completedTask.estimated_time,
+    project_id: completedTask.project_id,
+    tags: completedTask.tags,
+    category: completedTask.category,
+    starred: completedTask.starred,
+    recurrence_pattern: completedTask.recurrence_pattern,
+    recurrence_interval: completedTask.recurrence_interval,
+    recurrence_days: completedTask.recurrence_days,
+    recurrence_end_date: completedTask.recurrence_end_date,
+    recurrence_count: completedTask.recurrence_count,
+    parent_recurring_id: completedTask.parent_recurring_id || completedTask.id,
+  };
+
+  try {
+    const created = await createTaskFn(nextTask);
+    logger.info('Tasks', 'Created next recurring task', {
+      originalTask: completedTask.title,
+      nextDueDate,
+      newTaskId: created.id,
+    });
+    return created;
+  } catch (error) {
+    logger.error('Tasks', 'Failed to create next recurring task', { error });
+    return null;
+  }
+}
+
+/**
+ * Get tasks that would be unblocked when a task is completed
+ */
+function getTasksToUnblock(completedTaskId: string, allTasks: TaskData[]): TaskData[] {
+  return allTasks.filter(task => {
+    if (!task.depends_on?.includes(completedTaskId)) return false;
+    if (task.status === 'done' || task.deleted) return false;
+
+    // Check if this is the only blocking dependency
+    const otherBlockingDeps = task.depends_on.filter(depId => {
+      if (depId === completedTaskId) return false;
+      const depTask = allTasks.find(t => t.id === depId);
+      return depTask && depTask.status !== 'done';
+    });
+
+    return otherBlockingDeps.length === 0;
+  });
+}
 
 // =====================================================
 // TASKS QUERY HOOKS
@@ -44,7 +170,7 @@ export interface TaskFilters {
  */
 export function useTasks(filters?: TaskFilters): UseQueryResult<TaskData[], Error> {
   return useQuery({
-    queryKey: queryKeys.tasks.list(filters),
+    queryKey: queryKeys.tasks.list(filters as Record<string, unknown> | undefined),
     queryFn: () => getTasks(filters),
     ...queryOptions.user,
   });
@@ -74,26 +200,26 @@ export function useCreateTask(): UseMutationResult<TaskData, Error, Omit<TaskDat
 
   return useMutation({
     mutationFn: async (input: Omit<TaskData, 'id' | 'created_at' | 'updated_at'>) => {
-      logger.debug('Creating task', { title: input.title, priority: input.priority });
+      logger.debug('Tasks', 'Creating task', { title: input.title, priority: input.priority });
       const result = await createTask(input);
       return result;
     },
     onSuccess: (newTask) => {
-      logger.info('Task created successfully', { id: newTask.id, title: newTask.title });
+      logger.info('Tasks', 'Task created successfully', { id: newTask.id, title: newTask.title });
 
-      // Invalidate all task lists
-      void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.lists() });
-
-      // Optimistically add to cache
+      // Optimistically add to cache for immediate UI response
       queryClient.setQueryData<TaskData[]>(
         queryKeys.tasks.lists(),
         (old) => {
           return old ? [newTask, ...old] : [newTask];
         }
       );
+
+      // Emit event - DataSyncProvider handles cache invalidation
+      dataEvents.emit('task:created', { taskId: newTask.id!, task: newTask });
     },
     onError: (error: Error) => {
-      logger.error('Failed to create task', { error: error.message });
+      logger.error('Tasks', 'Failed to create task', { error: error.message });
     },
   });
 }
@@ -105,19 +231,19 @@ export function useUpdateTask(): UseMutationResult<
   TaskData,
   Error,
   { id: string; updates: Partial<TaskData> },
-  { previousTasks?: TaskData[]; previousTask?: TaskData }
+  { previousTasks?: TaskData[]; previousTask?: TaskData; wasCompleted?: boolean }
 > {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<TaskData> }) => {
-      logger.debug('Updating task', { id, updates });
+      logger.debug('Tasks', 'Updating task', { id, updates });
       const result = await updateTask(id, updates);
       return result;
     },
     // Optimistic update - happens BEFORE API call
     onMutate: async ({ id, updates }) => {
-      logger.debug('Optimistic update: updating task', { id, updates });
+      logger.debug('Tasks', 'Optimistic update: updating task', { id, updates });
 
       // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
       await queryClient.cancelQueries({ queryKey: queryKeys.tasks.lists() });
@@ -126,6 +252,9 @@ export function useUpdateTask(): UseMutationResult<
       // Snapshot the previous values for rollback
       const previousTasks = queryClient.getQueryData<TaskData[]>(queryKeys.tasks.lists());
       const previousTask = queryClient.getQueryData<TaskData>(queryKeys.tasks.detail(id));
+
+      // Track if this is a completion (status changing to 'done')
+      const wasCompleted = updates.status === 'done' && previousTask?.status !== 'done';
 
       // Optimistically update task lists
       queryClient.setQueryData<TaskData[]>(
@@ -146,10 +275,105 @@ export function useUpdateTask(): UseMutationResult<
       }
 
       // Return context with previous values for rollback
-      return { previousTasks, previousTask };
+      return { previousTasks, previousTask, wasCompleted };
     },
-    onSuccess: (updatedTask) => {
-      logger.info('Task updated successfully', { id: updatedTask.id, title: updatedTask.title });
+    onSuccess: (updatedTask, _variables, context) => {
+      logger.info('Tasks', 'Task updated successfully', { id: updatedTask.id, title: updatedTask.title });
+
+      // Record gamification points if task was just completed
+      if (context?.wasCompleted && updatedTask.id) {
+        // Map task priority to gamification priority (high/urgent/important -> high)
+        const taskPriority = updatedTask.priority;
+        const gamificationPriority: 'low' | 'medium' | 'high' =
+          taskPriority === 'high' || taskPriority === 'urgent' || taskPriority === 'important'
+            ? 'high'
+            : taskPriority === 'low'
+              ? 'low'
+              : 'medium';
+
+        recordTaskCompletion(updatedTask.id, gamificationPriority).catch((err) => {
+          logger.error('Gamification', err instanceof Error ? err : new Error(String(err)));
+        });
+
+        // Check for tasks that are now unblocked and move them to todo
+        const allTasks = queryClient.getQueryData<TaskData[]>(queryKeys.tasks.lists()) || [];
+
+        // Debug: Log all tasks with dependencies
+        const tasksWithDeps = allTasks.filter(t => t.depends_on && t.depends_on.length > 0);
+        logger.info('Tasks', 'DEBUG: Tasks with dependencies', {
+          completedTaskId: updatedTask.id,
+          tasksWithDeps: tasksWithDeps.map(t => ({
+            id: t.id,
+            title: t.title,
+            depends_on: t.depends_on,
+            status: t.status,
+            includesCompletedTask: t.depends_on?.includes(updatedTask.id!)
+          }))
+        });
+
+        const unblockedTasks = getTasksToUnblock(updatedTask.id, allTasks);
+        logger.info('Tasks', 'DEBUG: Unblocked tasks found', { count: unblockedTasks.length, tasks: unblockedTasks.map(t => t.title) });
+
+        if (unblockedTasks.length > 0) {
+          logger.info('Tasks', 'Tasks unblocked by completion', {
+            completedTask: updatedTask.title,
+            unblockedTasks: unblockedTasks.map(t => t.title)
+          });
+
+          // Update unblocked tasks to 'todo' status so they appear in backlog/todo
+          unblockedTasks.forEach(unblockedTask => {
+            logger.info('Tasks', 'DEBUG: Processing unblocked task', {
+              id: unblockedTask.id,
+              title: unblockedTask.title,
+              currentStatus: unblockedTask.status
+            });
+
+            if (unblockedTask.id) {
+              // Update in database - always update to ensure is_blocked is false
+              updateTask(unblockedTask.id, {
+                status: 'todo',
+                is_blocked: false
+              }).then(() => {
+                logger.info('Tasks', `Task "${unblockedTask.title}" moved to todo after being unblocked`);
+                // Invalidate to refresh
+                queryClient.invalidateQueries({ queryKey: queryKeys.tasks.lists() });
+              }).catch(err => {
+                logger.error('Tasks', `Failed to update unblocked task: ${err}`);
+              });
+            }
+          });
+
+          // Optimistically update the cache
+          queryClient.setQueryData<TaskData[]>(
+            queryKeys.tasks.lists(),
+            (old) => {
+              if (!old) return old;
+              return old.map(task => {
+                const isUnblocked = unblockedTasks.some(ut => ut.id === task.id);
+                if (isUnblocked) {
+                  return { ...task, status: 'todo' as const, is_blocked: false };
+                }
+                return task;
+              });
+            }
+          );
+        }
+
+        // Handle recurring tasks - create next occurrence
+        if (updatedTask.recurrence_pattern && updatedTask.recurrence_pattern !== 'none') {
+          createNextRecurringTask(updatedTask, createTask).then(nextTask => {
+            if (nextTask) {
+              // Add the new task to the cache
+              queryClient.setQueryData<TaskData[]>(
+                queryKeys.tasks.lists(),
+                (old) => old ? [...old, nextTask] : [nextTask]
+              );
+              // Invalidate to refresh from server
+              queryClient.invalidateQueries({ queryKey: queryKeys.tasks.lists() });
+            }
+          });
+        }
+      }
 
       // Update with server response (in case server modified the data)
       queryClient.setQueryData(
@@ -165,9 +389,24 @@ export function useUpdateTask(): UseMutationResult<
           );
         }
       );
+
+      // Emit appropriate event based on what changed
+      if (context?.wasCompleted) {
+        dataEvents.emit('task:completed', {
+          taskId: updatedTask.id!,
+          task: updatedTask,
+          changes: _variables.updates,
+        });
+      } else {
+        dataEvents.emit('task:updated', {
+          taskId: updatedTask.id!,
+          task: updatedTask,
+          changes: _variables.updates,
+        });
+      }
     },
     onError: (error: Error, { id }, context) => {
-      logger.error('Failed to update task - rolling back', { error: error.message, id });
+      logger.error('Tasks', 'Failed to update task - rolling back', { error: error.message, id });
 
       // Rollback to previous state on error
       if (context?.previousTasks) {
@@ -177,33 +416,25 @@ export function useUpdateTask(): UseMutationResult<
         queryClient.setQueryData(queryKeys.tasks.detail(id), context.previousTask);
       }
     },
-    // Always refetch after success or error to ensure we're in sync with server
-    onSettled: (_data, _error, { id }) => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.lists() });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.detail(id) });
-    },
   });
 }
 
 /**
  * Delete a task (soft delete)
  */
-export function useDeleteTask(): UseMutationResult<TaskData, Error, string, unknown> {
+export function useDeleteTask(): UseMutationResult<void, Error, string, unknown> {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (id: string) => {
-      logger.debug('Deleting task (soft delete)', { id });
+      logger.debug('Tasks', 'Deleting task (soft delete)', { id });
       const result = await deleteTask(id);
       return result;
     },
     onSuccess: (_data, deletedId) => {
-      logger.info('Task deleted successfully', { id: deletedId });
+      logger.info('Tasks', 'Task deleted successfully', { id: deletedId });
 
-      // Invalidate all task lists
-      void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.lists() });
-
-      // Mark as deleted in cache (soft delete)
+      // Mark as deleted in cache (soft delete) for immediate UI response
       queryClient.setQueryData<TaskData[]>(
         queryKeys.tasks.lists(),
         (old) => {
@@ -214,9 +445,12 @@ export function useDeleteTask(): UseMutationResult<TaskData, Error, string, unkn
           );
         }
       );
+
+      // Emit event - DataSyncProvider handles cache invalidation
+      dataEvents.emit('task:deleted', { taskId: deletedId, permanent: false });
     },
     onError: (error: Error, id) => {
-      logger.error('Failed to delete task', { error: error.message, id });
+      logger.error('Tasks', 'Failed to delete task', { error: error.message, id });
     },
   });
 }
@@ -229,29 +463,29 @@ export function usePermanentlyDeleteTask(): UseMutationResult<void, Error, strin
 
   return useMutation({
     mutationFn: async (id: string) => {
-      logger.debug('Permanently deleting task', { id });
+      logger.debug('Tasks', 'Permanently deleting task', { id });
       const result = await permanentlyDeleteTask(id);
       return result;
     },
     onSuccess: (_data, deletedId) => {
-      logger.info('Task permanently deleted', { id: deletedId });
-
-      // Invalidate all task lists
-      void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.lists() });
+      logger.info('Tasks', 'Task permanently deleted', { id: deletedId });
 
       // Remove from cache
       queryClient.removeQueries({ queryKey: queryKeys.tasks.detail(deletedId) });
 
-      // Optimistically remove from list caches
+      // Optimistically remove from list caches for immediate UI response
       queryClient.setQueryData<TaskData[]>(
         queryKeys.tasks.lists(),
         (old) => {
           return old?.filter((task) => task.id !== deletedId);
         }
       );
+
+      // Emit event - DataSyncProvider handles cache invalidation
+      dataEvents.emit('task:deleted', { taskId: deletedId, permanent: true });
     },
     onError: (error: Error, id) => {
-      logger.error('Failed to permanently delete task', { error: error.message, id });
+      logger.error('Tasks', 'Failed to permanently delete task', { error: error.message, id });
     },
   });
 }
@@ -264,17 +498,14 @@ export function useRestoreTask(): UseMutationResult<TaskData, Error, string, unk
 
   return useMutation({
     mutationFn: async (id: string) => {
-      logger.debug('Restoring task', { id });
+      logger.debug('Tasks', 'Restoring task', { id });
       const result = await restoreTask(id);
       return result;
     },
     onSuccess: (restoredTask) => {
-      logger.info('Task restored successfully', { id: restoredTask.id, title: restoredTask.title });
+      logger.info('Tasks', 'Task restored successfully', { id: restoredTask.id, title: restoredTask.title });
 
-      // Invalidate all task lists
-      void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.lists() });
-
-      // Update in cache
+      // Update in cache for immediate UI response
       queryClient.setQueryData<TaskData[]>(
         queryKeys.tasks.lists(),
         (old) => {
@@ -283,9 +514,12 @@ export function useRestoreTask(): UseMutationResult<TaskData, Error, string, unk
           );
         }
       );
+
+      // Emit event - DataSyncProvider handles cache invalidation
+      dataEvents.emit('task:restored', { taskId: restoredTask.id!, task: restoredTask });
     },
     onError: (error: Error, id) => {
-      logger.error('Failed to restore task', { error: error.message, id });
+      logger.error('Tasks', 'Failed to restore task', { error: error.message, id });
     },
   });
 }
@@ -295,13 +529,15 @@ export function useRestoreTask(): UseMutationResult<TaskData, Error, string, unk
 // =====================================================
 
 export interface ProjectFilters {
-  status?: ProjectData['status'];
+  status?: Project['status'];
+  priority?: Project['priority'];
+  tags?: string[];
 }
 
 /**
  * Get all projects with optional filters
  */
-export function useProjects(filters?: ProjectFilters): UseQueryResult<ProjectData[], Error> {
+export function useProjects(filters?: ProjectFilters): UseQueryResult<Project[], Error> {
   return useQuery({
     queryKey: [...queryKeys.tasks.all, 'projects', filters] as const,
     queryFn: () => getProjects(filters),
@@ -312,7 +548,7 @@ export function useProjects(filters?: ProjectFilters): UseQueryResult<ProjectDat
 /**
  * Get a single project by ID
  */
-export function useProject(id: string | null): UseQueryResult<ProjectData, Error> {
+export function useProject(id: string | null): UseQueryResult<Project, Error> {
   return useQuery({
     queryKey: [...queryKeys.tasks.all, 'projects', 'detail', id] as const,
     queryFn: () => getProject(id ?? ''),
@@ -325,26 +561,29 @@ export function useProject(id: string | null): UseQueryResult<ProjectData, Error
 // PROJECTS MUTATION HOOKS
 // =====================================================
 
+type CreateProjectInput = Omit<Project, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'milestones'>;
+type UpdateProjectInput = Partial<Omit<Project, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'milestones'>>;
+
 /**
  * Create a new project
  */
-export function useCreateProject(): UseMutationResult<ProjectData, Error, Omit<ProjectData, 'id' | 'created_at' | 'updated_at'>, unknown> {
+export function useCreateProject(): UseMutationResult<Project, Error, CreateProjectInput, unknown> {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (input: Omit<ProjectData, 'id' | 'created_at' | 'updated_at'>) => {
-      logger.debug('Creating project', { name: input.name, status: input.status });
+    mutationFn: async (input: CreateProjectInput) => {
+      logger.debug('Projects', 'Creating project', { name: input.name, status: input.status });
       const result = await createProject(input);
       return result;
     },
     onSuccess: (newProject) => {
-      logger.info('Project created successfully', { id: newProject.id, name: newProject.name });
+      logger.info('Projects', 'Project created successfully', { id: newProject.id, name: newProject.name });
 
       // Invalidate all project queries
       void queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'projects'] });
 
       // Optimistically add to cache
-      queryClient.setQueryData<ProjectData[]>(
+      queryClient.setQueryData<Project[]>(
         [...queryKeys.tasks.all, 'projects', undefined] as const,
         (old) => {
           return old ? [newProject, ...old] : [newProject];
@@ -352,7 +591,7 @@ export function useCreateProject(): UseMutationResult<ProjectData, Error, Omit<P
       );
     },
     onError: (error: Error) => {
-      logger.error('Failed to create project', { error: error.message });
+      logger.error('Projects', 'Failed to create project', { error: error.message });
     },
   });
 }
@@ -360,20 +599,20 @@ export function useCreateProject(): UseMutationResult<ProjectData, Error, Omit<P
 /**
  * Update an existing project
  */
-export function useUpdateProject(): UseMutationResult<ProjectData, Error, { id: string; updates: Partial<ProjectData> }, unknown> {
+export function useUpdateProject(): UseMutationResult<Project, Error, { id: string; updates: UpdateProjectInput }, unknown> {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, updates }: { id: string; updates: Partial<ProjectData> }) => {
-      logger.debug('Updating project', { id, updates });
+    mutationFn: async ({ id, updates }: { id: string; updates: UpdateProjectInput }) => {
+      logger.debug('Projects', 'Updating project', { id, updates });
       const result = await updateProject(id, updates);
       return result;
     },
     onMutate: ({ id, updates }) => {
-      logger.debug('Optimistic update: updating project', { id, updates });
+      logger.debug('Projects', 'Optimistic update: updating project', { id, updates });
     },
     onSuccess: (updatedProject) => {
-      logger.info('Project updated successfully', { id: updatedProject.id, name: updatedProject.name });
+      logger.info('Projects', 'Project updated successfully', { id: updatedProject.id, name: updatedProject.name });
 
       // Invalidate all project queries
       void queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'projects'] });
@@ -385,7 +624,7 @@ export function useUpdateProject(): UseMutationResult<ProjectData, Error, { id: 
       );
 
       // Optimistically update in list caches
-      queryClient.setQueryData<ProjectData[]>(
+      queryClient.setQueryData<Project[]>(
         [...queryKeys.tasks.all, 'projects', undefined] as const,
         (old) => {
           return old?.map((project) =>
@@ -395,7 +634,7 @@ export function useUpdateProject(): UseMutationResult<ProjectData, Error, { id: 
       );
     },
     onError: (error: Error, { id }) => {
-      logger.error('Failed to update project', { error: error.message, id });
+      logger.error('Projects', 'Failed to update project', { error: error.message, id });
     },
   });
 }
@@ -408,12 +647,12 @@ export function useDeleteProject(): UseMutationResult<void, Error, string, unkno
 
   return useMutation({
     mutationFn: async (id: string) => {
-      logger.debug('Deleting project', { id });
+      logger.debug('Projects', 'Deleting project', { id });
       const result = await deleteProject(id);
       return result;
     },
     onSuccess: (_data, deletedId) => {
-      logger.info('Project deleted successfully', { id: deletedId });
+      logger.info('Projects', 'Project deleted successfully', { id: deletedId });
 
       // Invalidate all project queries
       void queryClient.invalidateQueries({ queryKey: [...queryKeys.tasks.all, 'projects'] });
@@ -422,7 +661,7 @@ export function useDeleteProject(): UseMutationResult<void, Error, string, unkno
       queryClient.removeQueries({ queryKey: [...queryKeys.tasks.all, 'projects', 'detail', deletedId] });
 
       // Optimistically remove from list caches
-      queryClient.setQueryData<ProjectData[]>(
+      queryClient.setQueryData<Project[]>(
         [...queryKeys.tasks.all, 'projects', undefined] as const,
         (old) => {
           return old?.filter((project) => project.id !== deletedId);
@@ -430,7 +669,7 @@ export function useDeleteProject(): UseMutationResult<void, Error, string, unkno
       );
     },
     onError: (error: Error, id) => {
-      logger.error('Failed to delete project', { error: error.message, id });
+      logger.error('Projects', 'Failed to delete project', { error: error.message, id });
     },
   });
 }

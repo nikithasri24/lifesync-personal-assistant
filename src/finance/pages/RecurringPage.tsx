@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { PendingTransactionsReview, RecurringTransactionsList } from '../components/recurring';
-import { useGeneratePendingTransactionsMutation } from '../hooks/useFinanceQuery';
+import { useGeneratePendingTransactionsMutation } from '@/hooks/useFinanceQuery';
 
 const RecurringPage: React.FC = () => {
   const generateMutation = useGeneratePendingTransactionsMutation();

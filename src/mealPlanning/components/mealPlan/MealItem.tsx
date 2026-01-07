@@ -1,173 +1,49 @@
-/**
- * MealItem Component
- * Displays a single planned meal with inline editing and actions
- */
-
-import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { createPortal } from 'react-dom';
-import { ChefHat, Trash2 } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Flame, Pencil, Trash2, Check, X, RefreshCw, Undo2 } from 'lucide-react';
 import type { PlannedMeal, Recipe } from '../../../types';
-import {
-  useUpdatePlannedMealMutation,
-  useDeletePlannedMealMutation,
-  useCreateRecipeMutation,
-  useUpdateRecipeMutation,
-  useMealPlansQuery,
-} from '../../hooks/useMealPlanningQuery';
-import { useAppStore } from '../../../stores';
-import { ensureDate } from '../../utils/mealPlanHelpers';
+import { LogMealButton } from '../../../components/nutrition/LogMealButton';
+import { useUpdatePlannedMealMutation, useDeletePlannedMealMutation } from '../../../hooks/useMealPlanningQuery';
+import { SwapMealModal } from './SwapMealModal';
 import { logger } from '../../../services/logger';
 
-export interface MealItemProps {
+// Meal type color mapping
+const MEAL_TYPE_COLORS = {
+  breakfast: { bg: 'bg-amber-600', hover: 'hover:bg-amber-500', eaten: 'bg-amber-700' },
+  lunch: { bg: 'bg-emerald-600', hover: 'hover:bg-emerald-500', eaten: 'bg-emerald-700' },
+  dinner: { bg: 'bg-indigo-600', hover: 'hover:bg-indigo-500', eaten: 'bg-indigo-700' },
+  snack: { bg: 'bg-pink-600', hover: 'hover:bg-pink-500', eaten: 'bg-pink-700' },
+};
+
+interface MealItemProps {
   meal: PlannedMeal;
   recipes: Recipe[];
-  onShowRecipeForm: (initialName: string, onSave: (recipe: Recipe) => void) => void;
+  onShowRecipeForm: (initialName: string, onSave: (recipe: Omit<Recipe, 'id' | 'createdAt'>) => void) => void;
   onShowSimpleEdit: (recipe: Recipe, onSave: (updates: Partial<Recipe>) => void) => void;
 }
 
-interface MatchCandidate {
-  id: string;
-  name: string;
-  score: number;
-  type: 'custom' | 'option' | 'recipe';
-  count?: number;
-}
+export const MealItem: React.FC<MealItemProps> = ({ meal, recipes, onShowRecipeForm: _onShowRecipeForm, onShowSimpleEdit: _onShowSimpleEdit }) => {
+  const recipe = recipes.find(r => r.id === meal.recipeId);
+  const mealName = recipe?.name || meal.customMeal || 'Unnamed meal';
+  const calories = recipe?.calories ? recipe.calories * (meal.servings || 1) : null;
+  const isRecipeMeal = !!(recipe && meal.recipeId);
 
-/**
- * Score a text match for fuzzy search
- */
-function scoreMatch(text: string, query: string): number {
-  const lower = text.toLowerCase();
-  if (lower === query) return 1000;
-  if (lower.startsWith(query)) return 900;
-  const words = lower.split(/\s+/);
-  if (words.some(w => w.startsWith(query))) return 800;
-  if (lower.includes(query)) return 700;
-
-  // Fuzzy match
-  let fuzzyScore = 0;
-  let queryIdx = 0;
-  for (let i = 0; i < lower.length && queryIdx < query.length; i++) {
-    if (lower[i] === query[queryIdx]) {
-      fuzzyScore += (100 - i);
-      queryIdx++;
-    }
-  }
-  if (queryIdx === query.length) return fuzzyScore;
-  return 0;
-}
-
-export const MealItem: React.FC<MealItemProps> = ({
-  meal,
-  recipes,
-  onShowRecipeForm,
-  onShowSimpleEdit,
-}: MealItemProps): React.ReactElement => {
-  const { mealOptions } = useAppStore();
-  const { data: mealPlans = [] } = useMealPlansQuery();
-  const updatePlannedMealMutation = useUpdatePlannedMealMutation();
-  const deletePlannedMealMutation = useDeletePlannedMealMutation();
-  const createRecipeMutation = useCreateRecipeMutation();
-  const updateRecipeMutation = useUpdateRecipeMutation();
+  // Get color based on meal type
+  const mealType = meal.mealType as keyof typeof MEAL_TYPE_COLORS;
+  const colors = MEAL_TYPE_COLORS[mealType] || MEAL_TYPE_COLORS.breakfast;
 
   const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState('');
-  const [showList, setShowList] = useState(false);
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  const inputRef = useRef<HTMLInputElement | null>(null);
+  const [editedName, setEditedName] = useState(mealName);
+  const [showSwapModal, setShowSwapModal] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const recipe = recipes.find((item) => item.id === meal.recipeId);
-  const displayName = recipe?.name ?? meal.customMeal ?? 'Meal';
+  const updateMealMutation = useUpdatePlannedMealMutation();
+  const deleteMealMutation = useDeletePlannedMealMutation();
 
-  // Extract all historical custom meals from all meal plans
-  const historicalMeals = useMemo(() => {
-    const customMeals = new Map<string, { name: string; count: number; lastUsed: Date }>();
+  // Update editedName when mealName changes (after successful update)
+  useEffect(() => {
+    setEditedName(mealName);
+  }, [mealName]);
 
-    mealPlans.forEach(plan => {
-      plan.meals?.forEach(m => {
-        if (m.customMeal && !m.recipeId) {
-          const key = m.customMeal.toLowerCase();
-          const existing = customMeals.get(key);
-          const mealDate = ensureDate(m.date);
-
-          if (existing) {
-            existing.count++;
-            if (mealDate > existing.lastUsed) {
-              existing.lastUsed = mealDate;
-            }
-          } else {
-            customMeals.set(key, {
-              name: m.customMeal,
-              count: 1,
-              lastUsed: mealDate
-            });
-          }
-        }
-      });
-    });
-
-    return Array.from(customMeals.values())
-      .sort((a, b) => {
-        if (b.count !== a.count) return b.count - a.count;
-        return b.lastUsed.getTime() - a.lastUsed.getTime();
-      })
-      .map(item => ({ id: `__custom__:${item.name}`, name: item.name, count: item.count }));
-  }, [mealPlans]);
-
-  // Find matches based on edit value
-  const matches = useMemo(() => {
-    const q = editValue.trim().toLowerCase();
-
-    if (!q) {
-      return [];
-    }
-
-    const candidates: MatchCandidate[] = [];
-
-    // Historical custom meals
-    historicalMeals.forEach(item => {
-      const score = scoreMatch(item.name, q);
-      if (score > 0) {
-        candidates.push({ id: `__custom__:${item.name}`, name: item.name, score, type: 'custom', count: item.count });
-      }
-    });
-
-    // Meal options
-    const opts = mealOptions[meal.mealType as 'breakfast' | 'lunch' | 'dinner' | 'snack'] || [];
-    opts.forEach(name => {
-      const score = scoreMatch(name, q);
-      if (score > 0) {
-        candidates.push({ id: `__opt__:${name}`, name, score, type: 'option' });
-      }
-    });
-
-    // Recipes
-    recipes.forEach(recipe => {
-      const score = scoreMatch(recipe.name, q);
-      if (score > 0) {
-        candidates.push({ id: recipe.id, name: recipe.name, score, type: 'recipe' });
-      }
-    });
-
-    // Deduplicate by name (case-insensitive), keeping highest score
-    const deduped = new Map<string, MatchCandidate>();
-    candidates.forEach(candidate => {
-      const key = candidate.name.toLowerCase();
-      const existing = deduped.get(key);
-      if (!existing || candidate.score > existing.score) {
-        deduped.set(key, candidate);
-      }
-    });
-
-    return Array.from(deduped.values())
-      .sort((a, b) => {
-        if (b.score !== a.score) return b.score - a.score;
-        return a.name.localeCompare(b.name);
-      })
-      .slice(0, 12);
-  }, [editValue, recipes, mealOptions, meal.mealType, historicalMeals]);
-
-  // Focus input when editing starts
   useEffect(() => {
     if (isEditing && inputRef.current) {
       inputRef.current.focus();
@@ -175,229 +51,225 @@ export const MealItem: React.FC<MealItemProps> = ({
     }
   }, [isEditing]);
 
-  // Reset selected index when edit value changes
-  useEffect(() => {
-    setSelectedIndex(0);
-  }, [editValue]);
-
-  const startEdit = (): void => {
-    setEditValue(displayName);
-    setIsEditing(true);
-    setShowList(true);
-  };
-
-  const saveEdit = async (newValue?: string): Promise<void> => {
-    const trimmed = (newValue ?? editValue).trim();
-    if (!trimmed) {
-      cancelEdit();
-      return;
-    }
-
-    const originalName = meal.customMeal ?? recipe?.name ?? '';
-    if (trimmed === originalName) {
-      // No change
+  const handleSave = async () => {
+    if (!editedName.trim()) {
       setIsEditing(false);
-      setShowList(false);
+      setEditedName(mealName);
       return;
     }
 
     try {
-      if (meal.recipeId) {
-        // Convert recipe meal to custom meal
-        await updatePlannedMealMutation.mutateAsync({
-          mealId: meal.id,
-          updates: {
-            customMeal: trimmed,
-            recipeId: undefined
-          }
-        });
-      } else {
-        // Update custom meal name
-        await updatePlannedMealMutation.mutateAsync({
-          mealId: meal.id,
-          updates: { customMeal: trimmed }
-        });
-      }
+      await updateMealMutation.mutateAsync({
+        mealId: meal.id,
+        updates: { customMeal: editedName.trim() },
+      });
+      setIsEditing(false);
     } catch (error) {
-      logger.error('MealItem', 'Failed to update meal:', { error });
-      // Revert on error
-      setEditValue(originalName);
+      setEditedName(mealName);
+      setIsEditing(false);
     }
-    setIsEditing(false);
-    setShowList(false);
   };
 
-  const cancelEdit = (): void => {
+  const handleCancel = () => {
+    setEditedName(mealName);
     setIsEditing(false);
-    setShowList(false);
-    setEditValue('');
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent): void => {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      setSelectedIndex((prev) => Math.min(prev + 1, matches.length - 1));
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setSelectedIndex((prev) => Math.max(prev - 1, 0));
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      if (matches.length > 0) {
-        const selected = matches[selectedIndex];
-        void saveEdit(selected.name);
-      } else {
-        void saveEdit();
+  const handleDelete = async () => {
+    if (window.confirm(`Delete "${mealName}"?`)) {
+      try {
+        await deleteMealMutation.mutateAsync(meal.id);
+      } catch (error) {
+        logger.error('MealItem', 'Failed to delete meal', { error });
       }
-      setSelectedIndex(0);
+    }
+  };
+
+  const handleUndoLog = async () => {
+    try {
+      await updateMealMutation.mutateAsync({
+        mealId: meal.id,
+        updates: {
+          status: 'planned',
+          actualFoodLogId: undefined,
+        },
+      });
+    } catch (error) {
+      logger.error('MealItem', 'Failed to undo log', { error });
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      void handleSave();
     } else if (e.key === 'Escape') {
-      cancelEdit();
+      handleCancel();
     }
   };
 
-  const handleRecipeClick = (e: React.MouseEvent): void => {
-    e.stopPropagation();
-    if (meal.recipeId && recipe) {
-      onShowSimpleEdit(recipe, (updates): void => {
-        void updateRecipeMutation.mutateAsync({ recipeId: recipe.id, updates });
-      });
-    } else {
-      onShowRecipeForm(meal.customMeal ?? '', (recipeData): void => {
-        void (async () => {
-          const newRecipe = await createRecipeMutation.mutateAsync(recipeData);
-          if (newRecipe?.id) {
-            await updatePlannedMealMutation.mutateAsync({
-              mealId: meal.id,
-              updates: { recipeId: newRecipe.id, customMeal: undefined }
-            });
-          }
-        })();
-      });
-    }
-  };
-
-  const handleDelete = (e: React.MouseEvent): void => {
-    e.stopPropagation();
-    deletePlannedMealMutation.mutate(meal.id);
-  };
-
-  return (
-    <li
-      className={`group text-xs rounded border px-2 py-1 flex items-center justify-between gap-2 ${
-        !isEditing
-          ? 'border-slate-200 bg-white hover:border-indigo-300 hover:bg-indigo-50/30 transition-colors cursor-pointer'
-          : 'border-slate-200 bg-white'
-      }`}
-      draggable={!isEditing}
-      onDoubleClick={(e) => {
-        if (!isEditing) {
-          e.preventDefault();
-          e.stopPropagation();
-          startEdit();
-        }
-      }}
-      onDragStart={(e) => {
-        if (!isEditing) {
-          e.dataTransfer.setData('text/meal-id', meal.id);
-          e.dataTransfer.effectAllowed = 'move';
-        }
-      }}
-      title={meal.recipeId ? "Double-click or click pencil to edit (converts to custom meal), drag to move (hold Alt to copy)" : "Double-click to edit, drag to move (hold Alt to copy)"}
-    >
-      {isEditing ? (
-        <div className="relative flex-1">
+  if (isEditing) {
+    return (
+      <li className="group/meal mb-1">
+        <div className="flex items-center gap-1.5 p-2 bg-slate-100 border-2 border-indigo-400 rounded-md animate-in fade-in duration-200">
           <input
             ref={inputRef}
             type="text"
-            value={editValue}
-            onChange={(e) => { setEditValue(e.target.value); setShowList(true); }}
+            value={editedName}
+            onChange={(e) => setEditedName(e.target.value)}
             onKeyDown={handleKeyDown}
-            onBlur={() => setTimeout(() => { void saveEdit(); }, 200)}
-            className="w-full bg-transparent border-none outline-none text-xs"
+            onBlur={() => {
+              setTimeout(() => {
+                if (isEditing) void handleSave();
+              }, 200);
+            }}
+            disabled={updateMealMutation.isPending}
+            className="flex-1 min-w-0 px-2 py-1 text-sm border-0 bg-slate-50 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-slate-100 disabled:opacity-50"
+            placeholder="Meal name..."
           />
-          {showList && editValue.trim().length > 0 && inputRef.current && createPortal(
-            <div className="fixed z-[100] min-w-[240px] max-w-[320px] rounded-lg border border-slate-200 bg-white shadow-2xl ring-1 ring-black/5" style={{
-              left: inputRef.current.getBoundingClientRect().left,
-              top: inputRef.current.getBoundingClientRect().bottom + 4,
-            }}>
-              {matches.length === 0 ? (
-                <button
-                  type="button"
-                  className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-slate-700 hover:bg-indigo-50 transition-colors first:rounded-t-lg last:rounded-b-lg"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => { void saveEdit(editValue.trim()); }}
-                >
-                  <span className="flex h-6 w-6 items-center justify-center rounded-md bg-indigo-100 text-xs font-semibold text-indigo-700">+</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="truncate font-medium">Add "{editValue.trim()}"</div>
-                    <div className="text-xs text-slate-500">Create new meal</div>
-                  </div>
-                </button>
-              ) : (
-                <div className="max-h-[280px] overflow-auto py-1">
-                  {matches.map((r, idx) => {
-                    const isSelected = idx === selectedIndex;
-                    const isRecipe = r.type === 'recipe';
-                    const isCustom = r.type === 'custom';
-                    return (
-                      <button
-                        key={`${r.id}-${idx}`}
-                        type="button"
-                        className={`flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors ${
-                          isSelected ? 'bg-indigo-50 text-indigo-900' : 'text-slate-700 hover:bg-slate-50'
-                        }`}
-                        onMouseDown={(e) => e.preventDefault()}
-                        onMouseEnter={() => setSelectedIndex(idx)}
-                        onClick={() => { void saveEdit(r.name); }}
-                      >
-                        <span className={`flex h-6 w-6 items-center justify-center rounded-md text-xs font-semibold ${
-                          isRecipe ? 'bg-emerald-100 text-emerald-700' : isCustom ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700'
-                        }`}>
-                          {isRecipe ? '📖' : isCustom ? '⭐' : '🍽️'}
-                        </span>
-                        <div className="flex-1 min-w-0">
-                          <div className="truncate font-medium">{r.name}</div>
-                          <div className="text-xs text-slate-500">
-                            {isRecipe ? 'Recipe' : isCustom ? `Used ${r.count ?? 1}x` : 'Meal option'}
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>,
-            document.body
-          )}
-        </div>
-      ) : (
-        <span className="truncate flex-1" title={displayName}>
-          {displayName}
-        </span>
-      )}
-      {!isEditing && (
-        <div className="flex items-center gap-1">
           <button
             type="button"
-            onClick={handleRecipeClick}
-            className="p-1 text-slate-400 hover:text-indigo-600 transition-colors"
-            aria-label={meal.recipeId ? "View recipe" : "Save as recipe"}
-            title={meal.recipeId ? "View recipe" : "Save as recipe"}
+            onClick={(e) => {
+              // Allow Cmd/Ctrl+click to bubble up for multi-cell selection
+              if (!e.metaKey && !e.ctrlKey) {
+                e.stopPropagation();
+              }
+              void handleSave();
+            }}
+            disabled={!editedName.trim() || updateMealMutation.isPending}
+            className="p-1 text-white bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed rounded transition-colors"
+            title="Save (Enter)"
           >
-            <ChefHat className="w-3 h-3" />
+            <Check className="w-3.5 h-3.5" />
           </button>
           <button
             type="button"
-            onClick={handleDelete}
-            className="p-1 text-slate-400 hover:text-rose-600 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
-            aria-label="Remove meal"
-            title="Remove"
+            onClick={(e) => {
+              // Allow Cmd/Ctrl+click to bubble up for multi-cell selection
+              if (!e.metaKey && !e.ctrlKey) {
+                e.stopPropagation();
+              }
+              handleCancel();
+            }}
+            disabled={updateMealMutation.isPending}
+            className="p-1 text-slate-500 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-50 rounded transition-colors"
+            title="Cancel (Esc)"
           >
-            <Trash2 className="w-3 h-3" />
+            <X className="w-3.5 h-3.5" />
           </button>
         </div>
+      </li>
+    );
+  }
+
+  const isEaten = meal.status === 'eaten';
+
+  return (
+    <li
+      className="group/meal mb-1"
+      draggable={!isEaten}
+      onDragStart={(e) => {
+        if (isEaten) {
+          e.preventDefault();
+          return;
+        }
+        e.dataTransfer.setData('text/meal-id', meal.id);
+      }}
+    >
+      <div className="relative flex items-center gap-2 py-1 px-1">
+        {/* Meal Name */}
+        <button
+          type="button"
+          onClick={(e) => {
+            if (isEaten || isRecipeMeal) return; // Don't allow editing eaten or recipe-based meals
+            // Prevent cell selection when clicking to edit
+            if (!e.metaKey && !e.ctrlKey) {
+              e.stopPropagation();
+            }
+            setIsEditing(true);
+          }}
+          className="flex-1 min-w-0 text-left"
+          title={isEaten ? 'Meal logged' : isRecipeMeal ? 'Edit the recipe in Saved Recipes' : 'Click to edit'}
+          disabled={isEaten || isRecipeMeal}
+        >
+          <span className={`text-sm font-medium ${isEaten ? 'text-green-600 line-through' : 'text-slate-900'}`}>
+            {mealName}
+          </span>
+        </button>
+
+        {/* Calories - Always visible */}
+        {calories && (
+          <span className="text-xs font-medium flex items-center gap-1 shrink-0 text-slate-600" title={`${calories} calories`}>
+            <Flame className="w-3 h-3" />
+            {calories}
+          </span>
+        )}
+
+        {/* Actions - Hidden when eaten */}
+        {!isEaten && (
+          <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover/meal:opacity-100 transition-opacity">
+            <LogMealButton meal={meal} recipe={recipe} compact className="text-slate-400 hover:text-emerald-600 hover:bg-emerald-50" />
+            <button
+              type="button"
+              onClick={(e) => {
+                // Allow Cmd/Ctrl+click to bubble up for multi-cell selection
+                if (!e.metaKey && !e.ctrlKey) {
+                  e.stopPropagation();
+                }
+                setShowSwapModal(true);
+              }}
+              className="p-1 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors"
+              title="Swap meal - Log what you actually ate"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                // Allow Cmd/Ctrl+click to bubble up for multi-cell selection
+                if (!e.metaKey && !e.ctrlKey) {
+                  e.stopPropagation();
+                }
+                void handleDelete();
+              }}
+              className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+              title="Delete meal"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
+        {/* Undo button - Shown when eaten, visible on hover */}
+        {isEaten && (
+          <button
+            type="button"
+            onClick={(e) => {
+              if (!e.metaKey && !e.ctrlKey) {
+                e.stopPropagation();
+              }
+              void handleUndoLog();
+            }}
+            className="shrink-0 p-1 text-green-600 hover:text-green-800 hover:bg-green-100 rounded transition-all opacity-0 group-hover/meal:opacity-100"
+            title="Undo food log"
+          >
+            <Undo2 className="w-3.5 h-3.5" />
+          </button>
+        )}
+
+      </div>
+
+      {/* Swap Meal Modal */}
+      {showSwapModal && (
+        <SwapMealModal
+          meal={meal}
+          recipe={recipe}
+          onClose={() => setShowSwapModal(false)}
+          onSuccess={() => {
+            setShowSwapModal(false);
+          }}
+        />
       )}
     </li>
   );
 };
-
-export default MealItem;

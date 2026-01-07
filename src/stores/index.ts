@@ -1,11 +1,7 @@
 // Stores Barrel Exports
 // Centralized exports for all Zustand stores
 
-// Legacy stores (to be deprecated)
-export * from './useAppStore';
-export * from './useRealAppStore';
-
-// New composed store (modern approach)
+// Modern composed store
 export * from './useComposedStore';
 export {
   selectUI,

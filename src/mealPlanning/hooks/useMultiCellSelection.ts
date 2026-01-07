@@ -1,6 +1,9 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { logger } from '../../services/logger';
-import type { Recipe, MealPlanWeek } from '../../types';
+import type { MealPlanWeek } from '../../types';
+import type { Recipe } from '@/hooks/useMealPlanningQuery';
+import { mealPlanningKeys } from '@/hooks/useMealPlanningQuery';
 
 export type CellKey = string; // format: "yyyy-MM-dd:mealType"
 
@@ -13,7 +16,7 @@ interface CreatePlannedMealParams {
     customMeal?: string;
     servings: number;
     peopleCount: number;
-    status: string;
+    status: 'planned' | 'prepped' | 'cooked' | 'eaten';
     notes?: string;
     preparedAt?: Date;
     consumedAt?: Date;
@@ -47,14 +50,24 @@ export function useMultiCellSelection(
   handleCellClick: (dateKey: string, mealType: string, event: React.MouseEvent) => void;
   clearSelection: () => void;
   addMealToSelectedCells: (recipeId: string, customMeal?: string) => Promise<void>;
+  deleteMealsFromSelectedCells: () => Promise<void>;
   handleMultiCellKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => Promise<void>;
+  sharedInputValue: string;
+  setSharedInputValue: (value: string) => void;
+  isAnySelectedCellEditing: boolean;
+  setIsAnySelectedCellEditing: (editing: boolean) => void;
 } {
+  const queryClient = useQueryClient();
   const [selectedCells, setSelectedCells] = useState<Set<CellKey>>(new Set());
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [multiCellQuery, setMultiCellQuery] = useState('');
   const [showMultiCellList, setShowMultiCellList] = useState(false);
   const [multiCellSelectedIndex, setMultiCellSelectedIndex] = useState(0);
   const multiCellInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Shared state for multi-cell input
+  const [sharedInputValue, setSharedInputValue] = useState('');
+  const [isAnySelectedCellEditing, setIsAnySelectedCellEditing] = useState(false);
 
   const makeCellKey = (dateKey: string, mealType: string): CellKey => `${dateKey}:${mealType}`;
 
@@ -67,8 +80,15 @@ export function useMultiCellSelection(
         const next = new Set(prev);
         if (next.has(cellKey)) {
           next.delete(cellKey);
+          // If we're deselecting and no cells remain, exit editing mode
+          if (next.size === 0) {
+            setIsAnySelectedCellEditing(false);
+            setSharedInputValue('');
+          }
         } else {
           next.add(cellKey);
+          // Automatically enter editing mode when selecting cells
+          setIsAnySelectedCellEditing(true);
         }
         if (next.size === 0) {
           setIsSelectionMode(false);
@@ -81,6 +101,8 @@ export function useMultiCellSelection(
   const clearSelection = (): void => {
     setSelectedCells(new Set());
     setIsSelectionMode(false);
+    setSharedInputValue('');
+    setIsAnySelectedCellEditing(false);
   };
 
   const parseLocalDateKey = (key: string): Date => {
@@ -112,12 +134,64 @@ export function useMultiCellSelection(
       });
 
       await Promise.all(promises);
+
+      // Invalidate the meal plans cache to force a refetch with all new meals
+      await queryClient.invalidateQueries({ queryKey: mealPlanningKeys.mealPlansList() });
+
       showToast?.(`Added meal to ${selectedCells.size} cells`, 'success');
       clearSelection();
       setMultiCellQuery('');
     } catch (error) {
-      logger.error('MultiCellSelection', 'Failed to add meals to selected cells:', error);
+      logger.error('MultiCellSelection', error as Error, { context: 'add meals to selected cells failed' });
       showToast?.('Failed to add meals', 'error');
+    }
+  };
+
+  const deleteMealsFromSelectedCells = async (): Promise<void> => {
+    if (!activePlan || selectedCells.size === 0) return;
+
+    // Get all meals from selected cells
+    const mealsToDelete = activePlan.meals.filter((meal) => {
+      const dateKey = `${meal.date.getFullYear()}-${String(meal.date.getMonth() + 1).padStart(2, '0')}-${String(meal.date.getDate()).padStart(2, '0')}`;
+      const cellKey = makeCellKey(dateKey, meal.mealType);
+      return selectedCells.has(cellKey);
+    });
+
+    if (mealsToDelete.length === 0) {
+      showToast?.('No meals to delete in selected cells', 'info');
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Delete ${mealsToDelete.length} meal${mealsToDelete.length > 1 ? 's' : ''} from ${selectedCells.size} selected cell${selectedCells.size > 1 ? 's' : ''}?`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      // Optimistically update the UI
+      queryClient.setQueryData<MealPlanWeek[]>(mealPlanningKeys.mealPlansList(), (old) => {
+        if (!old) return [];
+        return old.map((plan) => ({
+          ...plan,
+          meals: plan.meals.filter((m) => !mealsToDelete.some((md) => md.id === m.id)),
+        }));
+      });
+
+      // Delete all meals
+      const { deletePlannedMeal } = await import('../../api/mealPlanningAPI');
+      await Promise.all(mealsToDelete.map((meal) => deletePlannedMeal(meal.id)));
+
+      // Invalidate the meal plans cache to force a refetch
+      await queryClient.invalidateQueries({ queryKey: mealPlanningKeys.mealPlansList() });
+
+      showToast?.(`Deleted ${mealsToDelete.length} meal${mealsToDelete.length > 1 ? 's' : ''}`, 'success');
+      clearSelection();
+    } catch (error) {
+      logger.error('MultiCellSelection', error as Error, { context: 'delete meals from selected cells failed' });
+      showToast?.('Failed to delete meals', 'error');
+      // Invalidate to restore the correct state
+      await queryClient.invalidateQueries({ queryKey: mealPlanningKeys.mealPlansList() });
     }
   };
 
@@ -263,6 +337,11 @@ export function useMultiCellSelection(
     handleCellClick,
     clearSelection,
     addMealToSelectedCells,
+    deleteMealsFromSelectedCells,
     handleMultiCellKeyDown,
+    sharedInputValue,
+    setSharedInputValue,
+    isAnySelectedCellEditing,
+    setIsAnySelectedCellEditing,
   };
 }

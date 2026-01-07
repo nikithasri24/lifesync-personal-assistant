@@ -194,10 +194,10 @@ describe('tripAPI', () => {
         if (result.destinations[0].visaRequirement) {
           expect(result.destinations[0].visaRequirement.visaType).toBe('visa-free');
         } else {
-          fail('Visa requirement should be defined');
+          throw new Error('Visa requirement should be defined');
         }
       } else {
-        fail('Trip should not be null');
+        throw new Error('Trip should not be null');
       }
     });
 

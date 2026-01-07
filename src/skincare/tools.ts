@@ -35,12 +35,12 @@ const addSkincareProductDefinition: ToolDefinition = {
         },
         ingredients: {
           type: 'array',
-          items: { type: 'string' },
+          items: { type: 'string', description: 'Ingredient name' },
           description: 'List of ingredients - optional',
         },
         key_ingredients: {
           type: 'array',
-          items: { type: 'string' },
+          items: { type: 'string', description: 'Key ingredient name' },
           description: 'List of key active ingredients - optional',
         },
         price: { type: 'number', description: 'Product price - optional' },
@@ -64,13 +64,11 @@ const logSkinConditionDefinition: ToolDefinition = {
         date: { type: 'string', description: 'Date in YYYY-MM-DD format - required' },
         overall_condition: {
           type: 'number',
-          minimum: 1,
-          maximum: 5,
           description: 'Overall skin condition (1=terrible, 5=excellent) - required',
         },
         concerns: {
           type: 'array',
-          items: { type: 'string' },
+          items: { type: 'string', description: 'Skin concern' },
           description: 'List of skin concerns (e.g., acne, dryness, redness) - optional',
         },
         notes: { type: 'string', description: 'Additional notes - optional' },
@@ -136,12 +134,12 @@ async function executeAddSkincareProduct(args: Record<string, unknown>): Promise
       name: args.name as string,
       brand: args.brand as string,
       category: args.category as SkincareProduct['category'],
-      ingredients: (args.ingredients as string[]) || [],
-      key_ingredients: (args.key_ingredients as string[]) || [],
+      keyIngredients: (args.key_ingredients as string[]) || [],
       price: args.price as number | undefined,
       rating: args.rating as number | undefined,
       notes: args.notes as string | undefined,
-      in_use: false,
+      currentlyUsing: false,
+      usageTime: [],
     });
 
     logger.info('SkincareTools', 'Skincare product added', { id: product.id, name: product.name });
@@ -151,7 +149,7 @@ async function executeAddSkincareProduct(args: Record<string, unknown>): Promise
       data: product,
     };
   } catch (error) {
-    logger.error('SkincareTools', error as Error, { context: 'executeAddSkincareProduct' });
+    logger.error('SkincareTools', 'Operation failed', { error, context: 'executeAddSkincareProduct' });
     return { success: false, error: (error as Error).message };
   }
 }
@@ -172,7 +170,7 @@ async function executeLogSkinCondition(args: Record<string, unknown>): Promise<T
       data: log,
     };
   } catch (error) {
-    logger.error('SkincareTools', error as Error, { context: 'executeLogSkinCondition' });
+    logger.error('SkincareTools', 'Operation failed', { error, context: 'executeLogSkinCondition' });
     return { success: false, error: (error as Error).message };
   }
 }
@@ -200,7 +198,7 @@ async function executeGetRoutineSuggestion(args: Record<string, unknown>): Promi
       count: routine.length,
     };
   } catch (error) {
-    logger.error('SkincareTools', error as Error, { context: 'executeGetRoutineSuggestion' });
+    logger.error('SkincareTools', 'Operation failed', { error, context: 'executeGetRoutineSuggestion' });
     return { success: false, error: (error as Error).message };
   }
 }
@@ -225,7 +223,7 @@ async function executeGetSkincareStats(_args: Record<string, unknown>): Promise<
       data: stats,
     };
   } catch (error) {
-    logger.error('SkincareTools', error as Error, { context: 'executeGetSkincareStats' });
+    logger.error('SkincareTools', 'Operation failed', { error, context: 'executeGetSkincareStats' });
     return { success: false, error: (error as Error).message };
   }
 }

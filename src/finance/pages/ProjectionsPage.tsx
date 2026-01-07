@@ -9,11 +9,11 @@ import {
   Zap,
 } from 'lucide-react';
 import type { Account, Transaction, Goal } from '../types';
-import { getFinanceAPI } from '../data';
 import {
   projectNetWorth,
   calculateCompoundInterest,
 } from '../utils/calculations';
+import { useAccountsQuery, useTransactionsQuery, useGoalsQuery } from '@/hooks/useFinanceQuery';
 import {
   calculateProjectionMetrics,
   calculateGoalProjections,
@@ -30,39 +30,17 @@ const NetWorthChart = lazy(() => import('../components/ProjectionCharts').then(m
 const CompoundInterestChart = lazy(() => import('../components/ProjectionCharts').then(module => ({ default: module.CompoundInterestChart })));
 
 const ProjectionsPage: React.FC = () => {
-  const [loading, setLoading] = React.useState(true);
-  const [accounts, setAccounts] = React.useState<Account[]>([]);
-  const [transactions, setTransactions] = React.useState<Transaction[]>([]);
-  const [goals, setGoals] = React.useState<Goal[]>([]);
+  // Use React Query hooks for data fetching
+  const { data: accounts = [], isLoading: accountsLoading } = useAccountsQuery();
+  const { data: transactions = [], isLoading: transactionsLoading } = useTransactionsQuery({ limit: 1000 });
+  const { data: goals = [], isLoading: goalsLoading } = useGoalsQuery();
+
+  const loading = accountsLoading || transactionsLoading || goalsLoading;
 
   // Projection settings
   const [projectionYears, setProjectionYears] = React.useState(10);
   const [annualReturnRate, setAnnualReturnRate] = React.useState(7);
   const [inflationRate, setInflationRate] = React.useState(3);
-
-  React.useEffect(() => {
-    let mounted = true;
-    void (async () => {
-      setLoading(true);
-      const api = await getFinanceAPI();
-
-      const [accts, { items: txns }, gls] = await Promise.all([
-        api.listAccounts(),
-        api.listTransactions({ limit: 1000 }),
-        api.listGoals(),
-      ]);
-
-      if (!mounted) return;
-      setAccounts(accts);
-      setTransactions(txns);
-      setGoals(gls);
-      setLoading(false);
-    })();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
 
   const metrics = calculateProjectionMetrics(accounts, transactions);
   const { netWorth, savingsRate, yearsToFI, monthlyExpenses } = metrics;

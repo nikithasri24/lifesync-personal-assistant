@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { getVoiceProvider, type VoiceProvider, type VoiceRecognitionResult } from '../lib/voice'
 
 export type VoiceState = {
   supported: boolean
@@ -13,120 +14,160 @@ export type UseVoice = VoiceState & {
   stop: () => void
   toggle: () => void
   clear: () => void
+  clearError: () => void
   setLang: (lang: string) => void
   speak: (text: string, opts?: { rate?: number; pitch?: number; lang?: string }) => Promise<void>
+  requestPermission: () => Promise<boolean>
 }
 
 type Options = {
   onFinal?: (text: string) => void
+  onInterim?: (text: string) => void
 }
 
+/**
+ * Cross-platform voice hook using VoiceProvider abstraction
+ *
+ * Works on:
+ * - Web browsers (Web Speech API)
+ * - iOS/Android (Capacitor speech plugins)
+ */
 export function useVoice(initialLang = 'en-US', options?: Options): UseVoice {
-  const recRef = useRef<ISpeechRecognition | null>(null);
-  const [supported] = useState<boolean>(() => !!(window.SpeechRecognition ?? window.webkitSpeechRecognition));
+  const providerRef = useRef<VoiceProvider | null>(null);
+  const [supported, setSupported] = useState(false);
   const [listening, setListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [lang, setLang] = useState(initialLang);
   const [error, setError] = useState<string | undefined>(undefined);
 
+  // Initialize provider
   useEffect(() => {
-    if (!supported) return;
-    const Ctor = (window.SpeechRecognition ?? window.webkitSpeechRecognition) as new () => ISpeechRecognition;
-    const rec: ISpeechRecognition = new Ctor();
-    rec.continuous = true;
-    rec.interimResults = true;
-    rec.lang = lang;
-    rec.onresult = (ev: SpeechRecognitionEvent) => {
-      let interim = '';
-      let finalText = '';
-      let hasFinal = false;
+    const provider = getVoiceProvider();
+    providerRef.current = provider;
+    setSupported(provider.isSupported());
 
-      for (let i = ev.results.length - 1; i >= 0; i--) {
-        const result = ev.results[i];
-        const alt = result[0];
-        if (!alt) continue;
-        if (result.isFinal) {
-          finalText = alt.transcript;
-          hasFinal = true;
-          setTranscript((t) => (t ? `${t} ${alt.transcript}` : alt.transcript));
-        } else {
-          interim = alt.transcript;
-        }
-      }
-
-      // Only call onFinal once per event, with the final text
-      if (hasFinal && options?.onFinal && finalText) {
-        options.onFinal(finalText);
-      }
-
-      // Show interim in suffix (UI can choose how to display)
-      if (interim) setTranscript((t) => `${t.replace(/\s+$/, '')} ${interim}`);
-    };
-    rec.onerror = (e: Event) => {
-      const error = e as { error?: string };
-      setError(error.error ?? 'speech_error');
-    };
-    rec.onend = () => setListening(false);
-    recRef.current = rec;
     return () => {
-      try { rec.stop(); } catch (e: unknown) {
-        // Ignore any errors during stop
-        void e;
-      }
-      recRef.current = null;
+      // Note: We don't dispose the provider since it's cached/shared
     };
-  }, [lang, supported, options]);
+  }, []);
+
+  // Handle result callback
+  const handleResult = useCallback((result: VoiceRecognitionResult) => {
+    if (result.isFinal) {
+      setTranscript(prev => prev ? `${prev} ${result.transcript}` : result.transcript);
+      options?.onFinal?.(result.transcript);
+    } else {
+      // Show interim results
+      options?.onInterim?.(result.transcript);
+      setTranscript(prev => {
+        const base = prev.replace(/\s+$/, '');
+        return base ? `${base} ${result.transcript}` : result.transcript;
+      });
+    }
+  }, [options]);
 
   const start = useCallback((): void => {
-    if (!supported || !recRef.current) return;
-    setError(undefined);
-    try {
-      if (recRef.current) {
-        recRef.current.lang = lang;
-        recRef.current.start();
-      }
-      setListening(true);
-    } catch (e: unknown) {
-      const error = e as Error;
-      setError(error.message || 'speech_start_failed');
+    const provider = providerRef.current;
+    if (!provider || !provider.isSupported()) {
+      console.error('[useVoice] Cannot start - provider not available or not supported');
+      setError('Voice recognition not supported');
+      return;
     }
-  }, [lang, supported]);
+
+    console.log('[useVoice] Starting voice recognition...');
+    // Clear any previous errors
+    setError(undefined);
+
+    // Start listening asynchronously
+    provider.startListening({
+      lang,
+      continuous: true,
+      interimResults: true,
+      onResult: handleResult,
+      onStart: () => {
+        console.log('[useVoice] Voice recognition started');
+        setListening(true);
+      },
+      onEnd: () => {
+        console.log('[useVoice] Voice recognition ended');
+        setListening(false);
+      },
+      onError: (err) => {
+        console.error('[useVoice] Voice recognition error:', err);
+        setError(err);
+        setListening(false);
+      },
+    }).catch((e: unknown) => {
+      const err = e as Error;
+      console.error('[useVoice] Failed to start voice recognition:', err.message);
+      setError(err.message || 'speech_start_failed');
+      setListening(false);
+    });
+  }, [lang, handleResult]);
 
   const stop = useCallback((): void => {
-    if (!recRef.current) return;
-    try {
-      recRef.current.stop();
-    } catch (e: unknown) {
-      // Ignore any errors during stop
-      void e;
-    }
+    const provider = providerRef.current;
+    if (!provider) return;
+
+    provider.stopListening().catch(() => {
+      // Ignore stop errors
+    });
     setListening(false);
   }, []);
 
-  const toggle = useCallback((): void => (listening ? stop() : start()), [listening, start, stop]);
+  const toggle = useCallback((): void => {
+    if (listening) {
+      stop();
+    } else {
+      start();
+    }
+  }, [listening, start, stop]);
+
   const clear = useCallback((): void => setTranscript(''), []);
 
-  const speak = useCallback((text: string, opts?: { rate?: number; pitch?: number; lang?: string }): Promise<void> => {
-    return new Promise<void>((resolve) => {
-      if (!('speechSynthesis' in window)) return resolve();
-      const u = new SpeechSynthesisUtterance(text);
-      u.lang = opts?.lang ?? lang;
-      u.rate = opts?.rate ?? 1;
-      u.pitch = opts?.pitch ?? 1;
-      u.onend = () => resolve();
-      u.onerror = () => resolve();
-      try { window.speechSynthesis.cancel(); } catch (e: unknown) {
-        // Ignore cancellation errors
-        void e;
-      }
-      window.speechSynthesis.speak(u);
+  const clearError = useCallback((): void => {
+    console.log('[useVoice] Clearing error state');
+    setError(undefined);
+  }, []);
+
+  const speak = useCallback(async (
+    text: string,
+    opts?: { rate?: number; pitch?: number; lang?: string }
+  ): Promise<void> => {
+    const provider = providerRef.current;
+    if (!provider || !provider.isSpeechSupported()) return;
+
+    await provider.speak(text, {
+      lang: opts?.lang ?? lang,
+      rate: opts?.rate ?? 1,
+      pitch: opts?.pitch ?? 1,
     });
   }, [lang]);
 
+  const requestPermission = useCallback(async (): Promise<boolean> => {
+    const provider = providerRef.current;
+    if (!provider) return false;
+    return provider.requestPermission();
+  }, []);
+
   return useMemo(
-    () => ({ supported, listening, transcript, lang, error, start, stop, toggle, clear, setLang, speak }),
-    [supported, listening, transcript, lang, error, start, stop, toggle, clear, setLang, speak]
-  )
+    () => ({
+      supported,
+      listening,
+      transcript,
+      lang,
+      error,
+      start,
+      stop,
+      toggle,
+      clear,
+      clearError,
+      setLang,
+      speak,
+      requestPermission
+    }),
+    [supported, listening, transcript, lang, error, start, stop, toggle, clear, clearError, setLang, speak, requestPermission]
+  );
 }
 
 export default useVoice

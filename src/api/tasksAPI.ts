@@ -1,10 +1,12 @@
 /**
- * Tasks and Projects API
- * CRUD operations for tasks and projects with Supabase
+ * Tasks API
+ * CRUD operations for tasks with Supabase
+ * Note: Project operations are in projectsAPI.ts
  */
 
 import { supabase } from '../lib/supabase';
-import type { TaskData, ProjectData } from '../services/types';
+import type { TaskData } from '../services/types';
+import { apiCall, requireAuth, handleSupabaseResponse } from './apiWrapper';
 
 // =====================================================
 // TASKS CRUD OPERATIONS
@@ -22,120 +24,184 @@ export async function getTasks(filters?: {
   archived?: boolean;
   deleted?: boolean;
 }): Promise<TaskData[]> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  let query = supabase
-    .from('tasks')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false });
+      let query = supabase
+        .from('tasks')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
 
-  // Apply filters
-  if (filters) {
-    if (filters.status) query = query.eq('status', filters.status);
-    if (filters.priority) query = query.eq('priority', filters.priority);
-    if (filters.category) query = query.eq('category', filters.category);
-    if (filters.projectId) query = query.eq('project_id', filters.projectId);
-    if (filters.starred !== undefined) query = query.eq('starred', filters.starred);
-    if (filters.archived !== undefined) query = query.eq('archived', filters.archived);
-    if (filters.deleted !== undefined) query = query.eq('deleted', filters.deleted);
-  }
+      // Apply filters
+      if (filters) {
+        if (filters.status) query = query.eq('status', filters.status);
+        if (filters.priority) query = query.eq('priority', filters.priority);
+        if (filters.category) query = query.eq('category', filters.category);
+        if (filters.projectId) query = query.eq('project_id', filters.projectId);
+        if (filters.starred !== undefined) query = query.eq('starred', filters.starred);
+        if (filters.archived !== undefined) query = query.eq('archived', filters.archived);
+        if (filters.deleted !== undefined) query = query.eq('deleted', filters.deleted);
+      }
 
-  const { data, error } = await query;
+      const { data, error } = await query;
 
-  if (error) throw error;
-  return (data ?? []) as TaskData[];
+      if (error) throw error;
+      return (data ?? []) as TaskData[];
+    },
+    { domain: 'TasksAPI', operation: 'getTasks', data: { filters } }
+  );
+}
+
+/**
+ * Get tasks by ID list
+ */
+export async function getTasksByIds(ids: string[]): Promise<TaskData[]> {
+  return apiCall(
+    async () => {
+      if (ids.length === 0) return [];
+      const user = await requireAuth();
+
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('*')
+        .in('id', ids)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      return (data ?? []) as TaskData[];
+    },
+    { domain: 'TasksAPI', operation: 'getTasksByIds', data: { count: ids.length } }
+  );
+}
+
+/**
+ * Get scheduled tasks for a specific date
+ */
+export async function getScheduledTasksForDate(date: string): Promise<TaskData[]> {
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
+
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('user_id', user.id)
+        .gte('scheduled_start', `${date}T00:00:00`)
+        .lt('scheduled_start', `${date}T23:59:59`);
+
+      if (error) throw error;
+      return (data ?? []) as TaskData[];
+    },
+    { domain: 'TasksAPI', operation: 'getScheduledTasksForDate', data: { date } }
+  );
 }
 
 /**
  * Get a single task by ID
  */
 export async function getTask(id: string): Promise<TaskData> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const response = await supabase
-    .from('tasks')
-    .select('*')
-    .eq('id', id)
-    .eq('user_id', user.id)
-    .single();
+      const response = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .single();
 
-  if (response.error) throw response.error;
-  if (!response.data) throw new Error('Task not found');
-  return response.data as TaskData;
+      return handleSupabaseResponse(response, 'Task', id);
+    },
+    { domain: 'TasksAPI', operation: 'getTask', data: { id } }
+  );
 }
 
 /**
  * Create a new task
  */
 export async function createTask(task: Omit<TaskData, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<TaskData> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const response = await supabase
-    .from('tasks')
-    .insert({
-      user_id: user.id,
-      ...task,
-    })
-    .select()
-    .single();
+      const response = await supabase
+        .from('tasks')
+        .insert({
+          user_id: user.id,
+          ...task,
+        })
+        .select()
+        .single();
 
-  if (response.error) throw response.error;
-  return response.data as TaskData;
+      return handleSupabaseResponse(response, 'Task');
+    },
+    { domain: 'TasksAPI', operation: 'createTask', data: { title: task.title } }
+  );
 }
 
 /**
  * Update an existing task
  */
 export async function updateTask(id: string, updates: Partial<TaskData>): Promise<TaskData> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const response = await supabase
-    .from('tasks')
-    .update(updates)
-    .eq('id', id)
-    .eq('user_id', user.id)
-    .select()
-    .single();
+      const response = await supabase
+        .from('tasks')
+        .update(updates)
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .select()
+        .single();
 
-  if (response.error) throw response.error;
-  return response.data as TaskData;
+      return handleSupabaseResponse(response, 'Task', id);
+    },
+    { domain: 'TasksAPI', operation: 'updateTask', data: { id } }
+  );
 }
 
 /**
  * Delete a task (soft delete)
  */
 export async function deleteTask(id: string): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { error } = await supabase
-    .from('tasks')
-    .update({ deleted: true, deleted_at: new Date().toISOString() })
-    .eq('id', id)
-    .eq('user_id', user.id);
+      const { error } = await supabase
+        .from('tasks')
+        .update({ deleted: true, deleted_at: new Date().toISOString() })
+        .eq('id', id)
+        .eq('user_id', user.id);
 
-  if (error) throw error;
+      if (error) throw error;
+    },
+    { domain: 'TasksAPI', operation: 'deleteTask', data: { id } }
+  );
 }
 
 /**
  * Permanently delete a task
  */
 export async function permanentlyDeleteTask(id: string): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { error } = await supabase
-    .from('tasks')
-    .delete()
-    .eq('id', id)
-    .eq('user_id', user.id);
+      const { error } = await supabase
+        .from('tasks')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
 
-  if (error) throw error;
+      if (error) throw error;
+    },
+    { domain: 'TasksAPI', operation: 'permanentlyDeleteTask', data: { id } }
+  );
 }
 
 /**
@@ -145,105 +211,53 @@ export async function restoreTask(id: string): Promise<TaskData> {
   return updateTask(id, { deleted: false, deleted_at: null });
 }
 
-// =====================================================
-// PROJECTS CRUD OPERATIONS
-// =====================================================
-
 /**
- * Get all projects for the current user
+ * Get tasks for reminder scheduling
+ * Returns active tasks with scheduled_start or upcoming due_date
  */
-export async function getProjects(filters?: {
-  status?: ProjectData['status'];
-}): Promise<ProjectData[]> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+export async function getTasksForReminders(options?: {
+  includeScheduled?: boolean;
+  includeDueToday?: boolean;
+  daysAhead?: number;
+}): Promise<TaskData[]> {
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
+      const today = new Date().toISOString().split('T')[0];
+      const daysAhead = options?.daysAhead ?? 7;
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + daysAhead);
+      const futureDateStr = futureDate.toISOString().split('T')[0];
 
-  let query = supabase
-    .from('projects')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false });
+      let query = supabase
+        .from('tasks')
+        .select('*')
+        .eq('user_id', user.id)
+        .neq('status', 'done')
+        .eq('deleted', false);
 
-  if (filters?.status) {
-    query = query.eq('status', filters.status);
-  }
+      // Build OR conditions for scheduled_start and due_date
+      const conditions: string[] = [];
+      if (options?.includeScheduled !== false) {
+        conditions.push('scheduled_start.not.is.null');
+      }
+      if (options?.includeDueToday !== false) {
+        conditions.push(`due_date.gte.${today},due_date.lte.${futureDateStr}`);
+      }
 
-  const { data, error } = await query;
+      if (conditions.length > 0) {
+        query = query.or(conditions.join(','));
+      }
 
-  if (error) throw error;
-  return (data ?? []) as ProjectData[];
+      query = query.order('scheduled_start', { ascending: true, nullsFirst: false });
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return (data ?? []) as TaskData[];
+    },
+    { domain: 'TasksAPI', operation: 'getTasksForReminders', data: { options } }
+  );
 }
 
-/**
- * Get a single project by ID
- */
-export async function getProject(id: string): Promise<ProjectData> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
-  const response = await supabase
-    .from('projects')
-    .select('*')
-    .eq('id', id)
-    .eq('user_id', user.id)
-    .single();
-
-  if (response.error) throw response.error;
-  if (!response.data) throw new Error('Project not found');
-  return response.data as ProjectData;
-}
-
-/**
- * Create a new project
- */
-export async function createProject(project: Omit<ProjectData, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<ProjectData> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
-  const response = await supabase
-    .from('projects')
-    .insert({
-      user_id: user.id,
-      ...project,
-    })
-    .select()
-    .single();
-
-  if (response.error) throw response.error;
-  return response.data as ProjectData;
-}
-
-/**
- * Update an existing project
- */
-export async function updateProject(id: string, updates: Partial<ProjectData>): Promise<ProjectData> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
-  const response = await supabase
-    .from('projects')
-    .update(updates)
-    .eq('id', id)
-    .eq('user_id', user.id)
-    .select()
-    .single();
-
-  if (response.error) throw response.error;
-  return response.data as ProjectData;
-}
-
-/**
- * Delete a project
- */
-export async function deleteProject(id: string): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
-  const { error } = await supabase
-    .from('projects')
-    .delete()
-    .eq('id', id)
-    .eq('user_id', user.id);
-
-  if (error) throw error;
-}
+// NOTE: Project CRUD operations are in projectsAPI.ts
+// Use projectsAPI.ts for all project-related operations

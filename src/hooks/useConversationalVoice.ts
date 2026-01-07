@@ -47,12 +47,8 @@ interface SpeechRecognitionErrorEvent extends Event {
   message: string;
 }
 
-declare global {
-  interface Window {
-    SpeechRecognition: new () => SpeechRecognition;
-    webkitSpeechRecognition: new () => SpeechRecognition;
-  }
-}
+// SpeechRecognition types are declared in lib.dom.d.ts
+// We just need to use them
 
 export interface ConversationState {
   isListening: boolean;
@@ -110,11 +106,13 @@ export function useConversationalVoice(userId: string): {
     recognition.interimResults = true;
     recognition.lang = 'en-US';
 
-    recognition.onresult = (event: SpeechRecognitionEvent): void => {
+    recognition.onresult = (event) => {
       let interimTranscript = '';
       let finalTranscript = '';
 
-      for (let i = event.resultIndex; i < event.results.length; i++) {
+      // TypeScript doesn't include resultIndex in the type, but it exists in the browser API
+      const resultIndex = (event as any).resultIndex || 0;
+      for (let i = resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i]?.[0]?.transcript ?? '';
         if (event.results[i].isFinal) {
           finalTranscript += transcript + ' ';
@@ -131,7 +129,7 @@ export function useConversationalVoice(userId: string): {
       // Process final transcript
       if (finalTranscript.trim()) {
         const userMessage = finalTranscript.trim();
-        logger.info('UseConversationalVoice', '[Voice] User said:', userMessage);
+        logger.info('UseConversationalVoice', '[Voice] User said', { message: userMessage });
 
         setState(prev => ({
           ...prev,
@@ -168,7 +166,7 @@ export function useConversationalVoice(userId: string): {
               }, 500);
             }
           } catch (error: unknown) {
-            logger.error('UseConversationalVoice', '[Voice] Error:', error);
+            logger.error('UseConversationalVoice', 'Voice error', { error: error instanceof Error ? error.message : String(error) });
             setState(prev => ({
               ...prev,
               isThinking: false,
@@ -180,7 +178,7 @@ export function useConversationalVoice(userId: string): {
     };
 
     recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-      logger.error('UseConversationalVoice', '[Voice] Recognition error:', event.error);
+      logger.error('UseConversationalVoice', 'Recognition error', { error: event.error });
 
       if (event.error === 'no-speech') {
         // User didn't say anything, just continue listening
@@ -203,7 +201,7 @@ export function useConversationalVoice(userId: string): {
       setState(prev => ({ ...prev, isListening: false }));
     };
 
-    recognitionRef.current = recognition;
+    recognitionRef.current = recognition as unknown as SpeechRecognition;
 
     return () => {
       recognition.stop();
@@ -234,9 +232,7 @@ export function useConversationalVoice(userId: string): {
       recognitionRef.current.start();
     } catch (error: unknown) {
       // Recognition might already be started
-      logger.info('UseConversationalVoice', '[Voice] Start error (might already be running):',
-        error instanceof Error ? error.message : 'An unknown error occurred'
-      );
+      logger.info('UseConversationalVoice', 'Start error (might already be running)', { error: error instanceof Error ? error.message : 'An unknown error occurred' });
     }
   }, []);
 
@@ -281,7 +277,7 @@ export function useConversationalVoice(userId: string): {
       };
 
       utterance.onerror = (event) => {
-        logger.error('UseConversationalVoice', '[Voice] Speech synthesis error:', event);
+        logger.error('UseConversationalVoice', 'Speech synthesis error', { error: event.error });
         resolve(); // Resolve anyway to not block
       };
 

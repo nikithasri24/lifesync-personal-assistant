@@ -1,108 +1,83 @@
-import type { StateCreator } from 'zustand';
-import type { MealPlanData, PlannedMealData } from '@/services/types';
-import { apiClient } from '@/services/apiClient';
+/**
+ * Meals Zustand Slice - UI STATE ONLY
+ *
+ * ⚠️ DEPRECATED: Server state removed - use React Query hooks instead
+ * 
+ * This slice now contains ONLY UI state (view modes, filters, etc.)
+ * All server data (meal plans, planned meals, loading states, CRUD operations) should use React Query.
+ *
+ * ✅ Use React Query hooks from @/hooks/useMealPlanningQuery.ts:
+ * - useMealPlansQuery() - Get all meal plans
+ * - useMealPlanQuery(id) - Get single meal plan
+ * - usePlannedMealsQuery(mealPlanId) - Get planned meals for a plan
+ * - useCreateMealPlanMutation() - Create meal plan
+ * - useUpdateMealPlanMutation() - Update meal plan
+ * - useDeleteMealPlanMutation() - Delete meal plan
+ * - useCreatePlannedMealMutation() - Add planned meal
+ * - useUpdatePlannedMealMutation() - Update planned meal
+ * - useDeletePlannedMealMutation() - Delete planned meal
+ *
+ * Additional React Query Features:
+ * - Recipe management hooks
+ * - Grocery list generation hooks
+ * - Nutrition tracking hooks
+ * - Meal prep scheduling hooks
+ *
+ * Benefits of React Query:
+ * - Better meal plan caching and synchronization
+ * - Optimistic updates for meal planning
+ * - Automatic invalidation when meals change
+ * - Proper separation: Server state (React Query) vs UI state (Zustand)
+ */
 
-type MealPlanInput = Omit<MealPlanData, 'id' | 'created_at' | 'updated_at' | 'planned_meals' | 'user_id'>;
-type PlannedMealInput = Omit<PlannedMealData, 'id' | 'created_at' | 'updated_at'>;
+import { type StateCreator } from 'zustand';
 
 export interface MealsSlice {
-  mealPlans: MealPlanData[];
-  mealPlansLoaded: boolean;
-  mealPlansLoading: boolean;
-  mealPlansError: string | null;
+  // UI State only - no server data!
+  mealsViewMode: 'calendar' | 'list' | 'grid';
+  mealsFilterDateRange: { start: string; end: string } | null;
+  mealsFilterMealType: 'all' | 'breakfast' | 'lunch' | 'dinner' | 'snack';
+  mealsFilterDietaryPreference: string | null;
+  mealsShowRecipes: boolean;
+  mealsSelectedMealPlan: string | null;
+  mealsSelectedDate: string | null;
 
-  loadMealPlans: () => Promise<void>;
-  addMealPlan: (plan: MealPlanInput) => Promise<MealPlanData>;
-  updateMealPlan: (id: string, updates: Partial<MealPlanData>) => Promise<MealPlanData>;
-  deleteMealPlan: (id: string) => Promise<void>;
-
-  addPlannedMeal: (meal: PlannedMealInput) => Promise<PlannedMealData>;
-  updatePlannedMeal: (id: string, updates: Partial<PlannedMealData>) => Promise<PlannedMealData>;
-  deletePlannedMeal: (id: string) => Promise<void>;
-  getMealPlanById: (id: string) => MealPlanData | undefined;
+  // UI Actions
+  setMealsViewMode: (mode: 'calendar' | 'list' | 'grid') => void;
+  setMealsFilterDateRange: (range: { start: string; end: string } | null) => void;
+  setMealsFilterMealType: (type: 'all' | 'breakfast' | 'lunch' | 'dinner' | 'snack') => void;
+  setMealsFilterDietaryPreference: (preference: string | null) => void;
+  setMealsShowRecipes: (show: boolean) => void;
+  setMealsSelectedMealPlan: (planId: string | null) => void;
+  setMealsSelectedDate: (date: string | null) => void;
+  resetMealsFilters: () => void;
 }
 
-export const createMealsSlice: StateCreator<MealsSlice, [], [], MealsSlice> = (set, get) => ({
-  mealPlans: [],
-  mealPlansLoaded: false,
-  mealPlansLoading: false,
-  mealPlansError: null,
+export const createMealsSlice: StateCreator<MealsSlice, [], [], MealsSlice> = (set) => ({
+  // Initial UI state
+  mealsViewMode: 'calendar',
+  mealsFilterDateRange: null,
+  mealsFilterMealType: 'all',
+  mealsFilterDietaryPreference: null,
+  mealsShowRecipes: false,
+  mealsSelectedMealPlan: null,
+  mealsSelectedDate: null,
 
-  loadMealPlans: async () => {
-    if (get().mealPlansLoading) return;
-    set({ mealPlansLoading: true, mealPlansError: null });
-    try {
-      const mealPlans = await apiClient.getMealPlans();
-      set({ mealPlans, mealPlansLoaded: true, mealPlansLoading: false });
-    } catch (error) {
-      set({
-        mealPlansError: error instanceof Error ? error.message : 'Failed to load meal plans',
-        mealPlansLoading: false,
-      });
-      throw error;
-    }
-  },
-
-  addMealPlan: async (plan) => {
-    const created = await apiClient.createMealPlan(plan);
-    set((state) => ({ mealPlans: [created, ...state.mealPlans] }));
-    return created;
-  },
-
-  updateMealPlan: async (id, updates) => {
-    const updated = await apiClient.updateMealPlan(id, updates);
-    set((state) => ({
-      mealPlans: state.mealPlans.map((plan) => (plan.id === id ? { ...plan, ...updated } : plan)),
-    }));
-    return updated;
-  },
-
-  deleteMealPlan: async (id) => {
-    await apiClient.deleteMealPlan(id);
-    set((state) => ({
-      mealPlans: state.mealPlans.filter((plan) => plan.id !== id),
-    }));
-  },
-
-  addPlannedMeal: async (meal) => {
-    const created = await apiClient.createPlannedMeal(meal);
-    set((state) => {
-      const planId = created.meal_plan_id;
-      return {
-        mealPlans: state.mealPlans.map((plan) =>
-          plan.id === planId
-            ? { ...plan, planned_meals: plan.planned_meals ? [created, ...plan.planned_meals] : [created] }
-            : plan
-        ),
-      };
-    });
-    return created;
-  },
-
-  updatePlannedMeal: async (id, updates) => {
-    const updated = await apiClient.updatePlannedMeal(id, updates);
-    set((state) => ({
-      mealPlans: state.mealPlans.map((plan) =>
-        plan.planned_meals?.some((meal) => meal.id === id)
-          ? {
-              ...plan,
-              planned_meals: plan.planned_meals?.map((meal) => (meal.id === id ? { ...meal, ...updated } : meal)),
-            }
-          : plan
-      ),
-    }));
-    return updated;
-  },
-
-  deletePlannedMeal: async (id) => {
-    await apiClient.deletePlannedMeal(id);
-    set((state) => ({
-      mealPlans: state.mealPlans.map((plan) => ({
-        ...plan,
-        planned_meals: plan.planned_meals?.filter((meal) => meal.id !== id),
-      })),
-    }));
-  },
-
-  getMealPlanById: (id) => get().mealPlans.find((plan) => plan.id === id),
+  // UI Actions
+  setMealsViewMode: (mode) => set({ mealsViewMode: mode }),
+  setMealsFilterDateRange: (range) => set({ mealsFilterDateRange: range }),
+  setMealsFilterMealType: (type) => set({ mealsFilterMealType: type }),
+  setMealsFilterDietaryPreference: (preference) => set({ mealsFilterDietaryPreference: preference }),
+  setMealsShowRecipes: (show) => set({ mealsShowRecipes: show }),
+  setMealsSelectedMealPlan: (planId) => set({ mealsSelectedMealPlan: planId }),
+  setMealsSelectedDate: (date) => set({ mealsSelectedDate: date }),
+  resetMealsFilters: () =>
+    set({
+      mealsFilterDateRange: null,
+      mealsFilterMealType: 'all',
+      mealsFilterDietaryPreference: null,
+      mealsShowRecipes: false,
+      mealsSelectedMealPlan: null,
+      mealsSelectedDate: null,
+    }),
 });

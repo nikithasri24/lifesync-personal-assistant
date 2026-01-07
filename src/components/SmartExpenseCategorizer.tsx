@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { Brain, Zap, CheckCircle, AlertTriangle, EyeOff, RefreshCw, Filter, Search, TrendingUp, Calendar, Lightbulb, Target } from 'lucide-react';
-import { apiClient } from '../services/apiClient';
+import { useTransactionsQuery, useUpsertTransactionMutation } from '@/hooks/useFinanceQuery';
 import { expenseCategorizationEngine, type CategorySuggestion } from '../services/expenseCategorizationEngine';
 import type { FinancialTransactionData } from '../services/types';
 import { logger } from '../services/logger';
@@ -15,9 +15,22 @@ interface TransactionCategorization {
 interface Anomaly { transaction: FinancialTransactionData; reason: string; }
 
 export default function SmartExpenseCategorizer(): React.JSX.Element {
-  const [transactions, setTransactions] = useState<FinancialTransactionData[]>([]);
+  // React Query hooks - fetch last 3 months of transactions
+  const threeMonthsAgo = useMemo(() => {
+    const date = new Date();
+    date.setMonth(date.getMonth() - 3);
+    return date.toISOString();
+  }, []);
+
+  const { data: allTransactions = [], isLoading: loading } = useTransactionsQuery({
+    fromISO: threeMonthsAgo,
+    type: 'debit', // 'debit' = expenses/withdrawals
+  });
+
+  const { mutate: updateTransaction } = useUpsertTransactionMutation();
+
+  // Local state
   const [categorizations, setCategorizations] = useState<TransactionCategorization[]>([]);
-  const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [filter, setFilter] = useState<'all' | 'uncategorized' | 'needs_review'>('uncategorized');
   const [searchTerm, setSearchTerm] = useState('');
@@ -25,13 +38,34 @@ export default function SmartExpenseCategorizer(): React.JSX.Element {
   const [insights, setInsights] = useState<{ insights: string[]; anomalies: Anomaly[] }>({ insights: [], anomalies: [] });
   const [potentialBills, setPotentialBills] = useState<FinancialTransactionData[]>([]);
 
+  // Convert Transaction (UI) → FinancialTransactionData (DB) for categorization engine
+  // Only process debit transactions (expenses)
+  const uiTransactions = useMemo(() =>
+    allTransactions.filter(t => t.type === 'debit'),
+    [allTransactions]
+  );
+
+  const transactions: FinancialTransactionData[] = useMemo(() =>
+    uiTransactions.map(t => ({
+      id: t.id,
+      account_id: t.accountId,
+      category_id: t.categoryId,
+      type: 'expense', // Map 'debit' → 'expense' for categorization engine
+      amount: t.amount,
+      description: t.description,
+      payee: t.merchantName,
+      date: t.dateISO,
+      notes: t.notes,
+    })), [uiTransactions]
+  );
+
   const processCategorizations = useCallback((transactionData: FinancialTransactionData[]): void => {
     setProcessing(true);
     try {
       const results = expenseCategorizationEngine.bulkCategorize(transactionData);
       const categorizations: TransactionCategorization[] = transactionData.map(transaction => ({
         transaction,
-        suggestions: results.get(transaction.id) ?? [],
+        suggestions: transaction.id ? (results.get(transaction.id) ?? []) : [],
         selectedCategory: transaction.category_id,
         isConfirmed: !!transaction.category_id
       }));
@@ -39,53 +73,66 @@ export default function SmartExpenseCategorizer(): React.JSX.Element {
       setInsights(expenseCategorizationEngine.generateSpendingInsights(transactionData));
       setPotentialBills(expenseCategorizationEngine.detectPotentialBills(transactionData));
     } catch (error) {
-      logger.error('Failed to process categorizations:', { error: error instanceof Error ? error.message : String(error) });
+      logger.error('Finance', error as Error);
     } finally {
       setProcessing(false);
     }
   }, []);
 
-  const loadTransactions = useCallback(async (): Promise<void> => {
-    try {
-      setLoading(true);
-      const data = await apiClient.getFinancialTransactions();
-      const threeMonthsAgo = new Date();
-      threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-      const recentTransactions = data.filter(t => new Date(t.date) >= threeMonthsAgo && t.type === 'expense');
-      setTransactions(recentTransactions);
-      processCategorizations(recentTransactions);
-    } catch (error) {
-      logger.error('Failed to load transactions:', { error: error instanceof Error ? error.message : String(error) });
-    } finally {
-      setLoading(false);
+  // Process categorizations when transactions change
+  useMemo(() => {
+    if (transactions.length > 0) {
+      processCategorizations(transactions);
     }
-  }, [processCategorizations]);
+  }, [transactions, processCategorizations]);
 
-  useEffect(() => {
-    void loadTransactions();
-  }, [loadTransactions]);
+  const handleCategorySelection = (transactionId: string, categoryId: string): void => {
+    // Find the full transaction
+    const uiTransaction = uiTransactions.find(t => t.id === transactionId);
+    if (!uiTransaction) return;
 
-  const handleCategorySelection = async (transactionId: string, categoryId: string): Promise<void> => {
-    try {
-      await apiClient.updateFinancialTransaction(transactionId, { category_id: categoryId });
-      setCategorizations(prev => prev.map(cat => cat.transaction.id === transactionId ? { ...cat, selectedCategory: categoryId, isConfirmed: true } : cat));
-      const transaction = categorizations.find(c => c.transaction.id === transactionId)?.transaction;
-      if (transaction) expenseCategorizationEngine.learnFromUserCategorization(transaction, categoryId);
-    } catch (error) {
-      logger.error('Failed to update transaction category:', { error: error instanceof Error ? error.message : String(error) });
-    }
+    // Update transaction with new category
+    updateTransaction(
+      {
+        id: uiTransaction.id,
+        accountId: uiTransaction.accountId,
+        dateISO: uiTransaction.dateISO,
+        description: uiTransaction.description,
+        categoryId, // Updated field
+        amount: uiTransaction.amount,
+        type: uiTransaction.type,
+        notes: uiTransaction.notes,
+        merchantName: uiTransaction.merchantName,
+      },
+      {
+        onSuccess: () => {
+          setCategorizations(prev => prev.map(cat =>
+            cat.transaction.id === transactionId
+              ? { ...cat, selectedCategory: categoryId, isConfirmed: true }
+              : cat
+          ));
+          const transaction = categorizations.find(c => c.transaction.id === transactionId)?.transaction;
+          if (transaction) {
+            expenseCategorizationEngine.learnFromUserCategorization(transaction, categoryId);
+          }
+        },
+        onError: (error) => {
+          logger.error('Finance', error);
+        },
+      }
+    );
   };
 
   const handleBulkCategorize = async (): Promise<void> => {
     setProcessing(true);
     try {
-      const updates = categorizations.filter(cat => !cat.isConfirmed && cat.suggestions.length > 0).map(async (cat) => {
+      const updates = categorizations.filter(cat => !cat.isConfirmed && cat.suggestions.length > 0 && cat.transaction.id).map(async (cat) => {
         const bestSuggestion = cat.suggestions[0];
-        if (bestSuggestion.confidence > 0.7) await handleCategorySelection(cat.transaction.id, bestSuggestion.categoryId);
+        if (bestSuggestion.confidence > 0.7 && cat.transaction.id) await handleCategorySelection(cat.transaction.id, bestSuggestion.categoryId);
       });
       await Promise.all(updates);
     } catch (error) {
-      logger.error('Failed to bulk categorize:', { error: error instanceof Error ? error.message : String(error) });
+      logger.error('Finance', 'Failed to bulk categorize:', { error: error instanceof Error ? error.message : String(error) });
     } finally {
       setProcessing(false);
     }
@@ -277,7 +324,7 @@ export default function SmartExpenseCategorizer(): React.JSX.Element {
                         <div className="text-center">
                           <div className="text-xs text-gray-500 mb-1">AI Suggestion</div>
                           <button
-                            onClick={() => { void handleCategorySelection(transaction.id, bestSuggestion.categoryId); }}
+                            onClick={() => { if (transaction.id) void handleCategorySelection(transaction.id, bestSuggestion.categoryId); }}
                             className="flex items-center gap-2 px-3 py-2 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 transition-colors"
                           >
                             <span>{getCategoryIcon(bestSuggestion.categoryId)}</span>
@@ -309,7 +356,7 @@ export default function SmartExpenseCategorizer(): React.JSX.Element {
                         {cat.suggestions.slice(1, 4).map((suggestion, index) => (
                           <button
                             key={index}
-                            onClick={() => { void handleCategorySelection(transaction.id, suggestion.categoryId); }}
+                            onClick={() => { if (transaction.id) void handleCategorySelection(transaction.id, suggestion.categoryId); }}
                             className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
                           >
                             {getCategoryIcon(suggestion.categoryId)} {suggestion.categoryName}

@@ -8,8 +8,9 @@ export * from './api/lifeGoalsAPI';
 export * from './types/lifeGoals';
 
 // Components
-export { GoalCheckins } from './components/GoalCheckins';
-export { GoalGamification } from './components/GoalGamification';
-export { GoalMilestones } from './components/GoalMilestones';
-export { GoalStreaks } from './components/GoalStreaks';
-export { GoalTemplates } from './components/GoalTemplates';
+// TODO: Re-export components when they are implemented
+// export { default as GoalCheckins } from './components/GoalCheckins';
+export { default as GoalGamification } from './components/GoalGamification';
+// export { default as GoalMilestones } from './components/GoalMilestones';
+// export { default as GoalStreaks } from './components/GoalStreaks';
+export { default as GoalTemplates } from './components/GoalTemplates';

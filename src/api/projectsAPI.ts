@@ -6,6 +6,7 @@
 import { supabase } from '../lib/supabase';
 import type { Project, ProjectMilestone, ProjectTask } from '../services/types';
 import { logger } from '../services/logger';
+import { apiCall, requireAuth, handleSupabaseResponse } from './apiWrapper';
 
 // =====================================================
 // PROJECTS CRUD OPERATIONS
@@ -19,77 +20,72 @@ export async function getProjects(filters?: {
   priority?: Project['priority'];
   tags?: string[];
 }): Promise<Project[]> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  let query = supabase
-    .from('projects')
-    .select(`
-      *,
-      milestones:project_milestones(*)
-    `)
-    .or(`user_id.eq.${user.id},team_members.cs.{${user.id}}`)
-    .order('created_at', { ascending: false });
+      let query = supabase
+        .from('projects')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
 
-  // Apply filters
-  if (filters) {
-    if (filters.status) {
-      query = query.eq('status', filters.status);
-    }
-    if (filters.priority) {
-      query = query.eq('priority', filters.priority);
-    }
-    if (filters.tags && filters.tags.length > 0) {
-      query = query.contains('tags', filters.tags);
-    }
-  }
+      // Apply filters
+      if (filters) {
+        if (filters.status) {
+          query = query.eq('status', filters.status);
+        }
+        if (filters.priority) {
+          query = query.eq('priority', filters.priority);
+        }
+        if (filters.tags && filters.tags.length > 0) {
+          query = query.contains('tags', filters.tags);
+        }
+      }
 
-  const { data, error } = await query;
+      const { data, error } = await query;
+      if (error) throw error;
 
-  if (error) {
-    logger.error('ProjectsAPI', error, { context: 'getProjects', filters });
-    throw error;
-  }
+      // Process milestones to ensure proper ordering
+      const projects = (data ?? []).map(project => ({
+        ...project,
+        milestones: (project.milestones || []).sort((a: ProjectMilestone, b: ProjectMilestone) => a.order_index - b.order_index)
+      })) as Project[];
 
-  // Process milestones to ensure proper ordering
-  const projects = (data ?? []).map(project => ({
-    ...project,
-    milestones: (project.milestones || []).sort((a: ProjectMilestone, b: ProjectMilestone) => a.order_index - b.order_index)
-  })) as Project[];
-
-  return projects;
+      return projects;
+    },
+    { domain: 'ProjectsAPI', operation: 'getProjects', data: { filters } }
+  );
 }
 
 /**
  * Get a single project by ID with all related data
  */
 export async function getProject(id: string): Promise<Project> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { data, error } = await supabase
-    .from('projects')
-    .select(`
-      *,
-      milestones:project_milestones(*)
-    `)
-    .eq('id', id)
-    .or(`user_id.eq.${user.id},team_members.cs.{${user.id}}`)
-    .single();
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*')
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .single();
 
-  if (error) {
-    logger.error('ProjectsAPI', error, { context: 'getProject', id });
-    throw error;
-  }
-  if (!data) throw new Error('Project not found');
+      if (error) throw error;
+      if (!data) throw new Error('Project not found');
 
-  // Sort milestones by order
-  const project = {
-    ...data,
-    milestones: (data.milestones || []).sort((a: ProjectMilestone, b: ProjectMilestone) => a.order_index - b.order_index)
-  } as Project;
+      // Sort milestones by order
+      const project = {
+        ...data,
+        milestones: (data.milestones || []).sort((a: ProjectMilestone, b: ProjectMilestone) => a.order_index - b.order_index)
+      } as Project;
 
-  return project;
+      return project;
+    },
+    { domain: 'ProjectsAPI', operation: 'getProject', data: { id } }
+  );
 }
 
 /**
@@ -98,40 +94,37 @@ export async function getProject(id: string): Promise<Project> {
 export async function createProject(
   project: Omit<Project, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'milestones'>
 ): Promise<Project> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  // Sanitize payload - ensure required fields have defaults
-  const sanitizedProject = {
-    user_id: user.id,
-    name: project.name,
-    description: project.description ?? null,
-    status: project.status ?? 'planning',
-    priority: project.priority ?? 'medium',
-    start_date: project.start_date ?? null,
-    target_date: project.target_date ?? null,
-    completed_date: project.completed_date ?? null,
-    tags: project.tags ?? [],
-    color: project.color ?? null,
-    progress: project.progress ?? 0,
-    team_members: project.team_members ?? null,
-  };
+      // Sanitize payload - ensure required fields have defaults
+      const sanitizedProject = {
+        user_id: user.id,
+        name: project.name,
+        description: project.description ?? null,
+        status: project.status ?? 'planning',
+        priority: project.priority ?? 'medium',
+        start_date: project.start_date ?? null,
+        target_date: project.target_date ?? null,
+        completed_date: project.completed_date ?? null,
+        tags: project.tags ?? [],
+        color: project.color ?? null,
+        progress: project.progress ?? 0,
+        team_members: project.team_members ?? null,
+      };
 
-  const { data, error } = await supabase
-    .from('projects')
-    .insert(sanitizedProject)
-    .select(`
-      *,
-      milestones:project_milestones(*)
-    `)
-    .single();
+      const { data, error } = await supabase
+        .from('projects')
+        .insert(sanitizedProject)
+        .select('*')
+        .single();
 
-  if (error) {
-    logger.error('ProjectsAPI', error, { context: 'createProject', project: sanitizedProject });
-    throw error;
-  }
-
-  return data as Project;
+      if (error) throw error;
+      return data as Project;
+    },
+    { domain: 'ProjectsAPI', operation: 'createProject', data: { name: project.name } }
+  );
 }
 
 /**
@@ -141,56 +134,55 @@ export async function updateProject(
   id: string,
   updates: Partial<Omit<Project, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'milestones'>>
 ): Promise<Project> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  // Sanitize updates - remove undefined values
-  const sanitizedUpdates = Object.fromEntries(
-    Object.entries(updates).filter(([_, value]) => value !== undefined)
+      // Sanitize updates - remove undefined values
+      const sanitizedUpdates = Object.fromEntries(
+        Object.entries(updates).filter(([_, value]) => value !== undefined)
+      );
+
+      const { data, error } = await supabase
+        .from('projects')
+        .update(sanitizedUpdates)
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .select('*')
+        .single();
+
+      if (error) throw error;
+
+      // Sort milestones by order
+      const project = {
+        ...data,
+        milestones: (data.milestones || []).sort((a: ProjectMilestone, b: ProjectMilestone) => a.order_index - b.order_index)
+      } as Project;
+
+      return project;
+    },
+    { domain: 'ProjectsAPI', operation: 'updateProject', data: { id } }
   );
-
-  const { data, error } = await supabase
-    .from('projects')
-    .update(sanitizedUpdates)
-    .eq('id', id)
-    .or(`user_id.eq.${user.id},team_members.cs.{${user.id}}`)
-    .select(`
-      *,
-      milestones:project_milestones(*)
-    `)
-    .single();
-
-  if (error) {
-    logger.error('ProjectsAPI', error, { context: 'updateProject', id, updates: sanitizedUpdates });
-    throw error;
-  }
-
-  // Sort milestones by order
-  const project = {
-    ...data,
-    milestones: (data.milestones || []).sort((a: ProjectMilestone, b: ProjectMilestone) => a.order_index - b.order_index)
-  } as Project;
-
-  return project;
 }
 
 /**
  * Delete a project
  */
 export async function deleteProject(id: string): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { error } = await supabase
-    .from('projects')
-    .delete()
-    .eq('id', id)
-    .eq('user_id', user.id);
+      const { error } = await supabase
+        .from('projects')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
 
-  if (error) {
-    logger.error('ProjectsAPI', error, { context: 'deleteProject', id });
-    throw error;
-  }
+      if (error) throw error;
+    },
+    { domain: 'ProjectsAPI', operation: 'deleteProject', data: { id } }
+  );
 }
 
 // =====================================================
@@ -201,31 +193,31 @@ export async function deleteProject(id: string): Promise<void> {
  * Get all milestones for a project
  */
 export async function getProjectMilestones(projectId: string): Promise<ProjectMilestone[]> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  // Verify user has access to the project
-  const { data: project } = await supabase
-    .from('projects')
-    .select('id')
-    .eq('id', projectId)
-    .or(`user_id.eq.${user.id},team_members.cs.{${user.id}}`)
-    .single();
+      // Verify user has access to the project
+      const { data: project } = await supabase
+        .from('projects')
+        .select('id')
+        .eq('id', projectId)
+        .eq('user_id', user.id)
+        .single();
 
-  if (!project) throw new Error('Project not found or access denied');
+      if (!project) throw new Error('Project not found or access denied');
 
-  const { data, error } = await supabase
-    .from('project_milestones')
-    .select('*')
-    .eq('project_id', projectId)
-    .order('order_index', { ascending: true });
+      const { data, error } = await supabase
+        .from('project_milestones')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('order_index', { ascending: true });
 
-  if (error) {
-    logger.error('ProjectsAPI', error, { context: 'getProjectMilestones', projectId });
-    throw error;
-  }
-
-  return (data ?? []) as ProjectMilestone[];
+      if (error) throw error;
+      return (data ?? []) as ProjectMilestone[];
+    },
+    { domain: 'ProjectsAPI', operation: 'getProjectMilestones', data: { projectId } }
+  );
 }
 
 /**
@@ -234,42 +226,42 @@ export async function getProjectMilestones(projectId: string): Promise<ProjectMi
 export async function createMilestone(
   milestone: Omit<ProjectMilestone, 'id' | 'created_at'>
 ): Promise<ProjectMilestone> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  // Verify user has access to the project
-  const { data: project } = await supabase
-    .from('projects')
-    .select('id')
-    .eq('id', milestone.project_id)
-    .or(`user_id.eq.${user.id},team_members.cs.{${user.id}}`)
-    .single();
+      // Verify user has access to the project
+      const { data: project } = await supabase
+        .from('projects')
+        .select('id')
+        .eq('id', milestone.project_id)
+        .eq('user_id', user.id)
+        .single();
 
-  if (!project) throw new Error('Project not found or access denied');
+      if (!project) throw new Error('Project not found or access denied');
 
-  // Sanitize payload
-  const sanitizedMilestone = {
-    project_id: milestone.project_id,
-    title: milestone.title,
-    description: milestone.description ?? null,
-    target_date: milestone.target_date ?? null,
-    completed: milestone.completed ?? false,
-    completed_date: milestone.completed_date ?? null,
-    order_index: milestone.order_index ?? 0,
-  };
+      // Sanitize payload
+      const sanitizedMilestone = {
+        project_id: milestone.project_id,
+        title: milestone.title,
+        description: milestone.description ?? null,
+        target_date: milestone.target_date ?? null,
+        completed: milestone.completed ?? false,
+        completed_date: milestone.completed_date ?? null,
+        order_index: milestone.order_index ?? 0,
+      };
 
-  const { data, error } = await supabase
-    .from('project_milestones')
-    .insert(sanitizedMilestone)
-    .select()
-    .single();
+      const { data, error } = await supabase
+        .from('project_milestones')
+        .insert(sanitizedMilestone)
+        .select()
+        .single();
 
-  if (error) {
-    logger.error('ProjectsAPI', error, { context: 'createMilestone', milestone: sanitizedMilestone });
-    throw error;
-  }
-
-  return data as ProjectMilestone;
+      if (error) throw error;
+      return data as ProjectMilestone;
+    },
+    { domain: 'ProjectsAPI', operation: 'createMilestone', data: { projectId: milestone.project_id, title: milestone.title } }
+  );
 }
 
 /**
@@ -279,50 +271,51 @@ export async function updateMilestone(
   id: string,
   updates: Partial<Omit<ProjectMilestone, 'id' | 'project_id' | 'created_at'>>
 ): Promise<ProjectMilestone> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  // Sanitize updates - remove undefined values
-  const sanitizedUpdates = Object.fromEntries(
-    Object.entries(updates).filter(([_, value]) => value !== undefined)
+      // Sanitize updates - remove undefined values
+      const sanitizedUpdates = Object.fromEntries(
+        Object.entries(updates).filter(([_, value]) => value !== undefined)
+      );
+
+      // If marking as completed, set completed_date
+      if (sanitizedUpdates.completed === true && !sanitizedUpdates.completed_date) {
+        sanitizedUpdates.completed_date = new Date().toISOString().split('T')[0];
+      }
+
+      const { data, error } = await supabase
+        .from('project_milestones')
+        .update(sanitizedUpdates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data as ProjectMilestone;
+    },
+    { domain: 'ProjectsAPI', operation: 'updateMilestone', data: { id } }
   );
-
-  // If marking as completed, set completed_date
-  if (sanitizedUpdates.completed === true && !sanitizedUpdates.completed_date) {
-    sanitizedUpdates.completed_date = new Date().toISOString().split('T')[0];
-  }
-
-  const { data, error } = await supabase
-    .from('project_milestones')
-    .update(sanitizedUpdates)
-    .eq('id', id)
-    .select()
-    .single();
-
-  if (error) {
-    logger.error('ProjectsAPI', error, { context: 'updateMilestone', id, updates: sanitizedUpdates });
-    throw error;
-  }
-
-  return data as ProjectMilestone;
 }
 
 /**
  * Delete a milestone
  */
 export async function deleteMilestone(id: string): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { error } = await supabase
-    .from('project_milestones')
-    .delete()
-    .eq('id', id);
+      const { error } = await supabase
+        .from('project_milestones')
+        .delete()
+        .eq('id', id);
 
-  if (error) {
-    logger.error('ProjectsAPI', error, { context: 'deleteMilestone', id });
-    throw error;
-  }
+      if (error) throw error;
+    },
+    { domain: 'ProjectsAPI', operation: 'deleteMilestone', data: { id } }
+  );
 }
 
 // =====================================================
@@ -333,30 +326,30 @@ export async function deleteMilestone(id: string): Promise<void> {
  * Get all tasks linked to a project
  */
 export async function getProjectTasks(projectId: string): Promise<string[]> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  // Verify user has access to the project
-  const { data: project } = await supabase
-    .from('projects')
-    .select('id')
-    .eq('id', projectId)
-    .or(`user_id.eq.${user.id},team_members.cs.{${user.id}}`)
-    .single();
+      // Verify user has access to the project
+      const { data: project } = await supabase
+        .from('projects')
+        .select('id')
+        .eq('id', projectId)
+        .eq('user_id', user.id)
+        .single();
 
-  if (!project) throw new Error('Project not found or access denied');
+      if (!project) throw new Error('Project not found or access denied');
 
-  const { data, error } = await supabase
-    .from('project_tasks')
-    .select('task_id')
-    .eq('project_id', projectId);
+      const { data, error } = await supabase
+        .from('project_tasks')
+        .select('task_id')
+        .eq('project_id', projectId);
 
-  if (error) {
-    logger.error('ProjectsAPI', error, { context: 'getProjectTasks', projectId });
-    throw error;
-  }
-
-  return (data ?? []).map(pt => pt.task_id);
+      if (error) throw error;
+      return (data ?? []).map(pt => pt.task_id);
+    },
+    { domain: 'ProjectsAPI', operation: 'getProjectTasks', data: { projectId } }
+  );
 }
 
 /**
@@ -366,51 +359,54 @@ export async function linkTaskToProject(
   projectId: string,
   taskId: string
 ): Promise<ProjectTask> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  // Verify user has access to both the project and the task
-  const [projectResult, taskResult] = await Promise.all([
-    supabase
-      .from('projects')
-      .select('id')
-      .eq('id', projectId)
-      .or(`user_id.eq.${user.id},team_members.cs.{${user.id}}`)
-      .single(),
-    supabase
-      .from('tasks')
-      .select('id')
-      .eq('id', taskId)
-      .eq('user_id', user.id)
-      .single()
-  ]);
+      // Verify user has access to both the project and the task
+      const [projectResult, taskResult] = await Promise.all([
+        supabase
+          .from('projects')
+          .select('id')
+          .eq('id', projectId)
+          .eq('user_id', user.id)
+          .single(),
+        supabase
+          .from('tasks')
+          .select('id')
+          .eq('id', taskId)
+          .eq('user_id', user.id)
+          .single()
+      ]);
 
-  if (!projectResult.data) throw new Error('Project not found or access denied');
-  if (!taskResult.data) throw new Error('Task not found or access denied');
+      if (!projectResult.data) throw new Error('Project not found or access denied');
+      if (!taskResult.data) throw new Error('Task not found or access denied');
 
-  const { data, error } = await supabase
-    .from('project_tasks')
-    .insert({ project_id: projectId, task_id: taskId })
-    .select()
-    .single();
-
-  if (error) {
-    // Ignore duplicate key errors (task already linked)
-    if (error.code === '23505') {
-      logger.info('ProjectsAPI', 'Task already linked to project', { projectId, taskId });
-      const { data: existing } = await supabase
+      const { data, error } = await supabase
         .from('project_tasks')
+        .insert({ project_id: projectId, task_id: taskId })
         .select()
-        .eq('project_id', projectId)
-        .eq('task_id', taskId)
         .single();
-      return existing as ProjectTask;
-    }
-    logger.error('ProjectsAPI', error, { context: 'linkTaskToProject', projectId, taskId });
-    throw error;
-  }
 
-  return data as ProjectTask;
+      if (error) {
+        // Ignore duplicate key errors (task already linked)
+        if (error.code === '23505') {
+          logger.info('ProjectsAPI', 'Task already linked to project', { projectId, taskId });
+          const { data: existing } = await supabase
+            .from('project_tasks')
+            .select()
+            .eq('project_id', projectId)
+            .eq('task_id', taskId)
+            .single();
+          return existing as ProjectTask;
+        }
+        throw error;
+      }
+
+      return data as ProjectTask;
+    },
+    { domain: 'ProjectsAPI', operation: 'linkTaskToProject', data: { projectId, taskId } }
+  );
 }
 
 /**
@@ -420,17 +416,18 @@ export async function unlinkTaskFromProject(
   projectId: string,
   taskId: string
 ): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { error } = await supabase
-    .from('project_tasks')
-    .delete()
-    .eq('project_id', projectId)
-    .eq('task_id', taskId);
+      const { error } = await supabase
+        .from('project_tasks')
+        .delete()
+        .eq('project_id', projectId)
+        .eq('task_id', taskId);
 
-  if (error) {
-    logger.error('ProjectsAPI', error, { context: 'unlinkTaskFromProject', projectId, taskId });
-    throw error;
-  }
+      if (error) throw error;
+    },
+    { domain: 'ProjectsAPI', operation: 'unlinkTaskFromProject', data: { projectId, taskId } }
+  );
 }

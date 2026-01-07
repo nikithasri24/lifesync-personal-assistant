@@ -58,6 +58,8 @@ describe('Calendar API', () => {
       start_date: '2025-01-20T10:00:00Z',
       end_date: '2025-01-20T11:00:00Z',
       type: 'meeting' as const,
+      all_day: false,
+      is_recurring: false,
     };
 
     const result = await createCalendarEvent(input);
@@ -110,8 +112,8 @@ describe('Calendar API', () => {
       endDate: '2025-01-31',
     });
 
-    expect(mockQuery.gte).toHaveBeenCalledWith('start_date', '2025-01-01');
     expect(mockQuery.lte).toHaveBeenCalledWith('start_date', '2025-01-31');
+    expect(mockQuery.gte).toHaveBeenCalledWith('end_date', '2025-01-01');
   });
 
   it('should update calendar event', async () => {
@@ -180,6 +182,8 @@ describe('Calendar API', () => {
       start_date: '2025-01-20T10:00:00Z',
       end_date: '2025-01-20T11:00:00Z',
       type: 'meeting',
+      all_day: false,
+      is_recurring: true,
       recurrence_rule: 'RRULE:FREQ=WEEKLY;BYDAY=MO',
     });
 

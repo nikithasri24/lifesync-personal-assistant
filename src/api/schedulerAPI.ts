@@ -6,6 +6,7 @@
 import { supabase } from '../lib/supabase';
 import type { ScheduleBlock } from '../services/types';
 import { logger } from '../services/logger';
+import { apiCall, requireAuth, handleSupabaseResponse } from './apiWrapper';
 
 // =====================================================
 // SCHEDULE BLOCKS CRUD OPERATIONS
@@ -22,37 +23,36 @@ export async function getScheduleBlocks(filters?: {
   endDate?: string;
   type?: ScheduleBlock['type'];
 }): Promise<ScheduleBlock[]> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  let query = supabase
-    .from('schedule_blocks')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('date', { ascending: true })
-    .order('start_time', { ascending: true });
+      let query = supabase
+        .from('schedule_blocks')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('date', { ascending: true })
+        .order('start_time', { ascending: true });
 
-  // Apply filters
-  if (filters) {
-    if (filters.startDate) {
-      query = query.gte('date', filters.startDate);
-    }
-    if (filters.endDate) {
-      query = query.lte('date', filters.endDate);
-    }
-    if (filters.type) {
-      query = query.eq('type', filters.type);
-    }
-  }
+      // Apply filters
+      if (filters) {
+        if (filters.startDate) {
+          query = query.gte('date', filters.startDate);
+        }
+        if (filters.endDate) {
+          query = query.lte('date', filters.endDate);
+        }
+        if (filters.type) {
+          query = query.eq('type', filters.type);
+        }
+      }
 
-  const { data, error } = await query;
-
-  if (error) {
-    logger.error('SchedulerAPI', error, { context: 'getScheduleBlocks', filters });
-    throw error;
-  }
-
-  return (data ?? []) as ScheduleBlock[];
+      const { data, error } = await query;
+      if (error) throw error;
+      return (data ?? []) as ScheduleBlock[];
+    },
+    { domain: 'SchedulerAPI', operation: 'getScheduleBlocks', data: { filters } }
+  );
 }
 
 /**
@@ -74,22 +74,22 @@ export async function getScheduleBlocksForDate(date: string): Promise<ScheduleBl
 export async function createScheduleBlock(
   block: Omit<ScheduleBlock, 'id' | 'user_id' | 'created_at' | 'updated_at'>
 ): Promise<ScheduleBlock> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { data, error } = await supabase
-    .from('schedule_blocks')
-    .insert({ ...block, user_id: user.id })
-    .select()
-    .single();
+      const result = await supabase
+        .from('schedule_blocks')
+        .insert({ ...block, user_id: user.id })
+        .select()
+        .single();
 
-  if (error) {
-    logger.error('SchedulerAPI', error, { context: 'createScheduleBlock', block });
-    throw error;
-  }
-
-  logger.info('SchedulerAPI', 'Schedule block created', { id: data.id, date: data.date });
-  return data as ScheduleBlock;
+      const data = handleSupabaseResponse(result, 'Schedule Block');
+      logger.info('SchedulerAPI', 'Schedule block created', { id: data.id, date: data.date });
+      return data as ScheduleBlock;
+    },
+    { domain: 'SchedulerAPI', operation: 'createScheduleBlock', data: { date: block.date } }
+  );
 }
 
 /**
@@ -103,24 +103,24 @@ export async function updateScheduleBlock(
   id: string,
   updates: Partial<ScheduleBlock>
 ): Promise<ScheduleBlock> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { data, error } = await supabase
-    .from('schedule_blocks')
-    .update({ ...updates, updated_at: new Date().toISOString() })
-    .eq('id', id)
-    .eq('user_id', user.id)
-    .select()
-    .single();
+      const result = await supabase
+        .from('schedule_blocks')
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .select()
+        .single();
 
-  if (error) {
-    logger.error('SchedulerAPI', error, { context: 'updateScheduleBlock', id, updates });
-    throw error;
-  }
-
-  logger.info('SchedulerAPI', 'Schedule block updated', { id });
-  return data as ScheduleBlock;
+      const data = handleSupabaseResponse(result, 'Schedule Block', id);
+      logger.info('SchedulerAPI', 'Schedule block updated', { id });
+      return data as ScheduleBlock;
+    },
+    { domain: 'SchedulerAPI', operation: 'updateScheduleBlock', data: { id } }
+  );
 }
 
 /**
@@ -130,25 +130,30 @@ export async function updateScheduleBlock(
  * @throws Error if deletion fails or user not authenticated
  */
 export async function deleteScheduleBlock(id: string): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { error } = await supabase
-    .from('schedule_blocks')
-    .delete()
-    .eq('id', id)
-    .eq('user_id', user.id);
+      const { error } = await supabase
+        .from('schedule_blocks')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
 
-  if (error) {
-    logger.error('SchedulerAPI', error, { context: 'deleteScheduleBlock', id });
-    throw error;
-  }
-
-  logger.info('SchedulerAPI', 'Schedule block deleted', { id });
+      if (error) throw error;
+      logger.info('SchedulerAPI', 'Schedule block deleted', { id });
+    },
+    { domain: 'SchedulerAPI', operation: 'deleteScheduleBlock', data: { id } }
+  );
 }
 
 /**
  * Find free time slots in a given date range
+ *
+ * @deprecated Use scheduleEngine.findFreeSlots() from src/services/scheduler instead.
+ * This function only considers schedule_blocks. The ScheduleEngine considers ALL sources:
+ * calendar_events, schedule_blocks, and scheduled tasks.
+ *
  * @param date - Date string in YYYY-MM-DD format
  * @param duration - Minimum duration required in minutes
  * @returns Promise<Array<{ start: string; end: string }>> - Array of free time slots

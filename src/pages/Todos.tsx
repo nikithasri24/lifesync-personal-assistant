@@ -15,16 +15,15 @@
  * - Ephemeral state (expanded tasks, pomodoro timer) - useTaskExpansion, usePomodoro
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
+import { format } from 'date-fns';
 import { useApiHealth } from '../hooks/useApiHealth';
 import {
   useTasks,
   useProjects,
   useCreateTask,
   useUpdateTask,
-  useDeleteTask,
 } from '../hooks/useTasksQuery';
-import { SkeletonCard } from '../components/LoadingSpinner';
 import type { TaskData } from '../services/types';
 
 // Import all custom hooks
@@ -44,6 +43,8 @@ import {
   KanbanView,
   MatrixView,
 } from '../todos/components';
+import { TodosLoadingState } from '../todos/components/layout/TodosLoadingState';
+import { TodosErrorState } from '../todos/components/layout/TodosErrorState';
 
 // Import utilities
 import { transformApiTasks, transformApiProjects } from '../todos/utils';
@@ -65,7 +66,6 @@ export default function Todos(): React.ReactElement {
 
   const createTaskMutation = useCreateTask();
   const updateTaskMutation = useUpdateTask();
-  const _deleteTaskMutation = useDeleteTask(); // TODO: Implement delete functionality
 
   // Enhanced API health monitoring
   const apiHealth = useApiHealth(15000); // Check every 15 seconds
@@ -97,7 +97,7 @@ export default function Todos(): React.ReactElement {
     {
       createTaskMutation: {
         mutate: (data: Partial<TaskData>, options?: { onSuccess?: () => void }) => {
-          void createTaskMutation.mutate(data, options);
+          void createTaskMutation.mutate(data as Omit<TaskData, 'id' | 'created_at' | 'updated_at'>, options);
         },
         isPending: createTaskMutation.isPending
       },
@@ -131,6 +131,23 @@ export default function Todos(): React.ReactElement {
   );
 
   // ============================================================================
+  // Smart Scheduling Handler
+  // ============================================================================
+
+  const handleScheduleTask = useCallback((taskId: string, start: Date, end: Date) => {
+    const dateStr = format(start, 'yyyy-MM-dd');
+    updateTaskMutation.mutate({
+      id: taskId,
+      updates: {
+        due_date: dateStr,
+        scheduled_start: start.toISOString(),
+        scheduled_end: end.toISOString(),
+        status: 'scheduled' as const,
+      },
+    });
+  }, [updateTaskMutation]);
+
+  // ============================================================================
   // Computed Values - Filtered and View-Specific Tasks
   // ============================================================================
 
@@ -158,34 +175,11 @@ export default function Todos(): React.ReactElement {
   // ============================================================================
 
   if (tasksLoading || projectsLoading) {
-    return (
-      <div className="h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center">
-        <div className="space-y-4 w-full max-w-2xl px-6">
-          <SkeletonCard className="h-32" />
-          <SkeletonCard className="h-24" />
-          <SkeletonCard className="h-24" />
-        </div>
-      </div>
-    );
+    return <TodosLoadingState />;
   }
 
   if (tasksError) {
-    return (
-      <div className="h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center">
-        <div className="rounded-lg border border-red-200 bg-red-50 p-6 max-w-md">
-          <h3 className="text-lg font-semibold text-red-900 mb-2">Error Loading Tasks</h3>
-          <p className="text-sm text-red-700 mb-4">
-            Unable to load your tasks. Please try refreshing the page.
-          </p>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
-          >
-            Refresh Page
-          </button>
-        </div>
-      </div>
-    );
+    return <TodosErrorState />;
   }
 
   // ============================================================================
@@ -278,6 +272,7 @@ export default function Todos(): React.ReactElement {
                 onCancelSubtaskForm={modals.closeSubtaskForm}
                 pomodoroTimer={pomodoro.pomodoroTimer}
                 onStartPomodoro={pomodoro.startPomodoro}
+                onScheduleTask={handleScheduleTask}
                 createTaskMutation={{
                   isPending: createTaskMutation.isPending,
                   isError: createTaskMutation.isError,

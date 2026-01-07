@@ -195,7 +195,7 @@ async function executeStartFocusSession(
       },
     };
   } catch (error) {
-    logger.error('FocusTools', error as Error, {
+    logger.error('FocusTools', 'Operation failed', { error,
       operation: 'start_focus_session',
       args,
     });
@@ -292,7 +292,7 @@ async function executeCompleteFocusSession(
       },
     };
   } catch (error) {
-    logger.error('FocusTools', error as Error, {
+    logger.error('FocusTools', 'Operation failed', { error,
       operation: 'complete_focus_session',
       args,
     });
@@ -383,7 +383,7 @@ async function executeGetFocusStats(
       message: `In the last ${days} days: ${completedSessions.length} sessions completed, ${Math.round(totalFocusMinutes)} minutes of focused work`,
     };
   } catch (error) {
-    logger.error('FocusTools', error as Error, {
+    logger.error('FocusTools', 'Operation failed', { error,
       operation: 'get_focus_stats',
       args,
     });
@@ -442,7 +442,7 @@ async function executeGetFocusHistory(
       message: `Showing ${limitedSessions.length} recent focus session${limitedSessions.length !== 1 ? 's' : ''}`,
     };
   } catch (error) {
-    logger.error('FocusTools', error as Error, {
+    logger.error('FocusTools', 'Operation failed', { error,
       operation: 'get_focus_history',
       args,
     });

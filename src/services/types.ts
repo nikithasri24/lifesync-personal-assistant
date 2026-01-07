@@ -3,6 +3,8 @@
 
 /**
  * TaskData - User tasks for the task management system
+ * This is the canonical Task type used throughout the application.
+ * It aligns with the Supabase/PostgreSQL schema.
  */
 export interface TaskData {
   id?: string;
@@ -11,10 +13,12 @@ export interface TaskData {
   description?: string;
   project_id?: string | null;
   status?: 'todo' | 'done' | 'waiting' | 'scheduled' | 'in_progress';
-  priority?: 'low' | 'medium' | 'high' | 'urgent';
+  priority?: 'low' | 'medium' | 'high' | 'urgent' | 'important';
   estimated_time?: number | null;
   actual_time?: number | null;
   due_date?: string | null;
+  scheduled_start?: string | null; // ISO timestamp for scheduled start
+  scheduled_end?: string | null; // ISO timestamp for scheduled end
   tags?: string[] | null;
   category?: 'work' | 'personal' | 'learning' | 'creative' | 'health' | 'other' | null;
   notes?: string | null;
@@ -27,6 +31,46 @@ export interface TaskData {
   completed_at?: string | null;
   created_at?: string;
   updated_at?: string;
+  // Properties from lib/supabase.ts Task type
+  sidebar_section?: 'todo' | 'in_progress' | 'backlog' | 'scheduled' | null;
+  depends_on?: string[] | null;
+  follow_up_tasks?: FollowUpTask[] | null;
+  is_waiting_for?: string | null;
+  trigger_date?: string | null;
+  is_blocked?: boolean | null;
+  reminder?: string | null;
+  attachments?: string[] | null;
+  assigned_to?: string | null; // User ID of the person this task is assigned to
+  assigned_by?: string | null; // User ID of the person who assigned this task
+  assigned_at?: string | null; // When the task was assigned
+  // Recurrence fields
+  recurrence_pattern?: 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom' | null;
+  recurrence_interval?: number | null; // e.g., every 2 weeks
+  recurrence_days?: number[] | null; // for weekly: [0,1,2,3,4,5,6] (Sun-Sat), for monthly: [1,15] (days of month)
+  recurrence_end_date?: string | null; // when recurrence should stop
+  recurrence_count?: number | null; // max occurrences (alternative to end_date)
+  parent_recurring_id?: string | null; // link to the original recurring task template
+  // Location fields for errands and location-based reminders
+  location_name?: string | null; // e.g., "Costco", "Target", "Home Depot"
+  location_address?: string | null; // Full address
+  location_coordinates?: { lat: number; lng: number } | null; // GPS coordinates
+  is_errand?: boolean | null; // Mark as errand for location-based reminders
+}
+
+/**
+ * FollowUpTask - A subtask or follow-up action for a task
+ */
+export interface FollowUpTask {
+  id: string;
+  title: string;
+  description?: string;
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
+  days_after?: number;
+  trigger_condition?: 'immediate' | 'delayed' | 'manual';
+  category?: 'work' | 'personal' | 'learning' | 'creative' | 'health' | 'other';
+  estimated_time?: number;
+  tags?: string[];
+  completed?: boolean;
 }
 
 export interface ProjectData {
@@ -121,6 +165,38 @@ export interface ShoppingListData {
   updated_at?: string;
 }
 
+export interface StoreData {
+  id?: string;
+  user_id?: string;
+  name: string;
+  type: 'grocery' | 'wholesale' | 'specialty' | 'organic' | 'international' | 'pharmacy';
+  address?: string;
+  phone?: string;
+  website?: string;
+  logo?: string;
+  color?: string;
+  coordinates?: { lat: number; lng: number } | null;
+  preferences?: {
+    priceRating?: number;
+    qualityRating?: number;
+    cleanlinessRating?: number;
+    serviceRating?: number;
+    overallRating?: number;
+  } | null;
+  specialties?: string[];
+  best_for?: string[];
+  avg_prices?: Record<string, number>;
+  distance?: number;
+  last_visited?: string;
+  favorite?: boolean;
+  hours?: Record<string, { open: string; close: string } | null> | null;
+  has_delivery?: boolean;
+  has_pickup?: boolean;
+  delivery_fee?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface ShoppingItemData {
   id?: string;
   shopping_list_id: string;
@@ -184,10 +260,18 @@ export interface PlannedMealData {
   servings?: number;
   custom_meal?: string;
   people_count?: number;
-  status?: 'planned' | 'prepped' | 'cooked' | 'eaten';
+  status?: 'planned' | 'prepped' | 'cooked' | 'eaten' | 'substituted' | 'postponed';
   notes?: string;
   prepared_at?: string;
   consumed_at?: string;
+
+  // Substitution and backlog tracking
+  actual_food_log_id?: string;
+  substituted_with?: string;
+  is_postponed?: boolean;
+  postponed_reason?: string;
+  original_date?: string;
+
   created_at?: string;
   updated_at?: string;
 }
@@ -259,7 +343,6 @@ export interface RecipeData {
   nutrition_info?: Record<string, number>;
   source_type?: string;
   source_url?: string;
-  author_name?: string;
   video_thumbnail?: string;
   created_at?: string;
   updated_at?: string;
@@ -299,6 +382,7 @@ export interface Project {
   completed_date?: string;
   tags: string[];
   color?: string;
+  icon?: string;
   progress: number; // 0-100
   milestones?: ProjectMilestone[];
   team_members?: string[]; // for shared projects

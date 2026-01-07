@@ -5,7 +5,7 @@
  */
 
 import type { Tool, ToolDefinition, ToolResult } from '@/lib/ai/toolRegistry';
-import { apiClient } from '@/services/apiClient';
+import * as mealPlanningAPI from '@/api/mealPlanningAPI';
 import { logger } from '@/services/logger';
 import type { RecipeData, PantryItemData } from '@/services/types';
 
@@ -57,7 +57,7 @@ const addRecipeDefinition: ToolDefinition = {
   type: 'function',
   function: {
     name: 'add_recipe',
-    description: 'Add a new recipe to your collection. Requires name (string). Optional: description, category, prep_time (number in minutes), cook_time (number in minutes), servings (number).',
+    description: 'Add a new recipe to your collection. Requires name (string). Optional: description, prep_time (number in minutes), cook_time (number in minutes), servings (number).',
     parameters: {
       type: 'object',
       properties: {
@@ -68,10 +68,6 @@ const addRecipeDefinition: ToolDefinition = {
         description: {
           type: 'string',
           description: 'Recipe description or notes - optional'
-        },
-        category: {
-          type: 'string',
-          description: 'Category like "breakfast", "lunch", "dinner", "dessert" - optional'
         },
         prep_time: {
           type: 'number',
@@ -116,14 +112,14 @@ async function executeSuggestMeal(
     logger.info('MealTools', 'Suggesting meal', { mealType });
 
     // Get pantry items to suggest meals based on available ingredients
-    const pantryItems = await apiClient.getPantryItems();
+    const pantryItems = await mealPlanningAPI.getPantryItems();
 
     // Get saved recipes
-    const allRecipes = await apiClient.getRecipes();
+    const allRecipes = await mealPlanningAPI.getRecipes();
 
-    // Filter recipes by category if applicable
+    // Filter recipes by tags if applicable
     const categoryRecipes = allRecipes.filter(recipe =>
-      recipe.category?.toLowerCase() === mealType.toLowerCase()
+      recipe.tags?.some(tag => tag.toLowerCase() === mealType.toLowerCase())
     );
 
     logger.info('MealTools', 'Meal suggestions generated', {
@@ -188,7 +184,7 @@ async function executeSuggestMeal(
       message: `Based on your pantry, I suggest these ${mealType} options: ${finalSuggestions.join(', ')}`
     };
   } catch (error) {
-    logger.error('MealTools', error as Error, {
+    logger.error('MealTools', 'Operation failed', { error,
       operation: 'suggest_meal',
       args
     });
@@ -213,12 +209,12 @@ async function executeGetRecipes(
 
     logger.info('MealTools', 'Getting recipes', { category, searchTerm });
 
-    let recipes = await apiClient.getRecipes();
+    let recipes = await mealPlanningAPI.getRecipes();
 
     // Apply filters
     if (category) {
       recipes = recipes.filter(recipe =>
-        recipe.category?.toLowerCase() === category.toLowerCase()
+        recipe.tags?.some(tag => tag.toLowerCase() === category.toLowerCase())
       );
     }
 
@@ -242,7 +238,7 @@ async function executeGetRecipes(
         id: recipe.id,
         name: recipe.name,
         description: recipe.description,
-        category: recipe.category,
+        tags: recipe.tags,
         prep_time: recipe.prep_time,
         cook_time: recipe.cook_time,
         servings: recipe.servings
@@ -251,7 +247,7 @@ async function executeGetRecipes(
       message: `You have ${recipes.length} recipe${recipes.length !== 1 ? 's' : ''}${category ? ` in ${category}` : ''}`
     };
   } catch (error) {
-    logger.error('MealTools', error as Error, {
+    logger.error('MealTools', 'Operation failed', { error,
       operation: 'get_recipes',
       args
     });
@@ -273,7 +269,6 @@ async function executeAddRecipe(
   try {
     const name = args.name as string;
     const description = args.description as string | undefined;
-    const category = args.category as string | undefined;
     const prepTime = args.prep_time as number | undefined;
     const cookTime = args.cook_time as number | undefined;
     const servings = args.servings as number | undefined;
@@ -288,16 +283,14 @@ async function executeAddRecipe(
 
     logger.info('MealTools', 'Adding recipe', {
       name,
-      category,
       prepTime,
       cookTime,
       servings
     });
 
-    const recipe = await apiClient.createRecipe({
+    const recipe = await mealPlanningAPI.createRecipe({
       name: name.trim(),
       description,
-      category,
       prep_time: prepTime,
       cook_time: cookTime,
       servings
@@ -314,14 +307,14 @@ async function executeAddRecipe(
       recipe: {
         id: recipe.id,
         name: recipe.name,
-        category: recipe.category,
+        tags: recipe.tags,
         prep_time: recipe.prep_time,
         cook_time: recipe.cook_time,
         servings: recipe.servings
       }
     };
   } catch (error) {
-    logger.error('MealTools', error as Error, {
+    logger.error('MealTools', 'Operation failed', { error,
       operation: 'add_recipe',
       args
     });

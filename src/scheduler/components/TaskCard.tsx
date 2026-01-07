@@ -43,7 +43,12 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   onQuickEdit,
   className = '',
 }) => {
-  const isOverdue = task.due_date && isPast(new Date(task.due_date)) && task.status !== 'done';
+  const scheduleDate = task.scheduled_start
+    ? new Date(task.scheduled_start)
+    : task.due_date
+      ? new Date(task.due_date)
+      : null;
+  const isOverdue = scheduleDate ? isPast(scheduleDate) && task.status !== 'done' : false;
   const hasComments = (task.comments?.length || 0) > 0;
   const hasAttachments = (task.attachments?.length || 0) > 0;
   const hasDependencies = (task.dependencies?.length || 0) > 0;
@@ -87,7 +92,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           ? 'bg-gradient-to-br from-blue-500 to-blue-600 border-2 border-blue-700'
           : 'bg-white dark:bg-gray-800 border-l-4'
         }
-        ${!isImportant ? priorityColors[task.priority] : ''}
+        ${!isImportant && task.priority ? priorityColors[task.priority] || '' : ''}
         ${isSelected ? 'ring-2 ring-blue-500 dark:ring-blue-400 ring-offset-2' : ''}
         ${isDragging ? 'opacity-50 rotate-2 scale-105' : ''}
         ${isBlocked ? 'opacity-75' : ''}
@@ -180,20 +185,20 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           </div>
         )}
 
-        {/* Metadata Row 1: Due date, Estimate, Priority */}
+        {/* Metadata Row 1: Scheduled/Due date, Estimate, Priority */}
         <div className="flex items-center gap-3 text-xs text-gray-700 dark:text-gray-300 font-medium mb-2">
-          {/* Due Date */}
-          {task.due_date && (
+          {/* Scheduled/Due Date */}
+          {scheduleDate && (
             <div className={`flex items-center gap-1 ${isOverdue ? 'text-red-600 dark:text-red-400 font-bold' : ''}`}>
               <Calendar className="w-3 h-3" />
-              <span title={format(new Date(task.due_date), 'PPP')}>
-                {formatDistanceToNow(new Date(task.due_date), { addSuffix: true })}
+              <span title={format(scheduleDate, 'PPP')}>
+                {formatDistanceToNow(scheduleDate, { addSuffix: true })}
               </span>
             </div>
           )}
 
           {/* Estimated Time */}
-          {task.estimated_time > 0 && (
+          {task.estimated_time != null && task.estimated_time > 0 && (
             <div className="flex items-center gap-1">
               <Clock className="w-3 h-3" />
               <span>{Math.floor(task.estimated_time / 60)}h {task.estimated_time % 60}m</span>
@@ -201,10 +206,12 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           )}
 
           {/* Priority Indicator */}
-          <div className="flex items-center gap-1">
-            <div className={`w-2 h-2 rounded-full ${priorityDotColors[task.priority]}`} />
-            <span className="capitalize">{task.priority}</span>
-          </div>
+          {task.priority && (
+            <div className="flex items-center gap-1">
+              <div className={`w-2 h-2 rounded-full ${priorityDotColors[task.priority] || 'bg-slate-300'}`} />
+              <span className="capitalize">{task.priority}</span>
+            </div>
+          )}
         </div>
 
         {/* Metadata Row 2: Assignees, Comments, Attachments, Dependencies */}

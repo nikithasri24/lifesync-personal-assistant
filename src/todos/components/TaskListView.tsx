@@ -55,6 +55,8 @@ interface TaskListViewProps {
   pomodoroTimer: PomodoroTimer;
   /** Called when pomodoro is started */
   onStartPomodoro: (taskId: string) => void;
+  /** Called when task is scheduled via smart scheduling */
+  onScheduleTask?: (taskId: string, start: Date, end: Date) => void;
   /** Create task mutation object */
   createTaskMutation: {
     isPending: boolean;
@@ -102,6 +104,7 @@ export function TaskListView({
   onCancelSubtaskForm,
   pomodoroTimer,
   onStartPomodoro,
+  onScheduleTask,
   createTaskMutation,
   updateTaskMutation,
   showQuickAdd,
@@ -137,6 +140,7 @@ export function TaskListView({
               onStartPomodoro={onStartPomodoro}
               onAddSubtask={onStartSubtaskForm}
               onToggleExpansion={onToggleExpansion}
+              onScheduleTask={onScheduleTask}
               pomodoroTimer={pomodoroTimer}
               isUpdating={updateTaskMutation.isPending}
               isExpanded={isExpanded}

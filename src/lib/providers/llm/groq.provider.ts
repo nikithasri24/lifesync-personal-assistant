@@ -75,7 +75,7 @@ export class GroqProvider implements LLMProvider {
         } : undefined
       };
     } catch (error) {
-      logger.error('GroqProvider.chat failed', { error });
+      logger.error('GroqProvider', error as Error, { context: 'chat failed' });
 
       // Mark as unavailable on rate limit or auth errors
       if (error instanceof Error &&
@@ -113,7 +113,7 @@ export class GroqProvider implements LLMProvider {
 
       yield { done: true };
     } catch (error) {
-      logger.error('GroqProvider.streamChat failed', { error });
+      logger.error('GroqProvider', error as Error, { context: 'streamChat failed' });
       throw error;
     }
   }
@@ -136,7 +136,7 @@ export class GroqProvider implements LLMProvider {
       });
       return true;
     } catch (error) {
-      logger.warn('GroqProvider availability check failed', { error });
+      logger.warn('Groq', 'Availability check failed', { error });
       return false;
     }
   }

@@ -37,7 +37,7 @@ const createJournalEntryDefinition: ToolDefinition = {
         },
         tags: {
           type: 'array',
-          items: { type: 'string' },
+          items: { type: 'string', description: 'Tag name' },
           description: 'Tags for categorizing the entry (e.g., ["work", "health"]) - optional'
         },
         gratitude: {
@@ -69,7 +69,7 @@ const getJournalEntriesDefinition: ToolDefinition = {
         },
         tags: {
           type: 'array',
-          items: { type: 'string' },
+          items: { type: 'string', description: 'Tag name' },
           description: 'Filter by tags - optional'
         },
         timeframe: {
@@ -165,7 +165,7 @@ async function executeCreateJournalEntry(
       }
     };
   } catch (error) {
-    logger.error('JournalTools', error as Error, {
+    logger.error('JournalTools', 'Operation failed', { error,
       operation: 'create_journal_entry',
       args
     });
@@ -237,7 +237,7 @@ async function executeGetJournalEntries(
       message: `You have ${entries.length} journal entr${entries.length !== 1 ? 'ies' : 'y'} ${timeframe !== 'all' ? `this ${timeframe}` : ''}`
     };
   } catch (error) {
-    logger.error('JournalTools', error as Error, {
+    logger.error('JournalTools', 'Operation failed', { error,
       operation: 'get_journal_entries',
       args
     });
@@ -320,7 +320,7 @@ async function executeGetMoodAnalysis(
       message
     };
   } catch (error) {
-    logger.error('JournalTools', error as Error, {
+    logger.error('JournalTools', 'Operation failed', { error,
       operation: 'get_mood_analysis',
       args
     });

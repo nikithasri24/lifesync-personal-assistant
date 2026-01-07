@@ -495,6 +495,7 @@ export async function createLifeDream(input: CreateLifeDreamInput): Promise<Life
       description: input.description,
       category: input.category,
       priority: input.priority,
+      status: 'dreaming',
       estimated_cost: input.estimatedCost,
       estimated_timeframe: input.estimatedTimeframe,
       required_resources: input.requiredResources ?? [],

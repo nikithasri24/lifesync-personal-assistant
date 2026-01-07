@@ -93,7 +93,7 @@ const MappackerStyleMap: React.FC<MappackerStyleMapProps> = ({
         }
 
         // Debug: Check what properties are available
-        logger.info('MappackerStyleMap', 'Sample feature properties:', geoJsonData.features[0]?.properties ?? null);
+        logger.info('MappackerStyleMap', 'Sample feature properties', { properties: geoJsonData.features[0]?.properties ?? null });
 
         // Convert and filter features
         const countryFeatures = geoJsonData.features
@@ -103,6 +103,12 @@ const MappackerStyleMap: React.FC<MappackerStyleMapProps> = ({
             const iso_a3 = f.properties?.ISO_A3 ?? f.properties?.iso_a3 ?? '';
             const name = f.properties?.NAME ?? f.properties?.name ?? f.properties?.ADMIN ?? 'Unknown';
 
+            const geom = f.geometry ?? { type: 'Polygon', coordinates: [] };
+            // Filter out GeometryCollection as it doesn't have coordinates
+            const validGeom = (geom && 'type' in geom && geom.type !== 'GeometryCollection')
+              ? geom
+              : { type: 'Polygon', coordinates: [] };
+
             return {
               type: 'Feature' as const,
               id: f.id ?? iso_a2 ?? `country-${Math.random()}`,
@@ -111,7 +117,7 @@ const MappackerStyleMap: React.FC<MappackerStyleMapProps> = ({
                 iso_a2: iso_a2,
                 iso_a3: iso_a3,
               },
-              geometry: f.geometry ?? { type: 'Polygon', coordinates: [] },
+              geometry: validGeom as GeoJSONGeometry,
             };
           })
           .filter((f): boolean => {
@@ -127,11 +133,13 @@ const MappackerStyleMap: React.FC<MappackerStyleMapProps> = ({
           });
 
         logger.debug('MappackerStyleMap', `Loaded ${countryFeatures.length} valid countries from ${geoJsonData.features.length} total features`);
-        logger.info('MappackerStyleMap', 'First 3 countries:', countryFeatures.slice(0, 3).map((c): { name: string; code: string; id: string } => ({
-          name: c.properties.name,
-          code: c.properties.iso_a2,
-          id: c.id
-        })));
+        logger.info('MappackerStyleMap', 'First 3 countries', {
+          countries: countryFeatures.slice(0, 3).map((c): { name: string; code: string; id: string } => ({
+            name: c.properties.name,
+            code: c.properties.iso_a2,
+            id: c.id
+          }))
+        });
 
         if (countryFeatures.length === 0) {
           throw new Error('No valid countries found in map data');
@@ -144,7 +152,7 @@ const MappackerStyleMap: React.FC<MappackerStyleMapProps> = ({
         setLoading(false);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to load map data';
-        logger.error('MappackerStyleMap', 'Error loading map data:', err);
+        logger.error('MappackerStyleMap', 'Error loading map data', { error: err instanceof Error ? err.message : String(err) });
         setError(errorMessage);
         setLoading(false);
       }
@@ -169,7 +177,9 @@ const MappackerStyleMap: React.FC<MappackerStyleMapProps> = ({
   React.useEffect(() => {
     if (countries.length > 0) {
       logger.debug('MappackerStyleMap', `Rendering map with ${countries.length} countries`);
-      logger.info('MappackerStyleMap', 'First 3 countries:', countries.slice(0, 3).map((c): { name: string; code: string } => ({ name: c.properties.name, code: c.properties.iso_a2 })));
+      logger.info('MappackerStyleMap', 'First 3 countries', {
+        countries: countries.slice(0, 3).map((c): { name: string; code: string } => ({ name: c.properties.name, code: c.properties.iso_a2 }))
+      });
     }
   }, [countries]);
 
@@ -254,7 +264,7 @@ const MappackerStyleMap: React.FC<MappackerStyleMapProps> = ({
                     const isHovered = hoveredCountry === countryCode;
 
                     try {
-                      const path = pathGenerator(country.geometry);
+                      const path = pathGenerator(country.geometry as GeoJSON.Geometry);
 
                       // Skip if path generation failed
                       if (!path) {
@@ -275,7 +285,7 @@ const MappackerStyleMap: React.FC<MappackerStyleMapProps> = ({
                         />
                       );
                     } catch (err) {
-                      logger.error('MappackerStyleMap', `Error rendering ${country.properties.name}:`, err);
+                      logger.error('MappackerStyleMap', err as Error, { context: 'renderCountry', country: country.properties.name });
                       return null;
                     }
                   })}

@@ -11,7 +11,7 @@ interface StoreWithDistance extends Store {
 export function useStoreSuggestions(stores: Store[]): {
   userLocation: Coordinates | null;
   getUserLocation: () => Promise<void>;
-  findNearbyStoresForItem: (item: ShoppingItem) => StoreWithDistance[];
+  findNearbyStoresForItem: (item: ShoppingItem) => Store[];
 } {
   const [userLocation, setUserLocation] = useState<Coordinates | null>(null);
 
@@ -34,7 +34,7 @@ export function useStoreSuggestions(stores: Store[]): {
         lng: position.coords.longitude
       });
     } catch (error) {
-      logger.error('useStoreSuggestions', 'Error getting location:', error);
+      logger.error('useStoreSuggestions', error as Error, { context: 'Error getting location' });
       logger.error('useStoreSuggestions', 'Unable to get your location. Please enable location services.');
     }
   };

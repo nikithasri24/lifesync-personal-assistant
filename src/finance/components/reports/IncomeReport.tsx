@@ -21,7 +21,7 @@ export interface IncomeReportProps {
 }
 
 const IncomeReport: React.FC<IncomeReportProps> = ({
-  _transactions,
+
   categories,
   dateRange,
   metrics,

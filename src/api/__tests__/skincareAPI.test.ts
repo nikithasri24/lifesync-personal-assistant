@@ -59,8 +59,9 @@ describe('Skincare API', () => {
         name: 'Vitamin C Serum',
         brand: 'The Ordinary',
         category: 'serum' as const,
-        in_use: true,
-        purchase_date: '2025-01-01',
+        usageTime: ['AM' as const],
+        currentlyUsing: true,
+        purchaseDate: '2025-01-01',
       };
 
       const result = await createSkincareProduct(input);
@@ -134,23 +135,23 @@ describe('Skincare API', () => {
         eq: vi.fn().mockReturnThis(),
         select: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({
-          data: { ...mockProduct, in_use: false },
+          data: { ...mockProduct, currentlyUsing: false },
           error: null,
         }),
       };
 
       (supabase!.from as any).mockReturnValue(mockQuery);
 
-      const result = await updateSkincareProduct('product-1', { in_use: false });
+      const result = await updateSkincareProduct('product-1', { currentlyUsing: false });
 
       expect(mockQuery.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          in_use: false,
+          currentlyUsing: false,
         })
       );
       expect(mockQuery.eq).toHaveBeenCalledWith('id', 'product-1');
       expect(mockQuery.eq).toHaveBeenCalledWith('user_id', mockUser.id);
-      expect(result.in_use).toBe(false);
+      expect(result.currentlyUsing).toBe(false);
     });
 
     it('should delete skincare product', async () => {
@@ -187,7 +188,7 @@ describe('Skincare API', () => {
       (supabase!.from as any).mockReturnValue(mockQuery);
 
       await expect(
-        createSkincareProduct({ name: 'Test', category: 'serum', in_use: true })
+        createSkincareProduct({ name: 'Test', category: 'serum', usageTime: ['AM'], currentlyUsing: true })
       ).rejects.toThrow();
     });
   });
@@ -216,7 +217,8 @@ describe('Skincare API', () => {
 
       const input = {
         date: '2025-01-15',
-        overall_condition: 4,
+        overall_condition: 4 as const,
+        concerns: ['acne', 'dryness'],
         notes: 'Skin looking good',
       };
 
@@ -288,7 +290,7 @@ describe('Skincare API', () => {
       (supabase!.from as any).mockReturnValue(mockQuery);
 
       await expect(
-        createSkinConditionLog({ date: '2025-01-15', overall_condition: 4 })
+        createSkinConditionLog({ date: '2025-01-15', overall_condition: 4 as const, concerns: [] })
       ).rejects.toThrow();
     });
   });

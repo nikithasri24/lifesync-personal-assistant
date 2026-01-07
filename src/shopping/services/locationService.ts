@@ -14,7 +14,15 @@ export async function getUserLocation(): Promise<Coordinates | null> {
 
   try {
     const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-      navigator.geolocation.getCurrentPosition(resolve, reject);
+      navigator.geolocation.getCurrentPosition(
+        resolve,
+        reject,
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 60000,
+        }
+      );
     });
 
     return {
@@ -22,7 +30,12 @@ export async function getUserLocation(): Promise<Coordinates | null> {
       lng: position.coords.longitude
     };
   } catch (error) {
-    logger.error('LocationService', 'Unable to get your location. Please enable location services.', error);
+    // Only log permission errors, not transient location failures
+    if (error instanceof GeolocationPositionError && error.code === error.PERMISSION_DENIED) {
+      const permissionError = new Error(error.message);
+      logger.error('LocationService', permissionError, { context: 'Location permission denied.' });
+    }
+    // Silently return null for other errors to avoid console noise
     return null;
   }
 }

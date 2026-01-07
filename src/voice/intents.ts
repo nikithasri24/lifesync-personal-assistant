@@ -1,5 +1,5 @@
 import { getFinanceAPI } from '../finance/data'
-import apiClient from '../services/apiClient'
+import * as mealPlanningAPI from '../api/mealPlanningAPI'
 import { currentMonth, monthRange } from '../finance/utils/date'
 import { formatCurrency } from '../finance/utils/currency'
 import { parseTimeWindow } from './time'
@@ -235,7 +235,7 @@ export async function handleUtterance(text: string, ctx?: IntentContext): Promis
   // Breakfast menu inquiry
   if (/(breakfast).*(menu|plan|what.*have|what.*had)/.test(t)) {
     try {
-      const plans = await apiClient.getMealPlans().catch(() => [])
+      const plans = await mealPlanningAPI.getMealPlans().catch(() => [])
       const today = new Date()
       const _todayISO = today.toISOString().slice(0,10)
       const todays = JSON.stringify(plans) // quick-and-dirty scan; structure varies by backend
@@ -253,7 +253,7 @@ export async function handleUtterance(text: string, ctx?: IntentContext): Promis
   // Suggest simple recipe based on pantry
   if (/suggest.*(simple|quick).*(breakfast|meal|something).*pantry/.test(t) || /lazy.*cook|without.*prep/.test(t)) {
     try {
-      const pantry = await apiClient.getPantryItems().catch(() => []) as Array<{ name?: string | number }>
+      const pantry = await mealPlanningAPI.getPantryItems().catch(() => []) as Array<{ name?: string | number }>
       const names = new Set<string>((pantry ?? []).map(p => (typeof p.name === 'string' || typeof p.name === 'number' ? String(p.name) : '').toLowerCase()))
       const has = (s: string): boolean => Array.from(names).some(n => n.includes(s))
       const options: string[] = []
@@ -268,7 +268,7 @@ export async function handleUtterance(text: string, ctx?: IntentContext): Promis
         return { reply: `Here are some quick options: ${options.slice(0,3).join(', ')}.` }
       }
       // try recipes tagged quick/breakfast
-      const recipes = await apiClient.getRecipes().catch(() => []) as Array<{ tags?: unknown; prep_time?: unknown; name?: string | number }>
+      const recipes = await mealPlanningAPI.getRecipes().catch(() => []) as Array<{ tags?: unknown; prep_time?: unknown; name?: string | number }>
       const quick = (recipes ?? []).filter(r =>
         (Array.isArray(r.tags) && (r.tags.includes('quick') ?? r.tags.includes('breakfast'))) ??
         (typeof r.prep_time === 'number' && r.prep_time <= 10)
@@ -282,7 +282,7 @@ export async function handleUtterance(text: string, ctx?: IntentContext): Promis
 
   // Navigation
   const navMatch = t.match(/^(go to|open|show) ([a-z ]+)$/); if (navMatch) {
-    const target = navMatch[2].trim(); const map: Record<string, string> = { dashboard: 'dashboard', home: 'dashboard', calendar: 'calendar', tasks: 'todos', focus: 'focus', habits: 'habits', notes: 'notes', projects: 'projects', journal: 'journal', mood: 'mood', period: 'period', travel: 'travel', finances: 'finances', finance: 'finances', shopping: 'shopping', meals: 'meals', goals: 'goals', shared: 'shared', personal: 'personal' }
+    const target = navMatch[2].trim(); const map: Record<string, string> = { dashboard: 'dashboard', home: 'dashboard', calendar: 'calendar', tasks: 'todos', focus: 'focus', habits: 'habits', notes: 'notes', projects: 'projects', journal: 'journal', mood: 'mood', travel: 'travel', finances: 'finances', finance: 'finances', shopping: 'shopping', meals: 'meals', goals: 'goals', shared: 'shared', personal: 'personal' }
     const view = map[target]; if (view) return { reply: `Opening ${target}.`, navigateView: view }
   }
 

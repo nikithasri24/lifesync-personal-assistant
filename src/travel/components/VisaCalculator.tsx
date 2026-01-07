@@ -3,7 +3,6 @@
  * Allows users to input their passport and visas to calculate visa-free travel access
  */
 
-/* eslint-disable max-lines */
 import React from 'react';
 import {
   getVisaRequirement,
@@ -18,12 +17,11 @@ import {
   getUserVisas,
   addPassport,
   addVisa,
-  deleteVisa
+  deleteVisa,
+  updatePassport
 } from '../api/passportAPI';
 import type { VisaRequirement, UserPassport, UserVisa } from '../types/visa';
 import VisaMap from './VisaMap';
-import ExpiryAlerts from './ExpiryAlerts';
-import { logger } from '../../services/logger';
 
 interface DestinationRequirement {
   country: string;
@@ -56,7 +54,7 @@ const VisaCalculator: React.FC = () => {
 
   // Load passport and visas on mount
   React.useEffect(() => {
-    const loadData = async (): Promise<void> => {
+    const loadData = async () => {
       try {
         setLoading(true);
         const [passportData, visasData] = await Promise.all([
@@ -66,12 +64,12 @@ const VisaCalculator: React.FC = () => {
         setPassport(passportData);
         setUserVisas(visasData);
       } catch (error) {
-        logger.error('Error loading passport/visa data:', { error });
+        console.error('Error loading passport/visa data:', error);
       } finally {
         setLoading(false);
       }
     };
-    void loadData();
+    loadData();
   }, []);
 
   // Get summary for selected passport
@@ -107,7 +105,8 @@ const VisaCalculator: React.FC = () => {
         activeVisasMap.set(visa.countryName, {
           daysAllowed: visa.maxStayDays,
           expiryDate: visa.expiryDate,
-          visaType: visa.visaType || 'visa'});
+          visaType: visa.visaType || 'visa',
+        });
       }
     });
 
@@ -122,7 +121,8 @@ const VisaCalculator: React.FC = () => {
         viaVisa: access.viaVisa,
         accessType: access.accessType,
         daysAllowed: access.daysAllowed,
-        conditions: access.conditions});
+        conditions: access.conditions,
+      });
     });
 
     // Get all countries and their requirements from passport
@@ -140,7 +140,8 @@ const VisaCalculator: React.FC = () => {
             requirement: 'visa-free',
             daysAllowed: activeVisa.daysAllowed,
             accessVia: 'visa',
-            visaCountry: `Valid ${activeVisa.visaType} until ${new Date(activeVisa.expiryDate).toLocaleDateString()}`});
+            visaCountry: `Valid ${activeVisa.visaType} until ${new Date(activeVisa.expiryDate).toLocaleDateString()}`,
+          });
           return; // Skip other checks for this country
         }
 
@@ -157,8 +158,8 @@ const VisaCalculator: React.FC = () => {
           }
           // Both grant visa-free, but visa grants MORE days
           else if (req.requirement === 'visa-free' && visaAccess.accessType === 'visa-free') {
-            const passportDays = req.daysAllowed ?? Infinity;
-            const visaDays = visaAccess.daysAllowed ?? Infinity;
+            const passportDays = req.daysAllowed || Infinity;
+            const visaDays = visaAccess.daysAllowed || Infinity;
             shouldUseVisaAccess = visaDays > passportDays;
           }
           // Passport requires e-visa/eta, but visa grants visa-free
@@ -180,7 +181,8 @@ const VisaCalculator: React.FC = () => {
             requirement: visaAccess.accessType,
             daysAllowed: visaAccess.daysAllowed,
             accessVia: 'visa',
-            visaCountry: visaAccess.viaVisa});
+            visaCountry: visaAccess.viaVisa,
+          });
         } else {
           // Use passport-based access (better or equal)
           results.push({
@@ -188,7 +190,8 @@ const VisaCalculator: React.FC = () => {
             requirement: req.requirement,
             daysAllowed: req.daysAllowed,
             accessVia: 'passport',
-            visaCountry: undefined});
+            visaCountry: undefined,
+          });
         }
       }
     });
@@ -211,7 +214,8 @@ const VisaCalculator: React.FC = () => {
       'eta': [],
       'e-visa': [],
       'visa-required': [],
-      'no-admission': []};
+      'no-admission': [],
+    };
 
     filteredDestinations.forEach(dest => {
       groups[dest.requirement].push(dest);
@@ -220,24 +224,25 @@ const VisaCalculator: React.FC = () => {
     return groups;
   }, [filteredDestinations]);
 
-  const handleSetPassport = async (): Promise<void> => {
+  const handleSetPassport = async () => {
     if (!selectedPassportCountry) return;
 
     try {
       const newPassport = await addPassport({
         countryCode: selectedPassportCountry.substring(0, 2).toUpperCase(),
         countryName: selectedPassportCountry,
-        isPrimary: true});
+        isPrimary: true,
+      });
       setPassport(newPassport);
       setShowPassportSelector(false);
       setSelectedPassportCountry('');
     } catch (error) {
-      logger.error('Error adding passport:', { error });
-      // Error logged, user feedback could be added here
+      console.error('Error adding passport:', error);
+      alert('Failed to save passport. Please try again.');
     }
   };
 
-  const handleAddVisa = async (): Promise<void> => {
+  const handleAddVisa = async () => {
     if (!newVisaCountry || !newVisaExpiry) return;
 
     try {
@@ -245,7 +250,8 @@ const VisaCalculator: React.FC = () => {
         countryCode: newVisaCountry.substring(0, 2).toUpperCase(),
         countryName: newVisaCountry,
         expiryDate: newVisaExpiry,
-        multipleEntry: newVisaMultipleEntry});
+        multipleEntry: newVisaMultipleEntry,
+      });
 
       setUserVisas(prev => [...prev, newVisa]);
       setNewVisaCountry('');
@@ -253,18 +259,18 @@ const VisaCalculator: React.FC = () => {
       setNewVisaMultipleEntry(true);
       setShowAddVisa(false);
     } catch (error) {
-      logger.error('Error adding visa:', { error });
-      // Error logged, user feedback could be added here
+      console.error('Error adding visa:', error);
+      alert('Failed to save visa. Please try again.');
     }
   };
 
-  const handleRemoveVisa = async (visaId: string): Promise<void> => {
+  const handleRemoveVisa = async (visaId: string) => {
     try {
       await deleteVisa(visaId);
       setUserVisas(prev => prev.filter(v => v.id !== visaId));
     } catch (error) {
-      logger.error('Error removing visa:', { error });
-      // Error logged, user feedback could be added here
+      console.error('Error removing visa:', error);
+      alert('Failed to remove visa. Please try again.');
     }
   };
 
@@ -315,16 +321,6 @@ const VisaCalculator: React.FC = () => {
         </p>
       </div>
 
-      {/* Expiry Alerts */}
-      {(passport ?? userVisas.length > 0) && (
-        <div className="mb-6">
-          <ExpiryAlerts
-            passports={passport ? [passport] : []}
-            visas={userVisas}
-          />
-        </div>
-      )}
-
       {/* Passport Selection */}
       <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
         <div className="flex items-center justify-between mb-4">
@@ -363,7 +359,7 @@ const VisaCalculator: React.FC = () => {
             </select>
             <div className="flex gap-2">
               <button
-                onClick={() => void handleSetPassport()}
+                onClick={handleSetPassport}
                 disabled={!selectedPassportCountry}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
@@ -495,7 +491,7 @@ const VisaCalculator: React.FC = () => {
               </div>
             </div>
             <button
-              onClick={() => void handleAddVisa()}
+              onClick={handleAddVisa}
               disabled={!newVisaCountry || !newVisaExpiry}
               className="mt-3 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
             >
@@ -523,7 +519,7 @@ const VisaCalculator: React.FC = () => {
                     </div>
                   </div>
                   <button
-                    onClick={() => void handleRemoveVisa(visa.id)}
+                    onClick={() => handleRemoveVisa(visa.id)}
                     className="text-red-600 hover:text-red-800 text-sm font-medium"
                   >
                     Remove

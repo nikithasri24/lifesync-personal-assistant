@@ -1,301 +1,212 @@
 /**
- * CreditCardsPage - Track all credit cards with utilization, balances, and payments
- * Inspired by MoneyPatrol and MaxRewards credit card tracking
+ * Credit Cards Page
+ * Comprehensive credit card management with benefits, rewards, and offers tracking
  */
 
-import React from 'react';
-import { CreditCard, TrendingDown, AlertTriangle, CheckCircle, Award } from 'lucide-react';
-import { useAccountsQuery, useUpdateAccountMutation } from '../hooks/useFinanceQuery';
+import React, { useState } from 'react';
+import { CreditCard, Plus, Loader2, Gift, TrendingUp } from 'lucide-react';
+import { useAccountsQuery } from '@/hooks/useFinanceQuery';
 import type { Account } from '../types';
 import { formatCurrency } from '../utils/currency';
-import { CreditCardCard } from '../components/creditCards/CreditCardCard';
-import { CreditCardDetailsPage } from './CreditCardDetailsPage';
-import { CreditCardPointsTracker } from '../components/creditCards/CreditCardPointsTracker';
-import { logger } from '../../services/logger';
+import { CreditCardDetailsModal } from '../components/creditCards/CreditCardDetailsModal';
+import { WelcomeBonusTracker } from '../components/creditCards/WelcomeBonusTracker';
+import { UtilizationDashboard } from '../components/creditCards/UtilizationDashboard';
+
+type TabType = 'cards' | 'bonuses' | 'utilization';
 
 const CreditCardsPage: React.FC = () => {
-  const [selectedCardId, setSelectedCardId] = React.useState<string | null>(null);
-  const [showPointsTracker, setShowPointsTracker] = React.useState(false);
+  const [selectedCard, setSelectedCard] = useState<Account | null>(null);
+  const [activeTab, setActiveTab] = useState<TabType>('cards');
 
-  // React Query hooks
-  const { data: accounts = [], isLoading: loading } = useAccountsQuery();
-  const updateAccountMutation = useUpdateAccountMutation();
+  const { data: accounts = [], isLoading, error } = useAccountsQuery();
 
-  // Filter to only credit cards
-  const creditCards = React.useMemo(() => {
-    return accounts.filter(a => a.type === 'credit');
-  }, [accounts]);
+  // Filter for credit card accounts only
+  const creditCards = accounts.filter(acc => acc.type === 'credit');
 
-  // Calculate summary metrics
-  const totalBalance = creditCards.reduce((sum, card) => sum + Math.abs(card.balance), 0);
-  const totalCreditLimit = creditCards.reduce((sum, card) => sum + (card.creditLimit ?? 0), 0);
-  const totalAvailable = totalCreditLimit - totalBalance;
-  const overallUtilization = totalCreditLimit > 0 ? (totalBalance / totalCreditLimit) * 100 : 0;
+  // Calculate summary stats
+  const totalBalance = creditCards.reduce((sum, card) => sum + card.balance, 0);
+  const totalCreditLimit = creditCards.reduce((sum, card) => sum + (card.creditLimit || 0), 0);
+  const totalRewards = creditCards.reduce((sum, card) => sum + (card.rewardsBalance || 0), 0);
+  const utilizationRate = totalCreditLimit > 0 ? (Math.abs(totalBalance) / totalCreditLimit) * 100 : 0;
 
-  // Count cards by status
-  const highUtilizationCards = creditCards.filter(c => {
-    if (!c.creditLimit) return false;
-    const util = (Math.abs(c.balance) / c.creditLimit) * 100;
-    return util >= 70;
-  });
-
-  const _cardsWithDueDates = creditCards.filter(c => c.paymentDueDay).length;
-
-  // Get upcoming payments
-  const getNextDueDate = (card: Account): Date | null => {
-    if (!card.paymentDueDay) return null;
-    const today = new Date();
-    const dueDate = new Date(today.getFullYear(), today.getMonth(), card.paymentDueDay);
-    if (dueDate < today) {
-      dueDate.setMonth(dueDate.getMonth() + 1);
-    }
-    return dueDate;
-  };
-
-  const upcomingPayments = creditCards
-    .filter(c => c.paymentDueDay && c.minimumPayment)
-    .map(c => {
-      const dueDate = getNextDueDate(c);
-      return dueDate ? {
-        card: c,
-        dueDate: dueDate,
-        amount: c.minimumPayment ?? 0
-      } : null;
-    })
-    .filter((payment): payment is NonNullable<typeof payment> => payment !== null)
-    .sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime())
-    .slice(0, 3);
-
-  // Check if any cards have rewards
-  const hasRewardsCards = creditCards.some(c => c.rewardsType && c.rewardsBalance !== undefined);
-
-  // Handle updating rewards balance
-  const handleUpdatePoints = async (accountId: string, newBalance: number): Promise<void> => {
-    try {
-      await updateAccountMutation.mutateAsync({
-        accountId,
-        updates: { rewardsBalance: newBalance }
-      });
-    } catch (error) {
-      logger.error('[CreditCardsPage] Failed to update rewards balance:', { error });
-    }
-  };
-
-  if (loading) {
+  if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent mx-auto mb-2" />
-          <p className="text-sm text-primary opacity-60">Loading credit cards...</p>
+          <p className="text-red-500 mb-2">Error loading credit cards</p>
+          <p className="text-sm text-primary opacity-60">{error.message}</p>
         </div>
       </div>
     );
   }
 
-  // Show details page if a card is selected
-  if (selectedCardId) {
-    return (
-      <CreditCardDetailsPage
-        accountId={selectedCardId}
-        onBack={() => setSelectedCardId(null)}
-      />
-    );
-  }
-
-  if (creditCards.length === 0) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center max-w-md">
-          <CreditCard className="h-16 w-16 text-primary opacity-40 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-primary mb-2">No Credit Cards Yet</h3>
-          <p className="text-sm text-primary opacity-70 mb-6">
-            Add your credit cards in the Accounts section to track utilization, payments, and avoid fees.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
+    { id: 'cards', label: 'My Cards', icon: <CreditCard className="h-4 w-4" /> },
+    { id: 'bonuses', label: 'Welcome Bonuses', icon: <Gift className="h-4 w-4" /> },
+    { id: 'utilization', label: 'Utilization', icon: <TrendingUp className="h-4 w-4" /> },
+  ];
 
   return (
-    <div className="space-y-6">
-      {/* View Toggle - Show only if there are rewards cards */}
-      {hasRewardsCards && (
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowPointsTracker(false)}
-              className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                !showPointsTracker
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-primary/20 text-primary hover:bg-primary/30'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <CreditCard className="h-4 w-4" />
-                <span>Cards View</span>
-              </div>
-            </button>
-            <button
-              onClick={() => setShowPointsTracker(true)}
-              className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                showPointsTracker
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-primary/20 text-primary hover:bg-primary/30'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <Award className="h-4 w-4" />
-                <span>Points Tracker</span>
-              </div>
-            </button>
-          </div>
-        </div>
-      )}
+    <div className="container mx-auto px-4 py-6 max-w-7xl">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-primary">Credit Cards</h1>
+      </div>
 
-      {/* Points Tracker View */}
-      {showPointsTracker && hasRewardsCards && (
-        <CreditCardPointsTracker
-          cards={creditCards}
-          onUpdatePoints={(accountId: string, newBalance: number) => {
-            void handleUpdatePoints(accountId, newBalance);
-          }}
-        />
-      )}
+      {/* Tabs */}
+      <div className="flex border-b border-primary/10 mb-6">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex items-center gap-2 px-4 py-3 border-b-2 transition-colors ${
+              activeTab === tab.id
+                ? 'border-blue-500 text-blue-500'
+                : 'border-transparent text-primary opacity-60 hover:opacity-100'
+            }`}
+          >
+            {tab.icon}
+            <span className="font-medium">{tab.label}</span>
+          </button>
+        ))}
+      </div>
 
-      {/* Cards View */}
-      {!showPointsTracker && (
+      {/* Tab Content */}
+      {activeTab === 'cards' && (
         <>
           {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {/* Total Balance */}
-        <div className="rounded-2xl bg-primary/30 backdrop-blur-sm shadow-sm ring-1 border-rose-500/30 p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="rounded-lg bg-rose-500/10 p-2">
-              <TrendingDown className="h-4 w-4 text-rose-600" />
-            </div>
-            <h3 className="text-sm font-medium text-primary opacity-70">Total Balance</h3>
-          </div>
-          <p className="text-2xl font-bold text-primary">{formatCurrency(totalBalance)}</p>
-          <p className="text-xs text-primary opacity-60 mt-1">{creditCards.length} cards</p>
-        </div>
+          {creditCards.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <div className="bg-primary/30 backdrop-blur-sm rounded-2xl p-4 ring-1 ring-primary/10">
+                <p className="text-sm text-primary opacity-60 mb-1">Total Balance</p>
+                <p className="text-2xl font-bold text-primary">{formatCurrency(Math.abs(totalBalance))}</p>
+                <p className="text-xs text-primary opacity-60 mt-1">
+                  {creditCards.length} card{creditCards.length !== 1 ? 's' : ''}
+                </p>
+              </div>
 
-        {/* Credit Limit */}
-        <div className="rounded-2xl bg-primary/30 backdrop-blur-sm shadow-sm ring-1 border-blue-500/30 p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="rounded-lg bg-blue-500/10 p-2">
-              <CreditCard className="h-4 w-4 text-blue-600" />
-            </div>
-            <h3 className="text-sm font-medium text-primary opacity-70">Total Limit</h3>
-          </div>
-          <p className="text-2xl font-bold text-primary">{formatCurrency(totalCreditLimit)}</p>
-          <p className="text-xs text-primary opacity-60 mt-1">{formatCurrency(totalAvailable)} available</p>
-        </div>
+              <div className="bg-primary/30 backdrop-blur-sm rounded-2xl p-4 ring-1 ring-primary/10">
+                <p className="text-sm text-primary opacity-60 mb-1">Credit Limit</p>
+                <p className="text-2xl font-bold text-primary">{formatCurrency(totalCreditLimit)}</p>
+                <p className="text-xs text-primary opacity-60 mt-1">Total available</p>
+              </div>
 
-        {/* Overall Utilization */}
-        <div className={`rounded-2xl bg-primary/30 backdrop-blur-sm shadow-sm ring-1 ${
-          overallUtilization >= 70 ? 'border-amber-500/30' : 'border-emerald-500/30'
-        } p-4`}>
-          <div className="flex items-center gap-2 mb-2">
-            <div className={`rounded-lg ${
-              overallUtilization >= 70 ? 'bg-amber-500/10' : 'bg-emerald-500/10'
-            } p-2`}>
-              {overallUtilization >= 70 ? (
-                <AlertTriangle className="h-4 w-4 text-amber-600" />
-              ) : (
-                <CheckCircle className="h-4 w-4 text-emerald-600" />
-              )}
-            </div>
-            <h3 className="text-sm font-medium text-primary opacity-70">Utilization</h3>
-          </div>
-          <p className="text-2xl font-bold text-primary">{overallUtilization.toFixed(1)}%</p>
-          <p className={`text-xs mt-1 ${
-            overallUtilization >= 70 ? 'text-amber-600' : 'text-emerald-600'
-          }`}>
-            {overallUtilization >= 70 ? 'High' : 'Healthy'}
-          </p>
-        </div>
+              <div className="bg-primary/30 backdrop-blur-sm rounded-2xl p-4 ring-1 ring-primary/10">
+                <p className="text-sm text-primary opacity-60 mb-1">Utilization</p>
+                <p className="text-2xl font-bold text-primary">{utilizationRate.toFixed(1)}%</p>
+                <p className={`text-xs mt-1 ${utilizationRate < 30 ? 'text-emerald-400' : utilizationRate < 50 ? 'text-amber-400' : 'text-red-400'}`}>
+                  {utilizationRate < 30 ? 'Excellent' : utilizationRate < 50 ? 'Good' : 'High'}
+                </p>
+              </div>
 
-        {/* High Utilization Alert */}
-        <div className="rounded-2xl bg-primary/30 backdrop-blur-sm shadow-sm ring-1 border-primary/20 p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="rounded-lg bg-primary/10 p-2">
-              <AlertTriangle className="h-4 w-4 text-primary opacity-60" />
+              <div className="bg-primary/30 backdrop-blur-sm rounded-2xl p-4 ring-1 ring-primary/10">
+                <p className="text-sm text-primary opacity-60 mb-1">Total Rewards</p>
+                <p className="text-2xl font-bold text-primary">{totalRewards.toLocaleString()}</p>
+                <p className="text-xs text-primary opacity-60 mt-1">Points/miles/cashback</p>
+              </div>
             </div>
-            <h3 className="text-sm font-medium text-primary opacity-70">High Utilization</h3>
-          </div>
-          <p className="text-2xl font-bold text-primary">{highUtilizationCards.length}</p>
-          <p className="text-xs text-primary opacity-60 mt-1">
-            {highUtilizationCards.length > 0 ? 'cards need attention' : 'all cards healthy'}
-          </p>
+          )}
+
+          {/* Credit Cards Grid */}
+          {creditCards.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-6xl mb-4">💳</div>
+              <h3 className="text-lg font-semibold text-primary mb-2">No credit cards yet</h3>
+              <p className="text-primary opacity-60 mb-4">
+                Add your credit cards to track balances, rewards, and benefits
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {creditCards.map((card) => (
+                <CreditCardCard
+                  key={card.id}
+                  card={card}
+                  onClick={() => setSelectedCard(card)}
+                />
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {activeTab === 'bonuses' && <WelcomeBonusTracker />}
+      {activeTab === 'utilization' && <UtilizationDashboard />}
+
+      {/* Detailed View Modal */}
+      {selectedCard && (
+        <CreditCardDetailsModal
+          card={selectedCard}
+          onClose={() => setSelectedCard(null)}
+        />
+      )}
+    </div>
+  );
+};
+
+// Credit Card Card Component
+interface CreditCardCardProps {
+  card: Account;
+  onClick: () => void;
+}
+
+const CreditCardCard: React.FC<CreditCardCardProps> = ({ card, onClick }) => {
+  const utilization = card.creditLimit ? (Math.abs(card.balance) / card.creditLimit) * 100 : 0;
+  const available = (card.creditLimit || 0) - Math.abs(card.balance);
+
+  return (
+    <div
+      onClick={onClick}
+      className="rounded-2xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 backdrop-blur-sm shadow-sm ring-1 ring-primary/10 p-5 transition-all hover:shadow-md hover:scale-[1.02] cursor-pointer"
+    >
+      {/* Card Header */}
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex-1">
+          <h3 className="text-lg font-semibold text-primary mb-1">{card.name}</h3>
+          {card.rewardsType && (
+            <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400">
+              {card.rewardsBalance?.toLocaleString()} {card.rewardsType}
+            </span>
+          )}
+        </div>
+        <CreditCard className="h-6 w-6 text-primary opacity-60" />
+      </div>
+
+      {/* Balance */}
+      <div className="mb-4">
+        <p className="text-sm text-primary opacity-60 mb-1">Current Balance</p>
+        <p className="text-2xl font-bold text-primary">{formatCurrency(Math.abs(card.balance))}</p>
+      </div>
+
+      {/* Credit Limit & Utilization */}
+      <div className="mb-3">
+        <div className="flex justify-between text-xs text-primary opacity-60 mb-1">
+          <span>Available: {formatCurrency(available)}</span>
+          <span>{utilization.toFixed(1)}% used</span>
+        </div>
+        <div className="w-full bg-primary/10 rounded-full h-2">
+          <div
+            className={`h-2 rounded-full transition-all ${
+              utilization < 30 ? 'bg-emerald-500' : utilization < 50 ? 'bg-amber-500' : 'bg-red-500'
+            }`}
+            style={{ width: `${Math.min(utilization, 100)}%` }}
+          />
         </div>
       </div>
 
-      {/* Upcoming Payments */}
-      {upcomingPayments.length > 0 && (
-        <div className="rounded-2xl bg-primary/30 backdrop-blur-sm shadow-sm ring-1 border-primary/20 p-5">
-          <h3 className="text-lg font-semibold text-primary mb-4">Upcoming Payments</h3>
-          <div className="space-y-3">
-            {upcomingPayments.map(({ card, dueDate, amount }) => {
-              const daysUntil = Math.ceil((dueDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-              const isUrgent = daysUntil <= 3;
-              const isWarning = daysUntil <= 7;
-
-              return (
-                <div
-                  key={card.id}
-                  className={`flex items-center justify-between p-3 rounded-lg ${
-                    isUrgent
-                      ? 'bg-rose-500/10 border border-rose-500/30'
-                      : isWarning
-                      ? 'bg-amber-500/10 border border-amber-500/30'
-                      : 'bg-primary/10 border border-primary/20'
-                  }`}
-                >
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-primary">{card.name}</p>
-                    <p className="text-xs text-primary opacity-60 mt-0.5">
-                      Minimum: {formatCurrency(amount)}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className={`text-sm font-semibold ${
-                      isUrgent ? 'text-rose-600' : isWarning ? 'text-amber-600' : 'text-primary'
-                    }`}>
-                      {dueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                    </p>
-                    <p className="text-xs text-primary opacity-60">
-                      {daysUntil === 0 ? 'Today' : `${daysUntil} days`}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-          {/* Credit Cards Grid */}
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-primary">Your Credit Cards</h3>
-              <p className="text-sm text-primary opacity-60">
-                {creditCards.length} {creditCards.length === 1 ? 'card' : 'cards'}
-              </p>
-            </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {creditCards.map(card => (
-                <div
-                  key={card.id}
-                  onClick={() => setSelectedCardId(card.id)}
-                  className="cursor-pointer transition-transform hover:scale-[1.02]"
-                >
-                  <CreditCardCard card={card} />
-                </div>
-              ))}
-            </div>
-          </div>
-        </>
-      )}
+      {/* APR & Limit */}
+      <div className="flex items-center justify-between text-xs text-primary opacity-60">
+        {card.apr && <span>APR: {card.apr}%</span>}
+        {card.creditLimit && <span>Limit: {formatCurrency(card.creditLimit)}</span>}
+      </div>
     </div>
   );
 };

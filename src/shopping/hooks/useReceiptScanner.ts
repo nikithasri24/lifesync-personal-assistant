@@ -178,7 +178,7 @@ export function useReceiptScanner(): UseReceiptScannerReturn {
       }
     } catch (e) {
       const msg = 'Text detection failed. Paste text below instead, or use Extract via server.';
-      logger.warn('useReceiptScanner', msg, e);
+      logger.warn('useReceiptScanner', msg, { error: e as Error });
     }
   };
 
@@ -222,7 +222,7 @@ export function useReceiptScanner(): UseReceiptScannerReturn {
       setParsedReceipt(items);
     } catch (e) {
       const msg = 'Server OCR failed. Please paste text manually or try again.';
-      logger.error('useReceiptScanner', msg, e);
+      logger.error('useReceiptScanner', e as Error, { context: msg });
     } finally {
       setReceiptOcrLoading(false);
     }

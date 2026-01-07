@@ -1,78 +1,98 @@
-import type { StateCreator } from 'zustand';
-import type { FinancialAccountData, FinancialTransactionData } from '@/services/types';
-import { apiClient } from '@/services/apiClient';
+/**
+ * Finance Zustand Slice - UI STATE ONLY
+ *
+ * ⚠️ DEPRECATED: Server state removed - use React Query hooks instead
+ * 
+ * This slice now contains ONLY UI state (view modes, filters, etc.)
+ * All server data (accounts, transactions, budgets, loading states, CRUD operations) should use React Query.
+ *
+ * ✅ Use React Query hooks from @/hooks/useFinanceQuery.ts:
+ * - useFinancialAccountsQuery() - Get all accounts
+ * - useFinancialAccountQuery(id) - Get single account
+ * - useFinancialTransactionsQuery() - Get all transactions
+ * - useFinancialTransactionQuery(id) - Get single transaction
+ * - useCreateAccountMutation() - Create account
+ * - useUpdateAccountMutation() - Update account
+ * - useDeleteAccountMutation() - Delete account
+ * - useCreateTransactionMutation() - Create transaction
+ * - useUpdateTransactionMutation() - Update transaction
+ * - useDeleteTransactionMutation() - Delete transaction
+ *
+ * Additional React Query Features:
+ * - Budget tracking hooks
+ * - Spending analytics hooks
+ * - Bill payment tracking hooks
+ * - Investment portfolio hooks
+ * - Financial goal tracking
+ *
+ * Benefits of React Query:
+ * - Better financial data caching and synchronization
+ * - Optimistic updates for transactions
+ * - Automatic invalidation when finances change
+ * - Proper separation: Server state (React Query) vs UI state (Zustand)
+ */
 
-type TransactionInput = Omit<FinancialTransactionData, 'id' | 'created_at' | 'updated_at'>;
+import { type StateCreator } from 'zustand';
 
 export interface FinanceSlice {
-  accounts: FinancialAccountData[];
-  accountsLoaded: boolean;
-  accountsLoading: boolean;
-  accountsError: string | null;
+  // UI State only - no server data!
+  financeViewMode: 'overview' | 'transactions' | 'accounts' | 'budgets' | 'analytics';
+  financeFilterDateRange: { start: string; end: string } | null;
+  financeFilterCategory: string | null;
+  financeFilterAccount: string | null;
+  financeFilterType: 'all' | 'income' | 'expense' | 'transfer';
+  financeSortBy: 'date' | 'amount' | 'category' | 'account';
+  financeSortOrder: 'asc' | 'desc';
+  financeShowRecurring: boolean;
+  financeSelectedTransaction: string | null;
+  financeSelectedAccount: string | null;
 
-  transactions: FinancialTransactionData[];
-  transactionsLoaded: boolean;
-  transactionsLoading: boolean;
-  transactionsError: string | null;
-
-  loadAccounts: () => Promise<void>;
-  loadTransactions: () => Promise<void>;
-  addTransaction: (tx: TransactionInput) => Promise<FinancialTransactionData>;
-  updateTransaction: (id: string, updates: Partial<FinancialTransactionData>) => Promise<FinancialTransactionData>;
+  // UI Actions
+  setFinanceViewMode: (mode: 'overview' | 'transactions' | 'accounts' | 'budgets' | 'analytics') => void;
+  setFinanceFilterDateRange: (range: { start: string; end: string } | null) => void;
+  setFinanceFilterCategory: (category: string | null) => void;
+  setFinanceFilterAccount: (account: string | null) => void;
+  setFinanceFilterType: (type: 'all' | 'income' | 'expense' | 'transfer') => void;
+  setFinanceSortBy: (sortBy: 'date' | 'amount' | 'category' | 'account') => void;
+  setFinanceSortOrder: (order: 'asc' | 'desc') => void;
+  setFinanceShowRecurring: (show: boolean) => void;
+  setFinanceSelectedTransaction: (transactionId: string | null) => void;
+  setFinanceSelectedAccount: (accountId: string | null) => void;
+  resetFinanceFilters: () => void;
 }
 
-export const createFinanceSlice: StateCreator<FinanceSlice, [], [], FinanceSlice> = (set, get) => ({
-  accounts: [],
-  accountsLoaded: false,
-  accountsLoading: false,
-  accountsError: null,
+export const createFinanceSlice: StateCreator<FinanceSlice, [], [], FinanceSlice> = (set) => ({
+  // Initial UI state
+  financeViewMode: 'overview',
+  financeFilterDateRange: null,
+  financeFilterCategory: null,
+  financeFilterAccount: null,
+  financeFilterType: 'all',
+  financeSortBy: 'date',
+  financeSortOrder: 'desc',
+  financeShowRecurring: true,
+  financeSelectedTransaction: null,
+  financeSelectedAccount: null,
 
-  transactions: [],
-  transactionsLoaded: false,
-  transactionsLoading: false,
-  transactionsError: null,
-
-  loadAccounts: async () => {
-    if (get().accountsLoading) return;
-    set({ accountsLoading: true, accountsError: null });
-    try {
-      const accounts = await apiClient.getFinancialAccounts();
-      set({ accounts, accountsLoaded: true, accountsLoading: false });
-    } catch (error) {
-      set({
-        accountsError: error instanceof Error ? error.message : 'Failed to load accounts',
-        accountsLoading: false,
-      });
-      throw error;
-    }
-  },
-
-  loadTransactions: async () => {
-    if (get().transactionsLoading) return;
-    set({ transactionsLoading: true, transactionsError: null });
-    try {
-      const transactions = await apiClient.getFinancialTransactions();
-      set({ transactions, transactionsLoaded: true, transactionsLoading: false });
-    } catch (error) {
-      set({
-        transactionsError: error instanceof Error ? error.message : 'Failed to load transactions',
-        transactionsLoading: false,
-      });
-      throw error;
-    }
-  },
-
-  addTransaction: async (tx) => {
-    const created = await apiClient.createFinancialTransaction(tx);
-    set((state) => ({ transactions: [created, ...state.transactions] }));
-    return created;
-  },
-
-  updateTransaction: async (id, updates) => {
-    const updated = await apiClient.updateFinancialTransaction(id, updates);
-    set((state) => ({
-      transactions: state.transactions.map((t) => (t.id === id ? { ...t, ...updated } : t)),
-    }));
-    return updated;
-  },
+  // UI Actions
+  setFinanceViewMode: (mode) => set({ financeViewMode: mode }),
+  setFinanceFilterDateRange: (range) => set({ financeFilterDateRange: range }),
+  setFinanceFilterCategory: (category) => set({ financeFilterCategory: category }),
+  setFinanceFilterAccount: (account) => set({ financeFilterAccount: account }),
+  setFinanceFilterType: (type) => set({ financeFilterType: type }),
+  setFinanceSortBy: (sortBy) => set({ financeSortBy: sortBy }),
+  setFinanceSortOrder: (order) => set({ financeSortOrder: order }),
+  setFinanceShowRecurring: (show) => set({ financeShowRecurring: show }),
+  setFinanceSelectedTransaction: (transactionId) => set({ financeSelectedTransaction: transactionId }),
+  setFinanceSelectedAccount: (accountId) => set({ financeSelectedAccount: accountId }),
+  resetFinanceFilters: () =>
+    set({
+      financeFilterDateRange: null,
+      financeFilterCategory: null,
+      financeFilterAccount: null,
+      financeFilterType: 'all',
+      financeShowRecurring: true,
+      financeSelectedTransaction: null,
+      financeSelectedAccount: null,
+    }),
 });

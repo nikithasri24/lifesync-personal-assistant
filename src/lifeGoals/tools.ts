@@ -127,7 +127,7 @@ async function executeCreateLifeGoal(args: Record<string, unknown>): Promise<Too
       data: goal,
     };
   } catch (error) {
-    logger.error('LifeGoalsTools', error as Error, { context: 'executeCreateLifeGoal' });
+    logger.error('LifeGoalsTools', 'Operation failed', { error, context: 'executeCreateLifeGoal' });
     return { success: false, error: (error as Error).message };
   }
 }
@@ -147,7 +147,7 @@ async function executeGetLifeGoals(args: Record<string, unknown>): Promise<ToolR
       count: goals.length,
     };
   } catch (error) {
-    logger.error('LifeGoalsTools', error as Error, { context: 'executeGetLifeGoals' });
+    logger.error('LifeGoalsTools', 'Operation failed', { error, context: 'executeGetLifeGoals' });
     return { success: false, error: (error as Error).message };
   }
 }
@@ -171,7 +171,7 @@ async function executeUpdateLifeGoal(args: Record<string, unknown>): Promise<Too
       data: updated,
     };
   } catch (error) {
-    logger.error('LifeGoalsTools', error as Error, { context: 'executeUpdateLifeGoal' });
+    logger.error('LifeGoalsTools', 'Operation failed', { error, context: 'executeUpdateLifeGoal' });
     return { success: false, error: (error as Error).message };
   }
 }
@@ -186,7 +186,7 @@ async function executeDeleteLifeGoal(args: Record<string, unknown>): Promise<Too
       message: 'Life goal deleted successfully',
     };
   } catch (error) {
-    logger.error('LifeGoalsTools', error as Error, { context: 'executeDeleteLifeGoal' });
+    logger.error('LifeGoalsTools', 'Operation failed', { error, context: 'executeDeleteLifeGoal' });
     return { success: false, error: (error as Error).message };
   }
 }

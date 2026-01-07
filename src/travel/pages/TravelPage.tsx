@@ -3,36 +3,33 @@
  * Shows cities, states, roads, and all geographic details
  */
 
-import React, { lazy, Suspense } from 'react';
-import { travelAPI } from '../data';
+import React from 'react';
+import LeafletTravelMapV2 from '../components/LeafletTravelMapV2';
+import { travelAPI } from '../api/data';
 import type { VisitStatus, VisitedLocation } from '../types';
 import { nationalParks, getParksByState } from '../data/nationalParks';
 import { islands, getIslandsByState } from '../data/islands';
-import { logger } from '../../services/logger';
-
-// Lazy load the map component to defer loading Leaflet
-const LeafletTravelMapV2 = lazy(() => import('../components/LeafletTravelMapV2'));
 
 const TravelPage: React.FC = () => {
   const [loading, setLoading] = React.useState(true);
   const [visitedLocations, setVisitedLocations] = React.useState<VisitedLocation[]>([]);
 
   // Load data
-  const loadData = React.useCallback(async (): Promise<void> => {
+  React.useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
     try {
       setLoading(true);
       const locations = await travelAPI.listVisitedLocations();
       setVisitedLocations(locations);
     } catch (error) {
-      logger.error('Error loading travel data:', { error });
+      console.error('Error loading travel data:', error);
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  React.useEffect(() => {
-    void loadData();
-  }, [loadData]);
+  };
 
   // Get visited countries map
   const visitedCountriesMap = React.useMemo(() => {
@@ -80,10 +77,10 @@ const TravelPage: React.FC = () => {
     return map;
   }, [visitedLocations]);
 
-  const handleCountryClick = React.useCallback(async (countryCode: string): Promise<void> => {
+  const handleCountryClick = async (countryCode: string) => {
     // Validate country code
     if (!countryCode || countryCode.length !== 2) {
-      logger.error('Invalid country code:', { countryCode });
+      console.error('Invalid country code:', countryCode);
       return;
     }
 
@@ -113,18 +110,17 @@ const TravelPage: React.FC = () => {
         setVisitedLocations(prev => [...prev, newLocation]);
       }
     } catch (error) {
-      logger.error('Error toggling country:', { error });
-      // eslint-disable-next-line no-alert
+      console.error('Error toggling country:', error);
       alert('Failed to update country. Please try again.');
       // Reload data to sync with server on error
       await loadData();
     }
-  }, [visitedLocations, loadData]);
+  };
 
-  const handleStateClick = React.useCallback(async (stateCode: string, countryCode: string): Promise<void> => {
+  const handleStateClick = async (stateCode: string, countryCode: string) => {
     // Validate codes
     if (!stateCode || !countryCode) {
-      logger.error('Invalid state or country code:', { stateCode, countryCode });
+      console.error('Invalid state or country code:', { stateCode, countryCode });
       return;
     }
 
@@ -180,7 +176,7 @@ const TravelPage: React.FC = () => {
               });
               newParkLocations.push(parkLocation);
             } catch (err) {
-              logger.error('Travel', `Failed to auto-mark park ${park.name}:`, { err });
+              console.error(`Failed to auto-mark park ${park.name}:`, err);
             }
           }
         }
@@ -211,7 +207,7 @@ const TravelPage: React.FC = () => {
               });
               newIslandLocations.push(islandLocation);
             } catch (err) {
-              logger.error('Travel', `Failed to auto-mark island ${island.name}:`, { err });
+              console.error(`Failed to auto-mark island ${island.name}:`, err);
             }
           }
         }
@@ -219,23 +215,22 @@ const TravelPage: React.FC = () => {
         // Update UI with all new locations
         if (newParkLocations.length > 0 || newIslandLocations.length > 0) {
           setVisitedLocations(prev => [...prev, ...newParkLocations, ...newIslandLocations]);
-          logger.debug('Travel', `Auto-marked ${newParkLocations.length} parks and ${newIslandLocations.length} islands in ${stateCode}`);
+          console.log(`Auto-marked ${newParkLocations.length} parks and ${newIslandLocations.length} islands in ${stateCode}`);
         }
       }
     } catch (error) {
-      logger.error('Error toggling state:', { error });
-      // eslint-disable-next-line no-alert
+      console.error('Error toggling state:', error);
       alert('Failed to update state. Please try again.');
       // Reload data to sync with server on error
       await loadData();
     }
-  }, [visitedLocations, getParksByState, getIslandsByState, loadData]);
+  };
 
-  const handleParkClick = React.useCallback(async (parkId: string): Promise<void> => {
+  const handleParkClick = async (parkId: string) => {
     // Find park details
     const park = nationalParks.find(p => p.id === parkId);
     if (!park) {
-      logger.error('Park not found:', { parkId });
+      console.error('Park not found:', parkId);
       return;
     }
 
@@ -283,7 +278,7 @@ const TravelPage: React.FC = () => {
             );
 
             if (!stateAlreadyMarked) {
-              logger.debug('Travel', `All parks in ${park.stateCode} visited! Auto-marking state.`);
+              console.log(`All parks in ${park.stateCode} visited! Auto-marking state.`);
               const stateLocation = await travelAPI.markLocation({
                 locationType: 'state',
                 countryCode: park.countryCode,
@@ -299,19 +294,18 @@ const TravelPage: React.FC = () => {
         }
       }
     } catch (error) {
-      logger.error('Error toggling park:', { error });
-      // eslint-disable-next-line no-alert
+      console.error('Error toggling park:', error);
       alert('Failed to update park. Please try again.');
       // Reload data to sync with server on error
       await loadData();
     }
-  }, [nationalParks, visitedLocations, getParksByState, loadData]);
+  };
 
   const handleIslandClick = async (islandId: string) => {
     // Find island details
     const island = islands.find(i => i.id === islandId);
     if (!island) {
-      logger.error('Island not found:', { islandId });
+      console.error('Island not found:', islandId);
       return;
     }
 
@@ -360,7 +354,7 @@ const TravelPage: React.FC = () => {
             );
 
             if (!stateAlreadyMarked) {
-              logger.debug('Travel', `All islands in ${island.stateCode} visited! Auto-marking state.`);
+              console.log(`All islands in ${island.stateCode} visited! Auto-marking state.`);
               const stateLocation = await travelAPI.markLocation({
                 locationType: 'state',
                 countryCode: island.countryCode,
@@ -376,8 +370,7 @@ const TravelPage: React.FC = () => {
         }
       }
     } catch (error) {
-      logger.error('Error toggling island:', { error });
-      // eslint-disable-next-line no-alert
+      console.error('Error toggling island:', error);
       alert('Failed to update island. Please try again.');
       // Reload data to sync with server on error
       await loadData();
@@ -396,25 +389,16 @@ const TravelPage: React.FC = () => {
   }
 
   return (
-    <Suspense fallback={
-      <div className="flex items-center justify-center min-h-screen bg-white">
-        <div className="text-center">
-          <div className="h-12 w-12 animate-spin rounded-full border-4 border-blue-500 border-t-transparent mx-auto mb-4" />
-          <p className="text-gray-600">Loading map...</p>
-        </div>
-      </div>
-    }>
-      <LeafletTravelMapV2
-        visitedCountries={visitedCountriesMap}
-        onCountryClick={handleCountryClick}
-        visitedStates={visitedStatesMap}
-        onStateClick={handleStateClick}
-        visitedParks={visitedParksMap}
-        onParkClick={handleParkClick}
-        visitedIslands={visitedIslandsMap}
-        onIslandClick={handleIslandClick}
-      />
-    </Suspense>
+    <LeafletTravelMapV2
+      visitedCountries={visitedCountriesMap}
+      onCountryClick={handleCountryClick}
+      visitedStates={visitedStatesMap}
+      onStateClick={handleStateClick}
+      visitedParks={visitedParksMap}
+      onParkClick={handleParkClick}
+      visitedIslands={visitedIslandsMap}
+      onIslandClick={handleIslandClick}
+    />
   );
 };
 

@@ -4,7 +4,7 @@
  * Functions for transforming API data to local application format
  */
 
-import type { TaskData, ProjectData } from '../../services/types';
+import type { TaskData, Project as ApiProject } from '../../services/types';
 import type { Task, Project } from '../types';
 
 /**
@@ -50,12 +50,17 @@ export function transformApiTasks(apiTasks: TaskData[]): Task[] {
         estimatedTime: task.estimated_time ?? 30,
         actualTime: task.actual_time ?? 0,
         dueDate: task.due_date ? new Date(task.due_date) : undefined,
+        scheduledStart: task.scheduled_start ? new Date(task.scheduled_start) : undefined,
+        scheduledEnd: task.scheduled_end ? new Date(task.scheduled_end) : undefined,
         projectId: task.project_id ?? undefined,
         tags: task.tags ?? [],
         category,
         createdAt: new Date(task.created_at),
         completedAt: task.completed_at ? new Date(task.completed_at) : undefined,
-        parentId: task.parent_id ?? undefined
+        parentId: task.parent_id ?? undefined,
+        starred: task.starred ?? false,
+        archived: task.archived ?? false,
+        deleted: task.deleted ?? false
       };
     });
 }
@@ -63,21 +68,27 @@ export function transformApiTasks(apiTasks: TaskData[]): Task[] {
 /**
  * Transform API projects to local Project format
  *
- * @param apiProjects - Projects from the API
+ * @param apiProjects - Projects from the API (new Project type with enhanced fields)
  * @returns Transformed projects in local format
  */
-export function transformApiProjects(apiProjects: ProjectData[]): Project[] {
+export function transformApiProjects(apiProjects: ApiProject[]): Project[] {
   return apiProjects.map(project => {
     // Validate required fields
     if (!project.id) {
       throw new Error('Project ID is required');
     }
 
-    // Ensure status is valid
-    const status: 'active' | 'completed' | 'on_hold' =
-      project.status === 'active' || project.status === 'completed' || project.status === 'on_hold'
-        ? project.status
-        : 'active';
+    // Map API status to local status
+    // API: 'planning' | 'active' | 'on-hold' | 'completed' | 'archived'
+    // Local: 'active' | 'completed' | 'on_hold'
+    let status: 'active' | 'completed' | 'on_hold' = 'active';
+    if (project.status === 'completed' || project.status === 'archived') {
+      status = 'completed';
+    } else if (project.status === 'on-hold') {
+      status = 'on_hold';
+    } else if (project.status === 'active' || project.status === 'planning') {
+      status = 'active';
+    }
 
     return {
       id: project.id,
@@ -104,6 +115,8 @@ export function transformTaskToApi(task: Partial<Task>): Partial<TaskData> {
     estimated_time: task.estimatedTime,
     actual_time: task.actualTime,
     due_date: task.dueDate ? task.dueDate.toISOString() : null,
+    scheduled_start: task.scheduledStart ? task.scheduledStart.toISOString() : null,
+    scheduled_end: task.scheduledEnd ? task.scheduledEnd.toISOString() : null,
     project_id: task.projectId ?? null,
     tags: task.tags ?? [],
     category: task.category,

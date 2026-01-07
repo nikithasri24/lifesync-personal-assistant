@@ -89,8 +89,8 @@ const VisaMap: React.FC<VisaMapProps> = ({ passportCountry, userVisas }) => {
             },
           }))
           .filter((f: CountryFeature): boolean => {
-            const hasValidCode = f.properties.iso_a2 && f.properties.iso_a2.length === 2 && f.properties.iso_a2 !== '-99';
-            const hasValidGeometry = f.geometry && (f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon');
+            const hasValidCode = !!(f.properties.iso_a2 && f.properties.iso_a2.length === 2 && f.properties.iso_a2 !== '-99');
+            const hasValidGeometry = !!(f.geometry && (f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon'));
             return hasValidCode && hasValidGeometry;
           });
 
@@ -99,7 +99,7 @@ const VisaMap: React.FC<VisaMapProps> = ({ passportCountry, userVisas }) => {
         setLoading(false);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to load map data';
-        logger.error('Error loading map data:', { err });
+        logger.error('VisaMap', err as Error, { context: 'loadMapData' });
         setError(errorMessage);
         setLoading(false);
       }
@@ -352,8 +352,8 @@ const VisaMap: React.FC<VisaMapProps> = ({ passportCountry, userVisas }) => {
             data={{
               type: 'FeatureCollection',
               features: countries,
-            }}
-            onEachFeature={onEachCountry}
+            } as GeoJSON.FeatureCollection}
+            onEachFeature={onEachCountry as (feature: GeoJSON.Feature, layer: L.Layer) => void}
             key={`visa-map-${passportCountry}-${userVisas.map(v => v.countryName).join(',')}-${filterType}`}
           />
         </MapContainer>

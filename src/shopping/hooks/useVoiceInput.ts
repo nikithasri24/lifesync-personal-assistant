@@ -3,7 +3,7 @@
  * Handles voice recognition for adding shopping items
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { logger } from '../../services/logger';
 import '../../types/experimental-web-apis.d.ts';
 
@@ -15,6 +15,7 @@ interface UseVoiceInputReturn {
 
 export function useVoiceInput(): UseVoiceInputReturn {
   const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<ISpeechRecognition | null>(null);
 
   const startVoiceInput = useCallback((onResult: (transcript: string) => void) => {
     if (!window.webkitSpeechRecognition) {
@@ -26,6 +27,7 @@ export function useVoiceInput(): UseVoiceInputReturn {
     recognition.continuous = false;
     recognition.interimResults = false;
     recognition.lang = 'en-US';
+    recognitionRef.current = recognition;
 
     setIsListening(true);
 
@@ -42,12 +44,24 @@ export function useVoiceInput(): UseVoiceInputReturn {
 
     recognition.onend = () => {
       setIsListening(false);
+      recognitionRef.current = null;
     };
 
     recognition.start();
   }, []);
 
   const stopVoiceInput = useCallback(() => {
+    const recognition = recognitionRef.current;
+    if (recognition) {
+      try {
+        recognition.stop();
+      } catch (error) {
+        logger.error('useVoiceInput', 'Failed to stop speech recognition', {
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+      recognitionRef.current = null;
+    }
     setIsListening(false);
   }, []);
 

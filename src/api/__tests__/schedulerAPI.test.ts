@@ -52,9 +52,11 @@ describe('Scheduler API', () => {
 
     const input = {
       title: 'Deep Work',
+      date: '2025-01-20',
       start_time: '09:00',
       end_time: '11:00',
-      days_of_week: ['Monday', 'Wednesday', 'Friday'],
+      type: 'focus' as const,
+      is_recurring: false,
     };
 
     const result = await createScheduleBlock(input);

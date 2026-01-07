@@ -1,22 +1,19 @@
 /* eslint-disable max-lines */
 // TODO: Refactor this file to be under 400 lines by extracting components and logic
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { type ReactElement, useState, useEffect, useMemo , type FormEvent } from 'react';
 import { logger } from '../services/logger';
 
-import { useAppStore } from '../stores/useAppStore';
+import { useComposedStore } from '../stores/useComposedStore';
+import { useToast } from '../hooks/useToast';
 import type { ShoppingItem, Store as StoreType, ShoppingList } from '../shopping/types';
 import { distributeItemsToStores as distributeItems, type DistributionStrategy } from '../shopping/services/storeDistribution';
 import { mapShoppingItemDataToModel, mapShoppingItemToCreateInput, mapShoppingItemToUpdateInput } from '../shopping/services/shoppingMappers';
-import { MOCK_STORES } from '../shopping/fixtures/mockStores';
 import { ShoppingHeader } from '../shopping/components/layout/ShoppingHeader';
 import { ViewTabs } from '../shopping/components/layout/ViewTabs';
-import { MasterListView, DistributeView, StoreListsView } from '../shopping/components/views';
-import { AddItemModal, EditItemModal, BarcodeScannerModal, ReceiptScanningModal, AddPantryItemModal, StoreSuggestionsModal } from '../shopping/components/modals';
-import { PantryActionButtons } from '../shopping/components/pantry/PantryActionButtons';
-import { PantryTable } from '../shopping/components/pantry/PantryTable';
-import { useVoiceInput, useBarcodeScanner, useStoreSuggestions, usePantryManagement, useItemForm, useShoppingModals, usePantryActions } from '../shopping/hooks';
+import { ShoppingModals } from '../shopping/components/layout/ShoppingModals';
+import { MasterListView, DistributeView, StoreListsView, PantryView } from '../shopping/components/views';
+import { useVoiceInput, useBarcodeScanner, useStoreSuggestions, useItemForm, useShoppingModals } from '../shopping/hooks';
 import { smartRecommendStores } from '../shopping/utils/storeUtils';
-import { createShoppingItemFromPantry } from '../shopping/utils/pantryUtils';
 import {
   useActiveShoppingList,
   useShoppingItems,
@@ -24,12 +21,13 @@ import {
   useUpdateShoppingItem,
   useDeleteShoppingItem,
   useToggleShoppingItem} from '../hooks/useShoppingQuery';
+import { useStoresQuery } from '../hooks/useStoresQuery';
 import {
   usePantryItemsQuery,
   useCreatePantryItemMutation,
   useUpdatePantryItemMutation,
   useDeletePantryItemMutation,
-  type PantryItem as PantryItemType} from '../mealPlanning/hooks/useMealPlanningQuery';
+  type PantryItem as PantryItemType} from '@/hooks/useMealPlanningQuery';
 import {
   Plus,
   ShoppingCart,
@@ -74,7 +72,7 @@ import {
   Navigation,
   Receipt} from 'lucide-react';
 
-export default function ShoppingSmart(): JSX.Element {
+export default function ShoppingSmart(): ReactElement {
   // React Query hooks for shopping data
   const { activeListId, isLoading: isLoadingList, ensureActiveList } = useActiveShoppingList();
   const { data: shoppingItemsData, isLoading: isLoadingItems } = useShoppingItems(activeListId);
@@ -95,16 +93,14 @@ export default function ShoppingSmart(): JSX.Element {
   const updatePantryItemMutation = useUpdatePantryItemMutation();
   const deletePantryItemMutation = useDeletePantryItemMutation();
 
-  const _shoppingLoading = isLoadingList || isLoadingItems || pantryLoading;
-
   // Get other store data that hasn't been migrated yet
-  const { showGlobalToast, addFinancialTransaction, financialAccounts } = useAppStore();
+  const { showToast } = useToast();
 
   // Ensure active shopping list exists on mount
   useEffect(() => {
     if (!isLoadingList && !activeListId) {
       ensureActiveList().catch((error: unknown) => {
-        logger.error('ShoppingSmart', 'Failed to create shopping list:', error as Error);
+        logger.error('ShoppingSmart', error as Error);
       });
     }
   }, [isLoadingList, activeListId, ensureActiveList]);
@@ -117,36 +113,36 @@ export default function ShoppingSmart(): JSX.Element {
       item: mapShoppingItemToCreateInput(item)});
   };
 
-  const updateShoppingItem = (itemId: string, updates: Partial<ShoppingItem>): Promise<ShoppingItem> => {
-    return updateItemMutation.mutateAsync({
+  const updateShoppingItem = async (itemId: string, updates: Partial<ShoppingItem>): Promise<ShoppingItem> => {
+    const result = await updateItemMutation.mutateAsync({
       itemId,
-      updates: mapShoppingItemToUpdateInput(updates)});
+      updates: mapShoppingItemToUpdateInput(updates),
+      listId: activeListId,
+    });
+    return mapShoppingItemDataToModel([result])[0];
   };
 
-  const deleteShoppingItem = (itemId: string): Promise<void> => {
-    return deleteItemMutation.mutateAsync(itemId);
+  const deleteShoppingItem = async (itemId: string): Promise<void> => {
+    await deleteItemMutation.mutateAsync({ itemId, listId: activeListId });
   };
 
-  const toggleShoppingItem = (itemId: string): Promise<ShoppingItem | void> => {
+  const toggleShoppingItem = async (itemId: string): Promise<ShoppingItem | void> => {
     const item = shoppingItems.find((i) => i.id === itemId);
     if (!item) return Promise.resolve();
-    return toggleItemMutation.mutateAsync({
+    const result = await toggleItemMutation.mutateAsync({
       itemId,
-      currentStatus: item.purchased});
+      currentStatus: item.purchased,
+      listId: activeListId,
+    });
+    return mapShoppingItemDataToModel([result])[0];
   };
 
-  // Sample stores with ratings and preferences
-  const [stores] = useState<StoreType[]>(MOCK_STORES);
-
-  // Use global shopping items as master list
-  const _masterList = shoppingItems;
+  const { data: stores = [] } = useStoresQuery();
 
   // Store-specific lists (auto-generated from master list)
   const [storeLists, setStoreLists] = useState<ShoppingList[]>([]);
 
   const [activeView, setActiveView] = useState<'master' | 'stores' | 'distribute' | 'pantry'>('master');
-  const [searchQuery, _setSearchQuery] = useState('');
-  const [_selectedStores, _setSelectedStores] = useState<string[]>([]);
   const [distributionStrategy, setDistributionStrategy] = useState<DistributionStrategy>('mixed');
 
   // Form state management using consolidated hook
@@ -176,7 +172,7 @@ export default function ShoppingSmart(): JSX.Element {
     setShowBarcodeScanner,
     barcodeResult,
     setBarcodeResult,
-    _showStorePrefs,
+    showStorePrefs: _showStorePrefs,
     setShowStorePrefs} = useShoppingModals();
 
   // Barcode scanning
@@ -200,25 +196,6 @@ export default function ShoppingSmart(): JSX.Element {
   // Location-based suggestions using custom hook
   const { userLocation, getUserLocation, findNearbyStoresForItem } = useStoreSuggestions(stores);
 
-  // Pantry management using custom hook
-  const {
-    pantryFilter,
-    setPantryFilter,
-    pantrySort,
-    setPantrySort,
-    editingPantryId,
-    editPantry,
-    setEditPantry,
-    startEditingPantry,
-    cancelEditing,
-    replenishId,
-    startReplenish,
-    cancelReplenish,
-    pantrySortedFiltered} = usePantryManagement(pantryItems);
-
-  // Pantry bulk actions using custom hook
-  const { addLowStockToShopping, addExpiredToShopping } = usePantryActions(pantryItems, addShoppingItem);
-
   // Heuristic parser to extract item lines from receipt text with auto-categorization
 
   // Smart distribution algorithm - now analyzes master list to determine optimal stores
@@ -231,14 +208,6 @@ export default function ShoppingSmart(): JSX.Element {
     setStoreLists(newStoreLists);
     setActiveView('stores');
   };
-
-  // Auto-populate distribute tab when master list changes
-  useEffect(() => {
-    if (shoppingItems.length > 0) {
-      distributeItemsToStores();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shoppingItems]);
 
   // Voice input handler
   const handleVoiceInput = (): void => {
@@ -349,10 +318,6 @@ export default function ShoppingSmart(): JSX.Element {
 
   // Smart store recommendation algorithm
 
-  const _filteredMasterItems = shoppingItems.filter(item =>
-    searchQuery === '' || item.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
   const totalMasterItems = shoppingItems.filter(item => !item.purchased).length;
   const totalEstimatedCost = shoppingItems.reduce((sum, item) => sum + (item.estimatedPrice ?? 0), 0);
 
@@ -414,179 +379,77 @@ export default function ShoppingSmart(): JSX.Element {
 
       {/* Pantry View */}
       {activeView === 'pantry' && (
-        <div className="bg-white rounded-xl shadow-sm border p-4 mt-4">
-          <div className="flex items-center justify-between mb-4">
-            <h4 className="text-lg font-semibold">Pantry</h4>
-            <PantryActionButtons
-              pantryItems={pantryItems}
-              pantryFilter={pantryFilter}
-              pantrySort={pantrySort}
-              onFilterChange={setPantryFilter}
-              onSortChange={setPantrySort}
-              onAddLowStock={async () => {
-                const count = await addLowStockToShopping();
-                showGlobalToast?.(`Added ${count} low-stock items to shopping`, 'success');
-              }}
-              onAddExpired={async () => {
-                const count = await addExpiredToShopping();
-                showGlobalToast?.(`Moved ${count} expired items to shopping`, 'info');
-              }}
-              onAddItem={() => setShowAddPantry(true)}
-              onScanReceipt={() => setShowScanReceipt(true)}
-            />
-          </div>
-
-          <PantryTable
-            items={pantrySortedFiltered}
-            editingItemId={editingPantryId}
-            editData={editPantry}
-            replenishId={replenishId}
-            onEditChange={(updates) => setEditPantry(s => ({ ...s, ...updates }))}
-            onSaveEdit={(itemId) => {
-              const qty = Number(editPantry.qty) || 0;
-              const exp = editPantry.exp ? new Date(editPantry.exp) : undefined;
-              void updatePantryItemMutation.mutateAsync({
-                itemId,
-                updates: {
-                  quantity: qty,
-                  unit: editPantry.unit !== '' ? editPantry.unit : undefined,
-                  expirationDate: exp,
-                  isLowStock: editPantry.low,
-                  lowStockThreshold: editPantry.threshold ? Number(editPantry.threshold) : undefined
-                }
-              }).then(() => {
-                cancelEditing();
-              });
-            }}
-            onCancelEdit={cancelEditing}
-            onStartEdit={startEditingPantry}
-            onStartReplenish={startReplenish}
-            onReplenish={async (targetQuantity) => {
-              const item = pantryItems.find(x => x.id === replenishId);
-              if (!item) return;
-
-              const need = Math.max(0, targetQuantity - (item.quantity || 0));
-              if (need <= 0) {
-                showGlobalToast?.('Already at or above target', 'info');
-                cancelReplenish();
-                return;
-              }
-
-              const shoppingItem = createShoppingItemFromPantry(item, need);
-              await addShoppingItem({ ...shoppingItem, tags: ['from:pantry', 'reason:replenish'] });
-              showGlobalToast?.(`Added ${need} ${item.unit ?? ''} of ${item.name} to shopping`, 'success');
-              cancelReplenish();
-            }}
-            onCancelReplenish={cancelReplenish}
-            onAddToShopping={(item: PantryItemType) => {
-              const qty = (item.lowStockThreshold != null && item.quantity < item.lowStockThreshold)
-                ? (item.lowStockThreshold - item.quantity)
-                : item.quantity ?? 1;
-              const shoppingItem = createShoppingItemFromPantry(item, qty);
-              void addShoppingItem(shoppingItem);
-              showGlobalToast?.(`Added ${item.name} to shopping`, 'success');
-            }}
-            onDelete={(itemId) => void deletePantryItemMutation.mutate(itemId)}
-          />
-        </div>
+        <PantryView
+          pantryItems={pantryItems}
+          onAddItem={() => setShowAddPantry(true)}
+          onScanReceipt={() => setShowScanReceipt(true)}
+          onAddToShopping={addShoppingItem}
+          onUpdateItem={async (itemId, updates) => {
+            await updatePantryItemMutation.mutateAsync({ itemId, updates });
+          }}
+          onDeleteItem={(itemId) => { void deletePantryItemMutation.mutate(itemId); }}
+          onShowToast={showToast}
+        />
       )}
 
-      {/* Add Pantry Modal */}
-      <AddPantryItemModal
-        isOpen={showAddPantry}
-        onClose={() => setShowAddPantry(false)}
-        onSave={async (item) => {
-          await createPantryItemMutation.mutateAsync(item);
+      <ShoppingModals
+        showAddPantry={showAddPantry}
+        onAddPantryClose={() => setShowAddPantry(false)}
+        onAddPantrySave={async (item) => {
+          await createPantryItemMutation.mutateAsync({
+            ...item,
+            createdAt: new Date()
+          });
         }}
-      />
-
-      {/* Scan Receipt Modal */}
-      <ReceiptScanningModal
-        isOpen={showScanReceipt}
-        onClose={() => setShowScanReceipt(false)}
+        showScanReceipt={showScanReceipt}
+        onScanReceiptClose={() => setShowScanReceipt(false)}
         onAddToPantry={async (items) => {
           for (const it of items) {
             const thresholdNum = it.threshold ? Number(it.threshold) : undefined;
+            const validPantryCategories = ['produce', 'dairy', 'meat', 'pantry', 'other'] as const;
+            const pantryCategory = validPantryCategories.includes(it.category as any)
+              ? (it.category as 'produce' | 'dairy' | 'meat' | 'pantry' | 'other')
+              : 'other';
+
             await createPantryItemMutation.mutateAsync({
               name: it.name,
               quantity: it.quantity,
-              category: it.category,
+              category: pantryCategory,
               lowStockThreshold: thresholdNum,
-              isLowStock: thresholdNum != null ? it.quantity <= thresholdNum : undefined
+              isLowStock: thresholdNum != null ? it.quantity <= thresholdNum : undefined,
+              createdAt: new Date()
             });
           }
-          showGlobalToast?.(`Added ${items.length} items to pantry`, 'success');
+          showToast(`Added ${items.length} items to pantry`, 'success');
         }}
-        onLogExpense={async (amount, merchant) => {
-          const accounts = financialAccounts as Array<{ id: string }> | undefined;
-          const acctId = accounts?.[0]?.id;
-          if (!acctId) {
-            showGlobalToast?.('Add a financial account first (Financials tab)', 'info');
-            return;
-          }
-          try {
-            const addTransaction = addFinancialTransaction as ((transaction: {
-              accountId: string;
-              amount: number;
-              type: string;
-              description: string;
-              date: Date;
-              categoryId: undefined;
-            }) => Promise<void>) | undefined;
-            await addTransaction?.({
-              accountId: acctId,
-              amount: Number(amount.toFixed(2)),
-              type: 'expense',
-              description: `Groceries — ${merchant}`,
-              date: new Date(),
-              categoryId: undefined});
-            showGlobalToast?.('Logged groceries expense', 'success');
-          } catch (_e) {
-            showGlobalToast?.('Failed to log expense', 'error');
-          }
+        onLogExpense={async (_amount, _merchant) => {
+          showToast('Financial integration not available', 'info');
         }}
-      />
-      {/* Barcode Scanner Modal */}
-      <BarcodeScannerModal
-        isOpen={showBarcodeScanner}
+        showBarcodeScanner={showBarcodeScanner}
         isScanning={isScanning}
         barcodeResult={barcodeResult}
         captureMessage={captureMessage}
         videoRef={videoRef}
-        onClose={handleStopBarcodeScanning}
-        onCapture={() => { void captureNow(); }}
-        onStop={handleStopBarcodeScanning}
-      />
-
-      {/* Edit Item Modal */}
-      <EditItemModal
-        isOpen={showEditItem}
-        formData={editItemForm.formData}
+        onBarcodeScannerClose={handleStopBarcodeScanning}
+        onBarcodeCapture={() => { void captureNow(); }}
+        onBarcodeStop={handleStopBarcodeScanning}
+        showEditItem={showEditItem}
+        editFormData={editItemForm.formData}
         stores={stores}
-        onClose={closeEditModal}
-        onSubmit={updateExistingItem}
-        onFormChange={(updates) => editItemForm.updateForm(updates)}
-      />
-
-      {/* Add Item Modal */}
-      <AddItemModal
-        isOpen={showAddItem}
-        formData={newItemForm.formData}
-        barcodeResult={barcodeResult}
-        stores={stores}
-        onClose={() => setShowAddItem(false)}
-        onSubmit={addItemToMaster}
-        onFormChange={(updates) => newItemForm.updateForm(updates)}
+        onEditItemClose={closeEditModal}
+        onEditItemSubmit={updateExistingItem}
+        onEditFormChange={(updates) => editItemForm.updateForm(updates)}
+        showAddItem={showAddItem}
+        addFormData={newItemForm.formData}
+        onAddItemClose={() => setShowAddItem(false)}
+        onAddItemSubmit={addItemToMaster}
+        onAddFormChange={(updates) => newItemForm.updateForm(updates)}
         onBarcodeChange={setBarcodeResult}
-      />
-
-      {/* Store Suggestions Modal */}
-      <StoreSuggestionsModal
-        isOpen={showLocationSuggestions}
-        item={selectedItemForSuggestions}
+        showLocationSuggestions={showLocationSuggestions}
+        selectedItemForSuggestions={selectedItemForSuggestions}
         userLocation={userLocation}
         nearbyStores={selectedItemForSuggestions ? findNearbyStoresForItem(selectedItemForSuggestions) : []}
-        onClose={closeStoreSuggestions}
+        onStoreSuggestionsClose={closeStoreSuggestions}
         onGetLocation={() => { void getUserLocation(); }}
         onAssignStore={(storeId) => {
           if (selectedItemForSuggestions) {

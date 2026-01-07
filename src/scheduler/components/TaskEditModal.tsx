@@ -16,13 +16,23 @@ import {
   FolderOpen,
   AlignLeft,
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, addDays, addWeeks } from 'date-fns';
 import type { ScheduledTask } from '../types';
-import type { TaskData, ProjectData } from '../../services/types';
+import type { TaskData } from '../../services/types';
+import { DependencySelector, DependencyIndicator } from '../../components/dependencies';
+import { RecurrenceSelector } from '../../components/recurrence';
+
+/** Minimal project interface for TaskEditModal - only needs id and name for dropdown */
+interface ProjectOption {
+  id: string;
+  name: string;
+}
 
 interface TaskEditModalProps {
   task: ScheduledTask | null;
-  projects: ProjectData[];
+  projects: ProjectOption[];
+  /** All tasks for dependency selection */
+  allTasks?: TaskData[];
   isOpen: boolean;
   onClose: () => void;
   onSave: (taskId: string, updates: Partial<TaskData>) => void;
@@ -33,6 +43,7 @@ interface TaskEditModalProps {
 export const TaskEditModal: React.FC<TaskEditModalProps> = ({
   task,
   projects,
+  allTasks = [],
   isOpen,
   onClose,
   onSave,
@@ -42,9 +53,15 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
   const [formData, setFormData] = useState<Partial<TaskData>>({});
   const [tagInput, setTagInput] = useState('');
 
-  // Initialize form data when task changes
+  // Debug: Log formData changes
   useEffect(() => {
-    if (task) {
+    console.log('[TaskEditModal] formData.due_date:', formData.due_date);
+  }, [formData.due_date]);
+
+  // Initialize form data when modal opens or task ID changes (not on every task prop change)
+  useEffect(() => {
+    if (task && isOpen) {
+      console.log('[TaskEditModal] Initializing form data for task:', task.id);
       setFormData({
         title: task.title,
         description: task.description || '',
@@ -56,15 +73,23 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
         tags: task.tags || [],
         starred: task.starred || false,
         category: task.category,
+        depends_on: task.depends_on || [],
+        recurrence_pattern: task.recurrence_pattern || 'none',
+        recurrence_interval: task.recurrence_interval || 1,
+        recurrence_days: task.recurrence_days || [],
       });
     }
-  }, [task]);
+  }, [task?.id, isOpen]); // Only re-initialize when task ID or modal open state changes
 
-  if (!isOpen || !task) return null;
+  if (!isOpen || !task || !task.id) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSave(task.id, formData);
+  const handleSubmit = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (task.id) {
+      console.log('[TaskEditModal] Saving task with formData:', formData);
+      console.log('[TaskEditModal] depends_on value:', formData.depends_on);
+      onSave(task.id, formData);
+    }
   };
 
   const handleAddTag = () => {
@@ -91,10 +116,10 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" style={{ overflow: 'hidden' }}>
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-2xl flex flex-col" style={{ maxHeight: 'calc(100vh - 2rem)', height: 'auto' }}>
+        {/* Header - Sticky */}
+        <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700" style={{ flexShrink: 0 }}>
           <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Edit Task</h2>
           <button
             onClick={onClose}
@@ -104,8 +129,8 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
           </button>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        {/* Form - Scrollable */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-6" style={{ overflowY: 'auto', flex: '1 1 auto', minHeight: 0 }}>
           {/* Title */}
           <div>
             <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
@@ -180,12 +205,63 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
                 <Calendar className="w-4 h-4 inline mr-1" />
                 Due Date
               </label>
-              <input
-                type="date"
-                value={formData.due_date ? format(new Date(formData.due_date), 'yyyy-MM-dd') : ''}
-                onChange={(e) => setFormData({ ...formData, due_date: e.target.value || null })}
-                className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+              <div className="space-y-2">
+                <div className="relative">
+                  <input
+                    type="date"
+                    value={formData.due_date ? (
+                      // If already in YYYY-MM-DD format, use directly; otherwise format it
+                      typeof formData.due_date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(formData.due_date)
+                        ? formData.due_date
+                        : format(new Date(formData.due_date), 'yyyy-MM-dd')
+                    ) : ''}
+                    onChange={(e) => {
+                      console.log('[TaskEditModal] Date changed:', e.target.value);
+                      setFormData({ ...formData, due_date: e.target.value || null });
+                    }}
+                    className="w-full px-4 py-2 pr-10 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                    style={{ colorScheme: 'light dark' }}
+                  />
+                  {formData.due_date && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setFormData({ ...formData, due_date: null });
+                      }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 z-10"
+                      title="Clear date"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+                {/* Quick date shortcuts */}
+                <div className="flex gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, due_date: format(new Date(), 'yyyy-MM-dd') })}
+                    className="px-2 py-1 text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded hover:bg-slate-200 dark:hover:bg-slate-700"
+                  >
+                    Today
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, due_date: format(addDays(new Date(), 1), 'yyyy-MM-dd') })}
+                    className="px-2 py-1 text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded hover:bg-slate-200 dark:hover:bg-slate-700"
+                  >
+                    Tomorrow
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, due_date: format(addWeeks(new Date(), 1), 'yyyy-MM-dd') })}
+                    className="px-2 py-1 text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded hover:bg-slate-200 dark:hover:bg-slate-700"
+                  >
+                    Next Week
+                  </button>
+                </div>
+              </div>
             </div>
 
             <div>
@@ -195,13 +271,13 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
               </label>
               <input
                 type="number"
-                value={formData.estimated_time || 0}
+                value={formData.estimated_time ?? 0}
                 onChange={(e) => setFormData({ ...formData, estimated_time: parseInt(e.target.value) || 0 })}
                 min="0"
-                step="15"
+                step="5"
                 className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              {formData.estimated_time > 0 && (
+              {formData.estimated_time != null && formData.estimated_time > 0 && (
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                   {formatTimeEstimate(formData.estimated_time)}
                 </p>
@@ -309,45 +385,80 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
             </label>
           </div>
 
-          {/* Actions */}
-          <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-700">
-            <div>
-              {onDelete && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (window.confirm('Are you sure you want to delete this task?')) {
-                      onDelete(task.id);
-                      onClose();
-                    }
-                  }}
-                  className="flex items-center gap-2 px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg font-medium transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Delete
-                </button>
-              )}
-            </div>
+          {/* Dependencies */}
+          {allTasks.length > 0 && (
+            <DependencySelector
+              currentTaskId={task.id}
+              selectedDependencies={formData.depends_on || []}
+              allTasks={allTasks}
+              onChange={(deps) => setFormData({ ...formData, depends_on: deps })}
+            />
+          )}
 
-            <div className="flex gap-3">
+          {/* Dependency Status Indicator */}
+          {task && allTasks.length > 0 && (formData.depends_on?.length ?? 0) > 0 && (
+            <DependencyIndicator
+              task={{ ...task, depends_on: formData.depends_on } as TaskData}
+              allTasks={allTasks}
+              variant="detailed"
+            />
+          )}
+
+          {/* Recurrence */}
+          <RecurrenceSelector
+            value={{
+              pattern: (formData.recurrence_pattern as 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom') || 'none',
+              interval: formData.recurrence_interval || 1,
+              days: formData.recurrence_days || [],
+            }}
+            onChange={(config) => setFormData({
+              ...formData,
+              recurrence_pattern: config.pattern,
+              recurrence_interval: config.interval,
+              recurrence_days: config.days,
+            })}
+          />
+        </form>
+
+        {/* Actions - Fixed Footer */}
+        <div className="flex items-center justify-between p-6 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800" style={{ flexShrink: 0 }}>
+          <div>
+            {onDelete && task.id && (
               <button
                 type="button"
-                onClick={onClose}
-                className="px-6 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg font-medium transition-colors"
+                onClick={() => {
+                  if (window.confirm('Are you sure you want to delete this task?')) {
+                    onDelete(task.id!);
+                    onClose();
+                  }
+                }}
+                className="flex items-center gap-2 px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg font-medium transition-colors"
               >
-                Cancel
+                <Trash2 className="w-4 h-4" />
+                Delete
               </button>
-              <button
-                type="submit"
-                disabled={isSaving}
-                className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg font-medium shadow-sm transition-colors"
-              >
-                <Save className="w-4 h-4" />
-                {isSaving ? 'Saving...' : 'Save Changes'}
-              </button>
-            </div>
+            )}
           </div>
-        </form>
+
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-6 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg font-medium transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={isSaving}
+              className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg font-medium shadow-sm transition-colors"
+            >
+              <Save className="w-4 h-4" />
+              {isSaving ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

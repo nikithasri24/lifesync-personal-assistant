@@ -8,7 +8,10 @@ import type { Task, Project } from '../types';
  * Get tasks due today
  */
 export function getTodayTasks(tasks: Task[]): Task[] {
-  return tasks.filter(task => task.dueDate && isToday(task.dueDate) && task.status !== 'done');
+  return tasks.filter(task => {
+    const targetDate = task.scheduledStart ?? task.dueDate;
+    return targetDate ? isToday(targetDate) && task.status !== 'done' : false;
+  });
 }
 
 /**
@@ -16,11 +19,10 @@ export function getTodayTasks(tasks: Task[]): Task[] {
  */
 export function getUpcomingTasks(tasks: Task[]): Task[] {
   const sevenDaysFromNow = addDays(new Date(), 7);
-  return tasks.filter(task =>
-    task.dueDate &&
-    task.dueDate <= sevenDaysFromNow &&
-    task.status !== 'done'
-  );
+  return tasks.filter(task => {
+    const targetDate = task.scheduledStart ?? task.dueDate;
+    return targetDate ? targetDate <= sevenDaysFromNow && task.status !== 'done' : false;
+  });
 }
 
 /**

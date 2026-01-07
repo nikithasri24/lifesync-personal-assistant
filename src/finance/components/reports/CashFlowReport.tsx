@@ -21,8 +21,8 @@ export interface CashFlowReportProps {
 }
 
 const CashFlowReport: React.FC<CashFlowReportProps> = ({
-  _transactions,
-  _categories,
+
+
   dateRange,
   metrics,
 }) => {

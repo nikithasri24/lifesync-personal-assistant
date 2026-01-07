@@ -187,7 +187,7 @@ async function executeAddTransaction(
       monthly_spending: categorySpending > 0 ? `You've spent $${categorySpending.toFixed(2)} on ${category?.name} this month` : undefined
     };
   } catch (error) {
-    logger.error('FinanceTools', error as Error, {
+    logger.error('FinanceTools', 'Operation failed', { error,
       operation: 'add_transaction',
       args
     });
@@ -281,7 +281,7 @@ async function executeGetSpendingSummary(
       message: `Total spending this ${timeframe}: $${totalSpent.toFixed(2)}. Top categories: ${topCategories.map(c => `${c.name} ($${c.amount.toFixed(2)})`).join(', ')}`
     };
   } catch (error) {
-    logger.error('FinanceTools', error as Error, {
+    logger.error('FinanceTools', 'Operation failed', { error,
       operation: 'get_spending_summary',
       args
     });
@@ -340,7 +340,7 @@ async function executeCreateBudget(
       limit: monthlyLimit
     };
   } catch (error) {
-    logger.error('FinanceTools', error as Error, {
+    logger.error('FinanceTools', 'Operation failed', { error,
       operation: 'create_budget',
       args
     });

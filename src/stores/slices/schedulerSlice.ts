@@ -1,142 +1,83 @@
 /**
- * Scheduler Slice
- * Manages schedule blocks state and operations
+ * Scheduler Zustand Slice - UI STATE ONLY
+ *
+ * ⚠️ DEPRECATED: Server state removed - use React Query hooks instead
+ * 
+ * This slice now contains ONLY UI state (view modes, selected date, filters, etc.)
+ * All server data (schedule blocks, loading states, CRUD operations) should use React Query.
+ *
+ * ✅ Use React Query hooks from @/hooks/useSchedulerQuery.ts (if exists) or create them:
+ * - useScheduleBlocksQuery() - Get all schedule blocks
+ * - useScheduleBlockQuery(id) - Get single block
+ * - useScheduleForDateQuery(date) - Get blocks for specific date
+ * - useCreateScheduleBlockMutation() - Create block
+ * - useUpdateScheduleBlockMutation() - Update block
+ * - useDeleteScheduleBlockMutation() - Delete block
+ * - useFindFreeTimeSlotsQuery() - Find free time slots
+ *
+ * Additional React Query Features:
+ * - Recurring block management
+ * - Conflict detection hooks
+ * - Time optimization hooks
+ * - Schedule templates
+ *
+ * Benefits of React Query:
+ * - Better schedule data caching and synchronization
+ * - Optimistic updates for block changes
+ * - Automatic invalidation when schedule changes
+ * - Proper separation: Server state (React Query) vs UI state (Zustand)
  */
 
-import type { StateCreator } from 'zustand';
-import type { ScheduleBlock } from '@/services/types';
-import {
-  getScheduleBlocks,
-  getScheduleBlocksForDate,
-  createScheduleBlock as apiCreateScheduleBlock,
-  updateScheduleBlock as apiUpdateScheduleBlock,
-  deleteScheduleBlock as apiDeleteScheduleBlock,
-  findFreeTimeSlots,
-} from '@/api/schedulerAPI';
-import { logger } from '@/services/logger';
+import { type StateCreator } from 'zustand';
 
 export interface SchedulerSlice {
-  // State
-  scheduleBlocks: ScheduleBlock[];
-  schedulerLoaded: boolean;
-  schedulerLoading: boolean;
-  schedulerError: string | null;
+  // UI State only - no server data!
+  schedulerViewMode: 'day' | 'week' | 'timeline';
+  schedulerSelectedDate: string; // ISO date string
+  schedulerFilterCategory: string | null;
+  schedulerFilterBlockType: 'all' | 'work' | 'personal' | 'break' | 'meeting';
+  schedulerShowCompleted: boolean;
+  schedulerTimeFormat: '12h' | '24h';
+  schedulerSelectedBlock: string | null;
+  schedulerDraggedBlock: string | null;
 
-  // Actions
-  loadScheduleBlocks: (filters?: Parameters<typeof getScheduleBlocks>[0]) => Promise<void>;
-  loadScheduleForDate: (date: string) => Promise<void>;
-  addScheduleBlock: (block: Omit<ScheduleBlock, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<ScheduleBlock>;
-  updateScheduleBlock: (id: string, updates: Partial<ScheduleBlock>) => Promise<ScheduleBlock>;
-  deleteScheduleBlock: (id: string) => Promise<void>;
-  findFreeTime: (date: string, durationMinutes: number) => Promise<Array<{ start: string; end: string }>>;
-  getScheduleBlockById: (id: string) => ScheduleBlock | undefined;
+  // UI Actions
+  setSchedulerViewMode: (mode: 'day' | 'week' | 'timeline') => void;
+  setSchedulerSelectedDate: (date: string) => void;
+  setSchedulerFilterCategory: (category: string | null) => void;
+  setSchedulerFilterBlockType: (type: 'all' | 'work' | 'personal' | 'break' | 'meeting') => void;
+  setSchedulerShowCompleted: (show: boolean) => void;
+  setSchedulerTimeFormat: (format: '12h' | '24h') => void;
+  setSchedulerSelectedBlock: (blockId: string | null) => void;
+  setSchedulerDraggedBlock: (blockId: string | null) => void;
+  resetSchedulerFilters: () => void;
 }
 
-export const createSchedulerSlice: StateCreator<SchedulerSlice, [], [], SchedulerSlice> = (
-  set,
-  get
-) => ({
-  // Initial state
-  scheduleBlocks: [],
-  schedulerLoaded: false,
-  schedulerLoading: false,
-  schedulerError: null,
+export const createSchedulerSlice: StateCreator<SchedulerSlice, [], [], SchedulerSlice> = (set) => ({
+  // Initial UI state
+  schedulerViewMode: 'day',
+  schedulerSelectedDate: new Date().toISOString().split('T')[0],
+  schedulerFilterCategory: null,
+  schedulerFilterBlockType: 'all',
+  schedulerShowCompleted: false,
+  schedulerTimeFormat: '12h',
+  schedulerSelectedBlock: null,
+  schedulerDraggedBlock: null,
 
-  // Load schedule blocks with filters
-  loadScheduleBlocks: async (filters): Promise<void> => {
-    if (get().schedulerLoading) return;
-
-    set({ schedulerLoading: true, schedulerError: null });
-    try {
-      const blocks = await getScheduleBlocks(filters);
-      set({ scheduleBlocks: blocks, schedulerLoaded: true, schedulerLoading: false });
-      logger.info('SchedulerSlice', 'Schedule blocks loaded', { count: blocks.length });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to load schedule blocks';
-      logger.error('SchedulerSlice', error as Error, { context: 'loadScheduleBlocks' });
-      set({
-        schedulerError: errorMessage,
-        schedulerLoading: false,
-      });
-      throw error;
-    }
-  },
-
-  // Load schedule for a specific date
-  loadScheduleForDate: async (date): Promise<void> => {
-    set({ schedulerLoading: true, schedulerError: null });
-    try {
-      const blocks = await getScheduleBlocksForDate(date);
-      set({ scheduleBlocks: blocks, schedulerLoaded: true, schedulerLoading: false });
-      logger.info('SchedulerSlice', 'Schedule loaded for date', { date, count: blocks.length });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to load schedule';
-      logger.error('SchedulerSlice', error as Error, { context: 'loadScheduleForDate', date });
-      set({
-        schedulerError: errorMessage,
-        schedulerLoading: false,
-      });
-      throw error;
-    }
-  },
-
-  // Add a new schedule block
-  addScheduleBlock: async (block): Promise<ScheduleBlock> => {
-    try {
-      const created = await apiCreateScheduleBlock(block);
-      set((state) => ({ scheduleBlocks: [...state.scheduleBlocks, created].sort((a, b) => {
-        const dateCompare = a.date.localeCompare(b.date);
-        return dateCompare !== 0 ? dateCompare : a.start_time.localeCompare(b.start_time);
-      }) }));
-      logger.info('SchedulerSlice', 'Schedule block created', { id: created.id, date: created.date });
-      return created;
-    } catch (error) {
-      logger.error('SchedulerSlice', error as Error, { context: 'addScheduleBlock' });
-      throw error;
-    }
-  },
-
-  // Update a schedule block
-  updateScheduleBlock: async (id, updates): Promise<ScheduleBlock> => {
-    try {
-      const updated = await apiUpdateScheduleBlock(id, updates);
-      set((state) => ({
-        scheduleBlocks: state.scheduleBlocks.map((b) => (b.id === id ? updated : b)),
-      }));
-      logger.info('SchedulerSlice', 'Schedule block updated', { id });
-      return updated;
-    } catch (error) {
-      logger.error('SchedulerSlice', error as Error, { context: 'updateScheduleBlock', id });
-      throw error;
-    }
-  },
-
-  // Delete a schedule block
-  deleteScheduleBlock: async (id): Promise<void> => {
-    try {
-      await apiDeleteScheduleBlock(id);
-      set((state) => ({
-        scheduleBlocks: state.scheduleBlocks.filter((b) => b.id !== id),
-      }));
-      logger.info('SchedulerSlice', 'Schedule block deleted', { id });
-    } catch (error) {
-      logger.error('SchedulerSlice', error as Error, { context: 'deleteScheduleBlock', id });
-      throw error;
-    }
-  },
-
-  // Find free time slots
-  findFreeTime: async (date, durationMinutes): Promise<Array<{ start: string; end: string }>> => {
-    try {
-      const slots = await findFreeTimeSlots(date, durationMinutes);
-      logger.info('SchedulerSlice', 'Free time slots found', { date, count: slots.length });
-      return slots;
-    } catch (error) {
-      logger.error('SchedulerSlice', error as Error, { context: 'findFreeTime', date, durationMinutes });
-      throw error;
-    }
-  },
-
-  // Get schedule block by ID
-  getScheduleBlockById: (id) => get().scheduleBlocks.find((b) => b.id === id),
+  // UI Actions
+  setSchedulerViewMode: (mode) => set({ schedulerViewMode: mode }),
+  setSchedulerSelectedDate: (date) => set({ schedulerSelectedDate: date }),
+  setSchedulerFilterCategory: (category) => set({ schedulerFilterCategory: category }),
+  setSchedulerFilterBlockType: (type) => set({ schedulerFilterBlockType: type }),
+  setSchedulerShowCompleted: (show) => set({ schedulerShowCompleted: show }),
+  setSchedulerTimeFormat: (format) => set({ schedulerTimeFormat: format }),
+  setSchedulerSelectedBlock: (blockId) => set({ schedulerSelectedBlock: blockId }),
+  setSchedulerDraggedBlock: (blockId) => set({ schedulerDraggedBlock: blockId }),
+  resetSchedulerFilters: () =>
+    set({
+      schedulerFilterCategory: null,
+      schedulerFilterBlockType: 'all',
+      schedulerShowCompleted: false,
+      schedulerSelectedBlock: null,
+    }),
 });

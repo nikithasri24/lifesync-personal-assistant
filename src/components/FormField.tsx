@@ -12,7 +12,7 @@ export function FormField({
   type = 'text',
   placeholder,
   className = ''
-}: FormFieldProps): JSX.Element {
+}: FormFieldProps) {
   const generatedId = useId()
   const inputId = `${generatedId}-input`
   const errorId = `${inputId}-error`
@@ -85,7 +85,7 @@ export function SelectField({
   required?: boolean;
   placeholder?: string;
   className?: string;
-}): JSX.Element {
+}) {
   const generatedId = useId()
   const selectId = `${generatedId}-select`
   const errorId = `${selectId}-error`
@@ -163,7 +163,7 @@ export function TextAreaField({
   placeholder?: string;
   rows?: number;
   className?: string;
-}): JSX.Element {
+}) {
   const generatedId = useId()
   const textAreaId = `${generatedId}-textarea`
   const errorId = `${textAreaId}-error`

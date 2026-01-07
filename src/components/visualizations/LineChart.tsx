@@ -12,7 +12,7 @@ export function LineChart({
   const svgRef = useRef<SVGSVGElement>(null);
   const [animationProgress, setAnimationProgress] = useState<number>(0);
 
-  useEffect((): void => {
+  useEffect(() => {
     if (animated) {
       setAnimationProgress(0);
       const timer = setTimeout(() => setAnimationProgress(1), 100);

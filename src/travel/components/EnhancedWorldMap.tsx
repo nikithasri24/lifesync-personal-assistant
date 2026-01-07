@@ -7,7 +7,6 @@ import React from 'react';
 import { geoPath, geoMercator } from 'd3-geo';
 import { ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
 import type { VisitStatus } from '../types';
-import { logger } from '../../services/logger';
 
 type EnhancedWorldMapProps = {
   visitedCountries: Record<string, VisitStatus>;
@@ -45,25 +44,25 @@ const EnhancedWorldMap: React.FC<EnhancedWorldMapProps> = ({
 
   // Fetch world map data
   React.useEffect(() => {
-    const fetchMapData = async (): Promise<void> => {
+    const fetchMapData = async () => {
       try {
         setLoading(true);
         // Using Natural Earth low-resolution data from CDN
         const response = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json');
-        await response.json();
+        const topology = await response.json();
 
         // Convert TopoJSON to GeoJSON features
         // For now, using a comprehensive static dataset
         setCountries(getComprehensiveCountries());
         setLoading(false);
-      } catch (error: unknown) {
-        logger.error('Error loading map data:', { error });
+      } catch (error) {
+        console.error('Error loading map data:', error);
         setCountries(getComprehensiveCountries());
         setLoading(false);
       }
     };
 
-    void fetchMapData();
+    fetchMapData();
   }, []);
 
   const projection = geoMercator()
@@ -95,27 +94,27 @@ const EnhancedWorldMap: React.FC<EnhancedWorldMapProps> = ({
     }
   };
 
-  const handleZoomIn = (): void => {
+  const handleZoomIn = () => {
     setZoom(prev => Math.min(prev * 1.5, 10));
   };
 
-  const handleZoomOut = (): void => {
+  const handleZoomOut = () => {
     setZoom(prev => Math.max(prev / 1.5, 1));
   };
 
-  const handleReset = (): void => {
+  const handleReset = () => {
     setZoom(1);
     setPan({ x: 0, y: 0 });
   };
 
-  const handleMouseDown = (e: React.MouseEvent): void => {
+  const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button === 0) {
       setIsDragging(true);
       setDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
     }
   };
 
-  const handleMouseMove = (e: React.MouseEvent): void => {
+  const handleMouseMove = (e: React.MouseEvent) => {
     if (isDragging) {
       setPan({
         x: e.clientX - dragStart.x,
@@ -124,11 +123,11 @@ const EnhancedWorldMap: React.FC<EnhancedWorldMapProps> = ({
     }
   };
 
-  const handleMouseUp = (): void => {
+  const handleMouseUp = () => {
     setIsDragging(false);
   };
 
-  const handleCountryMouseMove = (e: React.MouseEvent, countryName: string): void => {
+  const handleCountryMouseMove = (e: React.MouseEvent, countryName: string) => {
     const svg = svgRef.current;
     if (svg) {
       const rect = svg.getBoundingClientRect();
@@ -219,7 +218,7 @@ const EnhancedWorldMap: React.FC<EnhancedWorldMapProps> = ({
               const path = pathGenerator({
                 type: 'LineString',
                 coordinates: [[lon, -90], [lon, 90]],
-              } as GeoJSON.LineString);
+              } as any);
               return path ? <path key={`lon-${i}`} d={path} /> : null;
             })}
             {Array.from({ length: 19 }).map((_, i) => {
@@ -227,7 +226,7 @@ const EnhancedWorldMap: React.FC<EnhancedWorldMapProps> = ({
               const path = pathGenerator({
                 type: 'LineString',
                 coordinates: Array.from({ length: 361 }, (_, j) => [-180 + j, lat]),
-              } as GeoJSON.LineString);
+              } as any);
               return path ? <path key={`lat-${i}`} d={path} /> : null;
             })}
           </g>
@@ -237,7 +236,7 @@ const EnhancedWorldMap: React.FC<EnhancedWorldMapProps> = ({
             {countries.map((country) => {
               const countryCode = country.properties.iso_a2;
               const isHovered = hoveredCountry === countryCode;
-              const path = pathGenerator(country as GeoJSON.Feature);
+              const path = pathGenerator(country as any);
 
               if (!path) return null;
 

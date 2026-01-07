@@ -90,7 +90,7 @@ export class OllamaProvider implements LLMProvider {
         functionCall
       };
     } catch (error) {
-      logger.error('OllamaProvider.chat failed', { error });
+      logger.error('OllamaProvider', error as Error, { context: 'chat failed' });
       throw error;
     }
   }
@@ -160,7 +160,7 @@ export class OllamaProvider implements LLMProvider {
 
       yield { done: true };
     } catch (error) {
-      logger.error('OllamaProvider.streamChat failed', { error });
+      logger.error('OllamaProvider', error as Error, { context: 'streamChat failed' });
       throw error;
     }
   }
@@ -176,7 +176,7 @@ export class OllamaProvider implements LLMProvider {
       });
       return response.ok;
     } catch (error) {
-      logger.warn('OllamaProvider availability check failed', { error });
+      logger.warn('Ollama', 'Availability check failed', { error });
       return false;
     }
   }

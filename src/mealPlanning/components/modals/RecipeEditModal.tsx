@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, type ReactElement } from 'react';
 import { Loader2 } from 'lucide-react';
 import { logger } from '../../../services/logger';
 import type { Recipe, Ingredient } from '../../../types';
-import { useUpdateRecipeMutation } from '../../hooks/useMealPlanningQuery';
+import { useUpdateRecipeMutation } from '@/hooks/useMealPlanningQuery';
 
 interface RecipeEditModalProps {
   recipe: Recipe;
@@ -70,9 +70,9 @@ export function RecipeEditModal({ recipe, onClose }: RecipeEditModalProps): Reac
 
           const parsedIngredients: Ingredient[] = ingredientLines.map((line) => {
             const match1 = line.match(/^(\d+(?:\.\d+)?)\s+(\w+)\s+(.+)$/);
-            if (match1) return { amount: Number(match1[1]), unit: match1[2], name: match1[3] };
+            if (match1) return { amount: match1[1], unit: match1[2], name: match1[3] };
             const match2 = line.match(/^(\d+(?:\.\d+)?)\s+(.+)$/);
-            if (match2) return { amount: Number(match2[1]), unit: undefined, name: match2[2] };
+            if (match2) return { amount: match2[1], unit: undefined, name: match2[2] };
             return { amount: undefined, unit: undefined, name: line };
           });
 
@@ -90,7 +90,7 @@ export function RecipeEditModal({ recipe, onClose }: RecipeEditModalProps): Reac
 
           await updateRecipeMutation.mutateAsync({ recipeId: recipe.id, updates });
         } catch (err) {
-          logger.error('RecipeEditModal', 'Auto-save failed:', err);
+          logger.error('RecipeEditModal', err as Error, { context: 'auto-save failed' });
           setError('Auto-save failed');
         } finally {
           setSaving(false);

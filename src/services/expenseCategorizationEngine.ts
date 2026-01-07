@@ -456,8 +456,10 @@ export class ExpenseCategorizationEngine {
     const results = new Map<string, CategorySuggestion[]>();
 
     transactions.forEach(transaction => {
-      const suggestions = this.categorizeTransaction(transaction);
-      results.set(transaction.id, suggestions);
+      if (transaction.id) {
+        const suggestions = this.categorizeTransaction(transaction);
+        results.set(transaction.id, suggestions);
+      }
     });
 
     return results;

@@ -5,7 +5,28 @@
 
 import { supabase } from '../lib/supabase';
 import type { NationalPark } from '../types/nationalParks';
+import type { NationalPark as TravelPark } from '../travel/data/nationalParks';
 import { logger } from '../services/logger';
+import { apiCall, requireAuth, handleSupabaseResponse } from './apiWrapper';
+
+/**
+ * Maps travel data park format to the NationalPark type used by the app
+ */
+function mapTravelParkToNationalPark(park: TravelPark): NationalPark {
+  // Extract state abbreviation from stateCode (e.g., "US-CA" -> "CA")
+  const state = park.stateCode ? park.stateCode.split('-')[1] ?? park.stateCode : 'Unknown';
+
+  return {
+    id: park.id,
+    name: park.name,
+    state,
+    coordinates: [park.lat, park.lon],
+    established: park.established ? park.established.toString() : 'Unknown',
+    description: park.description ?? '',
+    visitors: 'Unknown', // Travel data doesn't include visitor counts
+    features: [], // Travel data doesn't include features
+  };
+}
 
 // Database types
 export interface VisitedParkData {
@@ -41,7 +62,8 @@ export async function getParks(filters?: ParkFilters): Promise<NationalPark[]> {
     // This function can be extended to fetch from Supabase if parks are stored in DB
     const { nationalParks } = await import('../travel/data/nationalParks');
 
-    let parks = [...nationalParks];
+    // Map travel parks to app NationalPark format
+    let parks = nationalParks.map(mapTravelParkToNationalPark);
 
     // Apply filters
     if (filters) {
@@ -74,7 +96,7 @@ export async function getParks(filters?: ParkFilters): Promise<NationalPark[]> {
 
     return parks;
   } catch (error) {
-    logger.error('NationalParksAPI', error as Error, { context: 'getParks', filters });
+    logger.error('NationalParksAPI', 'Operation failed', { error, context: 'getParks', filters });
     throw error;
   }
 }
@@ -94,9 +116,9 @@ export async function getPark(id: string): Promise<NationalPark> {
       throw new Error('Park not found');
     }
 
-    return park;
+    return mapTravelParkToNationalPark(park);
   } catch (error) {
-    logger.error('NationalParksAPI', error as Error, { context: 'getPark', id });
+    logger.error('NationalParksAPI', 'Operation failed', { error, context: 'getPark', id });
     throw error;
   }
 }
@@ -124,21 +146,21 @@ export async function searchParks(
  * @throws Error if user not authenticated
  */
 export async function getVisitedParks(): Promise<VisitedParkData[]> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { data, error } = await supabase
-    .from('visited_parks')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('visit_date', { ascending: false });
+      const { data, error } = await supabase
+        .from('visited_parks')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('visit_date', { ascending: false });
 
-  if (error) {
-    logger.error('NationalParksAPI', error, { context: 'getVisitedParks' });
-    throw error;
-  }
-
-  return (data ?? []) as VisitedParkData[];
+      if (error) throw error;
+      return (data ?? []) as VisitedParkData[];
+    },
+    { domain: 'NationalParksAPI', operation: 'getVisitedParks' }
+  );
 }
 
 /**
@@ -157,34 +179,34 @@ export async function addVisitedPark(
     photos?: string[];
   }
 ): Promise<VisitedParkData> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const visitDate =
-    typeof data.visitDate === 'string'
-      ? data.visitDate
-      : data.visitDate.toISOString().split('T')[0];
+      const visitDate =
+        typeof data.visitDate === 'string'
+          ? data.visitDate
+          : data.visitDate.toISOString().split('T')[0];
 
-  const result = await supabase
-    .from('visited_parks')
-    .insert({
-      user_id: user.id,
-      park_id: parkId,
-      visit_date: visitDate,
-      notes: data.notes ?? null,
-      rating: data.rating ?? null,
-      photos: data.photos ?? [],
-    })
-    .select()
-    .single();
+      const result = await supabase
+        .from('visited_parks')
+        .insert({
+          user_id: user.id,
+          park_id: parkId,
+          visit_date: visitDate,
+          notes: data.notes ?? null,
+          rating: data.rating ?? null,
+          photos: data.photos ?? [],
+        })
+        .select()
+        .single();
 
-  if (result.error) {
-    logger.error('NationalParksAPI', result.error, { context: 'addVisitedPark', parkId, data });
-    throw result.error;
-  }
-
-  logger.info('NationalParksAPI', 'Visited park added', { id: result.data.id, parkId });
-  return result.data as VisitedParkData;
+      const visitData = handleSupabaseResponse(result, 'Visited Park');
+      logger.info('NationalParksAPI', 'Visited park added', { id: visitData.id, parkId });
+      return visitData as VisitedParkData;
+    },
+    { domain: 'NationalParksAPI', operation: 'addVisitedPark', data: { parkId } }
+  );
 }
 
 /**
@@ -203,37 +225,37 @@ export async function updateVisitedPark(
     photos: string[];
   }>
 ): Promise<VisitedParkData> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const updateData: Record<string, unknown> = {};
+      const updateData: Record<string, unknown> = {};
 
-  if (updates.visitDate !== undefined) {
-    updateData.visit_date =
-      typeof updates.visitDate === 'string'
-        ? updates.visitDate
-        : updates.visitDate.toISOString().split('T')[0];
-  }
-  if (updates.notes !== undefined) updateData.notes = updates.notes;
-  if (updates.rating !== undefined) updateData.rating = updates.rating;
-  if (updates.photos !== undefined) updateData.photos = updates.photos;
-  updateData.updated_at = new Date().toISOString();
+      if (updates.visitDate !== undefined) {
+        updateData.visit_date =
+          typeof updates.visitDate === 'string'
+            ? updates.visitDate
+            : updates.visitDate.toISOString().split('T')[0];
+      }
+      if (updates.notes !== undefined) updateData.notes = updates.notes;
+      if (updates.rating !== undefined) updateData.rating = updates.rating;
+      if (updates.photos !== undefined) updateData.photos = updates.photos;
+      updateData.updated_at = new Date().toISOString();
 
-  const result = await supabase
-    .from('visited_parks')
-    .update(updateData)
-    .eq('id', id)
-    .eq('user_id', user.id)
-    .select()
-    .single();
+      const result = await supabase
+        .from('visited_parks')
+        .update(updateData)
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .select()
+        .single();
 
-  if (result.error) {
-    logger.error('NationalParksAPI', result.error, { context: 'updateVisitedPark', id, updates });
-    throw result.error;
-  }
-
-  logger.info('NationalParksAPI', 'Visited park updated', { id });
-  return result.data as VisitedParkData;
+      const data = handleSupabaseResponse(result, 'Visited Park', id);
+      logger.info('NationalParksAPI', 'Visited park updated', { id });
+      return data as VisitedParkData;
+    },
+    { domain: 'NationalParksAPI', operation: 'updateVisitedPark', data: { id } }
+  );
 }
 
 /**
@@ -243,21 +265,21 @@ export async function updateVisitedPark(
  * @throws Error if deletion fails or user not authenticated
  */
 export async function deleteVisitedPark(id: string): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { error } = await supabase
-    .from('visited_parks')
-    .delete()
-    .eq('id', id)
-    .eq('user_id', user.id);
+      const { error } = await supabase
+        .from('visited_parks')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
 
-  if (error) {
-    logger.error('NationalParksAPI', error, { context: 'deleteVisitedPark', id });
-    throw error;
-  }
-
-  logger.info('NationalParksAPI', 'Visited park deleted', { id });
+      if (error) throw error;
+      logger.info('NationalParksAPI', 'Visited park deleted', { id });
+    },
+    { domain: 'NationalParksAPI', operation: 'deleteVisitedPark', data: { id } }
+  );
 }
 
 /**
@@ -267,22 +289,22 @@ export async function deleteVisitedPark(id: string): Promise<void> {
  * @throws Error if user not authenticated
  */
 export async function isParkVisited(parkId: string): Promise<boolean> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { data, error } = await supabase
-    .from('visited_parks')
-    .select('id')
-    .eq('user_id', user.id)
-    .eq('park_id', parkId)
-    .maybeSingle();
+      const { data, error } = await supabase
+        .from('visited_parks')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('park_id', parkId)
+        .maybeSingle();
 
-  if (error) {
-    logger.error('NationalParksAPI', error, { context: 'isParkVisited', parkId });
-    throw error;
-  }
-
-  return data !== null;
+      if (error) throw error;
+      return data !== null;
+    },
+    { domain: 'NationalParksAPI', operation: 'isParkVisited', data: { parkId } }
+  );
 }
 
 /**

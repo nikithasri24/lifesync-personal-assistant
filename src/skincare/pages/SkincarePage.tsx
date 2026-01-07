@@ -4,16 +4,17 @@
  */
 
 import React from 'react';
-import { Sparkles, Package, Sun, Moon, Check, Plus, Edit } from 'lucide-react';
+import { Sparkles, Package, Sun, Moon, Check, Plus, Edit, Calendar, Grid3x3 } from 'lucide-react';
 import SkincareCalendar from '../components/SkincareCalendar';
 import ProductsLibrary from '../components/ProductsLibrary';
 import ProductFormModal from '../components/ProductFormModal';
 import RoutineEditorModal from '../components/RoutineEditorModal';
-import { skincareAPI } from '../data';
+import WeeklyPlannerView from '../components/WeeklyPlannerView';
+import WeeklyGridView from '../components/WeeklyGridView';
+import { skincareAPI } from '../api/data';
 import type { SkincareProduct, SkincareProductInput, SkincareRoutine, SkincareRoutineInput, SkincareLog } from '../types';
-import { logger } from '../../services/logger';
 
-type ViewType = 'journal' | 'products';
+type ViewType = 'journal' | 'products' | 'weekly' | 'grid';
 
 const SkincarePage: React.FC = () => {
   const [view, setView] = React.useState<ViewType>('journal');
@@ -38,10 +39,10 @@ const SkincarePage: React.FC = () => {
 
   // Load data
   React.useEffect(() => {
-    void loadData();
+    loadData();
   }, []);
 
-  const loadData = async (): Promise<void> => {
+  const loadData = async () => {
     try {
       setLoading(true);
       const [productsData, routinesData, logsData] = await Promise.all([
@@ -54,7 +55,7 @@ const SkincarePage: React.FC = () => {
       setRoutines(routinesData);
       setLogs(logsData.items);
     } catch (error) {
-      logger.error('Error loading skincare data:', { error });
+      console.error('Error loading skincare data:', error);
     } finally {
       setLoading(false);
     }
@@ -74,14 +75,14 @@ const SkincarePage: React.FC = () => {
   };
 
   // Check if today's routine is completed
-  const _getTodayCompletion = (routineType: 'AM' | 'PM'): boolean => {
+  const getTodayCompletion = (routineType: 'AM' | 'PM'): boolean => {
     const today = new Date().toISOString().split('T')[0];
     const log = logs.find(l => l.date === today && l.routineType === routineType);
-    return log?.completed ?? false;
+    return log?.completed || false;
   };
 
   // Toggle routine completion
-  const handleToggleComplete = async (routineType: 'AM' | 'PM'): Promise<void> => {
+  const handleToggleComplete = async (routineType: 'AM' | 'PM') => {
     const today = new Date().toISOString().split('T')[0];
     const existingLog = logs.find(l => l.date === today && l.routineType === routineType);
 
@@ -102,17 +103,17 @@ const SkincarePage: React.FC = () => {
           routineType,
           completed: true,
           completedAt: new Date().toISOString(),
-          productsUsed: routine?.productIds ?? [],
+          productsUsed: routine?.productIds || [],
           skippedProducts: [],
         });
         setLogs([newLog, ...logs]);
       }
     } catch (error) {
-      logger.error('Error toggling completion:', { error });
+      console.error('Error toggling completion:', error);
     }
   };
 
-  const handleDayClick = (date: string): void => {
+  const handleDayClick = (date: string) => {
     setSelectedDate(date);
   };
 
@@ -121,17 +122,17 @@ const SkincarePage: React.FC = () => {
   const selectedAMLog = selectedDateLogs.find(l => l.routineType === 'AM');
   const selectedPMLog = selectedDateLogs.find(l => l.routineType === 'PM');
 
-  const handleAddProduct = (): void => {
+  const handleAddProduct = () => {
     setEditingProduct(undefined);
     setShowProductModal(true);
   };
 
-  const handleEditProduct = (product: SkincareProduct): void => {
+  const handleEditProduct = (product: SkincareProduct) => {
     setEditingProduct(product);
     setShowProductModal(true);
   };
 
-  const handleSaveProduct = async (productData: SkincareProductInput): Promise<void> => {
+  const handleSaveProduct = async (productData: SkincareProductInput) => {
     try {
       if (editingProduct) {
         // Update existing product
@@ -145,24 +146,22 @@ const SkincarePage: React.FC = () => {
       setShowProductModal(false);
       setEditingProduct(undefined);
     } catch (error) {
-      logger.error('Error saving product:', { error });
-      // eslint-disable-next-line no-alert
+      console.error('Error saving product:', error);
       alert('Failed to save product. Please try again.');
     }
   };
 
-  const handleDeleteProduct = async (id: string): Promise<void> => {
-    // eslint-disable-next-line no-alert
+  const handleDeleteProduct = async (id: string) => {
     if (!confirm('Are you sure you want to delete this product?')) return;
     try {
       await skincareAPI.deleteProduct(id);
       setProducts(products.filter(p => p.id !== id));
     } catch (error) {
-      logger.error('Error deleting product:', { error });
+      console.error('Error deleting product:', error);
     }
   };
 
-  const handleCreateRoutine = async (routineType: 'AM' | 'PM'): Promise<void> => {
+  const handleCreateRoutine = async (routineType: 'AM' | 'PM') => {
     const name = routineType === 'AM' ? 'Morning Routine' : 'Evening Routine';
     try {
       const newRoutine = await skincareAPI.createRoutine({
@@ -173,18 +172,17 @@ const SkincarePage: React.FC = () => {
       });
       setRoutines([...routines, newRoutine]);
     } catch (error) {
-      logger.error('Error creating routine:', { error });
-      // eslint-disable-next-line no-alert
+      console.error('Error creating routine:', error);
       alert('Failed to create routine. Please try again.');
     }
   };
 
-  const handleEditRoutine = (routine: SkincareRoutine): void => {
+  const handleEditRoutine = (routine: SkincareRoutine) => {
     setEditingRoutine(routine);
     setShowRoutineEditor(true);
   };
 
-  const handleSaveRoutine = async (routineData: Partial<SkincareRoutineInput>): Promise<void> => {
+  const handleSaveRoutine = async (routineData: Partial<SkincareRoutineInput>) => {
     if (!editingRoutine) return;
 
     try {
@@ -193,14 +191,12 @@ const SkincarePage: React.FC = () => {
       setShowRoutineEditor(false);
       setEditingRoutine(undefined);
     } catch (error) {
-      logger.error('Error saving routine:', { error });
-      // eslint-disable-next-line no-alert
+      console.error('Error saving routine:', error);
       alert('Failed to save routine. Please try again.');
     }
   };
 
-  const handleDeleteRoutine = async (routine: SkincareRoutine): Promise<void> => {
-    // eslint-disable-next-line no-alert
+  const handleDeleteRoutine = async (routine: SkincareRoutine) => {
     if (!confirm(`Are you sure you want to delete ${routine.name}?`)) return;
     try {
       await skincareAPI.deleteRoutine(routine.id);
@@ -208,7 +204,7 @@ const SkincarePage: React.FC = () => {
       setShowRoutineEditor(false);
       setEditingRoutine(undefined);
     } catch (error) {
-      logger.error('Error deleting routine:', { error });
+      console.error('Error deleting routine:', error);
     }
   };
 
@@ -228,13 +224,13 @@ const SkincarePage: React.FC = () => {
     routine: SkincareRoutine | undefined,
     log: SkincareLog | undefined,
     type: 'AM' | 'PM'
-  ): React.JSX.Element => {
+  ) => {
     if (!routine) {
       return (
         <div className="text-center py-6">
           <p className="text-gray-500 text-sm mb-3">No {type} routine</p>
           <button
-            onClick={() => { void handleCreateRoutine(type); }}
+            onClick={() => handleCreateRoutine(type)}
             className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
           >
             <Plus className="h-4 w-4" />
@@ -245,7 +241,7 @@ const SkincarePage: React.FC = () => {
     }
 
     const routineProducts = getRoutineProducts(routine);
-    const isCompleted = log?.completed ?? false;
+    const isCompleted = log?.completed || false;
 
     return (
       <div className="space-y-2">
@@ -299,6 +295,28 @@ const SkincarePage: React.FC = () => {
           Journal
         </button>
         <button
+          onClick={() => setView('grid')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+            view === 'grid'
+              ? 'bg-gray-900 text-white'
+              : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+          }`}
+        >
+          <Grid3x3 className="h-5 w-5" />
+          Week View
+        </button>
+        <button
+          onClick={() => setView('weekly')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+            view === 'weekly'
+              ? 'bg-gray-900 text-white'
+              : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+          }`}
+        >
+          <Calendar className="h-5 w-5" />
+          Cards
+        </button>
+        <button
           onClick={() => setView('products')}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
             view === 'products'
@@ -348,7 +366,7 @@ const SkincarePage: React.FC = () => {
                 <div className="flex items-center gap-2">
                   {amRoutine && (
                     <button
-                      onClick={() => { handleEditRoutine(amRoutine); }}
+                      onClick={() => handleEditRoutine(amRoutine)}
                       className="p-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
                       title="Edit routine"
                     >
@@ -356,7 +374,7 @@ const SkincarePage: React.FC = () => {
                     </button>
                   )}
                   <button
-                    onClick={() => { void handleToggleComplete('AM'); }}
+                    onClick={() => handleToggleComplete('AM')}
                     className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
                       selectedAMLog?.completed
                         ? 'bg-gray-900 text-white'
@@ -380,7 +398,7 @@ const SkincarePage: React.FC = () => {
                 <div className="flex items-center gap-2">
                   {pmRoutine && (
                     <button
-                      onClick={() => { handleEditRoutine(pmRoutine); }}
+                      onClick={() => handleEditRoutine(pmRoutine)}
                       className="p-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
                       title="Edit routine"
                     >
@@ -388,7 +406,7 @@ const SkincarePage: React.FC = () => {
                     </button>
                   )}
                   <button
-                    onClick={() => { void handleToggleComplete('PM'); }}
+                    onClick={() => handleToggleComplete('PM')}
                     className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
                       selectedPMLog?.completed
                         ? 'bg-gray-900 text-white'
@@ -403,12 +421,16 @@ const SkincarePage: React.FC = () => {
             </div>
           </div>
         </div>
+      ) : view === 'grid' ? (
+        <WeeklyGridView />
+      ) : view === 'weekly' ? (
+        <WeeklyPlannerView />
       ) : (
         <ProductsLibrary
           products={products}
           onAddProduct={handleAddProduct}
           onEditProduct={handleEditProduct}
-          onDeleteProduct={(id) => { void handleDeleteProduct(id); }}
+          onDeleteProduct={handleDeleteProduct}
         />
       )}
 
@@ -416,7 +438,7 @@ const SkincarePage: React.FC = () => {
       {showProductModal && (
         <ProductFormModal
           product={editingProduct}
-          onSave={(productData) => { void handleSaveProduct(productData); }}
+          onSave={handleSaveProduct}
           onClose={() => {
             setShowProductModal(false);
             setEditingProduct(undefined);
@@ -429,8 +451,8 @@ const SkincarePage: React.FC = () => {
         <RoutineEditorModal
           routine={editingRoutine}
           allProducts={products}
-          onSave={(routineData) => { void handleSaveRoutine(routineData); }}
-          onDelete={() => { void handleDeleteRoutine(editingRoutine); }}
+          onSave={handleSaveRoutine}
+          onDelete={() => handleDeleteRoutine(editingRoutine)}
           onClose={() => {
             setShowRoutineEditor(false);
             setEditingRoutine(undefined);

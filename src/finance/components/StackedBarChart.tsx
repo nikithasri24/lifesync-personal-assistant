@@ -1,7 +1,17 @@
 import React from 'react';
 import { formatCurrency } from '../utils/currency';
+import type {
+  ResponsiveContainer as ResponsiveContainerType,
+  BarChart as BarChartType,
+  Bar as BarType,
+  XAxis as XAxisType,
+  YAxis as YAxisType,
+  Tooltip as TooltipType,
+  Legend as LegendType,
+  CartesianGrid as CartesianGridType,
+} from 'recharts';
 
-type DataEntry = Record<string, number>;
+type DataEntry = Record<string, string | number>;
 type StackKeyItem = { key: string; color: string; label: string };
 
 type StackedBarProps = {
@@ -21,14 +31,25 @@ type TooltipProps = {
   label?: string;
 };
 
+type RechartsLib = {
+  ResponsiveContainer: typeof ResponsiveContainerType;
+  BarChart: typeof BarChartType;
+  Bar: typeof BarType;
+  XAxis: typeof XAxisType;
+  YAxis: typeof YAxisType;
+  Tooltip: typeof TooltipType;
+  Legend: typeof LegendType;
+  CartesianGrid: typeof CartesianGridType;
+};
+
 export const StackedBarChart: React.FC<StackedBarProps> = ({ data, xKey, stackKeys, height = 300 }) => {
-  const [lib, setLib] = React.useState<Record<string, unknown> | null>(null);
+  const [lib, setLib] = React.useState<RechartsLib | null>(null);
 
   React.useEffect(() => {
     const loadLib = async (): Promise<void> => {
       try {
         const module = await import('recharts');
-        setLib(module);
+        setLib(module as unknown as RechartsLib);
       } catch (_error) {
         setLib(null);
       }

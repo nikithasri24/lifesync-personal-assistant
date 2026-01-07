@@ -21,6 +21,11 @@ export function mapShoppingItemDataToModel(items: ShoppingItemData[]): ShoppingI
     purchased: item.is_purchased ?? false,
     estimatedPrice: item.estimated_price !== undefined ? Number(item.estimated_price) : undefined,
     price: item.actual_price !== undefined ? Number(item.actual_price) : undefined,
+    brand: item.brand ?? undefined,
+    aisle: item.aisle ?? undefined,
+    barcode: item.barcode ?? undefined,
+    imageUrl: item.image_url ?? undefined,
+    nutritionInfo: item.nutrition_info as ShoppingItem['nutritionInfo'] | undefined,
     tags: item.tags ?? [],
     assignedStore: item.assigned_store ?? undefined,
     bestStores: item.best_stores ?? [],
@@ -33,34 +38,25 @@ export function mapShoppingItemDataToModel(items: ShoppingItemData[]): ShoppingI
 /**
  * Map UI ShoppingItem to API create input
  */
-export function mapShoppingItemToCreateInput(item: Omit<ShoppingItem, 'id' | 'createdAt' | 'updatedAt'>): {
-  name: string;
-  quantity: number;
-  unit: string | null;
-  category: string | null;
-  subcategory: string | null;
-  priority: string;
-  estimated_price: number | null;
-  actual_price: number | null;
-  tags: string[];
-  assigned_store: string | null;
-  best_stores: string[];
-  notes: string | null;
-  is_purchased: boolean;
-} {
+export function mapShoppingItemToCreateInput(item: Omit<ShoppingItem, 'id' | 'createdAt' | 'updatedAt'>): Omit<ShoppingItemData, 'id' | 'shopping_list_id' | 'created_at' | 'updated_at'> {
   return {
     name: item.name,
     quantity: item.quantity,
-    unit: item.unit ?? null,
-    category: item.category ?? null,
-    subcategory: item.subcategory ?? null,
+    unit: item.unit,
+    category: item.category,
+    subcategory: item.subcategory,
     priority: item.priority ?? 'medium',
-    estimated_price: item.estimatedPrice ?? null,
-    actual_price: item.price ?? null,
+    estimated_price: item.estimatedPrice,
+    actual_price: item.price,
+    brand: item.brand,
+    aisle: item.aisle,
+    barcode: item.barcode,
+    image_url: item.imageUrl,
+    nutrition_info: item.nutritionInfo as Record<string, unknown> | undefined,
     tags: item.tags ?? [],
-    assigned_store: item.assignedStore ?? null,
+    assigned_store: item.assignedStore,
     best_stores: item.bestStores ?? [],
-    notes: item.notes ?? null,
+    notes: item.notes,
     is_purchased: item.purchased ?? false,
   };
 }
@@ -68,34 +64,27 @@ export function mapShoppingItemToCreateInput(item: Omit<ShoppingItem, 'id' | 'cr
 /**
  * Map UI ShoppingItem updates to API update input
  */
-export function mapShoppingItemToUpdateInput(updates: Partial<ShoppingItem>): {
-  name?: string;
-  quantity?: number;
-  unit?: string;
-  category?: string;
-  subcategory?: string;
-  priority?: string;
-  estimated_price?: number;
-  actual_price?: number;
-  tags?: string[];
-  assigned_store?: string;
-  best_stores?: string[];
-  notes?: string;
-  is_purchased?: boolean;
-} {
-  return {
-    name: updates.name,
-    quantity: updates.quantity,
-    unit: updates.unit,
-    category: updates.category,
-    subcategory: updates.subcategory,
-    priority: updates.priority,
-    estimated_price: updates.estimatedPrice,
-    actual_price: updates.price,
-    tags: updates.tags,
-    assigned_store: updates.assignedStore,
-    best_stores: updates.bestStores,
-    notes: updates.notes,
-    is_purchased: updates.purchased,
-  };
+export function mapShoppingItemToUpdateInput(updates: Partial<ShoppingItem>): Partial<ShoppingItemData> {
+  const result: Partial<ShoppingItemData> = {};
+
+  if (updates.name !== undefined) result.name = updates.name;
+  if (updates.quantity !== undefined) result.quantity = updates.quantity;
+  if (updates.unit !== undefined) result.unit = updates.unit;
+  if (updates.category !== undefined) result.category = updates.category;
+  if (updates.subcategory !== undefined) result.subcategory = updates.subcategory;
+  if (updates.priority !== undefined) result.priority = updates.priority;
+  if (updates.estimatedPrice !== undefined) result.estimated_price = updates.estimatedPrice;
+  if (updates.price !== undefined) result.actual_price = updates.price;
+  if (updates.brand !== undefined) result.brand = updates.brand;
+  if (updates.aisle !== undefined) result.aisle = updates.aisle;
+  if (updates.barcode !== undefined) result.barcode = updates.barcode;
+  if (updates.imageUrl !== undefined) result.image_url = updates.imageUrl;
+  if (updates.nutritionInfo !== undefined) result.nutrition_info = updates.nutritionInfo as Record<string, unknown>;
+  if (updates.tags !== undefined) result.tags = updates.tags;
+  if (updates.assignedStore !== undefined) result.assigned_store = updates.assignedStore;
+  if (updates.bestStores !== undefined) result.best_stores = updates.bestStores;
+  if (updates.notes !== undefined) result.notes = updates.notes;
+  if (updates.purchased !== undefined) result.is_purchased = updates.purchased;
+
+  return result;
 }

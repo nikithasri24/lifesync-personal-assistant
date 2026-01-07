@@ -1,0 +1,131 @@
+
+> lifesync@1.0.0 typecheck
+> tsc -b --pretty false
+
+src/mealPlanning/hooks/useMealPlanningQuery.ts(310,3): error TS2741: Property 'createdAt' is missing in type '{ id: string; name: string; quantity: number; unit: string | undefined; category: "other" | "produce" | "dairy" | "meat" | "pantry" | "bakery"; location: string | undefined; expirationDate: Date | undefined; notes: string | undefined; isLowStock: boolean | undefined; lowStockThreshold: number | undefined; updatedAt:...' but required in type 'PantryItem'.
+src/pages/ShoppingSmart.tsx(502,54): error TS2345: Argument of type '{ name: string; quantity: number; unit?: string | undefined; category: "other" | "produce" | "dairy" | "meat" | "pantry" | "bakery"; expirationDate?: Date | undefined; location?: string | undefined; lowStockThreshold?: number | undefined; isLowStock?: boolean | undefined; }' is not assignable to parameter of type 'PantryItemInput'.
+  Property 'createdAt' is missing in type '{ name: string; quantity: number; unit?: string | undefined; category: "other" | "produce" | "dairy" | "meat" | "pantry" | "bakery"; expirationDate?: Date | undefined; location?: string | undefined; lowStockThreshold?: number | undefined; isLowStock?: boolean | undefined; }' but required in type 'PantryItemInput'.
+src/pages/ShoppingSmart.tsx(519,56): error TS2345: Argument of type '{ name: string; quantity: number; category: "other" | "produce" | "dairy" | "meat" | "pantry"; lowStockThreshold: number | undefined; isLowStock: boolean | undefined; }' is not assignable to parameter of type 'PantryItemInput'.
+  Property 'createdAt' is missing in type '{ name: string; quantity: number; category: "other" | "produce" | "dairy" | "meat" | "pantry"; lowStockThreshold: number | undefined; isLowStock: boolean | undefined; }' but required in type 'PantryItemInput'.
+src/scripts/importFinanceCSV.ts(244,67): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string | Error'.
+src/services/expenseCategorizationEngine.ts(460,19): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/services/supabaseAdapter.ts(2154,37): error TS2353: Object literal may only specify known properties, and 'limit' does not exist in type '{ head?: boolean | undefined; count?: "planned" | "exact" | "estimated" | undefined; }'.
+src/shopping/components/pantry/__tests__/PantryActionButtons.test.tsx(4,15): error TS2305: Module '"../../../types"' has no exported member 'PantryItem'.
+src/shopping/components/pantry/__tests__/PantryActionButtons.test.tsx(129,45): error TS2339: Property 'options' does not exist on type 'HTMLElement'.
+src/shopping/components/pantry/__tests__/PantryActionButtons.test.tsx(129,67): error TS18046: 'opt' is of type 'unknown'.
+src/shopping/components/pantry/__tests__/PantryActionButtons.test.tsx(138,43): error TS2339: Property 'options' does not exist on type 'HTMLElement'.
+src/shopping/components/pantry/__tests__/PantryActionButtons.test.tsx(138,65): error TS18046: 'opt' is of type 'unknown'.
+src/shopping/components/pantry/__tests__/PantryActionButtons.test.tsx(175,25): error TS2339: Property 'value' does not exist on type 'HTMLElement'.
+src/shopping/components/pantry/__tests__/PantryActionButtons.test.tsx(182,23): error TS2339: Property 'value' does not exist on type 'HTMLElement'.
+src/shopping/components/pantry/__tests__/PantryTable.test.tsx(4,15): error TS2305: Module '"../../../types"' has no exported member 'PantryItem'.
+src/shopping/components/views/DistributeView.tsx(107,60): error TS7015: Element implicitly has an 'any' type because index expression is not of type 'number'.
+src/shopping/components/views/PantryView.tsx(338,58): error TS2552: Cannot find name 'ReactElement'. Did you mean 'SVGRectElement'?
+src/shopping/hooks/__tests__/usePantryActions.test.ts(4,15): error TS2305: Module '"../../types"' has no exported member 'PantryItem'.
+src/shopping/hooks/useBarcodeScanner.ts(125,35): error TS18048: 'window.BarcodeDetector' is possibly 'undefined'.
+src/shopping/hooks/useBarcodeScanner.ts(234,5): error TS2322: Type 'RefObject<HTMLVideoElement | null>' is not assignable to type 'RefObject<HTMLVideoElement>'.
+  Type 'HTMLVideoElement | null' is not assignable to type 'HTMLVideoElement'.
+    Type 'null' is not assignable to type 'HTMLVideoElement'.
+src/shopping/hooks/usePantryActions.ts(23,9): error TS18048: 'p.lowStockThreshold' is possibly 'undefined'.
+src/shopping/hooks/usePantryActions.ts(29,32): error TS18048: 'target' is possibly 'undefined'.
+src/shopping/tools.ts(213,7): error TS2353: Object literal may only specify known properties, and 'shopping_list_id' does not exist in type 'Omit<ShoppingItemData, "created_at" | "id" | "updated_at" | "shopping_list_id">'.
+src/shopping/tools.ts(353,34): error TS2339: Property 'addPantryItem' does not exist on type 'ApiClient'.
+src/shopping/utils/pantryUtils.ts(15,9): error TS2741: Property 'bakery' is missing in type '{ produce: "produce"; dairy: "dairy"; meat: "meat"; pantry: "pantry"; other: "other"; }' but required in type 'Record<"other" | "produce" | "dairy" | "meat" | "pantry" | "bakery", "personal" | "other" | "produce" | "dairy" | "meat" | "pantry" | "bakery" | "electronics" | "frozen" | "deli" | "household">'.
+src/skincare/__tests__/tools.test.ts(28,70): error TS2345: Argument of type '{ id: string; name: string; brand: string; category: "serum"; user_id: string; in_use: boolean; created_at: string; updated_at: string; }' is not assignable to parameter of type 'SkincareProduct'.
+  Type '{ id: string; name: string; brand: string; category: "serum"; user_id: string; in_use: boolean; created_at: string; updated_at: string; }' is missing the following properties from type 'SkincareProduct': userId, usageTime, currentlyUsing, createdAt, updatedAt
+src/skincare/__tests__/tools.test.ts(44,30): error TS2339: Property 'name' does not exist on type '{}'.
+src/skincare/__tests__/tools.test.ts(101,71): error TS2345: Argument of type '{ id: string; date: string; overall_condition: number; notes: string; user_id: string; created_at: string; }' is not assignable to parameter of type 'SkinConditionLog'.
+  Property 'concerns' is missing in type '{ id: string; date: string; overall_condition: number; notes: string; user_id: string; created_at: string; }' but required in type 'SkinConditionLog'.
+src/skincare/__tests__/tools.test.ts(117,26): error TS2339: Property 'overall_condition' does not exist on type '{}'.
+src/skincare/__tests__/tools.test.ts(205,30): error TS2339: Property 'steps' does not exist on type '{}'.
+src/skincare/__tests__/tools.test.ts(206,44): error TS2339: Property 'steps' does not exist on type '{}'.
+src/skincare/__tests__/tools.test.ts(322,28): error TS2339: Property 'total_products' does not exist on type '{}'.
+src/skincare/__tests__/tools.test.ts(323,28): error TS2339: Property 'products_in_use' does not exist on type '{}'.
+src/skincare/__tests__/tools.test.ts(324,28): error TS2339: Property 'average_condition' does not exist on type '{}'.
+src/skincare/components/ProductFormModal.tsx(19,5): error TS2552: Cannot find name 'ReactElement'. Did you mean 'SVGRectElement'?
+src/skincare/components/ProductsLibrary.tsx(20,3): error TS2339: Property '_onDeleteProduct' does not exist on type 'ProductsLibraryProps'.
+src/skincare/components/SkincareRoutineCard.tsx(22,3): error TS2339: Property '_allProducts' does not exist on type 'SkincareRoutineCardProps'.
+src/skincare/tools.ts(38,11): error TS2741: Property 'description' is missing in type '{ type: string; }' but required in type 'ToolParameter'.
+src/skincare/tools.ts(43,11): error TS2741: Property 'description' is missing in type '{ type: string; }' but required in type 'ToolParameter'.
+src/skincare/tools.ts(67,11): error TS2353: Object literal may only specify known properties, and 'minimum' does not exist in type 'ToolParameter'.
+src/skincare/tools.ts(73,11): error TS2741: Property 'description' is missing in type '{ type: string; }' but required in type 'ToolParameter'.
+src/skincare/tools.ts(139,7): error TS2561: Object literal may only specify known properties, but 'ingredients' does not exist in type 'Omit<SkincareProduct, "id" | "userId" | "createdAt" | "updatedAt">'. Did you mean to write 'keyIngredients'?
+src/stores/__tests__/habits.persistence.test.tsx(3,33): error TS2307: Cannot find module '../../stores/useRealAppStore' or its corresponding type declarations.
+src/stores/__tests__/habits.persistence.test.tsx(81,57): error TS7006: Parameter 'h' implicitly has an 'any' type.
+src/stores/__tests__/useAppStore.test.ts(2,29): error TS2307: Cannot find module '../useAppStore' or its corresponding type declarations.
+src/stores/__tests__/useAppStore.test.ts(125,51): error TS7006: Parameter 'habit' implicitly has an 'any' type.
+src/stores/__tests__/useAppStore.test.ts(158,49): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/stores/__tests__/useAppStore.test.ts(168,51): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/stores/slices/nationalParksSlice.ts(200,3): error TS2322: Type '() => Promise<{ totalVisited: number; visitedByState: Record<string, number>; averageRating: number; recentVisits: VisitedParkData[]; }>' is not assignable to type '() => Promise<Promise<{ totalVisited: number; visitedByState: Record<string, number>; averageRating: number; recentVisits: VisitedParkData[]; }>>'.
+  Type 'Promise<{ totalVisited: number; visitedByState: Record<string, number>; averageRating: number; recentVisits: VisitedParkData[]; }>' is not assignable to type 'Promise<Promise<{ totalVisited: number; visitedByState: Record<string, number>; averageRating: number; recentVisits: VisitedParkData[]; }>>'.
+    Type '{ totalVisited: number; visitedByState: Record<string, number>; averageRating: number; recentVisits: VisitedParkData[]; }' is missing the following properties from type 'Promise<{ totalVisited: number; visitedByState: Record<string, number>; averageRating: number; recentVisits: VisitedParkData[]; }>': then, catch, finally, [Symbol.toStringTag]
+src/stores/slices/skincareSlice.ts(58,13): error TS2322: Type 'import("/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/skincare/types").SkincareProduct[]' is not assignable to type 'import("/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/services/types").SkincareProduct[]'.
+  Type 'SkincareProduct' is missing the following properties from type 'SkincareProduct': user_id, ingredients, key_ingredients, in_use, and 2 more.
+src/stores/slices/skincareSlice.ts(74,54): error TS2345: Argument of type 'Omit<SkincareProduct, "user_id" | "created_at" | "id" | "updated_at">' is not assignable to parameter of type 'Omit<SkincareProduct, "id" | "userId" | "createdAt" | "updatedAt">'.
+  Type 'Omit<SkincareProduct, "user_id" | "created_at" | "id" | "updated_at">' is missing the following properties from type 'Omit<SkincareProduct, "id" | "userId" | "createdAt" | "updatedAt">': usageTime, currentlyUsing
+src/stores/slices/skincareSlice.ts(75,11): error TS2345: Argument of type '(state: SkincareSlice) => { skincareProducts: (SkincareProduct | SkincareProduct)[]; }' is not assignable to parameter of type 'SkincareSlice | Partial<SkincareSlice> | ((state: SkincareSlice) => SkincareSlice | Partial<SkincareSlice>)'.
+  Type '(state: SkincareSlice) => { skincareProducts: (SkincareProduct | SkincareProduct)[]; }' is not assignable to type '(state: SkincareSlice) => SkincareSlice | Partial<SkincareSlice>'.
+    Type '{ skincareProducts: (SkincareProduct | SkincareProduct)[]; }' is not assignable to type 'SkincareSlice | Partial<SkincareSlice>'.
+      Type '{ skincareProducts: (SkincareProduct | SkincareProduct)[]; }' is not assignable to type 'Partial<SkincareSlice>'.
+        Types of property 'skincareProducts' are incompatible.
+          Type '(SkincareProduct | SkincareProduct)[]' is not assignable to type 'SkincareProduct[]'.
+            Type 'SkincareProduct | SkincareProduct' is not assignable to type 'SkincareProduct'.
+              Type 'SkincareProduct' is missing the following properties from type 'SkincareProduct': user_id, ingredients, key_ingredients, in_use, and 2 more.
+src/stores/slices/skincareSlice.ts(77,7): error TS2740: Type 'SkincareProduct' is missing the following properties from type 'SkincareProduct': user_id, ingredients, key_ingredients, in_use, and 2 more.
+src/stores/slices/skincareSlice.ts(87,58): error TS2345: Argument of type 'Partial<import("/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/services/types").SkincareProduct>' is not assignable to parameter of type 'Partial<import("/Users/sri.nikitha/Documents/GenAI/lifesync-personal-assistant/src/skincare/types").SkincareProduct>'.
+  Types of property 'notes' are incompatible.
+    Type 'string | null | undefined' is not assignable to type 'string | undefined'.
+      Type 'null' is not assignable to type 'string | undefined'.
+src/stores/slices/skincareSlice.ts(88,11): error TS2345: Argument of type '(state: SkincareSlice) => { skincareProducts: (SkincareProduct | SkincareProduct)[]; }' is not assignable to parameter of type 'SkincareSlice | Partial<SkincareSlice> | ((state: SkincareSlice) => SkincareSlice | Partial<SkincareSlice>)'.
+  Type '(state: SkincareSlice) => { skincareProducts: (SkincareProduct | SkincareProduct)[]; }' is not assignable to type '(state: SkincareSlice) => SkincareSlice | Partial<SkincareSlice>'.
+    Type '{ skincareProducts: (SkincareProduct | SkincareProduct)[]; }' is not assignable to type 'SkincareSlice | Partial<SkincareSlice>'.
+      Type '{ skincareProducts: (SkincareProduct | SkincareProduct)[]; }' is not assignable to type 'Partial<SkincareSlice>'.
+        Types of property 'skincareProducts' are incompatible.
+          Type '(SkincareProduct | SkincareProduct)[]' is not assignable to type 'SkincareProduct[]'.
+            Type 'SkincareProduct | SkincareProduct' is not assignable to type 'SkincareProduct'.
+              Type 'SkincareProduct' is missing the following properties from type 'SkincareProduct': user_id, ingredients, key_ingredients, in_use, and 2 more.
+src/stores/slices/skincareSlice.ts(92,7): error TS2740: Type 'SkincareProduct' is missing the following properties from type 'SkincareProduct': user_id, ingredients, key_ingredients, in_use, and 2 more.
+src/stores/slices/skincareSlice.ts(139,3): error TS2322: Type '() => Promise<{ totalProducts: number; productsInUse: number; averageCondition: number; recentLogs: SkinConditionLog[]; }>' is not assignable to type '() => Promise<Promise<{ totalProducts: number; productsInUse: number; averageCondition: number; recentLogs: SkinConditionLog[]; }>>'.
+  Type 'Promise<{ totalProducts: number; productsInUse: number; averageCondition: number; recentLogs: SkinConditionLog[]; }>' is not assignable to type 'Promise<Promise<{ totalProducts: number; productsInUse: number; averageCondition: number; recentLogs: SkinConditionLog[]; }>>'.
+    Type '{ totalProducts: number; productsInUse: number; averageCondition: number; recentLogs: SkinConditionLog[]; }' is missing the following properties from type 'Promise<{ totalProducts: number; productsInUse: number; averageCondition: number; recentLogs: SkinConditionLog[]; }>': then, catch, finally, [Symbol.toStringTag]
+src/tasks/hooks/useTasksQuery.ts(194,35): error TS2345: Argument of type 'TaskFilters | undefined' is not assignable to parameter of type '{ status?: "todo" | "waiting" | "scheduled" | "done" | "in_progress" | undefined; priority?: "low" | "medium" | "high" | "urgent" | "important" | undefined; category?: "personal" | ... 6 more ... | undefined; projectId?: string | undefined; starred?: boolean | undefined; archived?: boolean | undefined; deleted?: boo...'.
+  Type 'TaskFilters' is not assignable to type '{ status?: "todo" | "waiting" | "scheduled" | "done" | "in_progress" | undefined; priority?: "low" | "medium" | "high" | "urgent" | "important" | undefined; category?: "personal" | ... 6 more ... | undefined; projectId?: string | undefined; starred?: boolean | undefined; archived?: boolean | undefined; deleted?: boo...'.
+    Types of property 'status' are incompatible.
+      Type '"todo" | "waiting" | "scheduled" | "done" | "in_progress" | ("todo" | "waiting" | "scheduled" | "done" | "in_progress")[] | undefined' is not assignable to type '"todo" | "waiting" | "scheduled" | "done" | "in_progress" | undefined'.
+        Type '("todo" | "waiting" | "scheduled" | "done" | "in_progress")[]' is not assignable to type '"todo" | "waiting" | "scheduled" | "done" | "in_progress" | undefined'.
+src/todos/components/FilterPanel.tsx(32,3): error TS2339: Property '_onClose' does not exist on type 'FilterPanelProps'.
+src/todos/components/MatrixView.tsx(30,43): error TS2551: Property 'due_date' does not exist on type 'Task'. Did you mean 'dueDate'?
+src/todos/components/SubtaskForm.tsx(29,3): error TS2339: Property '_parentId' does not exist on type 'SubtaskFormProps'.
+src/todos/components/TaskRow.tsx(134,9): error TS2322: Type 'string | false | Date | Element | Project' is not assignable to type 'ReactNode'.
+  Type 'Date' is not assignable to type 'ReactNode'.
+src/todos/components/TaskRow.tsx(189,53): error TS2339: Property 'color' does not exist on type 'never'.
+src/todos/components/TaskRow.tsx(191,89): error TS2339: Property 'name' does not exist on type 'never'.
+src/travel/api/__tests__/tripAPI.test.ts(197,11): error TS2304: Cannot find name 'fail'.
+src/travel/api/__tests__/tripAPI.test.ts(200,9): error TS2304: Cannot find name 'fail'.
+src/travel/components/MappackerStyleMap.tsx(114,15): error TS2322: Type 'Geometry' is not assignable to type 'GeoJSONGeometry'.
+  Property 'coordinates' is missing in type 'GeometryCollection<Geometry>' but required in type 'GeoJSONGeometry'.
+src/travel/components/MappackerStyleMap.tsx(261,50): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(this: any, object: GeoPermissibleObjects, ...args: any[]): string | null', gave the following error.
+    Argument of type 'GeoJSONGeometry' is not assignable to parameter of type 'GeoPermissibleObjects'.
+      Property 'geometries' is missing in type 'GeoJSONGeometry' but required in type 'ExtendedGeometryCollection<GeoGeometryObjects>'.
+  Overload 2 of 2, '(this: any, object: GeoPermissibleObjects, ...args: any[]): void', gave the following error.
+    Argument of type 'GeoJSONGeometry' is not assignable to parameter of type 'GeoPermissibleObjects'.
+      Property 'geometries' is missing in type 'GeoJSONGeometry' but required in type 'ExtendedGeometryCollection<GeoGeometryObjects>'.
+src/travel/components/MappackerStyleMap.tsx(282,104): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'LogContext | undefined'.
+src/travel/components/ProfessionalWorldMap.tsx(6,22): error TS2307: Cannot find module 'react-svg-worldmap' or its corresponding type declarations.
+src/travel/components/TripPlanner.tsx(79,65): error TS2353: Object literal may only specify known properties, and 'error' does not exist in type 'Error'.
+src/travel/components/TripPlanner.tsx(93,58): error TS2353: Object literal may only specify known properties, and 'error' does not exist in type 'Error'.
+src/travel/components/TripPlanner.tsx(121,51): error TS2353: Object literal may only specify known properties, and 'error' does not exist in type 'Error'.
+src/travel/components/TripPlanner.tsx(142,57): error TS2353: Object literal may only specify known properties, and 'error' does not exist in type 'Error'.
+src/travel/components/TripPlanner.tsx(211,56): error TS2353: Object literal may only specify known properties, and 'error' does not exist in type 'Error'.
+src/travel/components/TripPlanner.tsx(224,58): error TS2353: Object literal may only specify known properties, and 'error' does not exist in type 'Error'.
+src/travel/components/VisaMap.tsx(94,13): error TS2322: Type 'string | boolean' is not assignable to type 'boolean'.
+  Type 'string' is not assignable to type 'boolean'.
+src/travel/components/VisaMap.tsx(102,51): error TS2353: Object literal may only specify known properties, and 'err' does not exist in type 'Error'.
+src/travel/components/VisaMap.tsx(354,15): error TS2353: Object literal may only specify known properties, and 'features' does not exist in type 'GeoJsonObject'.
+src/travel/components/VisaMap.tsx(356,13): error TS2322: Type '(feature: CountryFeature, layer: L.Layer) => void' is not assignable to type '(feature: Feature<Geometry, any>, layer: Layer) => void'.
+  Types of parameters 'feature' and 'feature' are incompatible.
+    Type 'Feature<Geometry, any>' is not assignable to type 'CountryFeature'.
+      Types of property 'id' are incompatible.
+        Type 'string | number | undefined' is not assignable to type 'string'.
+          Type 'undefined' is not assignable to type 'string'.

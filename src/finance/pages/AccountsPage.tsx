@@ -4,9 +4,10 @@ import { Button } from '../ui/Button';
 import { Dialog } from '../ui/Dialog';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
-import { useAccountsQuery, useInstitutionsQuery, useUpsertTransactionMutation } from '../hooks/useFinanceQuery';
+import { useAccountsQuery, useInstitutionsQuery, useUpsertAccountMutation } from '@/hooks/useFinanceQuery';
 import { formatCurrency } from '../utils/currency';
 import type { Account, AccountType } from '../types';
+import { logger } from '../../services/logger';
 
 const AccountsPage: React.FC = () => {
   const [open, setOpen] = React.useState(false);
@@ -15,7 +16,7 @@ const AccountsPage: React.FC = () => {
   // React Query hooks
   const { data: accts = [] } = useAccountsQuery();
   const { data: insts = [] } = useInstitutionsQuery();
-  const upsertTransactionMutation = useUpsertTransactionMutation();
+  const upsertAccountMutation = useUpsertAccountMutation();
 
   const grouped = accts.reduce<Record<string, Account[]>>((acc, a) => {
     const key = a.institutionId ?? 'manual';
@@ -25,17 +26,25 @@ const AccountsPage: React.FC = () => {
   }, {});
 
   const onSave = async (): Promise<void> => {
-    const now = new Date().toISOString();
-    await upsertTransactionMutation.mutateAsync({
-      // creating a zero-dollar transaction as a mock write demonstration if mock mode
-      accountId: form.id ?? 'manual',
-      amount: 0,
-      categoryId: undefined,
-      dateISO: now,
-      description: 'Manual account created',
-      type: 'credit',
-    });
-    setOpen(false);
+    if (!form.name || !form.type) {
+      alert('Please provide an account name and type');
+      return;
+    }
+
+    try {
+      await upsertAccountMutation.mutateAsync({
+        id: form.id,
+        name: form.name,
+        type: form.type,
+        balance: form.balance ?? 0,
+        institutionId: form.institutionId,
+      });
+      setOpen(false);
+      setForm({ type: 'checking', balance: 0 }); // Reset form
+    } catch (error) {
+      logger.error('AccountsPage', error instanceof Error ? error : new Error(String(error)), { context: 'onSave', form });
+      alert('Failed to save account. Please try again.');
+    }
   };
 
   const instName = (id?: string): string => insts.find((i) => i.id === id)?.name ?? 'Manual Accounts';
@@ -69,11 +78,20 @@ const AccountsPage: React.FC = () => {
         <div className="space-y-3">
           <Input label="Account name" value={form.name ?? ''} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
           <Select label="Type" value={(form.type as string) ?? 'checking'} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as AccountType }))}>
-            {['checking', 'savings', 'credit', 'brokerage', 'loan', 'investment'].map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
+            <optgroup label="Standard Accounts">
+              {['checking', 'savings', 'credit', 'brokerage', 'loan', 'investment'].map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label="Retirement Accounts">
+              {['401k', '403b', 'traditional_ira', 'roth_ira', 'sep_ira', 'simple_ira', 'hsa'].map((t) => (
+                <option key={t} value={t}>
+                  {t.replace('_', ' ').toUpperCase()}
+                </option>
+              ))}
+            </optgroup>
           </Select>
           <Input label="Balance" type="number" value={String(form.balance ?? 0)} onChange={(e) => setForm((f) => ({ ...f, balance: Number(e.target.value) }))} />
           <div className="flex justify-end gap-2">

@@ -39,8 +39,8 @@ describe('Calendar AI Tools', () => {
       );
 
       expect(result.success).toBe(true);
-      expect(result.event).toBeDefined();
-      expect(result.event?.title).toBe('Team Meeting');
+      expect(result.data).toBeDefined();
+      expect((result.data as any)?.title).toBe('Team Meeting');
     });
 
     it('should handle missing required fields', async () => {
@@ -142,7 +142,7 @@ describe('Calendar AI Tools', () => {
       );
 
       expect(result.success).toBe(true);
-      expect(result.event?.title).toBe('Updated Meeting');
+      expect((result.data as any)?.title).toBe('Updated Meeting');
     });
   });
 

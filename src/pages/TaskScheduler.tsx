@@ -17,16 +17,17 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import {
-  Search,
-  Filter,
-  Plus,
-  Timer,
-} from 'lucide-react';
 
 // Scheduler Components
 import { BoardView } from '../scheduler/components/BoardView';
 import { TaskEditModal } from '../scheduler/components/TaskEditModal';
+
+// Layout Components
+import { TaskSchedulerHeader } from '../scheduler/components/layout/TaskSchedulerHeader';
+import { StatsBar } from '../scheduler/components/layout/StatsBar';
+import { HelpTipBanner } from '../scheduler/components/layout/HelpTipBanner';
+import { TaskSchedulerLoadingState } from '../scheduler/components/layout/TaskSchedulerLoadingState';
+import { TaskSchedulerErrorState } from '../scheduler/components/layout/TaskSchedulerErrorState';
 
 // Task Management Components
 import {
@@ -42,6 +43,7 @@ import {
   useUpdateTask,
   useDeleteTask,
 } from '../hooks/useTasksQuery';
+import { useScheduleBlocks, useCreateScheduleBlock, useUpdateScheduleBlock, useDeleteScheduleBlock } from '../hooks/useScheduleBlocksQuery';
 import {
   useTaskModals,
   useTaskExpansion,
@@ -58,7 +60,8 @@ import type {
   TeamMember,
   Milestone,
 } from '../scheduler/types';
-import type { TaskData } from '../services/types';
+import type { TaskData, ScheduleBlock } from '../services/types';
+import { ScheduleBlockModal } from '../components/scheduleBlocks/ScheduleBlockModal';
 
 // Utilities
 import { transformApiTasks, transformApiProjects } from '../todos/utils';
@@ -67,10 +70,8 @@ import {
   getTodayTasks,
   getUpcomingTasks,
   getInboxTasks,
+  parseQuickAdd,
 } from '../todos/services/taskHelpers';
-
-// Loading
-import { SkeletonCard } from '../components/LoadingSpinner';
 
 const TaskScheduler: React.FC = () => {
   // ============================================================================
@@ -82,6 +83,10 @@ const TaskScheduler: React.FC = () => {
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [editingTask, setEditingTask] = useState<ScheduledTask | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [createTaskColumnId, setCreateTaskColumnId] = useState<string | null>(null);
+  const [showScheduleBlockModal, setShowScheduleBlockModal] = useState(false);
+  const [scheduleBlockInitialDate, setScheduleBlockInitialDate] = useState<Date | null>(null);
+  const [editingScheduleBlock, setEditingScheduleBlock] = useState<ScheduleBlock | null>(null);
 
   // ============================================================================
   // React Query Hooks - Server State
@@ -89,6 +94,14 @@ const TaskScheduler: React.FC = () => {
 
   const { data: apiTasks = [], isLoading: tasksLoading, error: tasksError } = useTasks();
   const { data: apiProjects = [], isLoading: projectsLoading } = useProjects();
+  const todayKey = new Date().toISOString().split('T')[0];
+  const { data: scheduleBlocks = [], isLoading: blocksLoading } = useScheduleBlocks({
+    startDate: todayKey,
+    endDate: todayKey,
+  });
+  const createScheduleBlockMutation = useCreateScheduleBlock();
+  const updateScheduleBlockMutation = useUpdateScheduleBlock();
+  const deleteScheduleBlockMutation = useDeleteScheduleBlock();
 
   const createTaskMutation = useCreateTask();
   const updateTaskMutation = useUpdateTask();
@@ -96,7 +109,14 @@ const TaskScheduler: React.FC = () => {
 
   // Note: API health check disabled - using Supabase instead of REST API
   // const apiHealth = useApiHealth(15000);
-  const isLoading = tasksLoading || projectsLoading;
+  const isLoading = tasksLoading || projectsLoading || blocksLoading;
+
+  const scheduleBlockStyles: Record<ScheduleBlock['type'], string> = {
+    task: 'bg-emerald-100 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-100',
+    event: 'bg-slate-100 text-slate-900 dark:bg-slate-700/60 dark:text-slate-100',
+    focus: 'bg-purple-100 text-purple-900 dark:bg-purple-900/40 dark:text-purple-100',
+    break: 'bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-100',
+  };
 
   // ============================================================================
   // Data Transformation
@@ -118,7 +138,7 @@ const TaskScheduler: React.FC = () => {
     {
       createTaskMutation: {
         mutate: (data: Partial<TaskData>, options?: { onSuccess?: () => void }) => {
-          void createTaskMutation.mutate(data, options);
+          void createTaskMutation.mutate(data as Omit<TaskData, 'id' | 'created_at' | 'updated_at'>, options);
         },
         isPending: createTaskMutation.isPending
       },
@@ -229,9 +249,10 @@ const TaskScheduler: React.FC = () => {
   const backlogTasks = useMemo(() => {
     return filteredTasks.filter(task =>
       task.status === 'todo' &&
+      !task.scheduled_start &&
       !task.due_date &&
       (task.priority === 'low' || task.priority === 'medium')
-    ).map(t => t.id);
+    ).map(t => t.id).filter((id): id is string => id !== undefined);
   }, [filteredTasks]);
 
   // ToDo: Todo items that are NOT in backlog (have due date OR high/urgent priority)
@@ -239,8 +260,9 @@ const TaskScheduler: React.FC = () => {
     const backlogSet = new Set(backlogTasks);
     return filteredTasks.filter(task =>
       task.status === 'todo' &&
+      task.id !== undefined &&
       !backlogSet.has(task.id)
-    ).map(t => t.id);
+    ).map(t => t.id).filter((id): id is string => id !== undefined);
   }, [filteredTasks, backlogTasks]);
 
   const boardColumns: BoardColumn[] = useMemo(() => [
@@ -265,7 +287,7 @@ const TaskScheduler: React.FC = () => {
       title: 'In Progress',
       status: 'in_progress',
       color: '#8b5cf6',
-      taskIds: filteredTasks.filter(t => t.status === 'in_progress').map(t => t.id),
+      taskIds: filteredTasks.filter(t => t.status === 'in_progress').map(t => t.id).filter((id): id is string => id !== undefined),
       order: 2,
     },
     {
@@ -273,7 +295,7 @@ const TaskScheduler: React.FC = () => {
       title: 'Review',
       status: 'waiting',
       color: '#f59e0b',
-      taskIds: filteredTasks.filter(t => t.status === 'waiting').map(t => t.id),
+      taskIds: filteredTasks.filter(t => t.status === 'waiting').map(t => t.id).filter((id): id is string => id !== undefined),
       order: 3,
     },
     {
@@ -281,7 +303,7 @@ const TaskScheduler: React.FC = () => {
       title: 'Done',
       status: 'done',
       color: '#10b981',
-      taskIds: filteredTasks.filter(t => t.status === 'done').map(t => t.id),
+      taskIds: filteredTasks.filter(t => t.status === 'done').map(t => t.id).filter((id): id is string => id !== undefined),
       order: 4,
     },
   ], [backlogTasks, todoTasks, filteredTasks]);
@@ -308,8 +330,7 @@ const TaskScheduler: React.FC = () => {
   // ============================================================================
 
   const handleTaskClick = (task: ScheduledTask) => {
-    console.log('Task clicked:', task.id, task.title);
-    setSelectedTaskId(task.id);
+    setSelectedTaskId(task.id ?? null);
     setEditingTask(task);
     setShowEditModal(true);
   };
@@ -318,7 +339,9 @@ const TaskScheduler: React.FC = () => {
     pomodoro.startPomodoro(taskId);
   };
 
-  const handleCreateTask = () => {
+  const handleCreateTask = (columnId?: string) => {
+    // Store which column we're creating from
+    setCreateTaskColumnId(columnId || null);
     modals.openQuickAdd();
   };
 
@@ -348,11 +371,36 @@ const TaskScheduler: React.FC = () => {
     setEditingTask(null);
   };
 
-  const handleTaskDrop = (result: { taskId: string; sourceColumn: string; targetColumn: string; newStatus: string }) => {
-    console.log('Task dropped:', result);
+  const handleCreateScheduleBlock = () => {
+    setScheduleBlockInitialDate(new Date());
+    setEditingScheduleBlock(null);
+    setShowScheduleBlockModal(true);
+  };
 
+  const handleScheduleBlockClick = (block: ScheduleBlock) => {
+    setEditingScheduleBlock(block);
+    setScheduleBlockInitialDate(new Date(`${block.date}T${block.start_time}`));
+    setShowScheduleBlockModal(true);
+  };
+
+  const handleSaveScheduleBlock = (
+    input: Omit<ScheduleBlock, 'id' | 'user_id' | 'created_at' | 'updated_at'>,
+    id?: string
+  ) => {
+    if (id) {
+      updateScheduleBlockMutation.mutate({ id, updates: input });
+      return;
+    }
+    createScheduleBlockMutation.mutate(input);
+  };
+
+  const handleDeleteScheduleBlock = (id: string) => {
+    deleteScheduleBlockMutation.mutate(id);
+  };
+
+  const handleTaskDrop = (result: { taskId: string; sourceColumn: string; targetColumn: string; newStatus?: string }) => {
     const task = scheduledTasks.find(t => t.id === result.taskId);
-    if (!task) return;
+    if (!task || !result.newStatus) return;
 
     const updates: Partial<TaskData> = {
       status: result.newStatus as TaskData['status'],
@@ -386,32 +434,11 @@ const TaskScheduler: React.FC = () => {
   // ============================================================================
 
   if (isLoading) {
-    return (
-      <div className="flex h-screen bg-white dark:bg-slate-900">
-        <div className="flex-1 p-6">
-          <SkeletonCard className="h-full" />
-        </div>
-      </div>
-    );
+    return <TaskSchedulerLoadingState />;
   }
 
   if (tasksError) {
-    return (
-      <div className="h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center">
-        <div className="rounded-lg border border-red-200 bg-red-50 p-6 max-w-md">
-          <h3 className="text-lg font-semibold text-red-900 mb-2">Error Loading Tasks</h3>
-          <p className="text-sm text-red-700 mb-4">
-            Unable to load your tasks. Please try refreshing the page.
-          </p>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
-          >
-            Refresh Page
-          </button>
-        </div>
-      </div>
-    );
+    return <TaskSchedulerErrorState />;
   }
 
   // ============================================================================
@@ -422,76 +449,17 @@ const TaskScheduler: React.FC = () => {
     <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
       <div className="flex-shrink-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <div className="px-6 py-4">
-          {/* Title Row */}
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Task Scheduler
-            </h1>
-
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search tasks..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-4 py-2 w-64 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-
-            {/* Filter Toggle */}
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className={`
-                p-2 rounded-lg transition-colors
-                ${showFilters
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }
-              `}
-            >
-              <Filter className="w-5 h-5" />
-            </button>
-
-            {/* Pomodoro Timer */}
-            {pomodoro.pomodoroTimer && (
-              <button
-                onClick={pomodoro.togglePomodoro}
-                className="flex items-center gap-2 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
-              >
-                <Timer className="w-4 h-4" />
-                <span className="text-sm">
-                  {Math.floor(pomodoro.pomodoroTimer.timeLeft / 60)}:
-                  {(pomodoro.pomodoroTimer.timeLeft % 60).toString().padStart(2, '0')}
-                </span>
-              </button>
-            )}
-
-            {/* Create Task Button */}
-            <button
-              onClick={handleCreateTask}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              New Task
-            </button>
-          </div>
-
-          {/* Priority Stats Row */}
-          <div className="flex items-center gap-6 pb-4">
-            <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-              <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-              <span className="text-sm font-semibold text-blue-900 dark:text-blue-300">
-                Important:
-              </span>
-              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
-                {filteredTasks.filter(t => t.status !== 'done' && t.priority === 'important').length}
-              </span>
-            </div>
-          </div>
-        </div>
+        <TaskSchedulerHeader
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          showFilters={showFilters}
+          onToggleFilters={() => setShowFilters(!showFilters)}
+          pomodoroTimer={pomodoro.pomodoroTimer}
+          onTogglePomodoro={pomodoro.togglePomodoro}
+          onCreateTask={() => handleCreateTask()}
+          onCreateBlock={handleCreateScheduleBlock}
+          importantTaskCount={filteredTasks.filter(t => t.status !== 'done' && t.priority === 'important').length}
+        />
 
         {/* Quick Add Form */}
         {modals.showQuickAdd && (
@@ -499,8 +467,62 @@ const TaskScheduler: React.FC = () => {
             <QuickAddForm
               value={modals.quickAddText}
               onChange={modals.setQuickAddText}
-              onSubmit={() => void editing.quickAddTask()}
-              onCancel={modals.closeQuickAdd}
+              onSubmit={() => {
+                if (!modals.quickAddText.trim()) return;
+
+                // Parse the quick add text
+                const parsed = parseQuickAdd(modals.quickAddText, projects);
+
+                // Determine priority based on column
+                let priority = parsed.priority;
+                let status: TaskData['status'] = 'todo';
+
+                if (createTaskColumnId === 'todo') {
+                  // Tasks in ToDo should have high priority (or a due date)
+                  // If no priority specified in text, default to high
+                  if (!parsed.priority || parsed.priority === 'low' || parsed.priority === 'medium') {
+                    priority = 'high';
+                  }
+                } else if (createTaskColumnId === 'backlog') {
+                  // Tasks in Backlog should have medium/low priority and no due date by default
+                  if (!parsed.priority) {
+                    priority = 'medium';
+                  }
+                } else if (createTaskColumnId) {
+                  // For other columns, set the appropriate status
+                  const column = boardColumns.find(c => c.id === createTaskColumnId);
+                  if (column?.status) {
+                    status = column.status as TaskData['status'];
+                  }
+                }
+
+                // Create the task with appropriate defaults
+                createTaskMutation.mutate(
+                  {
+                    title: parsed.title,
+                    description: '',
+                    priority,
+                    status,
+                    estimated_time: 25,
+                    actual_time: 0,
+                    due_date: parsed.dueDate ? parsed.dueDate.toISOString() : null,
+                    project_id: parsed.projectId ?? null,
+                    tags: parsed.tags,
+                    category: 'work',
+                  },
+                  {
+                    onSuccess: () => {
+                      modals.setQuickAddText('');
+                      modals.closeQuickAdd();
+                      setCreateTaskColumnId(null);
+                    },
+                  }
+                );
+              }}
+              onCancel={() => {
+                modals.closeQuickAdd();
+                setCreateTaskColumnId(null);
+              }}
               isLoading={createTaskMutation.isPending}
             />
           </div>
@@ -513,37 +535,50 @@ const TaskScheduler: React.FC = () => {
               filters={filters.filters}
               onFilterChange={filters.setFilters}
               onClearFilters={filters.resetFilters}
+              isVisible={showFilters}
+              onClose={() => setShowFilters(false)}
             />
           </div>
         )}
 
         {/* Stats Bar */}
-        <div className="px-6 py-3 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-6 text-sm">
-            <div className="flex items-center gap-2">
-              <span className="text-gray-600 dark:text-gray-400">Total:</span>
-              <span className="font-bold text-gray-900 dark:text-white">
-                {filteredTasks.length}
-              </span>
+        <StatsBar
+          totalTasks={filteredTasks.length}
+          inProgressTasks={filteredTasks.filter(t => t.status === 'in_progress').length}
+          completedTasks={filteredTasks.filter(t => t.status === 'done').length}
+        />
+
+        {/* Today's Schedule Blocks */}
+        {scheduleBlocks.length > 0 && (
+          <div className="px-6 pb-4">
+            <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">
+              Today&#39;s Blocks
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-gray-600 dark:text-gray-400">In Progress:</span>
-              <span className="font-bold text-blue-600 dark:text-blue-400">
-                {filteredTasks.filter(t => t.status === 'in_progress').length}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-gray-600 dark:text-gray-400">Completed:</span>
-              <span className="font-bold text-green-600 dark:text-green-400">
-                {filteredTasks.filter(t => t.status === 'done').length}
-              </span>
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {scheduleBlocks.map((block) => {
+                const label = block.title || `${block.type[0].toUpperCase()}${block.type.slice(1)}`;
+                const className = scheduleBlockStyles[block.type] || 'bg-slate-100 text-slate-900';
+                return (
+                  <div
+                    key={block.id}
+                    onClick={() => handleScheduleBlockClick(block)}
+                    className={`px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap cursor-pointer ${className}`}
+                    title={label}
+                  >
+                    <div className="text-[10px] opacity-80">
+                      {block.start_time}–{block.end_time}
+                    </div>
+                    <div className="text-[11px] font-semibold">{label}</div>
+                  </div>
+                );
+              })}
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Main Content - Board View Only */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 min-h-0">
         <BoardView
           tasks={filteredTasks}
           columns={boardColumns}
@@ -556,22 +591,27 @@ const TaskScheduler: React.FC = () => {
       </div>
 
       {/* Help Text */}
-      <div className="flex-shrink-0 px-6 py-2 bg-blue-50 dark:bg-gray-800 border-t border-blue-200 dark:border-gray-700">
-        <p className="text-sm text-gray-700 dark:text-gray-300">
-          <strong className="font-semibold text-blue-600 dark:text-blue-400">Tip:</strong> {' '}
-          Drag tasks between columns to change status. Click any task to edit. Focus on urgent & important items first.
-        </p>
-      </div>
+      <HelpTipBanner />
 
       {/* Task Edit Modal */}
       <TaskEditModal
         task={editingTask}
         projects={apiProjects}
+        allTasks={apiTasks}
         isOpen={showEditModal}
         onClose={handleCloseEditModal}
         onSave={handleSaveTask}
         onDelete={handleDeleteTask}
         isSaving={updateTaskMutation.isPending || deleteTaskMutation.isPending}
+      />
+
+      <ScheduleBlockModal
+        isOpen={showScheduleBlockModal}
+        onClose={() => setShowScheduleBlockModal(false)}
+        initialStart={scheduleBlockInitialDate}
+        block={editingScheduleBlock}
+        onSave={handleSaveScheduleBlock}
+        onDelete={handleDeleteScheduleBlock}
       />
     </div>
   );

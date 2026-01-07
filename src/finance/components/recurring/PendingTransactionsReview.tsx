@@ -13,7 +13,7 @@ import {
   useDeletePendingTransactionMutation,
   useAccountsQuery,
   useCategoriesQuery,
-} from '../../hooks/useFinanceQuery';
+} from '@/hooks/useFinanceQuery';
 import { formatCurrency } from '../../utils/currency';
 
 interface PendingGroup {

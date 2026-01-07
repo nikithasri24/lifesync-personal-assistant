@@ -29,7 +29,6 @@ interface RecipeApiResponse {
   servings?: unknown;
   tags?: unknown;
   image?: unknown;
-  authorName?: unknown;
 }
 
 // Generic clipper: fetch via server-side endpoint that parses JSON-LD/OG tags
@@ -57,7 +56,6 @@ export async function fetchClippedRecipe(url: string): Promise<Omit<Recipe, 'id'
   const name = isString(apiData.name) ? apiData.name : null;
   const description = isString(apiData.description) ? apiData.description : null;
   const image = isString(apiData.image) ? apiData.image : null;
-  const authorName = isString(apiData.authorName) ? apiData.authorName : null;
 
   const prepTime = Number.isFinite(Number(apiData.prepTime)) ? Number(apiData.prepTime) : 10;
   const cookTime = Number.isFinite(Number(apiData.cookTime)) ? Number(apiData.cookTime) : 20;
@@ -86,7 +84,6 @@ export async function fetchClippedRecipe(url: string): Promise<Omit<Recipe, 'id'
     flowChart: undefined,
     sourceType: 'manual',
     sourceUrl: url,
-    authorName: authorName ?? undefined,
     videoThumbnail: undefined,
   };
 }
@@ -169,7 +166,7 @@ export async function fetchRecipeFromGoogle(mealName: string): Promise<Omit<Reci
       nutritionInfo: undefined,
     };
   } catch (error) {
-    logger.warn('RecipeUtils', 'Failed to fetch recipe from Google. Using scaffold:', error);
+    logger.warn('RecipeUtils', 'Failed to fetch recipe from Google. Using scaffold', { error: error as Error });
     return scaffold(mealName);
   }
 }

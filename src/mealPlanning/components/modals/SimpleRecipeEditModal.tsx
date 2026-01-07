@@ -9,7 +9,7 @@ interface SimpleRecipeEditModalProps {
   onClose: () => void;
 }
 
-export function SimpleRecipeEditModal({ recipe, onSave, onClose }: SimpleRecipeEditModalProps): JSX.Element {
+export function SimpleRecipeEditModal({ recipe, onSave, onClose }: SimpleRecipeEditModalProps) {
   const [name, setName] = useState(recipe.name || '');
   const [ingredientsText, setIngredientsText] = useState(
     (recipe.ingredients || [])

@@ -1,58 +1,19 @@
-export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent'
-export type TaskStatus = 'todo' | 'in-progress' | 'waiting' | 'scheduled' | 'done'
+// Re-export canonical task types from task.ts
+export type {
+  TaskPriority,
+  TaskStatus,
+  TaskCategory,
+  SubTask,
+  FollowUpTask,
+  Task,
+  TaskInput,
+  TaskUpdate,
+  TaskFilters,
+  TaskAnalytics,
+} from './task';
 
-export type TaskCategory = 'work' | 'personal' | 'learning' | 'creative' | 'health' | 'other'
-
-export interface SubTask {
-  id: string
-  title: string
-  description?: string
-  status?: TaskStatus
-  completed?: boolean
-  estimatedTime?: number
-  actualTime?: number
-}
-
-export interface FollowUpTask {
-  id: string
-  title: string
-  description?: string
-  priority?: TaskPriority
-  daysAfter?: number
-  triggerCondition?: 'immediate' | 'delayed' | 'manual'
-  category?: string
-  estimatedTime?: number
-  tags?: string[]
-}
-
-export interface TodoItem {
-  id: string
-  title: string
-  description?: string
-  status: TaskStatus
-  priority: TaskPriority
-  categoryId?: TaskCategory
-  category?: string
-  projectId?: string
-  parentId?: string
-  tags: string[]
-  estimatedTime?: number
-  actualTime?: number
-  dueDate?: Date
-  completed: boolean
-  completedAt?: Date
-  createdAt: Date
-  updatedAt?: Date
-  deleted?: boolean
-  deletedAt?: Date
-  notes?: string
-  starred?: boolean
-  archived?: boolean
-  assignedTo?: string
-  dependsOn?: string[]
-  followUpTasks?: FollowUpTask[]
-  subtasks?: SubTask[]
-}
+// TodoItem has been deprecated and removed. Use Task from '@/types/task' instead.
+// Migration: task.completed → task.status === 'done'
 
 export type HabitFrequency = 'daily' | 'weekly' | 'monthly' | 'custom';
 
@@ -121,12 +82,30 @@ export interface HabitCategory {
   icon?: string;
 }
 
+export type NoteType = 'note' | 'list';
+
 export interface Note {
   id: string;
   title: string;
   content: string;
   tags: string[];
   category?: string;
+  noteType: NoteType;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ListItem {
+  id: string;
+  noteId: string;
+  title: string;
+  notes?: string;
+  completed: boolean;
+  completedAt?: Date;
+  tags: string[];
+  dueDate?: Date;
+  url?: string;
+  sortOrder: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -207,26 +186,29 @@ export interface Recipe {
   id: string;
   name: string;
   description?: string;
-  ingredients: Ingredient[];
+  cuisine?: string;
+  difficulty?: 'easy' | 'medium' | 'hard';
+  prepTime?: number;
+  cookTime?: number;
+  servings?: number;
+  calories?: number;
   instructions: string[];
-  prepTime: number;
-  cookTime: number;
-  servings: number;
-  difficulty: 'easy' | 'medium' | 'hard';
-  tags: string[];
+  ingredients: Array<{
+    name: string;
+    amount?: string;
+    unit?: string;
+  }>;
+  tags?: string[];
+  isFavorite?: boolean;
+  dietaryRestrictions?: string[];
+  nutritionInfo?: Record<string, unknown>;
+  sourceType?: 'manual' | 'url' | 'ai' | 'youtube';
+  sourceUrl?: string;
+  videoThumbnail?: string;
+  image?: string;
   rating?: number;
   notes?: string;
-  image?: string;
-  isFavorite?: boolean;
-  calories?: number;
-  cuisine?: string;
-  dietaryRestrictions?: string[];
-  nutritionInfo?: Record<string, number>;
-  flowChart?: RecipeFlowStep[];
-  sourceType?: 'youtube' | 'manual';
-  sourceUrl?: string;
-  authorName?: string;
-  videoThumbnail?: string;
+  flowChart?: unknown[];
   createdAt: Date;
 }
 
@@ -240,7 +222,7 @@ export interface MealColumn {
   order: number;
 }
 
-export type MealStatus = 'planned' | 'prepped' | 'cooked' | 'eaten';
+export type MealStatus = 'planned' | 'prepped' | 'cooked' | 'eaten' | 'substituted' | 'postponed';
 
 export interface PlannedMeal {
   id: string;
@@ -253,6 +235,14 @@ export interface PlannedMeal {
   peopleCount: number;
   status: MealStatus;
   notes?: string;
+
+  // Substitution and backlog tracking
+  actualFoodLogId?: string;      // Link to food_log entry for what was actually eaten
+  substitutedWith?: string;       // Quick note of what was eaten instead
+  isPostponed?: boolean;          // Whether this meal is in the backlog
+  postponedReason?: string;       // Reason for postponing
+  originalDate?: Date;            // Original scheduled date before postponing
+
   createdAt: Date;
 }
 
@@ -272,12 +262,13 @@ export interface PantryItem {
   name: string;
   quantity: number;
   unit?: string;
-  category: 'produce' | 'dairy' | 'meat' | 'pantry' | 'other';
+  category: 'produce' | 'dairy' | 'meat' | 'pantry' | 'bakery' | 'other';
   location?: string;
   expirationDate?: Date;
   notes?: string;
   isLowStock?: boolean;
   lowStockThreshold?: number;
+  createdAt: Date;
   updatedAt: Date;
 }
 
@@ -288,6 +279,7 @@ export interface UserStats {
   totalGoalsCompleted: number;
 }
 export * from './travel';
+export * from './infrastructure';
 
 // ==================== Health & Period Tracking Types ====================
 

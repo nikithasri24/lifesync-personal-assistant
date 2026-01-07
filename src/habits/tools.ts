@@ -279,7 +279,7 @@ async function executeCreateHabit(
       }
     };
   } catch (error) {
-    logger.error('HabitTools', error as Error, {
+    logger.error('HabitTools', 'Operation failed', { error,
       operation: 'create_habit',
       args
     });
@@ -332,7 +332,7 @@ async function executeGetHabits(
       message: `You have ${habits.length} habit${habits.length !== 1 ? 's' : ''}`
     };
   } catch (error) {
-    logger.error('HabitTools', error as Error, {
+    logger.error('HabitTools', 'Operation failed', { error,
       operation: 'get_habits',
       args
     });
@@ -416,7 +416,7 @@ async function executeLogHabit(
       streak_message: currentStreak > 0 ? `${currentStreak} day streak! 🔥` : 'Streak started!'
     };
   } catch (error) {
-    logger.error('HabitTools', error as Error, {
+    logger.error('HabitTools', 'Operation failed', { error,
       operation: 'log_habit',
       args
     });
@@ -484,7 +484,7 @@ async function executeGetHabitStreak(
         : `No current streak for "${habit.name}". Start one today!`
     };
   } catch (error) {
-    logger.error('HabitTools', error as Error, {
+    logger.error('HabitTools', 'Operation failed', { error,
       operation: 'get_habit_streak',
       args
     });
@@ -559,7 +559,7 @@ async function executeUpdateHabit(
       }
     };
   } catch (error) {
-    logger.error('HabitTools', error as Error, {
+    logger.error('HabitTools', 'Operation failed', { error,
       operation: 'update_habit',
       args
     });

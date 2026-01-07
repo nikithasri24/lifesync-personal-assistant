@@ -55,7 +55,7 @@ function parseCSV(filePath: string, month: string): ParsedTransaction[] {
     }
   }
 
-  logger.debug('ImportFinanceCSV', `Found categories:`, categories.map((c): string => c.name));
+  logger.debug('ImportFinanceCSV', `Found categories`, { categories: categories.map((c): string => c.name).join(', ') });
 
   // Parse transactions starting from row after category headers
   for (let rowIndex = categoryRowIndex + 1; rowIndex < lines.length; rowIndex++) {
@@ -131,7 +131,7 @@ async function getOrCreateCategory(
     .single();
 
   if (error) {
-    logger.error('ImportFinanceCSV', `Failed to create category ${mappedName}:`, error);
+    logger.error('ImportFinanceCSV', error, { operation: 'createCategory', categoryName: mappedName });
     throw error;
   }
 
@@ -189,13 +189,13 @@ async function importTransactions(
         });
 
       if (error) {
-        logger.error('ImportFinanceCSV', `Failed to import ${txn.description}:`, error);
+        logger.error('ImportFinanceCSV', error, { operation: 'importTransaction', description: txn.description });
         skipped++;
       } else {
         imported++;
       }
     } catch (err: unknown) {
-      logger.error('ImportFinanceCSV', `Error processing ${txn.description}:`, err);
+      logger.error('ImportFinanceCSV', err instanceof Error ? err : String(err), { operation: 'processTransaction', description: txn.description });
       skipped++;
     }
   }
@@ -241,4 +241,4 @@ async function main(): Promise<void> {
   logger.info('ImportFinanceCSV', '\n✓ Import complete!');
 }
 
-main().catch((error: unknown) => logger.error('ImportFinanceCSV', error));
+main().catch((error: unknown) => logger.error('ImportFinanceCSV', error as Error));

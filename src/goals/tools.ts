@@ -254,7 +254,7 @@ async function executeCreateGoal(
         : 'What milestones should we set for this goal?'
     };
   } catch (error) {
-    logger.error('GoalTools', error as Error, {
+    logger.error('GoalTools', 'Operation failed', { error,
       operation: 'create_goal',
       args
     });
@@ -307,7 +307,7 @@ async function executeGetGoals(
       message: `You have ${goals.length} goal${goals.length !== 1 ? 's' : ''}`
     };
   } catch (error) {
-    logger.error('GoalTools', error as Error, {
+    logger.error('GoalTools', 'Operation failed', { error,
       operation: 'get_goals',
       args
     });
@@ -365,9 +365,14 @@ async function executeUpdateGoalProgress(
     // Auto-complete if progress reaches 100
     const finalStatus = progress >= 100 ? 'completed' : (status ?? goal.status);
 
+    // Map status to UpdateGoalInput allowed values
+    const mappedStatus = finalStatus === 'paused' ? 'on_hold' :
+                        finalStatus === 'failed' ? 'archived' :
+                        finalStatus as 'active' | 'completed' | 'archived' | 'on_hold';
+
     const updatedGoal = await updateGoal(goal.id, {
       progress,
-      status: finalStatus
+      status: mappedStatus
     });
 
     logger.info('GoalTools', 'Goal progress updated successfully', {
@@ -389,7 +394,7 @@ async function executeUpdateGoalProgress(
       }
     };
   } catch (error) {
-    logger.error('GoalTools', error as Error, {
+    logger.error('GoalTools', 'Operation failed', { error,
       operation: 'update_goal_progress',
       args
     });
@@ -451,7 +456,7 @@ async function executeCreateDream(
       }
     };
   } catch (error) {
-    logger.error('GoalTools', error as Error, {
+    logger.error('GoalTools', 'Operation failed', { error,
       operation: 'create_dream',
       args
     });
@@ -494,7 +499,7 @@ async function executeGetDreams(
       message: `You have ${dreams.length} dream${dreams.length !== 1 ? 's' : ''}`
     };
   } catch (error) {
-    logger.error('GoalTools', error as Error, {
+    logger.error('GoalTools', 'Operation failed', { error,
       operation: 'get_dreams'
     });
 

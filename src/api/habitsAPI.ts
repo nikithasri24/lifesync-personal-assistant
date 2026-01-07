@@ -5,6 +5,7 @@
 
 import { supabase } from '../lib/supabase';
 import type { HabitData, HabitEntryData } from '../services/types';
+import { apiCall, requireAuth, handleSupabaseResponse } from './apiWrapper';
 
 // =====================================================
 // HABITS CRUD OPERATIONS
@@ -17,66 +18,73 @@ export async function getHabits(filters?: {
   category?: string;
   isActive?: boolean;
 }): Promise<HabitData[]> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  let query = supabase
-    .from('habits')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false });
+      let query = supabase
+        .from('habits')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
 
-  // Apply filters
-  if (filters) {
-    if (filters.category) query = query.eq('category', filters.category);
-    if (filters.isActive !== undefined) query = query.eq('is_active', filters.isActive);
-  }
+      // Apply filters
+      if (filters) {
+        if (filters.category) query = query.eq('category', filters.category);
+        if (filters.isActive !== undefined) query = query.eq('is_active', filters.isActive);
+      }
 
-  const { data, error } = await query;
+      const { data, error } = await query;
 
-  if (error) throw error;
-  if (!data) throw new Error('Failed to retrieve habits');
-  return data as HabitData[];
+      if (error) throw error;
+      return (data ?? []) as HabitData[];
+    },
+    { domain: 'HabitsAPI', operation: 'getHabits', data: { filters } }
+  );
 }
 
 /**
  * Get a single habit by ID
  */
 export async function getHabit(id: string): Promise<HabitData> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const result = await supabase
-    .from('habits')
-    .select('*')
-    .eq('id', id)
-    .eq('user_id', user.id)
-    .single();
+      const result = await supabase
+        .from('habits')
+        .select('*')
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .single();
 
-  if (result.error) throw result.error;
-  if (!result.data) throw new Error('Habit not found');
-  return result.data as unknown as HabitData;
+      return handleSupabaseResponse(result, 'Habit', id) as unknown as HabitData;
+    },
+    { domain: 'HabitsAPI', operation: 'getHabit', data: { id } }
+  );
 }
 
 /**
  * Create a new habit
  */
 export async function createHabit(habit: Omit<HabitData, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<HabitData> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const result = await supabase
-    .from('habits')
-    .insert({
-      user_id: user.id,
-      ...habit,
-    })
-    .select()
-    .single();
+      const result = await supabase
+        .from('habits')
+        .insert({
+          user_id: user.id,
+          ...habit,
+        })
+        .select()
+        .single();
 
-  if (result.error) throw result.error;
-  if (!result.data) throw new Error('Failed to create habit');
-  return result.data as unknown as HabitData;
+      return handleSupabaseResponse(result, 'Habit') as unknown as HabitData;
+    },
+    { domain: 'HabitsAPI', operation: 'createHabit', data: { name: habit.name } }
+  );
 }
 
 /**
@@ -169,6 +177,13 @@ export async function getHabitEntriesForHabit(habitId: string): Promise<HabitEnt
 }
 
 /**
+ * Get all habit entries for a specific date
+ */
+export async function getHabitEntriesForDate(date: string): Promise<HabitEntryData[]> {
+  return getHabitEntries({ startDate: date, endDate: date });
+}
+
+/**
  * Create a habit entry (log completion)
  */
 export async function createHabitEntry(entry: Omit<HabitEntryData, 'id' | 'created_at'>): Promise<HabitEntryData> {
@@ -253,6 +268,27 @@ export async function deleteHabitEntriesForDate(habitId: string, date: string): 
 }
 
 /**
+ * Delete all entries for a date range (used for resetting weekly/monthly progress)
+ */
+export async function deleteHabitEntriesForDateRange(
+  habitId: string,
+  startDate: string,
+  endDate: string
+): Promise<void> {
+  const { error } = await supabase
+    .from('habit_entries')
+    .delete()
+    .eq('habit_id', habitId)
+    .gte('date', startDate)
+    .lte('date', endDate);
+
+  if (error) throw error;
+
+  // Update habit streak and progress
+  await updateHabitStreakAndProgress(habitId);
+}
+
+/**
  * Delete all entries for a habit (used for resetting history)
  */
 export async function deleteAllHabitEntries(habitId: string): Promise<void> {
@@ -272,6 +308,77 @@ export async function deleteAllHabitEntries(habitId: string): Promise<void> {
       current_progress: 0,
     })
     .eq('id', habitId);
+}
+
+// =====================================================
+// REMINDER-SPECIFIC QUERIES
+// =====================================================
+
+/**
+ * Get habits with reminders enabled
+ * Used by useHabitReminders hook
+ */
+export async function getHabitsWithReminders(): Promise<HabitData[]> {
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
+
+      const { data, error } = await supabase
+        .from('habits')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .eq('reminder_enabled', true)
+        .not('reminder_time', 'is', null);
+
+      if (error) throw error;
+      return (data ?? []) as HabitData[];
+    },
+    { domain: 'HabitsAPI', operation: 'getHabitsWithReminders' }
+  );
+}
+
+/**
+ * Get habits with active streaks for streak protection alerts
+ * @param minStreak - Minimum streak count to include (default: 3)
+ */
+export async function getHabitsWithStreaks(minStreak: number = 3): Promise<HabitData[]> {
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
+
+      const { data, error } = await supabase
+        .from('habits')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .gte('streak_count', minStreak);
+
+      if (error) throw error;
+      return (data ?? []) as HabitData[];
+    },
+    { domain: 'HabitsAPI', operation: 'getHabitsWithStreaks', data: { minStreak } }
+  );
+}
+
+/**
+ * Check if a habit was completed on a specific date
+ */
+export async function checkHabitCompletionForDate(habitId: string, date: string): Promise<boolean> {
+  return apiCall(
+    async () => {
+      const { data, error } = await supabase
+        .from('habit_entries')
+        .select('id')
+        .eq('habit_id', habitId)
+        .eq('date', date)
+        .maybeSingle();
+
+      if (error) throw error;
+      return !!data;
+    },
+    { domain: 'HabitsAPI', operation: 'checkHabitCompletionForDate', data: { habitId, date } }
+  );
 }
 
 // =====================================================

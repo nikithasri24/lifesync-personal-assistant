@@ -66,6 +66,40 @@ export default tseslint.config([
       ],
 
       // ==========================================
+      // Architecture: Supabase Access Control
+      // ==========================================
+      // Supabase client should only be imported in src/api/ and src/lib/
+      // Type imports are allowed everywhere
+      // This is enforced via file-specific overrides below
+      'no-restricted-imports': [
+        'warn', // Warn for now during migration, change to 'error' when migration is complete
+        {
+          paths: [
+            {
+              name: '@/lib/supabase',
+              importNames: ['supabase'],
+              message: 'Direct Supabase client imports are only allowed in src/api/ and src/lib/. Use API layer functions instead. Type imports are allowed.',
+            },
+            {
+              name: '../lib/supabase',
+              importNames: ['supabase'],
+              message: 'Direct Supabase client imports are only allowed in src/api/ and src/lib/. Use API layer functions instead. Type imports are allowed.',
+            },
+            {
+              name: '../../lib/supabase',
+              importNames: ['supabase'],
+              message: 'Direct Supabase client imports are only allowed in src/api/ and src/lib/. Use API layer functions instead. Type imports are allowed.',
+            },
+            {
+              name: '../../../lib/supabase',
+              importNames: ['supabase'],
+              message: 'Direct Supabase client imports are only allowed in src/api/ and src/lib/. Use API layer functions instead. Type imports are allowed.',
+            },
+          ],
+        },
+      ],
+
+      // ==========================================
       // Code Quality: General
       // ==========================================
       'no-debugger': 'error',
@@ -146,6 +180,16 @@ export default tseslint.config([
     files: ['**/api/**/*.{ts,tsx}'],
     rules: {
       'max-lines': ['error', { max: 700, skipBlankLines: true, skipComments: true }], // API files with CRUD can be longer
+      'no-restricted-imports': 'off', // API layer is allowed to import Supabase
+    },
+  },
+  // ==========================================
+  // Exception: Lib Files (Infrastructure)
+  // ==========================================
+  {
+    files: ['**/lib/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': 'off', // Lib layer is allowed to import Supabase
     },
   },
   // ==========================================
@@ -184,6 +228,20 @@ export default tseslint.config([
       'no-console': 'off', // Logger implementation needs console
     },
   },
+  // ==========================================
+  // Exception: Auth Provider (needs direct Supabase access)
+  // ==========================================
+  {
+    files: ['src/providers/AuthProvider.tsx', 'src/components/AuthGate.tsx'],
+    rules: {
+      'no-restricted-imports': 'off', // Auth needs direct Supabase access
+    },
+  },
+  // ==========================================
+  // Exception: Domain API Files (allowed in api/ folders)
+  // ==========================================
+  // Note: Files in **/api/** are already covered by the rule on line 180
+  // Domain-specific API files (src/goals/api/, src/travel/api/, etc.) are compliant
   // ==========================================
   // Exception: CLI Files (different module system)
   // ==========================================

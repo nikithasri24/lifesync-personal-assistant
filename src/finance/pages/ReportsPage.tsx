@@ -9,7 +9,7 @@ import React, { useState } from 'react';
 import {
   useTransactionsQuery,
   useCategoriesQuery,
-  useAccountsQuery} from '../hooks/useFinanceQuery';
+  useAccountsQuery} from '@/hooks/useFinanceQuery';
 import { getTimePeriodRange, getPreviousPeriodRange, type TimePeriod } from '../utils/timePeriodUtils';
 import { useFinanceMetrics, type FinanceMetrics } from '../hooks/useFinanceMetrics';
 import type { Transaction } from '../types';
@@ -55,7 +55,7 @@ const ReportsPage: React.FC = () => {
     if (!loading && transactions.length > 0) {
       logger.debug('ReportsPage', '📈 Metrics Calculated', {
         timePeriod,
-        dateRange: `${currentPeriod.startDate} to ${currentPeriod.endDate}`,
+        dateRange: `${currentPeriod.from} to ${currentPeriod.to}`,
         totalIncome: metrics.summary.totalIncome,
         totalExpenses: metrics.summary.totalExpenses,
         netCashFlow: metrics.summary.netCashFlow,

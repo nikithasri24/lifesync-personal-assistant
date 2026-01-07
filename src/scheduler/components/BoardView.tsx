@@ -45,7 +45,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
       const columnTasks = tasks.filter(task => {
         // Prioritize taskIds if provided (for custom filtering like backlog vs todo)
         if (column.taskIds !== undefined) {
-          return column.taskIds.includes(task.id);
+          return task.id && column.taskIds.includes(task.id);
         }
         // Otherwise, match based on status
         if (column.status) {
@@ -75,7 +75,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
 
   // Drag handlers
   const handleDragStart = (e: React.DragEvent, task: ScheduledTask) => {
-    console.log('Drag started for task:', task.title);
+    if (!task.id) return;
     setDraggedTask(task);
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', task.id);
@@ -90,9 +90,6 @@ export const BoardView: React.FC<BoardViewProps> = ({
     e.preventDefault();
     e.stopPropagation();
     e.dataTransfer.dropEffect = 'move';
-    if (dragOverColumn !== columnId) {
-      console.log('Dragging over column:', columnId);
-    }
     setDragOverColumn(columnId);
   };
 
@@ -107,11 +104,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
     e.preventDefault();
     e.stopPropagation();
 
-    console.log('Drop triggered on column:', targetColumn.id);
-    console.log('Dragged task:', draggedTask);
-
     if (!draggedTask) {
-      console.log('No dragged task found');
       return;
     }
 
@@ -120,7 +113,6 @@ export const BoardView: React.FC<BoardViewProps> = ({
     );
 
     if (!sourceColumn) {
-      console.log('No source column found');
       return;
     }
 
@@ -128,14 +120,11 @@ export const BoardView: React.FC<BoardViewProps> = ({
     const newIndex = targetTasks.length;
 
     // Determine new status based on column
-    const newStatus = targetColumn.status as Task['status'];
+    const newStatus = (targetColumn.status || 'todo') as Task['status'];
 
-    console.log('Creating drop result:', {
-      taskId: draggedTask.id,
-      sourceColumn: sourceColumn.id,
-      targetColumn: targetColumn.id,
-      newStatus
-    });
+    if (!draggedTask.id) {
+      return;
+    }
 
     const result: DragDropResult = {
       taskId: draggedTask.id,
@@ -146,10 +135,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
     };
 
     if (onTaskDrop) {
-      console.log('Calling onTaskDrop');
       onTaskDrop(result);
-    } else {
-      console.log('onTaskDrop is not defined');
     }
 
     handleDragEnd();
@@ -176,21 +162,22 @@ export const BoardView: React.FC<BoardViewProps> = ({
   };
 
   return (
-    <div className={`h-full overflow-x-auto ${className}`}>
-      <div className="flex gap-4 h-full p-4 min-w-max">
-        {columns.map((column) => {
-          const columnTasks = tasksByColumn.get(column.id) || [];
-          const stats = getColumnStats(column.id);
-          const atWipLimit = isAtWipLimit(column);
-          const isDragOver = dragOverColumn === column.id;
+    <div className={`h-full flex flex-col ${className}`}>
+      <div className="flex-1 overflow-x-auto overflow-y-hidden">
+        <div className="flex gap-4 h-full p-4 min-w-max">
+          {columns.map((column) => {
+            const columnTasks = tasksByColumn.get(column.id) || [];
+            const stats = getColumnStats(column.id);
+            const atWipLimit = isAtWipLimit(column);
+            const isDragOver = dragOverColumn === column.id;
 
-          return (
-            <div
-              key={column.id}
-              className="flex flex-col w-80 flex-shrink-0 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
-              onDragOver={(e) => handleDragOver(e, column.id)}
-              onDrop={(e) => handleDrop(e, column)}
-            >
+            return (
+              <div
+                key={column.id}
+                className="flex flex-col w-80 flex-shrink-0 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 h-full"
+                onDragOver={(e) => handleDragOver(e, column.id)}
+                onDrop={(e) => handleDrop(e, column)}
+              >
               {/* Column Header */}
               <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
                 <div className="flex items-center justify-between mb-2">
@@ -206,7 +193,9 @@ export const BoardView: React.FC<BoardViewProps> = ({
                       {stats.count}
                     </span>
                     {atWipLimit && (
-                      <AlertCircle className="w-4 h-4 text-red-500" title="At WIP limit" />
+                      <div title="At WIP limit">
+                        <AlertCircle className="w-4 h-4 text-red-500" />
+                      </div>
                     )}
                   </div>
 
@@ -269,7 +258,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
                         isDragging={draggedTask?.id === task.id}
                         onClick={() => onTaskClick?.(task)}
                         onQuickEdit={() => onTaskClick?.(task)}
-                        onStartTimer={() => onStartTimer?.(task.id)}
+                        onStartTimer={() => task.id && onStartTimer?.(task.id)}
                       />
                     </div>
                   ))
@@ -298,12 +287,13 @@ export const BoardView: React.FC<BoardViewProps> = ({
           );
         })}
 
-        {/* Add Column Button */}
-        <div className="flex items-center justify-center w-64 flex-shrink-0">
-          <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
-            <Plus className="w-4 h-4" />
-            Add Column
-          </button>
+          {/* Add Column Button */}
+          <div className="flex items-center justify-center w-64 flex-shrink-0">
+            <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
+              <Plus className="w-4 h-4" />
+              Add Column
+            </button>
+          </div>
         </div>
       </div>
     </div>

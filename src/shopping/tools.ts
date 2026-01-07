@@ -5,7 +5,8 @@
  */
 
 import type { Tool, ToolDefinition, ToolResult } from '@/lib/ai/toolRegistry';
-import { apiClient } from '@/services/apiClient';
+import * as shoppingAPI from '@/api/shoppingAPI';
+import * as mealPlanningAPI from '@/api/mealPlanningAPI';
 import { logger } from '@/services/logger';
 import type { ShoppingListData, ShoppingItemData, PantryItemData } from '@/services/types';
 
@@ -132,7 +133,7 @@ const getPantryDefinition: ToolDefinition = {
  */
 async function getOrCreateDefaultList(listName: string = 'My Shopping List'): Promise<ShoppingListData> {
   try {
-    const lists = await apiClient.getShoppingLists();
+    const lists = await shoppingAPI.getShoppingLists();
 
     // Find list by name
     let list = lists.find(l =>
@@ -143,7 +144,7 @@ async function getOrCreateDefaultList(listName: string = 'My Shopping List'): Pr
     // Create if not found
     if (!list) {
       logger.info('ShoppingTools', 'Creating new shopping list', { listName });
-      list = await apiClient.createShoppingList({
+      list = await shoppingAPI.createShoppingList({
         name: listName,
         status: 'active'
       });
@@ -151,7 +152,7 @@ async function getOrCreateDefaultList(listName: string = 'My Shopping List'): Pr
 
     return list;
   } catch (error) {
-    logger.error('ShoppingTools', error as Error, {
+    logger.error('ShoppingTools', 'Operation failed', { error,
       operation: 'getOrCreateDefaultList',
       listName
     });
@@ -204,13 +205,12 @@ async function executeAddToShoppingList(
     }
 
     // Add item to list
-    const item = await apiClient.addShoppingItem(list.id, {
+    const item = await shoppingAPI.createShoppingItem(list.id, {
       name: itemName.trim(),
       quantity,
       unit,
       category,
-      is_purchased: false,
-      shopping_list_id: list.id
+      is_purchased: false
     });
 
     logger.info('ShoppingTools', 'Item added to shopping list', {
@@ -232,7 +232,7 @@ async function executeAddToShoppingList(
       list_name: list.name
     };
   } catch (error) {
-    logger.error('ShoppingTools', error as Error, {
+    logger.error('ShoppingTools', 'Operation failed', { error,
       operation: 'add_to_shopping_list',
       args
     });
@@ -257,7 +257,7 @@ async function executeGetShoppingList(
 
     logger.info('ShoppingTools', 'Getting shopping list', { listName, showPurchased });
 
-    const lists = await apiClient.getShoppingLists();
+    const lists = await shoppingAPI.getShoppingLists();
 
     // Find the list
     let list: ShoppingListData | undefined;
@@ -278,7 +278,7 @@ async function executeGetShoppingList(
     }
 
     // Get items for the list
-    const allItems = await apiClient.getShoppingListItems(list.id);
+    const allItems = await shoppingAPI.getShoppingListItems(list.id);
 
     // Filter purchased items if needed
     const items = showPurchased
@@ -307,7 +307,7 @@ async function executeGetShoppingList(
       message: `You have ${items.length} item${items.length !== 1 ? 's' : ''} on ${list.name}`
     };
   } catch (error) {
-    logger.error('ShoppingTools', error as Error, {
+    logger.error('ShoppingTools', 'Operation failed', { error,
       operation: 'get_shopping_list',
       args
     });
@@ -350,7 +350,7 @@ async function executeAddToPantry(
     });
 
     // Add to pantry
-    const item = await apiClient.addPantryItem({
+    const item = await mealPlanningAPI.createPantryItem({
       name: itemName.trim(),
       quantity,
       unit,
@@ -377,7 +377,7 @@ async function executeAddToPantry(
       }
     };
   } catch (error) {
-    logger.error('ShoppingTools', error as Error, {
+    logger.error('ShoppingTools', 'Operation failed', { error,
       operation: 'add_to_pantry',
       args
     });
@@ -402,7 +402,7 @@ async function executeGetPantry(
 
     logger.info('ShoppingTools', 'Getting pantry items', { category, showLowStock });
 
-    let items = await apiClient.getPantryItems();
+    let items = await mealPlanningAPI.getPantryItems();
 
     // Apply filters
     if (category) {
@@ -436,7 +436,7 @@ async function executeGetPantry(
       message: `You have ${items.length} item${items.length !== 1 ? 's' : ''} in your pantry`
     };
   } catch (error) {
-    logger.error('ShoppingTools', error as Error, {
+    logger.error('ShoppingTools', 'Operation failed', { error,
       operation: 'get_pantry',
       args
     });

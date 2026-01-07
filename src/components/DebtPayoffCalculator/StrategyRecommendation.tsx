@@ -5,7 +5,7 @@ interface StrategyRecommendationProps {
   strategies: StrategyComparison[];
 }
 
-export default function StrategyRecommendation({ strategies }: StrategyRecommendationProps): JSX.Element {
+export default function StrategyRecommendation({ strategies }: StrategyRecommendationProps) {
   if (strategies.length === 0) return <></>;
 
   return (

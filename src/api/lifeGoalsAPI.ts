@@ -6,6 +6,7 @@
 import { supabase } from '../lib/supabase';
 import type { LifeGoal } from '../services/types';
 import { logger } from '../services/logger';
+import { apiCall, requireAuth, handleSupabaseResponse } from './apiWrapper';
 
 // =====================================================
 // LIFE GOALS CRUD OPERATIONS
@@ -22,36 +23,35 @@ export async function getLifeGoals(filters?: {
   category?: LifeGoal['category'];
   priority?: LifeGoal['priority'];
 }): Promise<LifeGoal[]> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  let query = supabase
-    .from('life_goals')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false });
+      let query = supabase
+        .from('life_goals')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
 
-  // Apply filters
-  if (filters) {
-    if (filters.status) {
-      query = query.eq('status', filters.status);
-    }
-    if (filters.category) {
-      query = query.eq('category', filters.category);
-    }
-    if (filters.priority) {
-      query = query.eq('priority', filters.priority);
-    }
-  }
+      // Apply filters
+      if (filters) {
+        if (filters.status) {
+          query = query.eq('status', filters.status);
+        }
+        if (filters.category) {
+          query = query.eq('category', filters.category);
+        }
+        if (filters.priority) {
+          query = query.eq('priority', filters.priority);
+        }
+      }
 
-  const { data, error } = await query;
-
-  if (error) {
-    logger.error('LifeGoalsAPI', error, { context: 'getLifeGoals', filters });
-    throw error;
-  }
-
-  return (data ?? []) as LifeGoal[];
+      const { data, error } = await query;
+      if (error) throw error;
+      return (data ?? []) as LifeGoal[];
+    },
+    { domain: 'LifeGoalsAPI', operation: 'getLifeGoals', data: { filters } }
+  );
 }
 
 /**
@@ -61,22 +61,22 @@ export async function getLifeGoals(filters?: {
  * @throws Error if life goal not found or user not authenticated
  */
 export async function getLifeGoal(id: string): Promise<LifeGoal> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { data, error } = await supabase
-    .from('life_goals')
-    .select('*')
-    .eq('id', id)
-    .eq('user_id', user.id)
-    .single();
+      const result = await supabase
+        .from('life_goals')
+        .select('*')
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .single();
 
-  if (error) {
-    logger.error('LifeGoalsAPI', error, { context: 'getLifeGoal', id });
-    throw error;
-  }
-
-  return data as LifeGoal;
+      const data = handleSupabaseResponse(result, 'Life Goal', id);
+      return data as LifeGoal;
+    },
+    { domain: 'LifeGoalsAPI', operation: 'getLifeGoal', data: { id } }
+  );
 }
 
 /**
@@ -88,22 +88,22 @@ export async function getLifeGoal(id: string): Promise<LifeGoal> {
 export async function createLifeGoal(
   goal: Omit<LifeGoal, 'id' | 'user_id' | 'created_at' | 'updated_at'>
 ): Promise<LifeGoal> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { data, error } = await supabase
-    .from('life_goals')
-    .insert({ ...goal, user_id: user.id })
-    .select()
-    .single();
+      const result = await supabase
+        .from('life_goals')
+        .insert({ ...goal, user_id: user.id })
+        .select()
+        .single();
 
-  if (error) {
-    logger.error('LifeGoalsAPI', error, { context: 'createLifeGoal', goal });
-    throw error;
-  }
-
-  logger.info('LifeGoalsAPI', 'Life goal created', { id: data.id, title: data.title });
-  return data as LifeGoal;
+      const data = handleSupabaseResponse(result, 'Life Goal');
+      logger.info('LifeGoalsAPI', 'Life goal created', { id: data.id, title: data.title });
+      return data as LifeGoal;
+    },
+    { domain: 'LifeGoalsAPI', operation: 'createLifeGoal', data: { title: goal.title } }
+  );
 }
 
 /**
@@ -117,24 +117,24 @@ export async function updateLifeGoal(
   id: string,
   updates: Partial<LifeGoal>
 ): Promise<LifeGoal> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { data, error } = await supabase
-    .from('life_goals')
-    .update({ ...updates, updated_at: new Date().toISOString() })
-    .eq('id', id)
-    .eq('user_id', user.id)
-    .select()
-    .single();
+      const result = await supabase
+        .from('life_goals')
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .select()
+        .single();
 
-  if (error) {
-    logger.error('LifeGoalsAPI', error, { context: 'updateLifeGoal', id, updates });
-    throw error;
-  }
-
-  logger.info('LifeGoalsAPI', 'Life goal updated', { id });
-  return data as LifeGoal;
+      const data = handleSupabaseResponse(result, 'Life Goal', id);
+      logger.info('LifeGoalsAPI', 'Life goal updated', { id });
+      return data as LifeGoal;
+    },
+    { domain: 'LifeGoalsAPI', operation: 'updateLifeGoal', data: { id } }
+  );
 }
 
 /**
@@ -144,19 +144,19 @@ export async function updateLifeGoal(
  * @throws Error if deletion fails or user not authenticated
  */
 export async function deleteLifeGoal(id: string): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { error } = await supabase
-    .from('life_goals')
-    .delete()
-    .eq('id', id)
-    .eq('user_id', user.id);
+      const { error } = await supabase
+        .from('life_goals')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
 
-  if (error) {
-    logger.error('LifeGoalsAPI', error, { context: 'deleteLifeGoal', id });
-    throw error;
-  }
-
-  logger.info('LifeGoalsAPI', 'Life goal deleted', { id });
+      if (error) throw error;
+      logger.info('LifeGoalsAPI', 'Life goal deleted', { id });
+    },
+    { domain: 'LifeGoalsAPI', operation: 'deleteLifeGoal', data: { id } }
+  );
 }

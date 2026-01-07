@@ -5,7 +5,7 @@
  * Handles checkbox, priority, editing, metadata display, and action buttons.
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   CheckCircle2,
   Edit,
@@ -14,12 +14,16 @@ import {
   IndentIncrease,
   ChevronDown,
   ChevronRight,
-  CalendarDays
+  CalendarDays,
+  CalendarClock,
+  Lock,
+  Link2
 } from 'lucide-react';
 import { format, isToday } from 'date-fns';
 import type { Task, Project, PomodoroTimer } from '../types';
 import { PRIORITY_FLAGS } from '../constants';
 import { isOverdue } from '../services/taskHelpers';
+import { SmartSchedulePopover } from '../../components/scheduling';
 
 interface TaskRowProps {
   /** The task to display */
@@ -46,6 +50,8 @@ interface TaskRowProps {
   onAddSubtask: (taskId: string) => void;
   /** Called when expand/collapse button is clicked */
   onToggleExpansion: (taskId: string) => void;
+  /** Called when task is scheduled via smart scheduling */
+  onScheduleTask?: (taskId: string, start: Date, end: Date) => void;
   /** Current pomodoro timer state */
   pomodoroTimer: PomodoroTimer;
   /** Whether an update is in progress */
@@ -72,11 +78,13 @@ export function TaskRow({
   onStartPomodoro,
   onAddSubtask,
   onToggleExpansion,
+  onScheduleTask,
   pomodoroTimer,
   isUpdating,
   isExpanded,
   hasSubtasks
 }: TaskRowProps): React.ReactElement {
+  const [showSchedulePopover, setShowSchedulePopover] = useState(false);
   const taskIsOverdue = task.dueDate && isOverdue(task.dueDate, task.status);
 
   const getPriorityBorderClass = (): string => {
@@ -158,10 +166,21 @@ export function TaskRow({
 
           {/* Priority flag */}
           {task.priority !== 'low' && PRIORITY_FLAGS[task.priority]}
+
+          {/* Dependency indicator */}
+          {task.dependsOn && task.dependsOn.length > 0 && (
+            <span
+              className="flex items-center gap-1 px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400"
+              title={`Depends on ${task.dependsOn.length} task(s)`}
+            >
+              <Lock size={12} />
+              <span className="text-xs font-medium">{task.dependsOn.length}</span>
+            </span>
+          )}
         </div>
 
         {/* Task metadata */}
-        {(task.description ?? false) || (task.dueDate ?? false) || (project ?? false) || (task.tags.length > 0) && (
+        {(Boolean(task.description) || Boolean(task.dueDate) || Boolean(project) || task.tags.length > 0 || (task.dependsOn && task.dependsOn.length > 0)) && (
           <div className="flex items-center space-x-4 text-xs text-gray-500 dark:text-slate-400 ml-2">
             {task.description && (
               <span className="truncate max-w-xs text-gray-600 dark:text-slate-400">
@@ -214,6 +233,33 @@ export function TaskRow({
         >
           <IndentIncrease size={14} />
         </button>
+        {/* Smart Schedule Button */}
+        {onScheduleTask && task.status !== 'done' && (
+          <div className="relative">
+            <button
+              onClick={() => setShowSchedulePopover(true)}
+              className={`p-1.5 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-md transition-colors ${
+                showSchedulePopover ? 'text-purple-600 bg-purple-100 dark:bg-purple-900/30' : 'text-gray-400 hover:text-gray-600'
+              } dark:text-slate-400`}
+              title="Smart Schedule"
+            >
+              <CalendarClock size={14} />
+            </button>
+            {showSchedulePopover && (
+              <SmartSchedulePopover
+                task={{
+                  id: task.id,
+                  title: task.title,
+                  priority: task.priority as 'urgent' | 'high' | 'medium' | 'low',
+                  estimatedMinutes: task.estimatedTime,
+                }}
+                onSchedule={onScheduleTask}
+                onClose={() => setShowSchedulePopover(false)}
+                position="left"
+              />
+            )}
+          </div>
+        )}
         <button
           onClick={() => onStartPomodoro(task.id)}
           className={`p-1.5 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-md transition-colors ${

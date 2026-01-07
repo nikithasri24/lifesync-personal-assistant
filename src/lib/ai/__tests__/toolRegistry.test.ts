@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { toolRegistry, Tool, ToolDefinition, ToolResult } from '../toolRegistry';
+import { toolRegistry } from '../toolRegistry';
+import type { Tool, ToolDefinition, ToolResult } from '../toolRegistry';
 
 describe('ToolRegistry', () => {
   beforeEach(() => {

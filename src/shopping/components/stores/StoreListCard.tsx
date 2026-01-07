@@ -8,7 +8,7 @@ interface StoreListCardProps {
   store: Store;
 }
 
-export function StoreListCard({ list, store }: StoreListCardProps): JSX.Element {
+export function StoreListCard({ list, store }: StoreListCardProps) {
   return (
     <div className="bg-white rounded-lg border shadow-sm">
       <div className="p-4 border-b" style={{ backgroundColor: `${store.color}10` }}>
@@ -50,7 +50,7 @@ export function StoreListCard({ list, store }: StoreListCardProps): JSX.Element 
         <div className="mt-4 pt-3 border-t flex items-center justify-between">
           <div className="text-sm text-gray-600">
             <MapPin size={12} className="inline mr-1" />
-            {store.distance} miles
+            {store.distance != null ? `${store.distance} miles` : 'Distance unknown'}
           </div>
           <div className="text-sm font-semibold text-green-600">
             ${list.totalEstimatedCost?.toFixed(2)}

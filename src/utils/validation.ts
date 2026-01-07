@@ -91,8 +91,8 @@ export const validationRules = {
   
   currency: {
     pattern: /^\d+(\.\d{1,2})?$/,
-    custom: (value: string | number): string | null => {
-      const num = typeof value === 'string' ? parseFloat(value) : value;
+    custom: (value: unknown): string | null => {
+      const num = typeof value === 'string' ? parseFloat(value) : typeof value === 'number' ? value : NaN;
       if (isNaN(num) || num < 0) {
         return 'Please enter a valid amount';
       }

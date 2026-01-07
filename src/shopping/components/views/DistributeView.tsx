@@ -101,10 +101,12 @@ export function DistributeView({
               Available Stores
             </label>
             <div className="grid grid-cols-2 gap-3">
-              {stores.map(store => (
+              {stores.map(store => {
+                const storeType = STORE_TYPES.find(st => st.value === store.type);
+                return (
                 <div key={store.id} className="p-3 border rounded-lg bg-white">
                   <div className="flex items-center space-x-2">
-                    <span className="text-lg">{STORE_TYPES[store.type]}</span>
+                    <span className="text-lg">{storeType?.icon}</span>
                     <div className="flex-1">
                       <h4 className="font-medium text-gray-900 text-sm">{store.name}</h4>
                       <div className="flex items-center space-x-2 text-xs text-gray-500">
@@ -122,7 +124,8 @@ export function DistributeView({
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 

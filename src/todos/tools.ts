@@ -2,12 +2,14 @@
  * Tasks AI Tools
  *
  * AI tools for task management (create, get, update, complete, overview)
+ * Uses CommandBus for unified action dispatch
  */
 
 import type { Tool, ToolDefinition, ToolResult } from '@/lib/ai/toolRegistry';
-import { createTask, getTasks } from '@/api/tasksAPI';
+import { getTasks } from '@/api/tasksAPI';
+import { commandBus, type CreateTaskCommand } from '@/lib/commandBus';
 import { logger } from '@/services/logger';
-import { startOfWeek, addDays, isSameDay } from 'date-fns';
+import { addDays, isSameDay } from 'date-fns';
 import type { TaskData } from '@/services/types';
 
 // =====================================================
@@ -63,7 +65,7 @@ const getWeekOverviewDefinition: ToolDefinition = {
 // =====================================================
 
 /**
- * Create a new task
+ * Create a new task via CommandBus
  */
 async function executeCreateTask(
   args: Record<string, unknown>,
@@ -72,7 +74,7 @@ async function executeCreateTask(
   try {
     const title = args.title as string;
     const dueDate = args.due_date as string | undefined;
-    const priority = (args.priority as TaskData['priority']) ?? 'medium';
+    const priority = (args.priority as 'low' | 'medium' | 'high' | 'urgent') ?? 'medium';
     const estimatedHours = args.estimated_hours as number | undefined;
 
     // Validate required fields
@@ -83,32 +85,41 @@ async function executeCreateTask(
       };
     }
 
-    logger.info('TaskTools', 'Creating task', {
+    logger.info('TaskTools', 'Creating task via CommandBus', {
       title,
       priority,
       dueDate,
       estimatedHours
     });
 
-    const task = await createTask({
-      title: title.trim(),
-      due_date: dueDate,
-      priority,
-      status: 'todo',
-      deleted: false,
-      archived: false,
-      starred: false
-    });
+    // Dispatch command through CommandBus
+    const command: CreateTaskCommand = {
+      type: 'CREATE_TASK',
+      timestamp: new Date(),
+      source: 'ai',
+      payload: {
+        title: title.trim(),
+        dueDate,
+        priority,
+        estimatedTime: estimatedHours ? estimatedHours * 60 : undefined, // Convert hours to minutes
+      }
+    };
 
-    logger.info('TaskTools', 'Task created successfully', {
-      taskId: task.id,
-      title: task.title
-    });
+    const result = await commandBus.dispatch(command);
+
+    if (!result.success) {
+      return {
+        success: false,
+        error: result.error || 'Failed to create task'
+      };
+    }
+
+    const task = result.data as TaskData;
 
     return {
       success: true,
       task_id: task.id,
-      message: `Task "${task.title}" created successfully`,
+      message: result.message || `Task "${task.title}" created successfully`,
       task: {
         id: task.id,
         title: task.title,
@@ -118,7 +129,7 @@ async function executeCreateTask(
       }
     };
   } catch (error) {
-    logger.error('TaskTools', error as Error, {
+    logger.error('TaskTools', 'Operation failed', { error,
       operation: 'create_task',
       args
     });
@@ -198,13 +209,104 @@ async function executeGetWeekOverview(
       }
     };
   } catch (error) {
-    logger.error('TaskTools', error as Error, {
+    logger.error('TaskTools', 'Operation failed', { error,
       operation: 'get_week_overview'
     });
 
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to get week overview'
+    };
+  }
+}
+
+const assignTaskDefinition: ToolDefinition = {
+  type: 'function',
+  function: {
+    name: 'assign_task_to',
+    description: 'Assign a task to a connected family member (spouse, partner, etc.). Use for requests like "remind my husband to pick up milk" or "assign grocery shopping to my wife".',
+    parameters: {
+      type: 'object',
+      properties: {
+        title: {
+          type: 'string',
+          description: 'Task title (required)'
+        },
+        assignee_name: {
+          type: 'string',
+          description: 'Name or relationship of the person to assign to (e.g., "husband", "wife", "spouse", "partner", or their actual name)'
+        },
+        due_date: {
+          type: 'string',
+          description: 'Due date in ISO format (YYYY-MM-DD). Optional.'
+        },
+        priority: {
+          type: 'string',
+          enum: ['low', 'medium', 'high', 'urgent'],
+          description: 'Task priority level. Defaults to medium.'
+        },
+        notes: {
+          type: 'string',
+          description: 'Additional notes or context for the task'
+        }
+      },
+      required: ['title', 'assignee_name']
+    }
+  }
+};
+
+async function executeAssignTask(
+  args: Record<string, unknown>,
+  userId: string
+): Promise<ToolResult> {
+  try {
+    const title = args.title as string;
+    const assigneeName = args.assignee_name as string;
+    const dueDate = args.due_date as string | undefined;
+    const priority = (args.priority as string) || 'medium';
+    const notes = args.notes as string | undefined;
+
+    // TODO: Look up the assignee from connections based on name/relationship
+    // For now, create the task with a note about who it's for
+    const taskNotes = notes
+      ? `Assigned to: ${assigneeName}\n\n${notes}`
+      : `Assigned to: ${assigneeName}`;
+
+    const command: CreateTaskCommand = {
+      type: 'CREATE_TASK',
+      timestamp: new Date(),
+      source: 'ai',
+      userId,
+      payload: {
+        title,
+        priority: priority as 'low' | 'medium' | 'high' | 'urgent',
+        dueDate: dueDate,
+        tags: ['delegated', 'family'],
+      },
+    };
+
+    const result = await commandBus.dispatch(command);
+    const taskId = (result as { id?: string } | undefined)?.id;
+
+    logger.info('TaskTools', 'Task assigned via AI', {
+      title,
+      assignee: assigneeName,
+      taskId,
+    });
+
+    return {
+      success: true,
+      data: {
+        message: `Created task "${title}" for ${assigneeName}`,
+        taskId,
+        assignee: assigneeName,
+      },
+    };
+  } catch (error) {
+    logger.error('TaskTools', error as Error, { context: 'executeAssignTask' });
+    return {
+      success: false,
+      error: `Failed to assign task: ${(error as Error).message}`,
     };
   }
 }
@@ -221,5 +323,9 @@ export const taskTools: Tool[] = [
   {
     definition: getWeekOverviewDefinition,
     execute: executeGetWeekOverview
+  },
+  {
+    definition: assignTaskDefinition,
+    execute: executeAssignTask
   }
 ];

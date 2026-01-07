@@ -35,6 +35,7 @@ export type ShareableModule =
   | 'finances'
   | 'shopping'
   | 'meals'
+  | 'nutrition'
   | 'goals'
   | 'habits'
   | 'todos'
@@ -42,7 +43,6 @@ export type ShareableModule =
   | 'projects'
   | 'journal'
   | 'mood'
-  | 'period'
   | 'skincare';
 
 // =====================================================
@@ -55,12 +55,19 @@ export interface ProfileConnection {
   receiverId: string;
   relationship: ConnectionRelationship;
   status: ConnectionStatus;
+  userId?: string;
+  connectedUserId?: string;
   requesterLabel?: string;  // Custom nickname from requester's perspective
   receiverLabel?: string;   // Custom nickname from receiver's perspective
+  label?: string;
+  connectedUserEmail?: string;
+  connectedUserName?: string;
+  connectedUserAvatar?: string;
   notes?: string;
   createdAt: string;
   acceptedAt?: string;
   updatedAt: string;
+  isPending?: boolean;
 }
 
 export interface ModulePermission {
@@ -277,20 +284,20 @@ export const MODULE_CONFIGS: Record<ShareableModule, ModulePermissionConfig> = {
     supportedLevels: ['none', 'view'],
     hasSettings: false,
   },
-  period: {
-    module: 'period',
-    label: 'Period',
-    description: 'Menstrual cycle tracking',
-    icon: 'Droplets',
-    defaultLevel: 'none',
-    supportedLevels: ['none'],
-    hasSettings: false,
-  },
   skincare: {
     module: 'skincare',
     label: 'Skincare',
     description: 'Skincare routine and products',
     icon: 'Sparkles',
+    defaultLevel: 'none',
+    supportedLevels: ['none', 'view'],
+    hasSettings: false,
+  },
+  nutrition: {
+    module: 'nutrition',
+    label: 'Nutrition',
+    description: 'Nutrition tracking and meal analysis',
+    icon: 'Utensils',
     defaultLevel: 'none',
     supportedLevels: ['none', 'view'],
     hasSettings: false,

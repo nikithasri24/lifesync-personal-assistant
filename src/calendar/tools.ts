@@ -141,7 +141,7 @@ async function executeCreateEvent(args: Record<string, unknown>): Promise<ToolRe
       data: event,
     };
   } catch (error) {
-    logger.error('CalendarTools', error as Error, { context: 'executeCreateEvent' });
+    logger.error('CalendarTools', 'Operation failed', { error, context: 'executeCreateEvent' });
     return { success: false, error: (error as Error).message };
   }
 }
@@ -161,7 +161,7 @@ async function executeGetEvents(args: Record<string, unknown>): Promise<ToolResu
       count: events.length,
     };
   } catch (error) {
-    logger.error('CalendarTools', error as Error, { context: 'executeGetEvents' });
+    logger.error('CalendarTools', 'Operation failed', { error, context: 'executeGetEvents' });
     return { success: false, error: (error as Error).message };
   }
 }
@@ -186,7 +186,7 @@ async function executeUpdateEvent(args: Record<string, unknown>): Promise<ToolRe
       data: updated,
     };
   } catch (error) {
-    logger.error('CalendarTools', error as Error, { context: 'executeUpdateEvent' });
+    logger.error('CalendarTools', 'Operation failed', { error, context: 'executeUpdateEvent' });
     return { success: false, error: (error as Error).message };
   }
 }
@@ -201,7 +201,7 @@ async function executeDeleteEvent(args: Record<string, unknown>): Promise<ToolRe
       message: 'Calendar event deleted successfully',
     };
   } catch (error) {
-    logger.error('CalendarTools', error as Error, { context: 'executeDeleteEvent' });
+    logger.error('CalendarTools', 'Operation failed', { error, context: 'executeDeleteEvent' });
     return { success: false, error: (error as Error).message };
   }
 }
@@ -217,7 +217,7 @@ async function executeFindFreeSlots(args: Record<string, unknown>): Promise<Tool
       count: slots.length,
     };
   } catch (error) {
-    logger.error('CalendarTools', error as Error, { context: 'executeFindFreeSlots' });
+    logger.error('CalendarTools', 'Operation failed', { error, context: 'executeFindFreeSlots' });
     return { success: false, error: (error as Error).message };
   }
 }

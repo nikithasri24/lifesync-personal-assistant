@@ -76,7 +76,7 @@ const TripPlanner: React.FC = () => {
         setPassport(passportData);
         setUserVisas(visasData);
       } catch (error) {
-        void logger.error('Error loading trip planner data:', { error });
+        void logger.error('TripPlanner', error as Error, { context: 'loadData' });
       } finally {
         setLoading(false);
       }
@@ -90,7 +90,7 @@ const TripPlanner: React.FC = () => {
       const trip = await getTripById(tripId);
       setSelectedTrip(trip);
     } catch (error) {
-      void logger.error('Error loading trip details:', { error });
+      void logger.error('TripPlanner', error as Error, { context: 'loadTripDetails', tripId });
     }
   };
 
@@ -118,7 +118,7 @@ const TripPlanner: React.FC = () => {
 
       return trip;
     } catch (error) {
-      void logger.error('Error creating trip:', { error });
+      void logger.error('TripPlanner', error as Error, { context: 'handleCreateTrip' });
       showToast('Failed to create trip. Please try again.', 'error');
       return undefined;
     }
@@ -139,7 +139,7 @@ const TripPlanner: React.FC = () => {
             }
             setConfirmDialog({ show: false, message: '', onConfirm: () => void 0 });
           } catch (error) {
-            void logger.error('Error deleting trip:', { error });
+            void logger.error('TripPlanner', error as Error, { context: 'handleDeleteTrip', tripId });
             showToast('Failed to delete trip. Please try again.', 'error');
             setConfirmDialog({ show: false, message: '', onConfirm: () => void 0 });
           }
@@ -208,7 +208,7 @@ const TripPlanner: React.FC = () => {
       setNewDestCountry('');
       setShowAddDestination(false);
     } catch (error) {
-      void logger.error('Error adding destination:', { error });
+      void logger.error('TripPlanner', error as Error, { context: 'handleAddDestination' });
       showToast('Failed to add destination. Please try again.', 'error');
     }
   };
@@ -221,7 +221,7 @@ const TripPlanner: React.FC = () => {
       await removeDestination(destId);
       await loadTripDetails(selectedTrip.id);
     } catch (error) {
-      void logger.error('Error removing destination:', { error });
+      void logger.error('TripPlanner', error as Error, { context: 'handleRemoveDestination', destId });
       showToast('Failed to remove destination. Please try again.', 'error');
     }
   };

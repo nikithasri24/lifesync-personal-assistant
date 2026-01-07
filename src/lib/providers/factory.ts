@@ -26,7 +26,7 @@ const OLLAMA_MODEL = (import.meta.env.VITE_OLLAMA_MODEL as string | undefined) ?
  * 4. Error if none available
  */
 export async function createLLMProvider(): Promise<LLMProvider> {
-  logger.info('Creating LLM provider', { preferredProvider: LLM_PROVIDER });
+  logger.info('LLM', 'Creating LLM provider', { preferredProvider: LLM_PROVIDER });
 
   // Try configured provider first
   if (LLM_PROVIDER === 'groq' && GROQ_API_KEY) {
@@ -34,11 +34,11 @@ export async function createLLMProvider(): Promise<LLMProvider> {
     const available = await groq.isAvailable();
 
     if (available) {
-      logger.info('Using Groq LLM provider');
+      logger.info('LLM', 'Using Groq LLM provider');
       return groq;
     }
 
-    logger.warn('Groq provider not available, trying fallback');
+    logger.warn('LLM', 'Groq provider not available, trying fallback');
   }
 
   if (LLM_PROVIDER === 'ollama') {
@@ -46,15 +46,15 @@ export async function createLLMProvider(): Promise<LLMProvider> {
     const available = await ollama.isAvailable();
 
     if (available) {
-      logger.info('Using Ollama LLM provider');
+      logger.info('LLM', 'Using Ollama LLM provider');
       return ollama;
     }
 
-    logger.warn('Ollama provider not available');
+    logger.warn('LLM', 'Ollama provider not available');
   }
 
   // Try fallbacks
-  logger.info('Trying fallback providers');
+  logger.info('LLM', 'Trying fallback providers');
 
   // Try Groq as fallback (if not already tried)
   if (LLM_PROVIDER !== 'groq' && GROQ_API_KEY) {
@@ -62,7 +62,7 @@ export async function createLLMProvider(): Promise<LLMProvider> {
     const available = await groq.isAvailable();
 
     if (available) {
-      logger.info('Using Groq as fallback provider');
+      logger.info('LLM', 'Using Groq as fallback provider');
       return groq;
     }
   }
@@ -73,7 +73,7 @@ export async function createLLMProvider(): Promise<LLMProvider> {
     const available = await ollama.isAvailable();
 
     if (available) {
-      logger.info('Using Ollama as fallback provider');
+      logger.info('LLM', 'Using Ollama as fallback provider');
       return ollama;
     }
   }
@@ -93,7 +93,7 @@ export async function createLLMProviderWithFallback(): Promise<{
   primary: LLMProvider;
   fallback?: LLMProvider;
 }> {
-  logger.info('Creating LLM provider with fallback');
+  logger.info('LLM', 'Creating LLM provider with fallback');
 
   let primary: LLMProvider | undefined;
   let fallback: LLMProvider | undefined;
@@ -103,7 +103,7 @@ export async function createLLMProviderWithFallback(): Promise<{
     const groq = new GroqProvider(GROQ_API_KEY);
     if (await groq.isAvailable()) {
       primary = groq;
-      logger.info('Primary provider: Groq');
+      logger.info('LLM', 'Primary provider: Groq');
     }
   }
 
@@ -112,10 +112,10 @@ export async function createLLMProviderWithFallback(): Promise<{
   if (await ollama.isAvailable()) {
     if (!primary) {
       primary = ollama;
-      logger.info('Primary provider: Ollama (no Groq available)');
+      logger.info('LLM', 'Primary provider: Ollama (no Groq available)');
     } else {
       fallback = ollama;
-      logger.info('Fallback provider: Ollama');
+      logger.info('LLM', 'Fallback provider: Ollama');
     }
   }
 
@@ -140,7 +140,7 @@ export async function smartChat(
   try {
     return await primary.chat(messages, options);
   } catch (error) {
-    logger.warn('Primary LLM provider failed, trying fallback', { error });
+    logger.warn('LLM', 'Primary LLM provider failed, trying fallback', { error });
 
     if (!fallback) {
       throw error;
@@ -149,7 +149,7 @@ export async function smartChat(
     try {
       return await fallback.chat(messages, options);
     } catch (fallbackError) {
-      logger.error('Fallback LLM provider also failed', { fallbackError });
+      logger.error('LLM', 'Fallback LLM provider also failed', { fallbackError });
       throw fallbackError;
     }
   }

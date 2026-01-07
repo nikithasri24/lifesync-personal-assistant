@@ -11,7 +11,7 @@ import {
   useGoalProgressQuery,
   useUpsertGoalMutation,
   useDeleteGoalMutation,
-} from '../hooks/useFinanceQuery';
+} from '@/hooks/useFinanceQuery';
 import type { Goal, GoalInput, Account } from '../types';
 import GoalCard from '../components/goals/GoalCard';
 import GoalEditor from '../components/goals/GoalEditor';

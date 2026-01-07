@@ -18,15 +18,15 @@ export const useFocusAggregate = (): FocusAggregate => {
     // Map FocusSessionData to FocusSession type
     const mappedSessions: FocusSession[] = storeFocusSessions.map(session => ({
       id: session.id ?? '',
-      preset: session.preset,
-      duration: session.duration,
-      actualDuration: session.actual_duration,
-      startTime: new Date(session.start_time),
-      endTime: session.end_time ? new Date(session.end_time) : undefined,
-      status: session.status ?? 'active',
-      taskId: session.task_id,
-      todoId: session.task_id, // task_id maps to todoId for compatibility
-      notes: session.notes,
+      preset: session.type ?? 'pomodoro',
+      duration: session.duration_minutes ?? 0,
+      actualDuration: session.actual_duration_seconds ? session.actual_duration_seconds / 60 : undefined,
+      startTime: new Date(session.started_at),
+      endTime: session.completed_at ? new Date(session.completed_at) : undefined,
+      status: session.status as FocusSession['status'],
+      taskId: session.task_id ?? undefined,
+      todoId: session.task_id ?? undefined, // task_id maps to todoId for compatibility
+      notes: session.notes ?? undefined,
     }));
 
     return buildFocusAggregate(mappedSessions);

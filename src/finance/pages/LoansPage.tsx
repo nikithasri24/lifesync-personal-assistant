@@ -14,9 +14,10 @@ import {
   useUpsertLoanMutation,
   useDeleteLoanMutation,
   useUpsertLoanPaymentMutation,
-} from '../hooks/useFinanceQuery';
+} from '@/hooks/useFinanceQuery';
 import { formatCurrency } from '../utils/currency';
 import { calculateInterestPaidToDate, calculatePrincipalPaidToDate } from '../utils/loanCalculations';
+import { logger } from '../../services/logger';
 
 const LoansPage: React.FC = () => {
   const [selectedLoan, setSelectedLoan] = useState<Loan | null>(null);
@@ -44,7 +45,7 @@ const LoansPage: React.FC = () => {
       setIsEditorOpen(false);
       setSelectedLoan(null);
     } catch (error) {
-      console.error('Failed to save loan:', error);
+      logger.error('LoansPage', error instanceof Error ? error : new Error(String(error)), { context: 'handleSaveLoan', loanInput });
     }
   };
 
@@ -54,7 +55,7 @@ const LoansPage: React.FC = () => {
     try {
       await deleteLoanMutation.mutateAsync(loanId);
     } catch (error) {
-      console.error('Failed to delete loan:', error);
+      logger.error('LoansPage', error instanceof Error ? error : new Error(String(error)), { context: 'handleDeleteLoan', loanId });
     }
   };
 
@@ -81,7 +82,7 @@ const LoansPage: React.FC = () => {
       setIsPaymentModalOpen(false);
       setSelectedLoan(null);
     } catch (error) {
-      console.error('Failed to save payment:', error);
+      logger.error('LoansPage', error instanceof Error ? error : new Error(String(error)), { context: 'handleSavePayment', payment });
     }
   };
 

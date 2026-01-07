@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { logger } from '../../services/logger';
-import type { PlannedMeal, Recipe } from '../../types';
+import type { PlannedMeal } from '../../types';
+import type { Recipe } from '@/hooks/useMealPlanningQuery';
 
 export type GroceryItemStatus = 'needed' | 'at_home' | 'in_cart' | 'purchased';
 
@@ -37,7 +38,7 @@ export function useGroceryList(
         return new Map(Object.entries(parsed));
       }
     } catch (error) {
-      logger.error('GroceryList', 'Failed to load grocery statuses:', error);
+      logger.error('GroceryList', error as Error, { context: 'load grocery statuses failed' });
     }
     return new Map();
   });
@@ -48,7 +49,7 @@ export function useGroceryList(
       const obj = Object.fromEntries(groceryItemStatuses);
       localStorage.setItem(groceryStorageKey, JSON.stringify(obj));
     } catch (error) {
-      logger.error('GroceryList', 'Failed to save grocery statuses:', error);
+      logger.error('GroceryList', error as Error, { context: 'save grocery statuses failed' });
     }
   }, [groceryItemStatuses, groceryStorageKey]);
 

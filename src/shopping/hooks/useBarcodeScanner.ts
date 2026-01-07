@@ -19,7 +19,7 @@ interface UseBarcodeScannerReturn {
   isScanning: boolean;
   barcodeResult: string | null;
   captureMessage: string | null;
-  videoRef: React.RefObject<HTMLVideoElement>;
+  videoRef: React.RefObject<HTMLVideoElement | null>;
   startScanning: () => Promise<void>;
   stopScanning: () => void;
   captureNow: () => Promise<void>;
@@ -35,12 +35,17 @@ export function useBarcodeScanner(
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const barcodeDetectorRef = useRef<{ detect: (image: ImageBitmapSource) => Promise<Array<{ rawValue: string }>> } | undefined>(undefined);
   const streamRef = useRef<MediaStream | null>(null);
+  const scanningRef = useRef(false);
 
   const lookupProduct = async (barcode: string): Promise<ProductInfo> => {
     try {
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), 4000);
       const resp = await fetch(`/api/barcode/lookup?code=${encodeURIComponent(barcode)}`, {
         headers: { Accept: 'application/json' },
+        signal: controller.signal,
       });
+      window.clearTimeout(timeoutId);
       if (!resp.ok) throw new Error('lookup failed');
       const data = (await resp.json()) as {
         name?: string;
@@ -63,6 +68,7 @@ export function useBarcodeScanner(
 
   const stopScanning = useCallback(() => {
     setIsScanning(false);
+    scanningRef.current = false;
     setCaptureMessage(null);
 
     if (streamRef.current) {
@@ -82,6 +88,7 @@ export function useBarcodeScanner(
 
   const startScanning = useCallback(async () => {
     setIsScanning(true);
+    scanningRef.current = true;
     setBarcodeResult(null);
     setCaptureMessage(null);
 
@@ -89,6 +96,7 @@ export function useBarcodeScanner(
       if (!('BarcodeDetector' in window)) {
         logger.warn('useBarcodeScanner', 'Barcode scanning not supported on this device.');
         setIsScanning(false);
+        scanningRef.current = false;
         return;
       }
 
@@ -122,6 +130,9 @@ export function useBarcodeScanner(
       }
 
       const detectorOpts = formats?.length ? { formats } : undefined;
+      if (!window.BarcodeDetector) {
+        throw new Error('BarcodeDetector not supported');
+      }
       const barcodeDetector = new window.BarcodeDetector(detectorOpts) as { detect: (image: ImageBitmapSource) => Promise<Array<{ rawValue: string }>> };
       barcodeDetectorRef.current = barcodeDetector;
 
@@ -149,6 +160,7 @@ export function useBarcodeScanner(
 
       // Start barcode detection loop
       const detectBarcodes = async (): Promise<void> => {
+        if (!scanningRef.current) return;
         const video = videoRef.current;
         if (!video?.videoWidth || !video.videoHeight) {
           requestAnimationFrame(() => {
@@ -177,7 +189,7 @@ export function useBarcodeScanner(
           // Some browsers intermittently throw while the frame is not ready
         }
 
-        if (isScanning) {
+        if (scanningRef.current) {
           requestAnimationFrame(() => {
             void detectBarcodes();
           });
@@ -190,11 +202,12 @@ export function useBarcodeScanner(
         };
       }
     } catch (error) {
-      logger.error('useBarcodeScanner', 'Camera access error:', error);
+      logger.error('useBarcodeScanner', error as Error, { context: 'Camera access error' });
       logger.warn('useBarcodeScanner', 'Camera access denied. Please enable camera permissions to scan barcodes.');
       setIsScanning(false);
+      scanningRef.current = false;
     }
-  }, [isScanning, onProductFound, stopScanning]);
+  }, [onProductFound, stopScanning]);
 
   const captureNow = useCallback(async () => {
     setCaptureMessage(null);

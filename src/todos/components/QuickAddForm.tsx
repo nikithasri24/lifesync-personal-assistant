@@ -39,7 +39,7 @@ export function QuickAddForm({
   error,
   placeholder = "What needs to be done?",
   autoFocus = false
-}: QuickAddFormProps): JSX.Element {
+}: QuickAddFormProps) {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>): void => {
     if (e.key === 'Enter') {
       onSubmit();

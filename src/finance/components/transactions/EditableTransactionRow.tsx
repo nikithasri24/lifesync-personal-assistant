@@ -7,8 +7,8 @@ import React, { useState } from 'react';
 import { Edit2, Save, X, Trash2 } from 'lucide-react';
 import type { Transaction, Category } from '../../types';
 import { formatCurrency } from '../../utils/currency';
-import { getFinanceAPI } from '../../data';
 import { logger } from '../../../services/logger';
+import { useUpsertTransactionMutation, useDeleteTransactionMutation } from '@/hooks/useFinanceQuery';
 
 interface EditableTransactionRowProps {
   transaction: Transaction;
@@ -32,7 +32,8 @@ export const EditableTransactionRow: React.FC<EditableTransactionRowProps> = ({
     type: transaction.type,
     notes: transaction.notes ?? '',
   });
-  const [isSaving, setIsSaving] = useState(false);
+  const upsertTransactionMutation = useUpsertTransactionMutation();
+  const deleteTransactionMutation = useDeleteTransactionMutation();
 
   const handleEdit = (): void => {
     setIsEditing(true);
@@ -52,10 +53,7 @@ export const EditableTransactionRow: React.FC<EditableTransactionRowProps> = ({
 
   const handleSave = async (): Promise<void> => {
     try {
-      setIsSaving(true);
-      const api = await getFinanceAPI();
-
-      await api.upsertTransaction({
+      await upsertTransactionMutation.mutateAsync({
         id: transaction.id,
         accountId: transaction.accountId,
         description: editData.description,
@@ -69,11 +67,9 @@ export const EditableTransactionRow: React.FC<EditableTransactionRowProps> = ({
       setIsEditing(false);
       onUpdate();
     } catch (error) {
-      logger.error('Failed to update transaction:', { error });
+      logger.error('EditableTransactionRow', error instanceof Error ? error : new Error(String(error)), { context: 'handleSave', transactionId: transaction.id });
       // eslint-disable-next-line no-alert
       alert('Failed to update transaction');
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -82,11 +78,10 @@ export const EditableTransactionRow: React.FC<EditableTransactionRowProps> = ({
     if (!confirm('Delete this transaction?')) return;
 
     try {
-      const api = await getFinanceAPI();
-      await api.deleteTransaction(transaction.id);
+      await deleteTransactionMutation.mutateAsync(transaction.id);
       onDelete();
     } catch (error) {
-      logger.error('Failed to delete transaction:', { error });
+      logger.error('EditableTransactionRow', error instanceof Error ? error : new Error(String(error)), { context: 'handleDelete', transactionId: transaction.id });
       // eslint-disable-next-line no-alert
       alert('Failed to delete transaction');
     }
@@ -152,7 +147,7 @@ export const EditableTransactionRow: React.FC<EditableTransactionRowProps> = ({
               onClick={() => {
                 void handleSave();
               }}
-              disabled={isSaving}
+              disabled={upsertTransactionMutation.isPending}
               className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded transition-colors disabled:opacity-50"
               title="Save"
             >
@@ -160,7 +155,7 @@ export const EditableTransactionRow: React.FC<EditableTransactionRowProps> = ({
             </button>
             <button
               onClick={handleCancel}
-              disabled={isSaving}
+              disabled={upsertTransactionMutation.isPending}
               className="p-1.5 text-gray-600 hover:bg-gray-100 rounded transition-colors disabled:opacity-50"
               title="Cancel"
             >

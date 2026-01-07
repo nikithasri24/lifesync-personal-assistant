@@ -4,12 +4,12 @@
 // Types
 export * from './types';
 
-// Data
-export * from './data';
+// Data/API
+export * from './api/data';
 
 // Components
-export { ProductFormModal } from './components/ProductFormModal';
-export { ProductsLibrary } from './components/ProductsLibrary';
-export { RoutineEditorModal } from './components/RoutineEditorModal';
-export { SkincareCalendar } from './components/SkincareCalendar';
-export { SkincareRoutineCard } from './components/SkincareRoutineCard';
+export { default as ProductFormModal } from './components/ProductFormModal';
+export { default as ProductsLibrary } from './components/ProductsLibrary';
+export { default as RoutineEditorModal } from './components/RoutineEditorModal';
+export { default as SkincareCalendar } from './components/SkincareCalendar';
+export { default as SkincareRoutineCard } from './components/SkincareRoutineCard';

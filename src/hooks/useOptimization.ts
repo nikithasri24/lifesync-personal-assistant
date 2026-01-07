@@ -49,7 +49,7 @@ export function useThrottledCallback<T extends (...args: unknown[]) => unknown>(
 
 // Previous value hook for comparison
 export function usePrevious<T>(value: T): T | undefined {
-  const ref = useRef<T>();
+  const ref = useRef<T | undefined>(undefined);
   useEffect(() => {
     ref.current = value;
   });

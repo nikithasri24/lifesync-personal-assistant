@@ -1,152 +1,89 @@
 /**
- * Skincare Slice
- * Manages skincare products and condition logs
+ * Skincare Zustand Slice - UI STATE ONLY
+ *
+ * ⚠️ DEPRECATED: Server state removed - use React Query hooks instead
+ * 
+ * This slice now contains ONLY UI state (view modes, filters, etc.)
+ * All server data (skincare products, condition logs, stats, CRUD operations) should use React Query.
+ *
+ * ✅ Use React Query hooks from @/hooks/useSkincareQuery.ts:
+ * - useSkincareProductsQuery() - Get all skincare products
+ * - useSkincareProductQuery(id) - Get single product
+ * - useCreateSkincareProductMutation() - Create product
+ * - useUpdateSkincareProductMutation() - Update product
+ * - useDeleteSkincareProductMutation() - Delete product
+ * - useSkinConditionLogsQuery() - Get skin condition logs
+ * - useCreateSkinConditionLogMutation() - Create log
+ * - useSkincareStatsQuery() - Get skincare statistics
+ *
+ * Additional React Query Features:
+ * - Product recommendations
+ * - Routine tracking
+ * - Ingredient analysis
+ * - Progress tracking
+ *
+ * Benefits of React Query:
+ * - Better skincare data caching and synchronization
+ * - Optimistic updates for routine tracking
+ * - Automatic invalidation when products/logs change
+ * - Proper separation: Server state (React Query) vs UI state (Zustand)
  */
 
-import type { StateCreator } from 'zustand';
-import type { SkincareProduct, SkinConditionLog } from '@/services/types';
-import {
-  getSkincareProducts,
-  createSkincareProduct as apiCreateSkincareProduct,
-  updateSkincareProduct as apiUpdateSkincareProduct,
-  deleteSkincareProduct as apiDeleteSkincareProduct,
-  getSkinConditionLogs,
-  createSkinConditionLog as apiCreateSkinConditionLog,
-  getSkincareStats,
-} from '@/api/skincareAPI';
-import { logger } from '@/services/logger';
+import { type StateCreator } from 'zustand';
 
 export interface SkincareSlice {
-  // State
-  skincareProducts: SkincareProduct[];
-  skinConditionLogs: SkinConditionLog[];
-  skincareLoaded: boolean;
-  skincareLoading: boolean;
-  skincareError: string | null;
+  // UI State only - no server data!
+  skincareViewMode: 'grid' | 'list' | 'routine';
+  skincareFilterCategory: string | null;
+  skincareFilterBrand: string | null;
+  skincareFilterSkinType: string | null;
+  skincareSortBy: 'name' | 'brand' | 'purchase_date' | 'expiry_date';
+  skincareSortOrder: 'asc' | 'desc';
+  skincareShowExpired: boolean;
+  skincareSelectedProduct: string | null;
+  skincareSelectedTab: 'products' | 'routine' | 'logs' | 'stats';
 
-  // Actions
-  loadSkincareProducts: (filters?: Parameters<typeof getSkincareProducts>[0]) => Promise<void>;
-  addSkincareProduct: (product: Omit<SkincareProduct, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<SkincareProduct>;
-  updateSkincareProduct: (id: string, updates: Partial<SkincareProduct>) => Promise<SkincareProduct>;
-  deleteSkincareProduct: (id: string) => Promise<void>;
-
-  loadSkinConditionLogs: (filters?: Parameters<typeof getSkinConditionLogs>[0]) => Promise<void>;
-  addSkinConditionLog: (log: Omit<SkinConditionLog, 'id' | 'user_id' | 'created_at'>) => Promise<SkinConditionLog>;
-
-  getSkincareStats: () => Promise<ReturnType<typeof getSkincareStats>>;
-  getSkincareProductById: (id: string) => SkincareProduct | undefined;
+  // UI Actions
+  setSkincareViewMode: (mode: 'grid' | 'list' | 'routine') => void;
+  setSkincareFilterCategory: (category: string | null) => void;
+  setSkincareFilterBrand: (brand: string | null) => void;
+  setSkincareFilterSkinType: (skinType: string | null) => void;
+  setSkincareSortBy: (sortBy: 'name' | 'brand' | 'purchase_date' | 'expiry_date') => void;
+  setSkincareSortOrder: (order: 'asc' | 'desc') => void;
+  setSkincareShowExpired: (show: boolean) => void;
+  setSkincareSelectedProduct: (productId: string | null) => void;
+  setSkincareSelectedTab: (tab: 'products' | 'routine' | 'logs' | 'stats') => void;
+  resetSkincareFilters: () => void;
 }
 
-export const createSkincareSlice: StateCreator<SkincareSlice, [], [], SkincareSlice> = (
-  set,
-  get
-) => ({
-  // Initial state
-  skincareProducts: [],
-  skinConditionLogs: [],
-  skincareLoaded: false,
-  skincareLoading: false,
-  skincareError: null,
+export const createSkincareSlice: StateCreator<SkincareSlice, [], [], SkincareSlice> = (set) => ({
+  // Initial UI state
+  skincareViewMode: 'grid',
+  skincareFilterCategory: null,
+  skincareFilterBrand: null,
+  skincareFilterSkinType: null,
+  skincareSortBy: 'name',
+  skincareSortOrder: 'asc',
+  skincareShowExpired: false,
+  skincareSelectedProduct: null,
+  skincareSelectedTab: 'products',
 
-  // Load skincare products
-  loadSkincareProducts: async (filters): Promise<void> => {
-    if (get().skincareLoading) return;
-
-    set({ skincareLoading: true, skincareError: null });
-    try {
-      const products = await getSkincareProducts(filters);
-      set({ skincareProducts: products, skincareLoaded: true, skincareLoading: false });
-      logger.info('SkincareSlice', 'Skincare products loaded', { count: products.length });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to load skincare products';
-      logger.error('SkincareSlice', error as Error, { context: 'loadSkincareProducts' });
-      set({
-        skincareError: errorMessage,
-        skincareLoading: false,
-      });
-      throw error;
-    }
-  },
-
-  // Add a new skincare product
-  addSkincareProduct: async (product): Promise<SkincareProduct> => {
-    try {
-      const created = await apiCreateSkincareProduct(product);
-      set((state) => ({ skincareProducts: [created, ...state.skincareProducts] }));
-      logger.info('SkincareSlice', 'Skincare product created', { id: created.id, name: created.name });
-      return created;
-    } catch (error) {
-      logger.error('SkincareSlice', error as Error, { context: 'addSkincareProduct' });
-      throw error;
-    }
-  },
-
-  // Update a skincare product
-  updateSkincareProduct: async (id, updates): Promise<SkincareProduct> => {
-    try {
-      const updated = await apiUpdateSkincareProduct(id, updates);
-      set((state) => ({
-        skincareProducts: state.skincareProducts.map((p) => (p.id === id ? updated : p)),
-      }));
-      logger.info('SkincareSlice', 'Skincare product updated', { id });
-      return updated;
-    } catch (error) {
-      logger.error('SkincareSlice', error as Error, { context: 'updateSkincareProduct', id });
-      throw error;
-    }
-  },
-
-  // Delete a skincare product
-  deleteSkincareProduct: async (id): Promise<void> => {
-    try {
-      await apiDeleteSkincareProduct(id);
-      set((state) => ({
-        skincareProducts: state.skincareProducts.filter((p) => p.id !== id),
-      }));
-      logger.info('SkincareSlice', 'Skincare product deleted', { id });
-    } catch (error) {
-      logger.error('SkincareSlice', error as Error, { context: 'deleteSkincareProduct', id });
-      throw error;
-    }
-  },
-
-  // Load skin condition logs
-  loadSkinConditionLogs: async (filters): Promise<void> => {
-    try {
-      const logs = await getSkinConditionLogs(filters);
-      set({ skinConditionLogs: logs });
-      logger.info('SkincareSlice', 'Skin condition logs loaded', { count: logs.length });
-    } catch (error) {
-      logger.error('SkincareSlice', error as Error, { context: 'loadSkinConditionLogs' });
-      throw error;
-    }
-  },
-
-  // Add a skin condition log
-  addSkinConditionLog: async (log): Promise<SkinConditionLog> => {
-    try {
-      const created = await apiCreateSkinConditionLog(log);
-      set((state) => ({ skinConditionLogs: [created, ...state.skinConditionLogs] }));
-      logger.info('SkincareSlice', 'Skin condition log created', { id: created.id, date: created.date });
-      return created;
-    } catch (error) {
-      logger.error('SkincareSlice', error as Error, { context: 'addSkinConditionLog' });
-      throw error;
-    }
-  },
-
-  // Get skincare stats
-  getSkincareStats: async () => {
-    try {
-      const stats = await getSkincareStats();
-      logger.info('SkincareSlice', 'Skincare stats retrieved', stats);
-      return stats;
-    } catch (error) {
-      logger.error('SkincareSlice', error as Error, { context: 'getSkincareStats' });
-      throw error;
-    }
-  },
-
-  // Get skincare product by ID
-  getSkincareProductById: (id) => get().skincareProducts.find((p) => p.id === id),
+  // UI Actions
+  setSkincareViewMode: (mode) => set({ skincareViewMode: mode }),
+  setSkincareFilterCategory: (category) => set({ skincareFilterCategory: category }),
+  setSkincareFilterBrand: (brand) => set({ skincareFilterBrand: brand }),
+  setSkincareFilterSkinType: (skinType) => set({ skincareFilterSkinType: skinType }),
+  setSkincareSortBy: (sortBy) => set({ skincareSortBy: sortBy }),
+  setSkincareSortOrder: (order) => set({ skincareSortOrder: order }),
+  setSkincareShowExpired: (show) => set({ skincareShowExpired: show }),
+  setSkincareSelectedProduct: (productId) => set({ skincareSelectedProduct: productId }),
+  setSkincareSelectedTab: (tab) => set({ skincareSelectedTab: tab }),
+  resetSkincareFilters: () =>
+    set({
+      skincareFilterCategory: null,
+      skincareFilterBrand: null,
+      skincareFilterSkinType: null,
+      skincareShowExpired: false,
+      skincareSelectedProduct: null,
+    }),
 });

@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { Circle, CheckCircle, Clock } from 'lucide-react';
-import type { Project } from '../hooks/useProjectsQuery';
+import type { Project } from '@/hooks/useProjectsQuery';
 import { STATUS_CONFIG } from '../constants';
 
 interface StatusBadgeProps {
@@ -28,11 +28,15 @@ export function StatusBadge({ status, withIcon = false }: StatusBadgeProps): Rea
 
 function getStatusIcon(status: Project['status']): React.JSX.Element | undefined {
   switch (status) {
+    case 'planning':
+      return <Circle className="h-3 w-3" />;
     case 'active':
       return <Circle className="h-3 w-3" />;
+    case 'on-hold':
+      return <Clock className="h-3 w-3" />;
     case 'completed':
       return <CheckCircle className="h-3 w-3" />;
-    case 'on_hold':
-      return <Clock className="h-3 w-3" />;
+    case 'archived':
+      return <CheckCircle className="h-3 w-3" />;
   }
 }

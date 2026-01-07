@@ -16,6 +16,7 @@ interface LoanPaymentModalProps {
 
 export const LoanPaymentModal: React.FC<LoanPaymentModalProps> = ({ loan, onSave, onCancel }) => {
   const [formData, setFormData] = useState<Omit<LoanPaymentInput, 'balanceAfter'>>({
+    loanId: loan.id,
     paymentDate: new Date().toISOString().split('T')[0],
     amount: loan.monthlyPayment + loan.extraPayment,
     principalAmount: 0,
