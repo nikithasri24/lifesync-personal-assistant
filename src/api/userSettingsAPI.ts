@@ -129,13 +129,10 @@ export async function getUserPreferences(): Promise<UserPreferences | null> {
         .from('user_preferences')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
-      if (error) {
-        if (error.code === 'PGRST116') return null; // Not found
-        throw error;
-      }
-      return data as UserPreferences;
+      if (error) throw error;
+      return data as UserPreferences | null;
     },
     { domain: 'UserSettingsAPI', operation: 'getUserPreferences' }
   );
