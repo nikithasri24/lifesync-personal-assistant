@@ -24,13 +24,13 @@ vi.mock('../data.js', () => ({ dataManager: dm }))
 vi.mock('../config.js', () => ({ loadConfig: vi.fn().mockResolvedValue({}) }))
 
 describe('cli tasks command', () => {
-  let logSpy: any
+  let infoSpy: any
   beforeEach(() => {
-    logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
     vi.useFakeTimers()
   })
   afterEach(() => {
-    logSpy.mockRestore()
+    infoSpy.mockRestore()
     vi.useRealTimers()
     vi.clearAllMocks()
   })
@@ -51,7 +51,7 @@ describe('cli tasks command', () => {
 
     expect(dm.getTodoItems).toHaveBeenCalled()
     // Expect output contains our filtered task title
-    const printed = logSpy.mock.calls.map((c: any[]) => c.join(' ')).join('\n')
+    const printed = infoSpy.mock.calls.map((c: any[]) => c.join(' ')).join('\n')
     expect(printed).toContain('Work item')
     expect(printed).not.toContain('Home item')
   })

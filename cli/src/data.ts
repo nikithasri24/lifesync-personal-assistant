@@ -2,6 +2,7 @@ import fs from 'fs-extra';
 import path from 'path';
 import { type ShoppingItem, type Recipe, type MealPlan, type Store, type TodoItem, type TodoCategory, type CliConfig } from './types.js';
 import { loadConfig } from './config.js';
+import { logger } from './utils/logger.js';
 
 export class DataManager {
   private config: CliConfig | null;
@@ -14,7 +15,7 @@ export class DataManager {
 
   async init(): Promise<void> {
     this.config = await loadConfig();
-    this.dataPath = this.config.dataPath;
+    this.dataPath = this.config.dataPath ?? '';
     await fs.ensureDir(this.dataPath);
   }
 

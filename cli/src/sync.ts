@@ -3,10 +3,11 @@ import chalk from 'chalk';
 import ora from 'ora';
 import { dataManager } from './data.js';
 import { loadConfig } from './config.js';
-import { type ShoppingItem, type Recipe, type MealPlan } from './types.js';
+import { type ShoppingItem, type Recipe, type MealPlan, type CliConfig } from './types.js';
+import { logger } from './utils/logger.js';
 
 export class WebAppSync {
-  private config: Record<string, unknown> | null;
+  private config: CliConfig | null;
   private baseUrl: string;
 
   constructor() {
