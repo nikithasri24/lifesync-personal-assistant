@@ -7,7 +7,7 @@ import chalk from 'chalk';
 import ora from 'ora';
 import { format, parseISO, addDays } from 'date-fns';
 import { dataManager } from '../data.js';
-import { type TodoItem } from '../types.js';
+import { type TodoItem, type TodoStatus, type TodoPriority } from '../types.js';
 import { loadConfig } from '../config.js';
 
 interface TaskOptions {
@@ -31,19 +31,19 @@ interface ListTasksOptions {
 }
 
 interface UpdateStatusOptions {
-  status?: string;
+  status?: TodoStatus;
 }
 
 interface InquirerAnswer {
   title?: string;
   description?: string;
-  priority?: string;
+  priority?: TodoPriority;
   category?: string;
   newCategoryName?: string;
   dueDate?: Date;
   tags?: string[];
   estimatedTime?: number;
-  status?: string;
+  status?: TodoStatus;
   confirm?: boolean;
 }
 
@@ -394,7 +394,7 @@ export function createTasksCommand(): Command {
     .option('--due <date>', 'Due date (YYYY-MM-DD or day name)')
     .option('-t, --tags <string>', 'Tags (comma-separated)')
     .option('--time <number>', 'Estimated time in minutes')
-    .action(async (title: string | undefined, options: TaskOptions) => handleAddTask(title, options))
+    .action(async (title: string | undefined, options: TaskOptions): Promise<void> => { await handleAddTask(title, options); })
 
   tasks
     .command('list')
@@ -408,7 +408,7 @@ export function createTasksCommand(): Command {
     .option('--overdue', 'Show only overdue tasks')
     .option('--today', 'Show tasks due today')
     .option('--week', 'Show tasks due this week')
-    .action(async (options: ListTasksOptions) => handleListTasks(options))
+    .action(async (options: ListTasksOptions): Promise<void> => { await handleListTasks(options); })
 
   tasks
     .command('status')
@@ -416,33 +416,33 @@ export function createTasksCommand(): Command {
     .description('Update task status')
     .argument('<query>', 'Task title or ID')
     .option('-s, --status <status>', 'Status (need-to-start, currently-working, pending-others, done)')
-    .action(async (query: string, options: UpdateStatusOptions) => handleUpdateTaskStatus(query, options))
+    .action(async (query: string, options: UpdateStatusOptions): Promise<void> => { await handleUpdateTaskStatus(query, options); })
 
   tasks
     .command('done')
     .alias('complete')
     .description('Mark task as completed')
     .argument('<query>', 'Task title or ID')
-    .action(async (query: string) => handleCompleteTask(query))
+    .action(async (query: string): Promise<void> => { await handleCompleteTask(query); })
 
   tasks
     .command('start')
     .alias('work')
     .description('Start working on task')
     .argument('<query>', 'Task title or ID')
-    .action(async (query: string) => handleStartTask(query))
+    .action(async (query: string): Promise<void> => { await handleStartTask(query); })
 
   tasks
     .command('remove')
     .alias('rm')
     .description('Remove task')
     .argument('<query>', 'Task title or ID')
-    .action(async (query: string) => handleRemoveTask(query))
+    .action(async (query: string): Promise<void> => { await handleRemoveTask(query); })
 
   tasks
     .command('today')
     .description("Show today's tasks and summary")
-    .action(async () => handleTodayOverview())
+    .action(async (): Promise<void> => { await handleTodayOverview(); })
 
   return tasks
 }

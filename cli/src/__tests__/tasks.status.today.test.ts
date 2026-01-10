@@ -44,13 +44,13 @@ describe('cli tasks status & today', () => {
       { id: 't2', title: 'Overdue', status: 'need-to-start', priority: 'low', categoryId: 'c1', dueDate: yesterday, createdAt: yesterday, tags: [] },
     ])
 
-    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
     const { handleTodayOverview } = await import('../commands/tasks')
     await handleTodayOverview()
 
-    const output = logSpy.mock.calls.map((c) => c.join(' ')).join('\n')
+    const output = infoSpy.mock.calls.map((c) => c.join(' ')).join('\n')
     expect(output).toContain(format(today, 'EEEE, MMMM d, yyyy'))
     expect(output).toContain('📊 Quick Stats:')
-    logSpy.mockRestore()
+    infoSpy.mockRestore()
   })
 })

@@ -5,7 +5,7 @@ import inquirer from 'inquirer';
 import chalk from 'chalk';
 import ora, { type Ora } from 'ora';
 import { dataManager } from '../data.js';
-import { type Recipe, type Ingredient } from '../types.js';
+import { type Recipe, type Ingredient, type Cuisine, type Difficulty, type IngredientCategory } from '../types.js';
 
 interface RecipeAddOptions {
   cuisine?: string;
@@ -27,8 +27,8 @@ interface RecipeListOptions {
 interface BasicAnswers {
   name: string;
   description?: string;
-  cuisine: string;
-  difficulty: string;
+  cuisine: Cuisine;
+  difficulty: Difficulty;
   prepTime: number;
   cookTime: number;
   servings: number;
@@ -42,7 +42,7 @@ interface IngredientNameAnswer {
 interface IngredientDetailAnswers {
   amount: number;
   unit: string;
-  category: string;
+  category: IngredientCategory;
   optional: boolean;
 }
 
@@ -79,8 +79,8 @@ export function createRecipesCommand(): Command {
       await dataManager.init();
 
       let recipeName = name;
-      let cuisine = options.cuisine;
-      let difficulty = options.difficulty ?? 'medium';
+      let cuisine: Cuisine = (options.cuisine ?? 'other') as Cuisine;
+      let difficulty: Difficulty = (options.difficulty ?? 'medium') as Difficulty;
       let prepTime = parseInt(options.prep ?? '15') || 15;
       let cookTime = parseInt(options.cook ?? '30') || 30;
       let servings = parseInt(options.servings ?? '4') || 4;

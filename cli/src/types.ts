@@ -1,11 +1,19 @@
+export type ShoppingCategory = 'produce' | 'dairy' | 'meat' | 'pantry' | 'frozen' | 'bakery' | 'deli' | 'household' | 'personal' | 'electronics' | 'other';
+export type Priority = 'low' | 'medium' | 'high';
+export type Difficulty = 'easy' | 'medium' | 'hard';
+export type Cuisine = 'american' | 'italian' | 'mexican' | 'asian' | 'indian' | 'mediterranean' | 'other';
+export type IngredientCategory = 'produce' | 'dairy' | 'meat' | 'pantry' | 'frozen' | 'bakery' | 'deli' | 'household' | 'personal' | 'other';
+export type TodoStatus = 'need-to-start' | 'currently-working' | 'pending-others' | 'done';
+export type TodoPriority = 'low' | 'medium' | 'high' | 'urgent';
+
 export interface ShoppingItem {
   id: string;
   name: string;
   quantity: number;
   unit?: string;
-  category: 'produce' | 'dairy' | 'meat' | 'pantry' | 'frozen' | 'bakery' | 'deli' | 'household' | 'personal' | 'electronics' | 'other';
+  category: ShoppingCategory;
   subcategory?: string;
-  priority: 'low' | 'medium' | 'high';
+  priority: Priority;
   purchased: boolean;
   price?: number;
   estimatedPrice?: number;
@@ -35,8 +43,8 @@ export interface Recipe {
   id: string;
   name: string;
   description?: string;
-  cuisine: 'american' | 'italian' | 'mexican' | 'asian' | 'indian' | 'mediterranean' | 'other';
-  difficulty: 'easy' | 'medium' | 'hard';
+  cuisine: Cuisine;
+  difficulty: Difficulty;
   prepTime: number;
   cookTime: number;
   servings: number;
@@ -69,7 +77,7 @@ export interface Ingredient {
   name: string;
   amount: number;
   unit: string;
-  category: 'produce' | 'dairy' | 'meat' | 'pantry' | 'frozen' | 'bakery' | 'deli' | 'household' | 'personal' | 'other';
+  category: IngredientCategory;
   optional?: boolean;
   notes?: string;
 }
@@ -151,8 +159,8 @@ export interface TodoItem {
   id: string;
   title: string;
   description?: string;
-  status: 'need-to-start' | 'currently-working' | 'pending-others' | 'done';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
+  status: TodoStatus;
+  priority: TodoPriority;
   categoryId: string;
   dueDate?: Date;
   assignedTo?: string;

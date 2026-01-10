@@ -1,14 +1,14 @@
 export const logger = {
-  info: (context: string, message: string): void => {
-    console.log(message);
+  info: (context: string, ...args: unknown[]): void => {
+    console.log(...args);
   },
-  error: (context: string, error: unknown): void => {
-    console.error(error);
+  error: (context: string, ...args: unknown[]): void => {
+    console.error(...args);
   },
-  warn: (context: string, message: string): void => {
-    console.warn(message);
+  warn: (context: string, ...args: unknown[]): void => {
+    console.warn(...args);
   },
-  debug: (context: string, message: string): void => {
-    console.debug(message);
+  debug: (context: string, ...args: unknown[]): void => {
+    console.debug(...args);
   }
 };

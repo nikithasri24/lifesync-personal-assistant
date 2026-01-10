@@ -3,7 +3,7 @@ import inquirer from 'inquirer';
 import chalk from 'chalk';
 import ora, { type Ora } from 'ora';
 import { dataManager } from '../data.js';
-import { type ShoppingItem } from '../types.js';
+import { type ShoppingItem, type ShoppingCategory, type Priority } from '../types.js';
 import { loadConfig } from '../config.js';
 import { logger } from '../utils/logger.js';
 
@@ -47,8 +47,8 @@ export function createShoppingCommand(): Command {
       let itemName = name;
       let quantity = parseInt(options.quantity, 10) || 1;
       let unit = options.unit ?? 'pcs';
-      let category = options.category ?? config.defaultCategory ?? 'other';
-      let priority = options.priority ?? 'medium';
+      let category: ShoppingCategory = (options.category ?? config.defaultCategory ?? 'other') as ShoppingCategory;
+      let priority: Priority = (options.priority ?? 'medium') as Priority;
 
       // Interactive mode if no name provided
       if (!itemName) {
@@ -56,8 +56,8 @@ export function createShoppingCommand(): Command {
           name: string;
           quantity: number;
           unit: string;
-          category: string;
-          priority: string;
+          category: ShoppingCategory;
+          priority: Priority;
           price?: number;
           brand?: string;
           notes?: string;

@@ -2,6 +2,7 @@ import { Command } from 'commander';
 import inquirer from 'inquirer';
 import chalk from 'chalk';
 import { loadConfig, saveConfig, updateConfig } from '../config.js';
+import { logger } from '../utils/logger.js';
 
 export function createConfigCommand(): Command {
   const config = new Command('config')

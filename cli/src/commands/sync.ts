@@ -2,6 +2,7 @@ import { Command } from 'commander';
 import inquirer from 'inquirer';
 import chalk from 'chalk';
 import { webAppSync } from '../sync.js';
+import { logger } from '../utils/logger.js';
 
 export function createSyncCommand(): Command {
   const sync = new Command('sync')
