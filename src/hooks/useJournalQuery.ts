@@ -14,8 +14,6 @@ import {
   createJournalEntry,
   updateJournalEntry,
   deleteJournalEntry,
-  getJournalTags,
-  getMoodStats,
   type CreateJournalEntryInput,
   type UpdateJournalEntryInput,
   type JournalEntryFilters,
@@ -52,29 +50,7 @@ export function useJournalEntry(id: string | null): ReturnType<typeof useQuery> 
   });
 }
 
-/**
- * Get all available tags
- */
-export function useJournalTags(): ReturnType<typeof useQuery> {
-  return useQuery({
-    queryKey: [...queryKeys.journal.all, 'tags'] as const,
-    queryFn: getJournalTags,
-    ...queryOptions.user,
-    staleTime: 10 * 60 * 1000, // 10 minutes
-  });
-}
 
-/**
- * Get mood statistics
- */
-export function useMoodStats(startDate?: Date, endDate?: Date): ReturnType<typeof useQuery> {
-  return useQuery({
-    queryKey: [...queryKeys.journal.all, 'mood-stats', { startDate, endDate }] as const,
-    queryFn: () => getMoodStats(startDate, endDate),
-    ...queryOptions.user,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
-}
 
 // =====================================================
 // MUTATION HOOKS
@@ -88,7 +64,7 @@ export function useCreateJournalEntry(): UseMutationResult<JournalEntry, Error, 
 
   return useMutation({
     mutationFn: async (input: CreateJournalEntryInput) => {
-      logger.debug('Journal', 'Creating journal entry', { title: input.title, mood: input.mood });
+      logger.debug('Journal', 'Creating journal entry', { title: input.title });
       const result = await createJournalEntry(input);
       return result;
     },

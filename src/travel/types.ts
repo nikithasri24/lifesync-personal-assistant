@@ -80,84 +80,6 @@ export type Trip = {
   updatedAt: string;
 };
 
-export type TripExpense = {
-  id: string;
-  userId: string;
-  tripId: string;
-
-  // Expense details
-  date: string; // ISO date
-  description: string;
-  amount: number;
-  currency: string; // ISO 4217
-  category: ExpenseCategory;
-
-  // Payment info
-  paymentMethod?: 'cash' | 'credit_card' | 'debit_card' | 'mobile_payment' | 'other';
-  paidBy?: string; // Name of person who paid
-
-  // Location
-  location?: string; // City or place name
-  countryCode?: string;
-
-  // Splitting
-  sharedWith?: string[]; // Names of people expense is split with
-  splitAmount?: number; // Amount per person if split
-
-  // Receipt
-  receiptPhotoUrl?: string;
-
-  notes?: string;
-
-  createdAt: string;
-  updatedAt: string;
-};
-
-export type ExpenseCategory =
-  | 'accommodation'
-  | 'transportation'
-  | 'food'
-  | 'activities'
-  | 'shopping'
-  | 'entertainment'
-  | 'health'
-  | 'other';
-
-export type JournalEntry = {
-  id: string;
-  userId: string;
-  tripId?: string; // Optional - can be standalone or part of trip
-
-  // Entry details
-  date: string; // ISO date
-  title: string;
-  content: string; // Markdown supported
-
-  // Location
-  location?: string;
-  countryCode?: string;
-  coordinates?: {
-    lat: number;
-    lng: number;
-  };
-
-  // Media
-  photoUrls?: string[];
-
-  // Metadata
-  mood?: 'amazing' | 'great' | 'good' | 'okay' | 'bad';
-  weather?: 'sunny' | 'cloudy' | 'rainy' | 'snowy' | 'windy';
-
-  // Tags for easy filtering
-  tags?: string[];
-
-  // Privacy
-  isPrivate: boolean;
-
-  createdAt: string;
-  updatedAt: string;
-};
-
 export type Itinerary = {
   id: string;
   userId: string;
@@ -193,10 +115,6 @@ export type VisitedLocationInput = Omit<
 >;
 
 export type TripInput = Omit<Trip, 'id' | 'userId' | 'totalSpent' | 'createdAt' | 'updatedAt'>;
-
-export type TripExpenseInput = Omit<TripExpense, 'id' | 'userId' | 'createdAt' | 'updatedAt'>;
-
-export type JournalEntryInput = Omit<JournalEntry, 'id' | 'userId' | 'createdAt' | 'updatedAt'>;
 
 export type ItineraryInput = Omit<Itinerary, 'id' | 'userId' | 'createdAt' | 'updatedAt'>;
 

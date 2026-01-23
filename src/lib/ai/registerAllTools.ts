@@ -17,7 +17,6 @@ import { intelligenceTools } from './intelligenceTools';
 
 // Import additional tools as they're created
 // import { financeTools } from '@/finance/tools';
-// import { journalTools } from '@/journal/tools';
 // import { calendarTools } from '@/calendar/tools';
 
 let registered = false;

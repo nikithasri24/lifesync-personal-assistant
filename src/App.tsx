@@ -23,7 +23,8 @@ const Focus = lazy(() => import('./pages/Focus'));
 const Habits = lazy(() => import('./pages/Habits'));
 const Todos = lazy(() => import('./pages/Todos'));
 const Notes = lazy(() => import('./pages/Notes'));
-const Journal = lazy(() => import('./pages/Journal'));
+const Journal = lazy(() => import('./journal/JournalPage'));
+const JournalDetail = lazy(() => import('./journal/components/JournalDetailView'));
 const LifeGoals = lazy(() => import('./pages/LifeGoals'));
 const ShoppingSmart = lazy(() => import('./pages/ShoppingSmart'));
 const MealPlanning = lazy(() => import('./pages/MealPlanning'));
@@ -96,7 +97,8 @@ function App(): React.ReactElement {
             <Route path="/projects" element={<ProjectTracking />} />
 
             {/* Wellbeing Routes */}
-            <Route path="/journal" element={<Journal />} />
+            <Route path="/journal" element={<RouteErrorBoundary feature="Journal"><Journal /></RouteErrorBoundary>} />
+            <Route path="/journal/:id" element={<RouteErrorBoundary feature="Journal"><JournalDetail /></RouteErrorBoundary>} />
             <Route path="/skincare" element={<Skincare />} />
 
             {/* Personal Routes */}

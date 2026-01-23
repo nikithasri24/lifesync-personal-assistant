@@ -331,7 +331,7 @@ async function executeGetRecentActivity(
       entry.createdAt && new Date(entry.createdAt) >= cutoffDate
     ).map(j => ({
       id: j.id,
-      mood: j.mood,
+      tags: j.tags,
       created_at: j.createdAt
     }));
 

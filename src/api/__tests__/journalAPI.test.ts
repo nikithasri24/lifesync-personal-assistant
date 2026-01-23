@@ -28,11 +28,8 @@ describe('journalAPI', () => {
     user_id: 'test-user-123',
     title: 'Test Entry',
     content: 'Test content',
-    mood: 'good' as const,
     tags: ['test', 'api'],
     attachments: [],
-    weather: null,
-    gratitude: null,
     created_at: '2025-11-19T12:00:00Z',
     updated_at: '2025-11-19T12:00:00Z',
   };
@@ -107,23 +104,6 @@ describe('journalAPI', () => {
       await getJournalEntries(filters);
 
       expect(mockQuery.overlaps).toHaveBeenCalledWith('tags', ['work']);
-    });
-
-    it('should apply moods filter using in', async () => {
-      const mockQuery = {
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        order: vi.fn().mockReturnThis(),
-        in: vi.fn().mockReturnThis(),
-        then: vi.fn((resolve) => resolve({ data: [], error: null })),
-      };
-
-      (supabase!.from as any).mockReturnValue(mockQuery);
-
-      const filters: JournalEntryFilters = { moods: ['excellent', 'good'] };
-      await getJournalEntries(filters);
-
-      expect(mockQuery.in).toHaveBeenCalledWith('mood', ['excellent', 'good']);
     });
 
     it('should apply date range filters', async () => {
@@ -223,7 +203,6 @@ describe('journalAPI', () => {
       const input: CreateJournalEntryInput = {
         title: 'Test Entry',
         content: 'Test content',
-        mood: 'good' as const,
         tags: ['test'],
         attachments: [],
       };
@@ -235,7 +214,6 @@ describe('journalAPI', () => {
           user_id: mockUser.id,
           title: 'Test Entry',
           content: 'Test content',
-          mood: 'good' as const,
           tags: ['test'],
           attachments: [],
         })
@@ -248,7 +226,7 @@ describe('journalAPI', () => {
         insert: vi.fn().mockReturnThis(),
         select: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({
-          data: { ...mockEntry, title: null, mood: null },
+          data: { ...mockEntry, title: null },
           error: null,
         }),
       };
@@ -257,14 +235,12 @@ describe('journalAPI', () => {
 
       const input: CreateJournalEntryInput = {
         content: 'Minimal entry',
-        mood: 'neutral',
       };
 
       await createJournalEntry(input);
 
       const insertCall = mockQuery.insert.mock.calls[0][0];
       expect(insertCall.title).toBeNull();
-      expect(insertCall.mood).toBeUndefined();
       expect(insertCall.tags).toEqual([]);
       expect(insertCall.attachments).toEqual([]);
     });
@@ -282,7 +258,7 @@ describe('journalAPI', () => {
       (supabase!.from as any).mockReturnValue(mockQuery);
 
       await expect(
-        createJournalEntry({ content: 'Test', mood: 'neutral' })
+        createJournalEntry({ content: 'Test' })
       ).rejects.toThrow();
     });
   });
@@ -331,13 +307,13 @@ describe('journalAPI', () => {
       (supabase!.from as any).mockReturnValue(mockQuery);
 
       const updates: UpdateJournalEntryInput = {
-        mood: 'excellent' as const,
+        tags: ['updated', 'tags'],
       };
 
       await updateJournalEntry('entry-123', updates);
 
       const updateCall = mockQuery.update.mock.calls[0][0];
-      expect(updateCall).toHaveProperty('mood', 'excited');
+      expect(updateCall).toHaveProperty('tags');
       expect(updateCall).not.toHaveProperty('content');
       expect(updateCall).not.toHaveProperty('title');
     });

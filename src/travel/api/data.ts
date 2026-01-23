@@ -8,10 +8,6 @@ import type {
   VisitedLocationInput,
   Trip,
   TripInput,
-  TripExpense,
-  TripExpenseInput,
-  JournalEntry,
-  JournalEntryInput,
   WorldMapData,
   TravelStats,
 } from '../types';
@@ -184,98 +180,6 @@ export const travelAPI = {
 
   async deleteTrip(id: string): Promise<void> {
     const { error } = await supabase.from('trips').delete().eq('id', id);
-    if (error) throw error;
-  },
-
-  // ============= EXPENSES =============
-
-  async listExpenses(tripId: string): Promise<TripExpense[]> {
-    const { data, error } = await supabase
-      .from('trip_expenses')
-      .select('*')
-      .eq('trip_id', tripId)
-      .order('date', { ascending: false });
-
-    if (error) throw error;
-    return toCamelCase(data || []);
-  },
-
-  async createExpense(expense: TripExpenseInput): Promise<TripExpense> {
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) throw new Error('Not authenticated');
-
-    const response = await supabase
-      .from('trip_expenses')
-      .insert(toSnakeCase({ ...expense, userId: userData.user.id }))
-      .select()
-      .single();
-
-    if (response.error) throw response.error;
-    return toCamelCase<TripExpense>(response.data);
-  },
-
-  async updateExpense(id: string, updates: Partial<TripExpenseInput>): Promise<TripExpense> {
-    const response = await supabase
-      .from('trip_expenses')
-      .update(toSnakeCase(updates))
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (response.error) throw response.error;
-    return toCamelCase<TripExpense>(response.data);
-  },
-
-  async deleteExpense(id: string): Promise<void> {
-    const { error } = await supabase.from('trip_expenses').delete().eq('id', id);
-    if (error) throw error;
-  },
-
-  // ============= JOURNAL ENTRIES =============
-
-  async listJournalEntries(tripId?: string): Promise<JournalEntry[]> {
-    let query = supabase
-      .from('travel_journal_entries')
-      .select('*')
-      .order('date', { ascending: false });
-
-    if (tripId) {
-      query = query.eq('trip_id', tripId);
-    }
-
-    const { data, error } = await query;
-    if (error) throw error;
-    return toCamelCase(data || []);
-  },
-
-  async createJournalEntry(entry: JournalEntryInput): Promise<JournalEntry> {
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) throw new Error('Not authenticated');
-
-    const response = await supabase
-      .from('travel_journal_entries')
-      .insert(toSnakeCase({ ...entry, userId: userData.user.id }))
-      .select()
-      .single();
-
-    if (response.error) throw response.error;
-    return toCamelCase<JournalEntry>(response.data);
-  },
-
-  async updateJournalEntry(id: string, updates: Partial<JournalEntryInput>): Promise<JournalEntry> {
-    const response = await supabase
-      .from('travel_journal_entries')
-      .update(toSnakeCase(updates))
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (response.error) throw response.error;
-    return toCamelCase<JournalEntry>(response.data);
-  },
-
-  async deleteJournalEntry(id: string): Promise<void> {
-    const { error } = await supabase.from('travel_journal_entries').delete().eq('id', id);
     if (error) throw error;
   },
 

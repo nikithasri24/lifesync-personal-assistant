@@ -26,6 +26,7 @@
       "@/finance": ["./src/finance"],
       "@/goals": ["./src/goals"],
       "@/hooks": ["./src/hooks"],
+      "@/journal": ["./src/journal"],
       "@/lib": ["./src/lib"],
       "@/pages": ["./src/pages"],
       "@/services": ["./src/services"],

@@ -110,8 +110,6 @@ export interface ListItem {
   updatedAt: Date;
 }
 
-export type JournalMood = 'excellent' | 'good' | 'neutral' | 'bad' | 'terrible';
-
 export interface Attachment {
   id: string;
   name: string;
@@ -124,12 +122,9 @@ export interface JournalEntry {
   id: string;
   title: string;
   content: string;
-  mood: JournalMood;
   tags: string[];
   attachments: Attachment[];
   createdAt: Date;
-  weather?: unknown;
-  gratitude?: string;
 }
 
 export interface Goal {

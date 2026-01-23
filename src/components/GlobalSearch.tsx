@@ -144,7 +144,7 @@ export default function GlobalSearch({ onClose }: GlobalSearchProps) {
           type: 'journal',
           title: entry.title,
           content: entry.content.substring(0, 100) + '...',
-          category: entry.mood,
+          category: entry.tags?.[0] ?? 'journal',
           date: entry.createdAt,
           icon: BookOpen,
           onClick: (): void => {
