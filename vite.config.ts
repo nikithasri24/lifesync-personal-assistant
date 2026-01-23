@@ -13,6 +13,7 @@ export default defineConfig({
       '@/finance': path.resolve(__dirname, './src/finance'),
       '@/goals': path.resolve(__dirname, './src/goals'),
       '@/hooks': path.resolve(__dirname, './src/hooks'),
+      '@/journal': path.resolve(__dirname, './src/journal'),
       '@/lib': path.resolve(__dirname, './src/lib'),
       '@/pages': path.resolve(__dirname, './src/pages'),
       '@/services': path.resolve(__dirname, './src/services'),

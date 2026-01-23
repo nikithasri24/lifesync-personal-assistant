@@ -146,7 +146,6 @@ class SentimentAnalysisService {
     const analyses = entries.map(entry => ({
       date: format(entry.createdAt, 'yyyy-MM-dd'),
       analysis: this.analyzeSentiment(entry.content ?? ''),
-      mood: entry.mood,
     }));
 
     // Calculate average sentiment

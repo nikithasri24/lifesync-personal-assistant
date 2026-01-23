@@ -1,10 +1,8 @@
 /**
  * Journal Zustand Slice - UI STATE ONLY
  *
- * ⚠️ DEPRECATED: Server state removed - use React Query hooks instead
- * 
- * This slice now contains ONLY UI state (view modes, filters, etc.)
- * All server data (journal entries, loading states, CRUD operations) should use React Query.
+ * This slice contains ONLY UI state (view modes, filters, pagination, etc.)
+ * All server data (journal entries, loading states, CRUD operations) use React Query.
  *
  * ✅ Use React Query hooks from @/hooks/useJournalQuery.ts:
  * - useJournalEntries() - Get all journal entries
@@ -12,60 +10,50 @@
  * - useCreateJournalEntry() - Create journal entry
  * - useUpdateJournalEntry() - Update journal entry
  * - useDeleteJournalEntry() - Delete journal entry
- *
- * Benefits of React Query:
- * - Automatic caching and background refetching
- * - Optimistic updates with automatic rollback on error
- * - Better loading and error states
- * - Proper separation: Server state (React Query) vs UI state (Zustand)
  */
 
 import { type StateCreator } from 'zustand';
 
 export interface JournalSlice {
-  // UI State only - no server data!
-  journalViewMode: 'timeline' | 'calendar' | 'list';
-  journalFilterMood: string | null;
-  journalFilterDateRange: { start: string; end: string } | null;
-  journalSortBy: 'date' | 'mood' | 'created_at';
-  journalSortOrder: 'asc' | 'desc';
-  journalSearchQuery: string;
-  journalSelectedDate: string | null;
+  // View state
+  journalViewMode: 'list' | 'calendar';
 
-  // UI Actions
-  setJournalViewMode: (mode: 'timeline' | 'calendar' | 'list') => void;
-  setJournalFilterMood: (mood: string | null) => void;
+  // Filter state
+  journalFilterDateRange: { start: string; end: string } | null;
+  journalSearchQuery: string;
+  journalSelectedDate: string | null; // For calendar view selected day
+
+  // Pagination state
+  journalCurrentPage: number;
+
+  // Actions
+  setJournalViewMode: (mode: 'list' | 'calendar') => void;
   setJournalFilterDateRange: (range: { start: string; end: string } | null) => void;
-  setJournalSortBy: (sortBy: 'date' | 'mood' | 'created_at') => void;
-  setJournalSortOrder: (order: 'asc' | 'desc') => void;
   setJournalSearchQuery: (query: string) => void;
   setJournalSelectedDate: (date: string | null) => void;
+  setJournalCurrentPage: (page: number) => void;
   resetJournalFilters: () => void;
 }
 
 export const createJournalSlice: StateCreator<JournalSlice, [], [], JournalSlice> = (set) => ({
-  // Initial UI state
-  journalViewMode: 'timeline',
-  journalFilterMood: null,
+  // Initial state
+  journalViewMode: 'list',
   journalFilterDateRange: null,
-  journalSortBy: 'date',
-  journalSortOrder: 'desc',
   journalSearchQuery: '',
   journalSelectedDate: null,
+  journalCurrentPage: 0,
 
-  // UI Actions
-  setJournalViewMode: (mode) => set({ journalViewMode: mode }),
-  setJournalFilterMood: (mood) => set({ journalFilterMood: mood }),
-  setJournalFilterDateRange: (range) => set({ journalFilterDateRange: range }),
-  setJournalSortBy: (sortBy) => set({ journalSortBy: sortBy }),
-  setJournalSortOrder: (order) => set({ journalSortOrder: order }),
-  setJournalSearchQuery: (query) => set({ journalSearchQuery: query }),
+  // Actions
+  setJournalViewMode: (mode) => set({ journalViewMode: mode, journalCurrentPage: 0 }),
+  setJournalFilterDateRange: (range) => set({ journalFilterDateRange: range, journalCurrentPage: 0 }),
+  setJournalSearchQuery: (query) => set({ journalSearchQuery: query, journalCurrentPage: 0 }),
   setJournalSelectedDate: (date) => set({ journalSelectedDate: date }),
+  setJournalCurrentPage: (page) => set({ journalCurrentPage: page }),
   resetJournalFilters: () =>
     set({
-      journalFilterMood: null,
       journalFilterDateRange: null,
       journalSearchQuery: '',
       journalSelectedDate: null,
+      journalCurrentPage: 0,
     }),
 });

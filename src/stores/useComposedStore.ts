@@ -157,35 +157,27 @@ export const selectNotes = (state: ComposedStore): Pick<
 export const selectJournal = (state: ComposedStore): Pick<
   ComposedStore,
   | 'journalViewMode'
-  | 'journalFilterMood'
   | 'journalFilterDateRange'
-  | 'journalSortBy'
-  | 'journalSortOrder'
   | 'journalSearchQuery'
   | 'journalSelectedDate'
+  | 'journalCurrentPage'
   | 'setJournalViewMode'
-  | 'setJournalFilterMood'
   | 'setJournalFilterDateRange'
-  | 'setJournalSortBy'
-  | 'setJournalSortOrder'
   | 'setJournalSearchQuery'
   | 'setJournalSelectedDate'
+  | 'setJournalCurrentPage'
   | 'resetJournalFilters'
 > => ({
   journalViewMode: state.journalViewMode,
-  journalFilterMood: state.journalFilterMood,
   journalFilterDateRange: state.journalFilterDateRange,
-  journalSortBy: state.journalSortBy,
-  journalSortOrder: state.journalSortOrder,
   journalSearchQuery: state.journalSearchQuery,
   journalSelectedDate: state.journalSelectedDate,
+  journalCurrentPage: state.journalCurrentPage,
   setJournalViewMode: state.setJournalViewMode,
-  setJournalFilterMood: state.setJournalFilterMood,
   setJournalFilterDateRange: state.setJournalFilterDateRange,
-  setJournalSortBy: state.setJournalSortBy,
-  setJournalSortOrder: state.setJournalSortOrder,
   setJournalSearchQuery: state.setJournalSearchQuery,
   setJournalSelectedDate: state.setJournalSelectedDate,
+  setJournalCurrentPage: state.setJournalCurrentPage,
   resetJournalFilters: state.resetJournalFilters,
 });
 

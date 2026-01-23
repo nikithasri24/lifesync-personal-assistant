@@ -8,6 +8,12 @@
   box-sizing: border-box;
 }
 
+/* Reset anchor tag default styling */
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
 :root {
   /* Typography - Sophisticated & Modern */
   --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -1273,6 +1279,19 @@ aside nav::-webkit-scrollbar-thumb:hover {
 
 .dark .prose-invert hr {
   border-color: var(--border-primary);
+}
+
+/* Journal pagination buttons - force white text in dark mode */
+.dark [data-testid="journal-pagination-next"],
+.dark [data-testid="journal-pagination-next"] span,
+.dark [data-testid="journal-pagination-prev"],
+.dark [data-testid="journal-pagination-prev"] span {
+  color: #ffffff !important;
+}
+
+.dark [data-testid="journal-pagination-next"] svg,
+.dark [data-testid="journal-pagination-prev"] svg {
+  stroke: #ffffff !important;
 }
 
 /* Print styles */

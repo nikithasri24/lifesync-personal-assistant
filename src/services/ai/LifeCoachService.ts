@@ -180,23 +180,25 @@ class LifeCoachService {
   private calculateWellnessScore(journals: JournalEntry[]): number {
     if (journals.length === 0) return 50;
 
-    // Map mood strings to numbers
-    const moodMap: Record<string, number> = {
-      'excellent': 5,
-      'good': 4,
-      'neutral': 3,
-      'bad': 2,
-      'terrible': 1
-    };
+    // Calculate wellness based on journaling frequency and content length
+    // More entries with substantial content indicates better engagement
+    const recentJournals = journals.filter(j => {
+      const entryDate = new Date(j.createdAt);
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      return entryDate >= weekAgo;
+    });
 
-    const moods = journals
-      .filter(j => j.mood != null)
-      .map(j => moodMap[j.mood] || 3);
+    // Base score on frequency (0-50 points)
+    const frequencyScore = Math.min(50, recentJournals.length * 10);
 
-    if (moods.length === 0) return 50;
+    // Content engagement score (0-50 points) based on average content length
+    const avgContentLength = recentJournals.length > 0
+      ? recentJournals.reduce((sum, j) => sum + (j.content?.length || 0), 0) / recentJournals.length
+      : 0;
+    const contentScore = Math.min(50, avgContentLength / 10);
 
-    const avgMood = moods.reduce((sum, m) => sum + m, 0) / moods.length;
-    return Math.round((avgMood / 5) * 100); // Convert to 0-100 scale
+    return Math.round(frequencyScore + contentScore);
   }
 
   private calculateBalanceScore(productivity: number, habits: number, wellness: number): number {
