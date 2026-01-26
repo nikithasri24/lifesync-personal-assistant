@@ -28,12 +28,12 @@ const SkincareStats: React.FC<SkincareStatsProps> = ({ className = '' }) => {
 
   if (loading) {
     return (
-      <div className={`bg-white rounded-xl p-6 border border-gray-200 ${className}`}>
+      <div className={`bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 ${className}`}>
         <div className="animate-pulse space-y-4">
-          <div className="h-6 bg-gray-200 rounded w-1/3" />
+          <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3" />
           <div className="grid grid-cols-2 gap-4">
-            <div className="h-20 bg-gray-200 rounded" />
-            <div className="h-20 bg-gray-200 rounded" />
+            <div className="h-20 bg-gray-200 dark:bg-gray-700 rounded" />
+            <div className="h-20 bg-gray-200 dark:bg-gray-700 rounded" />
           </div>
         </div>
       </div>
@@ -49,8 +49,8 @@ const SkincareStats: React.FC<SkincareStatsProps> = ({ className = '' }) => {
   const pmCompletions = stats?.pmCompletions || 0;
 
   return (
-    <div className={`bg-white rounded-xl p-6 border border-gray-200 ${className}`}>
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Your Progress</h3>
+    <div className={`bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 ${className}`}>
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Your Progress</h3>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 gap-4">
@@ -125,8 +125,8 @@ const SkincareStats: React.FC<SkincareStatsProps> = ({ className = '' }) => {
       </div>
 
       {/* Weekly Heatmap */}
-      <div className="mt-6 pt-6 border-t border-gray-200">
-        <h4 className="text-sm font-medium text-gray-700 mb-3">Last 7 Days</h4>
+      <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Last 7 Days</h4>
         <div className="flex gap-2">
           {Array.from({ length: 7 }).map((_, index) => {
             const date = new Date(sevenDaysAgo);
@@ -144,11 +144,11 @@ const SkincareStats: React.FC<SkincareStatsProps> = ({ className = '' }) => {
                   className={`h-16 rounded-lg border-2 transition-all duration-200 ${
                     isCompleted
                       ? 'bg-green-500 border-green-600'
-                      : 'bg-gray-100 border-gray-200'
+                      : 'bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600'
                   }`}
                   title={dateStr}
                 />
-                <p className="text-xs text-center text-gray-600 mt-1">{dayName}</p>
+                <p className="text-xs text-center text-gray-600 dark:text-gray-400 mt-1">{dayName}</p>
               </div>
             );
           })}
@@ -157,9 +157,9 @@ const SkincareStats: React.FC<SkincareStatsProps> = ({ className = '' }) => {
 
       {/* Motivational Message */}
       {currentStreak > 0 && (
-        <div className="mt-6 pt-6 border-t border-gray-200">
-          <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 border border-green-200">
-            <p className="text-sm font-medium text-green-900">
+        <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/30 dark:to-emerald-900/30 rounded-lg p-4 border border-green-200 dark:border-green-800">
+            <p className="text-sm font-medium text-green-900 dark:text-green-100">
               {currentStreak >= 7
                 ? `Amazing! You've maintained your routine for ${currentStreak} days! 🎉`
                 : currentStreak >= 3

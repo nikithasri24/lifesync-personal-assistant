@@ -123,18 +123,18 @@ const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-2xl">
+        <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between rounded-t-2xl">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900">Edit Routine</h2>
-            <p className="text-sm text-gray-600">{routine.routineType} Routine</p>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Edit Routine</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400">{routine.routineType} Routine</p>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
           >
-            <X className="h-5 w-5 text-gray-600" />
+            <X className="h-5 w-5 text-gray-600 dark:text-gray-400" />
           </button>
         </div>
 
@@ -142,14 +142,14 @@ const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Routine Name */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Routine Name
             </label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               placeholder="e.g., Morning Routine"
               required
             />
@@ -164,14 +164,14 @@ const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
               onChange={(e) => setIsActive(e.target.checked)}
               className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
             />
-            <label htmlFor="isActive" className="text-sm font-medium text-gray-700">
+            <label htmlFor="isActive" className="text-sm font-medium text-gray-700 dark:text-gray-300">
               Active routine (shown in daily tracking)
             </label>
           </div>
 
           {/* Days of Week Selection */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
               Schedule
             </label>
 
@@ -184,7 +184,7 @@ const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                 onChange={(e) => handleAllDaysChange(e.target.checked)}
                 className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
               />
-              <label htmlFor="allDays" className="text-sm text-gray-600">
+              <label htmlFor="allDays" className="text-sm text-gray-600 dark:text-gray-400">
                 Every day
               </label>
             </div>
@@ -200,7 +200,7 @@ const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                     className={`px-3 py-2 text-sm font-medium rounded-lg border-2 transition-all ${
                       daysOfWeek.includes(day.value)
                         ? 'bg-blue-600 text-white border-blue-600'
-                        : 'bg-white text-gray-600 border-gray-300 hover:border-blue-300'
+                        : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500'
                     }`}
                   >
                     {day.label}
@@ -211,21 +211,21 @@ const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
           </div>
 
           {/* Reminder Settings */}
-          <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+          <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-900">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 {reminderEnabled ? (
-                  <Bell className="h-5 w-5 text-blue-600" />
+                  <Bell className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                 ) : (
-                  <BellOff className="h-5 w-5 text-gray-400" />
+                  <BellOff className="h-5 w-5 text-gray-400 dark:text-gray-500" />
                 )}
-                <label className="text-sm font-medium text-gray-700">Reminders</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Reminders</label>
               </div>
               <button
                 type="button"
                 onClick={() => setReminderEnabled(!reminderEnabled)}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  reminderEnabled ? 'bg-blue-600' : 'bg-gray-300'
+                  reminderEnabled ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'
                 }`}
               >
                 <span
@@ -238,14 +238,14 @@ const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
 
             {reminderEnabled && (
               <div>
-                <label className="block text-xs text-gray-600 mb-2">
+                <label className="block text-xs text-gray-600 dark:text-gray-400 mb-2">
                   Remind me at:
                 </label>
                 <input
                   type="time"
                   value={reminderTime}
                   onChange={(e) => setReminderTime(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
                 />
               </div>
             )}
@@ -254,13 +254,13 @@ const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
           {/* Products in Routine */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Products ({routineProducts.length})
               </label>
               <button
                 type="button"
                 onClick={() => setShowAddProducts(!showAddProducts)}
-                className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium flex items-center gap-1"
               >
                 <Plus className="h-4 w-4" />
                 Add Products
@@ -269,8 +269,8 @@ const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
 
             {/* Add Products Section */}
             {showAddProducts && availableProducts.length > 0 && (
-              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-xs text-blue-700 mb-2 font-medium">
+              <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <p className="text-xs text-blue-700 dark:text-blue-300 mb-2 font-medium">
                   Available {routine.routineType} Products:
                 </p>
                 <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -282,18 +282,18 @@ const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                         handleAddProduct(product.id);
                         setShowAddProducts(false);
                       }}
-                      className="w-full flex items-center justify-between p-2 bg-white rounded border border-blue-200 hover:bg-blue-50 transition-colors text-left"
+                      className="w-full flex items-center justify-between p-2 bg-white dark:bg-gray-800 rounded border border-blue-200 dark:border-blue-700 hover:bg-blue-50 dark:hover:bg-gray-700 transition-colors text-left"
                     >
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                           {product.name}
                         </p>
-                        <p className="text-xs text-gray-600">
+                        <p className="text-xs text-gray-600 dark:text-gray-400">
                           {product.brand && `${product.brand} • `}
                           {product.category}
                         </p>
                       </div>
-                      <Plus className="h-4 w-4 text-blue-600 flex-shrink-0 ml-2" />
+                      <Plus className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0 ml-2" />
                     </button>
                   ))}
                 </div>
@@ -302,9 +302,9 @@ const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
 
             {/* Product List */}
             {routineProducts.length === 0 ? (
-              <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-                <p className="text-sm text-gray-600 mb-2">No products in this routine</p>
-                <p className="text-xs text-gray-500">
+              <div className="text-center py-8 bg-gray-50 dark:bg-gray-900 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">No products in this routine</p>
+                <p className="text-xs text-gray-500 dark:text-gray-500">
                   Add products to create your skincare routine
                 </p>
               </div>
@@ -313,7 +313,7 @@ const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                 {routineProducts.map((product, index) => (
                   <div
                     key={product.id}
-                    className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200"
+                    className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700"
                   >
                     {/* Order Controls */}
                     <div className="flex flex-col gap-0.5">
@@ -323,8 +323,8 @@ const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                         disabled={index === 0}
                         className={`p-0.5 rounded ${
                           index === 0
-                            ? 'text-gray-300 cursor-not-allowed'
-                            : 'text-gray-600 hover:bg-gray-200'
+                            ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
                         }`}
                       >
                         ▲
@@ -335,8 +335,8 @@ const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                         disabled={index === routineProducts.length - 1}
                         className={`p-0.5 rounded ${
                           index === routineProducts.length - 1
-                            ? 'text-gray-300 cursor-not-allowed'
-                            : 'text-gray-600 hover:bg-gray-200'
+                            ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
                         }`}
                       >
                         ▼
@@ -344,16 +344,16 @@ const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                     </div>
 
                     {/* Step Number */}
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-sm font-semibold">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 flex items-center justify-center text-sm font-semibold">
                       {index + 1}
                     </div>
 
                     {/* Product Info */}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                         {product.name}
                       </p>
-                      <p className="text-xs text-gray-600">
+                      <p className="text-xs text-gray-600 dark:text-gray-400">
                         {product.brand && `${product.brand} • `}
                         {product.category}
                       </p>
@@ -363,7 +363,7 @@ const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                     <button
                       type="button"
                       onClick={() => handleRemoveProduct(product.id)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
                       title="Remove from routine"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -376,22 +376,22 @@ const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
 
           {/* Notes */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes</label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               placeholder="Any notes about this routine..."
             />
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3 pt-4 border-t border-gray-200">
+          <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
             <button
               type="button"
               onClick={onDelete}
-              className="px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors flex items-center gap-2"
+              className="px-4 py-2 border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors flex items-center gap-2"
             >
               <Trash2 className="h-4 w-4" />
               Delete Routine
@@ -400,7 +400,7 @@ const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
               Cancel
             </button>

@@ -35,7 +35,7 @@ const Travel = lazy(() => import('./pages/Travel'));
 const VisaPage = lazy(() => import('./travel/pages/VisaPage'));
 const TripPlanner = lazy(() => import('./travel/components/TripPlanner'));
 const Finances = lazy(() => import('./pages/Finances'));
-const Skincare = lazy(() => import('./pages/Skincare'));
+const SelfCare = lazy(() => import('./pages/SelfCare'));
 const Assistant = lazy(() => import('./pages/Assistant'));
 const TaskScheduler = lazy(() => import('./pages/TaskScheduler'));
 
@@ -99,7 +99,10 @@ function App(): React.ReactElement {
             {/* Wellbeing Routes */}
             <Route path="/journal" element={<RouteErrorBoundary feature="Journal"><Journal /></RouteErrorBoundary>} />
             <Route path="/journal/:id" element={<RouteErrorBoundary feature="Journal"><JournalDetail /></RouteErrorBoundary>} />
-            <Route path="/skincare" element={<Skincare />} />
+            <Route path="/self-care" element={<SelfCare />} />
+            {/* Legacy routes redirect to self-care */}
+            <Route path="/skincare" element={<Navigate to="/self-care" replace />} />
+            <Route path="/personal-care" element={<Navigate to="/self-care" replace />} />
 
             {/* Personal Routes */}
             <Route path="/goals" element={<LifeGoals />} />

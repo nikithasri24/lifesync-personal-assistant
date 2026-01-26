@@ -77,7 +77,7 @@ const ProductsLibrary: React.FC<ProductsLibraryProps> = ({
     <div className="space-y-4">
       {/* Header with Add Button */}
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900">Products Library</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Products Library</h3>
         <button
           onClick={onAddProduct}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -91,13 +91,13 @@ const ProductsLibrary: React.FC<ProductsLibraryProps> = ({
       <div className="flex flex-col md:flex-row gap-3">
         {/* Search */}
         <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500" />
           <input
             type="text"
             placeholder="Search products..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
           />
         </div>
 
@@ -105,7 +105,7 @@ const ProductsLibrary: React.FC<ProductsLibraryProps> = ({
         <select
           value={filterCategory}
           onChange={e => setFilterCategory(e.target.value as ProductCategory | 'all')}
-          className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+          className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
         >
           <option value="all">All Categories</option>
           {categories.map(cat => (
@@ -119,7 +119,7 @@ const ProductsLibrary: React.FC<ProductsLibraryProps> = ({
         <select
           value={filterStatus}
           onChange={e => setFilterStatus(e.target.value as 'all' | 'active' | 'inactive')}
-          className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+          className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
         >
           <option value="all">All Status</option>
           <option value="active">Currently Using</option>
@@ -129,8 +129,8 @@ const ProductsLibrary: React.FC<ProductsLibraryProps> = ({
 
       {/* Products Grid */}
       {filteredProducts.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 rounded-xl">
-          <p className="text-gray-600 mb-4">No products found</p>
+        <div className="text-center py-12 bg-gray-50 dark:bg-gray-800 rounded-xl">
+          <p className="text-gray-600 dark:text-gray-400 mb-4">No products found</p>
           {products.length === 0 && (
             <button
               onClick={onAddProduct}
@@ -148,22 +148,22 @@ const ProductsLibrary: React.FC<ProductsLibraryProps> = ({
               key={product.id}
               className={`rounded-xl p-4 border-2 transition-all hover:shadow-md cursor-pointer ${
                 product.currentlyUsing
-                  ? 'bg-white border-blue-200 hover:border-blue-300'
-                  : 'bg-gray-50 border-gray-200 opacity-75'
+                  ? 'bg-white dark:bg-gray-800 border-blue-200 dark:border-blue-800 hover:border-blue-300 dark:hover:border-blue-700'
+                  : 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 opacity-75'
               }`}
               onClick={() => onEditProduct(product)}
             >
               {/* Product Header */}
               <div className="flex items-start justify-between mb-3">
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-semibold text-gray-900 truncate">{product.name}</h4>
+                  <h4 className="font-semibold text-gray-900 dark:text-gray-100 truncate">{product.name}</h4>
                   {product.brand && (
-                    <p className="text-sm text-gray-600">{product.brand}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{product.brand}</p>
                   )}
                 </div>
                 {product.currentlyUsing && (
                   <div className="flex-shrink-0 ml-2">
-                    <span className="inline-block px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
+                    <span className="inline-block px-2 py-1 text-xs font-medium bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full">
                       Active
                     </span>
                   </div>
@@ -172,11 +172,11 @@ const ProductsLibrary: React.FC<ProductsLibraryProps> = ({
 
               {/* Category & Type */}
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
+                <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded">
                   {formatCategory(product.category)}
                 </span>
                 {product.productType && (
-                  <span className="text-xs text-gray-600">{product.productType}</span>
+                  <span className="text-xs text-gray-600 dark:text-gray-400">{product.productType}</span>
                 )}
               </div>
 
@@ -187,10 +187,10 @@ const ProductsLibrary: React.FC<ProductsLibraryProps> = ({
                     key={time}
                     className={`text-xs px-2 py-1 rounded ${
                       time === 'AM'
-                        ? 'bg-amber-100 text-amber-700'
+                        ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300'
                         : time === 'PM'
-                        ? 'bg-indigo-100 text-indigo-700'
-                        : 'bg-purple-100 text-purple-700'
+                        ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300'
+                        : 'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300'
                     }`}
                   >
                     {time}
@@ -207,7 +207,7 @@ const ProductsLibrary: React.FC<ProductsLibraryProps> = ({
                       className={`h-4 w-4 ${
                         i < (product.rating ?? 0)
                           ? 'text-yellow-500 fill-yellow-500'
-                          : 'text-gray-300'
+                          : 'text-gray-300 dark:text-gray-600'
                       }`}
                     />
                   ))}
@@ -216,19 +216,19 @@ const ProductsLibrary: React.FC<ProductsLibraryProps> = ({
 
               {/* Expiry Warning */}
               {isExpired(product.expiryDate) ? (
-                <div className="flex items-center gap-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700 mb-2">
+                <div className="flex items-center gap-2 p-2 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded text-xs text-red-700 dark:text-red-300 mb-2">
                   <AlertCircle className="h-4 w-4 flex-shrink-0" />
                   <span>Expired</span>
                 </div>
               ) : isExpiringSoon(product.expiryDate) ? (
-                <div className="flex items-center gap-2 p-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700 mb-2">
+                <div className="flex items-center gap-2 p-2 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded text-xs text-amber-700 dark:text-amber-300 mb-2">
                   <Calendar className="h-4 w-4 flex-shrink-0" />
                   <span>Expiring soon</span>
                 </div>
               ) : null}
 
               {/* Price & Size */}
-              <div className="flex items-center justify-between text-xs text-gray-600">
+              <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
                 {product.price && (
                   <div className="flex items-center gap-1">
                     <ShoppingBag className="h-3 w-3" />
@@ -240,8 +240,8 @@ const ProductsLibrary: React.FC<ProductsLibraryProps> = ({
 
               {/* Repurchase Tag */}
               {product.repurchase && (
-                <div className="mt-2 pt-2 border-t border-gray-200">
-                  <span className="text-xs font-medium text-emerald-600">
+                <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                  <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
                     ⭐ Would Repurchase
                   </span>
                 </div>
@@ -253,28 +253,28 @@ const ProductsLibrary: React.FC<ProductsLibraryProps> = ({
 
       {/* Summary Stats */}
       {products.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-gray-200">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
           <div className="text-center">
-            <p className="text-2xl font-bold text-blue-600">{products.length}</p>
-            <p className="text-xs text-gray-600">Total Products</p>
+            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{products.length}</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400">Total Products</p>
           </div>
           <div className="text-center">
-            <p className="text-2xl font-bold text-emerald-600">
+            <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
               {products.filter(p => p.currentlyUsing).length}
             </p>
-            <p className="text-xs text-gray-600">Currently Using</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400">Currently Using</p>
           </div>
           <div className="text-center">
-            <p className="text-2xl font-bold text-yellow-600">
+            <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
               {products.filter(p => p.rating && p.rating >= 4).length}
             </p>
-            <p className="text-xs text-gray-600">4+ Stars</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400">4+ Stars</p>
           </div>
           <div className="text-center">
-            <p className="text-2xl font-bold text-purple-600">
+            <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
               {products.filter(p => p.repurchase).length}
             </p>
-            <p className="text-xs text-gray-600">Would Repurchase</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400">Would Repurchase</p>
           </div>
         </div>
       )}

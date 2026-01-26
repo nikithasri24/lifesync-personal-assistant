@@ -83,21 +83,21 @@ const SkincareCalendar: React.FC<SkincareCalendarProps> = ({
   };
 
   return (
-    <div className="rounded-2xl bg-white shadow-sm border border-gray-200 p-6">
+    <div className="rounded-2xl bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-xl font-bold text-gray-900">{monthName}</h3>
+        <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">{monthName}</h3>
         <div className="flex items-center gap-1">
           <button
             onClick={handlePrevMonth}
-            className="p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors"
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 transition-colors"
             title="Previous month"
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
           <button
             onClick={handleNextMonth}
-            className="p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors"
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 transition-colors"
             title="Next month"
           >
             <ChevronRight className="h-5 w-5" />
@@ -106,24 +106,24 @@ const SkincareCalendar: React.FC<SkincareCalendarProps> = ({
       </div>
 
       {/* Legend */}
-      <div className="flex items-center gap-4 mb-6 pb-4 border-b border-gray-200">
+      <div className="flex items-center gap-4 mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center gap-2">
           <div className="w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center">
             <Check className="h-3 w-3 text-white" />
           </div>
-          <span className="text-xs text-gray-600">AM</span>
+          <span className="text-xs text-gray-600 dark:text-gray-400">AM</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-5 h-5 rounded-full bg-indigo-500 flex items-center justify-center">
             <Check className="h-3 w-3 text-white" />
           </div>
-          <span className="text-xs text-gray-600">PM</span>
+          <span className="text-xs text-gray-600 dark:text-gray-400">PM</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center">
             <Check className="h-3 w-3 text-white" />
           </div>
-          <span className="text-xs text-gray-600">Both</span>
+          <span className="text-xs text-gray-600 dark:text-gray-400">Both</span>
         </div>
       </div>
 
@@ -133,7 +133,7 @@ const SkincareCalendar: React.FC<SkincareCalendarProps> = ({
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
           <div
             key={day}
-            className="text-center text-sm font-semibold text-gray-700 pb-2"
+            className="text-center text-sm font-semibold text-gray-700 dark:text-gray-300 pb-2"
           >
             {day}
           </div>
@@ -160,12 +160,12 @@ const SkincareCalendar: React.FC<SkincareCalendarProps> = ({
               disabled={future}
               className={`aspect-square rounded-xl flex flex-col items-center justify-center p-2 border-2 transition-all ${
                 future
-                  ? 'bg-gray-50 border-gray-200 text-gray-300 cursor-not-allowed'
-                  : 'bg-white border-gray-200 hover:border-gray-400 hover:shadow-sm cursor-pointer'
-              } ${today ? 'border-blue-500 bg-blue-50' : ''}`}
+                  ? 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                  : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 hover:shadow-sm cursor-pointer'
+              } ${today ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/30' : ''}`}
             >
               <span className={`text-base font-semibold mb-1 ${
-                today ? 'text-blue-600' : future ? 'text-gray-300' : 'text-gray-900'
+                today ? 'text-blue-600 dark:text-blue-400' : future ? 'text-gray-300 dark:text-gray-600' : 'text-gray-900 dark:text-gray-100'
               }`}>
                 {day}
               </span>
@@ -189,7 +189,7 @@ const SkincareCalendar: React.FC<SkincareCalendarProps> = ({
                         </div>
                       )}
                       {!completion && (
-                        <div className="w-5 h-5 rounded-full border-2 border-gray-300" />
+                        <div className="w-5 h-5 rounded-full border-2 border-gray-300 dark:border-gray-500" />
                       )}
                     </>
                   )}
@@ -201,25 +201,25 @@ const SkincareCalendar: React.FC<SkincareCalendarProps> = ({
       </div>
 
       {/* Stats */}
-      <div className="mt-4 pt-4 border-t border-gray-200">
+      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
         <div className="grid grid-cols-3 gap-4 text-center">
           <div>
-            <p className="text-2xl font-bold text-emerald-600">
+            <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
               {Array.from(logsByDate.values()).filter(d => d.am && d.pm).length}
             </p>
-            <p className="text-xs text-gray-600">Perfect Days</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400">Perfect Days</p>
           </div>
           <div>
-            <p className="text-2xl font-bold text-amber-600">
+            <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">
               {Array.from(logsByDate.values()).filter(d => d.am).length}
             </p>
-            <p className="text-xs text-gray-600">AM Completed</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400">AM Completed</p>
           </div>
           <div>
-            <p className="text-2xl font-bold text-indigo-600">
+            <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
               {Array.from(logsByDate.values()).filter(d => d.pm).length}
             </p>
-            <p className="text-xs text-gray-600">PM Completed</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400">PM Completed</p>
           </div>
         </div>
       </div>

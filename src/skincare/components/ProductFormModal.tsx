@@ -87,17 +87,17 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-2xl">
-          <h2 className="text-xl font-semibold text-gray-900">
+        <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between rounded-t-2xl">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
             {product ? 'Edit Product' : 'Add Product'}
           </h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
           >
-            <X className="h-5 w-5 text-gray-600" />
+            <X className="h-5 w-5 text-gray-600 dark:text-gray-400" />
           </button>
         </div>
 
@@ -105,14 +105,14 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {/* Product Name */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Product Name *
             </label>
             <input
               type="text"
               value={formData.name}
               onChange={e => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               placeholder="e.g., CeraVe Hydrating Cleanser"
               required
             />
@@ -120,14 +120,14 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
 
           {/* Brand */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Brand
             </label>
             <input
               type="text"
               value={formData.brand}
               onChange={e => setFormData({ ...formData, brand: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               placeholder="e.g., CeraVe"
             />
           </div>
@@ -135,13 +135,13 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
           {/* Category & Product Type */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Category *
               </label>
               <select
                 value={formData.category}
                 onChange={e => setFormData({ ...formData, category: e.target.value as ProductCategory })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 required
               >
                 {categories.map(cat => (
@@ -153,14 +153,14 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Product Type
               </label>
               <input
                 type="text"
                 value={formData.productType}
                 onChange={e => setFormData({ ...formData, productType: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 placeholder="e.g., gel, cream, foam"
               />
             </div>
@@ -168,7 +168,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
 
           {/* Usage Time */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Usage Time *
             </label>
             <div className="flex gap-3">
@@ -180,11 +180,11 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
                   className={`px-4 py-2 rounded-lg border-2 transition-colors ${
                     formData.usageTime.includes(time)
                       ? time === 'AM'
-                        ? 'bg-amber-100 border-amber-600 text-amber-700'
+                        ? 'bg-amber-100 dark:bg-amber-900/50 border-amber-600 text-amber-700 dark:text-amber-300'
                         : time === 'PM'
-                        ? 'bg-indigo-100 border-indigo-600 text-indigo-700'
-                        : 'bg-purple-100 border-purple-600 text-purple-700'
-                      : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
+                        ? 'bg-indigo-100 dark:bg-indigo-900/50 border-indigo-600 text-indigo-700 dark:text-indigo-300'
+                        : 'bg-purple-100 dark:bg-purple-900/50 border-purple-600 text-purple-700 dark:text-purple-300'
+                      : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
                   }`}
                 >
                   {time}
@@ -196,7 +196,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
           {/* Price & Size */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Price ($)
               </label>
               <input
@@ -208,20 +208,20 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
                   const numericValue = value ? Number(value) : undefined;
                   setFormData({ ...formData, price: numericValue });
                 }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 placeholder="19.99"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Size
               </label>
               <input
                 type="text"
                 value={formData.size ?? ''}
                 onChange={e => setFormData({ ...formData, size: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 placeholder="e.g., 50ml, 1oz"
               />
             </div>
@@ -229,7 +229,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
 
           {/* Rating */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Rating
             </label>
             <div className="flex gap-2">
@@ -241,7 +241,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
                   className={`text-2xl transition-colors ${
                     (formData.rating !== undefined && star <= formData.rating)
                       ? 'text-yellow-500'
-                      : 'text-gray-300 hover:text-yellow-400'
+                      : 'text-gray-300 dark:text-gray-600 hover:text-yellow-400'
                   }`}
                 >
                   ★
@@ -251,7 +251,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setFormData({ ...formData, rating: undefined })}
-                  className="ml-2 text-sm text-gray-500 hover:text-gray-700"
+                  className="ml-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
                 >
                   Clear
                 </button>
@@ -268,31 +268,31 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
               onChange={e => setFormData({ ...formData, currentlyUsing: e.target.checked })}
               className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
             />
-            <label htmlFor="currentlyUsing" className="text-sm font-medium text-gray-700">
+            <label htmlFor="currentlyUsing" className="text-sm font-medium text-gray-700 dark:text-gray-300">
               Currently using this product
             </label>
           </div>
 
           {/* Notes */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Notes
             </label>
             <textarea
               value={formData.notes}
               onChange={e => setFormData({ ...formData, notes: e.target.value })}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               placeholder="Any observations, how it makes your skin feel, etc."
             />
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3 pt-4 border-t border-gray-200">
+          <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
               Cancel
             </button>

@@ -572,3 +572,60 @@ export function useSkincareStreak(): UseQueryResult<
     ...queryOptions.user,
   });
 }
+
+// =====================================================
+// WEEKLY ROUTINES QUERY HOOKS
+// =====================================================
+
+import { getWeeklyRoutines, upsertWeeklyRoutine } from '@/api/skincareAPI';
+import type { SkincareWeeklyRoutine, SkincareWeeklyRoutineInput } from '@/skincare/types';
+
+/**
+ * Get all weekly routines (7 days)
+ */
+export function useWeeklyRoutines(): UseQueryResult<SkincareWeeklyRoutine[], Error> {
+  return useQuery({
+    queryKey: queryKeys.skincare.weekly.list(),
+    queryFn: () => getWeeklyRoutines(),
+    ...queryOptions.user,
+  });
+}
+
+/**
+ * Upsert a weekly routine for a specific day
+ */
+export function useUpsertWeeklyRoutine(): UseMutationResult<
+  SkincareWeeklyRoutine,
+  Error,
+  SkincareWeeklyRoutineInput
+> {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (routine: SkincareWeeklyRoutineInput) => {
+      logger.debug('Skincare', 'Upserting weekly routine', { dayOfWeek: routine.dayOfWeek });
+      return upsertWeeklyRoutine(routine);
+    },
+    onSuccess: (newRoutine) => {
+      logger.info('Skincare', 'Weekly routine upserted successfully', { dayOfWeek: newRoutine.dayOfWeek });
+
+      // Optimistically update the cache
+      queryClient.setQueryData<SkincareWeeklyRoutine[]>(queryKeys.skincare.weekly.list(), (old) => {
+        if (!old) return [newRoutine];
+        const index = old.findIndex((r) => r.dayOfWeek === newRoutine.dayOfWeek);
+        if (index >= 0) {
+          const updated = [...old];
+          updated[index] = newRoutine;
+          return updated;
+        }
+        return [...old, newRoutine].sort((a, b) => a.dayOfWeek - b.dayOfWeek);
+      });
+    },
+    onError: (error: Error, routine) => {
+      logger.error('Skincare', 'Failed to upsert weekly routine', {
+        error: error.message,
+        dayOfWeek: routine.dayOfWeek,
+      });
+    },
+  });
+}

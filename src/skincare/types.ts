@@ -168,6 +168,23 @@ export type SkinObservation = {
   updatedAt: string;
 };
 
+// Weekly Routine (simple text-based)
+export type SkincareWeeklyRoutine = {
+  id: string;
+  userId: string;
+
+  dayOfWeek: number; // 0=Sunday, 1=Monday, ..., 6=Saturday
+
+  // Text-based routine descriptions
+  amRoutine?: string; // e.g., "Cleanser + Vitamin C + Moisturizer + SPF"
+  pmRoutine?: string; // e.g., "Oil Cleanser → Cleanser → Retinol → Moisturizer"
+
+  notes?: string;
+
+  createdAt: string;
+  updatedAt: string;
+};
+
 // Input types for forms
 export type SkincareProductInput = Omit<
   SkincareProduct,
@@ -186,6 +203,11 @@ export type SkincareLogInput = Omit<
 
 export type SkinObservationInput = Omit<
   SkinObservation,
+  'id' | 'userId' | 'createdAt' | 'updatedAt'
+>;
+
+export type SkincareWeeklyRoutineInput = Omit<
+  SkincareWeeklyRoutine,
   'id' | 'userId' | 'createdAt' | 'updatedAt'
 >;
 

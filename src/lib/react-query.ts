@@ -215,6 +215,10 @@ export const queryKeys = {
       details: () => [...queryKeys.skincare.logs.all(), 'detail'] as const,
       detail: (id: string) => [...queryKeys.skincare.logs.details(), id] as const,
     },
+    weekly: {
+      all: () => [...queryKeys.skincare.all, 'weekly'] as const,
+      list: () => [...queryKeys.skincare.weekly.all(), 'list'] as const,
+    },
     stats: (startDate: string, endDate: string) =>
       [...queryKeys.skincare.all, 'stats', startDate, endDate] as const,
     streaks: () => [...queryKeys.skincare.all, 'streaks'] as const,
@@ -402,6 +406,44 @@ export const queryKeys = {
       detail: (id: string) => [...queryKeys.shopping.lists.details(), id] as const,
     },
     items: (listId: string) => [...queryKeys.shopping.all, 'items', listId] as const,
+  },
+
+  // Personal Care
+  personalCare: {
+    all: ['personalCare'] as const,
+    categories: {
+      all: () => [...queryKeys.personalCare.all, 'categories'] as const,
+      lists: () => [...queryKeys.personalCare.categories.all(), 'list'] as const,
+      list: (filters?: QueryFilters) => [...queryKeys.personalCare.categories.lists(), filters] as const,
+      details: () => [...queryKeys.personalCare.categories.all(), 'detail'] as const,
+      detail: (id: string) => [...queryKeys.personalCare.categories.details(), id] as const,
+    },
+    items: {
+      all: () => [...queryKeys.personalCare.all, 'items'] as const,
+      lists: () => [...queryKeys.personalCare.items.all(), 'list'] as const,
+      list: (filters?: QueryFilters) => [...queryKeys.personalCare.items.lists(), filters] as const,
+      details: () => [...queryKeys.personalCare.items.all(), 'detail'] as const,
+      detail: (id: string) => [...queryKeys.personalCare.items.details(), id] as const,
+      scheduled: () => [...queryKeys.personalCare.items.all(), 'scheduled'] as const,
+    },
+    products: {
+      all: () => [...queryKeys.personalCare.all, 'products'] as const,
+      lists: () => [...queryKeys.personalCare.products.all(), 'list'] as const,
+      list: (filters?: QueryFilters) => [...queryKeys.personalCare.products.lists(), filters] as const,
+      details: () => [...queryKeys.personalCare.products.all(), 'detail'] as const,
+      detail: (id: string) => [...queryKeys.personalCare.products.details(), id] as const,
+      forItem: (itemId: string) => [...queryKeys.personalCare.products.all(), 'item', itemId] as const,
+    },
+    logs: {
+      all: () => [...queryKeys.personalCare.all, 'logs'] as const,
+      lists: () => [...queryKeys.personalCare.logs.all(), 'list'] as const,
+      list: (filters?: QueryFilters) => [...queryKeys.personalCare.logs.lists(), filters] as const,
+      forItem: (itemId: string) => [...queryKeys.personalCare.logs.all(), 'item', itemId] as const,
+    },
+    schedule: {
+      all: () => [...queryKeys.personalCare.all, 'schedule'] as const,
+      month: (year: number, month: number) => [...queryKeys.personalCare.schedule.all(), year, month] as const,
+    },
   },
 } as const;
 

@@ -858,3 +858,87 @@ export async function getSkincareStreak(): Promise<{
     { domain: 'SkincareAPI', operation: 'getSkincareStreak' }
   );
 }
+
+// =====================================================
+// WEEKLY ROUTINES (Simple text-based)
+// =====================================================
+
+import type { SkincareWeeklyRoutine, SkincareWeeklyRoutineInput } from '../skincare/types';
+
+/**
+ * Get all weekly routines for the current user
+ * @returns Promise<SkincareWeeklyRoutine[]> - Array of weekly routines (0-6 days)
+ */
+export async function getWeeklyRoutines(): Promise<SkincareWeeklyRoutine[]> {
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
+
+      const { data, error } = await supabase
+        .from('skincare_weekly_routines')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('day_of_week', { ascending: true });
+
+      if (error) throw error;
+
+      return (data || []).map((row) => ({
+        id: row.id,
+        userId: row.user_id,
+        dayOfWeek: row.day_of_week,
+        amRoutine: row.am_routine || undefined,
+        pmRoutine: row.pm_routine || undefined,
+        notes: row.notes || undefined,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+      }));
+    },
+    { domain: 'SkincareAPI', operation: 'getWeeklyRoutines' }
+  );
+}
+
+/**
+ * Upsert a weekly routine for a specific day
+ * @param routine - The weekly routine input
+ * @returns Promise<SkincareWeeklyRoutine> - The created/updated routine
+ */
+export async function upsertWeeklyRoutine(
+  routine: SkincareWeeklyRoutineInput
+): Promise<SkincareWeeklyRoutine> {
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
+
+      const { data, error } = await supabase
+        .from('skincare_weekly_routines')
+        .upsert(
+          {
+            user_id: user.id,
+            day_of_week: routine.dayOfWeek,
+            am_routine: routine.amRoutine || null,
+            pm_routine: routine.pmRoutine || null,
+            notes: routine.notes || null,
+          },
+          { onConflict: 'user_id,day_of_week' }
+        )
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      logger.info('SkincareAPI', 'Weekly routine upserted', { dayOfWeek: routine.dayOfWeek });
+
+      return {
+        id: data.id,
+        userId: data.user_id,
+        dayOfWeek: data.day_of_week,
+        amRoutine: data.am_routine || undefined,
+        pmRoutine: data.pm_routine || undefined,
+        notes: data.notes || undefined,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+      };
+    },
+    { domain: 'SkincareAPI', operation: 'upsertWeeklyRoutine', data: { dayOfWeek: routine.dayOfWeek } }
+  );
+}

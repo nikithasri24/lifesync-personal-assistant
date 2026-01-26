@@ -28,7 +28,7 @@ export type ViewKey =
   | 'shopping'
   | 'travel'
   | 'personal'
-  | 'skincare'
+  | 'self-care'
   | 'health'
   | 'visa'
   | 'projects'

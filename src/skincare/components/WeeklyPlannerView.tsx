@@ -79,7 +79,7 @@ const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = ({ className = '' })
   const renderProductsList = (products: SkincareProduct[]) => {
     if (products.length === 0) {
       return (
-        <p className="text-sm text-gray-500 italic">Rest day - no products scheduled</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 italic">Rest day - no products scheduled</p>
       );
     }
 
@@ -87,11 +87,11 @@ const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = ({ className = '' })
       <ol className="space-y-2">
         {products.map((product, idx) => (
           <li key={product.id} className="flex items-start gap-2 text-sm">
-            <span className="text-gray-400 font-medium min-w-[20px]">{idx + 1}.</span>
+            <span className="text-gray-400 dark:text-gray-500 font-medium min-w-[20px]">{idx + 1}.</span>
             <div className="flex-1">
-              <p className="text-gray-900 font-medium">{product.name}</p>
+              <p className="text-gray-900 dark:text-gray-100 font-medium">{product.name}</p>
               {product.brand && (
-                <p className="text-xs text-gray-500">{product.brand}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{product.brand}</p>
               )}
             </div>
           </li>
@@ -143,13 +143,13 @@ const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = ({ className = '' })
   };
 
   return (
-    <div className={`bg-gray-50 rounded-2xl p-8 ${className}`}>
+    <div className={`bg-gray-50 dark:bg-gray-900 rounded-2xl p-8 ${className}`}>
       {/* Header */}
       <div className="flex items-start justify-between mb-8">
         {/* Title */}
         <div className="flex items-center gap-3">
-          <h2 className="text-5xl font-serif italic text-gray-900">Weekly Planner</h2>
-          <Droplet className="h-10 w-10 text-emerald-600" />
+          <h2 className="text-5xl font-serif italic text-gray-900 dark:text-gray-100">Weekly Planner</h2>
+          <Droplet className="h-10 w-10 text-emerald-600 dark:text-emerald-400" />
         </div>
 
         {/* Skin Type & Concerns */}
@@ -160,35 +160,35 @@ const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = ({ className = '' })
               value={skinType}
               onChange={(e) => setSkinType(e.target.value)}
               placeholder="Skin type"
-              className="w-full px-3 py-2 text-sm bg-white text-gray-900 border border-gray-300 rounded-lg focus:border-emerald-500 focus:outline-none"
+              className="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 rounded-lg focus:border-emerald-500 dark:focus:border-emerald-400 focus:outline-none"
             />
             <textarea
               value={concerns}
               onChange={(e) => setConcerns(e.target.value)}
               placeholder="Concerns"
               rows={2}
-              className="w-full px-3 py-2 text-sm bg-white text-gray-900 border border-gray-300 rounded-lg focus:border-emerald-500 focus:outline-none resize-none"
+              className="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 rounded-lg focus:border-emerald-500 dark:focus:border-emerald-400 focus:outline-none resize-none"
             />
             <button
               onClick={() => setEditingHeader(false)}
-              className="text-xs text-emerald-600 hover:text-emerald-700 font-medium"
+              className="text-xs text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 font-medium"
             >
               Done
             </button>
           </div>
         ) : (
           <div className="max-w-md relative group text-right">
-            <p className="text-lg font-semibold text-gray-900 mb-2">
+            <p className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
               skin type: {skinType.toLowerCase()}
             </p>
-            <p className="text-base text-gray-700 leading-relaxed">
+            <p className="text-base text-gray-700 dark:text-gray-300 leading-relaxed">
               Concerns: {concerns}
             </p>
             <button
               onClick={() => setEditingHeader(true)}
               className="absolute -right-8 top-0 p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
             >
-              <Edit2 className="h-4 w-4 text-gray-600" />
+              <Edit2 className="h-4 w-4 text-gray-600 dark:text-gray-400" />
             </button>
           </div>
         )}
@@ -198,19 +198,19 @@ const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = ({ className = '' })
       <div className="flex items-center justify-center gap-4 mb-8">
         <button
           onClick={() => setWeekOffset((prev) => prev - 1)}
-          className="p-3 rounded-xl bg-white hover:bg-gray-100 transition-colors border border-gray-300 shadow-sm"
+          className="p-3 rounded-xl bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border border-gray-300 dark:border-gray-600 shadow-sm"
         >
-          <ChevronLeft className="h-5 w-5 text-gray-900" />
+          <ChevronLeft className="h-5 w-5 text-gray-900 dark:text-gray-100" />
         </button>
         <div className="text-center">
-          <p className="text-base text-gray-900 font-medium">
+          <p className="text-base text-gray-900 dark:text-gray-100 font-medium">
             {weekDates[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} -{' '}
             {weekDates[6].toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
           </p>
           {weekOffset !== 0 && (
             <button
               onClick={() => setWeekOffset(0)}
-              className="text-xs text-emerald-600 hover:text-emerald-700 mt-1 font-medium"
+              className="text-xs text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 mt-1 font-medium"
             >
               Back to this week
             </button>
@@ -218,9 +218,9 @@ const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = ({ className = '' })
         </div>
         <button
           onClick={() => setWeekOffset((prev) => prev + 1)}
-          className="p-3 rounded-xl bg-white hover:bg-gray-100 transition-colors border border-gray-300 shadow-sm"
+          className="p-3 rounded-xl bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border border-gray-300 dark:border-gray-600 shadow-sm"
         >
-          <ChevronRight className="h-5 w-5 text-gray-900" />
+          <ChevronRight className="h-5 w-5 text-gray-900 dark:text-gray-100" />
         </button>
       </div>
 
@@ -240,15 +240,15 @@ const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = ({ className = '' })
           return (
             <div
               key={day.value}
-              className={`bg-white border-2 rounded-2xl p-6 relative shadow-md ${
+              className={`bg-white dark:bg-gray-800 border-2 rounded-2xl p-6 relative shadow-md ${
                 isToday
-                  ? 'border-emerald-500 ring-2 ring-emerald-200'
-                  : 'border-gray-200'
+                  ? 'border-emerald-500 ring-2 ring-emerald-200 dark:ring-emerald-800'
+                  : 'border-gray-200 dark:border-gray-700'
               }`}
             >
               {/* Day Label */}
               <div className="mb-6 flex items-center justify-between">
-                <h3 className="text-xl font-bold text-gray-900">{day.label}</h3>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">{day.label}</h3>
                 {isToday && (
                   <span className="px-3 py-1 bg-emerald-500 text-white text-xs font-bold rounded-full">
                     Today
@@ -261,7 +261,7 @@ const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = ({ className = '' })
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <Sun className="h-5 w-5 text-amber-500" />
-                    <p className="text-sm font-bold text-gray-900 uppercase tracking-wider">
+                    <p className="text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wider">
                       MORNING
                     </p>
                   </div>
@@ -269,22 +269,22 @@ const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = ({ className = '' })
                     {amRoutines.length > 0 && (
                       <button
                         onClick={() => handleEditRoutine(amRoutines[0])}
-                        className="p-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
+                        className="p-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                         title="Edit morning routine"
                       >
-                        <Edit2 className="h-4 w-4 text-gray-700" />
+                        <Edit2 className="h-4 w-4 text-gray-700 dark:text-gray-300" />
                       </button>
                     )}
                     <button
                       onClick={() => handleCreateRoutine(dayOfWeek, 'AM')}
-                      className="p-1.5 rounded-lg bg-emerald-100 hover:bg-emerald-200 transition-colors"
+                      className="p-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 hover:bg-emerald-200 dark:hover:bg-emerald-800/50 transition-colors"
                       title={amRoutines.length > 0 ? "Add another morning routine" : "Add morning routine"}
                     >
-                      <Plus className="h-4 w-4 text-emerald-700" />
+                      <Plus className="h-4 w-4 text-emerald-700 dark:text-emerald-300" />
                     </button>
                   </div>
                 </div>
-                <div className="bg-amber-50 rounded-lg p-3 border border-amber-100">
+                <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-3 border border-amber-100 dark:border-amber-800">
                   {renderProductsList(amProducts)}
                 </div>
               </div>
@@ -294,29 +294,29 @@ const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = ({ className = '' })
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <Moon className="h-5 w-5 text-indigo-500" />
-                    <p className="text-sm font-bold text-gray-900 uppercase tracking-wider">
+                    <p className="text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wider">
                       NIGHT:
                     </p>
                   </div>
                   {pmRoutines.length > 0 ? (
                     <button
                       onClick={() => handleEditRoutine(pmRoutines[0])}
-                      className="p-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
+                      className="p-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                       title="Edit night routine"
                     >
-                      <Edit2 className="h-4 w-4 text-gray-700" />
+                      <Edit2 className="h-4 w-4 text-gray-700 dark:text-gray-300" />
                     </button>
                   ) : (
                     <button
                       onClick={() => handleCreateRoutine(dayOfWeek, 'PM')}
-                      className="p-1.5 rounded-lg bg-indigo-100 hover:bg-indigo-200 transition-colors"
+                      className="p-1.5 rounded-lg bg-indigo-100 dark:bg-indigo-900/50 hover:bg-indigo-200 dark:hover:bg-indigo-800/50 transition-colors"
                       title="Add night routine"
                     >
-                      <Plus className="h-4 w-4 text-indigo-700" />
+                      <Plus className="h-4 w-4 text-indigo-700 dark:text-indigo-300" />
                     </button>
                   )}
                 </div>
-                <div className="text-base text-gray-900 leading-relaxed">
+                <div className="text-base text-gray-900 dark:text-gray-100 leading-relaxed">
                   {renderProductsList(pmProducts)}
                 </div>
               </div>
@@ -324,7 +324,7 @@ const WeeklyPlannerView: React.FC<WeeklyPlannerViewProps> = ({ className = '' })
               {/* Decorative corner accent */}
               {index % 2 === 0 && (
                 <div className="absolute bottom-3 right-3 opacity-5">
-                  <Droplet className="h-8 w-8 text-emerald-600" />
+                  <Droplet className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
                 </div>
               )}
             </div>
