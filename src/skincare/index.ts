@@ -1,15 +1,15 @@
-// Skincare Domain Barrel Exports
-// Centralized exports for skincare tracking feature
+// Skincare/Self Care Domain Barrel Exports
+// Centralized exports for skincare and self care tracking feature
 
 // Types
 export * from './types';
-
-// Data/API
-export * from './api/data';
+export * from './personalCareTypes';
+export * from './templates';
 
 // Components
 export { default as ProductFormModal } from './components/ProductFormModal';
 export { default as ProductsLibrary } from './components/ProductsLibrary';
-export { default as RoutineEditorModal } from './components/RoutineEditorModal';
-export { default as SkincareCalendar } from './components/SkincareCalendar';
-export { default as SkincareRoutineCard } from './components/SkincareRoutineCard';
+export { default as WeeklyRoutineTable } from './components/WeeklyRoutineTable';
+export { CalendarView } from './components/CalendarView';
+export { default as CategoryFormModal } from './components/CategoryFormModal';
+export { default as ItemFormModal } from './components/ItemFormModal';
