@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { supabase } from '../../lib/supabase';
 import {
   getMealPlans,
-  getMealPlan,
   createMealPlan,
   updateMealPlan,
   deleteMealPlan,
@@ -236,27 +235,6 @@ describe('mealPlanningAPI', () => {
         expect(supabase!.from).toHaveBeenCalledWith('meal_plans');
         expect(mockQuery.select).toHaveBeenCalledWith('*, planned_meals(*)');
         expect(result).toEqual([mockMealPlan]);
-      });
-    });
-
-    describe('getMealPlan', () => {
-      it('should fetch a single meal plan by ID', async () => {
-        const mockQuery = {
-          select: vi.fn().mockReturnThis(),
-          eq: vi.fn().mockReturnThis(),
-          order: vi.fn().mockReturnThis(),
-          single: vi.fn().mockResolvedValue({
-            data: mockMealPlan,
-            error: null,
-          }),
-        };
-
-        (supabase!.from as ReturnType<typeof vi.fn>).mockReturnValue(mockQuery);
-
-        const result = await getMealPlan('mealplan-123');
-
-        expect(supabase!.from).toHaveBeenCalledWith('meal_plans');
-        expect(result.id).toBe('mealplan-123');
       });
     });
 

@@ -518,30 +518,6 @@ export function useRecipesQuery(options?: { enabled?: boolean }): ReturnType<typ
   });
 }
 
-/**
- * Fetch a single recipe by ID
- */
-export function useRecipeQuery(recipeId: string | undefined): ReturnType<typeof useQuery<Recipe>> {
-  const queryClient = useQueryClient();
-
-  return useQuery({
-    queryKey: mealPlanningKeys.recipeDetail(recipeId ?? 'undefined'),
-    queryFn: () => {
-      // Try to get from cache first
-      const cachedRecipes = queryClient.getQueryData<Recipe[]>(mealPlanningKeys.recipesList());
-      if (cachedRecipes) {
-        const cached = cachedRecipes.find(r => r.id === recipeId);
-        if (cached) return cached;
-      }
-
-      // If not in cache, we'd need a getRecipe endpoint
-      throw new Error('Recipe not found in cache and no single-recipe endpoint available');
-    },
-    enabled: !!recipeId,
-    staleTime: 1000 * 60 * 10,
-  });
-}
-
 // ==================== Recipe Mutations ====================
 
 /**
@@ -715,90 +691,6 @@ export function useMealPlansQuery(options?: { enabled?: boolean }): ReturnType<t
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
     enabled: options?.enabled ?? true,
-  });
-}
-
-/**
- * Fetch a single meal plan by ID
- */
-export function useMealPlanQuery(mealPlanId: string | undefined): ReturnType<typeof useQuery<MealPlanWeek>> {
-  const queryClient = useQueryClient();
-
-  return useQuery({
-    queryKey: mealPlanningKeys.mealPlanDetail(mealPlanId ?? 'undefined'),
-    queryFn: () => {
-      const cachedPlans = queryClient.getQueryData<MealPlanWeek[]>(mealPlanningKeys.mealPlansList());
-      if (cachedPlans) {
-        const cached = cachedPlans.find(p => p.id === mealPlanId);
-        if (cached) return cached;
-      }
-
-      throw new Error('Meal plan not found in cache and no single-plan endpoint available');
-    },
-    enabled: !!mealPlanId,
-    staleTime: 1000 * 60 * 5,
-  });
-}
-
-/**
- * Smart hook to ensure a meal plan exists for a given week
- * Cache-first, creates if missing, handles concurrency
- */
-export function useMealPlanForWeek(weekStartDate: Date, weekStartsOn: 0 | 1 = 0): ReturnType<typeof useQuery<MealPlanWeek>> {
-  const queryClient = useQueryClient();
-  const weekStart = startOfWeek(weekStartDate, { weekStartsOn });
-  const weekKey = formatDate(weekStart, 'yyyy-MM-dd');
-
-  return useQuery({
-    queryKey: mealPlanningKeys.mealPlanForWeek(weekKey),
-    queryFn: async () => {
-      // First, check all meal plans cache
-      const cachedPlans = queryClient.getQueryData<MealPlanWeek[]>(mealPlanningKeys.mealPlansList());
-      if (cachedPlans) {
-        const existing = cachedPlans.find((plan) => {
-          const planWeekStart = startOfWeek(plan.weekStartDate, { weekStartsOn });
-          return formatDate(planWeekStart, 'yyyy-MM-dd') === weekKey;
-        });
-        if (existing) return existing;
-      }
-
-      // If not found, create new plan
-      const payload = buildMealPlanInsertPayload(weekStart, 'Meal plan');
-      try {
-        const created = await mealPlanningAPI.createMealPlan(payload);
-        const plan = mapMealPlanDataToMealPlanWeek(created);
-
-        // Update the meal plans list cache
-        queryClient.setQueryData<MealPlanWeek[]>(mealPlanningKeys.mealPlansList(), (old) => {
-          if (!old) return [plan];
-          const alreadyExists = old.some(p => p.id === plan.id);
-          if (alreadyExists) return old;
-          return [...old, plan];
-        });
-
-        return plan;
-      } catch (e) {
-        logger.warn('MealPlanning', 'Cloud create failed; falling back to local-only plan', { error: e });
-        const localPlan: MealPlanWeek = {
-          id: `local-${Date.now()}`,
-          name: 'Meal plan',
-          weekStartDate: weekStart,
-          mealColumns: DEFAULT_MEAL_COLUMNS,
-          meals: [],
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
-
-        // Add to cache
-        queryClient.setQueryData<MealPlanWeek[]>(mealPlanningKeys.mealPlansList(), (old) => {
-          if (!old) return [localPlan];
-          return [...old, localPlan];
-        });
-
-        return localPlan;
-      }
-    },
-    staleTime: 1000 * 60 * 5,
   });
 }
 
@@ -1120,47 +1012,7 @@ export function usePostponePlannedMealMutation(): ReturnType<typeof useMutation<
   });
 }
 
-/**
- * Reschedule a postponed meal to a new date
- */
-export function useReschedulePlannedMealMutation(): ReturnType<typeof useMutation<PlannedMeal, Error, { mealId: string; newDate: Date; newMealType?: string }, { previousPlans: MealPlanWeek[] | undefined }>> {
-  const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: async ({ mealId, newDate, newMealType }: { mealId: string; newDate: Date; newMealType?: string }) => {
-      const data = await mealPlanningAPI.reschedulePlannedMeal(mealId, newDate, newMealType);
-      return mapPlannedMealDataToPlannedMeal(data);
-    },
-    onMutate: async ({ mealId, newDate, newMealType }) => {
-      await queryClient.cancelQueries({ queryKey: mealPlanningKeys.mealPlansList() });
-      const previousPlans = queryClient.getQueryData<MealPlanWeek[]>(mealPlanningKeys.mealPlansList());
-
-      // Optimistically update the meal
-      queryClient.setQueryData<MealPlanWeek[]>(mealPlanningKeys.mealPlansList(), (old) => {
-        if (!old) return [];
-        return old.map((plan) => ({
-          ...plan,
-          meals: plan.meals.map((m) =>
-            m.id === mealId
-              ? { ...m, date: newDate, mealType: newMealType || m.mealType, status: 'planned' as const, isPostponed: false, postponedReason: undefined }
-              : m
-          ),
-        }));
-      });
-
-      return { previousPlans };
-    },
-    onError: (err, variables, context) => {
-      if (context?.previousPlans) {
-        queryClient.setQueryData(mealPlanningKeys.mealPlansList(), context.previousPlans);
-      }
-      logger.error('MealPlanning', 'Error rescheduling planned meal', { error: err });
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: mealPlanningKeys.mealPlansList() });
-    },
-  });
-}
 
 // ==================== Pantry Queries ====================
 
@@ -1301,42 +1153,4 @@ export function useDeletePantryItemMutation(): ReturnType<typeof useMutation<str
   });
 }
 
-// ==================== Helper Hooks ====================
 
-/**
- * Get recipes filtered by tags or favorites
- */
-export function useFilteredRecipes(options?: {
-  tags?: string[];
-  favoritesOnly?: boolean;
-}): { data: Recipe[] } & Omit<ReturnType<typeof useRecipesQuery>, 'data'> {
-  const { data: recipes = [], ...rest } = useRecipesQuery();
-
-  const filtered = recipes.filter((recipe) => {
-    if (options?.favoritesOnly && !recipe.isFavorite) return false;
-    if (options?.tags && options.tags.length > 0) {
-      return options.tags.some((tag) => recipe.tags?.includes(tag));
-    }
-    return true;
-  });
-
-  return { data: filtered, ...rest };
-}
-
-/**
- * Get pantry items filtered by category or low stock
- */
-export function useFilteredPantryItems(options?: {
-  category?: PantryItem['category'];
-  lowStockOnly?: boolean;
-}): { data: PantryItem[] } & Omit<ReturnType<typeof usePantryItemsQuery>, 'data'> {
-  const { data: items = [], ...rest } = usePantryItemsQuery();
-
-  const filtered = items.filter((item) => {
-    if (options?.category && item.category !== options.category) return false;
-    if (options?.lowStockOnly && !item.isLowStock) return false;
-    return true;
-  });
-
-  return { data: filtered, ...rest };
-}
