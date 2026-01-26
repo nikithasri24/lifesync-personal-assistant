@@ -19,8 +19,8 @@ import type {
   PersonalCareScheduleWithItem,
   FrequencyType,
   ScheduleStatus,
-} from '../personal-care/types';
-import { CATEGORY_TEMPLATES, ITEM_TEMPLATES, type ItemTemplate } from '../personal-care/templates';
+} from '../skincare/personalCareTypes';
+import { CATEGORY_TEMPLATES, ITEM_TEMPLATES, type ItemTemplate } from '../skincare/templates';
 import { apiCall, requireAuth } from './apiWrapper';
 
 // =====================================================

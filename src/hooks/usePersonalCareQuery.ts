@@ -52,7 +52,7 @@ import type {
   PersonalCareSchedule,
   PersonalCareScheduleWithItem,
   ScheduleStatus,
-} from '@/personal-care/types';
+} from '@/skincare/personalCareTypes';
 
 // =====================================================
 // CATEGORIES QUERY HOOKS

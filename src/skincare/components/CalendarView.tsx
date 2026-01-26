@@ -6,7 +6,7 @@
 import { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Check, SkipForward, X } from 'lucide-react';
 import { useMonthSchedule, useScheduleItem, useUpdateScheduleStatus, useRemoveScheduledItem } from '@/hooks/usePersonalCareQuery';
-import type { PersonalCareItem, PersonalCareScheduleWithItem, ScheduleStatus } from '../types';
+import type { PersonalCareItem, PersonalCareScheduleWithItem, ScheduleStatus } from '../personalCareTypes';
 
 interface CalendarViewProps {
   items: PersonalCareItem[];

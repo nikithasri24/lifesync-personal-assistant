@@ -3,7 +3,7 @@
  * Pre-defined frequency categories and suggested items
  */
 
-import type { FrequencyType, TrackingMode } from './types';
+import type { FrequencyType, TrackingMode } from './personalCareTypes';
 
 // =====================================================
 // CATEGORY TEMPLATES

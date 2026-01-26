@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { X, Save } from 'lucide-react';
-import type { PersonalCareCategory, PersonalCareCategoryInput, FrequencyType } from '../types';
+import type { PersonalCareCategory, PersonalCareCategoryInput, FrequencyType } from '../personalCareTypes';
 import { getFrequencyDisplayName } from '../templates';
 
 // Common emoji icons for categories

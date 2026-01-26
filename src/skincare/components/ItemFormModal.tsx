@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { X, Save } from 'lucide-react';
-import type { PersonalCareItem, PersonalCareItemInput, TrackingMode } from '../types';
+import type { PersonalCareItem, PersonalCareItemInput, TrackingMode } from '../personalCareTypes';
 
 // Common emoji icons for items
 const ITEM_ICONS = [

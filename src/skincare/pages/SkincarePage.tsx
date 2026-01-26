@@ -14,9 +14,9 @@ import { Sparkles, Package, Calendar, Settings, Plus, Pencil } from 'lucide-reac
 import ProductsLibrary from '../components/ProductsLibrary';
 import ProductFormModal from '../components/ProductFormModal';
 import WeeklyRoutineTable from '../components/WeeklyRoutineTable';
-import { CalendarView } from '../../personal-care/components/CalendarView';
-import CategoryFormModal from '../../personal-care/components/CategoryFormModal';
-import ItemFormModal from '../../personal-care/components/ItemFormModal';
+import { CalendarView } from '../components/CalendarView';
+import CategoryFormModal from '../components/CategoryFormModal';
+import ItemFormModal from '../components/ItemFormModal';
 import {
   useSkincareProducts,
   useCreateProduct,
@@ -32,7 +32,7 @@ import {
   useInitializePersonalCare,
 } from '../../hooks/usePersonalCareQuery';
 import type { SkincareProduct, SkincareProductInput } from '../types';
-import type { PersonalCareCategory, PersonalCareItem, PersonalCareCategoryInput, PersonalCareItemInput } from '../../personal-care/types';
+import type { PersonalCareCategory, PersonalCareItem, PersonalCareCategoryInput, PersonalCareItemInput } from '../personalCareTypes';
 
 type ViewType = 'routine' | 'schedule' | 'products' | 'setup';
 
