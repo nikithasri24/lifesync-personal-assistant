@@ -1,10 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Flame, Pencil, Trash2, Check, X, RefreshCw, Undo2 } from 'lucide-react';
+import { Flame, Trash2, Check, X, RefreshCw, Undo2, Loader2 } from 'lucide-react';
+import { format } from 'date-fns';
 import type { PlannedMeal, Recipe } from '../../../types';
-import { LogMealButton } from '../../../components/nutrition/LogMealButton';
+import { useLogFoodMutation } from '../../../hooks/useNutritionQuery';
 import { useUpdatePlannedMealMutation, useDeletePlannedMealMutation } from '../../../hooks/useMealPlanningQuery';
 import { SwapMealModal } from './SwapMealModal';
 import { logger } from '../../../services/logger';
+import type { MealType } from '../../../api/nutritionAPI';
+import { useUndoRedo } from '../../../contexts/UndoRedoContext';
+import { DeletePlannedMealCommand, UpdatePlannedMealCommand } from '../../../commands/MealPlanningCommands';
 
 // Meal type color mapping
 const MEAL_TYPE_COLORS = {
@@ -34,10 +38,51 @@ export const MealItem: React.FC<MealItemProps> = ({ meal, recipes, onShowRecipeF
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState(mealName);
   const [showSwapModal, setShowSwapModal] = useState(false);
+  const [isLogging, setIsLogging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const updateMealMutation = useUpdatePlannedMealMutation();
   const deleteMealMutation = useDeletePlannedMealMutation();
+  const logFoodMutation = useLogFoodMutation();
+  const { executeCommand } = useUndoRedo();
+
+  // Quick log handler for checkbox
+  const handleQuickLog = async (e: React.MouseEvent | React.ChangeEvent) => {
+    e.stopPropagation();
+    if (isLogging) return;
+
+    setIsLogging(true);
+    const mealDisplayName = recipe?.name || meal.customMeal || 'Meal';
+    const mealCalories = recipe?.calories || 0;
+    const nutritionInfo = recipe?.nutritionInfo as { protein_g?: number; carbs_g?: number; fat_g?: number } | undefined;
+
+    try {
+      // Log to nutrition tracker
+      const foodLog = await logFoodMutation.mutateAsync({
+        custom_food_name: mealDisplayName,
+        quantity: meal.servings || 1,
+        meal_type: meal.mealType as MealType,
+        logged_date: format(meal.date, 'yyyy-MM-dd'),
+        calories: mealCalories * (meal.servings || 1),
+        protein_g: (nutritionInfo?.protein_g || 0) * (meal.servings || 1),
+        carbs_g: (nutritionInfo?.carbs_g || 0) * (meal.servings || 1),
+        fat_g: (nutritionInfo?.fat_g || 0) * (meal.servings || 1),
+      });
+
+      // Update meal status to 'eaten' and link to food log
+      await updateMealMutation.mutateAsync({
+        mealId: meal.id,
+        updates: {
+          status: 'eaten',
+          actualFoodLogId: foodLog.id,
+        },
+      });
+    } catch (err) {
+      logger.error('MealItem', 'Failed to log meal', { error: err });
+    } finally {
+      setIsLogging(false);
+    }
+  };
 
   // Update editedName when mealName changes (after successful update)
   useEffect(() => {
@@ -76,24 +121,29 @@ export const MealItem: React.FC<MealItemProps> = ({ meal, recipes, onShowRecipeF
   };
 
   const handleDelete = async () => {
-    if (window.confirm(`Delete "${mealName}"?`)) {
-      try {
-        await deleteMealMutation.mutateAsync(meal.id);
-      } catch (error) {
-        logger.error('MealItem', 'Failed to delete meal', { error });
-      }
+    // Use command pattern for undo support - no confirmation needed since we can undo
+    try {
+      const command = new DeletePlannedMealCommand(meal, meal.mealPlanId);
+      await executeCommand(command);
+    } catch (error) {
+      logger.error('MealItem', 'Failed to delete meal', { error });
     }
   };
 
   const handleUndoLog = async () => {
     try {
-      await updateMealMutation.mutateAsync({
-        mealId: meal.id,
-        updates: {
-          status: 'planned',
-          actualFoodLogId: undefined,
-        },
-      });
+      // Use command pattern for undo support
+      const previousState = {
+        status: meal.status,
+        actualFoodLogId: meal.actualFoodLogId,
+      };
+      const command = new UpdatePlannedMealCommand(
+        meal.id,
+        mealName,
+        { status: 'planned', actualFoodLogId: undefined },
+        previousState
+      );
+      await executeCommand(command);
     } catch (error) {
       logger.error('MealItem', 'Failed to undo log', { error });
     }
@@ -163,10 +213,11 @@ export const MealItem: React.FC<MealItemProps> = ({ meal, recipes, onShowRecipeF
   }
 
   const isEaten = meal.status === 'eaten';
+  const [isHovered, setIsHovered] = useState(false);
 
   return (
     <li
-      className="group/meal mb-1"
+      style={{ listStyle: 'none', background: 'transparent', border: 'none', margin: 0, padding: 0 }}
       draggable={!isEaten}
       onDragStart={(e) => {
         if (isEaten) {
@@ -175,88 +226,103 @@ export const MealItem: React.FC<MealItemProps> = ({ meal, recipes, onShowRecipeF
         }
         e.dataTransfer.setData('text/meal-id', meal.id);
       }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="relative flex items-center gap-2 py-1 px-1">
+      <div className="relative flex items-center gap-2 py-1" style={{ background: 'transparent', border: 'none' }}>
+        {/* Checkbox for quick logging */}
+        <div className="shrink-0 flex items-center">
+          {isLogging ? (
+            <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />
+          ) : isEaten ? (
+            <button
+              type="button"
+              onClick={(e) => {
+                if (!e.metaKey && !e.ctrlKey) {
+                  e.stopPropagation();
+                }
+                void handleUndoLog();
+              }}
+              className="w-4 h-4 rounded border-2 border-green-500 bg-green-500 flex items-center justify-center hover:bg-green-600 hover:border-green-600 transition-colors cursor-pointer"
+              title="Click to undo"
+            >
+              <Check className="w-3 h-3 text-white" />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleQuickLog}
+              className="w-4 h-4 rounded border-2 border-slate-400 hover:border-green-500 hover:bg-green-500/20 transition-colors cursor-pointer"
+              title="Click to mark as eaten"
+            />
+          )}
+        </div>
+
         {/* Meal Name */}
-        <button
-          type="button"
+        <span
           onClick={(e) => {
-            if (isEaten || isRecipeMeal) return; // Don't allow editing eaten or recipe-based meals
-            // Prevent cell selection when clicking to edit
+            if (isEaten || isRecipeMeal) return;
             if (!e.metaKey && !e.ctrlKey) {
               e.stopPropagation();
             }
             setIsEditing(true);
           }}
-          className="flex-1 min-w-0 text-left"
+          className={`flex-1 min-w-0 text-left text-sm cursor-pointer ${isEaten ? 'line-through' : ''}`}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: isEaten ? '#16a34a' : '#e2e8f0'
+          }}
           title={isEaten ? 'Meal logged' : isRecipeMeal ? 'Edit the recipe in Saved Recipes' : 'Click to edit'}
-          disabled={isEaten || isRecipeMeal}
         >
-          <span className={`text-sm font-medium ${isEaten ? 'text-green-600 line-through' : 'text-slate-900'}`}>
-            {mealName}
-          </span>
-        </button>
+          {mealName}
+        </span>
 
-        {/* Calories - Always visible */}
+        {/* Calories */}
         {calories && (
-          <span className="text-xs font-medium flex items-center gap-1 shrink-0 text-slate-600" title={`${calories} calories`}>
+          <span
+            className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 shrink-0"
+            title={`${calories} calories`}
+          >
             <Flame className="w-3 h-3" />
             {calories}
           </span>
         )}
 
-        {/* Actions - Hidden when eaten */}
+        {/* Swap button - Always visible when not eaten */}
         {!isEaten && (
-          <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover/meal:opacity-100 transition-opacity">
-            <LogMealButton meal={meal} recipe={recipe} compact className="text-slate-400 hover:text-emerald-600 hover:bg-emerald-50" />
-            <button
-              type="button"
-              onClick={(e) => {
-                // Allow Cmd/Ctrl+click to bubble up for multi-cell selection
-                if (!e.metaKey && !e.ctrlKey) {
-                  e.stopPropagation();
-                }
-                setShowSwapModal(true);
-              }}
-              className="p-1 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors"
-              title="Swap meal - Log what you actually ate"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={(e) => {
-                // Allow Cmd/Ctrl+click to bubble up for multi-cell selection
-                if (!e.metaKey && !e.ctrlKey) {
-                  e.stopPropagation();
-                }
-                void handleDelete();
-              }}
-              className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-              title="Delete meal"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        )}
-
-        {/* Undo button - Shown when eaten, visible on hover */}
-        {isEaten && (
           <button
             type="button"
             onClick={(e) => {
               if (!e.metaKey && !e.ctrlKey) {
                 e.stopPropagation();
               }
-              void handleUndoLog();
+              setShowSwapModal(true);
             }}
-            className="shrink-0 p-1 text-green-600 hover:text-green-800 hover:bg-green-100 rounded transition-all opacity-0 group-hover/meal:opacity-100"
-            title="Undo food log"
+            className="shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 text-xs text-amber-500 hover:text-amber-400 hover:bg-amber-500/10 rounded transition-colors"
+            title="I ate something different"
           >
-            <Undo2 className="w-3.5 h-3.5" />
+            <RefreshCw className="w-3 h-3" />
+            <span className="hidden sm:inline">Swap</span>
           </button>
         )}
 
+        {/* Delete - Visible on hover */}
+        {isHovered && (
+          <button
+            type="button"
+            onClick={(e) => {
+              if (!e.metaKey && !e.ctrlKey) {
+                e.stopPropagation();
+              }
+              void handleDelete();
+            }}
+            className="shrink-0 p-1 text-slate-500 hover:text-red-500 transition-colors"
+            title="Delete"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        )}
       </div>
 
       {/* Swap Meal Modal */}

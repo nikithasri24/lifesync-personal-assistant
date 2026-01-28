@@ -7,7 +7,8 @@ import React from 'react';
 import { Package, Calendar, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { format } from 'date-fns';
 import type { PlannedMeal, Recipe } from '../../../types';
-import { useDeletePlannedMealMutation } from '../../../hooks/useMealPlanningQuery';
+import { useUndoRedo } from '../../../contexts/UndoRedoContext';
+import { DeletePlannedMealCommand } from '../../../commands/MealPlanningCommands';
 
 interface MealBacklogSectionProps {
   postponedMeals: PlannedMeal[];
@@ -17,19 +18,19 @@ interface MealBacklogSectionProps {
 
 export function MealBacklogSection({ postponedMeals, recipes, onReschedule }: MealBacklogSectionProps): React.ReactElement | null {
   const [isExpanded, setIsExpanded] = React.useState(true);
-  const deleteMealMutation = useDeletePlannedMealMutation();
+  const { executeCommand } = useUndoRedo();
 
   if (postponedMeals.length === 0) {
     return null;
   }
 
-  const handleDelete = async (mealId: string, mealName: string) => {
-    if (window.confirm(`Delete "${mealName}" from backlog?`)) {
-      try {
-        await deleteMealMutation.mutateAsync(mealId);
-      } catch (error) {
-        console.error('[MealBacklog] Failed to delete meal:', error);
-      }
+  const handleDelete = async (meal: PlannedMeal, mealName: string) => {
+    // Use command pattern for undo support - no confirmation needed
+    try {
+      const command = new DeletePlannedMealCommand(meal, meal.mealPlanId);
+      await executeCommand(command);
+    } catch (error) {
+      console.error('[MealBacklog] Failed to delete meal:', error);
     }
   };
 
@@ -68,7 +69,12 @@ export function MealBacklogSection({ postponedMeals, recipes, onReschedule }: Me
             return (
               <div
                 key={meal.id}
-                className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-md hover:border-amber-300 hover:shadow-sm transition-all group"
+                draggable={true}
+                onDragStart={(e) => {
+                  e.dataTransfer.setData('text/meal-id', meal.id);
+                  e.dataTransfer.setData('text/from-backlog', 'true');
+                }}
+                className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-md hover:border-amber-300 hover:shadow-sm transition-all group cursor-move"
               >
                 {/* Meal Info */}
                 <div className="flex-1 min-w-0">
@@ -101,7 +107,7 @@ export function MealBacklogSection({ postponedMeals, recipes, onReschedule }: Me
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleDelete(meal.id, mealName)}
+                    onClick={() => handleDelete(meal, mealName)}
                     className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
                     title="Delete from backlog"
                   >
@@ -115,9 +121,8 @@ export function MealBacklogSection({ postponedMeals, recipes, onReschedule }: Me
           {/* Help Text */}
           <div className="mt-3 p-3 bg-slate-50 border border-slate-200 rounded-md">
             <p className="text-xs text-slate-600">
-              💡 <strong>Tip:</strong> These meals were postponed because you ate something else. 
-              You can reschedule them to another day or delete them if you no longer want to make them.
-              Groceries for these meals are still included in your shopping list.
+              💡 <strong>Tip:</strong> Drag meals from here onto the table above to reschedule them.
+              Or delete them if you no longer want to make them.
             </p>
           </div>
         </div>

@@ -5,12 +5,12 @@
 
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Loader2 } from 'lucide-react';
+import { X, Loader2, Package, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import type { PlannedMeal, Recipe } from '../../../types';
 import type { MealType } from '../../../api/nutritionAPI';
 import { useLogFoodMutation } from '../../../hooks/useNutritionQuery';
-import { usePostponePlannedMealMutation, useUpdatePlannedMealMutation, useDeletePlannedMealMutation } from '../../../hooks/useMealPlanningQuery';
+import { usePostponePlannedMealMutation, useUpdatePlannedMealMutation } from '../../../hooks/useMealPlanningQuery';
 
 interface SwapMealModalProps {
   meal: PlannedMeal;
@@ -19,18 +19,16 @@ interface SwapMealModalProps {
   onSuccess?: () => void;
 }
 
-type SwapAction = 'postpone' | 'reschedule' | 'cancel';
+type SwapAction = 'save_for_later' | 'forget_it';
 
 export function SwapMealModal({ meal, recipe, onClose, onSuccess }: SwapMealModalProps): React.ReactElement {
   const [actualFood, setActualFood] = useState('');
-  const [swapAction, setSwapAction] = useState<SwapAction>('postpone');
-  const [postponeReason, setPostponeReason] = useState('');
+  const [swapAction, setSwapAction] = useState<SwapAction>('forget_it');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const logFoodMutation = useLogFoodMutation();
   const postponeMealMutation = usePostponePlannedMealMutation();
   const updateMealMutation = useUpdatePlannedMealMutation();
-  const deleteMealMutation = useDeletePlannedMealMutation();
 
   const mealName = recipe?.name || meal.customMeal || 'Unnamed meal';
   const calories = recipe?.calories ? recipe.calories * (meal.servings || 1) : 0;
@@ -56,27 +54,27 @@ export function SwapMealModal({ meal, recipe, onClose, onSuccess }: SwapMealModa
       });
 
       // 2. Handle the planned meal based on selected action
-      if (swapAction === 'postpone') {
-        // Postpone to backlog
+      if (swapAction === 'save_for_later') {
+        // Move original meal to backlog - it will disappear from the grid
+        // The actual food is already logged to nutrition tracker above
         await postponeMealMutation.mutateAsync({
           mealId: meal.id,
-          reason: postponeReason || 'Ate something else',
+          reason: `Ate "${actualFood.trim()}" instead`,
         });
-        
-        // Link the food log to the planned meal
+      } else {
+        // "Forget it" - delete the planned meal entirely
+        // The actual food is already logged to nutrition tracker above
         await updateMealMutation.mutateAsync({
           mealId: meal.id,
           updates: {
-            status: 'substituted',
+            status: 'eaten',
+            customMeal: actualFood.trim(),
+            recipeId: undefined, // Clear the recipe link
             substitutedWith: actualFood.trim(),
             actualFoodLogId: foodLogEntry.id,
           },
         });
-      } else if (swapAction === 'cancel') {
-        // Delete the planned meal
-        await deleteMealMutation.mutateAsync(meal.id);
       }
-      // Note: 'reschedule' will be handled in a future update with date picker
 
       onSuccess?.();
       onClose();
@@ -156,60 +154,52 @@ export function SwapMealModal({ meal, recipe, onClose, onSuccess }: SwapMealModa
             {/* What to do with planned meal */}
             <div>
               <div className="text-sm font-medium text-slate-900 mb-3">
-                What to do with the planned meal?
+                What about "{mealName}"?
               </div>
               <div className="space-y-2">
-                <label className="flex items-start gap-3 p-3 border border-slate-300 rounded-md hover:bg-slate-50 cursor-pointer">
+                <label className={`flex items-start gap-3 p-3 border rounded-md cursor-pointer transition-colors ${swapAction === 'forget_it' ? 'border-indigo-500 bg-indigo-50' : 'border-slate-300 hover:bg-slate-50'}`}>
                   <input
                     type="radio"
                     name="swapAction"
-                    value="postpone"
-                    checked={swapAction === 'postpone'}
+                    value="forget_it"
+                    checked={swapAction === 'forget_it'}
                     onChange={(e) => setSwapAction(e.target.value as SwapAction)}
                     className="mt-0.5 shrink-0"
                     disabled={isSubmitting}
                   />
-                  <div className="min-w-0">
-                    <div className="font-medium text-sm text-slate-900">Postpone to backlog</div>
-                    <div className="text-xs text-slate-600 mt-0.5">Keep for later</div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <Trash2 className="w-4 h-4 text-slate-500" />
+                      <span className="font-medium text-sm text-slate-900">Forget it</span>
+                    </div>
+                    <div className="text-xs text-slate-600 mt-0.5">
+                      Replace with what I ate. I won't make the planned meal.
+                    </div>
                   </div>
                 </label>
 
-                <label className="flex items-start gap-3 p-3 border border-slate-300 rounded-md hover:bg-slate-50 cursor-pointer">
+                <label className={`flex items-start gap-3 p-3 border rounded-md cursor-pointer transition-colors ${swapAction === 'save_for_later' ? 'border-amber-500 bg-amber-50' : 'border-slate-300 hover:bg-slate-50'}`}>
                   <input
                     type="radio"
                     name="swapAction"
-                    value="cancel"
-                    checked={swapAction === 'cancel'}
+                    value="save_for_later"
+                    checked={swapAction === 'save_for_later'}
                     onChange={(e) => setSwapAction(e.target.value as SwapAction)}
                     className="mt-0.5 shrink-0"
                     disabled={isSubmitting}
                   />
-                  <div className="min-w-0">
-                    <div className="font-medium text-sm text-slate-900">Cancel completely</div>
-                    <div className="text-xs text-slate-600 mt-0.5">Remove from plan</div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <Package className="w-4 h-4 text-amber-600" />
+                      <span className="font-medium text-sm text-slate-900">Save for later</span>
+                    </div>
+                    <div className="text-xs text-slate-600 mt-0.5">
+                      Move to backlog so I can reschedule it another day.
+                    </div>
                   </div>
                 </label>
               </div>
             </div>
-
-            {/* Postpone reason */}
-            {swapAction === 'postpone' && (
-              <div>
-                <label htmlFor="postponeReason" className="block text-sm font-medium text-slate-900 mb-2">
-                  Reason <span className="text-slate-500 font-normal">(optional)</span>
-                </label>
-                <input
-                  id="postponeReason"
-                  type="text"
-                  value={postponeReason}
-                  onChange={(e) => setPostponeReason(e.target.value)}
-                  placeholder="e.g., Ate out"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  disabled={isSubmitting}
-                />
-              </div>
-            )}
           </div>
 
           {/* Actions */}
