@@ -1,11 +1,11 @@
 /**
  * Meal Plan Nutrition Summary
- * Shows daily and weekly nutrition totals based on planned meals
+ * Shows daily nutrition tracking with day selector
  */
 
-import React, { useMemo } from 'react';
-import { format } from 'date-fns';
-import { Flame, Beef, Wheat, Droplet, TrendingUp, ChevronDown, ChevronUp } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { format, isToday } from 'date-fns';
+import { Flame, Beef, Wheat, Droplet, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react';
 import { MacroProgressBar } from '@/components/nutrition/MacroProgressBar';
 import { useNutritionGoalQuery } from '@/hooks/useNutritionQuery';
 import type { PlannedMeal, Recipe } from '@/types';
@@ -19,11 +19,13 @@ interface MealPlanNutritionSummaryProps {
 interface DailyNutrition {
   date: Date;
   dayName: string;
+  fullDate: string;
   calories: number;
   protein: number;
   carbs: number;
   fat: number;
   mealCount: number;
+  isToday: boolean;
 }
 
 /**
@@ -52,7 +54,14 @@ export function MealPlanNutritionSummary({
   recipes,
 }: MealPlanNutritionSummaryProps): React.ReactElement {
   const { data: goal } = useNutritionGoalQuery();
-  const [isExpanded, setIsExpanded] = React.useState(false);
+
+  // Find today's index in weekDays, default to 0 if not found
+  const todayIndex = useMemo(() => {
+    const idx = weekDays.findIndex(d => isToday(d));
+    return idx >= 0 ? idx : 0;
+  }, [weekDays]);
+
+  const [selectedDayIndex, setSelectedDayIndex] = useState(todayIndex);
 
   // Calculate daily nutrition for each day
   const dailyNutrition = useMemo((): DailyNutrition[] => {
@@ -79,41 +88,44 @@ export function MealPlanNutritionSummary({
       return {
         date,
         dayName: format(date, 'EEE'),
+        fullDate: format(date, 'MMM d'),
         ...totals,
         mealCount: dayMeals.length,
+        isToday: isToday(date),
       };
     });
   }, [weekDays, plannedMeals, recipes]);
 
-  // Calculate weekly totals
+  // Get selected day's nutrition
+  const selectedDay = dailyNutrition[selectedDayIndex] || dailyNutrition[0];
+
+  // Daily targets from goals
+  const dailyTargets = useMemo(() => ({
+    calories: goal?.calories_target || 2000,
+    protein: goal?.protein_target_g || 150,
+    carbs: goal?.carbs_target_g || 200,
+    fat: goal?.fat_target_g || 65,
+  }), [goal]);
+
+  // Calculate weekly totals for the placeholder check
   const weeklyTotals = useMemo(() => {
     return dailyNutrition.reduce(
       (acc, day) => ({
         calories: acc.calories + day.calories,
-        protein: acc.protein + day.protein,
-        carbs: acc.carbs + day.carbs,
-        fat: acc.fat + day.fat,
         mealCount: acc.mealCount + day.mealCount,
       }),
-      { calories: 0, protein: 0, carbs: 0, fat: 0, mealCount: 0 }
+      { calories: 0, mealCount: 0 }
     );
   }, [dailyNutrition]);
 
-  // Weekly targets (goal × 7 days)
-  const weeklyTargets = useMemo(() => ({
-    calories: (goal?.calories_target || 2000) * 7,
-    protein: (goal?.protein_target_g || 150) * 7,
-    carbs: (goal?.carbs_target_g || 200) * 7,
-    fat: (goal?.fat_target_g || 65) * 7,
-  }), [goal]);
+  // Navigation handlers
+  const goToPreviousDay = () => {
+    setSelectedDayIndex(prev => Math.max(0, prev - 1));
+  };
 
-  // Daily average
-  const dailyAverage = useMemo(() => ({
-    calories: Math.round(weeklyTotals.calories / 7),
-    protein: Math.round(weeklyTotals.protein / 7),
-    carbs: Math.round(weeklyTotals.carbs / 7),
-    fat: Math.round(weeklyTotals.fat / 7),
-  }), [weeklyTotals]);
+  const goToNextDay = () => {
+    setSelectedDayIndex(prev => Math.min(weekDays.length - 1, prev + 1));
+  };
 
   // If no meals have nutrition data, show a placeholder
   if (weeklyTotals.calories === 0) {
@@ -129,115 +141,135 @@ export function MealPlanNutritionSummary({
 
   return (
     <section className="rounded-lg border border-slate-200 bg-white dark:bg-slate-800 dark:border-slate-700 overflow-hidden">
-      {/* Header - Always visible */}
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
-      >
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-gradient-to-br from-orange-500 to-red-500">
-            <Flame className="h-5 w-5 text-white" />
+      {/* Header with day selector */}
+      <div className="p-4">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-gradient-to-br from-orange-500 to-red-500">
+              <Flame className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-slate-900 dark:text-white">Daily Nutrition</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                {selectedDay.mealCount} meal{selectedDay.mealCount !== 1 ? 's' : ''} planned
+              </p>
+            </div>
           </div>
-          <div className="text-left">
-            <h3 className="font-semibold text-slate-900 dark:text-white">Weekly Nutrition</h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              {weeklyTotals.mealCount} meals planned • ~{dailyAverage.calories} cal/day avg
-            </p>
+
+          {/* Day selector */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={goToPreviousDay}
+              disabled={selectedDayIndex === 0}
+              className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronLeft className="h-5 w-5 text-slate-600 dark:text-slate-400" />
+            </button>
+            <div className="min-w-[100px] text-center">
+              <span className="font-medium text-slate-900 dark:text-white">
+                {selectedDay.dayName}, {selectedDay.fullDate}
+              </span>
+              {selectedDay.isToday && (
+                <span className="ml-2 text-xs px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
+                  Today
+                </span>
+              )}
+            </div>
+            <button
+              onClick={goToNextDay}
+              disabled={selectedDayIndex === weekDays.length - 1}
+              className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronRight className="h-5 w-5 text-slate-600 dark:text-slate-400" />
+            </button>
           </div>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="text-right hidden sm:block">
-            <span className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-              {Math.round(weeklyTotals.calories).toLocaleString()}
+
+        {/* Daily macro progress bars */}
+        <div className="space-y-3">
+          <MacroProgressBar
+            label="Calories"
+            current={selectedDay.calories}
+            target={dailyTargets.calories}
+            unit="cal"
+            color="#f97316"
+            icon={<Flame className="w-4 h-4 text-orange-500" />}
+          />
+          <MacroProgressBar
+            label="Protein"
+            current={selectedDay.protein}
+            target={dailyTargets.protein}
+            unit="g"
+            color="#ef4444"
+            icon={<Beef className="w-4 h-4 text-red-500" />}
+          />
+          <MacroProgressBar
+            label="Carbs"
+            current={selectedDay.carbs}
+            target={dailyTargets.carbs}
+            unit="g"
+            color="#3b82f6"
+            icon={<Wheat className="w-4 h-4 text-blue-500" />}
+          />
+          <MacroProgressBar
+            label="Fat"
+            current={selectedDay.fat}
+            target={dailyTargets.fat}
+            unit="g"
+            color="#eab308"
+            icon={<Droplet className="w-4 h-4 text-yellow-500" />}
+          />
+        </div>
+
+        {/* Week overview mini chart */}
+        <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Week Overview</span>
+            <span className="text-xs text-slate-400 dark:text-slate-500">
+              {weeklyTotals.mealCount} meals total
             </span>
-            <span className="text-sm text-slate-500 dark:text-slate-400 ml-1">/ {weeklyTargets.calories.toLocaleString()} cal</span>
           </div>
-          {isExpanded ? (
-            <ChevronUp className="h-5 w-5 text-slate-400" />
-          ) : (
-            <ChevronDown className="h-5 w-5 text-slate-400" />
-          )}
-        </div>
-      </button>
+          <div className="flex items-end gap-1 h-12">
+            {dailyNutrition.map((day, idx) => {
+              const heightPercent = Math.min((day.calories / dailyTargets.calories) * 100, 100);
+              const isSelected = idx === selectedDayIndex;
+              const isOver = day.calories > dailyTargets.calories;
 
-      {/* Expanded content */}
-      {isExpanded && (
-        <div className="border-t border-slate-200 dark:border-slate-700 p-4 space-y-6">
-          {/* Weekly macro progress bars */}
-          <div className="space-y-3">
-            <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300">Weekly Totals</h4>
-            <MacroProgressBar
-              label="Calories"
-              current={weeklyTotals.calories}
-              target={weeklyTargets.calories}
-              unit="cal"
-              color="#f97316"
-              icon={<Flame className="w-4 h-4 text-orange-500" />}
-            />
-            <MacroProgressBar
-              label="Protein"
-              current={weeklyTotals.protein}
-              target={weeklyTargets.protein}
-              unit="g"
-              color="#ef4444"
-              icon={<Beef className="w-4 h-4 text-red-500" />}
-            />
-            <MacroProgressBar
-              label="Carbs"
-              current={weeklyTotals.carbs}
-              target={weeklyTargets.carbs}
-              unit="g"
-              color="#3b82f6"
-              icon={<Wheat className="w-4 h-4 text-blue-500" />}
-            />
-            <MacroProgressBar
-              label="Fat"
-              current={weeklyTotals.fat}
-              target={weeklyTargets.fat}
-              unit="g"
-              color="#eab308"
-              icon={<Droplet className="w-4 h-4 text-yellow-500" />}
-            />
-          </div>
-
-          {/* Daily breakdown chart */}
-          <div className="space-y-3">
-            <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300">Daily Breakdown</h4>
-            <div className="flex items-end gap-1 h-24">
-              {dailyNutrition.map((day) => {
-                const dailyTarget = goal?.calories_target || 2000;
-                const heightPercent = Math.min((day.calories / dailyTarget) * 100, 150);
-                const isOver = day.calories > dailyTarget;
-
-                return (
-                  <div key={day.dayName} className="flex-1 flex flex-col items-center gap-1">
-                    <div
-                      className="w-full rounded-t transition-all duration-300 relative group"
-                      style={{
-                        height: `${heightPercent}%`,
-                        minHeight: day.calories > 0 ? '4px' : '0',
-                        backgroundColor: isOver ? '#ef4444' : '#f97316',
-                      }}
-                    >
-                      {/* Tooltip on hover */}
-                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
-                        {Math.round(day.calories)} cal
-                        {day.mealCount > 0 && ` • ${day.mealCount} meals`}
-                      </div>
-                    </div>
-                    <span className="text-xs text-slate-500 dark:text-slate-400">{day.dayName}</span>
-                  </div>
-                );
-              })}
-            </div>
-            {/* Target line indicator */}
-            <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-              <div className="w-3 h-0.5 bg-slate-300 dark:bg-slate-600" />
-              <span>Daily target: {goal?.calories_target || 2000} cal</span>
-            </div>
+              return (
+                <button
+                  key={day.dayName}
+                  onClick={() => setSelectedDayIndex(idx)}
+                  className={`flex-1 flex flex-col items-center gap-1 transition-all ${
+                    isSelected ? 'scale-105' : 'opacity-60 hover:opacity-100'
+                  }`}
+                >
+                  <div
+                    className={`w-full rounded-t transition-all duration-300 ${
+                      isSelected ? 'ring-2 ring-orange-400 ring-offset-1 dark:ring-offset-slate-800' : ''
+                    }`}
+                    style={{
+                      height: `${heightPercent}%`,
+                      minHeight: day.calories > 0 ? '4px' : '2px',
+                      backgroundColor: day.calories === 0
+                        ? '#e2e8f0'
+                        : isOver
+                          ? '#ef4444'
+                          : '#f97316',
+                    }}
+                  />
+                  <span className={`text-[10px] ${
+                    isSelected
+                      ? 'font-semibold text-orange-600 dark:text-orange-400'
+                      : 'text-slate-400 dark:text-slate-500'
+                  }`}>
+                    {day.dayName}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
-      )}
+      </div>
     </section>
   );
 }
