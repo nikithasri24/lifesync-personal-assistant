@@ -39,6 +39,7 @@ export const MealItem: React.FC<MealItemProps> = ({ meal, recipes, onShowRecipeF
   const [editedName, setEditedName] = useState(mealName);
   const [showSwapModal, setShowSwapModal] = useState(false);
   const [isLogging, setIsLogging] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const updateMealMutation = useUpdatePlannedMealMutation();
@@ -213,7 +214,6 @@ export const MealItem: React.FC<MealItemProps> = ({ meal, recipes, onShowRecipeF
   }
 
   const isEaten = meal.status === 'eaten';
-  const [isHovered, setIsHovered] = useState(false);
 
   return (
     <li

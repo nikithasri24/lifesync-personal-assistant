@@ -188,7 +188,9 @@ const MealPlanning: React.FC = () => {
   }, [weekNav.activePlan?.meals]);
 
   const mealsByDate: Record<string, PlannedMeal[]> = useMemo(() => {
-    const result = plannedMeals.reduce<Record<string, PlannedMeal[]>>((acc, meal) => {
+    // Filter out postponed meals - they appear in the backlog instead
+    const activeMeals = plannedMeals.filter((meal) => !meal.isPostponed);
+    const result = activeMeals.reduce<Record<string, PlannedMeal[]>>((acc, meal) => {
       const key = toKey(ensureDate(meal.date));
       if (!acc[key]) {
         acc[key] = [];
