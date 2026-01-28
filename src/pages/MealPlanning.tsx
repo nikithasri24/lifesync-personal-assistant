@@ -38,6 +38,7 @@ import AddMealControl from '../mealPlanning/components/mealPlan/AddMealControl';
 import { MealPlanToolbar } from '../mealPlanning/components/layout/MealPlanToolbar';
 import { SelectionToolbar } from '../mealPlanning/components/layout/SelectionToolbar';
 import { WeeklyOverviewSection } from '../mealPlanning/components/layout/WeeklyOverviewSection';
+import { MealPlanNutritionSummary } from '../mealPlanning/components/layout/MealPlanNutritionSummary';
 import { SavedRecipesSection } from '../mealPlanning/components/layout/SavedRecipesSection';
 import { ImportSections } from '../mealPlanning/components/layout/ImportSections';
 import { ModalContainer } from '../mealPlanning/components/layout/ModalContainer';
@@ -264,6 +265,13 @@ const MealPlanning: React.FC = () => {
         isAnySelectedCellEditing={multiCellSelection.isAnySelectedCellEditing}
         setIsAnySelectedCellEditing={multiCellSelection.setIsAnySelectedCellEditing}
         addMealToSelectedCells={multiCellSelection.addMealToSelectedCells}
+      />
+
+      {/* Nutrition summary */}
+      <MealPlanNutritionSummary
+        weekDays={weekNav.weekDays}
+        plannedMeals={plannedMeals}
+        recipes={recipes}
       />
 
       {/* Import sections */}
