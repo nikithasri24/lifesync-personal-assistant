@@ -223,76 +223,79 @@ export async function fetchYoutubeRecipe(url: string, lang: string = 'en'): Prom
   const snippet = data?.items?.[0]?.snippet;
   if (!snippet) throw new Error('Video metadata not available.');
 
-  // Get transcript data
+  // Get transcript data (store it once to avoid consuming the response twice)
   let transcriptText = '';
+  let transcriptEntries: TranscriptEntry[] = [];
   if (transcriptResp.ok) {
     const tr = (await transcriptResp.json()) as TranscriptResponse;
-    const transcript = Array.isArray(tr.transcript) ? tr.transcript : [];
-    transcriptText = transcript.map((t: TranscriptEntry) => t.text).join(' ');
+    transcriptEntries = Array.isArray(tr.transcript) ? tr.transcript : [];
+    transcriptText = transcriptEntries.map((t: TranscriptEntry) => t.text).join(' ');
   }
 
-  // Try AI-powered extraction first
-  try {
-    const aiResp = await fetch('/api/youtube/extract-recipe', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: snippet.title ?? '',
-        transcript: transcriptText,
-        description: snippet.description ?? ''
-      })
-    });
+  // Try AI-powered extraction first (only if we have transcript or description)
+  if (transcriptText || snippet.description) {
+    try {
+      const aiResp = await fetch('/api/youtube/extract-recipe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: snippet.title ?? '',
+          transcript: transcriptText,
+          description: snippet.description ?? ''
+        })
+      });
 
-    if (aiResp.ok) {
-      const aiData = (await aiResp.json()) as AIExtractionResponse;
-      // Merge AI results with video metadata
-      const recipeName: string = aiData.name ?? snippet.title ?? 'YouTube Recipe';
-      const recipeDescription: string = aiData.description ?? snippet.description?.split('\n')[0] ?? '';
-      const recipeIngredients: Array<{ name: string }> = aiData.ingredients ?? [];
-      const recipeInstructions: string[] = aiData.instructions ?? [];
-      const recipePrepTime: number | undefined = aiData.prepTime;
-      const recipeCookTime: number | undefined = aiData.cookTime;
-      const recipeServings: number | undefined = aiData.servings;
-      const recipeDifficulty: 'easy' | 'medium' | 'hard' | undefined = aiData.difficulty;
-      const recipeTags: string[] = [...(aiData.tags ?? []), 'video', 'youtube', 'ai-extracted'];
-      const recipeImage: string | undefined = snippet.thumbnails?.medium?.url ?? snippet.thumbnails?.default?.url ?? undefined;
-      const recipeCuisine: string = aiData.cuisine ?? 'other';
-      const recipeVideoThumbnail: string | undefined = snippet.thumbnails?.high?.url ?? snippet.thumbnails?.medium?.url;
+      if (aiResp.ok) {
+        const aiData = (await aiResp.json()) as AIExtractionResponse;
+        // Merge AI results with video metadata
+        const recipeName: string = aiData.name ?? snippet.title ?? 'YouTube Recipe';
+        const recipeDescription: string = aiData.description ?? snippet.description?.split('\n')[0] ?? '';
+        const recipeIngredients: Array<{ name: string }> = aiData.ingredients ?? [];
+        const recipeInstructions: string[] = aiData.instructions ?? [];
+        const recipePrepTime: number | undefined = aiData.prepTime;
+        const recipeCookTime: number | undefined = aiData.cookTime;
+        const recipeServings: number | undefined = aiData.servings;
+        const recipeDifficulty: 'easy' | 'medium' | 'hard' | undefined = aiData.difficulty;
+        const recipeTags: string[] = [...(aiData.tags ?? []), 'video', 'youtube', 'ai-extracted'];
+        const recipeImage: string | undefined = snippet.thumbnails?.medium?.url ?? snippet.thumbnails?.default?.url ?? undefined;
+        const recipeCuisine: string = aiData.cuisine ?? 'other';
+        const recipeVideoThumbnail: string | undefined = snippet.thumbnails?.high?.url ?? snippet.thumbnails?.medium?.url;
 
-      return {
-        name: recipeName,
-        description: recipeDescription,
-        ingredients: recipeIngredients,
-        instructions: recipeInstructions,
-        prepTime: recipePrepTime,
-        cookTime: recipeCookTime,
-        servings: recipeServings,
-        difficulty: recipeDifficulty,
-        tags: recipeTags,
-        rating: undefined,
-        notes: undefined,
-        image: recipeImage,
-        isFavorite: false,
-        calories: undefined,
-        cuisine: recipeCuisine,
-        dietaryRestrictions: [],
-        nutritionInfo: undefined,
-        flowChart: undefined,
-        sourceType: 'youtube',
-        sourceUrl: url,
-        videoThumbnail: recipeVideoThumbnail,
-      };
+        return {
+          name: recipeName,
+          description: recipeDescription,
+          ingredients: recipeIngredients,
+          instructions: recipeInstructions,
+          prepTime: recipePrepTime,
+          cookTime: recipeCookTime,
+          servings: recipeServings,
+          difficulty: recipeDifficulty,
+          tags: recipeTags,
+          rating: undefined,
+          notes: undefined,
+          image: recipeImage,
+          isFavorite: false,
+          calories: undefined,
+          cuisine: recipeCuisine,
+          dietaryRestrictions: [],
+          nutritionInfo: undefined,
+          flowChart: undefined,
+          sourceType: 'youtube',
+          sourceUrl: url,
+          videoThumbnail: recipeVideoThumbnail,
+        };
+      }
+      // AI returned non-ok status (e.g., 400 for missing GROQ_API_KEY) - fall through to regex
+    } catch (aiError) {
+      logger.warn('YouTubeParser', 'AI extraction failed, falling back to regex parser:', { aiError });
     }
-  } catch (aiError) {
-    logger.warn('YouTubeParser', 'AI extraction failed, falling back to regex parser:', { aiError });
   }
 
-  // Fallback to original regex-based parsing
+  // Fallback to original regex-based parsing (use stored transcript data)
   let ingredients: { name: string }[] = [];
   let instructions: string[] = [];
-  if (transcriptResp.ok) {
-    const tr = (await transcriptResp.json()) as TranscriptResponse;
-    const parsed = parseTranscriptToLists(Array.isArray(tr.transcript) ? tr.transcript : []);
+  if (transcriptEntries.length > 0) {
+    const parsed = parseTranscriptToLists(transcriptEntries);
     ingredients = parsed.ingredients;
     instructions = parsed.instructions;
   }
