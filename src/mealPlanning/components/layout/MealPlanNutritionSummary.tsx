@@ -3,11 +3,11 @@
  * Shows daily nutrition tracking with day selector
  */
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { format, isToday } from 'date-fns';
-import { Flame, Beef, Wheat, Droplet, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Flame, Beef, Wheat, Droplet, TrendingUp, ChevronLeft, ChevronRight, Settings, X } from 'lucide-react';
 import { MacroProgressBar } from '@/components/nutrition/MacroProgressBar';
-import { useNutritionGoalQuery } from '@/hooks/useNutritionQuery';
+import { useNutritionGoalQuery, useSetNutritionGoalMutation } from '@/hooks/useNutritionQuery';
 import type { PlannedMeal, Recipe } from '@/types';
 
 interface MealPlanNutritionSummaryProps {
@@ -54,6 +54,7 @@ export function MealPlanNutritionSummary({
   recipes,
 }: MealPlanNutritionSummaryProps): React.ReactElement {
   const { data: goal } = useNutritionGoalQuery();
+  const setGoalMutation = useSetNutritionGoalMutation();
 
   // Find today's index in weekDays, default to 0 if not found
   const todayIndex = useMemo(() => {
@@ -62,6 +63,35 @@ export function MealPlanNutritionSummary({
   }, [weekDays]);
 
   const [selectedDayIndex, setSelectedDayIndex] = useState(todayIndex);
+  const [showGoalSettings, setShowGoalSettings] = useState(false);
+  const [goalForm, setGoalForm] = useState({
+    calories: 2000,
+    protein: 150,
+    carbs: 200,
+    fat: 65,
+  });
+
+  // Sync form with goal data when it loads
+  useEffect(() => {
+    if (goal) {
+      setGoalForm({
+        calories: goal.calories_target,
+        protein: goal.protein_target_g,
+        carbs: goal.carbs_target_g,
+        fat: goal.fat_target_g,
+      });
+    }
+  }, [goal]);
+
+  const handleSaveGoal = async () => {
+    await setGoalMutation.mutateAsync({
+      calories_target: goalForm.calories,
+      protein_target_g: goalForm.protein,
+      carbs_target_g: goalForm.carbs,
+      fat_target_g: goalForm.fat,
+    });
+    setShowGoalSettings(false);
+  };
 
   // Calculate daily nutrition for each day
   const dailyNutrition = useMemo((): DailyNutrition[] => {
@@ -156,7 +186,7 @@ export function MealPlanNutritionSummary({
             </div>
           </div>
 
-          {/* Day selector */}
+          {/* Day selector and settings */}
           <div className="flex items-center gap-2">
             <button
               onClick={goToPreviousDay}
@@ -181,6 +211,14 @@ export function MealPlanNutritionSummary({
               className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
               <ChevronRight className="h-5 w-5 text-slate-600 dark:text-slate-400" />
+            </button>
+            <div className="w-px h-6 bg-slate-200 dark:bg-slate-600 mx-1" />
+            <button
+              onClick={() => setShowGoalSettings(true)}
+              className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+              title="Edit nutrition goals"
+            >
+              <Settings className="h-5 w-5 text-slate-500 dark:text-slate-400" />
             </button>
           </div>
         </div>
@@ -270,6 +308,78 @@ export function MealPlanNutritionSummary({
           </div>
         </div>
       </div>
+
+      {/* Goal Settings Modal */}
+      {showGoalSettings && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-6 w-full max-w-md space-y-4 shadow-xl">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Daily Nutrition Goals</h3>
+              <button
+                onClick={() => setShowGoalSettings(false)}
+                className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
+              >
+                <X className="h-5 w-5 text-slate-500" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Daily Calories</label>
+                <input
+                  type="number"
+                  value={goalForm.calories}
+                  onChange={e => setGoalForm(f => ({ ...f, calories: +e.target.value }))}
+                  className="w-full mt-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Protein (g)</label>
+                <input
+                  type="number"
+                  value={goalForm.protein}
+                  onChange={e => setGoalForm(f => ({ ...f, protein: +e.target.value }))}
+                  className="w-full mt-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Carbs (g)</label>
+                <input
+                  type="number"
+                  value={goalForm.carbs}
+                  onChange={e => setGoalForm(f => ({ ...f, carbs: +e.target.value }))}
+                  className="w-full mt-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Fat (g)</label>
+                <input
+                  type="number"
+                  value={goalForm.fat}
+                  onChange={e => setGoalForm(f => ({ ...f, fat: +e.target.value }))}
+                  className="w-full mt-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={() => setShowGoalSettings(false)}
+                className="flex-1 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveGoal}
+                disabled={setGoalMutation.isPending}
+                className="flex-1 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+              >
+                {setGoalMutation.isPending ? 'Saving...' : 'Save Goals'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
