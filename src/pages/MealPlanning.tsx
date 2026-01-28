@@ -1,9 +1,9 @@
 /* eslint-disable max-lines */
-import React, { type ReactElement, useEffect, useMemo, useState, useCallback, type FormEvent } from 'react';
+import React, { type ReactElement, useEffect, useMemo, useState, useCallback } from 'react';
 import { logger } from '../services/logger';
 import { createPortal } from 'react-dom';
 import { addDays, format, isSameWeek, startOfWeek, isSameDay } from 'date-fns';
-import { ChefHat, Plus, Save, Heart, Youtube, Search, X } from 'lucide-react';
+import { ChefHat, Plus, Save, Heart, Search, X } from 'lucide-react';
 import DatePickerPopover from '../components/DatePickerPopover';
 import ErrorState from '../components/ErrorState';
 import { useComposedStore } from '../stores/useComposedStore';
@@ -45,7 +45,6 @@ import { ModalContainer } from '../mealPlanning/components/layout/ModalContainer
 
 // Import utilities
 import { toKey, ensureDate, parseLocalDateKey } from '../mealPlanning/utils';
-import { fetchClippedRecipe } from '../mealPlanning/utils/recipeUtils';
 
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack'];
 
@@ -203,35 +202,6 @@ const MealPlanning: React.FC = () => {
 
   const isLoading = mealPlansLoading || weekNav.isEnsuringPlan;
 
-  // Handle URL import
-  const handleImportRecipe = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
-    event.preventDefault();
-    if (!recipeImport.importUrl.trim()) return;
-
-    recipeImport.setIsImporting(true);
-    recipeImport.setImportError(null);
-    try {
-      const recipe = await fetchClippedRecipe(recipeImport.importUrl.trim());
-      recipeImport.setImportDraft(recipe);
-      recipeImport.setImportUrl('');
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to import recipe.';
-      recipeImport.setImportError(message);
-    } finally {
-      recipeImport.setIsImporting(false);
-    }
-  };
-
-  const saveImportedRecipe = async (): Promise<void> => {
-    if (!recipeImport.importDraft) return;
-    try {
-      await createRecipeMutation.mutateAsync(recipeImport.importDraft);
-      recipeImport.clearUrlImport();
-    } catch (_e) {
-      recipeImport.setImportError('Failed to save recipe');
-    }
-  };
-
   // Copy week handler
   const handleCopyWeek = async (): Promise<void> => {
     try {
@@ -300,8 +270,6 @@ const MealPlanning: React.FC = () => {
       <ImportSections
         recipeImport={recipeImport}
         createRecipe={createRecipeWrapper}
-        handleImportRecipe={handleImportRecipe}
-        saveImportedRecipe={saveImportedRecipe}
       />
 
       {/* Saved recipes */}
