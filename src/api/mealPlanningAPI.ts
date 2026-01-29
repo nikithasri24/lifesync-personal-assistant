@@ -7,9 +7,17 @@
  */
 
 import { supabase } from '../lib/supabase';
-import type { MealPlanData, PlannedMealData, RecipeData, PantryItemData, MealBacklogData } from '../services/types';
+import type { MealPlanData, PlannedMealData, RecipeData, PantryItemData, MealBacklogData, MealTrackingData } from '../services/types';
 import { apiCall, requireAuth, handleSupabaseResponse } from './apiWrapper';
 import { getMergedConnectionId, type MergedConnectionResult } from '../shared/api/SharedDataProvider';
+import {
+  RecipeDataArraySchema,
+  MealPlanDataArraySchema,
+  PantryItemDataArraySchema,
+  MealTrackingDataArraySchema,
+  MealBacklogDataArraySchema,
+  validateArrayWithFilter,
+} from '../schemas/mealPlanning';
 
 // Cache for merged connection to avoid repeated checks within same session
 let cachedMergedConnection: MergedConnectionResult | null | undefined = undefined;
@@ -167,6 +175,7 @@ async function checkAndMigratePersonalMeals(
  * Get all meal plans for the current user.
  * If merged mode is enabled with a partner, returns shared plans instead.
  * Also handles migration of personal meals to shared plans.
+ * Validates API responses with Zod schemas.
  */
 export async function getMealPlans(): Promise<MealPlanData[]> {
   return apiCall(
@@ -190,9 +199,11 @@ export async function getMealPlans(): Promise<MealPlanData[]> {
         if (error) throw error;
         console.log('[MealPlanningAPI] MERGED plans found:', data?.length ?? 0, data);
 
+        // Validate API response
+        const validated = validateArrayWithFilter<MealPlanData>(MealPlanDataArraySchema.element, data ?? [], 'getMealPlans (merged)');
+
         // Check if we need to migrate personal meals to shared plans
-        const plans = (data ?? []) as MealPlanData[];
-        const migratedPlans = await checkAndMigratePersonalMeals(plans, user.id, mergedConnection);
+        const migratedPlans = await checkAndMigratePersonalMeals(validated, user.id, mergedConnection);
 
         return migratedPlans;
       }
@@ -210,7 +221,8 @@ export async function getMealPlans(): Promise<MealPlanData[]> {
       if (error) throw error;
       console.log('[MealPlanningAPI] PERSONAL plans found:', data?.length ?? 0, data);
 
-      return (data ?? []) as MealPlanData[];
+      // Validate API response
+      return validateArrayWithFilter<MealPlanData>(MealPlanDataArraySchema.element, data ?? [], 'getMealPlans (personal)');
     },
     { domain: 'MealPlanningAPI', operation: 'getMealPlans' }
   );
@@ -816,6 +828,7 @@ async function checkAndMigratePersonalRecipes(
 /**
  * Get all recipes for the current user.
  * If merged mode is enabled, returns shared recipes instead.
+ * Validates API responses with Zod schemas (invalid items are filtered out).
  */
 export async function getRecipes(): Promise<RecipeData[]> {
   return apiCall(
@@ -837,9 +850,11 @@ export async function getRecipes(): Promise<RecipeData[]> {
         if (error) throw error;
         console.log('[MealPlanningAPI] MERGED recipes found:', data?.length ?? 0);
 
+        // Validate API response
+        const validated = validateArrayWithFilter<RecipeData>(RecipeDataArraySchema.element, data ?? [], 'getRecipes (merged)');
+
         // Check if we need to migrate personal recipes to shared
-        const recipes = (data ?? []) as RecipeData[];
-        const migratedRecipes = await checkAndMigratePersonalRecipes(recipes, user.id, mergedConnection);
+        const migratedRecipes = await checkAndMigratePersonalRecipes(validated, user.id, mergedConnection);
 
         return migratedRecipes;
       }
@@ -854,7 +869,9 @@ export async function getRecipes(): Promise<RecipeData[]> {
 
       if (error) throw error;
       console.log('[MealPlanningAPI] PERSONAL recipes found:', data?.length ?? 0);
-      return (data ?? []) as RecipeData[];
+
+      // Validate API response
+      return validateArrayWithFilter<RecipeData>(RecipeDataArraySchema.element, data ?? [], 'getRecipes (personal)');
     },
     { domain: 'MealPlanningAPI', operation: 'getRecipes' }
   );
@@ -985,11 +1002,12 @@ export async function deleteRecipe(id: string): Promise<void> {
 // MEAL TRACKING CRUD OPERATIONS (Personal tracking of shared meals)
 // =====================================================
 
-import type { MealTrackingData, MealTrackingStatus } from '../services/types';
+import type { MealTrackingStatus } from '../services/types';
 
 /**
  * Get meal tracking records for a list of planned meal IDs.
  * Returns only the current user's tracking records.
+ * Validates API responses with Zod schemas.
  */
 export async function getMealTracking(plannedMealIds: string[]): Promise<MealTrackingData[]> {
   return apiCall(
@@ -1007,7 +1025,9 @@ export async function getMealTracking(plannedMealIds: string[]): Promise<MealTra
         .in('planned_meal_id', plannedMealIds);
 
       if (error) throw error;
-      return (data ?? []) as MealTrackingData[];
+
+      // Validate API response
+      return validateArrayWithFilter<MealTrackingData>(MealTrackingDataArraySchema.element, data ?? [], 'getMealTracking');
     },
     { domain: 'MealPlanningAPI', operation: 'getMealTracking' }
   );
@@ -1016,6 +1036,7 @@ export async function getMealTracking(plannedMealIds: string[]): Promise<MealTra
 /**
  * Get partner's meal tracking records for a list of planned meal IDs.
  * Used in merged mode to show what the partner ate.
+ * Validates API responses with Zod schemas.
  */
 export async function getPartnerMealTracking(
   plannedMealIds: string[],
@@ -1036,7 +1057,9 @@ export async function getPartnerMealTracking(
         .in('planned_meal_id', plannedMealIds);
 
       if (error) throw error;
-      return (data ?? []) as MealTrackingData[];
+
+      // Validate API response
+      return validateArrayWithFilter<MealTrackingData>(MealTrackingDataArraySchema.element, data ?? [], 'getPartnerMealTracking');
     },
     { domain: 'MealPlanningAPI', operation: 'getPartnerMealTracking' }
   );
@@ -1156,7 +1179,8 @@ export async function deleteMealTracking(id: string): Promise<void> {
 // =====================================================
 
 /**
- * Get all pantry items for the current user
+ * Get all pantry items for the current user.
+ * Validates API responses with Zod schemas.
  */
 export async function getPantryItems(): Promise<PantryItemData[]> {
   return apiCall(
@@ -1170,7 +1194,9 @@ export async function getPantryItems(): Promise<PantryItemData[]> {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return (data ?? []) as PantryItemData[];
+
+      // Validate API response
+      return validateArrayWithFilter<PantryItemData>(PantryItemDataArraySchema.element, data ?? [], 'getPantryItems');
     },
     { domain: 'MealPlanningAPI', operation: 'getPantryItems' }
   );
@@ -1397,6 +1423,7 @@ export async function searchMeals(query: string, limit: number = 10): Promise<Me
 /**
  * Get all backlog items for the user's merged connection.
  * Returns items saved by either partner.
+ * Validates API responses with Zod schemas.
  */
 export async function getBacklogItems(): Promise<MealBacklogData[]> {
   return apiCall(
@@ -1417,7 +1444,9 @@ export async function getBacklogItems(): Promise<MealBacklogData[]> {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return (data ?? []) as MealBacklogData[];
+
+      // Validate API response
+      return validateArrayWithFilter<MealBacklogData>(MealBacklogDataArraySchema.element, data ?? [], 'getBacklogItems');
     },
     { domain: 'MealPlanningAPI', operation: 'getBacklogItems' }
   );

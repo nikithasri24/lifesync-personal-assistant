@@ -46,7 +46,7 @@ export * from './useJournalQuery';
 export * from './useInboxQuery';
 
 // Lifestyle
-export * from './useMealPlanningQuery';
+export * from './mealPlanning';
 export * from './useNutritionQuery';
 export * from './useShoppingQuery';
 export * from './useStoresQuery';

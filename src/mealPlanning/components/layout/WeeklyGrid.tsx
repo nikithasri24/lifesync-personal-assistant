@@ -1,14 +1,25 @@
-import React, { type ReactElement, useMemo } from 'react';
+import React, { type ReactElement, useMemo, Suspense, lazy } from 'react';
 import { format, isSameDay } from 'date-fns';
 import { ChefHat, Coffee, Sun, Moon, Cookie } from 'lucide-react';
 import type { PlannedMeal, Recipe } from '../../../types';
 import { toKey, parseLocalDateKey } from '../../utils';
 import CellWithMeals from '../mealPlan/CellWithMeals';
 import AddMealControl from '../mealPlan/AddMealControl';
-import { MealBacklogSection } from './MealBacklogSection';
 import { useUndoRedo } from '../../../contexts/UndoRedoContext';
 import { MovePlannedMealCommand, CreatePlannedMealCommand, UseBacklogItemCommand } from '../../../commands/MealPlanningCommands';
 import { useRemoveFromBacklogMutation, useBacklogQuery } from '../../../hooks/useMealPlanningQuery';
+
+// Lazy load MealBacklogSection - only needed in merged mode
+const MealBacklogSection = lazy(() =>
+  import('./MealBacklogSection').then(m => ({ default: m.MealBacklogSection }))
+);
+
+// Loading fallback for backlog section
+const BacklogLoadingFallback = () => (
+  <div className="animate-pulse bg-gray-100 dark:bg-gray-800 rounded-lg h-24 mt-4 flex items-center justify-center">
+    <div className="text-gray-400 dark:text-gray-500 text-sm">Loading backlog...</div>
+  </div>
+);
 
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack'];
 
@@ -373,7 +384,7 @@ export function WeeklyGrid({
         </tbody>
       </table>
 
-      {/* Meal Backlog Section */}
+      {/* Meal Backlog Section - lazy loaded */}
       {(() => {
         const postponedMeals = useMemo(() => {
           return activePlan?.meals?.filter((m) => m.isPostponed) || [];
@@ -382,15 +393,17 @@ export function WeeklyGrid({
         const isMerged = !!activePlan?.connectionId;
 
         return (
-          <MealBacklogSection
-            postponedMeals={postponedMeals}
-            recipes={recipes}
-            isMerged={isMerged}
-            onReschedule={(meal) => {
-              // TODO: Implement reschedule functionality
-              console.log('[WeeklyGrid] Reschedule meal:', meal);
-            }}
-          />
+          <Suspense fallback={<BacklogLoadingFallback />}>
+            <MealBacklogSection
+              postponedMeals={postponedMeals}
+              recipes={recipes}
+              isMerged={isMerged}
+              onReschedule={(meal) => {
+                // TODO: Implement reschedule functionality
+                console.log('[WeeklyGrid] Reschedule meal:', meal);
+              }}
+            />
+          </Suspense>
         );
       })()}
     </div>

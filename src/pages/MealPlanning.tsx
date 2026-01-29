@@ -1,5 +1,5 @@
 /* eslint-disable max-lines */
-import React, { type ReactElement, useEffect, useMemo, useState, useCallback } from 'react';
+import React, { type ReactElement, useEffect, useMemo, useState, useCallback, Suspense, lazy } from 'react';
 import { logger } from '../services/logger';
 import { createPortal } from 'react-dom';
 import { addDays, format, isSameWeek, startOfWeek, isSameDay } from 'date-fns';
@@ -35,14 +35,29 @@ import RecipeCard from '../mealPlanning/components/recipe/RecipeCard';
 import CellWithMeals from '../mealPlanning/components/mealPlan/CellWithMeals';
 import AddMealControl from '../mealPlanning/components/mealPlan/AddMealControl';
 
-// Import layout components
+// Import layout components (core - always needed)
 import { MealPlanToolbar } from '../mealPlanning/components/layout/MealPlanToolbar';
 import { SelectionToolbar } from '../mealPlanning/components/layout/SelectionToolbar';
 import { WeeklyOverviewSection } from '../mealPlanning/components/layout/WeeklyOverviewSection';
-import { MealPlanNutritionSummary } from '../mealPlanning/components/layout/MealPlanNutritionSummary';
-import { SavedRecipesSection } from '../mealPlanning/components/layout/SavedRecipesSection';
-import { ImportSections } from '../mealPlanning/components/layout/ImportSections';
 import { ModalContainer } from '../mealPlanning/components/layout/ModalContainer';
+
+// Lazy load heavy components to reduce initial bundle size
+const MealPlanNutritionSummary = lazy(() =>
+  import('../mealPlanning/components/layout/MealPlanNutritionSummary').then(m => ({ default: m.MealPlanNutritionSummary }))
+);
+const SavedRecipesSection = lazy(() =>
+  import('../mealPlanning/components/layout/SavedRecipesSection').then(m => ({ default: m.SavedRecipesSection }))
+);
+const ImportSections = lazy(() =>
+  import('../mealPlanning/components/layout/ImportSections').then(m => ({ default: m.ImportSections }))
+);
+
+// Loading fallback for lazy-loaded sections
+const SectionLoadingFallback = () => (
+  <div className="animate-pulse bg-gray-100 dark:bg-gray-800 rounded-lg h-32 flex items-center justify-center">
+    <div className="text-gray-400 dark:text-gray-500 text-sm">Loading...</div>
+  </div>
+);
 
 
 // Import utilities
@@ -299,32 +314,38 @@ const MealPlanning: React.FC = () => {
         addMealToSelectedCells={multiCellSelection.addMealToSelectedCells}
       />
 
-      {/* Nutrition summary */}
-      <MealPlanNutritionSummary
-        weekDays={weekNav.weekDays}
-        plannedMeals={plannedMeals}
-        recipes={recipes}
-      />
+      {/* Nutrition summary - lazy loaded */}
+      <Suspense fallback={<SectionLoadingFallback />}>
+        <MealPlanNutritionSummary
+          weekDays={weekNav.weekDays}
+          plannedMeals={plannedMeals}
+          recipes={recipes}
+        />
+      </Suspense>
 
-      {/* Import sections */}
-      <ImportSections
-        recipeImport={recipeImport}
-        createRecipe={createRecipeWrapper}
-      />
+      {/* Import sections - lazy loaded */}
+      <Suspense fallback={<SectionLoadingFallback />}>
+        <ImportSections
+          recipeImport={recipeImport}
+          createRecipe={createRecipeWrapper}
+        />
+      </Suspense>
 
-      {/* Saved recipes */}
-      <SavedRecipesSection
-        recipes={recipeFiltering.filteredRecipes}
-        allRecipesCount={recipes.length}
-        showFavoritesOnly={recipeFiltering.showFavoritesOnly}
-        onToggleFavorites={recipeFiltering.toggleFavoritesOnly}
-        searchQuery={recipeFiltering.searchQuery}
-        onSearchChange={recipeFiltering.setSearchQuery}
-        onDeleteAll={deleteAllRecipesMutation.mutateAsync}
-        onViewRecipe={modalState.openRecipeView}
-        onEditRecipe={modalState.openRecipeEdit}
-        onDeleteRecipe={handleDeleteRecipe}
-      />
+      {/* Saved recipes - lazy loaded */}
+      <Suspense fallback={<SectionLoadingFallback />}>
+        <SavedRecipesSection
+          recipes={recipeFiltering.filteredRecipes}
+          allRecipesCount={recipes.length}
+          showFavoritesOnly={recipeFiltering.showFavoritesOnly}
+          onToggleFavorites={recipeFiltering.toggleFavoritesOnly}
+          searchQuery={recipeFiltering.searchQuery}
+          onSearchChange={recipeFiltering.setSearchQuery}
+          onDeleteAll={deleteAllRecipesMutation.mutateAsync}
+          onViewRecipe={modalState.openRecipeView}
+          onEditRecipe={modalState.openRecipeEdit}
+          onDeleteRecipe={handleDeleteRecipe}
+        />
+      </Suspense>
 
       {/* Modals */}
       <ModalContainer
