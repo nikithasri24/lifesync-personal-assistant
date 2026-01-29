@@ -248,6 +248,10 @@ export interface MealPlanWeek {
   mealColumns: MealColumn[];
   meals: PlannedMeal[];
   notes?: string;
+  shoppingListGenerated?: boolean;
+  totalEstimatedCost?: number;
+  connectionId?: string;  // For merged/shared meal plans between connected users
+  partnerId?: string;     // Partner's user ID when in merged mode
   createdAt: Date;
   updatedAt: Date;
 }

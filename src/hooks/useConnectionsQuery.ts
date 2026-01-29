@@ -17,6 +17,7 @@ import {
   deleteConnection,
   setModulePermission,
 } from '@/shared/api/connectionsAPI';
+import { clearMergedConnectionCache } from '@/api/mealPlanningAPI';
 import type {
   ConnectionWithUser,
   ConnectionWithPermissions,
@@ -256,6 +257,11 @@ export function useUpdatePermissionMutation() {
         module: permission.module,
         level: permission.permissionLevel,
       });
+      // Clear merged connection cache since permission level may have changed
+      // This ensures the next meal plan fetch re-evaluates merged status
+      if (permission.module === 'meals') {
+        clearMergedConnectionCache();
+      }
       // Invalidate connections to refetch with updated permissions
       void queryClient.invalidateQueries({ queryKey: connectionsKeys.connections() });
     },

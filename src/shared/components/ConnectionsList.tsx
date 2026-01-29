@@ -153,13 +153,23 @@ export function ConnectionsList({
 
       {/* Permission Manager Modal */}
       {editingConnection && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <PermissionManager
-            connectionId={editingConnection.id}
-            connectionName={editingConnection.myLabel || editingConnection.otherUser.fullName || editingConnection.otherUser.email}
-            currentPermissions={buildCurrentPermissions(editingConnection)}
-            onClose={() => setEditingConnection(null)}
-          />
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={(e) => {
+            // Close modal when clicking backdrop
+            if (e.target === e.currentTarget) {
+              setEditingConnection(null);
+            }
+          }}
+        >
+          <div onClick={(e) => e.stopPropagation()}>
+            <PermissionManager
+              connectionId={editingConnection.id}
+              connectionName={editingConnection.myLabel || editingConnection.otherUser.fullName || editingConnection.otherUser.email}
+              currentPermissions={buildCurrentPermissions(editingConnection)}
+              onClose={() => setEditingConnection(null)}
+            />
+          </div>
         </div>
       )}
     </>

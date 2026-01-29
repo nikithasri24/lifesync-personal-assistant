@@ -97,6 +97,7 @@ export interface MealPlanWeek {
   notes?: string;
   shoppingListGenerated?: boolean;
   totalEstimatedCost?: number;
+  connectionId?: string;  // For merged/shared meal plans between connected users
   createdAt: Date;
   updatedAt: Date;
 }
@@ -132,6 +133,20 @@ export const mealPlanningKeys = {
   pantryList: () => [...mealPlanningKeys.pantry(), 'list'] as const,
 
   mealSearch: (query: string) => [...mealPlanningKeys.all, 'search', query] as const,
+
+  // Merged connection info (for merged mode)
+  mergedConnection: () => [...mealPlanningKeys.all, 'mergedConnection'] as const,
+
+  // Personal meal tracking (for merged mode)
+  mealTracking: () => [...mealPlanningKeys.all, 'mealTracking'] as const,
+  mealTrackingForMeals: (mealIds: string[]) => [...mealPlanningKeys.mealTracking(), 'forMeals', mealIds.sort().join(',')] as const,
+  partnerMealTracking: () => [...mealPlanningKeys.all, 'partnerMealTracking'] as const,
+  partnerMealTrackingForMeals: (mealIds: string[], partnerId: string) =>
+    [...mealPlanningKeys.partnerMealTracking(), 'forMeals', partnerId, mealIds.sort().join(',')] as const,
+
+  // Shared meal backlog (for merged mode)
+  backlog: () => [...mealPlanningKeys.all, 'backlog'] as const,
+  backlogList: () => [...mealPlanningKeys.backlog(), 'list'] as const,
 };
 
 // ==================== Mappers ====================
@@ -346,6 +361,7 @@ function mapMealPlanDataToMealPlanWeek(data: MealPlanData): MealPlanWeek {
     notes: data.notes ?? undefined,
     shoppingListGenerated: data.shopping_list_generated ?? false,
     totalEstimatedCost: data.total_estimated_cost ?? undefined,
+    connectionId: data.connection_id ?? undefined,
     createdAt: toDate(data.created_at) ?? new Date(),
     updatedAt: toDate(data.updated_at) ?? new Date(),
   };
@@ -679,6 +695,33 @@ export function useDeleteAllRecipesMutation(): ReturnType<typeof useMutation<voi
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: mealPlanningKeys.recipesList() });
     },
+  });
+}
+
+// ==================== Merged Connection Query ====================
+
+/**
+ * Interface for merged connection result
+ */
+export interface MergedConnectionInfo {
+  connectionId: string;
+  partnerId: string;
+  partnerName?: string;
+}
+
+/**
+ * Fetch the merged connection info for meals module.
+ * Returns partnerId and connectionId if both users have merged mode enabled.
+ */
+export function useMergedConnectionQuery(options?: { enabled?: boolean }): ReturnType<typeof useQuery<MergedConnectionInfo | null>> {
+  return useQuery({
+    queryKey: mealPlanningKeys.mergedConnection(),
+    queryFn: async () => {
+      const result = await mealPlanningAPI.getMealsMergedConnection();
+      return result;
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes - merged connection doesn't change often
+    enabled: options?.enabled ?? true,
   });
 }
 
@@ -1173,5 +1216,290 @@ export function useMealSearchQuery(
     queryFn: () => mealPlanningAPI.searchMeals(query, 10),
     enabled: (options?.enabled ?? true) && query.trim().length >= 2,
     staleTime: 1000 * 60 * 5, // 5 minutes - search results don't change often
+  });
+}
+
+// ==================== Meal Tracking Hooks (Personal tracking for merged mode) ====================
+
+import type { MealTrackingData, MealTrackingStatus } from '@/services/types';
+
+/**
+ * Meal tracking interface for UI
+ */
+export interface MealTracking {
+  id: string;
+  userId: string;
+  plannedMealId: string;
+  status: MealTrackingStatus;
+  swappedMeal?: string;
+  swappedRecipeId?: string;
+  servingsConsumed?: number;
+  caloriesConsumed?: number;
+  notes?: string;
+  trackedAt?: Date;
+}
+
+/**
+ * Map API data to UI format
+ */
+function mapMealTrackingFromAPI(data: MealTrackingData): MealTracking {
+  return {
+    id: data.id!,
+    userId: data.user_id,
+    plannedMealId: data.planned_meal_id,
+    status: data.status,
+    swappedMeal: data.swapped_meal,
+    swappedRecipeId: data.swapped_recipe_id,
+    servingsConsumed: data.servings_consumed,
+    caloriesConsumed: data.calories_consumed,
+    notes: data.notes,
+    trackedAt: data.tracked_at ? new Date(data.tracked_at) : undefined,
+  };
+}
+
+/**
+ * Get meal tracking records for a list of planned meals.
+ * Returns a map of plannedMealId -> MealTracking for easy lookup.
+ */
+export function useMealTrackingQuery(
+  plannedMealIds: string[],
+  options?: { enabled?: boolean }
+): ReturnType<typeof useQuery<Map<string, MealTracking>>> {
+  return useQuery({
+    queryKey: mealPlanningKeys.mealTrackingForMeals(plannedMealIds),
+    queryFn: async () => {
+      const data = await mealPlanningAPI.getMealTracking(plannedMealIds);
+      const map = new Map<string, MealTracking>();
+      for (const item of data) {
+        map.set(item.planned_meal_id, mapMealTrackingFromAPI(item));
+      }
+      return map;
+    },
+    enabled: (options?.enabled ?? true) && plannedMealIds.length > 0,
+    staleTime: 1000 * 60 * 2, // 2 minutes
+  });
+}
+
+/**
+ * Get partner's meal tracking records for a list of planned meals.
+ * Used in merged mode to show what the partner ate.
+ */
+export function usePartnerMealTrackingQuery(
+  plannedMealIds: string[],
+  partnerId: string | undefined,
+  options?: { enabled?: boolean }
+): ReturnType<typeof useQuery<Map<string, MealTracking>>> {
+  return useQuery({
+    queryKey: mealPlanningKeys.partnerMealTrackingForMeals(plannedMealIds, partnerId ?? ''),
+    queryFn: async () => {
+      if (!partnerId) return new Map<string, MealTracking>();
+      const data = await mealPlanningAPI.getPartnerMealTracking(plannedMealIds, partnerId);
+      const map = new Map<string, MealTracking>();
+      for (const item of data) {
+        map.set(item.planned_meal_id, mapMealTrackingFromAPI(item));
+      }
+      return map;
+    },
+    enabled: (options?.enabled ?? true) && plannedMealIds.length > 0 && !!partnerId,
+    staleTime: 1000 * 60 * 2, // 2 minutes
+  });
+}
+
+/**
+ * Track a meal (mark as eaten, skipped, or swapped).
+ */
+export function useTrackMealMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      plannedMealId,
+      status,
+      swappedMeal,
+      swappedRecipeId,
+      servingsConsumed,
+      caloriesConsumed,
+      notes,
+    }: {
+      plannedMealId: string;
+      status: MealTrackingStatus;
+      swappedMeal?: string;
+      swappedRecipeId?: string;
+      servingsConsumed?: number;
+      caloriesConsumed?: number;
+      notes?: string;
+    }) => {
+      const data = await mealPlanningAPI.trackMeal(plannedMealId, {
+        status,
+        swappedMeal,
+        swappedRecipeId,
+        servingsConsumed,
+        caloriesConsumed,
+        notes,
+      });
+      return mapMealTrackingFromAPI(data);
+    },
+    onSuccess: () => {
+      // Invalidate all meal tracking queries
+      void queryClient.invalidateQueries({ queryKey: mealPlanningKeys.mealTracking() });
+    },
+    onError: (err) => {
+      logger.error('MealPlanning', 'Error tracking meal', { error: err });
+    },
+  });
+}
+
+/**
+ * Delete a meal tracking record (reset to untracked state).
+ */
+export function useDeleteMealTrackingMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (trackingId: string) => {
+      await mealPlanningAPI.deleteMealTracking(trackingId);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: mealPlanningKeys.mealTracking() });
+    },
+    onError: (err) => {
+      logger.error('MealPlanning', 'Error deleting meal tracking', { error: err });
+    },
+  });
+}
+
+// ==================== Meal Backlog Hooks (Shared backlog for merged mode) ====================
+
+import type { MealBacklogData } from '@/services/types';
+
+/**
+ * Meal backlog item interface for UI
+ */
+export interface MealBacklogItem {
+  id: string;
+  connectionId: string;
+  mealName: string;
+  recipeId?: string;
+  savedByUserId: string;
+  originalDate?: Date;
+  originalMealType?: string;
+  reason?: string;
+  servings: number;
+  peopleCount: number;
+  createdAt: Date;
+}
+
+/**
+ * Map API data to UI format
+ */
+function mapBacklogItemFromAPI(data: MealBacklogData): MealBacklogItem {
+  return {
+    id: data.id!,
+    connectionId: data.connection_id,
+    mealName: data.meal_name,
+    recipeId: data.recipe_id,
+    savedByUserId: data.saved_by_user_id,
+    originalDate: data.original_date ? new Date(data.original_date) : undefined,
+    originalMealType: data.original_meal_type,
+    reason: data.reason,
+    servings: data.servings ?? 2,
+    peopleCount: data.people_count ?? 2,
+    createdAt: data.created_at ? new Date(data.created_at) : new Date(),
+  };
+}
+
+/**
+ * Get all backlog items for the user's merged connection.
+ */
+export function useBacklogQuery(
+  options?: { enabled?: boolean }
+): ReturnType<typeof useQuery<MealBacklogItem[]>> {
+  return useQuery({
+    queryKey: mealPlanningKeys.backlogList(),
+    queryFn: async () => {
+      const data = await mealPlanningAPI.getBacklogItems();
+      return data.map(mapBacklogItemFromAPI);
+    },
+    enabled: options?.enabled ?? true,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+}
+
+/**
+ * Add a meal to the shared backlog.
+ */
+export function useAddToBacklogMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (item: {
+      mealName: string;
+      recipeId?: string;
+      originalDate?: string;
+      originalMealType?: string;
+      reason?: string;
+      servings?: number;
+      peopleCount?: number;
+    }) => {
+      const data = await mealPlanningAPI.addToBacklog(item);
+      return mapBacklogItemFromAPI(data);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: mealPlanningKeys.backlog() });
+    },
+    onError: (err) => {
+      logger.error('MealPlanning', 'Error adding to backlog', { error: err });
+    },
+  });
+}
+
+/**
+ * Remove a meal from the backlog.
+ */
+export function useRemoveFromBacklogMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (backlogId: string) => {
+      await mealPlanningAPI.removeFromBacklog(backlogId);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: mealPlanningKeys.backlog() });
+    },
+    onError: (err) => {
+      logger.error('MealPlanning', 'Error removing from backlog', { error: err });
+    },
+  });
+}
+
+/**
+ * Use a backlog item - creates a planned meal and removes from backlog.
+ */
+export function useUseBacklogItemMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      backlogId,
+      planId,
+      date,
+      mealType,
+    }: {
+      backlogId: string;
+      planId: string;
+      date: string;
+      mealType: string;
+    }) => {
+      const data = await mealPlanningAPI.useBacklogItem(backlogId, planId, date, mealType);
+      return mapPlannedMealDataToPlannedMeal(data);
+    },
+    onSuccess: () => {
+      // Invalidate both backlog and meal plans
+      void queryClient.invalidateQueries({ queryKey: mealPlanningKeys.backlog() });
+      void queryClient.invalidateQueries({ queryKey: mealPlanningKeys.mealPlans() });
+    },
+    onError: (err) => {
+      logger.error('MealPlanning', 'Error using backlog item', { error: err });
+    },
   });
 }

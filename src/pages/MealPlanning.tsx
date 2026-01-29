@@ -18,6 +18,7 @@ import {
   useCreateMealPlanMutation,
   useCreatePlannedMealMutation,
   useUpdatePlannedMealMutation,
+  useMergedConnectionQuery,
 } from '@/hooks/useMealPlanningQuery';
 
 // Import hooks
@@ -138,6 +139,18 @@ const MealPlanning: React.FC = () => {
   const weekNav = useWeekNavigation(weekStartsOn, mealPlans);
   const recipeImport = useRecipeImport();
 
+  // Get merged connection info for partner tracking
+  const { data: mergedConnection } = useMergedConnectionQuery();
+
+  // Enhance activePlan with partnerId from merged connection
+  const activePlanWithPartnerId = useMemo(() => {
+    if (!weekNav.activePlan) return null;
+    return {
+      ...weekNav.activePlan,
+      partnerId: mergedConnection?.partnerId,
+    };
+  }, [weekNav.activePlan, mergedConnection?.partnerId]);
+
   // Auto-create meal plan if missing for current week
   useEffect(() => {
     if (!weekNav.activePlan && !mealPlansLoading && !weekNav.isEnsuringPlan) {
@@ -252,7 +265,7 @@ const MealPlanning: React.FC = () => {
         weekDays={weekNav.weekDays}
         mealsByDate={mealsByDate}
         recipes={recipes}
-        activePlan={weekNav.activePlan}
+        activePlan={activePlanWithPartnerId}
         selectedCells={multiCellSelection.selectedCells}
         makeCellKey={multiCellSelection.makeCellKey}
         onCellClick={multiCellSelection.handleCellClick}

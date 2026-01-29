@@ -1,36 +1,56 @@
 /**
  * Meal Backlog Section Component
- * Shows postponed meals that can be rescheduled or deleted
+ * Shows postponed meals and shared backlog items that can be rescheduled or deleted
  */
 
 import React from 'react';
-import { Package, Calendar, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Package, Calendar, Trash2, ChevronDown, ChevronUp, Users } from 'lucide-react';
 import { format } from 'date-fns';
 import type { PlannedMeal, Recipe } from '../../../types';
 import { useUndoRedo } from '../../../contexts/UndoRedoContext';
 import { DeletePlannedMealCommand } from '../../../commands/MealPlanningCommands';
+import {
+  useBacklogQuery,
+  useRemoveFromBacklogMutation,
+  type MealBacklogItem,
+} from '../../../hooks/useMealPlanningQuery';
 
 interface MealBacklogSectionProps {
   postponedMeals: PlannedMeal[];
   recipes: Recipe[];
+  isMerged?: boolean;
   onReschedule?: (meal: PlannedMeal) => void;
 }
 
-export function MealBacklogSection({ postponedMeals, recipes, onReschedule }: MealBacklogSectionProps): React.ReactElement | null {
+export function MealBacklogSection({ postponedMeals, recipes, isMerged = false, onReschedule }: MealBacklogSectionProps): React.ReactElement | null {
   const [isExpanded, setIsExpanded] = React.useState(true);
   const { executeCommand } = useUndoRedo();
 
-  if (postponedMeals.length === 0) {
+  // Fetch shared backlog items when in merged mode
+  const { data: sharedBacklogItems = [] } = useBacklogQuery({ enabled: isMerged });
+  const removeFromBacklogMutation = useRemoveFromBacklogMutation();
+
+  const totalItems = postponedMeals.length + sharedBacklogItems.length;
+
+  if (totalItems === 0) {
     return null;
   }
 
-  const handleDelete = async (meal: PlannedMeal, mealName: string) => {
+  const handleDeletePostponed = async (meal: PlannedMeal) => {
     // Use command pattern for undo support - no confirmation needed
     try {
       const command = new DeletePlannedMealCommand(meal, meal.mealPlanId);
       await executeCommand(command);
     } catch (error) {
-      console.error('[MealBacklog] Failed to delete meal:', error);
+      console.error('[MealBacklog] Failed to delete postponed meal:', error);
+    }
+  };
+
+  const handleDeleteSharedBacklog = async (item: MealBacklogItem) => {
+    try {
+      await removeFromBacklogMutation.mutateAsync(item.id);
+    } catch (error) {
+      console.error('[MealBacklog] Failed to delete shared backlog item:', error);
     }
   };
 
@@ -47,7 +67,7 @@ export function MealBacklogSection({ postponedMeals, recipes, onReschedule }: Me
           <h3 className="font-semibold text-slate-900">
             Meal Backlog
             <span className="ml-2 text-sm font-normal text-slate-600">
-              ({postponedMeals.length} {postponedMeals.length === 1 ? 'meal' : 'meals'})
+              ({totalItems} {totalItems === 1 ? 'meal' : 'meals'})
             </span>
           </h3>
         </div>
@@ -58,9 +78,74 @@ export function MealBacklogSection({ postponedMeals, recipes, onReschedule }: Me
         )}
       </button>
 
-      {/* Postponed Meals List */}
+      {/* Backlog Items List */}
       {isExpanded && (
         <div className="mt-3 space-y-2">
+          {/* Shared Backlog Items (from merged mode) */}
+          {sharedBacklogItems.map((item) => {
+            const recipe = recipes.find((r) => r.id === item.recipeId);
+            const calories = recipe?.calories ? recipe.calories * (item.servings || 1) : null;
+
+            return (
+              <div
+                key={`shared-${item.id}`}
+                draggable={true}
+                onDragStart={(e) => {
+                  e.dataTransfer.setData('text/backlog-id', item.id);
+                  e.dataTransfer.setData('text/from-shared-backlog', 'true');
+                  // Include full item data for the drop handler
+                  e.dataTransfer.setData('text/backlog-item', JSON.stringify({
+                    id: item.id,
+                    mealName: item.mealName,
+                    recipeId: item.recipeId,
+                    servings: item.servings,
+                    peopleCount: item.peopleCount,
+                  }));
+                }}
+                className="flex items-center gap-3 p-3 bg-indigo-50 border border-indigo-200 rounded-md hover:border-indigo-300 hover:shadow-sm transition-all group cursor-move"
+              >
+                {/* Shared Badge */}
+                <div className="flex items-center gap-1 px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-full text-xs font-medium">
+                  <Users className="w-3 h-3" />
+                  <span>Shared</span>
+                </div>
+
+                {/* Meal Info */}
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-slate-900">{item.mealName}</p>
+                  <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
+                    {item.originalDate && (
+                      <span>
+                        Originally: {format(item.originalDate, 'MMM d')}
+                        {item.originalMealType && ` • ${item.originalMealType}`}
+                      </span>
+                    )}
+                    {item.reason && (
+                      <span className="text-indigo-600">• {item.reason}</span>
+                    )}
+                    {calories && (
+                      <span>• {calories} cal</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteSharedBacklog(item)}
+                    disabled={removeFromBacklogMutation.isPending}
+                    className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
+                    title="Remove from shared backlog"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Postponed Meals (personal) */}
           {postponedMeals.map((meal) => {
             const recipe = recipes.find((r) => r.id === meal.recipeId);
             const mealName = recipe?.name || meal.customMeal || 'Unnamed meal';
@@ -107,7 +192,7 @@ export function MealBacklogSection({ postponedMeals, recipes, onReschedule }: Me
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleDelete(meal, mealName)}
+                    onClick={() => handleDeletePostponed(meal)}
                     className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
                     title="Delete from backlog"
                   >
@@ -122,7 +207,7 @@ export function MealBacklogSection({ postponedMeals, recipes, onReschedule }: Me
           <div className="mt-3 p-3 bg-slate-50 border border-slate-200 rounded-md">
             <p className="text-xs text-slate-600">
               💡 <strong>Tip:</strong> Drag meals from here onto the table above to reschedule them.
-              Or delete them if you no longer want to make them.
+              {isMerged && ' Shared items can be used by either partner.'}
             </p>
           </div>
         </div>

@@ -75,6 +75,121 @@ interface ModulePermissionRow {
 }
 
 /**
+ * Result of checking for merged connection
+ */
+export interface MergedConnectionResult {
+  connectionId: string;
+  partnerId: string;
+  partnerName?: string;
+}
+
+/**
+ * Check if both users in a connection have set a module to "merged".
+ * Returns the connection ID if mutual merge is enabled, null otherwise.
+ *
+ * For merged functionality to work, BOTH partners must have set the module to "merged".
+ * This ensures data sharing is consensual from both sides.
+ */
+export async function getMergedConnectionId(
+  module: ShareableModule
+): Promise<MergedConnectionResult | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    console.log('[getMergedConnectionId] No user logged in');
+    return null;
+  }
+
+  console.log('[getMergedConnectionId] Checking for module:', module, 'user:', user.id);
+
+  try {
+    // Get active connections where we are either requester or receiver
+    const { data: connections, error: connError } = await supabase
+      .from('profile_connections')
+      .select(`
+        id,
+        requester_id,
+        receiver_id,
+        requester_user:profiles!profile_connections_requester_id_fkey(id, full_name),
+        receiver_user:profiles!profile_connections_receiver_id_fkey(id, full_name)
+      `)
+      .eq('status', 'active')
+      .or(`requester_id.eq.${user.id},receiver_id.eq.${user.id}`);
+
+    console.log('[getMergedConnectionId] Active connections:', connections?.length ?? 0, connError);
+
+    if (connError || !connections || connections.length === 0) return null;
+
+    for (const conn of connections) {
+      const partnerId = conn.requester_id === user.id
+        ? conn.receiver_id
+        : conn.requester_id;
+
+      // Get all module permissions for this connection and module
+      const { data: permissions, error: permError } = await supabase
+        .from('module_permissions')
+        .select('user_id, permission_level')
+        .eq('connection_id', conn.id)
+        .eq('module', module);
+
+      console.log('[getMergedConnectionId] Permissions for connection', conn.id, ':', permissions, permError);
+
+      if (permError || !permissions) continue;
+
+      // Check if BOTH users have set 'merged' for this module
+      const myPermission = permissions.find(p => p.user_id === user.id);
+      const partnerPermission = permissions.find(p => p.user_id === partnerId);
+
+      console.log('[getMergedConnectionId] My permission:', myPermission?.permission_level, 'Partner permission:', partnerPermission?.permission_level);
+
+      if (
+        myPermission?.permission_level === 'merged' &&
+        partnerPermission?.permission_level === 'merged'
+      ) {
+        // Get partner name
+        const partnerUser = conn.requester_id === user.id
+          ? conn.receiver_user
+          : conn.requester_user;
+        const partnerName = Array.isArray(partnerUser)
+          ? partnerUser[0]?.full_name
+          : partnerUser?.full_name;
+
+        console.log('[getMergedConnectionId] MERGED mode enabled! Connection:', conn.id);
+        return {
+          connectionId: conn.id,
+          partnerId,
+          partnerName: partnerName ?? undefined,
+        };
+      }
+    }
+
+    console.log('[getMergedConnectionId] No mutual merged found');
+    return null;
+  } catch (error) {
+    logger.error('SharedDataProvider', 'Error checking merged connection', { error, module });
+    return null;
+  }
+}
+
+/**
+ * Check if the current user has set a specific module to "merged" for any connection.
+ * This is useful to know if the user WANTS merged mode (even if partner hasn't agreed).
+ */
+export async function hasUserSetMerged(module: ShareableModule): Promise<boolean> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return false;
+
+  const { data: permissions } = await supabase
+    .from('module_permissions')
+    .select('permission_level')
+    .eq('user_id', user.id)
+    .eq('module', module)
+    .eq('permission_level', 'merged')
+    .limit(1);
+
+  return (permissions?.length ?? 0) > 0;
+}
+
+/**
  * Get the permission level a connected user has granted to the current user
  * for a specific module.
  */

@@ -10,18 +10,24 @@ import { format } from 'date-fns';
 import type { PlannedMeal, Recipe } from '../../../types';
 import type { MealType } from '../../../api/nutritionAPI';
 import { useLogFoodMutation } from '../../../hooks/useNutritionQuery';
-import { usePostponePlannedMealMutation, useUpdatePlannedMealMutation } from '../../../hooks/useMealPlanningQuery';
+import {
+  usePostponePlannedMealMutation,
+  useUpdatePlannedMealMutation,
+  useTrackMealMutation,
+  useAddToBacklogMutation,
+} from '../../../hooks/useMealPlanningQuery';
 
 interface SwapMealModalProps {
   meal: PlannedMeal;
   recipe?: Recipe;
+  isMerged?: boolean;
   onClose: () => void;
   onSuccess?: () => void;
 }
 
 type SwapAction = 'save_for_later' | 'forget_it';
 
-export function SwapMealModal({ meal, recipe, onClose, onSuccess }: SwapMealModalProps): React.ReactElement {
+export function SwapMealModal({ meal, recipe, isMerged = false, onClose, onSuccess }: SwapMealModalProps): React.ReactElement {
   const [actualFood, setActualFood] = useState('');
   const [swapAction, setSwapAction] = useState<SwapAction>('forget_it');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -29,6 +35,8 @@ export function SwapMealModal({ meal, recipe, onClose, onSuccess }: SwapMealModa
   const logFoodMutation = useLogFoodMutation();
   const postponeMealMutation = usePostponePlannedMealMutation();
   const updateMealMutation = useUpdatePlannedMealMutation();
+  const trackMealMutation = useTrackMealMutation();
+  const addToBacklogMutation = useAddToBacklogMutation();
 
   const mealName = recipe?.name || meal.customMeal || 'Unnamed meal';
   const calories = recipe?.calories ? recipe.calories * (meal.servings || 1) : 0;
@@ -41,7 +49,7 @@ export function SwapMealModal({ meal, recipe, onClose, onSuccess }: SwapMealModa
 
     try {
       // 1. Log what was actually eaten to nutrition tracker
-      const foodLogEntry = await logFoodMutation.mutateAsync({
+      await logFoodMutation.mutateAsync({
         custom_food_name: actualFood.trim(),
         quantity: 1,
         meal_type: meal.mealType as MealType,
@@ -53,27 +61,48 @@ export function SwapMealModal({ meal, recipe, onClose, onSuccess }: SwapMealModa
         notes: `Substituted for planned meal: ${mealName}`,
       });
 
-      // 2. Handle the planned meal based on selected action
-      if (swapAction === 'save_for_later') {
-        // Move original meal to backlog - it will disappear from the grid
-        // The actual food is already logged to nutrition tracker above
-        await postponeMealMutation.mutateAsync({
-          mealId: meal.id,
-          reason: `Ate "${actualFood.trim()}" instead`,
+      // 2. Handle the planned meal based on mode and selected action
+      if (isMerged) {
+        // In merged mode, use personal tracking - don't modify the shared meal plan
+        await trackMealMutation.mutateAsync({
+          plannedMealId: meal.id,
+          status: 'swapped',
+          swappedMeal: actualFood.trim(),
+          notes: swapAction === 'save_for_later' ? 'Original saved for later' : undefined,
         });
+
+        // If "Save for later", add the original meal to the shared backlog
+        if (swapAction === 'save_for_later') {
+          await addToBacklogMutation.mutateAsync({
+            mealName,
+            recipeId: recipe?.id,
+            originalDate: format(meal.date, 'yyyy-MM-dd'),
+            originalMealType: meal.mealType,
+            reason: `Ate "${actualFood.trim()}" instead`,
+            servings: meal.servings,
+            peopleCount: meal.peopleCount,
+          });
+        }
       } else {
-        // "Forget it" - delete the planned meal entirely
-        // The actual food is already logged to nutrition tracker above
-        await updateMealMutation.mutateAsync({
-          mealId: meal.id,
-          updates: {
-            status: 'eaten',
-            customMeal: actualFood.trim(),
-            recipeId: undefined, // Clear the recipe link
-            substitutedWith: actualFood.trim(),
-            actualFoodLogId: foodLogEntry.id,
-          },
-        });
+        // In personal mode, modify the planned meal directly
+        if (swapAction === 'save_for_later') {
+          // Move original meal to backlog - it will disappear from the grid
+          await postponeMealMutation.mutateAsync({
+            mealId: meal.id,
+            reason: `Ate "${actualFood.trim()}" instead`,
+          });
+        } else {
+          // "Forget it" - update the planned meal with the substitution
+          await updateMealMutation.mutateAsync({
+            mealId: meal.id,
+            updates: {
+              status: 'eaten',
+              customMeal: actualFood.trim(),
+              recipeId: undefined, // Clear the recipe link
+              substitutedWith: actualFood.trim(),
+            },
+          });
+        }
       }
 
       onSuccess?.();
@@ -141,7 +170,7 @@ export function SwapMealModal({ meal, recipe, onClose, onSuccess }: SwapMealModa
                 value={actualFood}
                 onChange={(e) => setActualFood(e.target.value)}
                 placeholder="e.g., Restaurant burger"
-                className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white text-slate-900"
                 disabled={isSubmitting}
                 required
                 autoFocus

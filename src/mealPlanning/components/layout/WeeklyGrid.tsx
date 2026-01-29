@@ -8,6 +8,7 @@ import AddMealControl from '../mealPlan/AddMealControl';
 import { MealBacklogSection } from './MealBacklogSection';
 import { useUndoRedo } from '../../../contexts/UndoRedoContext';
 import { MovePlannedMealCommand } from '../../../commands/MealPlanningCommands';
+import { useRemoveFromBacklogMutation } from '../../../hooks/useMealPlanningQuery';
 
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack'];
 
@@ -22,7 +23,7 @@ interface WeeklyGridProps {
   weekDays: Date[];
   mealsByDate: Record<string, PlannedMeal[]>;
   recipes: Recipe[];
-  activePlan: { id: string; meals?: PlannedMeal[] } | null;
+  activePlan: { id: string; meals?: PlannedMeal[]; connectionId?: string; partnerId?: string } | null;
   selectedCells: Set<string>;
   makeCellKey: (dateKey: string, mealType: string) => string;
   onCellClick: (dateKey: string, mealType: string, e: React.MouseEvent) => void;
@@ -73,6 +74,7 @@ export function WeeklyGrid({
   addMealToSelectedCells,
 }: WeeklyGridProps): ReactElement {
   const { executeCommand } = useUndoRedo();
+  const removeFromBacklogMutation = useRemoveFromBacklogMutation();
 
   return (
     <div className="mt-6 overflow-x-auto">
@@ -197,6 +199,43 @@ export function WeeklyGrid({
                             return;
                           }
 
+                          // Handle shared backlog item drop
+                          const backlogItemData = e.dataTransfer.getData('text/backlog-item');
+                          if (backlogItemData) {
+                            try {
+                              const backlogItem = JSON.parse(backlogItemData) as {
+                                id: string;
+                                mealName: string;
+                                recipeId?: string;
+                                servings: number;
+                                peopleCount: number;
+                              };
+
+                              // Create a new planned meal from the backlog item
+                              await createPlannedMeal({
+                                planId: activePlan.id,
+                                meal: {
+                                  date: parseLocalDateKey(key),
+                                  mealType,
+                                  recipeId: backlogItem.recipeId,
+                                  customMeal: backlogItem.recipeId ? undefined : backlogItem.mealName,
+                                  servings: backlogItem.servings ?? 2,
+                                  peopleCount: backlogItem.peopleCount ?? 2,
+                                  status: 'planned',
+                                  notes: undefined,
+                                  preparedAt: undefined,
+                                  consumedAt: undefined,
+                                },
+                              });
+
+                              // Remove from shared backlog after successful drop
+                              await removeFromBacklogMutation.mutateAsync(backlogItem.id);
+                              return;
+                            } catch (err) {
+                              console.error('[WeeklyGrid] Failed to handle backlog drop:', err);
+                            }
+                          }
+
                           const mealId = e.dataTransfer.getData('text/meal-id');
                           if (!mealId) return;
                           const fromBacklog = e.dataTransfer.getData('text/from-backlog') === 'true';
@@ -249,6 +288,8 @@ export function WeeklyGrid({
                           mealType={mealType}
                           dayMeals={dayMeals}
                           recipes={recipes}
+                          isMerged={!!activePlan?.connectionId}
+                          partnerId={activePlan?.partnerId}
                           onShowRecipeForm={onShowRecipeForm}
                           onShowSimpleEdit={onShowSimpleEdit}
                           renderAddControl={(triggerRef) => (
@@ -365,10 +406,13 @@ export function WeeklyGrid({
           return activePlan?.meals?.filter((m) => m.isPostponed) || [];
         }, [activePlan?.meals]);
 
+        const isMerged = !!activePlan?.connectionId;
+
         return (
           <MealBacklogSection
             postponedMeals={postponedMeals}
             recipes={recipes}
+            isMerged={isMerged}
             onReschedule={(meal) => {
               // TODO: Implement reschedule functionality
               console.log('[WeeklyGrid] Reschedule meal:', meal);

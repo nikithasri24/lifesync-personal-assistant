@@ -13,6 +13,8 @@ export interface CellWithMealsProps {
   mealType: string;
   dayMeals: PlannedMeal[];
   recipes: Recipe[];
+  isMerged?: boolean;
+  partnerId?: string;
   onShowRecipeForm: (initialName: string, onSave: (recipe: Omit<Recipe, 'id' | 'createdAt'>) => void) => void;
   onShowSimpleEdit: (recipe: Recipe, onSave: (updates: Partial<Recipe>) => void) => void;
   renderAddControl: (triggerRef: React.MutableRefObject<(() => void) | null>) => React.ReactNode;
@@ -23,6 +25,8 @@ export const CellWithMeals: React.FC<CellWithMealsProps> = ({
   mealType: _mealType,
   dayMeals,
   recipes,
+  isMerged = false,
+  partnerId,
   onShowRecipeForm,
   onShowSimpleEdit,
   renderAddControl,
@@ -38,6 +42,8 @@ export const CellWithMeals: React.FC<CellWithMealsProps> = ({
               key={meal.id}
               meal={meal}
               recipes={recipes}
+              isMerged={isMerged}
+              partnerId={partnerId}
               onShowRecipeForm={onShowRecipeForm}
               onShowSimpleEdit={onShowSimpleEdit}
             />

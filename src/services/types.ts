@@ -275,9 +275,48 @@ export interface PlannedMealData {
   updated_at?: string;
 }
 
+/**
+ * Personal meal tracking - each user tracks their own consumption of shared planned meals
+ */
+export type MealTrackingStatus = 'pending' | 'eaten' | 'skipped' | 'swapped';
+
+export interface MealTrackingData {
+  id?: string;
+  user_id: string;
+  planned_meal_id: string;
+  status: MealTrackingStatus;
+  swapped_meal?: string;
+  swapped_recipe_id?: string;
+  servings_consumed?: number;
+  calories_consumed?: number;
+  notes?: string;
+  tracked_at?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+/**
+ * Shared meal backlog - meals saved for later that either partner can use
+ */
+export interface MealBacklogData {
+  id?: string;
+  connection_id: string;
+  meal_name: string;
+  recipe_id?: string;
+  saved_by_user_id: string;
+  original_date?: string;
+  original_meal_type?: string;
+  reason?: string;
+  servings?: number;
+  people_count?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface MealPlanData {
   id?: string;
   user_id?: string;
+  connection_id?: string;  // For merged/shared meal plans between connected users
   name: string;
   week_start_date: string;
   notes?: string;
@@ -324,6 +363,7 @@ export interface FocusSessionData {
 export interface RecipeData {
   id?: string;
   user_id?: string;
+  connection_id?: string; // For merged/shared recipes
   name: string;
   description?: string;
   cuisine?: string;
