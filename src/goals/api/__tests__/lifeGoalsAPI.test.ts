@@ -536,7 +536,6 @@ describe('lifeGoalsAPI', () => {
           goalId: 'goal-1',
           progressUpdate: 40,
           notes: 'Feeling strong today',
-          mood: 'great',
           wins: 'Ran 10km without stopping',
           nextActions: 'Increase distance by 2km',
         });
@@ -547,12 +546,11 @@ describe('lifeGoalsAPI', () => {
           goal_id: 'goal-1',
           progress_update: 40,
           notes: 'Feeling strong today',
-          mood: 'great',
           blockers: undefined,
           wins: 'Ran 10km without stopping',
           next_actions: 'Increase distance by 2km',
         });
-        expect(result.mood).toBe('great');
+        expect(result.notes).toBe('Feeling strong today');
       });
     });
 

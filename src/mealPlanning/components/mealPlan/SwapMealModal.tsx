@@ -13,9 +13,10 @@ import { useLogFoodMutation } from '../../../hooks/useNutritionQuery';
 import {
   usePostponePlannedMealMutation,
   useUpdatePlannedMealMutation,
-  useTrackMealMutation,
-  useAddToBacklogMutation,
+  useMealTrackingQuery,
 } from '../../../hooks/useMealPlanningQuery';
+import { useUndoRedo } from '../../../contexts/UndoRedoContext';
+import { TrackMealCommand, AddToBacklogCommand, UpdatePlannedMealCommand } from '../../../commands/MealPlanningCommands';
 
 interface SwapMealModalProps {
   meal: PlannedMeal;
@@ -34,9 +35,11 @@ export function SwapMealModal({ meal, recipe, isMerged = false, onClose, onSucce
 
   const logFoodMutation = useLogFoodMutation();
   const postponeMealMutation = usePostponePlannedMealMutation();
-  const updateMealMutation = useUpdatePlannedMealMutation();
-  const trackMealMutation = useTrackMealMutation();
-  const addToBacklogMutation = useAddToBacklogMutation();
+  const { executeCommand } = useUndoRedo();
+
+  // Get current tracking state for undo support
+  const { data: trackingMap } = useMealTrackingQuery([meal.id], { enabled: isMerged });
+  const currentTracking = trackingMap?.get(meal.id);
 
   const mealName = recipe?.name || meal.customMeal || 'Unnamed meal';
   const calories = recipe?.calories ? recipe.calories * (meal.servings || 1) : 0;
@@ -63,17 +66,22 @@ export function SwapMealModal({ meal, recipe, isMerged = false, onClose, onSucce
 
       // 2. Handle the planned meal based on mode and selected action
       if (isMerged) {
-        // In merged mode, use personal tracking - don't modify the shared meal plan
-        await trackMealMutation.mutateAsync({
-          plannedMealId: meal.id,
-          status: 'swapped',
-          swappedMeal: actualFood.trim(),
-          notes: swapAction === 'save_for_later' ? 'Original saved for later' : undefined,
-        });
+        // In merged mode, use personal tracking with command pattern for undo
+        const trackCommand = new TrackMealCommand(
+          meal.id,
+          mealName,
+          {
+            status: 'swapped',
+            swappedMeal: actualFood.trim(),
+            notes: swapAction === 'save_for_later' ? 'Original saved for later' : undefined,
+          },
+          currentTracking ?? null
+        );
+        await executeCommand(trackCommand);
 
         // If "Save for later", add the original meal to the shared backlog
         if (swapAction === 'save_for_later') {
-          await addToBacklogMutation.mutateAsync({
+          const backlogCommand = new AddToBacklogCommand({
             mealName,
             recipeId: recipe?.id,
             originalDate: format(meal.date, 'yyyy-MM-dd'),
@@ -82,6 +90,7 @@ export function SwapMealModal({ meal, recipe, isMerged = false, onClose, onSucce
             servings: meal.servings,
             peopleCount: meal.peopleCount,
           });
+          await executeCommand(backlogCommand);
         }
       } else {
         // In personal mode, modify the planned meal directly
@@ -92,16 +101,25 @@ export function SwapMealModal({ meal, recipe, isMerged = false, onClose, onSucce
             reason: `Ate "${actualFood.trim()}" instead`,
           });
         } else {
-          // "Forget it" - update the planned meal with the substitution
-          await updateMealMutation.mutateAsync({
-            mealId: meal.id,
-            updates: {
+          // "Forget it" - update the planned meal with the substitution using command
+          const previousState = {
+            status: meal.status,
+            customMeal: meal.customMeal,
+            recipeId: meal.recipeId,
+            substitutedWith: meal.substitutedWith,
+          };
+          const command = new UpdatePlannedMealCommand(
+            meal.id,
+            mealName,
+            {
               status: 'eaten',
               customMeal: actualFood.trim(),
-              recipeId: undefined, // Clear the recipe link
+              recipeId: undefined,
               substitutedWith: actualFood.trim(),
             },
-          });
+            previousState
+          );
+          await executeCommand(command);
         }
       }
 

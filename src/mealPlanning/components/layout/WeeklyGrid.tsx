@@ -7,8 +7,8 @@ import CellWithMeals from '../mealPlan/CellWithMeals';
 import AddMealControl from '../mealPlan/AddMealControl';
 import { MealBacklogSection } from './MealBacklogSection';
 import { useUndoRedo } from '../../../contexts/UndoRedoContext';
-import { MovePlannedMealCommand } from '../../../commands/MealPlanningCommands';
-import { useRemoveFromBacklogMutation } from '../../../hooks/useMealPlanningQuery';
+import { MovePlannedMealCommand, CreatePlannedMealCommand, UseBacklogItemCommand } from '../../../commands/MealPlanningCommands';
+import { useRemoveFromBacklogMutation, useBacklogQuery } from '../../../hooks/useMealPlanningQuery';
 
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack'];
 
@@ -159,51 +159,52 @@ export function WeeklyGrid({
                       onDrop={(e) => {
                         void (async (): Promise<void> => {
                           if (!activePlan) return;
+                          const targetDate = parseLocalDateKey(key);
+
+                          // Handle meal option drop (quick add options like "Leftovers")
                           const optionName = e.dataTransfer.getData('text/meal-option');
                           if (optionName) {
-                            await createPlannedMeal({
-                              planId: activePlan.id,
-                              meal: {
-                                date: parseLocalDateKey(key),
+                            const command = new CreatePlannedMealCommand(
+                              activePlan.id,
+                              {
+                                date: targetDate,
                                 mealType,
-                                recipeId: undefined,
                                 customMeal: optionName,
                                 servings: 4,
                                 peopleCount: 4,
                                 status: 'planned',
-                                notes: undefined,
-                                preparedAt: undefined,
-                                consumedAt: undefined,
                               },
-                            });
+                              optionName
+                            );
+                            await executeCommand(command);
                             return;
                           }
 
+                          // Handle recipe drop
                           const recipeDragged = e.dataTransfer.getData('text/recipe-id');
                           if (recipeDragged) {
-                            await createPlannedMeal({
-                              planId: activePlan.id,
-                              meal: {
-                                date: parseLocalDateKey(key),
+                            const recipeName = recipes.find(r => r.id === recipeDragged)?.name || 'Recipe';
+                            const command = new CreatePlannedMealCommand(
+                              activePlan.id,
+                              {
+                                date: targetDate,
                                 mealType,
                                 recipeId: recipeDragged,
-                                customMeal: undefined,
                                 servings: 4,
                                 peopleCount: 4,
                                 status: 'planned',
-                                notes: undefined,
-                                preparedAt: undefined,
-                                consumedAt: undefined,
                               },
-                            });
+                              recipeName
+                            );
+                            await executeCommand(command);
                             return;
                           }
 
-                          // Handle shared backlog item drop
+                          // Handle shared backlog item drop - use UseBacklogItemCommand
                           const backlogItemData = e.dataTransfer.getData('text/backlog-item');
                           if (backlogItemData) {
                             try {
-                              const backlogItem = JSON.parse(backlogItemData) as {
+                              const backlogItemParsed = JSON.parse(backlogItemData) as {
                                 id: string;
                                 mealName: string;
                                 recipeId?: string;
@@ -211,25 +212,20 @@ export function WeeklyGrid({
                                 peopleCount: number;
                               };
 
-                              // Create a new planned meal from the backlog item
-                              await createPlannedMeal({
-                                planId: activePlan.id,
-                                meal: {
-                                  date: parseLocalDateKey(key),
-                                  mealType,
-                                  recipeId: backlogItem.recipeId,
-                                  customMeal: backlogItem.recipeId ? undefined : backlogItem.mealName,
-                                  servings: backlogItem.servings ?? 2,
-                                  peopleCount: backlogItem.peopleCount ?? 2,
-                                  status: 'planned',
-                                  notes: undefined,
-                                  preparedAt: undefined,
-                                  consumedAt: undefined,
+                              // Use the command pattern for undo support
+                              const command = new UseBacklogItemCommand(
+                                {
+                                  id: backlogItemParsed.id,
+                                  mealName: backlogItemParsed.mealName,
+                                  recipeId: backlogItemParsed.recipeId,
+                                  servings: backlogItemParsed.servings,
+                                  peopleCount: backlogItemParsed.peopleCount,
                                 },
-                              });
-
-                              // Remove from shared backlog after successful drop
-                              await removeFromBacklogMutation.mutateAsync(backlogItem.id);
+                                activePlan.id,
+                                targetDate,
+                                mealType
+                              );
+                              await executeCommand(command);
                               return;
                             } catch (err) {
                               console.error('[WeeklyGrid] Failed to handle backlog drop:', err);
@@ -245,28 +241,27 @@ export function WeeklyGrid({
                           const mealName = recipes.find(r => r.id === sourceMeal.recipeId)?.name || sourceMeal.customMeal || 'Meal';
 
                           if (e.altKey && !fromBacklog) {
-                            // Alt+drag creates a copy (no undo for this)
-                            await createPlannedMeal({
-                              planId: activePlan.id,
-                              meal: {
-                                date: parseLocalDateKey(key),
+                            // Alt+drag creates a copy - use command for undo
+                            const command = new CreatePlannedMealCommand(
+                              activePlan.id,
+                              {
+                                date: targetDate,
                                 mealType,
                                 recipeId: sourceMeal.recipeId,
                                 customMeal: sourceMeal.customMeal,
                                 servings: sourceMeal.servings ?? 4,
                                 peopleCount: sourceMeal.peopleCount ?? sourceMeal.servings ?? 4,
                                 status: 'planned',
-                                notes: undefined,
-                                preparedAt: undefined,
-                                consumedAt: undefined,
                               },
-                            });
+                              `${mealName} (copy)`
+                            );
+                            await executeCommand(command);
                           } else {
                             // Move the meal to the new date/mealType - use command for undo
                             const command = new MovePlannedMealCommand(
                               mealId,
                               mealName,
-                              parseLocalDateKey(key),
+                              targetDate,
                               mealType,
                               sourceMeal.date,
                               sourceMeal.mealType,
@@ -308,19 +303,15 @@ export function WeeklyGrid({
                               onAddMeal={(mealName) => {
                                 // If multiple cells are selected, add to all
                                 if (isSelected && selectedCells.size > 1 && addMealToSelectedCells) {
-                                  console.log('[AddMeal] Adding to all selected cells:', selectedCells.size);
                                   void addMealToSelectedCells('', mealName);
                                   return;
                                 }
 
-                                // Otherwise, add to just this cell
-                                if (!activePlan) {
-                                  console.error('[AddMeal] No active plan found!');
-                                  return;
-                                }
-                                const mealData = {
-                                  planId: activePlan.id,
-                                  meal: {
+                                // Otherwise, add to just this cell with command pattern for undo
+                                if (!activePlan) return;
+                                const command = new CreatePlannedMealCommand(
+                                  activePlan.id,
+                                  {
                                     date: parseLocalDateKey(key),
                                     mealType,
                                     customMeal: mealName,
@@ -328,15 +319,9 @@ export function WeeklyGrid({
                                     peopleCount: 2,
                                     status: 'planned',
                                   },
-                                };
-                                console.log('[AddMeal] ⚠️ About to call createPlannedMeal with:', mealData);
-                                console.log('[AddMeal] ⚠️ customMeal value:', mealName);
-                                console.log('[AddMeal] ⚠️ createPlannedMeal function:', typeof createPlannedMeal);
-                                void createPlannedMeal(mealData).then(() => {
-                                  console.log('[AddMeal] ✅ Meal created successfully!');
-                                }).catch((error) => {
-                                  console.error('[AddMeal] ❌ Failed to create meal:', error);
-                                });
+                                  mealName
+                                );
+                                void executeCommand(command);
                               }}
                             />
                           )}
@@ -356,25 +341,15 @@ export function WeeklyGrid({
                           onAddMeal={(mealName) => {
                             // If multiple cells are selected, add to all
                             if (isSelected && selectedCells.size > 1 && addMealToSelectedCells) {
-                              console.log('[AddMeal] Adding to all selected cells:', selectedCells.size);
                               void addMealToSelectedCells('', mealName);
                               return;
                             }
 
-                            // Otherwise, add to just this cell
-                            if (!activePlan) {
-                              console.error('[AddMeal] No active plan found!');
-                              return;
-                            }
-                            console.log('[AddMeal] Creating meal:', {
-                              planId: activePlan.id,
-                              date: parseLocalDateKey(key),
-                              mealType,
-                              customMeal: mealName,
-                            });
-                            void createPlannedMeal({
-                              planId: activePlan.id,
-                              meal: {
+                            // Otherwise, add to just this cell with command pattern for undo
+                            if (!activePlan) return;
+                            const command = new CreatePlannedMealCommand(
+                              activePlan.id,
+                              {
                                 date: parseLocalDateKey(key),
                                 mealType,
                                 customMeal: mealName,
@@ -382,11 +357,9 @@ export function WeeklyGrid({
                                 peopleCount: 2,
                                 status: 'planned',
                               },
-                            }).then(() => {
-                              console.log('[AddMeal] Meal created successfully!');
-                            }).catch((error) => {
-                              console.error('[AddMeal] Failed to create meal:', error);
-                            });
+                              mealName
+                            );
+                            void executeCommand(command);
                           }}
                         />
                       )}

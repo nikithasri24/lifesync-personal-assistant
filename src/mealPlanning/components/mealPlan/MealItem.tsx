@@ -15,7 +15,7 @@ import { SwapMealModal } from './SwapMealModal';
 import { logger } from '../../../services/logger';
 import type { MealType } from '../../../api/nutritionAPI';
 import { useUndoRedo } from '../../../contexts/UndoRedoContext';
-import { DeletePlannedMealCommand, UpdatePlannedMealCommand } from '../../../commands/MealPlanningCommands';
+import { DeletePlannedMealCommand, UpdatePlannedMealCommand, TrackMealCommand } from '../../../commands/MealPlanningCommands';
 
 // Meal type color mapping
 const MEAL_TYPE_COLORS = {
@@ -94,13 +94,18 @@ export const MealItem: React.FC<MealItemProps> = ({ meal, recipes, isMerged = fa
       });
 
       if (isMerged) {
-        // In merged mode, use personal tracking table
-        await trackMealMutation.mutateAsync({
-          plannedMealId: meal.id,
-          status: 'eaten',
-          caloriesConsumed: mealCalories * (meal.servings || 1),
-          servingsConsumed: meal.servings || 1,
-        });
+        // In merged mode, use personal tracking table with command pattern for undo
+        const command = new TrackMealCommand(
+          meal.id,
+          mealDisplayName,
+          {
+            status: 'eaten',
+            caloriesConsumed: mealCalories * (meal.servings || 1),
+            servingsConsumed: meal.servings || 1,
+          },
+          myTracking ?? null // Previous tracking state for undo
+        );
+        await executeCommand(command);
       } else {
         // In personal mode, update the planned meal directly
         await updateMealMutation.mutateAsync({

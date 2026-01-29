@@ -145,10 +145,10 @@ export async function getMergedConnectionId(
         myPermission?.permission_level === 'merged' &&
         partnerPermission?.permission_level === 'merged'
       ) {
-        // Get partner name
-        const partnerUser = conn.requester_id === user.id
+        // Get partner name (type assertion for Supabase join result)
+        const partnerUser = (conn.requester_id === user.id
           ? conn.receiver_user
-          : conn.requester_user;
+          : conn.requester_user) as { id: string; full_name: string } | { id: string; full_name: string }[] | null;
         const partnerName = Array.isArray(partnerUser)
           ? partnerUser[0]?.full_name
           : partnerUser?.full_name;

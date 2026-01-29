@@ -1257,6 +1257,10 @@ function mapMealTrackingFromAPI(data: MealTrackingData): MealTracking {
   };
 }
 
+// Helper to filter out temporary/optimistic IDs (they start with 'temp-')
+const filterValidMealIds = (ids: string[]): string[] =>
+  ids.filter(id => !id.startsWith('temp-'));
+
 /**
  * Get meal tracking records for a list of planned meals.
  * Returns a map of plannedMealId -> MealTracking for easy lookup.
@@ -1265,17 +1269,21 @@ export function useMealTrackingQuery(
   plannedMealIds: string[],
   options?: { enabled?: boolean }
 ): ReturnType<typeof useQuery<Map<string, MealTracking>>> {
+  // Filter out temporary IDs that haven't been persisted yet
+  const validIds = filterValidMealIds(plannedMealIds);
+
   return useQuery({
-    queryKey: mealPlanningKeys.mealTrackingForMeals(plannedMealIds),
+    queryKey: mealPlanningKeys.mealTrackingForMeals(validIds),
     queryFn: async () => {
-      const data = await mealPlanningAPI.getMealTracking(plannedMealIds);
+      if (validIds.length === 0) return new Map<string, MealTracking>();
+      const data = await mealPlanningAPI.getMealTracking(validIds);
       const map = new Map<string, MealTracking>();
       for (const item of data) {
         map.set(item.planned_meal_id, mapMealTrackingFromAPI(item));
       }
       return map;
     },
-    enabled: (options?.enabled ?? true) && plannedMealIds.length > 0,
+    enabled: (options?.enabled ?? true) && validIds.length > 0,
     staleTime: 1000 * 60 * 2, // 2 minutes
   });
 }
@@ -1289,18 +1297,21 @@ export function usePartnerMealTrackingQuery(
   partnerId: string | undefined,
   options?: { enabled?: boolean }
 ): ReturnType<typeof useQuery<Map<string, MealTracking>>> {
+  // Filter out temporary IDs that haven't been persisted yet
+  const validIds = filterValidMealIds(plannedMealIds);
+
   return useQuery({
-    queryKey: mealPlanningKeys.partnerMealTrackingForMeals(plannedMealIds, partnerId ?? ''),
+    queryKey: mealPlanningKeys.partnerMealTrackingForMeals(validIds, partnerId ?? ''),
     queryFn: async () => {
-      if (!partnerId) return new Map<string, MealTracking>();
-      const data = await mealPlanningAPI.getPartnerMealTracking(plannedMealIds, partnerId);
+      if (!partnerId || validIds.length === 0) return new Map<string, MealTracking>();
+      const data = await mealPlanningAPI.getPartnerMealTracking(validIds, partnerId);
       const map = new Map<string, MealTracking>();
       for (const item of data) {
         map.set(item.planned_meal_id, mapMealTrackingFromAPI(item));
       }
       return map;
     },
-    enabled: (options?.enabled ?? true) && plannedMealIds.length > 0 && !!partnerId,
+    enabled: (options?.enabled ?? true) && validIds.length > 0 && !!partnerId,
     staleTime: 1000 * 60 * 2, // 2 minutes
   });
 }

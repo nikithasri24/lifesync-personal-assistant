@@ -47,6 +47,8 @@ import { ModalContainer } from '../mealPlanning/components/layout/ModalContainer
 
 // Import utilities
 import { toKey, ensureDate, parseLocalDateKey } from '../mealPlanning/utils';
+import { useUndoRedo } from '../contexts/UndoRedoContext';
+import { DeleteRecipeCommand, CreateRecipeCommand } from '../commands/MealPlanningCommands';
 
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack'];
 
@@ -103,6 +105,7 @@ const MealPlanning: React.FC = () => {
   // Global UI settings
   const { weekStartsOn } = useComposedStore();
   const { showToast } = useToast();
+  const { executeCommand } = useUndoRedo();
 
   // Wrapper functions to adapt mutation signatures (defined early for hook dependencies)
   // Wrapped in useCallback to prevent infinite loops
@@ -117,6 +120,14 @@ const MealPlanning: React.FC = () => {
   const createRecipeWrapper = useCallback(async (recipe: Partial<Recipe>): Promise<Recipe> => {
     return await createRecipeMutation.mutateAsync(recipe as any);
   }, [createRecipeMutation]);
+
+  // Delete recipe with command pattern for undo support
+  const handleDeleteRecipe = useCallback((recipeId: string) => {
+    const recipeToDelete = recipes.find(r => r.id === recipeId);
+    if (!recipeToDelete) return;
+    const command = new DeleteRecipeCommand(recipeToDelete);
+    void executeCommand(command);
+  }, [recipes, executeCommand]);
 
   if (recipesError || mealPlansError) {
     return (
@@ -197,7 +208,15 @@ const MealPlanning: React.FC = () => {
 
   const plannedMeals = useMemo(() => {
     const meals = weekNav.activePlan?.meals ?? [];
-    return meals;
+    // Deduplicate meals by ID to prevent React key warnings
+    const seenIds = new Set<string>();
+    return meals.filter((meal) => {
+      if (seenIds.has(meal.id)) {
+        return false;
+      }
+      seenIds.add(meal.id);
+      return true;
+    });
   }, [weekNav.activePlan?.meals]);
 
   const mealsByDate: Record<string, PlannedMeal[]> = useMemo(() => {
@@ -304,7 +323,7 @@ const MealPlanning: React.FC = () => {
         onDeleteAll={deleteAllRecipesMutation.mutateAsync}
         onViewRecipe={modalState.openRecipeView}
         onEditRecipe={modalState.openRecipeEdit}
-        onDeleteRecipe={deleteRecipeMutation.mutate}
+        onDeleteRecipe={handleDeleteRecipe}
       />
 
       {/* Modals */}
