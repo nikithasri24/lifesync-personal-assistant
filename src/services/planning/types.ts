@@ -105,11 +105,10 @@ export interface WeeklyReview {
   
   // Goals
   goalProgress: { goalId: string; goalTitle: string; progressDelta: number }[];
-  
-  // Mood/Energy (if tracked)
-  averageMood?: number;
+
+  // Energy (if tracked)
   averageEnergy?: number;
-  
+
   // Insights
   wins: string[];
   areasToImprove: string[];

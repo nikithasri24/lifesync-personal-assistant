@@ -21,7 +21,6 @@ export type ViewKey =
   | 'notes'
   | 'finances'
   | 'analytics'
-  | 'mood'
   | 'calendar'
   | 'meals'
   | 'nutrition'

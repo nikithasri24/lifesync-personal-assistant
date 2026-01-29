@@ -13,6 +13,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as mealPlanningAPI from '@/api/mealPlanningAPI';
 import { startOfWeek, format as formatDate } from 'date-fns';
+
+// Re-export types from API for convenience
+export type { MealSearchResult } from '@/api/mealPlanningAPI';
 import type {
   RecipeData,
   MealPlanData,
@@ -127,6 +130,8 @@ export const mealPlanningKeys = {
 
   pantry: () => [...mealPlanningKeys.all, 'pantry'] as const,
   pantryList: () => [...mealPlanningKeys.pantry(), 'list'] as const,
+
+  mealSearch: (query: string) => [...mealPlanningKeys.all, 'search', query] as const,
 };
 
 // ==================== Mappers ====================
@@ -1153,4 +1158,20 @@ export function useDeletePantryItemMutation(): ReturnType<typeof useMutation<str
   });
 }
 
+// ==================== Meal Search Query ====================
 
+/**
+ * Search for meals across recipes, custom meals, and food items
+ * Used for autocomplete in the meal planning grid
+ */
+export function useMealSearchQuery(
+  query: string,
+  options?: { enabled?: boolean }
+): ReturnType<typeof useQuery<mealPlanningAPI.MealSearchResult[]>> {
+  return useQuery({
+    queryKey: mealPlanningKeys.mealSearch(query),
+    queryFn: () => mealPlanningAPI.searchMeals(query, 10),
+    enabled: (options?.enabled ?? true) && query.trim().length >= 2,
+    staleTime: 1000 * 60 * 5, // 5 minutes - search results don't change often
+  });
+}

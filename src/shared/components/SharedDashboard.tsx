@@ -20,7 +20,6 @@ import {
   Map,
   DollarSign,
   Trophy,
-  Smile,
   Sparkles,
   Loader2,
   ChevronDown,
@@ -55,7 +54,6 @@ const MODULE_ICONS: Record<ShareableModule, React.ReactNode> = {
   notes: <FileText className="w-5 h-5" />,
   projects: <FolderOpen className="w-5 h-5" />,
   journal: <BookOpen className="w-5 h-5" />,
-  mood: <Smile className="w-5 h-5" />,
   skincare: <Sparkles className="w-5 h-5" />,
 };
 
@@ -73,7 +71,6 @@ const MODULE_COLORS: Record<ShareableModule, string> = {
   notes: 'text-slate-500',
   projects: 'text-cyan-500',
   journal: 'text-rose-500',
-  mood: 'text-yellow-500',
   skincare: 'text-pink-500',
 };
 
@@ -265,8 +262,6 @@ function SharedModuleContent({ module, data }: SharedModuleContentProps): React.
       case 'notes':
       case 'journal':
         return (record.title as string) || (record.content as string) || item.name || 'Entry';
-      case 'mood':
-        return (record.mood as string) ? `Mood: ${record.mood as string}` : 'Mood Entry';
       default:
         return item.title || item.name || 'Item';
     }

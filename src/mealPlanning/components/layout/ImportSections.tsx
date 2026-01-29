@@ -1,78 +1,52 @@
-import React, { type ReactElement, type FormEvent } from 'react';
-import { CalendarDays, ChefHat, Loader2, Plus, Youtube } from 'lucide-react';
+import React, { type ReactElement } from 'react';
+import { ChefHat, Link, Loader2, Plus } from 'lucide-react';
 import type { Recipe } from '../../../types';
 import { RecipeDraftPreview } from './RecipeDraftPreview';
+import type { RecipeImportState } from '../../hooks/useRecipeImport';
 
 interface ImportSectionsProps {
-  recipeImport: {
-    videoUrl: string;
-    setVideoUrl: (url: string) => void;
-    videoLang: string;
-    setVideoLang: (lang: string) => void;
-    isVideoImporting: boolean;
-    videoImportError: string | null;
-    videoDraft: Partial<Recipe> | null;
-    importFromVideo: () => Promise<void>;
-    clearVideoImport: () => void;
-    setVideoImportError?: (error: string | null) => void;
-    importUrl: string;
-    setImportUrl: (url: string) => void;
-    isImporting: boolean;
-    importError: string | null;
-    importDraft: Partial<Recipe> | null;
-    clearUrlImport: () => void;
-    textTitle: string;
-    setTextTitle: (title: string) => void;
-    textImageUrl: string;
-    setTextImageUrl: (url: string) => void;
-    textInput: string;
-    setTextInput: (input: string) => void;
-    isTextParsing: boolean;
-    textError: string | null;
-    textDraft: Partial<Recipe> | null;
-    parseFromText: () => Promise<void>;
-    clearTextImport: () => void;
-    setTextError?: (error: string | null) => void;
-  };
+  recipeImport: RecipeImportState;
   createRecipe: (recipe: Partial<Recipe>) => Promise<unknown>;
-  handleImportRecipe: (event: FormEvent<HTMLFormElement>) => Promise<void>;
-  saveImportedRecipe: () => Promise<void>;
 }
 
 /**
- * Recipe import sections (Video, URL, Text)
+ * Recipe import sections (URL and Text)
+ * URL import auto-detects YouTube videos vs recipe websites
  */
 export function ImportSections({
   recipeImport,
   createRecipe,
-  handleImportRecipe,
-  saveImportedRecipe,
 }: ImportSectionsProps): ReactElement {
   return (
     <section className="grid gap-4 lg:grid-cols-2">
-      {/* Video to Recipe (YouTube) */}
+      {/* Unified Import from URL (auto-detects YouTube vs recipe site) */}
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          void recipeImport.importFromVideo();
+          void recipeImport.importFromUrl();
         }}
-        className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
+        className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800"
       >
-        <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900 mb-4">
-          <Youtube className="h-5 w-5 text-rose-600" />
-          Video to recipe
+        <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">
+          <Link className="h-5 w-5 text-indigo-600" />
+          Import from URL
         </h2>
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <input
-              value={recipeImport.videoUrl}
-              onChange={(e) => recipeImport.setVideoUrl(e.target.value)}
-              placeholder="https://www.youtube.com/watch?v=..."
-              className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200"
-            />
+        <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">
+          Paste a recipe website or YouTube cooking video URL
+        </p>
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <input
+            value={recipeImport.importUrl}
+            onChange={(e) => recipeImport.setImportUrl(e.target.value)}
+            placeholder="https://..."
+            className="flex-1 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800"
+          />
+          {/* Show language selector only for YouTube URLs */}
+          {recipeImport.isYoutube && (
             <select
-              value={recipeImport.videoLang}
-              onChange={(e) => recipeImport.setVideoLang(e.target.value)}
-              className="rounded-lg border border-slate-300 px-2 py-2 text-sm focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200"
+              value={recipeImport.lang}
+              onChange={(e) => recipeImport.setLang(e.target.value)}
+              className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 px-2 py-2 text-sm text-slate-900 dark:text-slate-100 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800"
               title="Caption language"
             >
               <option value="en">English</option>
@@ -84,76 +58,45 @@ export function ImportSections({
               <option value="hi">Hindi</option>
               <option value="ja">Japanese</option>
             </select>
+          )}
           <button
             type="submit"
-            disabled={recipeImport.isVideoImporting}
-            className="inline-flex items-center justify-center gap-2 rounded-md bg-rose-600 hover:bg-rose-500 px-3 py-2 text-sm font-medium text-white transition disabled:opacity-60"
-          >
-            {recipeImport.isVideoImporting ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Plus className="h-4 w-4" />
-            )}
-            Convert
-          </button>
-        </div>
-        {recipeImport.videoImportError && (
-          <p className="mt-3 text-sm text-rose-600">{recipeImport.videoImportError}</p>
-        )}
-
-        {recipeImport.videoDraft && (
-          <RecipeDraftPreview
-            draft={recipeImport.videoDraft}
-            onSave={() => {
-              return (async (): Promise<void> => {
-                try {
-                  if (recipeImport.videoDraft) {
-                    await createRecipe(recipeImport.videoDraft);
-                  }
-                  recipeImport.clearVideoImport();
-                } catch {
-                  recipeImport.setVideoImportError?.('Failed to save recipe');
-                }
-              })();
-            }}
-            onCancel={recipeImport.clearVideoImport}
-          />
-        )}
-      </form>
-
-      {/* Clip from URL */}
-      <form onSubmit={(e) => void handleImportRecipe(e)} className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900 mb-4">
-          <CalendarDays className="h-5 w-5 text-indigo-600" />
-          Clip from URL
-        </h2>
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <input
-            value={recipeImport.importUrl}
-            onChange={(e) => recipeImport.setImportUrl(e.target.value)}
-            placeholder="https://example.com/recipe/..."
-            className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
-          />
-          <button
-            type="submit"
-            disabled={recipeImport.isImporting}
-            className="inline-flex items-center justify-center gap-2 rounded-md bg-indigo-600 hover:bg-indigo-500 px-3 py-2 text-sm font-medium text-white transition disabled:opacity-60"
+            disabled={recipeImport.isImporting || !recipeImport.importUrl.trim()}
+            className="inline-flex items-center justify-center gap-2 rounded-md bg-indigo-600 hover:bg-indigo-500 px-4 py-2 text-sm font-medium text-white transition disabled:opacity-60"
           >
             {recipeImport.isImporting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <Plus className="h-4 w-4" />
             )}
-            Clip recipe
+            {recipeImport.isYoutube ? 'Extract recipe' : 'Clip recipe'}
           </button>
         </div>
-        {recipeImport.importError && <p className="mt-3 text-sm text-rose-600">{recipeImport.importError}</p>}
+        {recipeImport.isYoutube && (
+          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+            🎬 YouTube detected — will extract recipe from video captions
+          </p>
+        )}
+        {recipeImport.importError && (
+          <p className="mt-3 text-sm text-rose-600">{recipeImport.importError}</p>
+        )}
 
         {recipeImport.importDraft && (
           <RecipeDraftPreview
             draft={recipeImport.importDraft}
-            onSave={saveImportedRecipe}
-            onCancel={recipeImport.clearUrlImport}
+            onSave={() => {
+              return (async (): Promise<void> => {
+                try {
+                  if (recipeImport.importDraft) {
+                    await createRecipe(recipeImport.importDraft);
+                  }
+                  recipeImport.clearImport();
+                } catch {
+                  recipeImport.setImportError?.('Failed to save recipe');
+                }
+              })();
+            }}
+            onCancel={recipeImport.clearImport}
           />
         )}
       </form>
@@ -164,37 +107,37 @@ export function ImportSections({
           e.preventDefault();
           void recipeImport.parseFromText();
         }}
-        className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
+        className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800"
       >
-        <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900 mb-4">
+        <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">
           <ChefHat className="h-5 w-5 text-amber-600" />
           Paste text
         </h2>
-        <div className="mt-3 grid gap-3">
+        <div className="grid gap-3">
           <input
             value={recipeImport.textTitle}
             onChange={(e) => recipeImport.setTextTitle(e.target.value)}
             placeholder="Optional title"
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
+            className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:border-amber-500 focus:outline-none"
           />
           <input
             value={recipeImport.textImageUrl}
             onChange={(e) => recipeImport.setTextImageUrl(e.target.value)}
             placeholder="Optional image URL"
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
+            className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:border-amber-500 focus:outline-none"
           />
           <textarea
-            rows={8}
+            rows={6}
             value={recipeImport.textInput}
             onChange={(e) => recipeImport.setTextInput(e.target.value)}
             placeholder="Ingredients and directions..."
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
+            className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:border-amber-500 focus:outline-none"
           />
         </div>
         <div className="mt-3 flex gap-2">
           <button
             type="submit"
-            disabled={recipeImport.isTextParsing}
+            disabled={recipeImport.isTextParsing || !recipeImport.textInput.trim()}
             className="inline-flex items-center justify-center gap-2 rounded-md bg-amber-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-amber-500 disabled:opacity-60"
           >
             {recipeImport.isTextParsing ? (
@@ -207,12 +150,14 @@ export function ImportSections({
           <button
             type="button"
             onClick={recipeImport.clearTextImport}
-            className="rounded-md border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+            className="rounded-md border border-slate-200 dark:border-slate-600 px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
           >
             Clear
           </button>
         </div>
-        {recipeImport.textError && <p className="mt-3 text-sm text-rose-600">{recipeImport.textError}</p>}
+        {recipeImport.textError && (
+          <p className="mt-3 text-sm text-rose-600">{recipeImport.textError}</p>
+        )}
 
         {recipeImport.textDraft && (
           <RecipeDraftPreview

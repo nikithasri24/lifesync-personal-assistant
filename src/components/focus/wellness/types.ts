@@ -1,6 +1,6 @@
 export interface WellnessEvent {
   id: string;
-  type: 'eye_strain' | 'posture' | 'hydration' | 'breathing' | 'mood' | 'energy' | 'break';
+  type: 'eye_strain' | 'posture' | 'hydration' | 'breathing' | 'energy' | 'break';
   timestamp: Date;
   completed: boolean;
   value?: number;
@@ -18,7 +18,6 @@ export interface HealthMetrics {
   screenTime: number;
   focusSessionsCount: number;
   focusQuality: number;
-  mood: number;
   energy: number;
 }
 
@@ -30,7 +29,6 @@ export interface WellnessSettings {
   hydrationReminders: boolean;
   hydrationInterval: number;
   breathingExercises: boolean;
-  moodTracking: boolean;
   energyTracking: boolean;
   sleepCorrelation: boolean;
   maxDailyFocusTime: number;

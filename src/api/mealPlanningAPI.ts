@@ -551,3 +551,145 @@ export async function deletePantryItem(id: string): Promise<void> {
     { domain: 'MealPlanningAPI', operation: 'deletePantryItem', data: { id } }
   );
 }
+
+// =====================================================
+// MEAL SEARCH (Unified autocomplete)
+// =====================================================
+
+export interface MealSearchResult {
+  id: string;
+  name: string;
+  type: 'recipe' | 'custom_meal' | 'food_item';
+  frequency?: number; // How many times used
+  lastUsed?: string; // ISO date string
+  calories?: number;
+  recipeId?: string; // For recipes, the actual recipe ID
+}
+
+/**
+ * Search for meals across recipes, historical custom meals, and food items
+ * Returns results ranked by relevance and frequency
+ */
+export async function searchMeals(query: string, limit: number = 10): Promise<MealSearchResult[]> {
+  return apiCall(
+    async () => {
+      if (!query || query.trim().length < 2) {
+        return [];
+      }
+
+      const user = await requireAuth();
+      const searchTerm = `%${query.trim()}%`;
+      const results: MealSearchResult[] = [];
+
+      // 1. Search recipes
+      const { data: recipes, error: recipesError } = await supabase
+        .from('recipes')
+        .select('id, name, calories_per_serving')
+        .eq('user_id', user.id)
+        .ilike('name', searchTerm)
+        .limit(limit);
+
+      if (recipesError) {
+        console.error('Recipe search error:', recipesError);
+      }
+
+      if (recipes) {
+        recipes.forEach((recipe) => {
+          results.push({
+            id: `recipe:${recipe.id}`,
+            name: recipe.name,
+            type: 'recipe',
+            calories: recipe.calories_per_serving ?? undefined,
+            recipeId: recipe.id,
+          });
+        });
+      }
+
+      // 2. Search historical custom meals from planned_meals
+      // Get distinct custom meals with frequency count
+      const { data: customMeals } = await supabase
+        .from('planned_meals')
+        .select('custom_meal, date, meal_plans!inner(user_id)')
+        .eq('meal_plans.user_id', user.id)
+        .not('custom_meal', 'is', null)
+        .ilike('custom_meal', searchTerm)
+        .order('date', { ascending: false })
+        .limit(50); // Get more to calculate frequency
+
+      if (customMeals) {
+        // Aggregate by custom_meal name (case-insensitive)
+        const mealMap = new Map<string, { name: string; count: number; lastUsed: string }>();
+        customMeals.forEach((meal) => {
+          if (!meal.custom_meal) return;
+          const key = meal.custom_meal.toLowerCase();
+          const existing = mealMap.get(key);
+          if (existing) {
+            existing.count++;
+            if (meal.date > existing.lastUsed) {
+              existing.lastUsed = meal.date;
+            }
+          } else {
+            mealMap.set(key, {
+              name: meal.custom_meal,
+              count: 1,
+              lastUsed: meal.date,
+            });
+          }
+        });
+
+        mealMap.forEach((item, key) => {
+          // Don't add if already in results as a recipe
+          if (!results.some((r) => r.name.toLowerCase() === key)) {
+            results.push({
+              id: `custom:${key}`,
+              name: item.name,
+              type: 'custom_meal',
+              frequency: item.count,
+              lastUsed: item.lastUsed,
+            });
+          }
+        });
+      }
+
+      // 3. Search food items (from nutrition tracking)
+      const { data: foodItems } = await supabase
+        .from('food_items')
+        .select('id, name, calories')
+        .or(`user_id.is.null,user_id.eq.${user.id}`)
+        .ilike('name', searchTerm)
+        .limit(limit);
+
+      if (foodItems) {
+        foodItems.forEach((food) => {
+          // Don't add if already in results
+          if (!results.some((r) => r.name.toLowerCase() === food.name.toLowerCase())) {
+            results.push({
+              id: `food:${food.id}`,
+              name: food.name,
+              type: 'food_item',
+              calories: food.calories,
+            });
+          }
+        });
+      }
+
+      // Sort results: recipes first, then by frequency, then alphabetically
+      results.sort((a, b) => {
+        // Recipes first
+        if (a.type === 'recipe' && b.type !== 'recipe') return -1;
+        if (b.type === 'recipe' && a.type !== 'recipe') return 1;
+
+        // Then by frequency (higher first)
+        const freqA = a.frequency ?? 0;
+        const freqB = b.frequency ?? 0;
+        if (freqA !== freqB) return freqB - freqA;
+
+        // Then alphabetically
+        return a.name.localeCompare(b.name);
+      });
+
+      return results.slice(0, limit);
+    },
+    { domain: 'MealPlanningAPI', operation: 'searchMeals', data: { query } }
+  );
+}

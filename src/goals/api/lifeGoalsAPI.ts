@@ -25,7 +25,6 @@ import type {
   DreamCategory,
   DreamPriority,
   DreamStatus,
-  CheckinMood,
   LifeGoalTemplate,
   MilestoneTemplate,
 } from '../types/lifeGoals';
@@ -82,7 +81,6 @@ interface LifeGoalCheckinRow {
   check_in_date: string;
   progress_update: number | null;
   notes: string | null;
-  mood: CheckinMood | null;
   blockers: string | null;
   wins: string | null;
   next_actions: string | null;
@@ -394,7 +392,6 @@ export async function createCheckin(input: CreateCheckinInput): Promise<LifeGoal
       goal_id: input.goalId,
       progress_update: input.progressUpdate,
       notes: input.notes,
-      mood: input.mood,
       blockers: input.blockers,
       wins: input.wins,
       next_actions: input.nextActions,
@@ -735,7 +732,6 @@ function mapDbToCheckin(data: LifeGoalCheckinRow): LifeGoalCheckin {
     checkInDate: data.check_in_date,
     progressUpdate: data.progress_update ?? undefined,
     notes: data.notes ?? undefined,
-    mood: data.mood ?? undefined,
     blockers: data.blockers ?? undefined,
     wins: data.wins ?? undefined,
     nextActions: data.next_actions ?? undefined,

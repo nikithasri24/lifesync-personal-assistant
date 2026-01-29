@@ -9,7 +9,6 @@ import { KeyMetricsGrid } from '../analytics/components/KeyMetricsGrid';
 import { WeeklyProductivityChart } from '../analytics/components/WeeklyProductivityChart';
 import { HabitStreaksSection } from '../analytics/components/HabitStreaksSection';
 import { TaskInsightsSection } from '../analytics/components/TaskInsightsSection';
-import { MoodTrendsSection } from '../analytics/components/MoodTrendsSection';
 
 interface Todo extends TaskData {
   completed: boolean;
@@ -37,7 +36,7 @@ export default function Analytics() {
   const { data: habits = [] } = useHabits();
   const { data: habitEntries = [] } = useHabitEntries();
   const { data: tasks = [] } = useTasks();
-  const { data: journalEntries = [] } = useJournalEntries() as { data: Array<{ created_at?: string; mood?: string; id?: string }> };
+  const { data: journalEntries = [] } = useJournalEntries() as { data: Array<{ created_at?: string; id?: string }> };
 
   // Combine habits with their entries
   const habitsWithEntries: HabitWithEntries[] = habits.map((habit): HabitWithEntries => ({
@@ -178,8 +177,6 @@ export default function Analytics() {
           todos={todos}
         />
       </div>
-
-      <MoodTrendsSection journalEntries={journalEntries} />
     </PageLayoutV2>
   );
 }

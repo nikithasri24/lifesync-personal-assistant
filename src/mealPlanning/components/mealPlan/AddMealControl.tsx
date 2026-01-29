@@ -2,11 +2,13 @@
  * Add Meal Control Component
  *
  * Provides a button to add meals to a specific cell in the meal planning grid.
- * When clicked, it prompts the user to enter a meal name.
+ * When clicked, it prompts the user to enter a meal name with autocomplete.
  */
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Plus, X } from 'lucide-react';
+import { MealAutocomplete } from './MealAutocomplete';
+import type { MealSearchResult } from '@/api/mealPlanningAPI';
 
 export interface AddMealControlProps {
   dateKey: string;
@@ -111,6 +113,20 @@ export function AddMealControl({
     }
   };
 
+  // Handle selection from autocomplete dropdown
+  const handleAutocompleteSelect = (result: MealSearchResult) => {
+    // Use the meal name directly, submit immediately
+    if (onAddMeal) {
+      onAddMeal(result.name);
+      setMealName('');
+      setIsEditing(false);
+      if (isSelected && setSharedInputValue && setIsAnySelectedCellEditing) {
+        setSharedInputValue('');
+        setIsAnySelectedCellEditing(false);
+      }
+    }
+  };
+
   if (effectiveIsEditing) {
     return (
       <div
@@ -120,11 +136,10 @@ export function AddMealControl({
           e.stopPropagation();
         }}
       >
-        <input
-          ref={inputRef}
-          type="text"
+        <MealAutocomplete
           value={effectiveValue}
-          onChange={(e) => handleInputChange(e.target.value)}
+          onChange={handleInputChange}
+          onSelect={handleAutocompleteSelect}
           onKeyDown={handleKeyDown}
           onBlur={() => {
             // Don't auto-cancel when in multi-cell selection mode
@@ -137,8 +152,8 @@ export function AddMealControl({
               if (effectiveIsEditing) handleCancel();
             }, 200);
           }}
-          placeholder={`e.g., Scrambled eggs, Oatmeal...`}
-          className="flex-1 min-w-0 px-3 py-1.5 text-sm border-0 bg-slate-50 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-slate-100 placeholder:text-slate-400"
+          placeholder="e.g., Scrambled eggs, Oatmeal..."
+          inputRef={inputRef}
         />
         <button
           type="button"

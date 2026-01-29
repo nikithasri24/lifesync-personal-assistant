@@ -6,6 +6,8 @@ import { toKey, parseLocalDateKey } from '../../utils';
 import CellWithMeals from '../mealPlan/CellWithMeals';
 import AddMealControl from '../mealPlan/AddMealControl';
 import { MealBacklogSection } from './MealBacklogSection';
+import { useUndoRedo } from '../../../contexts/UndoRedoContext';
+import { MovePlannedMealCommand } from '../../../commands/MealPlanningCommands';
 
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack'];
 
@@ -70,6 +72,8 @@ export function WeeklyGrid({
   setIsAnySelectedCellEditing,
   addMealToSelectedCells,
 }: WeeklyGridProps): ReactElement {
+  const { executeCommand } = useUndoRedo();
+
   return (
     <div className="mt-6 overflow-x-auto">
       <table className="w-full border-collapse rounded-lg overflow-hidden border border-slate-200">
@@ -195,18 +199,23 @@ export function WeeklyGrid({
 
                           const mealId = e.dataTransfer.getData('text/meal-id');
                           if (!mealId) return;
-                          if (e.altKey) {
-                            const source = activePlan.meals?.find((m) => m.id === mealId);
-                            if (!source) return;
+                          const fromBacklog = e.dataTransfer.getData('text/from-backlog') === 'true';
+                          const sourceMeal = activePlan.meals?.find((m) => m.id === mealId);
+                          if (!sourceMeal) return;
+
+                          const mealName = recipes.find(r => r.id === sourceMeal.recipeId)?.name || sourceMeal.customMeal || 'Meal';
+
+                          if (e.altKey && !fromBacklog) {
+                            // Alt+drag creates a copy (no undo for this)
                             await createPlannedMeal({
                               planId: activePlan.id,
                               meal: {
                                 date: parseLocalDateKey(key),
                                 mealType,
-                                recipeId: source.recipeId,
-                                customMeal: source.customMeal,
-                                servings: source.servings ?? 4,
-                                peopleCount: source.peopleCount ?? source.servings ?? 4,
+                                recipeId: sourceMeal.recipeId,
+                                customMeal: sourceMeal.customMeal,
+                                servings: sourceMeal.servings ?? 4,
+                                peopleCount: sourceMeal.peopleCount ?? sourceMeal.servings ?? 4,
                                 status: 'planned',
                                 notes: undefined,
                                 preparedAt: undefined,
@@ -214,10 +223,17 @@ export function WeeklyGrid({
                               },
                             });
                           } else {
-                            await updatePlannedMeal({
+                            // Move the meal to the new date/mealType - use command for undo
+                            const command = new MovePlannedMealCommand(
                               mealId,
-                              updates: { date: parseLocalDateKey(key), mealType },
-                            });
+                              mealName,
+                              parseLocalDateKey(key),
+                              mealType,
+                              sourceMeal.date,
+                              sourceMeal.mealType,
+                              fromBacklog
+                            );
+                            await executeCommand(command);
                           }
                         })();
                       }}

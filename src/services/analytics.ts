@@ -37,8 +37,6 @@ export interface FinanceAnalytics {
 }
 
 export interface WellbeingAnalytics {
-  averageMood: number;
-  moodTrend: Array<{ date: string; mood: number }>;
   wellbeingScore: number; // 0-100
   journalStreak: number;
 }
@@ -151,46 +149,14 @@ export async function getWellbeingAnalytics(dateRange: DateRange): Promise<Wellb
     // Fetch journal entries using API layer
     const journalEntries = await getJournalEntriesForAnalytics(dateRange);
 
-    // Filter entries with mood
-    const entriesWithMood = journalEntries.filter(e => e.mood !== null);
-
-    // Calculate average mood (assuming mood is 1-5)
-    const moodValues = entriesWithMood.map((e) => {
-      const mood = e.mood;
-      if (typeof mood === 'number') return mood;
-      // Map string moods to numbers
-      const moodMap: Record<string, number> = {
-        terrible: 1,
-        bad: 2,
-        okay: 3,
-        good: 4,
-        great: 5,
-      };
-      return moodMap[String(mood).toLowerCase()] || 3;
-    });
-
-    const averageMood =
-      moodValues.length > 0
-        ? moodValues.reduce((sum, m) => sum + m, 0) / moodValues.length
-        : 3;
-
-    // Build mood trend
-    const moodTrend = entriesWithMood.map((e) => ({
-      date: e.date,
-      mood: typeof e.mood === 'number' ? e.mood : 3,
-    }));
-
-    // Calculate wellbeing score
-    const moodScore = (averageMood / 5) * 50;
-    const journalScore = Math.min((entriesWithMood.length / 7) * 50, 50);
-    const wellbeingScore = Math.round(moodScore + journalScore);
+    // Calculate wellbeing score based on journaling consistency
+    const journalScore = Math.min((journalEntries.length / 7) * 100, 100);
+    const wellbeingScore = Math.round(journalScore);
 
     // Calculate journal streak
-    const journalStreak = calculateJournalStreak(entriesWithMood.map((e) => e.date));
+    const journalStreak = calculateJournalStreak(journalEntries.map((e) => e.date));
 
     return {
-      averageMood: Math.round(averageMood * 10) / 10,
-      moodTrend,
       wellbeingScore,
       journalStreak,
     };

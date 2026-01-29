@@ -31,8 +31,8 @@ export const CellWithMeals: React.FC<CellWithMealsProps> = ({
 
   return (
     <>
-      <div className="space-y-1 relative" style={{ zIndex: 20, position: 'relative' }}>
-        <ul className="space-y-1">
+      <div className="relative" style={{ zIndex: 20, position: 'relative' }}>
+        <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
           {dayMeals.map((meal) => (
             <MealItem
               key={meal.id}

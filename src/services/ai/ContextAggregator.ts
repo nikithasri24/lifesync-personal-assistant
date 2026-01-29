@@ -44,7 +44,6 @@ export interface TodaysContext {
   
   // Wellness
   wellness: {
-    latestMood?: number;
     latestEnergy?: number;
     journalEntryToday: boolean;
   };
@@ -68,7 +67,6 @@ export interface UserPatterns {
   bestHabitStreak: number;
   
   // Wellness patterns
-  avgMood: number | null;
   avgEnergy: number | null;
 }
 
@@ -186,10 +184,7 @@ class ContextAggregator {
     const startDate = new Date(`${today}T00:00:00`);
     const journals = await cacheAccessor.getJournalEntries({ startDate });
 
-    // TODO: Add mood tracking API when available
-    // For now, return default values
     return {
-      latestMood: undefined,
       latestEnergy: undefined,
       journalEntryToday: journals.length > 0,
     };
@@ -213,7 +208,6 @@ class ContextAggregator {
         avgFocusMinutes: 0,
         habitCompletionRate: 0,
         bestHabitStreak: 0,
-        avgMood: null,
         avgEnergy: null,
       };
     }
@@ -224,11 +218,6 @@ class ContextAggregator {
     const habitsDue = days.reduce((sum, d) => sum + (d.habits_due || 0), 0);
     const habitsCompleted = days.reduce((sum, d) => sum + (d.habits_completed || 0), 0);
     const habitCompletionRate = habitsDue > 0 ? habitsCompleted / habitsDue : 0;
-
-    const moodDays = days.filter(d => d.wellness_mood_avg != null);
-    const avgMood = moodDays.length > 0
-      ? moodDays.reduce((sum, d) => sum + (d.wellness_mood_avg || 0), 0) / moodDays.length
-      : null;
 
     const energyDays = days.filter(d => d.wellness_energy_avg != null);
     const avgEnergy = energyDays.length > 0
@@ -242,7 +231,6 @@ class ContextAggregator {
       avgFocusMinutes: Math.round(avgFocusMinutes),
       habitCompletionRate: Math.round(habitCompletionRate * 100),
       bestHabitStreak: 0, // TODO: Query habits table
-      avgMood,
       avgEnergy,
     };
   }

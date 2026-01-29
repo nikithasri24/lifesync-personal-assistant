@@ -166,7 +166,6 @@ export interface AnalyticsDaily {
   avg_session_length: number;
   
   // Wellness
-  mood_avg: number | null;
   energy_avg: number | null;
   journal_entries: number;
 

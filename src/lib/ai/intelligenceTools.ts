@@ -196,7 +196,6 @@ async function executeGetWeeklyReport(
       },
 
       wellness: {
-        avg_mood: patterns.avgMood,
         avg_energy: patterns.avgEnergy
       },
 
@@ -231,10 +230,6 @@ async function executeGetWeeklyReport(
 
     if (patterns.habitCompletionRate < 70) {
       report.recommendations.push('Set morning reminders for habits to build consistency');
-    }
-
-    if (patterns.avgMood && patterns.avgMood < 3) {
-      report.recommendations.push('Consider adding mood-boosting activities like walks or meditation');
     }
 
     report.recommendations.push('Review your goals and adjust priorities for next week');
@@ -310,16 +305,6 @@ async function executeGetPatternInsights(
 
     // Wellness insights
     if (focusArea === 'all' || focusArea === 'wellness') {
-      if (patterns.avgMood !== null) {
-        insights.push({
-          area: 'wellness',
-          observation: `Your average mood is ${patterns.avgMood?.toFixed(1)}/5`,
-          suggestion: patterns.avgMood && patterns.avgMood < 3.5
-            ? 'Consider journaling or mindfulness exercises to boost mood'
-            : 'Great emotional balance! Keep up your self-care routines'
-        });
-      }
-
       if (!today.wellness.journalEntryToday) {
         insights.push({
           area: 'wellness',
@@ -907,7 +892,7 @@ const analyzeSentimentDefinition: ToolDefinition = {
   type: 'function',
   function: {
     name: 'analyze_sentiment',
-    description: 'Analyze mood and sentiment from journal entries. Use for "how have I been feeling?", "what are my emotional patterns?", "analyze my mood".',
+    description: 'Analyze sentiment from journal entries. Use for "how have I been feeling?", "what are my emotional patterns?", "analyze my sentiment".',
     parameters: {
       type: 'object',
       properties: {
@@ -969,7 +954,7 @@ async function executeAnalyzeSentiment(
         trend: insights.sentimentTrend,
         dominantEmotions: insights.dominantEmotions,
         recommendations: insights.recommendations,
-        moodTrends: insights.moodTrends.slice(-7), // Last 7 days
+        sentimentTrends: insights.sentimentTrends.slice(-7), // Last 7 days
       },
     };
   } catch (error) {

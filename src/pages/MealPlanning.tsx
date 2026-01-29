@@ -1,9 +1,9 @@
 /* eslint-disable max-lines */
-import React, { type ReactElement, useEffect, useMemo, useState, useCallback, type FormEvent } from 'react';
+import React, { type ReactElement, useEffect, useMemo, useState, useCallback } from 'react';
 import { logger } from '../services/logger';
 import { createPortal } from 'react-dom';
 import { addDays, format, isSameWeek, startOfWeek, isSameDay } from 'date-fns';
-import { ChefHat, Plus, Save, Heart, Youtube, Search, X } from 'lucide-react';
+import { ChefHat, Plus, Save, Heart, Search, X } from 'lucide-react';
 import DatePickerPopover from '../components/DatePickerPopover';
 import ErrorState from '../components/ErrorState';
 import { useComposedStore } from '../stores/useComposedStore';
@@ -38,6 +38,7 @@ import AddMealControl from '../mealPlanning/components/mealPlan/AddMealControl';
 import { MealPlanToolbar } from '../mealPlanning/components/layout/MealPlanToolbar';
 import { SelectionToolbar } from '../mealPlanning/components/layout/SelectionToolbar';
 import { WeeklyOverviewSection } from '../mealPlanning/components/layout/WeeklyOverviewSection';
+import { MealPlanNutritionSummary } from '../mealPlanning/components/layout/MealPlanNutritionSummary';
 import { SavedRecipesSection } from '../mealPlanning/components/layout/SavedRecipesSection';
 import { ImportSections } from '../mealPlanning/components/layout/ImportSections';
 import { ModalContainer } from '../mealPlanning/components/layout/ModalContainer';
@@ -45,7 +46,6 @@ import { ModalContainer } from '../mealPlanning/components/layout/ModalContainer
 
 // Import utilities
 import { toKey, ensureDate, parseLocalDateKey } from '../mealPlanning/utils';
-import { fetchClippedRecipe } from '../mealPlanning/utils/recipeUtils';
 
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack'];
 
@@ -188,7 +188,9 @@ const MealPlanning: React.FC = () => {
   }, [weekNav.activePlan?.meals]);
 
   const mealsByDate: Record<string, PlannedMeal[]> = useMemo(() => {
-    const result = plannedMeals.reduce<Record<string, PlannedMeal[]>>((acc, meal) => {
+    // Filter out postponed meals - they appear in the backlog instead
+    const activeMeals = plannedMeals.filter((meal) => !meal.isPostponed);
+    const result = activeMeals.reduce<Record<string, PlannedMeal[]>>((acc, meal) => {
       const key = toKey(ensureDate(meal.date));
       if (!acc[key]) {
         acc[key] = [];
@@ -200,35 +202,6 @@ const MealPlanning: React.FC = () => {
   }, [plannedMeals]);
 
   const isLoading = mealPlansLoading || weekNav.isEnsuringPlan;
-
-  // Handle URL import
-  const handleImportRecipe = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
-    event.preventDefault();
-    if (!recipeImport.importUrl.trim()) return;
-
-    recipeImport.setIsImporting(true);
-    recipeImport.setImportError(null);
-    try {
-      const recipe = await fetchClippedRecipe(recipeImport.importUrl.trim());
-      recipeImport.setImportDraft(recipe);
-      recipeImport.setImportUrl('');
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to import recipe.';
-      recipeImport.setImportError(message);
-    } finally {
-      recipeImport.setIsImporting(false);
-    }
-  };
-
-  const saveImportedRecipe = async (): Promise<void> => {
-    if (!recipeImport.importDraft) return;
-    try {
-      await createRecipeMutation.mutateAsync(recipeImport.importDraft);
-      recipeImport.clearUrlImport();
-    } catch (_e) {
-      recipeImport.setImportError('Failed to save recipe');
-    }
-  };
 
   // Copy week handler
   const handleCopyWeek = async (): Promise<void> => {
@@ -294,12 +267,17 @@ const MealPlanning: React.FC = () => {
         addMealToSelectedCells={multiCellSelection.addMealToSelectedCells}
       />
 
+      {/* Nutrition summary */}
+      <MealPlanNutritionSummary
+        weekDays={weekNav.weekDays}
+        plannedMeals={plannedMeals}
+        recipes={recipes}
+      />
+
       {/* Import sections */}
       <ImportSections
         recipeImport={recipeImport}
         createRecipe={createRecipeWrapper}
-        handleImportRecipe={handleImportRecipe}
-        saveImportedRecipe={saveImportedRecipe}
       />
 
       {/* Saved recipes */}

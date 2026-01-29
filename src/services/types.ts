@@ -115,7 +115,6 @@ export interface HabitEntryData {
   date: string;
   value?: number;
   notes?: string;
-  mood?: string;
   created_at?: string;
 }
 
@@ -315,8 +314,6 @@ export interface FocusSessionData {
   status: 'in-progress' | 'completed' | 'abandoned';
   breaks_taken?: number | null;
   distractions?: number | null;
-  mood_before?: string | null;
-  mood_after?: string | null;
   productivity_score?: number | null; // 1-10
   notes?: string | null;
   environment_data?: Record<string, unknown> | null;

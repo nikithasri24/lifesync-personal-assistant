@@ -1,6 +1,6 @@
 /**
  * Sentiment Analysis Service
- * Analyzes mood and sentiment from journal entries and text content
+ * Analyzes sentiment from journal entries and text content
  *
  * ARCHITECTURE: Uses API layer for all data access (no direct Supabase calls)
  */
@@ -19,7 +19,7 @@ export interface SentimentResult {
   confidence: number;
 }
 
-export interface MoodTrend {
+export interface SentimentTrend {
   date: string;
   sentiment: Sentiment;
   score: number;
@@ -38,7 +38,7 @@ export interface JournalInsights {
   sentimentTrend: 'improving' | 'declining' | 'stable';
   dominantEmotions: string[];
   emotionalPatterns: EmotionalPattern[];
-  moodTrends: MoodTrend[];
+  sentimentTrends: SentimentTrend[];
   recommendations: string[];
 }
 
@@ -137,7 +137,7 @@ class SentimentAnalysisService {
         sentimentTrend: 'stable',
         dominantEmotions: [],
         emotionalPatterns: [],
-        moodTrends: [],
+        sentimentTrends: [],
         recommendations: ['Start journaling to track your emotional patterns'],
       };
     }
@@ -177,10 +177,10 @@ class SentimentAnalysisService {
     // Generate recommendations
     const recommendations = this.generateRecommendations(avgScore, trend, dominantEmotions);
 
-    // Build mood trends
-    const moodTrends: MoodTrend[] = [];
+    // Build sentiment trends
+    const sentimentTrends: SentimentTrend[] = [];
     const dateGroups: Record<string, { scores: number[]; sentiments: Sentiment[] }> = {};
-    
+
     analyses.forEach(a => {
       if (!dateGroups[a.date]) {
         dateGroups[a.date] = { scores: [], sentiments: [] };
@@ -191,7 +191,7 @@ class SentimentAnalysisService {
 
     Object.entries(dateGroups).forEach(([date, data]) => {
       const avgDayScore = data.scores.reduce((sum, s) => sum + s, 0) / data.scores.length;
-      moodTrends.push({
+      sentimentTrends.push({
         date,
         sentiment: this.scoreToSentiment(avgDayScore),
         score: avgDayScore,
@@ -204,7 +204,7 @@ class SentimentAnalysisService {
       sentimentTrend: trend,
       dominantEmotions,
       emotionalPatterns: [],
-      moodTrends,
+      sentimentTrends,
       recommendations,
     };
   }
@@ -236,7 +236,7 @@ class SentimentAnalysisService {
     }
 
     if (trend === 'declining') {
-      recs.push('Your mood has been declining - consider what might be causing this');
+      recs.push('Your sentiment has been declining - consider what might be causing this');
     }
 
     if (trend === 'improving') {

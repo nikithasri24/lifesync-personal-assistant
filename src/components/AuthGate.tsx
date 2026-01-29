@@ -101,11 +101,11 @@ export function AuthGate({ children }: AuthGateProps) {
           </button>
         </form>
 
-        <div className="mt-6 text-center text-sm text-muted">
+        <div className="mt-6 text-center text-sm">
           {mode === 'signin' ? (
             <button
               type="button"
-              className="text-primary hover:underline"
+              className="text-blue-400 hover:text-blue-300 hover:underline font-medium"
               onClick={() => {
                 clearError()
                 setMode('signup')
@@ -116,7 +116,7 @@ export function AuthGate({ children }: AuthGateProps) {
           ) : (
             <button
               type="button"
-              className="text-primary hover:underline"
+              className="text-blue-400 hover:text-blue-300 hover:underline font-medium"
               onClick={() => {
                 clearError()
                 setMode('signin')
