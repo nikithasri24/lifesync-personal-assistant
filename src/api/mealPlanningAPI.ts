@@ -36,30 +36,6 @@ export async function getMealPlans(): Promise<MealPlanData[]> {
 }
 
 /**
- * Get a single meal plan by ID
- */
-export async function getMealPlan(id: string): Promise<MealPlanData> {
-  return apiCall(
-    async () => {
-      const user = await requireAuth();
-
-      const result = await supabase
-        .from('meal_plans')
-        .select('*, planned_meals(*)')
-        .eq('id', id)
-        .eq('user_id', user.id)
-        .order('date', { foreignTable: 'planned_meals', ascending: true })
-        .order('created_at', { foreignTable: 'planned_meals', ascending: true })
-        .single();
-
-      const data = handleSupabaseResponse(result, 'Meal Plan', id);
-      return data as MealPlanData;
-    },
-    { domain: 'MealPlanningAPI', operation: 'getMealPlan', data: { id } }
-  );
-}
-
-/**
  * Create a new meal plan
  */
 export async function createMealPlan(
