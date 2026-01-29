@@ -202,7 +202,6 @@ export interface WellnessSettings {
   hydrationReminders: boolean;
   hydrationInterval: number;
   breathingExercises: boolean;
-  moodTracking: boolean;
   energyTracking: boolean;
   sleepCorrelation: boolean;
   maxDailyFocusTime: number;

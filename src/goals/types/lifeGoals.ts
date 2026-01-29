@@ -13,8 +13,6 @@ export type DreamCategory = 'travel' | 'experiences' | 'possessions' | 'achievem
 export type DreamPriority = 'someday' | 'within-5-years' | 'within-10-years' | 'lifetime';
 export type DreamStatus = 'dreaming' | 'planning' | 'in-progress' | 'achieved' | 'no-longer-interested';
 
-export type CheckinMood = 'great' | 'good' | 'okay' | 'struggling' | 'stuck';
-
 export interface LifeGoal {
   id: string;
   userId: string;
@@ -76,7 +74,6 @@ export interface LifeGoalCheckin {
   checkInDate: string;
   progressUpdate?: number;
   notes?: string;
-  mood?: CheckinMood;
   blockers?: string;
   wins?: string;
   nextActions?: string;
@@ -215,7 +212,6 @@ export interface CreateCheckinInput {
   goalId: string;
   progressUpdate?: number;
   notes?: string;
-  mood?: CheckinMood;
   blockers?: string;
   wins?: string;
   nextActions?: string;

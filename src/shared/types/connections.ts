@@ -42,7 +42,6 @@ export type ShareableModule =
   | 'notes'
   | 'projects'
   | 'journal'
-  | 'mood'
   | 'skincare';
 
 // =====================================================
@@ -271,15 +270,6 @@ export const MODULE_CONFIGS: Record<ShareableModule, ModulePermissionConfig> = {
     label: 'Journal',
     description: 'Daily journal entries',
     icon: 'BookOpen',
-    defaultLevel: 'none',
-    supportedLevels: ['none', 'view'],
-    hasSettings: false,
-  },
-  mood: {
-    module: 'mood',
-    label: 'Mood',
-    description: 'Mood tracking and wellbeing',
-    icon: 'Smile',
     defaultLevel: 'none',
     supportedLevels: ['none', 'view'],
     hasSettings: false,

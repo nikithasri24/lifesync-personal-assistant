@@ -62,7 +62,7 @@ function mapDbToJournalEntry(data: JournalEntryDB): JournalEntry {
 
 /**
  * Get all journal entries for the current user
- * @param filters - Optional filters for search, moods, tags, and date range
+ * @param filters - Optional filters for search, tags, and date range
  * @returns Promise<JournalEntry[]> - Array of journal entries matching the filters
  * @throws Error if user not authenticated
  */

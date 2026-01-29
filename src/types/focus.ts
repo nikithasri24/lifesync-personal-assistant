@@ -82,7 +82,6 @@ export interface ProductivityMetrics {
   flowStateAchieved: boolean;
   taskCompletionRate: number; // 0-100
   energyLevel?: number; // 1-10, user reported
-  moodRating?: number; // 1-10, user reported
 }
 
 export interface FocusEnvironment {

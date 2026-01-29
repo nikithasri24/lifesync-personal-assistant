@@ -13,7 +13,6 @@ export interface FocusSession {
   taskId?: string;
   projectId?: string;
   notes?: string;
-  mood?: 'great' | 'good' | 'okay' | 'tired' | 'stressed';
   energy?: 1 | 2 | 3 | 4 | 5;
   productivity?: 1 | 2 | 3 | 4 | 5;
   tags?: string[];
@@ -72,7 +71,6 @@ export interface FocusAnalytics {
   focusQuality: number;
   peakHours: number[];
   distractionStats: DistractionAnalytics;
-  moodStats: MoodAnalytics;
   insights: Insight[];
   goals: Goal[];
   achievements: Achievement[];
@@ -91,17 +89,6 @@ export interface DistractionAnalytics {
   allowed: number;
 }
 
-export interface MoodAnalytics {
-  averageMood: number;
-  averageEnergy: number;
-  averageProductivity: number;
-  correlations: {
-    moodVsProductivity: number;
-    energyVsCompletion: number;
-    timeOfDayVsMood: Record<number, number>;
-  };
-}
-
 export interface DailyStats {
   date: Date;
   sessions: number;
@@ -109,7 +96,6 @@ export interface DailyStats {
   completions: number;
   distractions: number;
   productivity: number;
-  mood: number;
   energy: number;
   goalsMet: number;
   xpEarned: number;

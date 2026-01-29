@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, MessageSquare, TrendingUp, AlertCircle, Lightbulb, Target } from 'lucide-react';
-import type { LifeGoal, LifeGoalCheckin, CreateCheckinInput, CheckinMood } from '../types/lifeGoals';
+import type { LifeGoal, LifeGoalCheckin, CreateCheckinInput } from '../types/lifeGoals';
 import { createCheckin, getGoalCheckins } from '../api/lifeGoalsAPI';
 import { lifeGoalsKeys, useUpdateLifeGoalMutation } from '@/hooks/useLifeGoalsQuery';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -10,20 +10,11 @@ interface GoalCheckinsProps {
   goal: LifeGoal;
 }
 
-const MOOD_OPTIONS: { value: CheckinMood; label: string; emoji: string; color: string }[] = [
-  { value: 'great', label: 'Great', emoji: '🎉', color: 'text-emerald-600' },
-  { value: 'good', label: 'Good', emoji: '😊', color: 'text-green-600' },
-  { value: 'okay', label: 'Okay', emoji: '😐', color: 'text-yellow-600' },
-  { value: 'struggling', label: 'Struggling', emoji: '😓', color: 'text-orange-600' },
-  { value: 'stuck', label: 'Stuck', emoji: '😰', color: 'text-red-600' },
-];
-
 export function GoalCheckins({ goal }: GoalCheckinsProps): React.ReactElement {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newCheckin, setNewCheckin] = useState({
     progressUpdate: goal.progress,
     notes: '',
-    mood: 'good' as CheckinMood,
     blockers: '',
     wins: '',
     nextActions: '',
@@ -70,7 +61,6 @@ export function GoalCheckins({ goal }: GoalCheckinsProps): React.ReactElement {
       setNewCheckin({
         progressUpdate: goal.progress,
         notes: '',
-        mood: 'good',
         blockers: '',
         wins: '',
         nextActions: '',
@@ -83,7 +73,6 @@ export function GoalCheckins({ goal }: GoalCheckinsProps): React.ReactElement {
       goalId: goal.id,
       progressUpdate: newCheckin.progressUpdate,
       notes: newCheckin.notes || undefined,
-      mood: newCheckin.mood,
       blockers: newCheckin.blockers || undefined,
       wins: newCheckin.wins || undefined,
       nextActions: newCheckin.nextActions || undefined,
@@ -141,28 +130,6 @@ export function GoalCheckins({ goal }: GoalCheckinsProps): React.ReactElement {
       {/* Add check-in form */}
       {showAddForm && (
         <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-4">
-          {/* Mood selector */}
-          <div>
-            <label className="block text-xs font-medium text-slate-700 mb-2">How are you feeling?</label>
-            <div className="flex gap-2">
-              {MOOD_OPTIONS.map((mood) => (
-                <button
-                  key={mood.value}
-                  type="button"
-                  onClick={() => setNewCheckin({ ...newCheckin, mood: mood.value })}
-                  className={`flex-1 rounded-lg border p-2 text-center transition ${
-                    newCheckin.mood === mood.value
-                      ? 'border-indigo-500 bg-indigo-50'
-                      : 'border-slate-300 bg-white hover:border-slate-400'
-                  }`}
-                >
-                  <div className="text-2xl">{mood.emoji}</div>
-                  <div className={`text-xs font-medium ${mood.color}`}>{mood.label}</div>
-                </button>
-              ))}
-            </div>
-          </div>
-
           {/* Progress update */}
           <div>
             <label className="block text-xs font-medium text-slate-700 mb-2">
@@ -283,17 +250,11 @@ export function GoalCheckins({ goal }: GoalCheckinsProps): React.ReactElement {
           {[...checkins]
             .sort((a, b) => new Date(b.checkInDate).getTime() - new Date(a.checkInDate).getTime())
             .map((checkin) => {
-              const moodOption = MOOD_OPTIONS.find((m) => m.value === checkin.mood);
               return (
                 <li key={checkin.id} className="rounded-lg border border-slate-200 bg-white p-4 space-y-3">
                   {/* Header */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      {moodOption && (
-                        <span className="text-2xl" title={moodOption.label}>
-                          {moodOption.emoji}
-                        </span>
-                      )}
                       <div>
                         <p className="text-xs font-medium text-slate-900">
                           {new Date(checkin.checkInDate).toLocaleDateString('en-US', {

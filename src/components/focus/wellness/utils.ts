@@ -27,13 +27,6 @@ export const generateMockData = (): { events: WellnessEvent[]; metrics: HealthMe
         timestamp: new Date(date.getTime() + 10 * 60 * 60 * 1000),
         completed: Math.random() > 0.2,
         value: Math.floor(Math.random() * 3) + 1
-      },
-      {
-        id: `mood_${i}`,
-        type: 'mood',
-        timestamp: new Date(date.getTime() + 18 * 60 * 60 * 1000),
-        completed: true,
-        value: Math.floor(Math.random() * 5) + 1
       }
     ];
 
@@ -49,7 +42,6 @@ export const generateMockData = (): { events: WellnessEvent[]; metrics: HealthMe
       screenTime: Math.random() * 120 + 300,
       focusSessionsCount: Math.floor(Math.random() * 8) + 2,
       focusQuality: Math.floor(Math.random() * 5) + 1,
-      mood: Math.floor(Math.random() * 5) + 1,
       energy: Math.floor(Math.random() * 5) + 1
     });
   }

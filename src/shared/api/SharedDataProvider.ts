@@ -215,7 +215,6 @@ async function fetchModuleData(
     notes: 'notes',
     projects: 'projects',
     journal: 'journal_entries',
-    mood: 'journal_entries',
     travel: 'visited_locations',
     visa: 'user_visas',
     'trip-planner': 'trips',
@@ -235,10 +234,6 @@ async function fetchModuleData(
     .select('*')
     .eq('user_id', userId)
     .range(offset, Math.max(offset + limit - 1, offset));
-
-  if (module === 'mood' && table === 'journal_entries') {
-    query = query.not('mood', 'is', null);
-  }
 
   if (settings?.includeIds && settings.includeIds.length > 0) {
     query = query.in('id', settings.includeIds);

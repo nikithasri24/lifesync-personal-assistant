@@ -45,10 +45,6 @@ const startFocusSessionDefinition: ToolDefinition = {
           type: 'string',
           description: 'Notes about what you plan to work on - optional',
         },
-        mood_before: {
-          type: 'string',
-          description: 'Mood before starting session - optional',
-        },
       },
     },
   },
@@ -59,7 +55,7 @@ const completeFocusSessionDefinition: ToolDefinition = {
   function: {
     name: 'complete_focus_session',
     description:
-      'Complete an active focus session. Requires session_id (string UUID). Optional: productivity_score (1-10), mood_after (string), notes (string).',
+      'Complete an active focus session. Requires session_id (string UUID). Optional: productivity_score (1-10), notes (string).',
     parameters: {
       type: 'object',
       properties: {
@@ -71,10 +67,6 @@ const completeFocusSessionDefinition: ToolDefinition = {
           type: 'number',
           description:
             'Rate your productivity from 1 (low) to 10 (high) - optional',
-        },
-        mood_after: {
-          type: 'string',
-          description: 'How you feel after the session - optional',
         },
         notes: {
           type: 'string',
@@ -152,7 +144,6 @@ async function executeStartFocusSession(
     const type = (args.type as 'pomodoro' | 'deep-work' | 'custom') ?? 'pomodoro';
     const taskId = args.task_id as string | undefined;
     const notes = args.notes as string | undefined;
-    const moodBefore = args.mood_before as string | undefined;
 
     // Set default duration based on type
     let durationMinutes = args.duration_minutes as number | undefined;
@@ -173,7 +164,6 @@ async function executeStartFocusSession(
       started_at: new Date().toISOString(),
       status: 'in-progress',
       notes: notes ?? null,
-      mood_before: moodBefore ?? null,
     });
 
     logger.info('FocusTools', 'Focus session started', {
@@ -217,7 +207,6 @@ async function executeCompleteFocusSession(
   try {
     const sessionId = args.session_id as string;
     const productivityScore = args.productivity_score as number | undefined;
-    const moodAfter = args.mood_after as string | undefined;
     const notes = args.notes as string | undefined;
     const breaksTaken = args.breaks_taken as number | undefined;
     const distractions = args.distractions as number | undefined;
@@ -241,7 +230,6 @@ async function executeCompleteFocusSession(
     logger.info('FocusTools', 'Completing focus session', {
       sessionId,
       productivityScore,
-      moodAfter,
     });
 
     // Get the session to calculate actual duration
@@ -265,7 +253,6 @@ async function executeCompleteFocusSession(
       completed_at: new Date().toISOString(),
       actual_duration_seconds: actualDurationSeconds,
       productivity_score: productivityScore ?? null,
-      mood_after: moodAfter ?? null,
       notes: notes ?? session.notes,
       breaks_taken: breaksTaken ?? session.breaks_taken,
       distractions: distractions ?? session.distractions,
@@ -288,7 +275,6 @@ async function executeCompleteFocusSession(
         duration_minutes: updated.duration_minutes,
         actual_duration_minutes: actualMinutes,
         productivity_score: updated.productivity_score,
-        mood_after: updated.mood_after,
       },
     };
   } catch (error) {

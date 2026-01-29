@@ -15,7 +15,6 @@ export interface AnalyticsDailyData {
   focus_minutes?: number;
   habits_due?: number;
   habits_completed?: number;
-  wellness_mood_avg?: number | null;
   wellness_energy_avg?: number | null;
   created_at?: string;
   updated_at?: string;
@@ -231,7 +230,6 @@ export async function getFocusSessionsForAnalytics(dateRange: DateRange): Promis
 export async function getJournalEntriesForAnalytics(dateRange: DateRange): Promise<Array<{
   id: string;
   date: string;
-  mood: string | number | null;
   created_at: string;
 }>> {
   return apiCall(
@@ -240,7 +238,7 @@ export async function getJournalEntriesForAnalytics(dateRange: DateRange): Promi
 
       const { data, error } = await supabase
         .from('journal_entries')
-        .select('id, date, mood, created_at')
+        .select('id, date, created_at')
         .eq('user_id', user.id)
         .gte('created_at', dateRange.startDate)
         .lte('created_at', dateRange.endDate)

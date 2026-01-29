@@ -335,17 +335,16 @@ export class FocusService {
     const focusTime = totalTime - distractionTime;
     
     return {
-      focusScore: Math.max(0, Math.min(100, 
+      focusScore: Math.max(0, Math.min(100,
         100 - (session.distractions.length * 5) - (distractionTime / totalTime * 50)
       )),
       distractionCount: session.distractions.length,
-      averageDistraction: session.distractions.length > 0 ? 
+      averageDistraction: session.distractions.length > 0 ?
         session.distractions.reduce((sum, d) => sum + d.duration, 0) / session.distractions.length : 0,
       deepWorkPercentage: (focusTime / totalTime) * 100,
       flowStateAchieved: focusTime > (totalTime * 0.8) && session.distractions.length < 3,
       taskCompletionRate: 0, // Would be set externally based on task completion
-      energyLevel: session.productivity.energyLevel,
-      moodRating: session.productivity.moodRating
+      energyLevel: session.productivity.energyLevel
     };
   }
 

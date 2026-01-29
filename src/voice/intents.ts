@@ -282,7 +282,7 @@ export async function handleUtterance(text: string, ctx?: IntentContext): Promis
 
   // Navigation
   const navMatch = t.match(/^(go to|open|show) ([a-z ]+)$/); if (navMatch) {
-    const target = navMatch[2].trim(); const map: Record<string, string> = { dashboard: 'dashboard', home: 'dashboard', calendar: 'calendar', tasks: 'todos', focus: 'focus', habits: 'habits', notes: 'notes', projects: 'projects', journal: 'journal', mood: 'mood', travel: 'travel', finances: 'finances', finance: 'finances', shopping: 'shopping', meals: 'meals', goals: 'goals', shared: 'shared', personal: 'personal' }
+    const target = navMatch[2].trim(); const map: Record<string, string> = { dashboard: 'dashboard', home: 'dashboard', calendar: 'calendar', tasks: 'todos', focus: 'focus', habits: 'habits', notes: 'notes', projects: 'projects', journal: 'journal', travel: 'travel', finances: 'finances', finance: 'finances', shopping: 'shopping', meals: 'meals', goals: 'goals', shared: 'shared', personal: 'personal' }
     const view = map[target]; if (view) return { reply: `Opening ${target}.`, navigateView: view }
   }
 

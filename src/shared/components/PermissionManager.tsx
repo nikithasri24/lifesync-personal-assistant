@@ -81,7 +81,7 @@ export function PermissionManager({
       ['habits', 'todos', 'notes', 'projects'].includes(m.module)
     ),
     wellbeing: Object.values(MODULE_CONFIGS).filter(m =>
-      ['journal', 'mood', 'skincare', 'nutrition'].includes(m.module)
+      ['journal', 'skincare', 'nutrition'].includes(m.module)
     ),
     personal: Object.values(MODULE_CONFIGS).filter(m =>
       ['travel', 'visa', 'trip-planner', 'finances', 'shopping', 'meals', 'goals'].includes(m.module)
@@ -89,8 +89,8 @@ export function PermissionManager({
   };
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 max-w-2xl w-full">
-      <div className="flex items-center justify-between mb-6">
+    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+      <div className="flex items-center justify-between mb-4 flex-shrink-0">
         <div>
           <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
             Sharing with {connectionName}
@@ -109,7 +109,8 @@ export function PermissionManager({
         )}
       </div>
 
-      <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2">
+      <div className="flex-1 overflow-y-auto pr-2 -mr-2" style={{ maxHeight: 'calc(80vh - 180px)' }}>
+        <div className="space-y-6">
         {Object.entries(modulesByCategory).map(([category, modules]) => (
           <div key={category}>
             <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3 px-1">
@@ -157,10 +158,11 @@ export function PermissionManager({
             </div>
           </div>
         ))}
+        </div>
       </div>
 
       {hasChanges && (
-        <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-200 dark:border-slate-600">
+        <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-200 dark:border-slate-600 flex-shrink-0">
           <button
             onClick={() => {
               setPermissions(currentPermissions);

@@ -54,7 +54,7 @@ const getWellbeingInsightsDefinition: ToolDefinition = {
   function: {
     name: 'get_wellbeing_insights',
     description:
-      'Get wellbeing insights including mood trends and journal streaks. Optional: startDate and endDate (YYYY-MM-DD).',
+      'Get wellbeing insights including journal streaks. Optional: startDate and endDate (YYYY-MM-DD).',
     parameters: {
       type: 'object',
       properties: {
@@ -135,7 +135,7 @@ async function executeGetWellbeingInsights(args: Record<string, unknown>): Promi
     logger.info('AnalyticsTools', 'Wellbeing insights retrieved', { dateRange });
     return {
       success: true,
-      message: `Wellbeing score: ${insights.wellbeingScore}/100, Average mood: ${insights.averageMood}/5`,
+      message: `Wellbeing score: ${insights.wellbeingScore}/100, Journal streak: ${insights.journalStreak} days`,
       data: insights,
     };
   } catch (error) {
