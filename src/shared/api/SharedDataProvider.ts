@@ -149,15 +149,17 @@ export async function getMergedConnectionId(
         const partnerUser = (conn.requester_id === user.id
           ? conn.receiver_user
           : conn.requester_user) as { id: string; full_name: string } | { id: string; full_name: string }[] | null;
-        const partnerName = Array.isArray(partnerUser)
+        const rawPartnerName = Array.isArray(partnerUser)
           ? partnerUser[0]?.full_name
           : partnerUser?.full_name;
+        // Use 'Partner' as fallback if full_name is null, undefined, or empty string
+        const partnerName = rawPartnerName && rawPartnerName.trim() ? rawPartnerName : 'Partner';
 
-        console.log('[getMergedConnectionId] MERGED mode enabled! Connection:', conn.id);
+        console.log('[getMergedConnectionId] MERGED mode enabled! Connection:', conn.id, 'partnerName:', partnerName);
         return {
           connectionId: conn.id,
           partnerId,
-          partnerName: partnerName ?? undefined,
+          partnerName,
         };
       }
     }
