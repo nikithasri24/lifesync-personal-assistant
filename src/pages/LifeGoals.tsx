@@ -9,11 +9,15 @@ import {
   useCreateLifeDreamMutation,
   useUpdateLifeDreamMutation,
   useDeleteLifeDreamMutation,
+  useMergedGoalsConnectionQuery,
 } from '@/hooks/useLifeGoalsQuery';
 import type {
+  LifeGoal,
+  LifeDream,
   LifeGoalWithMilestones,
   DreamStatus,
 } from '../goals/types/lifeGoals';
+import { Users } from 'lucide-react';
 import GoalTemplates from '../goals/components/GoalTemplates';
 import GoalGamification from '../goals/components/GoalGamification';
 import { logger } from '../services/logger';
@@ -38,15 +42,18 @@ const createGoalDraft = (): GoalDraft => ({
   streakEnabled: false,
   streakFrequency: 'daily',
   streakTarget: '',
+  isShared: false,
+  trackingMode: 'combined',
 });
 
 const createDreamDraft = (): DreamDraft => ({
   title: '',
   description: '',
   category: 'travel',
-  priority: 'someday',
   estimatedCost: '',
   estimatedTimeframe: '',
+  isShared: false,
+  trackingMode: 'combined',
 });
 
 const LifeGoals: React.FC = () => {
@@ -63,12 +70,17 @@ const LifeGoals: React.FC = () => {
     error: dreamsError,
     refetch: refetchDreams,
   } = useLifeDreamsQuery();
+  const { data: mergedConnection } = useMergedGoalsConnectionQuery();
   const createGoalMutation = useCreateLifeGoalMutation();
   const updateGoalMutation = useUpdateLifeGoalMutation();
   const deleteGoalMutation = useDeleteLifeGoalMutation();
   const createDreamMutation = useCreateLifeDreamMutation();
   const updateDreamMutation = useUpdateLifeDreamMutation();
   const deleteDreamMutation = useDeleteLifeDreamMutation();
+
+  const isMerged = !!mergedConnection;
+  const partnerId = mergedConnection?.partnerId ?? null;
+  const partnerName = mergedConnection?.partnerName ?? 'Partner';
 
   const loading = goalsLoading || dreamsLoading;
 
@@ -82,6 +94,9 @@ const LifeGoals: React.FC = () => {
   const [editingProgress, setEditingProgress] = useState<string | null>(null);
   const [progressValue, setProgressValue] = useState<number>(0);
   const [expandedGoalId, setExpandedGoalId] = useState<string | null>(null);
+  // Edit mode state
+  const [editingGoalId, setEditingGoalId] = useState<string | null>(null);
+  const [editingDreamId, setEditingDreamId] = useState<string | null>(null);
 
   const goalStats = useMemo(() => {
     const completed = goals.filter((goal) => goal.status === 'completed').length;
@@ -106,17 +121,36 @@ const LifeGoals: React.FC = () => {
     if (!goalDraft.title.trim()) return;
 
     try {
-      await createGoalMutation.mutateAsync({
-        title: goalDraft.title,
-        description: goalDraft.description,
-        category: goalDraft.category,
-        priority: goalDraft.priority,
-        targetDate: goalDraft.targetDate,
-        startDate: new Date().toISOString(),
-        streakEnabled: goalDraft.streakEnabled,
-        streakFrequency: goalDraft.streakFrequency,
-        streakTarget: goalDraft.streakTarget ? Number(goalDraft.streakTarget) : undefined,
-      });
+      if (editingGoalId) {
+        // Update existing goal
+        await updateGoalMutation.mutateAsync({
+          goalId: editingGoalId,
+          updates: {
+            title: goalDraft.title,
+            description: goalDraft.description,
+            category: goalDraft.category,
+            priority: goalDraft.priority,
+            targetDate: goalDraft.targetDate,
+          },
+        });
+        setEditingGoalId(null);
+      } else {
+        // Create new goal
+        await createGoalMutation.mutateAsync({
+          title: goalDraft.title,
+          description: goalDraft.description,
+          category: goalDraft.category,
+          priority: goalDraft.priority,
+          targetDate: goalDraft.targetDate,
+          startDate: new Date().toISOString(),
+          streakEnabled: goalDraft.streakEnabled,
+          streakFrequency: goalDraft.streakFrequency,
+          streakTarget: goalDraft.streakTarget ? Number(goalDraft.streakTarget) : undefined,
+          // Sharing options - only set if merged mode is available
+          isShared: isMerged ? goalDraft.isShared : false,
+          trackingMode: goalDraft.isShared ? goalDraft.trackingMode : 'combined',
+        });
+      }
       setGoalDraft(createGoalDraft());
       setShowGoalForm(false);
     } catch (error) {
@@ -129,19 +163,68 @@ const LifeGoals: React.FC = () => {
     if (!dreamDraft.title.trim()) return;
 
     try {
-      await createDreamMutation.mutateAsync({
-        title: dreamDraft.title,
-        description: dreamDraft.description,
-        category: dreamDraft.category,
-        priority: dreamDraft.priority,
-        estimatedCost: dreamDraft.estimatedCost ? Number(dreamDraft.estimatedCost) : undefined,
-        estimatedTimeframe: dreamDraft.estimatedTimeframe || undefined,
-      });
+      if (editingDreamId) {
+        // Update existing dream
+        await updateDreamMutation.mutateAsync({
+          dreamId: editingDreamId,
+          updates: {
+            title: dreamDraft.title,
+            description: dreamDraft.description,
+            category: dreamDraft.category,
+            estimatedCost: dreamDraft.estimatedCost ? Number(dreamDraft.estimatedCost) : undefined,
+            estimatedTimeframe: dreamDraft.estimatedTimeframe || undefined,
+          },
+        });
+        setEditingDreamId(null);
+      } else {
+        // Create new dream
+        await createDreamMutation.mutateAsync({
+          title: dreamDraft.title,
+          description: dreamDraft.description,
+          category: dreamDraft.category,
+          estimatedCost: dreamDraft.estimatedCost ? Number(dreamDraft.estimatedCost) : undefined,
+          estimatedTimeframe: dreamDraft.estimatedTimeframe || undefined,
+          // Sharing options - only set if merged mode is available
+          isShared: isMerged ? dreamDraft.isShared : false,
+          trackingMode: dreamDraft.isShared ? dreamDraft.trackingMode : 'combined',
+        });
+      }
       setDreamDraft(createDreamDraft());
       setShowDreamForm(false);
     } catch (error) {
       logger.error('LifeGoals', error as Error);
     }
+  };
+
+  const handleEditGoal = (goal: LifeGoal): void => {
+    setGoalDraft({
+      title: goal.title,
+      description: goal.description ?? '',
+      category: goal.category,
+      priority: goal.priority,
+      targetDate: goal.targetDate ?? '',
+      streakEnabled: goal.streakEnabled,
+      streakFrequency: goal.streakFrequency,
+      streakTarget: goal.streakTarget?.toString() ?? '',
+      isShared: !!goal.connectionId,
+      trackingMode: goal.trackingMode,
+    });
+    setEditingGoalId(goal.id);
+    setShowGoalForm(true);
+  };
+
+  const handleEditDream = (dream: LifeDream): void => {
+    setDreamDraft({
+      title: dream.title,
+      description: dream.description ?? '',
+      category: dream.category,
+      estimatedCost: dream.estimatedCost?.toString() ?? '',
+      estimatedTimeframe: dream.estimatedTimeframe ?? '',
+      isShared: !!dream.connectionId,
+      trackingMode: dream.trackingMode,
+    });
+    setEditingDreamId(dream.id);
+    setShowDreamForm(true);
   };
 
   const handleMarkGoalComplete = async (goalId: string): Promise<void> => {
@@ -268,6 +351,19 @@ const LifeGoals: React.FC = () => {
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6 p-6">
+      {/* Merged mode indicator */}
+      {isMerged && (
+        <div className="flex items-center gap-2 rounded-lg bg-purple-50 p-3 text-purple-700 dark:bg-purple-900/20 dark:text-purple-300">
+          <Users className="h-5 w-5" />
+          <span className="text-sm font-medium">
+            Shared Goals with {partnerName}
+          </span>
+          <span className="ml-auto text-xs opacity-75">
+            Both of you can see and edit these goals
+          </span>
+        </div>
+      )}
+
       <LifeGoalsHeader
         onShowTemplates={() => setShowTemplates(true)}
         onNewGoal={() => {
@@ -293,11 +389,15 @@ const LifeGoals: React.FC = () => {
             progressValue={progressValue}
             onMarkComplete={handleMarkGoalComplete}
             onDelete={handleDeleteGoal}
+            onEdit={handleEditGoal}
             onStartEditProgress={handleStartEditProgress}
             onUpdateProgress={handleUpdateProgress}
             onCancelEditProgress={handleCancelEditProgress}
             onExpandGoal={handleExpandGoal}
             onSetProgressValue={setProgressValue}
+            isMerged={isMerged}
+            partnerId={partnerId}
+            partnerName={partnerName}
           />
         )}
         {activeTab === 'dreams' && (
@@ -306,6 +406,10 @@ const LifeGoals: React.FC = () => {
             onMarkAchieved={handleMarkDreamAchieved}
             onUndoAchieved={handleUndoDreamAchieved}
             onDelete={handleDeleteDream}
+            onEdit={handleEditDream}
+            isMerged={isMerged}
+            partnerId={partnerId}
+            partnerName={partnerName}
           />
         )}
         {activeTab === 'progress' && <GoalGamification goals={goals} />}
@@ -319,7 +423,10 @@ const LifeGoals: React.FC = () => {
         onClose={() => {
           setShowGoalForm(false);
           setGoalDraft(createGoalDraft());
+          setEditingGoalId(null);
         }}
+        isMergedModeAvailable={isMerged}
+        isEditMode={!!editingGoalId}
       />
 
       <DreamFormModal
@@ -330,7 +437,10 @@ const LifeGoals: React.FC = () => {
         onClose={() => {
           setShowDreamForm(false);
           setDreamDraft(createDreamDraft());
+          setEditingDreamId(null);
         }}
+        isMergedModeAvailable={isMerged}
+        isEditMode={!!editingDreamId}
       />
 
       {showTemplates && (
