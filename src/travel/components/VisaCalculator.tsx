@@ -1,9 +1,12 @@
 /**
  * Visa Calculator Component
  * Allows users to input their passport and visas to calculate visa-free travel access
+ * Supports merged mode to show combined passport/visa data from both users
  */
 
 import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '../../lib/supabase';
 import {
   getVisaRequirement,
   getAccessibleDestinations,
@@ -15,10 +18,12 @@ import { getAdditionalAccessFromVisas } from '../data/visaBasedAccess';
 import {
   getPrimaryPassport,
   getUserVisas,
+  getUserPassports,
   addPassport,
   addVisa,
   deleteVisa,
-  updatePassport
+  updatePassport,
+  getVisaMergedConnection
 } from '../api/passportAPI';
 import type { VisaRequirement, UserPassport, UserVisa } from '../types/visa';
 import VisaMap from './VisaMap';
@@ -33,10 +38,12 @@ interface DestinationRequirement {
 
 const VisaCalculator: React.FC = () => {
   const [passport, setPassport] = React.useState<UserPassport | null>(null);
+  const [allPassports, setAllPassports] = React.useState<UserPassport[]>([]);
   const [userVisas, setUserVisas] = React.useState<UserVisa[]>([]);
   const [searchTerm, setSearchTerm] = React.useState('');
   const [showAddVisa, setShowAddVisa] = React.useState(false);
   const [loading, setLoading] = React.useState(true);
+  const [currentUserId, setCurrentUserId] = React.useState<string | null>(null);
 
   // Add visa form state
   const [newVisaCountry, setNewVisaCountry] = React.useState('');
@@ -52,16 +59,47 @@ const VisaCalculator: React.FC = () => {
 
   const availableCountries = React.useMemo(() => getAvailablePassportCountries(), []);
 
+  // Check for merged connection
+  const { data: mergedConnection } = useQuery({
+    queryKey: ['visa', 'mergedConnection'],
+    queryFn: getVisaMergedConnection,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
+  // Helper to get ownership label for passports/visas
+  const getOwnershipLabel = (userId: string): string => {
+    if (!mergedConnection || !currentUserId) return '';
+    if (userId === currentUserId) return 'Me';
+    return mergedConnection.partnerName || 'Partner';
+  };
+
+  // Helper to get ownership color
+  const getOwnershipColor = (userId: string): string => {
+    if (!mergedConnection || !currentUserId) return '';
+    if (userId === currentUserId) return 'bg-blue-100 text-blue-800';
+    return 'bg-purple-100 text-purple-800';
+  };
+
   // Load passport and visas on mount
   React.useEffect(() => {
     const loadData = async () => {
       try {
         setLoading(true);
-        const [passportData, visasData] = await Promise.all([
+
+        // Get current user ID
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          setCurrentUserId(user.id);
+        }
+
+        const [passportData, allPassportsData, visasData] = await Promise.all([
           getPrimaryPassport(),
-          getUserVisas(),
+          getUserPassports(), // Get all passports (includes partner's in merged mode)
+          getUserVisas(), // Get all visas (includes partner's in merged mode)
         ]);
+
         setPassport(passportData);
+        setAllPassports(allPassportsData);
         setUserVisas(visasData);
       } catch (error) {
         console.error('Error loading passport/visa data:', error);
@@ -506,26 +544,41 @@ const VisaCalculator: React.FC = () => {
         ) : (
           <>
             <div className="space-y-2">
-              {userVisas.map(visa => (
-                <div key={visa.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
-                  <div className="flex items-center gap-3">
-                    <div className="text-2xl">{visa.countryCode === 'US' ? '🇺🇸' : visa.countryCode === 'IN' ? '🇮🇳' : '🌍'}</div>
-                    <div>
-                      <div className="font-medium text-gray-900">{visa.countryName}</div>
-                      <div className="text-xs text-gray-600">
-                        Expires: {new Date(visa.expiryDate).toLocaleDateString()}
-                        {visa.multipleEntry && ' • Multiple Entry'}
+              {userVisas.map(visa => {
+                const ownerLabel = getOwnershipLabel(visa.userId);
+                const ownerColor = getOwnershipColor(visa.userId);
+                const isOwnVisa = !mergedConnection || visa.userId === currentUserId;
+
+                return (
+                  <div key={visa.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="flex items-center gap-3 flex-1">
+                      <div className="text-2xl">{visa.countryCode === 'US' ? '🇺🇸' : visa.countryCode === 'IN' ? '🇮🇳' : '🌍'}</div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-gray-900">{visa.countryName}</span>
+                          {mergedConnection && ownerLabel && (
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${ownerColor}`}>
+                              {ownerLabel}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs text-gray-600">
+                          Expires: {new Date(visa.expiryDate).toLocaleDateString()}
+                          {visa.multipleEntry && ' • Multiple Entry'}
+                        </div>
                       </div>
                     </div>
+                    {isOwnVisa && (
+                      <button
+                        onClick={() => handleRemoveVisa(visa.id)}
+                        className="text-red-600 hover:text-red-800 text-sm font-medium"
+                      >
+                        Remove
+                      </button>
+                    )}
                   </div>
-                  <button
-                    onClick={() => handleRemoveVisa(visa.id)}
-                    className="text-red-600 hover:text-red-800 text-sm font-medium"
-                  >
-                    Remove
-                  </button>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Bonus Access from Visas */}
