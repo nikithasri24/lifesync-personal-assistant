@@ -29,7 +29,6 @@ export type ModulePermissionLevel =
   | 'merged';   // Full merge (see everything as if it's yours)
 
 export type ShareableModule =
-  | 'travel'
   | 'visa'
   | 'trip-planner'
   | 'finances'
@@ -166,15 +165,6 @@ export interface ModulePermissionConfig {
 
 // Default module configurations
 export const MODULE_CONFIGS: Record<ShareableModule, ModulePermissionConfig> = {
-  travel: {
-    module: 'travel',
-    label: 'Travel',
-    description: 'Visited countries, travel plans, and trip history',
-    icon: 'MapPin',
-    defaultLevel: 'none',
-    supportedLevels: ['none', 'view', 'merged'],
-    hasSettings: true,
-  },
   visa: {
     module: 'visa',
     label: 'Visa Calculator',
