@@ -32,7 +32,7 @@ export const RecipeIngredientSchema = z.object({
 
 export const RecipeDataSchema = z.object({
   id: uuid.optional(),
-  user_id: uuid.optional(),
+  user_id: uuid.optional().nullable(),
   connection_id: uuid.optional().nullable(),
   name: z.string().min(1, 'Recipe name is required'),
   description: z.string().optional().nullable(),
@@ -49,8 +49,8 @@ export const RecipeDataSchema = z.object({
   dietary_restrictions: z.array(z.string()).optional().nullable(),
   nutrition_info: z.record(z.string(), z.number()).optional().nullable(),
   source_type: z.string().optional().nullable(),
-  source_url: z.string().url().optional().nullable(),
-  video_thumbnail: z.string().url().optional().nullable(),
+  source_url: z.string().url().optional().nullable().or(z.literal('')),
+  video_thumbnail: z.string().url().optional().nullable().or(z.literal('')),
   image: z.string().optional().nullable(),
   rating: z.number().min(0).max(5).optional().nullable(),
   notes: z.string().optional().nullable(),

@@ -104,6 +104,14 @@ const MealPlanning: React.FC = () => {
     error: recipesError,
     refetch: refetchRecipes,
   } = useRecipesQuery();
+
+  // Debug: Log recipes data
+  useEffect(() => {
+    console.log('[MealPlanning] Recipes loaded:', recipes.length, recipes);
+    if (recipesError) {
+      console.error('[MealPlanning] Recipes error:', recipesError);
+    }
+  }, [recipes, recipesError]);
   const {
     data: mealPlans = [],
     isLoading: mealPlansLoading,
