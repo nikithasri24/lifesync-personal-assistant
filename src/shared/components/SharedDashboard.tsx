@@ -78,7 +78,7 @@ const MODULE_COLORS: Record<ShareableModule, string> = {
 };
 
 export function SharedDashboard({ connections }: SharedDashboardProps): React.ReactElement {
-  const [expandedModules, setExpandedModules] = useState<Set<ShareableModule>>(new Set(['meals', 'todos']));
+  const [expandedModules, setExpandedModules] = useState<Set<ShareableModule>>(new Set(['todos']));
   const { data: sharedData, isLoading } = useSharedDataQuery();
   const moduleSections = useMemo(() => {
     const data = sharedData ?? {};
@@ -86,8 +86,8 @@ export function SharedDashboard({ connections }: SharedDashboardProps): React.Re
 
     return Object.values(MODULE_CONFIGS)
       .filter((config) => availableModules.has(config.module))
-      // Filter out 'goals' since they're now merged into the main Goals page
-      .filter((config) => config.module !== 'goals')
+      // Filter out 'goals' and 'meals' since they're now merged into their main pages
+      .filter((config) => config.module !== 'goals' && config.module !== 'meals')
       .map((config) => ({
         module: config.module,
         label: config.label,

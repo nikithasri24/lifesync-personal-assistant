@@ -80,7 +80,9 @@ const LifeGoals: React.FC = () => {
 
   const isMerged = !!mergedConnection;
   const partnerId = mergedConnection?.partnerId ?? null;
-  const partnerName = mergedConnection?.partnerName ?? 'Partner';
+  const partnerName = mergedConnection?.partnerName && mergedConnection.partnerName.trim()
+    ? mergedConnection.partnerName
+    : 'Partner';
 
   const loading = goalsLoading || dreamsLoading;
 
