@@ -58,6 +58,17 @@ const VisaMap: React.FC<VisaMapProps> = ({
   });
   const [passportOwnerFilter, setPassportOwnerFilter] = React.useState<PassportOwnerFilter>('both');
 
+  // Debug logging
+  React.useEffect(() => {
+    console.log('[VisaMap] Props:', {
+      mergedConnection,
+      allPassportsCount: allPassports.length,
+      currentUserId,
+      passportCountry,
+      userVisasCount: userVisas.length,
+    });
+  }, [mergedConnection, allPassports, currentUserId, passportCountry, userVisas]);
+
   // Load countries data
   React.useEffect(() => {
     const loadMapData = async (): Promise<void> => {
@@ -429,7 +440,7 @@ const VisaMap: React.FC<VisaMapProps> = ({
             />
           </div>
 
-          {mergedConnection && allPassports.length > 1 && (
+          {mergedConnection && (
             <div className="flex items-center gap-2">
               <label className="text-sm font-medium text-gray-700">
                 Passport:
@@ -466,6 +477,11 @@ const VisaMap: React.FC<VisaMapProps> = ({
                   Both
                 </button>
               </div>
+              {allPassports.length > 0 && (
+                <span className="text-xs text-gray-500">
+                  ({allPassports.length} passport{allPassports.length !== 1 ? 's' : ''})
+                </span>
+              )}
             </div>
           )}
         </div>
