@@ -1,6 +1,7 @@
 /**
  * Visa-Free Travel Map
  * Visualizes visa requirements for countries based on passport and visas
+ * Supports date-based filtering and passport owner filtering (Me, Partner, Both)
  */
 
 import React from 'react';
@@ -9,12 +10,17 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { getVisaRequirement } from '../data/visaRequirements';
 import { getAdditionalAccessFromVisas } from '../data/visaBasedAccess';
-import type { VisaRequirement, UserVisa } from '../types/visa';
+import type { VisaRequirement, UserVisa, UserPassport } from '../types/visa';
 import { logger } from '../../services/logger';
+
+type PassportOwnerFilter = 'me' | 'partner' | 'both';
 
 interface VisaMapProps {
   passportCountry: string;
   userVisas: UserVisa[]; // Array of user visa objects with expiry dates
+  allPassports?: UserPassport[]; // All passports (including partner's in merged mode)
+  currentUserId?: string | null; // Current user ID for ownership filtering
+  mergedConnection?: { connectionId: string; partnerId: string; partnerName?: string } | null;
 }
 
 interface GeoJSONGeometry {
@@ -33,11 +39,24 @@ interface CountryFeature {
   geometry: GeoJSONGeometry;
 }
 
-const VisaMap: React.FC<VisaMapProps> = ({ passportCountry, userVisas }) => {
+const VisaMap: React.FC<VisaMapProps> = ({
+  passportCountry,
+  userVisas,
+  allPassports = [],
+  currentUserId = null,
+  mergedConnection = null
+}) => {
   const [countries, setCountries] = React.useState<CountryFeature[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [filterType, setFilterType] = React.useState<'all' | VisaRequirement>('all');
+
+  // New filters for date and passport owner
+  const [travelDate, setTravelDate] = React.useState<string>(() => {
+    // Default to today
+    return new Date().toISOString().split('T')[0];
+  });
+  const [passportOwnerFilter, setPassportOwnerFilter] = React.useState<PassportOwnerFilter>('both');
 
   // Load countries data
   React.useEffect(() => {
@@ -124,58 +143,146 @@ const VisaMap: React.FC<VisaMapProps> = ({ passportCountry, userVisas }) => {
     return nameMap[name] || name;
   };
 
-  // Calculate access for each country
+  // Get filtered passports based on owner filter
+  const getFilteredPassports = React.useCallback((): UserPassport[] => {
+    if (!mergedConnection || !currentUserId || passportOwnerFilter === 'both') {
+      return allPassports;
+    }
+
+    if (passportOwnerFilter === 'me') {
+      return allPassports.filter(p => p.userId === currentUserId);
+    }
+
+    if (passportOwnerFilter === 'partner') {
+      return allPassports.filter(p => p.userId === mergedConnection.partnerId);
+    }
+
+    return allPassports;
+  }, [allPassports, currentUserId, mergedConnection, passportOwnerFilter]);
+
+  // Calculate access for each country based on selected date and passport filter
   const getCountryAccess = React.useCallback((countryName: string): {
     requirement: VisaRequirement;
     daysAllowed?: number;
     viaVisa?: string;
+    viaPassport?: string;
   } | null => {
     // Normalize the country name for lookup
     const normalizedName = normalizeCountryName(countryName);
+    const checkDate = new Date(travelDate);
 
-    // Get passport-based access
-    const passportReq = getVisaRequirement(passportCountry, normalizedName);
+    // Get all filtered passports
+    const filteredPassports = getFilteredPassports();
 
-    if (!passportReq) return null;
+    // If no passports available, fall back to current passport
+    const passportsToCheck = filteredPassports.length > 0
+      ? filteredPassports
+      : [{ countryName: passportCountry, userId: currentUserId || '' } as UserPassport];
 
-    // Check if user has a valid visa for this specific country
-    const today = new Date();
-    const activeVisaForCountry = userVisas.find(visa =>
-      visa.countryName === normalizedName && new Date(visa.expiryDate) > today
-    );
+    // Find the best access across all passports
+    let bestAccess: {
+      requirement: VisaRequirement;
+      daysAllowed?: number;
+      viaVisa?: string;
+      viaPassport?: string;
+    } | null = null;
 
-    // If user has a valid visa for this country, show it as visa-free (accessible)
-    if (activeVisaForCountry) {
-      return {
-        requirement: 'visa-free',
-        daysAllowed: activeVisaForCountry.maxStayDays,
-        viaVisa: `Valid ${activeVisaForCountry.visaType ?? 'visa'} until ${new Date(activeVisaForCountry.expiryDate).toLocaleDateString()}`,
+    for (const passport of passportsToCheck) {
+      // Get passport-based access
+      const passportReq = getVisaRequirement(passport.countryName, normalizedName);
+      if (!passportReq) continue;
+
+      // Check if user has a valid visa for this specific country (valid on travel date)
+      const activeVisaForCountry = userVisas.find(visa =>
+        visa.countryName === normalizedName && new Date(visa.expiryDate) >= checkDate
+      );
+
+      // If user has a valid visa for this country, show it as visa-free (accessible)
+      if (activeVisaForCountry) {
+        const access = {
+          requirement: 'visa-free' as VisaRequirement,
+          daysAllowed: activeVisaForCountry.maxStayDays,
+          viaVisa: `Valid ${activeVisaForCountry.visaType ?? 'visa'} until ${new Date(activeVisaForCountry.expiryDate).toLocaleDateString()}`,
+          viaPassport: passport.countryName !== passportCountry ? passport.countryName : undefined,
+        };
+
+        if (!bestAccess || compareAccess(access, bestAccess) > 0) {
+          bestAccess = access;
+        }
+        continue;
+      }
+
+      // Get visa-based bonus access (e.g., US H1B grants access to Mexico)
+      // Only consider visas that are valid on the travel date
+      const validVisaCountries = userVisas
+        .filter(v => new Date(v.expiryDate) >= checkDate)
+        .map(v => v.countryName);
+      const additionalAccess = getAdditionalAccessFromVisas(validVisaCountries);
+      const visaAccess = additionalAccess.find(a => a.country === countryName);
+
+      // Determine which access to use (visa if better than passport)
+      if (visaAccess) {
+        const shouldUseVisaAccess =
+          passportReq.requirement === 'visa-required' || passportReq.requirement === 'no-admission' ||
+          (passportReq.requirement === 'visa-free' && visaAccess.accessType === 'visa-free' &&
+            (visaAccess.daysAllowed ?? Infinity) > (passportReq.daysAllowed ?? Infinity)) ||
+          ((passportReq.requirement === 'e-visa' || passportReq.requirement === 'eta') &&
+            (visaAccess.accessType === 'visa-free' || visaAccess.accessType === 'visa-on-arrival')) ||
+          (passportReq.requirement === 'visa-on-arrival' && visaAccess.accessType === 'visa-free');
+
+        if (shouldUseVisaAccess) {
+          const access = {
+            requirement: visaAccess.accessType,
+            daysAllowed: visaAccess.daysAllowed,
+            viaVisa: visaAccess.viaVisa,
+            viaPassport: passport.countryName !== passportCountry ? passport.countryName : undefined,
+          };
+
+          if (!bestAccess || compareAccess(access, bestAccess) > 0) {
+            bestAccess = access;
+          }
+          continue;
+        }
+      }
+
+      // Use passport-based access
+      const access = {
+        requirement: passportReq.requirement,
+        daysAllowed: passportReq.daysAllowed,
+        viaPassport: passport.countryName !== passportCountry ? passport.countryName : undefined,
       };
-    }
 
-    // Get visa-based bonus access (e.g., US H1B grants access to Mexico)
-    const visaCountries = userVisas.map(v => v.countryName);
-    const additionalAccess = getAdditionalAccessFromVisas(visaCountries);
-    const visaAccess = additionalAccess.find(a => a.country === countryName);
-
-    // Determine which access to use (visa if better than passport)
-    if (visaAccess) {
-      const shouldUseVisaAccess =
-        passportReq.requirement === 'visa-required' || passportReq.requirement === 'no-admission' ||
-        (passportReq.requirement === 'visa-free' && visaAccess.accessType === 'visa-free' &&
-          (visaAccess.daysAllowed ?? Infinity) > (passportReq.daysAllowed ?? Infinity)) ||
-        ((passportReq.requirement === 'e-visa' || passportReq.requirement === 'eta') &&
-          (visaAccess.accessType === 'visa-free' || visaAccess.accessType === 'visa-on-arrival')) ||
-        (passportReq.requirement === 'visa-on-arrival' && visaAccess.accessType === 'visa-free');
-
-      if (shouldUseVisaAccess) {
-        return { requirement: visaAccess.accessType, daysAllowed: visaAccess.daysAllowed, viaVisa: visaAccess.viaVisa };
+      if (!bestAccess || compareAccess(access, bestAccess) > 0) {
+        bestAccess = access;
       }
     }
 
-    // Use passport-based access
-    return { requirement: passportReq.requirement, daysAllowed: passportReq.daysAllowed };
-  }, [passportCountry, userVisas]);
+    return bestAccess;
+  }, [passportCountry, userVisas, travelDate, getFilteredPassports, currentUserId]);
+
+  // Helper to compare access quality (higher is better)
+  const compareAccess = (a: { requirement: VisaRequirement; daysAllowed?: number }, b: { requirement: VisaRequirement; daysAllowed?: number }): number => {
+    const priority: Record<VisaRequirement, number> = {
+      'visa-free': 6,
+      'visa-on-arrival': 5,
+      'eta': 4,
+      'e-visa': 3,
+      'visa-required': 2,
+      'no-admission': 1,
+    };
+
+    const aPriority = priority[a.requirement];
+    const bPriority = priority[b.requirement];
+
+    if (aPriority !== bPriority) {
+      return aPriority - bPriority;
+    }
+
+    // Same requirement type, compare days allowed
+    const aDays = a.daysAllowed ?? Infinity;
+    const bDays = b.daysAllowed ?? Infinity;
+    return aDays - bDays;
+  };
 
   // Visa requirement metadata
   const visaTypes = React.useMemo(() => [
@@ -239,6 +346,7 @@ const VisaMap: React.FC<VisaMapProps> = ({ passportCountry, userVisas }) => {
     const color = getColor(access.requirement);
     const daysText = access.daysAllowed ? `<div style="font-size: 13px; color: #4B5563; margin-top: 4px;">📅 ${access.daysAllowed} days allowed</div>` : '';
     const viaText = access.viaVisa ? `<div style="font-size: 13px; color: #7C3AED; font-weight: 600; margin-top: 6px; padding: 6px 8px; background-color: #F3E8FF; border-radius: 4px;">✨ ${access.viaVisa}</div>` : '';
+    const passportText = access.viaPassport ? `<div style="font-size: 13px; color: #2563EB; font-weight: 600; margin-top: 6px; padding: 6px 8px; background-color: #DBEAFE; border-radius: 4px;">🛂 Using ${access.viaPassport} passport</div>` : '';
 
     layer.bindPopup(`
       <div style="padding: 12px; min-width: 200px;">
@@ -246,7 +354,7 @@ const VisaMap: React.FC<VisaMapProps> = ({ passportCountry, userVisas }) => {
         <div style="display: inline-block; padding: 4px 10px; background-color: ${color}15; border-radius: 6px; border: 2px solid ${color};">
           <span style="color: ${color}; font-weight: 700; font-size: 14px;">${visaLabel}</span>
         </div>
-        ${daysText}${viaText}
+        ${daysText}${passportText}${viaText}
       </div>
     `);
   }, [getCountryAccess, getCountryStyle, getColor, visaTypes]);
@@ -306,7 +414,63 @@ const VisaMap: React.FC<VisaMapProps> = ({ passportCountry, userVisas }) => {
           </div>
         </div>
 
-        {/* Filter buttons */}
+        {/* Date and Passport Owner Filters */}
+        <div className="flex flex-wrap gap-3 mb-3">
+          <div className="flex items-center gap-2">
+            <label htmlFor="travel-date" className="text-sm font-medium text-gray-700">
+              Travel Date:
+            </label>
+            <input
+              id="travel-date"
+              type="date"
+              value={travelDate}
+              onChange={(e) => setTravelDate(e.target.value)}
+              className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+
+          {mergedConnection && allPassports.length > 1 && (
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-700">
+                Passport:
+              </label>
+              <div className="flex gap-1 bg-white border border-gray-300 rounded-lg p-1">
+                <button
+                  onClick={() => setPassportOwnerFilter('me')}
+                  className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                    passportOwnerFilter === 'me'
+                      ? 'bg-blue-600 text-white'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  Me
+                </button>
+                <button
+                  onClick={() => setPassportOwnerFilter('partner')}
+                  className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                    passportOwnerFilter === 'partner'
+                      ? 'bg-purple-600 text-white'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  {mergedConnection.partnerName || 'Partner'}
+                </button>
+                <button
+                  onClick={() => setPassportOwnerFilter('both')}
+                  className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                    passportOwnerFilter === 'both'
+                      ? 'bg-pink-600 text-white'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  Both
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Visa Requirement Filter buttons */}
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setFilterType('all')}
@@ -354,7 +518,7 @@ const VisaMap: React.FC<VisaMapProps> = ({ passportCountry, userVisas }) => {
               features: countries,
             } as GeoJSON.FeatureCollection}
             onEachFeature={onEachCountry as (feature: GeoJSON.Feature, layer: L.Layer) => void}
-            key={`visa-map-${passportCountry}-${userVisas.map(v => v.countryName).join(',')}-${filterType}`}
+            key={`visa-map-${passportCountry}-${userVisas.map(v => v.countryName).join(',')}-${filterType}-${travelDate}-${passportOwnerFilter}-${allPassports.map(p => p.id).join(',')}`}
           />
         </MapContainer>
       </div>

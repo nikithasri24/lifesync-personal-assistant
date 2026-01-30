@@ -474,6 +474,9 @@ const VisaCalculator: React.FC = () => {
           <VisaMap
             passportCountry={passport.countryName}
             userVisas={userVisas}
+            allPassports={allPassports}
+            currentUserId={currentUserId}
+            mergedConnection={mergedConnection}
           />
         </div>
       )}
