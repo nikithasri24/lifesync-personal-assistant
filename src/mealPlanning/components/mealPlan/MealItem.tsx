@@ -311,7 +311,13 @@ export const MealItem: React.FC<MealItemProps> = ({ meal, recipes, isMerged = fa
           ) : (
             <button
               type="button"
-              onClick={handleQuickLog}
+              onClick={(e) => {
+                // Allow Cmd/Ctrl+click to bubble up for multi-cell selection
+                if (!e.metaKey && !e.ctrlKey) {
+                  e.stopPropagation();
+                }
+                void handleQuickLog(e);
+              }}
               className="w-4 h-4 rounded border-2 border-slate-400 hover:border-green-500 hover:bg-green-500/20 transition-colors cursor-pointer"
               title="Click to mark as eaten"
             />

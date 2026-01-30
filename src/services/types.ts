@@ -569,69 +569,7 @@ export interface SkinConditionLog {
   created_at: string;
 }
 
-// =====================================================
-// TRAVEL - Travel Planning System
-// =====================================================
 
-export interface Trip {
-  id: string;
-  user_id: string;
-  name: string;
-  destination_countries: string[];
-  start_date: string;
-  end_date: string;
-  status: 'planning' | 'booked' | 'in-progress' | 'completed';
-  budget?: number | null;
-  actual_cost?: number | null;
-  travelers: string[]; // names
-  created_at: string;
-  updated_at: string;
-}
-
-export interface TripDay {
-  id: string;
-  trip_id: string;
-  date: string;
-  location: string;
-  activities: string[];
-  accommodations?: string | null;
-  transportation?: string | null;
-  notes?: string | null;
-  created_at: string;
-}
-
-export interface TravelDocument {
-  id: string;
-  trip_id?: string | null; // optional, for general docs
-  user_id: string;
-  type: 'passport' | 'visa' | 'ticket' | 'booking' | 'insurance' | 'vaccination';
-  name: string;
-  document_number?: string | null;
-  issue_date?: string | null;
-  expiry_date?: string | null;
-  file_url?: string | null;
-  notes?: string | null;
-  created_at: string;
-}
-
-export interface PackingList {
-  id: string;
-  trip_id?: string | null;
-  user_id: string;
-  name: string;
-  items: PackingItem[];
-  created_at: string;
-}
-
-export interface PackingItem {
-  id: string;
-  list_id: string;
-  name: string;
-  category: 'clothing' | 'toiletries' | 'electronics' | 'documents' | 'misc';
-  quantity: number;
-  packed: boolean;
-  created_at: string;
-}
 
 export interface VisaRequirement {
   id: string;

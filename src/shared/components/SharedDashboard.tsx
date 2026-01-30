@@ -15,7 +15,6 @@ import {
   BookOpen,
   FileText,
   FolderOpen,
-  MapPin,
   Plane,
   Map,
   DollarSign,
@@ -42,7 +41,6 @@ interface ModuleSection {
 }
 
 const MODULE_ICONS: Record<ShareableModule, React.ReactNode> = {
-  travel: <MapPin className="w-5 h-5" />,
   visa: <Plane className="w-5 h-5" />,
   'trip-planner': <Map className="w-5 h-5" />,
   finances: <DollarSign className="w-5 h-5" />,
@@ -65,7 +63,6 @@ const MODULE_COLORS: Record<ShareableModule, string> = {
   todos: 'text-blue-500',
   goals: 'text-purple-500',
   habits: 'text-indigo-500',
-  travel: 'text-emerald-500',
   visa: 'text-sky-500',
   'trip-planner': 'text-teal-500',
   finances: 'text-lime-500',
@@ -252,8 +249,6 @@ function SharedModuleContent({ module, data }: SharedModuleContentProps): React.
   const getTitle = (item: SharedItem): string => {
     const record = item as Record<string, unknown>;
     switch (module) {
-      case 'travel':
-        return (record.country_name as string) || (record.city_name as string) || (record.state_name as string) || (record.region_name as string) || (record.island_name as string) || item.title || item.name || 'Location';
       case 'visa':
         return (record.country_name as string) || item.title || item.name || 'Visa';
       case 'trip-planner':

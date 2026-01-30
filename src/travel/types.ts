@@ -10,7 +10,9 @@ export type VisitStatus = 'visited' | 'lived' | 'transit' | 'wishlist';
 // Core entities
 export type VisitedLocation = {
   id: string;
-  userId: string;
+  userId?: string | null; // Owner of the location entry
+  connectionId?: string | null; // For backward compatibility with old merged mode
+  visitedBy?: string[]; // Array of user IDs who have visited this location (for collaborative tracking)
 
   // Location details
   locationType: LocationType;
@@ -40,72 +42,11 @@ export type VisitedLocation = {
   updatedAt: string;
 };
 
-export type Trip = {
-  id: string;
-  userId: string;
+// Helper type to categorize locations by who visited them
+export type LocationVisitCategory = 'mine' | 'partner' | 'both';
 
-  // Basic info
-  name: string;
-  description?: string;
-
-  // Dates
-  startDate: string; // ISO date
-  endDate?: string; // ISO date (null for ongoing trips)
-
-  // Location
-  countries: string[]; // Array of country codes
-  cities?: string[];
-
-  // Trip metadata
-  tripType: 'vacation' | 'business' | 'weekend' | 'road_trip' | 'backpacking' | 'cruise' | 'other';
-  travelCompanions?: string[]; // Names of people you traveled with
-
-  // Budget & Expenses
-  budgetAmount?: number;
-  budgetCurrency: string; // ISO 4217 (e.g., 'USD', 'EUR')
-  totalSpent?: number; // Calculated from expenses
-
-  // Media
-  coverPhotoUrl?: string;
-  photoUrls?: string[];
-
-  // Status
-  status: 'planning' | 'ongoing' | 'completed' | 'cancelled';
-
-  // Rating & memories
-  rating?: number; // 1-5
-  highlights?: string[];
-
-  createdAt: string;
-  updatedAt: string;
-};
-
-export type Itinerary = {
-  id: string;
-  userId: string;
-  tripId: string;
-
-  date: string; // ISO date
-
-  activities: ItineraryActivity[];
-
-  notes?: string;
-
-  createdAt: string;
-  updatedAt: string;
-};
-
-export type ItineraryActivity = {
-  id: string;
-  time?: string; // HH:MM format
-  title: string;
-  description?: string;
-  location?: string;
-  type: 'accommodation' | 'transportation' | 'activity' | 'meal' | 'other';
-  bookingReference?: string;
-  cost?: number;
-  currency?: string;
-  notes?: string;
+export type CategorizedLocation = VisitedLocation & {
+  visitCategory: LocationVisitCategory;
 };
 
 // Input types for forms
@@ -113,10 +54,6 @@ export type VisitedLocationInput = Omit<
   VisitedLocation,
   'id' | 'userId' | 'createdAt' | 'updatedAt'
 >;
-
-export type TripInput = Omit<Trip, 'id' | 'userId' | 'totalSpent' | 'createdAt' | 'updatedAt'>;
-
-export type ItineraryInput = Omit<Itinerary, 'id' | 'userId' | 'createdAt' | 'updatedAt'>;
 
 // Stats & Analytics
 export type TravelStats = {
@@ -127,17 +64,6 @@ export type TravelStats = {
   statesVisited: number;
   citiesVisited: number;
   continentsVisited: number;
-
-  // Trip stats
-  totalTrips: number;
-  completedTrips: number;
-  upcomingTrips: number;
-  totalTravelDays: number;
-
-  // Expense stats
-  totalSpent: number;
-  averageTripCost: number;
-  budgetAdherence: number; // Percentage
 
   // Journal stats
   journalEntries: number;

@@ -129,6 +129,7 @@
   { "id": "omn", "code": "OM", "name": "Oman", "continent": "Asia" },
   { "id": "pak", "code": "PK", "name": "Pakistan", "continent": "Asia" },
   { "id": "plw", "code": "PW", "name": "Palau", "continent": "Oceania" },
+  { "id": "pse", "code": "PS", "name": "Palestine", "continent": "Asia" },
   { "id": "pan", "code": "PA", "name": "Panama", "continent": "North America" },
   { "id": "png", "code": "PG", "name": "Papua New Guinea", "continent": "Oceania" },
   { "id": "pry", "code": "PY", "name": "Paraguay", "continent": "South America" },

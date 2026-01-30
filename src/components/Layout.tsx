@@ -51,7 +51,6 @@ const navigation = [
   { name: 'Self Care', icon: Sparkles, view: 'self-care' as const, path: '/self-care', section: 'wellbeing' },
   { name: 'Travel', icon: MapPin, view: 'travel' as const, path: '/travel', section: 'personal' },
   { name: 'Visa Calculator', icon: Plane, view: 'visa' as const, path: '/travel/visa', section: 'personal' },
-  { name: 'Trip Planner', icon: Map, view: 'trip-planner' as const, path: '/travel/trip-planner', section: 'personal' },
   { name: 'Finances', icon: DollarSign, view: 'finances' as const, path: '/finances', section: 'personal' },
   { name: 'Shopping', icon: ShoppingCart, view: 'shopping' as const, path: '/shopping', section: 'personal' },
   { name: 'Meals', icon: ChefHat, view: 'meals' as const, path: '/meals', section: 'personal' },
