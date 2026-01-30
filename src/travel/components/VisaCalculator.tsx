@@ -57,6 +57,12 @@ const VisaCalculator: React.FC = () => {
   // Bonus countries expansion state
   const [showAllBonus, setShowAllBonus] = React.useState(false);
 
+  // Travel date state (shared with VisaMap)
+  const [travelDate, setTravelDate] = React.useState<string>(() => {
+    // Default to today
+    return new Date().toISOString().split('T')[0];
+  });
+
   const availableCountries = React.useMemo(() => getAvailablePassportCountries(), []);
 
   // Check for merged connection
@@ -123,10 +129,14 @@ const VisaCalculator: React.FC = () => {
   }, [passport]);
 
   // Get additional access from visas (for bonus countries section)
+  // Only consider visas that are valid on the travel date
   const additionalAccessFromVisas = React.useMemo(() => {
-    const visaCountries = userVisas.map(v => v.countryName);
-    return getAdditionalAccessFromVisas(visaCountries);
-  }, [userVisas]);
+    const checkDate = new Date(travelDate);
+    const validVisaCountries = userVisas
+      .filter(v => new Date(v.expiryDate) >= checkDate)
+      .map(v => v.countryName);
+    return getAdditionalAccessFromVisas(validVisaCountries);
+  }, [userVisas, travelDate]);
 
   // Calculate all destinations with access
   const destinationRequirements = React.useMemo((): DestinationRequirement[] => {
@@ -134,12 +144,12 @@ const VisaCalculator: React.FC = () => {
 
     const results: DestinationRequirement[] = [];
 
-    // Check if user has a valid visa for countries
-    const today = new Date();
+    // Check if user has a valid visa for countries based on travel date
+    const checkDate = new Date(travelDate);
     const activeVisasMap = new Map<string, { daysAllowed?: number; expiryDate: string; visaType: string }>();
     userVisas.forEach(visa => {
       const expiryDate = new Date(visa.expiryDate);
-      if (expiryDate > today) {
+      if (expiryDate >= checkDate) {
         activeVisasMap.set(visa.countryName, {
           daysAllowed: visa.maxStayDays,
           expiryDate: visa.expiryDate,
@@ -149,8 +159,11 @@ const VisaCalculator: React.FC = () => {
     });
 
     // Get additional access from existing visas (H1B, Schengen, etc.)
-    const visaCountries = userVisas.map(v => v.countryName);
-    const additionalAccess = getAdditionalAccessFromVisas(visaCountries);
+    // Only consider visas that are valid on the travel date
+    const validVisaCountries = userVisas
+      .filter(v => new Date(v.expiryDate) >= checkDate)
+      .map(v => v.countryName);
+    const additionalAccess = getAdditionalAccessFromVisas(validVisaCountries);
 
     // Create a map of countries with visa-based access
     const visaAccessMap = new Map<string, { viaVisa: string; accessType: 'visa-free' | 'visa-on-arrival' | 'eta'; daysAllowed?: number; conditions?: string }>();
@@ -235,7 +248,7 @@ const VisaCalculator: React.FC = () => {
     });
 
     return results.sort((a, b) => a.country.localeCompare(b.country));
-  }, [passport, userVisas, availableCountries]);
+  }, [passport, userVisas, availableCountries, travelDate]);
 
   // Filter destinations by search term
   const filteredDestinations = React.useMemo(() => {
@@ -477,6 +490,8 @@ const VisaCalculator: React.FC = () => {
             allPassports={allPassports}
             currentUserId={currentUserId}
             mergedConnection={mergedConnection}
+            travelDate={travelDate}
+            onTravelDateChange={setTravelDate}
           />
         </div>
       )}

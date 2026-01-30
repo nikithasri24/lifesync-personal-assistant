@@ -21,6 +21,8 @@ interface VisaMapProps {
   allPassports?: UserPassport[]; // All passports (including partner's in merged mode)
   currentUserId?: string | null; // Current user ID for ownership filtering
   mergedConnection?: { connectionId: string; partnerId: string; partnerName?: string } | null;
+  travelDate?: string; // Optional travel date (defaults to today)
+  onTravelDateChange?: (date: string) => void; // Callback when travel date changes
 }
 
 interface GeoJSONGeometry {
@@ -44,7 +46,9 @@ const VisaMap: React.FC<VisaMapProps> = ({
   userVisas,
   allPassports = [],
   currentUserId = null,
-  mergedConnection = null
+  mergedConnection = null,
+  travelDate: externalTravelDate,
+  onTravelDateChange
 }) => {
   const [countries, setCountries] = React.useState<CountryFeature[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -52,10 +56,16 @@ const VisaMap: React.FC<VisaMapProps> = ({
   const [filterType, setFilterType] = React.useState<'all' | VisaRequirement>('all');
 
   // New filters for date and passport owner
-  const [travelDate, setTravelDate] = React.useState<string>(() => {
+  // Use external travel date if provided, otherwise use internal state
+  const [internalTravelDate, setInternalTravelDate] = React.useState<string>(() => {
     // Default to today
     return new Date().toISOString().split('T')[0];
   });
+  const travelDate = externalTravelDate ?? internalTravelDate;
+  const setTravelDate = (date: string) => {
+    setInternalTravelDate(date);
+    onTravelDateChange?.(date);
+  };
   const [passportOwnerFilter, setPassportOwnerFilter] = React.useState<PassportOwnerFilter>('both');
 
   // Debug logging
