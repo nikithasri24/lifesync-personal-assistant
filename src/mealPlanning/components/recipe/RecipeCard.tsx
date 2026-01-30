@@ -7,7 +7,8 @@
 import React from 'react';
 import { Clock, Users, Heart, Pencil, Trash2, ChefHat, ExternalLink } from 'lucide-react';
 import type { Recipe } from '../../../types';
-import { useUpdateRecipeMutation } from '@/hooks/useMealPlanningQuery';
+import { useUndoRedo } from '../../../contexts/UndoRedoContext';
+import { UpdateRecipeCommand } from '../../../commands/MealPlanningCommands';
 
 export interface RecipeCardProps {
   recipe: Recipe;
@@ -29,7 +30,7 @@ function extractDomain(url: string): string {
 }
 
 export function RecipeCard({ recipe, onView, onEdit, onDelete }: RecipeCardProps) {
-  const updateRecipeMutation = useUpdateRecipeMutation();
+  const { executeCommand } = useUndoRedo();
 
   const totalTime = (recipe.prepTime ?? 0) + (recipe.cookTime ?? 0);
   const displayTags = recipe.tags?.slice(0, 3) ?? [];
@@ -40,10 +41,13 @@ export function RecipeCard({ recipe, onView, onEdit, onDelete }: RecipeCardProps
     if (!recipe.id) return;
 
     try {
-      await updateRecipeMutation.mutateAsync({
-        recipeId: recipe.id,
-        updates: { isFavorite: !recipe.isFavorite },
-      });
+      const command = new UpdateRecipeCommand(
+        recipe.id,
+        recipe.name,
+        { isFavorite: !recipe.isFavorite },
+        { isFavorite: recipe.isFavorite }
+      );
+      await executeCommand(command);
     } catch (error) {
       console.error('Failed to toggle favorite:', error);
     }

@@ -36,10 +36,10 @@ const PERMISSION_LABELS: Record<ModulePermissionLevel, string> = {
 };
 
 const PERMISSION_COLORS: Record<ModulePermissionLevel, string> = {
-  none: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400',
-  view: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
-  collaborate: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
-  merged: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
+  none: 'bg-red-500 text-white dark:bg-red-600 dark:text-white ring-2 ring-red-300 dark:ring-red-400 shadow-md',
+  view: 'bg-blue-500 text-white dark:bg-blue-600 dark:text-white ring-2 ring-blue-300 dark:ring-blue-400 shadow-md',
+  collaborate: 'bg-green-500 text-white dark:bg-green-600 dark:text-white ring-2 ring-green-300 dark:ring-green-400 shadow-md',
+  merged: 'bg-purple-500 text-white dark:bg-purple-600 dark:text-white ring-2 ring-purple-300 dark:ring-purple-400 shadow-md',
 };
 
 export function PermissionManager({
@@ -101,8 +101,9 @@ export function PermissionManager({
         </div>
         {onClose && (
           <button
+            type="button"
             onClick={onClose}
-            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg"
+            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -136,11 +137,12 @@ export function PermissionManager({
                   <div className="flex gap-1 flex-shrink-0">
                     {config.supportedLevels.map(level => (
                       <button
+                        type="button"
                         key={level}
                         onClick={() => handlePermissionChange(config.module, level)}
                         className={`
                           px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5
-                          transition-all duration-200
+                          transition-all duration-200 cursor-pointer
                           ${permissions[config.module] === level
                             ? PERMISSION_COLORS[level]
                             : 'bg-slate-100 text-slate-400 dark:bg-slate-600 dark:text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-500'
@@ -164,18 +166,20 @@ export function PermissionManager({
       {hasChanges && (
         <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-200 dark:border-slate-600 flex-shrink-0">
           <button
+            type="button"
             onClick={() => {
               setPermissions(currentPermissions);
               setHasChanges(false);
             }}
-            className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg"
+            className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg cursor-pointer"
           >
             Cancel
           </button>
           <button
+            type="button"
             onClick={handleSave}
             disabled={isPending}
-            className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg flex items-center gap-2 disabled:opacity-50"
+            className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg flex items-center gap-2 disabled:opacity-50 cursor-pointer"
           >
             <Check className="w-4 h-4" />
             Save Changes

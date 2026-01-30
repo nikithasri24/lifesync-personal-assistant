@@ -181,7 +181,7 @@ export const MODULE_CONFIGS: Record<ShareableModule, ModulePermissionConfig> = {
     description: 'Visa requirements and travel calculations',
     icon: 'Plane',
     defaultLevel: 'none',
-    supportedLevels: ['none', 'view'],
+    supportedLevels: ['none', 'view', 'merged'],
     hasSettings: false,
   },
   'trip-planner': {
@@ -190,7 +190,7 @@ export const MODULE_CONFIGS: Record<ShareableModule, ModulePermissionConfig> = {
     description: 'Multi-country trip plans and itineraries',
     icon: 'Map',
     defaultLevel: 'none',
-    supportedLevels: ['none', 'view', 'collaborate'],
+    supportedLevels: ['none', 'view', 'collaborate', 'merged'],
     hasSettings: true,
   },
   finances: {
@@ -208,7 +208,7 @@ export const MODULE_CONFIGS: Record<ShareableModule, ModulePermissionConfig> = {
     description: 'Grocery lists and shopping plans',
     icon: 'ShoppingCart',
     defaultLevel: 'none',
-    supportedLevels: ['none', 'view', 'collaborate'],
+    supportedLevels: ['none', 'view', 'collaborate', 'merged'],
     hasSettings: false,
   },
   meals: {
@@ -217,7 +217,7 @@ export const MODULE_CONFIGS: Record<ShareableModule, ModulePermissionConfig> = {
     description: 'Meal planning and recipes',
     icon: 'ChefHat',
     defaultLevel: 'none',
-    supportedLevels: ['none', 'view', 'collaborate'],
+    supportedLevels: ['none', 'view', 'collaborate', 'merged'],
     hasSettings: false,
   },
   goals: {
@@ -226,7 +226,7 @@ export const MODULE_CONFIGS: Record<ShareableModule, ModulePermissionConfig> = {
     description: 'Life goals and dreams',
     icon: 'Trophy',
     defaultLevel: 'none',
-    supportedLevels: ['none', 'view', 'collaborate'],
+    supportedLevels: ['none', 'merged'],
     hasSettings: true,
   },
   habits: {

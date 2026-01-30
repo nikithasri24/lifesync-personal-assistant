@@ -29,10 +29,40 @@ import type {
   MilestoneTemplate,
 } from '../types/lifeGoals';
 
+import { getMergedConnectionId, type MergedConnectionResult } from '../../shared/api/SharedDataProvider';
+
+// ==================== Merged Connection Cache ====================
+
+let cachedMergedConnection: MergedConnectionResult | null | undefined;
+
+/**
+ * Get the merged connection ID for goals if both users have enabled merged mode.
+ * Results are cached for the session to avoid repeated database calls.
+ */
+export async function getGoalsMergedConnection(): Promise<MergedConnectionResult | null> {
+  if (cachedMergedConnection !== undefined) {
+    console.log('[LifeGoalsAPI] Using cached merged connection:', cachedMergedConnection);
+    return cachedMergedConnection;
+  }
+  cachedMergedConnection = await getMergedConnectionId('goals');
+  console.log('[LifeGoalsAPI] Fetched merged connection:', cachedMergedConnection);
+  return cachedMergedConnection;
+}
+
+/**
+ * Clear the cached merged connection (call when permissions change)
+ */
+export function clearGoalsMergedConnectionCache(): void {
+  console.log('[LifeGoalsAPI] Clearing merged connection cache');
+  cachedMergedConnection = undefined;
+}
+
 // Database row types
 interface LifeGoalRow {
   id: string;
   user_id: string;
+  connection_id?: string | null;  // For merged/shared goals
+  tracking_mode: 'combined' | 'individual';  // How progress is tracked for shared goals
   title: string;
   description: string | null;
   category: GoalCategory;
@@ -99,6 +129,8 @@ interface LifeGoalStreakEntryRow {
 interface LifeDreamRow {
   id: string;
   user_id: string;
+  connection_id?: string | null;  // For merged/shared dreams
+  tracking_mode: 'combined' | 'individual';  // How progress is tracked for shared dreams
   title: string;
   description: string | null;
   category: DreamCategory;
@@ -116,6 +148,18 @@ interface LifeDreamRow {
   notes: string | null;
   created_at: string;
   updated_at: string;
+}
+
+// Goal Progress Tracking row type (for personal progress on shared goals)
+interface GoalProgressTrackingRow {
+  id: string;
+  user_id: string;
+  goal_id: string;
+  personal_progress: number;
+  personal_current_value: number | null;
+  notes: string | null;
+  last_updated: string;
+  created_at: string;
 }
 
 interface LifeGoalTemplateRow {
@@ -149,6 +193,9 @@ interface UpdateLifeGoalData {
   completed_date?: string;
   tags?: string[];
   notes?: string;
+  // Sharing options
+  connection_id?: string | null;
+  tracking_mode?: 'combined' | 'individual';
 }
 
 interface UpdateMilestoneData {
@@ -174,39 +221,85 @@ interface UpdateLifeDreamData {
   vision_board_images?: string[];
   vision_board_notes?: string;
   notes?: string;
+  // Sharing options
+  connection_id?: string | null;
+  tracking_mode?: 'combined' | 'individual';
 }
 
 /**
  * Get all life goals for current user
+ * In merged mode: fetches:
+ *   - My personal goals (user_id = me AND connection_id IS NULL)
+ *   - Partner's personal goals (user_id = partner AND connection_id IS NULL)
+ *   - Shared goals (connection_id = mergedConnection)
+ * In personal mode: fetches only goals by user_id
  */
 export async function getUserLifeGoals(): Promise<LifeGoal[]> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
-  const { data, error } = await supabase
-    .from('life_goals')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false });
+  const mergedConnection = await getGoalsMergedConnection();
+  console.log('[LifeGoalsAPI] getUserLifeGoals - user:', user.id, 'mergedConnection:', mergedConnection);
 
-  if (error) throw error;
+  if (mergedConnection) {
+    // Merged mode: fetch personal goals from BOTH users AND shared goals
+    // My personal goals: user_id = me AND connection_id IS NULL
+    // Partner's personal goals: user_id = partner AND connection_id IS NULL
+    // Shared goals: connection_id = merged connection
+    const { data, error } = await supabase
+      .from('life_goals')
+      .select('*')
+      .or(`and(user_id.eq.${user.id},connection_id.is.null),and(user_id.eq.${mergedConnection.partnerId},connection_id.is.null),connection_id.eq.${mergedConnection.connectionId}`)
+      .order('created_at', { ascending: false });
 
-  return (data ?? []).map((row) => mapDbToLifeGoal(row as LifeGoalRow));
+    if (error) throw error;
+    const goals = (data ?? []).map((row) => mapDbToLifeGoal(row as LifeGoalRow));
+    const myPersonalCount = goals.filter(g => !g.connectionId && g.userId === user.id).length;
+    const partnerPersonalCount = goals.filter(g => !g.connectionId && g.userId === mergedConnection.partnerId).length;
+    const sharedCount = goals.filter(g => g.connectionId).length;
+    console.log('[LifeGoalsAPI] Fetched', goals.length, 'total goals (', myPersonalCount, 'my personal,', partnerPersonalCount, 'partner personal,', sharedCount, 'shared)');
+    return goals;
+  } else {
+    // Personal mode: fetch by user_id only
+    const { data, error } = await supabase
+      .from('life_goals')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return (data ?? []).map((row) => mapDbToLifeGoal(row as LifeGoalRow));
+  }
 }
 
 /**
  * Get life goal by ID with milestones
+ * In merged mode: can access both personal goals (user's own) and shared goals (by connection_id)
  */
 export async function getLifeGoalById(goalId: string): Promise<LifeGoalWithMilestones | null> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
-  const goalResult = await supabase
-    .from('life_goals')
-    .select('*')
-    .eq('id', goalId)
-    .eq('user_id', user.id)
-    .single();
+  const mergedConnection = await getGoalsMergedConnection();
+
+  let goalResult;
+  if (mergedConnection) {
+    // Merged mode: can access personal goals (user's own) OR shared goals (by connection_id)
+    goalResult = await supabase
+      .from('life_goals')
+      .select('*')
+      .eq('id', goalId)
+      .or(`and(user_id.eq.${user.id},connection_id.is.null),connection_id.eq.${mergedConnection.connectionId}`)
+      .single();
+  } else {
+    // Personal mode: fetch by ID and user_id only
+    goalResult = await supabase
+      .from('life_goals')
+      .select('*')
+      .eq('id', goalId)
+      .eq('user_id', user.id)
+      .single();
+  }
 
   if (goalResult.error) throw goalResult.error;
   if (!goalResult.data) return null;
@@ -232,26 +325,43 @@ export async function createLifeGoal(input: CreateLifeGoalInput): Promise<LifeGo
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
+  // Determine if this should be a shared goal
+  let connectionId: string | null = null;
+  if (input.isShared) {
+    const mergedConnection = await getGoalsMergedConnection();
+    console.log('[LifeGoalsAPI] createLifeGoal - mergedConnection:', mergedConnection);
+    if (mergedConnection) {
+      connectionId = mergedConnection.connectionId;
+    } else {
+      console.warn('[LifeGoalsAPI] isShared=true but no merged connection available');
+    }
+  }
+
+  // Build insert data
+  const insertData: Record<string, unknown> = {
+    user_id: user.id,  // Always set user_id to track who created the goal
+    connection_id: connectionId,  // Only set if shared
+    tracking_mode: input.trackingMode ?? 'combined',
+    title: input.title,
+    description: input.description,
+    category: input.category,
+    priority: input.priority,
+    target_value: input.targetValue,
+    current_value: input.currentValue ?? 0,
+    unit: input.unit,
+    start_date: input.startDate,
+    target_date: input.targetDate,
+    difficulty: input.difficulty ?? 'medium',
+    tags: input.tags ?? [],
+    template_id: input.templateId,
+    streak_enabled: input.streakEnabled ?? false,
+    streak_frequency: input.streakFrequency ?? 'daily',
+    streak_target: input.streakTarget,
+  };
+
   const result = await supabase
     .from('life_goals')
-    .insert({
-      user_id: user.id,
-      title: input.title,
-      description: input.description,
-      category: input.category,
-      priority: input.priority,
-      target_value: input.targetValue,
-      current_value: input.currentValue ?? 0,
-      unit: input.unit,
-      start_date: input.startDate,
-      target_date: input.targetDate,
-      difficulty: input.difficulty ?? 'medium',
-      tags: input.tags ?? [],
-      template_id: input.templateId,
-      streak_enabled: input.streakEnabled ?? false,
-      streak_frequency: input.streakFrequency ?? 'daily',
-      streak_target: input.streakTarget,
-    })
+    .insert(insertData)
     .select()
     .single();
 
@@ -265,6 +375,8 @@ export async function createLifeGoal(input: CreateLifeGoalInput): Promise<LifeGo
 export async function updateLifeGoal(goalId: string, input: UpdateLifeGoalInput): Promise<LifeGoal> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
+
+  const mergedConnection = await getGoalsMergedConnection();
 
   const updateData: UpdateLifeGoalData = {};
   if (input.title !== undefined) updateData.title = input.title;
@@ -281,13 +393,35 @@ export async function updateLifeGoal(goalId: string, input: UpdateLifeGoalInput)
   if (input.tags !== undefined) updateData.tags = input.tags;
   if (input.notes !== undefined) updateData.notes = input.notes;
 
-  const result = await supabase
-    .from('life_goals')
-    .update(updateData)
-    .eq('id', goalId)
-    .eq('user_id', user.id)
-    .select()
-    .single();
+  // Handle sharing options change
+  if (input.isShared !== undefined && mergedConnection) {
+    // Changing to shared: set connection_id
+    // Changing to personal: set connection_id to null
+    updateData.connection_id = input.isShared ? mergedConnection.connectionId : null;
+  }
+  if (input.trackingMode !== undefined) updateData.tracking_mode = input.trackingMode;
+
+  let result;
+  if (mergedConnection) {
+    // Merged mode: can update own personal goals OR shared goals
+    // Try to update: either (user's own goal) OR (shared goal with connection_id)
+    result = await supabase
+      .from('life_goals')
+      .update(updateData)
+      .eq('id', goalId)
+      .or(`user_id.eq.${user.id},connection_id.eq.${mergedConnection.connectionId}`)
+      .select()
+      .single();
+  } else {
+    // Personal mode: update by ID and user_id
+    result = await supabase
+      .from('life_goals')
+      .update(updateData)
+      .eq('id', goalId)
+      .eq('user_id', user.id)
+      .select()
+      .single();
+  }
 
   if (result.error) throw result.error;
   return mapDbToLifeGoal(result.data as LifeGoalRow);
@@ -300,11 +434,26 @@ export async function deleteLifeGoal(goalId: string): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
-  const { error } = await supabase
-    .from('life_goals')
-    .delete()
-    .eq('id', goalId)
-    .eq('user_id', user.id);
+  const mergedConnection = await getGoalsMergedConnection();
+
+  let error;
+  if (mergedConnection) {
+    // Merged mode: can delete own personal goals OR shared goals
+    const result = await supabase
+      .from('life_goals')
+      .delete()
+      .eq('id', goalId)
+      .or(`user_id.eq.${user.id},connection_id.eq.${mergedConnection.connectionId}`);
+    error = result.error;
+  } else {
+    // Personal mode: delete by ID and user_id
+    const result = await supabase
+      .from('life_goals')
+      .delete()
+      .eq('id', goalId)
+      .eq('user_id', user.id);
+    error = result.error;
+  }
 
   if (error) throw error;
 }
@@ -462,19 +611,48 @@ export async function getStreakHistory(goalId: string, limit = 30): Promise<Life
 
 /**
  * Get all life dreams for current user
+ * In merged mode: fetches:
+ *   - My personal dreams (user_id = me AND connection_id IS NULL)
+ *   - Partner's personal dreams (user_id = partner AND connection_id IS NULL)
+ *   - Shared dreams (connection_id = mergedConnection)
+ * In personal mode: fetches only dreams by user_id
  */
 export async function getUserLifeDreams(): Promise<LifeDream[]> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
-  const { data, error } = await supabase
-    .from('life_dreams')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false });
+  const mergedConnection = await getGoalsMergedConnection();
+  console.log('[LifeGoalsAPI] getUserLifeDreams - user:', user.id, 'mergedConnection:', mergedConnection);
 
-  if (error) throw error;
-  return (data ?? []).map((row) => mapDbToLifeDream(row as LifeDreamRow));
+  if (mergedConnection) {
+    // Merged mode: fetch personal dreams from BOTH users AND shared dreams
+    // My personal dreams: user_id = me AND connection_id IS NULL
+    // Partner's personal dreams: user_id = partner AND connection_id IS NULL
+    // Shared dreams: connection_id = merged connection
+    const { data, error } = await supabase
+      .from('life_dreams')
+      .select('*')
+      .or(`and(user_id.eq.${user.id},connection_id.is.null),and(user_id.eq.${mergedConnection.partnerId},connection_id.is.null),connection_id.eq.${mergedConnection.connectionId}`)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    const dreams = (data ?? []).map((row) => mapDbToLifeDream(row as LifeDreamRow));
+    const myPersonalCount = dreams.filter(d => !d.connectionId && d.userId === user.id).length;
+    const partnerPersonalCount = dreams.filter(d => !d.connectionId && d.userId === mergedConnection.partnerId).length;
+    const sharedCount = dreams.filter(d => d.connectionId).length;
+    console.log('[LifeGoalsAPI] Fetched', dreams.length, 'total dreams (', myPersonalCount, 'my personal,', partnerPersonalCount, 'partner personal,', sharedCount, 'shared)');
+    return dreams;
+  } else {
+    // Personal mode: fetch by user_id only
+    const { data, error } = await supabase
+      .from('life_dreams')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return (data ?? []).map((row) => mapDbToLifeDream(row as LifeDreamRow));
+  }
 }
 
 /**
@@ -484,23 +662,40 @@ export async function createLifeDream(input: CreateLifeDreamInput): Promise<Life
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
+  // Determine if this should be a shared dream
+  let connectionId: string | null = null;
+  if (input.isShared) {
+    const mergedConnection = await getGoalsMergedConnection();
+    console.log('[LifeGoalsAPI] createLifeDream - mergedConnection:', mergedConnection);
+    if (mergedConnection) {
+      connectionId = mergedConnection.connectionId;
+    } else {
+      console.warn('[LifeGoalsAPI] isShared=true but no merged connection available');
+    }
+  }
+
+  // Build insert data
+  const insertData: Record<string, unknown> = {
+    user_id: user.id,  // Always set user_id to track who created the dream
+    connection_id: connectionId,  // Only set if shared
+    tracking_mode: input.trackingMode ?? 'combined',
+    title: input.title,
+    description: input.description,
+    category: input.category,
+    priority: input.priority ?? 'someday',  // Default for backward compatibility
+    status: 'dreaming',
+    estimated_cost: input.estimatedCost,
+    estimated_timeframe: input.estimatedTimeframe,
+    required_resources: input.requiredResources ?? [],
+    inspiration_sources: input.inspirationSources ?? [],
+    tags: input.tags ?? [],
+    vision_board_images: input.visionBoardImages ?? [],
+    vision_board_notes: input.visionBoardNotes,
+  };
+
   const result = await supabase
     .from('life_dreams')
-    .insert({
-      user_id: user.id,
-      title: input.title,
-      description: input.description,
-      category: input.category,
-      priority: input.priority,
-      status: 'dreaming',
-      estimated_cost: input.estimatedCost,
-      estimated_timeframe: input.estimatedTimeframe,
-      required_resources: input.requiredResources ?? [],
-      inspiration_sources: input.inspirationSources ?? [],
-      tags: input.tags ?? [],
-      vision_board_images: input.visionBoardImages ?? [],
-      vision_board_notes: input.visionBoardNotes,
-    })
+    .insert(insertData)
     .select()
     .single();
 
@@ -514,6 +709,8 @@ export async function createLifeDream(input: CreateLifeDreamInput): Promise<Life
 export async function updateLifeDream(dreamId: string, input: UpdateLifeDreamInput): Promise<LifeDream> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
+
+  const mergedConnection = await getGoalsMergedConnection();
 
   const updateData: UpdateLifeDreamData = {};
   if (input.title !== undefined) updateData.title = input.title;
@@ -531,13 +728,34 @@ export async function updateLifeDream(dreamId: string, input: UpdateLifeDreamInp
   if (input.visionBoardNotes !== undefined) updateData.vision_board_notes = input.visionBoardNotes;
   if (input.notes !== undefined) updateData.notes = input.notes;
 
-  const result = await supabase
-    .from('life_dreams')
-    .update(updateData)
-    .eq('id', dreamId)
-    .eq('user_id', user.id)
-    .select()
-    .single();
+  // Handle sharing options change
+  if (input.isShared !== undefined && mergedConnection) {
+    // Changing to shared: set connection_id
+    // Changing to personal: set connection_id to null
+    updateData.connection_id = input.isShared ? mergedConnection.connectionId : null;
+  }
+  if (input.trackingMode !== undefined) updateData.tracking_mode = input.trackingMode;
+
+  let result;
+  if (mergedConnection) {
+    // Merged mode: can update own personal dreams OR shared dreams
+    result = await supabase
+      .from('life_dreams')
+      .update(updateData)
+      .eq('id', dreamId)
+      .or(`user_id.eq.${user.id},connection_id.eq.${mergedConnection.connectionId}`)
+      .select()
+      .single();
+  } else {
+    // Personal mode: update by ID and user_id
+    result = await supabase
+      .from('life_dreams')
+      .update(updateData)
+      .eq('id', dreamId)
+      .eq('user_id', user.id)
+      .select()
+      .single();
+  }
 
   if (result.error) throw result.error;
   return mapDbToLifeDream(result.data as LifeDreamRow);
@@ -550,11 +768,112 @@ export async function deleteLifeDream(dreamId: string): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
+  const mergedConnection = await getGoalsMergedConnection();
+
+  let error;
+  if (mergedConnection) {
+    // Merged mode: can delete own personal dreams OR shared dreams
+    const result = await supabase
+      .from('life_dreams')
+      .delete()
+      .eq('id', dreamId)
+      .or(`user_id.eq.${user.id},connection_id.eq.${mergedConnection.connectionId}`);
+    error = result.error;
+  } else {
+    // Personal mode: delete by ID and user_id
+    const result = await supabase
+      .from('life_dreams')
+      .delete()
+      .eq('id', dreamId)
+      .eq('user_id', user.id);
+    error = result.error;
+  }
+
+  if (error) throw error;
+}
+
+// ==================== Personal Progress Tracking ====================
+
+/**
+ * Get personal progress tracking for shared goals
+ * In merged mode, each user has their own progress on shared goals
+ */
+export async function getGoalProgressTracking(goalIds: string[]): Promise<GoalProgressTrackingRow[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  if (goalIds.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from('goal_progress_tracking')
+    .select('*')
+    .eq('user_id', user.id)
+    .in('goal_id', goalIds);
+
+  if (error) throw error;
+  return (data ?? []) as GoalProgressTrackingRow[];
+}
+
+/**
+ * Get partner's progress tracking for shared goals
+ */
+export async function getPartnerGoalProgress(goalIds: string[], partnerId: string): Promise<GoalProgressTrackingRow[]> {
+  if (goalIds.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from('goal_progress_tracking')
+    .select('*')
+    .eq('user_id', partnerId)
+    .in('goal_id', goalIds);
+
+  if (error) throw error;
+  return (data ?? []) as GoalProgressTrackingRow[];
+}
+
+/**
+ * Update personal progress on a shared goal
+ */
+export async function updateGoalProgressTracking(
+  goalId: string,
+  personalProgress: number,
+  personalCurrentValue?: number,
+  notes?: string
+): Promise<GoalProgressTrackingRow> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  // Upsert - insert or update on conflict
+  const { data, error } = await supabase
+    .from('goal_progress_tracking')
+    .upsert({
+      user_id: user.id,
+      goal_id: goalId,
+      personal_progress: Math.min(100, Math.max(0, personalProgress)),
+      personal_current_value: personalCurrentValue,
+      notes: notes,
+      last_updated: new Date().toISOString(),
+    }, {
+      onConflict: 'user_id,goal_id',
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as GoalProgressTrackingRow;
+}
+
+/**
+ * Delete personal progress tracking for a goal
+ */
+export async function deleteGoalProgressTracking(goalId: string): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
   const { error } = await supabase
-    .from('life_dreams')
+    .from('goal_progress_tracking')
     .delete()
-    .eq('id', dreamId)
-    .eq('user_id', user.id);
+    .eq('user_id', user.id)
+    .eq('goal_id', goalId);
 
   if (error) throw error;
 }
@@ -680,6 +999,8 @@ function mapDbToLifeGoal(data: LifeGoalRow): LifeGoal {
   return {
     id: data.id,
     userId: data.user_id,
+    connectionId: data.connection_id ?? undefined,  // For merged/shared goals
+    trackingMode: data.tracking_mode ?? 'combined',  // How progress is tracked for shared goals
     title: data.title,
     description: data.description ?? undefined,
     category: data.category,
@@ -754,6 +1075,8 @@ function mapDbToLifeDream(data: LifeDreamRow): LifeDream {
   return {
     id: data.id,
     userId: data.user_id,
+    connectionId: data.connection_id ?? undefined,  // For merged/shared dreams
+    trackingMode: data.tracking_mode ?? 'combined',  // How progress is tracked for shared dreams
     title: data.title,
     description: data.description ?? undefined,
     category: data.category,

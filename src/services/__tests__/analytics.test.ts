@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { getTasks } from '@/api/tasksAPI';
 import { getHabits } from '@/api/habitsAPI';
-import { getGoals } from '@/api/goalsAPI';
+import { getUserLifeGoals } from '@/goals/api/lifeGoalsAPI';
 
 // Mock the APIs
 vi.mock('@/api/tasksAPI');
 vi.mock('@/api/habitsAPI');
-vi.mock('@/api/goalsAPI');
+vi.mock('@/goals/api/lifeGoalsAPI');
 
 describe('Analytics Service', () => {
   beforeEach(() => {
@@ -78,11 +78,11 @@ describe('Analytics Service', () => {
   it('should aggregate cross-feature data', async () => {
     const mockTasks = [{ id: '1', status: 'done' }];
     const mockHabits = [{ id: '1', streak_count: 5 }];
-    const mockGoals = [{ id: '1', status: 'active', progress: 75 }];
+    const mockGoals = [{ id: '1', status: 'in-progress', progress: 75 }];
 
     vi.mocked(getTasks).mockResolvedValue(mockTasks as any);
     vi.mocked(getHabits).mockResolvedValue(mockHabits as any);
-    vi.mocked(getGoals).mockResolvedValue(mockGoals as any);
+    vi.mocked(getUserLifeGoals).mockResolvedValue(mockGoals as any);
 
     // Aggregate data
     const summary = {

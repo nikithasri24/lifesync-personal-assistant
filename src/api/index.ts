@@ -6,7 +6,6 @@
 export * from './tasksAPI';
 export * from './projectsAPI';
 export * from './habitsAPI';
-export * from './goalsAPI';
 export * from './lifeGoalsAPI';
 
 // Analytics

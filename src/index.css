@@ -181,25 +181,25 @@ body {
 input,
 textarea,
 select {
-  color: #ffffff !important;
+  color: #334155; /* slate-700 for light mode */
   background-color: inherit;
 }
 
 .dark input,
 .dark textarea,
 .dark select {
-  color: #ffffff !important;
+  color: #f1f5f9; /* slate-100 for dark mode */
 }
 
 input::placeholder,
 textarea::placeholder {
-  color: #cbd5e1 !important;
-  opacity: 0.8;
+  color: #94a3b8; /* slate-400 - visible on light backgrounds */
+  opacity: 1;
 }
 
 .dark input::placeholder,
 .dark textarea::placeholder {
-  color: #cbd5e1 !important;
+  color: #64748b; /* slate-500 for dark mode */
 }
 
 /* Beautiful Scrollbar */

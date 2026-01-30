@@ -1,14 +1,21 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Flame, Trash2, Check, X, RefreshCw, Undo2, Loader2 } from 'lucide-react';
+import { Flame, Trash2, Check, X, RefreshCw, Undo2, Loader2, User } from 'lucide-react';
 import { format } from 'date-fns';
 import type { PlannedMeal, Recipe } from '../../../types';
 import { useLogFoodMutation } from '../../../hooks/useNutritionQuery';
-import { useUpdatePlannedMealMutation, useDeletePlannedMealMutation } from '../../../hooks/useMealPlanningQuery';
+import {
+  useUpdatePlannedMealMutation,
+  useDeletePlannedMealMutation,
+  useMealTrackingQuery,
+  usePartnerMealTrackingQuery,
+  useTrackMealMutation,
+  useDeleteMealTrackingMutation,
+} from '../../../hooks/useMealPlanningQuery';
 import { SwapMealModal } from './SwapMealModal';
 import { logger } from '../../../services/logger';
 import type { MealType } from '../../../api/nutritionAPI';
 import { useUndoRedo } from '../../../contexts/UndoRedoContext';
-import { DeletePlannedMealCommand, UpdatePlannedMealCommand } from '../../../commands/MealPlanningCommands';
+import { DeletePlannedMealCommand, UpdatePlannedMealCommand, TrackMealCommand } from '../../../commands/MealPlanningCommands';
 
 // Meal type color mapping
 const MEAL_TYPE_COLORS = {
@@ -21,11 +28,13 @@ const MEAL_TYPE_COLORS = {
 interface MealItemProps {
   meal: PlannedMeal;
   recipes: Recipe[];
+  isMerged?: boolean;
+  partnerId?: string;
   onShowRecipeForm: (initialName: string, onSave: (recipe: Omit<Recipe, 'id' | 'createdAt'>) => void) => void;
   onShowSimpleEdit: (recipe: Recipe, onSave: (updates: Partial<Recipe>) => void) => void;
 }
 
-export const MealItem: React.FC<MealItemProps> = ({ meal, recipes, onShowRecipeForm: _onShowRecipeForm, onShowSimpleEdit: _onShowSimpleEdit }) => {
+export const MealItem: React.FC<MealItemProps> = ({ meal, recipes, isMerged = false, partnerId, onShowRecipeForm: _onShowRecipeForm, onShowSimpleEdit: _onShowSimpleEdit }) => {
   const recipe = recipes.find(r => r.id === meal.recipeId);
   const mealName = recipe?.name || meal.customMeal || 'Unnamed meal';
   const calories = recipe?.calories ? recipe.calories * (meal.servings || 1) : null;
@@ -46,6 +55,20 @@ export const MealItem: React.FC<MealItemProps> = ({ meal, recipes, onShowRecipeF
   const deleteMealMutation = useDeletePlannedMealMutation();
   const logFoodMutation = useLogFoodMutation();
   const { executeCommand } = useUndoRedo();
+
+  // Personal meal tracking for merged mode
+  const { data: trackingMap } = useMealTrackingQuery([meal.id], { enabled: isMerged });
+  const myTracking = trackingMap?.get(meal.id);
+  const trackMealMutation = useTrackMealMutation();
+  const deleteTrackingMutation = useDeleteMealTrackingMutation();
+
+  // Partner's meal tracking for merged mode - to show what they ate
+  const { data: partnerTrackingMap } = usePartnerMealTrackingQuery(
+    [meal.id],
+    partnerId,
+    { enabled: isMerged && !!partnerId }
+  );
+  const partnerTracking = partnerTrackingMap?.get(meal.id);
 
   // Quick log handler for checkbox
   const handleQuickLog = async (e: React.MouseEvent | React.ChangeEvent) => {
@@ -70,14 +93,29 @@ export const MealItem: React.FC<MealItemProps> = ({ meal, recipes, onShowRecipeF
         fat_g: (nutritionInfo?.fat_g || 0) * (meal.servings || 1),
       });
 
-      // Update meal status to 'eaten' and link to food log
-      await updateMealMutation.mutateAsync({
-        mealId: meal.id,
-        updates: {
-          status: 'eaten',
-          actualFoodLogId: foodLog.id,
-        },
-      });
+      if (isMerged) {
+        // In merged mode, use personal tracking table with command pattern for undo
+        const command = new TrackMealCommand(
+          meal.id,
+          mealDisplayName,
+          {
+            status: 'eaten',
+            caloriesConsumed: mealCalories * (meal.servings || 1),
+            servingsConsumed: meal.servings || 1,
+          },
+          myTracking ?? null // Previous tracking state for undo
+        );
+        await executeCommand(command);
+      } else {
+        // In personal mode, update the planned meal directly
+        await updateMealMutation.mutateAsync({
+          mealId: meal.id,
+          updates: {
+            status: 'eaten',
+            actualFoodLogId: foodLog.id,
+          },
+        });
+      }
     } catch (err) {
       logger.error('MealItem', 'Failed to log meal', { error: err });
     } finally {
@@ -133,18 +171,23 @@ export const MealItem: React.FC<MealItemProps> = ({ meal, recipes, onShowRecipeF
 
   const handleUndoLog = async () => {
     try {
-      // Use command pattern for undo support
-      const previousState = {
-        status: meal.status,
-        actualFoodLogId: meal.actualFoodLogId,
-      };
-      const command = new UpdatePlannedMealCommand(
-        meal.id,
-        mealName,
-        { status: 'planned', actualFoodLogId: undefined },
-        previousState
-      );
-      await executeCommand(command);
+      if (isMerged && myTracking?.id) {
+        // In merged mode, delete the personal tracking record
+        await deleteTrackingMutation.mutateAsync(myTracking.id);
+      } else {
+        // In personal mode, use command pattern for undo support
+        const previousState = {
+          status: meal.status,
+          actualFoodLogId: meal.actualFoodLogId,
+        };
+        const command = new UpdatePlannedMealCommand(
+          meal.id,
+          mealName,
+          { status: 'planned', actualFoodLogId: undefined },
+          previousState
+        );
+        await executeCommand(command);
+      }
     } catch (error) {
       logger.error('MealItem', 'Failed to undo log', { error });
     }
@@ -213,14 +256,27 @@ export const MealItem: React.FC<MealItemProps> = ({ meal, recipes, onShowRecipeF
     );
   }
 
-  const isEaten = meal.status === 'eaten';
+  // In merged mode, check personal tracking; in personal mode, check meal status
+  const isEaten = isMerged
+    ? myTracking?.status === 'eaten'
+    : meal.status === 'eaten';
+
+  // Check if meal was swapped (only in merged mode)
+  const isSwapped = isMerged && myTracking?.status === 'swapped';
+  const swappedMealName = myTracking?.swappedMeal;
+
+  // Determine if meal is completed (eaten or swapped)
+  const isCompleted = isEaten || isSwapped;
+
+  // Display name: show swapped meal if swapped, otherwise original
+  const displayName = isSwapped && swappedMealName ? swappedMealName : mealName;
 
   return (
     <li
       style={{ listStyle: 'none', background: 'transparent', border: 'none', margin: 0, padding: 0 }}
-      draggable={!isEaten}
+      draggable={!isCompleted}
       onDragStart={(e) => {
-        if (isEaten) {
+        if (isCompleted) {
           e.preventDefault();
           return;
         }
@@ -234,7 +290,7 @@ export const MealItem: React.FC<MealItemProps> = ({ meal, recipes, onShowRecipeF
         <div className="shrink-0 flex items-center">
           {isLogging ? (
             <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />
-          ) : isEaten ? (
+          ) : isCompleted ? (
             <button
               type="button"
               onClick={(e) => {
@@ -243,8 +299,12 @@ export const MealItem: React.FC<MealItemProps> = ({ meal, recipes, onShowRecipeF
                 }
                 void handleUndoLog();
               }}
-              className="w-4 h-4 rounded border-2 border-green-500 bg-green-500 flex items-center justify-center hover:bg-green-600 hover:border-green-600 transition-colors cursor-pointer"
-              title="Click to undo"
+              className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors cursor-pointer ${
+                isSwapped
+                  ? 'border-amber-500 bg-amber-500 hover:bg-amber-600 hover:border-amber-600'
+                  : 'border-green-500 bg-green-500 hover:bg-green-600 hover:border-green-600'
+              }`}
+              title={isSwapped ? `Swapped: ${swappedMealName} (click to undo)` : 'Click to undo'}
             >
               <Check className="w-3 h-3 text-white" />
             </button>
@@ -258,25 +318,55 @@ export const MealItem: React.FC<MealItemProps> = ({ meal, recipes, onShowRecipeF
           )}
         </div>
 
-        {/* Meal Name */}
-        <span
-          onClick={(e) => {
-            if (isEaten || isRecipeMeal) return;
-            if (!e.metaKey && !e.ctrlKey) {
-              e.stopPropagation();
+        {/* Meal Name and Partner Status */}
+        <div className="flex-1 min-w-0 flex flex-col">
+          <span
+            onClick={(e) => {
+              if (isCompleted || isRecipeMeal) return;
+              if (!e.metaKey && !e.ctrlKey) {
+                e.stopPropagation();
+              }
+              setIsEditing(true);
+            }}
+            className={`text-left text-sm cursor-pointer ${
+              isSwapped
+                ? 'line-through text-amber-600'
+                : isEaten
+                  ? 'line-through text-green-600'
+                  : 'text-slate-700 dark:text-slate-200'
+            }`}
+            style={{
+              background: 'transparent',
+              border: 'none',
+            }}
+            title={
+              isSwapped
+                ? `Swapped with: ${swappedMealName}`
+                : isEaten
+                  ? 'Meal logged'
+                  : isRecipeMeal
+                    ? 'Edit the recipe in Saved Recipes'
+                    : 'Click to edit'
             }
-            setIsEditing(true);
-          }}
-          className={`flex-1 min-w-0 text-left text-sm cursor-pointer ${isEaten ? 'line-through' : ''}`}
-          style={{
-            background: 'transparent',
-            border: 'none',
-            color: isEaten ? '#16a34a' : '#e2e8f0'
-          }}
-          title={isEaten ? 'Meal logged' : isRecipeMeal ? 'Edit the recipe in Saved Recipes' : 'Click to edit'}
-        >
-          {mealName}
-        </span>
+          >
+            {isSwapped ? (
+              <span>
+                <span className="line-through">{mealName}</span>
+                <span className="text-amber-600 no-underline"> → {swappedMealName}</span>
+              </span>
+            ) : (
+              displayName
+            )}
+          </span>
+
+          {/* Partner's meal status - show if they ate something different */}
+          {isMerged && partnerTracking?.status === 'swapped' && partnerTracking.swappedMeal && (
+            <div className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              <User className="w-3 h-3" />
+              <span>{partnerTracking.swappedMeal}</span>
+            </div>
+          )}
+        </div>
 
         {/* Calories */}
         {calories && (
@@ -330,6 +420,7 @@ export const MealItem: React.FC<MealItemProps> = ({ meal, recipes, onShowRecipeF
         <SwapMealModal
           meal={meal}
           recipe={recipe}
+          isMerged={isMerged}
           onClose={() => setShowSwapModal(false)}
           onSuccess={() => {
             setShowSwapModal(false);

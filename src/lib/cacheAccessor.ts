@@ -17,11 +17,12 @@ import { queryClient as defaultQueryClient, queryKeys } from './react-query';
 import { getTasks, getTask } from '@/api/tasksAPI';
 import { getHabits, getHabit, getHabitEntries, getHabitEntriesForDate } from '@/api/habitsAPI';
 import { getCalendarEvents, getCalendarEvent } from '@/api/calendarAPI';
-import { getGoals, getGoal } from '@/api/goalsAPI';
+import { getUserLifeGoals, getLifeGoalById } from '@/goals/api/lifeGoalsAPI';
+import type { LifeGoal, LifeGoalWithMilestones } from '@/goals/types/lifeGoals';
 import { getFocusSessions } from '@/api/focusAPI';
 import { getJournalEntries } from '@/api/journalAPI';
 import type { TaskData, HabitData, HabitEntryData, FocusSessionData, CalendarEvent } from '@/services/types';
-import type { JournalEntry, Goal } from '@/types';
+import type { JournalEntry } from '@/types';
 import { logger } from '@/services/logger';
 
 interface CacheOptions {
@@ -148,18 +149,18 @@ export function createCacheAccessor(client: QueryClient = defaultQueryClient) {
 
     // ===== GOALS =====
     getGoals: async (options?: CacheOptions) => {
-      return fetchWithCache<Goal[], undefined>(
+      return fetchWithCache<LifeGoal[], undefined>(
         queryKeys.goals.list(),
-        getGoals as () => Promise<Goal[]>,
+        getUserLifeGoals,
         undefined,
         options
       );
     },
 
     getGoal: async (id: string, options?: CacheOptions) => {
-      return fetchWithCache<Goal | null, string>(
+      return fetchWithCache<LifeGoalWithMilestones | null, string>(
         queryKeys.goals.detail(id),
-        () => getGoal(id) as Promise<Goal | null>,
+        () => getLifeGoalById(id),
         undefined,
         options
       );

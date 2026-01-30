@@ -1,13 +1,25 @@
-import React from 'react';
-import type { Recipe, PlannedMeal } from '../../../types';
-import { GroceryListModal } from '../modals/GroceryListModal';
-import { CopyWeekModal } from '../modals/CopyWeekModal';
-import { QuickRecipeModal } from '../modals/QuickRecipeModal';
-import { SimpleRecipeEditModal } from '../modals/SimpleRecipeEditModal';
-import { RecipeEditModal } from '../modals/RecipeEditModal';
-import { RecipeViewModal } from '../modals/RecipeViewModal';
+import React, { Suspense, lazy } from 'react';
+import type { Recipe } from '../../../types';
 import type { GroceryItem, GroceryItemStatus } from '../../hooks/useGroceryList';
 import type { RecipeFormModal, SimpleEditModal } from '../../hooks/useMealFormModals';
+
+// Lazy load modals to reduce initial bundle size
+const GroceryListModal = lazy(() => import('../modals/GroceryListModal').then(m => ({ default: m.GroceryListModal })));
+const CopyWeekModal = lazy(() => import('../modals/CopyWeekModal').then(m => ({ default: m.CopyWeekModal })));
+const QuickRecipeModal = lazy(() => import('../modals/QuickRecipeModal').then(m => ({ default: m.QuickRecipeModal })));
+const SimpleRecipeEditModal = lazy(() => import('../modals/SimpleRecipeEditModal').then(m => ({ default: m.SimpleRecipeEditModal })));
+const RecipeEditModal = lazy(() => import('../modals/RecipeEditModal').then(m => ({ default: m.RecipeEditModal })));
+const RecipeViewModal = lazy(() => import('../modals/RecipeViewModal').then(m => ({ default: m.RecipeViewModal })));
+
+// Simple loading fallback for modals
+const ModalLoadingFallback = () => (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+    <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-xl">
+      <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto" />
+      <p className="mt-3 text-sm text-gray-600 dark:text-gray-300">Loading...</p>
+    </div>
+  </div>
+);
 
 interface ModalContainerProps {
   // Grocery list modal
@@ -90,67 +102,89 @@ export function ModalContainer({
 }: ModalContainerProps): React.ReactElement {
   return (
     <>
-      <GroceryListModal
-        isOpen={showGroceryList}
-        onClose={onCloseGroceryList}
-        groceryList={groceryList}
-        neededItems={neededItems}
-        atHomeItems={atHomeItems}
-        inCartItems={inCartItems}
-        purchasedItems={purchasedItems}
-        weekStartDate={weekStartDate}
-        updateItemStatus={updateItemStatus}
-        getStatusColor={getStatusColor}
-        onCopyCart={onCopyCart}
-      />
+      {/* Grocery List Modal - only load when open */}
+      {showGroceryList && (
+        <Suspense fallback={<ModalLoadingFallback />}>
+          <GroceryListModal
+            isOpen={showGroceryList}
+            onClose={onCloseGroceryList}
+            groceryList={groceryList}
+            neededItems={neededItems}
+            atHomeItems={atHomeItems}
+            inCartItems={inCartItems}
+            purchasedItems={purchasedItems}
+            weekStartDate={weekStartDate}
+            updateItemStatus={updateItemStatus}
+            getStatusColor={getStatusColor}
+            onCopyCart={onCopyCart}
+          />
+        </Suspense>
+      )}
 
-      <CopyWeekModal
-        isOpen={showCopyWeek}
-        onClose={onCloseCopyWeek}
-        sourceWeekStart={sourceWeekStart}
-        targetWeekStart={targetWeekStart}
-        onTargetWeekChange={onTargetWeekChange}
-        mealCount={mealCount}
-        weekStartsOn={weekStartsOn}
-        onCopy={onCopy}
-      />
+      {/* Copy Week Modal - only load when open */}
+      {showCopyWeek && (
+        <Suspense fallback={<ModalLoadingFallback />}>
+          <CopyWeekModal
+            isOpen={showCopyWeek}
+            onClose={onCloseCopyWeek}
+            sourceWeekStart={sourceWeekStart}
+            targetWeekStart={targetWeekStart}
+            onTargetWeekChange={onTargetWeekChange}
+            mealCount={mealCount}
+            weekStartsOn={weekStartsOn}
+            onCopy={onCopy}
+          />
+        </Suspense>
+      )}
 
+      {/* Quick Recipe Modal - only load when open */}
       {recipeFormModal && (
-        <QuickRecipeModal
-          initialName={recipeFormModal.initialName}
-          onSave={recipeFormModal.onSave}
-          onClose={onCloseRecipeForm}
-        />
+        <Suspense fallback={<ModalLoadingFallback />}>
+          <QuickRecipeModal
+            initialName={recipeFormModal.initialName}
+            onSave={recipeFormModal.onSave}
+            onClose={onCloseRecipeForm}
+          />
+        </Suspense>
       )}
 
+      {/* Simple Edit Modal - only load when open */}
       {simpleEditModal && (
-        <SimpleRecipeEditModal
-          recipe={simpleEditModal.recipe}
-          onSave={simpleEditModal.onSave}
-          onClose={onCloseSimpleEdit}
-        />
+        <Suspense fallback={<ModalLoadingFallback />}>
+          <SimpleRecipeEditModal
+            recipe={simpleEditModal.recipe}
+            onSave={simpleEditModal.onSave}
+            onClose={onCloseSimpleEdit}
+          />
+        </Suspense>
       )}
 
+      {/* Recipe Edit Modal - only load when open */}
       {editingRecipeId && (() => {
         const recipe = recipes.find((r) => r.id === editingRecipeId);
         return recipe ? (
-          <RecipeEditModal recipe={recipe} onClose={onCloseRecipeEdit} />
+          <Suspense fallback={<ModalLoadingFallback />}>
+            <RecipeEditModal recipe={recipe} onClose={onCloseRecipeEdit} />
+          </Suspense>
         ) : null;
       })()}
 
+      {/* Recipe View Modal - only load when open */}
       {viewingRecipeId && (() => {
         const recipe = recipes.find((r) => r.id === viewingRecipeId);
         return recipe ? (
-          <RecipeViewModal
-            recipe={recipe}
-            onClose={onCloseRecipeView}
-            onEdit={() => {
-              if (viewingRecipeId) {
-                onOpenRecipeEdit(viewingRecipeId);
-                onCloseRecipeView();
-              }
-            }}
-          />
+          <Suspense fallback={<ModalLoadingFallback />}>
+            <RecipeViewModal
+              recipe={recipe}
+              onClose={onCloseRecipeView}
+              onEdit={() => {
+                if (viewingRecipeId) {
+                  onOpenRecipeEdit(viewingRecipeId);
+                  onCloseRecipeView();
+                }
+              }}
+            />
+          </Suspense>
         ) : null;
       })()}
     </>

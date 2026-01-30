@@ -6,7 +6,7 @@
 import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import { supabase } from '../../lib/supabase';
 import * as habitsAPI from '../../api/habitsAPI';
-import * as goalsAPI from '../../api/goalsAPI';
+import * as lifeGoalsAPI from '../../goals/api/lifeGoalsAPI';
 
 // Mock Supabase
 vi.mock('../../lib/supabase', () => ({
@@ -30,7 +30,7 @@ describe('Habit-Goal Integration', () => {
     title: 'Run a Marathon',
     description: 'Complete a full marathon by end of year',
     category: 'fitness',
-    status: 'active',
+    status: 'in-progress',
     progress: 0,
     priority: 'high',
     target_date: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString(),
@@ -78,10 +78,10 @@ describe('Habit-Goal Integration', () => {
     (supabase.from as any).mockReturnValue(mockGoalQuery);
 
     // Create goal
-    const goal = await goalsAPI.createGoal({
+    const goal = await lifeGoalsAPI.createLifeGoal({
       title: mockGoal.title,
       description: mockGoal.description,
-      category: mockGoal.category,
+      category: 'fitness',
       priority: 'high',
     });
 
@@ -174,7 +174,7 @@ describe('Habit-Goal Integration', () => {
     // Calculate and update goal progress
     // In a real implementation, this would be based on habit milestones
     const progress = Math.min(((updatedHabit.streak_count ?? 0) / 100) * 100, 100);
-    const updatedGoal = await goalsAPI.updateGoal(mockGoal.id, {
+    const updatedGoal = await lifeGoalsAPI.updateLifeGoal(mockGoal.id, {
       progress: Math.round(progress),
     });
 
@@ -228,7 +228,7 @@ describe('Habit-Goal Integration', () => {
     const milestoneReached = (habit.streak_count ?? 0) >= 100;
 
     if (milestoneReached) {
-      const updatedGoal = await goalsAPI.updateGoal(mockGoal.id, {
+      const updatedGoal = await lifeGoalsAPI.updateLifeGoal(mockGoal.id, {
         status: 'completed',
         progress: 100,
       });

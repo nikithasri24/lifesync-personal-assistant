@@ -10,12 +10,20 @@ export type GoalDifficulty = 'easy' | 'medium' | 'hard' | 'extreme';
 export type StreakFrequency = 'daily' | 'weekly' | 'monthly';
 
 export type DreamCategory = 'travel' | 'experiences' | 'possessions' | 'achievements' | 'relationships' | 'lifestyle';
+/** @deprecated Use estimatedTimeframe text field instead */
 export type DreamPriority = 'someday' | 'within-5-years' | 'within-10-years' | 'lifetime';
 export type DreamStatus = 'dreaming' | 'planning' | 'in-progress' | 'achieved' | 'no-longer-interested';
+
+// Tracking mode for shared goals/dreams
+// 'combined' = one shared progress (e.g., "Save $50k for house")
+// 'individual' = each person tracks separately (e.g., "Exercise 3x/week")
+export type TrackingMode = 'combined' | 'individual';
 
 export interface LifeGoal {
   id: string;
   userId: string;
+  connectionId?: string;  // For merged/shared goals between connected users
+  trackingMode: TrackingMode;  // 'combined' = shared progress, 'individual' = separate tracking
   title: string;
   description?: string;
   category: GoalCategory;
@@ -92,10 +100,13 @@ export interface LifeGoalStreakEntry {
 export interface LifeDream {
   id: string;
   userId: string;
+  connectionId?: string;  // For merged/shared dreams between connected users
+  trackingMode: TrackingMode;  // 'combined' = shared progress, 'individual' = separate tracking
   title: string;
   description?: string;
   category: DreamCategory;
-  priority: DreamPriority;
+  /** @deprecated Use estimatedTimeframe instead. Kept for backward compatibility. */
+  priority?: DreamPriority;
   status: DreamStatus;
 
   // Planning
@@ -119,6 +130,30 @@ export interface LifeDream {
   notes?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+/**
+ * Personal progress tracking for shared goals.
+ * In merged mode, each user tracks their own progress independently.
+ */
+export interface GoalProgressTracking {
+  id: string;
+  userId: string;
+  goalId: string;
+  personalProgress: number; // 0-100
+  personalCurrentValue?: number;
+  notes?: string;
+  lastUpdated: string;
+  createdAt: string;
+}
+
+/**
+ * Merged connection info for goals module
+ */
+export interface MergedGoalsConnectionInfo {
+  connectionId: string;
+  partnerId: string;
+  partnerName?: string;
 }
 
 export interface LifeGoalTemplate {
@@ -182,6 +217,9 @@ export interface CreateLifeGoalInput {
   streakEnabled?: boolean;
   streakFrequency?: StreakFrequency;
   streakTarget?: number;
+  // Sharing options
+  isShared?: boolean;  // If true, goal is shared with partner (sets connection_id)
+  trackingMode?: TrackingMode;  // Only relevant when isShared=true
 }
 
 export interface UpdateLifeGoalInput {
@@ -198,6 +236,9 @@ export interface UpdateLifeGoalInput {
   completedDate?: string;
   tags?: string[];
   notes?: string;
+  // Sharing options
+  isShared?: boolean;
+  trackingMode?: 'combined' | 'individual';
 }
 
 export interface CreateMilestoneInput {
@@ -221,7 +262,8 @@ export interface CreateLifeDreamInput {
   title: string;
   description?: string;
   category: DreamCategory;
-  priority: DreamPriority;
+  /** @deprecated Use estimatedTimeframe instead */
+  priority?: DreamPriority;
   estimatedCost?: number;
   estimatedTimeframe?: string;
   requiredResources?: string[];
@@ -229,12 +271,16 @@ export interface CreateLifeDreamInput {
   tags?: string[];
   visionBoardImages?: string[];
   visionBoardNotes?: string;
+  // Sharing options
+  isShared?: boolean;  // If true, dream is shared with partner (sets connection_id)
+  trackingMode?: TrackingMode;  // Only relevant when isShared=true
 }
 
 export interface UpdateLifeDreamInput {
   title?: string;
   description?: string;
   category?: DreamCategory;
+  /** @deprecated Use estimatedTimeframe instead */
   priority?: DreamPriority;
   status?: DreamStatus;
   estimatedCost?: number;
@@ -246,6 +292,9 @@ export interface UpdateLifeDreamInput {
   visionBoardImages?: string[];
   visionBoardNotes?: string;
   notes?: string;
+  // Sharing options
+  isShared?: boolean;
+  trackingMode?: 'combined' | 'individual';
 }
 
 // Statistics and analytics
