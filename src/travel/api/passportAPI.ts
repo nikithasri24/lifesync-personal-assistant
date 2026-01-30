@@ -194,35 +194,67 @@ export async function addPassport(passport: {
   expiryDate?: string;
   isPrimary: boolean;
 }): Promise<UserPassport> {
-  const { data: authData } = await supabase.auth.getUser();
+  const { data: authData, error: authError } = await supabase.auth.getUser();
+
+  console.log('[addPassport] Auth data:', { authData, authError });
+
+  if (authError) {
+    console.error('[addPassport] Auth error:', authError);
+    throw new Error(`Authentication error: ${authError.message}`);
+  }
+
   const { user } = authData;
-  if (!user) throw new Error('Not authenticated');
+  if (!user) {
+    console.error('[addPassport] No user found in auth data');
+    throw new Error('Not authenticated');
+  }
+
+  if (!user.id) {
+    console.error('[addPassport] User ID is null/undefined:', user);
+    throw new Error('User ID is missing');
+  }
+
+  console.log('[addPassport] User ID:', user.id);
+  console.log('[addPassport] Passport data:', passport);
 
   // If setting as primary, unset other primary passports first
   if (passport.isPrimary) {
-    await supabase
+    const updateResult = await supabase
       .from('user_passports')
       .update({ is_primary: false })
       .eq('user_id', user.id)
       .eq('is_primary', true);
+
+    console.log('[addPassport] Unset primary result:', updateResult);
   }
+
+  const insertData = {
+    user_id: user.id,
+    country_code: passport.countryCode,
+    country_name: passport.countryName,
+    passport_number: passport.passportNumber ?? null,
+    issue_date: passport.issueDate ?? null,
+    expiry_date: passport.expiryDate ?? null,
+    is_primary: passport.isPrimary,
+  };
+
+  console.log('[addPassport] Inserting data:', insertData);
 
   const result = await supabase
     .from('user_passports')
-    .insert({
-      user_id: user.id,
-      country_code: passport.countryCode,
-      country_name: passport.countryName,
-      passport_number: passport.passportNumber ?? null,
-      issue_date: passport.issueDate ?? null,
-      expiry_date: passport.expiryDate ?? null,
-      is_primary: passport.isPrimary,
-    })
+    .insert(insertData)
     .select()
     .single();
 
-  if (result.error) throw result.error;
+  console.log('[addPassport] Insert result:', result);
+
+  if (result.error) {
+    console.error('[addPassport] Insert error:', result.error);
+    throw result.error;
+  }
+
   if (!result.data || !isUserPassportRow(result.data)) {
+    console.error('[addPassport] Invalid data returned:', result.data);
     throw new Error('Invalid passport data returned from database');
   }
 
