@@ -23,6 +23,8 @@ interface VisaMapProps {
   mergedConnection?: { connectionId: string; partnerId: string; partnerName?: string } | null;
   travelDate?: string; // Optional travel date (defaults to today)
   onTravelDateChange?: (date: string) => void; // Callback when travel date changes
+  passportOwnerFilter?: PassportOwnerFilter; // External passport owner filter
+  onPassportOwnerFilterChange?: (filter: PassportOwnerFilter) => void; // Callback when filter changes
 }
 
 interface GeoJSONGeometry {
@@ -48,7 +50,9 @@ const VisaMap: React.FC<VisaMapProps> = ({
   currentUserId = null,
   mergedConnection = null,
   travelDate: externalTravelDate,
-  onTravelDateChange
+  onTravelDateChange,
+  passportOwnerFilter: externalPassportOwnerFilter,
+  onPassportOwnerFilterChange
 }) => {
   const [countries, setCountries] = React.useState<CountryFeature[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -74,7 +78,22 @@ const VisaMap: React.FC<VisaMapProps> = ({
     setInternalTravelDate(date);
     onTravelDateChange?.(date);
   };
-  const [passportOwnerFilter, setPassportOwnerFilter] = React.useState<PassportOwnerFilter>('both');
+
+  // Use external passport owner filter if provided, otherwise use internal state
+  const [internalPassportOwnerFilter, setInternalPassportOwnerFilter] = React.useState<PassportOwnerFilter>('me');
+
+  // Sync internal state with external prop
+  React.useEffect(() => {
+    if (externalPassportOwnerFilter && externalPassportOwnerFilter !== internalPassportOwnerFilter) {
+      setInternalPassportOwnerFilter(externalPassportOwnerFilter);
+    }
+  }, [externalPassportOwnerFilter]);
+
+  const passportOwnerFilter = externalPassportOwnerFilter ?? internalPassportOwnerFilter;
+  const setPassportOwnerFilter = (filter: PassportOwnerFilter) => {
+    setInternalPassportOwnerFilter(filter);
+    onPassportOwnerFilterChange?.(filter);
+  };
 
   // Debug logging
   React.useEffect(() => {
@@ -229,7 +248,18 @@ const VisaMap: React.FC<VisaMapProps> = ({
       if (!passportReq) continue;
 
       // Check if user has a valid visa for this specific country (valid on travel date)
-      const activeVisaForCountry = userVisas.find(visa =>
+      // Filter by owner selection
+      let visasToCheck = userVisas;
+      if (mergedConnection && currentUserId) {
+        if (passportOwnerFilter === 'me') {
+          visasToCheck = userVisas.filter(v => v.userId === currentUserId);
+        } else if (passportOwnerFilter === 'partner') {
+          visasToCheck = userVisas.filter(v => v.userId === mergedConnection.partnerId);
+        }
+        // If 'both', use all visas (no filtering)
+      }
+
+      const activeVisaForCountry = visasToCheck.find(visa =>
         visa.countryName === normalizedName && new Date(visa.expiryDate) >= checkDate
       );
 
@@ -249,8 +279,18 @@ const VisaMap: React.FC<VisaMapProps> = ({
       }
 
       // Get visa-based bonus access (e.g., US H1B grants access to Mexico)
-      // Only consider visas that are valid on the travel date
-      const validVisaCountries = userVisas
+      // Only consider visas that are valid on the travel date AND belong to selected passport owner(s)
+      let filteredVisas = userVisas;
+      if (mergedConnection && currentUserId) {
+        if (passportOwnerFilter === 'me') {
+          filteredVisas = userVisas.filter(v => v.userId === currentUserId);
+        } else if (passportOwnerFilter === 'partner') {
+          filteredVisas = userVisas.filter(v => v.userId === mergedConnection.partnerId);
+        }
+        // If 'both', use all visas (no filtering)
+      }
+
+      const validVisaCountries = filteredVisas
         .filter(v => new Date(v.expiryDate) >= checkDate)
         .map(v => v.countryName);
       const additionalAccess = getAdditionalAccessFromVisas(validVisaCountries);

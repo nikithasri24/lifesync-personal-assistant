@@ -83,8 +83,8 @@ export function SharedDashboard({ connections }: SharedDashboardProps): React.Re
 
     return Object.values(MODULE_CONFIGS)
       .filter((config) => availableModules.has(config.module))
-      // Filter out 'goals' and 'meals' since they're now merged into their main pages
-      .filter((config) => config.module !== 'goals' && config.module !== 'meals')
+      // Filter out 'goals', 'meals', and 'visa' since they're now merged into their main pages
+      .filter((config) => config.module !== 'goals' && config.module !== 'meals' && config.module !== 'visa')
       .map((config) => ({
         module: config.module,
         label: config.label,
