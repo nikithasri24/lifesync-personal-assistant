@@ -61,6 +61,14 @@ const VisaMap: React.FC<VisaMapProps> = ({
     // Default to today
     return new Date().toISOString().split('T')[0];
   });
+
+  // Sync internal state with external prop
+  React.useEffect(() => {
+    if (externalTravelDate && externalTravelDate !== internalTravelDate) {
+      setInternalTravelDate(externalTravelDate);
+    }
+  }, [externalTravelDate]);
+
   const travelDate = externalTravelDate ?? internalTravelDate;
   const setTravelDate = (date: string) => {
     setInternalTravelDate(date);
@@ -76,8 +84,15 @@ const VisaMap: React.FC<VisaMapProps> = ({
       currentUserId,
       passportCountry,
       userVisasCount: userVisas.length,
+      travelDate,
+      externalTravelDate,
+      userVisas: userVisas.map(v => ({
+        country: v.countryName,
+        expiryDate: v.expiryDate,
+        isValid: new Date(v.expiryDate) >= new Date(travelDate)
+      }))
     });
-  }, [mergedConnection, allPassports, currentUserId, passportCountry, userVisas]);
+  }, [mergedConnection, allPassports, currentUserId, passportCountry, userVisas, travelDate, externalTravelDate]);
 
   // Load countries data
   React.useEffect(() => {

@@ -133,8 +133,13 @@ const VisaCalculator: React.FC = () => {
   const additionalAccessFromVisas = React.useMemo(() => {
     const checkDate = new Date(travelDate);
     const validVisaCountries = userVisas
-      .filter(v => new Date(v.expiryDate) >= checkDate)
+      .filter(v => {
+        const isValid = new Date(v.expiryDate) >= checkDate;
+        console.log(`[VisaCalculator] Visa ${v.countryName} expiry: ${v.expiryDate}, travel date: ${travelDate}, valid: ${isValid}`);
+        return isValid;
+      })
       .map(v => v.countryName);
+    console.log(`[VisaCalculator] Valid visa countries for ${travelDate}:`, validVisaCountries);
     return getAdditionalAccessFromVisas(validVisaCountries);
   }, [userVisas, travelDate]);
 
