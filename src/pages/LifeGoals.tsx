@@ -131,6 +131,9 @@ const LifeGoals: React.FC = () => {
             category: goalDraft.category,
             priority: goalDraft.priority,
             targetDate: goalDraft.targetDate,
+            // Sharing options - only update if merged mode is available
+            isShared: isMerged ? goalDraft.isShared : undefined,
+            trackingMode: isMerged && goalDraft.isShared ? goalDraft.trackingMode : undefined,
           },
         });
         setEditingGoalId(null);
@@ -173,6 +176,9 @@ const LifeGoals: React.FC = () => {
             category: dreamDraft.category,
             estimatedCost: dreamDraft.estimatedCost ? Number(dreamDraft.estimatedCost) : undefined,
             estimatedTimeframe: dreamDraft.estimatedTimeframe || undefined,
+            // Sharing options - only update if merged mode is available
+            isShared: isMerged ? dreamDraft.isShared : undefined,
+            trackingMode: isMerged && dreamDraft.isShared ? dreamDraft.trackingMode : undefined,
           },
         });
         setEditingDreamId(null);

@@ -9,7 +9,7 @@ import { getTasks } from '@/api/tasksAPI';
 import { getHabits, getHabitEntriesForHabit } from '@/api/habitsAPI';
 import { getNotes } from '@/api/notesAPI';
 import { getJournalEntries } from '@/api/journalAPI';
-import { getGoals } from '@/api/goalsAPI';
+import { getUserLifeGoals } from '@/goals/api/lifeGoalsAPI';
 import { logger } from '@/services/logger';
 import { isToday, addDays, startOfDay } from 'date-fns';
 
@@ -99,7 +99,7 @@ async function executeGetDashboardSummary(
       getHabits({ isActive: true }),
       getNotes(),
       getJournalEntries(),
-      getGoals()
+      getUserLifeGoals()
     ]);
 
     // Today's tasks

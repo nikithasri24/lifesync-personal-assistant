@@ -89,7 +89,8 @@ export function GoalFormModal({
                 required
                 value={goalDraft.title}
                 onChange={(event) => onDraftChange({ ...goalDraft, title: event.target.value })}
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400"
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm placeholder-slate-400 focus:border-indigo-500 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400"
+                style={{ color: '#1e293b' }}
                 placeholder="Launch new product"
               />
             </label>
@@ -98,7 +99,8 @@ export function GoalFormModal({
               <select
                 value={goalDraft.category}
                 onChange={(event) => onDraftChange({ ...goalDraft, category: event.target.value as GoalCategory })}
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+                style={{ color: '#1e293b' }}
               >
                 {GOAL_CATEGORIES.map((category) => (
                   <option key={category} value={category}>{category}</option>
@@ -110,7 +112,8 @@ export function GoalFormModal({
               <textarea
                 value={goalDraft.description}
                 onChange={(event) => onDraftChange({ ...goalDraft, description: event.target.value })}
-                className="h-24 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400"
+                className="h-24 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm placeholder-slate-400 focus:border-indigo-500 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400"
+                style={{ color: '#1e293b' }}
                 placeholder="Why this goal matters and how you will tackle it"
               />
             </label>
@@ -119,7 +122,8 @@ export function GoalFormModal({
               <select
                 value={goalDraft.priority}
                 onChange={(event) => onDraftChange({ ...goalDraft, priority: event.target.value as GoalPriority })}
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+                style={{ color: '#1e293b' }}
               >
                 {GOAL_PRIORITIES.map((priority) => (
                   <option key={priority} value={priority}>{priority}</option>
@@ -132,7 +136,8 @@ export function GoalFormModal({
                 type="date"
                 value={goalDraft.targetDate}
                 onChange={(event) => onDraftChange({ ...goalDraft, targetDate: event.target.value })}
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+                style={{ color: '#1e293b' }}
               />
             </label>
 
@@ -236,7 +241,8 @@ export function GoalFormModal({
                   <select
                     value={goalDraft.streakFrequency}
                     onChange={(e) => onDraftChange({ ...goalDraft, streakFrequency: e.target.value as 'daily' | 'weekly' | 'monthly' })}
-                    className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+                    style={{ color: '#1e293b' }}
                   >
                     <option value="daily">Daily</option>
                     <option value="weekly">Weekly</option>
@@ -250,7 +256,8 @@ export function GoalFormModal({
                     min="1"
                     value={goalDraft.streakTarget}
                     onChange={(e) => onDraftChange({ ...goalDraft, streakTarget: e.target.value })}
-                    className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm placeholder-slate-400 focus:border-indigo-500 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+                    style={{ color: '#1e293b' }}
                     placeholder="e.g., 30"
                   />
                 </label>

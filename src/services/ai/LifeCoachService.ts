@@ -8,7 +8,8 @@
 import { cacheAccessor } from '@/lib/cacheAccessor';
 import { logger } from '@/services/logger';
 import { format, subDays, subWeeks, startOfWeek, endOfWeek } from 'date-fns';
-import type { JournalEntry, Goal } from '@/types';
+import type { JournalEntry } from '@/types';
+import type { LifeGoal } from '@/goals/types/lifeGoals';
 import type { TaskData, HabitData, HabitEntryData, FocusSessionData } from '@/services/types';
 
 export interface CoachingInsight {
@@ -215,7 +216,7 @@ class LifeCoachService {
   private identifyWins(
     tasks: TaskData[],
     habits: { habits: HabitData[]; entries: HabitEntryData[] },
-    goals: Goal[],
+    goals: LifeGoal[],
     focusSessions: FocusSessionData[]
   ): string[] {
     const wins: string[] = [];

@@ -319,13 +319,14 @@ async function fetchModuleData(
   userId: string,
   userName: string,
   avatarUrl?: string,
-  settings?: PermissionSettings
+  settings?: PermissionSettings,
+  connectionId?: string
 ): Promise<SharedItem[]> {
   const tableMappings: Partial<Record<ShareableModule, string>> = {
     meals: 'meal_plans',
     shopping: 'shopping_lists',
     todos: 'tasks',
-    goals: 'goals',
+    goals: 'life_goals',
     habits: 'habits',
     notes: 'notes',
     projects: 'projects',
@@ -344,11 +345,22 @@ async function fetchModuleData(
   const limit = settings?.limit ?? 20;
   const offset = settings?.offset ?? 0;
 
-  let query = supabase
-    .from(table)
-    .select('*')
-    .eq('user_id', userId)
-    .range(offset, Math.max(offset + limit - 1, offset));
+  let query;
+
+  // For goals in merged mode, fetch both partner's personal goals AND shared goals
+  if (table === 'life_goals' && connectionId) {
+    query = supabase
+      .from(table)
+      .select('*')
+      .or(`user_id.eq.${userId},connection_id.eq.${connectionId}`)
+      .range(offset, Math.max(offset + limit - 1, offset));
+  } else {
+    query = supabase
+      .from(table)
+      .select('*')
+      .eq('user_id', userId)
+      .range(offset, Math.max(offset + limit - 1, offset));
+  }
 
   if (settings?.includeIds && settings.includeIds.length > 0) {
     query = query.in('id', settings.includeIds);
@@ -356,9 +368,9 @@ async function fetchModuleData(
 
   if (table === 'tasks') {
     query = query.order('updated_at', { ascending: false });
-  } else if (table === 'shopping_lists' || table === 'meal_plans' || table === 'goals') {
+  } else if (table === 'shopping_lists' || table === 'meal_plans' || table === 'life_goals' || table === 'notes') {
     query = query.order('created_at', { ascending: false });
-  } else if (table === 'journal_entries' || table === 'notes') {
+  } else if (table === 'journal_entries') {
     query = query.order('date', { ascending: false });
   } else {
     query = query.order('updated_at', { ascending: false });
@@ -408,7 +420,8 @@ export async function fetchSharedDashboardData(): Promise<SharedData> {
             perm.userId,
             perm.userName,
             perm.avatarUrl,
-            perm.settings
+            perm.settings,
+            perm.connectionId // Pass connectionId for goals to fetch shared goals too
           )
         )
       );
@@ -504,7 +517,7 @@ export async function fetchSharedHabits() {
 }
 
 export async function fetchSharedGoals() {
-  return fetchSharedData('goals', 'goals');
+  return fetchSharedData('life_goals', 'goals');
 }
 
 export async function fetchSharedMeals() {

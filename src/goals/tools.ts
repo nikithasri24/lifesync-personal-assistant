@@ -5,9 +5,15 @@
  */
 
 import type { Tool, ToolDefinition, ToolResult } from '@/lib/ai/toolRegistry';
-import { createGoal, getGoals, updateGoal, createDream, getDreams } from '@/api/goalsAPI';
+import {
+  getUserLifeGoals,
+  createLifeGoal,
+  updateLifeGoal,
+  getUserLifeDreams,
+  createLifeDream,
+} from '@/goals/api/lifeGoalsAPI';
+import type { LifeGoal, LifeDream, GoalCategory, GoalPriority, GoalStatus, DreamCategory } from '@/goals/types/lifeGoals';
 import { logger } from '@/services/logger';
-import type { Goal, Dream } from '@/types';
 
 // =====================================================
 // TOOL DEFINITIONS
@@ -154,10 +160,25 @@ const getDreamsDefinition: ToolDefinition = {
 // =====================================================
 
 /**
+ * Map old goal status to new LifeGoal status
+ */
+function mapToLifeGoalStatus(status: string): GoalStatus {
+  const statusMap: Record<string, GoalStatus> = {
+    'active': 'in-progress',
+    'completed': 'completed',
+    'archived': 'abandoned',
+    'on_hold': 'on-hold',
+    'paused': 'on-hold',
+    'failed': 'abandoned',
+  };
+  return statusMap[status] || (status as GoalStatus);
+}
+
+/**
  * Find goal by title (case-insensitive)
  */
-async function findGoalByTitle(goalTitle: string): Promise<Goal | null> {
-  const goals = await getGoals();
+async function findGoalByTitle(goalTitle: string): Promise<LifeGoal | null> {
+  const goals = await getUserLifeGoals();
   const goal = goals.find(g =>
     g.title.toLowerCase() === goalTitle.toLowerCase()
   );
@@ -223,14 +244,20 @@ async function executeCreateGoal(
         : `Target Amount: $${targetAmount}`;
     }
 
-    const goal = await createGoal({
+    // Map category to valid GoalCategory
+    const validCategories: GoalCategory[] = ['personal', 'health', 'career', 'financial', 'fitness'];
+    const mappedCategory: GoalCategory = validCategories.includes(category as GoalCategory)
+      ? (category as GoalCategory)
+      : 'personal';
+
+    const goal = await createLifeGoal({
       title: title.trim(),
       description: finalDescription,
-      category,
-      targetDate: targetDate ? new Date(targetDate) : undefined,
-      priority,
-      status: 'active',
-      progress: 0
+      category: mappedCategory,
+      targetDate: targetDate,
+      priority: priority as GoalPriority,
+      targetValue: targetAmount,
+      unit: targetAmount ? 'dollars' : undefined,
     });
 
     logger.info('GoalTools', 'Goal created successfully', {
@@ -247,7 +274,7 @@ async function executeCreateGoal(
         title: goal.title,
         category: goal.category,
         priority: goal.priority,
-        target_date: goal.targetDate?.toISOString().split('T')[0]
+        target_date: goal.targetDate
       },
       next_steps: targetAmount
         ? `I'll help you create a savings plan for $${targetAmount}`
@@ -280,11 +307,26 @@ async function executeGetGoals(
 
     logger.info('GoalTools', 'Getting goals', { status, category, priority });
 
-    const goals = await getGoals({
-      status,
-      category,
-      priority
-    });
+    let goals = await getUserLifeGoals();
+
+    // Apply filters client-side (lifeGoalsAPI doesn't support filters directly)
+    if (status) {
+      // Map old status values to new ones
+      const statusMap: Record<string, GoalStatus> = {
+        'active': 'in-progress',
+        'completed': 'completed',
+        'archived': 'abandoned',
+        'on_hold': 'on-hold'
+      };
+      const mappedStatus = statusMap[status] || status;
+      goals = goals.filter(g => g.status === mappedStatus);
+    }
+    if (category) {
+      goals = goals.filter(g => g.category === category);
+    }
+    if (priority) {
+      goals = goals.filter(g => g.priority === priority);
+    }
 
     logger.info('GoalTools', 'Goals retrieved', {
       count: goals.length
@@ -300,8 +342,8 @@ async function executeGetGoals(
         priority: g.priority,
         status: g.status,
         progress: g.progress,
-        target_date: g.targetDate?.toISOString().split('T')[0],
-        created_at: g.createdAt?.toISOString()
+        target_date: g.targetDate,
+        created_at: g.createdAt
       })),
       count: goals.length,
       message: `You have ${goals.length} goal${goals.length !== 1 ? 's' : ''}`
@@ -363,16 +405,11 @@ async function executeUpdateGoalProgress(
     });
 
     // Auto-complete if progress reaches 100
-    const finalStatus = progress >= 100 ? 'completed' : (status ?? goal.status);
+    const finalStatus: GoalStatus = progress >= 100 ? 'completed' : (status ? mapToLifeGoalStatus(status) : goal.status);
 
-    // Map status to UpdateGoalInput allowed values
-    const mappedStatus = finalStatus === 'paused' ? 'on_hold' :
-                        finalStatus === 'failed' ? 'archived' :
-                        finalStatus as 'active' | 'completed' | 'archived' | 'on_hold';
-
-    const updatedGoal = await updateGoal(goal.id, {
+    const updatedGoal = await updateLifeGoal(goal.id, {
       progress,
-      status: mappedStatus
+      status: finalStatus
     });
 
     logger.info('GoalTools', 'Goal progress updated successfully', {
@@ -432,11 +469,17 @@ async function executeCreateDream(
       category
     });
 
-    const dream = await createDream({
+    // Map category to valid DreamCategory
+    const validCategories: DreamCategory[] = ['travel', 'experiences', 'possessions', 'achievements', 'relationships', 'lifestyle'];
+    const mappedCategory: DreamCategory = validCategories.includes(category as DreamCategory)
+      ? (category as DreamCategory)
+      : 'experiences';
+
+    const dream = await createLifeDream({
       title: title.trim(),
       description,
-      category,
-      notes
+      category: mappedCategory,
+      visionBoardNotes: notes,
     });
 
     logger.info('GoalTools', 'Dream created successfully', {
@@ -478,7 +521,7 @@ async function executeGetDreams(
   try {
     logger.info('GoalTools', 'Getting dreams');
 
-    const dreams = await getDreams();
+    const dreams = await getUserLifeDreams();
 
     logger.info('GoalTools', 'Dreams retrieved', {
       count: dreams.length
@@ -491,9 +534,9 @@ async function executeGetDreams(
         title: d.title,
         description: d.description,
         category: d.category,
-        notes: d.notes,
-        created_at: d.createdAt?.toISOString(),
-        last_updated: d.lastUpdated?.toISOString()
+        notes: d.visionBoardNotes,
+        created_at: d.createdAt,
+        last_updated: d.updatedAt
       })),
       count: dreams.length,
       message: `You have ${dreams.length} dream${dreams.length !== 1 ? 's' : ''}`

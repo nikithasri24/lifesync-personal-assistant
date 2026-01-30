@@ -193,6 +193,9 @@ interface UpdateLifeGoalData {
   completed_date?: string;
   tags?: string[];
   notes?: string;
+  // Sharing options
+  connection_id?: string | null;
+  tracking_mode?: 'combined' | 'individual';
 }
 
 interface UpdateMilestoneData {
@@ -218,11 +221,17 @@ interface UpdateLifeDreamData {
   vision_board_images?: string[];
   vision_board_notes?: string;
   notes?: string;
+  // Sharing options
+  connection_id?: string | null;
+  tracking_mode?: 'combined' | 'individual';
 }
 
 /**
  * Get all life goals for current user
- * In merged mode: fetches BOTH personal goals (connection_id IS NULL) AND shared goals (connection_id = mergedConnection)
+ * In merged mode: fetches:
+ *   - My personal goals (user_id = me AND connection_id IS NULL)
+ *   - Partner's personal goals (user_id = partner AND connection_id IS NULL)
+ *   - Shared goals (connection_id = mergedConnection)
  * In personal mode: fetches only goals by user_id
  */
 export async function getUserLifeGoals(): Promise<LifeGoal[]> {
@@ -233,20 +242,22 @@ export async function getUserLifeGoals(): Promise<LifeGoal[]> {
   console.log('[LifeGoalsAPI] getUserLifeGoals - user:', user.id, 'mergedConnection:', mergedConnection);
 
   if (mergedConnection) {
-    // Merged mode: fetch BOTH personal AND shared goals
-    // Personal goals: user_id = current user AND connection_id IS NULL
+    // Merged mode: fetch personal goals from BOTH users AND shared goals
+    // My personal goals: user_id = me AND connection_id IS NULL
+    // Partner's personal goals: user_id = partner AND connection_id IS NULL
     // Shared goals: connection_id = merged connection
     const { data, error } = await supabase
       .from('life_goals')
       .select('*')
-      .or(`and(user_id.eq.${user.id},connection_id.is.null),connection_id.eq.${mergedConnection.connectionId}`)
+      .or(`and(user_id.eq.${user.id},connection_id.is.null),and(user_id.eq.${mergedConnection.partnerId},connection_id.is.null),connection_id.eq.${mergedConnection.connectionId}`)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
     const goals = (data ?? []).map((row) => mapDbToLifeGoal(row as LifeGoalRow));
-    const personalCount = goals.filter(g => !g.connectionId).length;
+    const myPersonalCount = goals.filter(g => !g.connectionId && g.userId === user.id).length;
+    const partnerPersonalCount = goals.filter(g => !g.connectionId && g.userId === mergedConnection.partnerId).length;
     const sharedCount = goals.filter(g => g.connectionId).length;
-    console.log('[LifeGoalsAPI] Fetched', goals.length, 'total goals (', personalCount, 'personal,', sharedCount, 'shared)');
+    console.log('[LifeGoalsAPI] Fetched', goals.length, 'total goals (', myPersonalCount, 'my personal,', partnerPersonalCount, 'partner personal,', sharedCount, 'shared)');
     return goals;
   } else {
     // Personal mode: fetch by user_id only
@@ -382,14 +393,23 @@ export async function updateLifeGoal(goalId: string, input: UpdateLifeGoalInput)
   if (input.tags !== undefined) updateData.tags = input.tags;
   if (input.notes !== undefined) updateData.notes = input.notes;
 
+  // Handle sharing options change
+  if (input.isShared !== undefined && mergedConnection) {
+    // Changing to shared: set connection_id
+    // Changing to personal: set connection_id to null
+    updateData.connection_id = input.isShared ? mergedConnection.connectionId : null;
+  }
+  if (input.trackingMode !== undefined) updateData.tracking_mode = input.trackingMode;
+
   let result;
   if (mergedConnection) {
-    // Merged mode: update by ID and connection_id
+    // Merged mode: can update own personal goals OR shared goals
+    // Try to update: either (user's own goal) OR (shared goal with connection_id)
     result = await supabase
       .from('life_goals')
       .update(updateData)
       .eq('id', goalId)
-      .eq('connection_id', mergedConnection.connectionId)
+      .or(`user_id.eq.${user.id},connection_id.eq.${mergedConnection.connectionId}`)
       .select()
       .single();
   } else {
@@ -418,12 +438,12 @@ export async function deleteLifeGoal(goalId: string): Promise<void> {
 
   let error;
   if (mergedConnection) {
-    // Merged mode: delete by ID and connection_id
+    // Merged mode: can delete own personal goals OR shared goals
     const result = await supabase
       .from('life_goals')
       .delete()
       .eq('id', goalId)
-      .eq('connection_id', mergedConnection.connectionId);
+      .or(`user_id.eq.${user.id},connection_id.eq.${mergedConnection.connectionId}`);
     error = result.error;
   } else {
     // Personal mode: delete by ID and user_id
@@ -591,7 +611,10 @@ export async function getStreakHistory(goalId: string, limit = 30): Promise<Life
 
 /**
  * Get all life dreams for current user
- * In merged mode: fetches BOTH personal dreams (connection_id IS NULL) AND shared dreams (connection_id = mergedConnection)
+ * In merged mode: fetches:
+ *   - My personal dreams (user_id = me AND connection_id IS NULL)
+ *   - Partner's personal dreams (user_id = partner AND connection_id IS NULL)
+ *   - Shared dreams (connection_id = mergedConnection)
  * In personal mode: fetches only dreams by user_id
  */
 export async function getUserLifeDreams(): Promise<LifeDream[]> {
@@ -602,20 +625,22 @@ export async function getUserLifeDreams(): Promise<LifeDream[]> {
   console.log('[LifeGoalsAPI] getUserLifeDreams - user:', user.id, 'mergedConnection:', mergedConnection);
 
   if (mergedConnection) {
-    // Merged mode: fetch BOTH personal AND shared dreams
-    // Personal dreams: user_id = current user AND connection_id IS NULL
+    // Merged mode: fetch personal dreams from BOTH users AND shared dreams
+    // My personal dreams: user_id = me AND connection_id IS NULL
+    // Partner's personal dreams: user_id = partner AND connection_id IS NULL
     // Shared dreams: connection_id = merged connection
     const { data, error } = await supabase
       .from('life_dreams')
       .select('*')
-      .or(`and(user_id.eq.${user.id},connection_id.is.null),connection_id.eq.${mergedConnection.connectionId}`)
+      .or(`and(user_id.eq.${user.id},connection_id.is.null),and(user_id.eq.${mergedConnection.partnerId},connection_id.is.null),connection_id.eq.${mergedConnection.connectionId}`)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
     const dreams = (data ?? []).map((row) => mapDbToLifeDream(row as LifeDreamRow));
-    const personalCount = dreams.filter(d => !d.connectionId).length;
+    const myPersonalCount = dreams.filter(d => !d.connectionId && d.userId === user.id).length;
+    const partnerPersonalCount = dreams.filter(d => !d.connectionId && d.userId === mergedConnection.partnerId).length;
     const sharedCount = dreams.filter(d => d.connectionId).length;
-    console.log('[LifeGoalsAPI] Fetched', dreams.length, 'total dreams (', personalCount, 'personal,', sharedCount, 'shared)');
+    console.log('[LifeGoalsAPI] Fetched', dreams.length, 'total dreams (', myPersonalCount, 'my personal,', partnerPersonalCount, 'partner personal,', sharedCount, 'shared)');
     return dreams;
   } else {
     // Personal mode: fetch by user_id only
@@ -703,14 +728,22 @@ export async function updateLifeDream(dreamId: string, input: UpdateLifeDreamInp
   if (input.visionBoardNotes !== undefined) updateData.vision_board_notes = input.visionBoardNotes;
   if (input.notes !== undefined) updateData.notes = input.notes;
 
+  // Handle sharing options change
+  if (input.isShared !== undefined && mergedConnection) {
+    // Changing to shared: set connection_id
+    // Changing to personal: set connection_id to null
+    updateData.connection_id = input.isShared ? mergedConnection.connectionId : null;
+  }
+  if (input.trackingMode !== undefined) updateData.tracking_mode = input.trackingMode;
+
   let result;
   if (mergedConnection) {
-    // Merged mode: update by ID and connection_id
+    // Merged mode: can update own personal dreams OR shared dreams
     result = await supabase
       .from('life_dreams')
       .update(updateData)
       .eq('id', dreamId)
-      .eq('connection_id', mergedConnection.connectionId)
+      .or(`user_id.eq.${user.id},connection_id.eq.${mergedConnection.connectionId}`)
       .select()
       .single();
   } else {
@@ -739,12 +772,12 @@ export async function deleteLifeDream(dreamId: string): Promise<void> {
 
   let error;
   if (mergedConnection) {
-    // Merged mode: delete by ID and connection_id
+    // Merged mode: can delete own personal dreams OR shared dreams
     const result = await supabase
       .from('life_dreams')
       .delete()
       .eq('id', dreamId)
-      .eq('connection_id', mergedConnection.connectionId);
+      .or(`user_id.eq.${user.id},connection_id.eq.${mergedConnection.connectionId}`);
     error = result.error;
   } else {
     // Personal mode: delete by ID and user_id

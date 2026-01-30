@@ -85,7 +85,8 @@ export function DreamFormModal({
               required
               value={dreamDraft.title}
               onChange={(event) => onDraftChange({ ...dreamDraft, title: event.target.value })}
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm placeholder-slate-400 focus:border-indigo-500 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400"
+              style={{ color: '#1e293b' }}
               placeholder="Backpack through Europe"
             />
           </label>
@@ -94,7 +95,8 @@ export function DreamFormModal({
             <select
               value={dreamDraft.category}
               onChange={(event) => onDraftChange({ ...dreamDraft, category: event.target.value as DreamCategory })}
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+              style={{ color: '#1e293b' }}
             >
               {DREAM_CATEGORIES.map((category) => (
                 <option key={category} value={category}>{category}</option>
@@ -106,7 +108,8 @@ export function DreamFormModal({
             <textarea
               value={dreamDraft.description}
               onChange={(event) => onDraftChange({ ...dreamDraft, description: event.target.value })}
-              className="h-24 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+              className="h-24 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm placeholder-slate-400 focus:border-indigo-500 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400"
+              style={{ color: '#1e293b' }}
               placeholder="Why this dream is meaningful and what it looks like"
             />
           </label>
@@ -117,7 +120,8 @@ export function DreamFormModal({
               min="0"
               value={dreamDraft.estimatedCost}
               onChange={(event) => onDraftChange({ ...dreamDraft, estimatedCost: event.target.value })}
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm placeholder-slate-400 focus:border-indigo-500 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400"
+              style={{ color: '#1e293b' }}
               placeholder="5000"
             />
           </label>
@@ -126,7 +130,8 @@ export function DreamFormModal({
             <input
               value={dreamDraft.estimatedTimeframe}
               onChange={(event) => onDraftChange({ ...dreamDraft, estimatedTimeframe: event.target.value })}
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm placeholder-slate-400 focus:border-indigo-500 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400"
+              style={{ color: '#1e293b' }}
               placeholder="Within 5 years"
             />
           </label>

@@ -236,6 +236,9 @@ export interface UpdateLifeGoalInput {
   completedDate?: string;
   tags?: string[];
   notes?: string;
+  // Sharing options
+  isShared?: boolean;
+  trackingMode?: 'combined' | 'individual';
 }
 
 export interface CreateMilestoneInput {
@@ -289,6 +292,9 @@ export interface UpdateLifeDreamInput {
   visionBoardImages?: string[];
   visionBoardNotes?: string;
   notes?: string;
+  // Sharing options
+  isShared?: boolean;
+  trackingMode?: 'combined' | 'individual';
 }
 
 // Statistics and analytics

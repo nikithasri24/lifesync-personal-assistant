@@ -127,41 +127,17 @@ export interface JournalEntry {
   createdAt: Date;
 }
 
-export interface Goal {
-  id: string;
-  title: string;
-  description: string;
-  category: 'financial' | 'health' | 'personal' | 'career' | 'fitness';
-  priority: 'low' | 'medium' | 'high' | 'critical';
-  status: 'not-started' | 'in-progress' | 'paused' | 'completed' | 'failed';
-  progress: number;
-  startDate: Date;
-  targetDate: Date;
-  completedDate?: Date;
-  tags: string[];
-  isPublic: boolean;
-  difficulty: 'easy' | 'medium' | 'hard' | 'legendary';
-  xpReward: number;
-  notes: string;
-  createdAt: Date;
-}
+/**
+ * @deprecated Use LifeGoal from '@/goals/types/lifeGoals' instead.
+ * This type is kept for backward compatibility.
+ */
+export type { LifeGoal as Goal } from '../goals/types/lifeGoals';
 
-export interface Dream {
-  id: string;
-  title: string;
-  description: string;
-  category: 'travel' | 'experiences' | 'possessions' | 'achievements' | 'relationships' | 'lifestyle';
-  priority: 'someday' | 'within-5-years' | 'within-10-years' | 'lifetime';
-  status: 'dreaming' | 'planning' | 'in-progress' | 'achieved' | 'no-longer-interested';
-  estimatedCost?: number;
-  estimatedTimeframe?: string;
-  tags: string[];
-  isPublic: boolean;
-  createdAt: Date;
-  lastUpdated: Date;
-  achievedAt?: Date;
-  notes: string;
-}
+/**
+ * @deprecated Use LifeDream from '@/goals/types/lifeGoals' instead.
+ * This type is kept for backward compatibility.
+ */
+export type { LifeDream as Dream } from '../goals/types/lifeGoals';
 
 export interface Ingredient {
   name: string;
