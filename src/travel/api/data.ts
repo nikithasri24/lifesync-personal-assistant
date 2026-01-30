@@ -8,8 +8,6 @@ import { supabase } from '../../lib/supabase';
 import type {
   VisitedLocation,
   VisitedLocationInput,
-  Trip,
-  TripInput,
   WorldMapData,
   TravelStats,
   CategorizedLocation,
@@ -371,65 +369,6 @@ export const travelAPI = {
     if (error) throw error;
   },
 
-  // ============= TRIPS =============
-
-  async listTrips(status?: string): Promise<Trip[]> {
-    let query = supabase
-      .from('trips')
-      .select('*')
-      .order('start_date', { ascending: false });
-
-    if (status) {
-      query = query.eq('status', status);
-    }
-
-    const { data, error } = await query;
-    if (error) throw error;
-    return toCamelCase(data || []);
-  },
-
-  async getTrip(id: string): Promise<Trip | null> {
-    const response = await supabase
-      .from('trips')
-      .select('*')
-      .eq('id', id)
-      .single();
-
-    if (response.error) throw response.error;
-    return toCamelCase<Trip>(response.data);
-  },
-
-  async createTrip(trip: TripInput): Promise<Trip> {
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) throw new Error('Not authenticated');
-
-    const response = await supabase
-      .from('trips')
-      .insert(toSnakeCase({ ...trip, userId: userData.user.id }))
-      .select()
-      .single();
-
-    if (response.error) throw response.error;
-    return toCamelCase<Trip>(response.data);
-  },
-
-  async updateTrip(id: string, updates: Partial<TripInput>): Promise<Trip> {
-    const response = await supabase
-      .from('trips')
-      .update(toSnakeCase(updates))
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (response.error) throw response.error;
-    return toCamelCase<Trip>(response.data);
-  },
-
-  async deleteTrip(id: string): Promise<void> {
-    const { error } = await supabase.from('trips').delete().eq('id', id);
-    if (error) throw error;
-  },
-
   // ============= STATS =============
 
   async getTravelStats(): Promise<TravelStats | null> {
@@ -442,20 +381,14 @@ export const travelAPI = {
       .select('location_type, country_code, status')
       .eq('user_id', userData.user.id);
 
-    const { data: trips } = await supabase
-      .from('trips')
-      .select('status, total_spent, start_date, end_date')
-      .eq('user_id', userData.user.id);
-
     const { data: entries } = await supabase
       .from('travel_journal_entries')
       .select('id, photo_urls')
       .eq('user_id', userData.user.id);
 
-    if (!locations || !trips || !entries) return null;
+    if (!locations || !entries) return null;
 
     type LocationRow = { location_type: string; country_code: string; status: string };
-    type TripRow = { status: string; total_spent: number | null; start_date: string; end_date: string };
     type EntryRow = { id: string; photo_urls: string[] | null };
 
     const countriesVisited = new Set(
@@ -463,13 +396,6 @@ export const travelAPI = {
         .filter((l: LocationRow) => l.location_type === 'country' && l.status === 'visited')
         .map((l: LocationRow) => l.country_code)
     ).size;
-
-    const totalSpent = (trips as TripRow[])
-      .filter((t: TripRow) => t.status === 'completed')
-      .reduce((sum: number, t: TripRow) => sum + (t.total_spent ?? 0), 0);
-
-    const completedTrips = (trips as TripRow[]).filter((t: TripRow) => t.status === 'completed').length;
-    const averageTripCost = completedTrips > 0 ? totalSpent / completedTrips : 0;
 
     const photosUploaded = (entries as EntryRow[]).reduce((sum: number, e: EntryRow) => sum + (e.photo_urls?.length ?? 0), 0);
 
@@ -483,13 +409,6 @@ export const travelAPI = {
       statesVisited: 0, // Calculate from locations
       citiesVisited: 0, // Calculate from locations
       continentsVisited,
-      totalTrips: trips.length,
-      completedTrips,
-      upcomingTrips: (trips as TripRow[]).filter((t: TripRow) => t.status === 'planning' || t.status === 'ongoing').length,
-      totalTravelDays: 0, // Calculate from trip dates
-      totalSpent,
-      averageTripCost,
-      budgetAdherence: 0, // Calculate from budget vs spent
       journalEntries: entries.length,
       photosUploaded,
       visitedAllContinents: continentsVisited === 7,

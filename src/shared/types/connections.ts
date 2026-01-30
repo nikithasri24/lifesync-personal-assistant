@@ -30,7 +30,6 @@ export type ModulePermissionLevel =
 
 export type ShareableModule =
   | 'visa'
-  | 'trip-planner'
   | 'finances'
   | 'shopping'
   | 'meals'
@@ -173,15 +172,6 @@ export const MODULE_CONFIGS: Record<ShareableModule, ModulePermissionConfig> = {
     defaultLevel: 'none',
     supportedLevels: ['none', 'view', 'merged'],
     hasSettings: false,
-  },
-  'trip-planner': {
-    module: 'trip-planner',
-    label: 'Trip Planner',
-    description: 'Multi-country trip plans and itineraries',
-    icon: 'Map',
-    defaultLevel: 'none',
-    supportedLevels: ['none', 'view', 'collaborate', 'merged'],
-    hasSettings: true,
   },
   finances: {
     module: 'finances',

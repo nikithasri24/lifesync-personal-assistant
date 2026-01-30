@@ -1,53 +1,3 @@
-export type TravelType = 'vacation' | 'business' | 'weekend' | 'adventure';
-
-export interface TravelItineraryItem {
-  id: string;
-  date: Date;
-  time?: string;
-  type?: 'flight' | 'hotel' | 'activity' | 'transport' | 'note';
-  title: string;
-  location?: string;
-  notes?: string;
-}
-
-export interface TravelTrip {
-  id: string;
-  title: string;
-  destination: string;
-  country?: string;
-  startDate: Date;
-  endDate: Date;
-  type: TravelType;
-  status: 'planning' | 'ongoing' | 'completed' | 'cancelled';
-  budget?: number;
-  spent?: number;
-  notes?: string;
-  itinerary: TravelItineraryItem[];
-  creditCardTrip?: boolean;
-  rating?: number;
-  memories?: string[];
-}
-
-export interface CreditCardTrip {
-  id: string;
-  cardName: string;
-  description: string;
-  pointsEarned: number;
-  pointsUsed: number;
-  earnedDate: Date;
-  redeemedDate?: Date;
-  bonusCategory?: string;
-}
-
-export interface PTOEntry {
-  id: string;
-  startDate: Date;
-  endDate: Date;
-  days: number;
-  type: 'approved' | 'pending' | 'planned' | 'taken';
-  reason?: string;
-}
-
 export interface WorldProgress {
   countries: { total: number; visited: number; list: string[] };
   states: { total: number; visited: number; list: string[] };
@@ -60,17 +10,6 @@ export interface MoonPhase {
   illumination: number;
   isNewMoon: boolean;
   quality: 'excellent' | 'good' | 'fair' | 'poor';
-}
-
-export interface CalendarEvent {
-  id: string;
-  date: Date;
-  title: string;
-  type: 'trip' | 'pto' | 'event';
-}
-
-export interface TravelStats {
-  totalTrips: number;
 }
 
 export interface Country {

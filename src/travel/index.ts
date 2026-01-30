@@ -3,7 +3,6 @@
 
 // API
 export * from './api/passportAPI';
-export * from './api/tripAPI';
 
 // Types
 export * from './types';
@@ -21,4 +20,3 @@ export { default as LeafletTravelMapV2 } from './components/LeafletTravelMapV2';
 export { default as MappackerStyleMap } from './components/MappackerStyleMap';
 export { default as ProfessionalWorldMap } from './components/ProfessionalWorldMap';
 export { default as RealisticWorldMap } from './components/RealisticWorldMap';
-export { default as TripPlanner } from './components/TripPlanner';

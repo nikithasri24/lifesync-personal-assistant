@@ -33,7 +33,6 @@ const ProjectTracking = lazy(() => import('./pages/ProjectTracking'));
 const Shared = lazy(() => import('./pages/Shared'));
 const Travel = lazy(() => import('./pages/Travel'));
 const VisaPage = lazy(() => import('./travel/pages/VisaPage'));
-const TripPlanner = lazy(() => import('./travel/components/TripPlanner'));
 const Finances = lazy(() => import('./pages/Finances'));
 const SelfCare = lazy(() => import('./pages/SelfCare'));
 const Assistant = lazy(() => import('./pages/Assistant'));
@@ -108,7 +107,6 @@ function App(): React.ReactElement {
             <Route path="/goals" element={<LifeGoals />} />
             <Route path="/travel" element={<Travel />} />
             <Route path="/travel/visa" element={<VisaPage />} />
-            <Route path="/travel/trip-planner" element={<TripPlanner />} />
             <Route path="/finances/*" element={<Finances />} />
             <Route path="/shopping" element={<ShoppingSmart />} />
             <Route path="/meals" element={<MealPlanning />} />
