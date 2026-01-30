@@ -20,6 +20,7 @@ import {
   Map,
   DollarSign,
   Trophy,
+  Smile,
   Sparkles,
   Loader2,
   ChevronDown,
@@ -54,6 +55,7 @@ const MODULE_ICONS: Record<ShareableModule, React.ReactNode> = {
   notes: <FileText className="w-5 h-5" />,
   projects: <FolderOpen className="w-5 h-5" />,
   journal: <BookOpen className="w-5 h-5" />,
+  mood: <Smile className="w-5 h-5" />,
   skincare: <Sparkles className="w-5 h-5" />,
 };
 
@@ -71,6 +73,7 @@ const MODULE_COLORS: Record<ShareableModule, string> = {
   notes: 'text-slate-500',
   projects: 'text-cyan-500',
   journal: 'text-rose-500',
+  mood: 'text-yellow-500',
   skincare: 'text-pink-500',
 };
 
@@ -83,6 +86,8 @@ export function SharedDashboard({ connections }: SharedDashboardProps): React.Re
 
     return Object.values(MODULE_CONFIGS)
       .filter((config) => availableModules.has(config.module))
+      // Filter out 'goals' since they're now merged into the main Goals page
+      .filter((config) => config.module !== 'goals')
       .map((config) => ({
         module: config.module,
         label: config.label,

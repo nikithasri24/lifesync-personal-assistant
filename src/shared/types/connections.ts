@@ -226,7 +226,7 @@ export const MODULE_CONFIGS: Record<ShareableModule, ModulePermissionConfig> = {
     description: 'Life goals and dreams',
     icon: 'Trophy',
     defaultLevel: 'none',
-    supportedLevels: ['none', 'view', 'collaborate', 'merged'],
+    supportedLevels: ['none', 'merged'],
     hasSettings: true,
   },
   habits: {
