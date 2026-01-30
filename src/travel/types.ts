@@ -10,7 +10,9 @@ export type VisitStatus = 'visited' | 'lived' | 'transit' | 'wishlist';
 // Core entities
 export type VisitedLocation = {
   id: string;
-  userId: string;
+  userId?: string | null; // Owner of the location entry
+  connectionId?: string | null; // For backward compatibility with old merged mode
+  visitedBy?: string[]; // Array of user IDs who have visited this location (for collaborative tracking)
 
   // Location details
   locationType: LocationType;
@@ -38,6 +40,13 @@ export type VisitedLocation = {
 
   createdAt: string;
   updatedAt: string;
+};
+
+// Helper type to categorize locations by who visited them
+export type LocationVisitCategory = 'mine' | 'partner' | 'both';
+
+export type CategorizedLocation = VisitedLocation & {
+  visitCategory: LocationVisitCategory;
 };
 
 export type Trip = {

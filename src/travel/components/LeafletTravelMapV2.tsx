@@ -20,6 +20,8 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
+type LocationVisitCategory = 'mine' | 'partner' | 'both';
+
 type LeafletTravelMapV2Props = {
   visitedCountries: Record<string, VisitStatus>;
   onCountryClick: (countryCode: string) => void;
@@ -29,6 +31,11 @@ type LeafletTravelMapV2Props = {
   onParkClick?: (parkId: string) => void;
   visitedIslands?: Record<string, VisitStatus>; // Key is island ID
   onIslandClick?: (islandId: string) => void;
+  // Category information for collaborative tracking
+  visitedCountriesCategories?: Record<string, LocationVisitCategory>;
+  visitedStatesCategories?: Record<string, LocationVisitCategory>;
+  visitedParksCategories?: Record<string, LocationVisitCategory>;
+  visitedIslandsCategories?: Record<string, LocationVisitCategory>;
 };
 
 interface CountryFeature {
@@ -80,15 +87,69 @@ const LeafletTravelMapV2: React.FC<LeafletTravelMapV2Props> = ({
   onParkClick,
   visitedIslands = {},
   onIslandClick,
+  visitedCountriesCategories = {},
+  visitedStatesCategories = {},
+  visitedParksCategories = {},
+  visitedIslandsCategories = {},
 }) => {
   const [countries, setCountries] = React.useState<CountryFeature[]>([]);
   const [states, setStates] = React.useState<StateFeature[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [currentZoom, setCurrentZoom] = React.useState(2);
-  const [showStatesAsCountries, setShowStatesAsCountries] = React.useState(true);
-  const [showNationalParks, setShowNationalParks] = React.useState(false);
-  const [showIslands, setShowIslands] = React.useState(false);
+
+  // Load checkbox states from localStorage
+  const [showStatesAsCountries, setShowStatesAsCountries] = React.useState(() => {
+    try {
+      const saved = localStorage.getItem('lifesync:travel:showStatesAsCountries');
+      return saved !== null ? JSON.parse(saved) : true;
+    } catch {
+      return true;
+    }
+  });
+
+  const [showNationalParks, setShowNationalParks] = React.useState(() => {
+    try {
+      const saved = localStorage.getItem('lifesync:travel:showNationalParks');
+      return saved !== null ? JSON.parse(saved) : false;
+    } catch {
+      return false;
+    }
+  });
+
+  const [showIslands, setShowIslands] = React.useState(() => {
+    try {
+      const saved = localStorage.getItem('lifesync:travel:showIslands');
+      return saved !== null ? JSON.parse(saved) : false;
+    } catch {
+      return false;
+    }
+  });
+
+  // Save checkbox states to localStorage whenever they change
+  React.useEffect(() => {
+    try {
+      localStorage.setItem('lifesync:travel:showStatesAsCountries', JSON.stringify(showStatesAsCountries));
+    } catch {
+      // Ignore storage errors
+    }
+  }, [showStatesAsCountries]);
+
+  React.useEffect(() => {
+    try {
+      localStorage.setItem('lifesync:travel:showNationalParks', JSON.stringify(showNationalParks));
+    } catch {
+      // Ignore storage errors
+    }
+  }, [showNationalParks]);
+
+  React.useEffect(() => {
+    try {
+      localStorage.setItem('lifesync:travel:showIslands', JSON.stringify(showIslands));
+    } catch {
+      // Ignore storage errors
+    }
+  }, [showIslands]);
 
   const countryLayerRef = React.useRef<L.GeoJSON | null>(null);
   const stateLayerRef = React.useRef<L.GeoJSON | null>(null);
@@ -176,6 +237,20 @@ const LeafletTravelMapV2: React.FC<LeafletTravelMapV2Props> = ({
     void loadStateData();
   }, [currentZoom, showStatesAsCountries, states.length]);
 
+  // Helper function to get category color
+  const getCategoryColor = (category?: LocationVisitCategory): string => {
+    switch (category) {
+      case 'mine':
+        return '#93C5FD'; // blue-300
+      case 'partner':
+        return '#C4B5FD'; // purple-300
+      case 'both':
+        return '#F9A8D4'; // pink-300
+      default:
+        return '#86EFAC'; // green-300 (fallback for old data)
+    }
+  };
+
   // Country style function
   const getCountryStyle = React.useCallback((countryCode: string): L.PathOptions => {
     const hasVisitedCountry = visitedCountries[countryCode];
@@ -186,22 +261,38 @@ const LeafletTravelMapV2: React.FC<LeafletTravelMapV2Props> = ({
     );
 
     const isVisited = hasVisitedCountry || hasVisitedStates;
+    const category = visitedCountriesCategories[countryCode];
 
     return {
-      fillColor: isVisited ? '#86EFAC' : 'transparent',
-      fillOpacity: isVisited ? 0.4 : 0,
+      fillColor: isVisited ? getCategoryColor(category) : 'transparent',
+      fillOpacity: isVisited ? 0.5 : 0,
       color: '#D4D2C5',
       weight: 1,
     };
-  }, [visitedCountries, visitedStates, showStatesAsCountries]);
+  }, [visitedCountries, visitedStates, showStatesAsCountries, visitedCountriesCategories]);
+
+  // Re-style all countries when checkbox or visited data changes
+  React.useEffect(() => {
+    if (countryLayerRef.current) {
+      countryLayerRef.current.eachLayer((layer) => {
+        if (layer instanceof L.Path) {
+          const feature = (layer as any).feature as CountryFeature;
+          if (feature?.properties?.iso_a2) {
+            layer.setStyle(getCountryStyle(feature.properties.iso_a2));
+          }
+        }
+      });
+    }
+  }, [showStatesAsCountries, visitedCountries, visitedStates, getCountryStyle]);
 
   // State style function
   const getStateStyle = (stateCode: string): L.PathOptions => {
     const hasVisited = visitedStates[stateCode];
+    const category = visitedStatesCategories[stateCode];
 
     return {
-      fillColor: hasVisited ? '#34D399' : 'transparent',
-      fillOpacity: hasVisited ? 0.5 : 0,
+      fillColor: hasVisited ? getCategoryColor(category) : 'transparent',
+      fillOpacity: hasVisited ? 0.6 : 0,
       color: '#9CA3AF',
       weight: 0.8,
       dashArray: '3, 3',
@@ -271,7 +362,23 @@ const LeafletTravelMapV2: React.FC<LeafletTravelMapV2Props> = ({
     });
   };
 
-  const visitedCount = Object.keys(visitedCountries).length;
+  // Calculate visited countries count based on checkbox setting
+  const visitedCount = React.useMemo(() => {
+    if (showStatesAsCountries) {
+      // Count countries that are explicitly visited OR have visited states
+      const explicitCountries = new Set(Object.keys(visitedCountries));
+      const countriesWithStates = new Set(
+        Object.keys(visitedStates)
+          .map(stateCode => stateCode.split('-')[0])
+          .filter(Boolean)
+      );
+      return new Set([...explicitCountries, ...countriesWithStates]).size;
+    } else {
+      // Only count explicitly visited countries
+      return Object.keys(visitedCountries).length;
+    }
+  }, [visitedCountries, visitedStates, showStatesAsCountries]);
+
   const visitedStatesCount = Object.keys(visitedStates).length;
 
   if (loading) {
