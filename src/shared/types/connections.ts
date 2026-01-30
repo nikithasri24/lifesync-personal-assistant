@@ -217,7 +217,7 @@ export const MODULE_CONFIGS: Record<ShareableModule, ModulePermissionConfig> = {
     description: 'Meal planning and recipes',
     icon: 'ChefHat',
     defaultLevel: 'none',
-    supportedLevels: ['none', 'view', 'collaborate', 'merged'],
+    supportedLevels: ['none', 'merged'],
     hasSettings: false,
   },
   goals: {
