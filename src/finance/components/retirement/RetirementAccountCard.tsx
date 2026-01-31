@@ -6,17 +6,22 @@
 import React from 'react';
 import { PiggyBank, TrendingUp, Lock, Unlock, DollarSign, Edit, Trash2 } from 'lucide-react';
 import type { RetirementAccountWithStats } from '../../types';
+import { OwnerBadge } from '../OwnerBadge';
 
 interface RetirementAccountCardProps {
   retirement: RetirementAccountWithStats;
   onEdit?: () => void;
   onDelete?: () => void;
+  currentUserId?: string;
+  partnerName?: string;
 }
 
 const RetirementAccountCard: React.FC<RetirementAccountCardProps> = ({
   retirement,
   onEdit,
   onDelete,
+  currentUserId,
+  partnerName,
 }) => {
   const totalBalance = retirement.accountBalance;
   const vestedBalance = retirement.vestedBalance;
@@ -58,9 +63,19 @@ const RetirementAccountCard: React.FC<RetirementAccountCardProps> = ({
             <PiggyBank className="h-5 w-5 text-blue-600 dark:text-blue-400" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              {retirement.accountName}
-            </h3>
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                {retirement.accountName}
+              </h3>
+              {currentUserId && retirement.userId && (
+                <OwnerBadge
+                  userId={retirement.userId}
+                  currentUserId={currentUserId}
+                  partnerName={partnerName}
+                  size="sm"
+                />
+              )}
+            </div>
             <p className="text-sm text-gray-500 dark:text-gray-400">
               {getAccountTypeDisplay(retirement.accountName)}
             </p>

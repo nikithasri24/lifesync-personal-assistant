@@ -11,17 +11,21 @@ import {
   useGoalProgressQuery,
   useUpsertGoalMutation,
   useDeleteGoalMutation,
+  useFinanceMergedConnectionQuery,
 } from '@/hooks/useFinanceQuery';
 import type { Goal, GoalInput, Account } from '../types';
 import GoalCard from '../components/goals/GoalCard';
 import GoalEditor from '../components/goals/GoalEditor';
+import { useAuth } from '@/hooks/useAuth';
 
 // Wrapper component to load progress for each goal
 const GoalCardWithProgress: React.FC<{
   goal: Goal;
   accounts: Account[];
   onEdit: (goal: Goal) => void;
-}> = ({ goal, accounts, onEdit }) => {
+  currentUserId?: string;
+  partnerName?: string;
+}> = ({ goal, accounts, onEdit, currentUserId, partnerName }) => {
   const { data: progressHistory = [] } = useGoalProgressQuery(goal.id);
   const linkedAccount = goal.linkedAccountId
     ? accounts.find(a => a.id === goal.linkedAccountId)
@@ -33,6 +37,8 @@ const GoalCardWithProgress: React.FC<{
       progressHistory={progressHistory}
       linkedAccount={linkedAccount}
       onEdit={onEdit}
+      currentUserId={currentUserId}
+      partnerName={partnerName}
     />
   );
 };
@@ -40,6 +46,16 @@ const GoalCardWithProgress: React.FC<{
 const GoalsPage: React.FC = () => {
   const [editorOpen, setEditorOpen] = React.useState(false);
   const [editingGoal, setEditingGoal] = React.useState<Goal | undefined>(undefined);
+
+  // Auth and merged connection
+  const { user } = useAuth();
+  const { data: mergedConnection } = useFinanceMergedConnectionQuery();
+
+  // Get partner name from merged connection
+  const partnerName = React.useMemo(() => {
+    if (!mergedConnection || !user) return undefined;
+    return mergedConnection.partnerName;
+  }, [mergedConnection, user]);
 
   // React Query hooks
   const { data: goals = [], isLoading: goalsLoading } = useGoalsQuery();
@@ -49,6 +65,7 @@ const GoalsPage: React.FC = () => {
 
   const loading = goalsLoading || accountsLoading;
 
+  // Sort goals - no filtering in merged mode, always show all
   const sortedGoals = React.useMemo<Goal[]>(() => {
     return [...goals].sort((a, b) => {
       const aComplete = a.currentAmount >= a.targetAmount;
@@ -102,7 +119,7 @@ const GoalsPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
         <div>
-          <h2 className="text-2xl font-semibold text-primary">Financial Goals</h2>
+          <h2 className="text-2xl font-semibold text-primary">🎯 Financial Goals</h2>
           <p className="mt-1 text-sm text-primary opacity-70">
             Track your savings targets and debt payoff progress
           </p>
@@ -145,6 +162,8 @@ const GoalsPage: React.FC = () => {
               goal={goal}
               accounts={accounts}
               onEdit={handleEditGoal}
+              currentUserId={user?.id}
+              partnerName={partnerName}
             />
           ))}
         </div>

@@ -14,12 +14,15 @@ import {
 } from '../../utils/goalCalculations';
 import { GoalRing } from '../GoalRing';
 import GoalProgressChart from '../GoalProgressChart';
+import { OwnerBadge } from '../OwnerBadge';
 
 interface GoalCardProps {
   goal: Goal;
   progressHistory?: GoalProgressPoint[];
   linkedAccount?: Account;
   onEdit: (goal: Goal) => void;
+  currentUserId?: string;
+  partnerName?: string;
 }
 
 export const GoalCard: React.FC<GoalCardProps> = ({
@@ -27,6 +30,8 @@ export const GoalCard: React.FC<GoalCardProps> = ({
   progressHistory = [],
   linkedAccount,
   onEdit,
+  currentUserId,
+  partnerName,
 }) => {
   const recommendation = calculateGoalRecommendation(goal, progressHistory);
   const progressPercentage = calculateProgressPercentage(goal);
@@ -76,7 +81,17 @@ export const GoalCard: React.FC<GoalCardProps> = ({
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1">
-          <h3 className="text-base font-semibold text-primary">{goal.name}</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-base font-semibold text-primary">{goal.name}</h3>
+            {currentUserId && (
+              <OwnerBadge
+                userId={goal.userId}
+                currentUserId={currentUserId}
+                partnerName={partnerName}
+                size="sm"
+              />
+            )}
+          </div>
           {linkedAccount && (
             <div className="flex items-center gap-1 mt-0.5">
               <DollarSign className="h-3 w-3 text-primary opacity-60" />

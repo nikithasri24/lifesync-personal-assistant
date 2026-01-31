@@ -14,15 +14,27 @@ import {
   useUpsertLoanMutation,
   useDeleteLoanMutation,
   useUpsertLoanPaymentMutation,
+  useFinanceMergedConnectionQuery,
 } from '@/hooks/useFinanceQuery';
 import { formatCurrency } from '../utils/currency';
 import { calculateInterestPaidToDate, calculatePrincipalPaidToDate } from '../utils/loanCalculations';
 import { logger } from '../../services/logger';
+import { useAuth } from '@/hooks/useAuth';
 
 const LoansPage: React.FC = () => {
   const [selectedLoan, setSelectedLoan] = useState<Loan | null>(null);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+
+  // Auth and merged connection
+  const { user } = useAuth();
+  const { data: mergedConnection } = useFinanceMergedConnectionQuery();
+
+  // Get partner name from merged connection
+  const partnerName = React.useMemo(() => {
+    if (!mergedConnection || !user) return undefined;
+    return mergedConnection.partnerName;
+  }, [mergedConnection, user]);
 
   const { data: loans = [], isLoading, error } = useLoansQuery();
   const upsertLoanMutation = useUpsertLoanMutation();
@@ -86,7 +98,7 @@ const LoansPage: React.FC = () => {
     }
   };
 
-  // Calculate summary stats
+  // Calculate summary stats - no filtering in merged mode, always show all
   const activeLoans = loans.filter((l) => l.status === 'active');
   const totalBalance = activeLoans.reduce((sum, l) => sum + l.currentBalance, 0);
   const totalMonthlyPayment = activeLoans.reduce((sum, l) => sum + l.monthlyPayment + l.extraPayment, 0);
@@ -124,7 +136,7 @@ const LoansPage: React.FC = () => {
     <div className="container mx-auto px-4 py-6 max-w-7xl">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-primary">Loan Tracker</h1>
+        <h1 className="text-2xl font-bold text-primary">💳 Loan Tracker</h1>
         <button
           onClick={handleAddLoan}
           className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors"
@@ -183,6 +195,8 @@ const LoansPage: React.FC = () => {
               loan={loan}
               onEdit={handleEditLoan}
               onAddPayment={handleAddPayment}
+              currentUserId={user?.id}
+              partnerName={partnerName}
             />
           ))}
         </div>

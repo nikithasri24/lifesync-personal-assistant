@@ -1,5 +1,6 @@
 export type Institution = {
   id: string;
+  userId: string; // Owner of the institution (for merged mode)
   name: string;
   logoUrl?: string;
 };
@@ -23,6 +24,7 @@ export type RewardsType = 'points' | 'miles' | 'cashback';
 
 export type Account = {
   id: string;
+  userId: string; // Owner of the account (for merged mode)
   institutionId?: string;
   name: string;
   type: AccountType;
@@ -46,6 +48,7 @@ export type Account = {
 
 export type Category = {
   id: string;
+  userId: string; // Owner of the category (for merged mode)
   name: string;
   parentId?: string;
   icon?: string;
@@ -56,6 +59,7 @@ export type TxnType = 'debit' | 'credit';
 
 export type Transaction = {
   id: string;
+  userId: string; // Owner of the transaction (for merged mode)
   accountId: string;
   dateISO: string; // UTC ISO string
   description: string;
@@ -72,6 +76,7 @@ export type Transaction = {
 
 export type Budget = {
   id: string;
+  userId: string; // Owner of the budget (for merged mode)
   categoryId: string;
   month: string; // YYYY-MM
   limit: number;
@@ -79,6 +84,7 @@ export type Budget = {
 
 export type BudgetTemplate = {
   id: string;
+  userId: string; // Owner of the budget template (for merged mode)
   categoryId: string;
   defaultAmount: number;
 };
@@ -95,6 +101,7 @@ export type GoalType = 'savings' | 'debt';
 
 export type Goal = {
   id: string;
+  userId: string; // Owner of the goal (for merged mode)
   name: string;
   targetAmount: number;
   currentAmount: number;
@@ -167,6 +174,7 @@ export type BenefitFrequency = 'annual' | 'monthly' | 'quarterly' | 'once' | 'pe
 
 export type CardBenefit = {
   id: string;
+  userId: string; // Owner of the card benefit (for merged mode)
   accountId: string;
   benefitType: BenefitType;
   name: string;
@@ -188,6 +196,7 @@ export type SpendingCategory = 'dining' | 'travel' | 'groceries' | 'gas' | 'onli
 
 export type CardCategoryBonus = {
   id: string;
+  userId: string; // Owner of the category bonus (for merged mode)
   accountId: string;
   category: SpendingCategory;
   rewardsRate: number; // e.g., 3.0 for 3x points
@@ -203,6 +212,7 @@ export type CardCategoryBonusInput = Omit<CardCategoryBonus, 'id' | 'createdAt'>
 
 export type WelcomeBonus = {
   id: string;
+  userId: string; // Owner of the welcome bonus (for merged mode)
   accountId: string;
   bonusAmount: number;
   requiredSpend: number;
@@ -222,6 +232,7 @@ export type OfferType = 'cashback' | 'statement_credit' | 'bonus_points';
 
 export type CardOffer = {
   id: string;
+  userId: string; // Owner of the card offer (for merged mode)
   accountId: string;
   merchant: string;
   offerType: OfferType;
@@ -264,6 +275,7 @@ export type PendingTransactionStatus = 'pending' | 'approved' | 'skipped' | 'edi
 
 export type RecurringTransaction = {
   id: string;
+  userId: string; // Owner of the recurring transaction (for merged mode)
   description: string;
   amount: number;
   type: 'credit' | 'debit';
@@ -293,6 +305,7 @@ export type RecurringTransactionInput = Omit<RecurringTransaction, 'id' | 'creat
 
 export type PendingTransaction = {
   id: string;
+  userId: string; // Owner of the pending transaction (for merged mode)
   recurringTransactionId?: string;
   description: string;
   amount: number;
@@ -321,6 +334,7 @@ export type PaymentStatus = 'pending' | 'completed' | 'failed' | 'refunded';
 
 export type InsurancePolicy = {
   id: string;
+  userId: string; // Owner of the insurance policy (for merged mode)
   policyName: string;
   policyNumber?: string;
   provider: string;
@@ -426,6 +440,7 @@ export type LoanStatus = 'active' | 'paid_off' | 'deferred' | 'defaulted';
 
 export type Loan = {
   id: string;
+  userId: string; // Owner of the loan (for merged mode)
   accountId?: string; // Link to account if tracked there
   loanName: string;
   loanType: LoanType;

@@ -18,6 +18,7 @@ import {
   setModulePermission,
 } from '@/shared/api/connectionsAPI';
 import { clearMergedConnectionCache } from '@/api/mealPlanningAPI';
+import { clearFinanceMergedConnectionCache } from '@/hooks/useFinanceQuery';
 import type {
   ConnectionWithUser,
   ConnectionWithPermissions,
@@ -258,9 +259,12 @@ export function useUpdatePermissionMutation() {
         level: permission.permissionLevel,
       });
       // Clear merged connection cache since permission level may have changed
-      // This ensures the next meal plan fetch re-evaluates merged status
+      // This ensures the next fetch re-evaluates merged status
       if (permission.module === 'meals') {
         clearMergedConnectionCache();
+      }
+      if (permission.module === 'finances') {
+        clearFinanceMergedConnectionCache();
       }
       // Invalidate connections to refetch with updated permissions
       void queryClient.invalidateQueries({ queryKey: connectionsKeys.connections() });

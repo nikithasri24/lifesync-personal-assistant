@@ -19,18 +19,30 @@ import {
   useCategoriesQuery,
   useBudgetsQuery,
   useBudgetTemplatesQuery,
+  useFinanceMergedConnectionQuery,
 } from '@/hooks/useFinanceQuery';
 import { useGroupedTransactions } from '../hooks/useGroupedTransactions';
 import { useBudgetSummary } from '../hooks/useBudgetSummary';
 import { formatCurrency } from '../utils/currency';
 import useFinanceFilters from '../store/useFinanceFilters';
 import { getFinanceAPI } from '../data';
+import { useAuth } from '@/hooks/useAuth';
 
 const TransactionsPageGrouped: React.FC = () => {
   const [showQuickAdd, setShowQuickAdd] = React.useState(false);
   const [showTemplateManager, setShowTemplateManager] = React.useState(false);
   const [collapsedGroups, setCollapsedGroups] = React.useState<Set<string>>(new Set());
   const filters = useFinanceFilters();
+
+  // Auth and merged connection
+  const { user } = useAuth();
+  const { data: mergedConnection } = useFinanceMergedConnectionQuery();
+
+  // Get partner name from merged connection
+  const partnerName = React.useMemo(() => {
+    if (!mergedConnection || !user) return undefined;
+    return mergedConnection.partnerName;
+  }, [mergedConnection, user]);
 
   // Get current month in YYYY-MM format
   const currentMonth = React.useMemo(() => {
@@ -67,7 +79,7 @@ const TransactionsPageGrouped: React.FC = () => {
     return templateMap;
   }, [budgetTemplatesList]);
 
-  // Group transactions by category
+  // Group transactions by category - no filtering in merged mode, always show all
   const groupedTransactions = useGroupedTransactions({
     transactions,
     categories,
@@ -104,7 +116,7 @@ const TransactionsPageGrouped: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      <Card title="Filters">
+      <Card title="💸 Transactions">
         <FiltersBar onApply={() => loadData()} onReset={() => filters.reset()} />
       </Card>
 
@@ -182,6 +194,8 @@ const TransactionsPageGrouped: React.FC = () => {
                       categories={categories}
                       onUpdate={loadData}
                       onDelete={loadData}
+                      currentUserId={user?.id}
+                      partnerName={partnerName}
                     />
                   )}
                 </div>

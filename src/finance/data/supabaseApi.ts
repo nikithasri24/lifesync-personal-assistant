@@ -67,6 +67,7 @@ export class SupabaseApi implements FinanceAPI {
     if (error) throw error;
     return (data || []).map(row => ({
       id: row.id,
+      userId: row.user_id,
       name: row.name,
       logoUrl: row.logo_url,
     }));
@@ -77,16 +78,17 @@ export class SupabaseApi implements FinanceAPI {
   // =====================================================
 
   async listAccounts(): Promise<Account[]> {
-    const userId = await this.getUserId();
+    // Don't filter by user_id - let RLS handle access control
+    // This allows viewing partner's accounts in merged mode
     const { data, error } = await this.client
       .from('finance_accounts')
       .select('*')
-      .eq('user_id', userId)
       .order('name');
 
     if (error) throw error;
     return (data || []).map(row => ({
       id: row.id,
+      userId: row.user_id,
       institutionId: row.institution_id,
       name: row.name,
       type: row.type,
@@ -114,6 +116,7 @@ export class SupabaseApi implements FinanceAPI {
     if (updates.name !== undefined) dbUpdates.name = updates.name;
     if (updates.balance !== undefined) dbUpdates.balance = updates.balance;
     if (updates.institutionId !== undefined) dbUpdates.institution_id = updates.institutionId;
+    if (updates.userId !== undefined) dbUpdates.user_id = updates.userId; // Allow ownership transfer
     if (updates.creditLimit !== undefined) dbUpdates.credit_limit = updates.creditLimit;
     if (updates.apr !== undefined) dbUpdates.apr = updates.apr;
     if (updates.paymentDueDay !== undefined) dbUpdates.payment_due_day = updates.paymentDueDay;
@@ -128,17 +131,18 @@ export class SupabaseApi implements FinanceAPI {
 
     dbUpdates.updated_at = new Date().toISOString();
 
+    // Don't filter by user_id when updating - allow updating partner's accounts in merged mode
+    // RLS will handle access control
     const { error } = await this.client
       .from('finance_accounts')
       .update(dbUpdates)
-      .eq('id', accountId)
-      .eq('user_id', userId);
+      .eq('id', accountId);
 
     if (error) throw error;
   }
 
-  async upsertAccount(account: { id?: string; name: string; type: string; balance: number; institutionId?: string }): Promise<void> {
-    const userId = await this.getUserId();
+  async upsertAccount(account: { id?: string; name: string; type: string; balance: number; institutionId?: string; userId?: string }): Promise<void> {
+    const currentUserId = await this.getUserId();
 
     if (account.id) {
       // Update existing
@@ -146,13 +150,14 @@ export class SupabaseApi implements FinanceAPI {
         name: account.name,
         balance: account.balance,
         institutionId: account.institutionId,
+        userId: account.userId, // Allow ownership transfer
       });
     } else {
-      // Insert new
+      // Insert new - use provided userId or default to current user
       const { error } = await this.client
         .from('finance_accounts')
         .insert({
-          user_id: userId,
+          user_id: account.userId ?? currentUserId,
           name: account.name,
           type: account.type,
           balance: account.balance,
@@ -179,11 +184,11 @@ export class SupabaseApi implements FinanceAPI {
   // =====================================================
 
   async listTransactions(params: TxnQuery): Promise<Paginated<Transaction>> {
-    const userId = await this.getUserId();
+    // Don't filter by user_id - let RLS handle access control
+    // This allows viewing partner's transactions in merged mode
     let query = this.client
       .from('finance_transactions')
-      .select('*')
-      .eq('user_id', userId);
+      .select('*');
 
     if (params.fromISO) query = query.gte('date', params.fromISO);
     if (params.toISO) query = query.lte('date', params.toISO);
@@ -202,6 +207,7 @@ export class SupabaseApi implements FinanceAPI {
 
     const items = (data || []).map(row => ({
       id: row.id,
+      userId: row.user_id,
       accountId: row.account_id,
       dateISO: row.date,
       description: row.description,
@@ -294,6 +300,7 @@ export class SupabaseApi implements FinanceAPI {
     if (error) throw error;
     return (data || []).map(row => ({
       id: row.id,
+      userId: row.user_id,
       categoryId: row.category_id,
       month: row.month,
       limit: parseFloat(row.limit_amount),
@@ -343,6 +350,7 @@ export class SupabaseApi implements FinanceAPI {
     if (error) throw error;
     return (data || []).map(row => ({
       id: row.id,
+      userId: row.user_id,
       categoryId: row.category_id,
       defaultAmount: parseFloat(row.default_amount),
     }));
@@ -413,6 +421,7 @@ export class SupabaseApi implements FinanceAPI {
     if (error) throw error;
     return (data || []).map(row => ({
       id: row.id,
+      userId: row.user_id,
       name: row.name,
       parentId: row.parent_id,
       icon: row.icon,
@@ -458,16 +467,17 @@ export class SupabaseApi implements FinanceAPI {
   // =====================================================
 
   async listGoals(): Promise<Goal[]> {
-    const userId = await this.getUserId();
+    // Don't filter by user_id - let RLS handle access control
+    // This allows viewing partner's goals in merged mode
     const { data, error } = await this.client
       .from('finance_goals')
       .select('*')
-      .eq('user_id', userId)
       .order('due_date');
 
     if (error) throw error;
     return (data || []).map(row => ({
       id: row.id,
+      userId: row.user_id,
       name: row.name,
       targetAmount: parseFloat(row.target_amount),
       currentAmount: parseFloat(row.current_amount),
@@ -608,6 +618,7 @@ export class SupabaseApi implements FinanceAPI {
 
     return (data || []).map(row => ({
       id: row.id,
+      userId: row.user_id,
       accountId: row.account_id,
       benefitType: row.benefit_type,
       name: row.name,
@@ -670,6 +681,7 @@ export class SupabaseApi implements FinanceAPI {
 
     return (data || []).map(row => ({
       id: row.id,
+      userId: row.user_id,
       accountId: row.account_id,
       category: row.category,
       rewardsRate: parseFloat(row.rewards_rate),
@@ -714,6 +726,7 @@ export class SupabaseApi implements FinanceAPI {
 
     return (data || []).map(row => ({
       id: row.id,
+      userId: row.user_id,
       accountId: row.account_id,
       bonusAmount: parseFloat(row.bonus_amount),
       requiredSpend: parseFloat(row.required_spend),
@@ -761,6 +774,7 @@ export class SupabaseApi implements FinanceAPI {
 
     return (data || []).map(row => ({
       id: row.id,
+      userId: row.user_id,
       accountId: row.account_id,
       merchant: row.merchant,
       offerType: row.offer_type,
@@ -805,17 +819,18 @@ export class SupabaseApi implements FinanceAPI {
   // =====================================================
 
   async listLoans(): Promise<Loan[]> {
-    const userId = await this.getUserId();
+    // Don't filter by user_id - let RLS handle access control
+    // This allows viewing partner's loans in merged mode
     const { data, error } = await this.client
       .from('finance_loans_with_stats')
       .select('*')
-      .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
 
     return (data || []).map(row => ({
       id: row.id,
+      userId: row.user_id,
       accountId: row.account_id,
       loanName: row.loan_name,
       loanType: row.loan_type,

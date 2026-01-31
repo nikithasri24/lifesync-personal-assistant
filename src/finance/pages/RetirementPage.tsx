@@ -11,13 +11,25 @@ import {
   useRetirementAccountQuery,
   useUpsertRetirementAccountMetadataMutation,
   useDeleteRetirementAccountMetadataMutation,
+  useFinanceMergedConnectionQuery,
 } from '@/hooks/useFinanceQuery';
 import { RetirementDashboard } from '../components/retirement';
 import RetirementAccountEditor from '../components/retirement/RetirementAccountEditor';
 import type { Account, RetirementAccountWithStats, RetirementAccountMetadataInput } from '../types';
 import { logger } from '../../services/logger';
+import { useAuth } from '@/hooks/useAuth';
 
 const RetirementPage: React.FC = () => {
+  // Auth and merged connection
+  const { user } = useAuth();
+  const { data: mergedConnection } = useFinanceMergedConnectionQuery();
+
+  // Get partner name from merged connection
+  const partnerName = React.useMemo(() => {
+    if (!mergedConnection || !user) return undefined;
+    return mergedConnection.partnerName;
+  }, [mergedConnection, user]);
+
   const { data: accounts = [], refetch: refetchAccounts } = useAccountsQuery();
   const { data: retirementAccounts = [], isLoading: loading } = useRetirementAccountsQuery();
   const upsertMetadataMutation = useUpsertRetirementAccountMetadataMutation();
@@ -148,6 +160,8 @@ const RetirementPage: React.FC = () => {
         onAddAccount={handleAddAccount}
         onEditAccount={handleEditAccount}
         onDeleteAccount={handleDeleteAccount}
+        currentUserId={user?.id}
+        partnerName={partnerName}
       />
 
       {/* Settings Hint */}
