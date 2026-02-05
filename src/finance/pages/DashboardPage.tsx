@@ -18,6 +18,8 @@ import { Pencil, Plus } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { OwnerBadge } from '../components/OwnerBadge';
 import { SplitMetricCard } from '../components/SplitMetricCard';
+import { OwnerFilter } from '../components/OwnerFilter';
+import useFinanceFilters from '../store/useFinanceFilters';
 
 const DashboardPage: React.FC = () => {
   const [month, setMonth] = React.useState(currentMonth());
@@ -39,14 +41,30 @@ const DashboardPage: React.FC = () => {
   const { data: accounts = [], isLoading: accountsLoading, refetch: refetchAccounts } = useAccountsQuery();
   const { data: categories = [], isLoading: categoriesLoading } = useCategoriesQuery();
   const { data: budgets = [], isLoading: budgetsLoading } = useBudgetsQuery(month);
+  const filters = useFinanceFilters();
 
   // useTransactionsQuery now returns Transaction[] directly (after our fix)
   const txns: Transaction[] = transactions;
   const loading = txnsLoading || accountsLoading || categoriesLoading || budgetsLoading;
 
+  // Filter data by owner (if in merged mode and filter is active)
+  const filteredTxns = React.useMemo(() => {
+    if (!mergedConnection || filters.ownerFilter === 'all') return txns;
+    if (filters.ownerFilter === 'mine') return txns.filter(t => t.userId === user?.id);
+    if (filters.ownerFilter === 'partner') return txns.filter(t => t.userId !== user?.id);
+    return txns;
+  }, [txns, mergedConnection, filters.ownerFilter, user]);
+
+  const filteredAccounts = React.useMemo(() => {
+    if (!mergedConnection || filters.ownerFilter === 'all') return accounts;
+    if (filters.ownerFilter === 'mine') return accounts.filter(a => a.userId === user?.id);
+    if (filters.ownerFilter === 'partner') return accounts.filter(a => a.userId !== user?.id);
+    return accounts;
+  }, [accounts, mergedConnection, filters.ownerFilter, user]);
+
   const { from, to } = monthRange(month);
   // Filter transactions by extracting just the YYYY-MM part for comparison
-  const monthTxns: Transaction[] = txns.filter((t: Transaction): boolean => {
+  const monthTxns: Transaction[] = filteredTxns.filter((t: Transaction): boolean => {
     const txnMonth: string = t.dateISO.slice(0, 7); // Extract YYYY-MM
     return txnMonth === month;
   });
@@ -166,11 +184,11 @@ const DashboardPage: React.FC = () => {
     };
   }, [month]);
 
-  // Only calculate metrics after data is loaded
+  // Only calculate metrics after data is loaded - use filtered data
   const metrics: FinanceMetrics = useFinanceMetrics({
-    transactions: loading ? [] : txns,
+    transactions: loading ? [] : filteredTxns,
     categories: loading ? [] : categories,
-    accounts: loading ? [] : accounts,
+    accounts: loading ? [] : filteredAccounts,
     currentPeriod,
     previousPeriod,
     topCategoriesLimit: 10,
@@ -190,12 +208,32 @@ const DashboardPage: React.FC = () => {
     }
   }, [loading, metrics.sankeyData, currentPeriod, txns, monthTxns, categories]);
 
-  // Calculate spending by category
+  // Calculate spending by category and track ownership
   const spendingMap: Record<string, number> = monthTxns.filter((t: Transaction): boolean => t.type === 'debit').reduce<Record<string, number>>((acc: Record<string, number>, t: Transaction): Record<string, number> => {
     const key: string = t.categoryId ?? 'uncategorized';
     acc[key] = (acc[key] ?? 0) + t.amount;
     return acc;
   }, {});
+
+  // Calculate who spent in each category
+  const categoryOwnership: Record<string, { hasMe: boolean; hasPartner: boolean }> = React.useMemo(() => {
+    const ownership: Record<string, { hasMe: boolean; hasPartner: boolean }> = {};
+
+    monthTxns.filter((t: Transaction): boolean => t.type === 'debit').forEach((t: Transaction) => {
+      const key: string = t.categoryId ?? 'uncategorized';
+      if (!ownership[key]) {
+        ownership[key] = { hasMe: false, hasPartner: false };
+      }
+
+      if (user && t.userId === user.id) {
+        ownership[key].hasMe = true;
+      } else {
+        ownership[key].hasPartner = true;
+      }
+    });
+
+    return ownership;
+  }, [monthTxns, user]);
 
   // Include all budgeted categories, even if there's no spending
   const allCategoryIds: Set<string> = new Set([
@@ -224,7 +262,7 @@ const DashboardPage: React.FC = () => {
 
   // Get months from transactions and ensure current month is included
   const monthsInTx: string[] = Array.from(
-    new Set([...txns.map((t: Transaction): string => toMonth(t.dateISO)), currentMonth()])
+    new Set([...filteredTxns.map((t: Transaction): string => toMonth(t.dateISO)), currentMonth()])
   ).sort();
 
 
@@ -232,8 +270,19 @@ const DashboardPage: React.FC = () => {
   return (
     <>
       <div className="space-y-6">
+        {/* Owner Filter - only show in merged mode */}
+        {mergedConnection && (
+          <div className="flex justify-end">
+            <OwnerFilter
+              value={filters.ownerFilter}
+              onChange={filters.setOwnerFilter}
+              partnerName={partnerName}
+            />
+          </div>
+        )}
+
         {/* Split Metrics Section - Full Width in Merged Mode */}
-        {mergedConnection && user && (
+        {mergedConnection && user && filters.ownerFilter === 'all' && (
           <div className="w-full">
             <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
               <span className="h-1 w-1 rounded-full bg-blue-500"></span>
@@ -337,12 +386,12 @@ const DashboardPage: React.FC = () => {
         }
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-          {accounts.length === 0 ? (
+          {filteredAccounts.length === 0 ? (
             <div className="col-span-full text-center py-6 text-slate-500">
-              No accounts yet. Click "Add Account" to create one.
+              {filters.ownerFilter === 'all' ? 'No accounts yet. Click "Add Account" to create one.' : 'No accounts for this owner filter.'}
             </div>
           ) : (
-            accounts.map((a) => (
+            filteredAccounts.map((a) => (
               <div key={a.id} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 group hover:bg-slate-100 transition-colors">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
@@ -419,9 +468,22 @@ const DashboardPage: React.FC = () => {
                 </div>
 
                 {/* Owner Badge */}
-                <div className="w-16 text-right text-xs text-slate-500">
-                  (Both)
-                </div>
+                {mergedConnection && user && (
+                  <div className="w-20 text-right text-xs">
+                    {(() => {
+                      const ownership = categoryOwnership[c.catId];
+                      if (!ownership) return <span className="text-slate-500">-</span>;
+                      if (ownership.hasMe && ownership.hasPartner) {
+                        return <span className="text-slate-600 font-medium">Both</span>;
+                      } else if (ownership.hasMe) {
+                        return <span className="text-blue-600 font-medium">Me</span>;
+                      } else if (ownership.hasPartner) {
+                        return <span className="text-purple-600 font-medium">{partnerName}</span>;
+                      }
+                      return <span className="text-slate-500">-</span>;
+                    })()}
+                  </div>
+                )}
               </div>
             );
           })}

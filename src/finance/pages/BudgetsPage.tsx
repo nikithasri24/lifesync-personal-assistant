@@ -17,6 +17,8 @@ import {
 import { currentMonth, monthRange } from '../utils/date';
 import { formatCurrency } from '../utils/currency';
 import { OwnerBadge } from '../components/OwnerBadge';
+import { OwnerFilter } from '../components/OwnerFilter';
+import useFinanceFilters from '../store/useFinanceFilters';
 import type { Budget, Category, Transaction } from '../types';
 
 const BudgetsPage: React.FC = () => {
@@ -41,6 +43,7 @@ const BudgetsPage: React.FC = () => {
   // Mutations
   const upsertBudget = useUpsertBudgetMutation();
   const deleteBudget = useDeleteBudgetMutation();
+  const filters = useFinanceFilters();
 
   const loading = budgetsLoading || categoriesLoading || txnsLoading;
 
@@ -103,7 +106,26 @@ const BudgetsPage: React.FC = () => {
     return categories.find((c) => c.id === categoryId)?.name || 'Unknown';
   };
 
-  // Group budgets by type (household vs personal)
+  // Filter transactions by owner (if filter is active)
+  const filteredMonthTxns = React.useMemo(() => {
+    if (!mergedConnection || filters.ownerFilter === 'all') return monthTxns;
+    if (filters.ownerFilter === 'mine') return monthTxns.filter(t => t.userId === user?.id);
+    if (filters.ownerFilter === 'partner') return monthTxns.filter(t => t.userId !== user?.id);
+    return monthTxns;
+  }, [monthTxns, mergedConnection, filters.ownerFilter, user]);
+
+  // Recalculate spending based on filtered transactions
+  const filteredSpendingByCategory = React.useMemo(() => {
+    const map = new Map<string, number>();
+    filteredMonthTxns.forEach((t: Transaction) => {
+      if (t.categoryId) {
+        map.set(t.categoryId, (map.get(t.categoryId) || 0) + t.amount);
+      }
+    });
+    return map;
+  }, [filteredMonthTxns]);
+
+  // Group budgets by type (household vs personal) - using filtered data
   const { householdBudgets, myBudgets, partnerBudgets } = React.useMemo(() => {
     const household: Budget[] = [];
     const mine: Budget[] = [];
@@ -150,6 +172,14 @@ const BudgetsPage: React.FC = () => {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-slate-900">📊 Budgets</h1>
         <div className="flex items-center gap-3">
+          {/* Owner Filter - only show in merged mode */}
+          {mergedConnection && (
+            <OwnerFilter
+              value={filters.ownerFilter}
+              onChange={filters.setOwnerFilter}
+              partnerName={partnerName}
+            />
+          )}
           <select
             value={month}
             onChange={(e) => setMonth(e.target.value)}
@@ -181,7 +211,7 @@ const BudgetsPage: React.FC = () => {
               </h2>
               <div className="space-y-4">
                 {householdBudgets.map((budget) => {
-                  const spent = spendingByCategory.get(budget.categoryId) || 0;
+                  const spent = filteredSpendingByCategory.get(budget.categoryId) || 0;
                   const remaining = budget.limit - spent;
                   const percentage = budget.limit > 0 ? (spent / budget.limit) * 100 : 0;
                   const isOverBudget = spent > budget.limit;
@@ -471,7 +501,7 @@ const BudgetsPage: React.FC = () => {
               <h2 className="text-lg font-bold text-slate-900 mb-4">My Budgets</h2>
               <div className="space-y-4">
                 {budgets.map((budget) => {
-                  const spent = spendingByCategory.get(budget.categoryId) || 0;
+                  const spent = filteredSpendingByCategory.get(budget.categoryId) || 0;
                   const remaining = budget.limit - spent;
                   const percentage = budget.limit > 0 ? (spent / budget.limit) * 100 : 0;
                   const isOverBudget = spent > budget.limit;

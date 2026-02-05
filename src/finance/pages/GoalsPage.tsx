@@ -17,6 +17,8 @@ import type { Goal, GoalInput, Account } from '../types';
 import GoalCard from '../components/goals/GoalCard';
 import GoalEditor from '../components/goals/GoalEditor';
 import { useAuth } from '@/hooks/useAuth';
+import { OwnerFilter } from '../components/OwnerFilter';
+import useFinanceFilters from '../store/useFinanceFilters';
 
 // Wrapper component to load progress for each goal
 const GoalCardWithProgress: React.FC<{
@@ -62,19 +64,28 @@ const GoalsPage: React.FC = () => {
   const { data: accounts = [], isLoading: accountsLoading } = useAccountsQuery();
   const upsertGoalMutation = useUpsertGoalMutation();
   const deleteGoalMutation = useDeleteGoalMutation();
+  const filters = useFinanceFilters();
 
   const loading = goalsLoading || accountsLoading;
 
-  // Sort goals - no filtering in merged mode, always show all
+  // Filter goals by owner (if in merged mode)
+  const filteredGoals = React.useMemo(() => {
+    if (!mergedConnection || filters.ownerFilter === 'all') return goals;
+    if (filters.ownerFilter === 'mine') return goals.filter(g => g.userId === user?.id);
+    if (filters.ownerFilter === 'partner') return goals.filter(g => g.userId !== user?.id);
+    return goals;
+  }, [goals, mergedConnection, filters.ownerFilter, user]);
+
+  // Sort filtered goals
   const sortedGoals = React.useMemo<Goal[]>(() => {
-    return [...goals].sort((a, b) => {
+    return [...filteredGoals].sort((a, b) => {
       const aComplete = a.currentAmount >= a.targetAmount;
       const bComplete = b.currentAmount >= b.targetAmount;
       if (aComplete !== bComplete) return aComplete ? 1 : -1;
 
       return new Date(a.dueDateISO).getTime() - new Date(b.dueDateISO).getTime();
     });
-  }, [goals]);
+  }, [filteredGoals]);
 
   const handleCreateGoal = (): void => {
     setEditingGoal(undefined);
@@ -124,13 +135,23 @@ const GoalsPage: React.FC = () => {
             Track your savings targets and debt payoff progress
           </p>
         </div>
-        <button
-          onClick={handleCreateGoal}
-          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-700 px-4 py-2 text-sm font-semibold text-white shadow-lg transition-all hover:scale-105"
-        >
-          <Plus className="h-4 w-4" />
-          <span>Create Goal</span>
-        </button>
+        <div className="flex items-center gap-3">
+          {/* Owner Filter - only show in merged mode */}
+          {mergedConnection && (
+            <OwnerFilter
+              value={filters.ownerFilter}
+              onChange={filters.setOwnerFilter}
+              partnerName={partnerName}
+            />
+          )}
+          <button
+            onClick={handleCreateGoal}
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-700 px-4 py-2 text-sm font-semibold text-white shadow-lg transition-all hover:scale-105"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Create Goal</span>
+          </button>
+        </div>
       </div>
 
       {/* Empty State */}

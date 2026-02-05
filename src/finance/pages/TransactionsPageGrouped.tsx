@@ -14,6 +14,7 @@ import { BudgetSummaryCard } from '../components/transactions/BudgetSummaryCard'
 import { TransactionGroupHeader } from '../components/transactions/TransactionGroupHeader';
 import { TransactionGroupTable } from '../components/transactions/TransactionGroupTable';
 import BudgetTemplateManager from '../components/budgets/BudgetTemplateManager';
+import { OwnerFilter } from '../components/OwnerFilter';
 import {
   useTransactionsQuery,
   useCategoriesQuery,
@@ -32,6 +33,7 @@ const TransactionsPageGrouped: React.FC = () => {
   const [showQuickAdd, setShowQuickAdd] = React.useState(false);
   const [showTemplateManager, setShowTemplateManager] = React.useState(false);
   const [collapsedGroups, setCollapsedGroups] = React.useState<Set<string>>(new Set());
+  const [groupBy, setGroupBy] = React.useState<'category' | 'owner'>('category');
   const filters = useFinanceFilters();
 
   // Auth and merged connection
@@ -79,12 +81,54 @@ const TransactionsPageGrouped: React.FC = () => {
     return templateMap;
   }, [budgetTemplatesList]);
 
-  // Group transactions by category - no filtering in merged mode, always show all
-  const groupedTransactions = useGroupedTransactions({
-    transactions,
+  // Filter transactions by owner (if in merged mode)
+  const filteredTransactions = React.useMemo(() => {
+    if (!mergedConnection || filters.ownerFilter === 'all') return transactions;
+    if (filters.ownerFilter === 'mine') return transactions.filter(t => t.userId === user?.id);
+    if (filters.ownerFilter === 'partner') return transactions.filter(t => t.userId !== user?.id);
+    return transactions;
+  }, [transactions, mergedConnection, filters.ownerFilter, user]);
+
+  // Group transactions by category or owner
+  const groupedByCategory = useGroupedTransactions({
+    transactions: filteredTransactions,
     categories,
     budgets,
   });
+
+  // Group transactions by owner (only in merged mode)
+  const groupedByOwner = React.useMemo(() => {
+    if (!mergedConnection || !user) return [];
+
+    const myTransactions = filteredTransactions.filter(t => t.userId === user.id);
+    const partnerTransactions = filteredTransactions.filter(t => t.userId !== user.id);
+
+    const groups = [];
+
+    if (myTransactions.length > 0) {
+      groups.push({
+        categoryId: 'owner-me',
+        categoryName: 'My Transactions',
+        transactions: myTransactions.sort((a, b) => b.dateISO.localeCompare(a.dateISO)),
+        total: myTransactions.reduce((sum, t) => sum + (t.type === 'credit' ? t.amount : -t.amount), 0),
+        budgetLimit: 0,
+      });
+    }
+
+    if (partnerTransactions.length > 0) {
+      groups.push({
+        categoryId: 'owner-partner',
+        categoryName: `${partnerName}'s Transactions`,
+        transactions: partnerTransactions.sort((a, b) => b.dateISO.localeCompare(a.dateISO)),
+        total: partnerTransactions.reduce((sum, t) => sum + (t.type === 'credit' ? t.amount : -t.amount), 0),
+        budgetLimit: 0,
+      });
+    }
+
+    return groups;
+  }, [filteredTransactions, mergedConnection, user, partnerName]);
+
+  const groupedTransactions = groupBy === 'category' ? groupedByCategory : groupedByOwner;
 
   const toggleGroup = (categoryId: string | null): void => {
     const key = categoryId ?? 'uncategorized';
@@ -104,8 +148,8 @@ const TransactionsPageGrouped: React.FC = () => {
     return collapsedGroups.has(key);
   };
 
-  const grandTotal = Array.isArray(transactions)
-    ? transactions.reduce(
+  const grandTotal = Array.isArray(filteredTransactions)
+    ? filteredTransactions.reduce(
         (sum, txn) => sum + (txn.type === 'credit' ? txn.amount : -txn.amount),
         0
       )
@@ -117,7 +161,45 @@ const TransactionsPageGrouped: React.FC = () => {
   return (
     <div className="space-y-4">
       <Card title="💸 Transactions">
-        <FiltersBar onApply={() => loadData()} onReset={() => filters.reset()} />
+        <div className="space-y-3">
+          <FiltersBar onApply={() => loadData()} onReset={() => filters.reset()} />
+
+          {/* Owner Filter and Grouping Options - only show in merged mode */}
+          {mergedConnection && (
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-600">Group by:</span>
+                <div className="inline-flex rounded-lg border border-slate-200 bg-white p-0.5 shadow-sm">
+                  <button
+                    onClick={() => setGroupBy('category')}
+                    className={`px-3 py-1.5 text-sm font-semibold rounded-md transition-all duration-200 ${
+                      groupBy === 'category'
+                        ? 'bg-slate-900 text-white shadow-sm'
+                        : 'text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    Category
+                  </button>
+                  <button
+                    onClick={() => setGroupBy('owner')}
+                    className={`px-3 py-1.5 text-sm font-semibold rounded-md transition-all duration-200 ${
+                      groupBy === 'owner'
+                        ? 'bg-slate-900 text-white shadow-sm'
+                        : 'text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    Owner
+                  </button>
+                </div>
+              </div>
+              <OwnerFilter
+                value={filters.ownerFilter}
+                onChange={filters.setOwnerFilter}
+                partnerName={partnerName}
+              />
+            </div>
+          )}
+        </div>
       </Card>
 
       {/* Budget Summary */}
@@ -145,7 +227,7 @@ const TransactionsPageGrouped: React.FC = () => {
       >
         <div className="mb-4 flex justify-between items-center">
           <div className="text-sm text-primary opacity-70">
-            {Array.isArray(transactions) ? transactions.length : 0} transaction{(Array.isArray(transactions) ? transactions.length : 0) !== 1 ? 's' : ''} in{' '}
+            {Array.isArray(filteredTransactions) ? filteredTransactions.length : 0} transaction{(Array.isArray(filteredTransactions) ? filteredTransactions.length : 0) !== 1 ? 's' : ''} in{' '}
             {groupedTransactions.length} categor{groupedTransactions.length !== 1 ? 'ies' : 'y'}
           </div>
           <div className="text-sm font-semibold text-primary">

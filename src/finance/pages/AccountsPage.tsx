@@ -10,6 +10,8 @@ import type { Account, AccountType } from '../types';
 import { logger } from '../../services/logger';
 import { useAuth } from '@/hooks/useAuth';
 import { OwnerBadge } from '../components/OwnerBadge';
+import { OwnerFilter } from '../components/OwnerFilter';
+import useFinanceFilters from '../store/useFinanceFilters';
 
 const AccountsPage: React.FC = () => {
   const [open, setOpen] = React.useState(false);
@@ -35,9 +37,18 @@ const AccountsPage: React.FC = () => {
   const { data: accts = [] } = useAccountsQuery();
   const { data: insts = [] } = useInstitutionsQuery();
   const upsertAccountMutation = useUpsertAccountMutation();
+  const filters = useFinanceFilters();
 
-  // No filtering in merged mode - always show all accounts
-  const grouped = accts.reduce<Record<string, Account[]>>((acc, a) => {
+  // Filter accounts by owner (if in merged mode)
+  const filteredAccounts = React.useMemo(() => {
+    if (!mergedConnection || filters.ownerFilter === 'all') return accts;
+    if (filters.ownerFilter === 'mine') return accts.filter(a => a.userId === user?.id);
+    if (filters.ownerFilter === 'partner') return accts.filter(a => a.userId !== user?.id);
+    return accts;
+  }, [accts, mergedConnection, filters.ownerFilter, user]);
+
+  // Group filtered accounts by institution
+  const grouped = filteredAccounts.reduce<Record<string, Account[]>>((acc, a) => {
     const key = a.institutionId ?? 'manual';
     acc[key] = acc[key] ?? [];
     acc[key].push(a);
@@ -86,7 +97,17 @@ const AccountsPage: React.FC = () => {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">🏦 Accounts</h2>
-        <Button onClick={onAddNew}>+ Add Account</Button>
+        <div className="flex items-center gap-3">
+          {/* Owner Filter - only show in merged mode */}
+          {mergedConnection && (
+            <OwnerFilter
+              value={filters.ownerFilter}
+              onChange={filters.setOwnerFilter}
+              partnerName={partnerName}
+            />
+          )}
+          <Button onClick={onAddNew}>+ Add Account</Button>
+        </div>
       </div>
       {Object.entries(grouped).map(([instId, list]) => (
         <Card key={instId} title={instName(instId)}>
