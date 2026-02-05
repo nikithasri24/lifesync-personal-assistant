@@ -46,11 +46,11 @@ let cachedFinanceMergedConnection: MergedConnectionResult | null | undefined = u
  */
 export async function getFinancesMergedConnection(): Promise<MergedConnectionResult | null> {
   if (cachedFinanceMergedConnection !== undefined) {
-    console.log('[FinanceAPI] Using cached merged connection:', cachedFinanceMergedConnection);
+    logger.debug('Hooks', 'Using cached finance merged connection', { connection: cachedFinanceMergedConnection });
     return cachedFinanceMergedConnection;
   }
   cachedFinanceMergedConnection = await getMergedConnectionId('finances');
-  console.log('[FinanceAPI] Fetched merged connection:', cachedFinanceMergedConnection);
+  logger.debug('Hooks', 'Fetched finance merged connection', { connection: cachedFinanceMergedConnection });
   return cachedFinanceMergedConnection;
 }
 

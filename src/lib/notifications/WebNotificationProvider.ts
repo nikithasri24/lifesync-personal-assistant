@@ -10,6 +10,7 @@ import {
   type NotificationPermissionStatus,
   type ScheduleOptions,
 } from './NotificationProvider';
+import { logger } from '@/services/logger';
 
 export class WebNotificationProvider extends BaseNotificationProvider {
   readonly name = 'WebNotificationProvider';
@@ -53,7 +54,7 @@ export class WebNotificationProvider extends BaseNotificationProvider {
       const subscription = await pushNotificationService.subscribe();
       return subscription?.endpoint ?? null;
     } catch (error) {
-      console.error('[WebNotificationProvider] Failed to register for push:', error);
+      logger.error('Notifications', 'Failed to register for push', { error });
       return null;
     }
   }
@@ -63,7 +64,7 @@ export class WebNotificationProvider extends BaseNotificationProvider {
       const { pushNotificationService } = await import('@/services/pushNotificationService');
       return await pushNotificationService.unsubscribe();
     } catch (error) {
-      console.error('[WebNotificationProvider] Failed to unregister:', error);
+      logger.error('Notifications', 'Failed to unregister from push', { error });
       return false;
     }
   }
@@ -71,7 +72,7 @@ export class WebNotificationProvider extends BaseNotificationProvider {
   async showNotification(notification: NotificationData): Promise<void> {
     const { permission } = await this.getPermissionStatus();
     if (permission !== 'granted') {
-      console.warn('[WebNotificationProvider] Permission not granted');
+      logger.warn('Notifications', 'Permission not granted to show notification');
       return;
     }
     

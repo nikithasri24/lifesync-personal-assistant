@@ -17,6 +17,7 @@ import {
 } from './HealthProvider';
 import { isNative, isIOS } from '../platform';
 import { startOfDay, eachDayOfInterval, format } from 'date-fns';
+import { logger } from '@/services/logger';
 
 // Types for Capacitor HealthKit plugin
 interface HealthKitPlugin {
@@ -65,7 +66,7 @@ async function loadPlugin(): Promise<void> {
       HealthKit = module.HealthKit;
     }
   } catch {
-    console.warn('[NativeHealthProvider] HealthKit plugin not available');
+    logger.warn('Health', 'HealthKit plugin not available');
   }
 }
 
@@ -156,7 +157,7 @@ export class NativeHealthProvider extends BaseHealthProvider {
       await HealthKit.requestAuthorization({ read: readTypes });
       return this.getPermissionStatus();
     } catch (error) {
-      console.error('[NativeHealthProvider] Permission request failed:', error);
+      logger.error('Health', 'Permission request failed', { error });
       return this.getPermissionStatus();
     }
   }
@@ -187,7 +188,7 @@ export class NativeHealthProvider extends BaseHealthProvider {
         steps: stepsByDay.get(format(date, 'yyyy-MM-dd')) ?? 0,
       }));
     } catch (error) {
-      console.error('[NativeHealthProvider] Failed to get steps:', error);
+      logger.error('Health', 'Failed to get steps', { error });
       return [];
     }
   }
@@ -221,7 +222,7 @@ export class NativeHealthProvider extends BaseHealthProvider {
         totalMinutes: Math.round(sleepByDay.get(format(date, 'yyyy-MM-dd')) ?? 0),
       }));
     } catch (error) {
-      console.error('[NativeHealthProvider] Failed to get sleep:', error);
+      logger.error('Health', 'Failed to get sleep', { error });
       return [];
     }
   }
@@ -268,7 +269,7 @@ export class NativeHealthProvider extends BaseHealthProvider {
         };
       });
     } catch (error) {
-      console.error('[NativeHealthProvider] Failed to get activity:', error);
+      logger.error('Health', 'Failed to get activity', { error });
       return [];
     }
   }
@@ -291,7 +292,7 @@ export class NativeHealthProvider extends BaseHealthProvider {
         bpm: Math.round(sample.value),
       }));
     } catch (error) {
-      console.error('[NativeHealthProvider] Failed to get heart rate:', error);
+      logger.error('Health', 'Failed to get heart rate', { error });
       return [];
     }
   }

@@ -12,6 +12,7 @@ import { islands, getIslandsByState } from '../data/islands';
 import { getEnhancedCountries } from '../components/countryData';
 import { usStates } from '../data/geographicFeatures';
 import { supabase } from '../../lib/supabase';
+import { logger } from '@/services/logger';
 
 const TravelPage: React.FC = () => {
   const [loading, setLoading] = React.useState(true);
@@ -32,7 +33,7 @@ const TravelPage: React.FC = () => {
       const locations = await travelAPI.listVisitedLocations();
       setVisitedLocations(locations);
     } catch (error) {
-      console.error('Error loading travel data:', error);
+      logger.error('Travel', 'Error loading travel data', { error });
     } finally {
       setLoading(false);
     }
@@ -49,7 +50,7 @@ const TravelPage: React.FC = () => {
       const partner = await getTravelPartner();
       setPartnerId(partner);
     } catch (error) {
-      console.error('Error loading user info:', error);
+      logger.error('Travel', 'Error loading user info', { error });
     }
   };
 
@@ -163,7 +164,7 @@ const TravelPage: React.FC = () => {
   const handleCountryClick = async (countryCode: string, visitedByUserIds?: string[]) => {
     // Validate country code
     if (!countryCode || countryCode.length !== 2) {
-      console.error('Invalid country code:', countryCode);
+      logger.error('Travel', 'Invalid country code', { countryCode });
       return;
     }
 
@@ -200,7 +201,7 @@ const TravelPage: React.FC = () => {
         setVisitedLocations(prev => [...prev, categorizedLocation]);
       }
     } catch (error) {
-      console.error('Error toggling country:', error);
+      logger.error('Travel', 'Error toggling country', { error });
       alert('Failed to update country. Please try again.');
       // Reload data to sync with server on error
       await loadData();
@@ -210,7 +211,7 @@ const TravelPage: React.FC = () => {
   const handleStateClick = async (stateCode: string, countryCode: string, visitedByUserIds?: string[]) => {
     // Validate codes
     if (!stateCode || !countryCode) {
-      console.error('Invalid state or country code:', { stateCode, countryCode });
+      logger.error('Travel', 'Invalid state or country code', { stateCode, countryCode });
       return;
     }
 
@@ -249,7 +250,7 @@ const TravelPage: React.FC = () => {
         setVisitedLocations(prev => [...prev, categorizedLocation]);
       }
     } catch (error) {
-      console.error('Error toggling state:', error);
+      logger.error('Travel', 'Error toggling state', { error });
       alert('Failed to update state. Please try again.');
       // Reload data to sync with server on error
       await loadData();
@@ -260,7 +261,7 @@ const TravelPage: React.FC = () => {
     // Find park details
     const park = nationalParks.find(p => p.id === parkId);
     if (!park) {
-      console.error('Park not found:', parkId);
+      logger.error('Travel', 'Park not found', { parkId });
       return;
     }
 
@@ -301,7 +302,7 @@ const TravelPage: React.FC = () => {
         setVisitedLocations(prev => [...prev, categorizedLocation]);
       }
     } catch (error) {
-      console.error('Error toggling park:', error);
+      logger.error('Travel', 'Error toggling park', { error });
       alert('Failed to update park. Please try again.');
       // Reload data to sync with server on error
       await loadData();
@@ -312,7 +313,7 @@ const TravelPage: React.FC = () => {
     // Find island details
     const island = islands.find(i => i.id === islandId);
     if (!island) {
-      console.error('Island not found:', islandId);
+      logger.error('Travel', 'Island not found', { islandId });
       return;
     }
 
@@ -354,7 +355,7 @@ const TravelPage: React.FC = () => {
         setVisitedLocations(prev => [...prev, categorizedLocation]);
       }
     } catch (error) {
-      console.error('Error toggling island:', error);
+      logger.error('Travel', 'Error toggling island', { error });
       alert('Failed to update island. Please try again.');
       // Reload data to sync with server on error
       await loadData();

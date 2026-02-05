@@ -13,6 +13,7 @@ import {
   type ScheduleOptions,
 } from './NotificationProvider';
 import { isNative } from '../platform';
+import { logger } from '@/services/logger';
 
 // Types for Capacitor notification plugins
 interface PushNotificationsPlugin {
@@ -74,7 +75,7 @@ async function loadPlugins(): Promise<void> {
       PushNotifications = pushModule.PushNotifications;
     }
   } catch {
-    console.warn('[NativeNotificationProvider] Push notifications plugin not available');
+    logger.warn('Notifications', 'Push notifications plugin not available');
   }
   
   try {
@@ -85,7 +86,7 @@ async function loadPlugins(): Promise<void> {
       LocalNotifications = localModule.LocalNotifications;
     }
   } catch {
-    console.warn('[NativeNotificationProvider] Local notifications plugin not available');
+    logger.warn('Notifications', 'Local notifications plugin not available');
   }
 }
 
@@ -141,7 +142,7 @@ export class NativeNotificationProvider extends BaseNotificationProvider {
     await pluginsLoaded;
 
     if (!PushNotifications) {
-      console.warn('[NativeNotificationProvider] Push plugin not available');
+      logger.warn('Notifications', 'Push plugin not available');
       return null;
     }
 
@@ -160,7 +161,7 @@ export class NativeNotificationProvider extends BaseNotificationProvider {
         });
 
         PushNotifications!.addListener('registrationError', (error) => {
-          console.error('[NativeNotificationProvider] Registration error:', error);
+          logger.error('Notifications', 'Registration error', { error });
           resolve(null);
         });
 
@@ -168,7 +169,7 @@ export class NativeNotificationProvider extends BaseNotificationProvider {
         PushNotifications!.register();
       });
     } catch (error) {
-      console.error('[NativeNotificationProvider] Failed to register:', error);
+      logger.error('Notifications', 'Failed to register for push', { error });
       return null;
     }
   }
@@ -184,7 +185,7 @@ export class NativeNotificationProvider extends BaseNotificationProvider {
     await pluginsLoaded;
 
     if (!LocalNotifications) {
-      console.warn('[NativeNotificationProvider] Local notifications not available');
+      logger.warn('Notifications', 'Local notifications not available');
       return;
     }
 
@@ -201,7 +202,7 @@ export class NativeNotificationProvider extends BaseNotificationProvider {
 
       this.emitReceived(notification);
     } catch (error) {
-      console.error('[NativeNotificationProvider] Failed to show notification:', error);
+      logger.error('Notifications', 'Failed to show notification', { error });
     }
   }
 
@@ -212,7 +213,7 @@ export class NativeNotificationProvider extends BaseNotificationProvider {
     await pluginsLoaded;
 
     if (!LocalNotifications) {
-      console.warn('[NativeNotificationProvider] Local notifications not available');
+      logger.warn('Notifications', 'Local notifications not available');
       return -1;
     }
 
@@ -236,7 +237,7 @@ export class NativeNotificationProvider extends BaseNotificationProvider {
 
       return id;
     } catch (error) {
-      console.error('[NativeNotificationProvider] Failed to schedule:', error);
+      logger.error('Notifications', 'Failed to schedule notification', { error });
       return -1;
     }
   }
@@ -249,7 +250,7 @@ export class NativeNotificationProvider extends BaseNotificationProvider {
     try {
       await LocalNotifications.cancel({ notifications: [{ id }] });
     } catch (error) {
-      console.error('[NativeNotificationProvider] Failed to cancel:', error);
+      logger.error('Notifications', 'Failed to cancel notification', { error });
     }
   }
 
@@ -264,7 +265,7 @@ export class NativeNotificationProvider extends BaseNotificationProvider {
         await LocalNotifications.cancel({ notifications: pending.notifications });
       }
     } catch (error) {
-      console.error('[NativeNotificationProvider] Failed to cancel all:', error);
+      logger.error('Notifications', 'Failed to cancel all notifications', { error });
     }
   }
 

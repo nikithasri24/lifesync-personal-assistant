@@ -16,6 +16,7 @@ import {
   type VoiceRecognitionResult
 } from './VoiceProvider';
 import { isNative } from '../platform';
+import { logger } from '@/services/logger';
 
 // Types for Capacitor speech plugins (will be fully typed when installed)
 interface SpeechRecognitionPlugin {
@@ -66,7 +67,7 @@ async function loadNativePlugins(): Promise<void> {
       SpeechRecognition = speechModule.SpeechRecognition;
     }
   } catch {
-    console.warn('[NativeVoiceProvider] Speech recognition plugin not available');
+    logger.warn('Voice', 'Speech recognition plugin not available');
   }
 
   try {
@@ -78,7 +79,7 @@ async function loadNativePlugins(): Promise<void> {
       TextToSpeech = ttsModule.TextToSpeech;
     }
   } catch {
-    console.warn('[NativeVoiceProvider] Text-to-speech plugin not available');
+    logger.warn('Voice', 'Text-to-speech plugin not available');
   }
 }
 

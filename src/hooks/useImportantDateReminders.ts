@@ -10,6 +10,7 @@ import { queryKeys } from '@/lib/react-query';
 import { reminderService } from '@/services/reminders';
 import type { ImportantDate } from '@/services/dates/types';
 import { addDays, setMonth, setDate, isAfter, isBefore, startOfDay, differenceInDays, getYear, addYears } from 'date-fns';
+import { logger } from '@/services/logger';
 
 /**
  * Get active important dates using the API layer
@@ -18,7 +19,7 @@ async function getActiveImportantDates(): Promise<ImportantDate[]> {
   try {
     return await getImportantDates(true);
   } catch (error) {
-    console.error('Error fetching important dates:', error);
+    logger.error('Hooks', 'Error fetching important dates', { error });
     return [];
   }
 }
@@ -139,7 +140,7 @@ export function useImportantDateReminders(enabled: boolean = true) {
               });
               scheduledRef.current.add(reminderKey);
             } catch (error) {
-              console.error(`Failed to schedule reminder for ${date.person_name}:`, error);
+              logger.error('Hooks', `Failed to schedule reminder for ${date.person_name}`, { error });
             }
           }
         }

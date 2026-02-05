@@ -15,6 +15,7 @@ import { useAuth } from './useAuth';
 import { predictionService, type Prediction } from '@/services/ai/PredictionService';
 import { reminderService } from '@/services/reminders';
 import type { ReminderPriority } from '@/services/reminders/types';
+import { logger } from '@/services/logger';
 
 interface ProactiveNotificationOptions {
   enabled?: boolean;
@@ -76,7 +77,7 @@ async function createNotificationFromPrediction(prediction: Prediction): Promise
 
     return reminderId;
   } catch (error) {
-    console.error('[ProactiveNotifications] Failed to create notification:', error);
+    logger.error('Hooks', 'Failed to create proactive notification', { error });
     return null;
   }
 }
@@ -108,19 +109,19 @@ export function useProactiveNotifications(options: ProactiveNotificationOptions 
     if (!user?.id) return;
 
     try {
-      console.log('[ProactiveNotifications] Generating predictions...');
+      logger.debug('Hooks', 'Generating proactive predictions...');
       const predictions = await predictionService.generatePredictions(user.id, lookAheadDays);
 
       // Filter to high/medium priority only to avoid notification spam
       const important = predictions.filter(p => p.priority === 'high' || p.priority === 'medium');
 
-      console.log(`[ProactiveNotifications] Found ${important.length} important predictions`);
+      logger.info('Hooks', 'Found important predictions', { count: important.length });
 
       for (const prediction of important) {
         await createNotificationFromPrediction(prediction);
       }
     } catch (error) {
-      console.error('[ProactiveNotifications] Failed to generate:', error);
+      logger.error('Hooks', 'Failed to generate proactive notifications', { error });
     }
   }, [user?.id, lookAheadDays]);
 

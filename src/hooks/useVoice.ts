@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { getVoiceProvider, type VoiceProvider, type VoiceRecognitionResult } from '../lib/voice'
+import { logger } from '@/services/logger'
 
 export type VoiceState = {
   supported: boolean
@@ -69,12 +70,12 @@ export function useVoice(initialLang = 'en-US', options?: Options): UseVoice {
   const start = useCallback((): void => {
     const provider = providerRef.current;
     if (!provider || !provider.isSupported()) {
-      console.error('[useVoice] Cannot start - provider not available or not supported');
+      logger.error('Hooks', 'Cannot start voice - provider not available or not supported');
       setError('Voice recognition not supported');
       return;
     }
 
-    console.log('[useVoice] Starting voice recognition...');
+    logger.debug('Hooks', 'Starting voice recognition...');
     // Clear any previous errors
     setError(undefined);
 
@@ -85,21 +86,21 @@ export function useVoice(initialLang = 'en-US', options?: Options): UseVoice {
       interimResults: true,
       onResult: handleResult,
       onStart: () => {
-        console.log('[useVoice] Voice recognition started');
+        logger.debug('Hooks', 'Voice recognition started');
         setListening(true);
       },
       onEnd: () => {
-        console.log('[useVoice] Voice recognition ended');
+        logger.debug('Hooks', 'Voice recognition ended');
         setListening(false);
       },
       onError: (err) => {
-        console.error('[useVoice] Voice recognition error:', err);
+        logger.error('Hooks', 'Voice recognition error', { error: err });
         setError(err);
         setListening(false);
       },
     }).catch((e: unknown) => {
       const err = e as Error;
-      console.error('[useVoice] Failed to start voice recognition:', err.message);
+      logger.error('Hooks', 'Failed to start voice recognition', { error: err.message });
       setError(err.message || 'speech_start_failed');
       setListening(false);
     });
@@ -126,7 +127,7 @@ export function useVoice(initialLang = 'en-US', options?: Options): UseVoice {
   const clear = useCallback((): void => setTranscript(''), []);
 
   const clearError = useCallback((): void => {
-    console.log('[useVoice] Clearing error state');
+    logger.debug('Hooks', 'Clearing voice error state');
     setError(undefined);
   }, []);
 

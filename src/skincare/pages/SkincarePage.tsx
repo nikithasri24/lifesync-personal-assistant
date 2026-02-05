@@ -11,6 +11,7 @@
 
 import React from 'react';
 import { Sparkles, Package, Calendar, Settings, Plus, Pencil } from 'lucide-react';
+import { logger } from '@/services/logger';
 import ProductsLibrary from '../components/ProductsLibrary';
 import ProductFormModal from '../components/ProductFormModal';
 import WeeklyRoutineTable from '../components/WeeklyRoutineTable';
@@ -115,7 +116,7 @@ const SelfCarePage: React.FC = () => {
       setShowProductModal(false);
       setEditingProduct(undefined);
     } catch (error) {
-      console.error('Error saving product:', error);
+      logger.error('Skincare', 'Error saving product', { error });
       alert('Failed to save product. Please try again.');
     }
   };
@@ -125,7 +126,7 @@ const SelfCarePage: React.FC = () => {
     try {
       await deleteProductMutation.mutateAsync(id);
     } catch (error) {
-      console.error('Error deleting product:', error);
+      logger.error('Skincare', 'Error deleting product', { error });
     }
   };
 
@@ -135,7 +136,7 @@ const SelfCarePage: React.FC = () => {
       await createCategoryMutation.mutateAsync(categoryData);
       setShowCategoryModal(false);
     } catch (error) {
-      console.error('Error creating category:', error);
+      logger.error('Skincare', 'Error creating category', { error });
       alert('Failed to create category. Please try again.');
     }
   };
@@ -154,7 +155,7 @@ const SelfCarePage: React.FC = () => {
       setSelectedCategoryForItem(null);
       setEditingItem(undefined);
     } catch (error) {
-      console.error('Error saving item:', error);
+      logger.error('Skincare', 'Error saving item', { error });
       alert('Failed to save item. Please try again.');
     }
   };
@@ -166,7 +167,7 @@ const SelfCarePage: React.FC = () => {
         updates: { isActive: !item.isActive },
       });
     } catch (error) {
-      console.error('Error toggling item:', error);
+      logger.error('Skincare', 'Error toggling item', { error });
     }
   };
 

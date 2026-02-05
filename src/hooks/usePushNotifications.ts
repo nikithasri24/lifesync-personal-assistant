@@ -6,6 +6,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { pushNotificationService } from '@/services/pushNotificationService';
 import type { PushNotificationStatus } from '@/services/pushNotificationService';
+import { logger } from '@/services/logger';
 
 interface UsePushNotificationsReturn {
   // Status
@@ -48,7 +49,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
         const currentStatus = await pushNotificationService.getStatus();
         setStatus(currentStatus);
       } catch (err) {
-        console.error('[usePushNotifications] Init error:', err);
+        logger.error('Hooks', 'Push notifications init error', { error: err });
         setError(err instanceof Error ? err.message : 'Failed to initialize');
       } finally {
         setIsLoading(false);
@@ -66,7 +67,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
       setStatus(prev => ({ ...prev, permission }));
       return permission;
     } catch (err) {
-      console.error('[usePushNotifications] Permission error:', err);
+      logger.error('Hooks', 'Push notifications permission error', { error: err });
       setError(err instanceof Error ? err.message : 'Failed to request permission');
       return 'denied';
     }
@@ -102,7 +103,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
         return false;
       }
     } catch (err) {
-      console.error('[usePushNotifications] Subscribe error:', err);
+      logger.error('Hooks', 'Push notifications subscribe error', { error: err });
       setError(err instanceof Error ? err.message : 'Failed to subscribe');
       return false;
     } finally {
@@ -128,7 +129,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
       
       return success;
     } catch (err) {
-      console.error('[usePushNotifications] Unsubscribe error:', err);
+      logger.error('Hooks', 'Push notifications unsubscribe error', { error: err });
       setError(err instanceof Error ? err.message : 'Failed to unsubscribe');
       return false;
     } finally {
@@ -146,7 +147,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
         data: { type: 'test' },
       });
     } catch (err) {
-      console.error('[usePushNotifications] Test notification error:', err);
+      logger.error('Hooks', 'Push notifications test error', { error: err });
       setError(err instanceof Error ? err.message : 'Failed to show notification');
     }
   }, []);
