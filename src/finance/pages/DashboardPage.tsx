@@ -281,12 +281,14 @@ const DashboardPage: React.FC = () => {
           </div>
         )}
 
-        {/* Split Metrics Section - Full Width in Merged Mode */}
-        {mergedConnection && user && filters.ownerFilter === 'all' && (
+        {/* Metrics Section - Adapts to Owner Filter in Merged Mode */}
+        {mergedConnection && user && (
           <div className="w-full">
             <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
               <span className="h-1 w-1 rounded-full bg-blue-500"></span>
-              Household Overview
+              {filters.ownerFilter === 'all' ? 'Household Overview' :
+               filters.ownerFilter === 'mine' ? 'My Overview' :
+               `${partnerName}'s Overview`}
               <span className="text-sm font-normal text-slate-500">({month})</span>
             </h2>
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
@@ -296,7 +298,7 @@ const DashboardPage: React.FC = () => {
                   <div className="rounded-xl bg-slate-100 animate-pulse h-48"></div>
                   <div className="rounded-xl bg-slate-100 animate-pulse h-48"></div>
                 </>
-              ) : (
+              ) : filters.ownerFilter === 'all' ? (
                 <>
                   <SplitMetricCard
                     title="Income"
@@ -319,6 +321,24 @@ const DashboardPage: React.FC = () => {
                     partnerName={partnerName}
                     colorScheme="networth"
                   />
+                </>
+              ) : (
+                <>
+                  <Card title="Income">
+                    <div className="text-3xl font-bold text-emerald-600">
+                      {formatCurrency(filters.ownerFilter === 'mine' ? myIncome : partnerIncome)}
+                    </div>
+                  </Card>
+                  <Card title="Expenses">
+                    <div className="text-3xl font-bold text-rose-600">
+                      {formatCurrency(filters.ownerFilter === 'mine' ? myExpense : partnerExpense)}
+                    </div>
+                  </Card>
+                  <Card title="Net Worth">
+                    <div className="text-3xl font-bold text-blue-600">
+                      {formatCurrency(filters.ownerFilter === 'mine' ? myNetWorth : partnerNetWorth)}
+                    </div>
+                  </Card>
                 </>
               )}
             </div>

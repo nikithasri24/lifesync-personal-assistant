@@ -6,6 +6,7 @@ import { FinancesTabNav } from '../finance/components/layout/FinancesTabNav';
 const DashboardPage = React.lazy(() => import('../finance/pages/DashboardPage'));
 const AccountsPage = React.lazy(() => import('../finance/pages/AccountsPage'));
 const TransactionsPage = React.lazy(() => import('../finance/pages/TransactionsPageGrouped'));
+const BudgetsPage = React.lazy(() => import('../finance/pages/BudgetsPage'));
 const RecurringPage = React.lazy(() => import('../finance/pages/RecurringPage'));
 const NetWorthPage = React.lazy(() => import('../finance/pages/NetWorthPage'));
 const GoalsPage = React.lazy(() => import('../finance/pages/GoalsPage'));
@@ -17,7 +18,7 @@ const CreditCardsPage = React.lazy(() => import('../finance/pages/CreditCardsPag
 const InsurancePage = React.lazy(() => import('../finance/pages/InsurancePage'));
 const SettingsPage = React.lazy(() => import('../finance/pages/SettingsPage'));
 
-type TabKey = 'dashboard' | 'accounts' | 'transactions' | 'recurring' | 'networth' | 'goals' | 'loans' | 'retirement' | 'projections' | 'calculators' | 'creditcards' | 'insurance' | 'settings';
+type TabKey = 'dashboard' | 'accounts' | 'transactions' | 'budgets' | 'recurring' | 'networth' | 'goals' | 'loans' | 'retirement' | 'projections' | 'calculators' | 'creditcards' | 'insurance' | 'settings';
 
 // Helper to get active tab from pathname
 const getActiveTab = (pathname: string): TabKey => {
@@ -43,6 +44,7 @@ const Finances: React.FC = () => {
             <Route path="dashboard" element={<DashboardPage />} />
             <Route path="accounts" element={<AccountsPage />} />
             <Route path="transactions" element={<TransactionsPage />} />
+            <Route path="budgets" element={<BudgetsPage />} />
             <Route path="recurring" element={<RecurringPage />} />
             <Route path="networth" element={<NetWorthPage />} />
             <Route path="goals" element={<GoalsPage />} />

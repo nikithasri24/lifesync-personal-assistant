@@ -49,6 +49,14 @@ export const AccountModal: React.FC<AccountModalProps> = ({ account, onClose, on
     e.preventDefault();
 
     try {
+      logger.debug('AccountModal', 'Submitting account', {
+        userId: formData.userId,
+        currentUserId: user?.id,
+        partnerId,
+        accountName: formData.name,
+        isEditing,
+      });
+
       await upsertAccountMutation.mutateAsync({
         id: account?.id,
         name: formData.name,
@@ -64,8 +72,16 @@ export const AccountModal: React.FC<AccountModalProps> = ({ account, onClose, on
       onSuccess();
       onClose();
     } catch (error: unknown) {
-      logger.error('AccountModal', error instanceof Error ? error : new Error(String(error)), { context: 'handleSubmit' });
-      showToast('Failed to save account. Check console for details.', 'error');
+      const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
+      logger.error('AccountModal', error instanceof Error ? error : new Error(String(error)), {
+        context: 'handleSubmit',
+        errorMessage,
+        userId: formData.userId,
+        currentUserId: user?.id,
+        partnerId,
+        isEditing,
+      });
+      showToast(`Failed to save account: ${errorMessage}`, 'error');
     }
   };
 
@@ -89,9 +105,9 @@ export const AccountModal: React.FC<AccountModalProps> = ({ account, onClose, on
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-        {/* Header */}
-        <div className="p-6 border-b border-slate-200">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] flex flex-col">
+        {/* Header - Fixed */}
+        <div className="p-6 border-b border-slate-200 flex-shrink-0">
           <h2 className="text-2xl font-semibold text-slate-900">
             {isEditing ? 'Edit Account' : 'Add New Account'}
           </h2>
@@ -100,8 +116,8 @@ export const AccountModal: React.FC<AccountModalProps> = ({ account, onClose, on
           </p>
         </div>
 
-        {/* Content */}
-        <div className="p-6">
+        {/* Content - Scrollable */}
+        <div className="p-6 overflow-y-auto flex-1">
           <form onSubmit={(e) => { void handleSubmit(e); }} className="space-y-4">
             {/* Account Name */}
             <div>
@@ -185,8 +201,8 @@ export const AccountModal: React.FC<AccountModalProps> = ({ account, onClose, on
           </form>
         </div>
 
-        {/* Footer */}
-        <div className="p-6 border-t border-slate-200 flex justify-between items-center">
+        {/* Footer - Fixed */}
+        <div className="p-6 border-t border-slate-200 flex justify-between items-center flex-shrink-0 bg-white">
           <div className="flex gap-2">
             <Button variant="ghost" onClick={onClose} disabled={upsertAccountMutation.isPending || deleteAccountMutation.isPending}>
               Cancel
@@ -202,7 +218,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({ account, onClose, on
               </Button>
             )}
           </div>
-          <Button onClick={(e) => { void handleSubmit(e); }} disabled={upsertAccountMutation.isPending || deleteAccountMutation.isPending}>
+          <Button type="submit" disabled={upsertAccountMutation.isPending || deleteAccountMutation.isPending}>
             {upsertAccountMutation.isPending ? 'Saving...' : isEditing ? 'Update Account' : 'Create Account'}
           </Button>
         </div>

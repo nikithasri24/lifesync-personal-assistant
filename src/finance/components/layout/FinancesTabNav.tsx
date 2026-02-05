@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-type TabKey = 'dashboard' | 'accounts' | 'transactions' | 'recurring' | 'networth' | 'goals' | 'loans' | 'retirement' | 'projections' | 'calculators' | 'creditcards' | 'insurance' | 'settings';
+type TabKey = 'dashboard' | 'accounts' | 'transactions' | 'budgets' | 'recurring' | 'networth' | 'goals' | 'loans' | 'retirement' | 'projections' | 'calculators' | 'creditcards' | 'insurance' | 'settings';
 
 interface FinancesTabNavProps {
   activeTab: TabKey;
@@ -12,6 +12,7 @@ const tabs: { key: TabKey; label: string }[] = [
   { key: 'dashboard', label: 'Dashboard' },
   { key: 'accounts', label: 'Accounts' },
   { key: 'transactions', label: 'Transactions' },
+  { key: 'budgets', label: 'Budgets' },
   { key: 'recurring', label: 'Recurring' },
   { key: 'networth', label: 'Net Worth' },
   { key: 'goals', label: 'Goals' },

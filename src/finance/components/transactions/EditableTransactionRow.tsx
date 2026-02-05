@@ -229,22 +229,24 @@ export const EditableTransactionRow = React.memo<EditableTransactionRowProps>(({
       </td>
       <td className="px-4 py-3">
         {isOwnTransaction ? (
-          <div className="flex items-center gap-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="flex items-center gap-1.5 justify-end">
             <button
               onClick={handleEdit}
-              className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-              title="Edit"
+              className="p-1.5 text-blue-600 hover:bg-blue-100 rounded transition-all hover:scale-110"
+              title="Edit transaction"
+              aria-label="Edit transaction"
             >
-              <Edit2 className="h-4 w-4" />
+              <Edit2 className="h-5 w-5" />
             </button>
             <button
               onClick={() => {
                 void handleDelete();
               }}
-              className="p-1.5 text-rose-600 hover:bg-rose-50 rounded transition-colors"
-              title="Delete"
+              className="p-1.5 text-rose-600 hover:bg-rose-100 rounded transition-all hover:scale-110"
+              title="Delete transaction"
+              aria-label="Delete transaction"
             >
-              <Trash2 className="h-4 w-4" />
+              <Trash2 className="h-5 w-5" />
             </button>
           </div>
         ) : (

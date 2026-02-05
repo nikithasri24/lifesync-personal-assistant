@@ -101,6 +101,20 @@ const GoalsPage: React.FC = () => {
     await upsertGoalMutation.mutateAsync(goal);
     setEditorOpen(false);
     setEditingGoal(undefined);
+
+    // Reset filter to show the newly created/updated goal
+    // If it's a new goal (no editingGoal), reset to 'all' to ensure it's visible
+    if (!editingGoal && mergedConnection) {
+      // Determine the owner of the goal
+      const goalUserId = goal.userId || user?.id;
+      if (goalUserId === user?.id) {
+        // If it's the current user's goal, switch to 'mine' or 'all'
+        filters.setOwnerFilter(filters.ownerFilter === 'partner' ? 'mine' : filters.ownerFilter);
+      } else {
+        // If it's the partner's goal, switch to 'partner' or 'all'
+        filters.setOwnerFilter(filters.ownerFilter === 'mine' ? 'partner' : filters.ownerFilter);
+      }
+    }
   };
 
   const handleDeleteGoal = async (goalId: string): Promise<void> => {

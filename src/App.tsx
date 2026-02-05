@@ -90,10 +90,10 @@ function App(): React.ReactElement {
             <Route path="/focus" element={<Focus />} />
 
             {/* Productivity Routes */}
-            <Route path="/habits" element={<Habits />} />
-            <Route path="/todos" element={<Todos />} />
-            <Route path="/notes" element={<Notes />} />
-            <Route path="/projects" element={<ProjectTracking />} />
+            <Route path="/habits" element={<RouteErrorBoundary feature="Habits"><Habits /></RouteErrorBoundary>} />
+            <Route path="/todos" element={<RouteErrorBoundary feature="Todos"><Todos /></RouteErrorBoundary>} />
+            <Route path="/notes" element={<RouteErrorBoundary feature="Notes"><Notes /></RouteErrorBoundary>} />
+            <Route path="/projects" element={<RouteErrorBoundary feature="Projects"><ProjectTracking /></RouteErrorBoundary>} />
 
             {/* Wellbeing Routes */}
             <Route path="/journal" element={<RouteErrorBoundary feature="Journal"><Journal /></RouteErrorBoundary>} />
@@ -104,14 +104,14 @@ function App(): React.ReactElement {
             <Route path="/personal-care" element={<Navigate to="/self-care" replace />} />
 
             {/* Personal Routes */}
-            <Route path="/goals" element={<LifeGoals />} />
-            <Route path="/travel" element={<Travel />} />
-            <Route path="/travel/visa" element={<VisaPage />} />
-            <Route path="/finances/*" element={<Finances />} />
-            <Route path="/shopping" element={<ShoppingSmart />} />
-            <Route path="/meals" element={<MealPlanning />} />
-            <Route path="/nutrition" element={<Nutrition />} />
-            <Route path="/shared" element={<Shared />} />
+            <Route path="/goals" element={<RouteErrorBoundary feature="Life Goals"><LifeGoals /></RouteErrorBoundary>} />
+            <Route path="/travel" element={<RouteErrorBoundary feature="Travel"><Travel /></RouteErrorBoundary>} />
+            <Route path="/travel/visa" element={<RouteErrorBoundary feature="Visa"><VisaPage /></RouteErrorBoundary>} />
+            <Route path="/finances/*" element={<RouteErrorBoundary feature="Finances"><Finances /></RouteErrorBoundary>} />
+            <Route path="/shopping" element={<RouteErrorBoundary feature="Shopping"><ShoppingSmart /></RouteErrorBoundary>} />
+            <Route path="/meals" element={<RouteErrorBoundary feature="Meal Planning"><MealPlanning /></RouteErrorBoundary>} />
+            <Route path="/nutrition" element={<RouteErrorBoundary feature="Nutrition"><Nutrition /></RouteErrorBoundary>} />
+            <Route path="/shared" element={<RouteErrorBoundary feature="Shared"><Shared /></RouteErrorBoundary>} />
 
             {/* Catch-all: redirect to dashboard */}
             <Route path="*" element={<Navigate to="/" replace />} />

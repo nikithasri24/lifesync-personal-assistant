@@ -103,6 +103,15 @@ export const QuickAddTransaction: React.FC<QuickAddTransactionProps> = ({ onClos
     e.preventDefault();
 
     try {
+      logger.debug('QuickAddTransaction', 'Submitting transaction', {
+        userId: formData.userId,
+        currentUserId: user?.id,
+        partnerId,
+        accountId: formData.accountId,
+        description: formData.description,
+        amount: formData.amount,
+      });
+
       await upsertTransactionMutation.mutateAsync({
         accountId: formData.accountId,
         description: formData.description,
@@ -119,7 +128,13 @@ export const QuickAddTransaction: React.FC<QuickAddTransactionProps> = ({ onClos
       onClose();
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
-      logger.error('QuickAddTransaction', error instanceof Error ? error : new Error(String(error)), { errorMessage });
+      logger.error('QuickAddTransaction', error instanceof Error ? error : new Error(String(error)), {
+        errorMessage,
+        userId: formData.userId,
+        currentUserId: user?.id,
+        partnerId,
+        accountId: formData.accountId,
+      });
       showToast(`Failed to add transaction: ${errorMessage}`, 'error');
     }
   };
@@ -158,9 +173,9 @@ export const QuickAddTransaction: React.FC<QuickAddTransactionProps> = ({ onClos
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="p-6 border-b border-slate-200">
+      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col">
+        {/* Header - Fixed */}
+        <div className="p-6 border-b border-slate-200 flex-shrink-0">
           <h2 className="text-2xl font-semibold text-slate-900">
             {formData.type === 'credit' ? 'Add Income' : 'Add Expense'}
           </h2>
@@ -171,8 +186,8 @@ export const QuickAddTransaction: React.FC<QuickAddTransactionProps> = ({ onClos
           </p>
         </div>
 
-        {/* Content */}
-        <div className="p-6">
+        {/* Content - Scrollable */}
+        <div className="p-6 overflow-y-auto flex-1">
           <form onSubmit={(e) => { void handleSubmit(e); }} className="space-y-4">
             {/* Account */}
             <div>
@@ -349,12 +364,12 @@ export const QuickAddTransaction: React.FC<QuickAddTransactionProps> = ({ onClos
           </form>
         </div>
 
-        {/* Footer */}
-        <div className="p-6 border-t border-slate-200 flex justify-between">
+        {/* Footer - Fixed */}
+        <div className="p-6 border-t border-slate-200 flex justify-between flex-shrink-0 bg-white">
           <Button variant="ghost" onClick={onClose} disabled={upsertTransactionMutation.isPending}>
             Cancel
           </Button>
-          <Button onClick={(e) => { void handleSubmit(e); }} disabled={upsertTransactionMutation.isPending || !formData.accountId}>
+          <Button type="submit" disabled={upsertTransactionMutation.isPending || !formData.accountId}>
             {upsertTransactionMutation.isPending ? 'Adding...' : 'Add Transaction'}
           </Button>
         </div>
