@@ -1,4 +1,5 @@
 import { logger } from '../../services/logger';
+import { NetworkError, ValidationError, ServerError } from '../../lib/errors';
 import type { Recipe } from '../../types';
 
 // Type guard for checking if value is a string
@@ -33,18 +34,56 @@ interface RecipeApiResponse {
 
 // Generic clipper: fetch via server-side endpoint that parses JSON-LD/OG tags
 export async function fetchClippedRecipe(url: string): Promise<Omit<Recipe, 'id' | 'createdAt'>> {
+  // Validate URL
+  try {
+    new URL(url);
+  } catch {
+    logger.error('RecipeUtils', new ValidationError('Invalid URL format'), { url });
+    throw new ValidationError('Please enter a valid recipe URL');
+  }
+
   const envUrl: unknown = import.meta.env.VITE_RECIPE_CLIPPER_URL;
   const clipperBase: string = (isString(envUrl) ? envUrl.trim() : null) ?? '/api/clip/recipe';
   const apiUrl = `${clipperBase}${clipperBase.includes('?') ? '&' : '?'}url=${encodeURIComponent(url)}`;
+
+  logger.debug('RecipeUtils', 'Fetching recipe from URL', { url, apiUrl });
+
   let response: Response;
   try {
     response = await fetch(apiUrl, { headers: { Accept: 'application/json' } });
-  } catch (_e) {
-    throw new Error('Unable to reach the recipe clipper service.');
+  } catch (error) {
+    logger.error('RecipeUtils', new NetworkError('Unable to reach recipe clipper service'), { url, error });
+    throw new NetworkError('Unable to reach the recipe clipper service. Please check your connection.');
   }
-  if (!response.ok) throw new Error('Failed to clip recipe.');
-  const data: unknown = await response.json();
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => 'Unknown error');
+    logger.error('RecipeUtils', new ServerError('Failed to clip recipe', response.status), {
+      url,
+      status: response.status,
+      statusText: response.statusText,
+      errorText
+    });
+
+    if (response.status === 404) {
+      throw new ValidationError('Recipe clipper service not found. Please check your configuration.');
+    } else if (response.status >= 500) {
+      throw new ServerError('Recipe clipper service is currently unavailable. Please try again later.', response.status);
+    } else {
+      throw new ServerError(`Failed to import recipe: ${response.statusText}`, response.status);
+    }
+  }
+
+  let data: unknown;
+  try {
+    data = await response.json();
+  } catch (error) {
+    logger.error('RecipeUtils', new ValidationError('Invalid JSON response from clipper'), { url, error });
+    throw new ValidationError('Received invalid data from recipe clipper service');
+  }
+
   const apiData = data as RecipeApiResponse;
+  logger.debug('RecipeUtils', 'Recipe data received', { url, hasName: !!apiData.name });
 
   const ingredients = isIngredientArray(apiData.ingredients) && apiData.ingredients.length > 0
     ? apiData.ingredients
@@ -120,14 +159,20 @@ export async function fetchRecipeFromGoogle(mealName: string): Promise<Omit<Reci
 
   try {
     const apiUrl = `/api/recipe/search?q=${encodeURIComponent(mealName)}`;
+    logger.debug('RecipeUtils', 'Searching for recipe', { mealName, apiUrl });
+
     const response = await fetch(apiUrl, { headers: { Accept: 'application/json' } });
     if (!response.ok) {
-      logger.warn('RecipeUtils', 'Recipe search failed (non-OK). Using scaffold.');
+      logger.warn('RecipeUtils', 'Recipe search failed (non-OK). Using scaffold.', {
+        mealName,
+        status: response.status
+      });
       return scaffold(mealName);
     }
 
     const data: unknown = await response.json();
     const apiData = data as RecipeApiResponse;
+    logger.debug('RecipeUtils', 'Recipe search completed', { mealName, hasName: !!apiData.name });
 
     const ingredients = isIngredientArray(apiData.ingredients) && apiData.ingredients.length > 0
       ? apiData.ingredients
@@ -166,7 +211,10 @@ export async function fetchRecipeFromGoogle(mealName: string): Promise<Omit<Reci
       nutritionInfo: undefined,
     };
   } catch (error) {
-    logger.warn('RecipeUtils', 'Failed to fetch recipe from Google. Using scaffold', { error: error as Error });
+    logger.warn('RecipeUtils', 'Failed to fetch recipe from Google. Using scaffold', {
+      mealName,
+      error: error instanceof Error ? error.message : String(error)
+    });
     return scaffold(mealName);
   }
 }
