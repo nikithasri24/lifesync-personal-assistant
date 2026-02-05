@@ -132,53 +132,46 @@ const VisaCalculator: React.FC = () => {
     return getPassportRanking(passport.countryCode);
   }, [passport]);
 
-  // Get additional access from visas (for bonus countries section)
-  // Only consider visas that are valid on the travel date AND belong to selected passport owner(s)
-  const additionalAccessFromVisas = React.useMemo(() => {
+  // Filter visas by owner selection and validity (computed once, used in multiple places)
+  const { filteredVisas, validVisas, validVisaCountries } = React.useMemo(() => {
     const checkDate = new Date(travelDate);
 
-    // Filter visas by owner selection
-    let filteredVisas = userVisas;
+    // Filter by owner selection
+    let ownerFiltered = userVisas;
     if (mergedConnection && currentUserId) {
       if (passportOwnerFilter === 'me') {
-        filteredVisas = userVisas.filter(v => v.userId === currentUserId);
+        ownerFiltered = userVisas.filter(v => v.userId === currentUserId);
       } else if (passportOwnerFilter === 'partner') {
-        filteredVisas = userVisas.filter(v => v.userId === mergedConnection.partnerId);
+        ownerFiltered = userVisas.filter(v => v.userId === mergedConnection.partnerId);
       }
       // If 'both', use all visas (no filtering)
     }
 
-    const validVisaCountries = filteredVisas
-      .filter(v => {
-        const isValid = new Date(v.expiryDate) >= checkDate;
-        console.log(`[VisaCalculator] Visa ${v.countryName} (owner: ${v.userId}) expiry: ${v.expiryDate}, travel date: ${travelDate}, valid: ${isValid}, owner filter: ${passportOwnerFilter}`);
-        return isValid;
-      })
-      .map(v => v.countryName);
-    console.log(`[VisaCalculator] Valid visa countries for ${travelDate} (filter: ${passportOwnerFilter}):`, validVisaCountries);
-    return getAdditionalAccessFromVisas(validVisaCountries);
+    // Filter by validity
+    const valid = ownerFiltered.filter(v => new Date(v.expiryDate) >= checkDate);
+
+    const countries = valid.map(v => v.countryName);
+
+    return {
+      filteredVisas: ownerFiltered,
+      validVisas: valid,
+      validVisaCountries: countries,
+    };
   }, [userVisas, travelDate, passportOwnerFilter, mergedConnection, currentUserId]);
+
+  // Get additional access from visas (for bonus countries section)
+  const additionalAccessFromVisas = React.useMemo(() => {
+    return getAdditionalAccessFromVisas(validVisaCountries);
+  }, [validVisaCountries]);
 
   // Calculate all destinations with access
   const destinationRequirements = React.useMemo((): DestinationRequirement[] => {
     if (!passport) return [];
 
     const results: DestinationRequirement[] = [];
-
-    // Check if user has a valid visa for countries based on travel date
     const checkDate = new Date(travelDate);
 
-    // Filter visas by owner selection (same logic as additionalAccessFromVisas)
-    let filteredVisas = userVisas;
-    if (mergedConnection && currentUserId) {
-      if (passportOwnerFilter === 'me') {
-        filteredVisas = userVisas.filter(v => v.userId === currentUserId);
-      } else if (passportOwnerFilter === 'partner') {
-        filteredVisas = userVisas.filter(v => v.userId === mergedConnection.partnerId);
-      }
-      // If 'both', use all visas (no filtering)
-    }
-
+    // Use pre-filtered visas from above (no need to filter again)
     const activeVisasMap = new Map<string, { daysAllowed?: number; expiryDate: string; visaType: string }>();
     filteredVisas.forEach(visa => {
       const expiryDate = new Date(visa.expiryDate);
@@ -192,15 +185,11 @@ const VisaCalculator: React.FC = () => {
     });
 
     // Get additional access from existing visas (H1B, Schengen, etc.)
-    // Only consider visas that are valid on the travel date
-    const validVisaCountries = filteredVisas
-      .filter(v => new Date(v.expiryDate) >= checkDate)
-      .map(v => v.countryName);
-    const additionalAccess = getAdditionalAccessFromVisas(validVisaCountries);
+    // Use pre-computed additionalAccessFromVisas (already filtered for validity)
 
     // Create a map of countries with visa-based access
     const visaAccessMap = new Map<string, { viaVisa: string; accessType: 'visa-free' | 'visa-on-arrival' | 'eta'; daysAllowed?: number; conditions?: string }>();
-    additionalAccess.forEach(access => {
+    additionalAccessFromVisas.forEach(access => {
       visaAccessMap.set(access.country, {
         viaVisa: access.viaVisa,
         accessType: access.accessType,
