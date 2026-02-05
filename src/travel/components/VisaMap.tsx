@@ -97,7 +97,7 @@ const VisaMap: React.FC<VisaMapProps> = ({
 
   // Debug logging
   React.useEffect(() => {
-    console.log('[VisaMap] Props:', {
+    logger.debug('Travel', 'VisaMap Props:', {
       mergedConnection,
       allPassportsCount: allPassports.length,
       currentUserId,

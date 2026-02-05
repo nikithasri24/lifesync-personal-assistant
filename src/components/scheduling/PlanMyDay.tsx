@@ -5,6 +5,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { format, isToday, isBefore, startOfDay } from 'date-fns';
+import { logger } from '../../services/logger';
 import {
   Sparkles, Calendar, Clock, CheckCircle, AlertCircle,
   Loader2, ChevronDown, ChevronUp, Zap, Target
@@ -62,7 +63,7 @@ export function PlanMyDay({ className = '', onComplete }: PlanMyDayProps) {
       setIsExpanded(true);
       onComplete?.();
     } catch (error) {
-      console.error('Auto-schedule failed:', error);
+      logger.error('Scheduler', error instanceof Error ? error : new Error(String(error)), { context: 'autoSchedule' });
     }
   };
 

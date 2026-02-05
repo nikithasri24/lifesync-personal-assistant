@@ -109,9 +109,9 @@ const MealPlanning: React.FC = () => {
 
   // Debug: Log recipes data
   useEffect(() => {
-    console.log('[MealPlanning] Recipes loaded:', recipes.length, recipes);
+    logger.debug('MealPlanning', 'Recipes loaded:', { count: recipes.length });
     if (recipesError) {
-      console.error('[MealPlanning] Recipes error:', recipesError);
+      logger.error('MealPlanning', recipesError instanceof Error ? recipesError : new Error(String(recipesError)), { context: 'recipesQuery' });
     }
   }, [recipes, recipesError]);
   const {
@@ -267,7 +267,7 @@ const MealPlanning: React.FC = () => {
       modalState.setShowCopyWeek(false);
       weekNav.goToWeek(weekCopy.copyTargetWeek);
     } catch (error) {
-      logger.error('MealPlanning', 'Failed to copy week:', { error: error instanceof Error ? error.message : String(error) });
+      logger.error('MealPlanning', error instanceof Error ? error : new Error(String(error)), { context: 'copyWeek' });
     }
   };
 
@@ -302,9 +302,9 @@ const MealPlanning: React.FC = () => {
           });
           successCount++;
         } catch (itemError) {
-          logger.warn('MealPlanning', 'Failed to add item to shopping list', {
-            itemName: item.name,
-            error: itemError instanceof Error ? itemError.message : String(itemError)
+          logger.warn('MealPlanning', itemError instanceof Error ? itemError : new Error(String(itemError)), {
+            context: 'addItemToShoppingList',
+            itemName: item.name
           });
         }
       }
@@ -315,9 +315,7 @@ const MealPlanning: React.FC = () => {
 
       return { success: successCount > 0, count: successCount };
     } catch (error) {
-      logger.error('MealPlanning', 'Failed to send items to shopping list', {
-        error: error instanceof Error ? error.message : String(error)
-      });
+      logger.error('MealPlanning', error instanceof Error ? error : new Error(String(error)), { context: 'sendItemsToShoppingList' });
       showToast('Failed to add items to Shopping List', 'error');
       return { success: false, count: 0 };
     }

@@ -6,6 +6,7 @@
 import React from 'react';
 import { Package, Calendar, Trash2, ChevronDown, ChevronUp, Users } from 'lucide-react';
 import { format } from 'date-fns';
+import { logger } from '../../../services/logger';
 import type { PlannedMeal, Recipe } from '../../../types';
 import { useUndoRedo } from '../../../contexts/UndoRedoContext';
 import { DeletePlannedMealCommand } from '../../../commands/MealPlanningCommands';
@@ -42,7 +43,7 @@ export function MealBacklogSection({ postponedMeals, recipes, isMerged = false, 
       const command = new DeletePlannedMealCommand(meal, meal.mealPlanId);
       await executeCommand(command);
     } catch (error) {
-      console.error('[MealBacklog] Failed to delete postponed meal:', error);
+      logger.error('MealPlanning', error instanceof Error ? error : new Error(String(error)), { context: 'deletePostponedMeal' });
     }
   };
 
@@ -50,7 +51,7 @@ export function MealBacklogSection({ postponedMeals, recipes, isMerged = false, 
     try {
       await removeFromBacklogMutation.mutateAsync(item.id);
     } catch (error) {
-      console.error('[MealBacklog] Failed to delete shared backlog item:', error);
+      logger.error('MealPlanning', error instanceof Error ? error : new Error(String(error)), { context: 'deleteSharedBacklogItem' });
     }
   };
 

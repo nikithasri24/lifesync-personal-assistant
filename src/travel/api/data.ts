@@ -4,6 +4,7 @@
  * and track individual vs joint visits.
  */
 
+import { logger } from '../../services/logger';
 import { supabase } from '../../lib/supabase';
 import type {
   VisitedLocation,
@@ -138,7 +139,7 @@ async function migrateToVisitedBy(userId: string): Promise<void> {
     return;
   }
 
-  console.log(`[TravelAPI] Migrating ${locationsToMigrate.length} locations to use visited_by array`);
+  logger.info('Travel', `Migrating ${locationsToMigrate.length} locations to use visited_by array`);
 
   // Update each location to include user in visited_by
   const { error: updateError } = await supabase
@@ -148,9 +149,9 @@ async function migrateToVisitedBy(userId: string): Promise<void> {
     .or('visited_by.is.null,visited_by.eq.[]');
 
   if (updateError) {
-    console.error('[TravelAPI] Error migrating to visited_by:', updateError);
+    logger.error('Travel', updateError instanceof Error ? updateError : new Error(String(updateError)), { context: 'migrateToVisitedBy' });
   } else {
-    console.log('[TravelAPI] Successfully migrated locations to visited_by');
+    logger.info('Travel', 'Successfully migrated locations to visited_by');
   }
 }
 
@@ -163,7 +164,7 @@ export const travelAPI = {
 
     const partnerId = await getTravelPartner();
 
-    console.log('[TravelAPI] listVisitedLocations - user:', userData.user.id, 'partner:', partnerId);
+    logger.debug('Travel', 'listVisitedLocations', { userId: userData.user.id, partnerId });
 
     // Migrate old data to use visited_by array (one-time migration)
     await migrateToVisitedBy(userData.user.id);
@@ -185,7 +186,7 @@ export const travelAPI = {
     const { data, error } = await query;
     if (error) throw error;
 
-    console.log('[TravelAPI] Locations found:', data?.length ?? 0);
+    logger.debug('Travel', 'Locations found:', { count: data?.length ?? 0 });
 
     const locations = toCamelCase<VisitedLocation[]>(data || []);
 

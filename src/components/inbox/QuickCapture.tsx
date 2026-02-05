@@ -5,6 +5,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { Plus, Inbox, Send, Mic, X, Loader2 } from 'lucide-react';
+import { logger } from '@/services/logger';
 import { useCreateInboxItem, usePendingInboxCount } from '@/hooks/useInboxQuery';
 
 interface QuickCaptureProps {
@@ -55,7 +56,7 @@ export function QuickCapture({ variant = 'floating', onCaptured, className = '' 
       }
       onCaptured?.();
     } catch (error) {
-      console.error('Failed to capture item:', error);
+      logger.error('Inbox', error instanceof Error ? error : new Error(String(error)), { context: 'captureItem' });
     }
   };
   

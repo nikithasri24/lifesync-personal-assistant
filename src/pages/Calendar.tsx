@@ -5,6 +5,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { format, parseISO, isSameDay, addDays, isToday, addMinutes } from 'date-fns';
+import { logger } from '../services/logger';
 import { CheckCircle2, Target } from 'lucide-react';
 
 // Hooks
@@ -207,7 +208,7 @@ const Calendar: React.FC = () => {
     const hour = dataHour !== null ? parseInt(dataHour, 10) : 9;
     const scheduledTime = `${hour.toString().padStart(2, '0')}:${clampedMinutes.toString().padStart(2, '0')}`;
 
-    console.log('[Calendar] Drop detected:', {
+    logger.debug('Calendar', 'Drop detected', {
       dataDate,
       dataHour,
       hour,

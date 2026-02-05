@@ -6,6 +6,7 @@
 
 import React from 'react';
 import { Clock, Users, Heart, Pencil, Trash2, ChefHat, ExternalLink } from 'lucide-react';
+import { logger } from '../../../services/logger';
 import type { Recipe } from '../../../types';
 import { useUndoRedo } from '../../../contexts/UndoRedoContext';
 import { UpdateRecipeCommand } from '../../../commands/MealPlanningCommands';
@@ -49,7 +50,7 @@ export const RecipeCard = React.memo<RecipeCardProps>(function RecipeCard({ reci
       );
       await executeCommand(command);
     } catch (error) {
-      console.error('Failed to toggle favorite:', error);
+      logger.error('MealPlanning', error instanceof Error ? error : new Error(String(error)), { context: 'toggleFavorite' });
     }
   };
 

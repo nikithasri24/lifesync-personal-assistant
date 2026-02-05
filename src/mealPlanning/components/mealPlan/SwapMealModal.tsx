@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Loader2, Package, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
+import { logger } from '../../../services/logger';
 import type { PlannedMeal, Recipe } from '../../../types';
 import type { MealType } from '../../../api/nutritionAPI';
 import { useLogFoodMutation } from '../../../hooks/useNutritionQuery';
@@ -126,7 +127,7 @@ export function SwapMealModal({ meal, recipe, isMerged = false, onClose, onSucce
       onSuccess?.();
       onClose();
     } catch (error) {
-      console.error('[SwapMealModal] Failed to swap meal:', error);
+      logger.error('MealPlanning', error instanceof Error ? error : new Error(String(error)), { context: 'swapMeal' });
     } finally {
       setIsSubmitting(false);
     }

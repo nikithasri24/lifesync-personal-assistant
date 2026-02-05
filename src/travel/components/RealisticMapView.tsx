@@ -7,6 +7,7 @@ import React from 'react';
 import { geoPath, geoNaturalEarth1 } from 'd3-geo';
 import { feature } from 'topojson-client';
 import { ZoomIn, ZoomOut, Maximize2, Search, X } from 'lucide-react';
+import { logger } from '../../services/logger';
 import type { VisitStatus } from '../types';
 import type { Topology, GeometryCollection } from 'topojson-specification';
 
@@ -81,7 +82,7 @@ const RealisticMapView: React.FC<RealisticMapViewProps> = ({
         setCountries(countryFeatures);
         setLoading(false);
       } catch (error) {
-        console.error('Error loading map data:', error);
+        logger.error('Travel', error instanceof Error ? error : new Error(String(error)), { context: 'loadMapData' });
         setLoading(false);
       }
     };

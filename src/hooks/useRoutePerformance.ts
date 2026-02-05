@@ -6,6 +6,7 @@
 
 import { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
+import { logger } from '../services/logger';
 import { performanceMonitor } from '../utils/performanceMonitor';
 
 export function useRoutePerformance() {
@@ -36,7 +37,7 @@ export function useRoutePerformance() {
         };
 
         if (import.meta.env.DEV) {
-          console.log('Page Load Performance:', metrics);
+          logger.debug('Hooks', 'Page Load Performance:', metrics);
         }
       }
     }

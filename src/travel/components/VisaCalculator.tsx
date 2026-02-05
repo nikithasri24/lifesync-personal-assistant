@@ -6,6 +6,7 @@
 
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { logger } from '../../services/logger';
 import { supabase } from '../../lib/supabase';
 import {
   getVisaRequirement,
@@ -112,7 +113,7 @@ const VisaCalculator: React.FC = () => {
         setAllPassports(allPassportsData);
         setUserVisas(visasData);
       } catch (error) {
-        console.error('Error loading passport/visa data:', error);
+        logger.error('Travel', error instanceof Error ? error : new Error(String(error)), { context: 'loadPassportVisaData' });
       } finally {
         setLoading(false);
       }
@@ -310,7 +311,7 @@ const VisaCalculator: React.FC = () => {
       setShowPassportSelector(false);
       setSelectedPassportCountry('');
     } catch (error) {
-      console.error('Error adding passport:', error);
+      logger.error('Travel', error instanceof Error ? error : new Error(String(error)), { context: 'addPassport' });
       alert('Failed to save passport. Please try again.');
     }
   };
@@ -332,7 +333,7 @@ const VisaCalculator: React.FC = () => {
       setNewVisaMultipleEntry(true);
       setShowAddVisa(false);
     } catch (error) {
-      console.error('Error adding visa:', error);
+      logger.error('Travel', error instanceof Error ? error : new Error(String(error)), { context: 'addVisa' });
       alert('Failed to save visa. Please try again.');
     }
   };
@@ -342,7 +343,7 @@ const VisaCalculator: React.FC = () => {
       await deleteVisa(visaId);
       setUserVisas(prev => prev.filter(v => v.id !== visaId));
     } catch (error) {
-      console.error('Error removing visa:', error);
+      logger.error('Travel', error instanceof Error ? error : new Error(String(error)), { context: 'deleteVisa' });
       alert('Failed to remove visa. Please try again.');
     }
   };

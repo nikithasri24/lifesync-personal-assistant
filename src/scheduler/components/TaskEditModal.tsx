@@ -17,6 +17,7 @@ import {
   AlignLeft,
 } from 'lucide-react';
 import { format, addDays, addWeeks } from 'date-fns';
+import { logger } from '../../services/logger';
 import type { ScheduledTask } from '../types';
 import type { TaskData } from '../../services/types';
 import { DependencySelector, DependencyIndicator } from '../../components/dependencies';
@@ -55,13 +56,13 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
 
   // Debug: Log formData changes
   useEffect(() => {
-    console.log('[TaskEditModal] formData.due_date:', formData.due_date);
+    logger.debug('Scheduler', 'formData.due_date:', { due_date: formData.due_date });
   }, [formData.due_date]);
 
   // Initialize form data when modal opens or task ID changes (not on every task prop change)
   useEffect(() => {
     if (task && isOpen) {
-      console.log('[TaskEditModal] Initializing form data for task:', task.id);
+      logger.debug('Scheduler', 'Initializing form data for task', { taskId: task.id });
       setFormData({
         title: task.title,
         description: task.description || '',
@@ -86,8 +87,7 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (task.id) {
-      console.log('[TaskEditModal] Saving task with formData:', formData);
-      console.log('[TaskEditModal] depends_on value:', formData.depends_on);
+      logger.debug('Scheduler', 'Saving task', { taskId: task.id, depends_on: formData.depends_on });
       onSave(task.id, formData);
     }
   };
@@ -216,7 +216,7 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
                         : format(new Date(formData.due_date), 'yyyy-MM-dd')
                     ) : ''}
                     onChange={(e) => {
-                      console.log('[TaskEditModal] Date changed:', e.target.value);
+                      logger.debug('Scheduler', 'Date changed', { newDate: e.target.value });
                       setFormData({ ...formData, due_date: e.target.value || null });
                     }}
                     className="w-full px-4 py-2 pr-10 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"

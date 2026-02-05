@@ -10,6 +10,7 @@ import React, { useMemo, useState, useEffect, type FormEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { List, CalendarDays } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
+import { logger } from '../services/logger';
 import type { JournalEntry } from '../types';
 import {
   useJournalEntries,
@@ -116,7 +117,7 @@ export const JournalContainer: React.FC = () => {
         }
       }
     } catch (err) {
-      console.error('[Journal] Failed to restore draft from localStorage:', err);
+      logger.error('Journal', err instanceof Error ? err : new Error(String(err)), { context: 'restoreDraft' });
     }
     return createDraft();
   });
@@ -129,7 +130,7 @@ export const JournalContainer: React.FC = () => {
       try {
         localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
       } catch (err) {
-        console.error('[Journal] Failed to save draft to localStorage:', err);
+        logger.error('Journal', err instanceof Error ? err : new Error(String(err)), { context: 'saveDraft' });
       }
     } else if (!editingId && !hasDraftContent(draft)) {
       // Clear localStorage if draft is empty and not editing

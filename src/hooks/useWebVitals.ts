@@ -108,11 +108,12 @@ export function useWebVitals(options: WebVitalsOptions = {}): void {
         };
 
         if (logToConsole) {
-          const emoji = webVitalsMetric.rating === 'good' ? '✅' : 
-                       webVitalsMetric.rating === 'needs-improvement' ? '⚠️' : '❌';
-          console.log(
-            `${emoji} ${webVitalsMetric.name}: ${webVitalsMetric.value.toFixed(2)}ms (${webVitalsMetric.rating})`
-          );
+          const emoji = webVitalsMetric.rating === 'good' ? 'good' :
+                       webVitalsMetric.rating === 'needs-improvement' ? 'needs-improvement' : 'poor';
+          logger.debug('Hooks', `Web Vital: ${webVitalsMetric.name}`, {
+            value: webVitalsMetric.value.toFixed(2),
+            rating: emoji
+          });
         }
 
         if (shouldReportToAnalytics) {

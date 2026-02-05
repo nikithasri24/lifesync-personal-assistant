@@ -1,5 +1,6 @@
 import React, { type ReactElement, useMemo, Suspense, lazy } from 'react';
 import { format, isSameDay } from 'date-fns';
+import { logger } from '../../../services/logger';
 import { ChefHat, Coffee, Sun, Moon, Cookie } from 'lucide-react';
 import type { PlannedMeal, Recipe } from '../../../types';
 import { toKey, parseLocalDateKey } from '../../utils';
@@ -239,7 +240,7 @@ export function WeeklyGrid({
                               await executeCommand(command);
                               return;
                             } catch (err) {
-                              console.error('[WeeklyGrid] Failed to handle backlog drop:', err);
+                              logger.error('MealPlanning', err instanceof Error ? err : new Error(String(err)), { context: 'handleBacklogDrop' });
                             }
                           }
 
@@ -400,7 +401,7 @@ export function WeeklyGrid({
               isMerged={isMerged}
               onReschedule={(meal) => {
                 // TODO: Implement reschedule functionality
-                console.log('[WeeklyGrid] Reschedule meal:', meal);
+                logger.debug('MealPlanning', 'Reschedule meal:', { mealId: meal.id, mealName: meal.customMeal });
               }}
             />
           </Suspense>

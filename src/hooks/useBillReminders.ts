@@ -6,6 +6,7 @@
 
 import { useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { logger } from '@/services/logger';
 import { getBills } from '@/api/billsAPI';
 import { queryKeys } from '@/lib/react-query';
 import { reminderService } from '@/services/reminders';
@@ -133,7 +134,7 @@ export function useBillReminders(enabled: boolean = true) {
               });
               scheduledRef.current.add(reminderKey);
             } catch (error) {
-              console.error(`Failed to schedule reminder for bill ${bill.name}:`, error);
+              logger.error('Hooks', error instanceof Error ? error : new Error(String(error)), { context: 'scheduleBillReminder', billName: bill.name });
             }
           }
         }

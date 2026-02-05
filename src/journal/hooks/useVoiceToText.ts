@@ -7,6 +7,7 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { logger } from '../../services/logger';
 
 // Local type definitions to avoid conflicts with global types
 interface VoiceSpeechRecognitionEvent {
@@ -68,8 +69,7 @@ const ERROR_MESSAGES: Record<string, string> = {
 
 // Debug logging helper
 function debugLog(event: string, data?: Record<string, unknown>): void {
-  const timestamp = new Date().toISOString();
-  console.log(`[VoiceToText] [${timestamp}] ${event}`, data || '');
+  logger.debug('Journal', event, data || {});
 }
 
 /**
@@ -106,7 +106,7 @@ function playErrorSound(): void {
       audioContext.close();
     };
   } catch (err) {
-    console.warn('[VoiceToText] Could not play error sound:', err);
+    logger.warn('Journal', err instanceof Error ? err : new Error(String(err)), { context: 'playErrorSound' });
   }
 }
 

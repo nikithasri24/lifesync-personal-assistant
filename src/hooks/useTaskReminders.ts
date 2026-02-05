@@ -6,6 +6,7 @@
 
 import { useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { logger } from '@/services/logger';
 import { getTasksForReminders } from '@/api/tasksAPI';
 import { queryKeys } from '@/lib/react-query';
 import { reminderService } from '@/services/reminders';
@@ -86,7 +87,7 @@ export function useTaskReminders(enabled: boolean = true) {
           );
           scheduledRef.current.add(task.id!);
         } catch (error) {
-          console.error(`Failed to schedule reminder for task ${task.title}:`, error);
+          logger.error('Hooks', error instanceof Error ? error : new Error(String(error)), { context: 'scheduleTaskReminder', taskTitle: task.title });
         }
       }
     };

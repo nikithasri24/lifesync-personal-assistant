@@ -6,6 +6,7 @@
 
 import { useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { logger } from '@/services/logger';
 import { getHabitsWithReminders, getHabitsWithStreaks, checkHabitCompletionForDate } from '@/api/habitsAPI';
 import { queryKeys } from '@/lib/react-query';
 import { smartReminderService } from '@/services/reminders/SmartReminderService';
@@ -73,7 +74,7 @@ export function useHabitReminders(enabled: boolean = true) {
           );
           scheduledRef.current.add(habit.id!);
         } catch (error) {
-          console.error(`Failed to schedule reminder for habit ${habit.name}:`, error);
+          logger.error('Hooks', error instanceof Error ? error : new Error(String(error)), { context: 'scheduleHabitReminder', habitName: habit.name });
         }
       }
     };
