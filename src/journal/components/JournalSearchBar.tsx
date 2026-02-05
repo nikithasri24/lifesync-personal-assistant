@@ -60,6 +60,7 @@ export function JournalSearchBar({
               ? 'bg-slate-200 dark:bg-slate-300 text-slate-800'
               : 'bg-slate-100 dark:bg-slate-200 text-slate-800 dark:text-slate-800 hover:bg-slate-200 dark:hover:bg-slate-300'
           }`}
+          aria-label={showFilters ? 'Hide filters' : 'Show filters'}
           data-testid="journal-filters-toggle"
         >
           <Filter className="h-4 w-4" />
@@ -117,6 +118,7 @@ export function JournalSearchBar({
                   type="button"
                   onClick={() => setDateRange(null)}
                   className="text-xs text-slate-600 dark:text-white hover:text-slate-700 dark:hover:text-slate-200"
+                  aria-label="Clear date range filter"
                   data-testid="journal-date-clear"
                 >
                   Clear
@@ -140,6 +142,7 @@ export function JournalSearchBar({
                         ? 'bg-slate-200 text-slate-900 dark:bg-slate-600 dark:text-white'
                         : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600'
                     }`}
+                    aria-label={`Filter by tag: ${tag}`}
                     data-testid={`journal-tag-filter-${tag}`}
                   >
                     {tag}
@@ -155,6 +158,7 @@ export function JournalSearchBar({
               type="button"
               onClick={clearFilters}
               className="text-sm text-slate-600 dark:text-white hover:text-slate-700 dark:hover:text-slate-200 font-medium"
+              aria-label="Clear all filters"
               data-testid="journal-clear-filters"
             >
               Clear all filters

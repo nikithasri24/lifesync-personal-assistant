@@ -75,7 +75,8 @@
       "Bash(./scripts/validate-finance-merged.sh:*)",
       "Bash(node fix-bad-dates.js:*)",
       "Bash(git merge:*)",
-      "Bash(./scripts/quality-report.sh:*)"
+      "Bash(./scripts/quality-report.sh:*)",
+      "Bash(./scripts/find-issues.sh:*)"
     ],
     "deny": [],
     "ask": []

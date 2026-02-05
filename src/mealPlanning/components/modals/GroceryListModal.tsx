@@ -104,6 +104,7 @@ export function GroceryListModal({
                       type="button"
                       onClick={() => updateItemStatus(item.id, 'at_home')}
                       className="rounded px-2 py-1 text-xs font-medium bg-green-100 text-green-700 hover:bg-green-200"
+                      aria-label={`Mark ${item.name} as at home`}
                       title="Mark as at home"
                     >
                       At Home
@@ -112,6 +113,7 @@ export function GroceryListModal({
                       type="button"
                       onClick={() => updateItemStatus(item.id, 'in_cart')}
                       className="rounded px-2 py-1 text-xs font-medium bg-indigo-100 text-indigo-700 hover:bg-indigo-200"
+                      aria-label={`Add ${item.name} to cart`}
                       title="Add to cart"
                     >
                       Add to Cart
@@ -135,6 +137,7 @@ export function GroceryListModal({
                       type="button"
                       onClick={() => updateItemStatus(item.id, 'needed')}
                       className="rounded px-2 py-1 text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200"
+                      aria-label={`Remove ${item.name} from cart`}
                       title="Move back to needed"
                     >
                       Remove
@@ -143,6 +146,7 @@ export function GroceryListModal({
                       type="button"
                       onClick={() => updateItemStatus(item.id, 'purchased')}
                       className="rounded px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      aria-label={`Mark ${item.name} as purchased`}
                       title="Mark as purchased"
                     >
                       Purchased
@@ -165,6 +169,7 @@ export function GroceryListModal({
                     type="button"
                     onClick={() => updateItemStatus(item.id, 'needed')}
                     className="rounded px-2 py-1 text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200"
+                    aria-label={`Mark ${item.name} as needed to buy`}
                     title="Move back to needed"
                   >
                     Need to Buy
@@ -200,6 +205,7 @@ export function GroceryListModal({
               type="button"
               onClick={onCopyCart}
               className="rounded-md border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              aria-label="Copy cart list to clipboard"
             >
               Copy Cart List
             </button>
@@ -209,6 +215,7 @@ export function GroceryListModal({
                 onClick={handleSendToShoppingList}
                 disabled={isSending || inCartItems.length === 0}
                 className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                aria-label="Send cart items to shopping list"
               >
                 {isSending ? (
                   <>
@@ -227,6 +234,7 @@ export function GroceryListModal({
               type="button"
               onClick={onClose}
               className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
+              aria-label="Close grocery list modal"
             >
               Done
             </button>

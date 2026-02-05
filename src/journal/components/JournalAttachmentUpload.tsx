@@ -76,6 +76,7 @@ export function JournalAttachmentUpload({
           type="button"
           onClick={() => fileInputRef.current?.click()}
           className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 dark:bg-slate-200 px-4 py-2 text-sm font-medium text-slate-800 dark:text-slate-800 hover:bg-slate-200 dark:hover:bg-slate-300 transition"
+          aria-label="Upload file"
           data-testid="journal-attachment-upload-file"
         >
           <Upload className="h-4 w-4" />
@@ -91,6 +92,7 @@ export function JournalAttachmentUpload({
               ? 'bg-slate-200 dark:bg-slate-300 text-slate-800'
               : 'bg-slate-100 dark:bg-slate-200 text-slate-800 dark:text-slate-800 hover:bg-slate-200 dark:hover:bg-slate-300'
           }`}
+          aria-label={showLinkInput ? 'Hide link input' : 'Add link to entry'}
           data-testid="journal-attachment-upload-link-toggle"
         >
           <LinkIcon className="h-4 w-4" />
@@ -144,6 +146,7 @@ export function JournalAttachmentUpload({
             onClick={handleAddLink}
             disabled={!linkUrl.trim()}
             className="rounded-md bg-slate-700 dark:bg-slate-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-600 dark:hover:bg-slate-500 disabled:opacity-50 disabled:cursor-not-allowed transition"
+            aria-label="Add link to entry"
             data-testid="journal-attachment-link-add"
           >
             Add

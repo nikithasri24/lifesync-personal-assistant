@@ -95,6 +95,7 @@ export function SimpleRecipeEditModal({ recipe, onSave, onClose }: SimpleRecipeE
               onClick={onClose}
               disabled={saving}
               className="rounded-md px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+              aria-label="Cancel recipe edit"
             >
               Cancel
             </button>
@@ -102,6 +103,7 @@ export function SimpleRecipeEditModal({ recipe, onSave, onClose }: SimpleRecipeE
               type="submit"
               disabled={saving || !name.trim()}
               className="inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+              aria-label="Save recipe changes"
             >
               {saving ? (
                 <>

@@ -86,6 +86,7 @@ export function JournalCalendarView({
             type="button"
             onClick={() => setCurrentMonth(new Date())}
             className="px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition"
+            aria-label="Go to today"
             data-testid="calendar-today"
           >
             Today
@@ -167,6 +168,7 @@ export function JournalCalendarView({
                   transition-colors flex flex-col items-center justify-start
                   ${getCellStyles()}
                 `}
+                aria-label={`${format(day, 'EEEE, MMMM d')}${hasEntries ? `, ${dayEntries.length} entry` : ''}`}
                 data-testid={`calendar-day-${format(day, 'yyyy-MM-dd')}`}
               >
                 <span

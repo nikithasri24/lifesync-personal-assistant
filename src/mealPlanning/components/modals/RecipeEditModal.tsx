@@ -129,7 +129,7 @@ export function RecipeEditModal({ recipe, onClose }: RecipeEditModalProps): Reac
               type="button"
               onClick={onClose}
               className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-              aria-label="Close"
+              aria-label="Close recipe edit modal"
             >
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -238,6 +238,7 @@ export function RecipeEditModal({ recipe, onClose }: RecipeEditModalProps): Reac
                 type="button"
                 onClick={onClose}
                 className="rounded-md px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100"
+                aria-label="Close recipe editor"
                 disabled={saving}
               >
                 Close

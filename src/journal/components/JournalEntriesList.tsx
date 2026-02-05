@@ -122,6 +122,7 @@ export function JournalEntriesList({
                   type="button"
                   onClick={() => onDeleteConfirm(entry.id)}
                   className="rounded-full bg-red-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-red-500"
+                  aria-label={`Confirm delete entry ${entry.title || 'Untitled'}`}
                 >
                   Delete
                 </button>
@@ -129,6 +130,7 @@ export function JournalEntriesList({
                   type="button"
                   onClick={onDeleteCancel}
                   className="rounded-full bg-slate-200 dark:bg-slate-600 px-3 py-1.5 text-xs font-medium text-slate-800 dark:text-white transition hover:bg-slate-300 dark:hover:bg-slate-500"
+                  aria-label="Cancel deletion"
                 >
                   Cancel
                 </button>
