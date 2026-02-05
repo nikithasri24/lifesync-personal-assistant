@@ -7,7 +7,7 @@
 import type { Command } from '../contexts/UndoRedoContext';
 import type { PlannedMeal, Recipe } from '../types';
 import type { PlannedMealInput, MealTracking } from '../hooks/useMealPlanningQuery';
-import type { MealTrackingStatus } from '../services/types';
+import type { MealTrackingStatus, PlannedMealData } from '../services/types';
 import * as mealPlanningAPI from '../api/mealPlanningAPI';
 import { logger } from '../services/logger';
 import { queryClient } from '../lib/react-query';
@@ -188,7 +188,7 @@ export class MovePlannedMealCommand implements Command {
       newDate: this.newDate,
       newMealType: this.newMealType
     });
-    const updates: any = {
+    const updates: Partial<PlannedMealData> = {
       date: this.newDate.toISOString().split('T')[0],
       meal_type: this.newMealType,
     };
@@ -206,7 +206,7 @@ export class MovePlannedMealCommand implements Command {
       mealId: this.mealId,
       previousDate: this.previousDate
     });
-    const updates: any = {
+    const updates: Partial<PlannedMealData> = {
       date: this.previousDate.toISOString().split('T')[0],
       meal_type: this.previousMealType,
     };

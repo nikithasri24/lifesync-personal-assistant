@@ -20,9 +20,9 @@ interface ISpeechRecognition extends EventTarget {
   continuous: boolean;
   interimResults: boolean;
   lang: string;
-  onresult: ((ev: SpeechRecognitionEvent) => any) | null;
-  onend: ((ev: Event) => any) | null;
-  onerror: ((ev: any) => any) | null;
+  onresult: ((ev: SpeechRecognitionEvent) => void) | null;
+  onend: ((ev: Event) => void) | null;
+  onerror: ((ev: Event) => void) | null;
   start(): void;
   stop(): void;
   abort(): void;

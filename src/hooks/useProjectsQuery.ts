@@ -299,7 +299,7 @@ export function useCreateMilestoneMutation(): ReturnType<typeof useMutation<Proj
       // const created = await apiClient.createProjectMilestone(projectId, milestone);
       throw new Error('API endpoint not yet implemented');
     },
-    onSuccess: (newMilestone: any, { projectId }) => {
+    onSuccess: (newMilestone: ProjectMilestone, { projectId }) => {
       logger.info('Projects', 'Milestone created successfully', { id: newMilestone?.id, projectId });
       void queryClient.invalidateQueries({ queryKey: projectsKeys.milestones(projectId) });
       void queryClient.invalidateQueries({ queryKey: projectsKeys.analytics() });
@@ -324,7 +324,7 @@ export function useUpdateProjectMilestoneMutation(): ReturnType<typeof useMutati
       // const updated = await apiClient.updateProjectMilestone(milestoneId, updates);
       throw new Error('API endpoint not yet implemented');
     },
-    onSuccess: (updatedMilestone: any, { projectId }) => {
+    onSuccess: (updatedMilestone: ProjectMilestone, { projectId }) => {
       logger.info('Projects', 'Milestone updated successfully', { id: updatedMilestone?.id, projectId });
       void queryClient.invalidateQueries({ queryKey: projectsKeys.milestones(projectId) });
       void queryClient.invalidateQueries({ queryKey: projectsKeys.analytics() });

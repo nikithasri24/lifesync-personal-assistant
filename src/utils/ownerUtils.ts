@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
+import type { MergedConnectionResult } from '../shared/api/SharedDataProvider';
 
 /**
  * Hook to get current user ID from Supabase auth
@@ -29,7 +30,7 @@ export function usePartnerName(mergedConnection: { partnerName?: string } | null
 /**
  * Check if merged mode is enabled (has active connection)
  */
-export function useHasMergedPermission(mergedConnection: any) {
+export function useHasMergedPermission(mergedConnection: MergedConnectionResult | null | undefined) {
   return useMemo(() => {
     return !!mergedConnection?.connectionId;
   }, [mergedConnection]);

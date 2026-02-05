@@ -3,16 +3,17 @@
  */
 
 import { useState } from 'react';
+import type { UseMutationResult } from '@tanstack/react-query';
 import type { Task } from '../../lib/supabase';
 import type { CalendarEvent } from '../../services/types';
 import type { ScheduledTask } from '../../scheduler/types';
 
 export const useCalendarModals = (
-  updateTaskMutation: any,
-  deleteTaskMutation: any,
-  createEventMutation: any,
-  updateEventMutation: any,
-  deleteEventMutation: any,
+  updateTaskMutation: UseMutationResult<Task, Error, { id: string; updates: Partial<Task> }>,
+  deleteTaskMutation: UseMutationResult<void, Error, string>,
+  createEventMutation: UseMutationResult<CalendarEvent, Error, Partial<CalendarEvent>>,
+  updateEventMutation: UseMutationResult<CalendarEvent, Error, { id: string; updates: Partial<CalendarEvent> }>,
+  deleteEventMutation: UseMutationResult<void, Error, string>,
   tasks: Task[]
 ) => {
   // Task editing state
@@ -120,7 +121,7 @@ export const useCalendarModals = (
   };
 
   // Quick schedule handlers
-  const handleCellClick = (date: Date, e: React.MouseEvent, draggedTask: any, draggedEvent: any) => {
+  const handleCellClick = (date: Date, e: React.MouseEvent, draggedTask: Task | null, draggedEvent: CalendarEvent | null) => {
     // Don't open quick schedule if user is dragging
     if (draggedTask || draggedEvent) return;
 

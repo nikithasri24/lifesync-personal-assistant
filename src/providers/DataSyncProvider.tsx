@@ -25,8 +25,7 @@ import { logger } from '@/services/logger';
  * Maps each event to the query keys that should be invalidated.
  * The function receives the event payload and returns an array of query keys.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type QueryKeyMapper = (payload: any, queryClient: QueryClient) => ReadonlyArray<readonly unknown[]>;
+type QueryKeyMapper = (payload: unknown, queryClient: QueryClient) => ReadonlyArray<readonly unknown[]>;
 
 /**
  * Complete mapping of events to affected query keys.
@@ -40,42 +39,57 @@ const eventToQueryKeys: Record<string, QueryKeyMapper> = {
     ['analytics'],
   ],
 
-  'task:updated': ({ taskId }) => [
-    queryKeys.tasks.lists(),
-    queryKeys.tasks.detail(taskId),
-    queryKeys.scheduling.all,
-    ['analytics'],
-    ['predictions'],
-  ],
+  'task:updated': (payload: unknown) => {
+    const { taskId } = payload as { taskId: string };
+    return [
+      queryKeys.tasks.lists(),
+      queryKeys.tasks.detail(taskId),
+      queryKeys.scheduling.all,
+      ['analytics'],
+      ['predictions'],
+    ];
+  },
 
-  'task:deleted': ({ taskId }) => [
-    queryKeys.tasks.lists(),
-    queryKeys.tasks.detail(taskId),
-    queryKeys.scheduling.all,
-    ['analytics'],
-  ],
+  'task:deleted': (payload: unknown) => {
+    const { taskId } = payload as { taskId: string };
+    return [
+      queryKeys.tasks.lists(),
+      queryKeys.tasks.detail(taskId),
+      queryKeys.scheduling.all,
+      ['analytics'],
+    ];
+  },
 
-  'task:completed': ({ taskId }) => [
-    queryKeys.tasks.lists(),
-    queryKeys.tasks.detail(taskId),
-    queryKeys.scheduling.all,
-    ['analytics'],
-    queryKeys.gamification.all,
-    ['predictions'],
-  ],
+  'task:completed': (payload: unknown) => {
+    const { taskId } = payload as { taskId: string };
+    return [
+      queryKeys.tasks.lists(),
+      queryKeys.tasks.detail(taskId),
+      queryKeys.scheduling.all,
+      ['analytics'],
+      queryKeys.gamification.all,
+      ['predictions'],
+    ];
+  },
 
-  'task:restored': ({ taskId }) => [
-    queryKeys.tasks.lists(),
-    queryKeys.tasks.detail(taskId),
-  ],
+  'task:restored': (payload: unknown) => {
+    const { taskId } = payload as { taskId: string };
+    return [
+      queryKeys.tasks.lists(),
+      queryKeys.tasks.detail(taskId),
+    ];
+  },
 
-  'task:scheduled': ({ taskId, date }) => [
-    queryKeys.tasks.lists(),
-    queryKeys.tasks.detail(taskId),
-    queryKeys.scheduling.all,
-    schedulingKeys.daySchedule(date),
-    schedulingKeys.freeSlots(date),
-  ],
+  'task:scheduled': (payload: unknown) => {
+    const { taskId, date } = payload as { taskId: string; date: string };
+    return [
+      queryKeys.tasks.lists(),
+      queryKeys.tasks.detail(taskId),
+      queryKeys.scheduling.all,
+      schedulingKeys.daySchedule(date),
+      schedulingKeys.freeSlots(date),
+    ];
+  },
 
   // ===== HABIT EVENTS =====
   'habit:created': () => [
@@ -83,30 +97,42 @@ const eventToQueryKeys: Record<string, QueryKeyMapper> = {
     ['analytics'],
   ],
 
-  'habit:updated': ({ habitId }) => [
-    queryKeys.habits.lists(),
-    queryKeys.habits.detail(habitId),
-    ['analytics'],
-  ],
+  'habit:updated': (payload: unknown) => {
+    const { habitId } = payload as { habitId: string };
+    return [
+      queryKeys.habits.lists(),
+      queryKeys.habits.detail(habitId),
+      ['analytics'],
+    ];
+  },
 
-  'habit:deleted': ({ habitId }) => [
-    queryKeys.habits.lists(),
-    queryKeys.habits.detail(habitId),
-    ['analytics'],
-  ],
+  'habit:deleted': (payload: unknown) => {
+    const { habitId } = payload as { habitId: string };
+    return [
+      queryKeys.habits.lists(),
+      queryKeys.habits.detail(habitId),
+      ['analytics'],
+    ];
+  },
 
-  'habit:entry-logged': ({ habitId }) => [
-    queryKeys.habits.lists(),
-    queryKeys.habits.detail(habitId),
-    ['analytics'],
-    queryKeys.gamification.all,
-  ],
+  'habit:entry-logged': (payload: unknown) => {
+    const { habitId } = payload as { habitId: string };
+    return [
+      queryKeys.habits.lists(),
+      queryKeys.habits.detail(habitId),
+      ['analytics'],
+      queryKeys.gamification.all,
+    ];
+  },
 
-  'habit:streak-changed': ({ habitId }) => [
-    queryKeys.habits.detail(habitId),
-    queryKeys.gamification.streaks(),
-    ['predictions'],
-  ],
+  'habit:streak-changed': (payload: unknown) => {
+    const { habitId } = payload as { habitId: string };
+    return [
+      queryKeys.habits.detail(habitId),
+      queryKeys.gamification.streaks(),
+      ['predictions'],
+    ];
+  },
 
   // ===== CALENDAR EVENTS =====
   'calendar:created': () => [
@@ -114,50 +140,71 @@ const eventToQueryKeys: Record<string, QueryKeyMapper> = {
     queryKeys.scheduling.all,
   ],
 
-  'calendar:updated': ({ eventId }) => [
-    queryKeys.calendar.lists(),
-    queryKeys.calendar.detail(eventId),
-    queryKeys.scheduling.all,
-  ],
+  'calendar:updated': (payload: unknown) => {
+    const { eventId } = payload as { eventId: string };
+    return [
+      queryKeys.calendar.lists(),
+      queryKeys.calendar.detail(eventId),
+      queryKeys.scheduling.all,
+    ];
+  },
 
-  'calendar:deleted': ({ eventId }) => [
-    queryKeys.calendar.lists(),
-    queryKeys.calendar.detail(eventId),
-    queryKeys.scheduling.all,
-  ],
+  'calendar:deleted': (payload: unknown) => {
+    const { eventId } = payload as { eventId: string };
+    return [
+      queryKeys.calendar.lists(),
+      queryKeys.calendar.detail(eventId),
+      queryKeys.scheduling.all,
+    ];
+  },
 
   // ===== SCHEDULING EVENTS =====
-  'schedule:block-created': ({ date }) => [
-    queryKeys.scheduling.blocks.all(),
-    schedulingKeys.daySchedule(date),
-    schedulingKeys.freeSlots(date),
-  ],
+  'schedule:block-created': (payload: unknown) => {
+    const { date } = payload as { date: string };
+    return [
+      queryKeys.scheduling.blocks.all(),
+      schedulingKeys.daySchedule(date),
+      schedulingKeys.freeSlots(date),
+    ];
+  },
 
-  'schedule:block-updated': ({ date }) => [
-    queryKeys.scheduling.blocks.all(),
-    schedulingKeys.daySchedule(date),
-    schedulingKeys.freeSlots(date),
-  ],
+  'schedule:block-updated': (payload: unknown) => {
+    const { date } = payload as { date: string };
+    return [
+      queryKeys.scheduling.blocks.all(),
+      schedulingKeys.daySchedule(date),
+      schedulingKeys.freeSlots(date),
+    ];
+  },
 
-  'schedule:block-deleted': ({ date }) => [
-    queryKeys.scheduling.blocks.all(),
-    schedulingKeys.daySchedule(date),
-    schedulingKeys.freeSlots(date),
-  ],
+  'schedule:block-deleted': (payload: unknown) => {
+    const { date } = payload as { date: string };
+    return [
+      queryKeys.scheduling.blocks.all(),
+      schedulingKeys.daySchedule(date),
+      schedulingKeys.freeSlots(date),
+    ];
+  },
 
-  'schedule:auto-scheduled': ({ date, taskIds }: ScheduleEventPayload) => [
-    queryKeys.tasks.lists(),
-    ...(taskIds?.map((id: string) => queryKeys.tasks.detail(id)) ?? []),
-    schedulingKeys.daySchedule(date),
-    schedulingKeys.freeSlots(date),
-    queryKeys.scheduling.all,
-  ],
+  'schedule:auto-scheduled': (payload: unknown) => {
+    const { date, taskIds } = payload as { date: string; taskIds?: string[] };
+    return [
+      queryKeys.tasks.lists(),
+      ...(taskIds?.map((id: string) => queryKeys.tasks.detail(id)) ?? []),
+      schedulingKeys.daySchedule(date),
+      schedulingKeys.freeSlots(date),
+      queryKeys.scheduling.all,
+    ];
+  },
 
-  'schedule:day-changed': ({ date }) => [
-    schedulingKeys.daySchedule(date),
-    schedulingKeys.freeSlots(date),
-    queryKeys.scheduling.all,
-  ],
+  'schedule:day-changed': (payload: unknown) => {
+    const { date } = payload as { date: string };
+    return [
+      schedulingKeys.daySchedule(date),
+      schedulingKeys.freeSlots(date),
+      queryKeys.scheduling.all,
+    ];
+  },
 
   // ===== GOAL EVENTS =====
   'goal:created': () => [
@@ -165,31 +212,43 @@ const eventToQueryKeys: Record<string, QueryKeyMapper> = {
     queryKeys.lifeGoals.lists(),
   ],
 
-  'goal:updated': ({ goalId }) => [
-    queryKeys.goals.lists(),
-    queryKeys.goals.detail(goalId),
-    queryKeys.lifeGoals.lists(),
-    queryKeys.lifeGoals.detail(goalId),
-  ],
+  'goal:updated': (payload: unknown) => {
+    const { goalId } = payload as { goalId: string };
+    return [
+      queryKeys.goals.lists(),
+      queryKeys.goals.detail(goalId),
+      queryKeys.lifeGoals.lists(),
+      queryKeys.lifeGoals.detail(goalId),
+    ];
+  },
 
-  'goal:deleted': ({ goalId }) => [
-    queryKeys.goals.lists(),
-    queryKeys.goals.detail(goalId),
-    queryKeys.lifeGoals.lists(),
-    queryKeys.lifeGoals.detail(goalId),
-  ],
+  'goal:deleted': (payload: unknown) => {
+    const { goalId } = payload as { goalId: string };
+    return [
+      queryKeys.goals.lists(),
+      queryKeys.goals.detail(goalId),
+      queryKeys.lifeGoals.lists(),
+      queryKeys.lifeGoals.detail(goalId),
+    ];
+  },
 
-  'goal:milestone-completed': ({ goalId }) => [
-    queryKeys.goals.detail(goalId),
-    queryKeys.lifeGoals.detail(goalId),
-    queryKeys.gamification.all,
-  ],
+  'goal:milestone-completed': (payload: unknown) => {
+    const { goalId } = payload as { goalId: string };
+    return [
+      queryKeys.goals.detail(goalId),
+      queryKeys.lifeGoals.detail(goalId),
+      queryKeys.gamification.all,
+    ];
+  },
 
-  'goal:progress-updated': ({ goalId }) => [
-    queryKeys.goals.detail(goalId),
-    queryKeys.lifeGoals.detail(goalId),
-    ['analytics'],
-  ],
+  'goal:progress-updated': (payload: unknown) => {
+    const { goalId } = payload as { goalId: string };
+    return [
+      queryKeys.goals.detail(goalId),
+      queryKeys.lifeGoals.detail(goalId),
+      ['analytics'],
+    ];
+  },
 
   // ===== FINANCE EVENTS =====
   'finance:transaction-created': () => [
@@ -213,7 +272,8 @@ const eventToQueryKeys: Record<string, QueryKeyMapper> = {
   ],
 
   // ===== BATCH/GENERIC EVENTS =====
-  'data:batch-update': ({ domains }: BatchUpdatePayload) => {
+  'data:batch-update': (payload: unknown) => {
+    const { domains } = payload as { domains: string[] };
     const keys: Array<readonly unknown[]> = [];
     if (domains.includes('tasks')) {
       keys.push(queryKeys.tasks.all);

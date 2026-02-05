@@ -198,15 +198,14 @@ export function useVoiceToText(): UseVoiceToTextResult {
     debugLog('Starting recognition, shouldRestart set to true');
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const SpeechRecognitionClass = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SpeechRecognitionClass) {
         setError('Voice recognition is not available');
         return;
       }
 
-      const recognition = new SpeechRecognitionClass() as RecognitionInstance;
-      recognitionRef.current = recognition;
+      const recognition = new SpeechRecognitionClass();
+      recognitionRef.current = recognition as unknown as RecognitionInstance;
       debugLog('Recognition instance created');
 
       recognition.continuous = true;

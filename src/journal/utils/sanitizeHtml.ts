@@ -9,14 +9,18 @@
  * npm install @types/dompurify --save-dev
  */
 
+// Minimal DOMPurify interface for dynamic loading
+interface DOMPurifyInstance {
+  sanitize: (html: string, config?: { ALLOWED_TAGS?: string[]; ALLOWED_ATTR?: string[]; ALLOW_DATA_ATTR?: boolean }) => string;
+}
+
 // DOMPurify instance - dynamically loaded if available
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let DOMPurify: any = null;
+let DOMPurify: DOMPurifyInstance | null = null;
 
 // Attempt to load DOMPurify dynamically
 try {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  DOMPurify = require('dompurify');
+  DOMPurify = require('dompurify') as DOMPurifyInstance;
 } catch {
   // DOMPurify not installed, will use fallback
 }

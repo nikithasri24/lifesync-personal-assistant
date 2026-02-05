@@ -4,14 +4,15 @@
 
 import { useState } from 'react';
 import { format } from 'date-fns';
+import type { UseMutationResult } from '@tanstack/react-query';
 import type { Task } from '../../lib/supabase';
 import type { CalendarEvent } from '../../services/types';
 import type { UndoRedoContextType } from '../../contexts/UndoRedoContext';
 import { MoveTaskCommand, ChangeTaskCategoryCommand } from '../../commands/TaskCommands';
 
 interface UseCalendarDragDropProps {
-  updateTaskMutation: any;
-  updateEventMutation: any;
+  updateTaskMutation: UseMutationResult<Task, Error, { id: string; updates: Partial<Task> }>;
+  updateEventMutation: UseMutationResult<CalendarEvent, Error, { id: string; updates: Partial<CalendarEvent> }>;
   executeCommand: UndoRedoContextType['executeCommand'];
 }
 

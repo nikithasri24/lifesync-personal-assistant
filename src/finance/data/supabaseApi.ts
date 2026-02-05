@@ -111,7 +111,7 @@ export class SupabaseApi implements FinanceAPI {
 
   async updateAccount(accountId: string, updates: Partial<Account>): Promise<void> {
     const userId = await this.getUserId();
-    const dbUpdates: any = {};
+    const dbUpdates: Record<string, unknown> = {};
 
     if (updates.name !== undefined) dbUpdates.name = updates.name;
     if (updates.balance !== undefined) dbUpdates.balance = updates.balance;
