@@ -10,7 +10,7 @@ import type { PantryItem } from '../../../types';
 import type { ShoppingItem } from '../../types';
 import { usePantryActions } from '../../hooks/usePantryActions';
 import { exportPantryToCsv, downloadCsv } from '../../utils/pantryUtils';
-import { CompactOwnerBadge } from '../common/OwnerBadge';
+import { CompactOwnerBadge } from '../../components/common/OwnerBadge';
 
 interface PantryViewProps {
   pantryItems: (PantryItem & {

@@ -2,7 +2,7 @@ import React from 'react';
 import { MapPin } from 'lucide-react';
 import type { ShoppingList, Store } from '../../types';
 import { CATEGORY_ICONS, STORE_TYPES } from '../../constants';
-import { CompactOwnerBadge } from '../common/OwnerBadge';
+import { CompactOwnerBadge } from '../../components/common/OwnerBadge';
 
 interface StoreListCardProps {
   list: ShoppingList;

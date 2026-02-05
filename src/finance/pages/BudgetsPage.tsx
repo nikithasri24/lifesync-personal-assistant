@@ -16,7 +16,7 @@ import {
 } from '@/hooks/useFinanceQuery';
 import { currentMonth, monthRange } from '../utils/date';
 import { formatCurrency } from '../utils/currency';
-import { OwnerBadge } from '../components/OwnerBadge';
+import { OwnerBadge } from '../../components/common/OwnerBadge';
 import { OwnerFilter } from '../components/OwnerFilter';
 import useFinanceFilters from '../store/useFinanceFilters';
 import type { Budget, Category, Transaction } from '../types';

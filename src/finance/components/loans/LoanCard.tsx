@@ -8,7 +8,7 @@ import { Calendar, DollarSign, Edit2, TrendingDown, Clock } from 'lucide-react';
 import type { Loan } from '../../types';
 import { formatCurrency } from '../../utils/currency';
 import { calculateInterestPaidToDate, calculatePrincipalPaidToDate } from '../../utils/loanCalculations';
-import { OwnerBadge } from '../OwnerBadge';
+import { OwnerBadge } from '../../components/common/OwnerBadge';
 
 interface LoanCardProps {
   loan: Loan;

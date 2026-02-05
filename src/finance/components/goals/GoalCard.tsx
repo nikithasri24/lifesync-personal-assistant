@@ -14,7 +14,7 @@ import {
 } from '../../utils/goalCalculations';
 import { GoalRing } from '../GoalRing';
 import GoalProgressChart from '../GoalProgressChart';
-import { OwnerBadge } from '../OwnerBadge';
+import { OwnerBadge } from '../../components/common/OwnerBadge';
 
 interface GoalCardProps {
   goal: Goal;

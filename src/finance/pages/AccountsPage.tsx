@@ -9,7 +9,7 @@ import { formatCurrency } from '../utils/currency';
 import type { Account, AccountType } from '../types';
 import { logger } from '../../services/logger';
 import { useAuth } from '@/hooks/useAuth';
-import { OwnerBadge } from '../components/OwnerBadge';
+import { OwnerBadge } from '../../components/common/OwnerBadge';
 import { OwnerFilter } from '../components/OwnerFilter';
 import useFinanceFilters from '../store/useFinanceFilters';
 

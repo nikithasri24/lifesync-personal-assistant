@@ -9,7 +9,7 @@ import type { Transaction, Category } from '../../types';
 import { formatCurrency } from '../../utils/currency';
 import { logger } from '../../../services/logger';
 import { useUpsertTransactionMutation, useDeleteTransactionMutation } from '@/hooks/useFinanceQuery';
-import { OwnerBadge } from '../OwnerBadge';
+import { OwnerBadge } from '../../components/common/OwnerBadge';
 
 interface EditableTransactionRowProps {
   transaction: Transaction;

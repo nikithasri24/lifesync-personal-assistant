@@ -16,7 +16,7 @@ import { logger } from '@/services/logger';
 import type { Transaction, Account } from '../types';
 import { Pencil, Plus } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { OwnerBadge } from '../components/OwnerBadge';
+import { OwnerBadge } from '../../components/common/OwnerBadge';
 import { SplitMetricCard } from '../components/SplitMetricCard';
 import { OwnerFilter } from '../components/OwnerFilter';
 import useFinanceFilters from '../store/useFinanceFilters';

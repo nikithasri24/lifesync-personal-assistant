@@ -12,7 +12,7 @@ import { CreditCardDetailsModal } from '../components/creditCards/CreditCardDeta
 import { WelcomeBonusTracker } from '../components/creditCards/WelcomeBonusTracker';
 import { UtilizationDashboard } from '../components/creditCards/UtilizationDashboard';
 import { useAuth } from '@/hooks/useAuth';
-import { OwnerBadge } from '../components/OwnerBadge';
+import { OwnerBadge } from '../../components/common/OwnerBadge';
 
 type TabType = 'cards' | 'bonuses' | 'utilization';
 

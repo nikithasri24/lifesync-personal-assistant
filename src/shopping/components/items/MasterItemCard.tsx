@@ -2,7 +2,7 @@ import React from 'react';
 import { Check, DollarSign, Scan, Heart, Store as StoreIcon, AlertCircle, Navigation, Edit3, Trash2 } from 'lucide-react';
 import type { ShoppingItem, Store } from '../../types';
 import { CATEGORY_ICONS } from '../../constants';
-import { CompactOwnerBadge } from '../common/OwnerBadge';
+import { CompactOwnerBadge } from '../../components/common/OwnerBadge';
 
 interface MasterItemCardProps {
   item: ShoppingItem & {

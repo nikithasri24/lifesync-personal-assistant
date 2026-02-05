@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import type { InsurancePolicy } from '../../types';
 import { formatCurrency } from '../../utils/currency';
-import { OwnerBadge } from '../OwnerBadge';
+import { OwnerBadge } from '../../components/common/OwnerBadge';
 
 interface InsuranceCardProps {
   policy: InsurancePolicy;

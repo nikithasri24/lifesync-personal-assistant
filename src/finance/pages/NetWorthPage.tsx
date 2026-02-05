@@ -11,7 +11,7 @@ import { formatCurrency } from '../utils/currency';
 import { useNetWorthQuery, useAccountsQuery, useLoansQuery, useFinanceMergedConnectionQuery } from '@/hooks/useFinanceQuery';
 import type { Account } from '../types';
 import { useAuth } from '@/hooks/useAuth';
-import { OwnerBadge } from '../components/OwnerBadge';
+import { OwnerBadge } from '../../components/common/OwnerBadge';
 
 const NetWorthPage: React.FC = () => {
   // Auth and merged connection

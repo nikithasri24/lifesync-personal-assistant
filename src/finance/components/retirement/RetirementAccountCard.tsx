@@ -6,7 +6,7 @@
 import React from 'react';
 import { PiggyBank, TrendingUp, Lock, Unlock, DollarSign, Edit, Trash2 } from 'lucide-react';
 import type { RetirementAccountWithStats } from '../../types';
-import { OwnerBadge } from '../OwnerBadge';
+import { OwnerBadge } from '../../components/common/OwnerBadge';
 
 interface RetirementAccountCardProps {
   retirement: RetirementAccountWithStats;
