@@ -3,6 +3,7 @@
  * Uses @capacitor/geolocation plugin
  */
 
+import { logger } from '@/services/logger';
 import { LocationProvider, type LocationWatchOptions } from './LocationProvider';
 import type { Coordinates, SavedLocation } from './types';
 
@@ -79,7 +80,7 @@ export class NativeLocationProvider extends LocationProvider {
       };
     } catch (error) {
       // Log error for debugging but don't throw
-      console.warn('[NativeLocationProvider] Could not get location:', error);
+      logger.warn('Location', 'Could not get location:', { error });
       return null;
     }
   }

@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { logger } from '@/services/logger';
 import { Search, X, Loader2, Star, Plus, ChevronRight } from 'lucide-react';
 import { openFoodFactsService, type NutritionInfo } from '@/services/nutrition/OpenFoodFactsService';
 import { useFoodSearchQuery } from '@/hooks/useNutritionQuery';
@@ -47,7 +48,7 @@ export function FoodSearch({ onSelectFood, onClose }: FoodSearchProps): React.Re
       const recent = [searchQuery, ...recentSearches.filter(s => s !== searchQuery)].slice(0, 5);
       localStorage.setItem('recentFoodSearches', JSON.stringify(recent));
     } catch (err) {
-      console.error('Food search failed:', err);
+      logger.error('Nutrition', 'Food search failed:', err);
       setResults([]);
     } finally {
       setIsLoading(false);

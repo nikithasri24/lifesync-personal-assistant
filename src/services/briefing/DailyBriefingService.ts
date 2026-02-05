@@ -49,7 +49,7 @@ async function getCurrentLocation(): Promise<{ lat: number; lng: number } | null
         // Silently handle location errors - briefing works without location
         // Only log permission errors for debugging
         if (error.code === error.PERMISSION_DENIED) {
-          console.debug('[DailyBriefing] Location permission denied');
+          logger.debug('Briefing', 'Location permission denied');
         }
         resolve(null);
       },

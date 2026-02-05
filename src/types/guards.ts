@@ -11,7 +11,7 @@
  * // Use:
  * if (isShoppingItem(data)) {
  *   // TypeScript knows data is ShoppingItem here
- *   console.log(data.name);
+ *   logger.debug('TypeGuards', `Found item: ${data.name}`);
  * }
  */
 

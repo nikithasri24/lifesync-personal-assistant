@@ -2,6 +2,7 @@
  * WebLocationProvider - Browser-based location using navigator.geolocation
  */
 
+import { logger } from '@/services/logger';
 import { LocationProvider, type LocationWatchOptions } from './LocationProvider';
 import type { Coordinates, SavedLocation } from './types';
 
@@ -55,7 +56,7 @@ export class WebLocationProvider extends LocationProvider {
         (error) => {
           // Only log non-timeout errors to avoid console noise
           if (error.code !== error.TIMEOUT && error.code !== error.POSITION_UNAVAILABLE) {
-            console.warn('[WebLocationProvider] Location error:', error.message);
+            logger.warn('Location', 'Location error:', { message: error.message });
           }
           resolve(null);
         },

@@ -4,6 +4,8 @@
  * https://world.openfoodfacts.org/
  */
 
+import { logger } from '@/services/logger';
+
 export interface OpenFoodFactsProduct {
   code: string;
   product_name: string;
@@ -60,7 +62,7 @@ class OpenFoodFactsService {
 
       return this.transformProduct(data.product, barcode);
     } catch (error) {
-      console.error('OpenFoodFacts barcode lookup failed:', error);
+      logger.error('Nutrition', 'OpenFoodFacts barcode lookup failed:', error);
       return null;
     }
   }
@@ -92,7 +94,7 @@ class OpenFoodFactsService {
         totalCount: data.count || 0,
       };
     } catch (error) {
-      console.error('OpenFoodFacts search failed:', error);
+      logger.error('Nutrition', 'OpenFoodFacts search failed:', error);
       return { products: [], totalCount: 0 };
     }
   }

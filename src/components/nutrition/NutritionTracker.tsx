@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react';
+import { logger } from '@/services/logger';
 import { format } from 'date-fns';
 import { Camera, Search, Plus, Utensils, ChevronLeft, ChevronRight, ScanBarcode } from 'lucide-react';
 import { FoodPhotoUpload } from './FoodPhotoUpload';
@@ -97,7 +98,7 @@ export function NutritionTracker(): React.ReactElement {
 
       setActivePanel('none');
     } catch (err) {
-      console.error('Failed to log photo meal:', err);
+      logger.error('Nutrition', 'Failed to log photo meal:', err);
     }
   };
 

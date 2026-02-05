@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
+import { logger } from '@/services/logger';
 import { X, Camera, Loader2, Search, AlertCircle } from 'lucide-react';
 import { openFoodFactsService, type NutritionInfo } from '@/services/nutrition/OpenFoodFactsService';
 
@@ -41,7 +42,7 @@ export function BarcodeScanner({ onProductFound, onCancel }: BarcodeScannerProps
         setIsScanning(true);
       }
     } catch (err) {
-      console.error('Camera access denied:', err);
+      logger.error('Nutrition', 'Camera access denied:', err);
       setCameraError('Camera access denied. Please enter barcode manually.');
     }
   };

@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react';
+import { logger } from '@/services/logger';
 import { Utensils, Check, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useLogFoodMutation } from '@/hooks/useNutritionQuery';
@@ -55,7 +56,7 @@ export function LogMealButton({ meal, recipe, className = '', compact = false }:
       setLogged(true);
       setTimeout(() => setLogged(false), 2000);
     } catch (err) {
-      console.error('Failed to log meal:', err);
+      logger.error('Nutrition', 'Failed to log meal:', err);
     }
   };
 

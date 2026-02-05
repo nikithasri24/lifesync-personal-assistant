@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useCallback, useMemo } from 'react';
+import { logger } from '@/services/logger';
 import { format, parseISO, isToday, isBefore, startOfDay, addMinutes } from 'date-fns';
 import { useDailyBriefing } from '@/hooks/useBriefingQuery';
 import { getWeatherEmoji } from '@/services/briefing';
@@ -279,13 +280,13 @@ export function MorningBriefing({ className = '', onCompleteTask, onCompleteHabi
             15 // 15 minutes before
           );
         } catch (reminderErr) {
-          console.warn('Failed to schedule reminder:', reminderErr);
+          logger.warn('Briefing', 'Failed to schedule reminder:', { error: reminderErr });
           // Don't fail the whole operation if reminder fails
         }
 
         scheduled++;
       } catch (err) {
-        console.error('Failed to schedule task:', selection.taskId, err);
+        logger.error('Briefing', 'Failed to schedule task:', { taskId: selection.taskId, error: err });
         failed++;
       }
     }

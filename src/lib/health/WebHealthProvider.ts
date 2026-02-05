@@ -1,10 +1,11 @@
 /**
  * Web Health Provider - Manual entry fallback for web browsers
- * 
+ *
  * Since web browsers don't have access to health data,
  * this provider allows manual entry and stores data in localStorage
  */
 
+import { logger } from '@/services/logger';
 import {
   BaseHealthProvider,
   type HealthPermissionStatus,
@@ -40,7 +41,7 @@ function saveStoredData(data: StoredHealthData): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch {
-    console.warn('[WebHealthProvider] Failed to save health data');
+    logger.warn('Health', 'Failed to save health data');
   }
 }
 

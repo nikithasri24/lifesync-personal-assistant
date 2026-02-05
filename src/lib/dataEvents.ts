@@ -11,6 +11,7 @@
  * - Scalable: New consumers can subscribe without modifying producers
  */
 
+import { logger } from '@/services/logger';
 import type { TaskData, HabitData, HabitEntryData } from '@/services/types';
 
 // =====================================================
@@ -199,7 +200,7 @@ class TypedEventEmitter<TEventMap extends { [key: string]: unknown }> {
         try {
           callback(payload);
         } catch (error) {
-          console.error(`[DataEvents] Error in listener for ${String(event)}:`, error);
+          logger.error('DataEvents', `Error in listener for ${String(event)}:`, error);
         }
       });
     }
@@ -211,7 +212,7 @@ class TypedEventEmitter<TEventMap extends { [key: string]: unknown }> {
         try {
           callback(payload);
         } catch (error) {
-          console.error(`[DataEvents] Error in once listener for ${String(event)}:`, error);
+          logger.error('DataEvents', `Error in once listener for ${String(event)}:`, error);
         }
       });
       this.onceListeners.delete(event);

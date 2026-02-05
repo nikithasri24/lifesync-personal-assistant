@@ -2,6 +2,7 @@ import React from 'react'
 import { Headphones, Bug } from 'lucide-react'
 import VoiceAssistant from './VoiceAssistant'
 import { VoiceDebugger } from './VoiceDebugger'
+import { logger } from '@/services/logger'
 
 const VoiceLauncher: React.FC = () => {
   const [open, setOpen] = React.useState(false)
@@ -27,7 +28,7 @@ const VoiceLauncher: React.FC = () => {
       // Reset opening state after a delay
       setTimeout(() => setIsOpening(false), 300)
     } catch (error) {
-      console.error('[VoiceLauncher] Error opening modal:', error)
+      logger.error('Voice', 'Error opening modal:', error)
       setIsOpening(false)
     }
   }, [isOpening, open])

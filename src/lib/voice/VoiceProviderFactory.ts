@@ -2,6 +2,7 @@
  * Factory for creating the appropriate VoiceProvider based on platform
  */
 
+import { logger } from '@/services/logger';
 import { type VoiceProvider } from './VoiceProvider';
 import { WebVoiceProvider } from './WebVoiceProvider';
 import { NativeVoiceProvider } from './NativeVoiceProvider';
@@ -28,8 +29,8 @@ export function getVoiceProvider(): VoiceProvider {
   } else {
     cachedProvider = new WebVoiceProvider();
   }
-  
-  console.log(`[VoiceProviderFactory] Using ${cachedProvider.name}`);
+
+  logger.debug('Voice', `Using ${cachedProvider.name}`);
   return cachedProvider;
 }
 
