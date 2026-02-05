@@ -42,6 +42,7 @@ export const TaskList: React.FC<TaskListProps> = ({
         <button
           onClick={onCreateTask}
           className="inline-flex items-center space-x-2 px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg transition-colors"
+          aria-label="Add task"
         >
           <Plus size={16} />
           <span>Add Task</span>

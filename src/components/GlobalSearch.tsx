@@ -258,6 +258,7 @@ export default function GlobalSearch({ onClose }: GlobalSearchProps) {
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 ml-3"
+            aria-label="Close search"
           >
             <X size={20} />
           </button>

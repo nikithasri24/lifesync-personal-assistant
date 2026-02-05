@@ -16,6 +16,7 @@ export default function ConfirmDialog({ title, message, onConfirm, onCancel }: C
           <button
             onClick={onCancel}
             className="text-gray-400 hover:text-gray-600"
+            aria-label="Close"
           >
             <X size={20} />
           </button>

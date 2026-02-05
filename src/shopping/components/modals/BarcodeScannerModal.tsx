@@ -34,7 +34,7 @@ export function BarcodeScannerModal({
       <div className="bg-white rounded-xl p-6 w-full max-w-md">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold">Barcode Scanner</h3>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-md">
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-md" aria-label="Close">
             <X size={20} />
           </button>
         </div>

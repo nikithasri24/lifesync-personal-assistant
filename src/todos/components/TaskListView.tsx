@@ -188,6 +188,7 @@ export function TaskListView({
           <button
             onClick={onQuickAddSubmit}
             className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 dark:text-blue-400 transition-colors text-sm font-medium"
+            aria-label="Add task"
           >
             <Plus size={16} />
             <span>Add task</span>

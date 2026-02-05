@@ -16,6 +16,7 @@ export const GoalsTab: React.FC<GoalsTabProps> = ({ goals, onOpenCreateGoal }) =
         <button
           onClick={onOpenCreateGoal}
           className="flex items-center space-x-2 px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg transition-colors"
+          aria-label="Create goal"
         >
           <Plus size={16} />
           <span>Create Goal</span>

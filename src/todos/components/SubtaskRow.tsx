@@ -69,6 +69,7 @@ export function SubtaskRow({
         <button
           onClick={() => onStartEdit(subtask)}
           className="p-1 hover:bg-gray-200 dark:hover:bg-slate-700 rounded text-gray-400 hover:text-gray-600 transition-colors"
+          aria-label="Edit subtask"
         >
           <Edit size={12} />
         </button>

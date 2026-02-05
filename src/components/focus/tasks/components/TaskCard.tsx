@@ -164,6 +164,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           <button
             onClick={() => onEdit(task)}
             className="p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+            aria-label="Edit task"
           >
             <Edit size={16} />
           </button>

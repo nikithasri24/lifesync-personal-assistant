@@ -97,6 +97,7 @@ export function Sidebar({
               onQuickAddSubmit(); // This should trigger showing the form
             }}
             className="w-full flex items-center space-x-2 px-3 py-2.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-700 rounded-md transition-colors text-sm font-medium"
+            aria-label="Add task"
           >
             <Plus size={16} />
             <span>Add task</span>

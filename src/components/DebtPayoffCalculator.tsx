@@ -107,6 +107,7 @@ export default function DebtPayoffCalculator() {
           <button
             onClick={handleAddDebt}
             className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
+            aria-label="Add debt account"
           >
             <Plus size={18} className="mr-2" />
             Add Debt
@@ -131,6 +132,7 @@ export default function DebtPayoffCalculator() {
           <button
             onClick={handleAddDebt}
             className="inline-flex items-center px-6 py-3 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
+            aria-label="Add first debt account"
           >
             <Plus size={20} className="mr-2" />
             Add First Debt

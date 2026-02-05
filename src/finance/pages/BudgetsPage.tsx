@@ -192,6 +192,7 @@ const BudgetsPage: React.FC = () => {
           <button
             onClick={() => setEditingBudget({ categoryId: '', limit: 0 })}
             className="flex items-center gap-2 rounded-md bg-slate-900 px-4 py-2 text-sm text-white hover:bg-slate-800 transition-colors"
+            aria-label="Add budget"
           >
             <Plus size={16} />
             Add Budget
@@ -587,6 +588,7 @@ const BudgetsPage: React.FC = () => {
               <button
                 onClick={() => setEditingBudget({ categoryId: '', limit: 0 })}
                 className="inline-flex items-center gap-2 rounded-md bg-slate-900 px-4 py-2 text-sm text-white hover:bg-slate-800 transition-colors"
+                aria-label="Create first budget"
               >
                 <Plus size={16} />
                 Create Your First Budget

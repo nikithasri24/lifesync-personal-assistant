@@ -59,7 +59,7 @@ export function AddPantryItemModal({ isOpen, onClose, onSave }: AddPantryItemMod
       <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-lg font-semibold">Add Pantry Item</h3>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-md">
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-md" aria-label="Close">
             <X size={18} />
           </button>
         </div>

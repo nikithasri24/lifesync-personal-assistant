@@ -115,6 +115,7 @@ export const MasterItemCard = React.memo<MasterItemCardProps>(function MasterIte
             onClick={onFindStores}
             className="p-1 text-gray-400 hover:text-blue-500 transition-colors"
             title="Find nearby stores"
+            aria-label="Find nearby stores"
           >
             <Navigation size={16} />
           </button>
@@ -125,6 +126,7 @@ export const MasterItemCard = React.memo<MasterItemCardProps>(function MasterIte
                 onClick={onEdit}
                 className="p-1 text-gray-400 hover:text-blue-500 transition-colors"
                 title="Edit item"
+                aria-label="Edit item"
               >
                 <Edit3 size={16} />
               </button>
@@ -132,6 +134,7 @@ export const MasterItemCard = React.memo<MasterItemCardProps>(function MasterIte
                 onClick={onDelete}
                 className="p-1 text-gray-400 hover:text-red-500 transition-colors"
                 title="Delete item"
+                aria-label="Delete item"
               >
                 <Trash2 size={16} />
               </button>

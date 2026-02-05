@@ -54,6 +54,7 @@ export function ShoppingHeader({
           <button
             onClick={onAddItem}
             className="btn-primary flex items-center space-x-2"
+            aria-label="Add shopping item"
           >
             <Plus size={16} />
             <span>Add Item</span>

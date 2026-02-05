@@ -379,6 +379,7 @@ const DashboardPage: React.FC = () => {
               setShowAccountModal(true);
             }}
             className="flex items-center gap-1 rounded-md bg-slate-900 px-3 py-1.5 text-sm text-white hover:bg-slate-800 transition-colors"
+            aria-label="Add account"
           >
             <Plus size={16} />
             Add Account
@@ -418,6 +419,7 @@ const DashboardPage: React.FC = () => {
                     }}
                     className="opacity-0 group-hover:opacity-100 p-1 hover:bg-slate-200 rounded transition-opacity"
                     title="Edit account"
+                    aria-label="Edit account"
                   >
                     <Pencil size={14} className="text-slate-600" />
                   </button>

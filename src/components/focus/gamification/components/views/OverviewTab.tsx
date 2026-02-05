@@ -45,6 +45,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
           <button
             onClick={onOpenCreateGoal}
             className="flex items-center space-x-1 text-indigo-600 hover:text-indigo-700 dark:text-indigo-400"
+            aria-label="Add goal"
           >
             <Plus size={16} />
             <span className="text-sm">Add Goal</span>

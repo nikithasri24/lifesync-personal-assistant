@@ -103,7 +103,7 @@ export function PantryActionButtons({
       </select>
 
       {/* Add Actions */}
-      <button onClick={onAddItem} className="btn-primary flex items-center space-x-2">
+      <button onClick={onAddItem} className="btn-primary flex items-center space-x-2" aria-label="Add pantry item">
         <Plus size={16} />
         <span>Add Pantry Item</span>
       </button>

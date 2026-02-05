@@ -37,6 +37,7 @@ export function EditItemModal({
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-md"
+            aria-label="Close"
           >
             <X size={20} />
           </button>

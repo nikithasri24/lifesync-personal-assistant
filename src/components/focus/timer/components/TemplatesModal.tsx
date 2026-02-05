@@ -26,6 +26,7 @@ export const TemplatesModal: React.FC<TemplatesModalProps> = ({
             <button
               onClick={onShowCreate}
               className="flex items-center space-x-2 px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg transition-colors"
+              aria-label="Create template"
             >
               <Plus size={16} />
               <span>Create</span>
@@ -59,6 +60,7 @@ export const TemplatesModal: React.FC<TemplatesModalProps> = ({
                   <button
                     onClick={() => onDeleteTemplate(template.id)}
                     className="text-red-500 hover:text-red-700 dark:text-red-400"
+                    aria-label="Delete template"
                   >
                     <Trash2 size={16} />
                   </button>

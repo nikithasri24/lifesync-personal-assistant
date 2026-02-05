@@ -63,6 +63,7 @@ export const CreateTemplateModal: React.FC<CreateTemplateModalProps> = ({
               <button
                 onClick={onAddSession}
                 className="flex items-center space-x-1 text-indigo-600 hover:text-indigo-700 dark:text-indigo-400"
+                aria-label="Add session"
               >
                 <Plus size={16} />
                 <span className="text-sm">Add Session</span>
@@ -110,6 +111,7 @@ export const CreateTemplateModal: React.FC<CreateTemplateModalProps> = ({
                     <button
                       onClick={() => onRemoveSession(index)}
                       className="text-red-500 hover:text-red-700 dark:text-red-400"
+                      aria-label="Delete session"
                     >
                       <Trash2 size={16} />
                     </button>

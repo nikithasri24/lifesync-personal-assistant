@@ -26,6 +26,7 @@ export default function StrategyCalculatorModal({
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600"
+            aria-label="Close"
           >
             <X size={20} />
           </button>

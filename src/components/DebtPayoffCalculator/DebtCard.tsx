@@ -51,12 +51,14 @@ export default function DebtCard({
           <button
             onClick={onEdit}
             className="p-2 text-gray-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
+            aria-label="Edit debt account"
           >
             <Edit size={16} />
           </button>
           <button
             onClick={onDelete}
             className="p-2 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+            aria-label="Delete debt account"
           >
             <Trash2 size={16} />
           </button>

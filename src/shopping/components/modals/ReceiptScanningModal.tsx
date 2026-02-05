@@ -114,7 +114,7 @@ export function ReceiptScanningModal({
       <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl p-6">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-lg font-semibold">Scan Receipt</h3>
-          <button onClick={handleClose} className="p-2 hover:bg-gray-100 rounded-md">
+          <button onClick={handleClose} className="p-2 hover:bg-gray-100 rounded-md" aria-label="Close">
             <X size={18} />
           </button>
         </div>

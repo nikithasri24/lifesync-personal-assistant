@@ -199,10 +199,11 @@ export function TaskItem({
             onClick={onStartEdit}
             className="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-md text-gray-400 hover:text-gray-600 dark:text-slate-400 transition-colors"
             title="Edit"
+            aria-label="Edit task"
           >
             <Edit size={14} />
           </button>
-          <button className="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-md text-gray-400 hover:text-gray-600 dark:text-slate-400 transition-colors">
+          <button className="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-md text-gray-400 hover:text-gray-600 dark:text-slate-400 transition-colors" aria-label="More options">
             <MoreHorizontal size={14} />
           </button>
         </div>
