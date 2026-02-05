@@ -10,6 +10,7 @@ import {
   useUpdateGoalProgressMutation,
 } from '@/hooks/useLifeGoalsQuery';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useToast } from '@/hooks/useToast';
 
 const EmptyState: React.FC<{ label: string; icon?: React.ReactNode }> = ({ label, icon }) => (
   <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-slate-300 bg-white p-12 text-center text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
@@ -73,6 +74,7 @@ export function GoalList({
     partnerId
   );
   const updateProgressMutation = useUpdateGoalProgressMutation();
+  const { showToast } = useToast();
 
   // Build progress lookup maps
   const personalProgressMap = useMemo(() => {
@@ -271,10 +273,18 @@ export function GoalList({
                       updateProgressMutation.mutate({
                         goalId: goal.id,
                         personalProgress: newProgress,
+                      }, {
+                        onSuccess: () => {
+                          showToast(`Progress updated to ${newProgress}%! Keep up the great work! 🎉`, 'success');
+                        },
+                        onError: (error) => {
+                          showToast(`Failed to update progress: ${error.message}`, 'error');
+                        },
                       });
                     }}
                     disabled={updateProgressMutation.isPending}
                     className="inline-flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-700 font-medium disabled:opacity-50"
+                    aria-label="Increase personal progress by 10%"
                   >
                     <Edit3 className="h-3 w-3" />
                     {updateProgressMutation.isPending ? 'Updating...' : 'Update my progress (+10%)'}

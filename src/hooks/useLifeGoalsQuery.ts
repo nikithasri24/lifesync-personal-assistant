@@ -659,8 +659,9 @@ export function useUpdateGoalProgressMutation(): UseMutationResult<
     },
     onSuccess: (tracking) => {
       logger.info('Goals', 'Personal progress updated', { goalId: tracking.goalId, progress: tracking.personalProgress });
-      // Invalidate all progress tracking queries
+      // Invalidate all progress tracking queries and goals (to refresh overall progress)
       void queryClient.invalidateQueries({ queryKey: [...lifeGoalsKeys.all, 'progressTracking'] });
+      void queryClient.invalidateQueries({ queryKey: lifeGoalsKeys.goals() });
     },
     onError: (error: Error, { goalId }) => {
       logger.error('Goals', 'Failed to update personal progress', { error: error.message, goalId });

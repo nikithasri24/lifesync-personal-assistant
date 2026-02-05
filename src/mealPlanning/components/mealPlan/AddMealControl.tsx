@@ -165,10 +165,11 @@ export function AddMealControl({
             handleSubmit();
           }}
           disabled={!effectiveValue.trim()}
-          className="flex items-center justify-center p-1.5 text-white bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed rounded-md transition-colors"
+          className="flex items-center justify-center min-w-[44px] min-h-[44px] p-2 text-white bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed rounded-md transition-colors"
           title="Add meal (Enter)"
+          aria-label="Add meal"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-5 h-5" />
         </button>
         <button
           type="button"
@@ -179,10 +180,11 @@ export function AddMealControl({
             }
             handleCancel();
           }}
-          className="flex items-center justify-center p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors"
+          className="flex items-center justify-center min-w-[44px] min-h-[44px] p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors"
           title="Cancel (Esc)"
+          aria-label="Cancel adding meal"
         >
-          <X className="w-4 h-4" />
+          <X className="w-5 h-5" />
         </button>
       </div>
     );
@@ -203,10 +205,11 @@ export function AddMealControl({
           }
         }
       }}
-      className="group/add-btn w-full text-left py-1.5 px-2 transition-all duration-200 hover:bg-slate-100 rounded"
+      className="group/add-btn w-full text-left min-h-[44px] py-2 px-3 transition-all duration-200 hover:bg-slate-100 rounded"
+      aria-label="Add meal to this slot"
     >
       <div className="flex items-center gap-2">
-        <Plus className="w-3.5 h-3.5 text-slate-400 group-hover/add-btn:text-slate-600 transition-colors" />
+        <Plus className="w-4 h-4 text-slate-400 group-hover/add-btn:text-slate-600 transition-colors" />
         <span className="text-sm text-slate-500 group-hover/add-btn:text-slate-700 transition-colors">
           Add meal
         </span>

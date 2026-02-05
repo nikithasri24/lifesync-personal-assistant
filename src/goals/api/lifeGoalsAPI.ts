@@ -860,7 +860,54 @@ export async function updateGoalProgressTracking(
     .single();
 
   if (error) throw error;
+
+  // Update overall goal progress for shared goals with combined tracking
+  await recalculateGoalProgress(goalId);
+
   return data as GoalProgressTrackingRow;
+}
+
+/**
+ * Recalculate and update overall goal progress based on personal progress tracking
+ * For shared goals with "combined" tracking mode, averages both users' personal progress
+ */
+async function recalculateGoalProgress(goalId: string): Promise<void> {
+  // Fetch the goal to check if it's shared and has combined tracking
+  const { data: goalData, error: goalError } = await supabase
+    .from('life_goals')
+    .select('is_shared, tracking_mode, connection_id')
+    .eq('id', goalId)
+    .single();
+
+  if (goalError || !goalData) return; // Silently fail if goal not found
+
+  // Only recalculate for shared goals with combined tracking
+  if (!goalData.is_shared || goalData.tracking_mode !== 'combined') {
+    return;
+  }
+
+  // Fetch all personal progress for this goal
+  const { data: progressData, error: progressError } = await supabase
+    .from('goal_progress_tracking')
+    .select('personal_progress')
+    .eq('goal_id', goalId);
+
+  if (progressError || !progressData || progressData.length === 0) return;
+
+  // Calculate average progress
+  const totalProgress = progressData.reduce((sum, p) => sum + (p.personal_progress || 0), 0);
+  const averageProgress = Math.round(totalProgress / progressData.length);
+
+  // Update the overall goal progress
+  const { error: updateError } = await supabase
+    .from('life_goals')
+    .update({ progress: averageProgress })
+    .eq('id', goalId);
+
+  if (updateError) {
+    // Log error but don't throw - this is a background calculation
+    console.error('Failed to update goal progress:', updateError);
+  }
 }
 
 /**

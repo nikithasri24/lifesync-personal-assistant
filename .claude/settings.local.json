@@ -77,7 +77,18 @@
       "Bash(git merge:*)",
       "Bash(./scripts/quality-report.sh:*)",
       "Bash(./scripts/find-issues.sh:*)",
-      "Bash(git diff:*)"
+      "Bash(git diff:*)",
+      "Bash(__NEW_LINE_217a876b61cb6140__ echo \"2. Meal Planning Module Modals:\")",
+      "Bash(__NEW_LINE_3fd9f23d98ba8cdb__ echo \"3. Focus Module Modals:\")",
+      "Bash(__NEW_LINE_a465ea1c7752818b__ echo \"5. Commit Information:\")",
+      "Bash(while read file)",
+      "Bash(do if grep -l \"console\\\\.\\\\\\(log\\\\|error\\\\|warn\\\\|info\\\\|debug\\\\\\)\" \"$file\")",
+      "Bash(then echo \"=== $file ===\" grep -n \"console\\\\.\\\\\\(log\\\\|error\\\\|warn\\\\|info\\\\|debug\\\\\\)\" \"$file\" fi done)",
+      "Bash(tree:*)",
+      "Bash(supabase db execute:*)",
+      "Bash(supabase status:*)",
+      "Bash(supabase projects:*)",
+      "Bash(supabase --help:*)"
     ],
     "deny": [],
     "ask": []

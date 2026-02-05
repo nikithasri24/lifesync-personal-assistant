@@ -150,6 +150,16 @@ const MealPlanning: React.FC = () => {
   const handleDeleteRecipe = useCallback((recipeId: string) => {
     const recipeToDelete = recipes.find(r => r.id === recipeId);
     if (!recipeToDelete) return;
+
+    // Confirm before deletion to prevent accidental data loss
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${recipeToDelete.name}"? This action can be undone using Ctrl+Z.`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
     const command = new DeleteRecipeCommand(recipeToDelete);
     void executeCommand(command);
   }, [recipes, executeCommand]);

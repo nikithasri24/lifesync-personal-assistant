@@ -160,7 +160,16 @@ export const MealItem: React.FC<MealItemProps> = ({ meal, recipes, isMerged = fa
   };
 
   const handleDelete = async () => {
-    // Use command pattern for undo support - no confirmation needed since we can undo
+    // Confirm before deletion to prevent accidental data loss
+    const confirmed = window.confirm(
+      `Are you sure you want to remove "${mealName}" from your meal plan?`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    // Use command pattern for undo support
     try {
       const command = new DeletePlannedMealCommand(meal, meal.mealPlanId);
       await executeCommand(command);
