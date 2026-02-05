@@ -3,7 +3,7 @@
  * Modal for creating a new task
  */
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import type { ChangeEvent } from 'react';
 import { format } from 'date-fns';
 import type { TaskView, ProjectView } from '../../types';
@@ -32,6 +32,20 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
   const handleSubmit = useCallback((): void => {
     onSubmit();
   }, [onSubmit]);
+
+  // Keyboard navigation for Escape key
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [isOpen, onClose]);
 
   const handlePriorityChange = useCallback((e: ChangeEvent<HTMLSelectElement>): void => {
     const priority = e.target.value as TaskPriority;

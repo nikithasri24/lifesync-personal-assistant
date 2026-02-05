@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { X, MapPin, Navigation, Store, DollarSign, Star } from 'lucide-react';
 import { CATEGORY_ICONS, STORE_TYPES } from '../../constants';
 import type { ShoppingItem, Store as StoreType } from '../../types';
@@ -23,6 +23,20 @@ export function StoreSuggestionsModal({
   onGetLocation,
   onAssignStore
 }: StoreSuggestionsModalProps): React.ReactNode {
+  // Keyboard navigation for Escape key
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [isOpen, onClose]);
+
   if (!isOpen || !item) return null;
 
   return (

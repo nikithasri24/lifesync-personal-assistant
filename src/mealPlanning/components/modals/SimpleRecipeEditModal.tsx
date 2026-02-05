@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Loader2, Save } from 'lucide-react';
 import { ModalShell } from './ModalShell';
 import type { Recipe, Ingredient } from '../../../types';
@@ -18,6 +18,18 @@ export function SimpleRecipeEditModal({ recipe, onSave, onClose }: SimpleRecipeE
   );
   const [instructionsText, setInstructionsText] = useState((recipe.instructions || []).join('\n'));
   const [saving, setSaving] = useState(false);
+
+  // Keyboard navigation for Escape key
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();

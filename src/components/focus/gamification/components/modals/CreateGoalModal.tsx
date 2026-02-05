@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { type Goal } from '../../types';
 
 interface CreateGoalModalProps {
@@ -16,6 +16,20 @@ export const CreateGoalModal: React.FC<CreateGoalModalProps> = ({
   onClose,
   onCreate
 }): React.ReactElement | null => {
+  // Keyboard navigation for Escape key
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   return (

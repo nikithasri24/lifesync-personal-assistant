@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import type { PantryItem } from '../../../types';
 import { validatePantryCategory } from '../../utils/typeValidators';
@@ -19,6 +19,19 @@ interface AddPantryItemModalProps {
 }
 
 export function AddPantryItemModal({ isOpen, onClose, onSave }: AddPantryItemModalProps): React.JSX.Element | null {
+  // Keyboard navigation for Escape key
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [isOpen, onClose]);
   const [pantryForm, setPantryForm] = useState({
     name: '',
     quantity: '1',

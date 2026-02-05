@@ -3,7 +3,7 @@
  * Modal for scanning product barcodes using device camera
  */
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { X, Camera } from 'lucide-react';
 
 interface BarcodeScannerModalProps {
@@ -27,6 +27,20 @@ export function BarcodeScannerModal({
   onCapture,
   onStop,
 }: BarcodeScannerModalProps) {
+  // Keyboard navigation for Escape key
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   return (

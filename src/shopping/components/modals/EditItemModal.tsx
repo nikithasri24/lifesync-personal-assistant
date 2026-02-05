@@ -3,7 +3,7 @@
  * Modal form for editing existing shopping list items
  */
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
 import type { ShoppingItemForm } from '../../types/forms';
 import type { Store } from '../../types';
@@ -27,6 +27,20 @@ export function EditItemModal({
   onSubmit,
   onFormChange,
 }: EditItemModalProps) {
+  // Keyboard navigation for Escape key
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   return (

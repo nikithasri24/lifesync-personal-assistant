@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { ModalShell } from './ModalShell';
 import type { Recipe } from '../../../types';
 import { normalizeFractions as normalizeYoutubeFractions } from '../../services/parsers/youtubeParser';
@@ -12,6 +12,18 @@ interface RecipeViewModalProps {
 export function RecipeViewModal({ recipe, onClose, onEdit }: RecipeViewModalProps): React.JSX.Element {
   const [servingsView, setServingsView] = useState<number>(recipe.servings || 1);
   const factor = Math.max(0.25, (servingsView || 1) / Math.max(1, recipe.servings || 1));
+
+  // Keyboard navigation for Escape key
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   const scaleNumber = (n: number): string => {
     const val = n * factor;

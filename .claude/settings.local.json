@@ -76,7 +76,8 @@
       "Bash(node fix-bad-dates.js:*)",
       "Bash(git merge:*)",
       "Bash(./scripts/quality-report.sh:*)",
-      "Bash(./scripts/find-issues.sh:*)"
+      "Bash(./scripts/find-issues.sh:*)",
+      "Bash(git diff:*)"
     ],
     "deny": [],
     "ask": []

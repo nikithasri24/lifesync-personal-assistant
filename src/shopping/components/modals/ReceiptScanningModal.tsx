@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { useReceiptScanner } from '../../hooks/useReceiptScanner';
 import { calculateReceiptCategorySummary, type ParsedReceiptItem } from '../../services/receiptParser';
@@ -81,6 +81,20 @@ export function ReceiptScanningModal({
   const receiptCategorySummary = useMemo(() => {
     return calculateReceiptCategorySummary(parsedReceipt);
   }, [parsedReceipt]);
+
+  // Keyboard navigation for Escape key
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        handleClose();
+      }
+    };
+
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [isOpen]);
 
   const handleClose = (): void => {
     reset();
