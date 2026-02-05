@@ -8,6 +8,8 @@ import type { ShoppingItemData } from '../../services/types';
 
 /**
  * Map React Query shopping item data to UI ShoppingItem model
+ * Note: Owner information (ownerName, isOwnedByCurrentUser) should be added separately
+ * using the addOwnerInfo utility function from shopping/utils/ownerUtils.ts
  */
 export function mapShoppingItemDataToModel(items: ShoppingItemData[]): ShoppingItem[] {
   return items.map((item) => ({
@@ -32,6 +34,8 @@ export function mapShoppingItemDataToModel(items: ShoppingItemData[]): ShoppingI
     notes: item.notes ?? undefined,
     createdAt: new Date(item.created_at ?? Date.now()),
     updatedAt: new Date(item.updated_at ?? Date.now()),
+    // Store raw user_id for owner identification
+    ownerId: item.user_id,
   }));
 }
 

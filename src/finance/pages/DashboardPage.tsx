@@ -3,7 +3,7 @@ import { Card } from '../components/Card';
 import SankeyChart from '../components/visualizations/SankeyChart';
 import { AccountModal } from '../components/AccountModal';
 import { formatCurrency } from '../utils/currency';
-import { currentMonth, monthRange, toMonth } from '../utils/date';
+import { currentMonth, monthRange, toMonth, formatMonth } from '../utils/date';
 import { useFinanceMetrics, type FinanceMetrics } from '../hooks/useFinanceMetrics';
 import {
   useTransactionsQuery,
@@ -330,7 +330,7 @@ const DashboardPage: React.FC = () => {
           <select className="rounded-md border border-slate-300 px-2 py-1 text-sm" value={month} onChange={(e: React.ChangeEvent<HTMLSelectElement>): void => setMonth(e.target.value)}>
             {monthsInTx.map((m: string) => (
               <option key={m} value={m}>
-                {m}
+                {formatMonth(m)}
               </option>
             ))}
           </select>

@@ -553,13 +553,18 @@ export async function setModulePermission(input: {
 
   const response = await supabase
     .from('module_permissions')
-    .upsert({
-      connection_id: input.connectionId,
-      module: input.module,
-      permission_level: input.permissionLevel,
-      user_id: user.id,
-      settings: input.settings ?? {},
-    })
+    .upsert(
+      {
+        connection_id: input.connectionId,
+        module: input.module,
+        permission_level: input.permissionLevel,
+        user_id: user.id,
+        settings: input.settings ?? {},
+      },
+      {
+        onConflict: 'connection_id,module,user_id',
+      }
+    )
     .select()
     .single();
 

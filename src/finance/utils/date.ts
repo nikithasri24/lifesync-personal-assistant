@@ -26,3 +26,20 @@ export function monthsBack(count: number): string[] {
   return res;
 }
 
+export function formatMonth(monthStr: string): string {
+  // Format "YYYY-MM" to "Month YYYY" (e.g., "2025-01" -> "January 2025")
+  const [year, month] = monthStr.split('-');
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+  const monthIndex = parseInt(month, 10) - 1;
+
+  if (monthIndex >= 0 && monthIndex < 12) {
+    return `${monthNames[monthIndex]} ${year}`;
+  }
+
+  // Fallback to original format if invalid
+  return monthStr;
+}
+

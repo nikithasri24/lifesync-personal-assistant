@@ -1,3 +1,4 @@
+import { useCallback, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
 import {
   getShoppingLists,
@@ -336,22 +337,41 @@ export function useActiveShoppingList(): {
 } {
   const { data: lists, isLoading } = useShoppingLists();
   const createList = useCreateShoppingList();
+  const isCreatingRef = useRef(false);
+  const pendingPromiseRef = useRef<Promise<ShoppingListData> | null>(null);
 
   const typedLists = lists as ShoppingListData[] | undefined;
 
   const activeList: ShoppingListData | undefined =
     typedLists?.find((list: ShoppingListData) => list.status === 'active') ?? typedLists?.[0];
 
-  const ensureActiveList = async (): Promise<ShoppingListData> => {
-    if (activeList) {
-      return activeList;
+  // Store activeList in a ref so useCallback doesn't need it as a dependency
+  const activeListRef = useRef(activeList);
+  activeListRef.current = activeList;
+
+  const ensureActiveList = useCallback(async (): Promise<ShoppingListData> => {
+    // Return existing active list if available
+    if (activeListRef.current) {
+      return activeListRef.current;
     }
 
-    return createList.mutateAsync({
+    // If already creating, return the pending promise
+    if (isCreatingRef.current && pendingPromiseRef.current) {
+      return pendingPromiseRef.current;
+    }
+
+    // Mark as creating and store the promise
+    isCreatingRef.current = true;
+    pendingPromiseRef.current = createList.mutateAsync({
       name: 'Shopping List',
       status: 'active',
+    }).finally(() => {
+      isCreatingRef.current = false;
+      pendingPromiseRef.current = null;
     });
-  };
+
+    return pendingPromiseRef.current;
+  }, [createList]);
 
   return {
     activeList,

@@ -13,6 +13,7 @@ import { ViewTabs } from '../shopping/components/layout/ViewTabs';
 import { ShoppingModals } from '../shopping/components/layout/ShoppingModals';
 import { MasterListView, DistributeView, StoreListsView, PantryView } from '../shopping/components/views';
 import { useVoiceInput, useBarcodeScanner, useStoreSuggestions, useItemForm, useShoppingModals } from '../shopping/hooks';
+import { useCurrentUserId, usePartnerName, useHasMergedPermission } from '../hooks/useOwnerInfo';
 import { smartRecommendStores } from '../shopping/utils/storeUtils';
 import {
   useActiveShoppingList,
@@ -81,17 +82,47 @@ export default function ShoppingSmart(): ReactElement {
   const deleteItemMutation = useDeleteShoppingItem();
   const toggleItemMutation = useToggleShoppingItem();
 
-  // Map React Query data to component format
+  // Owner info hooks for merged mode
+  const { data: currentUserId } = useCurrentUserId();
+  const { data: partnerName } = usePartnerName();
+  const { data: isMerged } = useHasMergedPermission();
+
+  // Map React Query data to component format and add owner information
   const shoppingItems = useMemo(() => {
     if (!shoppingItemsData) return [];
-    return mapShoppingItemDataToModel(shoppingItemsData);
-  }, [shoppingItemsData]);
+    const mappedItems = mapShoppingItemDataToModel(shoppingItemsData);
+
+    // Add owner information if in merged mode
+    if (!currentUserId || !isMerged) {
+      return mappedItems;
+    }
+
+    return mappedItems.map(item => ({
+      ...item,
+      ownerName: item.ownerId === currentUserId ? 'Me' : (partnerName || 'Partner'),
+      isOwnedByCurrentUser: item.ownerId === currentUserId,
+    }));
+  }, [shoppingItemsData, currentUserId, partnerName, isMerged]);
 
   // React Query hooks for pantry data
-  const { data: pantryItems = [], isLoading: pantryLoading } = usePantryItemsQuery();
+  const { data: pantryItemsRaw = [], isLoading: pantryLoading } = usePantryItemsQuery();
   const createPantryItemMutation = useCreatePantryItemMutation();
   const updatePantryItemMutation = useUpdatePantryItemMutation();
   const deletePantryItemMutation = useDeletePantryItemMutation();
+
+  // Add owner information to pantry items
+  const pantryItems = useMemo(() => {
+    if (!currentUserId || !isMerged) {
+      return pantryItemsRaw;
+    }
+
+    return pantryItemsRaw.map(item => ({
+      ...item,
+      ownerId: item.user_id,
+      ownerName: item.user_id === currentUserId ? 'Me' : (partnerName || 'Partner'),
+      isOwnedByCurrentUser: item.user_id === currentUserId,
+    }));
+  }, [pantryItemsRaw, currentUserId, partnerName, isMerged]);
 
   // Get other store data that hasn't been migrated yet
   const { showToast } = useToast();

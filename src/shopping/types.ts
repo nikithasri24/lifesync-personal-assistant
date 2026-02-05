@@ -79,3 +79,16 @@ export interface ShoppingList {
   createdAt: Date;
   updatedAt: Date;
 }
+
+// Owner information types for merged mode
+export interface ShoppingItemWithOwner extends ShoppingItem {
+  ownerId: string;
+  ownerName: string;
+  isOwnedByCurrentUser: boolean;
+}
+
+export interface ShoppingListWithOwner extends ShoppingList {
+  ownerId: string;
+  ownerName: string;
+  isOwnedByCurrentUser: boolean;
+}

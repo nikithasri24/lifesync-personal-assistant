@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Calculator, Plus, BarChart3 } from 'lucide-react';
 import type { DebtAccount } from '../types/finance';
-import { MOCK_DEBTS } from './DebtPayoffCalculator/constants';
 import { calculatePaymentSchedule, calculateDebtStrategy, getDebtTypeInfo, getCreditUtilization } from './DebtPayoffCalculator/utils';
 import DebtSummaryCards from './DebtPayoffCalculator/DebtSummaryCards';
 import StrategyRecommendation from './DebtPayoffCalculator/StrategyRecommendation';
@@ -12,7 +11,7 @@ import StrategyCalculatorModal from './DebtPayoffCalculator/StrategyCalculatorMo
 import ConfirmDialog from './DebtPayoffCalculator/ConfirmDialog';
 
 export default function DebtPayoffCalculator() {
-  const [debts, setDebts] = useState<DebtAccount[]>(MOCK_DEBTS);
+  const [debts, setDebts] = useState<DebtAccount[]>([]);
   const [showAddDebt, setShowAddDebt] = useState(false);
   const [showCalculator, setShowCalculator] = useState(false);
   const [editingDebt, setEditingDebt] = useState<DebtAccount | null>(null);

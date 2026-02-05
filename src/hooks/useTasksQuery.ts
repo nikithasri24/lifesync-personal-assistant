@@ -1,8 +1,10 @@
 /**
- * React Query hooks for Tasks and Projects
+ * React Query hooks for Tasks and Projects with Merged Mode Support
  *
  * Provides automatic caching, loading states, and cache invalidation
  * for tasks and projects CRUD operations.
+ *
+ * Merged Mode: When enabled, tasks hooks automatically include partner's tasks.
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -17,6 +19,7 @@ import {
   deleteTask,
   permanentlyDeleteTask,
   restoreTask,
+  getTasksMergedConnection,
 } from '@/api/tasksAPI';
 import {
   getProjects,
@@ -152,6 +155,26 @@ function getTasksToUnblock(completedTaskId: string, allTasks: TaskData[]): TaskD
 }
 
 // =====================================================
+// MERGED MODE HOOK
+// =====================================================
+
+/**
+ * Hook to check if tasks merged mode is enabled.
+ * Returns connection info if both users have set module to 'merged', null otherwise.
+ *
+ * @returns Query result with MergedConnectionResult or null
+ */
+export function useMergedTasksConnectionQuery() {
+  return useQuery({
+    queryKey: ['tasks', 'mergedConnection'],
+    queryFn: getTasksMergedConnection,
+    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+    gcTime: 1000 * 60 * 10,   // Keep in cache for 10 minutes
+    retry: 1,                   // Only retry once on failure
+  });
+}
+
+// =====================================================
 // TASKS QUERY HOOKS
 // =====================================================
 
@@ -166,7 +189,11 @@ export interface TaskFilters {
 }
 
 /**
- * Get all tasks with optional filters
+ * Get all tasks with optional filters.
+ * Automatically includes partner's tasks if merged mode is enabled.
+ *
+ * @param filters - Optional filters to apply
+ * @returns Query result with array of tasks
  */
 export function useTasks(filters?: TaskFilters): UseQueryResult<TaskData[], Error> {
   return useQuery({

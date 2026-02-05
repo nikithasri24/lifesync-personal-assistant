@@ -30,3 +30,4 @@ pocketbase.zip
 *.sln
 *.sw?
 .vercel
+.env*.local

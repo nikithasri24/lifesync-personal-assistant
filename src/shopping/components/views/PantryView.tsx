@@ -10,9 +10,14 @@ import type { PantryItem } from '../../../types';
 import type { ShoppingItem } from '../../types';
 import { usePantryActions } from '../../hooks/usePantryActions';
 import { exportPantryToCsv, downloadCsv } from '../../utils/pantryUtils';
+import { CompactOwnerBadge } from '../common/OwnerBadge';
 
 interface PantryViewProps {
-  pantryItems: PantryItem[];
+  pantryItems: (PantryItem & {
+    ownerId?: string;
+    ownerName?: string;
+    isOwnedByCurrentUser?: boolean;
+  })[];
   onAddItem: () => void;
   onScanReceipt: () => void;
   onAddToShopping: (item: Omit<ShoppingItem, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
@@ -246,6 +251,7 @@ export function PantryView({
             <thead>
               <tr className="text-left text-gray-600">
                 <th className="py-2 px-3">Item</th>
+                <th className="py-2 px-3">Owner</th>
                 <th className="py-2 px-3">Qty</th>
                 <th className="py-2 px-3">Expires</th>
                 <th className="py-2 px-3">Status</th>
@@ -275,6 +281,14 @@ export function PantryView({
                 return (
                   <tr key={p.id} className="border-t">
                     <td className="py-2 px-3 font-medium text-gray-900">{p.name}</td>
+                    <td className="py-2 px-3">
+                      {p.ownerName && (
+                        <CompactOwnerBadge
+                          ownerName={p.ownerName}
+                          isOwnedByCurrentUser={p.isOwnedByCurrentUser ?? true}
+                        />
+                      )}
+                    </td>
                     <td className="py-2 px-3">
                       {editingPantryId === p.id ? (
                         <div className="flex items-center gap-2">
@@ -370,39 +384,53 @@ export function PantryView({
                         </>
                       ) : (
                         <>
-                          <button
-                            className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50"
-                            onClick={(): void => {
-                              setEditingPantryId(p.id);
-                              setEditPantry({
-                                qty: String(p.quantity),
-                                unit: p.unit ?? '',
-                                exp: p.expirationDate !== undefined
-                                  ? format(p.expirationDate, 'yyyy-MM-dd')
-                                  : '',
-                                low: p.isLowStock === true,
-                                threshold: p.lowStockThreshold !== undefined
-                                  ? String(p.lowStockThreshold)
-                                  : '',
-                              });
-                            }}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50"
-                            title="Replenish to target quantity"
-                            onClick={(): void => {
-                              setReplenishId(p.id);
-                              setReplenishTarget(
-                                p.lowStockThreshold !== undefined
-                                  ? String(p.lowStockThreshold)
-                                  : String(Math.max(p.quantity ?? 0, 1))
-                              );
-                            }}
-                          >
-                            Replenish
-                          </button>
+                          {/* Only show edit/delete for items owned by current user */}
+                          {(p.isOwnedByCurrentUser ?? true) && (
+                            <>
+                              <button
+                                className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50"
+                                onClick={(): void => {
+                                  setEditingPantryId(p.id);
+                                  setEditPantry({
+                                    qty: String(p.quantity),
+                                    unit: p.unit ?? '',
+                                    exp: p.expirationDate !== undefined
+                                      ? format(p.expirationDate, 'yyyy-MM-dd')
+                                      : '',
+                                    low: p.isLowStock === true,
+                                    threshold: p.lowStockThreshold !== undefined
+                                      ? String(p.lowStockThreshold)
+                                      : '',
+                                  });
+                                }}
+                              >
+                                Edit
+                              </button>
+                              <button
+                                className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50"
+                                title="Replenish to target quantity"
+                                onClick={(): void => {
+                                  setReplenishId(p.id);
+                                  setReplenishTarget(
+                                    p.lowStockThreshold !== undefined
+                                      ? String(p.lowStockThreshold)
+                                      : String(Math.max(p.quantity ?? 0, 1))
+                                  );
+                                }}
+                              >
+                                Replenish
+                              </button>
+                              <button
+                                className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50"
+                                onClick={(): void => {
+                                  void onDeleteItem(p.id);
+                                }}
+                              >
+                                Delete
+                              </button>
+                            </>
+                          )}
+                          {/* Add to Shopping is always available */}
                           <button
                             className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50"
                             onClick={(): void => {
@@ -438,14 +466,6 @@ export function PantryView({
                             }}
                           >
                             Add to Shopping
-                          </button>
-                          <button
-                            className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50"
-                            onClick={(): void => {
-                              void onDeleteItem(p.id);
-                            }}
-                          >
-                            Delete
                           </button>
                         </>
                       )}

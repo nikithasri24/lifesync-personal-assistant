@@ -123,6 +123,7 @@ export type ValidatedMealPlanData = z.infer<typeof MealPlanDataSchema>;
 export const PantryItemDataSchema = z.object({
   id: uuid.optional(),
   user_id: uuid.optional().nullable(),
+  connection_id: uuid.optional().nullable(),
   name: z.string().min(1, 'Item name is required'),
   quantity: z.number().nonnegative().optional().nullable(),
   unit: z.string().optional().nullable(),

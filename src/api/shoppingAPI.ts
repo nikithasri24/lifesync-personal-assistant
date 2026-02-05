@@ -12,17 +12,17 @@ import { apiCall, requireAuth, handleSupabaseResponse } from './apiWrapper';
 // =====================================================
 
 /**
- * Get all shopping lists for the current user
+ * Get all shopping lists for the current user (includes merged lists from partner)
  */
 export async function getShoppingLists(): Promise<ShoppingListData[]> {
   return apiCall(
     async () => {
-      const user = await requireAuth();
+      await requireAuth();
 
+      // RLS policy handles filtering - returns own lists + partner's lists if merged
       const { data, error } = await supabase
         .from('shopping_lists')
         .select('*')
-        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -33,7 +33,7 @@ export async function getShoppingLists(): Promise<ShoppingListData[]> {
 }
 
 /**
- * Create a new shopping list
+ * Create a new shopping list (with connection_id if in merged mode)
  */
 export async function createShoppingList(
   list: Omit<ShoppingListData, 'id' | 'created_at' | 'updated_at'>
@@ -110,28 +110,19 @@ export async function deleteShoppingList(id: string): Promise<void> {
 // =====================================================
 
 /**
- * Get all items for a shopping list
+ * Get all items for a shopping list (RLS policy ensures access control)
  */
 export async function getShoppingListItems(listId: string): Promise<ShoppingItemData[]> {
   return apiCall(
     async () => {
-      const user = await requireAuth();
+      await requireAuth();
 
-      // Verify list ownership
-      const { data: list, error: listError } = await supabase
-        .from('shopping_lists')
-        .select('id')
-        .eq('id', listId)
-        .eq('user_id', user.id)
-        .single();
-
-      if (listError || !list) throw new Error('Shopping list not found or access denied');
-
+      // RLS policy on shopping_lists ensures we can only access lists we have permission to view
       const { data, error } = await supabase
         .from('shopping_items')
         .select('*')
         .eq('shopping_list_id', listId)
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: true});
 
       if (error) throw error;
       return (data ?? []) as ShoppingItemData[];
@@ -164,6 +155,7 @@ export async function createShoppingItem(
       const result = await supabase
         .from('shopping_items')
         .insert({
+          user_id: user.id,
           shopping_list_id: listId,
           ...item,
           is_purchased: item.is_purchased ?? false,

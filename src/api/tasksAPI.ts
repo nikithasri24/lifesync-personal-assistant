@@ -1,19 +1,61 @@
 /**
- * Tasks API
- * CRUD operations for tasks with Supabase
+ * Tasks API with Merged Mode Support
+ *
+ * This API supports "merged mode" where couples/partners can share tasks data.
+ * When both users set the 'todos' module to "merged" permission level,
+ * the API automatically fetches data for both users.
+ *
+ * Security: RLS policies on tasks table ensure users can only see
+ * partner's data if merged permission is mutually granted.
+ *
+ * @see src/shared/api/SharedDataProvider.ts - Core merged mode logic
+ * @see supabase/migrations/*_add_tasks_merged_mode.sql - RLS policies
+ *
  * Note: Project operations are in projectsAPI.ts
  */
 
 import { supabase } from '../lib/supabase';
 import type { TaskData } from '../services/types';
 import { apiCall, requireAuth, handleSupabaseResponse } from './apiWrapper';
+import { getMergedConnectionId, type MergedConnectionResult } from '../shared/api/SharedDataProvider';
+
+// ============================================
+// MERGED MODE SUPPORT
+// ============================================
+
+// Merged connection cache for Tasks
+let cachedMergedConnection: MergedConnectionResult | null | undefined;
+
+/**
+ * Get merged connection for tasks module.
+ * Returns connection info if both users have enabled merged mode, null otherwise.
+ *
+ * @returns MergedConnectionResult with partnerId and partnerName, or null
+ */
+export async function getTasksMergedConnection(): Promise<MergedConnectionResult | null> {
+  if (cachedMergedConnection !== undefined) {
+    return cachedMergedConnection;
+  }
+
+  cachedMergedConnection = await getMergedConnectionId('todos');
+  return cachedMergedConnection;
+}
+
+/**
+ * Clear cached merged connection.
+ * Call this when connection status changes or user logs out.
+ */
+export function clearTasksMergedConnectionCache(): void {
+  cachedMergedConnection = undefined;
+}
 
 // =====================================================
 // TASKS CRUD OPERATIONS
 // =====================================================
 
 /**
- * Get all tasks for the current user
+ * Get all tasks for the current user.
+ * In merged mode, fetches both user's and partner's tasks.
  */
 export async function getTasks(filters?: {
   status?: TaskData['status'];
@@ -28,11 +70,21 @@ export async function getTasks(filters?: {
     async () => {
       const user = await requireAuth();
 
+      // Check for merged connection
+      const mergedConnection = await getTasksMergedConnection();
+
       let query = supabase
         .from('tasks')
         .select('*')
-        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
+
+      // If merged mode enabled, fetch both users' data
+      // Otherwise, fetch only current user's data
+      if (mergedConnection) {
+        query = query.or(`user_id.eq.${user.id},user_id.eq.${mergedConnection.partnerId}`);
+      } else {
+        query = query.eq('user_id', user.id);
+      }
 
       // Apply filters
       if (filters) {
@@ -55,7 +107,8 @@ export async function getTasks(filters?: {
 }
 
 /**
- * Get tasks by ID list
+ * Get tasks by ID list.
+ * In merged mode, includes partner's tasks.
  */
 export async function getTasksByIds(ids: string[]): Promise<TaskData[]> {
   return apiCall(
@@ -63,11 +116,22 @@ export async function getTasksByIds(ids: string[]): Promise<TaskData[]> {
       if (ids.length === 0) return [];
       const user = await requireAuth();
 
-      const { data, error } = await supabase
+      // Check for merged connection
+      const mergedConnection = await getTasksMergedConnection();
+
+      let query = supabase
         .from('tasks')
         .select('*')
-        .in('id', ids)
-        .eq('user_id', user.id);
+        .in('id', ids);
+
+      // Apply user filter based on merged mode
+      if (mergedConnection) {
+        query = query.or(`user_id.eq.${user.id},user_id.eq.${mergedConnection.partnerId}`);
+      } else {
+        query = query.eq('user_id', user.id);
+      }
+
+      const { data, error} = await query;
 
       if (error) throw error;
       return (data ?? []) as TaskData[];
@@ -77,19 +141,31 @@ export async function getTasksByIds(ids: string[]): Promise<TaskData[]> {
 }
 
 /**
- * Get scheduled tasks for a specific date
+ * Get scheduled tasks for a specific date.
+ * In merged mode, includes partner's scheduled tasks.
  */
 export async function getScheduledTasksForDate(date: string): Promise<TaskData[]> {
   return apiCall(
     async () => {
       const user = await requireAuth();
 
-      const { data, error } = await supabase
+      // Check for merged connection
+      const mergedConnection = await getTasksMergedConnection();
+
+      let query = supabase
         .from('tasks')
         .select('*')
-        .eq('user_id', user.id)
         .gte('scheduled_start', `${date}T00:00:00`)
         .lt('scheduled_start', `${date}T23:59:59`);
+
+      // Apply user filter based on merged mode
+      if (mergedConnection) {
+        query = query.or(`user_id.eq.${user.id},user_id.eq.${mergedConnection.partnerId}`);
+      } else {
+        query = query.eq('user_id', user.id);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       return (data ?? []) as TaskData[];

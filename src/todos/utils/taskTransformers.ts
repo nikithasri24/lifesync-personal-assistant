@@ -40,9 +40,13 @@ export function transformApiTasks(apiTasks: TaskData[]): Task[] {
       if (!task.created_at) {
         throw new Error('Task created_at is required');
       }
+      if (!task.user_id) {
+        throw new Error('Task user_id is required');
+      }
 
       return {
         id: task.id,
+        userId: task.user_id, // Required for merged mode
         title: task.title,
         description: task.description ?? undefined,
         priority,
