@@ -15,7 +15,7 @@ import {
 import { RecurringTransactionEditor } from './RecurringTransactionEditor';
 import { formatCurrency } from '../../utils/currency';
 import { useAuth } from '@/hooks/useAuth';
-import { OwnerBadge } from '../../components/common/OwnerBadge';
+import { OwnerBadge } from '../../../components/common/OwnerBadge';
 
 const FREQUENCY_LABELS: Record<string, string> = {
   daily: 'Daily',

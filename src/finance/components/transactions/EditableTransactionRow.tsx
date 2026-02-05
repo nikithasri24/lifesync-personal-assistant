@@ -9,7 +9,7 @@ import type { Transaction, Category } from '../../types';
 import { formatCurrency } from '../../utils/currency';
 import { logger } from '../../../services/logger';
 import { useUpsertTransactionMutation, useDeleteTransactionMutation } from '@/hooks/useFinanceQuery';
-import { OwnerBadge } from '../../components/common/OwnerBadge';
+import { OwnerBadge } from '../../../components/common/OwnerBadge';
 
 interface EditableTransactionRowProps {
   transaction: Transaction;
@@ -20,7 +20,7 @@ interface EditableTransactionRowProps {
   partnerName?: string;
 }
 
-export const EditableTransactionRow: React.FC<EditableTransactionRowProps> = ({
+export const EditableTransactionRow = React.memo<EditableTransactionRowProps>(({
   transaction,
   categories,
   onUpdate,
@@ -63,6 +63,7 @@ export const EditableTransactionRow: React.FC<EditableTransactionRowProps> = ({
       await upsertTransactionMutation.mutateAsync({
         id: transaction.id,
         accountId: transaction.accountId,
+        userId: transaction.userId,
         description: editData.description,
         amount: parseFloat(editData.amount),
         categoryId: editData.categoryId || undefined,
@@ -254,6 +255,22 @@ export const EditableTransactionRow: React.FC<EditableTransactionRowProps> = ({
       </td>
     </tr>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom equality check - only re-render if these specific props change
+  return (
+    prevProps.transaction.id === nextProps.transaction.id &&
+    prevProps.transaction.description === nextProps.transaction.description &&
+    prevProps.transaction.amount === nextProps.transaction.amount &&
+    prevProps.transaction.categoryId === nextProps.transaction.categoryId &&
+    prevProps.transaction.dateISO === nextProps.transaction.dateISO &&
+    prevProps.transaction.type === nextProps.transaction.type &&
+    prevProps.transaction.notes === nextProps.transaction.notes &&
+    prevProps.transaction.userId === nextProps.transaction.userId &&
+    prevProps.transaction.merchantName === nextProps.transaction.merchantName &&
+    prevProps.categories.length === nextProps.categories.length &&
+    prevProps.currentUserId === nextProps.currentUserId &&
+    prevProps.partnerName === nextProps.partnerName
+  );
+});
 
 export default EditableTransactionRow;

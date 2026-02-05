@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import type { InsurancePolicy } from '../../types';
 import { formatCurrency } from '../../utils/currency';
-import { OwnerBadge } from '../../components/common/OwnerBadge';
+import { OwnerBadge } from '../../../components/common/OwnerBadge';
 
 interface InsuranceCardProps {
   policy: InsurancePolicy;
@@ -31,13 +31,13 @@ interface InsuranceCardProps {
   partnerName?: string;
 }
 
-export const InsuranceCard: React.FC<InsuranceCardProps> = ({
+export const InsuranceCard = React.memo<InsuranceCardProps>(function InsuranceCard({
   policy,
   onClick,
   className = '',
   currentUserId,
   partnerName,
-}) => {
+}) {
   // Get icon for policy type
   const getTypeIcon = (type: string): React.ComponentType<{ className?: string }> => {
     switch (type) {
@@ -267,6 +267,25 @@ export const InsuranceCard: React.FC<InsuranceCardProps> = ({
       )}
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom equality check - only re-render if these specific props change
+  return (
+    prevProps.policy.id === nextProps.policy.id &&
+    prevProps.policy.policyName === nextProps.policy.policyName &&
+    prevProps.policy.provider === nextProps.policy.provider &&
+    prevProps.policy.type === nextProps.policy.type &&
+    prevProps.policy.status === nextProps.policy.status &&
+    prevProps.policy.premiumAmount === nextProps.policy.premiumAmount &&
+    prevProps.policy.premiumFrequency === nextProps.policy.premiumFrequency &&
+    prevProps.policy.coverageAmount === nextProps.policy.coverageAmount &&
+    prevProps.policy.deductible === nextProps.policy.deductible &&
+    prevProps.policy.renewalDate === nextProps.policy.renewalDate &&
+    prevProps.policy.userId === nextProps.policy.userId &&
+    prevProps.policy.autoRenew === nextProps.policy.autoRenew &&
+    prevProps.className === nextProps.className &&
+    prevProps.currentUserId === nextProps.currentUserId &&
+    prevProps.partnerName === nextProps.partnerName
+  );
+});
 
 export default InsuranceCard;

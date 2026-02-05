@@ -29,7 +29,7 @@ function extractDomain(url: string): string {
   }
 }
 
-export function RecipeCard({ recipe, onView, onEdit, onDelete }: RecipeCardProps) {
+export const RecipeCard = React.memo<RecipeCardProps>(function RecipeCard({ recipe, onView, onEdit, onDelete }) {
   const { executeCommand } = useUndoRedo();
 
   const totalTime = (recipe.prepTime ?? 0) + (recipe.cookTime ?? 0);
@@ -204,6 +204,20 @@ export function RecipeCard({ recipe, onView, onEdit, onDelete }: RecipeCardProps
       </div>
     </li>
   );
-}
+}, (prevProps, nextProps) => {
+  // Custom equality check - only re-render if these specific props change
+  return (
+    prevProps.recipe.id === nextProps.recipe.id &&
+    prevProps.recipe.name === nextProps.recipe.name &&
+    prevProps.recipe.image === nextProps.recipe.image &&
+    prevProps.recipe.prepTime === nextProps.recipe.prepTime &&
+    prevProps.recipe.cookTime === nextProps.recipe.cookTime &&
+    prevProps.recipe.servings === nextProps.recipe.servings &&
+    prevProps.recipe.difficulty === nextProps.recipe.difficulty &&
+    prevProps.recipe.isFavorite === nextProps.recipe.isFavorite &&
+    prevProps.recipe.tags?.length === nextProps.recipe.tags?.length &&
+    prevProps.recipe.sourceUrl === nextProps.recipe.sourceUrl
+  );
+});
 
 export default RecipeCard;

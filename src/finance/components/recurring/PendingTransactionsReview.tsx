@@ -17,7 +17,7 @@ import {
 } from '@/hooks/useFinanceQuery';
 import { formatCurrency } from '../../utils/currency';
 import { useAuth } from '@/hooks/useAuth';
-import { OwnerBadge } from '../../components/common/OwnerBadge';
+import { OwnerBadge } from '../../../components/common/OwnerBadge';
 
 interface PendingGroup {
   label: string;

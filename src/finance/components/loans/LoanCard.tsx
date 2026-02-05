@@ -8,7 +8,7 @@ import { Calendar, DollarSign, Edit2, TrendingDown, Clock } from 'lucide-react';
 import type { Loan } from '../../types';
 import { formatCurrency } from '../../utils/currency';
 import { calculateInterestPaidToDate, calculatePrincipalPaidToDate } from '../../utils/loanCalculations';
-import { OwnerBadge } from '../../components/common/OwnerBadge';
+import { OwnerBadge } from '../../../components/common/OwnerBadge';
 
 interface LoanCardProps {
   loan: Loan;
@@ -18,7 +18,7 @@ interface LoanCardProps {
   partnerName?: string;
 }
 
-const LoanCard: React.FC<LoanCardProps> = ({ loan, onEdit, onAddPayment, currentUserId, partnerName }) => {
+const LoanCard = React.memo<LoanCardProps>(function LoanCard({ loan, onEdit, onAddPayment, currentUserId, partnerName }) {
   // Calculate interest and principal paid (use DB values if available, otherwise calculate)
   const calculatedInterestPaid = calculateInterestPaidToDate(loan);
   const calculatedPrincipalPaid = calculatePrincipalPaidToDate(loan);
@@ -210,6 +210,25 @@ const LoanCard: React.FC<LoanCardProps> = ({ loan, onEdit, onAddPayment, current
       )}
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom equality check - only re-render if these specific props change
+  return (
+    prevProps.loan.id === nextProps.loan.id &&
+    prevProps.loan.loanName === nextProps.loan.loanName &&
+    prevProps.loan.currentBalance === nextProps.loan.currentBalance &&
+    prevProps.loan.principalAmount === nextProps.loan.principalAmount &&
+    prevProps.loan.monthlyPayment === nextProps.loan.monthlyPayment &&
+    prevProps.loan.extraPayment === nextProps.loan.extraPayment &&
+    prevProps.loan.interestRate === nextProps.loan.interestRate &&
+    prevProps.loan.status === nextProps.loan.status &&
+    prevProps.loan.userId === nextProps.loan.userId &&
+    prevProps.loan.loanType === nextProps.loan.loanType &&
+    prevProps.loan.lender === nextProps.loan.lender &&
+    prevProps.loan.targetPayoffDate === nextProps.loan.targetPayoffDate &&
+    prevProps.loan.projectedPayoffDate === nextProps.loan.projectedPayoffDate &&
+    prevProps.currentUserId === nextProps.currentUserId &&
+    prevProps.partnerName === nextProps.partnerName
+  );
+});
 
 export { LoanCard };

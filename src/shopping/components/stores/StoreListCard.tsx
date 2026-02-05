@@ -2,14 +2,14 @@ import React from 'react';
 import { MapPin } from 'lucide-react';
 import type { ShoppingList, Store } from '../../types';
 import { CATEGORY_ICONS, STORE_TYPES } from '../../constants';
-import { CompactOwnerBadge } from '../../components/common/OwnerBadge';
+import { CompactOwnerBadge } from '../../../components/common/OwnerBadge';
 
 interface StoreListCardProps {
   list: ShoppingList;
   store: Store;
 }
 
-export function StoreListCard({ list, store }: StoreListCardProps) {
+export const StoreListCard = React.memo<StoreListCardProps>(function StoreListCard({ list, store }: StoreListCardProps) {
   return (
     <div className="bg-white rounded-lg border shadow-sm">
       <div className="p-4 border-b" style={{ backgroundColor: `${store.color}10` }}>
@@ -73,6 +73,19 @@ export function StoreListCard({ list, store }: StoreListCardProps) {
       </div>
     </div>
   );
-}
+}, (prevProps, nextProps) => {
+  // Custom equality check - only re-render if these specific props change
+  return (
+    prevProps.list.id === nextProps.list.id &&
+    prevProps.list.description === nextProps.list.description &&
+    prevProps.list.items.length === nextProps.list.items.length &&
+    prevProps.list.totalEstimatedCost === nextProps.list.totalEstimatedCost &&
+    prevProps.store.id === nextProps.store.id &&
+    prevProps.store.name === nextProps.store.name &&
+    prevProps.store.type === nextProps.store.type &&
+    prevProps.store.color === nextProps.store.color &&
+    prevProps.store.distance === nextProps.store.distance
+  );
+});
 
 export default StoreListCard;

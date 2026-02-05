@@ -2,7 +2,7 @@ import React from 'react';
 import { Check, DollarSign, Scan, Heart, Store as StoreIcon, AlertCircle, Navigation, Edit3, Trash2 } from 'lucide-react';
 import type { ShoppingItem, Store } from '../../types';
 import { CATEGORY_ICONS } from '../../constants';
-import { CompactOwnerBadge } from '../../components/common/OwnerBadge';
+import { CompactOwnerBadge } from '../../../components/common/OwnerBadge';
 
 interface MasterItemCardProps {
   item: ShoppingItem & {
@@ -17,14 +17,14 @@ interface MasterItemCardProps {
   onFindStores: () => void;
 }
 
-export function MasterItemCard({
+export const MasterItemCard = React.memo<MasterItemCardProps>(function MasterItemCard({
   item,
   stores,
   onToggle,
   onEdit,
   onDelete,
   onFindStores
-}: MasterItemCardProps): React.ReactElement {
+}) {
   const bestStore: Store | null = item.bestStores && item.bestStores.length > 0
     ? (stores.find((s): s is Store => s.id === item.bestStores?.[0]) ?? null)
     : null;
@@ -141,6 +141,23 @@ export function MasterItemCard({
       </div>
     </div>
   );
-}
+}, (prevProps, nextProps) => {
+  // Custom equality check - only re-render if these specific props change
+  return (
+    prevProps.item.id === nextProps.item.id &&
+    prevProps.item.name === nextProps.item.name &&
+    prevProps.item.category === nextProps.item.category &&
+    prevProps.item.quantity === nextProps.item.quantity &&
+    prevProps.item.unit === nextProps.item.unit &&
+    prevProps.item.purchased === nextProps.item.purchased &&
+    prevProps.item.priority === nextProps.item.priority &&
+    prevProps.item.estimatedPrice === nextProps.item.estimatedPrice &&
+    prevProps.item.ownerName === nextProps.item.ownerName &&
+    prevProps.item.isOwnedByCurrentUser === nextProps.item.isOwnedByCurrentUser &&
+    prevProps.item.nutritionInfo?.organic === nextProps.item.nutritionInfo?.organic &&
+    prevProps.item.bestStores?.length === nextProps.item.bestStores?.length &&
+    prevProps.stores.length === nextProps.stores.length
+  );
+});
 
 export default MasterItemCard;

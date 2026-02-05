@@ -67,8 +67,9 @@ interface TaskRowProps {
 
 /**
  * TaskRow - Individual task display with full interaction support
+ * Memoized to prevent unnecessary re-renders
  */
-export function TaskRow({
+export const TaskRow = React.memo<TaskRowProps>(function TaskRow({
   task,
   project,
   isEditing,
@@ -86,7 +87,7 @@ export function TaskRow({
   isUpdating,
   isExpanded,
   hasSubtasks
-}: TaskRowProps): React.ReactElement {
+}) {
   const [showSchedulePopover, setShowSchedulePopover] = useState(false);
   const taskIsOverdue = task.dueDate && isOverdue(task.dueDate, task.status);
 
@@ -299,4 +300,26 @@ export function TaskRow({
       </div>
     </div>
   );
-}
+}, (prevProps, nextProps) => {
+  // Custom equality check - only re-render if these specific props change
+  return (
+    prevProps.task.id === nextProps.task.id &&
+    prevProps.task.title === nextProps.task.title &&
+    prevProps.task.status === nextProps.task.status &&
+    prevProps.task.priority === nextProps.task.priority &&
+    prevProps.task.description === nextProps.task.description &&
+    prevProps.task.dueDate === nextProps.task.dueDate &&
+    prevProps.task.userId === nextProps.task.userId &&
+    prevProps.task.tags.length === nextProps.task.tags.length &&
+    prevProps.task.dependsOn?.length === nextProps.task.dependsOn?.length &&
+    prevProps.project?.id === nextProps.project?.id &&
+    prevProps.project?.name === nextProps.project?.name &&
+    prevProps.project?.color === nextProps.project?.color &&
+    prevProps.isEditing === nextProps.isEditing &&
+    prevProps.editText === nextProps.editText &&
+    prevProps.isUpdating === nextProps.isUpdating &&
+    prevProps.isExpanded === nextProps.isExpanded &&
+    prevProps.hasSubtasks === nextProps.hasSubtasks &&
+    prevProps.pomodoroTimer.taskId === nextProps.pomodoroTimer.taskId
+  );
+});

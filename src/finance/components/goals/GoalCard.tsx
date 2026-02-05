@@ -14,7 +14,7 @@ import {
 } from '../../utils/goalCalculations';
 import { GoalRing } from '../GoalRing';
 import GoalProgressChart from '../GoalProgressChart';
-import { OwnerBadge } from '../../components/common/OwnerBadge';
+import { OwnerBadge } from '../../../components/common/OwnerBadge';
 
 interface GoalCardProps {
   goal: Goal;
@@ -25,14 +25,14 @@ interface GoalCardProps {
   partnerName?: string;
 }
 
-export const GoalCard: React.FC<GoalCardProps> = ({
+export const GoalCard = React.memo<GoalCardProps>(function GoalCard({
   goal,
   progressHistory = [],
   linkedAccount,
   onEdit,
   currentUserId,
   partnerName,
-}) => {
+}) {
   const recommendation = calculateGoalRecommendation(goal, progressHistory);
   const progressPercentage = calculateProgressPercentage(goal);
   const expectedPath = generateExpectedPath(goal, 12);
@@ -192,6 +192,21 @@ export const GoalCard: React.FC<GoalCardProps> = ({
       )}
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom equality check - only re-render if these specific props change
+  return (
+    prevProps.goal.id === nextProps.goal.id &&
+    prevProps.goal.name === nextProps.goal.name &&
+    prevProps.goal.currentAmount === nextProps.goal.currentAmount &&
+    prevProps.goal.targetAmount === nextProps.goal.targetAmount &&
+    prevProps.goal.dueDateISO === nextProps.goal.dueDateISO &&
+    prevProps.goal.userId === nextProps.goal.userId &&
+    prevProps.goal.trackNetworth === nextProps.goal.trackNetworth &&
+    prevProps.progressHistory?.length === nextProps.progressHistory?.length &&
+    prevProps.linkedAccount?.id === nextProps.linkedAccount?.id &&
+    prevProps.currentUserId === nextProps.currentUserId &&
+    prevProps.partnerName === nextProps.partnerName
+  );
+});
 
 export default GoalCard;

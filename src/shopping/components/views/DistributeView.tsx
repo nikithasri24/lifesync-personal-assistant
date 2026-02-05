@@ -8,7 +8,7 @@ import { Zap, ArrowRight, DollarSign, Award, Navigation, Target, Star } from 'lu
 import type { ShoppingItem, Store } from '../../types';
 import type { DistributionStrategy } from '../../services/storeDistribution';
 import { CATEGORY_ICONS, STORE_TYPES } from '../../constants';
-import { CompactOwnerBadge } from '../../components/common/OwnerBadge';
+import { CompactOwnerBadge } from '../../../components/common/OwnerBadge';
 
 interface DistributeViewProps {
   items: (ShoppingItem & {
