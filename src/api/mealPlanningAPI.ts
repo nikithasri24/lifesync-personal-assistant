@@ -10,6 +10,7 @@ import { supabase } from '../lib/supabase';
 import type { MealPlanData, PlannedMealData, RecipeData, PantryItemData, MealBacklogData, MealTrackingData } from '../services/types';
 import { apiCall, requireAuth, handleSupabaseResponse } from './apiWrapper';
 import { getMergedConnectionId, type MergedConnectionResult } from '../shared/api/SharedDataProvider';
+import { logger } from '../services/logger';
 import {
   RecipeDataArraySchema,
   MealPlanDataArraySchema,
@@ -28,11 +29,11 @@ let cachedMergedConnection: MergedConnectionResult | null | undefined = undefine
  */
 export async function getMealsMergedConnection(): Promise<MergedConnectionResult | null> {
   if (cachedMergedConnection !== undefined) {
-    console.log('[MealPlanningAPI] Using cached merged connection:', cachedMergedConnection);
+    logger.debug('MealPlanning', 'Using cached merged connection', { cachedMergedConnection });
     return cachedMergedConnection;
   }
   cachedMergedConnection = await getMergedConnectionId('meals');
-  console.log('[MealPlanningAPI] Fetched merged connection:', cachedMergedConnection);
+  logger.debug('MealPlanning', 'Fetched merged connection', { cachedMergedConnection });
   return cachedMergedConnection;
 }
 
@@ -65,13 +66,13 @@ async function checkAndMigratePersonalMeals(
     return sharedPlans; // All plans have meals, nothing to migrate
   }
 
-  console.log('[MealPlanningAPI] Found', emptySharedPlans.length, 'empty shared plans, checking for personal meals to migrate');
+  logger.debug('MealPlanning', `Found ${emptySharedPlans.length} empty shared plans, checking for personal meals to migrate`);
 
   let needsRefetch = false;
 
   for (const sharedPlan of emptySharedPlans) {
-    console.log('[MealPlanningAPI] Checking for personal plans for week:', sharedPlan.week_start_date);
-    console.log('[MealPlanningAPI] Looking for plans from users:', userId, 'or', mergedConnection.partnerId);
+    logger.debug('MealPlanning', `Checking for personal plans for week: ${sharedPlan.week_start_date}`);
+    logger.debug('MealPlanning', `Looking for plans from users: ${userId} or ${mergedConnection.partnerId}`);
 
     // Check if there are personal plans for this week from either user
     const { data: personalPlans, error: personalPlansError } = await supabase
@@ -80,14 +81,14 @@ async function checkAndMigratePersonalMeals(
       .eq('week_start_date', sharedPlan.week_start_date)
       .in('user_id', [userId, mergedConnection.partnerId]);
 
-    console.log('[MealPlanningAPI] Personal plans query result:', personalPlans, 'error:', personalPlansError);
+    logger.debug('MealPlanning', 'Personal plans query result', { personalPlans: personalPlans?.length, error: personalPlansError });
 
     if (!personalPlans || personalPlans.length === 0) {
-      console.log('[MealPlanningAPI] No personal plans found for week:', sharedPlan.week_start_date);
+      logger.debug('MealPlanning', `No personal plans found for week: ${sharedPlan.week_start_date}`);
       continue; // No personal plans for this week
     }
 
-    console.log('[MealPlanningAPI] Found', personalPlans.length, 'personal plans for week:', sharedPlan.week_start_date);
+    logger.debug('MealPlanning', `Found ${personalPlans.length} personal plans for week: ${sharedPlan.week_start_date}`);
 
     // Collect meals from personal plans
     const mealsToMigrate: Array<{
@@ -132,14 +133,14 @@ async function checkAndMigratePersonalMeals(
     }
 
     if (mealsToMigrate.length > 0) {
-      console.log('[MealPlanningAPI] Migrating', mealsToMigrate.length, 'meals to shared plan for week:', sharedPlan.week_start_date);
+      logger.debug('MealPlanning', `Migrating ${mealsToMigrate.length} meals to shared plan for week: ${sharedPlan.week_start_date}`);
 
       const { error: insertError } = await supabase
         .from('planned_meals')
         .insert(mealsToMigrate);
 
       if (insertError) {
-        console.error('[MealPlanningAPI] Error migrating meals:', insertError);
+        logger.error('MealPlanning', insertError, { action: 'migrate meals' });
         continue;
       }
 
@@ -150,7 +151,7 @@ async function checkAndMigratePersonalMeals(
         .delete()
         .in('id', personalPlanIds);
 
-      console.log('[MealPlanningAPI] Migration complete for week:', sharedPlan.week_start_date);
+      logger.debug('MealPlanning', `Migration complete for week: ${sharedPlan.week_start_date}`);
       needsRefetch = true;
     }
   }
@@ -183,11 +184,11 @@ export async function getMealPlans(): Promise<MealPlanData[]> {
       const user = await requireAuth();
       const mergedConnection = await getMealsMergedConnection();
 
-      console.log('[MealPlanningAPI] getMealPlans - user:', user.id, 'mergedConnection:', mergedConnection);
+      logger.debug('MealPlanning', 'getMealPlans', { userId: user.id, mergedConnection });
 
       if (mergedConnection) {
         // Merged mode: fetch plans by connection_id
-        console.log('[MealPlanningAPI] Fetching MERGED plans for connection:', mergedConnection.connectionId);
+        logger.debug('MealPlanning', `Fetching MERGED plans for connection: ${mergedConnection.connectionId}`);
         const { data, error } = await supabase
           .from('meal_plans')
           .select('*, planned_meals(*)')
@@ -197,7 +198,7 @@ export async function getMealPlans(): Promise<MealPlanData[]> {
           .order('created_at', { foreignTable: 'planned_meals', ascending: true });
 
         if (error) throw error;
-        console.log('[MealPlanningAPI] MERGED plans found:', data?.length ?? 0, data);
+        logger.debug('MealPlanning', `MERGED plans found: ${data?.length ?? 0}`);
 
         // Validate API response
         const validated = validateArrayWithFilter<MealPlanData>(MealPlanDataArraySchema.element, data ?? [], 'getMealPlans (merged)');
@@ -209,7 +210,7 @@ export async function getMealPlans(): Promise<MealPlanData[]> {
       }
 
       // Normal mode: fetch plans by user_id
-      console.log('[MealPlanningAPI] Fetching PERSONAL plans for user:', user.id);
+      logger.debug('MealPlanning', `Fetching PERSONAL plans for user: ${user.id}`);
       const { data, error } = await supabase
         .from('meal_plans')
         .select('*, planned_meals(*)')
@@ -219,7 +220,7 @@ export async function getMealPlans(): Promise<MealPlanData[]> {
         .order('created_at', { foreignTable: 'planned_meals', ascending: true });
 
       if (error) throw error;
-      console.log('[MealPlanningAPI] PERSONAL plans found:', data?.length ?? 0, data);
+      logger.debug('MealPlanning', `PERSONAL plans found: ${data?.length ?? 0}`);
 
       // Validate API response
       return validateArrayWithFilter<MealPlanData>(MealPlanDataArraySchema.element, data ?? [], 'getMealPlans (personal)');
@@ -238,7 +239,7 @@ async function migratePersonalMealsToSharedPlan(
   userId: string,
   partnerId: string
 ): Promise<void> {
-  console.log('[MealPlanningAPI] Migrating personal meals to shared plan:', sharedPlanId);
+  logger.debug('MealPlanning', `Migrating personal meals to shared plan: ${sharedPlanId}`);
 
   // Find personal plans for this week from both users
   const { data: personalPlans } = await supabase
@@ -248,11 +249,11 @@ async function migratePersonalMealsToSharedPlan(
     .in('user_id', [userId, partnerId]);
 
   if (!personalPlans || personalPlans.length === 0) {
-    console.log('[MealPlanningAPI] No personal plans to migrate');
+    logger.debug('MealPlanning', 'No personal plans to migrate');
     return;
   }
 
-  console.log('[MealPlanningAPI] Found', personalPlans.length, 'personal plans to migrate');
+  logger.debug('MealPlanning', `Found ${personalPlans.length} personal plans to migrate`);
 
   // Collect all meals from personal plans
   const mealsToMigrate: Array<{
@@ -295,11 +296,11 @@ async function migratePersonalMealsToSharedPlan(
   }
 
   if (mealsToMigrate.length === 0) {
-    console.log('[MealPlanningAPI] No meals to migrate');
+    logger.debug('MealPlanning', 'No meals to migrate');
     return;
   }
 
-  console.log('[MealPlanningAPI] Migrating', mealsToMigrate.length, 'meals');
+  logger.debug('MealPlanning', `Migrating ${mealsToMigrate.length} meals`);
 
   // Insert meals into the shared plan
   const mealsWithPlanId = mealsToMigrate.map(meal => ({
@@ -312,11 +313,11 @@ async function migratePersonalMealsToSharedPlan(
     .insert(mealsWithPlanId);
 
   if (insertError) {
-    console.error('[MealPlanningAPI] Error migrating meals:', insertError);
+    logger.error('MealPlanning', insertError, { action: 'migrate meals' });
     return;
   }
 
-  console.log('[MealPlanningAPI] Successfully migrated meals');
+  logger.debug('MealPlanning', 'Successfully migrated meals');
 
   // Optionally: Delete the old personal plans (or keep them as archive)
   // For now, we'll delete them to avoid confusion
@@ -327,9 +328,9 @@ async function migratePersonalMealsToSharedPlan(
     .in('id', personalPlanIds);
 
   if (deleteError) {
-    console.error('[MealPlanningAPI] Error deleting old personal plans:', deleteError);
+    logger.error('MealPlanning', deleteError, { action: 'delete old personal plans' });
   } else {
-    console.log('[MealPlanningAPI] Deleted old personal plans');
+    logger.debug('MealPlanning', 'Deleted old personal plans');
   }
 }
 
@@ -774,12 +775,12 @@ async function checkAndMigratePersonalRecipes(
 ): Promise<RecipeData[]> {
   // If there are already shared recipes, no need to migrate
   if (sharedRecipes.length > 0) {
-    console.log('[MealPlanningAPI] Shared recipes already exist, skipping migration');
+    logger.debug('MealPlanning', 'Shared recipes already exist, skipping migration');
     return sharedRecipes;
   }
 
-  console.log('[MealPlanningAPI] No shared recipes, checking for personal recipes to migrate');
-  console.log('[MealPlanningAPI] Looking for recipes from users:', userId, 'or', mergedConnection.partnerId);
+  logger.debug('MealPlanning', 'No shared recipes, checking for personal recipes to migrate');
+  logger.debug('MealPlanning', `Looking for recipes from users: ${userId} or ${mergedConnection.partnerId}`);
 
   // Check for personal recipes from either user
   const { data: personalRecipes, error: personalRecipesError } = await supabase
@@ -787,14 +788,14 @@ async function checkAndMigratePersonalRecipes(
     .select('*')
     .in('user_id', [userId, mergedConnection.partnerId]);
 
-  console.log('[MealPlanningAPI] Personal recipes query result:', personalRecipes?.length ?? 0, 'error:', personalRecipesError);
+  logger.debug('MealPlanning', 'Personal recipes query result', { count: personalRecipes?.length ?? 0, error: personalRecipesError });
 
   if (!personalRecipes || personalRecipes.length === 0) {
-    console.log('[MealPlanningAPI] No personal recipes found to migrate');
+    logger.debug('MealPlanning', 'No personal recipes found to migrate');
     return sharedRecipes;
   }
 
-  console.log('[MealPlanningAPI] Found', personalRecipes.length, 'personal recipes to migrate');
+  logger.debug('MealPlanning', `Found ${personalRecipes.length} personal recipes to migrate`);
 
   // Migrate each recipe to shared
   const migratedRecipes: RecipeData[] = [];
@@ -812,7 +813,7 @@ async function checkAndMigratePersonalRecipes(
       .single();
 
     if (updateError) {
-      console.error('[MealPlanningAPI] Error migrating recipe:', recipe.id, updateError);
+      logger.error('MealPlanning', updateError, { action: 'migrate recipe', recipeId: recipe.id });
       continue;
     }
 
@@ -821,7 +822,7 @@ async function checkAndMigratePersonalRecipes(
     }
   }
 
-  console.log('[MealPlanningAPI] Successfully migrated', migratedRecipes.length, 'recipes to shared');
+  logger.debug('MealPlanning', `Successfully migrated ${migratedRecipes.length} recipes to shared`);
   return migratedRecipes;
 }
 
@@ -836,11 +837,11 @@ export async function getRecipes(): Promise<RecipeData[]> {
       const user = await requireAuth();
       const mergedConnection = await getMealsMergedConnection();
 
-      console.log('[MealPlanningAPI] getRecipes - user:', user.id, 'mergedConnection:', mergedConnection);
+      logger.debug('MealPlanning', 'getRecipes', { userId: user.id, mergedConnection });
 
       if (mergedConnection) {
         // Merged mode: fetch recipes by connection_id
-        console.log('[MealPlanningAPI] Fetching MERGED recipes for connection:', mergedConnection.connectionId);
+        logger.debug('MealPlanning', `Fetching MERGED recipes for connection: ${mergedConnection.connectionId}`);
         const { data, error } = await supabase
           .from('recipes')
           .select('*')
@@ -848,7 +849,7 @@ export async function getRecipes(): Promise<RecipeData[]> {
           .order('created_at', { ascending: false });
 
         if (error) throw error;
-        console.log('[MealPlanningAPI] MERGED recipes found:', data?.length ?? 0);
+        logger.debug('MealPlanning', `MERGED recipes found: ${data?.length ?? 0}`);
 
         // Validate API response
         const validated = validateArrayWithFilter<RecipeData>(RecipeDataArraySchema.element, data ?? [], 'getRecipes (merged)');
@@ -860,7 +861,7 @@ export async function getRecipes(): Promise<RecipeData[]> {
       }
 
       // Normal mode: fetch recipes by user_id
-      console.log('[MealPlanningAPI] Fetching PERSONAL recipes for user:', user.id);
+      logger.debug('MealPlanning', `Fetching PERSONAL recipes for user: ${user.id}`);
       const { data, error } = await supabase
         .from('recipes')
         .select('*')
@@ -868,7 +869,7 @@ export async function getRecipes(): Promise<RecipeData[]> {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      console.log('[MealPlanningAPI] PERSONAL recipes found:', data?.length ?? 0);
+      logger.debug('MealPlanning', `PERSONAL recipes found: ${data?.length ?? 0}`);
 
       // Validate API response
       return validateArrayWithFilter<RecipeData>(RecipeDataArraySchema.element, data ?? [], 'getRecipes (personal)');
@@ -891,7 +892,7 @@ export async function createRecipe(
 
       if (mergedConnection) {
         // Merged mode: create shared recipe with connection_id (no user_id)
-        console.log('[MealPlanningAPI] Creating MERGED recipe for connection:', mergedConnection.connectionId);
+        logger.debug('MealPlanning', `Creating MERGED recipe for connection: ${mergedConnection.connectionId}`);
         const result = await supabase
           .from('recipes')
           .insert({
@@ -1322,7 +1323,7 @@ export async function searchMeals(query: string, limit: number = 10): Promise<Me
         .limit(limit);
 
       if (recipesError) {
-        console.error('Recipe search error:', recipesError);
+        logger.error('MealPlanning', recipesError, { action: 'recipe search' });
       }
 
       if (recipes) {
@@ -1443,7 +1444,7 @@ export async function getBacklogItems(): Promise<MealBacklogData[]> {
       // Get the merged connection
       const mergedConnection = await getMealsMergedConnection();
       if (!mergedConnection) {
-        console.log('[MealPlanningAPI] No merged connection, returning empty backlog');
+        logger.debug('MealPlanning', 'No merged connection, returning empty backlog');
         return [];
       }
 
@@ -1579,7 +1580,7 @@ export async function useBacklogItem(
         .eq('id', backlogId);
 
       if (deleteError) {
-        console.error('[MealPlanningAPI] Failed to remove backlog item after use:', deleteError);
+        logger.error('MealPlanning', deleteError, { action: 'remove backlog item after use' });
         // Don't throw - the meal was created successfully
       }
 

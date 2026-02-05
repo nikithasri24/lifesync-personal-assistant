@@ -95,11 +95,11 @@ export async function getMergedConnectionId(
 ): Promise<MergedConnectionResult | null> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    console.log('[getMergedConnectionId] No user logged in');
+    logger.debug('SharedData', 'No user logged in');
     return null;
   }
 
-  console.log('[getMergedConnectionId] Checking for module:', module, 'user:', user.id);
+  logger.debug('SharedData', 'Checking for merged connection', { module, userId: user.id });
 
   try {
     // Get active connections where we are either requester or receiver
@@ -115,7 +115,7 @@ export async function getMergedConnectionId(
       .eq('status', 'active')
       .or(`requester_id.eq.${user.id},receiver_id.eq.${user.id}`);
 
-    console.log('[getMergedConnectionId] Active connections:', connections?.length ?? 0, connError);
+    logger.debug('SharedData', `Active connections: ${connections?.length ?? 0}`);
 
     if (connError || !connections || connections.length === 0) return null;
 
@@ -131,7 +131,7 @@ export async function getMergedConnectionId(
         .eq('connection_id', conn.id)
         .eq('module', module);
 
-      console.log('[getMergedConnectionId] Permissions for connection', conn.id, ':', permissions, permError);
+      logger.debug('SharedData', `Permissions for connection ${conn.id}`, { permissionsCount: permissions?.length, error: permError });
 
       if (permError || !permissions) continue;
 
@@ -139,7 +139,7 @@ export async function getMergedConnectionId(
       const myPermission = permissions.find(p => p.user_id === user.id);
       const partnerPermission = permissions.find(p => p.user_id === partnerId);
 
-      console.log('[getMergedConnectionId] My permission:', myPermission?.permission_level, 'Partner permission:', partnerPermission?.permission_level);
+      logger.debug('SharedData', 'Permission levels', { myLevel: myPermission?.permission_level, partnerLevel: partnerPermission?.permission_level });
 
       if (
         myPermission?.permission_level === 'merged' &&
@@ -155,7 +155,7 @@ export async function getMergedConnectionId(
         // Use 'Partner' as fallback if full_name is null, undefined, or empty string
         const partnerName = rawPartnerName && rawPartnerName.trim() ? rawPartnerName : 'Partner';
 
-        console.log('[getMergedConnectionId] MERGED mode enabled! Connection:', conn.id, 'partnerName:', partnerName);
+        logger.debug('SharedData', 'MERGED mode enabled', { connectionId: conn.id, partnerName });
         return {
           connectionId: conn.id,
           partnerId,
@@ -164,7 +164,7 @@ export async function getMergedConnectionId(
       }
     }
 
-    console.log('[getMergedConnectionId] No mutual merged found');
+    logger.debug('SharedData', 'No mutual merged connection found');
     return null;
   } catch (error) {
     logger.error('SharedDataProvider', 'Error checking merged connection', { error, module });

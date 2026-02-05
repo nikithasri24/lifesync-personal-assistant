@@ -5,6 +5,7 @@
 import { supabase } from '../../lib/supabase';
 import { getMergedConnectionId, type MergedConnectionResult } from '../../shared/api/SharedDataProvider';
 import type { UserPassport, UserVisa } from '../types/visa';
+import { logger } from '../../services/logger';
 
 // Cache for merged connection (to avoid repeated database calls)
 let cachedMergedConnection: MergedConnectionResult | null | undefined = undefined;
@@ -15,11 +16,11 @@ let cachedMergedConnection: MergedConnectionResult | null | undefined = undefine
  */
 export async function getVisaMergedConnection(): Promise<MergedConnectionResult | null> {
   if (cachedMergedConnection !== undefined) {
-    console.log('[PassportAPI] Using cached merged connection:', cachedMergedConnection);
+    logger.debug('Travel', 'Using cached merged connection', { cachedMergedConnection });
     return cachedMergedConnection;
   }
   cachedMergedConnection = await getMergedConnectionId('visa');
-  console.log('[PassportAPI] Fetched merged connection:', cachedMergedConnection);
+  logger.debug('Travel', 'Fetched merged connection', { cachedMergedConnection });
   return cachedMergedConnection;
 }
 
@@ -196,26 +197,25 @@ export async function addPassport(passport: {
 }): Promise<UserPassport> {
   const { data: authData, error: authError } = await supabase.auth.getUser();
 
-  console.log('[addPassport] Auth data:', { authData, authError });
+  logger.debug('Travel', 'Auth data retrieved', { hasUser: !!authData?.user, hasError: !!authError });
 
   if (authError) {
-    console.error('[addPassport] Auth error:', authError);
+    logger.error('Travel', authError, { action: 'get user auth' });
     throw new Error(`Authentication error: ${authError.message}`);
   }
 
   const { user } = authData;
   if (!user) {
-    console.error('[addPassport] No user found in auth data');
+    logger.error('Travel', 'No user found in auth data', {});
     throw new Error('Not authenticated');
   }
 
   if (!user.id) {
-    console.error('[addPassport] User ID is null/undefined:', user);
+    logger.error('Travel', 'User ID is null/undefined', { user });
     throw new Error('User ID is missing');
   }
 
-  console.log('[addPassport] User ID:', user.id);
-  console.log('[addPassport] Passport data:', passport);
+  logger.debug('Travel', 'Adding passport', { userId: user.id, country: passport.countryCode });
 
   // If setting as primary, unset other primary passports first
   if (passport.isPrimary) {
@@ -225,7 +225,7 @@ export async function addPassport(passport: {
       .eq('user_id', user.id)
       .eq('is_primary', true);
 
-    console.log('[addPassport] Unset primary result:', updateResult);
+    logger.debug('Travel', 'Unset primary passport', { updateResult });
   }
 
   const insertData = {
@@ -238,7 +238,7 @@ export async function addPassport(passport: {
     is_primary: passport.isPrimary,
   };
 
-  console.log('[addPassport] Inserting data:', insertData);
+  logger.debug('Travel', 'Inserting passport data', { country: passport.countryCode });
 
   const result = await supabase
     .from('user_passports')
@@ -246,15 +246,15 @@ export async function addPassport(passport: {
     .select()
     .single();
 
-  console.log('[addPassport] Insert result:', result);
+  logger.debug('Travel', 'Passport insert result', { hasData: !!result.data, hasError: !!result.error });
 
   if (result.error) {
-    console.error('[addPassport] Insert error:', result.error);
+    logger.error('Travel', result.error, { action: 'insert passport' });
     throw result.error;
   }
 
   if (!result.data || !isUserPassportRow(result.data)) {
-    console.error('[addPassport] Invalid data returned:', result.data);
+    logger.error('Travel', 'Invalid data returned from database', { data: result.data });
     throw new Error('Invalid passport data returned from database');
   }
 

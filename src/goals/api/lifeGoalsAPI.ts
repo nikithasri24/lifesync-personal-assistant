@@ -30,6 +30,7 @@ import type {
 } from '../types/lifeGoals';
 
 import { getMergedConnectionId, type MergedConnectionResult } from '../../shared/api/SharedDataProvider';
+import { logger } from '../../services/logger';
 
 // ==================== Merged Connection Cache ====================
 
@@ -41,11 +42,11 @@ let cachedMergedConnection: MergedConnectionResult | null | undefined;
  */
 export async function getGoalsMergedConnection(): Promise<MergedConnectionResult | null> {
   if (cachedMergedConnection !== undefined) {
-    console.log('[LifeGoalsAPI] Using cached merged connection:', cachedMergedConnection);
+    logger.debug('Goals', 'Using cached merged connection', { cachedMergedConnection });
     return cachedMergedConnection;
   }
   cachedMergedConnection = await getMergedConnectionId('goals');
-  console.log('[LifeGoalsAPI] Fetched merged connection:', cachedMergedConnection);
+  logger.debug('Goals', 'Fetched merged connection', { cachedMergedConnection });
   return cachedMergedConnection;
 }
 
@@ -53,7 +54,7 @@ export async function getGoalsMergedConnection(): Promise<MergedConnectionResult
  * Clear the cached merged connection (call when permissions change)
  */
 export function clearGoalsMergedConnectionCache(): void {
-  console.log('[LifeGoalsAPI] Clearing merged connection cache');
+  logger.debug('Goals', 'Clearing merged connection cache');
   cachedMergedConnection = undefined;
 }
 
@@ -239,7 +240,7 @@ export async function getUserLifeGoals(): Promise<LifeGoal[]> {
   if (!user) throw new Error('Not authenticated');
 
   const mergedConnection = await getGoalsMergedConnection();
-  console.log('[LifeGoalsAPI] getUserLifeGoals - user:', user.id, 'mergedConnection:', mergedConnection);
+  logger.debug('Goals', 'getUserLifeGoals', { userId: user.id, mergedConnection });
 
   if (mergedConnection) {
     // Merged mode: fetch personal goals from BOTH users AND shared goals
@@ -257,7 +258,7 @@ export async function getUserLifeGoals(): Promise<LifeGoal[]> {
     const myPersonalCount = goals.filter(g => !g.connectionId && g.userId === user.id).length;
     const partnerPersonalCount = goals.filter(g => !g.connectionId && g.userId === mergedConnection.partnerId).length;
     const sharedCount = goals.filter(g => g.connectionId).length;
-    console.log('[LifeGoalsAPI] Fetched', goals.length, 'total goals (', myPersonalCount, 'my personal,', partnerPersonalCount, 'partner personal,', sharedCount, 'shared)');
+    logger.debug('Goals', `Fetched ${goals.length} total goals`, { myPersonalCount, partnerPersonalCount, sharedCount });
     return goals;
   } else {
     // Personal mode: fetch by user_id only
@@ -329,11 +330,11 @@ export async function createLifeGoal(input: CreateLifeGoalInput): Promise<LifeGo
   let connectionId: string | null = null;
   if (input.isShared) {
     const mergedConnection = await getGoalsMergedConnection();
-    console.log('[LifeGoalsAPI] createLifeGoal - mergedConnection:', mergedConnection);
+    logger.debug('Goals', 'createLifeGoal', { mergedConnection });
     if (mergedConnection) {
       connectionId = mergedConnection.connectionId;
     } else {
-      console.warn('[LifeGoalsAPI] isShared=true but no merged connection available');
+      logger.warn('Goals', 'isShared=true but no merged connection available');
     }
   }
 
@@ -622,7 +623,7 @@ export async function getUserLifeDreams(): Promise<LifeDream[]> {
   if (!user) throw new Error('Not authenticated');
 
   const mergedConnection = await getGoalsMergedConnection();
-  console.log('[LifeGoalsAPI] getUserLifeDreams - user:', user.id, 'mergedConnection:', mergedConnection);
+  logger.debug('Goals', 'getUserLifeDreams', { userId: user.id, mergedConnection });
 
   if (mergedConnection) {
     // Merged mode: fetch personal dreams from BOTH users AND shared dreams
@@ -640,7 +641,7 @@ export async function getUserLifeDreams(): Promise<LifeDream[]> {
     const myPersonalCount = dreams.filter(d => !d.connectionId && d.userId === user.id).length;
     const partnerPersonalCount = dreams.filter(d => !d.connectionId && d.userId === mergedConnection.partnerId).length;
     const sharedCount = dreams.filter(d => d.connectionId).length;
-    console.log('[LifeGoalsAPI] Fetched', dreams.length, 'total dreams (', myPersonalCount, 'my personal,', partnerPersonalCount, 'partner personal,', sharedCount, 'shared)');
+    logger.debug('Goals', `Fetched ${dreams.length} total dreams`, { myPersonalCount, partnerPersonalCount, sharedCount });
     return dreams;
   } else {
     // Personal mode: fetch by user_id only
@@ -666,11 +667,11 @@ export async function createLifeDream(input: CreateLifeDreamInput): Promise<Life
   let connectionId: string | null = null;
   if (input.isShared) {
     const mergedConnection = await getGoalsMergedConnection();
-    console.log('[LifeGoalsAPI] createLifeDream - mergedConnection:', mergedConnection);
+    logger.debug('Goals', 'createLifeDream', { mergedConnection });
     if (mergedConnection) {
       connectionId = mergedConnection.connectionId;
     } else {
-      console.warn('[LifeGoalsAPI] isShared=true but no merged connection available');
+      logger.warn('Goals', 'isShared=true but no merged connection available');
     }
   }
 

@@ -15,6 +15,7 @@ import {
 } from '@/api/notificationAPI';
 import { pushNotificationService } from '@/services/pushNotificationService';
 import { format, addMinutes, subMinutes, isAfter, isBefore, parseISO } from 'date-fns';
+import { logger } from '../logger';
 import type {
   Reminder,
   ReminderType,
@@ -63,10 +64,10 @@ class ReminderService {
         scheduled_for: params.scheduledFor.toISOString(),
       });
 
-      console.log('[ReminderService] Scheduled reminder:', result.id);
+      logger.debug('Service', 'Scheduled reminder', { reminderId: result.id });
       return result.id;
     } catch (error) {
-      console.error('[ReminderService] Failed to schedule reminder:', error);
+      logger.error('Service', error instanceof Error ? error : 'Failed to schedule reminder', {});
       return null;
     }
   }
@@ -79,7 +80,7 @@ class ReminderService {
       await cancelReminderAPI(reminderId);
       return true;
     } catch (error) {
-      console.error('[ReminderService] Failed to cancel reminder:', error);
+      logger.error('Service', error instanceof Error ? error : 'Failed to cancel reminder', {});
       return false;
     }
   }
@@ -94,10 +95,10 @@ class ReminderService {
     minutesBefore: number = 15
   ): Promise<string | null> {
     const reminderTime = subMinutes(scheduledTime, minutesBefore);
-    
+
     // Don't schedule if reminder time is in the past
     if (isBefore(reminderTime, new Date())) {
-      console.log('[ReminderService] Reminder time is in the past, skipping');
+      logger.debug('Service', 'Reminder time is in the past, skipping');
       return null;
     }
 
@@ -154,7 +155,7 @@ class ReminderService {
       const reminders = await getUpcomingReminders();
       return reminders as NotificationQueueItem[];
     } catch (error) {
-      console.error('[ReminderService] Failed to get pending reminders:', error);
+      logger.error('Service', error instanceof Error ? error : 'Failed to get pending reminders', {});
       return [];
     }
   }
@@ -167,7 +168,7 @@ class ReminderService {
       const reminders = await getDueReminders();
       return reminders as NotificationQueueItem[];
     } catch (error) {
-      console.error('[ReminderService] Failed to get due reminders:', error);
+      logger.error('Service', error instanceof Error ? error : 'Failed to get due reminders', {});
       return [];
     }
   }
@@ -180,7 +181,7 @@ class ReminderService {
       await markReminderSent(reminderId);
       return true;
     } catch (error) {
-      console.error('[ReminderService] Failed to mark as sent:', error);
+      logger.error('Service', error instanceof Error ? error : 'Failed to mark reminder as sent', {});
       return false;
     }
   }
@@ -235,7 +236,7 @@ class ReminderService {
       this.checkAndShowDueReminders();
     }, intervalMs);
 
-    console.log('[ReminderService] Started reminder check every', intervalMs, 'ms');
+    logger.debug('Service', `Started reminder check every ${intervalMs}ms`);
   }
 
   /**
@@ -245,7 +246,7 @@ class ReminderService {
     if (this.checkInterval) {
       clearInterval(this.checkInterval);
       this.checkInterval = null;
-      console.log('[ReminderService] Stopped reminder check');
+      logger.debug('Service', 'Stopped reminder check');
     }
   }
 

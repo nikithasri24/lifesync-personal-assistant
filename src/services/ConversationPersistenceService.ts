@@ -13,6 +13,7 @@ import {
   addMessageToConversation
 } from '@/api/conversationsAPI';
 import type { Conversation, ConversationMessage } from '@/types/infrastructure';
+import { logger } from './logger';
 
 export interface ConversationSummary {
   id: string;
@@ -50,11 +51,11 @@ class ConversationPersistenceService {
       });
 
       this.currentConversationId = conversation.id;
-      console.log('[ConversationPersistence] Started session:', this.currentSessionId);
+      logger.debug('Service', 'Started conversation session', { sessionId: this.currentSessionId });
 
       return this.currentSessionId;
     } catch (error) {
-      console.error('[ConversationPersistence] Failed to start session:', error);
+      logger.error('Service', error instanceof Error ? error : 'Failed to start session', {});
       throw error;
     }
   }
@@ -69,7 +70,7 @@ class ConversationPersistenceService {
       const conversation = conversations.find(c => c.session_id === sessionId);
 
       if (!conversation) {
-        console.error('[ConversationPersistence] Session not found:', sessionId);
+        logger.error('Service', 'Session not found', { sessionId });
         return null;
       }
 
@@ -78,7 +79,7 @@ class ConversationPersistenceService {
 
       return conversation as Conversation;
     } catch (error) {
-      console.error('[ConversationPersistence] Failed to resume session:', error);
+      logger.error('Service', error instanceof Error ? error : 'Failed to resume session', {});
       return null;
     }
   }
@@ -88,7 +89,7 @@ class ConversationPersistenceService {
    */
   async addMessage(message: ConversationMessage): Promise<void> {
     if (!this.currentConversationId) {
-      console.warn('[ConversationPersistence] No active session');
+      logger.warn('Service', 'No active session');
       return;
     }
 
@@ -96,7 +97,7 @@ class ConversationPersistenceService {
     try {
       await addMessageToConversation(this.currentConversationId, message);
     } catch (error) {
-      console.error('[ConversationPersistence] Failed to add message:', error);
+      logger.error('Service', error instanceof Error ? error : 'Failed to add message', {});
     }
   }
 
@@ -132,7 +133,7 @@ class ConversationPersistenceService {
           updated_at: c.updated_at,
         }));
     } catch (error) {
-      console.error('[ConversationPersistence] Failed to get recent:', error);
+      logger.error('Service', error instanceof Error ? error : 'Failed to get recent conversations', {});
       return [];
     }
   }
@@ -156,7 +157,7 @@ class ConversationPersistenceService {
       });
       return filtered.slice(0, limit) as Conversation[];
     } catch (error) {
-      console.error('[ConversationPersistence] Search failed:', error);
+      logger.error('Service', error instanceof Error ? error : 'Search failed', {});
       return [];
     }
   }
@@ -169,7 +170,7 @@ class ConversationPersistenceService {
     try {
       await updateConversation(conversationId, { summary });
     } catch (error) {
-      console.error('[ConversationPersistence] Failed to update summary:', error);
+      logger.error('Service', error instanceof Error ? error : 'Failed to update summary', {});
     }
   }
 
@@ -183,7 +184,7 @@ class ConversationPersistenceService {
     try {
       await updateConversation(this.currentConversationId, { context_snapshot: context });
     } catch (error) {
-      console.error('[ConversationPersistence] Failed to save context:', error);
+      logger.error('Service', error instanceof Error ? error : 'Failed to save context snapshot', {});
     }
   }
 

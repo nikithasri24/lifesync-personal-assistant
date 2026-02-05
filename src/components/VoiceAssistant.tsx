@@ -4,6 +4,7 @@ import useVoice from '../hooks/useVoice'
 import { ConversationEngine } from '../services/conversationEngine'
 import { useToast } from '../hooks/useToast'
 import { useAuth } from '../hooks/useAuth'
+import { logger } from '../services/logger'
 
 type Props = { open: boolean; onClose: () => void }
 
@@ -92,15 +93,15 @@ export const VoiceAssistant: React.FC<Props> = ({ open, onClose }) => {
 
   // Handle permission denied error
   React.useEffect(() => {
-    console.log('[VoiceAssistant] voiceError changed:', voiceError)
+    logger.debug('UI', 'Voice error changed', { voiceError })
 
     if (voiceError === 'not-allowed') {
-      console.warn('[VoiceAssistant] Permission denied error detected')
+      logger.warn('UI', 'Permission denied error detected')
       setPermissionDenied(true)
       // Don't show toast, we have a better UI for this
     } else if (voiceError && voiceError !== 'not-allowed') {
       // Only show toast for other errors
-      console.error('[VoiceAssistant] Voice error:', voiceError)
+      logger.error('UI', `Voice error: ${voiceError}`, {})
       // Clear the error after showing it
       if (voiceError !== 'not-allowed') {
         showToast(`Voice error: ${voiceError}`, 'error')
@@ -110,7 +111,7 @@ export const VoiceAssistant: React.FC<Props> = ({ open, onClose }) => {
 
   // Handle start - just start directly, let the browser handle permission
   const handleStart = React.useCallback(() => {
-    console.log('[VoiceAssistant] handleStart called, clearing errors and permission denied state')
+    logger.debug('UI', 'handleStart called, clearing errors and permission denied state')
     // Clear the permission denied state and any errors when user tries again
     clearError()
     setPermissionDenied(false)
@@ -119,10 +120,10 @@ export const VoiceAssistant: React.FC<Props> = ({ open, onClose }) => {
     setTimeout(() => {
       try {
         // Start listening - browser will request permission if needed
-        console.log('[VoiceAssistant] Starting voice recognition...')
+        logger.debug('UI', 'Starting voice recognition')
         start()
       } catch (error) {
-        console.error('[VoiceAssistant] Failed to start:', error)
+        logger.error('UI', error instanceof Error ? error : 'Failed to start voice recognition', {})
         setPermissionDenied(true)
       }
     }, 100)
@@ -135,15 +136,15 @@ export const VoiceAssistant: React.FC<Props> = ({ open, onClose }) => {
       return
     }
 
-    console.log('[VoiceAssistant] Modal opened, supported:', supported, 'voiceError:', voiceError)
+    logger.debug('UI', 'Modal opened', { supported, voiceError })
 
     // Clear any previous errors and permission denied state when opening
-    console.log('[VoiceAssistant] Clearing previous errors...')
+    logger.debug('UI', 'Clearing previous errors')
     clearError()
     setPermissionDenied(false)
 
     if (!supported) {
-      console.error('[VoiceAssistant] Voice not supported in this browser')
+      logger.error('UI', 'Voice not supported in this browser', {})
       showToast('Voice recognition not supported in this browser', 'error')
     }
 
@@ -151,7 +152,7 @@ export const VoiceAssistant: React.FC<Props> = ({ open, onClose }) => {
     setIsInitializing(false)
 
     return () => {
-      console.log('[VoiceAssistant] Modal closed, cleaning up...')
+      logger.debug('UI', 'Modal closed, cleaning up')
       setIsInitializing(false)
       setPermissionDenied(false)
       try { window.speechSynthesis?.cancel?.() } catch { /* Ignore cancel errors */ }
