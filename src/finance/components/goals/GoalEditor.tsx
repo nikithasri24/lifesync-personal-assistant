@@ -13,6 +13,8 @@ import {
   DollarSign
 } from 'lucide-react';
 import type { Goal, Account, GoalInput } from '../../types';
+import { useAuth } from '@/hooks/useAuth';
+import { useFinanceMergedConnectionQuery } from '@/hooks/useFinanceQuery';
 
 interface GoalEditorProps {
   isOpen: boolean;
@@ -31,10 +33,14 @@ export const GoalEditor: React.FC<GoalEditorProps> = ({
   goal,
   accounts,
 }) => {
+  const { user } = useAuth();
+  const { data: mergedConnection } = useFinanceMergedConnectionQuery();
+
   const [form, setForm] = React.useState<Partial<GoalInput>>({
     type: 'savings',
     currentAmount: 0,
     trackNetworth: false,
+    isShared: false,
   });
   const [saving, setSaving] = React.useState<boolean>(false);
   const [_error, setError] = React.useState<string>('');
@@ -53,6 +59,8 @@ export const GoalEditor: React.FC<GoalEditorProps> = ({
           type: goal.type,
           linkedAccountId: goal.linkedAccountId,
           trackNetworth: goal.trackNetworth ?? false,
+          isShared: goal.isShared ?? false,
+          connectionId: goal.connectionId,
         });
       } else {
         // Creating new goal
@@ -60,6 +68,7 @@ export const GoalEditor: React.FC<GoalEditorProps> = ({
           type: 'savings',
           currentAmount: 0,
           trackNetworth: false,
+          isShared: false,
           dueDateISO: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 year from now
         });
       }
@@ -90,6 +99,9 @@ export const GoalEditor: React.FC<GoalEditorProps> = ({
 
     try {
       setSaving(true);
+      // If shared goal, use the connection_id from merged connection
+      const connectionId = (form.isShared && mergedConnection) ? mergedConnection.connectionId : undefined;
+
       await onSave({
         ...(form.id ? { id: form.id } : {}),
         name: form.name ?? '',
@@ -98,6 +110,8 @@ export const GoalEditor: React.FC<GoalEditorProps> = ({
         startingAmount: 0, // Always start from 0
         dueDateISO: form.dueDateISO ?? '',
         type: form.type ?? 'savings',
+        connectionId,
+        isShared: form.isShared,
         linkedAccountId: form.linkedAccountId,
         trackNetworth: form.trackNetworth,
       } as GoalInput);
@@ -280,6 +294,29 @@ export const GoalEditor: React.FC<GoalEditorProps> = ({
                 <span className="text-sm text-slate-700">Track total net worth instead</span>
               </label>
             </div>
+
+            {/* Shared Goal Option - only in merged mode */}
+            {mergedConnection && (
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <label className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    checked={form.isShared ?? false}
+                    onChange={(e) => setForm({ ...form, isShared: e.target.checked })}
+                    className="mt-1 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <div className="flex-1">
+                    <span className="text-sm font-medium text-slate-900">
+                      This is a shared goal
+                    </span>
+                    <p className="text-xs text-slate-600 mt-1">
+                      Both you and {mergedConnection.partnerName} are working toward this goal together.
+                      It will be visible to both of you and contributions from either partner will count toward the target.
+                    </p>
+                  </div>
+                </label>
+              </div>
+            )}
           </div>
 
           {/* Footer */}

@@ -102,6 +102,7 @@ export type GoalType = 'savings' | 'debt';
 export type Goal = {
   id: string;
   userId: string; // Owner of the goal (for merged mode)
+  connectionId?: string; // For shared goals in merged mode
   name: string;
   targetAmount: number;
   currentAmount: number;
@@ -111,6 +112,7 @@ export type Goal = {
   linkedCategoryId?: string;
   linkedAccountId?: string; // Auto-track from account balance
   trackNetworth?: boolean; // Track total networth instead
+  isShared?: boolean; // Whether this is a shared goal (UI helper)
   createdAtISO?: string;
   updatedAtISO?: string;
 };

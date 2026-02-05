@@ -225,7 +225,7 @@ export class SupabaseApi implements FinanceAPI {
   }
 
   async upsertTransaction(txn: TransactionInput): Promise<void> {
-    const userId = await this.getUserId();
+    const currentUserId = await this.getUserId();
 
     if (txn.id) {
       // Update existing
@@ -246,15 +246,15 @@ export class SupabaseApi implements FinanceAPI {
           updated_at: new Date().toISOString(),
         })
         .eq('id', txn.id)
-        .eq('user_id', userId);
+        .eq('user_id', currentUserId);
 
       if (error) throw error;
     } else {
-      // Insert new
+      // Insert new - use provided userId or default to current user
       const { error } = await this.client
         .from('finance_transactions')
         .insert({
-          user_id: userId,
+          user_id: txn.userId ?? currentUserId,
           account_id: txn.accountId,
           date: txn.dateISO,
           description: txn.description,
@@ -478,6 +478,7 @@ export class SupabaseApi implements FinanceAPI {
     return (data || []).map(row => ({
       id: row.id,
       userId: row.user_id,
+      connectionId: row.connection_id,
       name: row.name,
       targetAmount: parseFloat(row.target_amount),
       currentAmount: parseFloat(row.current_amount),
@@ -487,6 +488,7 @@ export class SupabaseApi implements FinanceAPI {
       linkedCategoryId: row.linked_category_id,
       linkedAccountId: row.linked_account_id,
       trackNetworth: row.track_networth,
+      isShared: !!row.connection_id, // Helper flag for UI
       createdAtISO: row.created_at,
       updatedAtISO: row.updated_at,
     }));
@@ -509,6 +511,7 @@ export class SupabaseApi implements FinanceAPI {
           linked_category_id: goal.linkedCategoryId,
           linked_account_id: goal.linkedAccountId,
           track_networth: goal.trackNetworth,
+          connection_id: goal.connectionId,
           updated_at: new Date().toISOString(),
         })
         .eq('id', goal.id)
@@ -516,11 +519,12 @@ export class SupabaseApi implements FinanceAPI {
 
       if (error) throw error;
     } else {
-      // Insert new
+      // Insert new - for shared goals, use connectionId
       const { error } = await this.client
         .from('finance_goals')
         .insert({
           user_id: userId,
+          connection_id: goal.connectionId,
           name: goal.name,
           target_amount: goal.targetAmount,
           current_amount: goal.currentAmount,
