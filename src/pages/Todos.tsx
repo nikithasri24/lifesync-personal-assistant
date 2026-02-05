@@ -15,7 +15,7 @@
  * - Ephemeral state (expanded tasks, pomodoro timer) - useTaskExpansion, usePomodoro
  */
 
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useState } from 'react';
 import { format } from 'date-fns';
 import { useApiHealth } from '../hooks/useApiHealth';
 import {
@@ -23,8 +23,11 @@ import {
   useProjects,
   useCreateTask,
   useUpdateTask,
+  useMergedTasksConnectionQuery,
 } from '../hooks/useTasksQuery';
 import type { TaskData } from '../services/types';
+import { OwnerFilter, type OwnerFilterValue } from '../components/common/OwnerFilter';
+import { useCurrentUserId, usePartnerName } from '../utils/ownerUtils';
 
 // Import all custom hooks
 import {
@@ -70,11 +73,31 @@ export default function Todos(): React.ReactElement {
   // Enhanced API health monitoring
   const apiHealth = useApiHealth(15000); // Check every 15 seconds
 
+  // Merged mode support
+  const { data: mergedConnection } = useMergedTasksConnectionQuery();
+  const { data: currentUserId } = useCurrentUserId();
+  const partnerName = usePartnerName(mergedConnection);
+  const [ownerFilter, setOwnerFilter] = useState<OwnerFilterValue>('all');
+
   // ============================================================================
   // Data Transformation - API to Local Format
   // ============================================================================
-  const tasks = useMemo(() => transformApiTasks(apiTasks), [apiTasks]);
+  const allTasks = useMemo(() => transformApiTasks(apiTasks), [apiTasks]);
   const projects = useMemo(() => transformApiProjects(apiProjects), [apiProjects]);
+
+  // Apply owner filter if in merged mode
+  const tasks = useMemo(() => {
+    if (!mergedConnection || !currentUserId) return allTasks;
+
+    switch (ownerFilter) {
+      case 'mine':
+        return allTasks.filter(task => task.userId === currentUserId);
+      case 'partner':
+        return allTasks.filter(task => task.userId === mergedConnection.partnerId);
+      default:
+        return allTasks; // 'all'
+    }
+  }, [allTasks, ownerFilter, currentUserId, mergedConnection]);
 
   // ============================================================================
   // Custom Hooks - Client State Management
@@ -230,6 +253,17 @@ export default function Todos(): React.ReactElement {
           tasksLoading={tasksLoading}
           tasks={tasks}
         />
+
+        {/* Owner Filter - Show only in merged mode */}
+        {mergedConnection && (
+          <div className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 px-6 py-3">
+            <OwnerFilter
+              value={ownerFilter}
+              onChange={setOwnerFilter}
+              partnerName={partnerName}
+            />
+          </div>
+        )}
 
         {/* Content Area - View-Specific Rendering */}
         <div className="flex-1 overflow-y-auto bg-white dark:bg-slate-900">

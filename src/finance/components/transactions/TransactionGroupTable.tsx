@@ -12,6 +12,8 @@ interface TransactionGroupTableProps {
   categories: Category[];
   onUpdate: () => void;
   onDelete: () => void;
+  currentUserId?: string;
+  partnerName?: string;
 }
 
 export const TransactionGroupTable: React.FC<TransactionGroupTableProps> = ({
@@ -19,6 +21,8 @@ export const TransactionGroupTable: React.FC<TransactionGroupTableProps> = ({
   categories,
   onUpdate,
   onDelete,
+  currentUserId,
+  partnerName,
 }) => {
   return (
     <div className="overflow-x-auto">
@@ -53,6 +57,8 @@ export const TransactionGroupTable: React.FC<TransactionGroupTableProps> = ({
               categories={categories}
               onUpdate={onUpdate}
               onDelete={onDelete}
+              currentUserId={currentUserId}
+              partnerName={partnerName}
             />
           ))}
         </tbody>

@@ -2,6 +2,7 @@ import React from 'react';
 import { MapPin } from 'lucide-react';
 import type { ShoppingList, Store } from '../../types';
 import { CATEGORY_ICONS, STORE_TYPES } from '../../constants';
+import { CompactOwnerBadge } from '../common/OwnerBadge';
 
 interface StoreListCardProps {
   list: ShoppingList;
@@ -31,15 +32,28 @@ export function StoreListCard({ list, store }: StoreListCardProps) {
 
       <div className="p-4">
         <div className="space-y-2 max-h-40 overflow-y-auto">
-          {list.items.slice(0, 5).map(item => (
-            <div key={item.id} className="flex items-center justify-between text-sm">
-              <div className="flex items-center space-x-2">
-                <span>{CATEGORY_ICONS[item.category]}</span>
-                <span className="text-gray-900">{item.name}</span>
+          {list.items.slice(0, 5).map(item => {
+            const itemWithOwner = item as typeof item & {
+              ownerId?: string;
+              ownerName?: string;
+              isOwnedByCurrentUser?: boolean;
+            };
+            return (
+              <div key={item.id} className="flex items-center justify-between text-sm">
+                <div className="flex items-center space-x-2">
+                  <span>{CATEGORY_ICONS[item.category]}</span>
+                  <span className="text-gray-900">{item.name}</span>
+                  {itemWithOwner.ownerName && (
+                    <CompactOwnerBadge
+                      ownerName={itemWithOwner.ownerName}
+                      isOwnedByCurrentUser={itemWithOwner.isOwnedByCurrentUser ?? true}
+                    />
+                  )}
+                </div>
+                <span className="text-gray-500">{item.quantity} {item.unit}</span>
               </div>
-              <span className="text-gray-500">{item.quantity} {item.unit}</span>
-            </div>
-          ))}
+            );
+          })}
           {list.items.length > 5 && (
             <div className="text-xs text-gray-500 text-center pt-2">
               +{list.items.length - 5} more items

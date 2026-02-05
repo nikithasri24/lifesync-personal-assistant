@@ -224,7 +224,7 @@ export const MODULE_CONFIGS: Record<ShareableModule, ModulePermissionConfig> = {
     description: 'Todo lists and task management',
     icon: 'CheckSquare',
     defaultLevel: 'none',
-    supportedLevels: ['none', 'view', 'collaborate'],
+    supportedLevels: ['none', 'view', 'collaborate', 'merged'],
     hasSettings: false,
   },
   notes: {

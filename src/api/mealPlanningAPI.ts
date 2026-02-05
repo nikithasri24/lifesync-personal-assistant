@@ -1179,18 +1179,18 @@ export async function deleteMealTracking(id: string): Promise<void> {
 // =====================================================
 
 /**
- * Get all pantry items for the current user.
+ * Get all pantry items for the current user (includes merged items from partner).
  * Validates API responses with Zod schemas.
  */
 export async function getPantryItems(): Promise<PantryItemData[]> {
   return apiCall(
     async () => {
-      const user = await requireAuth();
+      await requireAuth();
 
+      // RLS policy handles filtering - returns own items + partner's items if merged
       const { data, error } = await supabase
         .from('pantry_items')
         .select('*')
-        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -1203,7 +1203,7 @@ export async function getPantryItems(): Promise<PantryItemData[]> {
 }
 
 /**
- * Create a new pantry item
+ * Create a new pantry item (with connection_id if in merged mode)
  */
 export async function createPantryItem(
   item: Omit<PantryItemData, 'id' | 'created_at' | 'updated_at' | 'user_id'>
@@ -1212,10 +1212,20 @@ export async function createPantryItem(
     async () => {
       const user = await requireAuth();
 
+      // Get connection_id if user has merged permission
+      const { data: permissions } = await supabase
+        .from('module_permissions')
+        .select('connection_id')
+        .eq('user_id', user.id)
+        .eq('module', 'shopping')
+        .eq('permission_level', 'merged')
+        .maybeSingle();
+
       const result = await supabase
         .from('pantry_items')
         .insert({
           user_id: user.id,
+          connection_id: permissions?.connection_id ?? null,
           ...item,
         })
         .select()

@@ -13,8 +13,11 @@ import {
   useDeletePendingTransactionMutation,
   useAccountsQuery,
   useCategoriesQuery,
+  useFinanceMergedConnectionQuery,
 } from '@/hooks/useFinanceQuery';
 import { formatCurrency } from '../../utils/currency';
+import { useAuth } from '@/hooks/useAuth';
+import { OwnerBadge } from '../OwnerBadge';
 
 interface PendingGroup {
   label: string;
@@ -23,6 +26,16 @@ interface PendingGroup {
 }
 
 export const PendingTransactionsReview: React.FC = () => {
+  // Auth and merged connection
+  const { user } = useAuth();
+  const { data: mergedConnection } = useFinanceMergedConnectionQuery();
+
+  // Get partner name from merged connection
+  const partnerName = React.useMemo(() => {
+    if (!mergedConnection || !user) return undefined;
+    return mergedConnection.partnerName;
+  }, [mergedConnection, user]);
+
   const { data: pending = [], isLoading } = usePendingTransactionsQuery();
   const { data: accounts = [] } = useAccountsQuery();
   const { data: categories = [] } = useCategoriesQuery();
@@ -248,7 +261,17 @@ export const PendingTransactionsReview: React.FC = () => {
                           /* View Mode */
                           <div className="flex items-center justify-between">
                             <div className="flex-1 min-w-0">
-                              <h4 className="font-medium">{p.description}</h4>
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-medium">{p.description}</h4>
+                                {user && (
+                                  <OwnerBadge
+                                    userId={p.userId}
+                                    currentUserId={user.id}
+                                    partnerName={partnerName}
+                                    size="sm"
+                                  />
+                                )}
+                              </div>
                               <div className="flex items-center gap-3 mt-1 text-sm opacity-70">
                                 <span>{formatCurrency(p.amount)}</span>
                                 {category && <span>• {category.name}</span>}

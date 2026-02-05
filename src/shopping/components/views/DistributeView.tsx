@@ -8,9 +8,14 @@ import { Zap, ArrowRight, DollarSign, Award, Navigation, Target, Star } from 'lu
 import type { ShoppingItem, Store } from '../../types';
 import type { DistributionStrategy } from '../../services/storeDistribution';
 import { CATEGORY_ICONS, STORE_TYPES } from '../../constants';
+import { CompactOwnerBadge } from '../common/OwnerBadge';
 
 interface DistributeViewProps {
-  items: ShoppingItem[];
+  items: (ShoppingItem & {
+    ownerId?: string;
+    ownerName?: string;
+    isOwnedByCurrentUser?: boolean;
+  })[];
   stores: Store[];
   distributionStrategy: DistributionStrategy;
   onStrategyChange: (strategy: DistributionStrategy) => void;
@@ -50,6 +55,12 @@ export function DistributeView({
                   <div key={item.id} className="flex items-center space-x-2 text-sm">
                     <span>{CATEGORY_ICONS[item.category]}</span>
                     <span className="text-gray-900">{item.name}</span>
+                    {item.ownerName && (
+                      <CompactOwnerBadge
+                        ownerName={item.ownerName}
+                        isOwnedByCurrentUser={item.isOwnedByCurrentUser ?? true}
+                      />
+                    )}
                     {item.assignedStore && (
                       <span className="text-purple-600 text-xs">
                         (Preferred: {stores.find(s => s.id === item.assignedStore)?.name})

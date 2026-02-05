@@ -8,10 +8,22 @@ import { TrendingUp, TrendingDown, DollarSign, PieChart, BarChart3 } from 'lucid
 import { Card } from '../components/Card';
 import { ChartLazy } from '../components/ChartLazy';
 import { formatCurrency } from '../utils/currency';
-import { useNetWorthQuery, useAccountsQuery, useLoansQuery } from '@/hooks/useFinanceQuery';
+import { useNetWorthQuery, useAccountsQuery, useLoansQuery, useFinanceMergedConnectionQuery } from '@/hooks/useFinanceQuery';
 import type { Account } from '../types';
+import { useAuth } from '@/hooks/useAuth';
+import { OwnerBadge } from '../components/OwnerBadge';
 
 const NetWorthPage: React.FC = () => {
+  // Auth and merged connection
+  const { user } = useAuth();
+  const { data: mergedConnection } = useFinanceMergedConnectionQuery();
+
+  // Get partner name from merged connection
+  const partnerName = React.useMemo(() => {
+    if (!mergedConnection || !user) return undefined;
+    return mergedConnection.partnerName;
+  }, [mergedConnection, user]);
+
   // React Query hooks
   const { data: netWorthData = [], isLoading: netWorthLoading } = useNetWorthQuery();
   const { data: accounts = [], isLoading: accountsLoading } = useAccountsQuery();
@@ -201,7 +213,17 @@ const NetWorthPage: React.FC = () => {
                   <div className="space-y-1.5 ml-3">
                     {accts.map(a => (
                       <div key={a.id} className="flex items-center justify-between text-xs text-primary opacity-70">
-                        <span>{a.name}</span>
+                        <div className="flex items-center gap-2">
+                          <span>{a.name}</span>
+                          {user && (
+                            <OwnerBadge
+                              userId={a.userId}
+                              currentUserId={user.id}
+                              partnerName={partnerName}
+                              size="sm"
+                            />
+                          )}
+                        </div>
                         <span>{formatCurrency(a.liability ? -a.balance : a.balance)}</span>
                       </div>
                     ))}
@@ -240,7 +262,17 @@ const NetWorthPage: React.FC = () => {
                   <div className="space-y-1.5 ml-3">
                     {accts.map(a => (
                       <div key={a.id} className="flex items-center justify-between text-xs text-primary opacity-70">
-                        <span>{a.name}</span>
+                        <div className="flex items-center gap-2">
+                          <span>{a.name}</span>
+                          {user && (
+                            <OwnerBadge
+                              userId={a.userId}
+                              currentUserId={user.id}
+                              partnerName={partnerName}
+                              size="sm"
+                            />
+                          )}
+                        </div>
                         <span>{formatCurrency(Math.abs(a.balance))}</span>
                       </div>
                     ))}
@@ -264,7 +296,17 @@ const NetWorthPage: React.FC = () => {
                 <div className="space-y-1.5 ml-3">
                   {activeLoans.map(loan => (
                     <div key={loan.id} className="flex items-center justify-between text-xs text-primary opacity-70">
-                      <span>{loan.loanName}</span>
+                      <div className="flex items-center gap-2">
+                        <span>{loan.loanName}</span>
+                        {user && (
+                          <OwnerBadge
+                            userId={loan.userId}
+                            currentUserId={user.id}
+                            partnerName={partnerName}
+                            size="sm"
+                          />
+                        )}
+                      </div>
                       <span>{formatCurrency(loan.currentBalance)}</span>
                     </div>
                   ))}

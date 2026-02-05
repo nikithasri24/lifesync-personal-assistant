@@ -9,7 +9,8 @@ import { Button } from '../ui/Button';
 import { logger } from '../../services/logger';
 import { useToast } from '../../hooks/useToast';
 import type { Account, AccountType } from '../types';
-import { useUpsertAccountMutation, useDeleteAccountMutation } from '@/hooks/useFinanceQuery';
+import { useUpsertAccountMutation, useDeleteAccountMutation, useFinanceMergedConnectionQuery } from '@/hooks/useFinanceQuery';
+import { useAuth } from '@/hooks/useAuth';
 
 interface AccountModalProps {
   account?: Account;
@@ -21,10 +22,25 @@ export const AccountModal: React.FC<AccountModalProps> = ({ account, onClose, on
   const { showToast } = useToast();
   const upsertAccountMutation = useUpsertAccountMutation();
   const deleteAccountMutation = useDeleteAccountMutation();
+  const { user } = useAuth();
+  const { data: mergedConnection } = useFinanceMergedConnectionQuery();
+
+  // Get partner info from merged connection
+  const partnerName = React.useMemo(() => {
+    if (!mergedConnection || !user) return undefined;
+    return mergedConnection.partnerName;
+  }, [mergedConnection, user]);
+
+  const partnerId = React.useMemo(() => {
+    if (!mergedConnection || !user) return undefined;
+    return mergedConnection.partnerId;
+  }, [mergedConnection, user]);
+
   const [formData, setFormData] = React.useState({
     name: account?.name ?? '',
     type: account?.type ?? 'checking',
     balance: account?.balance?.toString() ?? '0',
+    userId: account?.userId ?? user?.id ?? '',
   });
 
   const isEditing = !!account;
@@ -38,6 +54,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({ account, onClose, on
         name: formData.name,
         type: formData.type,
         balance: parseFloat(formData.balance),
+        userId: formData.userId,
       });
 
       showToast(
@@ -145,6 +162,26 @@ export const AccountModal: React.FC<AccountModalProps> = ({ account, onClose, on
                 For credit cards, enter positive number for amount owed (e.g., 1200 for $1,200 debt)
               </p>
             </div>
+
+            {/* Owner selection - only show in merged mode */}
+            {mergedConnection && user && partnerId && (
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Owner
+                </label>
+                <select
+                  value={formData.userId}
+                  onChange={(e) => setFormData({ ...formData, userId: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
+                >
+                  <option value={user.id}>Me</option>
+                  <option value={partnerId}>{partnerName || 'Partner'}</option>
+                </select>
+                <p className="mt-1 text-xs text-slate-500">
+                  Who owns this account
+                </p>
+              </div>
+            )}
           </form>
         </div>
 

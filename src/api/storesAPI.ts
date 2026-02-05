@@ -10,12 +10,12 @@ import { apiCall, requireAuth, handleSupabaseResponse } from './apiWrapper';
 export async function getStores(): Promise<StoreData[]> {
   return apiCall(
     async () => {
-      const user = await requireAuth();
+      await requireAuth();
 
+      // RLS policy handles filtering - returns own stores + partner's stores if merged
       const { data, error } = await supabase
         .from('stores')
         .select('*')
-        .eq('user_id', user.id)
         .order('favorite', { ascending: false })
         .order('name', { ascending: true });
 
@@ -33,9 +33,22 @@ export async function createStore(
     async () => {
       const user = await requireAuth();
 
+      // Get connection_id if user has merged permission
+      const { data: permissions } = await supabase
+        .from('module_permissions')
+        .select('connection_id')
+        .eq('user_id', user.id)
+        .eq('module', 'shopping')
+        .eq('permission_level', 'merged')
+        .maybeSingle();
+
       const result = await supabase
         .from('stores')
-        .insert({ user_id: user.id, ...store })
+        .insert({
+          user_id: user.id,
+          connection_id: permissions?.connection_id ?? null,
+          ...store
+        })
         .select()
         .single();
 

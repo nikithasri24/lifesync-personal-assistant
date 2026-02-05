@@ -33,11 +33,39 @@ import type {
   RetirementAccountMetadataInput,
 } from '@/finance/types';
 import { logger } from '@/services/logger';
+import { getMergedConnectionId, type MergedConnectionResult } from '@/shared/api/SharedDataProvider';
+
+// ==================== Merged Connection ====================
+
+// Cache for merged connection to avoid repeated checks within same session
+let cachedFinanceMergedConnection: MergedConnectionResult | null | undefined = undefined;
+
+/**
+ * Get the merged connection ID for finances if both users have enabled merged mode.
+ * Results are cached for the session to avoid repeated database calls.
+ */
+export async function getFinancesMergedConnection(): Promise<MergedConnectionResult | null> {
+  if (cachedFinanceMergedConnection !== undefined) {
+    console.log('[FinanceAPI] Using cached merged connection:', cachedFinanceMergedConnection);
+    return cachedFinanceMergedConnection;
+  }
+  cachedFinanceMergedConnection = await getMergedConnectionId('finances');
+  console.log('[FinanceAPI] Fetched merged connection:', cachedFinanceMergedConnection);
+  return cachedFinanceMergedConnection;
+}
+
+/**
+ * Clear the cached merged connection (call when permissions change)
+ */
+export function clearFinanceMergedConnectionCache(): void {
+  cachedFinanceMergedConnection = undefined;
+}
 
 // ==================== Query Keys ====================
 
 export const financeKeys = {
   all: ['finance'] as const,
+  mergedConnection: () => [...financeKeys.all, 'mergedConnection'] as const,
   institutions: () => [...financeKeys.all, 'institutions'] as const,
   accounts: () => [...financeKeys.all, 'accounts'] as const,
   account: (id: string) => [...financeKeys.all, 'account', id] as const,
@@ -61,6 +89,24 @@ export const financeKeys = {
   retirementAccounts: () => [...financeKeys.all, 'retirementAccounts'] as const,
   retirementAccount: (id: string) => [...financeKeys.all, 'retirementAccount', id] as const,
 };
+
+// ==================== Merged Connection ====================
+
+/**
+ * Hook to get merged connection for finances module.
+ * Returns partnerId and connectionId if both users have merged mode enabled.
+ */
+export function useFinanceMergedConnectionQuery(options?: { enabled?: boolean }): UseQueryResult<MergedConnectionResult | null, Error> {
+  return useQuery<MergedConnectionResult | null, Error>({
+    queryKey: financeKeys.mergedConnection(),
+    queryFn: async () => {
+      const result = await getFinancesMergedConnection();
+      return result;
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes - merged connection doesn't change often
+    enabled: options?.enabled ?? true,
+  });
+}
 
 // ==================== Institutions ====================
 

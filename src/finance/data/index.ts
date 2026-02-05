@@ -1,31 +1,22 @@
 import type { FinanceAPI } from './api';
 
 export async function getFinanceAPI(): Promise<FinanceAPI> {
-  const backend = typeof import.meta.env?.VITE_FINANCE_BACKEND === 'string'
-    ? import.meta.env.VITE_FINANCE_BACKEND
-    : 'mock';
+  const url = typeof import.meta.env?.VITE_SUPABASE_URL === 'string'
+    ? import.meta.env.VITE_SUPABASE_URL
+    : undefined;
 
-  if (backend === 'supabase') {
-    const url = typeof import.meta.env?.VITE_SUPABASE_URL === 'string'
-      ? import.meta.env.VITE_SUPABASE_URL
-      : undefined;
+  const key = typeof import.meta.env?.VITE_SUPABASE_ANON_KEY === 'string'
+    ? import.meta.env.VITE_SUPABASE_ANON_KEY
+    : undefined;
 
-    const key = typeof import.meta.env?.VITE_SUPABASE_ANON_KEY === 'string'
-      ? import.meta.env.VITE_SUPABASE_ANON_KEY
-      : undefined;
+  if (!url || !key) throw new Error('Supabase URL/Anon key missing');
 
-    if (!url || !key) throw new Error('Supabase URL/Anon key missing');
+  const [{ createClient }, { SupabaseApi }] = await Promise.all([
+    import('@supabase/supabase-js'),
+    import('./supabaseApi'),
+  ]);
 
-    const [{ createClient }, { SupabaseApi }] = await Promise.all([
-      import('@supabase/supabase-js'),
-      import('./supabaseApi'),
-    ]);
-
-    const client = createClient(url, key);
-    return new SupabaseApi(client);
-  }
-
-  const { MockApi } = await import('./mockApi');
-  return new MockApi();
+  const client = createClient(url, key);
+  return new SupabaseApi(client);
 }
 

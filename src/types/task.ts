@@ -61,6 +61,7 @@ export interface Task {
   deleted: boolean;
   tags: string[];
   createdAt: Date;
+  userId: string; // Owner of the task (for merged mode support)
 
   // Optional fields
   description?: string;

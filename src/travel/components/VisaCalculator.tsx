@@ -1,9 +1,12 @@
 /**
  * Visa Calculator Component
  * Allows users to input their passport and visas to calculate visa-free travel access
+ * Supports merged mode to show combined passport/visa data from both users
  */
 
 import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '../../lib/supabase';
 import {
   getVisaRequirement,
   getAccessibleDestinations,
@@ -15,10 +18,12 @@ import { getAdditionalAccessFromVisas } from '../data/visaBasedAccess';
 import {
   getPrimaryPassport,
   getUserVisas,
+  getUserPassports,
   addPassport,
   addVisa,
   deleteVisa,
-  updatePassport
+  updatePassport,
+  getVisaMergedConnection
 } from '../api/passportAPI';
 import type { VisaRequirement, UserPassport, UserVisa } from '../types/visa';
 import VisaMap from './VisaMap';
@@ -33,10 +38,12 @@ interface DestinationRequirement {
 
 const VisaCalculator: React.FC = () => {
   const [passport, setPassport] = React.useState<UserPassport | null>(null);
+  const [allPassports, setAllPassports] = React.useState<UserPassport[]>([]);
   const [userVisas, setUserVisas] = React.useState<UserVisa[]>([]);
   const [searchTerm, setSearchTerm] = React.useState('');
   const [showAddVisa, setShowAddVisa] = React.useState(false);
   const [loading, setLoading] = React.useState(true);
+  const [currentUserId, setCurrentUserId] = React.useState<string | null>(null);
 
   // Add visa form state
   const [newVisaCountry, setNewVisaCountry] = React.useState('');
@@ -50,18 +57,59 @@ const VisaCalculator: React.FC = () => {
   // Bonus countries expansion state
   const [showAllBonus, setShowAllBonus] = React.useState(false);
 
+  // Travel date state (shared with VisaMap)
+  const [travelDate, setTravelDate] = React.useState<string>(() => {
+    // Default to today
+    return new Date().toISOString().split('T')[0];
+  });
+
+  // Passport owner filter state (shared with VisaMap)
+  type PassportOwnerFilter = 'me' | 'partner' | 'both';
+  const [passportOwnerFilter, setPassportOwnerFilter] = React.useState<PassportOwnerFilter>('me');
+
   const availableCountries = React.useMemo(() => getAvailablePassportCountries(), []);
+
+  // Check for merged connection
+  const { data: mergedConnection } = useQuery({
+    queryKey: ['visa', 'mergedConnection'],
+    queryFn: getVisaMergedConnection,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
+  // Helper to get ownership label for passports/visas
+  const getOwnershipLabel = (userId: string): string => {
+    if (!mergedConnection || !currentUserId) return '';
+    if (userId === currentUserId) return 'Me';
+    return mergedConnection.partnerName || 'Partner';
+  };
+
+  // Helper to get ownership color
+  const getOwnershipColor = (userId: string): string => {
+    if (!mergedConnection || !currentUserId) return '';
+    if (userId === currentUserId) return 'bg-blue-100 text-blue-800';
+    return 'bg-purple-100 text-purple-800';
+  };
 
   // Load passport and visas on mount
   React.useEffect(() => {
     const loadData = async () => {
       try {
         setLoading(true);
-        const [passportData, visasData] = await Promise.all([
+
+        // Get current user ID
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          setCurrentUserId(user.id);
+        }
+
+        const [passportData, allPassportsData, visasData] = await Promise.all([
           getPrimaryPassport(),
-          getUserVisas(),
+          getUserPassports(), // Get all passports (includes partner's in merged mode)
+          getUserVisas(), // Get all visas (includes partner's in merged mode)
         ]);
+
         setPassport(passportData);
+        setAllPassports(allPassportsData);
         setUserVisas(visasData);
       } catch (error) {
         console.error('Error loading passport/visa data:', error);
@@ -85,10 +133,31 @@ const VisaCalculator: React.FC = () => {
   }, [passport]);
 
   // Get additional access from visas (for bonus countries section)
+  // Only consider visas that are valid on the travel date AND belong to selected passport owner(s)
   const additionalAccessFromVisas = React.useMemo(() => {
-    const visaCountries = userVisas.map(v => v.countryName);
-    return getAdditionalAccessFromVisas(visaCountries);
-  }, [userVisas]);
+    const checkDate = new Date(travelDate);
+
+    // Filter visas by owner selection
+    let filteredVisas = userVisas;
+    if (mergedConnection && currentUserId) {
+      if (passportOwnerFilter === 'me') {
+        filteredVisas = userVisas.filter(v => v.userId === currentUserId);
+      } else if (passportOwnerFilter === 'partner') {
+        filteredVisas = userVisas.filter(v => v.userId === mergedConnection.partnerId);
+      }
+      // If 'both', use all visas (no filtering)
+    }
+
+    const validVisaCountries = filteredVisas
+      .filter(v => {
+        const isValid = new Date(v.expiryDate) >= checkDate;
+        console.log(`[VisaCalculator] Visa ${v.countryName} (owner: ${v.userId}) expiry: ${v.expiryDate}, travel date: ${travelDate}, valid: ${isValid}, owner filter: ${passportOwnerFilter}`);
+        return isValid;
+      })
+      .map(v => v.countryName);
+    console.log(`[VisaCalculator] Valid visa countries for ${travelDate} (filter: ${passportOwnerFilter}):`, validVisaCountries);
+    return getAdditionalAccessFromVisas(validVisaCountries);
+  }, [userVisas, travelDate, passportOwnerFilter, mergedConnection, currentUserId]);
 
   // Calculate all destinations with access
   const destinationRequirements = React.useMemo((): DestinationRequirement[] => {
@@ -96,12 +165,24 @@ const VisaCalculator: React.FC = () => {
 
     const results: DestinationRequirement[] = [];
 
-    // Check if user has a valid visa for countries
-    const today = new Date();
+    // Check if user has a valid visa for countries based on travel date
+    const checkDate = new Date(travelDate);
+
+    // Filter visas by owner selection (same logic as additionalAccessFromVisas)
+    let filteredVisas = userVisas;
+    if (mergedConnection && currentUserId) {
+      if (passportOwnerFilter === 'me') {
+        filteredVisas = userVisas.filter(v => v.userId === currentUserId);
+      } else if (passportOwnerFilter === 'partner') {
+        filteredVisas = userVisas.filter(v => v.userId === mergedConnection.partnerId);
+      }
+      // If 'both', use all visas (no filtering)
+    }
+
     const activeVisasMap = new Map<string, { daysAllowed?: number; expiryDate: string; visaType: string }>();
-    userVisas.forEach(visa => {
+    filteredVisas.forEach(visa => {
       const expiryDate = new Date(visa.expiryDate);
-      if (expiryDate > today) {
+      if (expiryDate >= checkDate) {
         activeVisasMap.set(visa.countryName, {
           daysAllowed: visa.maxStayDays,
           expiryDate: visa.expiryDate,
@@ -111,8 +192,11 @@ const VisaCalculator: React.FC = () => {
     });
 
     // Get additional access from existing visas (H1B, Schengen, etc.)
-    const visaCountries = userVisas.map(v => v.countryName);
-    const additionalAccess = getAdditionalAccessFromVisas(visaCountries);
+    // Only consider visas that are valid on the travel date
+    const validVisaCountries = filteredVisas
+      .filter(v => new Date(v.expiryDate) >= checkDate)
+      .map(v => v.countryName);
+    const additionalAccess = getAdditionalAccessFromVisas(validVisaCountries);
 
     // Create a map of countries with visa-based access
     const visaAccessMap = new Map<string, { viaVisa: string; accessType: 'visa-free' | 'visa-on-arrival' | 'eta'; daysAllowed?: number; conditions?: string }>();
@@ -197,7 +281,7 @@ const VisaCalculator: React.FC = () => {
     });
 
     return results.sort((a, b) => a.country.localeCompare(b.country));
-  }, [passport, userVisas, availableCountries]);
+  }, [passport, userVisas, availableCountries, travelDate, passportOwnerFilter, mergedConnection, currentUserId]);
 
   // Filter destinations by search term
   const filteredDestinations = React.useMemo(() => {
@@ -436,6 +520,13 @@ const VisaCalculator: React.FC = () => {
           <VisaMap
             passportCountry={passport.countryName}
             userVisas={userVisas}
+            allPassports={allPassports}
+            currentUserId={currentUserId}
+            mergedConnection={mergedConnection}
+            travelDate={travelDate}
+            onTravelDateChange={setTravelDate}
+            passportOwnerFilter={passportOwnerFilter}
+            onPassportOwnerFilterChange={setPassportOwnerFilter}
           />
         </div>
       )}
@@ -506,26 +597,41 @@ const VisaCalculator: React.FC = () => {
         ) : (
           <>
             <div className="space-y-2">
-              {userVisas.map(visa => (
-                <div key={visa.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
-                  <div className="flex items-center gap-3">
-                    <div className="text-2xl">{visa.countryCode === 'US' ? '🇺🇸' : visa.countryCode === 'IN' ? '🇮🇳' : '🌍'}</div>
-                    <div>
-                      <div className="font-medium text-gray-900">{visa.countryName}</div>
-                      <div className="text-xs text-gray-600">
-                        Expires: {new Date(visa.expiryDate).toLocaleDateString()}
-                        {visa.multipleEntry && ' • Multiple Entry'}
+              {userVisas.map(visa => {
+                const ownerLabel = getOwnershipLabel(visa.userId);
+                const ownerColor = getOwnershipColor(visa.userId);
+                const isOwnVisa = !mergedConnection || visa.userId === currentUserId;
+
+                return (
+                  <div key={visa.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="flex items-center gap-3 flex-1">
+                      <div className="text-2xl">{visa.countryCode === 'US' ? '🇺🇸' : visa.countryCode === 'IN' ? '🇮🇳' : '🌍'}</div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-gray-900">{visa.countryName}</span>
+                          {mergedConnection && ownerLabel && (
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${ownerColor}`}>
+                              {ownerLabel}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs text-gray-600">
+                          Expires: {new Date(visa.expiryDate).toLocaleDateString()}
+                          {visa.multipleEntry && ' • Multiple Entry'}
+                        </div>
                       </div>
                     </div>
+                    {isOwnVisa && (
+                      <button
+                        onClick={() => handleRemoveVisa(visa.id)}
+                        className="text-red-600 hover:text-red-800 text-sm font-medium"
+                      >
+                        Remove
+                      </button>
+                    )}
                   </div>
-                  <button
-                    onClick={() => handleRemoveVisa(visa.id)}
-                    className="text-red-600 hover:text-red-800 text-sm font-medium"
-                  >
-                    Remove
-                  </button>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Bonus Access from Visas */}

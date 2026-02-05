@@ -9,12 +9,15 @@ import type { Transaction, Category } from '../../types';
 import { formatCurrency } from '../../utils/currency';
 import { logger } from '../../../services/logger';
 import { useUpsertTransactionMutation, useDeleteTransactionMutation } from '@/hooks/useFinanceQuery';
+import { OwnerBadge } from '../OwnerBadge';
 
 interface EditableTransactionRowProps {
   transaction: Transaction;
   categories: Category[];
   onUpdate: () => void;
   onDelete: () => void;
+  currentUserId?: string;
+  partnerName?: string;
 }
 
 export const EditableTransactionRow: React.FC<EditableTransactionRowProps> = ({
@@ -22,7 +25,11 @@ export const EditableTransactionRow: React.FC<EditableTransactionRowProps> = ({
   categories,
   onUpdate,
   onDelete,
+  currentUserId,
+  partnerName,
 }) => {
+  // Check if current user owns this transaction
+  const isOwnTransaction = !currentUserId || transaction.userId === currentUserId;
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({
     description: transaction.description,
@@ -178,7 +185,17 @@ export const EditableTransactionRow: React.FC<EditableTransactionRowProps> = ({
       </td>
       <td className="px-4 py-3">
         <div>
-          <div className="font-medium text-slate-900 text-sm">{transaction.description}</div>
+          <div className="flex items-center gap-2">
+            <div className="font-medium text-slate-900 text-sm">{transaction.description}</div>
+            {currentUserId && (
+              <OwnerBadge
+                userId={transaction.userId}
+                currentUserId={currentUserId}
+                partnerName={partnerName}
+                size="sm"
+              />
+            )}
+          </div>
           {transaction.merchantName && transaction.merchantName !== transaction.description && (
             <div className="text-xs text-slate-600">{transaction.merchantName}</div>
           )}
@@ -210,24 +227,30 @@ export const EditableTransactionRow: React.FC<EditableTransactionRowProps> = ({
         </span>
       </td>
       <td className="px-4 py-3">
-        <div className="flex items-center gap-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
-          <button
-            onClick={handleEdit}
-            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-            title="Edit"
-          >
-            <Edit2 className="h-4 w-4" />
-          </button>
-          <button
-            onClick={() => {
-              void handleDelete();
-            }}
-            className="p-1.5 text-rose-600 hover:bg-rose-50 rounded transition-colors"
-            title="Delete"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
-        </div>
+        {isOwnTransaction ? (
+          <div className="flex items-center gap-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              onClick={handleEdit}
+              className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+              title="Edit"
+            >
+              <Edit2 className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => {
+                void handleDelete();
+              }}
+              className="p-1.5 text-rose-600 hover:bg-rose-50 rounded transition-colors"
+              title="Delete"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center justify-end">
+            <span className="text-xs text-slate-400 italic">View only</span>
+          </div>
+        )}
       </td>
     </tr>
   );

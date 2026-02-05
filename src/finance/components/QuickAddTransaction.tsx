@@ -8,7 +8,8 @@ import React from 'react';
 import { Button } from '../ui/Button';
 import { logger } from '../../services/logger';
 import { useToast } from '../../hooks/useToast';
-import { useUpsertTransactionMutation, useAccountsQuery, useCategoriesQuery } from '@/hooks/useFinanceQuery';
+import { useUpsertTransactionMutation, useAccountsQuery, useCategoriesQuery, useFinanceMergedConnectionQuery } from '@/hooks/useFinanceQuery';
+import { useAuth } from '@/hooks/useAuth';
 
 interface QuickAddTransactionProps {
   onClose: () => void;
@@ -18,6 +19,19 @@ interface QuickAddTransactionProps {
 export const QuickAddTransaction: React.FC<QuickAddTransactionProps> = ({ onClose, onSuccess }) => {
   const { showToast } = useToast();
   const upsertTransactionMutation = useUpsertTransactionMutation();
+  const { user } = useAuth();
+  const { data: mergedConnection } = useFinanceMergedConnectionQuery();
+
+  // Get partner info from merged connection
+  const partnerName = React.useMemo(() => {
+    if (!mergedConnection || !user) return undefined;
+    return mergedConnection.partnerName;
+  }, [mergedConnection, user]);
+
+  const partnerId = React.useMemo(() => {
+    if (!mergedConnection || !user) return undefined;
+    return mergedConnection.partnerId;
+  }, [mergedConnection, user]);
 
   // Use React Query hooks for data fetching
   const { data: accounts = [] } = useAccountsQuery();
@@ -30,7 +44,8 @@ export const QuickAddTransaction: React.FC<QuickAddTransactionProps> = ({ onClos
     date: new Date().toISOString().split('T')[0],
     type: 'debit' as 'debit' | 'credit',
     categoryId: '',
-    notes: ''
+    notes: '',
+    userId: user?.id ?? '' // Default to current user
   });
 
   // Set default account when accounts load
@@ -96,6 +111,7 @@ export const QuickAddTransaction: React.FC<QuickAddTransactionProps> = ({ onClos
         type: formData.type,
         categoryId: formData.categoryId || undefined,
         notes: formData.notes || undefined,
+        userId: formData.userId || user?.id, // Use selected userId or default to current user
       });
 
       showToast('Transaction added successfully!', 'success');
@@ -296,6 +312,26 @@ export const QuickAddTransaction: React.FC<QuickAddTransactionProps> = ({ onClos
                 required
               />
             </div>
+
+            {/* Owner Selection - only in merged mode */}
+            {mergedConnection && user && partnerId && (
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Who made this purchase?
+                </label>
+                <select
+                  value={formData.userId}
+                  onChange={(e) => setFormData({ ...formData, userId: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
+                >
+                  <option value={user.id}>Me</option>
+                  <option value={partnerId}>{partnerName || 'Partner'}</option>
+                </select>
+                <p className="mt-1 text-xs text-slate-500">
+                  This determines who owns this transaction
+                </p>
+              </div>
+            )}
 
             {/* Notes (optional) */}
             <div>

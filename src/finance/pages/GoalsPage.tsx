@@ -11,17 +11,23 @@ import {
   useGoalProgressQuery,
   useUpsertGoalMutation,
   useDeleteGoalMutation,
+  useFinanceMergedConnectionQuery,
 } from '@/hooks/useFinanceQuery';
 import type { Goal, GoalInput, Account } from '../types';
 import GoalCard from '../components/goals/GoalCard';
 import GoalEditor from '../components/goals/GoalEditor';
+import { useAuth } from '@/hooks/useAuth';
+import { OwnerFilter } from '../components/OwnerFilter';
+import useFinanceFilters from '../store/useFinanceFilters';
 
 // Wrapper component to load progress for each goal
 const GoalCardWithProgress: React.FC<{
   goal: Goal;
   accounts: Account[];
   onEdit: (goal: Goal) => void;
-}> = ({ goal, accounts, onEdit }) => {
+  currentUserId?: string;
+  partnerName?: string;
+}> = ({ goal, accounts, onEdit, currentUserId, partnerName }) => {
   const { data: progressHistory = [] } = useGoalProgressQuery(goal.id);
   const linkedAccount = goal.linkedAccountId
     ? accounts.find(a => a.id === goal.linkedAccountId)
@@ -33,6 +39,8 @@ const GoalCardWithProgress: React.FC<{
       progressHistory={progressHistory}
       linkedAccount={linkedAccount}
       onEdit={onEdit}
+      currentUserId={currentUserId}
+      partnerName={partnerName}
     />
   );
 };
@@ -41,23 +49,43 @@ const GoalsPage: React.FC = () => {
   const [editorOpen, setEditorOpen] = React.useState(false);
   const [editingGoal, setEditingGoal] = React.useState<Goal | undefined>(undefined);
 
+  // Auth and merged connection
+  const { user } = useAuth();
+  const { data: mergedConnection } = useFinanceMergedConnectionQuery();
+
+  // Get partner name from merged connection
+  const partnerName = React.useMemo(() => {
+    if (!mergedConnection || !user) return undefined;
+    return mergedConnection.partnerName;
+  }, [mergedConnection, user]);
+
   // React Query hooks
   const { data: goals = [], isLoading: goalsLoading } = useGoalsQuery();
   const { data: accounts = [], isLoading: accountsLoading } = useAccountsQuery();
   const upsertGoalMutation = useUpsertGoalMutation();
   const deleteGoalMutation = useDeleteGoalMutation();
+  const filters = useFinanceFilters();
 
   const loading = goalsLoading || accountsLoading;
 
+  // Filter goals by owner (if in merged mode)
+  const filteredGoals = React.useMemo(() => {
+    if (!mergedConnection || filters.ownerFilter === 'all') return goals;
+    if (filters.ownerFilter === 'mine') return goals.filter(g => g.userId === user?.id);
+    if (filters.ownerFilter === 'partner') return goals.filter(g => g.userId !== user?.id);
+    return goals;
+  }, [goals, mergedConnection, filters.ownerFilter, user]);
+
+  // Sort filtered goals
   const sortedGoals = React.useMemo<Goal[]>(() => {
-    return [...goals].sort((a, b) => {
+    return [...filteredGoals].sort((a, b) => {
       const aComplete = a.currentAmount >= a.targetAmount;
       const bComplete = b.currentAmount >= b.targetAmount;
       if (aComplete !== bComplete) return aComplete ? 1 : -1;
 
       return new Date(a.dueDateISO).getTime() - new Date(b.dueDateISO).getTime();
     });
-  }, [goals]);
+  }, [filteredGoals]);
 
   const handleCreateGoal = (): void => {
     setEditingGoal(undefined);
@@ -102,18 +130,28 @@ const GoalsPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
         <div>
-          <h2 className="text-2xl font-semibold text-primary">Financial Goals</h2>
+          <h2 className="text-2xl font-semibold text-primary">🎯 Financial Goals</h2>
           <p className="mt-1 text-sm text-primary opacity-70">
             Track your savings targets and debt payoff progress
           </p>
         </div>
-        <button
-          onClick={handleCreateGoal}
-          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-700 px-4 py-2 text-sm font-semibold text-white shadow-lg transition-all hover:scale-105"
-        >
-          <Plus className="h-4 w-4" />
-          <span>Create Goal</span>
-        </button>
+        <div className="flex items-center gap-3">
+          {/* Owner Filter - only show in merged mode */}
+          {mergedConnection && (
+            <OwnerFilter
+              value={filters.ownerFilter}
+              onChange={filters.setOwnerFilter}
+              partnerName={partnerName}
+            />
+          )}
+          <button
+            onClick={handleCreateGoal}
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-700 px-4 py-2 text-sm font-semibold text-white shadow-lg transition-all hover:scale-105"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Create Goal</span>
+          </button>
+        </div>
       </div>
 
       {/* Empty State */}
@@ -145,6 +183,8 @@ const GoalsPage: React.FC = () => {
               goal={goal}
               accounts={accounts}
               onEdit={handleEditGoal}
+              currentUserId={user?.id}
+              partnerName={partnerName}
             />
           ))}
         </div>

@@ -3,7 +3,32 @@
  */
 
 import { supabase } from '../../lib/supabase';
+import { getMergedConnectionId, type MergedConnectionResult } from '../../shared/api/SharedDataProvider';
 import type { UserPassport, UserVisa } from '../types/visa';
+
+// Cache for merged connection (to avoid repeated database calls)
+let cachedMergedConnection: MergedConnectionResult | null | undefined = undefined;
+
+/**
+ * Get the merged connection ID for visa module if both users have enabled merged mode.
+ * Results are cached for the session to avoid repeated database calls.
+ */
+export async function getVisaMergedConnection(): Promise<MergedConnectionResult | null> {
+  if (cachedMergedConnection !== undefined) {
+    console.log('[PassportAPI] Using cached merged connection:', cachedMergedConnection);
+    return cachedMergedConnection;
+  }
+  cachedMergedConnection = await getMergedConnectionId('visa');
+  console.log('[PassportAPI] Fetched merged connection:', cachedMergedConnection);
+  return cachedMergedConnection;
+}
+
+/**
+ * Clear the cached merged connection (call when permissions change)
+ */
+export function clearVisaMergedConnectionCache(): void {
+  cachedMergedConnection = undefined;
+}
 
 // Database row types (snake_case as stored in Supabase)
 interface UserPassportRow {
@@ -107,18 +132,21 @@ function visaRowToUserVisa(row: UserVisaRow): UserVisa {
 // ========== PASSPORTS ==========
 
 /**
- * Get all passports for the current user
+ * Get all passports for the current user.
+ * In merged mode, returns passports from both users.
+ * RLS policies handle access control automatically.
  */
 export async function getUserPassports(): Promise<UserPassport[]> {
   const { data: authData } = await supabase.auth.getUser();
   const { user } = authData;
   if (!user) throw new Error('Not authenticated');
 
+  // RLS policies automatically handle merged mode access
+  // No need to check merged connection here - just query all accessible passports
   const { data, error } = await supabase
     .from('user_passports')
     .select('*')
-    .eq('user_id', user.id)
-    .order('is_primary', { ascending: false })
+    .order('is_primary', { ascending: false})
     .order('created_at', { ascending: false });
 
   if (error) throw error;
@@ -130,7 +158,8 @@ export async function getUserPassports(): Promise<UserPassport[]> {
 }
 
 /**
- * Get primary passport for the current user
+ * Get primary passport for the current user.
+ * In merged mode, returns the current user's primary passport (not partner's).
  */
 export async function getPrimaryPassport(): Promise<UserPassport | null> {
   const { data: authData } = await supabase.auth.getUser();
@@ -165,35 +194,67 @@ export async function addPassport(passport: {
   expiryDate?: string;
   isPrimary: boolean;
 }): Promise<UserPassport> {
-  const { data: authData } = await supabase.auth.getUser();
+  const { data: authData, error: authError } = await supabase.auth.getUser();
+
+  console.log('[addPassport] Auth data:', { authData, authError });
+
+  if (authError) {
+    console.error('[addPassport] Auth error:', authError);
+    throw new Error(`Authentication error: ${authError.message}`);
+  }
+
   const { user } = authData;
-  if (!user) throw new Error('Not authenticated');
+  if (!user) {
+    console.error('[addPassport] No user found in auth data');
+    throw new Error('Not authenticated');
+  }
+
+  if (!user.id) {
+    console.error('[addPassport] User ID is null/undefined:', user);
+    throw new Error('User ID is missing');
+  }
+
+  console.log('[addPassport] User ID:', user.id);
+  console.log('[addPassport] Passport data:', passport);
 
   // If setting as primary, unset other primary passports first
   if (passport.isPrimary) {
-    await supabase
+    const updateResult = await supabase
       .from('user_passports')
       .update({ is_primary: false })
       .eq('user_id', user.id)
       .eq('is_primary', true);
+
+    console.log('[addPassport] Unset primary result:', updateResult);
   }
+
+  const insertData = {
+    user_id: user.id,
+    country_code: passport.countryCode,
+    country_name: passport.countryName,
+    passport_number: passport.passportNumber ?? null,
+    issue_date: passport.issueDate ?? null,
+    expiry_date: passport.expiryDate ?? null,
+    is_primary: passport.isPrimary,
+  };
+
+  console.log('[addPassport] Inserting data:', insertData);
 
   const result = await supabase
     .from('user_passports')
-    .insert({
-      user_id: user.id,
-      country_code: passport.countryCode,
-      country_name: passport.countryName,
-      passport_number: passport.passportNumber ?? null,
-      issue_date: passport.issueDate ?? null,
-      expiry_date: passport.expiryDate ?? null,
-      is_primary: passport.isPrimary,
-    })
+    .insert(insertData)
     .select()
     .single();
 
-  if (result.error) throw result.error;
+  console.log('[addPassport] Insert result:', result);
+
+  if (result.error) {
+    console.error('[addPassport] Insert error:', result.error);
+    throw result.error;
+  }
+
   if (!result.data || !isUserPassportRow(result.data)) {
+    console.error('[addPassport] Invalid data returned:', result.data);
     throw new Error('Invalid passport data returned from database');
   }
 
@@ -265,17 +326,20 @@ export async function deletePassport(passportId: string): Promise<void> {
 // ========== VISAS ==========
 
 /**
- * Get all visas for the current user
+ * Get all visas for the current user.
+ * In merged mode, returns visas from both users.
+ * RLS policies handle access control automatically.
  */
 export async function getUserVisas(): Promise<UserVisa[]> {
   const { data: authData } = await supabase.auth.getUser();
   const { user } = authData;
   if (!user) throw new Error('Not authenticated');
 
+  // RLS policies automatically handle merged mode access
+  // No need to check merged connection here - just query all accessible visas
   const { data, error } = await supabase
     .from('user_visas')
     .select('*')
-    .eq('user_id', user.id)
     .order('expiry_date', { ascending: false });
 
   if (error) throw error;
@@ -287,7 +351,8 @@ export async function getUserVisas(): Promise<UserVisa[]> {
 }
 
 /**
- * Get active (non-expired) visas for the current user
+ * Get active (non-expired) visas for the current user.
+ * In merged mode, returns active visas from both users.
  */
 export async function getActiveVisas(): Promise<UserVisa[]> {
   const { data: authData } = await supabase.auth.getUser();
@@ -296,10 +361,10 @@ export async function getActiveVisas(): Promise<UserVisa[]> {
 
   const today = new Date().toISOString().split('T')[0];
 
+  // RLS policies automatically handle merged mode access
   const { data, error } = await supabase
     .from('user_visas')
     .select('*')
-    .eq('user_id', user.id)
     .gte('expiry_date', today)
     .order('expiry_date', { ascending: false });
 

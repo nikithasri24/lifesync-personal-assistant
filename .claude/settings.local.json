@@ -65,7 +65,15 @@
       "WebFetch(domain:i.pinimg.com)",
       "Bash(cut:*)",
       "Bash(git push:*)",
-      "Bash(do)"
+      "Bash(do)",
+      "Bash(test:*)",
+      "Bash(supabase link:*)",
+      "Bash(supabase db push:*)",
+      "Bash(supabase db pull:*)",
+      "Bash(supabase db dump:*)",
+      "Bash(supabase db remote exec:*)",
+      "Bash(./scripts/validate-finance-merged.sh:*)",
+      "Bash(node fix-bad-dates.js:*)"
     ],
     "deny": [],
     "ask": []

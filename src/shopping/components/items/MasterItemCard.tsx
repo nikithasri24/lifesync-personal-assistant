@@ -2,9 +2,14 @@ import React from 'react';
 import { Check, DollarSign, Scan, Heart, Store as StoreIcon, AlertCircle, Navigation, Edit3, Trash2 } from 'lucide-react';
 import type { ShoppingItem, Store } from '../../types';
 import { CATEGORY_ICONS } from '../../constants';
+import { CompactOwnerBadge } from '../common/OwnerBadge';
 
 interface MasterItemCardProps {
-  item: ShoppingItem;
+  item: ShoppingItem & {
+    ownerId?: string;
+    ownerName?: string;
+    isOwnedByCurrentUser?: boolean;
+  };
   stores: Store[];
   onToggle: () => void;
   onEdit: () => void;
@@ -52,6 +57,12 @@ export function MasterItemCard({
                 {item.name}
               </h4>
               <span className="text-lg">{CATEGORY_ICONS[item.category]}</span>
+              {item.ownerName && (
+                <CompactOwnerBadge
+                  ownerName={item.ownerName}
+                  isOwnedByCurrentUser={item.isOwnedByCurrentUser ?? true}
+                />
+              )}
               {item.nutritionInfo?.organic && (
                 <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
                   🌱 Organic
@@ -107,19 +118,25 @@ export function MasterItemCard({
           >
             <Navigation size={16} />
           </button>
-          <button
-            onClick={onEdit}
-            className="p-1 text-gray-400 hover:text-blue-500 transition-colors"
-            title="Edit item"
-          >
-            <Edit3 size={16} />
-          </button>
-          <button
-            onClick={onDelete}
-            className="p-1 text-gray-400 hover:text-red-500 transition-colors"
-          >
-            <Trash2 size={16} />
-          </button>
+          {/* Only show edit/delete for items owned by current user */}
+          {(item.isOwnedByCurrentUser ?? true) && (
+            <>
+              <button
+                onClick={onEdit}
+                className="p-1 text-gray-400 hover:text-blue-500 transition-colors"
+                title="Edit item"
+              >
+                <Edit3 size={16} />
+              </button>
+              <button
+                onClick={onDelete}
+                className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                title="Delete item"
+              >
+                <Trash2 size={16} />
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>

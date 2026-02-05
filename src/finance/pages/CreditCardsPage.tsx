@@ -5,18 +5,30 @@
 
 import React, { useState } from 'react';
 import { CreditCard, Plus, Loader2, Gift, TrendingUp } from 'lucide-react';
-import { useAccountsQuery } from '@/hooks/useFinanceQuery';
+import { useAccountsQuery, useFinanceMergedConnectionQuery } from '@/hooks/useFinanceQuery';
 import type { Account } from '../types';
 import { formatCurrency } from '../utils/currency';
 import { CreditCardDetailsModal } from '../components/creditCards/CreditCardDetailsModal';
 import { WelcomeBonusTracker } from '../components/creditCards/WelcomeBonusTracker';
 import { UtilizationDashboard } from '../components/creditCards/UtilizationDashboard';
+import { useAuth } from '@/hooks/useAuth';
+import { OwnerBadge } from '../components/OwnerBadge';
 
 type TabType = 'cards' | 'bonuses' | 'utilization';
 
 const CreditCardsPage: React.FC = () => {
   const [selectedCard, setSelectedCard] = useState<Account | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('cards');
+
+  // Auth and merged connection
+  const { user } = useAuth();
+  const { data: mergedConnection } = useFinanceMergedConnectionQuery();
+
+  // Get partner name from merged connection
+  const partnerName = React.useMemo(() => {
+    if (!mergedConnection || !user) return undefined;
+    return mergedConnection.partnerName;
+  }, [mergedConnection, user]);
 
   const { data: accounts = [], isLoading, error } = useAccountsQuery();
 
@@ -131,6 +143,8 @@ const CreditCardsPage: React.FC = () => {
                   key={card.id}
                   card={card}
                   onClick={() => setSelectedCard(card)}
+                  currentUserId={user?.id}
+                  partnerName={partnerName}
                 />
               ))}
             </div>
@@ -156,9 +170,11 @@ const CreditCardsPage: React.FC = () => {
 interface CreditCardCardProps {
   card: Account;
   onClick: () => void;
+  currentUserId?: string;
+  partnerName?: string;
 }
 
-const CreditCardCard: React.FC<CreditCardCardProps> = ({ card, onClick }) => {
+const CreditCardCard: React.FC<CreditCardCardProps> = ({ card, onClick, currentUserId, partnerName }) => {
   const utilization = card.creditLimit ? (Math.abs(card.balance) / card.creditLimit) * 100 : 0;
   const available = (card.creditLimit || 0) - Math.abs(card.balance);
 
@@ -170,7 +186,17 @@ const CreditCardCard: React.FC<CreditCardCardProps> = ({ card, onClick }) => {
       {/* Card Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
-          <h3 className="text-lg font-semibold text-primary mb-1">{card.name}</h3>
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <h3 className="text-lg font-semibold text-primary">{card.name}</h3>
+            {currentUserId && (
+              <OwnerBadge
+                userId={card.userId}
+                currentUserId={currentUserId}
+                partnerName={partnerName}
+                size="sm"
+              />
+            )}
+          </div>
           {card.rewardsType && (
             <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400">
               {card.rewardsBalance?.toLocaleString()} {card.rewardsType}

@@ -166,10 +166,10 @@ export const FinancialInsightsCard: React.FC<FinancialInsightsCardProps> = ({
   healthScore += netWorth.netWorth > 0 ? 15 : 0;
 
   const getHealthColor = React.useCallback((score: number): string => {
-    if (score >= 80) return 'text-green-600';
-    if (score >= 60) return 'text-blue-600';
-    if (score >= 40) return 'text-yellow-600';
-    return 'text-red-600';
+    if (score >= 80) return 'text-emerald-400';
+    if (score >= 60) return 'text-blue-400';
+    if (score >= 40) return 'text-amber-400';
+    return 'text-red-400';
   }, []);
 
   const getHealthLabel = React.useCallback((score: number): string => {
@@ -182,109 +182,124 @@ export const FinancialInsightsCard: React.FC<FinancialInsightsCardProps> = ({
   return (
     <div
       onClick={onClick}
-      className={`rounded-2xl bg-primary/30 backdrop-blur-sm shadow-sm ring-1 border-primary/20 p-5 ${
-        onClick ? 'cursor-pointer transition-all hover:shadow-md hover:scale-[1.02]' : ''
+      className={`rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 shadow-xl ring-1 ring-slate-700/50 p-6 ${
+        onClick ? 'cursor-pointer transition-all hover:shadow-2xl hover:ring-slate-600/50' : ''
       } ${className}`}
     >
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <div className="rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 p-2">
-            <Calculator className="h-5 w-5 text-white" />
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 p-2.5 shadow-lg">
+            <Calculator className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h3 className="text-sm font-medium text-primary opacity-70">Financial Insights</h3>
-            <p className="text-xs text-primary opacity-60">
-              <span className={`font-semibold ${getHealthColor(healthScore)}`}>
+            <h3 className="text-lg font-bold text-white">Financial Insights</h3>
+            <p className="text-sm text-slate-300">
+              <span className={`font-bold ${getHealthColor(healthScore)}`}>
                 {getHealthLabel(healthScore)}
               </span>
               {' '} • {healthScore.toFixed(0)}/100 Health Score
             </p>
           </div>
         </div>
-        {onClick && <ChevronRight className="h-5 w-5 text-primary opacity-40" />}
+        {onClick && <ChevronRight className="h-5 w-5 text-slate-400" />}
       </div>
 
       {/* Key Metrics Grid */}
-      <div className="grid grid-cols-2 gap-3 mb-4">
+      <div className="grid grid-cols-2 gap-4 mb-6">
         {/* Savings Rate */}
-        <div className="p-3 rounded-lg bg-primary/20">
-          <div className="flex items-center gap-2 mb-1">
-            <PiggyBank className="h-4 w-4 text-blue-600" />
-            <p className="text-xs font-medium text-primary opacity-70">Savings Rate</p>
+        <div className="p-4 rounded-xl bg-slate-700/50 backdrop-blur-sm border border-slate-600/30">
+          <div className="flex items-center gap-2 mb-2">
+            <PiggyBank className="h-4 w-4 text-blue-400" />
+            <p className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Savings Rate</p>
           </div>
-          <p className="text-2xl font-bold text-primary">
+          <p className="text-3xl font-bold text-white mb-1">
             {savingsRate.savingsRate.toFixed(1)}%
           </p>
-          <p className="text-xs text-primary opacity-60 mt-1">
+          <p className="text-sm text-slate-400">
             {formatCurrency(savingsRate.monthlySavings)}/mo
           </p>
         </div>
 
         {/* Emergency Fund */}
-        <div className="p-3 rounded-lg bg-primary/20">
-          <div className="flex items-center gap-2 mb-1">
-            <Shield className="h-4 w-4 text-emerald-600" />
-            <p className="text-xs font-medium text-primary opacity-70">Emergency Fund</p>
+        <div className="p-4 rounded-xl bg-slate-700/50 backdrop-blur-sm border border-slate-600/30">
+          <div className="flex items-center gap-2 mb-2">
+            <Shield className="h-4 w-4 text-emerald-400" />
+            <p className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Emergency Fund</p>
           </div>
-          <p className="text-2xl font-bold text-primary">
+          <p className="text-3xl font-bold text-white mb-1">
             {emergencyFund.monthsCovered.toFixed(1)}
           </p>
-          <p className="text-xs text-primary opacity-60 mt-1">
-            {emergencyFund.monthsCovered < 3 ? '⚠️ ' : '✓ '}
+          <p className="text-sm text-slate-400 flex items-center gap-1">
+            {emergencyFund.monthsCovered < 3 ? (
+              <span className="text-amber-400">⚠️</span>
+            ) : (
+              <span className="text-emerald-400">✓</span>
+            )}
             months covered
           </p>
-          <p className="text-xs text-primary opacity-40 mt-0.5">
+          <p className="text-xs text-slate-500 mt-1">
             {formatCurrency(emergencyFundBalance)} ÷ {formatCurrency(monthlyExpenses)}/mo
           </p>
         </div>
 
         {/* Net Worth */}
-        <div className="p-3 rounded-lg bg-primary/20">
-          <div className="flex items-center gap-2 mb-1">
-            <TrendingUp className="h-4 w-4 text-purple-600" />
-            <p className="text-xs font-medium text-primary opacity-70">Net Worth</p>
+        <div className="p-4 rounded-xl bg-slate-700/50 backdrop-blur-sm border border-slate-600/30">
+          <div className="flex items-center gap-2 mb-2">
+            <TrendingUp className="h-4 w-4 text-purple-400" />
+            <p className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Net Worth</p>
           </div>
-          <p className="text-xl font-bold text-primary">
+          <p className="text-2xl font-bold text-white mb-1">
             {formatCurrency(netWorth.netWorth)}
           </p>
-          <p className="text-xs text-primary opacity-60 mt-1">
+          <p className="text-sm text-slate-400">
             Total wealth
           </p>
         </div>
 
         {/* Years to FI */}
-        <div className="p-3 rounded-lg bg-primary/20">
-          <div className="flex items-center gap-2 mb-1">
-            <Target className="h-4 w-4 text-amber-600" />
-            <p className="text-xs font-medium text-primary opacity-70">Years to FI</p>
+        <div className="p-4 rounded-xl bg-slate-700/50 backdrop-blur-sm border border-slate-600/30">
+          <div className="flex items-center gap-2 mb-2">
+            <Target className="h-4 w-4 text-amber-400" />
+            <p className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Years to FI</p>
           </div>
-          <p className="text-2xl font-bold text-primary">
+          <p className="text-3xl font-bold text-white mb-1">
             {yearsToFI.yearsToFI === Infinity ? '∞' : yearsToFI.yearsToFI.toFixed(0)}
           </p>
-          <p className="text-xs text-primary opacity-60 mt-1">
+          <p className="text-sm text-slate-400">
             {yearsToFI.currentProgress.toFixed(0)}% there
           </p>
         </div>
       </div>
 
       {/* Insights */}
-      <div className="space-y-2">
-        <p className="text-xs font-medium text-primary opacity-70 mb-2">Key Insights</p>
+      <div className="space-y-2.5">
+        <p className="text-sm font-bold text-white mb-3">Key Insights</p>
+
+        {/* Emergency Fund Insight - Priority */}
+        {emergencyFund.monthsCovered < 6 && (
+          <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+            <AlertCircle className="h-5 w-5 text-amber-400 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-slate-200">
+              <span className="font-bold text-white">Build emergency fund:</span>
+              {' '}Need {formatCurrency(emergencyFund.shortfall)} more for 6 months coverage
+            </p>
+          </div>
+        )}
 
         {/* Savings Rate Insight */}
         {savingsRate.savingsRate > 0 && (
-          <div className="flex items-start gap-2 p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20">
+          <div className="flex items-start gap-3 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
             {savingsRate.savingsRate >= 20 ? (
-              <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
+              <CheckCircle className="h-5 w-5 text-emerald-400 flex-shrink-0 mt-0.5" />
             ) : (
-              <Info className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" />
+              <Info className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" />
             )}
-            <p className="text-xs text-primary">
-              <span className="font-semibold">{savingsRate.interpretation}</span>
+            <p className="text-sm text-slate-200">
+              <span className="font-bold text-white">{savingsRate.interpretation}</span>
               {savingsRate.savingsRate >= 50 && (
                 <span className="ml-1">
-                  At this rate, you could achieve financial independence in ~
+                  {' '}At this rate, you could achieve financial independence in ~
                   {yearsToFI.yearsToFI.toFixed(0)} years!
                 </span>
               )}
@@ -292,34 +307,23 @@ export const FinancialInsightsCard: React.FC<FinancialInsightsCardProps> = ({
           </div>
         )}
 
-        {/* Emergency Fund Insight */}
-        {emergencyFund.monthsCovered < 3 && (
-          <div className="flex items-start gap-2 p-2 rounded-lg bg-amber-50 dark:bg-amber-900/20">
-            <AlertCircle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
-            <p className="text-xs text-primary">
-              <span className="font-semibold">Build emergency fund:</span>
-              {' '}Need {formatCurrency(emergencyFund.shortfall)} more for 6 months coverage
-            </p>
-          </div>
-        )}
-
         {/* Credit Utilization Warning */}
         {creditUtil.utilizationRate > 30 && (
-          <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20">
-            <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-amber-900 dark:text-amber-100">
-              <span className="font-semibold">High credit utilization:</span>
+          <div className="flex items-start gap-3 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+            <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-slate-200">
+              <span className="font-bold text-white">High credit utilization:</span>
               {' '}{creditUtil.utilizationRate.toFixed(1)}% - {creditUtil.impact}
             </p>
           </div>
         )}
 
         {/* Retirement Progress */}
-        {netWorth.netWorth > 0 && (
-          <div className="flex items-start gap-2 p-2 rounded-lg bg-purple-50 dark:bg-purple-900/20">
-            <DollarSign className="h-4 w-4 text-purple-600 flex-shrink-0 mt-0.5" />
-            <p className="text-xs text-primary">
-              <span className="font-semibold">4% Rule:</span>
+        {netWorth.netWorth > 0 && retirementRule.monthlyWithdrawal > 0 && (
+          <div className="flex items-start gap-3 p-3 rounded-lg bg-purple-500/10 border border-purple-500/20">
+            <DollarSign className="h-5 w-5 text-purple-400 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-slate-200">
+              <span className="font-bold text-white">4% Rule:</span>
               {' '}Current net worth supports {formatCurrency(retirementRule.monthlyWithdrawal)}/month in retirement
             </p>
           </div>
@@ -327,8 +331,8 @@ export const FinancialInsightsCard: React.FC<FinancialInsightsCardProps> = ({
       </div>
 
       {/* Footer */}
-      <div className="mt-4 pt-3 border-t border-primary/20">
-        <p className="text-xs text-primary opacity-60">
+      <div className="mt-5 pt-4 border-t border-slate-700/50">
+        <p className="text-xs text-slate-400">
           💡 Based on last 3 months of data • Updated daily
         </p>
       </div>

@@ -18,8 +18,20 @@ import { formatCurrency } from '../utils/currency';
 import { InsuranceCard } from '../components/insurance/InsuranceCard';
 import { InsurancePolicyForm } from '../components/insurance/InsurancePolicyForm';
 import { logger } from '../../services/logger';
+import { useAuth } from '@/hooks/useAuth';
+import { useFinanceMergedConnectionQuery } from '@/hooks/useFinanceQuery';
 
 const InsurancePage: React.FC = () => {
+  // Auth and merged connection
+  const { user } = useAuth();
+  const { data: mergedConnection } = useFinanceMergedConnectionQuery();
+
+  // Get partner name from merged connection
+  const partnerName = React.useMemo(() => {
+    if (!mergedConnection || !user) return undefined;
+    return mergedConnection.partnerName;
+  }, [mergedConnection, user]);
+
   const [policies, setPolicies] = React.useState<InsurancePolicy[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [_selectedPolicyId, _setSelectedPolicyId] = React.useState<string | null>(null);
@@ -355,6 +367,8 @@ const InsurancePage: React.FC = () => {
               key={policy.id}
               policy={policy}
               onClick={() => handleEditPolicy(policy)}
+              currentUserId={user?.id}
+              partnerName={partnerName}
             />
           ))}
         </div>

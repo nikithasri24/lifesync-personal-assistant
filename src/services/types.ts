@@ -153,6 +153,7 @@ export interface FinancialAccountData {
 export interface ShoppingListData {
   id?: string;
   user_id?: string;
+  connection_id?: string | null;
   name: string;
   description?: string;
   status?: 'active' | 'completed' | 'archived';
@@ -167,6 +168,7 @@ export interface ShoppingListData {
 export interface StoreData {
   id?: string;
   user_id?: string;
+  connection_id?: string | null;
   name: string;
   type: 'grocery' | 'wholesale' | 'specialty' | 'organic' | 'international' | 'pharmacy';
   address?: string;
@@ -199,6 +201,8 @@ export interface StoreData {
 export interface ShoppingItemData {
   id?: string;
   shopping_list_id: string;
+  user_id?: string;
+  connection_id?: string | null;
   name: string;
   quantity?: number;
   unit?: string;

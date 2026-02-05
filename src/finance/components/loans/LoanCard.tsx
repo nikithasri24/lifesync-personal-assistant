@@ -8,14 +8,17 @@ import { Calendar, DollarSign, Edit2, TrendingDown, Clock } from 'lucide-react';
 import type { Loan } from '../../types';
 import { formatCurrency } from '../../utils/currency';
 import { calculateInterestPaidToDate, calculatePrincipalPaidToDate } from '../../utils/loanCalculations';
+import { OwnerBadge } from '../OwnerBadge';
 
 interface LoanCardProps {
   loan: Loan;
   onEdit: (loan: Loan) => void;
   onAddPayment: (loan: Loan) => void;
+  currentUserId?: string;
+  partnerName?: string;
 }
 
-const LoanCard: React.FC<LoanCardProps> = ({ loan, onEdit, onAddPayment }) => {
+const LoanCard: React.FC<LoanCardProps> = ({ loan, onEdit, onAddPayment, currentUserId, partnerName }) => {
   // Calculate interest and principal paid (use DB values if available, otherwise calculate)
   const calculatedInterestPaid = calculateInterestPaidToDate(loan);
   const calculatedPrincipalPaid = calculatePrincipalPaidToDate(loan);
@@ -62,8 +65,16 @@ const LoanCard: React.FC<LoanCardProps> = ({ loan, onEdit, onAddPayment }) => {
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <h3 className="text-base font-semibold text-primary">{loan.loanName}</h3>
+            {currentUserId && (
+              <OwnerBadge
+                userId={loan.userId}
+                currentUserId={currentUserId}
+                partnerName={partnerName}
+                size="sm"
+              />
+            )}
             <span
               className={`text-xs px-2 py-0.5 rounded-full ${statusConfig.bgColor} ${statusConfig.iconColor}`}
             >

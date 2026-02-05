@@ -10,9 +10,12 @@ import {
   useRecurringTransactionsQuery,
   useUpsertRecurringTransactionMutation,
   useDeleteRecurringTransactionMutation,
+  useFinanceMergedConnectionQuery,
 } from '@/hooks/useFinanceQuery';
 import { RecurringTransactionEditor } from './RecurringTransactionEditor';
 import { formatCurrency } from '../../utils/currency';
+import { useAuth } from '@/hooks/useAuth';
+import { OwnerBadge } from '../OwnerBadge';
 
 const FREQUENCY_LABELS: Record<string, string> = {
   daily: 'Daily',
@@ -24,6 +27,16 @@ const FREQUENCY_LABELS: Record<string, string> = {
 };
 
 export const RecurringTransactionsList: React.FC = () => {
+  // Auth and merged connection
+  const { user } = useAuth();
+  const { data: mergedConnection } = useFinanceMergedConnectionQuery();
+
+  // Get partner name from merged connection
+  const partnerName = React.useMemo(() => {
+    if (!mergedConnection || !user) return undefined;
+    return mergedConnection.partnerName;
+  }, [mergedConnection, user]);
+
   const { data: recurring = [], isLoading } = useRecurringTransactionsQuery();
   const upsertMutation = useUpsertRecurringTransactionMutation();
   const deleteMutation = useDeleteRecurringTransactionMutation();
@@ -119,10 +132,20 @@ export const RecurringTransactionsList: React.FC = () => {
               {/* Header */}
               <div className="flex items-start justify-between mb-3">
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-                    {rec.description}
-                  </h3>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                      {rec.description}
+                    </h3>
+                    {user && (
+                      <OwnerBadge
+                        userId={rec.userId}
+                        currentUserId={user.id}
+                        partnerName={partnerName}
+                        size="sm"
+                      />
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">
                     {FREQUENCY_LABELS[rec.frequency] || rec.frequency}
                   </p>
                 </div>

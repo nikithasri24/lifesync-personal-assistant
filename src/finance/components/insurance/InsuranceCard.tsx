@@ -21,17 +21,22 @@ import {
 } from 'lucide-react';
 import type { InsurancePolicy } from '../../types';
 import { formatCurrency } from '../../utils/currency';
+import { OwnerBadge } from '../OwnerBadge';
 
 interface InsuranceCardProps {
   policy: InsurancePolicy;
   onClick?: () => void;
   className?: string;
+  currentUserId?: string;
+  partnerName?: string;
 }
 
 export const InsuranceCard: React.FC<InsuranceCardProps> = ({
   policy,
   onClick,
   className = '',
+  currentUserId,
+  partnerName,
 }) => {
   // Get icon for policy type
   const getTypeIcon = (type: string): React.ComponentType<{ className?: string }> => {
@@ -146,7 +151,17 @@ export const InsuranceCard: React.FC<InsuranceCardProps> = ({
             <TypeIcon className={`h-5 w-5 ${statusConfig.color}`} />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-primary">{policy.policyName}</h3>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="text-lg font-semibold text-primary">{policy.policyName}</h3>
+              {currentUserId && (
+                <OwnerBadge
+                  userId={policy.userId}
+                  currentUserId={currentUserId}
+                  partnerName={partnerName}
+                  size="sm"
+                />
+              )}
+            </div>
             <p className="text-xs text-primary opacity-60 mt-0.5">{policy.provider}</p>
           </div>
         </div>

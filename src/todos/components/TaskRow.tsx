@@ -24,6 +24,9 @@ import type { Task, Project, PomodoroTimer } from '../types';
 import { PRIORITY_FLAGS } from '../constants';
 import { isOverdue } from '../services/taskHelpers';
 import { SmartSchedulePopover } from '../../components/scheduling';
+import { OwnerBadge } from '../../components/common/OwnerBadge';
+import { useMergedTasksConnectionQuery } from '../../hooks/useTasksQuery';
+import { useCurrentUserId, usePartnerName } from '../../utils/ownerUtils';
 
 interface TaskRowProps {
   /** The task to display */
@@ -86,6 +89,11 @@ export function TaskRow({
 }: TaskRowProps): React.ReactElement {
   const [showSchedulePopover, setShowSchedulePopover] = useState(false);
   const taskIsOverdue = task.dueDate && isOverdue(task.dueDate, task.status);
+
+  // Merged mode support
+  const { data: mergedConnection } = useMergedTasksConnectionQuery();
+  const { data: currentUserId } = useCurrentUserId();
+  const partnerName = usePartnerName(mergedConnection);
 
   const getPriorityBorderClass = (): string => {
     if (task.status === 'done') {
@@ -166,6 +174,15 @@ export function TaskRow({
 
           {/* Priority flag */}
           {task.priority !== 'low' && PRIORITY_FLAGS[task.priority]}
+
+          {/* Owner badge - only show in merged mode */}
+          {mergedConnection && currentUserId && task.userId && (
+            <OwnerBadge
+              userId={task.userId}
+              currentUserId={currentUserId}
+              partnerName={partnerName}
+            />
+          )}
 
           {/* Dependency indicator */}
           {task.dependsOn && task.dependsOn.length > 0 && (

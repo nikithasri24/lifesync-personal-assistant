@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { format } from 'date-fns';
-import { ChefHat } from 'lucide-react';
+import { ChefHat, ShoppingCart, Loader2 } from 'lucide-react';
 import { ModalShell } from './ModalShell';
 import type { GroceryItem, GroceryItemStatus } from '../../hooks/useGroceryList';
 
@@ -16,6 +16,7 @@ interface GroceryListModalProps {
   updateItemStatus: (itemId: string, status: GroceryItemStatus) => void;
   getStatusColor: (status: GroceryItemStatus) => string;
   onCopyCart: () => void;
+  onSendToShoppingList?: (items: GroceryItem[]) => Promise<{ success: boolean; count: number }>;
 }
 
 export function GroceryListModal({
@@ -30,8 +31,29 @@ export function GroceryListModal({
   updateItemStatus,
   getStatusColor,
   onCopyCart,
+  onSendToShoppingList,
 }: GroceryListModalProps): React.ReactElement | null {
+  const [isSending, setIsSending] = useState(false);
+  const [sendResult, setSendResult] = useState<{ success: boolean; count: number } | null>(null);
+
   if (!isOpen) return null;
+
+  const handleSendToShoppingList = async (): Promise<void> => {
+    if (!onSendToShoppingList || inCartItems.length === 0) return;
+
+    setIsSending(true);
+    setSendResult(null);
+
+    try {
+      const result = await onSendToShoppingList(inCartItems);
+      setSendResult(result);
+
+      // Clear the result message after 3 seconds
+      setTimeout(() => setSendResult(null), 3000);
+    } finally {
+      setIsSending(false);
+    }
+  };
 
   return (
     <ModalShell
@@ -154,26 +176,61 @@ export function GroceryListModal({
         )}
       </div>
 
-      <div className="border-t border-slate-200 pt-4 flex items-center justify-between">
-        <div className="text-sm text-slate-600">
-          <span className="font-medium">{groceryList.length}</span> total items •
-          <span className="font-medium text-indigo-600"> {inCartItems.length}</span> in cart
-        </div>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={onCopyCart}
-            className="rounded-md border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-          >
-            Copy Cart List
-          </button>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
-          >
-            Done
-          </button>
+      <div className="border-t border-slate-200 pt-4 space-y-3">
+        {/* Result message */}
+        {sendResult && (
+          <div className={`text-sm text-center py-2 px-4 rounded-md ${
+            sendResult.success
+              ? 'bg-green-50 text-green-700 border border-green-200'
+              : 'bg-red-50 text-red-700 border border-red-200'
+          }`}>
+            {sendResult.success
+              ? `✓ Added ${sendResult.count} item${sendResult.count !== 1 ? 's' : ''} to Shopping List`
+              : 'Failed to add items to Shopping List'}
+          </div>
+        )}
+
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-slate-600">
+            <span className="font-medium">{groceryList.length}</span> total items •
+            <span className="font-medium text-indigo-600"> {inCartItems.length}</span> in cart
+          </div>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={onCopyCart}
+              className="rounded-md border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              Copy Cart List
+            </button>
+            {onSendToShoppingList && (
+              <button
+                type="button"
+                onClick={handleSendToShoppingList}
+                disabled={isSending || inCartItems.length === 0}
+                className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {isSending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <ShoppingCart className="w-4 h-4" />
+                    Send to Shopping List
+                  </>
+                )}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
+            >
+              Done
+            </button>
+          </div>
         </div>
       </div>
     </ModalShell>

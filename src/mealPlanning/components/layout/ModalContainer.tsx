@@ -34,6 +34,7 @@ interface ModalContainerProps {
   updateItemStatus: (itemId: string, status: GroceryItemStatus) => void;
   getStatusColor: (status: GroceryItemStatus) => string;
   onCopyCart: () => void;
+  onSendToShoppingList?: (items: GroceryItem[]) => Promise<{ success: boolean; count: number }>;
 
   // Copy week modal
   showCopyWeek: boolean;
@@ -81,6 +82,7 @@ export function ModalContainer({
   updateItemStatus,
   getStatusColor,
   onCopyCart,
+  onSendToShoppingList,
   showCopyWeek,
   onCloseCopyWeek,
   sourceWeekStart,
@@ -117,6 +119,7 @@ export function ModalContainer({
             updateItemStatus={updateItemStatus}
             getStatusColor={getStatusColor}
             onCopyCart={onCopyCart}
+            onSendToShoppingList={onSendToShoppingList}
           />
         </Suspense>
       )}

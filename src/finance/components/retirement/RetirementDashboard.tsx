@@ -16,6 +16,8 @@ interface RetirementDashboardProps {
   onAddAccount?: () => void;
   onEditAccount?: (accountId: string) => void;
   onDeleteAccount?: (accountId: string) => void;
+  currentUserId?: string;
+  partnerName?: string;
 }
 
 const RetirementDashboard: React.FC<RetirementDashboardProps> = ({
@@ -25,6 +27,8 @@ const RetirementDashboard: React.FC<RetirementDashboardProps> = ({
   onAddAccount,
   onEditAccount,
   onDeleteAccount,
+  currentUserId,
+  partnerName,
 }) => {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -268,6 +272,8 @@ const RetirementDashboard: React.FC<RetirementDashboardProps> = ({
                   retirement={account}
                   onEdit={onEditAccount ? () => onEditAccount(account.accountId) : undefined}
                   onDelete={onDeleteAccount ? () => onDeleteAccount(account.accountId) : undefined}
+                  currentUserId={currentUserId}
+                  partnerName={partnerName}
                 />
               ))}
             </div>

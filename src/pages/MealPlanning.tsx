@@ -20,6 +20,8 @@ import {
   useUpdatePlannedMealMutation,
   useMergedConnectionQuery,
 } from '@/hooks/useMealPlanningQuery';
+import { getShoppingLists, createShoppingList, createShoppingItem } from '@/api/shoppingAPI';
+import type { GroceryItem } from '@/mealPlanning/hooks/useGroceryList';
 
 // Import hooks
 import { useMealFormModals } from '../mealPlanning/hooks/useMealFormModals';
@@ -269,6 +271,58 @@ const MealPlanning: React.FC = () => {
     }
   };
 
+  // Send grocery items to shopping list
+  const handleSendToShoppingList = useCallback(async (items: GroceryItem[]): Promise<{ success: boolean; count: number }> => {
+    try {
+      // Get or create shopping list
+      let lists = await getShoppingLists();
+      let targetList = lists.find(l => l.name === 'My Shopping List' || l.status === 'active');
+
+      if (!targetList) {
+        // Create a new list
+        targetList = await createShoppingList({
+          name: 'My Shopping List',
+          status: 'active',
+        });
+      }
+
+      if (!targetList?.id) {
+        throw new Error('Failed to get or create shopping list');
+      }
+
+      // Add each item to the shopping list
+      let successCount = 0;
+      for (const item of items) {
+        try {
+          await createShoppingItem(targetList.id, {
+            name: item.name,
+            quantity: item.amount ? parseFloat(item.amount) || 1 : 1,
+            unit: item.unit ?? undefined,
+            is_purchased: false,
+          });
+          successCount++;
+        } catch (itemError) {
+          logger.warn('MealPlanning', 'Failed to add item to shopping list', {
+            itemName: item.name,
+            error: itemError instanceof Error ? itemError.message : String(itemError)
+          });
+        }
+      }
+
+      if (successCount > 0) {
+        showToast(`Added ${successCount} item${successCount !== 1 ? 's' : ''} to Shopping List!`, 'success');
+      }
+
+      return { success: successCount > 0, count: successCount };
+    } catch (error) {
+      logger.error('MealPlanning', 'Failed to send items to shopping list', {
+        error: error instanceof Error ? error.message : String(error)
+      });
+      showToast('Failed to add items to Shopping List', 'error');
+      return { success: false, count: 0 };
+    }
+  }, [showToast]);
+
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-4 sm:gap-6 p-3 sm:p-6">
       <MealPlanToolbar
@@ -378,6 +432,7 @@ const MealPlanning: React.FC = () => {
           void navigator.clipboard.writeText(text);
           showToast('Shopping list copied to clipboard!', 'success');
         }}
+        onSendToShoppingList={handleSendToShoppingList}
         showCopyWeek={modalState.showCopyWeek}
         onCloseCopyWeek={() => modalState.setShowCopyWeek(false)}
         sourceWeekStart={weekNav.currentWeekStart}
