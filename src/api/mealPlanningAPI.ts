@@ -11,6 +11,7 @@ import type { MealPlanData, PlannedMealData, RecipeData, PantryItemData, MealBac
 import { apiCall, requireAuth, handleSupabaseResponse } from './apiWrapper';
 import { getMergedConnectionId, type MergedConnectionResult } from '../shared/api/SharedDataProvider';
 import { logger } from '../services/logger';
+import { NotFoundError, AuthorizationError } from '../lib/errors';
 import {
   RecipeDataArraySchema,
   MealPlanDataArraySchema,
@@ -440,17 +441,17 @@ export async function updateMealPlan(
         .single();
 
       if (!existingPlan) {
-        throw new Error('Meal plan not found');
+        throw new NotFoundError('Meal Plan', id);
       }
 
       // Verify access
       if (existingPlan.connection_id) {
         // Shared plan - verify connection access
         if (!mergedConnection || existingPlan.connection_id !== mergedConnection.connectionId) {
-          throw new Error('Access denied to shared meal plan');
+          throw new AuthorizationError('Access denied to shared meal plan');
         }
       } else if (existingPlan.user_id !== user.id) {
-        throw new Error('Access denied to meal plan');
+        throw new AuthorizationError('Access denied to meal plan');
       }
 
       // Update the plan (RLS will also verify access)
@@ -486,15 +487,15 @@ export async function deleteMealPlan(id: string): Promise<void> {
         .single();
 
       if (!existingPlan) {
-        throw new Error('Meal plan not found');
+        throw new NotFoundError('Meal Plan', id);
       }
 
       if (existingPlan.connection_id) {
         if (!mergedConnection || existingPlan.connection_id !== mergedConnection.connectionId) {
-          throw new Error('Access denied to shared meal plan');
+          throw new AuthorizationError('Access denied to shared meal plan');
         }
       } else if (existingPlan.user_id !== user.id) {
-        throw new Error('Access denied to meal plan');
+        throw new AuthorizationError('Access denied to meal plan');
       }
 
       // Delete the plan (RLS will also verify access)
@@ -555,7 +556,7 @@ export async function createPlannedMeal(
 
       // Verify meal plan access
       const hasAccess = await verifyMealPlanAccess(meal.meal_plan_id, user.id, mergedConnection);
-      if (!hasAccess) throw new Error('Meal plan not found or access denied');
+      if (!hasAccess) throw new NotFoundError('Meal Plan', meal.meal_plan_id);
 
       const result = await supabase
         .from('planned_meals')
@@ -590,13 +591,13 @@ export async function updatePlannedMeal(
         .single();
 
       if (itemError || !item?.meal_plan_id) {
-        throw new Error('Planned meal not found');
+        throw new NotFoundError('Planned Meal', id);
       }
 
       // Verify access to the parent meal plan
       const hasAccess = await verifyMealPlanAccess(item.meal_plan_id, user.id, mergedConnection);
       if (!hasAccess) {
-        throw new Error('Planned meal not found or access denied');
+        throw new NotFoundError('Planned Meal', id);
       }
 
       const result = await supabase
@@ -631,13 +632,13 @@ export async function deletePlannedMeal(id: string): Promise<void> {
         .single();
 
       if (itemError || !item?.meal_plan_id) {
-        throw new Error('Planned meal not found');
+        throw new NotFoundError('Planned Meal', id);
       }
 
       // Verify access to the parent meal plan
       const hasAccess = await verifyMealPlanAccess(item.meal_plan_id, user.id, mergedConnection);
       if (!hasAccess) {
-        throw new Error('Planned meal not found or access denied');
+        throw new NotFoundError('Planned Meal', id);
       }
 
       const { error } = await supabase
@@ -673,13 +674,13 @@ export async function postponePlannedMeal(
         .single();
 
       if (!currentMeal?.meal_plan_id) {
-        throw new Error('Planned meal not found');
+        throw new NotFoundError('Planned Meal', id);
       }
 
       // Verify access to the parent meal plan
       const hasAccess = await verifyMealPlanAccess(currentMeal.meal_plan_id, user.id, mergedConnection);
       if (!hasAccess) {
-        throw new Error('Planned meal not found or access denied');
+        throw new NotFoundError('Planned Meal', id);
       }
 
       const result = await supabase
@@ -723,13 +724,13 @@ export async function reschedulePlannedMeal(
         .single();
 
       if (itemError || !item?.meal_plan_id) {
-        throw new Error('Planned meal not found');
+        throw new NotFoundError('Planned Meal', id);
       }
 
       // Verify access to the parent meal plan
       const hasAccess = await verifyMealPlanAccess(item.meal_plan_id, user.id, mergedConnection);
       if (!hasAccess) {
-        throw new Error('Planned meal not found or access denied');
+        throw new NotFoundError('Planned Meal', id);
       }
 
       const dateStr = newDate.toISOString().split('T')[0];
@@ -1483,7 +1484,7 @@ export async function addToBacklog(item: {
       // Get the merged connection
       const mergedConnection = await getMealsMergedConnection();
       if (!mergedConnection) {
-        throw new Error('Cannot add to backlog: No merged connection found');
+        throw new AuthorizationError('Cannot add to backlog: No merged connection found');
       }
 
       const result = await supabase
@@ -1550,7 +1551,7 @@ export async function useBacklogItem(
         .single();
 
       if (fetchError) throw fetchError;
-      if (!backlogItem) throw new Error('Backlog item not found');
+      if (!backlogItem) throw new NotFoundError('Backlog Item', backlogId);
 
       const item = backlogItem as MealBacklogData;
 

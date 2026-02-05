@@ -6,6 +6,7 @@
 import { supabase } from '../lib/supabase';
 import type { ShoppingItemData, ShoppingListData } from '../services/types';
 import { apiCall, requireAuth, handleSupabaseResponse } from './apiWrapper';
+import { NotFoundError } from '../lib/errors';
 
 // =====================================================
 // SHOPPING LISTS CRUD OPERATIONS
@@ -150,7 +151,7 @@ export async function createShoppingItem(
         .eq('user_id', user.id)
         .single();
 
-      if (listError || !list) throw new Error('Shopping list not found or access denied');
+      if (listError || !list) throw new NotFoundError('Shopping List', listId);
 
       const result = await supabase
         .from('shopping_items')
@@ -188,7 +189,7 @@ export async function updateShoppingItem(
         .single();
 
       if (itemError || !item?.shopping_list_id) {
-        throw new Error('Shopping item not found');
+        throw new NotFoundError('Shopping Item', itemId);
       }
 
       const { data: list, error: listError } = await supabase
@@ -199,7 +200,7 @@ export async function updateShoppingItem(
         .single();
 
       if (listError || !list) {
-        throw new Error('Shopping item not found or access denied');
+        throw new NotFoundError('Shopping Item', itemId);
       }
 
       const result = await supabase
@@ -232,7 +233,7 @@ export async function deleteShoppingItem(itemId: string): Promise<void> {
         .single();
 
       if (itemError || !item?.shopping_list_id) {
-        throw new Error('Shopping item not found');
+        throw new NotFoundError('Shopping Item', itemId);
       }
 
       const { data: list, error: listError } = await supabase
@@ -243,7 +244,7 @@ export async function deleteShoppingItem(itemId: string): Promise<void> {
         .single();
 
       if (listError || !list) {
-        throw new Error('Shopping item not found or access denied');
+        throw new NotFoundError('Shopping Item', itemId);
       }
 
       const { error } = await supabase

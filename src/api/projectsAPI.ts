@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabase';
 import type { Project, ProjectMilestone, ProjectTask } from '../services/types';
 import { logger } from '../services/logger';
 import { apiCall, requireAuth, handleSupabaseResponse } from './apiWrapper';
+import { NotFoundError, AuthorizationError } from '../lib/errors';
 
 // =====================================================
 // PROJECTS CRUD OPERATIONS
@@ -74,7 +75,7 @@ export async function getProject(id: string): Promise<Project> {
         .single();
 
       if (error) throw error;
-      if (!data) throw new Error('Project not found');
+      if (!data) throw new NotFoundError('Project', id);
 
       // Sort milestones by order
       const project = {
@@ -205,7 +206,7 @@ export async function getProjectMilestones(projectId: string): Promise<ProjectMi
         .eq('user_id', user.id)
         .single();
 
-      if (!project) throw new Error('Project not found or access denied');
+      if (!project) throw new NotFoundError('Project', projectId);
 
       const { data, error } = await supabase
         .from('project_milestones')
@@ -238,7 +239,7 @@ export async function createMilestone(
         .eq('user_id', user.id)
         .single();
 
-      if (!project) throw new Error('Project not found or access denied');
+      if (!project) throw new NotFoundError('Project', projectId);
 
       // Sanitize payload
       const sanitizedMilestone = {
@@ -338,7 +339,7 @@ export async function getProjectTasks(projectId: string): Promise<string[]> {
         .eq('user_id', user.id)
         .single();
 
-      if (!project) throw new Error('Project not found or access denied');
+      if (!project) throw new NotFoundError('Project', projectId);
 
       const { data, error } = await supabase
         .from('project_tasks')
@@ -379,8 +380,8 @@ export async function linkTaskToProject(
           .single()
       ]);
 
-      if (!projectResult.data) throw new Error('Project not found or access denied');
-      if (!taskResult.data) throw new Error('Task not found or access denied');
+      if (!projectResult.data) throw new NotFoundError('Project', projectId);
+      if (!taskResult.data) throw new NotFoundError('Task', taskId);
 
       const { data, error } = await supabase
         .from('project_tasks')

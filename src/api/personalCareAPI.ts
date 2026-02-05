@@ -22,6 +22,7 @@ import type {
 } from '../skincare/personalCareTypes';
 import { CATEGORY_TEMPLATES, ITEM_TEMPLATES, type ItemTemplate } from '../skincare/templates';
 import { apiCall, requireAuth } from './apiWrapper';
+import { NotFoundError } from '../lib/errors';
 
 // =====================================================
 // CATEGORIES
@@ -917,7 +918,7 @@ export async function getItemProducts(
         const product = (Array.isArray(rawProduct) ? rawProduct[0] : rawProduct) as Record<string, unknown> | null;
 
         if (!product) {
-          throw new Error('Product not found for item product link');
+          throw new NotFoundError('Product', itemId);
         }
 
         return {

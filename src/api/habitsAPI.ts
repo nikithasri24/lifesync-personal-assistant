@@ -6,6 +6,7 @@
 import { supabase } from '../lib/supabase';
 import type { HabitData, HabitEntryData } from '../services/types';
 import { apiCall, requireAuth, handleSupabaseResponse } from './apiWrapper';
+import { AuthenticationError, NotFoundError } from '../lib/errors';
 
 // =====================================================
 // HABITS CRUD OPERATIONS
@@ -92,7 +93,7 @@ export async function createHabit(habit: Omit<HabitData, 'id' | 'user_id' | 'cre
  */
 export async function updateHabit(id: string, updates: Partial<HabitData>): Promise<HabitData> {
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  if (!user) throw new AuthenticationError('Not authenticated');
 
   const result = await supabase
     .from('habits')
@@ -103,7 +104,7 @@ export async function updateHabit(id: string, updates: Partial<HabitData>): Prom
     .single();
 
   if (result.error) throw result.error;
-  if (!result.data) throw new Error('Habit not found or update failed');
+  if (!result.data) throw new NotFoundError('Habit', id);
   return result.data as unknown as HabitData;
 }
 
@@ -112,7 +113,7 @@ export async function updateHabit(id: string, updates: Partial<HabitData>): Prom
  */
 export async function deleteHabit(id: string): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  if (!user) throw new AuthenticationError('Not authenticated');
 
   const { error } = await supabase
     .from('habits')
@@ -136,7 +137,7 @@ export async function getHabitEntries(filters?: {
   endDate?: string;
 }): Promise<HabitEntryData[]> {
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  if (!user) throw new AuthenticationError('Not authenticated');
 
   // First get user's habits to filter entries
   const { data: userHabits, error: habitsError } = await supabase
@@ -165,7 +166,7 @@ export async function getHabitEntries(filters?: {
   const { data, error } = await query;
 
   if (error) throw error;
-  if (!data) throw new Error('Failed to retrieve habit entries');
+  if (!data) throw new NotFoundError('Habit entries');
   return data as HabitEntryData[];
 }
 
@@ -188,7 +189,7 @@ export async function getHabitEntriesForDate(date: string): Promise<HabitEntryDa
  */
 export async function createHabitEntry(entry: Omit<HabitEntryData, 'id' | 'created_at'>): Promise<HabitEntryData> {
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  if (!user) throw new AuthenticationError('Not authenticated');
 
   // Verify the habit belongs to the user
   const habitResult = await supabase
@@ -199,7 +200,7 @@ export async function createHabitEntry(entry: Omit<HabitEntryData, 'id' | 'creat
     .single();
 
   if (habitResult.error) throw habitResult.error;
-  if (!habitResult.data) throw new Error('Habit not found or access denied');
+  if (!habitResult.data) throw new NotFoundError('Habit', entry.habit_id);
 
   // Use upsert to handle duplicate entries (same habit_id and date)
   const result = await supabase
@@ -212,7 +213,7 @@ export async function createHabitEntry(entry: Omit<HabitEntryData, 'id' | 'creat
     .single();
 
   if (result.error) throw result.error;
-  if (!result.data) throw new Error('Failed to create habit entry');
+  if (!result.data) throw new NotFoundError('Habit Entry');
 
   // Update habit streak and progress
   await updateHabitStreakAndProgress(entry.habit_id);
@@ -232,7 +233,7 @@ export async function updateHabitEntry(id: string, updates: Partial<HabitEntryDa
     .single();
 
   if (result.error) throw result.error;
-  if (!result.data) throw new Error('Habit entry not found or update failed');
+  if (!result.data) throw new NotFoundError('Habit Entry', id);
   return result.data as unknown as HabitEntryData;
 }
 

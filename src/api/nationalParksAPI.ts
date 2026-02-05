@@ -8,6 +8,7 @@ import type { NationalPark } from '../types/nationalParks';
 import type { NationalPark as TravelPark } from '../travel/data/nationalParks';
 import { logger } from '../services/logger';
 import { apiCall, requireAuth, handleSupabaseResponse } from './apiWrapper';
+import { NotFoundError } from '../lib/errors';
 
 /**
  * Maps travel data park format to the NationalPark type used by the app
@@ -113,7 +114,7 @@ export async function getPark(id: string): Promise<NationalPark> {
     const park = nationalParks.find((p) => p.id === id);
 
     if (!park) {
-      throw new Error('Park not found');
+      throw new NotFoundError('National Park', id);
     }
 
     return mapTravelParkToNationalPark(park);

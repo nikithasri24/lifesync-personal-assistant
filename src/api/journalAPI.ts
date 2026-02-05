@@ -6,6 +6,7 @@
 import { supabase } from '../lib/supabase';
 import type { JournalEntry, Attachment } from '../types';
 import { apiCall, requireAuth, handleSupabaseResponse } from './apiWrapper';
+import { NotFoundError } from '../lib/errors';
 
 // Database types (snake_case from Supabase)
 interface JournalEntryDB {
@@ -139,7 +140,7 @@ export async function getJournalEntry(id: string): Promise<JournalEntry> {
       }
 
       if (!data) {
-        throw new Error(`Journal entry not found: ${id}`);
+        throw new NotFoundError('Journal Entry', id);
       }
 
       return mapDbToJournalEntry(data as JournalEntryDB);

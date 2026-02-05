@@ -5,6 +5,7 @@
 
 import { supabase } from '../lib/supabase';
 import { logger } from '../services/logger';
+import { AuthenticationError } from '../lib/errors';
 
 // =====================================================
 // TYPES
@@ -41,7 +42,7 @@ export interface CreateInboxItemInput {
  */
 export async function getInboxItems(status?: InboxItemStatus): Promise<InboxItem[]> {
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  if (!user) throw new AuthenticationError('Not authenticated');
 
   let query = supabase
     .from('inbox_items')
@@ -66,7 +67,7 @@ export async function getInboxItems(status?: InboxItemStatus): Promise<InboxItem
  */
 export async function getPendingCount(): Promise<number> {
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  if (!user) throw new AuthenticationError('Not authenticated');
 
   const { count, error } = await supabase
     .from('inbox_items')
@@ -86,7 +87,7 @@ export async function getPendingCount(): Promise<number> {
  */
 export async function createInboxItem(input: CreateInboxItemInput): Promise<InboxItem> {
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  if (!user) throw new AuthenticationError('Not authenticated');
 
   const { data, error } = await supabase
     .from('inbox_items')
@@ -115,7 +116,7 @@ export async function updateInboxItem(
   updates: Partial<Pick<InboxItem, 'content' | 'suggested_type' | 'suggested_category' | 'status' | 'processed_result'>>
 ): Promise<InboxItem> {
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  if (!user) throw new AuthenticationError('Not authenticated');
 
   const updateData: Record<string, unknown> = { ...updates };
   if (updates.status === 'processed') {
@@ -162,7 +163,7 @@ export async function dismissInboxItem(id: string): Promise<InboxItem> {
  */
 export async function deleteInboxItem(id: string): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  if (!user) throw new AuthenticationError('Not authenticated');
 
   const { error } = await supabase
     .from('inbox_items')
@@ -185,7 +186,7 @@ export async function processInboxItem(
   processedToId: string
 ): Promise<InboxItem> {
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  if (!user) throw new AuthenticationError('Not authenticated');
 
   const { data, error } = await supabase
     .from('inbox_items')
@@ -221,7 +222,7 @@ export interface InboxStats {
 
 export async function getInboxStats(): Promise<InboxStats> {
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  if (!user) throw new AuthenticationError('Not authenticated');
 
   const today = new Date().toISOString().split('T')[0];
 
