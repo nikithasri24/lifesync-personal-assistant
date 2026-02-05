@@ -408,13 +408,15 @@ const VisaCalculator: React.FC = () => {
       {/* Passport Selection */}
       <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">Your Passport</h2>
-          {passport && (
+          <h2 className="text-xl font-semibold text-gray-900">
+            {mergedConnection && allPassports.length > 1 ? 'Passports' : 'Your Passport'}
+          </h2>
+          {passport && !showPassportSelector && (
             <button
               onClick={() => setShowPassportSelector(true)}
               className="text-sm text-blue-600 hover:text-blue-700 font-medium"
             >
-              Change Passport
+              {allPassports.length > 0 ? 'Manage Passports' : 'Change Passport'}
             </button>
           )}
         </div>
@@ -463,21 +465,79 @@ const VisaCalculator: React.FC = () => {
             </div>
           </div>
         ) : (
-          <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
-            <div className="text-4xl">{passport?.countryCode === 'US' ? '🇺🇸' : passport?.countryCode === 'IN' ? '🇮🇳' : '🌍'}</div>
-            <div>
-              <div className="font-semibold text-gray-900">{passport?.countryName}</div>
-              {passport?.expiryDate && (
-                <div className="text-sm text-gray-600">
-                  Expires: {new Date(passport.expiryDate).toLocaleDateString()}
+          <>
+            {/* Show all passports in merged mode, or just the primary one otherwise */}
+            {mergedConnection && allPassports.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {allPassports.map((p) => {
+                  const ownerLabel = getOwnershipLabel(p.userId);
+                  const ownerColor = getOwnershipColor(p.userId);
+                  const summary = getVisaAccessSummary(p.countryName);
+                  const ranking = getPassportRanking(p.countryCode);
+
+                  return (
+                    <div key={p.id} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="text-4xl">{p.countryCode === 'US' ? '🇺🇸' : p.countryCode === 'IN' ? '🇮🇳' : '🌍'}</div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-gray-900">{p.countryName}</span>
+                            {ownerLabel && (
+                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${ownerColor}`}>
+                                {ownerLabel}
+                              </span>
+                            )}
+                          </div>
+                          {p.expiryDate && (
+                            <div className="text-sm text-gray-600">
+                              Expires: {new Date(p.expiryDate).toLocaleDateString()}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Mini summary for each passport */}
+                      {summary && (
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div className="bg-green-50 rounded p-2">
+                            <div className="font-bold text-green-700">{summary.visaFree}</div>
+                            <div className="text-green-600">Visa Free</div>
+                          </div>
+                          <div className="bg-blue-50 rounded p-2">
+                            <div className="font-bold text-blue-700">{summary.visaOnArrival}</div>
+                            <div className="text-blue-600">On Arrival</div>
+                          </div>
+                        </div>
+                      )}
+
+                      {ranking && (
+                        <div className="mt-2 text-xs text-gray-600">
+                          Rank #{ranking.rank} globally
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              /* Single passport view for non-merged mode */
+              <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="text-4xl">{passport?.countryCode === 'US' ? '🇺🇸' : passport?.countryCode === 'IN' ? '🇮🇳' : '🌍'}</div>
+                <div>
+                  <div className="font-semibold text-gray-900">{passport?.countryName}</div>
+                  {passport?.expiryDate && (
+                    <div className="text-sm text-gray-600">
+                      Expires: {new Date(passport.expiryDate).toLocaleDateString()}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          </div>
+              </div>
+            )}
+          </>
         )}
 
-        {/* Passport Summary */}
-        {passportSummary && (
+        {/* Passport Summary - Only show in non-merged mode (merged mode shows mini summaries on each card) */}
+        {!mergedConnection && passportSummary && (
           <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-green-50 rounded-lg p-4">
               <div className="text-2xl font-bold text-green-700">{passportSummary.visaFree}</div>
@@ -498,8 +558,8 @@ const VisaCalculator: React.FC = () => {
           </div>
         )}
 
-        {/* Passport Ranking */}
-        {passportRanking && (
+        {/* Passport Ranking - Only show in non-merged mode */}
+        {!mergedConnection && passportRanking && (
           <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
             <div className="flex items-center justify-between">
               <div>

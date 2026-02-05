@@ -73,7 +73,8 @@
       "Bash(supabase db dump:*)",
       "Bash(supabase db remote exec:*)",
       "Bash(./scripts/validate-finance-merged.sh:*)",
-      "Bash(node fix-bad-dates.js:*)"
+      "Bash(node fix-bad-dates.js:*)",
+      "Bash(git merge:*)"
     ],
     "deny": [],
     "ask": []
