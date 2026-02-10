@@ -9,7 +9,6 @@ import React, { useMemo, useState } from 'react';
 import {
   Users,
   Utensils,
-  ShoppingCart,
   CheckSquare,
   Target,
   BookOpen,
@@ -17,7 +16,6 @@ import {
   FolderOpen,
   Plane,
   Map,
-  DollarSign,
   Trophy,
   Smile,
   Sparkles,
@@ -43,8 +41,6 @@ interface ModuleSection {
 const MODULE_ICONS: Record<ShareableModule, React.ReactNode> = {
   visa: <Plane className="w-5 h-5" />,
   'trip-planner': <Map className="w-5 h-5" />,
-  finances: <DollarSign className="w-5 h-5" />,
-  shopping: <ShoppingCart className="w-5 h-5" />,
   meals: <Utensils className="w-5 h-5" />,
   nutrition: <Utensils className="w-5 h-5" />,
   goals: <Trophy className="w-5 h-5" />,
@@ -59,13 +55,11 @@ const MODULE_ICONS: Record<ShareableModule, React.ReactNode> = {
 
 const MODULE_COLORS: Record<ShareableModule, string> = {
   meals: 'text-orange-500',
-  shopping: 'text-green-500',
   todos: 'text-blue-500',
   goals: 'text-purple-500',
   habits: 'text-indigo-500',
   visa: 'text-sky-500',
   'trip-planner': 'text-teal-500',
-  finances: 'text-lime-500',
   nutrition: 'text-amber-500',
   notes: 'text-slate-500',
   projects: 'text-cyan-500',
@@ -83,8 +77,8 @@ export function SharedDashboard({ connections }: SharedDashboardProps): React.Re
 
     return Object.values(MODULE_CONFIGS)
       .filter((config) => availableModules.has(config.module))
-      // Filter out 'goals', 'meals', and 'visa' since they're now merged into their main pages
-      .filter((config) => config.module !== 'goals' && config.module !== 'meals' && config.module !== 'visa')
+      // Filter out modules that have merged mode in their own pages: goals, meals, visa, finances, shopping, todos
+      .filter((config) => config.module !== 'goals' && config.module !== 'meals' && config.module !== 'visa' && config.module !== 'finances' && config.module !== 'shopping' && config.module !== 'todos')
       .map((config) => ({
         module: config.module,
         label: config.label,
@@ -253,8 +247,6 @@ function SharedModuleContent({ module, data }: SharedModuleContentProps): React.
         return (record.country_name as string) || item.title || item.name || 'Visa';
       case 'trip-planner':
         return (record.name as string) || item.title || 'Trip';
-      case 'finances':
-        return (record.description as string) || (record.merchant_name as string) || item.title || item.name || 'Transaction';
       case 'nutrition':
         return (record.custom_food_name as string) || item.title || item.name || 'Food Log';
       case 'skincare':
