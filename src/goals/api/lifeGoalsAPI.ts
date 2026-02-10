@@ -16,12 +16,9 @@ import type {
   CreateCheckinInput,
   CreateLifeDreamInput,
   UpdateLifeDreamInput,
-  LifeGoalStreakEntry,
   GoalCategory,
   GoalPriority,
   GoalStatus,
-  GoalDifficulty,
-  StreakFrequency,
   DreamCategory,
   DreamPriority,
   DreamStatus,
@@ -76,15 +73,6 @@ interface LifeGoalRow {
   start_date: string | null;
   target_date: string | null;
   completed_date: string | null;
-  difficulty: GoalDifficulty;
-  xp_reward: number;
-  streak_days: number;
-  longest_streak: number;
-  current_streak: number;
-  streak_enabled: boolean;
-  streak_frequency: StreakFrequency;
-  streak_target: number | null;
-  last_streak_update: string | null;
   tags: string[];
   is_public: boolean;
   template_id: string | null;
@@ -102,7 +90,6 @@ interface LifeGoalMilestoneRow {
   is_completed: boolean;
   completed_date: string | null;
   target_date: string | null;
-  xp_reward: number;
   created_at: string;
 }
 
@@ -115,15 +102,6 @@ interface LifeGoalCheckinRow {
   blockers: string | null;
   wins: string | null;
   next_actions: string | null;
-  created_at: string;
-}
-
-interface LifeGoalStreakEntryRow {
-  id: string;
-  goal_id: string;
-  date: string;
-  completed: boolean;
-  notes: string | null;
   created_at: string;
 }
 
@@ -168,7 +146,6 @@ interface LifeGoalTemplateRow {
   name: string;
   description: string | null;
   category: GoalCategory;
-  difficulty: GoalDifficulty;
   estimated_duration_days: number | null;
   default_milestones: unknown;
   suggested_tags: string[];
@@ -352,12 +329,8 @@ export async function createLifeGoal(input: CreateLifeGoalInput): Promise<LifeGo
     unit: input.unit,
     start_date: input.startDate,
     target_date: input.targetDate,
-    difficulty: input.difficulty ?? 'medium',
     tags: input.tags ?? [],
     template_id: input.templateId,
-    streak_enabled: input.streakEnabled ?? false,
-    streak_frequency: input.streakFrequency ?? 'daily',
-    streak_target: input.streakTarget,
   };
 
   const result = await supabase
@@ -568,46 +541,6 @@ export async function getGoalCheckins(goalId: string): Promise<LifeGoalCheckin[]
 
   if (error) throw error;
   return (data ?? []).map((row) => mapDbToCheckin(row as LifeGoalCheckinRow));
-}
-
-/**
- * Record streak for goal
- */
-export async function recordStreak(goalId: string, date: string, completed: boolean, notes?: string): Promise<LifeGoalStreakEntry> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
-  const result = await supabase
-    .from('life_goal_streak_history')
-    .upsert({
-      goal_id: goalId,
-      date,
-      completed,
-      notes,
-    })
-    .select()
-    .single();
-
-  if (result.error) throw result.error;
-  return mapDbToStreakEntry(result.data as LifeGoalStreakEntryRow);
-}
-
-/**
- * Get streak history for goal
- */
-export async function getStreakHistory(goalId: string, limit = 30): Promise<LifeGoalStreakEntry[]> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
-  const { data, error } = await supabase
-    .from('life_goal_streak_history')
-    .select('*')
-    .eq('goal_id', goalId)
-    .order('date', { ascending: false })
-    .limit(limit);
-
-  if (error) throw error;
-  return (data ?? []).map((row) => mapDbToStreakEntry(row as LifeGoalStreakEntryRow));
 }
 
 /**
@@ -976,15 +909,6 @@ export async function createGoalFromTemplate(templateId: string, customTitle?: s
     );
   }
 
-  // Calculate XP reward based on difficulty
-  const difficultyXpMap: Record<GoalDifficulty, number> = {
-    extreme: 500,
-    hard: 300,
-    medium: 200,
-    easy: 100,
-  };
-  const xpReward = difficultyXpMap[template.difficulty];
-
   // Create goal from template
   const goalResult = await supabase
     .from('life_goals')
@@ -994,10 +918,8 @@ export async function createGoalFromTemplate(templateId: string, customTitle?: s
       description: template.description,
       category: template.category,
       priority: 'medium',
-      difficulty: template.difficulty,
       tags: template.suggested_tags ?? [],
       template_id: templateId,
-      xp_reward: xpReward,
       target_date: template.estimated_duration_days
         ? new Date(Date.now() + template.estimated_duration_days * 24 * 60 * 60 * 1000).toISOString()
         : undefined,
@@ -1062,15 +984,6 @@ function mapDbToLifeGoal(data: LifeGoalRow): LifeGoal {
     startDate: data.start_date ?? undefined,
     targetDate: data.target_date ?? undefined,
     completedDate: data.completed_date ?? undefined,
-    difficulty: data.difficulty,
-    xpReward: data.xp_reward,
-    streakDays: data.streak_days,
-    longestStreak: data.longest_streak,
-    currentStreak: data.current_streak,
-    streakEnabled: data.streak_enabled,
-    streakFrequency: data.streak_frequency,
-    streakTarget: data.streak_target ?? undefined,
-    lastStreakUpdate: data.last_streak_update ?? undefined,
     tags: data.tags,
     isPublic: data.is_public,
     templateId: data.template_id ?? undefined,
@@ -1090,7 +1003,6 @@ function mapDbToMilestone(data: LifeGoalMilestoneRow): LifeGoalMilestone {
     isCompleted: data.is_completed,
     completedDate: data.completed_date ?? undefined,
     targetDate: data.target_date ?? undefined,
-    xpReward: data.xp_reward,
     createdAt: data.created_at,
   };
 }
@@ -1105,17 +1017,6 @@ function mapDbToCheckin(data: LifeGoalCheckinRow): LifeGoalCheckin {
     blockers: data.blockers ?? undefined,
     wins: data.wins ?? undefined,
     nextActions: data.next_actions ?? undefined,
-    createdAt: data.created_at,
-  };
-}
-
-function mapDbToStreakEntry(data: LifeGoalStreakEntryRow): LifeGoalStreakEntry {
-  return {
-    id: data.id,
-    goalId: data.goal_id,
-    date: data.date,
-    completed: data.completed,
-    notes: data.notes ?? undefined,
     createdAt: data.created_at,
   };
 }
@@ -1168,7 +1069,6 @@ function mapDbToTemplate(data: LifeGoalTemplateRow): LifeGoalTemplate {
     name: data.name,
     description: data.description ?? undefined,
     category: data.category,
-    difficulty: data.difficulty,
     estimatedDurationDays: data.estimated_duration_days ?? undefined,
     defaultMilestones: isMilestoneTemplateArray(data.default_milestones) ? data.default_milestones : [],
     suggestedTags: data.suggested_tags,

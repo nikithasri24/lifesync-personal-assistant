@@ -1,8 +1,7 @@
 import React, { type ReactElement, useMemo, useState } from 'react';
-import { Target, CheckCircle2, Trash2, Edit3, TrendingUp, Users } from 'lucide-react';
+import { Target, CheckCircle2, Trash2, Edit3, TrendingUp, Users, RotateCcw } from 'lucide-react';
 import type { LifeGoal } from '../../types/lifeGoals';
 import { GoalMilestones } from '../GoalMilestones';
-import { GoalStreaks } from '../GoalStreaks';
 import { GoalCheckins } from '../GoalCheckins';
 import {
   useGoalProgressTrackingQuery,
@@ -27,6 +26,7 @@ interface GoalListProps {
   editingProgress: string | null;
   progressValue: number;
   onMarkComplete: (goalId: string) => void;
+  onUndoComplete: (goalId: string) => void;
   onDelete: (goalId: string) => void;
   onEdit: (goal: LifeGoal) => void;
   onStartEditProgress: (goalId: string, currentProgress: number) => void;
@@ -49,6 +49,7 @@ export function GoalList({
   editingProgress,
   progressValue,
   onMarkComplete,
+  onUndoComplete,
   onDelete,
   onEdit,
   onStartEditProgress,
@@ -181,13 +182,26 @@ export function GoalList({
                 {/* Only show action buttons if user can edit (own goals or shared goals) */}
                 {!isPartnerGoal && (
                   <>
-                    {goal.status !== 'completed' && (
+                    {goal.status === 'completed' ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onUndoComplete(goal.id);
+                        }}
+                        className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-600 transition hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50"
+                        aria-label="Reopen goal"
+                      >
+                        <RotateCcw className="h-4 w-4" />
+                        Reopen
+                      </button>
+                    ) : (
                       <button
                         type="button"
                         onClick={() => {
                           onMarkComplete(goal.id);
                         }}
                         className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-600 transition hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50"
+                        aria-label="Mark goal as complete"
                       >
                         <CheckCircle2 className="h-4 w-4" />
                         Complete
@@ -200,6 +214,7 @@ export function GoalList({
                       }}
                       className="rounded-full border border-slate-200 p-1 text-slate-500 transition hover:bg-slate-100 dark:border-slate-600 dark:hover:bg-slate-700"
                       title="Edit goal"
+                      aria-label="Edit goal"
                     >
                       <Edit3 className="h-4 w-4" />
                     </button>
@@ -210,6 +225,7 @@ export function GoalList({
                       }}
                       className="rounded-full border border-slate-200 p-1 text-slate-500 transition hover:bg-slate-100 dark:border-slate-600 dark:hover:bg-slate-700"
                       title="Delete goal"
+                      aria-label="Delete goal"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -386,15 +402,6 @@ export function GoalList({
             {isExpanded && (
               <>
                 <GoalMilestones goal={goal} />
-                {/* Streaks section */}
-                {goal.streakEnabled && (
-                  <GoalStreaks
-                    goal={goal}
-                    onGoalUpdated={() => {
-                      // React Query cache is automatically updated by mutations
-                    }}
-                  />
-                )}
                 {/* Check-ins section */}
                 <GoalCheckins goal={goal} />
               </>

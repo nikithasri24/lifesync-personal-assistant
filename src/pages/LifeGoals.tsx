@@ -1,5 +1,5 @@
 /* eslint-disable max-lines */
-import React, { useMemo, useState , type FormEvent } from 'react';
+import React, { useMemo, useState , type FormEvent, useEffect } from 'react';
 import {
   useLifeGoalsQuery,
   useLifeDreamsQuery,
@@ -21,6 +21,7 @@ import { Users } from 'lucide-react';
 import GoalTemplates from '../goals/components/GoalTemplates';
 import { logger } from '../services/logger';
 import ErrorState from '../components/ErrorState';
+import { supabase } from '../lib/supabase';
 
 // Import layout components
 import { LifeGoalsHeader } from '../goals/components/layout/LifeGoalsHeader';
@@ -31,6 +32,7 @@ import { GoalList } from '../goals/components/layout/GoalList';
 import { DreamList } from '../goals/components/layout/DreamList';
 import { GoalFormModal, type GoalDraft } from '../goals/components/layout/GoalFormModal';
 import { DreamFormModal, type DreamDraft } from '../goals/components/layout/DreamFormModal';
+import { FilterBar, type StatusFilter, type OwnershipFilter } from '../goals/components/layout/FilterBar';
 
 const createGoalDraft = (): GoalDraft => ({
   title: '',
@@ -38,9 +40,6 @@ const createGoalDraft = (): GoalDraft => ({
   category: 'personal',
   priority: 'medium',
   targetDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
-  streakEnabled: false,
-  streakFrequency: 'daily',
-  streakTarget: '',
   isShared: false,
   trackingMode: 'combined',
 });
@@ -85,6 +84,17 @@ const LifeGoals: React.FC = () => {
 
   const loading = goalsLoading || dreamsLoading;
 
+  // Get current user ID
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUserId(user?.id ?? null);
+    };
+    void fetchUser();
+  }, []);
+
   // UI state
   const [activeTab, setActiveTab] = useState<'goals' | 'dreams'>('goals');
   const [goalDraft, setGoalDraft] = useState<GoalDraft>(createGoalDraft);
@@ -98,6 +108,11 @@ const LifeGoals: React.FC = () => {
   // Edit mode state
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null);
   const [editingDreamId, setEditingDreamId] = useState<string | null>(null);
+  // Filter state
+  const [goalStatusFilter, setGoalStatusFilter] = useState<StatusFilter>('all');
+  const [goalOwnershipFilter, setGoalOwnershipFilter] = useState<OwnershipFilter>('all');
+  const [dreamStatusFilter, setDreamStatusFilter] = useState<StatusFilter>('all');
+  const [dreamOwnershipFilter, setDreamOwnershipFilter] = useState<OwnershipFilter>('all');
 
   const goalStats = useMemo(() => {
     const completed = goals.filter((goal) => goal.status === 'completed').length;
@@ -116,6 +131,66 @@ const LifeGoals: React.FC = () => {
       achieved,
     };
   }, [dreams]);
+
+  // Filtered goals
+  const filteredGoals = useMemo(() => {
+    let filtered = [...goals];
+
+    // Apply status filter
+    if (goalStatusFilter === 'active') {
+      filtered = filtered.filter((goal) => goal.status !== 'completed');
+    } else if (goalStatusFilter === 'completed') {
+      filtered = filtered.filter((goal) => goal.status === 'completed');
+    }
+
+    // Apply ownership filter (only in merged mode and if not 'all')
+    if (isMerged && goalOwnershipFilter !== 'all') {
+      filtered = filtered.filter((goal) => {
+        // Determine ownership
+        let ownership: 'mine' | 'partner' | 'shared' = 'mine';
+        if (goal.connectionId) {
+          ownership = 'shared';
+        } else if (currentUserId && goal.userId === currentUserId) {
+          ownership = 'mine';
+        } else if (partnerId && goal.userId === partnerId) {
+          ownership = 'partner';
+        }
+        return ownership === goalOwnershipFilter;
+      });
+    }
+
+    return filtered;
+  }, [goals, goalStatusFilter, goalOwnershipFilter, isMerged, partnerId, currentUserId]);
+
+  // Filtered dreams
+  const filteredDreams = useMemo(() => {
+    let filtered = [...dreams];
+
+    // Apply status filter
+    if (dreamStatusFilter === 'active') {
+      filtered = filtered.filter((dream) => dream.status !== 'achieved');
+    } else if (dreamStatusFilter === 'completed') {
+      filtered = filtered.filter((dream) => dream.status === 'achieved');
+    }
+
+    // Apply ownership filter (only in merged mode and if not 'all')
+    if (isMerged && dreamOwnershipFilter !== 'all') {
+      filtered = filtered.filter((dream) => {
+        // Determine ownership
+        let ownership: 'mine' | 'partner' | 'shared' = 'mine';
+        if (dream.connectionId) {
+          ownership = 'shared';
+        } else if (currentUserId && dream.userId === currentUserId) {
+          ownership = 'mine';
+        } else if (partnerId && dream.userId === partnerId) {
+          ownership = 'partner';
+        }
+        return ownership === dreamOwnershipFilter;
+      });
+    }
+
+    return filtered;
+  }, [dreams, dreamStatusFilter, dreamOwnershipFilter, isMerged, partnerId, currentUserId]);
 
   const handleGoalSubmit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
@@ -147,9 +222,6 @@ const LifeGoals: React.FC = () => {
           priority: goalDraft.priority,
           targetDate: goalDraft.targetDate,
           startDate: new Date().toISOString(),
-          streakEnabled: goalDraft.streakEnabled,
-          streakFrequency: goalDraft.streakFrequency,
-          streakTarget: goalDraft.streakTarget ? Number(goalDraft.streakTarget) : undefined,
           // Sharing options - only set if merged mode is available
           isShared: isMerged ? goalDraft.isShared : false,
           trackingMode: goalDraft.isShared ? goalDraft.trackingMode : 'combined',
@@ -210,9 +282,6 @@ const LifeGoals: React.FC = () => {
       category: goal.category,
       priority: goal.priority,
       targetDate: goal.targetDate ?? '',
-      streakEnabled: goal.streakEnabled,
-      streakFrequency: goal.streakFrequency,
-      streakTarget: goal.streakTarget?.toString() ?? '',
       isShared: !!goal.connectionId,
       trackingMode: goal.trackingMode,
     });
@@ -242,6 +311,20 @@ const LifeGoals: React.FC = () => {
           status: 'completed',
           progress: 100,
           completedDate: new Date().toISOString(),
+        },
+      });
+    } catch (error) {
+      logger.error('LifeGoals', error as Error);
+    }
+  };
+
+  const handleUndoGoalComplete = async (goalId: string): Promise<void> => {
+    try {
+      await updateGoalMutation.mutateAsync({
+        goalId,
+        updates: {
+          status: 'in-progress',
+          completedDate: undefined,
         },
       });
     } catch (error) {
@@ -387,37 +470,60 @@ const LifeGoals: React.FC = () => {
 
       <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
 
-      <section>
+      <section className="space-y-4">
         {activeTab === 'goals' && (
-          <GoalList
-            goals={goals}
-            expandedGoalId={expandedGoalId}
-            editingProgress={editingProgress}
-            progressValue={progressValue}
-            onMarkComplete={handleMarkGoalComplete}
-            onDelete={handleDeleteGoal}
-            onEdit={handleEditGoal}
-            onStartEditProgress={handleStartEditProgress}
-            onUpdateProgress={handleUpdateProgress}
-            onCancelEditProgress={handleCancelEditProgress}
-            onExpandGoal={handleExpandGoal}
-            onSetProgressValue={setProgressValue}
-            isMerged={isMerged}
-            partnerId={partnerId}
-            partnerName={partnerName}
-          />
+          <>
+            <FilterBar
+              statusFilter={goalStatusFilter}
+              onStatusFilterChange={setGoalStatusFilter}
+              ownershipFilter={goalOwnershipFilter}
+              onOwnershipFilterChange={setGoalOwnershipFilter}
+              isMerged={isMerged}
+              partnerName={partnerName}
+              itemType="goals"
+            />
+            <GoalList
+              goals={filteredGoals}
+              expandedGoalId={expandedGoalId}
+              editingProgress={editingProgress}
+              progressValue={progressValue}
+              onMarkComplete={handleMarkGoalComplete}
+              onUndoComplete={handleUndoGoalComplete}
+              onDelete={handleDeleteGoal}
+              onEdit={handleEditGoal}
+              onStartEditProgress={handleStartEditProgress}
+              onUpdateProgress={handleUpdateProgress}
+              onCancelEditProgress={handleCancelEditProgress}
+              onExpandGoal={handleExpandGoal}
+              onSetProgressValue={setProgressValue}
+              isMerged={isMerged}
+              partnerId={partnerId}
+              partnerName={partnerName}
+            />
+          </>
         )}
         {activeTab === 'dreams' && (
-          <DreamList
-            dreams={dreams}
-            onMarkAchieved={handleMarkDreamAchieved}
-            onUndoAchieved={handleUndoDreamAchieved}
-            onDelete={handleDeleteDream}
-            onEdit={handleEditDream}
-            isMerged={isMerged}
-            partnerId={partnerId}
-            partnerName={partnerName}
-          />
+          <>
+            <FilterBar
+              statusFilter={dreamStatusFilter}
+              onStatusFilterChange={setDreamStatusFilter}
+              ownershipFilter={dreamOwnershipFilter}
+              onOwnershipFilterChange={setDreamOwnershipFilter}
+              isMerged={isMerged}
+              partnerName={partnerName}
+              itemType="dreams"
+            />
+            <DreamList
+              dreams={filteredDreams}
+              onMarkAchieved={handleMarkDreamAchieved}
+              onUndoAchieved={handleUndoDreamAchieved}
+              onDelete={handleDeleteDream}
+              onEdit={handleEditDream}
+              isMerged={isMerged}
+              partnerId={partnerId}
+              partnerName={partnerName}
+            />
+          </>
         )}
       </section>
 

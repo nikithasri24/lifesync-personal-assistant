@@ -6,8 +6,6 @@
 export type GoalCategory = 'personal' | 'health' | 'career' | 'financial' | 'fitness';
 export type GoalPriority = 'low' | 'medium' | 'high' | 'critical';
 export type GoalStatus = 'not-started' | 'in-progress' | 'completed' | 'on-hold' | 'abandoned';
-export type GoalDifficulty = 'easy' | 'medium' | 'hard' | 'extreme';
-export type StreakFrequency = 'daily' | 'weekly' | 'monthly';
 
 export type DreamCategory = 'travel' | 'experiences' | 'possessions' | 'achievements' | 'relationships' | 'lifestyle';
 /** @deprecated Use estimatedTimeframe text field instead */
@@ -41,17 +39,6 @@ export interface LifeGoal {
   targetDate?: string;
   completedDate?: string;
 
-  // Gamification
-  difficulty: GoalDifficulty;
-  xpReward: number;
-  streakDays: number;
-  longestStreak: number;
-  currentStreak: number;
-  streakEnabled: boolean;
-  streakFrequency: StreakFrequency;
-  streakTarget?: number;
-  lastStreakUpdate?: string;
-
   // Organization
   tags: string[];
   isPublic: boolean;
@@ -72,7 +59,6 @@ export interface LifeGoalMilestone {
   isCompleted: boolean;
   completedDate?: string;
   targetDate?: string;
-  xpReward: number;
   createdAt: string;
 }
 
@@ -85,15 +71,6 @@ export interface LifeGoalCheckin {
   blockers?: string;
   wins?: string;
   nextActions?: string;
-  createdAt: string;
-}
-
-export interface LifeGoalStreakEntry {
-  id: string;
-  goalId: string;
-  date: string;
-  completed: boolean;
-  notes?: string;
   createdAt: string;
 }
 
@@ -161,7 +138,6 @@ export interface LifeGoalTemplate {
   name: string;
   description?: string;
   category: GoalCategory;
-  difficulty: GoalDifficulty;
   estimatedDurationDays?: number;
 
   // Template structure
@@ -191,7 +167,6 @@ export interface LifeGoalWithMilestones extends LifeGoal {
 export interface LifeGoalWithDetails extends LifeGoal {
   milestones: LifeGoalMilestone[];
   checkins: LifeGoalCheckin[];
-  streakHistory: LifeGoalStreakEntry[];
   linkedHabits?: string[]; // habit IDs
   linkedTasks?: string[]; // task IDs
 }
@@ -211,12 +186,8 @@ export interface CreateLifeGoalInput {
   unit?: string;
   startDate?: string;
   targetDate?: string;
-  difficulty?: GoalDifficulty;
   tags?: string[];
   templateId?: string;
-  streakEnabled?: boolean;
-  streakFrequency?: StreakFrequency;
-  streakTarget?: number;
   // Sharing options
   isShared?: boolean;  // If true, goal is shared with partner (sets connection_id)
   trackingMode?: TrackingMode;  // Only relevant when isShared=true
@@ -305,7 +276,6 @@ export interface GoalStats {
   completed: number;
   onHold: number;
   abandoned: number;
-  totalXpEarned: number;
   avgProgress: number;
   completionRate: number;
 }

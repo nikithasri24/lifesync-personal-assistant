@@ -11,9 +11,6 @@ export type GoalDraft = {
   category: GoalCategory;
   priority: GoalPriority;
   targetDate: string;
-  streakEnabled: boolean;
-  streakFrequency: 'daily' | 'weekly' | 'monthly';
-  streakTarget: string;
   // Sharing options
   isShared: boolean;
   trackingMode: TrackingMode;
@@ -220,50 +217,6 @@ export function GoalFormModal({
               )}
             </div>
           )}
-
-          {/* Streak tracking options */}
-          <div className="sm:col-span-2 border-t border-slate-200 dark:border-slate-600 pt-4">
-            <label className="flex items-center gap-2 text-sm cursor-pointer">
-              <input
-                type="checkbox"
-                checked={goalDraft.streakEnabled}
-                onChange={(e) => onDraftChange({ ...goalDraft, streakEnabled: e.target.checked })}
-                className="rounded border-slate-300 dark:border-slate-600"
-              />
-              <span className="font-medium text-slate-700 dark:text-slate-300">Enable streak tracking</span>
-            </label>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 ml-6">Track progress with check-ins and earn XP for consistency</p>
-
-            {goalDraft.streakEnabled && (
-              <div className="mt-3 ml-6 grid gap-3 sm:grid-cols-2">
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="font-medium text-slate-700 dark:text-slate-300">Frequency</span>
-                  <select
-                    value={goalDraft.streakFrequency}
-                    onChange={(e) => onDraftChange({ ...goalDraft, streakFrequency: e.target.value as 'daily' | 'weekly' | 'monthly' })}
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white"
-                    style={{ color: '#1e293b' }}
-                  >
-                    <option value="daily">Daily</option>
-                    <option value="weekly">Weekly</option>
-                    <option value="monthly">Monthly</option>
-                  </select>
-                </label>
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="font-medium text-slate-700 dark:text-slate-300">Target streak (days)</span>
-                  <input
-                    type="number"
-                    min="1"
-                    value={goalDraft.streakTarget}
-                    onChange={(e) => onDraftChange({ ...goalDraft, streakTarget: e.target.value })}
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm placeholder-slate-400 focus:border-indigo-500 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white"
-                    style={{ color: '#1e293b' }}
-                    placeholder="e.g., 30"
-                  />
-                </label>
-              </div>
-            )}
-          </div>
         </div>
         <div className="mt-6 flex gap-2 justify-end">
           <button

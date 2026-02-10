@@ -14,8 +14,6 @@ import {
   deleteMilestone,
   createCheckin,
   getGoalCheckins,
-  recordStreak,
-  getStreakHistory,
   getGoalTemplates,
   createGoalFromTemplate,
   getGoalsMergedConnection,
@@ -37,7 +35,6 @@ import type {
   LifeGoalWithMilestones,
   LifeGoalMilestone,
   LifeGoalCheckin,
-  LifeGoalStreakEntry,
   LifeGoalTemplate,
   GoalProgressTracking,
   MergedGoalsConnectionInfo,
@@ -54,7 +51,6 @@ export const lifeGoalsKeys = {
   dream: (id: string) => [...lifeGoalsKeys.all, 'dream', id] as const,
   templates: () => [...lifeGoalsKeys.all, 'templates'] as const,
   checkins: (goalId: string) => [...lifeGoalsKeys.all, 'checkins', goalId] as const,
-  streaks: (goalId: string) => [...lifeGoalsKeys.all, 'streaks', goalId] as const,
   // Merged mode keys
   mergedConnection: () => [...lifeGoalsKeys.all, 'mergedConnection'] as const,
   progressTracking: (goalIds: string[]) => [...lifeGoalsKeys.all, 'progressTracking', goalIds.sort().join(',')] as const,
@@ -123,15 +119,6 @@ export function useCreateLifeGoalMutation(): UseMutationResult<LifeGoal, Error, 
         startDate: input.startDate,
         targetDate: input.targetDate,
         completedDate: undefined,
-        difficulty: input.difficulty ?? 'medium',
-        xpReward: 100,
-        streakDays: 0,
-        longestStreak: 0,
-        currentStreak: 0,
-        streakEnabled: input.streakEnabled ?? false,
-        streakFrequency: input.streakFrequency ?? 'daily',
-        streakTarget: input.streakTarget,
-        lastStreakUpdate: undefined,
         tags: input.tags ?? [],
         isPublic: false,
         templateId: input.templateId,
@@ -462,51 +449,6 @@ export function useCreateCheckinMutation(): UseMutationResult<LifeGoalCheckin, E
     },
     onError: (error: Error, input) => {
       logger.error('Goals', 'Failed to create check-in', { error: error.message, goalId: input.goalId });
-    },
-  });
-}
-
-// ==================== Streaks ====================
-
-export function useStreakHistoryQuery(goalId: string | null, limit = 30): UseQueryResult<LifeGoalStreakEntry[], Error> {
-  return useQuery({
-    queryKey: goalId ? lifeGoalsKeys.streaks(goalId) : ['streaks-null'],
-    queryFn: () => {
-      if (!goalId) throw new Error('Goal ID is required');
-      return getStreakHistory(goalId, limit);
-    },
-    enabled: !!goalId,
-    staleTime: 1000 * 60 * 5, // 5 minutes
-  });
-}
-
-export function useRecordStreakMutation(): UseMutationResult<LifeGoalStreakEntry, Error, { goalId: string; date: string; completed: boolean; notes?: string }, unknown> {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({
-      goalId,
-      date,
-      completed,
-      notes,
-    }: {
-      goalId: string;
-      date: string;
-      completed: boolean;
-      notes?: string;
-    }) => {
-      logger.debug('Goals', 'Recording streak', { goalId, date, completed });
-      const result = await recordStreak(goalId, date, completed, notes);
-      return result;
-    },
-    onSuccess: (_, { goalId, date, completed }) => {
-      logger.info('Goals', 'Streak recorded successfully', { goalId, date, completed });
-      void queryClient.invalidateQueries({ queryKey: lifeGoalsKeys.streaks(goalId) });
-      void queryClient.invalidateQueries({ queryKey: lifeGoalsKeys.goal(goalId) });
-      void queryClient.invalidateQueries({ queryKey: lifeGoalsKeys.goals() });
-    },
-    onError: (error: Error, { goalId, date }) => {
-      logger.error('Goals', 'Failed to record streak', { error: error.message, goalId, date });
     },
   });
 }

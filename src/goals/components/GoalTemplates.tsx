@@ -20,7 +20,6 @@ interface TemplateResponse {
   name: string;
   description: string;
   category: string;
-  difficulty: string;
   estimated_duration_days: number;
   default_milestones?: Milestone[];
   suggested_tags?: string[];
@@ -34,7 +33,6 @@ interface Template {
   name: string;
   description: string;
   category: string;
-  difficulty: string;
   estimatedDurationDays: number;
   defaultMilestones: Milestone[];
   suggestedTags: string[];
@@ -47,13 +45,6 @@ interface GoalTemplatesProps {
   onGoalCreated: (goal: LifeGoalWithMilestones) => void;
   onClose: () => void;
 }
-
-const difficultyColors: Record<string, string> = {
-  easy: 'bg-green-100 text-green-800 border-green-300',
-  medium: 'bg-yellow-100 text-yellow-800 border-yellow-300',
-  hard: 'bg-orange-100 text-orange-800 border-orange-300',
-  extreme: 'bg-red-100 text-red-800 border-red-300',
-};
 
 const categoryIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   fitness: TrendingUp,
@@ -79,7 +70,6 @@ const GoalTemplates: React.FC<GoalTemplatesProps> = ({ onGoalCreated, onClose })
     name: t.name,
     description: t.description ?? '',
     category: t.category,
-    difficulty: t.difficulty,
     estimatedDurationDays: t.estimatedDurationDays ?? 0,
     defaultMilestones: t.defaultMilestones,
     suggestedTags: t.suggestedTags,
@@ -187,9 +177,6 @@ const GoalTemplates: React.FC<GoalTemplatesProps> = ({ onGoalCreated, onClose })
                           <p className="text-xs text-slate-500">{template.category}</p>
                         </div>
                       </div>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium border ${difficultyColors[template.difficulty]}`}>
-                        {template.difficulty}
-                      </span>
                     </div>
 
                     <p className="text-sm text-slate-600 mb-3 line-clamp-2">{template.description}</p>
@@ -249,9 +236,6 @@ const GoalTemplates: React.FC<GoalTemplatesProps> = ({ onGoalCreated, onClose })
                 </div>
 
                 <div className="flex flex-wrap gap-2 mt-4">
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium border ${difficultyColors[selectedTemplate.difficulty]}`}>
-                    {selectedTemplate.difficulty}
-                  </span>
                   <span className="px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-xs font-medium">
                     {selectedTemplate.category}
                   </span>

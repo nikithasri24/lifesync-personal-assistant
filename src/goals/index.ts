@@ -10,7 +10,5 @@ export * from './types/lifeGoals';
 // Components
 // TODO: Re-export components when they are implemented
 // export { default as GoalCheckins } from './components/GoalCheckins';
-export { default as GoalGamification } from './components/GoalGamification';
 // export { default as GoalMilestones } from './components/GoalMilestones';
-// export { default as GoalStreaks } from './components/GoalStreaks';
 export { default as GoalTemplates } from './components/GoalTemplates';
