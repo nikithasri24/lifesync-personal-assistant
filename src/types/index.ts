@@ -243,6 +243,7 @@ export interface PantryItem {
   notes?: string;
   isLowStock?: boolean;
   lowStockThreshold?: number;
+  user_id?: string; // User ID of the owner (for merged mode)
   createdAt: Date;
   updatedAt: Date;
 }

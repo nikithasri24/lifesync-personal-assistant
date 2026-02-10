@@ -27,6 +27,7 @@ export interface ShoppingItem {
   purchasedBy?: string;
   assignedStore?: string; // Store ID where this item should be bought
   bestStores?: string[]; // Ordered list of best stores for this item
+  ownerId?: string; // User ID of the owner (for merged mode)
   createdAt: Date;
   updatedAt: Date;
 }
