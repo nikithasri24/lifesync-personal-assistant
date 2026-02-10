@@ -19,7 +19,6 @@ import type {
 } from '../goals/types/lifeGoals';
 import { Users } from 'lucide-react';
 import GoalTemplates from '../goals/components/GoalTemplates';
-import GoalGamification from '../goals/components/GoalGamification';
 import { logger } from '../services/logger';
 import ErrorState from '../components/ErrorState';
 
@@ -87,7 +86,7 @@ const LifeGoals: React.FC = () => {
   const loading = goalsLoading || dreamsLoading;
 
   // UI state
-  const [activeTab, setActiveTab] = useState<'goals' | 'dreams' | 'progress'>('goals');
+  const [activeTab, setActiveTab] = useState<'goals' | 'dreams'>('goals');
   const [goalDraft, setGoalDraft] = useState<GoalDraft>(createGoalDraft);
   const [dreamDraft, setDreamDraft] = useState<DreamDraft>(createDreamDraft);
   const [showGoalForm, setShowGoalForm] = useState(false);
@@ -420,7 +419,6 @@ const LifeGoals: React.FC = () => {
             partnerName={partnerName}
           />
         )}
-        {activeTab === 'progress' && <GoalGamification goals={goals} />}
       </section>
 
       <GoalFormModal
