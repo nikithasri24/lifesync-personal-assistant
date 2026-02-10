@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { X } from 'lucide-react';
 import LeafletTravelMapV2 from '../components/LeafletTravelMapV2';
 import { travelAPI } from '../api/data';
 import type { VisitStatus, CategorizedLocation, LocationVisitCategory } from '../types';
@@ -601,24 +602,11 @@ function AllLocationsListCard<T>({
             return (
               <div
                 key={itemKey}
-                className={`flex items-center gap-2 p-2 rounded border cursor-pointer hover:shadow-sm transition-shadow ${
+                className={`group flex items-center gap-2 p-2 rounded border hover:shadow-sm transition-shadow ${
                   visited
                     ? getCategoryColor(visitedLocation.visitCategory)
                     : 'bg-white border-gray-200 hover:bg-gray-50'
                 }`}
-                onClick={() => {
-                  if (visited) {
-                    // If already visited, toggle to remove
-                    onToggle(item);
-                  } else {
-                    // Default: mark as "Both of Us" if partner exists, otherwise "Me Only"
-                    if (partnerId && currentUserId) {
-                      onToggle(item, [currentUserId, partnerId]);
-                    } else {
-                      onToggle(item, currentUserId ? [currentUserId] : undefined);
-                    }
-                  }
-                }}
                 onContextMenu={(e) => {
                   if (!visited && partnerId && currentUserId) {
                     e.preventDefault();
@@ -630,8 +618,21 @@ function AllLocationsListCard<T>({
                 <input
                   type="checkbox"
                   checked={visited}
-                  readOnly
-                  className="h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    if (visited) {
+                      // If already visited, toggle to remove
+                      onToggle(item);
+                    } else {
+                      // Default: mark as "Both of Us" if partner exists, otherwise "Me Only"
+                      if (partnerId && currentUserId) {
+                        onToggle(item, [currentUserId, partnerId]);
+                      } else {
+                        onToggle(item, currentUserId ? [currentUserId] : undefined);
+                      }
+                    }
+                  }}
+                  className="h-4 w-4 text-blue-600 rounded focus:ring-blue-500 cursor-pointer"
                 />
 
                 {/* Name */}
@@ -640,6 +641,20 @@ function AllLocationsListCard<T>({
                     {getItemName(item)}
                   </p>
                 </div>
+
+                {/* Remove button for visited items */}
+                {visited && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onToggle(item);
+                    }}
+                    className="flex-shrink-0 p-1 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                    aria-label={`Remove ${getItemName(item)}`}
+                  >
+                    <X size={16} />
+                  </button>
+                )}
 
                 {/* Category badge */}
                 {visited && visitedLocation && (

@@ -13,7 +13,7 @@ interface MasterItemCardProps {
   stores: Store[];
   onToggle: () => void;
   onEdit: () => void;
-  onDelete: () => void;
+  onRequestDelete: () => void;
   onFindStores: () => void;
 }
 
@@ -22,7 +22,7 @@ export const MasterItemCard = React.memo<MasterItemCardProps>(function MasterIte
   stores,
   onToggle,
   onEdit,
-  onDelete,
+  onRequestDelete,
   onFindStores
 }) {
   const bestStore: Store | null = item.bestStores && item.bestStores.length > 0
@@ -131,7 +131,7 @@ export const MasterItemCard = React.memo<MasterItemCardProps>(function MasterIte
                 <Edit3 size={16} />
               </button>
               <button
-                onClick={onDelete}
+                onClick={onRequestDelete}
                 className="p-1 text-gray-400 hover:text-red-500 transition-colors"
                 title="Delete item"
                 aria-label="Delete item"

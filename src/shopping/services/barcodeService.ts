@@ -1,3 +1,6 @@
+import { NetworkError, ValidationError } from '../../lib/errors';
+import { logger } from '../../services/logger';
+
 export interface ProductInfo {
   name: string;
   price?: number;
@@ -24,12 +27,16 @@ export async function lookupProductByBarcode(barcode: string): Promise<ProductIn
       headers: { Accept: 'application/json' }
     });
 
-    if (!resp.ok) throw new Error('lookup failed');
+    if (!resp.ok) {
+      logger.warn('BarcodeService', 'Barcode lookup failed', { barcode, status: resp.status });
+      throw new NetworkError('Barcode lookup failed', { barcode, status: resp.status });
+    }
 
     const rawData: unknown = await resp.json();
 
     if (!isBarcodeAPIResponse(rawData)) {
-      throw new Error('Invalid API response');
+      logger.error('BarcodeService', 'Invalid API response from barcode service', { barcode, rawData });
+      throw new ValidationError('Invalid API response from barcode service', undefined, { barcode });
     }
 
     const data: BarcodeAPIResponse = rawData;
@@ -42,10 +49,11 @@ export async function lookupProductByBarcode(barcode: string): Promise<ProductIn
       image: data.image ?? undefined,
     };
   } catch (error) {
-    // Log error for debugging purposes
-    if (error instanceof Error) {
-      // Error logged: Product lookup failed
-    }
+    logger.error('BarcodeService', error instanceof Error ? error : new Error(String(error)), {
+      context: 'lookupProductByBarcode',
+      barcode,
+    });
+    // Return fallback product info instead of throwing
     return {
       name: `Product ${barcode.slice(-4)}`,
       category: 'other'

@@ -1,10 +1,10 @@
 /**
  * Pantry Queries and Mutations
- * 
+ *
  * React Query hooks for pantry item CRUD operations.
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery, type UseInfiniteQueryResult } from '@tanstack/react-query';
 import * as mealPlanningAPI from '@/api/mealPlanningAPI';
 import type { PantryItemData } from '@/services/types';
 import { logger } from '@/services/logger';
@@ -142,6 +142,41 @@ export function useDeletePantryItemMutation() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: mealPlanningKeys.pantryList() });
     },
+  });
+}
+
+/**
+ * Infinite query for paginated pantry items
+ * Use this for large pantry lists (100+ items) with infinite scroll
+ */
+export function useInfinitePantryItemsQuery(
+  params?: {
+    filter?: 'all' | 'expired' | 'expiring_soon' | 'low_stock';
+  },
+  pageSize: number = 50
+): UseInfiniteQueryResult<
+  {
+    pages: { items: PantryItem[]; nextCursor?: string }[];
+    pageParams: (string | undefined)[];
+  },
+  Error
+> {
+  return useInfiniteQuery({
+    queryKey: [...mealPlanningKeys.pantryList(), 'infinite', params?.filter],
+    queryFn: async ({ pageParam }) => {
+      const data = await mealPlanningAPI.listPantryItems({
+        cursor: pageParam as string | undefined,
+        limit: pageSize,
+        filter: params?.filter,
+      });
+      return {
+        items: data.items.map(mapPantryItemDataToPantryItem),
+        nextCursor: data.nextCursor,
+      };
+    },
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
+    initialPageParam: undefined,
+    staleTime: 1000 * 60 * 2, // 2 minutes
   });
 }
 

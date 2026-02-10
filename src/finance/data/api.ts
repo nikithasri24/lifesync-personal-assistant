@@ -25,6 +25,8 @@ import type {
   LoanInput,
   LoanPayment,
   LoanPaymentInput,
+  InsurancePolicy,
+  InsurancePolicyInput,
   RetirementAccountWithStats,
   RetirementAccountMetadataInput,
   RetirementContribution,
@@ -74,6 +76,10 @@ export interface FinanceAPI {
   listLoanPayments(loanId: string): Promise<LoanPayment[]>;
   upsertLoanPayment(loanId: string, payment: LoanPaymentInput): Promise<void>;
   deleteLoanPayment(paymentId: string): Promise<void>;
+  // Insurance tracking
+  listInsurancePolicies(): Promise<InsurancePolicy[]>;
+  upsertInsurancePolicy(policy: InsurancePolicyInput): Promise<void>;
+  deleteInsurancePolicy(policyId: string): Promise<void>;
   // Retirement account tracking
   listRetirementAccounts(): Promise<RetirementAccountWithStats[]>;
   getRetirementAccount(accountId: string): Promise<RetirementAccountWithStats | null>;

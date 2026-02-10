@@ -20,6 +20,7 @@ interface DistributeViewProps {
   distributionStrategy: DistributionStrategy;
   onStrategyChange: (strategy: DistributionStrategy) => void;
   onDistribute: () => void;
+  isDistributing?: boolean;
 }
 
 export function DistributeView({
@@ -28,6 +29,7 @@ export function DistributeView({
   distributionStrategy,
   onStrategyChange,
   onDistribute,
+  isDistributing = false,
 }: DistributeViewProps) {
   const unpurchasedItems = items.filter(item => !item.purchased);
 
@@ -144,12 +146,21 @@ export function DistributeView({
           <div className="text-center">
             <button
               onClick={onDistribute}
-              disabled={unpurchasedItems.length === 0}
+              disabled={unpurchasedItems.length === 0 || isDistributing}
               className="btn-primary flex items-center space-x-2 mx-auto disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Zap size={16} />
-              <span>Auto-Distribute Items</span>
-              <ArrowRight size={16} />
+              {isDistributing ? (
+                <>
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  <span>Distributing...</span>
+                </>
+              ) : (
+                <>
+                  <Zap size={16} />
+                  <span>Auto-Distribute Items</span>
+                  <ArrowRight size={16} />
+                </>
+              )}
             </button>
             <p className="text-xs text-gray-500 mt-2">
               AI will create store-specific lists based on your strategy and item preferences

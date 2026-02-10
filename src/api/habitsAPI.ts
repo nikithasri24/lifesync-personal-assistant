@@ -6,7 +6,8 @@
 import { supabase } from '../lib/supabase';
 import type { HabitData, HabitEntryData } from '../services/types';
 import { apiCall, requireAuth, handleSupabaseResponse } from './apiWrapper';
-import { AuthenticationError, NotFoundError } from '../lib/errors';
+import { AuthenticationError, NotFoundError, ValidationError } from '../lib/errors';
+import { isHabitData, isHabitEntryData, isArrayOf } from '../types/guards';
 
 // =====================================================
 // HABITS CRUD OPERATIONS
@@ -59,7 +60,13 @@ export async function getHabit(id: string): Promise<HabitData> {
         .eq('user_id', user.id)
         .single();
 
-      return handleSupabaseResponse(result, 'Habit', id) as unknown as HabitData;
+      const data = handleSupabaseResponse(result, 'Habit', id);
+
+      if (!isHabitData(data)) {
+        throw new ValidationError('Invalid habit data received from database');
+      }
+
+      return data;
     },
     { domain: 'HabitsAPI', operation: 'getHabit', data: { id } }
   );
@@ -82,7 +89,13 @@ export async function createHabit(habit: Omit<HabitData, 'id' | 'user_id' | 'cre
         .select()
         .single();
 
-      return handleSupabaseResponse(result, 'Habit') as unknown as HabitData;
+      const data = handleSupabaseResponse(result, 'Habit');
+
+      if (!isHabitData(data)) {
+        throw new ValidationError('Invalid habit data received from database');
+      }
+
+      return data;
     },
     { domain: 'HabitsAPI', operation: 'createHabit', data: { name: habit.name } }
   );
@@ -105,7 +118,12 @@ export async function updateHabit(id: string, updates: Partial<HabitData>): Prom
 
   if (result.error) throw result.error;
   if (!result.data) throw new NotFoundError('Habit', id);
-  return result.data as unknown as HabitData;
+
+  if (!isHabitData(result.data)) {
+    throw new ValidationError('Invalid habit data received from database');
+  }
+
+  return result.data;
 }
 
 /**
@@ -215,10 +233,14 @@ export async function createHabitEntry(entry: Omit<HabitEntryData, 'id' | 'creat
   if (result.error) throw result.error;
   if (!result.data) throw new NotFoundError('Habit Entry');
 
+  if (!isHabitEntryData(result.data)) {
+    throw new ValidationError('Invalid habit entry data received from database');
+  }
+
   // Update habit streak and progress
   await updateHabitStreakAndProgress(entry.habit_id);
 
-  return result.data as unknown as HabitEntryData;
+  return result.data;
 }
 
 /**
@@ -234,7 +256,12 @@ export async function updateHabitEntry(id: string, updates: Partial<HabitEntryDa
 
   if (result.error) throw result.error;
   if (!result.data) throw new NotFoundError('Habit Entry', id);
-  return result.data as unknown as HabitEntryData;
+
+  if (!isHabitEntryData(result.data)) {
+    throw new ValidationError('Invalid habit entry data received from database');
+  }
+
+  return result.data;
 }
 
 /**

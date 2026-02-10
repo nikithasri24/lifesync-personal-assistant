@@ -89,9 +89,33 @@ export default function Layout({ children }: LayoutProps) {
   const { sidebarCollapsed, setSidebarCollapsed } = useComposedStore();
   const { toast, dismissToast } = useToast();
   const { mode } = useAppMode();
+  const mainRef = React.useRef<HTMLDivElement>(null);
 
   // Derive activeView from current URL path
   const activeView = getViewFromPath(location.pathname);
+
+  // Add keyboard navigation for Home/End keys
+  React.useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Only handle if not focused on input/textarea
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      if (event.key === 'Home') {
+        event.preventDefault();
+        mainRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+      } else if (event.key === 'End') {
+        event.preventDefault();
+        const scrollHeight = mainRef.current?.scrollHeight ?? 0;
+        mainRef.current?.scrollTo({ top: scrollHeight, behavior: 'smooth' });
+      }
+    };
+
+    const mainEl = mainRef.current;
+    mainEl?.addEventListener('keydown', handleKeyDown);
+    return () => mainEl?.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // In voice mode and on assistant page, show full-screen assistant
   const isVoiceModeAssistant = mode === 'voice' && activeView === 'assistant';
@@ -306,8 +330,10 @@ export default function Layout({ children }: LayoutProps) {
 
         {/* Premium Page Content */}
         <main
+          ref={mainRef}
           className="flex-1 overflow-y-auto p-8 bg-gradient-to-br from-secondary via-tertiary/30 to-secondary"
           role="main"
+          tabIndex={0}
           aria-labelledby="page-title"
         >
           <h1 id="page-title" className="sr-only">

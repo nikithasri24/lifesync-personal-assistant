@@ -20,7 +20,8 @@ import type { Task } from '../lib/supabase';
 import type { Transaction, Account, Category } from '../finance/types';
 import type { Goal } from './index';
 import type { Recipe, PantryItem } from './index';
-import type { CalendarEvent } from '../services/types';
+import type { CalendarEvent, HabitData, HabitEntryData } from '../services/types';
+import type { SavedLocation, Coordinates } from '../lib/location/types';
 
 /**
  * Check if value is a ShoppingItem
@@ -157,6 +158,74 @@ export function isCalendarEvent(value: unknown): value is CalendarEvent {
     'start_time' in value &&
     typeof (value as CalendarEvent).title === 'string' &&
     typeof (value as CalendarEvent).start_time === 'string'
+  );
+}
+
+/**
+ * Check if value is a HabitData
+ */
+export function isHabitData(value: unknown): value is HabitData {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'name' in value &&
+    typeof (value as HabitData).name === 'string' &&
+    (
+      !('id' in value) ||
+      typeof (value as HabitData).id === 'string'
+    ) &&
+    (
+      !('frequency' in value) ||
+      ['daily', 'weekly', 'monthly'].includes((value as HabitData).frequency!)
+    )
+  );
+}
+
+/**
+ * Check if value is a HabitEntryData
+ */
+export function isHabitEntryData(value: unknown): value is HabitEntryData {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'habit_id' in value &&
+    'date' in value &&
+    typeof (value as HabitEntryData).habit_id === 'string' &&
+    typeof (value as HabitEntryData).date === 'string'
+  );
+}
+
+/**
+ * Check if value is valid Coordinates
+ */
+export function isCoordinates(value: unknown): value is Coordinates {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'lat' in value &&
+    'lng' in value &&
+    typeof (value as Coordinates).lat === 'number' &&
+    typeof (value as Coordinates).lng === 'number' &&
+    !isNaN((value as Coordinates).lat) &&
+    !isNaN((value as Coordinates).lng)
+  );
+}
+
+/**
+ * Check if value is a SavedLocation
+ */
+export function isSavedLocation(value: unknown): value is SavedLocation {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'id' in value &&
+    'name' in value &&
+    'coordinates' in value &&
+    'type' in value &&
+    typeof (value as SavedLocation).id === 'string' &&
+    typeof (value as SavedLocation).name === 'string' &&
+    isCoordinates((value as SavedLocation).coordinates) &&
+    ['home', 'work', 'store', 'custom'].includes((value as SavedLocation).type)
   );
 }
 

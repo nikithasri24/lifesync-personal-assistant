@@ -12,6 +12,7 @@ import * as mealPlanningAPI from '../api/mealPlanningAPI';
 import { logger } from '../services/logger';
 import { queryClient } from '../lib/react-query';
 import { mealPlanningKeys } from '../hooks/useMealPlanningQuery';
+import { buildPlannedMealUpdatePayload } from '../hooks/mealPlanning/mappers';
 
 // Helper to invalidate meal planning queries
 const invalidateMealPlanning = async () => {
@@ -78,13 +79,15 @@ export class UpdatePlannedMealCommand implements Command {
 
   async execute(): Promise<void> {
     logger.debug('MealPlanning', '[UpdatePlannedMealCommand] Executing', { mealId: this.mealId, updates: this.updates });
-    await mealPlanningAPI.updatePlannedMeal(this.mealId, this.updates as any);
+    const payload = buildPlannedMealUpdatePayload(this.updates);
+    await mealPlanningAPI.updatePlannedMeal(this.mealId, payload);
     await invalidateMealPlanning();
   }
 
   async undo(): Promise<void> {
     logger.debug('MealPlanning', '[UpdatePlannedMealCommand] Undoing', { mealId: this.mealId, previousState: this.previousState });
-    await mealPlanningAPI.updatePlannedMeal(this.mealId, this.previousState as any);
+    const payload = buildPlannedMealUpdatePayload(this.previousState);
+    await mealPlanningAPI.updatePlannedMeal(this.mealId, payload);
     await invalidateMealPlanning();
   }
 }

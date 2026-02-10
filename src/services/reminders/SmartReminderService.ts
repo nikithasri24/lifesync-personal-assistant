@@ -29,6 +29,21 @@ import {
 } from 'date-fns';
 import type { ReminderPreferences, ReminderPriority, ReminderType } from './types';
 
+/**
+ * Type guard for ReminderPreferences
+ */
+function isReminderPreferences(value: unknown): value is ReminderPreferences {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'enabled' in value &&
+    'taskRemindersEnabled' in value &&
+    'quietHoursEnabled' in value &&
+    typeof (value as ReminderPreferences).enabled === 'boolean' &&
+    typeof (value as ReminderPreferences).taskRemindersEnabled === 'boolean'
+  );
+}
+
 interface SmartTimingContext {
   userPatterns: {
     avgWakeTime: number; // hour of day
@@ -66,9 +81,22 @@ class SmartReminderService {
     // Use API layer instead of direct Supabase
     try {
       const settings = await getUserSettings();
-      this.preferences = (settings?.reminder_preferences as unknown as ReminderPreferences) ?? this.getDefaultPreferences();
+
+      // Validate reminder_preferences
+      if (settings?.reminder_preferences && isReminderPreferences(settings.reminder_preferences)) {
+        this.preferences = settings.reminder_preferences;
+      } else {
+        if (settings?.reminder_preferences) {
+          logger.warn('SmartReminderService', 'Invalid reminder_preferences from database', {
+            data: settings.reminder_preferences,
+          });
+        }
+        this.preferences = this.getDefaultPreferences();
+      }
+
       return this.preferences;
     } catch (error) {
+      logger.error('SmartReminderService', 'Failed to load reminder preferences', { error });
       return this.getDefaultPreferences();
     }
   }

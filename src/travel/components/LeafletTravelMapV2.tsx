@@ -9,6 +9,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { VisitStatus } from '../types';
 import { logger } from '../../services/logger';
+import { useMapData } from '../hooks/useMapData';
 import { MapMarkers } from './MapMarkers';
 import { MapLegend } from './MapLegend';
 
@@ -154,62 +155,53 @@ const LeafletTravelMapV2: React.FC<LeafletTravelMapV2Props> = ({
   const countryLayerRef = React.useRef<L.GeoJSON | null>(null);
   const stateLayerRef = React.useRef<L.GeoJSON | null>(null);
 
-  // Load countries data
+  // Load countries data with React Query caching
+  const { data: geoJsonData, isLoading: isLoadingMap, error: mapError } = useMapData();
+
+  // Process map data when it arrives
   React.useEffect(() => {
-    const loadMapData = async (): Promise<void> => {
-      try {
-        setLoading(true);
-        const response = await fetch(
-          'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson'
-        );
+    if (!geoJsonData) return;
 
-        if (!response.ok) {
-          throw new Error(`Failed to fetch map data: ${response.status}`);
-        }
+    try {
+      const countryFeatures = geoJsonData.features
+        .map((f) => ({
+          type: 'Feature' as const,
+          id: f.id ?? f.properties?.ISO_A2 ?? `country-${Math.random()}`,
+          properties: {
+            name: f.properties?.NAME ?? f.properties?.name ?? 'Unknown',
+            iso_a2: f.properties?.ISO_A2 ?? f.properties?.iso_a2 ?? '',
+            iso_a3: f.properties?.ISO_A3 ?? f.properties?.iso_a3 ?? '',
+          },
+          geometry: f.geometry ?? { type: 'Polygon', coordinates: [] } as GeoJSON.Geometry,
+        }))
+        .filter((f): f is CountryFeature => {
+          const hasValidCode = !!(f.properties.iso_a2 && f.properties.iso_a2.length === 2 && f.properties.iso_a2 !== '-99');
+          const hasValidGeometry = !!(f.geometry && (f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon'));
+          return hasValidCode && hasValidGeometry;
+        });
 
-        const geoJsonData = await response.json() as { features: Array<{
-          id?: string;
-          properties?: {
-            NAME?: string;
-            name?: string;
-            ISO_A2?: string;
-            iso_a2?: string;
-            ISO_A3?: string;
-            iso_a3?: string;
-          };
-          geometry?: GeoJSON.Geometry;
-        }> };
+      setCountries(countryFeatures);
+      setError(null);
+      setLoading(false);
+    } catch (err) {
+      logger.error('Travel', err instanceof Error ? err : new Error(String(err)), {
+        context: 'processMapData'
+      });
+      setError('Failed to process map data');
+      setLoading(false);
+    }
+  }, [geoJsonData]);
 
-        const countryFeatures = geoJsonData.features
-          .map((f) => ({
-            type: 'Feature' as const,
-            id: f.id ?? f.properties?.ISO_A2 ?? `country-${Math.random()}`,
-            properties: {
-              name: f.properties?.NAME ?? f.properties?.name ?? 'Unknown',
-              iso_a2: f.properties?.ISO_A2 ?? f.properties?.iso_a2 ?? '',
-              iso_a3: f.properties?.ISO_A3 ?? f.properties?.iso_a3 ?? '',
-            },
-            geometry: f.geometry ?? { type: 'Polygon', coordinates: [] } as GeoJSON.Geometry,
-          }))
-          .filter((f): f is CountryFeature => {
-            const hasValidCode = !!(f.properties.iso_a2 && f.properties.iso_a2.length === 2 && f.properties.iso_a2 !== '-99');
-            const hasValidGeometry = !!(f.geometry && (f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon'));
-            return hasValidCode && hasValidGeometry;
-          });
-
-        setCountries(countryFeatures);
-        setError(null);
-        setLoading(false);
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Failed to load map data';
-        logger.error('LeafletTravelMapV2', 'Error loading map data', { error: err instanceof Error ? err.message : String(err) });
-        setError(errorMessage);
-        setLoading(false);
-      }
-    };
-
-    void loadMapData();
-  }, []);
+  // Handle loading and error states from React Query
+  React.useEffect(() => {
+    if (isLoadingMap) {
+      setLoading(true);
+    }
+    if (mapError) {
+      setError('Failed to load map data. Please try again.');
+      setLoading(false);
+    }
+  }, [isLoadingMap, mapError]);
 
   // Load state/province boundaries when zoomed in OR when checkbox is unchecked
   React.useEffect(() => {

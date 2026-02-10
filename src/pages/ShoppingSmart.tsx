@@ -35,6 +35,10 @@ export default function ShoppingSmart(): ReactElement {
   const [storeLists, setStoreLists] = useState<ShoppingList[]>([]);
   const [activeView, setActiveView] = useState<'master' | 'stores' | 'distribute' | 'pantry'>('master');
   const [distributionStrategy, setDistributionStrategy] = useState<DistributionStrategy>('mixed');
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+  const [isDistributing, setIsDistributing] = useState(false);
+
+  // Form state management using consolidated hook
   const newItemForm = useItemForm();
   const editItemForm = useItemForm();
   const { isListening, startVoiceInput } = useVoiceInput();
@@ -59,10 +63,33 @@ export default function ShoppingSmart(): ReactElement {
   const { handleAddItem, handleUpdateItem } = useShoppingFormHandlers({ stores, addShoppingItem, updateShoppingItem });
   const { handleAddPantryItem, handleAddToPantry, handleLogExpense } = usePantryHandlers({ createPantryItem, showToast });
 
-  const distributeItemsToStores = (): void => {
-    const newStoreLists = distributeItems({ items: shoppingItems, stores, strategy: distributionStrategy });
-    setStoreLists(newStoreLists);
-    setActiveView('stores');
+  // Smart distribution algorithm - analyzes master list to determine optimal stores
+  const distributeItemsToStores = async (): Promise<void> => {
+    try {
+      setIsDistributing(true);
+
+      const unpurchasedItems = shoppingItems.filter(item => !item.purchased);
+
+      const newStoreLists = distributeItems({
+        items: shoppingItems,
+        stores,
+        strategy: distributionStrategy
+      });
+
+      setStoreLists(newStoreLists);
+
+      showToast(
+        `Successfully distributed ${unpurchasedItems.length} items to ${newStoreLists.length} stores!`,
+        'success'
+      );
+
+      setActiveView('stores');
+    } catch (error) {
+      logger.error('Shopping', error as Error);
+      showToast('Failed to distribute items. Please try again.', 'error');
+    } finally {
+      setIsDistributing(false);
+    }
   };
 
   const handleVoiceInput = (): void => startVoiceInput((transcript) => {
@@ -140,7 +167,7 @@ export default function ShoppingSmart(): ReactElement {
             stores={stores}
             onToggleItem={(itemId) => { void toggleShoppingItem(itemId); }}
             onEditItem={startEditItem}
-            onDeleteItem={(itemId) => { void deleteShoppingItem(itemId); }}
+            onRequestDeleteItem={(itemId) => setItemToDelete(itemId)}
             onFindStores={openStoreSuggestions}
             onShowStorePrefs={() => setShowStorePrefs(true)}
           />
@@ -154,6 +181,7 @@ export default function ShoppingSmart(): ReactElement {
             distributionStrategy={distributionStrategy}
             onStrategyChange={setDistributionStrategy}
             onDistribute={distributeItemsToStores}
+            isDistributing={isDistributing}
           />
         )}
 
@@ -224,6 +252,19 @@ export default function ShoppingSmart(): ReactElement {
           }
         }}
       />
+
+      {/* Item deletion confirmation dialog */}
+      {itemToDelete && (
+        <ConfirmDialog
+          title="Delete Item"
+          message="Are you sure you want to delete this item from your shopping list?"
+          onConfirm={() => {
+            void deleteShoppingItem(itemToDelete);
+            setItemToDelete(null);
+          }}
+          onCancel={() => setItemToDelete(null)}
+        />
+      )}
     </div>
   );
 }

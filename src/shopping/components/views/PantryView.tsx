@@ -6,6 +6,7 @@
 import React, { useState, useMemo, type ReactElement } from 'react';
 import { Plus, Receipt } from 'lucide-react';
 import { format, differenceInCalendarDays } from 'date-fns';
+import { logger } from '../../../services/logger';
 import type { PantryItem } from '../../../types';
 import type { ShoppingItem } from '../../types';
 import { usePantryActions } from '../../hooks/usePantryActions';
@@ -226,8 +227,11 @@ export function PantryView({
             <option value="name">Sort by name</option>
           </select>
           <button
-            onClick={onAddItem}
-            className="btn-primary flex items-center space-x-2"
+            onClick={(e) => {
+              logger.debug('Shopping', 'Add Pantry Item clicked');
+              onAddItem();
+            }}
+            className="btn-primary flex items-center space-x-2 transition-transform active:scale-95"
             aria-label="Add pantry item"
           >
             <Plus size={16} />

@@ -15,6 +15,7 @@ import {
   logPointTransaction as logPointTransactionAPI,
 } from '@/api/gamificationAPI';
 import { logger } from '@/services/logger';
+import { ValidationError } from '@/lib/errors';
 import {
   type UserGamification,
   type AchievementDefinition,
@@ -61,6 +62,39 @@ interface AchievementDefinitionRow {
   xp_reward: number;
   sort_order: number;
   is_active: boolean;
+}
+
+// ============================================================================
+// Type Guards
+// ============================================================================
+
+function isUserGamificationRow(value: unknown): value is UserGamificationRow {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'id' in value &&
+    'user_id' in value &&
+    'total_xp' in value &&
+    'current_level' in value &&
+    typeof (value as UserGamificationRow).id === 'string' &&
+    typeof (value as UserGamificationRow).user_id === 'string' &&
+    typeof (value as UserGamificationRow).total_xp === 'number' &&
+    typeof (value as UserGamificationRow).current_level === 'number'
+  );
+}
+
+function isAchievementDefinitionRow(value: unknown): value is AchievementDefinitionRow {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'id' in value &&
+    'name' in value &&
+    'requirement_type' in value &&
+    'requirement_target' in value &&
+    typeof (value as AchievementDefinitionRow).id === 'string' &&
+    typeof (value as AchievementDefinitionRow).name === 'string' &&
+    typeof (value as AchievementDefinitionRow).requirement_target === 'number'
+  );
 }
 
 // ============================================================================
@@ -115,14 +149,22 @@ export async function getUserGamification(): Promise<UserGamification> {
   // Use API layer instead of direct Supabase
   const data = await getUserGamificationAPI();
 
-  // If exists, return it
+  // If exists, validate and return it
   if (data) {
-    return mapRowToUserGamification(data as unknown as UserGamificationRow);
+    if (!isUserGamificationRow(data)) {
+      logger.error('GamificationService', 'Invalid user gamification data from API', { data });
+      throw new ValidationError('Invalid user gamification data received from database');
+    }
+    return mapRowToUserGamification(data);
   }
 
   // Create new profile
   const newProfile = await initializeUserGamificationAPI();
-  return mapRowToUserGamification(newProfile as unknown as UserGamificationRow);
+  if (!isUserGamificationRow(newProfile)) {
+    logger.error('GamificationService', 'Invalid new gamification profile from API', { newProfile });
+    throw new ValidationError('Invalid gamification profile created');
+  }
+  return mapRowToUserGamification(newProfile);
 }
 
 /**
@@ -131,7 +173,24 @@ export async function getUserGamification(): Promise<UserGamification> {
 export async function getAchievementDefinitions(): Promise<AchievementDefinition[]> {
   // Use API layer instead of direct Supabase
   const data = await getAchievementDefinitionsAPI();
-  return (data as unknown as AchievementDefinitionRow[]).map(mapRowToAchievementDefinition);
+
+  // Validate array
+  if (!Array.isArray(data)) {
+    logger.error('GamificationService', 'Invalid achievement definitions data from API', { data });
+    throw new ValidationError('Invalid achievement definitions data received');
+  }
+
+  // Filter and map valid items
+  const validDefinitions: AchievementDefinition[] = [];
+  for (let i = 0; i < data.length; i++) {
+    if (isAchievementDefinitionRow(data[i])) {
+      validDefinitions.push(mapRowToAchievementDefinition(data[i]));
+    } else {
+      logger.warn('GamificationService', 'Invalid achievement definition at index', { index: i, item: data[i] });
+    }
+  }
+
+  return validDefinitions;
 }
 
 /**

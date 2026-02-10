@@ -170,8 +170,16 @@ export function useReceiptScanner(): UseReceiptScannerReturn {
 
         setReceiptText(text);
         setReceiptMeta(parseReceiptMeta(text));
-        const items = parseReceiptToItems(text);
-        setParsedReceipt(items);
+        const result = parseReceiptToItems(text);
+        setParsedReceipt(result.items);
+
+        // Log validation results
+        if (result.validation.invalidItems > 0) {
+          logger.warn('useReceiptScanner', 'Some items were filtered during validation', {
+            validItems: result.validation.validItems,
+            invalidItems: result.validation.invalidItems,
+          });
+        }
       } else {
         const msg = 'On-device text detection is not supported in this browser. Paste text below instead, or use Extract via server.';
         logger.warn('useReceiptScanner', msg);
@@ -218,8 +226,16 @@ export function useReceiptScanner(): UseReceiptScannerReturn {
       const text = String(j.text ?? '');
       setReceiptText(text);
       setReceiptMeta(parseReceiptMeta(text));
-      const items = parseReceiptToItems(text);
-      setParsedReceipt(items);
+      const result = parseReceiptToItems(text);
+      setParsedReceipt(result.items);
+
+      // Log validation results
+      if (result.validation.invalidItems > 0) {
+        logger.warn('useReceiptScanner', 'Some items were filtered during validation', {
+          validItems: result.validation.validItems,
+          invalidItems: result.validation.invalidItems,
+        });
+      }
     } catch (e) {
       const msg = 'Server OCR failed. Please paste text manually or try again.';
       logger.error('useReceiptScanner', e as Error, { context: msg });
@@ -229,9 +245,25 @@ export function useReceiptScanner(): UseReceiptScannerReturn {
   };
 
   const parseManualText = (): void => {
-    setReceiptMeta(parseReceiptMeta(receiptText));
-    const items = parseReceiptToItems(receiptText);
-    setParsedReceipt(items);
+    try {
+      setReceiptMeta(parseReceiptMeta(receiptText));
+      const result = parseReceiptToItems(receiptText);
+      setParsedReceipt(result.items);
+
+      // Log validation results
+      if (result.validation.invalidItems > 0) {
+        logger.warn('useReceiptScanner', 'Some items were filtered during validation', {
+          validItems: result.validation.validItems,
+          invalidItems: result.validation.invalidItems,
+        });
+      }
+    } catch (error) {
+      logger.error('useReceiptScanner', error instanceof Error ? error : new Error(String(error)), {
+        context: 'parseManualText',
+      });
+      // Show empty result on error
+      setParsedReceipt([]);
+    }
   };
 
   const cropImage = (): void => {

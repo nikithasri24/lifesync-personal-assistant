@@ -15,6 +15,8 @@ import type {
   ErrandTask,
 } from '@/lib/location/types';
 import { getUserPreferences, updateUserPreferences } from '@/api/userSettingsAPI';
+import { isSavedLocation, isArrayOf } from '@/types/guards';
+import { logger } from '@/services/logger';
 
 class LocationService {
   private preferences: LocationPreferences | null = null;
@@ -31,10 +33,39 @@ class LocationService {
       const data = await getUserPreferences();
 
       if (data) {
+        // Validate home_location
+        const homeLocation = data.home_location && isSavedLocation(data.home_location)
+          ? data.home_location
+          : null;
+
+        if (data.home_location && !homeLocation) {
+          logger.warn('LocationService', 'Invalid home_location data from database', { data: data.home_location });
+        }
+
+        // Validate work_location
+        const workLocation = data.work_location && isSavedLocation(data.work_location)
+          ? data.work_location
+          : null;
+
+        if (data.work_location && !workLocation) {
+          logger.warn('LocationService', 'Invalid work_location data from database', { data: data.work_location });
+        }
+
+        // Validate saved_locations array
+        const savedLocations = Array.isArray(data.saved_locations) && isArrayOf(data.saved_locations, isSavedLocation)
+          ? data.saved_locations
+          : [];
+
+        if (Array.isArray(data.saved_locations) && !isArrayOf(data.saved_locations, isSavedLocation)) {
+          logger.warn('LocationService', 'Invalid saved_locations data from database', {
+            count: data.saved_locations.length,
+          });
+        }
+
         this.preferences = {
-          homeLocation: (data.home_location as unknown as SavedLocation) || null,
-          workLocation: (data.work_location as unknown as SavedLocation) || null,
-          savedLocations: ((data.saved_locations as unknown as SavedLocation[]) ?? []),
+          homeLocation,
+          workLocation,
+          savedLocations,
           commuteMode: 'driving',
           defaultCommuteMinutes: 30,
         };
@@ -44,6 +75,7 @@ class LocationService {
 
       return this.preferences;
     } catch (error) {
+      logger.error('LocationService', 'Failed to load location preferences', { error });
       return this.getDefaultPreferences();
     }
   }
@@ -231,18 +263,18 @@ class LocationService {
 
     if (location.type === 'home') {
       await updateUserPreferences({
-        home_location: location as unknown as Record<string, unknown>,
+        home_location: location,
       });
       this.preferences = { ...prefs, homeLocation: location };
     } else if (location.type === 'work') {
       await updateUserPreferences({
-        work_location: location as unknown as Record<string, unknown>,
+        work_location: location,
       });
       this.preferences = { ...prefs, workLocation: location };
     } else {
       const updatedLocations = [...prefs.savedLocations.filter((l) => l.id !== location.id), location];
       await updateUserPreferences({
-        saved_locations: updatedLocations as unknown as Record<string, unknown>[],
+        saved_locations: updatedLocations,
       });
       this.preferences = { ...prefs, savedLocations: updatedLocations };
     }
@@ -257,7 +289,7 @@ class LocationService {
     const updatedLocations = prefs.savedLocations.filter((l) => l.id !== locationId);
 
     await updateUserPreferences({
-      saved_locations: updatedLocations as unknown as Record<string, unknown>[],
+      saved_locations: updatedLocations,
     });
 
     this.preferences = { ...prefs, savedLocations: updatedLocations };

@@ -1388,4 +1388,521 @@ describe('SupabaseApi', () => {
       });
     });
   });
+
+  describe('Retirement Accounts', () => {
+    describe('upsertRetirementAccountMetadata', () => {
+      it('should insert retirement account metadata with all fields', async () => {
+        const mockQuery = {
+          upsert: vi.fn().mockResolvedValue({ error: null }),
+        };
+
+        mockClient.from.mockReturnValue(mockQuery);
+
+        await api.upsertRetirementAccountMetadata({
+          accountId: 'acc-401k',
+          taxTreatment: 'pre_tax',
+          annualContributionLimit: 23000,
+          catchUpLimit: 7500,
+          currentYearContributions: 15000,
+          contributionYear: 2024,
+          hasEmployerMatch: true,
+          employerMatchPercentage: 50,
+          employerMatchLimit: 6,
+          employerMatchType: 'percentage',
+          employerContributionsYTD: 4500,
+          hasVestingSchedule: true,
+          vestingScheduleType: 'graded',
+          vestingCliffYears: 2,
+          vestingGradedYears: 5,
+          vestingPercentage: 60,
+          unvestedBalance: 8000,
+          allocation: {
+            stocks: 70,
+            bonds: 25,
+            cash: 5,
+          },
+          notes: 'Employer 401k plan',
+        });
+
+        expect(mockClient.from).toHaveBeenCalledWith('finance_retirement_account_metadata');
+        expect(mockQuery.upsert).toHaveBeenCalledWith({
+          id: undefined,
+          account_id: 'acc-401k',
+          tax_treatment: 'pre_tax',
+          annual_contribution_limit: 23000,
+          catch_up_limit: 7500,
+          current_year_contributions: 15000,
+          contribution_year: 2024,
+          has_employer_match: true,
+          employer_match_percentage: 50,
+          employer_match_limit: 6,
+          employer_match_type: 'percentage',
+          employer_contributions_ytd: 4500,
+          has_vesting_schedule: true,
+          vesting_schedule_type: 'graded',
+          vesting_cliff_years: 2,
+          vesting_graded_years: 5,
+          vesting_percentage: 60,
+          unvested_balance: 8000,
+          allocation: {
+            stocks: 70,
+            bonds: 25,
+            cash: 5,
+          },
+          is_family_coverage: undefined,
+          notes: 'Employer 401k plan',
+        });
+      });
+
+      it('should handle HSA-specific fields', async () => {
+        const mockQuery = {
+          upsert: vi.fn().mockResolvedValue({ error: null }),
+        };
+
+        mockClient.from.mockReturnValue(mockQuery);
+
+        await api.upsertRetirementAccountMetadata({
+          accountId: 'acc-hsa',
+          taxTreatment: 'tax_exempt',
+          annualContributionLimit: 8300,
+          catchUpLimit: 1000,
+          currentYearContributions: 5000,
+          contributionYear: 2024,
+          hasEmployerMatch: true,
+          employerMatchPercentage: 100,
+          employerContributionsYTD: 1500,
+          hasVestingSchedule: false,
+          vestingPercentage: 100,
+          unvestedBalance: 0,
+          isFamilyCoverage: true,
+        });
+
+        expect(mockQuery.upsert).toHaveBeenCalledWith(
+          expect.objectContaining({
+            account_id: 'acc-hsa',
+            is_family_coverage: true,
+          })
+        );
+      });
+
+      it('should throw error when upsert fails', async () => {
+        const mockQuery = {
+          upsert: vi.fn().mockResolvedValue({ error: new Error('Upsert failed') }),
+        };
+
+        mockClient.from.mockReturnValue(mockQuery);
+
+        await expect(
+          api.upsertRetirementAccountMetadata({
+            accountId: 'acc-401k',
+            taxTreatment: 'pre_tax',
+            annualContributionLimit: 23000,
+            currentYearContributions: 0,
+            contributionYear: 2024,
+            hasEmployerMatch: false,
+            employerContributionsYTD: 0,
+            hasVestingSchedule: false,
+            vestingPercentage: 100,
+            unvestedBalance: 0,
+          })
+        ).rejects.toThrow('Upsert failed');
+      });
+    });
+
+    describe('deleteRetirementAccountMetadata', () => {
+      it('should delete retirement account metadata by account ID', async () => {
+        const mockDelete = vi.fn().mockReturnThis();
+        const mockEq = vi.fn().mockResolvedValue({ error: null });
+
+        const mockQuery = { delete: mockDelete };
+        mockDelete.mockReturnValue({ eq: mockEq });
+
+        mockClient.from.mockReturnValue(mockQuery);
+
+        await api.deleteRetirementAccountMetadata('acc-401k');
+
+        expect(mockClient.from).toHaveBeenCalledWith('finance_retirement_account_metadata');
+        expect(mockDelete).toHaveBeenCalled();
+        expect(mockEq).toHaveBeenCalledWith('account_id', 'acc-401k');
+      });
+
+      it('should throw error when delete fails', async () => {
+        const mockDelete = vi.fn().mockReturnThis();
+        const mockEq = vi.fn().mockResolvedValue({ error: new Error('Delete failed') });
+
+        const mockQuery = { delete: mockDelete };
+        mockDelete.mockReturnValue({ eq: mockEq });
+
+        mockClient.from.mockReturnValue(mockQuery);
+
+        await expect(
+          api.deleteRetirementAccountMetadata('acc-401k')
+        ).rejects.toThrow('Delete failed');
+      });
+    });
+
+    describe('listRetirementContributions', () => {
+      it('should list retirement contributions for account', async () => {
+        const mockContributions = [
+          {
+            id: 'contrib-1',
+            retirement_account_id: 'acc-401k',
+            contribution_date: '2024-11-15',
+            amount: '1000.00',
+            contribution_type: 'employee',
+            contribution_year: 2024,
+            transaction_id: 'txn-123',
+            notes: 'Biweekly contribution',
+            created_at: '2024-11-15T10:00:00Z',
+          },
+          {
+            id: 'contrib-2',
+            retirement_account_id: 'acc-401k',
+            contribution_date: '2024-11-01',
+            amount: '500.00',
+            contribution_type: 'employer',
+            contribution_year: 2024,
+            transaction_id: null,
+            notes: null,
+            created_at: '2024-11-01T10:00:00Z',
+          },
+        ];
+
+        const mockQuery = {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          order: vi.fn().mockResolvedValue({ data: mockContributions, error: null }),
+        };
+
+        mockClient.from.mockReturnValue(mockQuery);
+
+        const result = await api.listRetirementContributions('acc-401k');
+
+        expect(mockClient.from).toHaveBeenCalledWith('finance_retirement_contributions');
+        expect(mockQuery.select).toHaveBeenCalledWith('*');
+        expect(mockQuery.eq).toHaveBeenCalledWith('retirement_account_id', 'acc-401k');
+        expect(mockQuery.order).toHaveBeenCalledWith('contribution_date', { ascending: false });
+        expect(result).toHaveLength(2);
+        expect(result[0]).toEqual({
+          id: 'contrib-1',
+          retirementAccountId: 'acc-401k',
+          contributionDate: '2024-11-15',
+          amount: 1000.00,
+          contributionType: 'employee',
+          contributionYear: 2024,
+          transactionId: 'txn-123',
+          notes: 'Biweekly contribution',
+          createdAt: '2024-11-15T10:00:00Z',
+        });
+        expect(result[1].transactionId).toBeUndefined();
+        expect(result[1].notes).toBeUndefined();
+      });
+
+      it('should return empty array when no contributions found', async () => {
+        const mockQuery = {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          order: vi.fn().mockResolvedValue({ data: [], error: null }),
+        };
+
+        mockClient.from.mockReturnValue(mockQuery);
+
+        const result = await api.listRetirementContributions('acc-401k');
+        expect(result).toEqual([]);
+      });
+
+      it('should throw error when query fails', async () => {
+        const mockQuery = {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          order: vi.fn().mockResolvedValue({ data: null, error: new Error('Query failed') }),
+        };
+
+        mockClient.from.mockReturnValue(mockQuery);
+
+        await expect(
+          api.listRetirementContributions('acc-401k')
+        ).rejects.toThrow('Query failed');
+      });
+    });
+
+    describe('addRetirementContribution', () => {
+      it('should insert new retirement contribution', async () => {
+        const mockQuery = {
+          insert: vi.fn().mockResolvedValue({ error: null }),
+        };
+
+        mockClient.from.mockReturnValue(mockQuery);
+
+        await api.addRetirementContribution({
+          retirementAccountId: 'acc-401k',
+          contributionDate: '2024-12-01',
+          amount: 2000,
+          contributionType: 'employee',
+          contributionYear: 2024,
+          transactionId: 'txn-456',
+          notes: 'Year-end bonus contribution',
+        });
+
+        expect(mockClient.from).toHaveBeenCalledWith('finance_retirement_contributions');
+        expect(mockQuery.insert).toHaveBeenCalledWith({
+          id: undefined,
+          retirement_account_id: 'acc-401k',
+          contribution_date: '2024-12-01',
+          amount: 2000,
+          contribution_type: 'employee',
+          contribution_year: 2024,
+          transaction_id: 'txn-456',
+          notes: 'Year-end bonus contribution',
+        });
+      });
+
+      it('should handle catch-up contributions', async () => {
+        const mockQuery = {
+          insert: vi.fn().mockResolvedValue({ error: null }),
+        };
+
+        mockClient.from.mockReturnValue(mockQuery);
+
+        await api.addRetirementContribution({
+          retirementAccountId: 'acc-ira',
+          contributionDate: '2024-04-15',
+          amount: 1000,
+          contributionType: 'catch_up',
+          contributionYear: 2024,
+        });
+
+        expect(mockQuery.insert).toHaveBeenCalledWith(
+          expect.objectContaining({
+            contribution_type: 'catch_up',
+            amount: 1000,
+          })
+        );
+      });
+
+      it('should throw error when insert fails', async () => {
+        const mockQuery = {
+          insert: vi.fn().mockResolvedValue({ error: new Error('Insert failed') }),
+        };
+
+        mockClient.from.mockReturnValue(mockQuery);
+
+        await expect(
+          api.addRetirementContribution({
+            retirementAccountId: 'acc-401k',
+            contributionDate: '2024-12-01',
+            amount: 2000,
+            contributionType: 'employee',
+            contributionYear: 2024,
+          })
+        ).rejects.toThrow('Insert failed');
+      });
+    });
+
+    describe('deleteRetirementContribution', () => {
+      it('should delete retirement contribution by ID', async () => {
+        const mockDelete = vi.fn().mockReturnThis();
+        const mockEq = vi.fn().mockResolvedValue({ error: null });
+
+        const mockQuery = { delete: mockDelete };
+        mockDelete.mockReturnValue({ eq: mockEq });
+
+        mockClient.from.mockReturnValue(mockQuery);
+
+        await api.deleteRetirementContribution('contrib-1');
+
+        expect(mockClient.from).toHaveBeenCalledWith('finance_retirement_contributions');
+        expect(mockDelete).toHaveBeenCalled();
+        expect(mockEq).toHaveBeenCalledWith('id', 'contrib-1');
+      });
+
+      it('should throw error when delete fails', async () => {
+        const mockDelete = vi.fn().mockReturnThis();
+        const mockEq = vi.fn().mockResolvedValue({ error: new Error('Delete failed') });
+
+        const mockQuery = { delete: mockDelete };
+        mockDelete.mockReturnValue({ eq: mockEq });
+
+        mockClient.from.mockReturnValue(mockQuery);
+
+        await expect(
+          api.deleteRetirementContribution('contrib-1')
+        ).rejects.toThrow('Delete failed');
+      });
+    });
+
+    describe('listRetirementPerformance', () => {
+      it('should list retirement performance snapshots', async () => {
+        const mockPerformance = [
+          {
+            id: 'perf-1',
+            retirement_account_id: 'acc-401k',
+            snapshot_date: '2024-11-30',
+            balance: '125000.50',
+            total_contributions: '100000.00',
+            total_gains: '25000.50',
+            rate_of_return: '8.5',
+            allocation_snapshot: {
+              stocks: 70,
+              bonds: 25,
+              cash: 5,
+            },
+            created_at: '2024-12-01T00:00:00Z',
+          },
+          {
+            id: 'perf-2',
+            retirement_account_id: 'acc-401k',
+            snapshot_date: '2024-10-31',
+            balance: '120000.00',
+            total_contributions: '95000.00',
+            total_gains: '25000.00',
+            rate_of_return: null,
+            allocation_snapshot: null,
+            created_at: '2024-11-01T00:00:00Z',
+          },
+        ];
+
+        const mockQuery = {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          order: vi.fn().mockResolvedValue({ data: mockPerformance, error: null }),
+        };
+
+        mockClient.from.mockReturnValue(mockQuery);
+
+        const result = await api.listRetirementPerformance('acc-401k');
+
+        expect(mockClient.from).toHaveBeenCalledWith('finance_retirement_performance');
+        expect(mockQuery.select).toHaveBeenCalledWith('*');
+        expect(mockQuery.eq).toHaveBeenCalledWith('retirement_account_id', 'acc-401k');
+        expect(mockQuery.order).toHaveBeenCalledWith('snapshot_date', { ascending: false });
+        expect(result).toHaveLength(2);
+        expect(result[0]).toEqual({
+          id: 'perf-1',
+          retirementAccountId: 'acc-401k',
+          snapshotDate: '2024-11-30',
+          balance: 125000.50,
+          totalContributions: 100000.00,
+          totalGains: 25000.50,
+          rateOfReturn: 8.5,
+          allocationSnapshot: {
+            stocks: 70,
+            bonds: 25,
+            cash: 5,
+          },
+          createdAt: '2024-12-01T00:00:00Z',
+        });
+        expect(result[1].rateOfReturn).toBeUndefined();
+        expect(result[1].allocationSnapshot).toBeUndefined();
+      });
+
+      it('should return empty array when no performance data found', async () => {
+        const mockQuery = {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          order: vi.fn().mockResolvedValue({ data: [], error: null }),
+        };
+
+        mockClient.from.mockReturnValue(mockQuery);
+
+        const result = await api.listRetirementPerformance('acc-401k');
+        expect(result).toEqual([]);
+      });
+
+      it('should throw error when query fails', async () => {
+        const mockQuery = {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          order: vi.fn().mockResolvedValue({ data: null, error: new Error('Query failed') }),
+        };
+
+        mockClient.from.mockReturnValue(mockQuery);
+
+        await expect(
+          api.listRetirementPerformance('acc-401k')
+        ).rejects.toThrow('Query failed');
+      });
+    });
+
+    describe('recordRetirementPerformance', () => {
+      it('should insert new retirement performance snapshot', async () => {
+        const mockQuery = {
+          insert: vi.fn().mockResolvedValue({ error: null }),
+        };
+
+        mockClient.from.mockReturnValue(mockQuery);
+
+        await api.recordRetirementPerformance({
+          retirementAccountId: 'acc-401k',
+          snapshotDate: '2024-12-31',
+          balance: 130000,
+          totalContributions: 105000,
+          totalGains: 25000,
+          rateOfReturn: 9.2,
+          allocationSnapshot: {
+            stocks: 65,
+            bonds: 30,
+            cash: 5,
+          },
+        });
+
+        expect(mockClient.from).toHaveBeenCalledWith('finance_retirement_performance');
+        expect(mockQuery.insert).toHaveBeenCalledWith({
+          id: undefined,
+          retirement_account_id: 'acc-401k',
+          snapshot_date: '2024-12-31',
+          balance: 130000,
+          total_contributions: 105000,
+          total_gains: 25000,
+          rate_of_return: 9.2,
+          allocation_snapshot: {
+            stocks: 65,
+            bonds: 30,
+            cash: 5,
+          },
+        });
+      });
+
+      it('should handle optional fields', async () => {
+        const mockQuery = {
+          insert: vi.fn().mockResolvedValue({ error: null }),
+        };
+
+        mockClient.from.mockReturnValue(mockQuery);
+
+        await api.recordRetirementPerformance({
+          retirementAccountId: 'acc-ira',
+          snapshotDate: '2024-12-31',
+          balance: 50000,
+          totalContributions: 45000,
+          totalGains: 5000,
+        });
+
+        expect(mockQuery.insert).toHaveBeenCalledWith(
+          expect.objectContaining({
+            rate_of_return: undefined,
+            allocation_snapshot: undefined,
+          })
+        );
+      });
+
+      it('should throw error when insert fails', async () => {
+        const mockQuery = {
+          insert: vi.fn().mockResolvedValue({ error: new Error('Insert failed') }),
+        };
+
+        mockClient.from.mockReturnValue(mockQuery);
+
+        await expect(
+          api.recordRetirementPerformance({
+            retirementAccountId: 'acc-401k',
+            snapshotDate: '2024-12-31',
+            balance: 130000,
+            totalContributions: 105000,
+            totalGains: 25000,
+          })
+        ).rejects.toThrow('Insert failed');
+      });
+    });
+  });
 });

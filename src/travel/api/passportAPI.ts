@@ -6,6 +6,7 @@ import { supabase } from '../../lib/supabase';
 import { getMergedConnectionId, type MergedConnectionResult } from '../../shared/api/SharedDataProvider';
 import type { UserPassport, UserVisa } from '../types/visa';
 import { logger } from '../../services/logger';
+import { AuthenticationError, ValidationError, DatabaseError } from '../../lib/errors';
 
 // Cache for merged connection (to avoid repeated database calls)
 let cachedMergedConnection: MergedConnectionResult | null | undefined = undefined;
@@ -140,7 +141,7 @@ function visaRowToUserVisa(row: UserVisaRow): UserVisa {
 export async function getUserPassports(): Promise<UserPassport[]> {
   const { data: authData } = await supabase.auth.getUser();
   const { user } = authData;
-  if (!user) throw new Error('Not authenticated');
+  if (!user) throw new AuthenticationError('Not authenticated');
 
   // RLS policies automatically handle merged mode access
   // No need to check merged connection here - just query all accessible passports
@@ -165,7 +166,7 @@ export async function getUserPassports(): Promise<UserPassport[]> {
 export async function getPrimaryPassport(): Promise<UserPassport | null> {
   const { data: authData } = await supabase.auth.getUser();
   const { user } = authData;
-  if (!user) throw new Error('Not authenticated');
+  if (!user) throw new AuthenticationError('Not authenticated');
 
   const result = await supabase
     .from('user_passports')
@@ -201,7 +202,7 @@ export async function addPassport(passport: {
 
   if (authError) {
     logger.error('Travel', authError, { action: 'get user auth' });
-    throw new Error(`Authentication error: ${authError.message}`);
+    throw new AuthenticationError(`Authentication error: ${authError.message}`, { authError });
   }
 
   const { user } = authData;
@@ -212,7 +213,7 @@ export async function addPassport(passport: {
 
   if (!user.id) {
     logger.error('Travel', 'User ID is null/undefined', { user });
-    throw new Error('User ID is missing');
+    throw new AuthenticationError('User ID is missing', { user });
   }
 
   logger.debug('Travel', 'Adding passport', { userId: user.id, country: passport.countryCode });
@@ -255,7 +256,7 @@ export async function addPassport(passport: {
 
   if (!result.data || !isUserPassportRow(result.data)) {
     logger.error('Travel', 'Invalid data returned from database', { data: result.data });
-    throw new Error('Invalid passport data returned from database');
+    throw new ValidationError('Invalid passport data returned from database');
   }
 
   return passportRowToUserPassport(result.data);
@@ -270,7 +271,7 @@ export async function updatePassport(
 ): Promise<UserPassport> {
   const { data: authData } = await supabase.auth.getUser();
   const { user } = authData;
-  if (!user) throw new Error('Not authenticated');
+  if (!user) throw new AuthenticationError('Not authenticated');
 
   // If setting as primary, unset other primary passports first
   if (updates.isPrimary) {
@@ -300,7 +301,7 @@ export async function updatePassport(
 
   if (result.error) throw result.error;
   if (!result.data || !isUserPassportRow(result.data)) {
-    throw new Error('Invalid passport data returned from database');
+    throw new ValidationError('Invalid passport data returned from database');
   }
 
   return passportRowToUserPassport(result.data);
@@ -312,7 +313,7 @@ export async function updatePassport(
 export async function deletePassport(passportId: string): Promise<void> {
   const { data: authData } = await supabase.auth.getUser();
   const { user } = authData;
-  if (!user) throw new Error('Not authenticated');
+  if (!user) throw new AuthenticationError('Not authenticated');
 
   const { error } = await supabase
     .from('user_passports')
@@ -333,7 +334,7 @@ export async function deletePassport(passportId: string): Promise<void> {
 export async function getUserVisas(): Promise<UserVisa[]> {
   const { data: authData } = await supabase.auth.getUser();
   const { user } = authData;
-  if (!user) throw new Error('Not authenticated');
+  if (!user) throw new AuthenticationError('Not authenticated');
 
   // RLS policies automatically handle merged mode access
   // No need to check merged connection here - just query all accessible visas
@@ -357,7 +358,7 @@ export async function getUserVisas(): Promise<UserVisa[]> {
 export async function getActiveVisas(): Promise<UserVisa[]> {
   const { data: authData } = await supabase.auth.getUser();
   const { user } = authData;
-  if (!user) throw new Error('Not authenticated');
+  if (!user) throw new AuthenticationError('Not authenticated');
 
   const today = new Date().toISOString().split('T')[0];
 
@@ -391,7 +392,7 @@ export async function addVisa(visa: {
 }): Promise<UserVisa> {
   const { data: authData } = await supabase.auth.getUser();
   const { user } = authData;
-  if (!user) throw new Error('Not authenticated');
+  if (!user) throw new AuthenticationError('Not authenticated');
 
   const result = await supabase
     .from('user_visas')
@@ -411,7 +412,7 @@ export async function addVisa(visa: {
 
   if (result.error) throw result.error;
   if (!result.data || !isUserVisaRow(result.data)) {
-    throw new Error('Invalid visa data returned from database');
+    throw new ValidationError('Invalid visa data returned from database');
   }
 
   return visaRowToUserVisa(result.data);
@@ -426,7 +427,7 @@ export async function updateVisa(
 ): Promise<UserVisa> {
   const { data: authData } = await supabase.auth.getUser();
   const { user } = authData;
-  if (!user) throw new Error('Not authenticated');
+  if (!user) throw new AuthenticationError('Not authenticated');
 
   const dbUpdates: Partial<Omit<UserVisaRow, 'id' | 'user_id' | 'created_at' | 'updated_at'>> = {};
   if (updates.countryCode !== undefined) dbUpdates.country_code = updates.countryCode;
@@ -448,7 +449,7 @@ export async function updateVisa(
 
   if (result.error) throw result.error;
   if (!result.data || !isUserVisaRow(result.data)) {
-    throw new Error('Invalid visa data returned from database');
+    throw new ValidationError('Invalid visa data returned from database');
   }
 
   return visaRowToUserVisa(result.data);
@@ -460,7 +461,7 @@ export async function updateVisa(
 export async function deleteVisa(visaId: string): Promise<void> {
   const { data: authData } = await supabase.auth.getUser();
   const { user } = authData;
-  if (!user) throw new Error('Not authenticated');
+  if (!user) throw new AuthenticationError('Not authenticated');
 
   const { error } = await supabase
     .from('user_visas')

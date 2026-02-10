@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { FinanceAPI } from './api';
+import { AuthenticationError } from '@/lib/errors';
 import type {
   Institution,
   Account,
@@ -27,6 +28,8 @@ import type {
   LoanInput,
   LoanPayment,
   LoanPaymentInput,
+  InsurancePolicy,
+  InsurancePolicyInput,
   RetirementAccountWithStats,
   RetirementAccountMetadataInput,
   RetirementContribution,
@@ -48,7 +51,7 @@ export class SupabaseApi implements FinanceAPI {
 
   private async getUserId(): Promise<string> {
     const { data: { user }, error } = await this.client.auth.getUser();
-    if (error || !user) throw new Error('Not authenticated');
+    if (error || !user) throw new AuthenticationError('Not authenticated', { error });
     return user.id;
   }
 
@@ -190,6 +193,7 @@ export class SupabaseApi implements FinanceAPI {
       .from('finance_transactions')
       .select('*');
 
+    // Apply filters
     if (params.fromISO) query = query.gte('date', params.fromISO);
     if (params.toISO) query = query.lte('date', params.toISO);
     if (params.accountIds?.length) query = query.in('account_id', params.accountIds);
@@ -197,15 +201,35 @@ export class SupabaseApi implements FinanceAPI {
     if (params.type) query = query.eq('type', params.type);
     if (params.text) query = query.ilike('description', `%${params.text}%`);
 
-    query = query.order('date', { ascending: false });
+    // Cursor-based pagination
+    // Cursor format: "date:id" (e.g., "2024-01-15:abc123")
+    if (params.cursor) {
+      try {
+        const [cursorDate, cursorId] = params.cursor.split(':');
+        if (cursorDate && cursorId) {
+          // For descending order, get rows where (date < cursorDate) OR (date = cursorDate AND id < cursorId)
+          query = query.or(`date.lt.${cursorDate},and(date.eq.${cursorDate},id.lt.${cursorId})`);
+        }
+      } catch (e) {
+        // Invalid cursor format - ignore and start from beginning
+      }
+    }
 
+    // Order by date DESC, then by id DESC for consistent pagination
+    query = query.order('date', { ascending: false }).order('id', { ascending: false });
+
+    // Fetch limit + 1 to determine if there are more results
     const limit = params.limit || 100;
-    query = query.limit(limit);
+    query = query.limit(limit + 1);
 
     const { data, error } = await query;
     if (error) throw error;
 
-    const items = (data || []).map(row => ({
+    const rows = data || [];
+    const hasMore = rows.length > limit;
+    const itemsToReturn = hasMore ? rows.slice(0, limit) : rows;
+
+    const items = itemsToReturn.map(row => ({
       id: row.id,
       userId: row.user_id,
       accountId: row.account_id,
@@ -221,7 +245,14 @@ export class SupabaseApi implements FinanceAPI {
       categorizationRuleId: row.categorization_rule_id,
     }));
 
-    return { items, nextCursor: undefined };
+    // Generate next cursor if there are more results
+    let nextCursor: string | undefined;
+    if (hasMore && items.length > 0) {
+      const lastItem = items[items.length - 1];
+      nextCursor = `${lastItem.dateISO}:${lastItem.id}`;
+    }
+
+    return { items, nextCursor };
   }
 
   async upsertTransaction(txn: TransactionInput): Promise<void> {
@@ -966,6 +997,96 @@ export class SupabaseApi implements FinanceAPI {
   }
 
   // =====================================================
+  // INSURANCE TRACKING
+  // =====================================================
+
+  async listInsurancePolicies(): Promise<InsurancePolicy[]> {
+    const { data, error } = await this.client
+      .from('finance_insurance_policies')
+      .select('*')
+      .order('policy_name');
+
+    if (error) throw error;
+
+    return (data || []).map(row => ({
+      id: row.id,
+      userId: row.user_id,
+      policyName: row.policy_name,
+      policyNumber: row.policy_number || undefined,
+      provider: row.provider,
+      type: row.type,
+      status: row.status,
+      coverageAmount: row.coverage_amount ? parseFloat(row.coverage_amount) : undefined,
+      deductible: row.deductible ? parseFloat(row.deductible) : undefined,
+      premiumAmount: parseFloat(row.premium_amount),
+      premiumFrequency: row.premium_frequency,
+      startDate: row.start_date,
+      endDate: row.end_date || undefined,
+      renewalDate: row.renewal_date || undefined,
+      nextPaymentDate: row.next_payment_date || undefined,
+      agentName: row.agent_name || undefined,
+      agentPhone: row.agent_phone || undefined,
+      agentEmail: row.agent_email || undefined,
+      notes: row.notes || undefined,
+      documents: row.documents || undefined,
+      autoRenew: row.auto_renew,
+      renewalReminderDays: row.renewal_reminder_days,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+      claimCount: row.claim_count,
+      totalClaimsPaid: row.total_claims_paid ? parseFloat(row.total_claims_paid) : undefined,
+      beneficiaryCount: row.beneficiary_count,
+      lastPaymentDate: row.last_payment_date || undefined,
+    }));
+  }
+
+  async upsertInsurancePolicy(policy: InsurancePolicyInput): Promise<void> {
+    const userId = await this.getUserId();
+
+    const row = {
+      id: policy.id,
+      user_id: userId,
+      policy_name: policy.policyName,
+      policy_number: policy.policyNumber,
+      provider: policy.provider,
+      type: policy.type,
+      status: policy.status,
+      coverage_amount: policy.coverageAmount,
+      deductible: policy.deductible,
+      premium_amount: policy.premiumAmount,
+      premium_frequency: policy.premiumFrequency,
+      start_date: policy.startDate,
+      end_date: policy.endDate,
+      renewal_date: policy.renewalDate,
+      next_payment_date: policy.nextPaymentDate,
+      agent_name: policy.agentName,
+      agent_phone: policy.agentPhone,
+      agent_email: policy.agentEmail,
+      notes: policy.notes,
+      documents: policy.documents,
+      auto_renew: policy.autoRenew,
+      renewal_reminder_days: policy.renewalReminderDays,
+    };
+
+    const { error } = await this.client
+      .from('finance_insurance_policies')
+      .upsert(row);
+
+    if (error) throw error;
+  }
+
+  async deleteInsurancePolicy(policyId: string): Promise<void> {
+    const userId = await this.getUserId();
+    const { error } = await this.client
+      .from('finance_insurance_policies')
+      .delete()
+      .eq('id', policyId)
+      .eq('user_id', userId);
+
+    if (error) throw error;
+  }
+
+  // =====================================================
   // RETIREMENT ACCOUNTS (Stub implementations - to be completed later)
   // =====================================================
 
@@ -977,24 +1098,95 @@ export class SupabaseApi implements FinanceAPI {
     return null;
   }
 
-  async upsertRetirementAccountMetadata(_metadata: RetirementAccountMetadataInput): Promise<void> {
-    // TODO: Implement when needed
+  async upsertRetirementAccountMetadata(metadata: RetirementAccountMetadataInput): Promise<void> {
+    const row = {
+      id: metadata.id,
+      account_id: metadata.accountId,
+      tax_treatment: metadata.taxTreatment,
+      annual_contribution_limit: metadata.annualContributionLimit,
+      catch_up_limit: metadata.catchUpLimit,
+      current_year_contributions: metadata.currentYearContributions,
+      contribution_year: metadata.contributionYear,
+      has_employer_match: metadata.hasEmployerMatch,
+      employer_match_percentage: metadata.employerMatchPercentage,
+      employer_match_limit: metadata.employerMatchLimit,
+      employer_match_type: metadata.employerMatchType,
+      employer_contributions_ytd: metadata.employerContributionsYTD,
+      has_vesting_schedule: metadata.hasVestingSchedule,
+      vesting_schedule_type: metadata.vestingScheduleType,
+      vesting_cliff_years: metadata.vestingCliffYears,
+      vesting_graded_years: metadata.vestingGradedYears,
+      vesting_percentage: metadata.vestingPercentage,
+      unvested_balance: metadata.unvestedBalance,
+      allocation: metadata.allocation,
+      is_family_coverage: metadata.isFamilyCoverage,
+      notes: metadata.notes,
+    };
+
+    const { error } = await this.client
+      .from('finance_retirement_account_metadata')
+      .upsert(row);
+
+    if (error) throw error;
   }
 
-  async deleteRetirementAccountMetadata(_accountId: string): Promise<void> {
-    // TODO: Implement when needed
+  async deleteRetirementAccountMetadata(accountId: string): Promise<void> {
+    const { error } = await this.client
+      .from('finance_retirement_account_metadata')
+      .delete()
+      .eq('account_id', accountId);
+
+    if (error) throw error;
   }
 
-  async listRetirementContributions(_retirementAccountId: string): Promise<RetirementContribution[]> {
-    return [];
+  async listRetirementContributions(retirementAccountId: string): Promise<RetirementContribution[]> {
+    const { data, error } = await this.client
+      .from('finance_retirement_contributions')
+      .select('*')
+      .eq('retirement_account_id', retirementAccountId)
+      .order('contribution_date', { ascending: false });
+
+    if (error) throw error;
+
+    return (data || []).map(row => ({
+      id: row.id,
+      retirementAccountId: row.retirement_account_id,
+      contributionDate: row.contribution_date,
+      amount: parseFloat(row.amount),
+      contributionType: row.contribution_type,
+      contributionYear: row.contribution_year,
+      transactionId: row.transaction_id || undefined,
+      notes: row.notes || undefined,
+      createdAt: row.created_at,
+    }));
   }
 
-  async addRetirementContribution(_contribution: RetirementContributionInput): Promise<void> {
-    // TODO: Implement when needed
+  async addRetirementContribution(contribution: RetirementContributionInput): Promise<void> {
+    const row = {
+      id: contribution.id,
+      retirement_account_id: contribution.retirementAccountId,
+      contribution_date: contribution.contributionDate,
+      amount: contribution.amount,
+      contribution_type: contribution.contributionType,
+      contribution_year: contribution.contributionYear,
+      transaction_id: contribution.transactionId,
+      notes: contribution.notes,
+    };
+
+    const { error } = await this.client
+      .from('finance_retirement_contributions')
+      .insert(row);
+
+    if (error) throw error;
   }
 
-  async deleteRetirementContribution(_contributionId: string): Promise<void> {
-    // TODO: Implement when needed
+  async deleteRetirementContribution(contributionId: string): Promise<void> {
+    const { error } = await this.client
+      .from('finance_retirement_contributions')
+      .delete()
+      .eq('id', contributionId);
+
+    if (error) throw error;
   }
 
   async calculateContributionRoom(_retirementAccountId: string, _annualIncome: number): Promise<ContributionRoom> {
@@ -1006,12 +1198,45 @@ export class SupabaseApi implements FinanceAPI {
     };
   }
 
-  async listRetirementPerformance(_retirementAccountId: string): Promise<RetirementPerformance[]> {
-    return [];
+  async listRetirementPerformance(retirementAccountId: string): Promise<RetirementPerformance[]> {
+    const { data, error } = await this.client
+      .from('finance_retirement_performance')
+      .select('*')
+      .eq('retirement_account_id', retirementAccountId)
+      .order('snapshot_date', { ascending: false });
+
+    if (error) throw error;
+
+    return (data || []).map(row => ({
+      id: row.id,
+      retirementAccountId: row.retirement_account_id,
+      snapshotDate: row.snapshot_date,
+      balance: parseFloat(row.balance),
+      totalContributions: parseFloat(row.total_contributions),
+      totalGains: parseFloat(row.total_gains),
+      rateOfReturn: row.rate_of_return ? parseFloat(row.rate_of_return) : undefined,
+      allocationSnapshot: row.allocation_snapshot || undefined,
+      createdAt: row.created_at,
+    }));
   }
 
-  async recordRetirementPerformance(_performance: RetirementPerformanceInput): Promise<void> {
-    // TODO: Implement when needed
+  async recordRetirementPerformance(performance: RetirementPerformanceInput): Promise<void> {
+    const row = {
+      id: performance.id,
+      retirement_account_id: performance.retirementAccountId,
+      snapshot_date: performance.snapshotDate,
+      balance: performance.balance,
+      total_contributions: performance.totalContributions,
+      total_gains: performance.totalGains,
+      rate_of_return: performance.rateOfReturn,
+      allocation_snapshot: performance.allocationSnapshot,
+    };
+
+    const { error } = await this.client
+      .from('finance_retirement_performance')
+      .insert(row);
+
+    if (error) throw error;
   }
 
   async calculateVestedBalance(_retirementAccountId: string, _employmentYears: number): Promise<number> {

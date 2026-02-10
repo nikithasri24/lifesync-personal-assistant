@@ -8,6 +8,7 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { logger } from '../../services/logger';
 import { supabase } from '../../lib/supabase';
+import ConfirmDialog from '../../components/DebtPayoffCalculator/ConfirmDialog';
 import {
   getVisaRequirement,
   getAccessibleDestinations,
@@ -67,6 +68,12 @@ const VisaCalculator: React.FC = () => {
   // Passport owner filter state (shared with VisaMap)
   type PassportOwnerFilter = 'me' | 'partner' | 'both';
   const [passportOwnerFilter, setPassportOwnerFilter] = React.useState<PassportOwnerFilter>('me');
+
+  // Ref for add visa form to scroll into view
+  const addVisaFormRef = React.useRef<HTMLDivElement>(null);
+
+  // State for visa deletion confirmation
+  const [visaToDelete, setVisaToDelete] = React.useState<string | null>(null);
 
   const availableCountries = React.useMemo(() => getAvailablePassportCountries(), []);
 
@@ -313,6 +320,20 @@ const VisaCalculator: React.FC = () => {
     } catch (error) {
       logger.error('Travel', error instanceof Error ? error : new Error(String(error)), { context: 'addPassport' });
       alert('Failed to save passport. Please try again.');
+    }
+  };
+
+  const handleToggleAddVisa = () => {
+    setShowAddVisa(!showAddVisa);
+
+    // If opening form, scroll to it after render
+    if (!showAddVisa) {
+      setTimeout(() => {
+        addVisaFormRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest'
+        });
+      }, 100);
     }
   };
 
@@ -586,16 +607,16 @@ const VisaCalculator: React.FC = () => {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-gray-900">Your Existing Visas</h2>
           <button
-            onClick={() => setShowAddVisa(!showAddVisa)}
+            onClick={handleToggleAddVisa}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
           >
-            {showAddVisa ? 'Cancel' : '+ Add Visa'}
+            {showAddVisa ? '✕ Cancel' : '+ Add Visa'}
           </button>
         </div>
 
         {/* Add Visa Form */}
         {showAddVisa && (
-          <div className="bg-gray-50 rounded-lg p-4 mb-4 border border-gray-200">
+          <div ref={addVisaFormRef} className="bg-gray-50 rounded-lg p-4 mb-4 border-2 border-blue-300">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
@@ -673,8 +694,9 @@ const VisaCalculator: React.FC = () => {
                     </div>
                     {isOwnVisa && (
                       <button
-                        onClick={() => handleRemoveVisa(visa.id)}
+                        onClick={() => setVisaToDelete(visa.id)}
                         className="text-red-600 hover:text-red-800 text-sm font-medium"
+                        aria-label={`Remove visa for ${visa.countryName}`}
                       >
                         Remove
                       </button>
@@ -772,6 +794,19 @@ const VisaCalculator: React.FC = () => {
             })}
           </div>
         </div>
+      )}
+
+      {/* Visa deletion confirmation dialog */}
+      {visaToDelete && (
+        <ConfirmDialog
+          title="Remove Visa"
+          message="Are you sure you want to remove this visa? This action cannot be undone."
+          onConfirm={() => {
+            handleRemoveVisa(visaToDelete);
+            setVisaToDelete(null);
+          }}
+          onCancel={() => setVisaToDelete(null)}
+        />
       )}
     </div>
   );

@@ -2,6 +2,14 @@
 // These mirror the Supabase/PostgreSQL schema while remaining compatible with the legacy REST API.
 
 /**
+ * Paginated response type for cursor-based pagination
+ */
+export type Paginated<T> = {
+  items: T[];
+  nextCursor?: string;
+};
+
+/**
  * TaskData - User tasks for the task management system
  * This is the canonical Task type used throughout the application.
  * It aligns with the Supabase/PostgreSQL schema.

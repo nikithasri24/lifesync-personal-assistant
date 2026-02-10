@@ -64,8 +64,8 @@ export class UpdateTaskCommand implements Command {
 
     // Store previous values for undo
     this.previousState = {};
-    Object.keys(updates).forEach(key => {
-      this.previousState![key as keyof Task] = currentTask[key as keyof Task] as any;
+    (Object.keys(updates) as Array<keyof Task>).forEach(key => {
+      this.previousState![key] = currentTask[key];
     });
   }
 

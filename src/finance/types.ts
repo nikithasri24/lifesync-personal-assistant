@@ -420,7 +420,7 @@ export type InsurancePremiumPayment = {
   createdAt: string;
 };
 
-export type InsurancePolicyInput = Omit<InsurancePolicy, 'id' | 'createdAt' | 'updatedAt' | 'claimCount' | 'totalClaimsPaid' | 'beneficiaryCount' | 'lastPaymentDate'> & {
+export type InsurancePolicyInput = Omit<InsurancePolicy, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'claimCount' | 'totalClaimsPaid' | 'beneficiaryCount' | 'lastPaymentDate'> & {
   id?: string;
 };
 

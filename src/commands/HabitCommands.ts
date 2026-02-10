@@ -65,8 +65,8 @@ export class UpdateHabitCommand implements Command {
 
     // Store previous values
     this.previousState = {};
-    Object.keys(updates).forEach(key => {
-      this.previousState![key as keyof HabitData] = currentHabit[key as keyof HabitData] as any;
+    (Object.keys(updates) as Array<keyof HabitData>).forEach(key => {
+      this.previousState![key] = currentHabit[key];
     });
   }
 

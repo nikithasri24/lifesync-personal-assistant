@@ -19,7 +19,11 @@ import { InsuranceCard } from '../components/insurance/InsuranceCard';
 import { InsurancePolicyForm } from '../components/insurance/InsurancePolicyForm';
 import { logger } from '../../services/logger';
 import { useAuth } from '@/hooks/useAuth';
-import { useFinanceMergedConnectionQuery } from '@/hooks/useFinanceQuery';
+import {
+  useFinanceMergedConnectionQuery,
+  useInsurancePoliciesQuery,
+  useUpsertInsurancePolicyMutation,
+} from '@/hooks/useFinanceQuery';
 
 const InsurancePage: React.FC = () => {
   // Auth and merged connection
@@ -32,19 +36,13 @@ const InsurancePage: React.FC = () => {
     return mergedConnection.partnerName;
   }, [mergedConnection, user]);
 
-  const [policies, setPolicies] = React.useState<InsurancePolicy[]>([]);
-  const [loading, setLoading] = React.useState(true);
+  const { data: policies = [], isLoading, error } = useInsurancePoliciesQuery();
+  const upsertPolicyMutation = useUpsertInsurancePolicyMutation();
+
   const [_selectedPolicyId, _setSelectedPolicyId] = React.useState<string | null>(null);
   const [filterType, setFilterType] = React.useState<string>('all');
   const [showForm, setShowForm] = React.useState(false);
   const [editingPolicy, setEditingPolicy] = React.useState<InsurancePolicy | undefined>(undefined);
-
-  React.useEffect(() => {
-    // TODO: Load from API
-    // For now, using mock data
-    setLoading(false);
-    setPolicies([]);
-  }, []);
 
   const handleAddPolicy = (): void => {
     logger.debug('Insurance', 'Add Policy button clicked');
@@ -57,34 +55,17 @@ const InsurancePage: React.FC = () => {
     setShowForm(true);
   };
 
-  const handleSavePolicy = (policyInput: InsurancePolicyInput): void => {
-    // TODO: Save to API
-    if (editingPolicy) {
-      // Update existing policy
-      setPolicies(prev =>
-        prev.map(p =>
-          p.id === editingPolicy.id
-            ? {
-                ...policyInput,
-                id: editingPolicy.id,
-                createdAt: editingPolicy.createdAt,
-                updatedAt: new Date().toISOString(),
-              } as InsurancePolicy
-            : p
-        )
-      );
-    } else {
-      // Add new policy
-      const newPolicy: InsurancePolicy = {
-        ...policyInput,
-        id: `policy-${Date.now()}`,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      setPolicies(prev => [...prev, newPolicy]);
+  const handleSavePolicy = async (policyInput: InsurancePolicyInput): Promise<void> => {
+    try {
+      await upsertPolicyMutation.mutateAsync(policyInput);
+      setShowForm(false);
+      setEditingPolicy(undefined);
+    } catch (error) {
+      logger.error('Insurance', error instanceof Error ? error : new Error(String(error)), {
+        context: 'handleSavePolicy',
+        policyInput,
+      });
     }
-    setShowForm(false);
-    setEditingPolicy(undefined);
   };
 
   const handleCancelForm = (): void => {
@@ -163,7 +144,7 @@ const InsurancePage: React.FC = () => {
     { value: 'travel', label: 'Travel', icon: Shield },
   ];
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">

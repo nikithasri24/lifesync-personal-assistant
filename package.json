@@ -16,7 +16,7 @@
     "test:coverage": "vitest --coverage",
     "cleanup:ports": "lsof -ti:3001,5173 | xargs kill -9 2>/dev/null || true",
     "version": "node scripts/version.js",
-    "prepare": "husky install",
+    "prepare": "node -e \"if (process.env.NODE_ENV !== 'production' && !process.env.CI && !process.env.VERCEL) { try { require('child_process').execSync('husky install', {stdio:'inherit'}) } catch(e) {} }\"",
     "validate": "npm run typecheck && npm run lint && npm test -- --run",
     "api:start": "node server/dist/index.js",
     "start": "concurrently \"npm run api:start\" \"npm run dev\" --names \"API,UI\" --prefix-colors \"blue,magenta\"",

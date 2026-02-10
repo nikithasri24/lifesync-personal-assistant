@@ -13,7 +13,7 @@ interface MasterListViewProps {
   stores: Store[];
   onToggleItem: (itemId: string) => void;
   onEditItem: (item: ShoppingItem) => void;
-  onDeleteItem: (itemId: string) => void;
+  onRequestDeleteItem: (itemId: string) => void;
   onFindStores: (item: ShoppingItem) => void;
   onShowStorePrefs: () => void;
 }
@@ -23,7 +23,7 @@ export function MasterListView({
   stores,
   onToggleItem,
   onEditItem,
-  onDeleteItem,
+  onRequestDeleteItem,
   onFindStores,
   onShowStorePrefs,
 }: MasterListViewProps) {
@@ -63,7 +63,7 @@ export function MasterListView({
             stores={stores}
             onToggle={() => onToggleItem(item.id)}
             onEdit={() => onEditItem(item)}
-            onDelete={() => onDeleteItem(item.id)}
+            onRequestDelete={() => onRequestDeleteItem(item.id)}
             onFindStores={() => onFindStores(item)}
           />
         ))}

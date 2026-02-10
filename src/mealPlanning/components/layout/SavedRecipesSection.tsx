@@ -1,4 +1,5 @@
-import React, { type ReactElement } from 'react';
+import React, { type ReactElement, useRef, useMemo, useEffect, useState } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { Heart, Search, X } from 'lucide-react';
 import { logger } from '../../../services/logger';
 import type { Recipe } from '../../../types';
@@ -32,6 +33,51 @@ export function SavedRecipesSection({
   onEditRecipe,
   onDeleteRecipe,
 }: SavedRecipesSectionProps): ReactElement {
+  const parentRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState(0);
+
+  // Update container width on resize
+  useEffect(() => {
+    if (!parentRef.current) return;
+
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (entry) {
+        setContainerWidth(entry.contentRect.width);
+      }
+    });
+
+    observer.observe(parentRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  // Calculate columns based on container width (Tailwind breakpoints: sm=640px, lg=1024px)
+  const columns = useMemo(() => {
+    if (containerWidth >= 1024) return 3; // lg: 3 columns
+    if (containerWidth >= 640) return 2; // sm: 2 columns
+    return 1; // default: 1 column
+  }, [containerWidth]);
+
+  // Group recipes into rows
+  const rows = useMemo(() => {
+    const result: Recipe[][] = [];
+    for (let i = 0; i < recipes.length; i += columns) {
+      result.push(recipes.slice(i, i + columns));
+    }
+    return result;
+  }, [recipes, columns]);
+
+  // Only virtualize if we have many recipes (100+)
+  const shouldVirtualize = recipes.length > 100;
+
+  const virtualizer = useVirtualizer({
+    count: rows.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 380, // Estimated height of RecipeCard (h-40 image + content padding)
+    overscan: 2, // Render 2 extra rows above and below viewport
+    enabled: shouldVirtualize,
+  });
+
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
       <div className="flex items-center justify-between">
@@ -107,6 +153,52 @@ export function SavedRecipesSection({
       ) : recipes.length === 0 ? (
         <div className="mt-4 rounded-lg border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-slate-500">
           No recipes match your search. Try different keywords.
+        </div>
+      ) : shouldVirtualize ? (
+        <div
+          ref={parentRef}
+          className="mt-4 overflow-y-auto"
+          style={{ height: '600px' }}
+        >
+          <div
+            style={{
+              height: `${virtualizer.getTotalSize()}px`,
+              width: '100%',
+              position: 'relative',
+            }}
+          >
+            {virtualizer.getVirtualItems().map((virtualRow) => {
+              const row = rows[virtualRow.index];
+              if (!row) return null;
+
+              return (
+                <div
+                  key={virtualRow.key}
+                  data-index={virtualRow.index}
+                  ref={virtualizer.measureElement}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    transform: `translateY(${virtualRow.start}px)`,
+                  }}
+                >
+                  <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {row.map((r) => (
+                      <RecipeCard
+                        key={r.id}
+                        recipe={r}
+                        onView={() => onViewRecipe(r.id)}
+                        onEdit={() => onEditRecipe(r.id)}
+                        onDelete={() => onDeleteRecipe(r.id)}
+                      />
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
+          </div>
         </div>
       ) : (
         <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

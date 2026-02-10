@@ -1,4 +1,4 @@
-import React, { type ReactElement, useMemo, Suspense, lazy } from 'react';
+import React, { type ReactElement, useMemo, Suspense, lazy, useState } from 'react';
 import { format, isSameDay } from 'date-fns';
 import { logger } from '../../../services/logger';
 import { ChefHat, Coffee, Sun, Moon, Cookie } from 'lucide-react';
@@ -9,6 +9,7 @@ import AddMealControl from '../mealPlan/AddMealControl';
 import { useUndoRedo } from '../../../contexts/UndoRedoContext';
 import { MovePlannedMealCommand, CreatePlannedMealCommand, UseBacklogItemCommand } from '../../../commands/MealPlanningCommands';
 import { useRemoveFromBacklogMutation, useBacklogQuery } from '../../../hooks/useMealPlanningQuery';
+import { RescheduleMealModal } from '../modals/RescheduleMealModal';
 
 // Lazy load MealBacklogSection - only needed in merged mode
 const MealBacklogSection = lazy(() =>
@@ -87,6 +88,53 @@ export function WeeklyGrid({
 }: WeeklyGridProps): ReactElement {
   const { executeCommand } = useUndoRedo();
   const removeFromBacklogMutation = useRemoveFromBacklogMutation();
+
+  // Reschedule modal state
+  const [rescheduleModalOpen, setRescheduleModalOpen] = useState(false);
+  const [mealToReschedule, setMealToReschedule] = useState<PlannedMeal | null>(null);
+
+  const handleOpenRescheduleModal = (meal: PlannedMeal) => {
+    logger.debug('MealPlanning', 'Opening reschedule modal', { mealId: meal.id, mealName: meal.customMeal });
+    setMealToReschedule(meal);
+    setRescheduleModalOpen(true);
+  };
+
+  const handleCloseRescheduleModal = () => {
+    setRescheduleModalOpen(false);
+    setMealToReschedule(null);
+  };
+
+  const handleReschedule = async (newDate: Date, newMealType: string) => {
+    if (!mealToReschedule) return;
+
+    try {
+      const recipe = recipes.find((r) => r.id === mealToReschedule.recipeId);
+      const mealName = recipe?.name || mealToReschedule.customMeal || 'meal';
+
+      const command = new MovePlannedMealCommand(
+        mealToReschedule.id,
+        mealName,
+        newDate,
+        newMealType,
+        mealToReschedule.date,
+        mealToReschedule.mealType,
+        true // wasPostponed = true to clear postponed status
+      );
+
+      await executeCommand(command);
+      logger.info('MealPlanning', 'Meal rescheduled successfully', {
+        mealId: mealToReschedule.id,
+        newDate,
+        newMealType,
+      });
+    } catch (error) {
+      logger.error('MealPlanning', error instanceof Error ? error : new Error(String(error)), {
+        context: 'handleReschedule',
+        mealId: mealToReschedule.id,
+      });
+      throw error; // Re-throw to let modal handle the error state
+    }
+  };
 
   return (
     <div className="mt-6 overflow-x-auto">
@@ -399,14 +447,20 @@ export function WeeklyGrid({
               postponedMeals={postponedMeals}
               recipes={recipes}
               isMerged={isMerged}
-              onReschedule={(meal) => {
-                // TODO: Implement reschedule functionality
-                logger.debug('MealPlanning', 'Reschedule meal:', { mealId: meal.id, mealName: meal.customMeal });
-              }}
+              onReschedule={handleOpenRescheduleModal}
             />
           </Suspense>
         );
       })()}
+
+      {/* Reschedule Modal */}
+      <RescheduleMealModal
+        isOpen={rescheduleModalOpen}
+        onClose={handleCloseRescheduleModal}
+        meal={mealToReschedule}
+        weekStartsOn={weekDays[0]?.getDay() as 0 | 1 | 2 | 3 | 4 | 5 | 6}
+        onReschedule={handleReschedule}
+      />
     </div>
   );
 }

@@ -7,7 +7,7 @@
  */
 
 import { supabase } from '../lib/supabase';
-import type { MealPlanData, PlannedMealData, RecipeData, PantryItemData, MealBacklogData, MealTrackingData } from '../services/types';
+import type { MealPlanData, PlannedMealData, RecipeData, PantryItemData, MealBacklogData, MealTrackingData, Paginated } from '../services/types';
 import { apiCall, requireAuth, handleSupabaseResponse } from './apiWrapper';
 import { getMergedConnectionId, type MergedConnectionResult } from '../shared/api/SharedDataProvider';
 import { logger } from '../services/logger';
@@ -1201,6 +1201,81 @@ export async function getPantryItems(): Promise<PantryItemData[]> {
       return validateArrayWithFilter<PantryItemData>(PantryItemDataArraySchema.element, data ?? [], 'getPantryItems');
     },
     { domain: 'MealPlanningAPI', operation: 'getPantryItems' }
+  );
+}
+
+/**
+ * List pantry items with cursor-based pagination.
+ * Cursor format: "timestamp:id" (e.g., "2024-01-15T10:30:00Z:item-abc123")
+ */
+export async function listPantryItems(params?: {
+  cursor?: string;
+  limit?: number;
+  filter?: 'all' | 'expired' | 'expiring_soon' | 'low_stock';
+}): Promise<Paginated<PantryItemData>> {
+  return apiCall(
+    async () => {
+      await requireAuth();
+
+      const limit = params?.limit ?? 100;
+      let query = supabase.from('pantry_items').select('*');
+
+      // Apply cursor pagination
+      if (params?.cursor) {
+        // Cursor format: "timestamp:id" - split on last colon to handle timestamp colons
+        const lastColonIndex = params.cursor.lastIndexOf(':');
+        if (lastColonIndex > 0) {
+          const cursorTimestamp = params.cursor.substring(0, lastColonIndex);
+          const cursorId = params.cursor.substring(lastColonIndex + 1);
+          query = query.or(
+            `created_at.lt.${cursorTimestamp},and(created_at.eq.${cursorTimestamp},id.lt.${cursorId})`
+          );
+        }
+      }
+
+      // Apply filters
+      const now = new Date().toISOString();
+      if (params?.filter === 'expired') {
+        query = query.lt('expiration_date', now);
+      } else if (params?.filter === 'expiring_soon') {
+        const weekFromNow = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+        query = query.gte('expiration_date', now).lte('expiration_date', weekFromNow);
+      } else if (params?.filter === 'low_stock') {
+        query = query.eq('is_low_stock', true);
+      }
+
+      // Order by created_at DESC, id DESC for stable pagination
+      query = query.order('created_at', { ascending: false }).order('id', { ascending: false });
+
+      // Fetch limit + 1 to check if there are more results
+      query = query.limit(limit + 1);
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      // Validate API response
+      const validated = validateArrayWithFilter<PantryItemData>(
+        PantryItemDataArraySchema.element,
+        data ?? [],
+        'listPantryItems'
+      );
+
+      // Determine if there are more results
+      const hasMore = validated.length > limit;
+      const items = hasMore ? validated.slice(0, limit) : validated;
+
+      // Generate nextCursor from last item
+      let nextCursor: string | undefined;
+      if (hasMore && items.length > 0) {
+        const lastItem = items[items.length - 1];
+        if (lastItem?.created_at && lastItem?.id) {
+          nextCursor = `${lastItem.created_at}:${lastItem.id}`;
+        }
+      }
+
+      return { items, nextCursor };
+    },
+    { domain: 'MealPlanningAPI', operation: 'listPantryItems' }
   );
 }
 

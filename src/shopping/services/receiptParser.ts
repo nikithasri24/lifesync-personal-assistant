@@ -1,4 +1,11 @@
 import type { ShoppingItem } from '../types';
+import {
+  validateReceiptItems,
+  validateReceiptMeta,
+  type ValidatedReceiptItem,
+  type ValidatedReceiptMeta,
+} from '@/schemas/shopping';
+import { logger } from '@/services/logger';
 
 export interface ParsedReceiptItem {
   id: string;
@@ -22,7 +29,21 @@ export interface ReceiptMeta {
   payment?: string;
 }
 
-export function parseReceiptToItems(text: string): ParsedReceiptItem[] {
+export interface ReceiptParseResult {
+  items: ValidatedReceiptItem[];
+  validation: {
+    totalParsed: number;
+    validItems: number;
+    invalidItems: number;
+    errors: string[];
+  };
+}
+
+/**
+ * Parse receipt text to items with validation
+ * @throws {Error} if no valid items are found
+ */
+export function parseReceiptToItems(text: string): ReceiptParseResult {
   const lines = text
     .split(/\r?\n/)
     .map(l => l.trim())
@@ -87,48 +108,105 @@ export function parseReceiptToItems(text: string): ParsedReceiptItem[] {
     items.push({ id: Math.random().toString(36).slice(2, 10), name, quantity: qty, selected: true, category, threshold: '', price, size });
   }
 
-  return items;
+  // Validate parsed items
+  const totalParsed = items.length;
+  const { valid, invalid, errors } = validateReceiptItems(items);
+
+  // Log validation results
+  if (invalid > 0) {
+    logger.warn('ReceiptParser', 'Some items failed validation', {
+      totalParsed,
+      validItems: valid.length,
+      invalidItems: invalid,
+      errors: errors.slice(0, 5), // Log first 5 errors
+    });
+  }
+
+  // Throw error if no valid items found
+  if (valid.length === 0) {
+    logger.error('ReceiptParser', 'No valid items found in receipt', {
+      totalParsed,
+      errors,
+    });
+    throw new Error('No valid items found in receipt. Please check the receipt text and try again.');
+  }
+
+  logger.debug('ReceiptParser', 'Receipt parsed successfully', {
+    totalParsed,
+    validItems: valid.length,
+    invalidItems: invalid,
+  });
+
+  return {
+    items: valid,
+    validation: {
+      totalParsed,
+      validItems: valid.length,
+      invalidItems: invalid,
+      errors,
+    },
+  };
 }
 
-export function parseReceiptMeta(text: string): ReceiptMeta {
+/**
+ * Parse receipt metadata with validation
+ * Returns validated metadata or empty object if validation fails
+ */
+export function parseReceiptMeta(text: string): ValidatedReceiptMeta {
   const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
   const meta: ReceiptMeta = {};
 
-  // Merchant: first non-empty alpha line
-  const merchantLine = lines.find(l => /[A-Za-z]/.test(l) && !/(receipt|invoice|order|store|merchant|thank)/i.test(l));
-  if (merchantLine) meta.merchant = merchantLine;
+  try {
+    // Merchant: first non-empty alpha line
+    const merchantLine = lines.find(l => /[A-Za-z]/.test(l) && !/(receipt|invoice|order|store|merchant|thank)/i.test(l));
+    if (merchantLine) meta.merchant = merchantLine;
 
-  // Address: line with street or city, state zip
-  const addressLine = lines.find(l => /(\d+\s+\w+\s+(st|ave|rd|blvd|dr|ct)\b|,\s*[A-Z]{2}\s*\d{5})/i.test(l));
-  if (addressLine) meta.address = addressLine;
+    // Address: line with street or city, state zip
+    const addressLine = lines.find(l => /(\d+\s+\w+\s+(st|ave|rd|blvd|dr|ct)\b|,\s*[A-Z]{2}\s*\d{5})/i.test(l));
+    if (addressLine) meta.address = addressLine;
 
-  // Date and time
-  const dateMatch = text.match(/(\d{4}[\/-]\d{1,2}[\/-]\d{1,2}|\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4})/);
-  const timeMatch = text.match(/\b(\d{1,2}:\d{2}(?::\d{2})?\s*(?:AM|PM)?)\b/i);
-  if (dateMatch) meta.date = dateMatch[1];
-  if (timeMatch) meta.time = timeMatch[1];
+    // Date and time
+    const dateMatch = text.match(/(\d{4}[\/-]\d{1,2}[\/-]\d{1,2}|\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4})/);
+    const timeMatch = text.match(/\b(\d{1,2}:\d{2}(?::\d{2})?\s*(?:AM|PM)?)\b/i);
+    if (dateMatch) meta.date = dateMatch[1];
+    if (timeMatch) meta.time = timeMatch[1];
 
-  // Totals
-  const money = (s: string) => {
-    const m = s.match(/(\d{1,3}(?:[\.,]\d{3})*(?:[\.,]\d{2})|\d+(?:[\.,]\d{2}))/);
-    if (!m) return undefined;
-    return Number(m[1].replace(/,/g, '.'));
-  };
+    // Totals
+    const money = (s: string) => {
+      const m = s.match(/(\d{1,3}(?:[\.,]\d{3})*(?:[\.,]\d{2})|\d+(?:[\.,]\d{2}))/);
+      if (!m) return undefined;
+      return Number(m[1].replace(/,/g, '.'));
+    };
 
-  const subLine = lines.find(l => /sub\s*total/i.test(l)) || lines.find(l => /^subtotal/i.test(l));
-  const taxLine = lines.find(l => /tax/i.test(l));
-  // Prefer a line that starts with total
-  const totalLine = lines.find(l => /^total\b/i.test(l)) || lines.reverse().find(l => /total/i.test(l));
+    const subLine = lines.find(l => /sub\s*total/i.test(l)) || lines.find(l => /^subtotal/i.test(l));
+    const taxLine = lines.find(l => /tax/i.test(l));
+    // Prefer a line that starts with total
+    const totalLine = lines.find(l => /^total\b/i.test(l)) || lines.reverse().find(l => /total/i.test(l));
 
-  if (subLine) meta.subtotal = money(subLine);
-  if (taxLine) meta.tax = money(taxLine);
-  if (totalLine) meta.total = money(totalLine);
+    if (subLine) meta.subtotal = money(subLine);
+    if (taxLine) meta.tax = money(taxLine);
+    if (totalLine) meta.total = money(totalLine);
 
-  // Payment
-  const payLine = lines.find(l => /(visa|mastercard|amex|debit|credit|cash)/i.test(l));
-  if (payLine) meta.payment = payLine;
+    // Payment
+    const payLine = lines.find(l => /(visa|mastercard|amex|debit|credit|cash)/i.test(l));
+    if (payLine) meta.payment = payLine;
 
-  return meta;
+    // Validate metadata (non-strict mode)
+    const validated = validateReceiptMeta(meta);
+
+    logger.debug('ReceiptParser', 'Receipt metadata parsed', {
+      hasDate: !!validated.date,
+      hasTotal: !!validated.total,
+      hasMerchant: !!validated.merchant,
+    });
+
+    return validated;
+  } catch (error) {
+    logger.error('ReceiptParser', 'Failed to parse receipt metadata', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return {};
+  }
 }
 
 export function categorizeName(name: string): ShoppingItem['category'] {
