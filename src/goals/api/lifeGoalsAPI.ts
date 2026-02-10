@@ -875,14 +875,15 @@ async function recalculateGoalProgress(goalId: string): Promise<void> {
   // Fetch the goal to check if it's shared and has combined tracking
   const { data: goalData, error: goalError } = await supabase
     .from('life_goals')
-    .select('is_shared, tracking_mode, connection_id')
+    .select('tracking_mode, connection_id')
     .eq('id', goalId)
     .single();
 
   if (goalError || !goalData) return; // Silently fail if goal not found
 
   // Only recalculate for shared goals with combined tracking
-  if (!goalData.is_shared || goalData.tracking_mode !== 'combined') {
+  // A goal is shared if it has a connection_id
+  if (!goalData.connection_id || goalData.tracking_mode !== 'combined') {
     return;
   }
 
