@@ -1,4 +1,4 @@
-import React, { type ReactElement, useMemo } from 'react';
+import React, { type ReactElement, useMemo, useState } from 'react';
 import { Target, CheckCircle2, Trash2, Edit3, TrendingUp, Users } from 'lucide-react';
 import type { LifeGoal } from '../../types/lifeGoals';
 import { GoalMilestones } from '../GoalMilestones';
@@ -75,6 +75,10 @@ export function GoalList({
   );
   const updateProgressMutation = useUpdateGoalProgressMutation();
   const { showToast } = useToast();
+
+  // Local state for editing personal progress
+  const [editingPersonalProgress, setEditingPersonalProgress] = useState<string | null>(null);
+  const [personalProgressValue, setPersonalProgressValue] = useState<number>(0);
 
   // Build progress lookup maps
   const personalProgressMap = useMemo(() => {
@@ -265,30 +269,61 @@ export function GoalList({
                       {partnerProgressMap.get(goal.id) ?? 0}%
                     </span>
                   </div>
-                  {/* Update personal progress button */}
-                  <button
-                    onClick={() => {
-                      const currentPersonal = personalProgressMap.get(goal.id) ?? 0;
-                      const newProgress = Math.min(100, currentPersonal + 10);
-                      updateProgressMutation.mutate({
-                        goalId: goal.id,
-                        personalProgress: newProgress,
-                      }, {
-                        onSuccess: () => {
-                          showToast(`Progress updated to ${newProgress}%! Keep up the great work! 🎉`, 'success');
-                        },
-                        onError: (error) => {
-                          showToast(`Failed to update progress: ${error.message}`, 'error');
-                        },
-                      });
-                    }}
-                    disabled={updateProgressMutation.isPending}
-                    className="inline-flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-700 font-medium disabled:opacity-50"
-                    aria-label="Increase personal progress by 10%"
-                  >
-                    <Edit3 className="h-3 w-3" />
-                    {updateProgressMutation.isPending ? 'Updating...' : 'Update my progress (+10%)'}
-                  </button>
+                  {/* Update personal progress editor */}
+                  {editingPersonalProgress === goal.id ? (
+                    <div className="flex items-center gap-2 mt-2">
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="5"
+                        value={personalProgressValue}
+                        onChange={(e) => setPersonalProgressValue(Number(e.target.value))}
+                        className="flex-1"
+                        aria-label="Personal progress slider"
+                      />
+                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300 w-12">{personalProgressValue}%</span>
+                      <button
+                        onClick={() => {
+                          updateProgressMutation.mutate({
+                            goalId: goal.id,
+                            personalProgress: personalProgressValue,
+                          }, {
+                            onSuccess: () => {
+                              showToast(`Progress updated to ${personalProgressValue}%! Keep up the great work! 🎉`, 'success');
+                              setEditingPersonalProgress(null);
+                            },
+                            onError: (error) => {
+                              showToast(`Failed to update progress: ${error.message}`, 'error');
+                            },
+                          });
+                        }}
+                        disabled={updateProgressMutation.isPending}
+                        className="px-3 py-1 bg-emerald-600 text-white text-xs rounded hover:bg-emerald-700 disabled:opacity-50"
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={() => setEditingPersonalProgress(null)}
+                        className="px-3 py-1 bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300 text-xs rounded hover:bg-slate-300 dark:hover:bg-slate-600"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        const currentPersonal = personalProgressMap.get(goal.id) ?? 0;
+                        setPersonalProgressValue(currentPersonal);
+                        setEditingPersonalProgress(goal.id);
+                      }}
+                      className="inline-flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-700 font-medium"
+                      aria-label="Update my progress"
+                    >
+                      <Edit3 className="h-3 w-3" />
+                      Update my progress
+                    </button>
+                  )}
                 </div>
               )}
 
