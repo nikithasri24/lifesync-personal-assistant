@@ -5,6 +5,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { QuickAddTransaction } from '../components/QuickAddTransaction';
 import { AccountModal } from '../components/AccountModal';
 import GoalEditor from '../components/goals/GoalEditor';
@@ -12,13 +13,13 @@ import TransactionsPageGrouped from '../pages/TransactionsPageGrouped';
 import AccountsPage from '../pages/AccountsPage';
 
 // Mock hooks
-jest.mock('@/hooks/useAuth', () => ({
+vi.mock('@/hooks/useAuth', () => ({
   useAuth: () => ({
     user: { id: 'user-123', email: 'test@example.com' }
   })
 }));
 
-jest.mock('@/hooks/useFinanceQuery', () => ({
+vi.mock('@/hooks/useFinanceQuery', () => ({
   useFinanceMergedConnectionQuery: () => ({
     data: {
       connectionId: 'conn-456',
@@ -30,8 +31,8 @@ jest.mock('@/hooks/useFinanceQuery', () => ({
   useCategoriesQuery: () => ({ data: [], isLoading: false }),
   useTransactionsQuery: () => ({ data: [], isLoading: false }),
   useBudgetsQuery: () => ({ data: [], isLoading: false }),
-  useUpsertTransactionMutation: () => ({ mutateAsync: jest.fn(), isPending: false }),
-  useUpsertAccountMutation: () => ({ mutateAsync: jest.fn(), isPending: false }),
+  useUpsertTransactionMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useUpsertAccountMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
 
 const createWrapper = () => {
@@ -54,7 +55,7 @@ describe('Finance Merged Mode Integration', () => {
   describe('QuickAddTransaction', () => {
     it('should show owner selection in merged mode', () => {
       const { container } = render(
-        <QuickAddTransaction onClose={jest.fn()} onSuccess={jest.fn()} />,
+        <QuickAddTransaction onClose={vi.fn()} onSuccess={vi.fn()} />,
         { wrapper: createWrapper() }
       );
 
@@ -70,12 +71,12 @@ describe('Finance Merged Mode Integration', () => {
     });
 
     it('should submit with selected userId', async () => {
-      const mockMutate = jest.fn().mockResolvedValue({});
-      jest.spyOn(require('@/hooks/useFinanceQuery'), 'useUpsertTransactionMutation')
+      const mockMutate = vi.fn().mockResolvedValue({});
+      vi.spyOn(require('@/hooks/useFinanceQuery'), 'useUpsertTransactionMutation')
         .mockReturnValue({ mutateAsync: mockMutate, isPending: false });
 
       const { container } = render(
-        <QuickAddTransaction onClose={jest.fn()} onSuccess={jest.fn()} />,
+        <QuickAddTransaction onClose={vi.fn()} onSuccess={vi.fn()} />,
         { wrapper: createWrapper() }
       );
 
@@ -109,7 +110,7 @@ describe('Finance Merged Mode Integration', () => {
   describe('AccountModal', () => {
     it('should show owner selection in merged mode', () => {
       const { container } = render(
-        <AccountModal onClose={jest.fn()} onSuccess={jest.fn()} />,
+        <AccountModal onClose={vi.fn()} onSuccess={vi.fn()} />,
         { wrapper: createWrapper() }
       );
 
@@ -132,8 +133,8 @@ describe('Finance Merged Mode Integration', () => {
       render(
         <GoalEditor
           isOpen={true}
-          onClose={jest.fn()}
-          onSave={jest.fn()}
+          onClose={vi.fn()}
+          onSave={vi.fn()}
           accounts={[]}
         />,
         { wrapper: createWrapper() }
@@ -145,12 +146,12 @@ describe('Finance Merged Mode Integration', () => {
     });
 
     it('should submit with connectionId when shared is checked', async () => {
-      const mockSave = jest.fn().mockResolvedValue({});
+      const mockSave = vi.fn().mockResolvedValue({});
 
       const { container } = render(
         <GoalEditor
           isOpen={true}
-          onClose={jest.fn()}
+          onClose={vi.fn()}
           onSave={mockSave}
           accounts={[]}
         />,
@@ -209,13 +210,13 @@ describe('Finance Merged Mode Integration', () => {
 describe('Finance Non-Merged Mode', () => {
   beforeEach(() => {
     // Mock no merged connection
-    jest.spyOn(require('@/hooks/useFinanceQuery'), 'useFinanceMergedConnectionQuery')
+    vi.spyOn(require('@/hooks/useFinanceQuery'), 'useFinanceMergedConnectionQuery')
       .mockReturnValue({ data: null });
   });
 
   it('should NOT show owner selection in QuickAddTransaction', () => {
     render(
-      <QuickAddTransaction onClose={jest.fn()} onSuccess={jest.fn()} />,
+      <QuickAddTransaction onClose={vi.fn()} onSuccess={vi.fn()} />,
       { wrapper: createWrapper() }
     );
 
@@ -226,8 +227,8 @@ describe('Finance Non-Merged Mode', () => {
     render(
       <GoalEditor
         isOpen={true}
-        onClose={jest.fn()}
-        onSave={jest.fn()}
+        onClose={vi.fn()}
+        onSave={vi.fn()}
         accounts={[]}
       />,
       { wrapper: createWrapper() }

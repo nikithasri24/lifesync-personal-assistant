@@ -95,7 +95,8 @@ describe('PantryTable', () => {
     it('shows expiration status for expired items', () => {
       render(<PantryTable {...defaultProps} />);
 
-      expect(screen.getByText('Expired')).toBeInTheDocument();
+      const expiredElements = screen.getAllByText('Expired');
+      expect(expiredElements.length).toBeGreaterThan(0);
     });
 
     it('shows low stock indicator', () => {

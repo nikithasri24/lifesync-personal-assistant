@@ -38,6 +38,63 @@ if (typeof process !== 'undefined') {
   process.env.VITE_SUPABASE_ANON_KEY = 'your-anon-key'
 }
 
+// Mock Supabase client globally
+vi.mock('../lib/supabase', () => {
+  const createMockQueryBuilder = () => ({
+    select: vi.fn().mockReturnThis(),
+    insert: vi.fn().mockReturnThis(),
+    update: vi.fn().mockReturnThis(),
+    delete: vi.fn().mockReturnThis(),
+    upsert: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    neq: vi.fn().mockReturnThis(),
+    gt: vi.fn().mockReturnThis(),
+    gte: vi.fn().mockReturnThis(),
+    lt: vi.fn().mockReturnThis(),
+    lte: vi.fn().mockReturnThis(),
+    like: vi.fn().mockReturnThis(),
+    ilike: vi.fn().mockReturnThis(),
+    in: vi.fn().mockReturnThis(),
+    is: vi.fn().mockReturnThis(),
+    or: vi.fn().mockReturnThis(),
+    order: vi.fn().mockReturnThis(),
+    limit: vi.fn().mockReturnThis(),
+    range: vi.fn().mockReturnThis(),
+    single: vi.fn().mockResolvedValue({ data: null, error: null }),
+    maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+    then: vi.fn().mockResolvedValue({ data: [], error: null }),
+  });
+
+  return {
+    supabase: {
+      from: vi.fn(() => createMockQueryBuilder()),
+      auth: {
+        getUser: vi.fn().mockResolvedValue({
+          data: { user: { id: 'test-user-id', email: 'test@example.com' } },
+          error: null,
+        }),
+        getSession: vi.fn().mockResolvedValue({
+          data: { session: { user: { id: 'test-user-id' } } },
+          error: null,
+        }),
+        signInWithPassword: vi.fn().mockResolvedValue({ data: {}, error: null }),
+        signOut: vi.fn().mockResolvedValue({ error: null }),
+        onAuthStateChange: vi.fn(() => ({
+          data: { subscription: { unsubscribe: vi.fn() } },
+        })),
+      },
+      storage: {
+        from: vi.fn(() => ({
+          upload: vi.fn().mockResolvedValue({ data: {}, error: null }),
+          download: vi.fn().mockResolvedValue({ data: new Blob(), error: null }),
+          remove: vi.fn().mockResolvedValue({ data: {}, error: null }),
+          getPublicUrl: vi.fn(() => ({ data: { publicUrl: 'mock-url' } })),
+        })),
+      },
+    },
+  };
+});
+
 // Provide a basic jest compatibility layer for suites that still reference jest.*
 if (!(globalThis as any).jest) {
   (globalThis as any).jest = {
