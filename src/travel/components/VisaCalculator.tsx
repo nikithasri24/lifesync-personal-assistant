@@ -8,6 +8,7 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { logger } from '../../services/logger';
 import { supabase } from '../../lib/supabase';
+import { useToast } from '@/hooks/useToast';
 import ConfirmDialog from '../../components/DebtPayoffCalculator/ConfirmDialog';
 import {
   getVisaRequirement,
@@ -24,11 +25,15 @@ import {
   addPassport,
   addVisa,
   deleteVisa,
+  deletePassport,
   updatePassport,
+  updateVisa,
   getVisaMergedConnection
 } from '../api/passportAPI';
 import type { VisaRequirement, UserPassport, UserVisa } from '../types/visa';
 import VisaMap from './VisaMap';
+import PassportEditor from './PassportEditor';
+import VisaEditor from './VisaEditor';
 
 interface DestinationRequirement {
   country: string;
@@ -39,22 +44,20 @@ interface DestinationRequirement {
 }
 
 const VisaCalculator: React.FC = () => {
+  const { showToast } = useToast();
   const [passport, setPassport] = React.useState<UserPassport | null>(null);
   const [allPassports, setAllPassports] = React.useState<UserPassport[]>([]);
   const [userVisas, setUserVisas] = React.useState<UserVisa[]>([]);
   const [searchTerm, setSearchTerm] = React.useState('');
-  const [showAddVisa, setShowAddVisa] = React.useState(false);
   const [loading, setLoading] = React.useState(true);
   const [currentUserId, setCurrentUserId] = React.useState<string | null>(null);
 
-  // Add visa form state
-  const [newVisaCountry, setNewVisaCountry] = React.useState('');
-  const [newVisaExpiry, setNewVisaExpiry] = React.useState('');
-  const [newVisaMultipleEntry, setNewVisaMultipleEntry] = React.useState(true);
-
-  // Passport selection state (for changing passport)
-  const [showPassportSelector, setShowPassportSelector] = React.useState(false);
-  const [selectedPassportCountry, setSelectedPassportCountry] = React.useState('');
+  // Modal state
+  const [isPassportEditorOpen, setIsPassportEditorOpen] = React.useState(false);
+  const [editingPassport, setEditingPassport] = React.useState<UserPassport | undefined>(undefined);
+  const [isVisaEditorOpen, setIsVisaEditorOpen] = React.useState(false);
+  const [editingVisa, setEditingVisa] = React.useState<UserVisa | undefined>(undefined);
+  const [passportToDelete, setPassportToDelete] = React.useState<string | null>(null);
 
   // Bonus countries expansion state
   const [showAllBonus, setShowAllBonus] = React.useState(false);
@@ -68,9 +71,6 @@ const VisaCalculator: React.FC = () => {
   // Passport owner filter state (shared with VisaMap)
   type PassportOwnerFilter = 'me' | 'partner' | 'both';
   const [passportOwnerFilter, setPassportOwnerFilter] = React.useState<PassportOwnerFilter>('me');
-
-  // Ref for add visa form to scroll into view
-  const addVisaFormRef = React.useRef<HTMLDivElement>(null);
 
   // State for visa deletion confirmation
   const [visaToDelete, setVisaToDelete] = React.useState<string | null>(null);
@@ -132,13 +132,13 @@ const VisaCalculator: React.FC = () => {
   const passportSummary = React.useMemo(() => {
     if (!passport) return null;
     return getVisaAccessSummary(passport.countryName);
-  }, [passport]);
+  }, [passport?.id, passport?.countryName]);
 
   // Get passport ranking
   const passportRanking = React.useMemo(() => {
     if (!passport) return null;
     return getPassportRanking(passport.countryCode);
-  }, [passport]);
+  }, [passport?.id, passport?.countryCode]);
 
   // Filter visas by owner selection and validity (computed once, used in multiple places)
   const { filteredVisas, validVisas, validVisaCountries } = React.useMemo(() => {
@@ -209,6 +209,14 @@ const VisaCalculator: React.FC = () => {
     // Get all countries and their requirements from passport
     availableCountries.forEach(country => {
       const req = getVisaRequirement(passport.countryName, country);
+
+      if (!req) {
+        logger.warn('Travel', 'No visa requirement data found', {
+          passport: passport.countryName,
+          destination: country
+        });
+        return; // Skip this country gracefully
+      }
 
       if (req) {
         // Check if user has a valid visa for this country
@@ -305,69 +313,139 @@ const VisaCalculator: React.FC = () => {
     return groups;
   }, [filteredDestinations]);
 
-  const handleSetPassport = async () => {
-    if (!selectedPassportCountry) return;
-
-    try {
-      const newPassport = await addPassport({
-        countryCode: selectedPassportCountry.substring(0, 2).toUpperCase(),
-        countryName: selectedPassportCountry,
-        isPrimary: true,
-      });
-      setPassport(newPassport);
-      setShowPassportSelector(false);
-      setSelectedPassportCountry('');
-    } catch (error) {
-      logger.error('Travel', error instanceof Error ? error : new Error(String(error)), { context: 'addPassport' });
-      alert('Failed to save passport. Please try again.');
-    }
+  // Passport handlers
+  const handleCreatePassport = () => {
+    setEditingPassport(undefined);
+    setIsPassportEditorOpen(true);
   };
 
-  const handleToggleAddVisa = () => {
-    setShowAddVisa(!showAddVisa);
+  const handleEditPassport = (passport: UserPassport) => {
+    logger.debug('Travel', 'Opening passport editor', { passportId: passport.id });
+    setEditingPassport(passport);
+    setIsPassportEditorOpen(true);
+  };
 
-    // If opening form, scroll to it after render
-    if (!showAddVisa) {
-      setTimeout(() => {
-        addVisaFormRef.current?.scrollIntoView({
-          behavior: 'smooth',
-          block: 'nearest'
+  const handleSavePassport = async (updates: Partial<UserPassport>) => {
+    try {
+      if (editingPassport) {
+        // Edit mode
+        const updated = await updatePassport(editingPassport.id, updates);
+        setAllPassports(prev => prev.map(p => p.id === updated.id ? updated : p));
+        if (updated.isPrimary) setPassport(updated);
+        logger.info('Travel', 'Passport updated', { passportId: updated.id });
+        showToast('Passport updated successfully', 'success');
+      } else {
+        // Create mode
+        const newPassport = await addPassport({
+          countryCode: updates.countryCode!,
+          countryName: updates.countryName!,
+          passportNumber: updates.passportNumber,
+          issueDate: updates.issueDate,
+          expiryDate: updates.expiryDate,
+          isPrimary: updates.isPrimary ?? true,
         });
-      }, 100);
-    }
-  };
-
-  const handleAddVisa = async () => {
-    if (!newVisaCountry || !newVisaExpiry) return;
-
-    try {
-      const newVisa = await addVisa({
-        countryCode: newVisaCountry.substring(0, 2).toUpperCase(),
-        countryName: newVisaCountry,
-        expiryDate: newVisaExpiry,
-        multipleEntry: newVisaMultipleEntry,
-      });
-
-      setUserVisas(prev => [...prev, newVisa]);
-      setNewVisaCountry('');
-      setNewVisaExpiry('');
-      setNewVisaMultipleEntry(true);
-      setShowAddVisa(false);
+        setAllPassports(prev => [...prev, newPassport]);
+        if (newPassport.isPrimary) setPassport(newPassport);
+        logger.info('Travel', 'Passport created', { passportId: newPassport.id });
+        showToast('Passport added successfully', 'success');
+      }
+      setIsPassportEditorOpen(false);
+      setEditingPassport(undefined);
     } catch (error) {
-      logger.error('Travel', error instanceof Error ? error : new Error(String(error)), { context: 'addVisa' });
-      alert('Failed to save visa. Please try again.');
+      logger.error('Travel', error instanceof Error ? error : new Error(String(error)), { context: 'savePassport' });
+      showToast('Failed to save passport. Please try again.', 'error');
     }
   };
 
-  const handleRemoveVisa = async (visaId: string) => {
+  const handleDeletePassport = async (passportId: string) => {
+    try {
+      await deletePassport(passportId);
+      setAllPassports(prev => prev.filter(p => p.id !== passportId));
+      // If deleted passport was primary, set another as primary or clear
+      if (passport?.id === passportId) {
+        const newPrimary = allPassports.find(p => p.id !== passportId);
+        setPassport(newPrimary || null);
+      }
+      setPassportToDelete(null);
+      logger.info('Travel', 'Passport deleted', { passportId });
+      showToast('Passport deleted successfully', 'success');
+    } catch (error) {
+      logger.error('Travel', error instanceof Error ? error : new Error(String(error)), { context: 'deletePassport' });
+      showToast('Failed to delete passport. Please try again.', 'error');
+    }
+  };
+
+  const handleSetPrimaryPassport = async (passportId: string) => {
+    try {
+      const updated = await updatePassport(passportId, { isPrimary: true });
+      setAllPassports(prev => prev.map(p => p.id === updated.id ? updated : p));
+      setPassport(updated);
+      logger.info('Travel', 'Primary passport updated', { passportId });
+      showToast('Primary passport updated successfully', 'success');
+    } catch (error) {
+      logger.error('Travel', error instanceof Error ? error : new Error(String(error)), { context: 'setPrimaryPassport' });
+      showToast('Failed to set primary passport. Please try again.', 'error');
+    }
+  };
+
+  // Visa handlers
+  const handleCreateVisa = () => {
+    setEditingVisa(undefined);
+    setIsVisaEditorOpen(true);
+  };
+
+  const handleEditVisa = (visa: UserVisa) => {
+    logger.debug('Travel', 'Opening visa editor', { visaId: visa.id });
+    setEditingVisa(visa);
+    setIsVisaEditorOpen(true);
+  };
+
+  const handleSaveVisa = async (updates: Partial<UserVisa>) => {
+    try {
+      if (editingVisa) {
+        // Edit mode
+        const updated = await updateVisa(editingVisa.id, updates);
+        setUserVisas(prev => prev.map(v => v.id === updated.id ? updated : v));
+        logger.info('Travel', 'Visa updated', { visaId: updated.id });
+        showToast('Visa updated successfully', 'success');
+      } else {
+        // Create mode
+        const newVisa = await addVisa({
+          countryCode: updates.countryCode!,
+          countryName: updates.countryName!,
+          visaType: updates.visaType || '',
+          issueDate: updates.issueDate,
+          expiryDate: updates.expiryDate!,
+          multipleEntry: updates.multipleEntry ?? true,
+          maxStayDays: updates.maxStayDays,
+          notes: updates.notes,
+        });
+        setUserVisas(prev => [...prev, newVisa]);
+        logger.info('Travel', 'Visa created', { visaId: newVisa.id });
+        showToast('Visa added successfully', 'success');
+      }
+      setIsVisaEditorOpen(false);
+      setEditingVisa(undefined);
+    } catch (error) {
+      logger.error('Travel', error instanceof Error ? error : new Error(String(error)), { context: 'saveVisa' });
+      showToast('Failed to save visa. Please try again.', 'error');
+    }
+  };
+
+  const handleDeleteVisa = async (visaId: string) => {
     try {
       await deleteVisa(visaId);
       setUserVisas(prev => prev.filter(v => v.id !== visaId));
+      setVisaToDelete(null);
+      logger.info('Travel', 'Visa deleted', { visaId });
+      showToast('Visa deleted successfully', 'success');
     } catch (error) {
       logger.error('Travel', error instanceof Error ? error : new Error(String(error)), { context: 'deleteVisa' });
-      alert('Failed to remove visa. Please try again.');
+      showToast('Failed to delete visa. Please try again.', 'error');
     }
   };
+
+  const handleRemoveVisa = handleDeleteVisa; // Keep for backward compatibility
 
   const getRequirementColor = (req: VisaRequirement): string => {
     switch (req) {
@@ -422,59 +500,21 @@ const VisaCalculator: React.FC = () => {
           <h2 className="text-xl font-semibold text-gray-900">
             {mergedConnection && allPassports.length > 1 ? 'Passports' : 'Your Passport'}
           </h2>
-          {passport && !showPassportSelector && (
-            <button
-              onClick={() => setShowPassportSelector(true)}
-              className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-            >
-              {allPassports.length > 0 ? 'Manage Passports' : 'Change Passport'}
-            </button>
-          )}
+          <button
+            onClick={handleCreatePassport}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+          >
+            + Add Passport
+          </button>
         </div>
 
-        {!passport && !showPassportSelector ? (
+        {!passport && allPassports.length === 0 ? (
           <button
-            onClick={() => setShowPassportSelector(true)}
+            onClick={handleCreatePassport}
             className="w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-500 hover:text-blue-600 transition-colors"
           >
             + Add Your Passport
           </button>
-        ) : showPassportSelector ? (
-          <div className="max-w-md space-y-3">
-            <label className="block text-sm font-medium text-gray-700">
-              Select Passport Country
-            </label>
-            <select
-              value={selectedPassportCountry}
-              onChange={(e) => setSelectedPassportCountry(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="">-- Select a country --</option>
-              {availableCountries.map(country => (
-                <option key={country} value={country}>{country}</option>
-              ))}
-            </select>
-            <div className="flex gap-2">
-              <button
-                onClick={handleSetPassport}
-                disabled={!selectedPassportCountry}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-              >
-                Save Passport
-              </button>
-              {passport && (
-                <button
-                  onClick={() => {
-                    setShowPassportSelector(false);
-                    setSelectedPassportCountry('');
-                  }}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
-                >
-                  Cancel
-                </button>
-              )}
-            </div>
-          </div>
         ) : (
           <>
             {/* Show all passports in merged mode, or just the primary one otherwise */}
@@ -526,19 +566,67 @@ const VisaCalculator: React.FC = () => {
                           Rank #{ranking.rank} globally
                         </div>
                       )}
+
+                      {/* Action buttons */}
+                      {currentUserId && p.userId === currentUserId && (
+                        <div className="flex gap-2 mt-3">
+                          <button
+                            onClick={() => handleEditPassport(p)}
+                            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                            aria-label={`Edit ${p.countryName} passport`}
+                          >
+                            Edit
+                          </button>
+                          {!p.isPrimary && (
+                            <button
+                              onClick={() => handleSetPrimaryPassport(p.id)}
+                              className="text-sm text-gray-600 hover:text-gray-700 font-medium"
+                            >
+                              Set as Primary
+                            </button>
+                          )}
+                          <button
+                            onClick={() => setPassportToDelete(p.id)}
+                            className="text-sm text-red-600 hover:text-red-700 font-medium"
+                            aria-label={`Delete ${p.countryName} passport`}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
               </div>
             ) : (
               /* Single passport view for non-merged mode */
-              <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <div className="text-4xl">{passport?.countryCode === 'US' ? '🇺🇸' : passport?.countryCode === 'IN' ? '🇮🇳' : '🌍'}</div>
-                <div>
-                  <div className="font-semibold text-gray-900">{passport?.countryName}</div>
-                  {passport?.expiryDate && (
-                    <div className="text-sm text-gray-600">
-                      Expires: {new Date(passport.expiryDate).toLocaleDateString()}
+              <div>
+                <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <div className="text-4xl">{passport?.countryCode === 'US' ? '🇺🇸' : passport?.countryCode === 'IN' ? '🇮🇳' : '🌍'}</div>
+                  <div className="flex-1">
+                    <div className="font-semibold text-gray-900">{passport?.countryName}</div>
+                    {passport?.expiryDate && (
+                      <div className="text-sm text-gray-600">
+                        Expires: {new Date(passport.expiryDate).toLocaleDateString()}
+                      </div>
+                    )}
+                  </div>
+                  {passport && currentUserId && passport.userId === currentUserId && (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleEditPassport(passport)}
+                        className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                        aria-label={`Edit ${passport.countryName} passport`}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => setPassportToDelete(passport.id)}
+                        className="text-sm text-red-600 hover:text-red-700 font-medium"
+                        aria-label={`Delete ${passport.countryName} passport`}
+                      >
+                        Delete
+                      </button>
                     </div>
                   )}
                 </div>
@@ -607,60 +695,12 @@ const VisaCalculator: React.FC = () => {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-gray-900">Your Existing Visas</h2>
           <button
-            onClick={handleToggleAddVisa}
+            onClick={handleCreateVisa}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
           >
-            {showAddVisa ? '✕ Cancel' : '+ Add Visa'}
+            + Add Visa
           </button>
         </div>
-
-        {/* Add Visa Form */}
-        {showAddVisa && (
-          <div ref={addVisaFormRef} className="bg-gray-50 rounded-lg p-4 mb-4 border-2 border-blue-300">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
-                <select
-                  value={newVisaCountry}
-                  onChange={(e) => setNewVisaCountry(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                >
-                  <option value="">-- Select country --</option>
-                  {availableCountries.map(country => (
-                    <option key={country} value={country}>{country}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Expiry Date</label>
-                <input
-                  type="date"
-                  value={newVisaExpiry}
-                  onChange={(e) => setNewVisaExpiry(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                />
-              </div>
-              <div className="flex items-end">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={newVisaMultipleEntry}
-                    onChange={(e) => setNewVisaMultipleEntry(e.target.checked)}
-                    className="w-4 h-4 text-blue-600 rounded"
-                  />
-                  <span className="text-sm text-gray-700">Multiple Entry</span>
-                </label>
-              </div>
-            </div>
-            <button
-              onClick={handleAddVisa}
-              disabled={!newVisaCountry || !newVisaExpiry}
-              className="mt-3 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
-            >
-              Add Visa
-            </button>
-          </div>
-        )}
 
         {/* Visa List */}
         {userVisas.length === 0 ? (
@@ -693,13 +733,22 @@ const VisaCalculator: React.FC = () => {
                       </div>
                     </div>
                     {isOwnVisa && (
-                      <button
-                        onClick={() => setVisaToDelete(visa.id)}
-                        className="text-red-600 hover:text-red-800 text-sm font-medium"
-                        aria-label={`Remove visa for ${visa.countryName}`}
-                      >
-                        Remove
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEditVisa(visa)}
+                          className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                          aria-label={`Edit visa for ${visa.countryName}`}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => setVisaToDelete(visa.id)}
+                          className="text-red-600 hover:text-red-800 text-sm font-medium"
+                          aria-label={`Remove visa for ${visa.countryName}`}
+                        >
+                          Remove
+                        </button>
+                      </div>
                     )}
                   </div>
                 );
@@ -759,41 +808,86 @@ const VisaCalculator: React.FC = () => {
 
           {/* Requirement Type Tabs */}
           <div className="space-y-6">
-            {(['visa-free', 'visa-on-arrival', 'eta', 'e-visa', 'visa-required', 'no-admission'] as VisaRequirement[]).map(reqType => {
-              const destinations = groupedDestinations[reqType];
-              if (destinations.length === 0) return null;
+            {filteredDestinations.length === 0 ? (
+              <div className="text-center py-12 text-gray-500">
+                <p className="text-lg mb-2">No destination data available</p>
+                <p className="text-sm">Try a different search term or check back later.</p>
+              </div>
+            ) : (
+              (['visa-free', 'visa-on-arrival', 'eta', 'e-visa', 'visa-required', 'no-admission'] as VisaRequirement[]).map(reqType => {
+                const destinations = groupedDestinations[reqType];
+                if (destinations.length === 0) return null;
 
-              return (
-                <div key={reqType}>
-                  <div className={`flex items-center gap-2 mb-3 px-3 py-2 rounded-lg ${getRequirementColor(reqType)} border`}>
-                    <h3 className="font-semibold">{getRequirementLabel(reqType)}</h3>
-                    <span className="text-sm">({destinations.length})</span>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {destinations.map(dest => (
-                      <div key={dest.country} className={`p-3 rounded-lg border ${dest.accessVia === 'visa' ? 'bg-purple-50 border-purple-200' : 'bg-gray-50 border-gray-200'}`}>
-                        <div className="flex items-start justify-between">
-                          <div className="font-medium text-gray-900">{dest.country}</div>
-                          {dest.accessVia === 'visa' && (
-                            <span className="text-xs px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded font-medium">VISA</span>
+                return (
+                  <div key={reqType}>
+                    <div className={`flex items-center gap-2 mb-3 px-3 py-2 rounded-lg ${getRequirementColor(reqType)} border`}>
+                      <h3 className="font-semibold">{getRequirementLabel(reqType)}</h3>
+                      <span className="text-sm">({destinations.length})</span>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {destinations.map(dest => (
+                        <div key={dest.country} className={`p-3 rounded-lg border ${dest.accessVia === 'visa' ? 'bg-purple-50 border-purple-200' : 'bg-gray-50 border-gray-200'}`}>
+                          <div className="flex items-start justify-between">
+                            <div className="font-medium text-gray-900">{dest.country}</div>
+                            {dest.accessVia === 'visa' && (
+                              <span className="text-xs px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded font-medium">VISA</span>
+                            )}
+                          </div>
+                          {dest.daysAllowed && (
+                            <div className="text-xs text-gray-600 mt-1">📅 Stay: {dest.daysAllowed} days</div>
+                          )}
+                          {dest.accessVia === 'visa' && dest.visaCountry && (
+                            <div className="text-xs text-purple-700 mt-1 font-medium">
+                              ✨ Via {dest.visaCountry} visa
+                            </div>
                           )}
                         </div>
-                        {dest.daysAllowed && (
-                          <div className="text-xs text-gray-600 mt-1">📅 Stay: {dest.daysAllowed} days</div>
-                        )}
-                        {dest.accessVia === 'visa' && dest.visaCountry && (
-                          <div className="text-xs text-purple-700 mt-1 font-medium">
-                            ✨ Via {dest.visaCountry} visa
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </div>
+      )}
+
+      {/* Passport Editor Modal */}
+      <PassportEditor
+        isOpen={isPassportEditorOpen}
+        onClose={() => {
+          setIsPassportEditorOpen(false);
+          setEditingPassport(undefined);
+        }}
+        onSave={handleSavePassport}
+        onDelete={handleDeletePassport}
+        passport={editingPassport}
+        availableCountries={availableCountries}
+      />
+
+      {/* Visa Editor Modal */}
+      <VisaEditor
+        isOpen={isVisaEditorOpen}
+        onClose={() => {
+          setIsVisaEditorOpen(false);
+          setEditingVisa(undefined);
+        }}
+        onSave={handleSaveVisa}
+        onDelete={handleDeleteVisa}
+        visa={editingVisa}
+        availableCountries={availableCountries}
+      />
+
+      {/* Passport deletion confirmation dialog */}
+      {passportToDelete && (
+        <ConfirmDialog
+          title="Delete Passport"
+          message="Are you sure you want to delete this passport? This action cannot be undone."
+          onConfirm={() => {
+            handleDeletePassport(passportToDelete);
+          }}
+          onCancel={() => setPassportToDelete(null)}
+        />
       )}
 
       {/* Visa deletion confirmation dialog */}
