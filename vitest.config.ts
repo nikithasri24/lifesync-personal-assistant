@@ -32,10 +32,28 @@ export default defineConfig({
     exclude: ['node_modules', 'dist', '.idea', '.git', '.cache'],
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'html'],
+      reporter: ['text', 'html', 'json-summary', 'lcov'],
       reportsDirectory: './coverage',
       include: ['src/**/*.{ts,tsx}'],
-      exclude: ['src/test/**', '**/__tests__/**', '**/*.d.ts'],
+      exclude: [
+        'src/test/**',
+        '**/__tests__/**',
+        '**/*.d.ts',
+        '**/*.config.{ts,js}',
+        '**/types/**',
+        '**/*.stories.{ts,tsx}',
+        'src/main.tsx', // Entry point
+      ],
+      // Coverage thresholds - fail if below these percentages
+      thresholds: {
+        lines: 60,      // Minimum 60% line coverage
+        functions: 55,  // Minimum 55% function coverage
+        branches: 50,   // Minimum 50% branch coverage
+        statements: 60, // Minimum 60% statement coverage
+      },
+      // Report uncovered lines
+      all: true,
+      clean: true,
     },
     server: {
       deps: {
