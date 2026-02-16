@@ -1,19 +1,55 @@
 /**
  * Life Goals API
  * CRUD operations for long-term life goals and planning
+ *
+ * Merged Mode Support:
+ * - If both users have set goals to "merged", goals from both users are shown
+ * - Use getGoalsMergedConnection() to check for merged mode
+ * - Use clearGoalsMergedConnectionCache() when connection status changes
  */
 
 import { supabase } from '../lib/supabase';
 import type { LifeGoal } from '../services/types';
 import { logger } from '../services/logger';
 import { apiCall, requireAuth, handleSupabaseResponse } from './apiWrapper';
+import { getMergedConnectionId, type MergedConnectionResult } from '../shared/api/SharedDataProvider';
+
+// ============================================
+// MERGED MODE SUPPORT
+// ============================================
+
+// Merged connection cache for Goals
+let cachedMergedConnection: MergedConnectionResult | null | undefined;
+
+/**
+ * Get merged connection for goals module.
+ * Returns connection info if both users have enabled merged mode, null otherwise.
+ */
+export async function getGoalsMergedConnection(): Promise<MergedConnectionResult | null> {
+  if (cachedMergedConnection !== undefined) {
+    return cachedMergedConnection;
+  }
+
+  cachedMergedConnection = await getMergedConnectionId('goals');
+  return cachedMergedConnection;
+}
+
+/**
+ * Clear cached merged connection.
+ * Call this when connection status changes or user logs out.
+ */
+export function clearGoalsMergedConnectionCache(): void {
+  cachedMergedConnection = undefined;
+}
 
 // =====================================================
 // LIFE GOALS CRUD OPERATIONS
 // =====================================================
 
 /**
- * Get all life goals for the current user
+ * Get all life goals for the current user.
+ * In merged mode, fetches both user's and partner's goals.
+ *
  * @param filters - Optional filters for status, category, and priority
  * @returns Promise<LifeGoal[]> - Array of life goals matching the filters
  * @throws Error if user not authenticated
@@ -27,11 +63,21 @@ export async function getLifeGoals(filters?: {
     async () => {
       const user = await requireAuth();
 
+      // Check for merged connection
+      const mergedConnection = await getGoalsMergedConnection();
+
       let query = supabase
         .from('life_goals')
         .select('*')
-        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
+
+      // If merged mode enabled, fetch both users' data
+      // Otherwise, fetch only current user's data
+      if (mergedConnection) {
+        query = query.or(`user_id.eq.${user.id},user_id.eq.${mergedConnection.partnerId}`);
+      } else {
+        query = query.eq('user_id', user.id);
+      }
 
       // Apply filters
       if (filters) {

@@ -69,11 +69,11 @@ export async function getInboxItems(status?: InboxItemStatus): Promise<InboxItem
       const { data, error } = await query;
       const validated = handleSupabaseResponse({ data, error }, 'InboxItem');
 
-      if (!isArrayOf(validated, isInboxItem)) {
+      if (!Array.isArray(validated) || !validated.every(isInboxItem)) {
         throw new ValidationError('Invalid inbox item data received');
       }
 
-      return validated;
+      return validated as InboxItem[];
     },
     { domain: 'InboxAPI', operation: 'getInboxItems', data: { status } }
   );
@@ -127,9 +127,9 @@ export async function createInboxItem(input: CreateInboxItemInput): Promise<Inbo
         throw new ValidationError('Invalid inbox item data received');
       }
 
-      return validated;
+      return validated as InboxItem;
     },
-    { domain: 'InboxAPI', operation: 'createInboxItem', data: input }
+    { domain: 'InboxAPI', operation: 'createInboxItem', data: { content: input.content } }
   );
 }
 
@@ -163,7 +163,7 @@ export async function updateInboxItem(
         throw new ValidationError('Invalid inbox item data received');
       }
 
-      return validated;
+      return validated as InboxItem;
     },
     { domain: 'InboxAPI', operation: 'updateInboxItem', data: { id, updates } }
   );
@@ -242,7 +242,7 @@ export async function processInboxItem(
         throw new ValidationError('Invalid inbox item data received');
       }
 
-      return validated;
+      return validated as InboxItem;
     },
     { domain: 'InboxAPI', operation: 'processInboxItem', data: { id, processedToType, processedToId } }
   );

@@ -40,7 +40,8 @@ export type ShareableModule =
   | 'notes'
   | 'projects'
   | 'journal'
-  | 'skincare';
+  | 'skincare'
+  | 'calendar';
 
 // =====================================================
 // CORE TYPES
@@ -270,6 +271,15 @@ export const MODULE_CONFIGS: Record<ShareableModule, ModulePermissionConfig> = {
     icon: 'Utensils',
     defaultLevel: 'none',
     supportedLevels: ['none', 'view'],
+    hasSettings: false,
+  },
+  calendar: {
+    module: 'calendar',
+    label: 'Calendar',
+    description: 'Calendar events and scheduling',
+    icon: 'Calendar',
+    defaultLevel: 'none',
+    supportedLevels: ['none', 'view', 'merged'],
     hasSettings: false,
   },
 };

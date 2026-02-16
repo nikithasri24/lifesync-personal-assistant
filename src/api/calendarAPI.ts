@@ -1,6 +1,11 @@
 /**
  * Calendar API
  * CRUD operations for calendar events with recurring support
+ *
+ * Merged Mode Support:
+ * - If both users have set calendar to "merged", events from both users are shown
+ * - Use getCalendarMergedConnection() to check for merged mode
+ * - Use clearCalendarMergedConnectionCache() when connection status changes
  */
 
 import { supabase } from '../lib/supabase';
@@ -10,7 +15,14 @@ import { logger } from '../services/logger';
 import { apiCall, requireAuth, handleSupabaseResponse } from './apiWrapper';
 import { scheduleEngine } from '../services/scheduler';
 import { DEFAULT_SCHEDULING_PREFS } from '../services/scheduling/types';
-import { fetchCalendarEvents } from './calendarData';
+import {
+  fetchCalendarEvents,
+  getCalendarMergedConnection,
+  clearCalendarMergedConnectionCache,
+} from './calendarData';
+
+// Re-export merged mode functions
+export { getCalendarMergedConnection, clearCalendarMergedConnectionCache };
 
 // =====================================================
 // CALENDAR EVENTS CRUD OPERATIONS

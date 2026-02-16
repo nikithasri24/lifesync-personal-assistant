@@ -36,6 +36,12 @@ import type {
   FocusSessionData,
 } from '../services/types';
 import type { SavedLocation, Coordinates } from '../lib/location/types';
+import type {
+  ProfileConnection,
+  ModulePermission,
+  ConnectionInvitation,
+  ConnectionWithUser,
+} from '../shared/types/connections';
 
 /**
  * Check if value is a ShoppingItem
@@ -396,17 +402,10 @@ export function isSavedLocation(value: unknown): value is SavedLocation {
 // =====================================================
 
 /**
- * Check if value is an InboxItem
+ * Check if value is an InboxItem (runtime validation only)
+ * Note: This checks structural shape. Use type assertion after validation.
  */
-export function isInboxItem(value: unknown): value is {
-  id: string;
-  user_id: string;
-  content: string;
-  suggested_type: string;
-  status: string;
-  created_at: string;
-  updated_at: string;
-} {
+export function isInboxItem(value: unknown): boolean {
   return (
     typeof value === 'object' &&
     value !== null &&
@@ -415,9 +414,15 @@ export function isInboxItem(value: unknown): value is {
     'content' in value &&
     'suggested_type' in value &&
     'status' in value &&
+    'created_at' in value &&
+    'updated_at' in value &&
     typeof (value as any).id === 'string' &&
     typeof (value as any).user_id === 'string' &&
-    typeof (value as any).content === 'string'
+    typeof (value as any).content === 'string' &&
+    typeof (value as any).suggested_type === 'string' &&
+    typeof (value as any).status === 'string' &&
+    typeof (value as any).created_at === 'string' &&
+    typeof (value as any).updated_at === 'string'
   );
 }
 
@@ -499,6 +504,93 @@ export function isBoolean(value: unknown): value is boolean {
  */
 export function isDate(value: unknown): value is Date {
   return value instanceof Date && !isNaN(value.getTime());
+}
+
+// =====================================================
+// Connection Types
+// =====================================================
+
+/**
+ * Check if value is a ProfileConnection
+ */
+export function isProfileConnection(value: unknown): value is ProfileConnection {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'id' in value &&
+    'requesterId' in value &&
+    'receiverId' in value &&
+    'relationship' in value &&
+    'status' in value &&
+    'createdAt' in value &&
+    'updatedAt' in value &&
+    typeof (value as ProfileConnection).id === 'string' &&
+    typeof (value as ProfileConnection).requesterId === 'string' &&
+    typeof (value as ProfileConnection).receiverId === 'string' &&
+    typeof (value as ProfileConnection).relationship === 'string' &&
+    typeof (value as ProfileConnection).status === 'string' &&
+    typeof (value as ProfileConnection).createdAt === 'string' &&
+    typeof (value as ProfileConnection).updatedAt === 'string'
+  );
+}
+
+/**
+ * Check if value is a ModulePermission
+ */
+export function isModulePermission(value: unknown): value is ModulePermission {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'id' in value &&
+    'connectionId' in value &&
+    'module' in value &&
+    'permissionLevel' in value &&
+    'userId' in value &&
+    'createdAt' in value &&
+    'updatedAt' in value &&
+    typeof (value as ModulePermission).id === 'string' &&
+    typeof (value as ModulePermission).connectionId === 'string' &&
+    typeof (value as ModulePermission).module === 'string' &&
+    typeof (value as ModulePermission).permissionLevel === 'string' &&
+    typeof (value as ModulePermission).userId === 'string' &&
+    typeof (value as ModulePermission).createdAt === 'string' &&
+    typeof (value as ModulePermission).updatedAt === 'string'
+  );
+}
+
+/**
+ * Check if value is a ConnectionInvitation
+ */
+export function isConnectionInvitation(value: unknown): value is ConnectionInvitation {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'id' in value &&
+    'connectionId' in value &&
+    'proposedPermissions' in value &&
+    'createdAt' in value &&
+    'expiresAt' in value &&
+    typeof (value as ConnectionInvitation).id === 'string' &&
+    typeof (value as ConnectionInvitation).connectionId === 'string' &&
+    typeof (value as ConnectionInvitation).createdAt === 'string' &&
+    typeof (value as ConnectionInvitation).expiresAt === 'string'
+  );
+}
+
+/**
+ * Check if value is a ConnectionWithUser
+ */
+export function isConnectionWithUser(value: unknown): value is ConnectionWithUser {
+  return (
+    isProfileConnection(value) &&
+    'otherUser' in value &&
+    typeof (value as ConnectionWithUser).otherUser === 'object' &&
+    (value as ConnectionWithUser).otherUser !== null &&
+    'id' in (value as ConnectionWithUser).otherUser &&
+    'email' in (value as ConnectionWithUser).otherUser &&
+    typeof (value as ConnectionWithUser).otherUser.id === 'string' &&
+    typeof (value as ConnectionWithUser).otherUser.email === 'string'
+  );
 }
 
 /**

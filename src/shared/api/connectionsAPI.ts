@@ -1,10 +1,25 @@
 /**
  * Connections API
  * CRUD operations for profile connections and permissions
+ *
+ * Migrated to modern pattern: 2026-02-16
+ * Uses apiWrapper for standardized error handling
  */
 
 import { supabase } from '../../lib/supabase';
-import { logger } from '../../services/logger';
+import { apiCall, requireAuth, handleSupabaseResponse } from '../../api/apiWrapper';
+import {
+  isProfileConnection,
+  isModulePermission,
+  isConnectionWithUser,
+  isArrayOf,
+} from '../../types/guards';
+import {
+  AuthenticationError,
+  ValidationError,
+  NotFoundError,
+  ConflictError,
+} from '../../lib/errors';
 
 import type {
   ProfileConnection,
@@ -92,37 +107,41 @@ interface DbUserLookup {
  * Get all connections for the current user
  */
 export async function getUserConnections(): Promise<ConnectionWithUser[]> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const response = await supabase.rpc('get_connections_with_users');
+      const response = await supabase.rpc('get_connections_with_users');
 
-  if (response.error) throw response.error;
+      if (response.error) throw response.error;
 
-  // Type assertion for the RPC response
-  const connections = (response.data ?? []) as DbConnectionWithUsers[];
+      // Type assertion for the RPC response
+      const connections = (response.data ?? []) as DbConnectionWithUsers[];
 
-  // Filter for active connections and sort by created_at
-  const activeConnections = connections
-    .filter((conn) => conn.status === 'active')
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      // Filter for active connections and sort by created_at
+      const activeConnections = connections
+        .filter((conn) => conn.status === 'active')
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-  return activeConnections.map((conn) => {
-    const isRequester = conn.requester_id === user.id;
-    const otherUser = isRequester ? conn.receiver_user : conn.requester_user;
+      return activeConnections.map((conn) => {
+        const isRequester = conn.requester_id === user.id;
+        const otherUser = isRequester ? conn.receiver_user : conn.requester_user;
 
-    return {
-      ...mapDbToConnection(conn),
-      otherUser: {
-        id: otherUser.id,
-        email: otherUser.email,
-        fullName: otherUser.full_name ?? undefined,
-        avatarUrl: otherUser.avatar_url ?? undefined,
-      },
-      myLabel: isRequester ? (conn.requester_label ?? undefined) : (conn.receiver_label ?? undefined),
-      theirLabel: isRequester ? (conn.receiver_label ?? undefined) : (conn.requester_label ?? undefined),
-    };
-  });
+        return {
+          ...mapDbToConnection(conn),
+          otherUser: {
+            id: otherUser.id,
+            email: otherUser.email,
+            fullName: otherUser.full_name ?? undefined,
+            avatarUrl: otherUser.avatar_url ?? undefined,
+          },
+          myLabel: isRequester ? (conn.requester_label ?? undefined) : (conn.receiver_label ?? undefined),
+          theirLabel: isRequester ? (conn.receiver_label ?? undefined) : (conn.requester_label ?? undefined),
+        };
+      });
+    },
+    { domain: 'ConnectionsAPI', operation: 'getUserConnections' }
+  );
 }
 
 /**
@@ -132,8 +151,9 @@ export async function getPendingInvitations(): Promise<{
   sent: PendingInvitation[];
   received: PendingInvitation[];
 }> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
   const response = await supabase.rpc('get_invitations_with_connections');
 
@@ -215,20 +235,24 @@ export async function getPendingInvitations(): Promise<{
     });
   }
 
-  return { sent, received };
+      return { sent, received };
+    },
+    { domain: 'ConnectionsAPI', operation: 'getPendingInvitations' }
+  );
 }
 
 /**
  * Create a new connection (send invitation)
  */
 export async function createConnection(input: CreateConnectionInput): Promise<ProfileConnection> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  // Check if trying to connect to yourself
-  if (input.receiverEmail.toLowerCase() === user.email?.toLowerCase()) {
-    throw new Error('You cannot connect with yourself');
-  }
+      // Check if trying to connect to yourself
+      if (input.receiverEmail.toLowerCase() === user.email?.toLowerCase()) {
+        throw new ConflictError('You cannot connect with yourself');
+      }
 
   // Try to find receiver by email using RPC function
   const { data: receiverData, error: lookupError } = await supabase
@@ -252,7 +276,7 @@ export async function createConnection(input: CreateConnectionInput): Promise<Pr
       .single();
 
     if (connectionResponse.error) throw connectionResponse.error;
-    if (!connectionResponse.data) throw new Error('Failed to create connection');
+    if (!connectionResponse.data) throw new ValidationError('Failed to create connection');
 
     const connection = connectionResponse.data as DbConnection;
 
@@ -335,7 +359,7 @@ export async function createConnection(input: CreateConnectionInput): Promise<Pr
       pendingInvitation = created;
     }
 
-    if (!pendingInvitation) throw new Error('Failed to create pending invitation');
+    if (!pendingInvitation) throw new ValidationError('Failed to create pending invitation');
 
     // Send email invitation to join LifeSync
     // Note: Email function is optional - invitation still works without it
@@ -374,71 +398,82 @@ export async function createConnection(input: CreateConnectionInput): Promise<Pr
       updatedAt: pendingInvitation.created_at,
       isPending: true,
     };
-  }
+      }
+    },
+    { domain: 'ConnectionsAPI', operation: 'createConnection', data: { receiverEmail: input.receiverEmail } }
+  );
 }
 
 /**
  * Accept a connection invitation
  */
 export async function acceptConnection(input: AcceptConnectionInput): Promise<ProfileConnection> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  // Update connection status
-  const response = await supabase
-    .from('profile_connections')
-    .update({
-      status: 'active',
-      accepted_at: new Date().toISOString(),
-      receiver_label: input.label,
-    })
-    .eq('id', input.connectionId)
-    .eq('receiver_id', user.id)
-    .select()
-    .single();
-
-  if (response.error) throw response.error;
-  if (!response.data) throw new Error('Failed to accept connection');
-
-  // Type assertion for the database response
-  const connection = response.data as DbConnection;
-
-  // Set initial permissions if provided
-  if (input.permissions) {
-    await Promise.all(
-      Object.entries(input.permissions).map(([module, level]) =>
-        setModulePermission({
-          connectionId: input.connectionId,
-          module: module as ShareableModule,
-          permissionLevel: level,
+      // Update connection status
+      const response = await supabase
+        .from('profile_connections')
+        .update({
+          status: 'active',
+          accepted_at: new Date().toISOString(),
+          receiver_label: input.label,
         })
-      )
-    );
-  }
+        .eq('id', input.connectionId)
+        .eq('receiver_id', user.id)
+        .select()
+        .single();
 
-  // Delete invitation
-  await supabase
-    .from('connection_invitations')
-    .delete()
-    .eq('connection_id', input.connectionId);
+      if (response.error) throw response.error;
+      if (!response.data) throw new NotFoundError('Connection', input.connectionId);
 
-  return mapDbToConnection(connection);
+      // Type assertion for the database response
+      const connection = response.data as DbConnection;
+
+      // Set initial permissions if provided
+      if (input.permissions) {
+        await Promise.all(
+          Object.entries(input.permissions).map(([module, level]) =>
+            setModulePermission({
+              connectionId: input.connectionId,
+              module: module as ShareableModule,
+              permissionLevel: level,
+            })
+          )
+        );
+      }
+
+      // Delete invitation
+      await supabase
+        .from('connection_invitations')
+        .delete()
+        .eq('connection_id', input.connectionId);
+
+      return mapDbToConnection(connection);
+    },
+    { domain: 'ConnectionsAPI', operation: 'acceptConnection', data: { connectionId: input.connectionId } }
+  );
 }
 
 /**
  * Reject/decline a connection invitation
  */
 export async function rejectConnection(connectionId: string): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { error } = await supabase
-    .from('profile_connections')
-    .delete()
-    .eq('id', connectionId)
-    .eq('receiver_id', user.id);
+      const { error } = await supabase
+        .from('profile_connections')
+        .delete()
+        .eq('id', connectionId)
+        .eq('receiver_id', user.id);
 
-  if (error) throw error;
+      if (error) throw error;
+    },
+    { domain: 'ConnectionsAPI', operation: 'rejectConnection', data: { connectionId } }
+  );
 }
 
 /**
@@ -448,61 +483,69 @@ export async function updateConnection(
   connectionId: string,
   input: UpdateConnectionInput
 ): Promise<ProfileConnection> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  // Get connection to determine if user is requester or receiver
-  const { data: conn } = await supabase
-    .from('profile_connections')
-    .select('requester_id, receiver_id')
-    .eq('id', connectionId)
-    .single();
+      // Get connection to determine if user is requester or receiver
+      const { data: conn } = await supabase
+        .from('profile_connections')
+        .select('requester_id, receiver_id')
+        .eq('id', connectionId)
+        .single();
 
-  if (!conn) throw new Error('Connection not found');
+      if (!conn) throw new NotFoundError('Connection', connectionId);
 
-  // Type assertion for the partial connection response
-  const partialConn = conn as Pick<DbConnection, 'requester_id' | 'receiver_id'>;
-  const isRequester = partialConn.requester_id === user.id;
+      // Type assertion for the partial connection response
+      const partialConn = conn as Pick<DbConnection, 'requester_id' | 'receiver_id'>;
+      const isRequester = partialConn.requester_id === user.id;
 
-  const updateData: Partial<Pick<DbConnection, 'relationship' | 'notes' | 'requester_label' | 'receiver_label'>> = {};
-  if (input.relationship) updateData.relationship = input.relationship;
-  if (input.notes !== undefined) updateData.notes = input.notes;
-  if (input.label !== undefined) {
-    if (isRequester) {
-      updateData.requester_label = input.label;
-    } else {
-      updateData.receiver_label = input.label;
-    }
-  }
+      const updateData: Partial<Pick<DbConnection, 'relationship' | 'notes' | 'requester_label' | 'receiver_label'>> = {};
+      if (input.relationship) updateData.relationship = input.relationship;
+      if (input.notes !== undefined) updateData.notes = input.notes;
+      if (input.label !== undefined) {
+        if (isRequester) {
+          updateData.requester_label = input.label;
+        } else {
+          updateData.receiver_label = input.label;
+        }
+      }
 
-  const response = await supabase
-    .from('profile_connections')
-    .update(updateData)
-    .eq('id', connectionId)
-    .select()
-    .single();
+      const response = await supabase
+        .from('profile_connections')
+        .update(updateData)
+        .eq('id', connectionId)
+        .select()
+        .single();
 
-  if (response.error) throw response.error;
-  if (!response.data) throw new Error('Failed to update connection');
+      if (response.error) throw response.error;
+      if (!response.data) throw new ValidationError('Failed to update connection');
 
-  // Type assertion for the database response
-  const connection = response.data as DbConnection;
-  return mapDbToConnection(connection);
+      // Type assertion for the database response
+      const connection = response.data as DbConnection;
+      return mapDbToConnection(connection);
+    },
+    { domain: 'ConnectionsAPI', operation: 'updateConnection', data: { connectionId } }
+  );
 }
 
 /**
  * Delete/end a connection
  */
 export async function deleteConnection(connectionId: string): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { error } = await supabase
-    .from('profile_connections')
-    .delete()
-    .eq('id', connectionId);
+      const { error } = await supabase
+        .from('profile_connections')
+        .delete()
+        .eq('id', connectionId);
 
-  if (error) throw error;
+      if (error) throw error;
+    },
+    { domain: 'ConnectionsAPI', operation: 'deleteConnection', data: { connectionId } }
+  );
 }
 
 // =====================================================
@@ -515,28 +558,32 @@ export async function deleteConnection(connectionId: string): Promise<void> {
 export async function getConnectionPermissions(
   connectionId: string
 ): Promise<{ myPermissions: ModulePermission[]; theirPermissions: ModulePermission[] }> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const response = await supabase
-    .from('module_permissions')
-    .select('*')
-    .eq('connection_id', connectionId);
+      const response = await supabase
+        .from('module_permissions')
+        .select('*')
+        .eq('connection_id', connectionId);
 
-  if (response.error) throw response.error;
+      if (response.error) throw response.error;
 
-  // Type assertion for the database response
-  const permissions = (response.data ?? []) as DbPermission[];
+      // Type assertion for the database response
+      const permissions = (response.data ?? []) as DbPermission[];
 
-  const myPermissions = permissions
-    .filter((p) => p.user_id === user.id)
-    .map(mapDbToPermission);
+      const myPermissions = permissions
+        .filter((p) => p.user_id === user.id)
+        .map(mapDbToPermission);
 
-  const theirPermissions = permissions
-    .filter((p) => p.user_id !== user.id)
-    .map(mapDbToPermission);
+      const theirPermissions = permissions
+        .filter((p) => p.user_id !== user.id)
+        .map(mapDbToPermission);
 
-  return { myPermissions, theirPermissions };
+      return { myPermissions, theirPermissions };
+    },
+    { domain: 'ConnectionsAPI', operation: 'getConnectionPermissions', data: { connectionId } }
+  );
 }
 
 /**
@@ -548,32 +595,36 @@ export async function setModulePermission(input: {
   permissionLevel: ModulePermissionLevel;
   settings?: Record<string, unknown>;
 }): Promise<ModulePermission> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const response = await supabase
-    .from('module_permissions')
-    .upsert(
-      {
-        connection_id: input.connectionId,
-        module: input.module,
-        permission_level: input.permissionLevel,
-        user_id: user.id,
-        settings: input.settings ?? {},
-      },
-      {
-        onConflict: 'connection_id,module,user_id',
-      }
-    )
-    .select()
-    .single();
+      const response = await supabase
+        .from('module_permissions')
+        .upsert(
+          {
+            connection_id: input.connectionId,
+            module: input.module,
+            permission_level: input.permissionLevel,
+            user_id: user.id,
+            settings: input.settings ?? {},
+          },
+          {
+            onConflict: 'connection_id,module,user_id',
+          }
+        )
+        .select()
+        .single();
 
-  if (response.error) throw response.error;
-  if (!response.data) throw new Error('Failed to set module permission');
+      if (response.error) throw response.error;
+      if (!response.data) throw new ValidationError('Failed to set module permission');
 
-  // Type assertion for the database response
-  const permission = response.data as DbPermission;
-  return mapDbToPermission(permission);
+      // Type assertion for the database response
+      const permission = response.data as DbPermission;
+      return mapDbToPermission(permission);
+    },
+    { domain: 'ConnectionsAPI', operation: 'setModulePermission', data: { connectionId: input.connectionId, module: input.module } }
+  );
 }
 
 /**
@@ -603,17 +654,21 @@ export async function deleteModulePermission(
   connectionId: string,
   module: ShareableModule
 ): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { error } = await supabase
-    .from('module_permissions')
-    .delete()
-    .eq('connection_id', connectionId)
-    .eq('module', module)
-    .eq('user_id', user.id);
+      const { error } = await supabase
+        .from('module_permissions')
+        .delete()
+        .eq('connection_id', connectionId)
+        .eq('module', module)
+        .eq('user_id', user.id);
 
-  if (error) throw error;
+      if (error) throw error;
+    },
+    { domain: 'ConnectionsAPI', operation: 'deleteModulePermission', data: { connectionId, module } }
+  );
 }
 
 // =====================================================
