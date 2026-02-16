@@ -16,12 +16,29 @@ import {
   deleteLogEntry,
   getActiveGoal,
   setNutritionGoal,
+  getNutritionMergedConnection,
   type FoodItem,
   type FoodLogEntry,
   type NutritionGoal,
   type LogFoodInput,
 } from '@/api/nutritionAPI';
 import { logger } from '@/services/logger';
+
+// ==================== Merged Mode ====================
+
+/**
+ * Hook to check if nutrition merged mode is enabled
+ * Returns connection info if both users have enabled merged mode, null otherwise
+ */
+export function useMergedNutritionConnectionQuery() {
+  return useQuery({
+    queryKey: ['nutrition', 'mergedConnection'],
+    queryFn: getNutritionMergedConnection,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    gcTime: 1000 * 60 * 10, // 10 minutes
+    retry: 1,
+  });
+}
 
 // ==================== Query Keys ====================
 

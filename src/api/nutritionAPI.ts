@@ -1,12 +1,21 @@
 /**
- * Nutrition API
+ * Nutrition API with Merged Mode Support
  * CRUD operations for food tracking, meals, and nutrition goals
+ *
+ * Merged Mode: When both users in a connection set this module to "merged",
+ * the API fetches food logs for both users. RLS policies ensure proper access control.
+ *
+ * Implementation:
+ * - getNutritionMergedConnection() checks if merged mode is enabled
+ * - Fetch functions include partner's food logs when merged
+ * - RLS policies on food_log table handle security
  */
 
 import { supabase } from '../lib/supabase';
 import { logger } from '../services/logger';
 import { format } from 'date-fns';
 import { apiCall, requireAuth, handleSupabaseResponse } from './apiWrapper';
+import { getMergedConnectionId, type MergedConnectionResult } from '../shared/api/SharedDataProvider';
 
 // =====================================================
 // TYPES
@@ -80,6 +89,41 @@ export interface LogFoodInput {
   image_url?: string;
   ai_analyzed?: boolean;
   ai_confidence?: number;
+}
+
+// =====================================================
+// MERGED MODE SUPPORT
+// =====================================================
+
+// Merged connection cache for Nutrition
+let cachedMergedConnection: MergedConnectionResult | null | undefined;
+
+/**
+ * Get merged connection for nutrition module
+ * Returns connection info if both users have enabled merged mode, null otherwise
+ */
+export async function getNutritionMergedConnection(): Promise<MergedConnectionResult | null> {
+  if (cachedMergedConnection !== undefined) {
+    logger.debug('NutritionAPI', 'Returning cached merged connection', { cached: cachedMergedConnection });
+    return cachedMergedConnection;
+  }
+
+  logger.debug('NutritionAPI', 'Fetching nutrition merged connection');
+  cachedMergedConnection = await getMergedConnectionId('nutrition');
+  logger.info('NutritionAPI', 'Nutrition merged connection fetched', {
+    hasMergedMode: !!cachedMergedConnection,
+    partnerId: cachedMergedConnection?.partnerId
+  });
+
+  return cachedMergedConnection;
+}
+
+/**
+ * Clear cached merged connection (call when connection status changes)
+ */
+export function clearNutritionMergedConnectionCache(): void {
+  logger.debug('NutritionAPI', 'Clearing nutrition merged connection cache');
+  cachedMergedConnection = undefined;
 }
 
 // =====================================================
@@ -179,21 +223,42 @@ export async function logFood(input: LogFoodInput): Promise<FoodLogEntry> {
 }
 
 /**
- * Get food log for a specific date
+ * Get food log for a specific date (supports merged mode)
+ * In merged mode, returns both users' food logs for comparison and shared tracking
  */
 export async function getDailyLog(date: string): Promise<FoodLogEntry[]> {
   return apiCall(
     async () => {
       const user = await requireAuth();
 
-      const { data, error } = await supabase
+      // Check for merged connection
+      const mergedConnection = await getNutritionMergedConnection();
+
+      let query = supabase
         .from('food_log')
         .select('*')
-        .eq('user_id', user.id)
         .eq('logged_date', date)
         .order('logged_time', { ascending: true });
 
+      // If merged mode, get both users' logs
+      // Otherwise, just get current user's logs
+      if (mergedConnection) {
+        logger.debug('NutritionAPI', 'Merged mode enabled - fetching food logs for both users');
+        query = query.or(`user_id.eq.${user.id},user_id.eq.${mergedConnection.partnerId}`);
+      } else {
+        query = query.eq('user_id', user.id);
+      }
+
+      const { data, error } = await query;
+
       if (error) throw error;
+
+      logger.info('NutritionAPI', 'Fetched daily log', {
+        count: data?.length ?? 0,
+        date,
+        mergedMode: !!mergedConnection
+      });
+
       return data as FoodLogEntry[];
     },
     { domain: 'NutritionAPI', operation: 'getDailyLog', data: { date } }
