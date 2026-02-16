@@ -206,7 +206,7 @@ export async function getProjectMilestones(projectId: string): Promise<ProjectMi
         .eq('user_id', user.id)
         .single();
 
-      if (!project) throw new NotFoundError('Project', projectId);
+      if (!project) throw new NotFoundError('Project', milestone.project_id);
 
       const { data, error } = await supabase
         .from('project_milestones')
@@ -239,7 +239,7 @@ export async function createMilestone(
         .eq('user_id', user.id)
         .single();
 
-      if (!project) throw new NotFoundError('Project', projectId);
+      if (!project) throw new NotFoundError('Project', milestone.project_id);
 
       // Sanitize payload
       const sanitizedMilestone = {
@@ -339,7 +339,7 @@ export async function getProjectTasks(projectId: string): Promise<string[]> {
         .eq('user_id', user.id)
         .single();
 
-      if (!project) throw new NotFoundError('Project', projectId);
+      if (!project) throw new NotFoundError('Project', milestone.project_id);
 
       const { data, error } = await supabase
         .from('project_tasks')

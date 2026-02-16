@@ -1,15 +1,15 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import Layout from '../Layout';
-import { useAppStore } from '../../stores/useAppStore';
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { useComposedStore } from '../../stores/useComposedStore';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
-vi.mock('../../stores/useAppStore');
+vi.mock('../../stores/useComposedStore');
 
 const setActiveView = vi.fn();
 const setSidebarCollapsed = vi.fn();
 
 function mockStore(overrides: Record<string, unknown> = {}) {
-  vi.mocked(useAppStore).mockReturnValue({
+  vi.mocked(useComposedStore).mockReturnValue({
     activeView: 'dashboard',
     setActiveView,
     sidebarCollapsed: false,

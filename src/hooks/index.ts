@@ -16,6 +16,7 @@ export * from './useLocalStorage';
 export * from './useLocation';
 export * from './useNotifications';
 export * from './useOptimization';
+export * from './useOwnerInfo';
 export * from './usePlatform';
 export * from './usePushNotifications';
 export * from './useReminders';

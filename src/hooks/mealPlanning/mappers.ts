@@ -28,6 +28,7 @@ import type {
   PantryItemInput,
   PantryItemUpdate,
 } from './types';
+import { sanitizeInput, sanitizeText, sanitizeArray } from '@/utils/sanitize';
 import type { PantryItem } from '@/types';
 
 // ==================== Constants ====================
@@ -255,42 +256,50 @@ export function mapBacklogItemFromAPI(data: MealBacklogData): MealBacklogItem {
 
 export function buildRecipeInsertPayload(input: RecipeInput) {
   return sanitize({
-    name: input.name,
-    description: input.description ?? '',
-    cuisine: input.cuisine ?? null,
+    name: sanitizeInput(input.name),
+    description: sanitizeText(input.description ?? ''),
+    cuisine: input.cuisine ? sanitizeInput(input.cuisine) : null,
     difficulty: input.difficulty ?? 'medium',
     prep_time: input.prepTime ?? null,
     cook_time: input.cookTime ?? null,
     servings: input.servings ?? 1,
     calories_per_serving: input.calories ?? null,
-    instructions: input.instructions.join('\n'),
+    instructions: sanitizeArray(input.instructions).join('\n'),
     ingredients: Array.isArray(input.ingredients) && input.ingredients.length > 0
-      ? input.ingredients.map((ing) => ({ name: ing.name, amount: ing.amount ?? undefined, unit: ing.unit ?? undefined }))
+      ? input.ingredients.map((ing) => ({
+          name: sanitizeInput(ing.name),
+          amount: ing.amount ?? undefined,
+          unit: ing.unit ? sanitizeInput(ing.unit) : undefined
+        }))
       : null,
-    tags: input.tags ?? [],
+    tags: sanitizeArray(input.tags ?? []),
     is_favorite: input.isFavorite ?? false,
-    dietary_restrictions: input.dietaryRestrictions ?? [],
+    dietary_restrictions: sanitizeArray(input.dietaryRestrictions ?? []),
     nutrition_info: input.nutritionInfo ?? null,
   });
 }
 
 export function buildRecipeUpdatePayload(updates: RecipeUpdate) {
   return sanitize({
-    name: updates.name,
-    description: updates.description,
-    cuisine: updates.cuisine,
+    name: updates.name ? sanitizeInput(updates.name) : undefined,
+    description: updates.description ? sanitizeText(updates.description) : undefined,
+    cuisine: updates.cuisine ? sanitizeInput(updates.cuisine) : undefined,
     difficulty: updates.difficulty,
     prep_time: updates.prepTime,
     cook_time: updates.cookTime,
     servings: updates.servings,
     calories_per_serving: updates.calories,
-    instructions: updates.instructions ? updates.instructions.join('\n') : undefined,
+    instructions: updates.instructions ? sanitizeArray(updates.instructions).join('\n') : undefined,
     ingredients: updates.ingredients
-      ? updates.ingredients.map((ing) => ({ name: ing.name, amount: ing.amount ?? undefined, unit: ing.unit ?? undefined }))
+      ? updates.ingredients.map((ing) => ({
+          name: sanitizeInput(ing.name),
+          amount: ing.amount ?? undefined,
+          unit: ing.unit ? sanitizeInput(ing.unit) : undefined
+        }))
       : undefined,
-    tags: updates.tags,
+    tags: updates.tags ? sanitizeArray(updates.tags) : undefined,
     is_favorite: updates.isFavorite,
-    dietary_restrictions: updates.dietaryRestrictions,
+    dietary_restrictions: updates.dietaryRestrictions ? sanitizeArray(updates.dietaryRestrictions) : undefined,
     nutrition_info: updates.nutritionInfo,
   });
 }
@@ -319,11 +328,11 @@ export function buildPlannedMealInsertPayload(planId: string, meal: PlannedMealI
     meal_type: meal.mealType,
     date: formatDate(meal.date, 'yyyy-MM-dd'),
     recipe_id: meal.recipeId && meal.recipeId.trim() !== '' ? meal.recipeId : null,
-    custom_meal: meal.customMeal && meal.customMeal.trim() !== '' ? meal.customMeal : null,
+    custom_meal: meal.customMeal && meal.customMeal.trim() !== '' ? sanitizeInput(meal.customMeal) : null,
     servings: meal.servings,
     people_count: meal.peopleCount,
     status: meal.status ?? 'planned',
-    notes: meal.notes ?? undefined,
+    notes: meal.notes ? sanitizeText(meal.notes) : undefined,
   });
 }
 
@@ -332,15 +341,15 @@ export function buildPlannedMealUpdatePayload(updates: PlannedMealUpdate) {
     date: updates.date ? formatDate(updates.date, 'yyyy-MM-dd') : undefined,
     meal_type: updates.mealType,
     recipe_id: updates.recipeId !== undefined ? (updates.recipeId?.trim() !== '' ? updates.recipeId : null) : undefined,
-    custom_meal: updates.customMeal !== undefined ? (updates.customMeal?.trim() !== '' ? updates.customMeal : null) : undefined,
+    custom_meal: updates.customMeal !== undefined ? (updates.customMeal?.trim() !== '' ? sanitizeInput(updates.customMeal) : null) : undefined,
     servings: updates.servings,
     people_count: updates.peopleCount,
     status: updates.status,
-    notes: updates.notes,
+    notes: updates.notes ? sanitizeText(updates.notes) : undefined,
     actual_food_log_id: updates.actualFoodLogId,
-    substituted_with: updates.substitutedWith,
+    substituted_with: updates.substitutedWith ? sanitizeInput(updates.substitutedWith) : undefined,
     is_postponed: updates.isPostponed,
-    postponed_reason: updates.postponedReason,
+    postponed_reason: updates.postponedReason ? sanitizeText(updates.postponedReason) : undefined,
     original_date: updates.originalDate ? formatDate(updates.originalDate, 'yyyy-MM-dd') : undefined,
     prepared_at: updates.preparedAt ? updates.preparedAt.toISOString() : undefined,
     consumed_at: updates.consumedAt ? updates.consumedAt.toISOString() : undefined,
@@ -349,13 +358,13 @@ export function buildPlannedMealUpdatePayload(updates: PlannedMealUpdate) {
 
 export function buildPantryItemInsertPayload(item: PantryItemInput) {
   return sanitize({
-    name: item.name,
+    name: sanitizeInput(item.name),
     quantity: item.quantity,
-    unit: item.unit ?? null,
+    unit: item.unit ? sanitizeInput(item.unit) : null,
     category: item.category,
-    location: item.location ?? null,
+    location: item.location ? sanitizeInput(item.location) : null,
     expiration_date: item.expirationDate ? item.expirationDate.toISOString() : null,
-    notes: item.notes ?? null,
+    notes: item.notes ? sanitizeText(item.notes) : null,
     is_low_stock: item.isLowStock ?? null,
     low_stock_threshold: item.lowStockThreshold ?? null,
   });
@@ -363,13 +372,13 @@ export function buildPantryItemInsertPayload(item: PantryItemInput) {
 
 export function buildPantryItemUpdatePayload(updates: PantryItemUpdate) {
   return sanitize({
-    name: updates.name,
+    name: updates.name ? sanitizeInput(updates.name) : undefined,
     quantity: updates.quantity,
-    unit: updates.unit,
+    unit: updates.unit ? sanitizeInput(updates.unit) : undefined,
     category: updates.category,
-    location: updates.location,
+    location: updates.location ? sanitizeInput(updates.location) : undefined,
     expiration_date: updates.expirationDate ? updates.expirationDate.toISOString() : undefined,
-    notes: updates.notes,
+    notes: updates.notes ? sanitizeText(updates.notes) : undefined,
     is_low_stock: updates.isLowStock,
     low_stock_threshold: updates.lowStockThreshold,
   });

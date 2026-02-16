@@ -6,15 +6,11 @@ describe('ProjectTracking', () => {
     render(<ProjectTracking />);
 
     expect(
-      screen.getByRole('heading', { name: /project tracking/i })
+      screen.getByRole('heading', { name: /projects/i })
     ).toBeInTheDocument();
 
     expect(
-      screen.getByText(/a slimmer project view is on the roadmap/i)
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByText(/kanban lanes, swimlanes, and dependency visualisation/i)
+      screen.getByText(/create your first project to start tracking/i)
     ).toBeInTheDocument();
   });
 });

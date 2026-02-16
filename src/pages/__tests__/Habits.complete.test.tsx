@@ -1,63 +1,142 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 import React from 'react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
-const completeHabit = vi.fn()
-const resetHabitToday = vi.fn()
-const resetHabitHistory = vi.fn()
-const deleteHabit = vi.fn()
+const createHabitEntryMock = vi.fn()
+const deleteHabitEntriesForDateMock = vi.fn()
+const deleteAllHabitEntriesMock = vi.fn()
+const deleteHabitMock = vi.fn()
 
-vi.mock('../../stores/useAppStore', () => ({
-  useAppStore: () => ({
-    habitCategories: [{ id: 'general', name: 'General' }],
-    habits: [
+vi.mock('../../hooks/useHabitsQuery', () => ({
+  useHabits: () => ({
+    data: [
       {
         id: 'h1',
         name: 'Drink water',
         description: '8 glasses',
         frequency: 'daily',
-        targetCount: 1,
-        categoryId: 'general',
+        target_count: 1,
+        category_id: 'general',
+        icon: '💧',
         color: '#22c55e',
-        currentProgress: 0,
-        streak: 0,
-        completions: [],
-        createdAt: new Date(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       },
     ],
-    addHabit: vi.fn(),
-    updateHabit: vi.fn(),
-    completeHabit,
-    resetHabitToday,
-    resetHabitHistory,
-    deleteHabit,
+    isLoading: false,
+    error: null,
+  }),
+  useHabit: () => ({
+    data: null,
+    isLoading: false,
+    error: null,
+  }),
+  useHabitEntries: () => ({
+    data: [],
+    isLoading: false,
+    error: null,
+  }),
+  useHabitEntriesForHabit: () => ({
+    data: [],
+    isLoading: false,
+    error: null,
+  }),
+  useCreateHabit: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+  useUpdateHabit: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+  useDeleteHabit: () => ({
+    mutate: deleteHabitMock,
+    isPending: false,
+  }),
+  useCreateHabitEntry: () => ({
+    mutate: createHabitEntryMock,
+    isPending: false,
+  }),
+  useUpdateHabitEntry: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+  useDeleteHabitEntry: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+  useDeleteHabitEntriesForDate: () => ({
+    mutate: deleteHabitEntriesForDateMock,
+    isPending: false,
+  }),
+  useDeleteHabitEntriesForDateRange: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+  useDeleteAllHabitEntries: () => ({
+    mutate: deleteAllHabitEntriesMock,
+    isPending: false,
+  }),
+}))
+
+vi.mock('../../hooks/useHabitCategories', () => ({
+  useHabitCategories: () => ({
+    data: [{ id: 'general', name: 'General', icon: '📋', color: '#6b7280' }],
+    isLoading: false,
+    error: null,
+  }),
+  useCreateHabitCategory: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+  useUpdateHabitCategory: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+  useDeleteHabitCategory: () => ({
+    mutate: vi.fn(),
+    isPending: false,
   }),
 }))
 
 describe('Habits interactions', () => {
   it('completes, resets and deletes a habit', async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    })
+
     const mod = await import('../Habits')
     const Habits = mod.default
-    render(<Habits />)
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <Habits />
+      </QueryClientProvider>
+    )
 
     // Complete today
     const completeBtn = screen.getByRole('button', { name: /complete today/i })
     fireEvent.click(completeBtn)
-    expect(completeHabit).toHaveBeenCalledWith('h1')
+    expect(createHabitEntryMock).toHaveBeenCalledWith(expect.objectContaining({
+      habit_id: 'h1'
+    }))
 
     // Reset today
     const resetTodayBtn = screen.getByRole('button', { name: /reset today/i })
     fireEvent.click(resetTodayBtn)
-    expect(resetHabitToday).toHaveBeenCalledWith('h1')
+    expect(deleteHabitEntriesForDateMock).toHaveBeenCalledWith(expect.objectContaining({
+      habitId: 'h1'
+    }))
 
     // Reset streak/history
     const resetHistoryBtn = screen.getByRole('button', { name: /reset streak/i })
     fireEvent.click(resetHistoryBtn)
-    expect(resetHabitHistory).toHaveBeenCalledWith('h1')
+    expect(deleteAllHabitEntriesMock).toHaveBeenCalledWith('h1')
 
     // Delete
     const deleteBtn = screen.getByRole('button', { name: /delete habit/i })
     fireEvent.click(deleteBtn)
-    expect(deleteHabit).toHaveBeenCalledWith('h1')
+    expect(deleteHabitMock).toHaveBeenCalledWith('h1')
   })
 })

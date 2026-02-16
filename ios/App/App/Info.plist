@@ -2,12 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>CAPACITOR_DEBUG</key>
+	<key>CAPACITOR_DEBUG</key>
 	<string>$(CAPACITOR_DEBUG)</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-        <string>LifeSync</string>
+	<string>LifeSync</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -24,6 +24,28 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCalendarsUsageDescription</key>
+	<string>LifeSync syncs with your calendar to show events in your daily briefing and avoid scheduling conflicts.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>LifeSync uses Face ID to protect your private journal entries and financial data.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>LifeSync reads your health data (steps, sleep, activity) to provide personalized wellness insights and track your health goals.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>LifeSync can write health data to help you track manually entered wellness metrics.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>LifeSync uses your location in the background to remind you about errands when you're near relevant stores.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>LifeSync uses your location to provide commute estimates, location-based reminders, and nearby errand suggestions.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>LifeSync needs microphone access to enable voice commands and voice notes for quick capture.</string>
+	<key>NSRemindersUsageDescription</key>
+	<string>LifeSync can sync with your Reminders to import and manage tasks.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>LifeSync uses speech recognition to let you create tasks, log habits, and interact with your AI assistant using your voice.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
@@ -47,43 +69,5 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
-
-	<!-- Speech Recognition Permission -->
-	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>LifeSync uses speech recognition to let you create tasks, log habits, and interact with your AI assistant using your voice.</string>
-
-	<!-- Microphone Permission -->
-	<key>NSMicrophoneUsageDescription</key>
-	<string>LifeSync needs microphone access to enable voice commands and voice notes for quick capture.</string>
-
-	<!-- HealthKit Permission -->
-	<key>NSHealthShareUsageDescription</key>
-	<string>LifeSync reads your health data (steps, sleep, activity) to provide personalized wellness insights and track your health goals.</string>
-	<key>NSHealthUpdateUsageDescription</key>
-	<string>LifeSync can write health data to help you track manually entered wellness metrics.</string>
-
-	<!-- Push Notifications -->
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>remote-notification</string>
-	</array>
-
-	<!-- Location Permission (for commute/errand features) -->
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>LifeSync uses your location to provide commute estimates, location-based reminders, and nearby errand suggestions.</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>LifeSync uses your location in the background to remind you about errands when you're near relevant stores.</string>
-
-	<!-- Calendar Access -->
-	<key>NSCalendarsUsageDescription</key>
-	<string>LifeSync syncs with your calendar to show events in your daily briefing and avoid scheduling conflicts.</string>
-
-	<!-- Reminders Access -->
-	<key>NSRemindersUsageDescription</key>
-	<string>LifeSync can sync with your Reminders to import and manage tasks.</string>
-
-	<!-- Face ID (for secure data) -->
-	<key>NSFaceIDUsageDescription</key>
-	<string>LifeSync uses Face ID to protect your private journal entries and financial data.</string>
 </dict>
 </plist>

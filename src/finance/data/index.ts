@@ -1,4 +1,5 @@
 import type { FinanceAPI } from './api';
+import { ValidationError } from '@/lib/errors';
 
 export async function getFinanceAPI(): Promise<FinanceAPI> {
   const url = typeof import.meta.env?.VITE_SUPABASE_URL === 'string'
@@ -9,7 +10,7 @@ export async function getFinanceAPI(): Promise<FinanceAPI> {
     ? import.meta.env.VITE_SUPABASE_ANON_KEY
     : undefined;
 
-  if (!url || !key) throw new Error('Supabase URL/Anon key missing');
+  if (!url || !key) throw new ValidationError('Supabase URL/Anon key missing - check environment configuration');
 
   const [{ createClient }, { SupabaseApi }] = await Promise.all([
     import('@supabase/supabase-js'),

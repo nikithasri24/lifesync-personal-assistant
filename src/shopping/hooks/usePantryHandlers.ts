@@ -5,6 +5,7 @@
 
 import { useCallback } from 'react';
 import type { UseShoppingMutationsReturn } from './useShoppingMutations';
+import type { PantryItem } from '@/types';
 
 export interface PantryItemInput {
   name: string;
@@ -18,8 +19,11 @@ export interface UsePantryHandlersParams {
   showToast: (message: string, type: 'success' | 'error' | 'info') => void;
 }
 
+// Type for creating a new pantry item (omits id and updatedAt)
+export type PantryItemCreateInput = Omit<PantryItem, 'id' | 'updatedAt'>;
+
 export interface UsePantryHandlersReturn {
-  handleAddPantryItem: (item: any) => Promise<void>;
+  handleAddPantryItem: (item: Partial<PantryItemCreateInput>) => Promise<void>;
   handleAddToPantry: (items: PantryItemInput[]) => Promise<void>;
   handleLogExpense: (_amount: number, _merchant: string) => Promise<void>;
 }
@@ -30,7 +34,7 @@ export interface UsePantryHandlersReturn {
 export function usePantryHandlers(params: UsePantryHandlersParams): UsePantryHandlersReturn {
   const { createPantryItem, showToast } = params;
 
-  const handleAddPantryItem = useCallback(async (item: any): Promise<void> => {
+  const handleAddPantryItem = useCallback(async (item: Partial<PantryItemCreateInput>): Promise<void> => {
     await createPantryItem.mutateAsync({
       ...item,
       createdAt: new Date()

@@ -7,7 +7,8 @@ const today = new Date().toISOString().split('T')[0]
 const entry = (id: string) => ({
   id,
   habit_id: 'hc2',
-  completed_at: today,
+  date: today,
+  value: 1,
   notes: null,
   created_at: new Date().toISOString(),
 })
@@ -52,6 +53,10 @@ vi.mock('../../hooks/useHabitsQuery', () => ({
     isPending: false,
   }),
   useDeleteHabitEntriesForDate: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+  useDeleteHabitEntriesForDateRange: () => ({
     mutate: vi.fn(),
     isPending: false,
   }),

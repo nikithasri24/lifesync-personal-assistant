@@ -46,6 +46,10 @@ vi.mock('../../hooks/useHabitsQuery', () => ({
     mutate: vi.fn(),
     isPending: false,
   }),
+  useDeleteHabitEntriesForDateRange: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
   useDeleteAllHabitEntries: () => ({
     mutate: vi.fn(),
     isPending: false,

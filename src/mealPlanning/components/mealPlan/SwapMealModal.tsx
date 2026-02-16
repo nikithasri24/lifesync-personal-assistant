@@ -18,6 +18,7 @@ import {
 } from '../../../hooks/useMealPlanningQuery';
 import { useUndoRedo } from '../../../contexts/UndoRedoContext';
 import { TrackMealCommand, AddToBacklogCommand, UpdatePlannedMealCommand } from '../../../commands/MealPlanningCommands';
+import { sanitizeInput } from '../../../utils/sanitize';
 
 interface SwapMealModalProps {
   meal: PlannedMeal;
@@ -51,10 +52,14 @@ export function SwapMealModal({ meal, recipe, isMerged = false, onClose, onSucce
 
     setIsSubmitting(true);
 
+    // Sanitize user input to prevent XSS
+    const sanitizedFood = sanitizeInput(actualFood);
+    if (!sanitizedFood) return;
+
     try {
       // 1. Log what was actually eaten to nutrition tracker
       await logFoodMutation.mutateAsync({
-        custom_food_name: actualFood.trim(),
+        custom_food_name: sanitizedFood,
         quantity: 1,
         meal_type: meal.mealType as MealType,
         logged_date: format(meal.date, 'yyyy-MM-dd'),
@@ -73,7 +78,7 @@ export function SwapMealModal({ meal, recipe, isMerged = false, onClose, onSucce
           mealName,
           {
             status: 'swapped',
-            swappedMeal: actualFood.trim(),
+            swappedMeal: sanitizedFood,
             notes: swapAction === 'save_for_later' ? 'Original saved for later' : undefined,
           },
           currentTracking ?? null
@@ -87,7 +92,7 @@ export function SwapMealModal({ meal, recipe, isMerged = false, onClose, onSucce
             recipeId: recipe?.id,
             originalDate: format(meal.date, 'yyyy-MM-dd'),
             originalMealType: meal.mealType,
-            reason: `Ate "${actualFood.trim()}" instead`,
+            reason: `Ate "${sanitizedFood}" instead`,
             servings: meal.servings,
             peopleCount: meal.peopleCount,
           });
@@ -99,7 +104,7 @@ export function SwapMealModal({ meal, recipe, isMerged = false, onClose, onSucce
           // Move original meal to backlog - it will disappear from the grid
           await postponeMealMutation.mutateAsync({
             mealId: meal.id,
-            reason: `Ate "${actualFood.trim()}" instead`,
+            reason: `Ate "${sanitizedFood}" instead`,
           });
         } else {
           // "Forget it" - update the planned meal with the substitution using command
@@ -114,9 +119,9 @@ export function SwapMealModal({ meal, recipe, isMerged = false, onClose, onSucce
             mealName,
             {
               status: 'eaten',
-              customMeal: actualFood.trim(),
+              customMeal: sanitizedFood,
               recipeId: undefined,
-              substitutedWith: actualFood.trim(),
+              substitutedWith: sanitizedFood,
             },
             previousState
           );
@@ -160,6 +165,7 @@ export function SwapMealModal({ meal, recipe, isMerged = false, onClose, onSucce
             onClick={onClose}
             className="text-slate-400 hover:text-slate-600"
             disabled={isSubmitting}
+            aria-label="Close"
           >
             <X className="w-5 h-5" />
           </button>

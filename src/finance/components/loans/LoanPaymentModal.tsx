@@ -69,6 +69,7 @@ export const LoanPaymentModal: React.FC<LoanPaymentModalProps> = ({ loan, onSave
           <button
             onClick={onCancel}
             className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            aria-label="Close"
           >
             <X className="h-5 w-5 text-gray-700 dark:text-gray-300" />
           </button>

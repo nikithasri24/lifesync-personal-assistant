@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { ModalShell } from './ModalShell';
 import type { Recipe } from '../../../types';
 import { normalizeFractions as normalizeYoutubeFractions } from '../../services/parsers/youtubeParser';
+import { sanitizeInput, sanitizeText } from '../../../utils/sanitize';
 
 interface RecipeViewModalProps {
   recipe: Recipe;
@@ -126,7 +127,7 @@ export function RecipeViewModal({ recipe, onClose, onEdit }: RecipeViewModalProp
           {recipe.instructions && recipe.instructions.length > 0 ? (
             <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-slate-700">
               {recipe.instructions.map((s, i) => (
-                <li key={i}>{s}</li>
+                <li key={i}>{sanitizeText(s)}</li>
               ))}
             </ol>
           ) : (
@@ -154,7 +155,7 @@ export function RecipeViewModal({ recipe, onClose, onEdit }: RecipeViewModalProp
             <ul className="mt-2 list-disc pl-5 text-sm text-slate-700">
               {recipe.ingredients.map((ing, i) => (
                 <li key={i}>
-                  {ing.amount ? `${scaleNumber(Number(ing.amount))} ${ing.unit ?? ''} ${ing.name}`.trim() : scaleLine(ing.name)}
+                  {ing.amount ? `${scaleNumber(Number(ing.amount))} ${sanitizeInput(ing.unit ?? '')} ${sanitizeInput(ing.name)}`.trim() : sanitizeText(scaleLine(ing.name))}
                 </li>
               ))}
             </ul>

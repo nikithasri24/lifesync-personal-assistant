@@ -11,7 +11,17 @@ vi.mock('../../hooks/useHabitsQuery', () => ({
     isLoading: false,
     error: null,
   }),
+  useHabit: () => ({
+    data: null,
+    isLoading: false,
+    error: null,
+  }),
   useHabitEntries: () => ({
+    data: [],
+    isLoading: false,
+    error: null,
+  }),
+  useHabitEntriesForHabit: () => ({
     data: [],
     isLoading: false,
     error: null,
@@ -32,7 +42,19 @@ vi.mock('../../hooks/useHabitsQuery', () => ({
     mutate: vi.fn(),
     isPending: false,
   }),
+  useUpdateHabitEntry: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+  useDeleteHabitEntry: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
   useDeleteHabitEntriesForDate: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+  useDeleteHabitEntriesForDateRange: () => ({
     mutate: vi.fn(),
     isPending: false,
   }),

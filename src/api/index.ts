@@ -23,7 +23,7 @@ export * from './calendarAPI';
 export * from './shoppingAPI';
 export * from './focusAPI';
 export * from './skincareAPI';
-export * from './travelAPI';
+// export * from './travelAPI'; // TODO: Re-enable when travelAPI is implemented
 export * from './nutritionAPI';
 
 // Finance & Bills

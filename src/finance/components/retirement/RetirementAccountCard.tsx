@@ -89,6 +89,7 @@ const RetirementAccountCard: React.FC<RetirementAccountCardProps> = ({
               onClick={onEdit}
               className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
               title="Edit account"
+              aria-label="Edit retirement account"
             >
               <Edit className="h-4 w-4" />
             </button>
@@ -98,6 +99,7 @@ const RetirementAccountCard: React.FC<RetirementAccountCardProps> = ({
               onClick={onDelete}
               className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
               title="Delete account"
+              aria-label="Delete retirement account"
             >
               <Trash2 className="h-4 w-4" />
             </button>

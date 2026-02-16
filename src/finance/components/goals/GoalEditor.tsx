@@ -173,6 +173,7 @@ export const GoalEditor: React.FC<GoalEditorProps> = ({
             <button
               onClick={onClose}
               className="rounded-lg p-2 hover:bg-slate-100 transition-colors"
+              aria-label="Close"
             >
               <X className="h-5 w-5" />
             </button>

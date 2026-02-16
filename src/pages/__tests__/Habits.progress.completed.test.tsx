@@ -1,41 +1,135 @@
 import { render, screen } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 import React from 'react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { format } from 'date-fns'
 
 const today = new Date()
-const completion = (id: string) => ({ id, completedAt: today, notes: undefined as string | undefined })
+const todayISO = format(today, 'yyyy-MM-dd')
 
-vi.mock('../../stores/useAppStore', () => ({
-  useAppStore: () => ({
-    habitCategories: [{ id: 'work', name: 'Work' }],
-    habits: [
+vi.mock('../../hooks/useHabitsQuery', () => ({
+  useHabits: () => ({
+    data: [
       {
         id: 'h4',
         name: 'Plan',
         description: '',
         frequency: 'daily',
-        targetCount: 2,
-        categoryId: 'work',
+        target_count: 2,
+        category_id: 'work',
+        icon: '📋',
         color: '#22c55e',
-        currentProgress: 2,
-        streak: 0,
-        completions: [completion('c1'), completion('c2')],
-        createdAt: new Date(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       },
     ],
-    addHabit: vi.fn(),
-    updateHabit: vi.fn(),
-    completeHabit: vi.fn(),
-    resetHabitToday: vi.fn(),
-    resetHabitHistory: vi.fn(),
-    deleteHabit: vi.fn(),
+    isLoading: false,
+    error: null,
+  }),
+  useHabit: () => ({
+    data: null,
+    isLoading: false,
+    error: null,
+  }),
+  useHabitEntries: () => ({
+    data: [
+      {
+        id: 'e1',
+        habit_id: 'h4',
+        completed_date: todayISO,
+        notes: '',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      {
+        id: 'e2',
+        habit_id: 'h4',
+        completed_date: todayISO,
+        notes: '',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+    ],
+    isLoading: false,
+    error: null,
+  }),
+  useHabitEntriesForHabit: () => ({
+    data: [],
+    isLoading: false,
+    error: null,
+  }),
+  useCreateHabit: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+  useUpdateHabit: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+  useDeleteHabit: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+  useCreateHabitEntry: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+  useUpdateHabitEntry: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+  useDeleteHabitEntry: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+  useDeleteHabitEntriesForDate: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+  useDeleteHabitEntriesForDateRange: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+  useDeleteAllHabitEntries: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+}))
+
+vi.mock('../../hooks/useHabitCategories', () => ({
+  useHabitCategories: () => ({
+    data: [{ id: 'work', name: 'Work', icon: '💼', color: '#3b82f6' }],
+    isLoading: false,
+    error: null,
+  }),
+  useCreateHabitCategory: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+  useUpdateHabitCategory: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+  useDeleteHabitCategory: () => ({
+    mutate: vi.fn(),
+    isPending: false,
   }),
 }))
 
 describe('Habits progress completed', () => {
   it('shows Completed today (2/2) and disables the button', async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    })
+
     const { default: Habits } = await import('../Habits')
-    render(<Habits />)
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <Habits />
+      </QueryClientProvider>
+    )
+
     const card = screen.getByText('Plan').closest('article') as HTMLElement
     expect(card).toBeTruthy()
     expect(card.textContent).toMatch(/Completed today\s*\(2\/2\)/)
@@ -43,4 +137,3 @@ describe('Habits progress completed', () => {
     expect(completeBtn).toBeDisabled()
   })
 })
-

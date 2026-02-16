@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { logger } from '../../services/logger';
 import type { PlannedMeal } from '../../types';
 import type { Recipe } from '@/hooks/useMealPlanningQuery';
+import { getSecureItem, setSecureItem, migrateToSecureStorage } from '@/utils/secureStorage';
 
 export type GroceryItemStatus = 'needed' | 'at_home' | 'in_cart' | 'purchased';
 
@@ -29,13 +30,16 @@ export function useGroceryList(
 } {
   const groceryStorageKey = `grocery-statuses-${weekKey}`;
 
-  // Load grocery item statuses from localStorage
+  // Load grocery item statuses from secure storage
   const [groceryItemStatuses, setGroceryItemStatuses] = useState<Map<string, GroceryItemStatus>>(() => {
     try {
-      const stored = localStorage.getItem(groceryStorageKey);
+      // Migrate existing unencrypted data to encrypted storage (one-time operation)
+      migrateToSecureStorage(groceryStorageKey);
+
+      // Load from secure storage
+      const stored = getSecureItem<Record<string, GroceryItemStatus>>(groceryStorageKey);
       if (stored) {
-        const parsed = JSON.parse(stored) as Record<string, GroceryItemStatus>;
-        return new Map(Object.entries(parsed));
+        return new Map(Object.entries(stored));
       }
     } catch (error) {
       logger.error('GroceryList', error as Error, { context: 'load grocery statuses failed' });
@@ -43,11 +47,16 @@ export function useGroceryList(
     return new Map();
   });
 
-  // Persist grocery statuses to localStorage
+  // Persist grocery statuses to secure storage
   useEffect(() => {
     try {
       const obj = Object.fromEntries(groceryItemStatuses);
-      localStorage.setItem(groceryStorageKey, JSON.stringify(obj));
+      const success = setSecureItem(groceryStorageKey, obj);
+      if (!success) {
+        logger.warn('GroceryList', 'Failed to save grocery statuses - storage quota may be exceeded', {
+          itemCount: groceryItemStatuses.size
+        });
+      }
     } catch (error) {
       logger.error('GroceryList', error as Error, { context: 'save grocery statuses failed' });
     }

@@ -88,7 +88,17 @@
       "Bash(supabase db execute:*)",
       "Bash(supabase status:*)",
       "Bash(supabase projects:*)",
-      "Bash(supabase --help:*)"
+      "Bash(supabase --help:*)",
+      "Bash(do if grep -q \"vi.mock.*useHabitsQuery\" \"$file\")",
+      "Bash(! grep -q \"useDeleteHabitEntriesForDateRange\" \"$file\")",
+      "Bash(then echo \"$file\")",
+      "Bash(fi)",
+      "Bash(claude config list:*)",
+      "Bash(env:*)",
+      "Bash(.claude/hooks/notification.sh:*)",
+      "Bash(vercel:*)",
+      "Bash(open:*)",
+      "Bash(xcodebuild:*)"
     ],
     "deny": [],
     "ask": []

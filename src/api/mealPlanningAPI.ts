@@ -20,6 +20,7 @@ import {
   MealBacklogDataArraySchema,
   validateArrayWithFilter,
 } from '../schemas/mealPlanning';
+import { sanitizeInput, sanitizeText } from '../utils/sanitize';
 
 // Cache for merged connection to avoid repeated checks within same session
 let cachedMergedConnection: MergedConnectionResult | null | undefined = undefined;
@@ -1086,6 +1087,10 @@ export async function trackMeal(
     async () => {
       const user = await requireAuth();
 
+      // Sanitize user-generated content
+      const sanitizedSwappedMeal = tracking.swappedMeal ? sanitizeInput(tracking.swappedMeal) : undefined;
+      const sanitizedNotes = tracking.notes ? sanitizeText(tracking.notes) : undefined;
+
       // Use upsert to create or update
       const result = await supabase
         .from('meal_tracking')
@@ -1094,11 +1099,11 @@ export async function trackMeal(
             user_id: user.id,
             planned_meal_id: plannedMealId,
             status: tracking.status,
-            swapped_meal: tracking.swappedMeal,
+            swapped_meal: sanitizedSwappedMeal,
             swapped_recipe_id: tracking.swappedRecipeId,
             servings_consumed: tracking.servingsConsumed,
             calories_consumed: tracking.caloriesConsumed,
-            notes: tracking.notes,
+            notes: sanitizedNotes,
             tracked_at: new Date().toISOString(),
           },
           {
@@ -1562,16 +1567,20 @@ export async function addToBacklog(item: {
         throw new AuthorizationError('Cannot add to backlog: No merged connection found');
       }
 
+      // Sanitize user-generated content
+      const sanitizedMealName = sanitizeInput(item.mealName);
+      const sanitizedReason = item.reason ? sanitizeText(item.reason) : undefined;
+
       const result = await supabase
         .from('meal_backlog')
         .insert({
           connection_id: mergedConnection.connectionId,
-          meal_name: item.mealName,
+          meal_name: sanitizedMealName,
           recipe_id: item.recipeId,
           saved_by_user_id: user.id,
           original_date: item.originalDate,
           original_meal_type: item.originalMealType,
-          reason: item.reason,
+          reason: sanitizedReason,
           servings: item.servings ?? 2,
           people_count: item.peopleCount ?? 2,
         })

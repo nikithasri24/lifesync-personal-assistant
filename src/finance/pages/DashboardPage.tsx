@@ -10,8 +10,8 @@ import {
   useAccountsQuery,
   useCategoriesQuery,
   useBudgetsQuery,
-  useFinanceMergedConnectionQuery,
 } from '@/hooks/useFinanceQuery';
+import { useCurrentUserId, useMergedConnection, usePartnerName } from '@/hooks/useOwnerInfo';
 import { logger } from '@/services/logger';
 import type { Transaction, Account } from '../types';
 import { Pencil, Plus } from 'lucide-react';
@@ -26,15 +26,11 @@ const DashboardPage: React.FC = () => {
   const [showAccountModal, setShowAccountModal] = React.useState(false);
   const [editingAccount, setEditingAccount] = React.useState<Account | undefined>(undefined);
 
-  // Auth and merged connection
+  // Auth and merged connection (using standardized hooks)
   const { user } = useAuth();
-  const { data: mergedConnection } = useFinanceMergedConnectionQuery();
-
-  // Get partner name from merged connection
-  const partnerName = React.useMemo(() => {
-    if (!mergedConnection || !user) return undefined;
-    return mergedConnection.partnerName;
-  }, [mergedConnection, user]);
+  const { data: currentUserId } = useCurrentUserId();
+  const { data: mergedConnection } = useMergedConnection('finances');
+  const { data: partnerName } = usePartnerName('finances');
 
   // React Query hooks
   const { data: transactions = [], isLoading: txnsLoading } = useTransactionsQuery({ limit: 500 });

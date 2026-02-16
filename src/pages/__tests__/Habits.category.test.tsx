@@ -1,57 +1,133 @@
 import { render, screen, fireEvent, within } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 import React from 'react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
-const addHabit = vi.fn()
-const updateHabit = vi.fn()
+const createHabitMock = vi.fn()
+const updateHabitMock = vi.fn()
 
-vi.mock('../../stores/useAppStore', () => ({
-  useAppStore: () => ({
-    habitCategories: [
-      { id: 'work', name: 'Work' },
-      { id: 'health', name: 'Health' },
-    ],
-    habits: [
+vi.mock('../../hooks/useHabitsQuery', () => ({
+  useHabits: () => ({
+    data: [
       {
         id: 'h1',
         name: 'Plan day',
         description: '',
         frequency: 'daily',
-        targetCount: 1,
-        categoryId: 'work',
+        target_count: 1,
+        category_id: 'work',
+        icon: '📋',
         color: '#22c55e',
-        currentProgress: 0,
-        streak: 0,
-        completions: [],
-        createdAt: new Date(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       },
       {
         id: 'h2',
         name: 'Run',
         description: '',
         frequency: 'daily',
-        targetCount: 1,
-        categoryId: 'health',
+        target_count: 1,
+        category_id: 'health',
+        icon: '🏃',
         color: '#22c55e',
-        currentProgress: 0,
-        streak: 0,
-        completions: [],
-        createdAt: new Date(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       },
     ],
-    addHabit,
-    updateHabit,
-    completeHabit: vi.fn(),
-    resetHabitToday: vi.fn(),
-    resetHabitHistory: vi.fn(),
-    deleteHabit: vi.fn(),
+    isLoading: false,
+    error: null,
+  }),
+  useHabit: () => ({
+    data: null,
+    isLoading: false,
+    error: null,
+  }),
+  useHabitEntries: () => ({
+    data: [],
+    isLoading: false,
+    error: null,
+  }),
+  useHabitEntriesForHabit: () => ({
+    data: [],
+    isLoading: false,
+    error: null,
+  }),
+  useCreateHabit: () => ({
+    mutate: createHabitMock,
+    isPending: false,
+  }),
+  useUpdateHabit: () => ({
+    mutate: updateHabitMock,
+    isPending: false,
+  }),
+  useDeleteHabit: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+  useCreateHabitEntry: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+  useUpdateHabitEntry: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+  useDeleteHabitEntry: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+  useDeleteHabitEntriesForDate: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+  useDeleteHabitEntriesForDateRange: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+  useDeleteAllHabitEntries: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+}))
+
+vi.mock('../../hooks/useHabitCategories', () => ({
+  useHabitCategories: () => ({
+    data: [
+      { id: 'work', name: 'Work', icon: '💼', color: '#3b82f6' },
+      { id: 'health', name: 'Health', icon: '💪', color: '#10b981' },
+    ],
+    isLoading: false,
+    error: null,
+  }),
+  useCreateHabitCategory: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+  useUpdateHabitCategory: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+  useDeleteHabitCategory: () => ({
+    mutate: vi.fn(),
+    isPending: false,
   }),
 }))
 
 describe('Habits categories', () => {
+  const renderWithClient = (component: React.ReactElement) => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    })
+    return render(
+      <QueryClientProvider client={queryClient}>
+        {component}
+      </QueryClientProvider>
+    )
+  }
+
   it('shows category labels for each habit card', async () => {
     const { default: Habits } = await import('../Habits')
-    render(<Habits />)
+    renderWithClient(<Habits />)
 
     // Work habit shows "Work •"
     const workName = screen.getByText('Plan day')
@@ -66,7 +142,7 @@ describe('Habits categories', () => {
 
   it('adds a habit with selected category', async () => {
     const { default: Habits } = await import('../Habits')
-    render(<Habits />)
+    renderWithClient(<Habits />)
 
     fireEvent.change(screen.getByTestId('habit-add-name'), { target: { value: 'Meditate' } })
     const selects = screen.getAllByLabelText('Category') as HTMLSelectElement[]
@@ -74,14 +150,14 @@ describe('Habits categories', () => {
     fireEvent.change(selects[0], { target: { value: 'health' } })
     fireEvent.click(screen.getByTestId('habit-add-submit'))
 
-    expect(addHabit).toHaveBeenCalled()
-    const args = addHabit.mock.calls.pop()[0]
-    expect(args.categoryId).toBe('health')
+    expect(createHabitMock).toHaveBeenCalled()
+    const args = createHabitMock.mock.calls[createHabitMock.mock.calls.length - 1][0]
+    expect(args.category_id).toBe('health')
   })
 
   it('edits a habit and changes its category', async () => {
     const { default: Habits } = await import('../Habits')
-    render(<Habits />)
+    renderWithClient(<Habits />)
 
     // Open edit for first card
     const workName = screen.getByText('Plan day')
@@ -97,6 +173,9 @@ describe('Habits categories', () => {
     const saveBtn = within(workCard).getByRole('button', { name: /save changes/i })
     fireEvent.click(saveBtn)
 
-    expect(updateHabit).toHaveBeenCalledWith('h1', expect.objectContaining({ categoryId: 'health' }))
+    expect(updateHabitMock).toHaveBeenCalledWith(expect.objectContaining({
+      id: 'h1',
+      updates: expect.objectContaining({ category_id: 'health' })
+    }))
   })
 })
