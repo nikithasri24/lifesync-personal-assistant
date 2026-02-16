@@ -45,6 +45,3 @@ export * from './pushSubscriptionsAPI';
 
 // Gamification
 export * from './gamificationAPI';
-
-// Specialty APIs
-export * from './nationalParksAPI';

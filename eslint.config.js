@@ -261,4 +261,49 @@ export default tseslint.config([
       '@typescript-eslint/no-unsafe-return': 'off',
     },
   },
+  // ==========================================
+  // STATE MANAGEMENT BOUNDARIES
+  // ==========================================
+  // Enforce clear separation: Zustand = UI State, React Query = Server State
+  {
+    files: ['src/stores/slices/**/*.ts'],
+    rules: {
+      // Prevent server state in Zustand slices
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@tanstack/react-query', '@tanstack/react-query/*'],
+              message: 'Zustand slices should NOT use React Query. Use React Query hooks in components instead. Zustand is for UI state only (filters, modals, view modes).',
+            },
+            {
+              group: ['**/api/**', '@/api/**'],
+              message: 'Zustand slices should NOT import from API layer. API calls belong in React Query hooks, not Zustand. Keep Zustand for UI state only.',
+            },
+            {
+              group: ['@/lib/supabase', '../../../lib/supabase', '../../lib/supabase', '../lib/supabase'],
+              message: 'Zustand slices should NOT use Supabase client. Database operations belong in API layer with React Query hooks. Keep Zustand for UI state only.',
+            },
+          ],
+        },
+      ],
+      // Prevent data fetching patterns in Zustand slices
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'CallExpression[callee.name="fetch"]',
+          message: 'Zustand slices should NOT fetch data. Use React Query hooks in components. Zustand is for UI state only (filters, modals, view modes).',
+        },
+        {
+          selector: 'AwaitExpression[argument.callee.object.name="supabase"]',
+          message: 'Zustand slices should NOT query Supabase. Use React Query hooks in components. Zustand is for UI state only (filters, modals, view modes).',
+        },
+        {
+          selector: 'ImportDeclaration[source.value="axios"] ~ * CallExpression[callee.object.name="axios"]',
+          message: 'Zustand slices should NOT make HTTP requests. Use React Query hooks in components. Zustand is for UI state only (filters, modals, view modes).',
+        },
+      ],
+    },
+  },
 ])

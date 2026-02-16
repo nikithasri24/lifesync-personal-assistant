@@ -98,7 +98,8 @@
       "Bash(.claude/hooks/notification.sh:*)",
       "Bash(vercel:*)",
       "Bash(open:*)",
-      "Bash(xcodebuild:*)"
+      "Bash(xcodebuild:*)",
+      "Bash(kill:*)"
     ],
     "deny": [],
     "ask": []

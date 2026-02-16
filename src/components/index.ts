@@ -14,7 +14,6 @@ export { default as IndiaVisitedSVG } from './IndiaVisitedSVG';
 export { default as Layout } from './Layout';
 export { default as LoadingSpinner, SkeletonCard } from './LoadingSpinner';
 export { default as Logo } from './Logo';
-export { default as NationalParksMap } from './NationalParksMap';
 export { default as NikeLogo } from './NikeLogo';
 export { default as PremiumLogo } from './PremiumLogo';
 export { default as SmartExpenseCategorizer } from './SmartExpenseCategorizer';
