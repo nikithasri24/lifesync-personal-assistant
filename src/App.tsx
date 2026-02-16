@@ -37,6 +37,7 @@ const Finances = lazy(() => import('./pages/Finances'));
 const SelfCare = lazy(() => import('./pages/SelfCare'));
 const Assistant = lazy(() => import('./pages/Assistant'));
 const TaskScheduler = lazy(() => import('./pages/TaskScheduler'));
+const More = lazy(() => import('./pages/More'));
 
 function App(): React.ReactElement {
   // Performance monitoring
@@ -83,11 +84,11 @@ function App(): React.ReactElement {
         }>
           <Routes>
             {/* Main Routes */}
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/assistant" element={<Assistant />} />
-            <Route path="/calendar" element={<Calendar />} />
-            <Route path="/scheduler" element={<TaskScheduler />} />
-            <Route path="/focus" element={<Focus />} />
+            <Route path="/" element={<RouteErrorBoundary feature="Dashboard"><Dashboard /></RouteErrorBoundary>} />
+            <Route path="/assistant" element={<RouteErrorBoundary feature="Assistant"><Assistant /></RouteErrorBoundary>} />
+            <Route path="/calendar" element={<RouteErrorBoundary feature="Calendar"><Calendar /></RouteErrorBoundary>} />
+            <Route path="/scheduler" element={<RouteErrorBoundary feature="Task Scheduler"><TaskScheduler /></RouteErrorBoundary>} />
+            <Route path="/focus" element={<RouteErrorBoundary feature="Focus"><Focus /></RouteErrorBoundary>} />
 
             {/* Productivity Routes */}
             <Route path="/habits" element={<RouteErrorBoundary feature="Habits"><Habits /></RouteErrorBoundary>} />
@@ -98,7 +99,7 @@ function App(): React.ReactElement {
             {/* Wellbeing Routes */}
             <Route path="/journal" element={<RouteErrorBoundary feature="Journal"><Journal /></RouteErrorBoundary>} />
             <Route path="/journal/:id" element={<RouteErrorBoundary feature="Journal"><JournalDetail /></RouteErrorBoundary>} />
-            <Route path="/self-care" element={<SelfCare />} />
+            <Route path="/self-care" element={<RouteErrorBoundary feature="Self Care"><SelfCare /></RouteErrorBoundary>} />
             {/* Legacy routes redirect to self-care */}
             <Route path="/skincare" element={<Navigate to="/self-care" replace />} />
             <Route path="/personal-care" element={<Navigate to="/self-care" replace />} />
@@ -112,6 +113,7 @@ function App(): React.ReactElement {
             <Route path="/meals" element={<RouteErrorBoundary feature="Meal Planning"><MealPlanning /></RouteErrorBoundary>} />
             <Route path="/nutrition" element={<RouteErrorBoundary feature="Nutrition"><Nutrition /></RouteErrorBoundary>} />
             <Route path="/shared" element={<RouteErrorBoundary feature="Shared"><Shared /></RouteErrorBoundary>} />
+            <Route path="/more" element={<RouteErrorBoundary feature="More"><More /></RouteErrorBoundary>} />
 
             {/* Catch-all: redirect to dashboard */}
             <Route path="*" element={<Navigate to="/" replace />} />

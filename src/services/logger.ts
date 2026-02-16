@@ -4,9 +4,11 @@
  * Centralized logging utility that:
  * - Only logs in development mode
  * - Provides consistent log formatting
- * - Can be extended to send logs to error tracking services (Sentry, LogRocket, etc.)
+ * - Sends errors to Sentry in production for monitoring
  * - Prevents logging sensitive data in production
  */
+
+import * as Sentry from '@sentry/react';
 
 const isDev = import.meta.env.DEV;
 const isProd = import.meta.env.PROD;
@@ -136,8 +138,8 @@ class Logger {
   }
 
   /**
-   * Send logs to error tracking service (Sentry, LogRocket, etc.)
-   * Override this method to integrate with your error tracking service
+   * Send logs to error tracking service (Sentry)
+   * Captures errors and warnings in production for monitoring
    */
   private sendToErrorTracking(
     level: LogLevel,
@@ -145,16 +147,20 @@ class Logger {
     message: string,
     context?: LogContext
   ): void {
-    // TODO: Integrate with Sentry or other error tracking service
-    // Example:
-    // Sentry.captureMessage(message, {
-    //   level: level.toLowerCase(),
-    //   tags: { domain },
-    //   extra: context,
-    // });
+    if (isProd) {
+      // Send to Sentry with appropriate severity level
+      const sentryLevel = level === LogLevel.ERROR ? 'error' : 'warning';
 
-    // For now, just log to console in production
-    if (isProd && (level === LogLevel.ERROR || level === LogLevel.WARN)) {
+      Sentry.captureMessage(message, {
+        level: sentryLevel,
+        tags: {
+          domain,
+          service: this.serviceName,
+        },
+        extra: context,
+      });
+
+      // Also log to console for backup
       console.error(`[${level}] [${domain}]`, message, context);
     }
   }
