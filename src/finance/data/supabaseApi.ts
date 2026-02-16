@@ -37,7 +37,11 @@ import type {
   RetirementPerformance,
   RetirementPerformanceInput,
   ContributionRoom,
+  RecurringTransaction,
+  RecurringTransactionInput,
+  PendingTransaction,
 } from '../types';
+import * as recurringAPI from './recurringAPI';
 
 /**
  * Supabase implementation of FinanceAPI
@@ -1241,5 +1245,39 @@ export class SupabaseApi implements FinanceAPI {
 
   async calculateVestedBalance(_retirementAccountId: string, _employmentYears: number): Promise<number> {
     return 0;
+  }
+
+  // Recurring transactions
+  async listRecurringTransactions(): Promise<RecurringTransaction[]> {
+    return recurringAPI.listRecurringTransactions();
+  }
+
+  async upsertRecurringTransaction(input: RecurringTransactionInput): Promise<RecurringTransaction> {
+    return recurringAPI.upsertRecurringTransaction(input);
+  }
+
+  async deleteRecurringTransaction(id: string): Promise<void> {
+    return recurringAPI.deleteRecurringTransaction(id);
+  }
+
+  // Pending transactions
+  async listPendingTransactions(): Promise<PendingTransaction[]> {
+    return recurringAPI.listPendingTransactions();
+  }
+
+  async approvePendingTransaction(pendingId: string, overrides?: Partial<TransactionInput>): Promise<void> {
+    return recurringAPI.approvePendingTransaction(pendingId, overrides);
+  }
+
+  async skipPendingTransaction(pendingId: string): Promise<void> {
+    return recurringAPI.skipPendingTransaction(pendingId);
+  }
+
+  async deletePendingTransaction(pendingId: string): Promise<void> {
+    return recurringAPI.deletePendingTransaction(pendingId);
+  }
+
+  async generatePendingTransactions(): Promise<number> {
+    return recurringAPI.generatePendingTransactions();
   }
 }

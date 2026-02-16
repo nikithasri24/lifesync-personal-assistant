@@ -34,6 +34,9 @@ import type {
   RetirementPerformance,
   RetirementPerformanceInput,
   ContributionRoom,
+  RecurringTransaction,
+  RecurringTransactionInput,
+  PendingTransaction,
 } from '../types';
 
 export interface FinanceAPI {
@@ -95,4 +98,14 @@ export interface FinanceAPI {
   recordRetirementPerformance(performance: RetirementPerformanceInput): Promise<void>;
   // Vesting calculations
   calculateVestedBalance(retirementAccountId: string, employmentYears: number): Promise<number>;
+  // Recurring transactions
+  listRecurringTransactions(): Promise<RecurringTransaction[]>;
+  upsertRecurringTransaction(input: RecurringTransactionInput): Promise<RecurringTransaction>;
+  deleteRecurringTransaction(id: string): Promise<void>;
+  // Pending transactions
+  listPendingTransactions(): Promise<PendingTransaction[]>;
+  approvePendingTransaction(pendingId: string, overrides?: Partial<TransactionInput>): Promise<void>;
+  skipPendingTransaction(pendingId: string): Promise<void>;
+  deletePendingTransaction(pendingId: string): Promise<void>;
+  generatePendingTransactions(): Promise<number>;
 }

@@ -36,6 +36,7 @@ import type {
 } from '@/finance/types';
 import { logger } from '@/services/logger';
 import { getMergedConnectionId, type MergedConnectionResult } from '@/shared/api/SharedDataProvider';
+import { useCurrentUserId as useCurrentUserIdBase, useMergedConnection as useMergedConnectionBase, usePartnerName as usePartnerNameBase, useHasMergedPermission as useHasMergedPermissionBase } from '@/hooks/useOwnerInfo';
 
 // ==================== Merged Connection ====================
 
@@ -99,6 +100,7 @@ export const financeKeys = {
 /**
  * Hook to get merged connection for finances module.
  * Returns partnerId and connectionId if both users have merged mode enabled.
+ * @deprecated Use useMergedConnection('finances') from @/hooks/useOwnerInfo for standardization
  */
 export function useFinanceMergedConnectionQuery(options?: { enabled?: boolean }): UseQueryResult<MergedConnectionResult | null, Error> {
   return useQuery<MergedConnectionResult | null, Error>({
@@ -110,6 +112,40 @@ export function useFinanceMergedConnectionQuery(options?: { enabled?: boolean })
     staleTime: 1000 * 60 * 5, // 5 minutes - merged connection doesn't change often
     enabled: options?.enabled ?? true,
   });
+}
+
+// ==================== Standardized Owner Info Hooks ====================
+// These are re-exports from useOwnerInfo configured for the finances module
+// Use these for new code to maintain consistency across the codebase
+
+/**
+ * Get current user ID.
+ * Re-export of standardized hook from useOwnerInfo.
+ */
+export const useFinanceCurrentUserId = useCurrentUserIdBase;
+
+/**
+ * Get merged connection for finances module.
+ * Re-export of standardized hook from useOwnerInfo.
+ */
+export function useFinanceMergedConnection() {
+  return useMergedConnectionBase('finances');
+}
+
+/**
+ * Get partner's name from merged connection.
+ * Re-export of standardized hook from useOwnerInfo.
+ */
+export function useFinancePartnerName() {
+  return usePartnerNameBase('finances');
+}
+
+/**
+ * Check if finances merged mode is enabled.
+ * Re-export of standardized hook from useOwnerInfo.
+ */
+export function useFinanceHasMergedPermission() {
+  return useHasMergedPermissionBase('finances');
 }
 
 // ==================== Institutions ====================
@@ -924,8 +960,8 @@ export function useRecurringTransactionsQuery(): UseQueryResult<RecurringTransac
   return useQuery<RecurringTransaction[], Error>({
     queryKey: financeKeys.recurringTransactions(),
     queryFn: async () => {
-      // TODO: Implement listRecurringTransactions in FinanceAPI
-      return [];
+      const api = await getFinanceAPI();
+      return api.listRecurringTransactions();
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
@@ -935,8 +971,8 @@ export function usePendingTransactionsQuery(): UseQueryResult<PendingTransaction
   return useQuery<PendingTransaction[], Error>({
     queryKey: financeKeys.pendingTransactions(),
     queryFn: async () => {
-      // TODO: Implement listPendingTransactions in FinanceAPI
-      return [];
+      const api = await getFinanceAPI();
+      return api.listPendingTransactions();
     },
     refetchInterval: 1000 * 60, // Refetch every minute for pending items
     staleTime: 1000 * 30, // 30 seconds
@@ -949,15 +985,15 @@ export function useUpsertRecurringTransactionMutation(): UseMutationResult<void,
   return useMutation<void, Error, RecurringTransactionInput>({
     mutationFn: async (recurring: RecurringTransactionInput) => {
       logger.debug('Finance', 'Upserting recurring transaction', { recurring });
-      // TODO: Implement upsertRecurringTransaction in FinanceAPI
-      logger.warn('Finance', 'upsertRecurringTransaction not implemented');
+      const api = await getFinanceAPI();
+      await api.upsertRecurringTransaction(recurring);
     },
     onSuccess: (_, recurring) => {
       logger.info('Finance', 'Recurring transaction saved successfully', { id: recurring.id });
       void queryClient.invalidateQueries({ queryKey: financeKeys.recurringTransactions() });
     },
     onError: (error: Error) => {
-      logger.error('Finance', 'Failed to save recurring transaction', { error: error.message });
+      logger.error('Finance', error, { context: 'Failed to save recurring transaction' });
     },
   });
 }
@@ -968,8 +1004,8 @@ export function useDeleteRecurringTransactionMutation(): UseMutationResult<void,
   return useMutation<void, Error, string>({
     mutationFn: async (recurringId: string) => {
       logger.debug('Finance', 'Deleting recurring transaction', { recurringId });
-      // TODO: Implement deleteRecurringTransaction in FinanceAPI
-      logger.warn('Finance', 'deleteRecurringTransaction not implemented');
+      const api = await getFinanceAPI();
+      await api.deleteRecurringTransaction(recurringId);
     },
     onSuccess: (_, recurringId) => {
       logger.info('Finance', 'Recurring transaction deleted successfully', { recurringId });
@@ -977,7 +1013,7 @@ export function useDeleteRecurringTransactionMutation(): UseMutationResult<void,
       void queryClient.invalidateQueries({ queryKey: financeKeys.pendingTransactions() });
     },
     onError: (error: Error) => {
-      logger.error('Finance', 'Failed to delete recurring transaction', { error: error.message });
+      logger.error('Finance', error, { context: 'Failed to delete recurring transaction' });
     },
   });
 }
@@ -988,8 +1024,8 @@ export function useApprovePendingTransactionMutation(): UseMutationResult<void, 
   return useMutation<void, Error, { pendingId: string; edits?: Partial<TransactionInput> }>({
     mutationFn: async ({ pendingId, edits }) => {
       logger.debug('Finance', 'Approving pending transaction', { pendingId, hasEdits: !!edits });
-      // TODO: Implement approvePendingTransaction in FinanceAPI
-      logger.warn('Finance', 'approvePendingTransaction not implemented');
+      const api = await getFinanceAPI();
+      await api.approvePendingTransaction(pendingId, edits);
     },
     onSuccess: (_, { pendingId }) => {
       logger.info('Finance', 'Pending transaction approved successfully', { pendingId });
@@ -998,7 +1034,7 @@ export function useApprovePendingTransactionMutation(): UseMutationResult<void, 
       void queryClient.invalidateQueries({ queryKey: financeKeys.accounts() });
     },
     onError: (error: Error) => {
-      logger.error('Finance', 'Failed to approve pending transaction', { error: error.message });
+      logger.error('Finance', error, { context: 'Failed to approve pending transaction' });
     },
   });
 }
@@ -1009,15 +1045,15 @@ export function useSkipPendingTransactionMutation(): UseMutationResult<void, Err
   return useMutation<void, Error, string>({
     mutationFn: async (pendingId: string) => {
       logger.debug('Finance', 'Skipping pending transaction', { pendingId });
-      // TODO: Implement skipPendingTransaction in FinanceAPI
-      logger.warn('Finance', 'skipPendingTransaction not implemented');
+      const api = await getFinanceAPI();
+      await api.skipPendingTransaction(pendingId);
     },
     onSuccess: (_, pendingId) => {
       logger.info('Finance', 'Pending transaction skipped successfully', { pendingId });
       void queryClient.invalidateQueries({ queryKey: financeKeys.pendingTransactions() });
     },
     onError: (error: Error) => {
-      logger.error('Finance', 'Failed to skip pending transaction', { error: error.message });
+      logger.error('Finance', error, { context: 'Failed to skip pending transaction' });
     },
   });
 }
@@ -1028,35 +1064,35 @@ export function useDeletePendingTransactionMutation(): UseMutationResult<void, E
   return useMutation<void, Error, string>({
     mutationFn: async (pendingId: string) => {
       logger.debug('Finance', 'Deleting pending transaction', { pendingId });
-      // TODO: Implement deletePendingTransaction in FinanceAPI
-      logger.warn('Finance', 'deletePendingTransaction not implemented');
+      const api = await getFinanceAPI();
+      await api.deletePendingTransaction(pendingId);
     },
     onSuccess: (_, pendingId) => {
       logger.info('Finance', 'Pending transaction deleted successfully', { pendingId });
       void queryClient.invalidateQueries({ queryKey: financeKeys.pendingTransactions() });
     },
     onError: (error: Error) => {
-      logger.error('Finance', 'Failed to delete pending transaction', { error: error.message });
+      logger.error('Finance', error, { context: 'Failed to delete pending transaction' });
     },
   });
 }
 
-export function useGeneratePendingTransactionsMutation(): UseMutationResult<void, Error, void, unknown> {
+export function useGeneratePendingTransactionsMutation(): UseMutationResult<number, Error, void, unknown> {
   const queryClient = useQueryClient();
 
-  return useMutation<void, Error, void>({
+  return useMutation<number, Error, void>({
     mutationFn: async () => {
       logger.debug('Finance', 'Generating pending transactions');
-      // TODO: Implement generatePendingTransactions in FinanceAPI
-      logger.warn('Finance', 'generatePendingTransactions not implemented');
+      const api = await getFinanceAPI();
+      return api.generatePendingTransactions();
     },
-    onSuccess: () => {
-      logger.info('Finance', 'Pending transactions generated successfully');
+    onSuccess: (count) => {
+      logger.info('Finance', 'Pending transactions generated successfully', { count });
       void queryClient.invalidateQueries({ queryKey: financeKeys.pendingTransactions() });
       void queryClient.invalidateQueries({ queryKey: financeKeys.recurringTransactions() });
     },
     onError: (error: Error) => {
-      logger.error('Finance', 'Failed to generate pending transactions', { error: error.message });
+      logger.error('Finance', error, { context: 'Failed to generate pending transactions' });
     },
   });
 }
