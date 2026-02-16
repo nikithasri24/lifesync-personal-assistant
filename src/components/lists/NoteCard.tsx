@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Trash2, FileText, List as ListIcon, ChevronDown, ChevronUp } from 'lucide-react';
 import type { Note, ListItem } from '../../types';
 import { useListItems, useCreateListItem, useUpdateListItem, useDeleteListItem } from '../../hooks/useNotesQuery';
 import ListItemRow from './ListItemRow';
 import AddListItem from './AddListItem';
+import { logger } from '../../services/logger';
 
 interface NoteCardProps {
   note: Note;
@@ -14,7 +15,7 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onDelete }) => {
   const [isExpanded, setIsExpanded] = useState(note.noteType === 'list');
 
   // List items hooks (only used if note is a list)
-  const { data: listItems, isLoading: itemsLoading } = useListItems(note.noteType === 'list' ? note.id : null);
+  const { data: listItems, isLoading: itemsLoading, error: itemsError } = useListItems(note.noteType === 'list' ? note.id : null);
   const createItemMutation = useCreateListItem();
   const updateItemMutation = useUpdateListItem();
   const deleteItemMutation = useDeleteListItem();
@@ -51,6 +52,20 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onDelete }) => {
   const handleDeleteItem = (itemId: string) => {
     deleteItemMutation.mutate({ id: itemId, noteId: note.id });
   };
+
+  // Log list items state for debugging
+  useEffect(() => {
+    if (note.noteType === 'list') {
+      logger.debug('Notes', 'List items state', {
+        noteId: note.id,
+        noteTitle: note.title,
+        isLoading: itemsLoading,
+        hasError: !!itemsError,
+        itemCount: listItems?.length || 0,
+        errorMessage: itemsError?.message,
+      });
+    }
+  }, [note.noteType, note.id, note.title, itemsLoading, itemsError, listItems]);
 
   const completedCount = listItems?.filter((item) => item.completed).length || 0;
   const totalCount = listItems?.length || 0;
@@ -116,6 +131,15 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onDelete }) => {
         <div className="mt-4 space-y-2">
           {itemsLoading ? (
             <p className="text-sm text-slate-500 dark:text-slate-400">Loading items...</p>
+          ) : itemsError ? (
+            <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+              <p className="text-sm text-red-600 dark:text-red-400 font-medium">
+                Failed to load list items
+              </p>
+              <p className="text-xs text-red-500 dark:text-red-500 mt-1">
+                {itemsError.message}
+              </p>
+            </div>
           ) : listItems && listItems.length > 0 ? (
             listItems.map((item) => (
               <ListItemRow
