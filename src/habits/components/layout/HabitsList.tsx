@@ -2,6 +2,7 @@ import React, { type FormEvent } from 'react';
 import { HabitCard } from '../HabitCard';
 import type { HabitData } from '../../../services/types';
 import type { HabitDraft } from '../../types';
+import type { MergedConnectionResult } from '../../../shared/api/SharedDataProvider';
 
 type Habit = HabitData;
 
@@ -33,10 +34,14 @@ interface HabitsListProps {
   onResetToday: (habitId: string) => void;
   onResetHistory: (habitId: string) => void;
   onDelete: (habitId: string) => void;
+  mergedConnection?: MergedConnectionResult | null;
+  currentUserId?: string | null;
+  partnerName?: string;
 }
 
 /**
  * List of habits with filtering for completed weekly/monthly habits
+ * Supports merged mode with owner display
  */
 export function HabitsList({
   habitsWithStats,
@@ -57,6 +62,9 @@ export function HabitsList({
   onResetToday,
   onResetHistory,
   onDelete,
+  mergedConnection,
+  currentUserId,
+  partnerName,
 }: HabitsListProps): React.ReactElement {
   if (habitsWithStats.length === 0) {
     return (
@@ -112,6 +120,9 @@ export function HabitsList({
               onResetToday={() => { onResetToday(habit.id as string); }}
               onResetHistory={() => { onResetHistory(habit.id as string); }}
               onDelete={() => { onDelete(habit.id as string); }}
+              mergedConnection={mergedConnection}
+              currentUserId={currentUserId}
+              partnerName={partnerName}
             />
           );
         })}

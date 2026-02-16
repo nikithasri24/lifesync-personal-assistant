@@ -1,6 +1,7 @@
 /**
  * Habit Card Component
  * Displays an individual habit with actions and optional edit form
+ * Supports merged mode with owner badges
  */
 
 import React, { useState } from 'react';
@@ -8,8 +9,10 @@ import type { FormEvent } from 'react';
 import { CheckCircle2, Pencil, RefreshCcw, Trash2, X, ChevronDown, ChevronUp, BarChart3 } from 'lucide-react';
 import type { HabitData, HabitEntryData } from '../../services/types';
 import type { HabitDraft } from '../types';
+import type { MergedConnectionResult } from '../../shared/api/SharedDataProvider';
 import { HabitEditForm } from './HabitEditForm';
 import { HabitStreakCalendar } from '../../components/HabitStreakCalendar';
+import { OwnerBadge } from '../../components/common/OwnerBadge';
 
 interface HabitCardProps {
   habit: HabitData;
@@ -35,6 +38,9 @@ interface HabitCardProps {
   onResetToday: () => void;
   onResetHistory: () => void;
   onDelete: () => void;
+  mergedConnection?: MergedConnectionResult | null;
+  currentUserId?: string | null;
+  partnerName?: string;
 }
 
 export function HabitCard({
@@ -61,6 +67,9 @@ export function HabitCard({
   onResetToday,
   onResetHistory,
   onDelete,
+  mergedConnection,
+  currentUserId,
+  partnerName = 'Partner',
 }: HabitCardProps) {
   const [showStreakVisualization, setShowStreakVisualization] = useState(false);
 
@@ -68,8 +77,18 @@ export function HabitCard({
     <article className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <p className="font-semibold text-slate-900">{habit.name}</p>
+
+            {/* Show owner badge if merged mode is enabled */}
+            {mergedConnection && currentUserId && (
+              <OwnerBadge
+                userId={habit.user_id}
+                currentUserId={currentUserId}
+                partnerName={partnerName}
+              />
+            )}
+
             {hasReachedTarget ? (
               <span className="rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-semibold text-green-600 border border-green-200">
                 Completed {habit.frequency === 'weekly' ? 'this week' : habit.frequency === 'monthly' ? 'this month' : 'today'}{targetCount > 1 ? ` (${todayCompletions}/${targetCount})` : ''}

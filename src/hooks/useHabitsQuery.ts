@@ -22,10 +22,30 @@ import {
   deleteHabitEntriesForDate,
   deleteHabitEntriesForDateRange,
   deleteAllHabitEntries,
+  getHabitsMergedConnection,
 } from '@/api/habitsAPI';
 import { logger } from '@/services/logger';
 import { recordHabitCompletion } from '@/services/gamification';
 import { dataEvents } from '@/lib/dataEvents';
+import type { MergedConnectionResult } from '@/shared/api/SharedDataProvider';
+
+// =====================================================
+// MERGED MODE SUPPORT
+// =====================================================
+
+/**
+ * Hook to check if habits merged mode is enabled
+ * Returns connection info if both users have merged mode enabled
+ */
+export function useMergedHabitsConnectionQuery(): UseQueryResult<MergedConnectionResult | null, Error> {
+  return useQuery({
+    queryKey: ['habits', 'mergedConnection'],
+    queryFn: getHabitsMergedConnection,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    gcTime: 1000 * 60 * 10, // 10 minutes
+    retry: 1,
+  });
+}
 
 // =====================================================
 // HABITS QUERY HOOKS

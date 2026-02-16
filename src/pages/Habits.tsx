@@ -28,7 +28,10 @@ import {
   useDeleteHabitEntriesForDate,
   useDeleteHabitEntriesForDateRange,
   useDeleteAllHabitEntries,
+  useMergedHabitsConnectionQuery,
 } from '../hooks/useHabitsQuery';
+import { useCurrentUserId } from '../hooks/useOwnerInfo';
+import { OwnerFilter, type OwnerFilterValue } from '../components/common/OwnerFilter';
 import { logger } from '../services/logger';
 import type { HabitDraft } from '../habits/types';
 import { createDraft, toHabitDraft } from '../habits/services/habitHelpers';
@@ -62,6 +65,11 @@ const Habits: React.FC = () => {
   const { data: apiHabits = [], isLoading: habitsLoading, error: habitsError } = useHabits({ isActive: true });
   const { data: apiEntries = [], isLoading: entriesLoading } = useHabitEntries();
 
+  // Merged mode support
+  const { data: mergedConnection } = useMergedHabitsConnectionQuery();
+  const { data: currentUserId } = useCurrentUserId();
+  const [ownerFilter, setOwnerFilter] = useState<OwnerFilterValue>('all');
+
   const createHabitMutation = useCreateHabit();
   const updateHabitMutation = useUpdateHabit();
   const deleteHabitMutation = useDeleteHabit();
@@ -79,9 +87,29 @@ const Habits: React.FC = () => {
   const weekBoundaries = getWeekBoundaries();
   const { toast, showToast, dismissToast } = useToast();
 
+  // Get partner name for display
+  const partnerName = mergedConnection?.partnerName ?? 'Partner';
+
+  // Filter habits by owner in merged mode
+  const filteredHabits = useMemo(() => {
+    if (!mergedConnection || ownerFilter === 'all') {
+      return apiHabits;
+    }
+
+    if (ownerFilter === 'mine') {
+      return apiHabits.filter(habit => habit.user_id === currentUserId);
+    }
+
+    if (ownerFilter === 'partner') {
+      return apiHabits.filter(habit => habit.user_id === mergedConnection.partnerId);
+    }
+
+    return apiHabits;
+  }, [apiHabits, ownerFilter, currentUserId, mergedConnection]);
+
   // Combine habits with their entry counts
   const habitsWithStats = useMemo(() => {
-    return apiHabits.map((habit) => {
+    return filteredHabits.map((habit) => {
       // Filter entries for this habit
       const habitEntries = apiEntries.filter(entry => entry.habit_id === habit.id);
 
@@ -120,7 +148,7 @@ const Habits: React.FC = () => {
         totalCompletions: habit.current_progress ?? 0,
       };
     });
-  }, [apiHabits, apiEntries, todayKey, weekBoundaries]);
+  }, [filteredHabits, apiEntries, todayKey, weekBoundaries]);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
@@ -314,7 +342,19 @@ const Habits: React.FC = () => {
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6 p-6">
       <Toast toast={toast} onDismiss={dismissToast} />
-      <HabitsHeader />
+
+      <div className="flex items-center justify-between">
+        <HabitsHeader />
+
+        {/* Show owner filter only if merged mode is enabled */}
+        {mergedConnection && (
+          <OwnerFilter
+            value={ownerFilter}
+            onChange={setOwnerFilter}
+            partnerName={partnerName}
+          />
+        )}
+      </div>
 
       <HabitForm
         draft={draft}
@@ -344,6 +384,9 @@ const Habits: React.FC = () => {
         onResetToday={handleResetToday}
         onResetHistory={handleResetHistory}
         onDelete={handleDeleteHabit}
+        mergedConnection={mergedConnection}
+        currentUserId={currentUserId}
+        partnerName={partnerName}
       />
     </div>
   );

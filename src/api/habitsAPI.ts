@@ -1,6 +1,16 @@
 /**
- * Habits and Habit Entries API
+ * Habits and Habit Entries API with Merged Mode Support
  * CRUD operations for habits and habit tracking with Supabase
+ *
+ * Merged Mode: When both users in a connection set this module to "merged",
+ * the API fetches habits for both users. Each user tracks their own progress
+ * on both personal and shared habits. RLS policies ensure proper access control.
+ *
+ * Implementation:
+ * - getHabitsMergedConnection() checks if merged mode is enabled
+ * - Fetch functions include partner's habits when merged
+ * - Each user maintains individual progress/streaks for all visible habits
+ * - RLS policies on habits and habit_entries tables handle security
  */
 
 import { supabase } from '../lib/supabase';
@@ -8,13 +18,51 @@ import type { HabitData, HabitEntryData } from '../services/types';
 import { apiCall, requireAuth, handleSupabaseResponse } from './apiWrapper';
 import { AuthenticationError, NotFoundError, ValidationError } from '../lib/errors';
 import { isHabitData, isHabitEntryData, isArrayOf } from '../types/guards';
+import { getMergedConnectionId, type MergedConnectionResult } from '../shared/api/SharedDataProvider';
+import { logger } from '../services/logger';
+
+// =====================================================
+// MERGED MODE SUPPORT
+// =====================================================
+
+// Merged connection cache for Habits
+let cachedMergedConnection: MergedConnectionResult | null | undefined;
+
+/**
+ * Get merged connection for habits module
+ * Returns connection info if both users have enabled merged mode, null otherwise
+ */
+export async function getHabitsMergedConnection(): Promise<MergedConnectionResult | null> {
+  if (cachedMergedConnection !== undefined) {
+    logger.debug('HabitsAPI', 'Returning cached merged connection', { cached: cachedMergedConnection });
+    return cachedMergedConnection;
+  }
+
+  logger.debug('HabitsAPI', 'Fetching habits merged connection');
+  cachedMergedConnection = await getMergedConnectionId('habits');
+  logger.info('HabitsAPI', 'Habits merged connection fetched', {
+    hasMergedMode: !!cachedMergedConnection,
+    partnerId: cachedMergedConnection?.partnerId
+  });
+
+  return cachedMergedConnection;
+}
+
+/**
+ * Clear cached merged connection (call when connection status changes)
+ */
+export function clearHabitsMergedConnectionCache(): void {
+  logger.debug('HabitsAPI', 'Clearing habits merged connection cache');
+  cachedMergedConnection = undefined;
+}
 
 // =====================================================
 // HABITS CRUD OPERATIONS
 // =====================================================
 
 /**
- * Get all habits for the current user
+ * Get all habits for the current user (supports merged mode)
+ * In merged mode, returns both users' habits so couples can track habits together
  */
 export async function getHabits(filters?: {
   category?: string;
@@ -24,11 +72,22 @@ export async function getHabits(filters?: {
     async () => {
       const user = await requireAuth();
 
+      // Check for merged connection
+      const mergedConnection = await getHabitsMergedConnection();
+
       let query = supabase
         .from('habits')
         .select('*')
-        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
+
+      // If merged mode, get both users' habits
+      // Otherwise, just get current user's habits
+      if (mergedConnection) {
+        logger.debug('HabitsAPI', 'Merged mode enabled - fetching habits for both users');
+        query = query.or(`user_id.eq.${user.id},user_id.eq.${mergedConnection.partnerId}`);
+      } else {
+        query = query.eq('user_id', user.id);
+      }
 
       // Apply filters
       if (filters) {
@@ -39,6 +98,13 @@ export async function getHabits(filters?: {
       const { data, error } = await query;
 
       if (error) throw error;
+
+      logger.info('HabitsAPI', 'Fetched habits', {
+        count: data?.length ?? 0,
+        mergedMode: !!mergedConnection,
+        filters
+      });
+
       return (data ?? []) as HabitData[];
     },
     { domain: 'HabitsAPI', operation: 'getHabits', data: { filters } }
@@ -147,7 +213,9 @@ export async function deleteHabit(id: string): Promise<void> {
 // =====================================================
 
 /**
- * Get habit entries with optional filters
+ * Get habit entries with optional filters (supports merged mode)
+ * In merged mode, returns entries for both users' habits
+ * Note: Each user has their own entries even for partner's habits
  */
 export async function getHabitEntries(filters?: {
   habitId?: string;
@@ -157,11 +225,22 @@ export async function getHabitEntries(filters?: {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new AuthenticationError('Not authenticated');
 
-  // First get user's habits to filter entries
-  const { data: userHabits, error: habitsError } = await supabase
+  // Check for merged connection
+  const mergedConnection = await getHabitsMergedConnection();
+
+  // Get habits for current user (and partner if merged mode)
+  let habitsQuery = supabase
     .from('habits')
-    .select('id')
-    .eq('user_id', user.id);
+    .select('id');
+
+  if (mergedConnection) {
+    // In merged mode, get all visible habits (mine + partner's)
+    habitsQuery = habitsQuery.or(`user_id.eq.${user.id},user_id.eq.${mergedConnection.partnerId}`);
+  } else {
+    habitsQuery = habitsQuery.eq('user_id', user.id);
+  }
+
+  const { data: userHabits, error: habitsError } = await habitsQuery;
 
   if (habitsError) throw habitsError;
   if (!userHabits || userHabits.length === 0) return [];
@@ -185,6 +264,13 @@ export async function getHabitEntries(filters?: {
 
   if (error) throw error;
   if (!data) throw new NotFoundError('Habit entries');
+
+  logger.debug('HabitsAPI', 'Fetched habit entries', {
+    count: data.length,
+    habitIds: habitIds.length,
+    mergedMode: !!mergedConnection
+  });
+
   return data as HabitEntryData[];
 }
 
