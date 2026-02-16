@@ -9,7 +9,7 @@ import { logger } from '../services/logger';
 import { CheckCircle2, Target } from 'lucide-react';
 
 // Hooks
-import { useTasks, useUpdateTask, useDeleteTask } from '../hooks/useTasksQuery';
+import { useTasks, useUpdateTask, useDeleteTask, useMergedTasksConnectionQuery } from '../hooks/useTasksQuery';
 import { useHabits, useHabitEntries } from '../hooks/useHabitsQuery';
 import { useCalendarEvents, useCreateCalendarEvent, useUpdateCalendarEvent, useDeleteCalendarEvent } from '../hooks/useCalendarQuery';
 import { useScheduleBlocks, useCreateScheduleBlock, useUpdateScheduleBlock, useDeleteScheduleBlock } from '../hooks/useScheduleBlocksQuery';
@@ -18,6 +18,8 @@ import { useCalendarTasks } from '../calendar/hooks/useCalendarTasks';
 import { isMultiDayTask, getTaskSpanDays, taskAppearsOnDate, getTaskSpanPosition } from '../calendar/hooks';
 import { useUndoRedo } from '../contexts/UndoRedoContext';
 import { useProjectsQuery } from '@/hooks/useProjectsQuery';
+import { useCurrentUserId, usePartnerName } from '../utils/ownerUtils';
+import type { OwnerFilterValue } from '../components/common/OwnerFilter';
 
 // Components
 import { CalendarHeader } from '../calendar/components/CalendarHeader';
@@ -49,6 +51,12 @@ const Calendar: React.FC = () => {
   const { data: habitEntries = [], isLoading: entriesLoading } = useHabitEntries();
   const { data: calendarEvents = [], isLoading: eventsLoading } = useCalendarEvents();
   const { data: projects = [] } = useProjectsQuery();
+  const { data: mergedConnection } = useMergedTasksConnectionQuery();
+  const { data: currentUserId } = useCurrentUserId();
+  const partnerName = usePartnerName(mergedConnection);
+
+  // Owner filter state
+  const [ownerFilter, setOwnerFilter] = useState<OwnerFilterValue>('all');
 
   // Mutations
   const updateTaskMutation = useUpdateTask();
@@ -83,7 +91,35 @@ const Calendar: React.FC = () => {
     };
   }, [calendarState.view, calendarState.weekDays, calendarState.monthGridDays, calendarState.currentDate]);
   const { data: scheduleBlocks = [], isLoading: blocksLoading } = useScheduleBlocks(scheduleFilters);
-  const { categorizedTasks, unscheduledTasks } = useCalendarTasks(tasks);
+
+  // Filter tasks and events by owner
+  const filteredTasks = useMemo(() => {
+    if (!mergedConnection || !currentUserId) return tasks;
+
+    switch (ownerFilter) {
+      case 'mine':
+        return tasks.filter(task => task.user_id === currentUserId);
+      case 'partner':
+        return tasks.filter(task => task.user_id === mergedConnection.partnerId);
+      default:
+        return tasks; // 'all'
+    }
+  }, [tasks, ownerFilter, currentUserId, mergedConnection]);
+
+  const filteredEvents = useMemo(() => {
+    if (!mergedConnection || !currentUserId) return calendarEvents;
+
+    switch (ownerFilter) {
+      case 'mine':
+        return calendarEvents.filter(event => event.user_id === currentUserId);
+      case 'partner':
+        return calendarEvents.filter(event => event.user_id === mergedConnection.partnerId);
+      default:
+        return calendarEvents; // 'all'
+    }
+  }, [calendarEvents, ownerFilter, currentUserId, mergedConnection]);
+
+  const { categorizedTasks, unscheduledTasks } = useCalendarTasks(filteredTasks);
   const { executeCommand } = useUndoRedo();
   const scheduleBlockStyles: Record<ScheduleBlock['type'], string> = {
     task: 'bg-emerald-200/70 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-100',
@@ -127,7 +163,7 @@ const Calendar: React.FC = () => {
     const dateKey = format(date, 'yyyy-MM-dd');
 
     // Tasks (including multi-day tasks that span this date)
-    const dayTasks = tasks.filter(task => taskAppearsOnDate(task, date));
+    const dayTasks = filteredTasks.filter(task => taskAppearsOnDate(task, date));
 
     // Separate all-day tasks (high priority or starred tasks are treated as all-day)
     const allDayTasks = dayTasks.filter(task =>
@@ -138,7 +174,7 @@ const Calendar: React.FC = () => {
     );
 
     // Calendar Events
-    const dayEvents = calendarEvents.filter(event => {
+    const dayEvents = filteredEvents.filter(event => {
       const eventStart = parseISO(event.start_date);
       const eventEnd = parseISO(event.end_date);
       return isSameDay(date, eventStart) || isSameDay(date, eventEnd) ||
@@ -583,6 +619,10 @@ const Calendar: React.FC = () => {
             onViewChange={calendarState.setView}
             onNewEvent={() => handleNewEvent()}
             onNewBlock={() => handleQuickCreateBlock(calendarState.currentDate)}
+            ownerFilter={ownerFilter}
+            onOwnerFilterChange={setOwnerFilter}
+            partnerName={partnerName}
+            showOwnerFilter={!!mergedConnection}
           />
 
           {/* Week View */}

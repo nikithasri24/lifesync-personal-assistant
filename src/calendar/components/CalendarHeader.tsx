@@ -6,6 +6,7 @@ import React from 'react';
 import { format } from 'date-fns';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus } from 'lucide-react';
 import type { CalendarView, WeekDay } from '../hooks/useCalendarState';
+import { OwnerFilter, type OwnerFilterValue } from '../../components/common/OwnerFilter';
 
 interface CalendarHeaderProps {
   currentDate: Date;
@@ -17,6 +18,10 @@ interface CalendarHeaderProps {
   onViewChange: (view: CalendarView) => void;
   onNewEvent: () => void;
   onNewBlock: () => void;
+  ownerFilter?: OwnerFilterValue;
+  onOwnerFilterChange?: (value: OwnerFilterValue) => void;
+  partnerName?: string;
+  showOwnerFilter?: boolean;
 }
 
 export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
@@ -29,6 +34,10 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
   onViewChange,
   onNewEvent,
   onNewBlock,
+  ownerFilter,
+  onOwnerFilterChange,
+  partnerName,
+  showOwnerFilter = false,
 }) => {
   const dateDisplay = view === 'day'
     ? format(currentDate, 'EEEE, MMMM d, yyyy')
@@ -67,6 +76,15 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
       </div>
 
       <div className="flex items-center gap-3">
+        {/* Owner Filter */}
+        {showOwnerFilter && ownerFilter && onOwnerFilterChange && (
+          <OwnerFilter
+            value={ownerFilter}
+            onChange={onOwnerFilterChange}
+            partnerName={partnerName}
+          />
+        )}
+
         {/* View selector */}
         <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
           <button
