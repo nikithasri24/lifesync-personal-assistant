@@ -6,6 +6,11 @@
 import { supabase } from '../lib/supabase';
 import { apiCall, requireAuth, handleSupabaseResponse } from './apiWrapper';
 import type { AutomationRule, AutomationEventType } from '../types/infrastructure';
+import {
+  mapRowToAutomationRule,
+  mapAutomationRuleToInsert,
+  mapAutomationRuleToUpdate,
+} from './mappers/automationMappers';
 
 /**
  * Get all active automation rules for the current user
@@ -22,7 +27,7 @@ export async function getActiveAutomationRules(): Promise<AutomationRule[]> {
         .eq('enabled', true);
 
       if (error) throw error;
-      return (data ?? []) as AutomationRule[];
+      return (data ?? []).map(mapRowToAutomationRule);
     },
     { domain: 'AutomationAPI', operation: 'getActiveAutomationRules' }
   );
@@ -45,7 +50,7 @@ export async function getAutomationRulesForEvent(eventType: AutomationEventType)
         .contains('trigger_config', { event: eventType });
 
       if (error) throw error;
-      return (data ?? []) as AutomationRule[];
+      return (data ?? []).map(mapRowToAutomationRule);
     },
     { domain: 'AutomationAPI', operation: 'getAutomationRulesForEvent', data: { eventType } }
   );
@@ -61,17 +66,19 @@ export async function createAutomationRule(
     async () => {
       const user = await requireAuth();
 
+      const dbRule = mapAutomationRuleToInsert(rule);
+
       const result = await supabase
         .from('automation_rules')
         .insert({
-          ...rule,
+          ...dbRule,
           user_id: user.id, // Override to ensure correct user
         })
         .select()
         .single();
 
       const data = handleSupabaseResponse(result, 'Automation Rule');
-      return data as AutomationRule;
+      return mapRowToAutomationRule(data);
     },
     { domain: 'AutomationAPI', operation: 'createAutomationRule', data: { name: rule.name } }
   );
@@ -86,9 +93,11 @@ export async function updateAutomationRule(
 ): Promise<void> {
   return apiCall(
     async () => {
+      const dbUpdates = mapAutomationRuleToUpdate(updates);
+
       const { error } = await supabase
         .from('automation_rules')
-        .update(updates)
+        .update(dbUpdates)
         .eq('id', ruleId);
 
       if (error) throw error;
@@ -130,7 +139,7 @@ export async function getAutomationRule(ruleId: string): Promise<AutomationRule 
         if (error.code === 'PGRST116') return null; // Not found
         throw error;
       }
-      return data as AutomationRule;
+      return mapRowToAutomationRule(data);
     },
     { domain: 'AutomationAPI', operation: 'getAutomationRule', data: { ruleId } }
   );

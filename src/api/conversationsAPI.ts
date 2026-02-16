@@ -6,6 +6,11 @@
 import { supabase } from '../lib/supabase';
 import { apiCall, requireAuth, handleSupabaseResponse } from './apiWrapper';
 import type { Conversation, ConversationMessage } from '@/types/infrastructure';
+import {
+  mapRowToConversation,
+  mapConversationToInsert,
+  mapConversationToUpdate,
+} from './mappers/conversationMappers';
 
 /**
  * Get conversations for the current user
@@ -39,7 +44,7 @@ export async function getConversations(filters?: {
 
       const { data, error } = await query;
       if (error) throw error;
-      return (data ?? []) as Conversation[];
+      return (data ?? []).map(mapRowToConversation);
     },
     { domain: 'ConversationsAPI', operation: 'getConversations', data: { filters } }
   );
@@ -61,7 +66,7 @@ export async function getConversation(id: string): Promise<Conversation> {
         .single();
 
       const data = handleSupabaseResponse(result, 'Conversation', id);
-      return data as Conversation;
+      return mapRowToConversation(data);
     },
     { domain: 'ConversationsAPI', operation: 'getConversation', data: { id } }
   );
@@ -75,10 +80,12 @@ export async function createConversation(conversation: Partial<Conversation>): P
     async () => {
       const user = await requireAuth();
 
+      const dbConversation = mapConversationToInsert(conversation);
+
       const result = await supabase
         .from('conversations')
         .insert({
-          ...conversation,
+          ...dbConversation,
           user_id: user.id,
           created_at: new Date().toISOString(),
         })
@@ -86,7 +93,7 @@ export async function createConversation(conversation: Partial<Conversation>): P
         .single();
 
       const data = handleSupabaseResponse(result, 'Conversation');
-      return data as Conversation;
+      return mapRowToConversation(data);
     },
     { domain: 'ConversationsAPI', operation: 'createConversation' }
   );
@@ -100,10 +107,12 @@ export async function updateConversation(id: string, updates: Partial<Conversati
     async () => {
       const user = await requireAuth();
 
+      const dbUpdates = mapConversationToUpdate(updates);
+
       const result = await supabase
         .from('conversations')
         .update({
-          ...updates,
+          ...dbUpdates,
           updated_at: new Date().toISOString(),
         })
         .eq('id', id)
@@ -112,7 +121,7 @@ export async function updateConversation(id: string, updates: Partial<Conversati
         .single();
 
       const data = handleSupabaseResponse(result, 'Conversation', id);
-      return data as Conversation;
+      return mapRowToConversation(data);
     },
     { domain: 'ConversationsAPI', operation: 'updateConversation', data: { id } }
   );

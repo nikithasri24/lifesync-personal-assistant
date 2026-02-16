@@ -120,7 +120,7 @@ export interface DateRange {
 export async function getTasksForAnalytics(dateRange: DateRange): Promise<Array<{
   status: string;
   completed_at: string | null;
-  created_at: string;
+  created_at: string | null;
 }>> {
   return apiCall(
     async () => {
@@ -145,7 +145,7 @@ export async function getTasksForAnalytics(dateRange: DateRange): Promise<Array<
  */
 export async function getHabitEntriesForAnalytics(dateRange: DateRange): Promise<Array<{
   id: string;
-  habit_id: string;
+  habit_id: string | null;
   date: string;
 }>> {
   return apiCall(
@@ -203,7 +203,7 @@ export async function getHabitsCount(): Promise<number> {
 export async function getFocusSessionsForAnalytics(dateRange: DateRange): Promise<Array<{
   duration_minutes: number;
   actual_duration_seconds: number | null;
-  status: string;
+  status: string | null;
 }>> {
   return apiCall(
     async () => {
@@ -229,7 +229,6 @@ export async function getFocusSessionsForAnalytics(dateRange: DateRange): Promis
  */
 export async function getJournalEntriesForAnalytics(dateRange: DateRange): Promise<Array<{
   id: string;
-  date: string;
   created_at: string;
 }>> {
   return apiCall(
@@ -238,11 +237,11 @@ export async function getJournalEntriesForAnalytics(dateRange: DateRange): Promi
 
       const { data, error } = await supabase
         .from('journal_entries')
-        .select('id, date, created_at')
+        .select('id, created_at')
         .eq('user_id', user.id)
         .gte('created_at', dateRange.startDate)
         .lte('created_at', dateRange.endDate)
-        .order('date', { ascending: true });
+        .order('created_at', { ascending: true });
 
       if (error) throw error;
       return data ?? [];
@@ -256,8 +255,8 @@ export async function getJournalEntriesForAnalytics(dateRange: DateRange): Promi
  */
 export async function getProjectsForAnalytics(dateRange: DateRange): Promise<Array<{
   id: string;
-  progress: number;
-  updated_at: string;
+  status: string;
+  updated_at: string | null;
 }>> {
   return apiCall(
     async () => {
@@ -265,7 +264,7 @@ export async function getProjectsForAnalytics(dateRange: DateRange): Promise<Arr
 
       const { data, error } = await supabase
         .from('projects')
-        .select('id, progress, updated_at')
+        .select('id, status, updated_at')
         .eq('user_id', user.id)
         .gte('updated_at', dateRange.startDate)
         .lte('updated_at', dateRange.endDate);
@@ -318,11 +317,11 @@ export async function getBudgetsTotalForAnalytics(): Promise<number> {
 
       const { data, error } = await supabase
         .from('finance_budgets')
-        .select('amount')
+        .select('limit_amount')
         .eq('user_id', user.id);
 
       if (error) throw error;
-      return (data ?? []).reduce((sum, b) => sum + (b.amount ?? 0), 0);
+      return (data ?? []).reduce((sum, b) => sum + (b.limit_amount ?? 0), 0);
     },
     { domain: 'AnalyticsAPI', operation: 'getBudgetsTotalForAnalytics' }
   );
