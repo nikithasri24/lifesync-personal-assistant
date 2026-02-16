@@ -19,11 +19,12 @@ import {
   usePantryHandlers,
 } from '../shopping/hooks';
 import { useStoresQuery } from '../hooks/useStoresQuery';
+import ConfirmDialog from '../components/DebtPayoffCalculator/ConfirmDialog';
 
 export default function ShoppingSmart(): ReactElement {
-  const { shoppingItems, pantryItems, activeListId, isLoadingList, ensureActiveList } = useShoppingData();
+  const { shoppingItems, pantryItems, activeListId, isLoadingList, isLoadingItems, ensureActiveList } = useShoppingData();
   const { addShoppingItem, updateShoppingItem, deleteShoppingItem, toggleShoppingItem, createPantryItem, updatePantryItem, deletePantryItem } = useShoppingMutations({ activeListId, ensureActiveList, shoppingItems });
-  const { data: stores = [] } = useStoresQuery();
+  const { data: stores = [], isLoading: isLoadingStores } = useStoresQuery();
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -31,6 +32,20 @@ export default function ShoppingSmart(): ReactElement {
       ensureActiveList().catch((error: unknown) => logger.error('ShoppingSmart', error as Error));
     }
   }, [isLoadingList, activeListId, ensureActiveList]);
+
+  // Show loading state while initial data is loading
+  const isInitialLoading = isLoadingList || (isLoadingItems && shoppingItems.length === 0) || isLoadingStores;
+
+  if (isInitialLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-center">
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-blue-500 border-t-transparent mx-auto mb-4" />
+          <p className="text-gray-600">Loading shopping data...</p>
+        </div>
+      </div>
+    );
+  }
 
   const [storeLists, setStoreLists] = useState<ShoppingList[]>([]);
   const [activeView, setActiveView] = useState<'master' | 'stores' | 'distribute' | 'pantry'>('master');
@@ -138,7 +153,8 @@ export default function ShoppingSmart(): ReactElement {
   const totalEstimatedCost = shoppingItems.reduce((sum: number, item: ShoppingItem) => sum + (item.estimatedPrice ?? 0), 0);
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
       {/* Header */}
       <ShoppingHeader
         totalMasterItems={totalMasterItems}
@@ -265,6 +281,7 @@ export default function ShoppingSmart(): ReactElement {
           onCancel={() => setItemToDelete(null)}
         />
       )}
+      </div>
     </div>
   );
 }
