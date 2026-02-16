@@ -15,7 +15,8 @@ import {
   getAccessibleDestinations,
   getVisaAccessSummary,
   getAvailablePassportCountries
-} from '../data/visaRequirements';
+} from '../api/visaRequirementsAPI';
+import { useAvailablePassportCountries, usePassportVisaData, useVisaAccessSummary } from '../hooks/useVisaRequirements';
 import { getPassportRanking } from '../data/passportPower';
 import { getAdditionalAccessFromVisas } from '../data/visaBasedAccess';
 import {
@@ -34,6 +35,7 @@ import type { VisaRequirement, UserPassport, UserVisa } from '../types/visa';
 import VisaMap from './VisaMap';
 import PassportEditor from './PassportEditor';
 import VisaEditor from './VisaEditor';
+import { PassportSummaryCard } from './PassportSummaryCard';
 
 interface DestinationRequirement {
   country: string;
@@ -75,7 +77,14 @@ const VisaCalculator: React.FC = () => {
   // State for visa deletion confirmation
   const [visaToDelete, setVisaToDelete] = React.useState<string | null>(null);
 
-  const availableCountries = React.useMemo(() => getAvailablePassportCountries(), []);
+  // Use hook to get available passport countries
+  const { data: availableCountries = [] } = useAvailablePassportCountries();
+
+  // Fetch all visa data for the selected passport (cached by React Query)
+  const { data: passportVisaData = {} } = usePassportVisaData(passport?.countryName || '');
+
+  // Use hook for passport summary
+  const { data: passportSummaryData } = useVisaAccessSummary(passport?.countryName || '');
 
   // Check for merged connection
   const { data: mergedConnection } = useQuery({
@@ -128,11 +137,8 @@ const VisaCalculator: React.FC = () => {
     loadData();
   }, []);
 
-  // Get summary for selected passport
-  const passportSummary = React.useMemo(() => {
-    if (!passport) return null;
-    return getVisaAccessSummary(passport.countryName);
-  }, [passport?.id, passport?.countryName]);
+  // Get summary for selected passport (from hook data)
+  const passportSummary = passportSummaryData || null;
 
   // Get passport ranking
   const passportRanking = React.useMemo(() => {
@@ -206,15 +212,13 @@ const VisaCalculator: React.FC = () => {
       });
     });
 
-    // Get all countries and their requirements from passport
+    // Get all countries and their requirements from passport (use cached data)
     availableCountries.forEach(country => {
-      const req = getVisaRequirement(passport.countryName, country);
+      const req = passportVisaData[country];
 
       if (!req) {
-        logger.warn('Travel', 'No visa requirement data found', {
-          passport: passport.countryName,
-          destination: country
-        });
+        // Skip countries without data (expected for some pairs)
+        return;
         return; // Skip this country gracefully
       }
 
@@ -520,83 +524,18 @@ const VisaCalculator: React.FC = () => {
             {/* Show all passports in merged mode, or just the primary one otherwise */}
             {mergedConnection && allPassports.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {allPassports.map((p) => {
-                  const ownerLabel = getOwnershipLabel(p.userId);
-                  const ownerColor = getOwnershipColor(p.userId);
-                  const summary = getVisaAccessSummary(p.countryName);
-                  const ranking = getPassportRanking(p.countryCode);
-
-                  return (
-                    <div key={p.id} className="border border-gray-200 rounded-lg p-4">
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="text-4xl">{p.countryCode === 'US' ? '🇺🇸' : p.countryCode === 'IN' ? '🇮🇳' : '🌍'}</div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-gray-900">{p.countryName}</span>
-                            {ownerLabel && (
-                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${ownerColor}`}>
-                                {ownerLabel}
-                              </span>
-                            )}
-                          </div>
-                          {p.expiryDate && (
-                            <div className="text-sm text-gray-600">
-                              Expires: {new Date(p.expiryDate).toLocaleDateString()}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Mini summary for each passport */}
-                      {summary && (
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div className="bg-green-50 rounded p-2">
-                            <div className="font-bold text-green-700">{summary.visaFree}</div>
-                            <div className="text-green-600">Visa Free</div>
-                          </div>
-                          <div className="bg-blue-50 rounded p-2">
-                            <div className="font-bold text-blue-700">{summary.visaOnArrival}</div>
-                            <div className="text-blue-600">On Arrival</div>
-                          </div>
-                        </div>
-                      )}
-
-                      {ranking && (
-                        <div className="mt-2 text-xs text-gray-600">
-                          Rank #{ranking.rank} globally
-                        </div>
-                      )}
-
-                      {/* Action buttons */}
-                      {currentUserId && p.userId === currentUserId && (
-                        <div className="flex gap-2 mt-3">
-                          <button
-                            onClick={() => handleEditPassport(p)}
-                            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                            aria-label={`Edit ${p.countryName} passport`}
-                          >
-                            Edit
-                          </button>
-                          {!p.isPrimary && (
-                            <button
-                              onClick={() => handleSetPrimaryPassport(p.id)}
-                              className="text-sm text-gray-600 hover:text-gray-700 font-medium"
-                            >
-                              Set as Primary
-                            </button>
-                          )}
-                          <button
-                            onClick={() => setPassportToDelete(p.id)}
-                            className="text-sm text-red-600 hover:text-red-700 font-medium"
-                            aria-label={`Delete ${p.countryName} passport`}
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                {allPassports.map((p) => (
+                  <PassportSummaryCard
+                    key={p.id}
+                    passport={p}
+                    ownerLabel={getOwnershipLabel(p.userId)}
+                    ownerColor={getOwnershipColor(p.userId)}
+                    currentUserId={currentUserId}
+                    onEdit={handleEditPassport}
+                    onSetPrimary={handleSetPrimaryPassport}
+                    onDelete={setPassportToDelete}
+                  />
+                ))}
               </div>
             ) : (
               /* Single passport view for non-merged mode */

@@ -8,10 +8,11 @@ import React from 'react';
 import { MapContainer, TileLayer, GeoJSON } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { getVisaRequirement } from '../data/visaRequirements';
 import { getAdditionalAccessFromVisas } from '../data/visaBasedAccess';
 import type { VisaRequirement, UserVisa, UserPassport } from '../types/visa';
+import type { VisaRequirementEntry } from '../api/visaRequirementsAPI';
 import { logger } from '../../services/logger';
+import { usePassportVisaData } from '../hooks/useVisaRequirements';
 
 type PassportOwnerFilter = 'me' | 'partner' | 'both';
 
@@ -58,6 +59,9 @@ const VisaMap: React.FC<VisaMapProps> = ({
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [filterType, setFilterType] = React.useState<'all' | VisaRequirement>('all');
+
+  // Fetch all visa data for the primary passport (cached by React Query)
+  const { data: primaryPassportVisaData = {} } = usePassportVisaData(passportCountry);
 
   // New filters for date and passport owner
   // Use external travel date if provided, otherwise use internal state
@@ -216,7 +220,10 @@ const VisaMap: React.FC<VisaMapProps> = ({
   }, [allPassports, currentUserId, mergedConnection, passportOwnerFilter]);
 
   // Calculate access for each country based on selected date and passport filter
-  const getCountryAccess = React.useCallback((countryName: string): {
+  const getCountryAccess = React.useCallback((
+    countryName: string,
+    visaDataCache: Record<string, VisaRequirementEntry>
+  ): {
     requirement: VisaRequirement;
     daysAllowed?: number;
     viaVisa?: string;
@@ -243,8 +250,10 @@ const VisaMap: React.FC<VisaMapProps> = ({
     } | null = null;
 
     for (const passport of passportsToCheck) {
-      // Get passport-based access
-      const passportReq = getVisaRequirement(passport.countryName, normalizedName);
+      // Get passport-based access from cache (synchronous lookup)
+      const passportReq = passport.countryName === passportCountry
+        ? visaDataCache[normalizedName]
+        : null; // For now, only support primary passport lookups
       if (!passportReq) continue;
 
       // Check if user has a valid visa for this specific country (valid on travel date)
@@ -334,7 +343,7 @@ const VisaMap: React.FC<VisaMapProps> = ({
     }
 
     return bestAccess;
-  }, [passportCountry, userVisas, travelDate, getFilteredPassports, currentUserId]);
+  }, [passportCountry, userVisas, travelDate, getFilteredPassports, currentUserId, primaryPassportVisaData]);
 
   // Helper to compare access quality (higher is better)
   const compareAccess = (a: { requirement: VisaRequirement; daysAllowed?: number }, b: { requirement: VisaRequirement; daysAllowed?: number }): number => {
@@ -377,7 +386,7 @@ const VisaMap: React.FC<VisaMapProps> = ({
 
   // Country style function
   const getCountryStyle = React.useCallback((countryName: string): L.PathOptions => {
-    const access = getCountryAccess(countryName);
+    const access = getCountryAccess(countryName, primaryPassportVisaData);
 
     if (!access) {
       // Countries without visa data (Antarctica, territories, etc.)
@@ -411,7 +420,7 @@ const VisaMap: React.FC<VisaMapProps> = ({
   // Country layer setup
   const onEachCountry = React.useCallback((feature: CountryFeature, layer: L.Layer): void => {
     const countryName = feature.properties.name;
-    const access = getCountryAccess(countryName);
+    const access = getCountryAccess(countryName, primaryPassportVisaData);
     if (!access) return;
 
     if (layer instanceof L.Path) {
@@ -447,7 +456,7 @@ const VisaMap: React.FC<VisaMapProps> = ({
     };
 
     countries.forEach(country => {
-      const access = getCountryAccess(country.properties.name);
+      const access = getCountryAccess(country.properties.name, primaryPassportVisaData);
       if (access) {
         counts[access.requirement]++;
       }

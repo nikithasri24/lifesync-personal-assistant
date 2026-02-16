@@ -26,7 +26,10 @@
     "cap:android": "npx cap open android",
     "cap:build": "npm run build && npx cap sync",
     "cap:build:ios": "npm run build && npx cap sync ios && npx cap open ios",
-    "cap:build:android": "npm run build && npx cap sync android && npx cap open android"
+    "cap:build:android": "npm run build && npx cap sync android && npx cap open android",
+    "import:visa-data": "npx tsx scripts/import-visa-data.ts",
+    "import:visa-to-db": "npx tsx scripts/import-visa-to-supabase.ts",
+    "export:visa-csv": "npx tsx scripts/export-visa-to-csv.ts"
   },
   "dependencies": {
     "@capacitor/android": "^8.0.0",

@@ -19,6 +19,9 @@ logs/
 pocketbase
 pocketbase.zip
 
+# Generated data files
+visa_requirements.csv
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

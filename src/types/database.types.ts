@@ -8095,6 +8095,36 @@ export type Database = {
         }
         Relationships: []
       }
+      visa_requirements: {
+        Row: {
+          created_at: string
+          days_allowed: number | null
+          destination_country: string
+          id: string
+          passport_country: string
+          requirement: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          days_allowed?: number | null
+          destination_country: string
+          id?: string
+          passport_country: string
+          requirement: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          days_allowed?: number | null
+          destination_country?: string
+          id?: string
+          passport_country?: string
+          requirement?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       visited_locations: {
         Row: {
           city_name: string | null
