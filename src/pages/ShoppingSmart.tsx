@@ -27,26 +27,7 @@ export default function ShoppingSmart(): ReactElement {
   const { data: stores = [], isLoading: isLoadingStores } = useStoresQuery();
   const { showToast } = useToast();
 
-  useEffect(() => {
-    if (!isLoadingList && !activeListId) {
-      ensureActiveList().catch((error: unknown) => logger.error('ShoppingSmart', error as Error));
-    }
-  }, [isLoadingList, activeListId, ensureActiveList]);
-
-  // Show loading state while initial data is loading
-  const isInitialLoading = isLoadingList || (isLoadingItems && shoppingItems.length === 0) || isLoadingStores;
-
-  if (isInitialLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="text-center">
-          <div className="h-12 w-12 animate-spin rounded-full border-4 border-blue-500 border-t-transparent mx-auto mb-4" />
-          <p className="text-gray-600">Loading shopping data...</p>
-        </div>
-      </div>
-    );
-  }
-
+  // All state hooks must be called before any conditional returns
   const [storeLists, setStoreLists] = useState<ShoppingList[]>([]);
   const [activeView, setActiveView] = useState<'master' | 'stores' | 'distribute' | 'pantry'>('master');
   const [distributionStrategy, setDistributionStrategy] = useState<DistributionStrategy>('mixed');
@@ -77,6 +58,26 @@ export default function ShoppingSmart(): ReactElement {
   const { userLocation, getUserLocation, findNearbyStoresForItem } = useStoreSuggestions(stores);
   const { handleAddItem, handleUpdateItem } = useShoppingFormHandlers({ stores, addShoppingItem, updateShoppingItem });
   const { handleAddPantryItem, handleAddToPantry, handleLogExpense } = usePantryHandlers({ createPantryItem, showToast });
+
+  useEffect(() => {
+    if (!isLoadingList && !activeListId) {
+      ensureActiveList().catch((error: unknown) => logger.error('ShoppingSmart', error as Error));
+    }
+  }, [isLoadingList, activeListId, ensureActiveList]);
+
+  // Show loading state while initial data is loading (after all hooks are called)
+  const isInitialLoading = isLoadingList || (isLoadingItems && shoppingItems.length === 0) || isLoadingStores;
+
+  if (isInitialLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-center">
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-blue-500 border-t-transparent mx-auto mb-4" />
+          <p className="text-gray-600">Loading shopping data...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Smart distribution algorithm - analyzes master list to determine optimal stores
   const distributeItemsToStores = async (): Promise<void> => {
