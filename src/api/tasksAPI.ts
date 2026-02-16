@@ -18,6 +18,8 @@ import { supabase } from '../lib/supabase';
 import type { TaskData } from '../services/types';
 import { apiCall, requireAuth, handleSupabaseResponse } from './apiWrapper';
 import { getMergedConnectionId, type MergedConnectionResult } from '../shared/api/SharedDataProvider';
+import { validateApiResponse } from '../lib/validation';
+import { TaskDataSchema, TaskDataArraySchema } from '../tasks/schemas';
 
 // ============================================
 // MERGED MODE SUPPORT
@@ -134,7 +136,11 @@ export async function getTasksByIds(ids: string[]): Promise<TaskData[]> {
       const { data, error} = await query;
 
       if (error) throw error;
-      return (data ?? []) as TaskData[];
+      return validateApiResponse(
+        TaskDataArraySchema,
+        data ?? [],
+        'getTasksByIds'
+      );
     },
     { domain: 'TasksAPI', operation: 'getTasksByIds', data: { count: ids.length } }
   );
@@ -189,7 +195,8 @@ export async function getTask(id: string): Promise<TaskData> {
         .eq('user_id', user.id)
         .single();
 
-      return handleSupabaseResponse(response, 'Task', id);
+      const data = handleSupabaseResponse(response, 'Task', id);
+      return validateApiResponse(TaskDataSchema, data, 'getTask');
     },
     { domain: 'TasksAPI', operation: 'getTask', data: { id } }
   );
@@ -212,7 +219,8 @@ export async function createTask(task: Omit<TaskData, 'id' | 'user_id' | 'create
         .select()
         .single();
 
-      return handleSupabaseResponse(response, 'Task');
+      const data = handleSupabaseResponse(response, 'Task');
+      return validateApiResponse(TaskDataSchema, data, 'createTask');
     },
     { domain: 'TasksAPI', operation: 'createTask', data: { title: task.title } }
   );
@@ -234,7 +242,8 @@ export async function updateTask(id: string, updates: Partial<TaskData>): Promis
         .select()
         .single();
 
-      return handleSupabaseResponse(response, 'Task', id);
+      const data = handleSupabaseResponse(response, 'Task', id);
+      return validateApiResponse(TaskDataSchema, data, 'updateTask');
     },
     { domain: 'TasksAPI', operation: 'updateTask', data: { id } }
   );
@@ -329,7 +338,11 @@ export async function getTasksForReminders(options?: {
 
       const { data, error } = await query;
       if (error) throw error;
-      return (data ?? []) as TaskData[];
+      return validateApiResponse(
+        TaskDataArraySchema,
+        data ?? [],
+        'getTasksForReminders'
+      );
     },
     { domain: 'TasksAPI', operation: 'getTasksForReminders', data: { options } }
   );
