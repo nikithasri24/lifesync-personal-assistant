@@ -44,6 +44,22 @@ export const projectsKeys = {
   analytics: () => [...projectsKeys.all, 'analytics'] as const,
 };
 
+// ==================== Merged Mode ====================
+
+/**
+ * Hook to check if projects merged mode is enabled
+ * Returns connection info if both users have enabled merged mode, null otherwise
+ */
+export function useMergedProjectsConnectionQuery() {
+  return useQuery({
+    queryKey: ['projects', 'mergedConnection'],
+    queryFn: projectsAPI.getProjectsMergedConnection,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    gcTime: 1000 * 60 * 10, // 10 minutes
+    retry: 1,
+  });
+}
+
 // ==================== Queries ====================
 
 /**

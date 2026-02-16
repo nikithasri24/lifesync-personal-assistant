@@ -101,7 +101,11 @@
       "Bash(xcodebuild:*)",
       "Bash(kill:*)",
       "Bash(/tmp/check-api-consistency.sh:*)",
-      "Bash(bash /tmp/check-api-consistency.sh)"
+      "Bash(bash /tmp/check-api-consistency.sh)",
+      "Bash(/tmp/analyze-apis.sh:*)",
+      "Bash(bash /tmp/analyze-apis.sh)",
+      "Bash(/tmp/check-response-types.sh:*)",
+      "Bash(bash /tmp/check-response-types.sh)"
     ],
     "deny": [],
     "ask": []

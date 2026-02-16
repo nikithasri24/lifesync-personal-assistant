@@ -193,6 +193,149 @@ const calculateTotal = (items: ShoppingItem[]): number => {
 }
 ```
 
+## 🔌 API Development Rules (MUST Follow)
+
+### Standardized API Pattern
+
+**ALWAYS use the apiWrapper pattern for all API files:**
+
+```typescript
+// ✅ CORRECT - Modern Pattern
+import { apiCall, requireAuth, handleSupabaseResponse } from '@/api/apiWrapper';
+
+export async function getItems(filters?: ItemFilters): Promise<ItemData[]> {
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
+
+      const { data, error } = await supabase
+        .from('items')
+        .select('*')
+        .eq('user_id', user.id);
+
+      return handleSupabaseResponse({ data, error }, 'Item');
+    },
+    { domain: 'ItemsAPI', operation: 'getItems', data: filters }
+  );
+}
+```
+
+```typescript
+// ❌ WRONG - Manual error handling
+export async function getItems(): Promise<ItemData[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated'); // ❌ Use requireAuth()
+
+  const { data, error } = await query;
+  if (error) throw error; // ❌ Use handleSupabaseResponse()
+  return data as ItemData[]; // ❌ Use type guards
+}
+```
+
+### API Pattern Requirements
+
+**MUST DO:**
+- ✅ Use `apiCall()` wrapper for all operations
+- ✅ Use `requireAuth()` for authentication
+- ✅ Use `handleSupabaseResponse()` for Supabase responses
+- ✅ Explicit return types: `Promise<Type>`
+- ✅ Add merged mode support if data is shareable
+- ✅ Use type guards instead of type assertions
+
+**MUST NOT:**
+- ❌ Throw raw Supabase errors
+- ❌ Use `throw error` without transformation
+- ❌ Use `as` type assertions without validation
+- ❌ Manual error logging (apiCall does it)
+- ❌ Direct `supabase.auth.getUser()` calls (use requireAuth)
+
+### Merged Mode Support (For Shareable Data)
+
+If the module can be shared (tasks, habits, meals, shopping, calendar, goals):
+
+```typescript
+// Add merged mode support
+let cachedMergedConnection: MergedConnectionResult | null | undefined;
+
+export async function getItemsMergedConnection(): Promise<MergedConnectionResult | null> {
+  if (cachedMergedConnection !== undefined) {
+    return cachedMergedConnection;
+  }
+
+  cachedMergedConnection = await getMergedConnectionId('module_name');
+  return cachedMergedConnection;
+}
+
+export function clearItemsMergedConnectionCache(): void {
+  cachedMergedConnection = undefined;
+}
+
+// Use in queries
+export async function getItems(): Promise<ItemData[]> {
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
+      const mergedConnection = await getItemsMergedConnection();
+
+      let query = supabase.from('items').select('*');
+
+      if (mergedConnection) {
+        query = query.or(`user_id.eq.${user.id},user_id.eq.${mergedConnection.partnerId}`);
+      } else {
+        query = query.eq('user_id', user.id);
+      }
+
+      const { data, error } = await query;
+      return handleSupabaseResponse({ data, error }, 'Item');
+    },
+    { domain: 'ItemsAPI', operation: 'getItems' }
+  );
+}
+```
+
+### Type Safety in APIs
+
+**Use type guards instead of type assertions:**
+
+```typescript
+// ✅ CORRECT
+import { isArrayOf, isItemData } from '@/types/guards';
+
+const { data, error } = await query;
+if (error) throw error;
+if (!data || !isArrayOf(data, isItemData)) {
+  throw new ValidationError('Invalid item data received');
+}
+return data; // TypeScript knows it's ItemData[]
+```
+
+```typescript
+// ❌ WRONG
+const { data, error } = await query;
+if (error) throw error;
+return data as ItemData[]; // No validation!
+```
+
+### Current State
+
+**See:** `API_LAYER_CONSISTENCY_AUDIT_2026-02-16.md`
+
+- **66% of APIs** use modern pattern (28/41 files)
+- **34% need migration** (13 files) - Finance module, legacy APIs
+- **24% have merged mode** (10/41 files)
+
+**When creating NEW APIs:**
+- ALWAYS follow modern pattern above
+- Reference `src/api/tasksAPI.ts` as gold standard
+- Add merged mode if data is shareable
+
+**When modifying EXISTING APIs:**
+- If touching legacy API, consider migrating to modern pattern
+- Don't break existing functionality
+- Add tests for any changes
+
+---
+
 ## 🤖 AI Development Rules (Follow Strictly)
 
 ### LLM Integration

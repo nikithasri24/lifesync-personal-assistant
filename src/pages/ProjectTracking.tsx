@@ -18,6 +18,11 @@ const ProjectTracking: React.FC = () => {
     setSearchQuery,
     statusFilter,
     setStatusFilter,
+    ownerFilter,
+    setOwnerFilter,
+    mergedConnection,
+    currentUserId,
+    partnerName,
     showCreateModal,
     setShowCreateModal,
     editingProject,
@@ -55,6 +60,10 @@ const ProjectTracking: React.FC = () => {
         onStatusFilterChange={setStatusFilter}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
+        showOwnerFilter={!!mergedConnection}
+        ownerFilter={ownerFilter}
+        onOwnerFilterChange={setOwnerFilter}
+        partnerName={partnerName}
       />
 
       {/* Projects Display */}
@@ -85,6 +94,9 @@ const ProjectTracking: React.FC = () => {
                 onToggleExpand={() => setExpandedProjectId(isExpanded ? null : project.id)}
                 onEdit={() => openEditModal(project)}
                 onDelete={() => setDeleteConfirmId(project.id)}
+                showOwnerBadge={!!mergedConnection}
+                currentUserId={currentUserId}
+                partnerName={partnerName}
               />
             );
           })}

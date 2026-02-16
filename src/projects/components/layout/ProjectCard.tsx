@@ -1,6 +1,7 @@
 import React from 'react';
 import { Edit2, Trash2, CheckCircle, Circle, ChevronDown, ChevronRight } from 'lucide-react';
 import { StatusBadge } from '../StatusBadge';
+import { OwnerBadge } from '@/components/common/OwnerBadge';
 import type { Project } from '@/hooks/useProjectsQuery';
 import type { Task } from '@/types/task';
 
@@ -19,6 +20,10 @@ interface ProjectCardProps {
   onToggleExpand: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  // Merged mode props (optional)
+  showOwnerBadge?: boolean;
+  currentUserId?: string;
+  partnerName?: string;
 }
 
 /**
@@ -31,6 +36,9 @@ export function ProjectCard({
   onToggleExpand,
   onEdit,
   onDelete,
+  showOwnerBadge = false,
+  currentUserId,
+  partnerName = 'Partner',
 }: ProjectCardProps): React.ReactElement {
   const safeProject = {
     id: project.id,
@@ -38,7 +46,8 @@ export function ProjectCard({
     icon: project.icon,
     status: project.status,
     description: project.description ?? '',
-    color: project.color
+    color: project.color,
+    user_id: project.user_id
   };
 
   return (
@@ -48,11 +57,18 @@ export function ProjectCard({
         <div className="flex items-start gap-3 flex-1">
           <div className="text-2xl">{safeProject.icon}</div>
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h3 className="text-lg font-semibold text-slate-900 dark:text-white truncate">
                 {safeProject.name}
               </h3>
               <StatusBadge status={safeProject.status} />
+              {showOwnerBadge && currentUserId && (
+                <OwnerBadge
+                  userId={safeProject.user_id}
+                  currentUserId={currentUserId}
+                  partnerName={partnerName}
+                />
+              )}
             </div>
             {safeProject.description && (
               <p className="mt-1 text-sm text-slate-600 dark:text-slate-400 line-clamp-2">

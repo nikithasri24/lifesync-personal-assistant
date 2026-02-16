@@ -1,11 +1,15 @@
 /**
  * Inbox API
  * CRUD operations for quick capture inbox items
+ *
+ * Migrated to modern pattern: 2026-02-16
+ * Uses apiWrapper for standardized error handling
  */
 
 import { supabase } from '../lib/supabase';
-import { logger } from '../services/logger';
-import { AuthenticationError } from '../lib/errors';
+import { apiCall, requireAuth, handleSupabaseResponse } from './apiWrapper';
+import { isInboxItem, isArrayOf } from '../types/guards';
+import { ValidationError } from '../lib/errors';
 
 // =====================================================
 // TYPES
@@ -33,6 +37,13 @@ export interface CreateInboxItemInput {
   suggested_category?: string;
 }
 
+export interface InboxStats {
+  pending: number;
+  processedToday: number;
+  total: number;
+  byType: Record<InboxItemType, number>;
+}
+
 // =====================================================
 // CRUD OPERATIONS
 // =====================================================
@@ -41,71 +52,85 @@ export interface CreateInboxItemInput {
  * Get all inbox items for the current user
  */
 export async function getInboxItems(status?: InboxItemStatus): Promise<InboxItem[]> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new AuthenticationError('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  let query = supabase
-    .from('inbox_items')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false });
+      let query = supabase
+        .from('inbox_items')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
 
-  if (status) {
-    query = query.eq('status', status);
-  }
+      if (status) {
+        query = query.eq('status', status);
+      }
 
-  const { data, error } = await query;
-  if (error) {
-    logger.error('InboxAPI', 'Failed to get inbox items', { error });
-    throw error;
-  }
-  return data as InboxItem[];
+      const { data, error } = await query;
+      const validated = handleSupabaseResponse({ data, error }, 'InboxItem');
+
+      if (!isArrayOf(validated, isInboxItem)) {
+        throw new ValidationError('Invalid inbox item data received');
+      }
+
+      return validated;
+    },
+    { domain: 'InboxAPI', operation: 'getInboxItems', data: { status } }
+  );
 }
 
 /**
  * Get pending inbox items count
  */
 export async function getPendingCount(): Promise<number> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new AuthenticationError('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { count, error } = await supabase
-    .from('inbox_items')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', user.id)
-    .eq('status', 'pending');
+      const { count, error } = await supabase
+        .from('inbox_items')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('status', 'pending');
 
-  if (error) {
-    logger.error('InboxAPI', 'Failed to get pending count', { error });
-    throw error;
-  }
-  return count ?? 0;
+      if (error) throw error;
+
+      return count ?? 0;
+    },
+    { domain: 'InboxAPI', operation: 'getPendingCount' }
+  );
 }
 
 /**
  * Create a new inbox item
  */
 export async function createInboxItem(input: CreateInboxItemInput): Promise<InboxItem> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new AuthenticationError('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { data, error } = await supabase
-    .from('inbox_items')
-    .insert({
-      user_id: user.id,
-      content: input.content,
-      suggested_type: input.suggested_type || 'unknown',
-      suggested_category: input.suggested_category,
-      status: 'pending',
-    })
-    .select()
-    .single();
+      const { data, error } = await supabase
+        .from('inbox_items')
+        .insert({
+          user_id: user.id,
+          content: input.content,
+          suggested_type: input.suggested_type || 'unknown',
+          suggested_category: input.suggested_category,
+          status: 'pending',
+        })
+        .select()
+        .single();
 
-  if (error) {
-    logger.error('InboxAPI', 'Failed to create inbox item', { error });
-    throw error;
-  }
-  return data as InboxItem;
+      const validated = handleSupabaseResponse({ data, error }, 'InboxItem');
+
+      if (!isInboxItem(validated)) {
+        throw new ValidationError('Invalid inbox item data received');
+      }
+
+      return validated;
+    },
+    { domain: 'InboxAPI', operation: 'createInboxItem', data: input }
+  );
 }
 
 /**
@@ -115,27 +140,33 @@ export async function updateInboxItem(
   id: string,
   updates: Partial<Pick<InboxItem, 'content' | 'suggested_type' | 'suggested_category' | 'status' | 'processed_result'>>
 ): Promise<InboxItem> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new AuthenticationError('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const updateData: Record<string, unknown> = { ...updates };
-  if (updates.status === 'processed') {
-    updateData.processed_at = new Date().toISOString();
-  }
+      const updateData: Record<string, unknown> = { ...updates };
+      if (updates.status === 'processed') {
+        updateData.processed_at = new Date().toISOString();
+      }
 
-  const { data, error } = await supabase
-    .from('inbox_items')
-    .update(updateData)
-    .eq('id', id)
-    .eq('user_id', user.id)
-    .select()
-    .single();
+      const { data, error } = await supabase
+        .from('inbox_items')
+        .update(updateData)
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .select()
+        .single();
 
-  if (error) {
-    logger.error('InboxAPI', 'Failed to update inbox item', { error });
-    throw error;
-  }
-  return data as InboxItem;
+      const validated = handleSupabaseResponse({ data, error }, 'InboxItem', id);
+
+      if (!isInboxItem(validated)) {
+        throw new ValidationError('Invalid inbox item data received');
+      }
+
+      return validated;
+    },
+    { domain: 'InboxAPI', operation: 'updateInboxItem', data: { id, updates } }
+  );
 }
 
 /**
@@ -162,19 +193,20 @@ export async function dismissInboxItem(id: string): Promise<InboxItem> {
  * Delete an inbox item
  */
 export async function deleteInboxItem(id: string): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new AuthenticationError('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { error } = await supabase
-    .from('inbox_items')
-    .delete()
-    .eq('id', id)
-    .eq('user_id', user.id);
+      const { error } = await supabase
+        .from('inbox_items')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
 
-  if (error) {
-    logger.error('InboxAPI', 'Failed to delete inbox item', { error });
-    throw error;
-  }
+      if (error) throw error;
+    },
+    { domain: 'InboxAPI', operation: 'deleteInboxItem', data: { id } }
+  );
 }
 
 /**
@@ -185,92 +217,93 @@ export async function processInboxItem(
   processedToType: string,
   processedToId: string
 ): Promise<InboxItem> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new AuthenticationError('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const { data, error } = await supabase
-    .from('inbox_items')
-    .update({
-      status: 'processed',
-      processed_at: new Date().toISOString(),
-      processed_result: {
-        processed_to_type: processedToType,
-        processed_to_id: processedToId,
-      },
-    })
-    .eq('id', id)
-    .eq('user_id', user.id)
-    .select()
-    .single();
+      const { data, error } = await supabase
+        .from('inbox_items')
+        .update({
+          status: 'processed',
+          processed_at: new Date().toISOString(),
+          processed_result: {
+            processed_to_type: processedToType,
+            processed_to_id: processedToId,
+          },
+        })
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .select()
+        .single();
 
-  if (error) {
-    logger.error('InboxAPI', 'Failed to process inbox item', { error });
-    throw error;
-  }
-  return data as InboxItem;
+      const validated = handleSupabaseResponse({ data, error }, 'InboxItem', id);
+
+      if (!isInboxItem(validated)) {
+        throw new ValidationError('Invalid inbox item data received');
+      }
+
+      return validated;
+    },
+    { domain: 'InboxAPI', operation: 'processInboxItem', data: { id, processedToType, processedToId } }
+  );
 }
 
 /**
  * Get inbox statistics
  */
-export interface InboxStats {
-  pending: number;
-  processedToday: number;
-  total: number;
-  byType: Record<InboxItemType, number>;
-}
-
 export async function getInboxStats(): Promise<InboxStats> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new AuthenticationError('Not authenticated');
+  return apiCall(
+    async () => {
+      const user = await requireAuth();
 
-  const today = new Date().toISOString().split('T')[0];
+      const today = new Date().toISOString().split('T')[0];
 
-  const [pendingResult, processedTodayResult, allResult] = await Promise.all([
-    supabase
-      .from('inbox_items')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .eq('status', 'pending'),
-    supabase
-      .from('inbox_items')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .eq('status', 'processed')
-      .gte('processed_at', `${today}T00:00:00`),
-    supabase
-      .from('inbox_items')
-      .select('suggested_type')
-      .eq('user_id', user.id)
-      .eq('status', 'pending'),
-  ]);
+      const [pendingResult, processedTodayResult, allResult] = await Promise.all([
+        supabase
+          .from('inbox_items')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .eq('status', 'pending'),
+        supabase
+          .from('inbox_items')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .eq('status', 'processed')
+          .gte('processed_at', `${today}T00:00:00`),
+        supabase
+          .from('inbox_items')
+          .select('suggested_type')
+          .eq('user_id', user.id)
+          .eq('status', 'pending'),
+      ]);
 
-  if (pendingResult.error || processedTodayResult.error || allResult.error) {
-    logger.error('InboxAPI', 'Failed to get inbox stats', {
-      errors: [pendingResult.error, processedTodayResult.error, allResult.error],
-    });
-    throw pendingResult.error || processedTodayResult.error || allResult.error;
-  }
+      // Check for errors
+      if (pendingResult.error) throw pendingResult.error;
+      if (processedTodayResult.error) throw processedTodayResult.error;
+      if (allResult.error) throw allResult.error;
 
-  // Count by type
-  const byType: Record<InboxItemType, number> = {
-    task: 0,
-    note: 0,
-    shopping: 0,
-    reminder: 0,
-    idea: 0,
-    unknown: 0,
-  };
+      // Count by type
+      const byType: Record<InboxItemType, number> = {
+        task: 0,
+        note: 0,
+        shopping: 0,
+        reminder: 0,
+        idea: 0,
+        unknown: 0,
+      };
 
-  (allResult.data || []).forEach((item) => {
-    const type = item.suggested_type as InboxItemType;
-    byType[type] = (byType[type] || 0) + 1;
-  });
+      (allResult.data || []).forEach((item) => {
+        const type = item.suggested_type as InboxItemType;
+        byType[type] = (byType[type] || 0) + 1;
+      });
 
-  return {
-    pending: pendingResult.count ?? 0,
-    processedToday: processedTodayResult.count ?? 0,
-    total: (pendingResult.count ?? 0) + (processedTodayResult.count ?? 0),
-    byType,
-  };
+      return {
+        pending: pendingResult.count ?? 0,
+        processedToday: processedTodayResult.count ?? 0,
+        total: (pendingResult.count ?? 0) + (processedTodayResult.count ?? 0),
+        byType,
+      };
+    },
+    { domain: 'InboxAPI', operation: 'getInboxStats' }
+  );
 }

@@ -1,6 +1,15 @@
 /**
- * Projects API
+ * Projects API with Merged Mode Support
  * CRUD operations for enhanced project tracking with milestones and task linking
+ *
+ * Merged Mode: When both users in a connection set this module to "merged",
+ * the API fetches projects for both users. Couples can collaborate on shared
+ * projects like home renovations, vacations, moving, etc.
+ *
+ * Implementation:
+ * - getProjectsMergedConnection() checks if merged mode is enabled
+ * - Fetch functions include partner's projects when merged
+ * - RLS policies on projects, milestones, and project_tasks handle security
  */
 
 import { supabase } from '../lib/supabase';
@@ -8,13 +17,50 @@ import type { Project, ProjectMilestone, ProjectTask } from '../services/types';
 import { logger } from '../services/logger';
 import { apiCall, requireAuth, handleSupabaseResponse } from './apiWrapper';
 import { NotFoundError, AuthorizationError } from '../lib/errors';
+import { getMergedConnectionId, type MergedConnectionResult } from '../shared/api/SharedDataProvider';
+
+// =====================================================
+// MERGED MODE SUPPORT
+// =====================================================
+
+// Merged connection cache for Projects
+let cachedMergedConnection: MergedConnectionResult | null | undefined;
+
+/**
+ * Get merged connection for projects module
+ * Returns connection info if both users have enabled merged mode, null otherwise
+ */
+export async function getProjectsMergedConnection(): Promise<MergedConnectionResult | null> {
+  if (cachedMergedConnection !== undefined) {
+    logger.debug('ProjectsAPI', 'Returning cached merged connection', { cached: cachedMergedConnection });
+    return cachedMergedConnection;
+  }
+
+  logger.debug('ProjectsAPI', 'Fetching projects merged connection');
+  cachedMergedConnection = await getMergedConnectionId('projects');
+  logger.info('ProjectsAPI', 'Projects merged connection fetched', {
+    hasMergedMode: !!cachedMergedConnection,
+    partnerId: cachedMergedConnection?.partnerId
+  });
+
+  return cachedMergedConnection;
+}
+
+/**
+ * Clear cached merged connection (call when connection status changes)
+ */
+export function clearProjectsMergedConnectionCache(): void {
+  logger.debug('ProjectsAPI', 'Clearing projects merged connection cache');
+  cachedMergedConnection = undefined;
+}
 
 // =====================================================
 // PROJECTS CRUD OPERATIONS
 // =====================================================
 
 /**
- * Get all projects for the current user
+ * Get all projects for the current user (supports merged mode)
+ * In merged mode, returns both users' projects so couples can collaborate
  */
 export async function getProjects(filters?: {
   status?: Project['status'];
@@ -25,11 +71,22 @@ export async function getProjects(filters?: {
     async () => {
       const user = await requireAuth();
 
+      // Check for merged connection
+      const mergedConnection = await getProjectsMergedConnection();
+
       let query = supabase
         .from('projects')
         .select('*')
-        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
+
+      // If merged mode, get both users' projects
+      // Otherwise, just get current user's projects
+      if (mergedConnection) {
+        logger.debug('ProjectsAPI', 'Merged mode enabled - fetching projects for both users');
+        query = query.or(`user_id.eq.${user.id},user_id.eq.${mergedConnection.partnerId}`);
+      } else {
+        query = query.eq('user_id', user.id);
+      }
 
       // Apply filters
       if (filters) {
@@ -53,6 +110,12 @@ export async function getProjects(filters?: {
         milestones: (project.milestones || []).sort((a: ProjectMilestone, b: ProjectMilestone) => a.order_index - b.order_index)
       })) as Project[];
 
+      logger.info('ProjectsAPI', 'Fetched projects', {
+        count: projects.length,
+        mergedMode: !!mergedConnection,
+        filters
+      });
+
       return projects;
     },
     { domain: 'ProjectsAPI', operation: 'getProjects', data: { filters } }
@@ -60,19 +123,28 @@ export async function getProjects(filters?: {
 }
 
 /**
- * Get a single project by ID with all related data
+ * Get a single project by ID with all related data (supports merged mode)
+ * In merged mode, can view partner's projects
  */
 export async function getProject(id: string): Promise<Project> {
   return apiCall(
     async () => {
       const user = await requireAuth();
+      const mergedConnection = await getProjectsMergedConnection();
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('projects')
         .select('*')
-        .eq('id', id)
-        .eq('user_id', user.id)
-        .single();
+        .eq('id', id);
+
+      // Apply user filter based on merged mode
+      if (mergedConnection) {
+        query = query.or(`user_id.eq.${user.id},user_id.eq.${mergedConnection.partnerId}`);
+      } else {
+        query = query.eq('user_id', user.id);
+      }
+
+      const { data, error } = await query.single();
 
       if (error) throw error;
       if (!data) throw new NotFoundError('Project', id);
@@ -191,22 +263,29 @@ export async function deleteProject(id: string): Promise<void> {
 // =====================================================
 
 /**
- * Get all milestones for a project
+ * Get all milestones for a project (supports merged mode)
  */
 export async function getProjectMilestones(projectId: string): Promise<ProjectMilestone[]> {
   return apiCall(
     async () => {
       const user = await requireAuth();
+      const mergedConnection = await getProjectsMergedConnection();
 
-      // Verify user has access to the project
-      const { data: project } = await supabase
+      // Verify user has access to the project (own or partner's in merged mode)
+      let projectQuery = supabase
         .from('projects')
         .select('id')
-        .eq('id', projectId)
-        .eq('user_id', user.id)
-        .single();
+        .eq('id', projectId);
 
-      if (!project) throw new NotFoundError('Project', milestone.project_id);
+      if (mergedConnection) {
+        projectQuery = projectQuery.or(`user_id.eq.${user.id},user_id.eq.${mergedConnection.partnerId}`);
+      } else {
+        projectQuery = projectQuery.eq('user_id', user.id);
+      }
+
+      const { data: project } = await projectQuery.single();
+
+      if (!project) throw new NotFoundError('Project', projectId);
 
       const { data, error } = await supabase
         .from('project_milestones')
@@ -222,7 +301,7 @@ export async function getProjectMilestones(projectId: string): Promise<ProjectMi
 }
 
 /**
- * Create a new milestone
+ * Create a new milestone (supports merged mode)
  */
 export async function createMilestone(
   milestone: Omit<ProjectMilestone, 'id' | 'created_at'>
@@ -230,14 +309,21 @@ export async function createMilestone(
   return apiCall(
     async () => {
       const user = await requireAuth();
+      const mergedConnection = await getProjectsMergedConnection();
 
-      // Verify user has access to the project
-      const { data: project } = await supabase
+      // Verify user has access to the project (own or partner's in merged mode)
+      let projectQuery = supabase
         .from('projects')
         .select('id')
-        .eq('id', milestone.project_id)
-        .eq('user_id', user.id)
-        .single();
+        .eq('id', milestone.project_id);
+
+      if (mergedConnection) {
+        projectQuery = projectQuery.or(`user_id.eq.${user.id},user_id.eq.${mergedConnection.partnerId}`);
+      } else {
+        projectQuery = projectQuery.eq('user_id', user.id);
+      }
+
+      const { data: project } = await projectQuery.single();
 
       if (!project) throw new NotFoundError('Project', milestone.project_id);
 
@@ -324,22 +410,29 @@ export async function deleteMilestone(id: string): Promise<void> {
 // =====================================================
 
 /**
- * Get all tasks linked to a project
+ * Get all tasks linked to a project (supports merged mode)
  */
 export async function getProjectTasks(projectId: string): Promise<string[]> {
   return apiCall(
     async () => {
       const user = await requireAuth();
+      const mergedConnection = await getProjectsMergedConnection();
 
-      // Verify user has access to the project
-      const { data: project } = await supabase
+      // Verify user has access to the project (own or partner's in merged mode)
+      let projectQuery = supabase
         .from('projects')
         .select('id')
-        .eq('id', projectId)
-        .eq('user_id', user.id)
-        .single();
+        .eq('id', projectId);
 
-      if (!project) throw new NotFoundError('Project', milestone.project_id);
+      if (mergedConnection) {
+        projectQuery = projectQuery.or(`user_id.eq.${user.id},user_id.eq.${mergedConnection.partnerId}`);
+      } else {
+        projectQuery = projectQuery.eq('user_id', user.id);
+      }
+
+      const { data: project } = await projectQuery.single();
+
+      if (!project) throw new NotFoundError('Project', projectId);
 
       const { data, error } = await supabase
         .from('project_tasks')
@@ -354,7 +447,7 @@ export async function getProjectTasks(projectId: string): Promise<string[]> {
 }
 
 /**
- * Link a task to a project
+ * Link a task to a project (supports merged mode)
  */
 export async function linkTaskToProject(
   projectId: string,
@@ -363,21 +456,31 @@ export async function linkTaskToProject(
   return apiCall(
     async () => {
       const user = await requireAuth();
+      const mergedConnection = await getProjectsMergedConnection();
+
+      // Build queries for project and task access verification
+      let projectQuery = supabase
+        .from('projects')
+        .select('id')
+        .eq('id', projectId);
+
+      let taskQuery = supabase
+        .from('tasks')
+        .select('id')
+        .eq('id', taskId);
+
+      if (mergedConnection) {
+        projectQuery = projectQuery.or(`user_id.eq.${user.id},user_id.eq.${mergedConnection.partnerId}`);
+        taskQuery = taskQuery.or(`user_id.eq.${user.id},user_id.eq.${mergedConnection.partnerId}`);
+      } else {
+        projectQuery = projectQuery.eq('user_id', user.id);
+        taskQuery = taskQuery.eq('user_id', user.id);
+      }
 
       // Verify user has access to both the project and the task
       const [projectResult, taskResult] = await Promise.all([
-        supabase
-          .from('projects')
-          .select('id')
-          .eq('id', projectId)
-          .eq('user_id', user.id)
-          .single(),
-        supabase
-          .from('tasks')
-          .select('id')
-          .eq('id', taskId)
-          .eq('user_id', user.id)
-          .single()
+        projectQuery.single(),
+        taskQuery.single()
       ]);
 
       if (!projectResult.data) throw new NotFoundError('Project', projectId);

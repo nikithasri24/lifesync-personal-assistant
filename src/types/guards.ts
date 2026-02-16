@@ -20,7 +20,21 @@ import type { Task } from '../lib/supabase';
 import type { Transaction, Account, Category } from '../finance/types';
 import type { Goal } from './index';
 import type { Recipe, PantryItem } from './index';
-import type { CalendarEvent, HabitData, HabitEntryData } from '../services/types';
+import type {
+  CalendarEvent,
+  HabitData,
+  HabitEntryData,
+  TaskData,
+  ProjectData,
+  ShoppingListData,
+  StoreData,
+  ShoppingItemData,
+  PantryItemData,
+  MealPlanData,
+  PlannedMealData,
+  RecipeData as RecipeDataType,
+  FocusSessionData,
+} from '../services/types';
 import type { SavedLocation, Coordinates } from '../lib/location/types';
 
 /**
@@ -40,7 +54,7 @@ export function isShoppingItem(value: unknown): value is ShoppingItem {
 }
 
 /**
- * Check if value is a Task
+ * Check if value is a Task (legacy type)
  */
 export function isTask(value: unknown): value is Task {
   return (
@@ -51,6 +65,154 @@ export function isTask(value: unknown): value is Task {
     'status' in value &&
     typeof (value as Task).title === 'string' &&
     typeof (value as Task).status === 'string'
+  );
+}
+
+/**
+ * Check if value is TaskData (modern type)
+ */
+export function isTaskData(value: unknown): value is TaskData {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'id' in value &&
+    'title' in value &&
+    'status' in value &&
+    'user_id' in value &&
+    typeof (value as TaskData).title === 'string' &&
+    typeof (value as TaskData).status === 'string' &&
+    typeof (value as TaskData).user_id === 'string'
+  );
+}
+
+/**
+ * Check if value is ProjectData
+ */
+export function isProjectData(value: unknown): value is ProjectData {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'id' in value &&
+    'name' in value &&
+    'user_id' in value &&
+    typeof (value as ProjectData).name === 'string' &&
+    typeof (value as ProjectData).user_id === 'string'
+  );
+}
+
+/**
+ * Check if value is ShoppingListData
+ */
+export function isShoppingListData(value: unknown): value is ShoppingListData {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'id' in value &&
+    'name' in value &&
+    'user_id' in value &&
+    typeof (value as ShoppingListData).name === 'string' &&
+    typeof (value as ShoppingListData).user_id === 'string'
+  );
+}
+
+/**
+ * Check if value is ShoppingItemData
+ */
+export function isShoppingItemData(value: unknown): value is ShoppingItemData {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'name' in value &&
+    'shopping_list_id' in value &&
+    typeof (value as ShoppingItemData).name === 'string' &&
+    typeof (value as ShoppingItemData).shopping_list_id === 'string'
+  );
+}
+
+/**
+ * Check if value is StoreData
+ */
+export function isStoreData(value: unknown): value is StoreData {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'id' in value &&
+    'name' in value &&
+    typeof (value as StoreData).name === 'string'
+  );
+}
+
+/**
+ * Check if value is PantryItemData
+ */
+export function isPantryItemData(value: unknown): value is PantryItemData {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'name' in value &&
+    typeof (value as PantryItemData).name === 'string'
+  );
+}
+
+/**
+ * Check if value is MealPlanData
+ */
+export function isMealPlanData(value: unknown): value is MealPlanData {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'id' in value &&
+    'name' in value &&
+    'user_id' in value &&
+    typeof (value as MealPlanData).name === 'string' &&
+    typeof (value as MealPlanData).user_id === 'string'
+  );
+}
+
+/**
+ * Check if value is PlannedMealData
+ */
+export function isPlannedMealData(value: unknown): value is PlannedMealData {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'id' in value &&
+    'meal_plan_id' in value &&
+    'date' in value &&
+    'meal_type' in value &&
+    typeof (value as PlannedMealData).meal_plan_id === 'string' &&
+    typeof (value as PlannedMealData).date === 'string' &&
+    ['breakfast', 'lunch', 'dinner', 'snack'].includes((value as PlannedMealData).meal_type)
+  );
+}
+
+/**
+ * Check if value is RecipeData
+ */
+export function isRecipeData(value: unknown): value is RecipeDataType {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'id' in value &&
+    'name' in value &&
+    'user_id' in value &&
+    typeof (value as RecipeDataType).name === 'string' &&
+    typeof (value as RecipeDataType).user_id === 'string'
+  );
+}
+
+/**
+ * Check if value is FocusSessionData
+ */
+export function isFocusSessionData(value: unknown): value is FocusSessionData {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'id' in value &&
+    'user_id' in value &&
+    'started_at' in value &&
+    typeof (value as FocusSessionData).user_id === 'string' &&
+    typeof (value as FocusSessionData).started_at === 'string'
   );
 }
 
@@ -226,6 +388,66 @@ export function isSavedLocation(value: unknown): value is SavedLocation {
     typeof (value as SavedLocation).name === 'string' &&
     isCoordinates((value as SavedLocation).coordinates) &&
     ['home', 'work', 'store', 'custom'].includes((value as SavedLocation).type)
+  );
+}
+
+// =====================================================
+// Inbox Types
+// =====================================================
+
+/**
+ * Check if value is an InboxItem
+ */
+export function isInboxItem(value: unknown): value is {
+  id: string;
+  user_id: string;
+  content: string;
+  suggested_type: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+} {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'id' in value &&
+    'user_id' in value &&
+    'content' in value &&
+    'suggested_type' in value &&
+    'status' in value &&
+    typeof (value as any).id === 'string' &&
+    typeof (value as any).user_id === 'string' &&
+    typeof (value as any).content === 'string'
+  );
+}
+
+// =====================================================
+// Notification Types
+// =====================================================
+
+/**
+ * Check if value is a NotificationQueueItem
+ */
+export function isNotificationQueueItem(value: unknown): value is {
+  id?: string;
+  user_id: string;
+  type: string;
+  priority: 'low' | 'normal' | 'high';
+  payload: Record<string, unknown>;
+  scheduled_for: string;
+  status?: string;
+} {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'user_id' in value &&
+    'type' in value &&
+    'priority' in value &&
+    'payload' in value &&
+    'scheduled_for' in value &&
+    typeof (value as any).user_id === 'string' &&
+    typeof (value as any).type === 'string' &&
+    ['low', 'normal', 'high'].includes((value as any).priority)
   );
 }
 

@@ -12,8 +12,12 @@ export type ProjectFormData = {
   name: string;
   description: string;
   color: string;
-  icon: string;
+  icon?: string;
   status: Project['status'];
+  priority: Project['priority'];
+  start_date: string | null;
+  target_date: string | null;
+  tags: string[];
 };
 
 export type ProjectMetrics = {

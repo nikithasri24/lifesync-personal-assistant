@@ -1,6 +1,7 @@
 import React from 'react';
 import { Search, Filter, Grid, List } from 'lucide-react';
 import type { StatusFilter } from '../../types';
+import { OwnerFilter, type OwnerFilterValue } from '@/components/common/OwnerFilter';
 
 interface ProjectsFiltersBarProps {
   searchQuery: string;
@@ -9,6 +10,11 @@ interface ProjectsFiltersBarProps {
   onStatusFilterChange: (filter: StatusFilter) => void;
   viewMode: 'grid' | 'list';
   onViewModeChange: (mode: 'grid' | 'list') => void;
+  // Merged mode props (optional)
+  showOwnerFilter?: boolean;
+  ownerFilter?: OwnerFilterValue;
+  onOwnerFilterChange?: (filter: OwnerFilterValue) => void;
+  partnerName?: string;
 }
 
 /**
@@ -21,6 +27,10 @@ export function ProjectsFiltersBar({
   onStatusFilterChange,
   viewMode,
   onViewModeChange,
+  showOwnerFilter = false,
+  ownerFilter = 'all',
+  onOwnerFilterChange,
+  partnerName = 'Partner',
 }: ProjectsFiltersBarProps): React.ReactElement {
   return (
     <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -51,6 +61,15 @@ export function ProjectsFiltersBar({
             <option value="on_hold">On Hold</option>
           </select>
         </div>
+
+        {/* Owner Filter (Merged Mode) */}
+        {showOwnerFilter && onOwnerFilterChange && (
+          <OwnerFilter
+            value={ownerFilter}
+            onChange={onOwnerFilterChange}
+            partnerName={partnerName}
+          />
+        )}
       </div>
 
       {/* View Toggle */}
