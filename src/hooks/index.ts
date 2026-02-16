@@ -14,6 +14,7 @@ export * from './useFocus';
 export * from './useHealth';
 export * from './useLocalStorage';
 export * from './useLocation';
+export * from './useModalState'; // Generic modal state management
 export * from './useNotifications';
 export * from './useOptimization';
 export * from './useOwnerInfo';

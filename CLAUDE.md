@@ -8,6 +8,7 @@ This document outlines the coding conventions and best practices for the LifeSyn
 - [Accessibility](#accessibility)
 - [TypeScript Patterns](#typescript-patterns)
 - [React Patterns](#react-patterns)
+- [Hook Patterns](#hook-patterns)
 - [API Design](#api-design)
 - [Testing](#testing)
 
@@ -403,6 +404,317 @@ export function TasksPage() {
 
 ---
 
+## Hook Patterns
+
+Custom hooks are critical to code reusability and maintainability. Follow these guidelines to ensure hooks remain focused, testable, and consistent.
+
+### ✅ DO: Keep Hooks Focused (Single Responsibility)
+
+**Max size: 150 lines per hook file**
+**Max dependencies: 3 other custom hooks**
+
+```typescript
+// ✅ CORRECT - Focused hook with single responsibility
+export function useTaskFilters() {
+  const [filters, setFilters] = useState<TaskFilters>({
+    status: 'all',
+    priority: 'all',
+    assignee: 'all',
+  });
+
+  const updateFilter = (key: keyof TaskFilters, value: string) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+  };
+
+  const resetFilters = () => {
+    setFilters({ status: 'all', priority: 'all', assignee: 'all' });
+  };
+
+  return { filters, updateFilter, resetFilters };
+}
+```
+
+```typescript
+// ❌ INCORRECT - Hook doing too much (500+ lines)
+export function useTasksQuery() {
+  // Query logic
+  // Mutation logic
+  // Business logic functions
+  // Filter logic
+  // Modal state
+  // Form handlers
+  // ... 500+ lines
+}
+```
+
+### ✅ DO: Use Generic Hooks to Avoid Duplication
+
+**Use `useModalState` for modal management instead of useState boilerplate**
+
+```typescript
+// ✅ CORRECT - Use generic hook
+import { useModalState } from '@/hooks/useModalState';
+
+export function TasksPage() {
+  const modals = useModalState({
+    quickAdd: false,
+    quickAddText: '',
+    editingTask: null,
+    showFilters: false,
+  });
+
+  return (
+    <>
+      {modals.state.quickAdd && (
+        <QuickAddModal
+          text={modals.state.quickAddText}
+          onClose={() => modals.close('quickAdd')}
+        />
+      )}
+      <button onClick={() => modals.open('quickAdd')}>Add Task</button>
+    </>
+  );
+}
+```
+
+```typescript
+// ❌ INCORRECT - Boilerplate for each modal (100+ lines)
+const [showQuickAdd, setShowQuickAdd] = useState(false);
+const [quickAddText, setQuickAddText] = useState('');
+const [editingTask, setEditingTask] = useState<string | null>(null);
+const [showFilters, setShowFilters] = useState(false);
+
+const openQuickAdd = () => setShowQuickAdd(true);
+const closeQuickAdd = () => {
+  setShowQuickAdd(false);
+  setQuickAddText('');
+};
+// ... repeat for each modal (100+ lines of duplication)
+```
+
+### ✅ DO: Follow Naming Conventions
+
+| Hook Type | Naming Pattern | Example | Location |
+|-----------|---------------|---------|----------|
+| **Queries** | `use<Resource>Query` | `useTasksQuery` | `src/hooks/api/<domain>/` |
+| **Mutations** | `useCreate<Resource>`, `useUpdate<Resource>` | `useCreateTask` | Same file as queries |
+| **State** | `use<Feature>State` | `useCalendarState` | `src/hooks/state/` |
+| **Modals** | `use<Feature>Modals` or `useModalState` | `useTaskModals` | `src/hooks/state/` |
+| **Utilities** | `use<Functionality>` | `useDebounce`, `useLocalStorage` | `src/hooks/utilities/` |
+
+```typescript
+// ✅ CORRECT - Consistent naming
+export function useTasksQuery(filters?: TaskFilters) { /* useQuery */ }
+export function useCreateTask() { /* useMutation */ }
+export function useUpdateTask() { /* useMutation */ }
+export function useDeleteTask() { /* useMutation */ }
+```
+
+```typescript
+// ❌ INCORRECT - Inconsistent naming
+export function useGetTasks() { /* Should be useTasksQuery */ }
+export function taskCreate() { /* Missing 'use' prefix */ }
+export function useTasksAPI() { /* Unclear - query or mutation? */ }
+```
+
+### ✅ DO: Separate Queries from Business Logic
+
+**Extract pure functions to utils, keep hooks focused on React integration**
+
+```typescript
+// ✅ CORRECT - Separate concerns
+
+// src/hooks/api/tasks/useTasksQuery.ts (300 lines - React Query only)
+export function useTasksQuery(filters?: TaskFilters) {
+  return useQuery({
+    queryKey: queryKeys.tasks.list(filters),
+    queryFn: () => fetchTasks(filters),
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+export function useUpdateTask() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updateTask,
+    onSuccess: () => void queryClient.invalidateQueries(queryKeys.tasks.all),
+  });
+}
+
+// src/utils/taskRecurrence.ts (100 lines - pure functions, testable)
+export function calculateNextOccurrence(task: TaskData): string | null {
+  // Business logic here - no React dependencies
+}
+
+export function createNextRecurringTask(task: TaskData): TaskData {
+  // Business logic here
+}
+```
+
+```typescript
+// ❌ INCORRECT - Mixed concerns (700+ lines)
+// useTasksQuery.ts
+export function useTasksQuery() { /* queries */ }
+export function useCreateTask() { /* mutations */ }
+
+// Business logic embedded in hook file (should be in utils)
+function calculateNextOccurrence(task: TaskData): string | null {
+  // 30+ lines of date math
+}
+
+function createNextRecurringTask(task: TaskData): TaskData {
+  // 50+ lines of business logic
+}
+```
+
+### ✅ DO: Organize Hooks by Purpose
+
+```
+src/hooks/
+├── api/                    # React Query data fetching
+│   ├── tasks/
+│   │   ├── useTasksQuery.ts
+│   │   └── useProjectsQuery.ts
+│   ├── shopping/
+│   │   ├── useShoppingItemsQuery.ts
+│   │   └── usePantryQuery.ts
+│   └── finance/
+│       ├── useFinanceAccountsQuery.ts
+│       ├── useFinanceTransactionsQuery.ts
+│       └── useFinanceBudgetsQuery.ts
+├── state/                  # Local state management
+│   ├── useModalState.ts
+│   ├── useFormState.ts
+│   └── useFilterState.ts
+├── utilities/              # General utilities
+│   ├── useLocalStorage.ts
+│   ├── useDebounce.ts
+│   └── useAsync.ts
+└── index.ts               # Public exports
+```
+
+### ✅ DO: Split Large Query Files
+
+**If a query file exceeds 400 lines, split by resource type**
+
+```typescript
+// ❌ BEFORE: useFinanceQuery.ts (1,165 lines)
+export function useFinanceInstitutions() { /* ... */ }
+export function useFinanceAccounts() { /* ... */ }
+export function useFinanceTransactions() { /* ... */ }
+export function useFinanceBudgets() { /* ... */ }
+export function useFinanceGoals() { /* ... */ }
+export function useFinanceCards() { /* ... */ }
+export function useFinanceLoans() { /* ... */ }
+export function useFinanceInsurance() { /* ... */ }
+// ... 40+ more hooks in one file
+
+// ✅ AFTER: Split into focused files
+// src/hooks/api/finance/useFinanceAccountsQuery.ts (150 lines)
+export function useFinanceInstitutions() { /* ... */ }
+export function useFinanceAccounts() { /* ... */ }
+
+// src/hooks/api/finance/useFinanceTransactionsQuery.ts (200 lines)
+export function useFinanceTransactions() { /* ... */ }
+export function useRecurringTransactions() { /* ... */ }
+
+// src/hooks/api/finance/useFinanceBudgetsQuery.ts (150 lines)
+export function useFinanceBudgets() { /* ... */ }
+export function useFinanceBudgetTemplates() { /* ... */ }
+```
+
+### ✅ DO: Use TypeScript for Hook Return Types
+
+```typescript
+// ✅ CORRECT - Explicit return type
+export function useTaskFilters(): {
+  filters: TaskFilters;
+  updateFilter: (key: keyof TaskFilters, value: string) => void;
+  resetFilters: () => void;
+} {
+  // Implementation
+}
+
+// OR use type inference with clear interface
+interface TaskFiltersAPI {
+  filters: TaskFilters;
+  updateFilter: (key: keyof TaskFilters, value: string) => void;
+  resetFilters: () => void;
+}
+
+export function useTaskFilters(): TaskFiltersAPI {
+  // Implementation
+}
+```
+
+### ✅ DO: Document Complex Hooks
+
+```typescript
+/**
+ * Hook for managing task filters with URL sync
+ *
+ * Manages filter state and syncs with URL query parameters
+ * for shareable filtered views.
+ *
+ * @param initialFilters - Default filter values
+ * @returns Filter state and update functions
+ *
+ * @example
+ * ```typescript
+ * const { filters, updateFilter, resetFilters } = useTaskFilters({
+ *   status: 'active',
+ *   priority: 'all',
+ * });
+ *
+ * updateFilter('status', 'completed');
+ * ```
+ */
+export function useTaskFilters(initialFilters: TaskFilters) {
+  // Implementation
+}
+```
+
+### ❌ DON'T: Create Thin Wrapper Hooks
+
+```typescript
+// ❌ INCORRECT - Unnecessary wrapper
+export function useStoresQuery(): UseQueryResult<Store[], Error> {
+  return useQuery({
+    queryKey: ['stores'],
+    queryFn: fetchStores,
+  });
+}
+
+// ✅ CORRECT - Use React Query directly in component
+const { data: stores } = useQuery({
+  queryKey: ['stores'],
+  queryFn: fetchStores,
+});
+
+// ✅ CORRECT - Wrapper is OK if it adds business logic
+export function useStoresQuery(filters?: StoreFilters) {
+  const { data: currentUserId } = useCurrentUserId();
+
+  return useQuery({
+    queryKey: ['stores', currentUserId, filters],
+    queryFn: () => fetchStores(currentUserId, filters),
+    enabled: !!currentUserId, // Added business logic
+  });
+}
+```
+
+### Hook Size Guidelines
+
+| Size | Status | Action |
+|------|--------|--------|
+| < 10 lines | ⚠️ Too Small | Consider inlining or merging |
+| 10-150 lines | ✅ Good | Ideal size |
+| 150-300 lines | ⚠️ Large | Consider splitting if multiple concerns |
+| 300-500 lines | 🔴 Very Large | Should split into multiple hooks |
+| 500+ lines | 🔴 Critical | Must split immediately |
+
+---
+
 ## API Design
 
 ### Supabase API Patterns
@@ -514,6 +826,11 @@ When writing new code, ensure:
 - [ ] All errors logged with proper context
 - [ ] User-friendly error messages provided
 - [ ] Tests written for new functionality
+- [ ] Custom hooks follow naming conventions
+- [ ] Hooks are < 150 lines (split if larger)
+- [ ] Modal state uses `useModalState` instead of boilerplate
+- [ ] Business logic extracted to utils (not in hooks)
+- [ ] Hook return types are explicitly typed
 
 ---
 
@@ -525,3 +842,4 @@ If you're unsure about a pattern or convention, check existing code in these ref
 - Type Guards: `src/types/guards.ts`
 - React Query: `src/lib/react-query.ts`
 - Error Boundaries: `src/components/ErrorBoundary.tsx`, `src/components/FeatureErrorBoundary.tsx`
+- Hook Patterns: `src/hooks/useModalState.ts` (generic modal state example)
