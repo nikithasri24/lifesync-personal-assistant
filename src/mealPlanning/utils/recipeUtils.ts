@@ -74,12 +74,33 @@ export async function fetchClippedRecipe(url: string): Promise<Omit<Recipe, 'id'
     }
   }
 
+  // Check if response is actually JSON
+  const contentType = response.headers.get('content-type');
+  if (contentType && !contentType.includes('application/json')) {
+    const responseText = await response.text().catch(() => 'Unable to read response');
+    logger.error('RecipeUtils', new ValidationError('Recipe clipper returned non-JSON response'), {
+      url,
+      contentType,
+      responsePreview: responseText.substring(0, 200)
+    });
+
+    // Check if it's HTML
+    if (contentType.includes('text/html') || responseText.trim().startsWith('<!DOCTYPE') || responseText.trim().startsWith('<html')) {
+      throw new ValidationError(
+        'Recipe clipper service is not configured. The URL returned an HTML page instead of recipe data. ' +
+        'Please ensure the recipe clipper API is running or check your VITE_RECIPE_CLIPPER_URL environment variable.'
+      );
+    }
+
+    throw new ValidationError(`Recipe clipper returned unexpected format: ${contentType}. Expected JSON.`);
+  }
+
   let data: unknown;
   try {
     data = await response.json();
   } catch (error) {
     logger.error('RecipeUtils', new ValidationError('Invalid JSON response from clipper'), { url, error });
-    throw new ValidationError('Received invalid data from recipe clipper service');
+    throw new ValidationError('Received invalid data from recipe clipper service. The response could not be parsed as JSON.');
   }
 
   const apiData = data as RecipeApiResponse;
