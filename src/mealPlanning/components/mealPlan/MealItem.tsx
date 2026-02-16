@@ -412,22 +412,25 @@ export const MealItem: React.FC<MealItemProps> = ({ meal, recipes, isMerged = fa
           </button>
         )}
 
-        {/* Delete - Visible on hover */}
-        {isHovered && (
-          <button
-            type="button"
-            onClick={(e) => {
-              if (!e.metaKey && !e.ctrlKey) {
-                e.stopPropagation();
-              }
-              void handleDelete();
-            }}
-            className="shrink-0 p-1 text-slate-500 hover:text-red-500 transition-colors"
-            title="Delete"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
-        )}
+        {/* Delete - Always visible, but subtle when not hovered */}
+        <button
+          type="button"
+          onClick={(e) => {
+            if (!e.metaKey && !e.ctrlKey) {
+              e.stopPropagation();
+            }
+            void handleDelete();
+          }}
+          className={`shrink-0 p-1 transition-all ${
+            isHovered
+              ? 'text-red-500 opacity-100'
+              : 'text-slate-400 opacity-0 group-hover/meal:opacity-60'
+          } hover:text-red-500 hover:opacity-100`}
+          title="Delete meal from plan"
+          aria-label="Delete meal"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </button>
       </div>
 
       {/* Swap Meal Modal */}

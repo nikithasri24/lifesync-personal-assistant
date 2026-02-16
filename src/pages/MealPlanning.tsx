@@ -9,6 +9,7 @@ import ErrorState from '../components/ErrorState';
 import { useComposedStore } from '../stores/useComposedStore';
 import { useToast } from '../hooks/useToast';
 import type { PlannedMeal, Recipe } from '../types';
+import type { PlannedMealInput, PlannedMealUpdate, RecipeInput } from '@/hooks/mealPlanning/types';
 import {
   useRecipesQuery,
   useMealPlansQuery,
@@ -64,8 +65,6 @@ const SectionLoadingFallback = () => (
 
 // Import utilities
 import { toKey, ensureDate, parseLocalDateKey } from '../mealPlanning/utils';
-import { useUndoRedo } from '../contexts/UndoRedoContext';
-import { DeleteRecipeCommand, CreateRecipeCommand } from '../commands/MealPlanningCommands';
 
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack'];
 
@@ -130,39 +129,48 @@ const MealPlanning: React.FC = () => {
   // Global UI settings
   const { weekStartsOn } = useComposedStore();
   const { showToast } = useToast();
-  const { executeCommand } = useUndoRedo();
 
   // Wrapper functions to adapt mutation signatures (defined early for hook dependencies)
   // Wrapped in useCallback to prevent infinite loops
-  const createPlannedMealWrapper = useCallback(async (data: { planId: string; meal: any }): Promise<void> => {
+  const createPlannedMealWrapper = useCallback(async (data: { planId: string; meal: PlannedMealInput }): Promise<void> => {
     await createPlannedMealMutation.mutateAsync(data);
   }, [createPlannedMealMutation]);
 
-  const updatePlannedMealWrapper = useCallback(async (data: { mealId: string; updates: any }): Promise<void> => {
+  const updatePlannedMealWrapper = useCallback(async (data: { mealId: string; updates: PlannedMealUpdate }): Promise<void> => {
     await updatePlannedMealMutation.mutateAsync(data);
   }, [updatePlannedMealMutation]);
 
-  const createRecipeWrapper = useCallback(async (recipe: Partial<Recipe>): Promise<Recipe> => {
-    return await createRecipeMutation.mutateAsync(recipe as any);
+  const createRecipeWrapper = useCallback(async (recipe: RecipeInput): Promise<Recipe> => {
+    return await createRecipeMutation.mutateAsync(recipe);
   }, [createRecipeMutation]);
 
-  // Delete recipe with command pattern for undo support
-  const handleDeleteRecipe = useCallback((recipeId: string) => {
+  // Delete recipe with confirmation
+  const handleDeleteRecipe = useCallback(async (recipeId: string) => {
+    logger.debug('MealPlanning', 'Attempting to delete recipe', { recipeId });
+
+    // Find recipe to get name for confirmation dialog
     const recipeToDelete = recipes.find(r => r.id === recipeId);
-    if (!recipeToDelete) return;
+    const recipeName = recipeToDelete?.name || 'this recipe';
 
     // Confirm before deletion to prevent accidental data loss
     const confirmed = window.confirm(
-      `Are you sure you want to delete "${recipeToDelete.name}"? This action can be undone using Ctrl+Z.`
+      `Are you sure you want to delete "${recipeName}"?`
     );
 
     if (!confirmed) {
+      logger.debug('MealPlanning', 'Recipe deletion cancelled by user', { recipeId });
       return;
     }
 
-    const command = new DeleteRecipeCommand(recipeToDelete);
-    void executeCommand(command);
-  }, [recipes, executeCommand]);
+    try {
+      logger.info('MealPlanning', 'Deleting recipe', { recipeId, recipeName });
+      await deleteRecipeMutation.mutateAsync(recipeId);
+      showToast('Recipe deleted successfully', 'success');
+    } catch (error) {
+      logger.error('MealPlanning', error instanceof Error ? error : new Error(String(error)), { context: 'deleteRecipe', recipeId });
+      showToast('Failed to delete recipe. Please try again.', 'error');
+    }
+  }, [recipes, deleteRecipeMutation, showToast]);
 
   if (recipesError || mealPlansError) {
     return (
