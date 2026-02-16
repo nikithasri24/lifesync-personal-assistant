@@ -7,6 +7,21 @@ import { supabase } from '../lib/supabase';
 import type { ShoppingItemData, ShoppingListData } from '../services/types';
 import { apiCall, requireAuth, handleSupabaseResponse } from './apiWrapper';
 import { NotFoundError } from '../lib/errors';
+import { validateApiResponse } from '../lib/validation';
+import {
+  ShoppingListDataSchema,
+  ShoppingListDataArraySchema,
+  ShoppingItemDataSchema,
+  ShoppingItemDataArraySchema,
+} from '../shopping/schemas';
+import {
+  mapRowToShoppingList,
+  mapShoppingListToInsert,
+  mapShoppingListToUpdate,
+  mapRowToShoppingItem,
+  mapShoppingItemToInsert,
+  mapShoppingItemToUpdate,
+} from './mappers/shoppingMappers';
 
 // =====================================================
 // SHOPPING LISTS CRUD OPERATIONS
@@ -27,7 +42,12 @@ export async function getShoppingLists(): Promise<ShoppingListData[]> {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return (data ?? []) as ShoppingListData[];
+      const lists = (data ?? []).map(mapRowToShoppingList);
+      return validateApiResponse(
+        ShoppingListDataArraySchema,
+        lists,
+        'getShoppingLists'
+      );
     },
     { domain: 'ShoppingAPI', operation: 'getShoppingLists' }
   );
@@ -37,24 +57,30 @@ export async function getShoppingLists(): Promise<ShoppingListData[]> {
  * Create a new shopping list (with connection_id if in merged mode)
  */
 export async function createShoppingList(
-  list: Omit<ShoppingListData, 'id' | 'created_at' | 'updated_at'>
+  list: Omit<ShoppingListData, 'id' | 'created_at' | 'updated_at' | 'user_id'>
 ): Promise<ShoppingListData> {
   return apiCall(
     async () => {
       const user = await requireAuth();
 
+      const dbList = mapShoppingListToInsert(list);
+
       const result = await supabase
         .from('shopping_lists')
         .insert({
+          ...dbList,
           user_id: user.id,
-          ...list,
-          status: list.status ?? 'active',
         })
         .select()
         .single();
 
       const data = handleSupabaseResponse(result, 'Shopping List');
-      return data as ShoppingListData;
+      const mappedData = mapRowToShoppingList(data);
+      return validateApiResponse(
+        ShoppingListDataSchema,
+        mappedData,
+        'createShoppingList'
+      );
     },
     { domain: 'ShoppingAPI', operation: 'createShoppingList', data: { name: list.name } }
   );
@@ -65,22 +91,29 @@ export async function createShoppingList(
  */
 export async function updateShoppingList(
   id: string,
-  updates: Partial<ShoppingListData>
+  updates: Partial<Omit<ShoppingListData, 'id' | 'user_id' | 'created_at'>>
 ): Promise<ShoppingListData> {
   return apiCall(
     async () => {
       const user = await requireAuth();
 
+      const dbUpdates = mapShoppingListToUpdate(updates);
+
       const result = await supabase
         .from('shopping_lists')
-        .update(updates)
+        .update(dbUpdates)
         .eq('id', id)
         .eq('user_id', user.id)
         .select()
         .single();
 
       const data = handleSupabaseResponse(result, 'Shopping List', id);
-      return data as ShoppingListData;
+      const mappedData = mapRowToShoppingList(data);
+      return validateApiResponse(
+        ShoppingListDataSchema,
+        mappedData,
+        'updateShoppingList'
+      );
     },
     { domain: 'ShoppingAPI', operation: 'updateShoppingList', data: { id } }
   );
@@ -126,7 +159,12 @@ export async function getShoppingListItems(listId: string): Promise<ShoppingItem
         .order('created_at', { ascending: true});
 
       if (error) throw error;
-      return (data ?? []) as ShoppingItemData[];
+      const items = (data ?? []).map(mapRowToShoppingItem);
+      return validateApiResponse(
+        ShoppingItemDataArraySchema,
+        items,
+        'getShoppingListItems'
+      );
     },
     { domain: 'ShoppingAPI', operation: 'getShoppingListItems', data: { listId } }
   );
@@ -137,7 +175,7 @@ export async function getShoppingListItems(listId: string): Promise<ShoppingItem
  */
 export async function createShoppingItem(
   listId: string,
-  item: Omit<ShoppingItemData, 'id' | 'shopping_list_id' | 'created_at' | 'updated_at'>
+  item: Omit<ShoppingItemData, 'id' | 'shopping_list_id' | 'created_at' | 'updated_at' | 'user_id'>
 ): Promise<ShoppingItemData> {
   return apiCall(
     async () => {
@@ -153,19 +191,25 @@ export async function createShoppingItem(
 
       if (listError || !list) throw new NotFoundError('Shopping List', listId);
 
+      const dbItem = mapShoppingItemToInsert(item);
+
       const result = await supabase
         .from('shopping_items')
         .insert({
+          ...dbItem,
           user_id: user.id,
           shopping_list_id: listId,
-          ...item,
-          is_purchased: item.is_purchased ?? false,
         })
         .select()
         .single();
 
       const data = handleSupabaseResponse(result, 'Shopping Item');
-      return data as ShoppingItemData;
+      const mappedData = mapRowToShoppingItem(data);
+      return validateApiResponse(
+        ShoppingItemDataSchema,
+        mappedData,
+        'createShoppingItem'
+      );
     },
     { domain: 'ShoppingAPI', operation: 'createShoppingItem', data: { listId, name: item.name } }
   );
@@ -176,7 +220,7 @@ export async function createShoppingItem(
  */
 export async function updateShoppingItem(
   itemId: string,
-  updates: Partial<ShoppingItemData>
+  updates: Partial<Omit<ShoppingItemData, 'id' | 'user_id' | 'shopping_list_id' | 'created_at'>>
 ): Promise<ShoppingItemData> {
   return apiCall(
     async () => {
@@ -203,16 +247,23 @@ export async function updateShoppingItem(
         throw new NotFoundError('Shopping Item', itemId);
       }
 
+      const dbUpdates = mapShoppingItemToUpdate(updates);
+
       const result = await supabase
         .from('shopping_items')
-        .update(updates)
+        .update(dbUpdates)
         .eq('id', itemId)
         .eq('shopping_list_id', item.shopping_list_id)
         .select()
         .single();
 
       const data = handleSupabaseResponse(result, 'Shopping Item', itemId);
-      return data as ShoppingItemData;
+      const mappedData = mapRowToShoppingItem(data);
+      return validateApiResponse(
+        ShoppingItemDataSchema,
+        mappedData,
+        'updateShoppingItem'
+      );
     },
     { domain: 'ShoppingAPI', operation: 'updateShoppingItem', data: { itemId } }
   );

@@ -171,18 +171,13 @@ export interface FinancialAccountData {
 }
 
 export interface ShoppingListData {
-  id?: string;
-  user_id?: string;
-  connection_id?: string | null;
+  id: string;
+  user_id: string;
   name: string;
-  description?: string;
-  status?: 'active' | 'completed' | 'archived';
-  total_estimated_cost?: number;
-  total_actual_cost?: number;
-  store?: string;
-  shopping_date?: string;
-  created_at?: string;
-  updated_at?: string;
+  description?: string | null;
+  status: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface StoreData {
@@ -219,38 +214,37 @@ export interface StoreData {
 }
 
 export interface ShoppingItemData {
-  id?: string;
+  id: string;
   shopping_list_id: string;
-  user_id?: string;
-  connection_id?: string | null;
+  user_id: string;
   name: string;
-  quantity?: number;
-  unit?: string;
-  estimated_price?: number;
-  actual_price?: number;
-  category?: string;
-  subcategory?: string;
-  brand?: string;
-  notes?: string;
-  is_purchased?: boolean;
-  purchased_at?: string;
-  position?: number;
-  priority?: 'low' | 'medium' | 'high';
-  tags?: string[];
-  assigned_store?: string;
-  best_stores?: string[];
-  barcode?: string;
-  image_url?: string;
-  nutrition_info?: Record<string, unknown>;
-  added_by?: string;
-  purchased_by?: string;
-  auto_added?: boolean;
-  recipe_id?: string;
-  store?: string;
-  aisle?: string;
-  recurring?: Record<string, unknown>;
-  created_at?: string;
-  updated_at?: string;
+  quantity?: number | null;
+  unit?: string | null;
+  estimated_price?: number | null;
+  actual_price?: number | null;
+  category?: string | null;
+  subcategory?: string | null;
+  brand?: string | null;
+  notes?: string | null;
+  is_purchased?: boolean | null;
+  purchased_at?: string | null;
+  purchased_by?: string | null;
+  position?: number | null;
+  priority?: string | null;
+  tags?: string[] | null;
+  assigned_store?: string | null;
+  best_stores?: string[] | null;
+  aisle?: string | null;
+  barcode?: string | null;
+  image_url?: string | null;
+  nutrition_info?: unknown | null;
+  recurring?: unknown | null;
+  added_by?: string | null;
+  auto_added?: boolean | null;
+  recipe_id?: string | null;
+  store?: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface PantryItemData {

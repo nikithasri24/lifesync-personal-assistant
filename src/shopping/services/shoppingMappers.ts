@@ -42,7 +42,7 @@ export function mapShoppingItemDataToModel(items: ShoppingItemData[]): ShoppingI
 /**
  * Map UI ShoppingItem to API create input
  */
-export function mapShoppingItemToCreateInput(item: Omit<ShoppingItem, 'id' | 'createdAt' | 'updatedAt'>): Omit<ShoppingItemData, 'id' | 'shopping_list_id' | 'created_at' | 'updated_at'> {
+export function mapShoppingItemToCreateInput(item: Omit<ShoppingItem, 'id' | 'createdAt' | 'updatedAt'>): Omit<ShoppingItemData, 'id' | 'shopping_list_id' | 'user_id' | 'created_at' | 'updated_at'> {
   return {
     name: item.name,
     quantity: item.quantity,
