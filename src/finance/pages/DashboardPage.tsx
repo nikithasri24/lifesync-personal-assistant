@@ -32,8 +32,15 @@ const DashboardPage: React.FC = () => {
   const { data: mergedConnection } = useMergedConnection('finances');
   const { data: partnerName } = usePartnerName('finances');
 
-  // React Query hooks
-  const { data: transactions = [], isLoading: txnsLoading } = useTransactionsQuery({ limit: 500 });
+  // Calculate month range early for query filtering
+  const { from, to } = React.useMemo(() => monthRange(month), [month]);
+
+  // React Query hooks - fetch only current month's data
+  const { data: transactions = [], isLoading: txnsLoading } = useTransactionsQuery({
+    fromISO: from,
+    toISO: to,
+    limit: 200  // Reduced from 500 - only need 1 month
+  });
   const { data: accounts = [], isLoading: accountsLoading, refetch: refetchAccounts } = useAccountsQuery();
   const { data: categories = [], isLoading: categoriesLoading } = useCategoriesQuery();
   const { data: budgets = [], isLoading: budgetsLoading } = useBudgetsQuery(month);
@@ -58,12 +65,8 @@ const DashboardPage: React.FC = () => {
     return accounts;
   }, [accounts, mergedConnection, filters.ownerFilter, user]);
 
-  const { from, to } = monthRange(month);
-  // Filter transactions by extracting just the YYYY-MM part for comparison
-  const monthTxns: Transaction[] = filteredTxns.filter((t: Transaction): boolean => {
-    const txnMonth: string = t.dateISO.slice(0, 7); // Extract YYYY-MM
-    return txnMonth === month;
-  });
+  // Transactions are already filtered by date from query
+  const monthTxns: Transaction[] = filteredTxns;
 
   // Debug logging
   React.useEffect((): void => {

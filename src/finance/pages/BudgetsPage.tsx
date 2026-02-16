@@ -6,6 +6,7 @@
 import React from 'react';
 import { Plus, Edit2, Trash2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { logger } from '@/services/logger';
 import {
   useBudgetsQuery,
   useUpsertBudgetMutation,
@@ -37,10 +38,18 @@ const BudgetsPage: React.FC = () => {
     return mergedConnection.partnerName;
   }, [mergedConnection, user]);
 
-  // Queries
+  // Calculate month range early for query filtering
+  const { from, to } = React.useMemo(() => monthRange(month), [month]);
+
+  // Queries - fetch only current month's debit transactions
   const { data: budgets = [], isLoading: budgetsLoading } = useBudgetsQuery(month);
   const { data: categories = [], isLoading: categoriesLoading } = useCategoriesQuery();
-  const { data: transactions = [], isLoading: txnsLoading } = useTransactionsQuery({ limit: 1000 });
+  const { data: transactions = [], isLoading: txnsLoading } = useTransactionsQuery({
+    fromISO: from,
+    toISO: to,
+    type: 'debit',  // Only need expenses for budgets
+    limit: 300      // Reduced from 1000
+  });
 
   // Mutations
   const upsertBudget = useUpsertBudgetMutation();
@@ -49,14 +58,8 @@ const BudgetsPage: React.FC = () => {
 
   const loading = budgetsLoading || categoriesLoading || txnsLoading;
 
-  // Filter transactions for current month
-  const { from, to } = monthRange(month);
-  const monthTxns = React.useMemo(() => {
-    return transactions.filter((t: Transaction) => {
-      const txnMonth = t.dateISO.slice(0, 7);
-      return txnMonth === month && t.type === 'debit';
-    });
-  }, [transactions, month]);
+  // Transactions are pre-filtered by query (current month, debit only)
+  const monthTxns = transactions;
 
   // Calculate spending by category
   const spendingByCategory = React.useMemo(() => {
@@ -130,7 +133,7 @@ const BudgetsPage: React.FC = () => {
       });
       handleCloseEditor();
     } catch (error) {
-      console.error('Failed to save budget:', error);
+      logger.error('Finance', 'Failed to save budget', { error, budgetData, month });
     }
   };
 
@@ -139,7 +142,7 @@ const BudgetsPage: React.FC = () => {
       await deleteBudget.mutateAsync(budgetId);
       handleCloseEditor();
     } catch (error) {
-      console.error('Failed to delete budget:', error);
+      logger.error('Finance', 'Failed to delete budget', { error, budgetId });
     }
   };
 
