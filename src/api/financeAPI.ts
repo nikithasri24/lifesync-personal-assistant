@@ -6,6 +6,21 @@
 import { supabase } from '../lib/supabase';
 import type { FinancialAccountData, FinancialTransactionData } from '../services/types';
 import { apiCall, requireAuth, handleSupabaseResponse } from './apiWrapper';
+import { validateApiResponse } from '../lib/validation';
+import {
+  FinancialAccountDataSchema,
+  FinancialAccountDataArraySchema,
+  FinancialTransactionDataSchema,
+  FinancialTransactionDataArraySchema,
+} from '../finance/schemas';
+import {
+  mapRowToFinancialAccount,
+  mapFinancialAccountToInsert,
+  mapFinancialAccountToUpdate,
+  mapRowToFinancialTransaction,
+  mapFinancialTransactionToInsert,
+  mapFinancialTransactionToUpdate,
+} from './mappers/financeMappers';
 
 // =====================================================
 // FINANCIAL ACCOUNTS CRUD OPERATIONS
@@ -19,14 +34,19 @@ export async function getFinancialAccounts(): Promise<FinancialAccountData[]> {
     async () => {
       const user = await requireAuth();
 
-      const { data, error } = await supabase
-        .from('financial_accounts')
+      const { data, error} = await supabase
+        .from('finance_accounts')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return (data ?? []) as FinancialAccountData[];
+      const accounts = (data ?? []).map(mapRowToFinancialAccount);
+      return validateApiResponse(
+        FinancialAccountDataArraySchema,
+        accounts,
+        'getFinancialAccounts'
+      );
     },
     { domain: 'FinanceAPI', operation: 'getFinancialAccounts' }
   );
@@ -36,23 +56,30 @@ export async function getFinancialAccounts(): Promise<FinancialAccountData[]> {
  * Create a new financial account
  */
 export async function createFinancialAccount(
-  account: Omit<FinancialAccountData, 'id' | 'created_at' | 'updated_at'>
+  account: Omit<FinancialAccountData, 'id' | 'created_at' | 'updated_at' | 'user_id'>
 ): Promise<FinancialAccountData> {
   return apiCall(
     async () => {
       const user = await requireAuth();
 
+      const dbAccount = mapFinancialAccountToInsert(account);
+
       const result = await supabase
-        .from('financial_accounts')
+        .from('finance_accounts')
         .insert({
+          ...dbAccount,
           user_id: user.id,
-          ...account,
         })
         .select()
         .single();
 
       const data = handleSupabaseResponse(result, 'Financial Account');
-      return data as FinancialAccountData;
+      const mappedData = mapRowToFinancialAccount(data);
+      return validateApiResponse(
+        FinancialAccountDataSchema,
+        mappedData,
+        'createFinancialAccount'
+      );
     },
     { domain: 'FinanceAPI', operation: 'createFinancialAccount', data: { name: account.name } }
   );
@@ -63,22 +90,29 @@ export async function createFinancialAccount(
  */
 export async function updateFinancialAccount(
   id: string,
-  updates: Partial<FinancialAccountData>
+  updates: Partial<Omit<FinancialAccountData, 'id' | 'user_id' | 'created_at'>>
 ): Promise<FinancialAccountData> {
   return apiCall(
     async () => {
       const user = await requireAuth();
 
+      const dbUpdates = mapFinancialAccountToUpdate(updates);
+
       const result = await supabase
-        .from('financial_accounts')
-        .update(updates)
+        .from('finance_accounts')
+        .update(dbUpdates)
         .eq('id', id)
         .eq('user_id', user.id)
         .select()
         .single();
 
       const data = handleSupabaseResponse(result, 'Financial Account', id);
-      return data as FinancialAccountData;
+      const mappedData = mapRowToFinancialAccount(data);
+      return validateApiResponse(
+        FinancialAccountDataSchema,
+        mappedData,
+        'updateFinancialAccount'
+      );
     },
     { domain: 'FinanceAPI', operation: 'updateFinancialAccount', data: { id } }
   );
@@ -93,7 +127,7 @@ export async function deleteFinancialAccount(id: string): Promise<void> {
       const user = await requireAuth();
 
       const { error } = await supabase
-        .from('financial_accounts')
+        .from('finance_accounts')
         .delete()
         .eq('id', id)
         .eq('user_id', user.id);
@@ -113,7 +147,7 @@ export async function deleteFinancialAccount(id: string): Promise<void> {
  */
 export async function getFinancialTransactions(filters?: {
   accountId?: string;
-  type?: 'income' | 'expense';
+  type?: 'credit' | 'debit';
   category?: string;
   startDate?: string;
   endDate?: string;
@@ -123,7 +157,7 @@ export async function getFinancialTransactions(filters?: {
       const user = await requireAuth();
 
       let query = supabase
-        .from('financial_transactions')
+        .from('finance_transactions')
         .select('*')
         .eq('user_id', user.id)
         .order('date', { ascending: false });
@@ -132,14 +166,19 @@ export async function getFinancialTransactions(filters?: {
       if (filters) {
         if (filters.accountId) query = query.eq('account_id', filters.accountId);
         if (filters.type) query = query.eq('type', filters.type);
-        if (filters.category) query = query.eq('category', filters.category);
+        if (filters.category) query = query.eq('category_id', filters.category);
         if (filters.startDate) query = query.gte('date', filters.startDate);
         if (filters.endDate) query = query.lte('date', filters.endDate);
       }
 
       const { data, error } = await query;
       if (error) throw error;
-      return (data ?? []) as FinancialTransactionData[];
+      const transactions = (data ?? []).map(mapRowToFinancialTransaction);
+      return validateApiResponse(
+        FinancialTransactionDataArraySchema,
+        transactions,
+        'getFinancialTransactions'
+      );
     },
     { domain: 'FinanceAPI', operation: 'getFinancialTransactions', data: { filters } }
   );
@@ -149,23 +188,30 @@ export async function getFinancialTransactions(filters?: {
  * Create a new financial transaction
  */
 export async function createFinancialTransaction(
-  transaction: Omit<FinancialTransactionData, 'id' | 'created_at' | 'updated_at'>
+  transaction: Omit<FinancialTransactionData, 'id' | 'created_at' | 'updated_at' | 'user_id'>
 ): Promise<FinancialTransactionData> {
   return apiCall(
     async () => {
       const user = await requireAuth();
 
+      const dbTransaction = mapFinancialTransactionToInsert(transaction);
+
       const result = await supabase
-        .from('financial_transactions')
+        .from('finance_transactions')
         .insert({
+          ...dbTransaction,
           user_id: user.id,
-          ...transaction,
         })
         .select()
         .single();
 
       const data = handleSupabaseResponse(result, 'Financial Transaction');
-      return data as FinancialTransactionData;
+      const mappedData = mapRowToFinancialTransaction(data);
+      return validateApiResponse(
+        FinancialTransactionDataSchema,
+        mappedData,
+        'createFinancialTransaction'
+      );
     },
     { domain: 'FinanceAPI', operation: 'createFinancialTransaction', data: { type: transaction.type, amount: transaction.amount } }
   );
@@ -176,22 +222,29 @@ export async function createFinancialTransaction(
  */
 export async function updateFinancialTransaction(
   id: string,
-  updates: Partial<FinancialTransactionData>
+  updates: Partial<Omit<FinancialTransactionData, 'id' | 'user_id' | 'created_at'>>
 ): Promise<FinancialTransactionData> {
   return apiCall(
     async () => {
       const user = await requireAuth();
 
+      const dbUpdates = mapFinancialTransactionToUpdate(updates);
+
       const result = await supabase
-        .from('financial_transactions')
-        .update(updates)
+        .from('finance_transactions')
+        .update(dbUpdates)
         .eq('id', id)
         .eq('user_id', user.id)
         .select()
         .single();
 
       const data = handleSupabaseResponse(result, 'Financial Transaction', id);
-      return data as FinancialTransactionData;
+      const mappedData = mapRowToFinancialTransaction(data);
+      return validateApiResponse(
+        FinancialTransactionDataSchema,
+        mappedData,
+        'updateFinancialTransaction'
+      );
     },
     { domain: 'FinanceAPI', operation: 'updateFinancialTransaction', data: { id } }
   );
@@ -206,7 +259,7 @@ export async function deleteFinancialTransaction(id: string): Promise<void> {
       const user = await requireAuth();
 
       const { error } = await supabase
-        .from('financial_transactions')
+        .from('finance_transactions')
         .delete()
         .eq('id', id)
         .eq('user_id', user.id);

@@ -127,35 +127,47 @@ export interface HabitEntryData {
 }
 
 export interface FinancialTransactionData {
-  id?: string;
-  user_id?: string;
-  account_id?: string;
-  category_id?: string;
-  type: 'income' | 'expense' | 'transfer';
+  id: string;
+  user_id: string;
+  account_id: string;
   amount: number;
-  description?: string;
-  payee?: string;
+  description: string;
   date: string;
-  tags?: string[];
-  notes?: string;
-  created_at?: string;
-  updated_at?: string;
+  type: string;
+  category_id?: string | null;
+  notes?: string | null;
+  merchant_name?: string | null;
+  confidence_score?: number | null;
+  suggested_category_id?: string | null;
+  categorization_rule_id?: string | null;
+  connection_id?: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface FinancialAccountData {
-  id?: string;
-  user_id?: string;
+  id: string;
+  user_id: string;
   name: string;
   type: string;
-  institution?: string;
-  account_number?: string;
-  balance?: number;
-  currency?: string;
-  color?: string;
-  icon?: string;
-  is_active?: boolean;
-  created_at?: string;
-  updated_at?: string;
+  balance: number;
+  last_updated_at: string;
+  created_at: string;
+  updated_at: string;
+  credit_limit?: number | null;
+  apr?: number | null;
+  payment_due_day?: number | null;
+  minimum_payment?: number | null;
+  statement_balance?: number | null;
+  statement_date?: string | null;
+  annual_fee?: number | null;
+  annual_fee_due_date?: string | null;
+  rewards_balance?: number | null;
+  rewards_type?: string | null;
+  base_rewards_rate?: number | null;
+  liability?: boolean | null;
+  institution_id?: string | null;
+  connection_id?: string | null;
 }
 
 export interface ShoppingListData {
