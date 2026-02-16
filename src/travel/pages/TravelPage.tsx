@@ -12,20 +12,49 @@ import { nationalParks, getParksByState } from '../data/nationalParks';
 import { islands, getIslandsByState } from '../data/islands';
 import { getEnhancedCountries } from '../components/countryData';
 import { usStates } from '../data/geographicFeatures';
-import { supabase } from '../../lib/supabase';
 import { logger } from '@/services/logger';
+import { useCurrentUserId, useMergedConnection, usePartnerName } from '@/hooks/useOwnerInfo';
+import { useToast } from '@/hooks/useToast';
+
+type LocationTypeFilter = 'all' | 'countries' | 'states' | 'parks' | 'islands';
 
 const TravelPage: React.FC = () => {
   const [loading, setLoading] = React.useState(true);
   const [visitedLocations, setVisitedLocations] = React.useState<CategorizedLocation[]>([]);
+  const { showToast } = useToast();
   const [categoryFilter, setCategoryFilter] = React.useState<LocationVisitCategory | 'all'>('all');
-  const [currentUserId, setCurrentUserId] = React.useState<string | null>(null);
-  const [partnerId, setPartnerId] = React.useState<string | null>(null);
+
+  // Location type filter state (persisted in localStorage)
+  const [locationTypeFilter, setLocationTypeFilter] = React.useState<LocationTypeFilter>(() => {
+    const saved = localStorage.getItem('travel_location_type_filter');
+    return (saved as LocationTypeFilter) || 'all';
+  });
+
+  // States count as countries toggle (persisted in localStorage)
+  const [statesCountAsCountries, setStatesCountAsCountries] = React.useState(() => {
+    const saved = localStorage.getItem('travel_states_count_as_countries');
+    return saved === 'true';
+  });
+
+  // Use standardized hooks for merged mode support
+  const { data: currentUserId } = useCurrentUserId();
+  const { data: mergedConnection } = useMergedConnection('visa');
+  const { data: partnerName } = usePartnerName('visa');
+  const partnerId = mergedConnection?.partnerId ?? null;
+
+  // Persist location type filter
+  React.useEffect(() => {
+    localStorage.setItem('travel_location_type_filter', locationTypeFilter);
+  }, [locationTypeFilter]);
+
+  // Persist states count toggle
+  React.useEffect(() => {
+    localStorage.setItem('travel_states_count_as_countries', String(statesCountAsCountries));
+  }, [statesCountAsCountries]);
 
   // Load data
   React.useEffect(() => {
     loadData();
-    loadUserInfo();
   }, []);
 
   const loadData = async () => {
@@ -40,26 +69,35 @@ const TravelPage: React.FC = () => {
     }
   };
 
-  const loadUserInfo = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setCurrentUserId(user.id);
-      }
-      // Import getTravelPartner from the API
-      const { getTravelPartner } = await import('../api/data');
-      const partner = await getTravelPartner();
-      setPartnerId(partner);
-    } catch (error) {
-      logger.error('Travel', 'Error loading user info', { error });
-    }
-  };
-
-  // Filter locations by category
+  // Filter locations by category and type
   const filteredLocations = React.useMemo(() => {
-    if (categoryFilter === 'all') return visitedLocations;
-    return visitedLocations.filter(loc => loc.visitCategory === categoryFilter);
-  }, [visitedLocations, categoryFilter]);
+    let filtered = visitedLocations;
+
+    // Filter by category (mine/partner/both/all)
+    if (categoryFilter !== 'all') {
+      filtered = filtered.filter(loc => loc.visitCategory === categoryFilter);
+    }
+
+    // Filter by location type
+    if (locationTypeFilter !== 'all') {
+      switch (locationTypeFilter) {
+        case 'countries':
+          filtered = filtered.filter(loc => loc.locationType === 'country');
+          break;
+        case 'states':
+          filtered = filtered.filter(loc => loc.locationType === 'state');
+          break;
+        case 'parks':
+          filtered = filtered.filter(loc => loc.locationType === 'national_park');
+          break;
+        case 'islands':
+          filtered = filtered.filter(loc => loc.locationType === 'island');
+          break;
+      }
+    }
+
+    return filtered;
+  }, [visitedLocations, categoryFilter, locationTypeFilter]);
 
   // Get visited countries map
   const visitedCountriesMap = React.useMemo(() => {
@@ -203,7 +241,7 @@ const TravelPage: React.FC = () => {
       }
     } catch (error) {
       logger.error('Travel', 'Error toggling country', { error });
-      alert('Failed to update country. Please try again.');
+      showToast('Failed to update country. Please try again.', 'error');
       // Reload data to sync with server on error
       await loadData();
     }
@@ -252,7 +290,7 @@ const TravelPage: React.FC = () => {
       }
     } catch (error) {
       logger.error('Travel', 'Error toggling state', { error });
-      alert('Failed to update state. Please try again.');
+      showToast('Failed to update state. Please try again.', 'error');
       // Reload data to sync with server on error
       await loadData();
     }
@@ -304,7 +342,7 @@ const TravelPage: React.FC = () => {
       }
     } catch (error) {
       logger.error('Travel', 'Error toggling park', { error });
-      alert('Failed to update park. Please try again.');
+      showToast('Failed to update park. Please try again.', 'error');
       // Reload data to sync with server on error
       await loadData();
     }
@@ -357,7 +395,7 @@ const TravelPage: React.FC = () => {
       }
     } catch (error) {
       logger.error('Travel', 'Error toggling island', { error });
-      alert('Failed to update island. Please try again.');
+      showToast('Failed to update island. Please try again.', 'error');
       // Reload data to sync with server on error
       await loadData();
     }
@@ -408,7 +446,7 @@ const TravelPage: React.FC = () => {
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
-              Partner's Travels ({categoryCounts.partner})
+              {partnerName ? `${partnerName}'s Travels` : "Partner's Travels"} ({categoryCounts.partner})
             </button>
             <button
               onClick={() => setCategoryFilter('both')}
@@ -420,6 +458,82 @@ const TravelPage: React.FC = () => {
             >
               Our Travels ({categoryCounts.both})
             </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Location Type Filters and Settings */}
+      <div className="bg-gray-50 border-b border-gray-200 py-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            {/* Location Type Filter Buttons */}
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setLocationTypeFilter('all')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  locationTypeFilter === 'all'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                All Locations
+              </button>
+              <button
+                onClick={() => setLocationTypeFilter('countries')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  locationTypeFilter === 'countries'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                Countries Only
+              </button>
+              <button
+                onClick={() => setLocationTypeFilter('states')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  locationTypeFilter === 'states'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                States Only
+              </button>
+              <button
+                onClick={() => setLocationTypeFilter('parks')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  locationTypeFilter === 'parks'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                Parks Only
+              </button>
+              <button
+                onClick={() => setLocationTypeFilter('islands')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  locationTypeFilter === 'islands'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                Islands Only
+              </button>
+            </div>
+
+            {/* States Count as Countries Toggle */}
+            <div className="flex items-center gap-2">
+              <label className="flex items-center gap-2 cursor-pointer bg-white px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={statesCountAsCountries}
+                  onChange={(e) => setStatesCountAsCountries(e.target.checked)}
+                  className="h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
+                />
+                <span className="text-sm font-medium text-gray-700">
+                  States count as country visits
+                </span>
+              </label>
+            </div>
           </div>
         </div>
       </div>
