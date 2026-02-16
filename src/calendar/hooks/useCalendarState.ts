@@ -13,6 +13,8 @@ import {
   isToday,
   addWeeks,
   subWeeks,
+  addMonths,
+  subMonths,
 } from 'date-fns';
 
 export type CalendarView = 'week' | 'month' | 'day';
@@ -139,13 +141,13 @@ export const useCalendarState = () => {
   // Navigation handlers
   const goToPreviousWeek = () => setCurrentDate(subWeeks(currentDate, 1));
   const goToNextWeek = () => setCurrentDate(addWeeks(currentDate, 1));
-  const goToPreviousMonth = () => setCurrentDate(prev => addWeeks(prev, -4));
-  const goToNextMonth = () => setCurrentDate(prev => addWeeks(prev, 4));
+  const goToPreviousMonth = () => setCurrentDate(prev => subMonths(prev, 1));
+  const goToNextMonth = () => setCurrentDate(prev => addMonths(prev, 1));
   const goToPreviousDay = () => setCurrentDate(prev => addDays(prev, -1));
   const goToNextDay = () => setCurrentDate(prev => addDays(prev, 1));
   const goToToday = () => setCurrentDate(new Date());
-  const goToPreviousMonthMini = () => setMiniCalendarDate(prev => addWeeks(prev, -4));
-  const goToNextMonthMini = () => setMiniCalendarDate(prev => addWeeks(prev, 4));
+  const goToPreviousMonthMini = () => setMiniCalendarDate(prev => subMonths(prev, 1));
+  const goToNextMonthMini = () => setMiniCalendarDate(prev => addMonths(prev, 1));
 
   return {
     // State
