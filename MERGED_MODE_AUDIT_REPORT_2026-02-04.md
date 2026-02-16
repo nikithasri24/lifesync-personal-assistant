@@ -11,11 +11,11 @@
 ## 📊 Executive Summary
 
 ### Current Status (Updated 2026-02-16)
-- **Total Features Analyzed:** 15 major features
-- **Complete Merged Mode:** 7 features (47%) ⬆️ **+3 since last audit**
+- **Total Features Analyzed:** 14 major features
+- **Complete Merged Mode:** 7 features (50%) ⬆️ **+3 since last audit**
 - **Partial Merged Mode:** 0 features (0%) ⬇️ **-1 (Travel completed)**
-- **Missing Merged Mode:** 8 features (53%) ⬇️ **-2 features**
-- **Overall Completion:** 47% ⬆️ **+20% improvement**
+- **Missing Merged Mode:** 7 features (50%) ⬇️ **-3 features**
+- **Overall Completion:** 50% ⬆️ **+23% improvement**
 
 ### 🎉 Major Improvements Since Last Audit
 1. **Calendar** - ✅ NEW: Full merged mode added (Feb 16, 2026)
@@ -181,7 +181,6 @@ Your LifeSync app has **mature, production-grade merged mode infrastructure** wi
 | **Focus** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ Missing | - | **2h** |
 | **Nutrition** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ Missing | - | **2h** |
 | **Skincare** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ Missing | - | **1-2h** |
-| **National Parks** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ Missing | - | **2h** |
 
 **Legend:**
 - ✅ Complete and Production-Ready
@@ -524,14 +523,11 @@ Your LifeSync app has **mature, production-grade merged mode infrastructure** wi
 
 ---
 
-### ❌ NATIONAL PARKS - Missing (No Change)
+### ~~NATIONAL PARKS~~ - ✅ Part of Travel Module
 
-**Overall Status**: ❌ **Not Implemented**
-**Estimated Effort**: 2 hours
-**Priority**: 🟢 **Low**
-**User Value**: **Medium** - Fun to see which parks both visited
+**Status**: ✅ **Already Implemented** (within Travel module)
 
-**Implementation Idea:** Color-coded map markers (me=blue, partner=purple, both=green)
+**Note**: National Parks tracking is integrated into the Travel module and already has merged mode support. The standalone National Parks page was removed as dead code (commit 4cbd508). National Parks are tracked within Travel with visit counts (e.g., "21/94" display).
 
 ---
 
@@ -616,8 +612,10 @@ export function useMergedProjectsConnectionQuery() {
 
 ### 🟢 Priority 3 - Low Priority / Optional
 
-#### 4-8. **Journal, Focus, National Parks, Nutrition, Skincare** - 2 hours each
+#### 4-7. **Journal, Focus, Nutrition, Skincare** - 2 hours each
 **User Value:** Nice-to-have, limited collaboration scenarios
+
+**Note:** National Parks removed from list - already part of Travel module
 
 ---
 
@@ -801,8 +799,8 @@ describe('Feature Merged Mode', () => {
 | **Completed** | Calendar, Tasks, Travel UI | ~~7-8 hours~~ | ✅ **DONE** |
 | Priority 1 (High) | Projects, Habits | 5-7 hours | 🔴 Remaining |
 | Priority 2 (Medium) | Notes | 2 hours | 🟡 Remaining |
-| Priority 3 (Low) | Journal, Focus, Parks, Nutrition, Skincare | 9-10 hours | 🟢 Optional |
-| **Total Remaining** | **All missing features** | **16-19 hours** | - |
+| Priority 3 (Low) | Journal, Focus, Nutrition, Skincare | 7-8 hours | 🟢 Optional |
+| **Total Remaining** | **All missing features** | **14-17 hours** | - |
 
 **Original estimate:** 24-28 hours total
 **Work completed:** 7-8 hours (3 features)
@@ -849,7 +847,7 @@ describe('Feature Merged Mode', () => {
 6. **Document merged mode patterns** in codebase
 
 ### Future (Optional)
-- Journal, Focus, National Parks, Nutrition, Skincare as time permits
+- Journal, Focus, Nutrition, Skincare as time permits
 - Consider: `/add-merged-mode` skill to automate implementation
 
 ---
@@ -869,13 +867,15 @@ describe('Feature Merged Mode', () => {
 
 **Infrastructure:** Production-ready ✅
 **Pattern Standardization:** Excellent ✅
-**Feature Coverage:** 47% (7/15 features) ✅
+**Feature Coverage:** 50% (7/14 features) ✅
 **Code Quality:** Type-safe, well-tested, accessible ✅
 **Documentation:** Comprehensive with clear examples ✅
 
 ### Path Forward
 
-With only **2 high-priority features remaining** (Projects, Habits), LifeSync is positioned to achieve **60-67% merged mode coverage** with just 5-7 hours of additional development. The standardized pattern means each new feature implementation becomes faster and more consistent.
+With only **2 high-priority features remaining** (Projects, Habits), LifeSync is positioned to achieve **64-71% merged mode coverage** with just 5-7 hours of additional development. The standardized pattern means each new feature implementation becomes faster and more consistent.
+
+**Dead Code Removed (commit 4cbd508):** Standalone National Parks feature removed - functionality already exists in Travel module with merged mode support.
 
 **Recommendation:** Focus on Projects and Habits in the next week to maximize collaboration value for couples using LifeSync.
 
