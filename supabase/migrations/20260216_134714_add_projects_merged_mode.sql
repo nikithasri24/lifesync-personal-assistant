@@ -1,6 +1,76 @@
--- Add merged mode support for projects
+-- Add projects tables and merged mode support
 -- Allows users to view partner's projects when both have set module to 'merged'
 -- Supports collaboration on shared projects (home renovations, vacations, moving, etc.)
+
+-- =====================================================
+-- CREATE PROJECTS TABLE
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS projects (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  description TEXT,
+  status TEXT NOT NULL DEFAULT 'planning' CHECK (status IN ('planning', 'active', 'on-hold', 'completed', 'archived')),
+  priority TEXT NOT NULL DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high', 'urgent')),
+  start_date DATE,
+  target_date DATE,
+  completed_date DATE,
+  tags TEXT[] DEFAULT ARRAY[]::TEXT[],
+  color TEXT,
+  icon TEXT,
+  progress INTEGER DEFAULT 0 CHECK (progress >= 0 AND progress <= 100),
+  team_members TEXT[],
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Create index on user_id for faster queries
+CREATE INDEX IF NOT EXISTS idx_projects_user_id ON projects(user_id);
+CREATE INDEX IF NOT EXISTS idx_projects_status ON projects(status);
+
+-- =====================================================
+-- CREATE PROJECT_MILESTONES TABLE
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS project_milestones (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  description TEXT,
+  target_date DATE,
+  completed BOOLEAN DEFAULT false,
+  completed_date DATE,
+  order_index INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Create index on project_id for faster queries
+CREATE INDEX IF NOT EXISTS idx_project_milestones_project_id ON project_milestones(project_id);
+
+-- =====================================================
+-- CREATE PROJECT_TASKS TABLE
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS project_tasks (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  task_id UUID NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(project_id, task_id)
+);
+
+-- Create indexes for faster queries
+CREATE INDEX IF NOT EXISTS idx_project_tasks_project_id ON project_tasks(project_id);
+CREATE INDEX IF NOT EXISTS idx_project_tasks_task_id ON project_tasks(task_id);
+
+-- =====================================================
+-- ENABLE ROW LEVEL SECURITY
+-- =====================================================
+
+ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
+ALTER TABLE project_milestones ENABLE ROW LEVEL SECURITY;
+ALTER TABLE project_tasks ENABLE ROW LEVEL SECURITY;
 
 -- =====================================================
 -- PROJECTS TABLE RLS POLICIES
