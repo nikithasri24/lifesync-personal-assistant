@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { logger } from '../services/logger'
+import type { Database } from '../types/database.types'
 
 // Re-export TaskData as Task for backward compatibility
 // TaskData is the canonical type defined in services/types.ts
@@ -22,10 +23,10 @@ const isPlaceholder = (value?: string): boolean => {
 export const isSupabaseConfigured =
   !isPlaceholder(supabaseUrl) && !isPlaceholder(supabaseAnonKey)
 
-let supabaseClient: SupabaseClient | null = null
+let supabaseClient: SupabaseClient<Database> | null = null
 
 if (isSupabaseConfigured && supabaseUrl && supabaseAnonKey) {
-  supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+  supabaseClient = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
@@ -42,7 +43,7 @@ if (isSupabaseConfigured && supabaseUrl && supabaseAnonKey) {
 // before using supabase in contexts where it might not be configured
 export const supabase = supabaseClient!
 
-export const ensureSupabase = (): SupabaseClient => {
+export const ensureSupabase = (): SupabaseClient<Database> => {
   if (!supabaseClient) {
     throw new Error(
       'Supabase client is not configured. Provide VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your environment.',

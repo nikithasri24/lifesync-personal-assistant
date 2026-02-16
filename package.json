@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "typecheck": "tsc -b --pretty false",
+    "types:generate": "npx supabase gen types typescript --project-id rfwaiijodrowakcpayoa > src/types/database.types.ts",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --max-warnings 0 --fix",
     "preview": "vite preview",
