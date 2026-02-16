@@ -188,7 +188,7 @@ export const QuickAddTransaction: React.FC<QuickAddTransactionProps> = ({ onClos
 
         {/* Content - Scrollable */}
         <div className="p-6 overflow-y-auto flex-1">
-          <form onSubmit={(e) => { void handleSubmit(e); }} className="space-y-4">
+          <form id="add-transaction-form" onSubmit={(e) => { void handleSubmit(e); }} className="space-y-4">
             {/* Account */}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -369,7 +369,11 @@ export const QuickAddTransaction: React.FC<QuickAddTransactionProps> = ({ onClos
           <Button variant="ghost" onClick={onClose} disabled={upsertTransactionMutation.isPending}>
             Cancel
           </Button>
-          <Button type="submit" disabled={upsertTransactionMutation.isPending || !formData.accountId}>
+          <Button
+            type="submit"
+            form="add-transaction-form"
+            disabled={upsertTransactionMutation.isPending || !formData.accountId}
+          >
             {upsertTransactionMutation.isPending ? 'Adding...' : 'Add Transaction'}
           </Button>
         </div>

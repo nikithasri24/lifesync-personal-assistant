@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LifeSync - Design Showcase (6 Beautiful Options)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .header p {
+            font-size: 18px;
+            opacity: 0.9;
+        }
+
+        .showcase {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: 40px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 800px) {
+            .showcase {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .design-option {
+            background: white;
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .design-label {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 16px;
+            letter-spacing: 0.5px;
+        }
+
+        .phone {
+            background: #000;
+            border-radius: 40px;
+            padding: 10px;
+            margin: 0 auto;
+            max-width: 360px;
+        }
+
+        .screen {
+            border-radius: 32px;
+            overflow: hidden;
+            height: 640px;
+            position: relative;
+        }
+
+        /* Common Elements */
+        .status-bar {
+            padding: 8px 20px 4px;
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* DESIGN 1: iOS BLUE (REFINED) */
+        .ios-blue .design-label {
+            background: #E5F2FF;
+            color: #007AFF;
+        }
+
+        .ios-blue .screen {
+            background: #F5F5F5;
+        }
+
+        .ios-blue .status-bar {
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+        }
+
+        .ios-blue .header {
+            background: white;
+            padding: 36px 20px 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+
+        .ios-blue .header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            color: #1C1C1E;
+            margin-bottom: 6px;
+        }
+
+        .ios-blue .header p {
+            font-size: 14px;
+            color: #8E8E93;
+        }
+
+        .ios-blue .filters {
+            padding: 12px 20px;
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+        }
+
+        .ios-blue .chip {
+            background: white;
+            border: 2px solid #E5E5EA;
+            padding: 8px 16px;
+            border-radius: 16px;
+            font-size: 14px;
+            font-weight: 600;
+            white-space: nowrap;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+        }
+
+        .ios-blue .chip.active {
+            background: #007AFF;
+            border-color: #007AFF;
+            color: white;
+        }
+
+        .ios-blue .list {
+            background: white;
+            margin: 0 20px 20px;
+            border-radius: 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+
+        .ios-blue .item {
+            display: flex;
+            align-items: center;
+            padding: 14px 16px;
+            border-bottom: 1px solid #F0F0F0;
+        }
+
+        .ios-blue .item:last-child {
+            border-bottom: none;
+        }
+
+        .ios-blue .checkbox {
+            width: 28px;
+            height: 28px;
+            border: 2.5px solid #D1D1D6;
+            border-radius: 50%;
+            margin-right: 12px;
+        }
+
+        .ios-blue .checkbox.checked {
+            background: #34C759;
+            border-color: #34C759;
+            position: relative;
+        }
+
+        .ios-blue .checkbox.checked::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .ios-blue .item-name {
+            flex: 1;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .ios-blue .badge {
+            background: #E5F2FF;
+            color: #007AFF;
+            padding: 4px 10px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        /* DESIGN 2: MINIMAL MONOCHROME */
+        .minimal .design-label {
+            background: #1C1C1E;
+            color: white;
+        }
+
+        .minimal .screen {
+            background: #FFFFFF;
+        }
+
+        .minimal .status-bar {
+            background: #FFFFFF;
+            color: #1C1C1E;
+            border-bottom: 1px solid #F0F0F0;
+        }
+
+        .minimal .header {
+            padding: 36px 20px 20px;
+        }
+
+        .minimal .header h1 {
+            font-size: 32px;
+            font-weight: 300;
+            color: #1C1C1E;
+            letter-spacing: -1px;
+            margin-bottom: 6px;
+        }
+
+        .minimal .header p {
+            font-size: 14px;
+            color: #8E8E93;
+            font-weight: 300;
+        }
+
+        .minimal .filters {
+            padding: 12px 20px;
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+        }
+
+        .minimal .chip {
+            background: transparent;
+            border: 1px solid #E5E5EA;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 400;
+            white-space: nowrap;
+            color: #8E8E93;
+        }
+
+        .minimal .chip.active {
+            background: #1C1C1E;
+            border-color: #1C1C1E;
+            color: white;
+        }
+
+        .minimal .list {
+            padding: 0 20px;
+        }
+
+        .minimal .item {
+            display: flex;
+            align-items: center;
+            padding: 16px 0;
+            border-bottom: 1px solid #F5F5F5;
+        }
+
+        .minimal .item:last-child {
+            border-bottom: none;
+        }
+
+        .minimal .checkbox {
+            width: 20px;
+            height: 20px;
+            border: 1.5px solid #1C1C1E;
+            border-radius: 4px;
+            margin-right: 16px;
+        }
+
+        .minimal .checkbox.checked {
+            background: #1C1C1E;
+            position: relative;
+        }
+
+        .minimal .checkbox.checked::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .minimal .item-name {
+            flex: 1;
+            font-size: 16px;
+            font-weight: 300;
+            color: #1C1C1E;
+        }
+
+        /* DESIGN 3: SOFT PASTEL */
+        .pastel .design-label {
+            background: linear-gradient(135deg, #FFB6C1 0%, #DDA0DD 100%);
+            color: white;
+        }
+
+        .pastel .screen {
+            background: linear-gradient(135deg, #FFF5F7 0%, #F5F0FF 100%);
+        }
+
+        .pastel .status-bar {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            color: #1C1C1E;
+        }
+
+        .pastel .header {
+            padding: 36px 20px 20px;
+        }
+
+        .pastel .header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #FF69B4 0%, #9370DB 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 6px;
+        }
+
+        .pastel .header p {
+            font-size: 14px;
+            color: #8E8E93;
+        }
+
+        .pastel .filters {
+            padding: 12px 20px;
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+        }
+
+        .pastel .chip {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 182, 193, 0.3);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            white-space: nowrap;
+            color: #9370DB;
+        }
+
+        .pastel .chip.active {
+            background: linear-gradient(135deg, #FFB6C1 0%, #DDA0DD 100%);
+            border-color: transparent;
+            color: white;
+        }
+
+        .pastel .list {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            margin: 0 20px 20px;
+            border-radius: 20px;
+            box-shadow: 0 4px 16px rgba(255, 105, 180, 0.1);
+        }
+
+        .pastel .item {
+            display: flex;
+            align-items: center;
+            padding: 14px 16px;
+            border-bottom: 1px solid rgba(255, 182, 193, 0.2);
+        }
+
+        .pastel .item:last-child {
+            border-bottom: none;
+        }
+
+        .pastel .checkbox {
+            width: 28px;
+            height: 28px;
+            border: 2.5px solid #FFB6C1;
+            border-radius: 50%;
+            margin-right: 12px;
+        }
+
+        .pastel .checkbox.checked {
+            background: linear-gradient(135deg, #FFB6C1 0%, #DDA0DD 100%);
+            border-color: transparent;
+            position: relative;
+        }
+
+        .pastel .checkbox.checked::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .pastel .item-name {
+            flex: 1;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .pastel .badge {
+            background: rgba(255, 255, 255, 0.8);
+            color: #9370DB;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        /* DESIGN 4: VIBRANT GRADIENT */
+        .vibrant .design-label {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .vibrant .screen {
+            background: #F5F5F5;
+        }
+
+        .vibrant .status-bar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .vibrant .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 36px 20px 24px;
+            color: white;
+        }
+
+        .vibrant .header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .vibrant .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .vibrant .stats {
+            background: white;
+            margin: -16px 20px 0;
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .vibrant .stat {
+            text-align: center;
+        }
+
+        .vibrant .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 4px;
+        }
+
+        .vibrant .stat-label {
+            font-size: 11px;
+            color: #8E8E93;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .vibrant .filters {
+            padding: 16px 20px 12px;
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+        }
+
+        .vibrant .chip {
+            background: white;
+            border: 2px solid #E5E5EA;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+
+        .vibrant .chip.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: transparent;
+            color: white;
+        }
+
+        .vibrant .list {
+            background: white;
+            margin: 0 20px 20px;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .vibrant .item {
+            display: flex;
+            align-items: center;
+            padding: 14px 16px;
+            border-bottom: 1px solid #F5F5F5;
+        }
+
+        .vibrant .item:last-child {
+            border-bottom: none;
+        }
+
+        .vibrant .checkbox {
+            width: 28px;
+            height: 28px;
+            border: 2.5px solid #D1D1D6;
+            border-radius: 50%;
+            margin-right: 12px;
+        }
+
+        .vibrant .checkbox.checked {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: transparent;
+            position: relative;
+        }
+
+        .vibrant .checkbox.checked::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .vibrant .item-name {
+            flex: 1;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .vibrant .badge {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            color: #667eea;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        /* DESIGN 5: DARK MODE */
+        .dark .design-label {
+            background: #2C2C2E;
+            color: white;
+        }
+
+        .dark .screen {
+            background: #000000;
+        }
+
+        .dark .status-bar {
+            background: #000000;
+            color: white;
+        }
+
+        .dark .header {
+            background: #1C1C1E;
+            padding: 36px 20px 20px;
+        }
+
+        .dark .header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 6px;
+        }
+
+        .dark .header p {
+            font-size: 14px;
+            color: #8E8E93;
+        }
+
+        .dark .filters {
+            padding: 12px 20px;
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+        }
+
+        .dark .chip {
+            background: #2C2C2E;
+            border: 1px solid #3A3A3C;
+            padding: 8px 16px;
+            border-radius: 16px;
+            font-size: 14px;
+            font-weight: 600;
+            white-space: nowrap;
+            color: #8E8E93;
+        }
+
+        .dark .chip.active {
+            background: #0A84FF;
+            border-color: #0A84FF;
+            color: white;
+        }
+
+        .dark .list {
+            background: #1C1C1E;
+            margin: 0 20px 20px;
+            border-radius: 16px;
+        }
+
+        .dark .item {
+            display: flex;
+            align-items: center;
+            padding: 14px 16px;
+            border-bottom: 1px solid #2C2C2E;
+        }
+
+        .dark .item:last-child {
+            border-bottom: none;
+        }
+
+        .dark .checkbox {
+            width: 28px;
+            height: 28px;
+            border: 2.5px solid #48484A;
+            border-radius: 50%;
+            margin-right: 12px;
+        }
+
+        .dark .checkbox.checked {
+            background: #30D158;
+            border-color: #30D158;
+            position: relative;
+        }
+
+        .dark .checkbox.checked::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .dark .item-name {
+            flex: 1;
+            font-size: 16px;
+            font-weight: 500;
+            color: white;
+        }
+
+        .dark .badge {
+            background: #2C2C2E;
+            color: #0A84FF;
+            padding: 4px 10px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        /* DESIGN 6: MODERN CARD */
+        .cards .design-label {
+            background: linear-gradient(135deg, #00C9FF 0%, #92FE9D 100%);
+            color: white;
+        }
+
+        .cards .screen {
+            background: #F0F4F8;
+        }
+
+        .cards .status-bar {
+            background: #F0F4F8;
+            color: #1C1C1E;
+        }
+
+        .cards .header {
+            padding: 36px 20px 16px;
+        }
+
+        .cards .header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            color: #1C1C1E;
+            margin-bottom: 6px;
+        }
+
+        .cards .header p {
+            font-size: 14px;
+            color: #8E8E93;
+        }
+
+        .cards .filters {
+            padding: 12px 20px;
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+        }
+
+        .cards .chip {
+            background: white;
+            border: 2px solid #E0E7EF;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+
+        .cards .chip.active {
+            background: linear-gradient(135deg, #00C9FF 0%, #92FE9D 100%);
+            border-color: transparent;
+            color: white;
+        }
+
+        .cards .list {
+            padding: 0 20px 20px;
+        }
+
+        .cards .item {
+            background: white;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            display: flex;
+            align-items: center;
+        }
+
+        .cards .checkbox {
+            width: 28px;
+            height: 28px;
+            border: 2.5px solid #D1D1D6;
+            border-radius: 50%;
+            margin-right: 12px;
+        }
+
+        .cards .checkbox.checked {
+            background: linear-gradient(135deg, #00C9FF 0%, #92FE9D 100%);
+            border-color: transparent;
+            position: relative;
+        }
+
+        .cards .checkbox.checked::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .cards .item-name {
+            flex: 1;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .cards .badge {
+            background: linear-gradient(135deg, rgba(0, 201, 255, 0.1) 0%, rgba(146, 254, 157, 0.1) 100%);
+            color: #00A8CC;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>✨ LifeSync Design Showcase</h1>
+        <p>6 Beautiful Design Options - Pick Your Favorite!</p>
+    </div>
+
+    <div class="showcase">
+        <!-- DESIGN 1: iOS BLUE -->
+        <div class="design-option ios-blue">
+            <div class="design-label">Option 1: iOS Blue (Classic)</div>
+
+            <div class="phone">
+                <div class="screen">
+                    <div class="status-bar">
+                        <span>2:00</span>
+                        <span>96%</span>
+                    </div>
+
+                    <div class="header">
+                        <h1>Shopping</h1>
+                        <p>8 items • 3 stores</p>
+                    </div>
+
+                    <div class="filters">
+                        <div class="chip active">All</div>
+                        <div class="chip">🏪 Whole Foods</div>
+                        <div class="chip">🌴 Trader Joe's</div>
+                        <div class="chip">📦 Costco</div>
+                    </div>
+
+                    <div class="list">
+                        <div class="item">
+                            <div class="checkbox"></div>
+                            <div class="item-name">🥛 Milk</div>
+                            <div class="badge">WF</div>
+                        </div>
+                        <div class="item">
+                            <div class="checkbox checked"></div>
+                            <div class="item-name">🍌 Bananas</div>
+                            <div class="badge">TJ</div>
+                        </div>
+                        <div class="item">
+                            <div class="checkbox"></div>
+                            <div class="item-name">🥑 Avocados</div>
+                            <div class="badge">TJ</div>
+                        </div>
+                        <div class="item">
+                            <div class="checkbox"></div>
+                            <div class="item-name">🥬 Spinach</div>
+                            <div class="badge">WF</div>
+                        </div>
+                        <div class="item">
+                            <div class="checkbox"></div>
+                            <div class="item-name">🥚 Eggs</div>
+                            <div class="badge">WF</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 16px; padding: 12px; background: #E5F2FF; border-radius: 12px; text-align: center;">
+                <strong style="color: #007AFF;">Clean, Native iOS Feel</strong>
+            </div>
+        </div>
+
+        <!-- DESIGN 2: MINIMAL MONOCHROME -->
+        <div class="design-option minimal">
+            <div class="design-label">Option 2: Minimal Monochrome</div>
+
+            <div class="phone">
+                <div class="screen">
+                    <div class="status-bar">
+                        <span>2:00</span>
+                        <span>96%</span>
+                    </div>
+
+                    <div class="header">
+                        <h1>Shopping</h1>
+                        <p>8 items • 3 stores</p>
+                    </div>
+
+                    <div class="filters">
+                        <div class="chip active">All</div>
+                        <div class="chip">Whole Foods</div>
+                        <div class="chip">Trader Joe's</div>
+                        <div class="chip">Costco</div>
+                    </div>
+
+                    <div class="list">
+                        <div class="item">
+                            <div class="checkbox"></div>
+                            <div class="item-name">Milk</div>
+                        </div>
+                        <div class="item">
+                            <div class="checkbox checked"></div>
+                            <div class="item-name">Bananas</div>
+                        </div>
+                        <div class="item">
+                            <div class="checkbox"></div>
+                            <div class="item-name">Avocados</div>
+                        </div>
+                        <div class="item">
+                            <div class="checkbox"></div>
+                            <div class="item-name">Spinach</div>
+                        </div>
+                        <div class="item">
+                            <div class="checkbox"></div>
+                            <div class="item-name">Eggs</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 16px; padding: 12px; background: #F5F5F5; border-radius: 12px; text-align: center;">
+                <strong style="color: #1C1C1E;">Ultra-Clean, Typography-Focused</strong>
+            </div>
+        </div>
+
+        <!-- DESIGN 3: SOFT PASTEL -->
+        <div class="design-option pastel">
+            <div class="design-label">Option 3: Soft Pastel</div>
+
+            <div class="phone">
+                <div class="screen">
+                    <div class="status-bar">
+                        <span>2:00</span>
+                        <span>96%</span>
+                    </div>
+
+                    <div class="header">
+                        <h1>Shopping</h1>
+                        <p>8 items • 3 stores</p>
+                    </div>
+
+                    <div class="filters">
+                        <div class="chip active">All</div>
+                        <div class="chip">🏪 Whole Foods</div>
+                        <div class="chip">🌴 Trader Joe's</div>
+                        <div class="chip">📦 Costco</div>
+                    </div>
+
+                    <div class="list">
+                        <div class="item">
+                            <div class="checkbox"></div>
+                            <div class="item-name">🥛 Milk</div>
+                            <div class="badge">WF</div>
+                        </div>
+                        <div class="item">
+                            <div class="checkbox checked"></div>
+                            <div class="item-name">🍌 Bananas</div>
+                            <div class="badge">TJ</div>
+                        </div>
+                        <div class="item">
+                            <div class="checkbox"></div>
+                            <div class="item-name">🥑 Avocados</div>
+                            <div class="badge">TJ</div>
+                        </div>
+                        <div class="item">
+                            <div class="checkbox"></div>
+                            <div class="item-name">🥬 Spinach</div>
+                            <div class="badge">WF</div>
+                        </div>
+                        <div class="item">
+                            <div class="checkbox"></div>
+                            <div class="item-name">🥚 Eggs</div>
+                            <div class="badge">WF</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 16px; padding: 12px; background: linear-gradient(135deg, #FFE4E1 0%, #E6E6FA 100%); border-radius: 12px; text-align: center;">
+                <strong style="background: linear-gradient(135deg, #FF69B4 0%, #9370DB 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Dreamy, Soft & Feminine</strong>
+            </div>
+        </div>
+
+        <!-- DESIGN 4: VIBRANT GRADIENT -->
+        <div class="design-option vibrant">
+            <div class="design-label">Option 4: Vibrant Gradient</div>
+
+            <div class="phone">
+                <div class="screen">
+                    <div class="status-bar">
+                        <span>2:00</span>
+                        <span>96%</span>
+                    </div>
+
+                    <div class="header">
+                        <h1>Shopping</h1>
+                        <p>8 items • 3 stores</p>
+                    </div>
+
+                    <div class="stats">
+                        <div class="stat">
+                            <div class="stat-value">8</div>
+                            <div class="stat-label">Items</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value">3</div>
+                            <div class="stat-label">Stores</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value">2</div>
+                            <div class="stat-label">Done</div>
+                        </div>
+                    </div>
+
+                    <div class="filters">
+                        <div class="chip active">All</div>
+                        <div class="chip">🏪 Whole Foods</div>
+                        <div class="chip">🌴 Trader Joe's</div>
+                    </div>
+
+                    <div class="list">
+                        <div class="item">
+                            <div class="checkbox"></div>
+                            <div class="item-name">🥛 Milk</div>
+                            <div class="badge">WF</div>
+                        </div>
+                        <div class="item">
+                            <div class="checkbox checked"></div>
+                            <div class="item-name">🍌 Bananas</div>
+                            <div class="badge">TJ</div>
+                        </div>
+                        <div class="item">
+                            <div class="checkbox"></div>
+                            <div class="item-name">🥑 Avocados</div>
+                            <div class="badge">TJ</div>
+                        </div>
+                        <div class="item">
+                            <div class="checkbox"></div>
+                            <div class="item-name">🥬 Spinach</div>
+                            <div class="badge">WF</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 16px; padding: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; text-align: center; color: white;">
+                <strong>Bold, Colorful & Modern</strong>
+            </div>
+        </div>
+
+        <!-- DESIGN 5: DARK MODE -->
+        <div class="design-option dark">
+            <div class="design-label">Option 5: Dark Mode</div>
+
+            <div class="phone">
+                <div class="screen">
+                    <div class="status-bar">
+                        <span>2:00</span>
+                        <span>96%</span>
+                    </div>
+
+                    <div class="header">
+                        <h1>Shopping</h1>
+                        <p>8 items • 3 stores</p>
+                    </div>
+
+                    <div class="filters">
+                        <div class="chip active">All</div>
+                        <div class="chip">🏪 Whole Foods</div>
+                        <div class="chip">🌴 Trader Joe's</div>
+                        <div class="chip">📦 Costco</div>
+                    </div>
+
+                    <div class="list">
+                        <div class="item">
+                            <div class="checkbox"></div>
+                            <div class="item-name">🥛 Milk</div>
+                            <div class="badge">WF</div>
+                        </div>
+                        <div class="item">
+                            <div class="checkbox checked"></div>
+                            <div class="item-name">🍌 Bananas</div>
+                            <div class="badge">TJ</div>
+                        </div>
+                        <div class="item">
+                            <div class="checkbox"></div>
+                            <div class="item-name">🥑 Avocados</div>
+                            <div class="badge">TJ</div>
+                        </div>
+                        <div class="item">
+                            <div class="checkbox"></div>
+                            <div class="item-name">🥬 Spinach</div>
+                            <div class="badge">WF</div>
+                        </div>
+                        <div class="item">
+                            <div class="checkbox"></div>
+                            <div class="item-name">🥚 Eggs</div>
+                            <div class="badge">WF</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 16px; padding: 12px; background: #1C1C1E; border-radius: 12px; text-align: center; color: white;">
+                <strong>Sleek, Eye-Friendly Dark Theme</strong>
+            </div>
+        </div>
+
+        <!-- DESIGN 6: MODERN CARD -->
+        <div class="design-option cards">
+            <div class="design-label">Option 6: Modern Card-Based</div>
+
+            <div class="phone">
+                <div class="screen">
+                    <div class="status-bar">
+                        <span>2:00</span>
+                        <span>96%</span>
+                    </div>
+
+                    <div class="header">
+                        <h1>Shopping</h1>
+                        <p>8 items • 3 stores</p>
+                    </div>
+
+                    <div class="filters">
+                        <div class="chip active">All</div>
+                        <div class="chip">🏪 Whole Foods</div>
+                        <div class="chip">🌴 Trader Joe's</div>
+                        <div class="chip">📦 Costco</div>
+                    </div>
+
+                    <div class="list">
+                        <div class="item">
+                            <div class="checkbox"></div>
+                            <div class="item-name">🥛 Milk</div>
+                            <div class="badge">WF</div>
+                        </div>
+                        <div class="item">
+                            <div class="checkbox checked"></div>
+                            <div class="item-name">🍌 Bananas</div>
+                            <div class="badge">TJ</div>
+                        </div>
+                        <div class="item">
+                            <div class="checkbox"></div>
+                            <div class="item-name">🥑 Avocados</div>
+                            <div class="badge">TJ</div>
+                        </div>
+                        <div class="item">
+                            <div class="checkbox"></div>
+                            <div class="item-name">🥬 Spinach</div>
+                            <div class="badge">WF</div>
+                        </div>
+                        <div class="item">
+                            <div class="checkbox"></div>
+                            <div class="item-name">🥚 Eggs</div>
+                            <div class="badge">WF</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 16px; padding: 12px; background: linear-gradient(135deg, rgba(0, 201, 255, 0.1) 0%, rgba(146, 254, 157, 0.1) 100%); border-radius: 12px; text-align: center; border: 2px solid #00C9FF;">
+                <strong style="background: linear-gradient(135deg, #00C9FF 0%, #92FE9D 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Fresh, Card-Based Layout</strong>
+            </div>
+        </div>
+    </div>
+
+    <div style="text-align: center; margin-top: 60px; color: white;">
+        <h2 style="font-size: 24px; margin-bottom: 12px;">Which design speaks to you? ✨</h2>
+        <p style="font-size: 16px; opacity: 0.9;">Pick your favorite and I'll implement it!</p>
+    </div>
+</body>
+</html>

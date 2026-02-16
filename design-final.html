@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LifeSync - Final Design (iOS Blue)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+            background: #E5E5EA;
+            padding: 20px;
+        }
+
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 1100px) {
+            .comparison {
+                grid-template-columns: 1fr;
+                gap: 50px;
+            }
+        }
+
+        .version {
+            background: white;
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+        }
+
+        .label {
+            display: inline-block;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+            letter-spacing: 0.5px;
+        }
+
+        .label-current {
+            background: #FFE5E5;
+            color: #FF3B30;
+        }
+
+        .label-final {
+            background: #E5F2FF;
+            color: #007AFF;
+        }
+
+        .phone {
+            max-width: 390px;
+            margin: 0 auto;
+            background: #000;
+            border-radius: 50px;
+            padding: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        .screen {
+            background: #F5F5F5;
+            border-radius: 40px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .status-bar {
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 10px 24px 6px;
+            font-size: 15px;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* CURRENT DESIGN */
+        .current .app-container {
+            display: flex;
+            height: 700px;
+            background: white;
+        }
+
+        .current .sidebar {
+            width: 60px;
+            background: #F8F8F8;
+            border-right: 1px solid #E0E0E0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 0;
+            gap: 20px;
+        }
+
+        .current .sidebar-icon {
+            width: 28px;
+            height: 28px;
+            background: #DDD;
+            border-radius: 8px;
+        }
+
+        .current .main-content {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .current .header {
+            background: white;
+            padding: 20px 16px 16px;
+            border-bottom: 1px solid #F0F0F0;
+        }
+
+        .current .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        /* FINAL DESIGN - iOS Blue Theme */
+        .final .app-container {
+            height: 700px;
+            background: #F5F5F5;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            position: relative;
+        }
+
+        /* Clean White Header */
+        .final .header {
+            background: white;
+            padding: 48px 24px 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+
+        .final .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .final .header h1 {
+            font-size: 34px;
+            font-weight: 700;
+            letter-spacing: -0.4px;
+            color: #1C1C1E;
+        }
+
+        .final .header-icon {
+            font-size: 28px;
+        }
+
+        .final .header-subtitle {
+            font-size: 15px;
+            color: #8E8E93;
+            font-weight: 400;
+        }
+
+        /* Stats Cards */
+        .final .stats {
+            padding: 16px 24px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .final .stat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 16px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+
+        .final .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #007AFF;
+            margin-bottom: 4px;
+        }
+
+        .final .stat-label {
+            font-size: 13px;
+            color: #8E8E93;
+            font-weight: 500;
+        }
+
+        /* Store Filter Chips - iOS Blue */
+        .final .filters {
+            padding: 16px 24px 12px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            display: flex;
+            gap: 10px;
+        }
+
+        .final .filters::-webkit-scrollbar {
+            display: none;
+        }
+
+        .final .filter-chip {
+            background: white;
+            border: 2px solid #E5E5EA;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 15px;
+            font-weight: 600;
+            white-space: nowrap;
+            color: #1C1C1E;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+            transition: all 0.15s ease;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .final .filter-chip:active {
+            transform: scale(0.96);
+        }
+
+        .final .filter-chip.active {
+            background: #007AFF;
+            border-color: #007AFF;
+            color: white;
+        }
+
+        .final .filter-count {
+            background: rgba(0, 0, 0, 0.08);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .final .filter-chip.active .filter-count {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Section Header */
+        .final .section-header {
+            padding: 20px 24px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .final .section-title {
+            font-size: 22px;
+            font-weight: 600;
+            color: #1C1C1E;
+        }
+
+        .final .section-action {
+            color: #007AFF;
+            font-size: 17px;
+            font-weight: 600;
+        }
+
+        /* List Container */
+        .final .list-container {
+            background: white;
+            margin: 0 24px 100px;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+
+        .final .list-item {
+            display: flex;
+            align-items: center;
+            min-height: 72px;
+            padding: 16px 20px;
+            border-bottom: 1px solid #F0F0F0;
+            transition: background 0.15s ease;
+        }
+
+        .final .list-item:last-child {
+            border-bottom: none;
+        }
+
+        .final .list-item:active {
+            background: #F9F9F9;
+        }
+
+        /* Checkbox */
+        .final .item-checkbox {
+            width: 32px;
+            height: 32px;
+            border: 2.5px solid #D1D1D6;
+            border-radius: 50%;
+            flex-shrink: 0;
+            margin-right: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s ease;
+        }
+
+        .final .item-checkbox:active {
+            transform: scale(0.9);
+        }
+
+        .final .item-checkbox.checked {
+            background: #34C759;
+            border-color: #34C759;
+        }
+
+        .final .item-checkbox.checked::after {
+            content: '✓';
+            color: white;
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        /* Item Info */
+        .final .item-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .final .item-name {
+            font-size: 17px;
+            font-weight: 500;
+            color: #1C1C1E;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .final .item-name.checked {
+            color: #8E8E93;
+            text-decoration: line-through;
+        }
+
+        .final .item-emoji {
+            font-size: 22px;
+        }
+
+        .final .item-details {
+            display: flex;
+            gap: 12px;
+            font-size: 15px;
+            color: #8E8E93;
+        }
+
+        /* Badges - iOS Blue Theme */
+        .final .item-badges {
+            display: flex;
+            gap: 6px;
+            margin-right: 8px;
+            flex-wrap: wrap;
+        }
+
+        .final .badge {
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .final .badge-store {
+            background: #E5F2FF;
+            color: #007AFF;
+        }
+
+        .final .badge-owner {
+            background: #E8F5E9;
+            color: #34C759;
+        }
+
+        /* Chevron */
+        .final .chevron {
+            width: 24px;
+            height: 24px;
+            color: #C7C7CC;
+        }
+
+        /* FAB - iOS Blue */
+        .final .fab {
+            position: absolute;
+            bottom: 100px;
+            right: 24px;
+            width: 64px;
+            height: 64px;
+            background: #007AFF;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 16px rgba(0, 122, 255, 0.35);
+            z-index: 10;
+            transition: all 0.15s ease;
+        }
+
+        .final .fab:active {
+            transform: scale(0.92);
+        }
+
+        .final .fab svg {
+            width: 28px;
+            height: 28px;
+            stroke: white;
+            stroke-width: 3;
+        }
+
+        /* iOS Tab Bar */
+        .final .tab-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            padding: 8px 0 24px;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+        }
+
+        .final .tab-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 0;
+        }
+
+        .final .tab-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+        }
+
+        .final .tab-icon.inactive {
+            background: #C7C7CC;
+        }
+
+        .final .tab-icon.active {
+            background: #007AFF;
+        }
+
+        .final .tab-label {
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .final .tab-label.inactive {
+            color: #8E8E93;
+        }
+
+        .final .tab-label.active {
+            color: #007AFF;
+        }
+
+        /* Summary Box */
+        .summary {
+            margin-top: 24px;
+            padding: 20px;
+            background: #E5F2FF;
+            border-radius: 16px;
+            border: 2px solid #007AFF;
+        }
+
+        .summary h3 {
+            font-size: 18px;
+            font-weight: 700;
+            color: #007AFF;
+            margin-bottom: 12px;
+        }
+
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-size: 15px;
+            border-bottom: 1px solid rgba(0, 122, 255, 0.1);
+        }
+
+        .summary-item:last-child {
+            border-bottom: none;
+        }
+
+        .summary-label {
+            color: #1C1C1E;
+            font-weight: 500;
+        }
+
+        .summary-value {
+            color: #007AFF;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="comparison">
+        <!-- CURRENT -->
+        <div class="version">
+            <div class="label label-current">❌ Current (Cramped)</div>
+
+            <div class="phone current">
+                <div class="screen">
+                    <div class="status-bar">
+                        <span>2:00</span>
+                        <span>●●●●● 96%</span>
+                    </div>
+
+                    <div class="app-container">
+                        <div class="sidebar">
+                            <div class="sidebar-icon"></div>
+                            <div class="sidebar-icon"></div>
+                            <div class="sidebar-icon"></div>
+                            <div class="sidebar-icon"></div>
+                            <div class="sidebar-icon"></div>
+                        </div>
+
+                        <div class="main-content">
+                            <div class="header">
+                                <h1>Shopping</h1>
+                                <p style="font-size: 13px; color: #888; margin-top: 4px;">Smart grocery management</p>
+                            </div>
+
+                            <div style="background: white; border-radius: 16px; padding: 16px; margin: 12px 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: flex; align-items: center; gap: 12px;">
+                                <div style="width: 24px; height: 24px; border: 2px solid #CCC; border-radius: 50%;"></div>
+                                <div style="flex: 1;">
+                                    <div style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">Bananas 🛒</div>
+                                    <div style="font-size: 13px; color: #888;">1 pcs0</div>
+                                </div>
+                                <div style="background: #E3F2FD; padding: 4px 8px; border-radius: 10px; font-size: 11px; color: #1976D2;">[Me]</div>
+                            </div>
+
+                            <div style="background: white; border-radius: 16px; padding: 16px; margin: 12px 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: flex; align-items: center; gap: 12px;">
+                                <div style="width: 24px; height: 24px; border: 2px solid #CCC; border-radius: 50%;"></div>
+                                <div style="flex: 1;">
+                                    <div style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">Milk 🥛</div>
+                                    <div style="font-size: 13px; color: #888;">1 pcs0</div>
+                                </div>
+                                <div style="background: #E3F2FD; padding: 4px 8px; border-radius: 10px; font-size: 11px; color: #1976D2;">[Me]</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FINAL DESIGN -->
+        <div class="version">
+            <div class="label label-final">✨ Final Design (iOS Blue - Clean & Simple)</div>
+
+            <div class="phone final">
+                <div class="screen">
+                    <div class="status-bar">
+                        <span>2:00</span>
+                        <span>●●●●● 96%</span>
+                    </div>
+
+                    <div class="app-container">
+                        <!-- Clean White Header -->
+                        <div class="header">
+                            <div class="header-top">
+                                <h1>Shopping</h1>
+                                <div class="header-icon">🛒</div>
+                            </div>
+                            <div class="header-subtitle">8 items • 3 stores</div>
+                        </div>
+
+                        <!-- Stats -->
+                        <div class="stats">
+                            <div class="stat-card">
+                                <div class="stat-value">8</div>
+                                <div class="stat-label">Items</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value">3</div>
+                                <div class="stat-label">Stores</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value">2</div>
+                                <div class="stat-label">Checked</div>
+                            </div>
+                        </div>
+
+                        <!-- Store Filters -->
+                        <div class="filters">
+                            <div class="filter-chip active">
+                                All Stores
+                                <span class="filter-count">8</span>
+                            </div>
+                            <div class="filter-chip">
+                                🏪 Whole Foods
+                                <span class="filter-count">4</span>
+                            </div>
+                            <div class="filter-chip">
+                                🌴 Trader Joe's
+                                <span class="filter-count">3</span>
+                            </div>
+                            <div class="filter-chip">
+                                📦 Costco
+                                <span class="filter-count">1</span>
+                            </div>
+                        </div>
+
+                        <!-- Section Header -->
+                        <div class="section-header">
+                            <div class="section-title">Your List</div>
+                            <div class="section-action">Sort</div>
+                        </div>
+
+                        <!-- List -->
+                        <div class="list-container">
+                            <div class="list-item">
+                                <div class="item-checkbox"></div>
+                                <div class="item-info">
+                                    <div class="item-name">
+                                        <span class="item-emoji">🥛</span>
+                                        Organic Whole Milk
+                                    </div>
+                                    <div class="item-details">
+                                        <span>1 gallon</span>
+                                    </div>
+                                </div>
+                                <div class="item-badges">
+                                    <div class="badge badge-store">Whole Foods</div>
+                                </div>
+                                <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <path d="M9 18l6-6-6-6"/>
+                                </svg>
+                            </div>
+
+                            <div class="list-item">
+                                <div class="item-checkbox checked"></div>
+                                <div class="item-info">
+                                    <div class="item-name checked">
+                                        <span class="item-emoji">🍌</span>
+                                        Bananas
+                                    </div>
+                                    <div class="item-details">
+                                        <span>1 bunch</span>
+                                    </div>
+                                </div>
+                                <div class="item-badges">
+                                    <div class="badge badge-store">Trader Joe's</div>
+                                </div>
+                                <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <path d="M9 18l6-6-6-6"/>
+                                </svg>
+                            </div>
+
+                            <div class="list-item">
+                                <div class="item-checkbox"></div>
+                                <div class="item-info">
+                                    <div class="item-name">
+                                        <span class="item-emoji">🥑</span>
+                                        Avocados
+                                    </div>
+                                    <div class="item-details">
+                                        <span>4 count</span>
+                                    </div>
+                                </div>
+                                <div class="item-badges">
+                                    <div class="badge badge-owner">Partner</div>
+                                    <div class="badge badge-store">Trader Joe's</div>
+                                </div>
+                                <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <path d="M9 18l6-6-6-6"/>
+                                </svg>
+                            </div>
+
+                            <div class="list-item">
+                                <div class="item-checkbox"></div>
+                                <div class="item-info">
+                                    <div class="item-name">
+                                        <span class="item-emoji">🥬</span>
+                                        Organic Spinach
+                                    </div>
+                                    <div class="item-details">
+                                        <span>1 bunch</span>
+                                    </div>
+                                </div>
+                                <div class="item-badges">
+                                    <div class="badge badge-store">Whole Foods</div>
+                                </div>
+                                <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <path d="M9 18l6-6-6-6"/>
+                                </svg>
+                            </div>
+
+                            <div class="list-item">
+                                <div class="item-checkbox"></div>
+                                <div class="item-info">
+                                    <div class="item-name">
+                                        <span class="item-emoji">🥚</span>
+                                        Eggs
+                                    </div>
+                                    <div class="item-details">
+                                        <span>1 dozen</span>
+                                    </div>
+                                </div>
+                                <div class="item-badges">
+                                    <div class="badge badge-store">Whole Foods</div>
+                                </div>
+                                <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <path d="M9 18l6-6-6-6"/>
+                                </svg>
+                            </div>
+
+                            <div class="list-item">
+                                <div class="item-checkbox checked"></div>
+                                <div class="item-info">
+                                    <div class="item-name checked">
+                                        <span class="item-emoji">🍞</span>
+                                        Bread
+                                    </div>
+                                    <div class="item-details">
+                                        <span>1 loaf</span>
+                                    </div>
+                                </div>
+                                <div class="item-badges">
+                                    <div class="badge badge-store">Trader Joe's</div>
+                                </div>
+                                <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <path d="M9 18l6-6-6-6"/>
+                                </svg>
+                            </div>
+
+                            <div class="list-item">
+                                <div class="item-checkbox"></div>
+                                <div class="item-info">
+                                    <div class="item-name">
+                                        <span class="item-emoji">🧀</span>
+                                        Cheese
+                                    </div>
+                                    <div class="item-details">
+                                        <span>8 oz</span>
+                                    </div>
+                                </div>
+                                <div class="item-badges">
+                                    <div class="badge badge-store">Whole Foods</div>
+                                </div>
+                                <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <path d="M9 18l6-6-6-6"/>
+                                </svg>
+                            </div>
+
+                            <div class="list-item">
+                                <div class="item-checkbox"></div>
+                                <div class="item-info">
+                                    <div class="item-name">
+                                        <span class="item-emoji">☕</span>
+                                        Coffee Beans
+                                    </div>
+                                    <div class="item-details">
+                                        <span>1 lb</span>
+                                    </div>
+                                </div>
+                                <div class="item-badges">
+                                    <div class="badge badge-store">Costco</div>
+                                </div>
+                                <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <path d="M9 18l6-6-6-6"/>
+                                </svg>
+                            </div>
+                        </div>
+
+                        <!-- FAB -->
+                        <div class="fab">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <path d="M12 5v14M5 12h14" stroke="currentColor"/>
+                            </svg>
+                        </div>
+
+                        <!-- Tab Bar -->
+                        <div class="tab-bar">
+                            <div class="tab-item">
+                                <div class="tab-icon inactive"></div>
+                                <div class="tab-label inactive">Home</div>
+                            </div>
+                            <div class="tab-item">
+                                <div class="tab-icon inactive"></div>
+                                <div class="tab-label inactive">Tasks</div>
+                            </div>
+                            <div class="tab-item">
+                                <div class="tab-icon active"></div>
+                                <div class="tab-label active">Shopping</div>
+                            </div>
+                            <div class="tab-item">
+                                <div class="tab-icon inactive"></div>
+                                <div class="tab-label inactive">Meals</div>
+                            </div>
+                            <div class="tab-item">
+                                <div class="tab-icon inactive"></div>
+                                <div class="tab-label inactive">More</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary -->
+            <div class="summary">
+                <h3>✨ Final Design Features</h3>
+
+                <div class="summary-item">
+                    <span class="summary-label">Color Scheme</span>
+                    <span class="summary-value">iOS Blue (#007AFF)</span>
+                </div>
+
+                <div class="summary-item">
+                    <span class="summary-label">Navigation</span>
+                    <span class="summary-value">Bottom Tab Bar</span>
+                </div>
+
+                <div class="summary-item">
+                    <span class="summary-label">Item Height</span>
+                    <span class="summary-value">72px (vs 60px)</span>
+                </div>
+
+                <div class="summary-item">
+                    <span class="summary-label">Checkbox Size</span>
+                    <span class="summary-value">32px (vs 24px)</span>
+                </div>
+
+                <div class="summary-item">
+                    <span class="summary-label">Text Size</span>
+                    <span class="summary-value">17px body (vs 14px)</span>
+                </div>
+
+                <div class="summary-item">
+                    <span class="summary-label">Screen Space Gained</span>
+                    <span class="summary-value">+19% (no sidebar)</span>
+                </div>
+
+                <div class="summary-item">
+                    <span class="summary-label">Store Filtering</span>
+                    <span class="summary-value">Yes ✓</span>
+                </div>
+
+                <div class="summary-item">
+                    <span class="summary-label">Partner Items</span>
+                    <span class="summary-value">Green Badge ✓</span>
+                </div>
+
+                <div class="summary-item">
+                    <span class="summary-label">Clutter Removed</span>
+                    <span class="summary-value">Prices, Categories, Priority</span>
+                </div>
+
+                <div class="summary-item">
+                    <span class="summary-label">Design Style</span>
+                    <span class="summary-value">iOS Native</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

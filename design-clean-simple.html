@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LifeSync - Clean & Simple Design</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+            background: #E5E5EA;
+            padding: 20px;
+        }
+
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 1100px) {
+            .comparison {
+                grid-template-columns: 1fr;
+                gap: 50px;
+            }
+        }
+
+        .version {
+            background: white;
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+        }
+
+        .label {
+            display: inline-block;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+            letter-spacing: 0.5px;
+        }
+
+        .label-current {
+            background: #FFE5E5;
+            color: #FF3B30;
+        }
+
+        .label-clean {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .phone {
+            max-width: 390px;
+            margin: 0 auto;
+            background: #000;
+            border-radius: 50px;
+            padding: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        .screen {
+            background: #F5F5F5;
+            border-radius: 40px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .status-bar {
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 10px 24px 6px;
+            font-size: 15px;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* CURRENT DESIGN */
+        .current .app-container {
+            display: flex;
+            height: 700px;
+            background: white;
+        }
+
+        .current .sidebar {
+            width: 60px;
+            background: #F8F8F8;
+            border-right: 1px solid #E0E0E0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 0;
+            gap: 20px;
+        }
+
+        .current .sidebar-icon {
+            width: 28px;
+            height: 28px;
+            background: #DDD;
+            border-radius: 8px;
+        }
+
+        .current .main-content {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .current .header {
+            background: white;
+            padding: 20px 16px 16px;
+            border-bottom: 1px solid #F0F0F0;
+        }
+
+        .current .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .current .header p {
+            font-size: 13px;
+            color: #888;
+        }
+
+        .current .item-card {
+            background: white;
+            border-radius: 16px;
+            padding: 16px;
+            margin: 12px 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .current .item-checkbox {
+            width: 24px;
+            height: 24px;
+            border: 2px solid #CCC;
+            border-radius: 50%;
+        }
+
+        .current .item-name {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        /* CLEAN DESIGN */
+        .clean .app-container {
+            height: 700px;
+            background: #F5F5F5;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            position: relative;
+        }
+
+        /* Gradient Header */
+        .clean .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 16px 24px 28px;
+            color: white;
+        }
+
+        .clean .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .clean .header h1 {
+            font-size: 34px;
+            font-weight: 700;
+            letter-spacing: -0.4px;
+        }
+
+        .clean .header-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
+            font-size: 20px;
+        }
+
+        .clean .header-subtitle {
+            font-size: 15px;
+            opacity: 0.9;
+            font-weight: 500;
+        }
+
+        /* Stats */
+        .clean .stats {
+            background: white;
+            margin: -16px 20px 0;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        .clean .stat {
+            text-align: center;
+        }
+
+        .clean .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 4px;
+        }
+
+        .clean .stat-label {
+            font-size: 11px;
+            color: #8E8E93;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Store Filter Chips */
+        .clean .filters {
+            padding: 20px 20px 12px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            display: flex;
+            gap: 10px;
+        }
+
+        .clean .filters::-webkit-scrollbar {
+            display: none;
+        }
+
+        .clean .filter-chip {
+            background: white;
+            border: 2px solid #E5E5EA;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 15px;
+            font-weight: 600;
+            white-space: nowrap;
+            color: #1C1C1E;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            transition: all 0.2s ease;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .clean .filter-chip:active {
+            transform: scale(0.96);
+        }
+
+        .clean .filter-chip.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: #667eea;
+            color: white;
+        }
+
+        .clean .filter-count {
+            background: rgba(0, 0, 0, 0.1);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .clean .filter-chip.active .filter-count {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Section Header */
+        .clean .section-header {
+            padding: 16px 24px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .clean .section-title {
+            font-size: 22px;
+            font-weight: 600;
+            color: #1C1C1E;
+        }
+
+        .clean .section-action {
+            color: #667eea;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        /* List Container */
+        .clean .list-container {
+            background: white;
+            margin: 0 20px 100px;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+        }
+
+        .clean .list-item {
+            display: flex;
+            align-items: center;
+            min-height: 72px;
+            padding: 16px 20px;
+            border-bottom: 1px solid #F5F5F5;
+            transition: background 0.15s ease;
+        }
+
+        .clean .list-item:last-child {
+            border-bottom: none;
+        }
+
+        .clean .list-item:active {
+            background: #FAFAFA;
+        }
+
+        /* Checkbox */
+        .clean .item-checkbox {
+            width: 32px;
+            height: 32px;
+            border: 2.5px solid #D1D1D6;
+            border-radius: 50%;
+            flex-shrink: 0;
+            margin-right: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .clean .item-checkbox:active {
+            transform: scale(0.9);
+        }
+
+        .clean .item-checkbox.checked {
+            background: linear-gradient(135deg, #34C759 0%, #30D158 100%);
+            border-color: #34C759;
+        }
+
+        .clean .item-checkbox.checked::after {
+            content: '✓';
+            color: white;
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        /* Item Info */
+        .clean .item-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .clean .item-name {
+            font-size: 17px;
+            font-weight: 500;
+            color: #1C1C1E;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .clean .item-name.checked {
+            color: #8E8E93;
+            text-decoration: line-through;
+        }
+
+        .clean .item-emoji {
+            font-size: 22px;
+        }
+
+        .clean .item-details {
+            display: flex;
+            gap: 12px;
+            font-size: 15px;
+            color: #8E8E93;
+        }
+
+        /* Simple Badges - Only Store and Owner */
+        .clean .item-badges {
+            display: flex;
+            gap: 6px;
+            margin-right: 8px;
+            flex-wrap: wrap;
+        }
+
+        .clean .badge {
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .clean .badge-store {
+            background: #F0F0F5;
+            color: #5B5BD6;
+        }
+
+        .clean .badge-owner {
+            background: #E8F5E9;
+            color: #34C759;
+        }
+
+        /* Chevron */
+        .clean .chevron {
+            width: 24px;
+            height: 24px;
+            color: #C7C7CC;
+        }
+
+        /* FAB */
+        .clean .fab {
+            position: absolute;
+            bottom: 100px;
+            right: 24px;
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+            z-index: 10;
+            transition: all 0.2s ease;
+        }
+
+        .clean .fab:active {
+            transform: scale(0.92);
+        }
+
+        .clean .fab svg {
+            width: 28px;
+            height: 28px;
+            stroke: white;
+            stroke-width: 3;
+        }
+
+        /* iOS Tab Bar */
+        .clean .tab-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(0, 0, 0, 0.08);
+            padding: 8px 0 24px;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+        }
+
+        .clean .tab-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 0;
+        }
+
+        .clean .tab-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+        }
+
+        .clean .tab-icon.inactive {
+            background: #C7C7CC;
+        }
+
+        .clean .tab-icon.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .clean .tab-label {
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .clean .tab-label.inactive {
+            color: #8E8E93;
+        }
+
+        .clean .tab-label.active {
+            color: #667eea;
+        }
+
+        /* Features */
+        .features {
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 2px solid #F0F0F0;
+        }
+
+        .features h3 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .feature-card {
+            background: #F9F9F9;
+            padding: 12px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .feature-icon {
+            font-size: 24px;
+            margin-bottom: 6px;
+        }
+
+        .feature-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="comparison">
+        <!-- CURRENT -->
+        <div class="version">
+            <div class="label label-current">❌ Current (Cluttered)</div>
+
+            <div class="phone current">
+                <div class="screen">
+                    <div class="status-bar">
+                        <span>2:00</span>
+                        <span>●●●●● 96%</span>
+                    </div>
+
+                    <div class="app-container">
+                        <div class="sidebar">
+                            <div class="sidebar-icon"></div>
+                            <div class="sidebar-icon"></div>
+                            <div class="sidebar-icon"></div>
+                            <div class="sidebar-icon"></div>
+                            <div class="sidebar-icon"></div>
+                        </div>
+
+                        <div class="main-content">
+                            <div class="header">
+                                <h1>Shopping</h1>
+                                <p>Smart grocery management</p>
+                            </div>
+
+                            <div class="item-card">
+                                <div class="item-checkbox"></div>
+                                <div style="flex: 1;">
+                                    <div class="item-name">Bananas 🛒</div>
+                                    <div style="font-size: 13px; color: #888;">1 pcs0</div>
+                                </div>
+                                <div style="background: #E3F2FD; padding: 4px 8px; border-radius: 10px; font-size: 11px; color: #1976D2;">[Me]</div>
+                            </div>
+
+                            <div class="item-card">
+                                <div class="item-checkbox"></div>
+                                <div style="flex: 1;">
+                                    <div class="item-name">Milk 🥛</div>
+                                    <div style="font-size: 13px; color: #888;">1 pcs0</div>
+                                </div>
+                                <div style="background: #E3F2FD; padding: 4px 8px; border-radius: 10px; font-size: 11px; color: #1976D2;">[Me]</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CLEAN DESIGN -->
+        <div class="version">
+            <div class="label label-clean">✨ Clean & Simple (No Clutter)</div>
+
+            <div class="phone clean">
+                <div class="screen">
+                    <div class="status-bar">
+                        <span>2:00</span>
+                        <span>●●●●● 96%</span>
+                    </div>
+
+                    <div class="app-container">
+                        <!-- Header -->
+                        <div class="header">
+                            <div class="header-top">
+                                <h1>Shopping</h1>
+                                <div class="header-icon">🛒</div>
+                            </div>
+                            <div class="header-subtitle">8 items • 3 stores</div>
+                        </div>
+
+                        <!-- Stats -->
+                        <div class="stats">
+                            <div class="stat">
+                                <div class="stat-value">8</div>
+                                <div class="stat-label">Items</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-value">3</div>
+                                <div class="stat-label">Stores</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-value">2</div>
+                                <div class="stat-label">Checked</div>
+                            </div>
+                        </div>
+
+                        <!-- Store Filters -->
+                        <div class="filters">
+                            <div class="filter-chip active">
+                                All Stores
+                                <span class="filter-count">8</span>
+                            </div>
+                            <div class="filter-chip">
+                                🏪 Whole Foods
+                                <span class="filter-count">4</span>
+                            </div>
+                            <div class="filter-chip">
+                                🌴 Trader Joe's
+                                <span class="filter-count">3</span>
+                            </div>
+                            <div class="filter-chip">
+                                📦 Costco
+                                <span class="filter-count">1</span>
+                            </div>
+                        </div>
+
+                        <!-- Section Header -->
+                        <div class="section-header">
+                            <div class="section-title">Your List</div>
+                            <div class="section-action">Sort</div>
+                        </div>
+
+                        <!-- List -->
+                        <div class="list-container">
+                            <!-- Item 1 -->
+                            <div class="list-item">
+                                <div class="item-checkbox"></div>
+                                <div class="item-info">
+                                    <div class="item-name">
+                                        <span class="item-emoji">🥛</span>
+                                        Organic Whole Milk
+                                    </div>
+                                    <div class="item-details">
+                                        <span>1 gallon</span>
+                                    </div>
+                                </div>
+                                <div class="item-badges">
+                                    <div class="badge badge-store">Whole Foods</div>
+                                </div>
+                                <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <path d="M9 18l6-6-6-6"/>
+                                </svg>
+                            </div>
+
+                            <!-- Item 2 - Checked -->
+                            <div class="list-item">
+                                <div class="item-checkbox checked"></div>
+                                <div class="item-info">
+                                    <div class="item-name checked">
+                                        <span class="item-emoji">🍌</span>
+                                        Bananas
+                                    </div>
+                                    <div class="item-details">
+                                        <span>1 bunch</span>
+                                    </div>
+                                </div>
+                                <div class="item-badges">
+                                    <div class="badge badge-store">Trader Joe's</div>
+                                </div>
+                                <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <path d="M9 18l6-6-6-6"/>
+                                </svg>
+                            </div>
+
+                            <!-- Item 3 - Partner's -->
+                            <div class="list-item">
+                                <div class="item-checkbox"></div>
+                                <div class="item-info">
+                                    <div class="item-name">
+                                        <span class="item-emoji">🥑</span>
+                                        Avocados
+                                    </div>
+                                    <div class="item-details">
+                                        <span>4 count</span>
+                                    </div>
+                                </div>
+                                <div class="item-badges">
+                                    <div class="badge badge-owner">Partner</div>
+                                    <div class="badge badge-store">Trader Joe's</div>
+                                </div>
+                                <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <path d="M9 18l6-6-6-6"/>
+                                </svg>
+                            </div>
+
+                            <!-- Item 4 -->
+                            <div class="list-item">
+                                <div class="item-checkbox"></div>
+                                <div class="item-info">
+                                    <div class="item-name">
+                                        <span class="item-emoji">🥬</span>
+                                        Organic Spinach
+                                    </div>
+                                    <div class="item-details">
+                                        <span>1 bunch</span>
+                                    </div>
+                                </div>
+                                <div class="item-badges">
+                                    <div class="badge badge-store">Whole Foods</div>
+                                </div>
+                                <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <path d="M9 18l6-6-6-6"/>
+                                </svg>
+                            </div>
+
+                            <!-- Item 5 -->
+                            <div class="list-item">
+                                <div class="item-checkbox"></div>
+                                <div class="item-info">
+                                    <div class="item-name">
+                                        <span class="item-emoji">🥚</span>
+                                        Eggs
+                                    </div>
+                                    <div class="item-details">
+                                        <span>1 dozen</span>
+                                    </div>
+                                </div>
+                                <div class="item-badges">
+                                    <div class="badge badge-store">Whole Foods</div>
+                                </div>
+                                <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <path d="M9 18l6-6-6-6"/>
+                                </svg>
+                            </div>
+
+                            <!-- Item 6 - Checked -->
+                            <div class="list-item">
+                                <div class="item-checkbox checked"></div>
+                                <div class="item-info">
+                                    <div class="item-name checked">
+                                        <span class="item-emoji">🍞</span>
+                                        Bread
+                                    </div>
+                                    <div class="item-details">
+                                        <span>1 loaf</span>
+                                    </div>
+                                </div>
+                                <div class="item-badges">
+                                    <div class="badge badge-store">Trader Joe's</div>
+                                </div>
+                                <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <path d="M9 18l6-6-6-6"/>
+                                </svg>
+                            </div>
+
+                            <!-- Item 7 -->
+                            <div class="list-item">
+                                <div class="item-checkbox"></div>
+                                <div class="item-info">
+                                    <div class="item-name">
+                                        <span class="item-emoji">🧀</span>
+                                        Cheese
+                                    </div>
+                                    <div class="item-details">
+                                        <span>8 oz</span>
+                                    </div>
+                                </div>
+                                <div class="item-badges">
+                                    <div class="badge badge-store">Whole Foods</div>
+                                </div>
+                                <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <path d="M9 18l6-6-6-6"/>
+                                </svg>
+                            </div>
+
+                            <!-- Item 8 -->
+                            <div class="list-item">
+                                <div class="item-checkbox"></div>
+                                <div class="item-info">
+                                    <div class="item-name">
+                                        <span class="item-emoji">☕</span>
+                                        Coffee Beans
+                                    </div>
+                                    <div class="item-details">
+                                        <span>1 lb</span>
+                                    </div>
+                                </div>
+                                <div class="item-badges">
+                                    <div class="badge badge-store">Costco</div>
+                                </div>
+                                <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <path d="M9 18l6-6-6-6"/>
+                                </svg>
+                            </div>
+                        </div>
+
+                        <!-- FAB -->
+                        <div class="fab">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <path d="M12 5v14M5 12h14" stroke="currentColor"/>
+                            </svg>
+                        </div>
+
+                        <!-- Tab Bar -->
+                        <div class="tab-bar">
+                            <div class="tab-item">
+                                <div class="tab-icon inactive"></div>
+                                <div class="tab-label inactive">Home</div>
+                            </div>
+                            <div class="tab-item">
+                                <div class="tab-icon inactive"></div>
+                                <div class="tab-label inactive">Tasks</div>
+                            </div>
+                            <div class="tab-item">
+                                <div class="tab-icon active"></div>
+                                <div class="tab-label active">Shopping</div>
+                            </div>
+                            <div class="tab-item">
+                                <div class="tab-icon inactive"></div>
+                                <div class="tab-label inactive">Meals</div>
+                            </div>
+                            <div class="tab-item">
+                                <div class="tab-icon inactive"></div>
+                                <div class="tab-label inactive">More</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Features -->
+            <div class="features">
+                <h3>✨ What's Included (Clean & Simple)</h3>
+
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">🏪</div>
+                        <div class="feature-title">Store Filtering</div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">👥</div>
+                        <div class="feature-title">Partner Items</div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">📱</div>
+                        <div class="feature-title">iOS Tab Bar</div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">✨</div>
+                        <div class="feature-title">Clean Design</div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">📊</div>
+                        <div class="feature-title">3 Simple Stats</div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">✅</div>
+                        <div class="feature-title">Large Checkboxes</div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">➕</div>
+                        <div class="feature-title">Quick Add FAB</div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">🎨</div>
+                        <div class="feature-title">Gradient Header</div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 20px; padding: 16px; background: #F0FDF4; border-radius: 12px; border-left: 4px solid #34C759;">
+                    <div style="font-weight: 600; margin-bottom: 8px; color: #166534;">✅ Removed Clutter:</div>
+                    <ul style="font-size: 14px; color: #15803d; line-height: 1.8; margin-left: 20px;">
+                        <li>No priority badges</li>
+                        <li>No urgent indicators</li>
+                        <li>No category badges</li>
+                        <li>No prices</li>
+                        <li>No color-coded borders</li>
+                    </ul>
+                </div>
+
+                <div style="margin-top: 12px; padding: 16px; background: #EFF6FF; border-radius: 12px; border-left: 4px solid #667eea;">
+                    <div style="font-weight: 600; margin-bottom: 8px; color: #1e3a8a;">✨ What You See:</div>
+                    <ul style="font-size: 14px; color: #1e40af; line-height: 1.8; margin-left: 20px;">
+                        <li>Item name with emoji</li>
+                        <li>Quantity only</li>
+                        <li>Store name (filterable)</li>
+                        <li>Partner badge (if applicable)</li>
+                        <li>Clean, spacious layout</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

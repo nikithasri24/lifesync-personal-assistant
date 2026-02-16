@@ -18,12 +18,14 @@ import { currentMonth, monthRange } from '../utils/date';
 import { formatCurrency } from '../utils/currency';
 import { OwnerBadge } from '../../components/common/OwnerBadge';
 import { OwnerFilter } from '../components/OwnerFilter';
+import BudgetEditor from '../components/budgets/BudgetEditor';
 import useFinanceFilters from '../store/useFinanceFilters';
 import type { Budget, Category, Transaction } from '../types';
 
 const BudgetsPage: React.FC = () => {
   const [month, setMonth] = React.useState(currentMonth());
-  const [editingBudget, setEditingBudget] = React.useState<{ categoryId: string; limit: number } | null>(null);
+  const [editorOpen, setEditorOpen] = React.useState(false);
+  const [editingBudget, setEditingBudget] = React.useState<Budget | undefined>(undefined);
 
   // Auth and merged connection
   const { user } = useAuth();
@@ -104,6 +106,41 @@ const BudgetsPage: React.FC = () => {
   // Get category name
   const getCategoryName = (categoryId: string) => {
     return categories.find((c) => c.id === categoryId)?.name || 'Unknown';
+  };
+
+  // Handler functions for budget editor
+  const handleOpenEditor = (budget?: Budget) => {
+    setEditingBudget(budget);
+    setEditorOpen(true);
+  };
+
+  const handleCloseEditor = () => {
+    setEditorOpen(false);
+    setEditingBudget(undefined);
+  };
+
+  const handleSaveBudget = async (budgetData: { categoryId: string; limit: number; userId?: string }) => {
+    try {
+      await upsertBudget.mutateAsync({
+        id: editingBudget?.id,
+        month,
+        categoryId: budgetData.categoryId,
+        limit: budgetData.limit,
+        userId: budgetData.userId,
+      });
+      handleCloseEditor();
+    } catch (error) {
+      console.error('Failed to save budget:', error);
+    }
+  };
+
+  const handleDeleteBudget = async (budgetId: string) => {
+    try {
+      await deleteBudget.mutateAsync(budgetId);
+      handleCloseEditor();
+    } catch (error) {
+      console.error('Failed to delete budget:', error);
+    }
   };
 
   // Filter transactions by owner (if filter is active)
@@ -190,7 +227,7 @@ const BudgetsPage: React.FC = () => {
             ))}
           </select>
           <button
-            onClick={() => setEditingBudget({ categoryId: '', limit: 0 })}
+            onClick={() => handleOpenEditor()}
             className="flex items-center gap-2 rounded-md bg-slate-900 px-4 py-2 text-sm text-white hover:bg-slate-800 transition-colors"
             aria-label="Add budget"
           >
@@ -287,7 +324,7 @@ const BudgetsPage: React.FC = () => {
                       {/* Actions */}
                       <div className="flex items-center gap-2 justify-end">
                         <button
-                          onClick={() => setEditingBudget({ categoryId: budget.categoryId, limit: budget.limit })}
+                          onClick={() => handleOpenEditor(budget)}
                           className="px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100 rounded transition-colors"
                         >
                           Edit
@@ -387,7 +424,7 @@ const BudgetsPage: React.FC = () => {
                       {/* Actions */}
                       <div className="flex items-center gap-2 justify-end">
                         <button
-                          onClick={() => setEditingBudget({ categoryId: budget.categoryId, limit: budget.limit })}
+                          onClick={() => handleOpenEditor(budget)}
                           className="px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100 rounded transition-colors"
                         >
                           Edit
@@ -562,7 +599,7 @@ const BudgetsPage: React.FC = () => {
                       {/* Actions */}
                       <div className="flex items-center gap-2 justify-end">
                         <button
-                          onClick={() => setEditingBudget({ categoryId: budget.categoryId, limit: budget.limit })}
+                          onClick={() => handleOpenEditor(budget)}
                           className="px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100 rounded transition-colors"
                         >
                           Edit
@@ -586,7 +623,7 @@ const BudgetsPage: React.FC = () => {
             <div className="text-center py-12">
               <p className="text-slate-500 mb-4">No budgets yet for {month}</p>
               <button
-                onClick={() => setEditingBudget({ categoryId: '', limit: 0 })}
+                onClick={() => handleOpenEditor()}
                 className="inline-flex items-center gap-2 rounded-md bg-slate-900 px-4 py-2 text-sm text-white hover:bg-slate-800 transition-colors"
                 aria-label="Create first budget"
               >
@@ -597,6 +634,17 @@ const BudgetsPage: React.FC = () => {
           )}
         </div>
       )}
+
+      {/* Budget Editor Modal */}
+      <BudgetEditor
+        isOpen={editorOpen}
+        onClose={handleCloseEditor}
+        onSave={handleSaveBudget}
+        onDelete={handleDeleteBudget}
+        budget={editingBudget}
+        month={month}
+        categories={categories}
+      />
     </div>
   );
 };
