@@ -5,12 +5,16 @@ import type { Note } from '../../../types';
 interface NotesListProps {
   notes?: Note[];
   onDelete: (id: string) => void;
+  // Merged mode props (optional)
+  showOwnerBadge?: boolean;
+  currentUserId?: string | null;
+  partnerName?: string;
 }
 
 /**
  * List of notes with empty state
  */
-export function NotesList({ notes, onDelete }: NotesListProps): React.ReactElement {
+export function NotesList({ notes, onDelete, showOwnerBadge = false, currentUserId, partnerName = 'Partner' }: NotesListProps): React.ReactElement {
   if (!notes || notes.length === 0) {
     return (
       <section className="space-y-3">
@@ -28,6 +32,9 @@ export function NotesList({ notes, onDelete }: NotesListProps): React.ReactEleme
           key={note.id}
           note={note}
           onDelete={() => onDelete(note.id)}
+          showOwnerBadge={showOwnerBadge}
+          currentUserId={currentUserId}
+          partnerName={partnerName}
         />
       ))}
     </section>

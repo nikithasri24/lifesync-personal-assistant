@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Trash2, FileText, List as ListIcon, ChevronDown, ChevronUp } from 'lucide-react';
 import type { Note, ListItem } from '../../types';
 import { useListItems, useCreateListItem, useUpdateListItem, useDeleteListItem } from '../../hooks/useNotesQuery';
+import { OwnerBadge } from '../common/OwnerBadge';
 import ListItemRow from './ListItemRow';
 import AddListItem from './AddListItem';
 import { logger } from '../../services/logger';
@@ -9,9 +10,13 @@ import { logger } from '../../services/logger';
 interface NoteCardProps {
   note: Note;
   onDelete: () => void;
+  // Merged mode props (optional)
+  showOwnerBadge?: boolean;
+  currentUserId?: string | null;
+  partnerName?: string;
 }
 
-const NoteCard: React.FC<NoteCardProps> = ({ note, onDelete }) => {
+const NoteCard: React.FC<NoteCardProps> = ({ note, onDelete, showOwnerBadge = false, currentUserId, partnerName = 'Partner' }) => {
   const [isExpanded, setIsExpanded] = useState(note.noteType === 'list');
 
   // List items hooks (only used if note is a list)
@@ -75,7 +80,7 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onDelete }) => {
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             {note.noteType === 'list' ? (
               <ListIcon className="h-4 w-4 text-indigo-500 flex-shrink-0" />
             ) : (
@@ -84,6 +89,13 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onDelete }) => {
             <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
               {note.title}
             </p>
+            {showOwnerBadge && currentUserId && (
+              <OwnerBadge
+                userId={note.user_id}
+                currentUserId={currentUserId}
+                partnerName={partnerName}
+              />
+            )}
           </div>
 
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">

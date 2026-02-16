@@ -1,12 +1,22 @@
 /**
- * Notes API - Supabase backend for notes persistence
+ * Notes API - Supabase backend for notes persistence with Merged Mode Support
  * Provides CRUD operations and search/filter capabilities
  * Extended to support list-type notes with list items
+ *
+ * Merged Mode: When both users in a connection set this module to "merged",
+ * the API fetches notes for both users. RLS policies ensure proper access control.
+ *
+ * Implementation:
+ * - getNotesMergedConnection() checks if merged mode is enabled
+ * - Fetch functions include partner's notes when merged
+ * - RLS policies on notes and list_items tables handle security
  */
 
 import { supabase } from '../lib/supabase';
 import type { Note, ListItem, NoteType } from '../types';
 import { apiCall, requireAuth, handleSupabaseResponse } from './apiWrapper';
+import { getMergedConnectionId, type MergedConnectionResult } from '../shared/api/SharedDataProvider';
+import { logger } from '../services/logger';
 
 // Database row types
 interface NoteRow {
@@ -80,12 +90,52 @@ export interface UpdateListItemInput {
   sortOrder?: number;
 }
 
+// =====================================================
+// MERGED MODE SUPPORT
+// =====================================================
+
+// Merged connection cache for Notes
+let cachedMergedConnection: MergedConnectionResult | null | undefined;
+
+/**
+ * Get merged connection for notes module
+ * Returns connection info if both users have enabled merged mode, null otherwise
+ */
+export async function getNotesMergedConnection(): Promise<MergedConnectionResult | null> {
+  if (cachedMergedConnection !== undefined) {
+    logger.debug('NotesAPI', 'Returning cached merged connection', { cached: cachedMergedConnection });
+    return cachedMergedConnection;
+  }
+
+  logger.debug('NotesAPI', 'Fetching notes merged connection');
+  cachedMergedConnection = await getMergedConnectionId('notes');
+  logger.info('NotesAPI', 'Notes merged connection fetched', {
+    hasMergedMode: !!cachedMergedConnection,
+    partnerId: cachedMergedConnection?.partnerId
+  });
+
+  return cachedMergedConnection;
+}
+
+/**
+ * Clear cached merged connection (call when connection status changes)
+ */
+export function clearNotesMergedConnectionCache(): void {
+  logger.debug('NotesAPI', 'Clearing notes merged connection cache');
+  cachedMergedConnection = undefined;
+}
+
+// =====================================================
+// MAPPERS
+// =====================================================
+
 /**
  * Map database row to Note type
  */
 function mapDbToNote(row: NoteRow): Note {
   return {
     id: row.id,
+    user_id: row.user_id,
     title: row.title ?? '',
     content: row.content,
     tags: row.tags ?? [],
@@ -117,18 +167,30 @@ function mapDbToListItem(row: ListItemRow): ListItem {
 }
 
 /**
- * Get all notes for the authenticated user with optional filters
+ * Get all notes for the authenticated user with optional filters (supports merged mode)
+ * In merged mode, returns both users' notes so couples can share knowledge
  */
 export async function getNotes(filters?: NoteFilters): Promise<Note[]> {
   return apiCall(
     async () => {
       const user = await requireAuth();
 
+      // Check for merged connection
+      const mergedConnection = await getNotesMergedConnection();
+
       let query = supabase
         .from('notes')
         .select('*')
-        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
+
+      // If merged mode, get both users' notes
+      // Otherwise, just get current user's notes
+      if (mergedConnection) {
+        logger.debug('NotesAPI', 'Merged mode enabled - fetching notes for both users');
+        query = query.or(`user_id.eq.${user.id},user_id.eq.${mergedConnection.partnerId}`);
+      } else {
+        query = query.eq('user_id', user.id);
+      }
 
       // Apply category filter
       if (filters?.category) {
@@ -160,6 +222,12 @@ export async function getNotes(filters?: NoteFilters): Promise<Note[]> {
         );
       }
 
+      logger.info('NotesAPI', 'Fetched notes', {
+        count: notes.length,
+        mergedMode: !!mergedConnection,
+        filters
+      });
+
       return notes;
     },
     { domain: 'NotesAPI', operation: 'getNotes', data: { filters } }
@@ -167,19 +235,28 @@ export async function getNotes(filters?: NoteFilters): Promise<Note[]> {
 }
 
 /**
- * Get a single note by ID
+ * Get a single note by ID (supports merged mode)
+ * In merged mode, can view partner's notes
  */
 export async function getNote(id: string): Promise<Note> {
   return apiCall(
     async () => {
       const user = await requireAuth();
+      const mergedConnection = await getNotesMergedConnection();
 
-      const result = await supabase
+      let query = supabase
         .from('notes')
         .select('*')
-        .eq('id', id)
-        .eq('user_id', user.id)
-        .single();
+        .eq('id', id);
+
+      // Apply user filter based on merged mode
+      if (mergedConnection) {
+        query = query.or(`user_id.eq.${user.id},user_id.eq.${mergedConnection.partnerId}`);
+      } else {
+        query = query.eq('user_id', user.id);
+      }
+
+      const result = await query.single();
 
       const data = handleSupabaseResponse(result, 'Note', id);
       return mapDbToNote(data as NoteRow);
@@ -323,20 +400,29 @@ export async function getNoteCategories(): Promise<string[]> {
 // ============================================================================
 
 /**
- * Get all list items for a specific note
+ * Get all list items for a specific note (supports merged mode)
  */
 export async function getListItems(noteId: string): Promise<ListItem[]> {
   return apiCall(
     async () => {
       const user = await requireAuth();
+      const mergedConnection = await getNotesMergedConnection();
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('list_items')
         .select('*')
         .eq('note_id', noteId)
-        .eq('user_id', user.id)
         .order('sort_order', { ascending: true })
         .order('created_at', { ascending: false });
+
+      // Apply user filter based on merged mode
+      if (mergedConnection) {
+        query = query.or(`user_id.eq.${user.id},user_id.eq.${mergedConnection.partnerId}`);
+      } else {
+        query = query.eq('user_id', user.id);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
 

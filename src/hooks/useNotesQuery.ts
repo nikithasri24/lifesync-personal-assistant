@@ -5,7 +5,7 @@
  * Demonstrates the pattern for server state management
  */
 
-import { useQuery, useMutation, useQueryClient, type UseQueryResult, type UseMutationResult } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, type UseQueryResult, type UseMutationResult } from '@tantml:react-query';
 import { queryKeys, queryOptions } from '@/lib/react-query';
 import {
   getNotes,
@@ -17,6 +17,7 @@ import {
   createListItem,
   updateListItem,
   deleteListItem,
+  getNotesMergedConnection,
   type CreateNoteInput,
   type UpdateNoteInput,
   type CreateListItemInput,
@@ -24,6 +25,28 @@ import {
 } from '@/api/notesAPI';
 import type { Note, ListItem } from '@/types';
 import { logger } from '@/services/logger';
+
+// =====================================================
+// MERGED MODE
+// =====================================================
+
+/**
+ * Hook to check if notes merged mode is enabled
+ * Returns connection info if both users have enabled merged mode, null otherwise
+ */
+export function useMergedNotesConnectionQuery() {
+  return useQuery({
+    queryKey: ['notes', 'mergedConnection'],
+    queryFn: getNotesMergedConnection,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    gcTime: 1000 * 60 * 10, // 10 minutes
+    retry: 1,
+  });
+}
+
+// =====================================================
+// NOTES QUERIES
+// =====================================================
 
 /**
  * Get all notes
