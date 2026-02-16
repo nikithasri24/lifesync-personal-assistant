@@ -6,6 +6,8 @@
 
 import { logger } from '../../services/logger';
 import { supabase } from '../../lib/supabase';
+import { getMergedConnectionId, type MergedConnectionResult } from '../../shared/api/SharedDataProvider';
+import { AuthenticationError, DatabaseError } from '../../lib/errors';
 import type {
   VisitedLocation,
   VisitedLocationInput,
@@ -13,53 +15,44 @@ import type {
   TravelStats,
   CategorizedLocation,
   LocationVisitCategory,
+  Trip,
+  TripInput,
+  TripCategory,
+  CategorizedTrip,
 } from '../types';
 
-// Cache for partner ID to avoid repeated checks within same session
-let cachedPartnerId: string | null | undefined = undefined;
+// Cache for merged connection to avoid repeated checks within same session
+let cachedMergedConnection: MergedConnectionResult | null | undefined = undefined;
 
 /**
- * Get the partner's user ID if they have granted view/collaborate permission for travel.
+ * Get the merged connection for travel if both users have enabled merged mode.
  * Results are cached for the session to avoid repeated database calls.
  */
+export async function getTravelMergedConnection(): Promise<MergedConnectionResult | null> {
+  if (cachedMergedConnection !== undefined) {
+    logger.debug('Travel', 'Using cached merged connection', { cachedMergedConnection });
+    return cachedMergedConnection;
+  }
+
+  cachedMergedConnection = await getMergedConnectionId('visa');
+  logger.debug('Travel', 'Fetched merged connection', { cachedMergedConnection });
+  return cachedMergedConnection;
+}
+
+/**
+ * Clear the cached merged connection (call when permissions change)
+ */
+export function clearTravelMergedConnectionCache(): void {
+  cachedMergedConnection = undefined;
+}
+
+/**
+ * Get the partner's user ID if travel merged mode is enabled.
+ * @deprecated Use getTravelMergedConnection() instead for full connection info
+ */
 export async function getTravelPartner(): Promise<string | null> {
-  if (cachedPartnerId !== undefined) {
-    return cachedPartnerId;
-  }
-
-  const { data: userData } = await supabase.auth.getUser();
-  if (!userData.user) {
-    cachedPartnerId = null;
-    return null;
-  }
-
-  // Find active connection with travel permission (view, collaborate, or merged)
-  const { data: connections, error } = await supabase
-    .from('profile_connections')
-    .select(`
-      id,
-      requester_id,
-      receiver_id,
-      module_permissions!inner(module, permission_level, user_id)
-    `)
-    .eq('status', 'active')
-    .or(`requester_id.eq.${userData.user.id},receiver_id.eq.${userData.user.id}`)
-    .eq('module_permissions.module', 'travel')
-    .in('module_permissions.permission_level', ['view', 'collaborate', 'merged']);
-
-  if (error || !connections || connections.length === 0) {
-    cachedPartnerId = null;
-    return null;
-  }
-
-  // Get partner's ID (the other person in the connection)
-  const connection = connections[0];
-  const partnerId = connection.requester_id === userData.user.id
-    ? connection.receiver_id
-    : connection.requester_id;
-
-  cachedPartnerId = partnerId;
-  return partnerId;
+  const connection = await getTravelMergedConnection();
+  return connection?.partnerId ?? null;
 }
 
 /**
@@ -160,7 +153,7 @@ export const travelAPI = {
 
   async listVisitedLocations(): Promise<CategorizedLocation[]> {
     const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) throw new Error('Not authenticated');
+    if (!userData.user) throw new AuthenticationError('Not authenticated');
 
     const partnerId = await getTravelPartner();
 
@@ -184,7 +177,7 @@ export const travelAPI = {
     }
 
     const { data, error } = await query;
-    if (error) throw error;
+    if (error) throw new DatabaseError(error.message, { error });
 
     logger.debug('Travel', 'Locations found:', { count: data?.length ?? 0 });
 
@@ -201,7 +194,7 @@ export const travelAPI = {
 
   async getWorldMapData(): Promise<WorldMapData> {
     const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) throw new Error('Not authenticated');
+    if (!userData.user) throw new AuthenticationError('Not authenticated');
 
     const partnerId = await getTravelPartner();
 
@@ -219,7 +212,7 @@ export const travelAPI = {
     }
 
     const { data, error } = await query;
-    if (error) throw error;
+    if (error) throw new DatabaseError(error.message, { error });
 
     const mapData: WorldMapData = {
       visited: [],
@@ -267,7 +260,7 @@ export const travelAPI = {
     visitedByUserIds?: string[]
   ): Promise<VisitedLocation> {
     const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) throw new Error('Not authenticated');
+    if (!userData.user) throw new AuthenticationError('Not authenticated');
 
     const partnerId = await getTravelPartner();
 
@@ -330,7 +323,7 @@ export const travelAPI = {
    */
   async toggleMyVisit(locationId: string): Promise<VisitedLocation> {
     const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) throw new Error('Not authenticated');
+    if (!userData.user) throw new AuthenticationError('Not authenticated');
 
     // Get current location
     const { data: locationData, error: fetchError } = await supabase
@@ -367,14 +360,14 @@ export const travelAPI = {
 
   async deleteLocation(id: string): Promise<void> {
     const { error } = await supabase.from('visited_locations').delete().eq('id', id);
-    if (error) throw error;
+    if (error) throw new DatabaseError(error.message, { error });
   },
 
   // ============= STATS =============
 
   async getTravelStats(): Promise<TravelStats | null> {
     const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) throw new Error('Not authenticated');
+    if (!userData.user) throw new AuthenticationError('Not authenticated');
 
     // Get basic stats from visited locations
     const { data: locations } = await supabase
@@ -418,3 +411,168 @@ export const travelAPI = {
     };
   },
 };
+
+// ========== TRIP MANAGEMENT API ==========
+
+/**
+ * Categorize a trip based on who is participating
+ */
+export function categorizeTrip(trip: Trip, currentUserId: string, partnerId: string | null): TripCategory {
+  const visitedBy = trip.visitedBy || [];
+  const visitedByMe = visitedBy.includes(currentUserId);
+  const visitedByPartner = partnerId ? visitedBy.includes(partnerId) : false;
+
+  if (visitedByMe && visitedByPartner) return 'both';
+  if (visitedByMe) return 'mine';
+  if (visitedByPartner) return 'partner';
+
+  // Fallback: if no visited_by data, use user_id
+  if (trip.userId === currentUserId) return 'mine';
+  if (partnerId && trip.userId === partnerId) return 'partner';
+
+  return 'mine'; // Default
+}
+
+/**
+ * List all trips for the current user (includes partner trips in merged mode)
+ */
+export async function listTrips(): Promise<CategorizedTrip[]> {
+  const { data: userData, error: authError } = await supabase.auth.getUser();
+  if (authError || !userData?.user) {
+    throw new AuthenticationError('Not authenticated');
+  }
+
+  const mergedConnection = await getTravelMergedConnection();
+  const partnerId = mergedConnection?.partnerId ?? null;
+
+  let query = supabase
+    .from('trips')
+    .select('*')
+    .order('start_date', { ascending: false });
+
+  // In merged mode, get trips from both users
+  if (partnerId) {
+    query = query.or(`user_id.eq.${userData.user.id},user_id.eq.${partnerId}`);
+  } else {
+    query = query.eq('user_id', userData.user.id);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    logger.error('Travel', 'Error listing trips', { error });
+    throw new DatabaseError(error.message);
+  }
+
+  const trips: Trip[] = (data || []).map(row => toCamelCase<Trip>(row));
+
+  // Categorize trips
+  return trips.map(trip => ({
+    ...trip,
+    tripCategory: categorizeTrip(trip, userData.user.id, partnerId),
+  }));
+}
+
+/**
+ * Get a single trip by ID
+ */
+export async function getTrip(tripId: string): Promise<Trip> {
+  const { data: userData, error: authError } = await supabase.auth.getUser();
+  if (authError || !userData?.user) {
+    throw new AuthenticationError('Not authenticated');
+  }
+
+  const { data, error } = await supabase
+    .from('trips')
+    .select('*')
+    .eq('id', tripId)
+    .single();
+
+  if (error) {
+    logger.error('Travel', 'Error getting trip', { error, tripId });
+    throw new DatabaseError(error.message);
+  }
+
+  return toCamelCase<Trip>(data);
+}
+
+/**
+ * Create a new trip
+ */
+export async function createTrip(input: TripInput, participantIds?: string[]): Promise<Trip> {
+  const { data: userData, error: authError } = await supabase.auth.getUser();
+  if (authError || !userData?.user) {
+    throw new AuthenticationError('Not authenticated');
+  }
+
+  const tripData = {
+    ...(toSnakeCase(input) as Record<string, unknown>),
+    user_id: userData.user.id,
+    visited_by: participantIds || [userData.user.id],
+  };
+
+  const { data, error } = await supabase
+    .from('trips')
+    .insert(tripData)
+    .select()
+    .single();
+
+  if (error) {
+    logger.error('Travel', 'Error creating trip', { error });
+    throw new DatabaseError(error.message);
+  }
+
+  logger.info('Travel', 'Trip created', { tripId: data.id });
+  return toCamelCase<Trip>(data);
+}
+
+/**
+ * Update a trip
+ */
+export async function updateTrip(tripId: string, updates: Partial<TripInput>): Promise<Trip> {
+  const { data: userData, error: authError } = await supabase.auth.getUser();
+  if (authError || !userData?.user) {
+    throw new AuthenticationError('Not authenticated');
+  }
+
+  const updateData = toSnakeCase(updates) as Record<string, unknown>;
+
+  const { data, error } = await supabase
+    .from('trips')
+    .update(updateData)
+    .eq('id', tripId)
+    .eq('user_id', userData.user.id)
+    .select()
+    .single();
+
+  if (error) {
+    logger.error('Travel', 'Error updating trip', { error, tripId });
+    throw new DatabaseError(error.message);
+  }
+
+  logger.info('Travel', 'Trip updated', { tripId });
+  return toCamelCase<Trip>(data);
+}
+
+/**
+ * Delete a trip
+ */
+export async function deleteTrip(tripId: string): Promise<void> {
+  const { data: userData, error: authError } = await supabase.auth.getUser();
+  if (authError || !userData?.user) {
+    throw new AuthenticationError('Not authenticated');
+  }
+
+  const { error } = await supabase
+    .from('trips')
+    .delete()
+    .eq('id', tripId)
+    .eq('user_id', userData.user.id);
+
+  if (error) {
+    logger.error('Travel', 'Error deleting trip', { error, tripId });
+    throw new DatabaseError(error.message);
+  }
+
+  logger.info('Travel', 'Trip deleted', { tripId });
+}

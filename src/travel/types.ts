@@ -90,3 +90,47 @@ export type WorldMapData = {
   transit: string[]; // Country codes
   wishlist: string[]; // Country codes
 };
+
+// Trip management
+export type TripStatus = 'planning' | 'upcoming' | 'in_progress' | 'completed' | 'cancelled';
+
+export type Trip = {
+  id: string;
+  userId: string;
+  connectionId?: string | null; // For shared trips
+  visitedBy?: string[]; // Array of user IDs participating in this trip
+
+  // Trip details
+  name: string;
+  description?: string;
+  startDate: string; // ISO date
+  endDate: string; // ISO date
+  status: TripStatus;
+
+  // Associated locations (many-to-many relationship)
+  locationIds?: string[]; // IDs of VisitedLocation entries
+
+  // Trip metadata
+  budget?: number;
+  currency?: string; // ISO 4217 (e.g., 'USD', 'EUR')
+  coverPhoto?: string; // URL
+  tags?: string[]; // e.g., ['backpacking', 'business', 'family']
+
+  // Notes and memories
+  notes?: string;
+  highlights?: string[]; // Key moments or experiences
+  rating?: number; // 1-5
+
+  createdAt: string;
+  updatedAt: string;
+};
+
+// Helper type to categorize trips by participants
+export type TripCategory = 'mine' | 'partner' | 'both';
+
+export type CategorizedTrip = Trip & {
+  tripCategory: TripCategory;
+};
+
+// Input type for creating/updating trips
+export type TripInput = Omit<Trip, 'id' | 'userId' | 'createdAt' | 'updatedAt'>;

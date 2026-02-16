@@ -4,10 +4,10 @@
  */
 
 import React from 'react';
-import { X } from 'lucide-react';
+import { X, Plus, Calendar, MapPin, Clock } from 'lucide-react';
 import LeafletTravelMapV2 from '../components/LeafletTravelMapV2';
-import { travelAPI } from '../api/data';
-import type { VisitStatus, CategorizedLocation, LocationVisitCategory } from '../types';
+import { travelAPI, listTrips, createTrip, updateTrip, deleteTrip, categorizeTrip } from '../api/data';
+import type { VisitStatus, CategorizedLocation, LocationVisitCategory, CategorizedTrip, Trip, TripInput } from '../types';
 import { nationalParks, getParksByState } from '../data/nationalParks';
 import { islands, getIslandsByState } from '../data/islands';
 import { getEnhancedCountries } from '../components/countryData';
@@ -15,14 +15,22 @@ import { usStates } from '../data/geographicFeatures';
 import { logger } from '@/services/logger';
 import { useCurrentUserId, useMergedConnection, usePartnerName } from '@/hooks/useOwnerInfo';
 import { useToast } from '@/hooks/useToast';
+import TripEditor from '../components/TripEditor';
+import ConfirmDialog from '../../components/DebtPayoffCalculator/ConfirmDialog';
 
 type LocationTypeFilter = 'all' | 'countries' | 'states' | 'parks' | 'islands';
 
 const TravelPage: React.FC = () => {
   const [loading, setLoading] = React.useState(true);
   const [visitedLocations, setVisitedLocations] = React.useState<CategorizedLocation[]>([]);
+  const [trips, setTrips] = React.useState<CategorizedTrip[]>([]);
   const { showToast } = useToast();
   const [categoryFilter, setCategoryFilter] = React.useState<LocationVisitCategory | 'all'>('all');
+
+  // Trip editor state
+  const [isTripEditorOpen, setIsTripEditorOpen] = React.useState(false);
+  const [editingTrip, setEditingTrip] = React.useState<Trip | undefined>(undefined);
+  const [tripToDelete, setTripToDelete] = React.useState<string | null>(null);
 
   // Location type filter state (persisted in localStorage)
   const [locationTypeFilter, setLocationTypeFilter] = React.useState<LocationTypeFilter>(() => {
@@ -60,8 +68,12 @@ const TravelPage: React.FC = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const locations = await travelAPI.listVisitedLocations();
+      const [locations, tripsData] = await Promise.all([
+        travelAPI.listVisitedLocations(),
+        listTrips(),
+      ]);
       setVisitedLocations(locations);
+      setTrips(tripsData);
     } catch (error) {
       logger.error('Travel', 'Error loading travel data', { error });
     } finally {
@@ -401,6 +413,69 @@ const TravelPage: React.FC = () => {
     }
   };
 
+  // Trip handlers
+  const handleCreateTrip = () => {
+    setEditingTrip(undefined);
+    setIsTripEditorOpen(true);
+  };
+
+  const handleEditTrip = (trip: Trip) => {
+    logger.debug('Travel', 'Opening trip editor', { tripId: trip.id });
+    setEditingTrip(trip);
+    setIsTripEditorOpen(true);
+  };
+
+  const handleSaveTrip = async (updates: Partial<Trip>) => {
+    try {
+      if (editingTrip) {
+        // Edit mode
+        const updated = await updateTrip(editingTrip.id, updates as TripInput);
+        const categorized: CategorizedTrip = {
+          ...updated,
+          tripCategory: categorizeTrip(updated, currentUserId!, partnerId),
+        };
+        setTrips(prev => prev.map(t => t.id === updated.id ? categorized : t));
+        logger.info('Travel', 'Trip updated', { tripId: updated.id });
+        showToast('Trip updated successfully', 'success');
+      } else {
+        // Create mode
+        const newTrip = await createTrip(
+          updates as TripInput,
+          partnerId && currentUserId ? [currentUserId, partnerId] : undefined
+        );
+        const categorized: CategorizedTrip = {
+          ...newTrip,
+          tripCategory: categorizeTrip(newTrip, currentUserId!, partnerId),
+        };
+        setTrips(prev => [categorized, ...prev]);
+        logger.info('Travel', 'Trip created', { tripId: newTrip.id });
+        showToast('Trip created successfully', 'success');
+      }
+      setIsTripEditorOpen(false);
+      setEditingTrip(undefined);
+    } catch (error) {
+      logger.error('Travel', error instanceof Error ? error : new Error(String(error)), {
+        context: 'saveTrip',
+      });
+      showToast('Failed to save trip. Please try again.', 'error');
+    }
+  };
+
+  const handleDeleteTrip = async (tripId: string) => {
+    try {
+      await deleteTrip(tripId);
+      setTrips(prev => prev.filter(t => t.id !== tripId));
+      setTripToDelete(null);
+      logger.info('Travel', 'Trip deleted', { tripId });
+      showToast('Trip deleted successfully', 'success');
+    } catch (error) {
+      logger.error('Travel', error instanceof Error ? error : new Error(String(error)), {
+        context: 'deleteTrip',
+      });
+      showToast('Failed to delete trip. Please try again.', 'error');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-white">
@@ -556,9 +631,148 @@ const TravelPage: React.FC = () => {
         />
       </div>
 
+      {/* Trips Section */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold text-gray-900">Your Trips</h2>
+          <button
+            onClick={handleCreateTrip}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+          >
+            <Plus className="h-5 w-5" />
+            Add Trip
+          </button>
+        </div>
+
+        {trips.length === 0 ? (
+          <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+            <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">No trips yet</h3>
+            <p className="text-gray-600 mb-4">Start planning your next adventure!</p>
+            <button
+              onClick={handleCreateTrip}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+            >
+              <Plus className="h-5 w-5" />
+              Plan Your First Trip
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {trips.map((trip) => {
+              const isOwnTrip = trip.userId === currentUserId;
+              const startDate = new Date(trip.startDate);
+              const endDate = new Date(trip.endDate);
+              const duration = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+
+              // Determine status color
+              const getStatusColor = (status: string) => {
+                switch (status) {
+                  case 'planning': return 'bg-gray-100 text-gray-800';
+                  case 'upcoming': return 'bg-blue-100 text-blue-800';
+                  case 'in_progress': return 'bg-green-100 text-green-800';
+                  case 'completed': return 'bg-purple-100 text-purple-800';
+                  case 'cancelled': return 'bg-red-100 text-red-800';
+                  default: return 'bg-gray-100 text-gray-800';
+                }
+              };
+
+              const getCategoryColor = (category: string) => {
+                switch (category) {
+                  case 'mine': return 'border-blue-300 bg-blue-50';
+                  case 'partner': return 'border-purple-300 bg-purple-50';
+                  case 'both': return 'border-pink-300 bg-pink-50';
+                  default: return 'border-gray-200 bg-white';
+                }
+              };
+
+              return (
+                <div
+                  key={trip.id}
+                  className={`bg-white rounded-lg border-2 ${getCategoryColor(trip.tripCategory)} shadow-sm hover:shadow-md transition-shadow overflow-hidden`}
+                >
+                  <div className="p-6">
+                    {/* Header */}
+                    <div className="flex items-start justify-between mb-3">
+                      <h3 className="text-lg font-semibold text-gray-900 flex-1">{trip.name}</h3>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(trip.status)}`}>
+                        {trip.status.replace('_', ' ').toUpperCase()}
+                      </span>
+                    </div>
+
+                    {/* Description */}
+                    {trip.description && (
+                      <p className="text-sm text-gray-600 mb-4 line-clamp-2">{trip.description}</p>
+                    )}
+
+                    {/* Dates */}
+                    <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                      <Calendar className="h-4 w-4" />
+                      <span>
+                        {startDate.toLocaleDateString()} - {endDate.toLocaleDateString()}
+                      </span>
+                    </div>
+
+                    {/* Duration */}
+                    <div className="flex items-center gap-2 text-sm text-gray-600 mb-3">
+                      <Clock className="h-4 w-4" />
+                      <span>{duration} {duration === 1 ? 'day' : 'days'}</span>
+                    </div>
+
+                    {/* Budget */}
+                    {trip.budget && (
+                      <div className="text-sm text-gray-600 mb-3">
+                        Budget: {trip.currency} {trip.budget.toLocaleString()}
+                      </div>
+                    )}
+
+                    {/* Tags */}
+                    {trip.tags && trip.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mb-4">
+                        {trip.tags.slice(0, 3).map((tag) => (
+                          <span
+                            key={tag}
+                            className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                        {trip.tags.length > 3 && (
+                          <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
+                            +{trip.tags.length - 3}
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Actions */}
+                    <div className="flex gap-2 pt-3 border-t border-gray-200">
+                      <button
+                        onClick={() => handleEditTrip(trip)}
+                        className="flex-1 px-3 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      >
+                        Edit
+                      </button>
+                      {isOwnTrip && (
+                        <button
+                          onClick={() => setTripToDelete(trip.id)}
+                          className="flex-1 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
       {/* Location Lists */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Track Your Travels</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">Track Your Locations</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* Countries List */}
@@ -614,6 +828,30 @@ const TravelPage: React.FC = () => {
           />
         </div>
       </div>
+
+      {/* Trip Editor Modal */}
+      <TripEditor
+        isOpen={isTripEditorOpen}
+        onClose={() => {
+          setIsTripEditorOpen(false);
+          setEditingTrip(undefined);
+        }}
+        onSave={handleSaveTrip}
+        onDelete={handleDeleteTrip}
+        trip={editingTrip}
+      />
+
+      {/* Trip Deletion Confirmation */}
+      {tripToDelete && (
+        <ConfirmDialog
+          title="Delete Trip"
+          message="Are you sure you want to delete this trip? This action cannot be undone."
+          onConfirm={() => {
+            handleDeleteTrip(tripToDelete);
+          }}
+          onCancel={() => setTripToDelete(null)}
+        />
+      )}
     </div>
   );
 };
