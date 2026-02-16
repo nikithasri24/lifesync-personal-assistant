@@ -12,10 +12,10 @@
 
 ### Current Status (Updated 2026-02-16)
 - **Total Features Analyzed:** 11 major features (collaborative features only)
-- **Complete Merged Mode:** 7 features (64%) ⬆️ **+3 since last audit**
+- **Complete Merged Mode:** 8 features (73%) ⬆️ **+4 since last audit**
 - **Not Applicable (Personal):** 3 features (Journal, Skincare, Focus)
-- **Missing Merged Mode:** 4 features (36%) ⬇️ **-6 features**
-- **Overall Completion:** 64% ⬆️ **+37% improvement**
+- **Missing Merged Mode:** 3 features (27%) ⬇️ **-7 features**
+- **Overall Completion:** 73% ⬆️ **+46% improvement**
 
 ### 🎉 Major Improvements Since Last Audit
 1. **Calendar** - ✅ NEW: Full merged mode added (Feb 16, 2026)
@@ -174,8 +174,8 @@ Your LifeSync app has **mature, production-grade merged mode infrastructure** wi
 | **Travel/Visa** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ Complete | ⬆️ **Upgraded** | - |
 | **Tasks/Todos** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ Complete | ⬆️ **NEW** | - |
 | **Calendar** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ Complete | ⬆️ **NEW** | - |
+| **Habits** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ Complete | ⬆️ **NEW** | - |
 | **Projects** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ Missing | - | **3-4h** |
-| **Habits** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ Missing | - | **2-3h** |
 | **Notes** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ Missing | - | **2h** |
 | **Nutrition** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ Missing | - | **2h** |
 | **Journal** | - | - | - | - | - | 🚫 N/A | Personal | - |
@@ -446,29 +446,48 @@ Your LifeSync app has **mature, production-grade merged mode infrastructure** wi
 
 ---
 
-### ❌ HABITS - Missing (No Change)
+### ✅ HABITS - Complete ⬆️ NEW
 
-**API Layer**: ❌ Missing
+**Previous Status:** ❌ Missing
+**Current Status:** ✅ Complete
+**Implementation Date:** February 16, 2026
+
+**Commit:** `f7142b7 - feat: Add merged mode support for Habits`
+
+**API Layer**: ✅ Complete
 - File: `src/api/habitsAPI.ts`
-- Line 30: `.eq('user_id', user.id)` - No merged mode support
-- No `getMergedConnectionId` implementation
+- `getHabitsMergedConnection()` with caching
+- `getHabits()` includes partner's habits in merged mode
+- `getHabitEntries()` supports merged mode
 
-**Database Layer**: ❌ Missing
-- No connection_id field
-- RLS policies only user-specific
+**Database Layer**: ✅ Complete
+- RLS policies for habits table: `merged_access_habits`
+- RLS policies for habit_entries table
+- Each user tracks their own progress on all visible habits
 
-**Overall Status**: ❌ **Not Implemented**
-**Estimated Effort**: 2-3 hours
-**Priority**: 🟡 **HIGH**
-**User Value**: **HIGH** - Couples track shared habits, motivate each other
+**Hooks Layer**: ✅ Complete
+- `useMergedHabitsConnectionQuery()` hook
+- Returns merged connection info
 
-**Implementation Needed:**
-- Add `getMergedConnectionId('habits')` to API
-- Support shared habits with individual progress (like Goals)
-- Update RLS policies
-- Create merged connection hook
-- Add owner badges and comparison UI
-- Optional: Competitive leaderboard, achievements
+**UI Components**: ✅ Complete
+- OwnerBadge in HabitCard showing habit owner
+- OwnerFilter dropdown (All/Mine/Partner)
+- Color-coded badges (Me=blue, Partner=purple)
+
+**Page Integration**: ✅ Complete
+- Page: `src/pages/Habits.tsx`
+- Owner filter state and filtering logic
+- Merged connection detection
+- Partner name display
+
+**Features:**
+- View partner's habits when merged mode enabled
+- Track personal progress on partner's habits
+- Filter to show All/Mine/Partner habits
+- Each user maintains individual progress/streaks
+- Perfect for couples motivating each other!
+
+**Overall Status**: ✅ **Production-Ready**
 
 ---
 
@@ -538,10 +557,11 @@ Your LifeSync app has **mature, production-grade merged mode infrastructure** wi
 - ✅ Calendar merged mode (2-3 hours) - DONE ✓
 - ✅ Travel UI completion (2 hours) - DONE ✓
 - ✅ Tasks merged mode (3 hours) - DONE ✓
+- ✅ Habits merged mode (2-3 hours) - DONE ✓
 - ✅ Infrastructure unification (OwnerBadge) - DONE ✓
 
-**Total effort invested:** ~7-8 hours
-**Features completed:** 3 major features + infrastructure improvements
+**Total effort invested:** ~9-11 hours
+**Features completed:** 4 major features + infrastructure improvements
 
 ---
 
@@ -797,18 +817,18 @@ describe('Feature Merged Mode', () => {
 
 | Priority | Features | Total Hours | Status |
 |----------|----------|-------------|--------|
-| **Completed** | Calendar, Tasks, Travel UI | ~~7-8 hours~~ | ✅ **DONE** |
-| Priority 1 (High) | Projects, Habits | 5-7 hours | 🔴 Remaining |
+| **Completed** | Calendar, Tasks, Travel UI, Habits | ~~9-11 hours~~ | ✅ **DONE** |
+| Priority 1 (High) | Projects | 3-4 hours | 🔴 Remaining |
 | Priority 2 (Medium) | Notes | 2 hours | 🟡 Remaining |
 | Priority 3 (Low) | Nutrition | 2 hours | 🟢 Optional |
 | **Not Applicable** | Journal, Skincare, Focus | N/A | Personal features |
-| **Total Remaining** | **All missing features** | **9-11 hours** | - |
+| **Total Remaining** | **All missing features** | **7-8 hours** | - |
 
 **Original estimate:** 24-28 hours total
-**Work completed:** 7-8 hours (3 features)
-**Remaining work:** 11-13 hours (5 features)
-**Not applicable:** Journal, Skincare (personal features)
-**Completion rate:** ~30% of estimated effort yielded 58% feature coverage ⚡
+**Work completed:** 9-11 hours (4 features)
+**Remaining work:** 7-8 hours (3 features)
+**Not applicable:** Journal, Skincare, Focus (personal features)
+**Completion rate:** ~40% of estimated effort yielded 73% feature coverage ⚡
 
 ---
 
@@ -835,14 +855,12 @@ describe('Feature Merged Mode', () => {
 
 ### This Week (Priority 1)
 1. ✅ **Audit complete** - Updated report ready
-2. **Implement Projects merged mode** (3-4 hours)
-   - Highest remaining value
-   - More complex (good documentation opportunity)
-3. **Implement Habits merged mode** (2-3 hours)
-   - High user value for couples
-   - Simpler implementation
+2. ✅ **Habits merged mode** - DONE (Feb 16, 2026)
+3. **Implement Projects merged mode** (3-4 hours)
+   - Only high-priority feature remaining
+   - More complex (milestones and project_tasks)
 
-**Estimated completion:** 1-2 days of focused work
+**Estimated completion:** 1 day of focused work
 
 ### Next Week
 4. **Implement Notes merged mode** (2 hours)
@@ -874,18 +892,20 @@ describe('Feature Merged Mode', () => {
 
 **Infrastructure:** Production-ready ✅
 **Pattern Standardization:** Excellent ✅
-**Feature Coverage:** 58% (7/12 collaborative features) ✅
+**Feature Coverage:** 73% (8/11 collaborative features) ✅
 **Code Quality:** Type-safe, well-tested, accessible ✅
 **Documentation:** Comprehensive with clear examples ✅
-**Personal Features:** Journal and Skincare intentionally excluded (remain personal-only) ✅
+**Personal Features:** Journal, Skincare, and Focus intentionally excluded (remain personal-only) ✅
 
 ### Path Forward
 
-With only **2 high-priority features remaining** (Projects, Habits), LifeSync is positioned to achieve **75-83% merged mode coverage** (of collaborative features) with just 5-7 hours of additional development. The standardized pattern means each new feature implementation becomes faster and more consistent.
+With only **1 high-priority feature remaining** (Projects), LifeSync is positioned to achieve **82-91% merged mode coverage** (of collaborative features) with just 3-4 hours of additional development. The standardized pattern means each new feature implementation becomes faster and more consistent.
 
 **Dead Code Removed (commit 4cbd508):** Standalone National Parks feature removed - functionality already exists in Travel module with merged mode support.
 
-**Personal Features Excluded:** Journal and Skincare are intentionally excluded from merged mode as they are highly personal features with no collaboration value.
+**Personal Features Excluded:** Journal, Skincare, and Focus are intentionally excluded from merged mode as they are highly personal features with no collaboration value.
+
+**Latest Addition (Feb 16, 2026):** Habits merged mode implemented in commit f7142b7, allowing couples to track habits together with individual progress.
 
 **Recommendation:** Focus on Projects and Habits in the next week to maximize collaboration value for couples using LifeSync.
 
