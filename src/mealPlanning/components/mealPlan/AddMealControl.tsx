@@ -205,13 +205,16 @@ export function AddMealControl({
           }
         }
       }}
-      className="group/add-btn w-full text-left min-h-[44px] py-2 px-3 transition-all duration-200 hover:bg-slate-100 rounded"
+      className="group/add-btn w-full text-left min-h-[60px] py-3 px-4 transition-all duration-200 border-2 border-dashed border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/30 rounded-lg"
       aria-label="Add meal to this slot"
     >
-      <div className="flex items-center gap-2">
-        <Plus className="w-4 h-4 text-slate-400 group-hover/add-btn:text-slate-600 transition-colors" />
-        <span className="text-sm text-slate-500 group-hover/add-btn:text-slate-700 transition-colors">
+      <div className="flex flex-col items-center justify-center gap-1.5">
+        <Plus className="w-6 h-6 text-slate-400 group-hover/add-btn:text-indigo-600 transition-colors" />
+        <span className="text-sm font-medium text-slate-600 group-hover/add-btn:text-indigo-700 transition-colors">
           Add meal
+        </span>
+        <span className="text-xs text-slate-400 group-hover/add-btn:text-indigo-500 transition-colors">
+          Click or drag a recipe
         </span>
       </div>
     </button>
