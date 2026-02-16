@@ -137,7 +137,163 @@ export function WeeklyGrid({
   };
 
   return (
-    <div className="mt-6 overflow-x-auto">
+    <div className="mt-6">
+      {/* Mobile view - Vertical cards per day */}
+      <div className="md:hidden space-y-4">
+        {weekDays.map((d) => {
+          const key = toKey(d);
+          const today = new Date();
+          const isToday = isSameDay(d, today);
+
+          return (
+            <div
+              key={key}
+              className={`rounded-lg border-2 overflow-hidden ${
+                isToday ? 'border-indigo-400 bg-indigo-50/20' : 'border-slate-200 bg-white'
+              }`}
+            >
+              {/* Day header */}
+              <div className={`p-4 border-b ${isToday ? 'bg-indigo-100/50 border-indigo-200' : 'bg-slate-50 border-slate-200'}`}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-lg font-bold text-slate-900">
+                      {format(d, 'EEEE')}
+                    </div>
+                    <div className="text-sm text-slate-600">
+                      {format(d, 'MMMM d, yyyy')}
+                    </div>
+                  </div>
+                  {isToday && (
+                    <div className="px-3 py-1 bg-indigo-600 text-white text-xs font-semibold rounded-full">
+                      Today
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Meal types */}
+              <div className="divide-y divide-slate-200">
+                {MEAL_TYPES.map((mealType) => {
+                  const dayMeals = (mealsByDate[key] ?? []).filter((m) => m.mealType === mealType);
+                  const cellKey = makeCellKey(key, mealType);
+                  const isSelected = selectedCells.has(cellKey);
+                  const config = MEAL_TYPE_CONFIG[mealType as keyof typeof MEAL_TYPE_CONFIG];
+                  const Icon = config.icon;
+
+                  return (
+                    <div
+                      key={`${key}-${mealType}`}
+                      className={`p-4 cursor-pointer transition-all ${
+                        isSelected
+                          ? 'bg-indigo-50 ring-2 ring-inset ring-indigo-400'
+                          : 'hover:bg-slate-50'
+                      }`}
+                      onClick={(e) => onCellClick(key, mealType, e)}
+                    >
+                      {/* Meal type header */}
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className={`p-1.5 rounded-lg bg-gradient-to-br ${config.gradient}`}>
+                          <Icon className="w-4 h-4 text-white" />
+                        </div>
+                        <span className="font-semibold text-slate-900 capitalize">
+                          {mealType}
+                        </span>
+                      </div>
+
+                      {/* Meal content */}
+                      <div className="min-h-[60px]">
+                        {dayMeals.length > 0 ? (
+                          <CellWithMeals
+                            dateKey={key}
+                            mealType={mealType}
+                            dayMeals={dayMeals}
+                            recipes={recipes}
+                            isMerged={!!activePlan?.connectionId}
+                            partnerId={activePlan?.partnerId}
+                            onShowRecipeForm={onShowRecipeForm}
+                            onShowSimpleEdit={onShowSimpleEdit}
+                            renderAddControl={(triggerRef) => (
+                              <AddMealControl
+                                key={`add-control-trigger-mobile-${key}-${mealType}`}
+                                dateKey={key}
+                                mealType={mealType}
+                                showByDefault={false}
+                                compact={true}
+                                triggerRef={triggerRef}
+                                isSelected={isSelected}
+                                sharedInputValue={sharedInputValue}
+                                setSharedInputValue={setSharedInputValue}
+                                isAnySelectedCellEditing={isAnySelectedCellEditing}
+                                setIsAnySelectedCellEditing={setIsAnySelectedCellEditing}
+                                onAddMeal={(mealName) => {
+                                  if (isSelected && selectedCells.size > 1 && addMealToSelectedCells) {
+                                    void addMealToSelectedCells('', mealName);
+                                    return;
+                                  }
+                                  if (!activePlan) return;
+                                  const command = new CreatePlannedMealCommand(
+                                    activePlan.id,
+                                    {
+                                      date: parseLocalDateKey(key),
+                                      mealType,
+                                      customMeal: mealName,
+                                      servings: 2,
+                                      peopleCount: 2,
+                                      status: 'planned',
+                                    },
+                                    mealName
+                                  );
+                                  void executeCommand(command);
+                                }}
+                              />
+                            )}
+                          />
+                        ) : (
+                          <AddMealControl
+                            key={`add-control-empty-mobile-${key}-${mealType}`}
+                            dateKey={key}
+                            mealType={mealType}
+                            showByDefault={true}
+                            compact={false}
+                            isSelected={isSelected}
+                            sharedInputValue={sharedInputValue}
+                            setSharedInputValue={setSharedInputValue}
+                            isAnySelectedCellEditing={isAnySelectedCellEditing}
+                            setIsAnySelectedCellEditing={setIsAnySelectedCellEditing}
+                            onAddMeal={(mealName) => {
+                              if (isSelected && selectedCells.size > 1 && addMealToSelectedCells) {
+                                void addMealToSelectedCells('', mealName);
+                                return;
+                              }
+                              if (!activePlan) return;
+                              const command = new CreatePlannedMealCommand(
+                                activePlan.id,
+                                {
+                                  date: parseLocalDateKey(key),
+                                  mealType,
+                                  customMeal: mealName,
+                                  servings: 2,
+                                  peopleCount: 2,
+                                  status: 'planned',
+                                },
+                                mealName
+                              );
+                              void executeCommand(command);
+                            }}
+                          />
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Desktop view - Table layout */}
+      <div className="hidden md:block overflow-x-auto">
       <table className="w-full border-collapse rounded-lg overflow-hidden border border-slate-200">
         {/* Table header */}
         <thead>
@@ -432,6 +588,7 @@ export function WeeklyGrid({
           })}
         </tbody>
       </table>
+      </div>
 
       {/* Meal Backlog Section - lazy loaded */}
       {(() => {
