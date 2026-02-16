@@ -13,11 +13,11 @@ import { taskTools } from '@/todos/tools';
 import { habitTools } from '@/habits/tools';
 import { goalTools } from '@/goals/tools';
 import { schedulerTools } from '@/scheduler/tools';
+import { financeTools } from '@/finance/tools';
+import { shoppingTools } from '@/shopping/tools';
+import { mealTools } from '@/mealPlanning/tools';
+import { calendarTools } from '@/calendar/tools';
 import { intelligenceTools } from './intelligenceTools';
-
-// Import additional tools as they're created
-// import { financeTools } from '@/finance/tools';
-// import { calendarTools } from '@/calendar/tools';
 
 let registered = false;
 
@@ -39,8 +39,11 @@ export function registerAllTools(): void {
     ...habitTools,
     ...goalTools,
     ...schedulerTools,
+    ...financeTools,
+    ...shoppingTools,
+    ...mealTools,
+    ...calendarTools,
     ...intelligenceTools,
-    // Add more tools here as they're created
   ]);
 
   registered = true;

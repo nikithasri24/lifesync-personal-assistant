@@ -99,7 +99,9 @@
       "Bash(vercel:*)",
       "Bash(open:*)",
       "Bash(xcodebuild:*)",
-      "Bash(kill:*)"
+      "Bash(kill:*)",
+      "Bash(/tmp/check-api-consistency.sh:*)",
+      "Bash(bash /tmp/check-api-consistency.sh)"
     ],
     "deny": [],
     "ask": []

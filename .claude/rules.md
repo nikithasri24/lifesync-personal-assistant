@@ -25,12 +25,15 @@
 - ✅ **Journal**: API and Store ready (AI tools missing)
 - ✅ **Additional**: Focus mode, 75 Hard tracker, Task scheduler with Kanban/Timeline
 
-**What Needs Work:**
-- ⚠️ AI tool coverage incomplete (50% done)
-- ⚠️ Tool registry needs extraction from conversation engine
-- ⚠️ React Query migration incomplete (only Goals migrated)
-- ⚠️ Voice/Visual mode switcher not implemented
-- ⚠️ Some features still use Zustand for server state (should use React Query)
+**What Needs Work (Updated 2026-02-16):**
+- ⏳ AI tool registration incomplete (4 tool files not imported) - **15 min**
+- ⏳ Assistant page integration needs review - **1-2 hours**
+- ⏳ End-to-end testing for voice/visual mode - **2-3 hours**
+- ✅ Tool registry extracted (**COMPLETE**)
+- ✅ React Query migration complete (**COMPLETE** - see STATE_MANAGEMENT_AUDIT_2026-02-16.md)
+- ✅ Mode switcher component implemented (**COMPLETE**)
+- ✅ ESLint enforcement for state management boundaries (**NEW** - added 2026-02-16)
+- ❌ Journal AI tools - **NOT NEEDED** (user prefers manual journal entry only)
 
 ### CRITICAL PROJECT GUIDELINES
 
@@ -54,22 +57,32 @@
 - ✅ Follow established patterns in the codebase
 - ✅ Read existing code before making changes
 
-### Current Enhancement Focus:
+### Current Enhancement Focus (Updated 2026-02-16):
 
-**Phase 1 (Weeks 1-3): Complete AI Integration**
-1. Extract tool registry from conversationEngine.ts
-2. Create modular AI tools for each feature
-3. Implement missing AI tools (shopping, meals, habits, goals, journal)
+> **NOTE:** Much of the original plan is already complete! See PHASE_STATUS_AUDIT_2026-02-16.md for details.
 
-**Phase 2 (Weeks 4-5): React Query Migration**
-1. Migrate Tasks, Habits, Finance to React Query hooks
-2. Migrate Shopping/Meals to React Query hooks
-3. Remove server state from Zustand (keep UI state only)
+**Week 1 (1-2 hours): Complete AI Tool Registration**
+1. ✅ Tool registry extraction - **COMPLETE** (src/lib/ai/toolRegistry.ts)
+2. ⏳ Register existing tools (finance, shopping, meals, calendar) - **15 minutes**
+   - Update src/lib/ai/registerAllTools.ts to import and register 4 tool files
+3. ⏳ Test all tools in conversation - **1 hour**
+4. ❌ Journal tools - **NOT NEEDED** (per user request)
 
-**Phase 3 (Weeks 6-7): Voice/Visual Integration**
-1. Implement mode switcher component
-2. Enhance Assistant page design
-3. Polish and test end-to-end
+**Week 2 (3-5 hours): Complete Voice/Visual Integration**
+1. ✅ Mode switcher component - **COMPLETE** (src/components/ModeSwitch.tsx)
+2. ⏳ Review Assistant page integration - **1-2 hours**
+   - Ensure ModeSwitch is integrated
+   - Verify full-screen voice mode works
+3. ⏳ End-to-end testing & polish - **2-3 hours**
+   - Test mode switching, keyboard shortcuts, persistence
+   - UI/UX refinements
+
+**React Query Migration: ✅ COMPLETE**
+- All features migrated to React Query (38 hook files, 700+ usages)
+- Zustand slices contain UI state only (verified)
+- ESLint enforcement rules added (eslint.config.js lines 240-273)
+- Zero violations: `npx eslint src/stores/slices/*.ts`
+- See STATE_MANAGEMENT_AUDIT_2026-02-16.md for comprehensive analysis
 
 ---
 

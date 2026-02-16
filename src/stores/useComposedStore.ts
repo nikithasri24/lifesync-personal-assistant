@@ -33,7 +33,6 @@ import { createLifeGoalsSlice, type LifeGoalsSlice } from './slices/lifeGoalsSli
 import { createCalendarSlice, type CalendarSlice } from './slices/calendarSlice';
 import { createSkincareSlice, type SkincareSlice } from './slices/skincareSlice';
 import { createTravelSlice, type TravelSlice } from './slices/travelSlice';
-import { createNationalParksSlice, type NationalParksSlice } from './slices/nationalParksSlice';
 
 // Compose all slices into one store type
 export type ComposedStore = UISlice &
@@ -51,8 +50,7 @@ export type ComposedStore = UISlice &
   LifeGoalsSlice &
   CalendarSlice &
   SkincareSlice &
-  TravelSlice &
-  NationalParksSlice;
+  TravelSlice;
 
 /**
  * Modern, composed Zustand store
@@ -86,7 +84,6 @@ export const useComposedStore = create<ComposedStore>()(
         ...createCalendarSlice(...a),
         ...createSkincareSlice(...a),
         ...createTravelSlice(...a),
-        ...createNationalParksSlice(...a),
       }),
       {
         name: 'lifesync-storage',
@@ -757,47 +754,4 @@ export const selectSkincare = (state: ComposedStore): Pick<
   setSkincareSelectedProduct: state.setSkincareSelectedProduct,
   setSkincareSelectedTab: state.setSkincareSelectedTab,
   resetSkincareFilters: state.resetSkincareFilters,
-});
-
-export const selectNationalParks = (state: ComposedStore): Pick<
-  ComposedStore,
-  | 'parksViewMode'
-  | 'parksFilterState'
-  | 'parksFilterVisited'
-  | 'parksFilterActivities'
-  | 'parksSearchQuery'
-  | 'parksSortBy'
-  | 'parksSortOrder'
-  | 'parksSelectedPark'
-  | 'parksSelectedTab'
-  | 'setParksViewMode'
-  | 'setParksFilterState'
-  | 'setParksFilterVisited'
-  | 'setParksFilterActivities'
-  | 'setParksSearchQuery'
-  | 'setParksSortBy'
-  | 'setParksSortOrder'
-  | 'setParksSelectedPark'
-  | 'setParksSelectedTab'
-  | 'resetParksFilters'
-> => ({
-  parksViewMode: state.parksViewMode,
-  parksFilterState: state.parksFilterState,
-  parksFilterVisited: state.parksFilterVisited,
-  parksFilterActivities: state.parksFilterActivities,
-  parksSearchQuery: state.parksSearchQuery,
-  parksSortBy: state.parksSortBy,
-  parksSortOrder: state.parksSortOrder,
-  parksSelectedPark: state.parksSelectedPark,
-  parksSelectedTab: state.parksSelectedTab,
-  setParksViewMode: state.setParksViewMode,
-  setParksFilterState: state.setParksFilterState,
-  setParksFilterVisited: state.setParksFilterVisited,
-  setParksFilterActivities: state.setParksFilterActivities,
-  setParksSearchQuery: state.setParksSearchQuery,
-  setParksSortBy: state.setParksSortBy,
-  setParksSortOrder: state.setParksSortOrder,
-  setParksSelectedPark: state.setParksSelectedPark,
-  setParksSelectedTab: state.setParksSelectedTab,
-  resetParksFilters: state.resetParksFilters,
 });
