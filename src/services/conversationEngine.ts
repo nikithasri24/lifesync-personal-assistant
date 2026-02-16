@@ -69,6 +69,12 @@ export class ConversationEngine {
     if (this.sessionStarted) return;
 
     try {
+      // Check if LLM provider is available
+      const { primary } = await import('@/lib/providers/factory').then(m => m.createLLMProviderWithFallback());
+      if (!primary) {
+        throw new Error('No LLM provider configured. Please set VITE_GROQ_API_KEY in your environment variables or run Ollama locally.');
+      }
+
       // Start a new conversation session
       await conversationPersistenceService.startSession(this.userId);
 
@@ -79,7 +85,13 @@ export class ConversationEngine {
       logger.info('ConversationEngine', 'Session initialized', { userId: this.userId });
     } catch (error) {
       logger.error('ConversationEngine', error as Error, { context: 'initialize' });
-      // Continue without persistence/context on error
+
+      // If it's an LLM provider error, re-throw it so the UI can display it
+      if (error instanceof Error && error.message.includes('LLM provider')) {
+        throw error;
+      }
+
+      // Continue without persistence/context on other errors
       this.sessionStarted = true;
     }
   }

@@ -5,6 +5,7 @@ interface ConversationInputProps {
   textInput: string;
   isListening: boolean;
   isSpeaking: boolean;
+  isThinking?: boolean;
   onTextChange: (text: string) => void;
   onTextSubmit: () => void;
   onVoiceToggle: () => void;
@@ -18,6 +19,7 @@ export function ConversationInput({
   textInput,
   isListening,
   isSpeaking,
+  isThinking = false,
   onTextChange,
   onTextSubmit,
   onVoiceToggle,
@@ -44,8 +46,9 @@ export function ConversationInput({
                   onTextSubmit();
                 }
               }}
-              placeholder="Ask me anything... 💬"
-              className="w-full px-5 py-4 pr-14 rounded-2xl border-2 border-slate-200 bg-slate-800 text-white placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none transition-all duration-200 shadow-sm hover:border-slate-300"
+              placeholder={isThinking ? "AI is thinking..." : "Ask me anything... 💬"}
+              disabled={isThinking || isListening}
+              className="w-full px-5 py-4 pr-14 rounded-2xl border-2 border-slate-200 bg-slate-800 text-white placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none transition-all duration-200 shadow-sm hover:border-slate-300 disabled:opacity-60 disabled:cursor-not-allowed"
               rows={1}
               style={{
                 minHeight: '56px',
@@ -120,6 +123,20 @@ export function ConversationInput({
                 <div className="absolute inset-0 w-2 h-2 bg-white rounded-full animate-ping" />
               </div>
               <span className="text-sm text-white font-semibold" style={{ color: '#ffffff' }}>Listening to you...</span>
+            </div>
+          </div>
+        )}
+
+        {/* Thinking Status Indicator */}
+        {isThinking && (
+          <div className="mt-3 text-center animate-fadeIn">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 border-2 border-indigo-400 rounded-full shadow-sm">
+              <div className="flex gap-1">
+                <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+              </div>
+              <span className="text-sm text-white font-semibold" style={{ color: '#ffffff' }}>AI is thinking...</span>
             </div>
           </div>
         )}

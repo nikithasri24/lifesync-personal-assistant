@@ -87,6 +87,19 @@ export function useConversationalVoice(userId: string): {
   // Initialize conversation engine
   useEffect(() => {
     engineRef.current = new ConversationEngine(userId);
+
+    // Initialize the engine and catch any configuration errors
+    void (async () => {
+      try {
+        await engineRef.current?.initialize();
+      } catch (error) {
+        logger.error('UseConversationalVoice', error as Error, { context: 'initialization' });
+        setState(prev => ({
+          ...prev,
+          error: error instanceof Error ? error.message : 'Failed to initialize AI assistant'
+        }));
+      }
+    })();
   }, [userId]);
 
   // Initialize speech recognition

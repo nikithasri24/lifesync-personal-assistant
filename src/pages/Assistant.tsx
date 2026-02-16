@@ -133,6 +133,7 @@ export default function Assistant() {
           textInput={textInput}
           isListening={isListening}
           isSpeaking={isSpeaking}
+          isThinking={isThinking}
           onTextChange={setTextInput}
           onTextSubmit={handleTextSubmit}
           onVoiceToggle={handleVoiceToggle}
