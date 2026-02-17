@@ -50,10 +50,13 @@ export const SendPartnerRequestModal: React.FC<SendPartnerRequestModalProps> = (
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center lg:items-center"
+      className="fixed top-0 left-0 right-0 bottom-0 z-[60] flex items-end justify-center lg:items-center"
       style={{
         backgroundColor: 'rgba(0, 0, 0, 0.4)',
         backdropFilter: 'blur(4px)',
+        marginTop: 'calc(-1 * env(safe-area-inset-top, 0px))',
+        paddingTop: 'env(safe-area-inset-top, 0px)',
+        height: 'calc(100vh + env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px))',
       }}
       onClick={handleBackdropClick}
     >

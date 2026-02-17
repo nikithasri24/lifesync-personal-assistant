@@ -92,7 +92,7 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
 
     if (!title.trim() || !targetMetric.trim() || !targetValue.trim()) {
       if (toast) {
-        toast('Please fill in all required fields', 'error');
+        toast('Please fill in all required fields (Title, Metric, and Goal Value)', 'error');
       }
       return;
     }
@@ -100,16 +100,18 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
     createChallenge(
       {
         title,
-        description,
-        target_metric: targetMetric,
+        description: description || `Complete ${targetValue} ${targetMetric}`,
+        linked_type: 'habit' as const,
+        linked_id: partnerLink.id,
+        target_type: 'count' as const,
         target_value: parseFloat(targetValue),
-        current_value: 0,
         reward_type: rewardType,
-        reward_content: rewardContent,
-        hide_reward_until_unlock: hideReward,
-        expires_at: expiresAt || null,
+        reward_description: rewardContent,
+        reward_message_id: null,
+        hide_reward: hideReward,
+        expiration_date: expiresAt || null,
         connection_id: partnerLink.id,
-        partner_id: partnerLink.partner_id,
+        recipient_id: partnerLink.partner_id,
       },
       {
         onSuccess: () => {
@@ -161,10 +163,13 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center lg:items-center"
+      className="fixed top-0 left-0 right-0 bottom-0 z-[60] flex items-end justify-center lg:items-center"
       style={{
         backgroundColor: 'rgba(0, 0, 0, 0.4)',
         backdropFilter: 'blur(4px)',
+        marginTop: 'calc(-1 * env(safe-area-inset-top, 0px))',
+        paddingTop: 'env(safe-area-inset-top, 0px)',
+        height: 'calc(100vh + env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px))',
       }}
       onClick={handleBackdropClick}
     >

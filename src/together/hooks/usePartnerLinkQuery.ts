@@ -22,7 +22,7 @@ function connectionToPartnerLink(connection: ConnectionWithPermissions): Partner
   return {
     id: connection.id,
     requester_id: connection.requesterId,
-    partner_id: connection.receiverId,
+    partner_id: connection.otherUser.id, // Use otherUser.id instead of receiverId
     status: 'accepted', // Maps from ConnectionStatus 'active' to PartnerLink 'accepted'
     relationship_start_date: null, // TODO: Read from profile_connections.relationship_start_date
     created_at: connection.createdAt,

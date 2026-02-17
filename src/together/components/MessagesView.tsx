@@ -33,6 +33,9 @@ export const MessagesView: React.FC<MessagesViewProps> = ({ partnerLink }) => {
     return localStorage.getItem(STORAGE_KEY_VIEWING);
   });
 
+  // Track which message is being edited
+  const [editingMessage, setEditingMessage] = useState<PartnerMessage | null>(null);
+
   const { data: messages = [], isLoading } = usePartnerMessages();
 
   // Find the viewing message from the ID
@@ -120,15 +123,15 @@ export const MessagesView: React.FC<MessagesViewProps> = ({ partnerLink }) => {
     if (message.reveal_trigger === 'first_login') {
       return 'First login trigger';
     }
-    if (message.reveal_trigger === 'scheduled_date' && message.scheduled_for) {
-      const date = formatDateLong(message.scheduled_for.split('T')[0]);
+    if (message.reveal_trigger === 'specific_date' && message.reveal_date) {
+      const date = formatDateLong(message.reveal_date.split('T')[0]);
       return `Scheduled: ${date}`;
     }
-    if (message.reveal_trigger === 'achievement_unlock') {
+    if (message.reveal_trigger === 'achievement' && message.achievement_id) {
       return 'Achievement unlock trigger';
     }
-    if (message.reveal_trigger === 'immediate') {
-      return 'Sent immediately';
+    if (message.reveal_trigger === 'manual') {
+      return 'Manual reveal';
     }
     return 'Draft';
   };
@@ -302,7 +305,11 @@ export const MessagesView: React.FC<MessagesViewProps> = ({ partnerLink }) => {
         <ComposeMessageModal
           isOpen={composeOpen}
           partnerLink={partnerLink}
-          onClose={handleCloseCompose}
+          onClose={() => {
+            handleCloseCompose();
+            setEditingMessage(null); // Clear editing state
+          }}
+          editingMessage={editingMessage}
         />
       )}
 
@@ -312,6 +319,12 @@ export const MessagesView: React.FC<MessagesViewProps> = ({ partnerLink }) => {
           isOpen={!!viewingMessage}
           message={viewingMessage}
           onClose={handleCloseViewMessage}
+          onEdit={() => {
+            // Set editing message and open compose modal
+            setEditingMessage(viewingMessage);
+            handleCloseViewMessage();
+            setComposeOpen(true);
+          }}
         />
       )}
     </div>

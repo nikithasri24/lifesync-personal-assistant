@@ -157,22 +157,41 @@ export function useCreatePartnerMessage() {
         throw new AuthenticationError('Not authenticated');
       }
 
+      // Build the insert payload explicitly
+      const insertPayload = {
+        sender_id: user.id,
+        recipient_id: message.recipient_id,
+        connection_id: message.connection_id,
+        title: message.title,
+        message_body: message.message_body,
+        reveal_trigger: message.reveal_trigger,
+        reveal_date: message.reveal_date,
+        achievement_id: message.achievement_id,
+        photo_urls: message.photo_urls || null,
+        video_url: message.video_url || null,
+        background_music_url: message.background_music_url || null,
+        status: message.status || 'draft',
+      };
+
       logger.debug('Together', 'Creating partner message', {
         trigger: message.reveal_trigger,
+        payload: insertPayload,
       });
 
       const { data, error } = await supabase
         .from('partner_messages')
-        .insert({
-          sender_id: user.id,
-          ...message,
-          status: message.status || 'draft',
-        })
+        .insert(insertPayload)
         .select()
         .single();
 
       if (error) {
-        logger.error('Together', 'Failed to create partner message', { error });
+        logger.error('Together', 'Failed to create partner message', {
+          error,
+          errorMessage: error.message,
+          errorDetails: error.details,
+          errorHint: error.hint,
+          payload: insertPayload,
+        });
         throw parseToLifeSyncError(error);
       }
 

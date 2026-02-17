@@ -5,14 +5,15 @@
 
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-import { useCreatePartnerMessage } from '../../hooks/usePartnerMessagesQuery';
-import type { PartnerLink, MessageRevealTrigger } from '../../types';
+import { useCreatePartnerMessage, useUpdatePartnerMessage } from '../../hooks/usePartnerMessagesQuery';
+import type { PartnerLink, RevealTrigger, PartnerMessage } from '../../types';
 import { useToast } from '@/hooks/useToast';
 
 interface ComposeMessageModalProps {
   isOpen: boolean;
   partnerLink: PartnerLink | null;
   onClose: () => void;
+  editingMessage?: PartnerMessage | null;
 }
 
 const STORAGE_KEY = 'together_compose_message_draft';
@@ -21,9 +22,12 @@ export const ComposeMessageModal: React.FC<ComposeMessageModalProps> = ({
   isOpen,
   partnerLink,
   onClose,
+  editingMessage,
 }) => {
   const { toast } = useToast();
-  const { mutate: createMessage, isPending } = useCreatePartnerMessage();
+  const { mutate: createMessage, isPending: isCreating } = useCreatePartnerMessage();
+  const { mutate: updateMessage, isPending: isUpdating } = useUpdatePartnerMessage();
+  const isPending = isCreating || isUpdating;
 
   // Load saved draft from localStorage
   const loadDraft = () => {
@@ -38,27 +42,44 @@ export const ComposeMessageModal: React.FC<ComposeMessageModalProps> = ({
     return null;
   };
 
-  const savedDraft = loadDraft();
+  const savedDraft = !editingMessage ? loadDraft() : null;
 
-  // Form state - restore from localStorage if available
-  const [title, setTitle] = useState(savedDraft?.title || '');
-  const [content, setContent] = useState(savedDraft?.content || '');
-  const [revealTrigger, setRevealTrigger] = useState<MessageRevealTrigger>(savedDraft?.revealTrigger || 'first_login');
-  const [scheduledDate, setScheduledDate] = useState(savedDraft?.scheduledDate || '');
-  const [scheduledTime, setScheduledTime] = useState(savedDraft?.scheduledTime || '09:00');
+  // Form state - restore from editingMessage, then localStorage, then defaults
+  const [title, setTitle] = useState(editingMessage?.title || savedDraft?.title || '');
+  const [messageBody, setMessageBody] = useState(editingMessage?.message_body || savedDraft?.messageBody || '');
+  const [revealTrigger, setRevealTrigger] = useState<RevealTrigger>(
+    editingMessage?.reveal_trigger || savedDraft?.revealTrigger || 'first_login'
+  );
+  const [scheduledDate, setScheduledDate] = useState(
+    editingMessage?.reveal_date?.split('T')[0] || savedDraft?.scheduledDate || ''
+  );
+  const [scheduledTime, setScheduledTime] = useState(
+    editingMessage?.reveal_date?.split('T')[1]?.substring(0, 5) || savedDraft?.scheduledTime || '09:00'
+  );
+
+  // Update form when editingMessage changes
+  useEffect(() => {
+    if (editingMessage) {
+      setTitle(editingMessage.title);
+      setMessageBody(editingMessage.message_body);
+      setRevealTrigger(editingMessage.reveal_trigger);
+      setScheduledDate(editingMessage.reveal_date?.split('T')[0] || '');
+      setScheduledTime(editingMessage.reveal_date?.split('T')[1]?.substring(0, 5) || '09:00');
+    }
+  }, [editingMessage]);
 
   // Auto-save draft to localStorage whenever form changes
   useEffect(() => {
-    if (title || content) {
+    if (title || messageBody) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
         title,
-        content,
+        messageBody,
         revealTrigger,
         scheduledDate,
         scheduledTime,
       }));
     }
-  }, [title, content, revealTrigger, scheduledDate, scheduledTime]);
+  }, [title, messageBody, revealTrigger, scheduledDate, scheduledTime]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -76,6 +97,95 @@ export const ComposeMessageModal: React.FC<ComposeMessageModalProps> = ({
 
   if (!isOpen) return null;
 
+  const handleSaveDraft = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+
+    if (!partnerLink) {
+      if (toast) {
+        toast('Please connect with a partner first', 'error');
+      }
+      return;
+    }
+
+    if (!title.trim() || !messageBody.trim()) {
+      const missingFields = [];
+      if (!title.trim()) missingFields.push('Title');
+      if (!messageBody.trim()) missingFields.push('Message');
+
+      const errorMsg = `Please enter: ${missingFields.join(' and ')}`;
+
+      if (toast) {
+        toast(errorMsg, 'error');
+      } else {
+        alert(errorMsg);
+      }
+      return;
+    }
+
+    // Build reveal_date timestamp if applicable
+    let revealDate: string | null = null;
+    if (revealTrigger === 'specific_date' && scheduledDate) {
+      revealDate = `${scheduledDate}T${scheduledTime}:00`;
+    }
+
+    const messageData = {
+      title,
+      message_body: messageBody,
+      reveal_trigger: revealTrigger,
+      reveal_date: revealDate,
+      achievement_id: null,
+      status: 'draft' as const,
+    };
+
+    const onSuccessCallback = () => {
+      if (toast) {
+        toast(editingMessage ? 'Draft updated! 💾' : 'Draft saved! 💾', 'success');
+      }
+      // Clear draft from localStorage
+      localStorage.removeItem(STORAGE_KEY);
+      onClose();
+      // Reset form
+      setTitle('');
+      setMessageBody('');
+      setRevealTrigger('first_login');
+      setScheduledDate('');
+      setScheduledTime('09:00');
+    };
+
+    const onErrorCallback = (error: Error) => {
+      if (toast) {
+        toast(`Failed to save draft: ${error.message}`, 'error');
+      }
+    };
+
+    if (editingMessage) {
+      // Update existing message
+      updateMessage(
+        {
+          id: editingMessage.id,
+          ...messageData,
+        },
+        {
+          onSuccess: onSuccessCallback,
+          onError: onErrorCallback,
+        }
+      );
+    } else {
+      // Create new message
+      createMessage(
+        {
+          ...messageData,
+          connection_id: partnerLink.id,
+          recipient_id: partnerLink.partner_id,
+        },
+        {
+          onSuccess: onSuccessCallback,
+          onError: onErrorCallback,
+        }
+      );
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -86,55 +196,78 @@ export const ComposeMessageModal: React.FC<ComposeMessageModalProps> = ({
       return;
     }
 
-    if (!title.trim() || !content.trim()) {
+    if (!title.trim() || !messageBody.trim()) {
       if (toast) {
         toast('Please enter both title and message', 'error');
       }
       return;
     }
 
-    // Build scheduled_for timestamp if applicable
-    let scheduledFor: string | null = null;
-    if (revealTrigger === 'scheduled_date' && scheduledDate) {
-      scheduledFor = `${scheduledDate}T${scheduledTime}:00`;
+    // Build reveal_date timestamp if applicable
+    let revealDate: string | null = null;
+    if (revealTrigger === 'specific_date' && scheduledDate) {
+      revealDate = `${scheduledDate}T${scheduledTime}:00`;
     }
 
     // Determine status based on trigger
-    const status = revealTrigger === 'immediate' ? 'revealed' : 'scheduled';
+    const status = revealTrigger === 'manual' ? 'revealed' : 'scheduled';
 
-    createMessage(
-      {
-        title,
-        content,
-        reveal_trigger: revealTrigger,
-        scheduled_for: scheduledFor,
-        connection_id: partnerLink.id,
-        partner_id: partnerLink.partner_id,
-        status,
-        recipient_id: partnerLink.partner_id,
-      },
-      {
-        onSuccess: () => {
-          if (toast) {
-            toast('Message created successfully! 💌', 'success');
-          }
-          // Clear draft from localStorage
-          localStorage.removeItem(STORAGE_KEY);
-          onClose();
-          // Reset form
-          setTitle('');
-          setContent('');
-          setRevealTrigger('first_login');
-          setScheduledDate('');
-          setScheduledTime('09:00');
-        },
-        onError: (error) => {
-          if (toast) {
-            toast(`Failed to create message: ${error.message}`, 'error');
-          }
-        },
+    const messageData = {
+      title,
+      message_body: messageBody,
+      reveal_trigger: revealTrigger,
+      reveal_date: revealDate,
+      achievement_id: null,
+      status,
+    };
+
+    const onSuccessCallback = () => {
+      if (toast) {
+        toast(editingMessage ? 'Message updated! 💌' : 'Message created successfully! 💌', 'success');
       }
-    );
+      // Clear draft from localStorage
+      localStorage.removeItem(STORAGE_KEY);
+      onClose();
+      // Reset form
+      setTitle('');
+      setMessageBody('');
+      setRevealTrigger('first_login');
+      setScheduledDate('');
+      setScheduledTime('09:00');
+    };
+
+    const onErrorCallback = (error: Error) => {
+      if (toast) {
+        toast(`Failed to ${editingMessage ? 'update' : 'create'} message: ${error.message}`, 'error');
+      }
+    };
+
+    if (editingMessage) {
+      // Update existing message
+      updateMessage(
+        {
+          id: editingMessage.id,
+          ...messageData,
+        },
+        {
+          onSuccess: onSuccessCallback,
+          onError: onErrorCallback,
+        }
+      );
+    } else {
+      // Create new message
+      createMessage(
+        {
+          ...messageData,
+          connection_id: partnerLink.id,
+          recipient_id: partnerLink.partner_id,
+        },
+        {
+          onSuccess: onSuccessCallback,
+          onError: onErrorCallback,
+        }
+      );
+    }
   };
 
 
@@ -148,11 +281,11 @@ export const ComposeMessageModal: React.FC<ComposeMessageModalProps> = ({
     switch (revealTrigger) {
       case 'first_login':
         return 'Message will reveal the next time your partner logs into LifeSync';
-      case 'scheduled_date':
+      case 'specific_date':
         return 'Message will reveal at the specific date and time you choose';
-      case 'achievement_unlock':
+      case 'achievement':
         return 'Message will reveal when your partner completes a challenge';
-      case 'immediate':
+      case 'manual':
         return 'Message will be sent and visible immediately';
       default:
         return '';
@@ -161,10 +294,13 @@ export const ComposeMessageModal: React.FC<ComposeMessageModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center lg:items-center"
+      className="fixed top-0 left-0 right-0 bottom-0 z-[60] flex items-end justify-center lg:items-center"
       style={{
         backgroundColor: 'rgba(0, 0, 0, 0.4)',
         backdropFilter: 'blur(4px)',
+        marginTop: 'calc(-1 * env(safe-area-inset-top, 0px))',
+        paddingTop: 'env(safe-area-inset-top, 0px)',
+        height: 'calc(100vh + env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px))',
       }}
       onClick={handleBackdropClick}
     >
@@ -174,6 +310,7 @@ export const ComposeMessageModal: React.FC<ComposeMessageModalProps> = ({
           maxHeight: '90vh',
           maxWidth: '600px',
         }}
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Drag Handle (mobile) */}
         <div className="lg:hidden pt-2">
@@ -183,7 +320,7 @@ export const ComposeMessageModal: React.FC<ComposeMessageModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-gray-200">
           <h2 className="text-2xl font-bold text-gray-900">
-            Write Message
+            {editingMessage ? 'Edit Message' : 'Write Message'}
           </h2>
           <button
             type="button"
@@ -233,8 +370,8 @@ export const ComposeMessageModal: React.FC<ComposeMessageModalProps> = ({
             </label>
             <textarea
               rows={10}
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
+              value={messageBody}
+              onChange={(e) => setMessageBody(e.target.value)}
               placeholder="My dearest love,&#10;&#10;It's hard to believe it's been 10 years since we first met...&#10;&#10;With all my love,&#10;[Your name]"
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none resize-none transition-all"
               required
@@ -253,7 +390,7 @@ export const ComposeMessageModal: React.FC<ComposeMessageModalProps> = ({
                   name="reveal-trigger"
                   value="first_login"
                   checked={revealTrigger === 'first_login'}
-                  onChange={(e) => setRevealTrigger(e.target.value as MessageRevealTrigger)}
+                  onChange={(e) => setRevealTrigger(e.target.value as RevealTrigger)}
                   className="w-5 h-5 mt-0.5 text-terracotta-400 focus:ring-terracotta-300"
                 />
                 <div>
@@ -270,9 +407,9 @@ export const ComposeMessageModal: React.FC<ComposeMessageModalProps> = ({
                 <input
                   type="radio"
                   name="reveal-trigger"
-                  value="scheduled_date"
-                  checked={revealTrigger === 'scheduled_date'}
-                  onChange={(e) => setRevealTrigger(e.target.value as MessageRevealTrigger)}
+                  value="specific_date"
+                  checked={revealTrigger === 'specific_date'}
+                  onChange={(e) => setRevealTrigger(e.target.value as RevealTrigger)}
                   className="w-5 h-5 mt-0.5 text-terracotta-400 focus:ring-terracotta-300"
                 />
                 <div className="flex-1">
@@ -282,7 +419,7 @@ export const ComposeMessageModal: React.FC<ComposeMessageModalProps> = ({
                   <p className="text-sm mt-1 text-gray-600">
                     Schedule for anniversaries or special moments
                   </p>
-                  {revealTrigger === 'scheduled_date' && (
+                  {revealTrigger === 'specific_date' && (
                     <div className="grid grid-cols-2 gap-3 mt-3">
                       <input
                         type="date"
@@ -306,9 +443,9 @@ export const ComposeMessageModal: React.FC<ComposeMessageModalProps> = ({
                 <input
                   type="radio"
                   name="reveal-trigger"
-                  value="immediate"
-                  checked={revealTrigger === 'immediate'}
-                  onChange={(e) => setRevealTrigger(e.target.value as MessageRevealTrigger)}
+                  value="manual"
+                  checked={revealTrigger === 'manual'}
+                  onChange={(e) => setRevealTrigger(e.target.value as RevealTrigger)}
                   className="w-5 h-5 mt-0.5 text-terracotta-400 focus:ring-terracotta-300"
                 />
                 <div>
@@ -329,19 +466,35 @@ export const ComposeMessageModal: React.FC<ComposeMessageModalProps> = ({
         </form>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-200 flex gap-3">
+        <div className="px-6 py-4 border-t border-gray-200 flex gap-3 relative z-10 bg-white">
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold text-gray-700 transition-colors"
+            className="px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold text-gray-700 transition-colors cursor-pointer"
           >
             Cancel
           </button>
           <button
-            type="submit"
-            onClick={handleSubmit}
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleSaveDraft();
+            }}
             disabled={isPending}
-            className="flex-1 px-4 py-3 rounded-xl font-semibold text-white transition-opacity disabled:opacity-50"
+            className="flex-1 px-4 py-3 bg-blue-100 hover:bg-blue-200 rounded-xl font-semibold text-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          >
+            {isPending ? 'Saving...' : 'Save Draft 💾'}
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleSubmit(e);
+            }}
+            disabled={isPending}
+            className="flex-1 px-4 py-3 rounded-xl font-semibold text-white transition-opacity disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             style={{
               background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
             }}

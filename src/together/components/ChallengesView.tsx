@@ -8,6 +8,7 @@ import { useAchievementRewards } from '../hooks';
 import type { PartnerLink, AchievementReward } from '../types';
 import { ChallengeCard } from './ChallengeCard';
 import { CreateChallengeModal } from './modals/CreateChallengeModal';
+import { ChallengeDetailModal } from './modals/ChallengeDetailModal';
 import { useThemeColors } from '@/hooks/useThemeColors';
 
 interface ChallengesViewProps {
@@ -20,7 +21,7 @@ export const ChallengesView: React.FC<ChallengesViewProps> = ({ partnerLink }) =
   const [createOpen, setCreateOpen] = useState(false);
   const [viewingChallenge, setViewingChallenge] = useState<AchievementReward | null>(null);
 
-  const { data: challenges = [], isLoading } = useAchievementRewards();
+  const { data: challenges = [], isLoading } = useAchievementRewards(partnerLink?.id);
 
   const hasPartner = partnerLink?.status === 'accepted';
 
@@ -170,14 +171,14 @@ export const ChallengesView: React.FC<ChallengesViewProps> = ({ partnerLink }) =
         />
       )}
 
-      {/* TODO: Challenge detail/edit modal */}
-      {/* {viewingChallenge && (
+      {/* Challenge Detail/Edit Modal */}
+      {viewingChallenge && (
         <ChallengeDetailModal
           isOpen={!!viewingChallenge}
           challenge={viewingChallenge}
           onClose={() => setViewingChallenge(null)}
         />
-      )} */}
+      )}
     </div>
   );
 };

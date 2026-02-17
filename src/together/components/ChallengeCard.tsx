@@ -19,16 +19,15 @@ export const ChallengeCard: React.FC<ChallengeCardProps> = ({
 }) => {
   const colors = useThemeColors();
 
-  const progress = Math.min(
-    (challenge.current_value / challenge.target_value) * 100,
-    100
-  );
+  const progress = challenge.target_value
+    ? Math.min((challenge.current_progress / challenge.target_value) * 100, 100)
+    : 0;
 
   const isCompleted = challenge.status === 'unlocked';
   const isExpired = challenge.status === 'expired';
 
   const getRewardIcon = () => {
-    if (challenge.hide_reward_until_unlock && !isCompleted) {
+    if (challenge.hide_reward && !isCompleted) {
       return '🎁';
     }
     switch (challenge.reward_type) {
@@ -46,10 +45,10 @@ export const ChallengeCard: React.FC<ChallengeCardProps> = ({
   };
 
   const getRewardText = () => {
-    if (challenge.hide_reward_until_unlock && !isCompleted) {
+    if (challenge.hide_reward && !isCompleted) {
       return 'Mystery Reward (unlocks when complete)';
     }
-    return challenge.reward_content || 'Reward awaits!';
+    return challenge.reward_description || 'Reward awaits!';
   };
 
   return (
@@ -122,8 +121,7 @@ export const ChallengeCard: React.FC<ChallengeCardProps> = ({
             />
           </div>
           <p className="text-xs mt-1" style={{ color: colors.text.tertiary }}>
-            Current: {challenge.current_value} {challenge.target_metric} | Target:{' '}
-            {challenge.target_value} {challenge.target_metric}
+            Current: {challenge.current_progress} | Target: {challenge.target_value}
           </p>
         </div>
       )}

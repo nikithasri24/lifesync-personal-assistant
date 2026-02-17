@@ -155,24 +155,27 @@ export const AddMilestoneModal: React.FC<AddMilestoneModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center lg:items-center"
+      className="fixed top-0 left-0 right-0 bottom-0 z-[60] flex items-end justify-center lg:items-center"
       style={{
         backgroundColor: 'rgba(0, 0, 0, 0.4)',
         backdropFilter: 'blur(4px)',
+        marginTop: 'calc(-1 * env(safe-area-inset-top, 0px))',
+        paddingTop: 'env(safe-area-inset-top, 0px)',
+        height: 'calc(100vh + env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px))',
       }}
       onClick={handleBackdropClick}
     >
       <div
-        className="w-full bg-white lg:rounded-3xl rounded-t-3xl overflow-hidden"
+        className="w-full bg-white lg:rounded-3xl rounded-t-3xl overflow-hidden flex flex-col"
         style={{ maxHeight: '90vh', maxWidth: '600px' }}
       >
         {/* Drag Handle (mobile) */}
-        <div className="lg:hidden pt-2">
+        <div className="lg:hidden pt-2 flex-shrink-0">
           <div className="w-9 h-1 rounded-full mx-auto bg-gray-300" />
         </div>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-200">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-200 flex-shrink-0">
           <h2 className="text-2xl font-bold text-gray-900">Add Milestone</h2>
           <button
             type="button"
@@ -184,8 +187,8 @@ export const AddMilestoneModal: React.FC<AddMilestoneModalProps> = ({
           </button>
         </div>
 
-        {/* Form */}
-        <div className="overflow-y-auto p-6 space-y-5" style={{ maxHeight: 'calc(90vh - 140px)' }}>
+        {/* Form - Scrollable */}
+        <div className="overflow-y-auto p-6 space-y-5 flex-1">
           {/* Milestone Type */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -211,39 +214,39 @@ export const AddMilestoneModal: React.FC<AddMilestoneModalProps> = ({
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               For Whom?
             </label>
-            <div className="space-y-2">
-              <label className="flex items-center gap-3 p-3 border border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
+            <div className="grid grid-cols-3 gap-2">
+              <label className="flex items-center gap-2 p-3 border border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
                 <input
                   type="radio"
                   name="for-whom"
                   value="partner"
                   checked={forWhom === 'partner'}
                   onChange={(e) => setForWhom(e.target.value as ForWhom)}
-                  className="w-5 h-5 text-terracotta-400 focus:ring-terracotta-300"
+                  className="w-4 h-4 text-terracotta-400 focus:ring-terracotta-300"
                 />
-                <span className="font-medium text-gray-900">Partner</span>
+                <span className="font-medium text-gray-900 text-sm">Partner</span>
               </label>
-              <label className="flex items-center gap-3 p-3 border border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
+              <label className="flex items-center gap-2 p-3 border border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
                 <input
                   type="radio"
                   name="for-whom"
                   value="me"
                   checked={forWhom === 'me'}
                   onChange={(e) => setForWhom(e.target.value as ForWhom)}
-                  className="w-5 h-5 text-terracotta-400 focus:ring-terracotta-300"
+                  className="w-4 h-4 text-terracotta-400 focus:ring-terracotta-300"
                 />
-                <span className="font-medium text-gray-900">Me</span>
+                <span className="font-medium text-gray-900 text-sm">Me</span>
               </label>
-              <label className="flex items-center gap-3 p-3 border border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
+              <label className="flex items-center gap-2 p-3 border border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
                 <input
                   type="radio"
                   name="for-whom"
                   value="both"
                   checked={forWhom === 'both'}
                   onChange={(e) => setForWhom(e.target.value as ForWhom)}
-                  className="w-5 h-5 text-terracotta-400 focus:ring-terracotta-300"
+                  className="w-4 h-4 text-terracotta-400 focus:ring-terracotta-300"
                 />
-                <span className="font-medium text-gray-900">Both of us</span>
+                <span className="font-medium text-gray-900 text-sm">Both</span>
               </label>
             </div>
           </div>
@@ -251,11 +254,11 @@ export const AddMilestoneModal: React.FC<AddMilestoneModalProps> = ({
           {/* Date */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Date</label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <select
                 value={month}
                 onChange={(e) => setMonth(e.target.value)}
-                className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none"
+                className="px-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none text-sm"
               >
                 {months.map((m) => (
                   <option key={m.value} value={m.value}>
@@ -270,18 +273,18 @@ export const AddMilestoneModal: React.FC<AddMilestoneModalProps> = ({
                 value={day}
                 onChange={(e) => setDay(e.target.value)}
                 placeholder="Day"
-                className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none"
+                className="px-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none text-sm"
+              />
+              <input
+                type="number"
+                min="1900"
+                max="2100"
+                value={year}
+                onChange={(e) => setYear(e.target.value)}
+                placeholder="Year"
+                className="px-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none text-sm"
               />
             </div>
-            <input
-              type="number"
-              min="1900"
-              max="2100"
-              value={year}
-              onChange={(e) => setYear(e.target.value)}
-              placeholder="Year (optional)"
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none mt-3"
-            />
           </div>
 
           {/* Recurring */}
@@ -365,8 +368,8 @@ export const AddMilestoneModal: React.FC<AddMilestoneModalProps> = ({
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-200 flex gap-3">
+        {/* Footer - Always visible */}
+        <div className="px-6 py-4 border-t border-gray-200 flex gap-3 flex-shrink-0 bg-white">
           <button
             type="button"
             onClick={onClose}

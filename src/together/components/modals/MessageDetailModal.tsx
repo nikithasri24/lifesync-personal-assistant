@@ -3,22 +3,28 @@
  * Display received/sent partner messages
  */
 
-import React, { useEffect } from 'react';
-import { X, Heart } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { X, Heart, Trash2, Edit2 } from 'lucide-react';
 import type { PartnerMessage } from '../../types';
 import { formatDateLong } from '../../utils/dateHelpers';
+import { useDeletePartnerMessage } from '../../hooks/usePartnerMessagesQuery';
+import { useToast } from '@/hooks/useToast';
 
 interface MessageDetailModalProps {
   isOpen: boolean;
   message: PartnerMessage;
   onClose: () => void;
+  onEdit?: () => void;
 }
 
 export const MessageDetailModal: React.FC<MessageDetailModalProps> = ({
   isOpen,
   message,
   onClose,
+  onEdit,
 }) => {
+  const { toast } = useToast();
+  const { mutate: deleteMessage, isPending: isDeleting } = useDeletePartnerMessage();
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -41,15 +47,56 @@ export const MessageDetailModal: React.FC<MessageDetailModalProps> = ({
     }
   };
 
+  const handleDelete = () => {
+    if (!confirm('Are you sure you want to delete this message? This cannot be undone.')) {
+      return;
+    }
+
+    deleteMessage(message.id, {
+      onSuccess: () => {
+        if (toast) {
+          toast('Message deleted', 'success');
+        }
+        onClose();
+      },
+      onError: (error) => {
+        if (toast) {
+          toast(`Failed to delete message: ${error.message}`, 'error');
+        }
+      },
+    });
+  };
+
   const isReceived = message.status === 'revealed';
+  const isDraft = message.status === 'draft' || message.status === 'scheduled';
   const sentDate = message.sent_at ? formatDateLong(message.sent_at.split('T')[0]) : 'Draft';
+
+  const getRevealTriggerText = () => {
+    switch (message.reveal_trigger) {
+      case 'first_login':
+        return 'Will reveal when partner opens the app';
+      case 'specific_date':
+        return message.reveal_date
+          ? `Scheduled for ${new Date(message.reveal_date).toLocaleString()}`
+          : 'Scheduled for specific date';
+      case 'achievement':
+        return 'Will reveal when partner unlocks achievement';
+      case 'manual':
+        return 'Sent immediately';
+      default:
+        return 'Draft';
+    }
+  };
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center lg:items-center"
+      className="fixed top-0 left-0 right-0 bottom-0 z-[60] flex items-end justify-center lg:items-center"
       style={{
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
         backdropFilter: 'blur(8px)',
+        marginTop: 'calc(-1 * env(safe-area-inset-top, 0px))',
+        paddingTop: 'env(safe-area-inset-top, 0px)',
+        height: 'calc(100vh + env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px))',
       }}
       onClick={handleBackdropClick}
     >
@@ -68,14 +115,37 @@ export const MessageDetailModal: React.FC<MessageDetailModalProps> = ({
 
         {/* Header */}
         <div className="relative px-6 py-8 text-center">
-          <button
-            type="button"
-            onClick={onClose}
-            className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            aria-label="Close"
-          >
-            <X className="w-5 h-5 text-gray-500" />
-          </button>
+          <div className="absolute top-4 right-4 flex items-center gap-2">
+            {isDraft && onEdit && (
+              <button
+                type="button"
+                onClick={onEdit}
+                className="p-2 hover:bg-blue-50 rounded-lg transition-colors"
+                aria-label="Edit message"
+              >
+                <Edit2 className="w-5 h-5 text-blue-500" />
+              </button>
+            )}
+            {isDraft && (
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="p-2 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                aria-label="Delete message"
+              >
+                <Trash2 className="w-5 h-5 text-red-500" />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              aria-label="Close"
+            >
+              <X className="w-5 h-5 text-gray-500" />
+            </button>
+          </div>
 
           {isReceived && (
             <div className="mb-4">
@@ -88,9 +158,32 @@ export const MessageDetailModal: React.FC<MessageDetailModalProps> = ({
           <h2 className="text-3xl font-bold mb-2 text-gray-900">
             {message.title}
           </h2>
+
+          {/* Status Badge */}
+          {isDraft && (
+            <div className="flex justify-center gap-2 mb-2">
+              <div
+                className="px-3 py-1 rounded-full text-xs font-bold"
+                style={{
+                  backgroundColor: message.status === 'scheduled' ? '#3B82F6' : '#6B7280',
+                  color: 'white'
+                }}
+              >
+                {message.status === 'scheduled' ? 'Scheduled' : 'Draft'}
+              </div>
+            </div>
+          )}
+
           <p className="text-sm text-gray-600">
             {sentDate}
           </p>
+
+          {/* Reveal Trigger Info */}
+          {isDraft && (
+            <p className="text-xs text-gray-500 mt-2">
+              {getRevealTriggerText()}
+            </p>
+          )}
         </div>
 
         {/* Message Content */}
@@ -131,17 +224,26 @@ export const MessageDetailModal: React.FC<MessageDetailModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-200 flex justify-center">
+        <div className="px-6 py-4 border-t border-gray-200 flex gap-3">
           <button
             type="button"
             onClick={onClose}
-            className="px-8 py-3 rounded-xl font-semibold text-white transition-colors"
-            style={{
-              background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
-            }}
+            className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold text-gray-700 transition-colors"
           >
             Close
           </button>
+          {isDraft && onEdit && (
+            <button
+              type="button"
+              onClick={onEdit}
+              className="flex-1 px-4 py-3 rounded-xl font-semibold text-white transition-colors"
+              style={{
+                background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
+              }}
+            >
+              Edit Message
+            </button>
+          )}
         </div>
       </div>
     </div>

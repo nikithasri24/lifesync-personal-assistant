@@ -126,23 +126,16 @@ export const PartnerStatusCard: React.FC<PartnerStatusCardProps> = ({
 
   return (
     <div
-      className="p-6 rounded-2xl shadow-sm border"
+      className="px-4 py-3 rounded-xl border flex items-center justify-between"
       style={{
-        backgroundColor: colors.bg.white,
-        borderColor: colors.border.light,
+        backgroundColor: 'rgba(212, 165, 116, 0.08)',
+        borderColor: 'rgba(193, 139, 94, 0.2)',
       }}
     >
-      <div className="flex items-center gap-4">
-        <div className="text-5xl">💑</div>
-        <div className="flex-1">
-          <h2
-            className="text-xl font-bold mb-1"
-            style={{ color: colors.text.primary }}
-          >
-            Partner Connection
-          </h2>
-          <div className="mb-2 flex items-center gap-2">
-            <span style={{ color: colors.text.secondary }}>Connected with:</span>
+      <div className="flex items-center gap-3">
+        <div className="text-2xl">💑</div>
+        <div>
+          <div className="flex items-center gap-2">
             {isEditing ? (
               <div className="flex items-center gap-2">
                 <input
@@ -151,14 +144,14 @@ export const PartnerStatusCard: React.FC<PartnerStatusCardProps> = ({
                   value={editedName}
                   onChange={(e) => setEditedName(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  className="px-2 py-1 rounded border font-semibold"
+                  className="px-2 py-1 text-sm rounded border font-semibold"
                   style={{
-                    color: '#D4A574',
+                    color: '#C18B5E',
                     borderColor: colors.border.medium,
                     backgroundColor: colors.bg.white,
-                    minWidth: '150px',
+                    minWidth: '120px',
                   }}
-                  placeholder="Enter partner name"
+                  placeholder="Partner name"
                   aria-label="Edit partner name"
                 />
                 <button
@@ -167,7 +160,7 @@ export const PartnerStatusCard: React.FC<PartnerStatusCardProps> = ({
                   disabled={!editedName.trim() || updatePartnerName.isPending}
                   aria-label="Save partner name"
                 >
-                  <Check className="w-4 h-4" style={{ color: '#2E7D32' }} />
+                  <Check className="w-3 h-3" style={{ color: '#2E7D32' }} />
                 </button>
                 <button
                   onClick={handleCancel}
@@ -175,14 +168,14 @@ export const PartnerStatusCard: React.FC<PartnerStatusCardProps> = ({
                   disabled={updatePartnerName.isPending}
                   aria-label="Cancel editing"
                 >
-                  <X className="w-4 h-4" style={{ color: '#D32F2F' }} />
+                  <X className="w-3 h-3" style={{ color: '#D32F2F' }} />
                 </button>
               </div>
             ) : (
               <span
                 onClick={handleStartEdit}
-                className="font-semibold cursor-pointer hover:opacity-80 transition-opacity"
-                style={{ color: '#D4A574' }}
+                className="font-semibold text-sm cursor-pointer hover:opacity-80 transition-opacity"
+                style={{ color: '#C18B5E' }}
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => {
@@ -196,18 +189,19 @@ export const PartnerStatusCard: React.FC<PartnerStatusCardProps> = ({
               </span>
             )}
           </div>
-          {partnerLink.relationship_start_date && (
-            <p className="text-sm" style={{ color: colors.text.tertiary }}>
-              Since: {formatDateLong(partnerLink.relationship_start_date)}
-              {daysTogether !== null && (
-                <span className="font-semibold ml-1">
-                  • {daysTogether} days together
-                </span>
-              )}
-            </p>
-          )}
         </div>
       </div>
+      {partnerLink.relationship_start_date && daysTogether !== null && (
+        <div
+          className="text-xs font-semibold px-2 py-1 rounded-full"
+          style={{
+            background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
+            color: '#FFFFFF',
+          }}
+        >
+          {daysTogether} days
+        </div>
+      )}
     </div>
   );
 };
