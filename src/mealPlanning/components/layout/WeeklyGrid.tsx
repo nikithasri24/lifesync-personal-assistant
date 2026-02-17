@@ -28,7 +28,7 @@ const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack'];
 const MEAL_TYPE_CONFIG = {
   breakfast: { icon: Coffee, gradient: 'from-amber-400 to-orange-500' },
   lunch: { icon: Sun, gradient: 'from-emerald-400 to-teal-500' },
-  dinner: { icon: Moon, gradient: 'from-indigo-400 to-purple-500' },
+  dinner: { icon: Moon, gradient: 'from-[#D4A574] to-[#C18B5E]' },
   snack: { icon: Cookie, gradient: 'from-pink-400 to-rose-500' },
 };
 
@@ -149,11 +149,11 @@ export function WeeklyGrid({
             <div
               key={key}
               className={`rounded-lg border-2 overflow-hidden ${
-                isToday ? 'border-indigo-400 bg-indigo-50/20' : 'border-slate-200 bg-white'
+                isToday ? 'border-[#D4A574] bg-[#F5EBE0]/20' : 'border-slate-200 bg-white'
               }`}
             >
               {/* Day header */}
-              <div className={`p-4 border-b ${isToday ? 'bg-indigo-100/50 border-indigo-200' : 'bg-slate-50 border-slate-200'}`}>
+              <div className={`p-4 border-b ${isToday ? 'bg-[#F5EBE0]/50 border-[#E5B88A]' : 'bg-slate-50 border-slate-200'}`}>
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="text-lg font-bold text-slate-900">
@@ -164,7 +164,7 @@ export function WeeklyGrid({
                     </div>
                   </div>
                   {isToday && (
-                    <div className="px-3 py-1 bg-indigo-600 text-white text-xs font-semibold rounded-full">
+                    <div className="px-3 py-1 bg-[#C18B5E] text-white text-xs font-semibold rounded-full">
                       Today
                     </div>
                   )}
@@ -185,7 +185,7 @@ export function WeeklyGrid({
                       key={`${key}-${mealType}`}
                       className={`p-4 cursor-pointer transition-all ${
                         isSelected
-                          ? 'bg-indigo-50 ring-2 ring-inset ring-indigo-400'
+                          ? 'bg-[#F5EBE0] ring-2 ring-inset ring-[#D4A574]'
                           : 'hover:bg-slate-50'
                       }`}
                       onClick={(e) => onCellClick(key, mealType, e)}
@@ -330,13 +330,13 @@ export function WeeklyGrid({
               <tr
                 key={key}
                 className={`border-b border-slate-200 ${
-                  isToday ? 'bg-indigo-50/20' : ''
+                  isToday ? 'bg-[#F5EBE0]/20' : ''
                 }`}
               >
                 {/* Date column */}
                 <td
                   className={`sticky left-0 z-10 border-r-2 border-slate-200 p-4 font-medium ${
-                    isToday ? 'bg-indigo-100/30' : 'bg-slate-50/50'
+                    isToday ? 'bg-[#F5EBE0]/30' : 'bg-slate-50/50'
                   }`}
                 >
                   <div className="text-sm font-bold text-slate-900">
@@ -346,7 +346,7 @@ export function WeeklyGrid({
                     {format(d, 'MMM d')}
                   </div>
                   {isToday && (
-                    <div className="text-xs font-semibold text-indigo-600 mt-1">
+                    <div className="text-xs font-semibold text-[#C18B5E] mt-1">
                       Today
                     </div>
                   )}
@@ -367,7 +367,7 @@ export function WeeklyGrid({
                       key={`${key}-${mealType}`}
                       className={`p-3 align-top cursor-pointer transition-all relative ${
                         isSelected
-                          ? 'ring-4 ring-inset ring-indigo-400 bg-indigo-50/30'
+                          ? 'ring-4 ring-inset ring-[#D4A574] bg-[#F5EBE0]/30'
                           : 'hover:bg-slate-100/50'
                       }`}
                       onClick={(e) => onCellClick(key, mealType, e)}
@@ -488,7 +488,7 @@ export function WeeklyGrid({
                         })();
                       }}
                     >
-                      {highlight && <div className="absolute inset-y-0 left-0 w-1 bg-indigo-500" aria-hidden />}
+                      {highlight && <div className="absolute inset-y-0 left-0 w-1 bg-[#C18B5E]" aria-hidden />}
                       <div
                         className="min-h-[100px] group/cell relative"
                         style={{ overflow: 'visible' }}

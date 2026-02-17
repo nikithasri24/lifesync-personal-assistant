@@ -96,7 +96,7 @@ export function DistributeView({
                   onClick={() => onStrategyChange(strategy.value as DistributionStrategy)}
                   className={`p-3 border-2 rounded-lg text-center transition-all ${
                     distributionStrategy === strategy.value
-                      ? 'border-blue-500 bg-blue-50 text-blue-700'
+                      ? 'border-[#C18B5E] bg-[#F5EBE0] text-[#8B6F47]'
                       : 'border-gray-200 hover:border-gray-300 text-gray-700'
                   }`}
                 >

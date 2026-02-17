@@ -40,7 +40,7 @@ export function ShoppingHeader({
             disabled={isScanning}
             className={`btn-secondary flex items-center space-x-2 ${isScanning ? 'opacity-50' : ''}`}
           >
-            <Scan size={16} className={isScanning ? 'text-blue-500' : ''} />
+            <Scan size={16} className={isScanning ? 'text-[#C18B5E]' : ''} />
             <span>{isScanning ? 'Scanning...' : 'Scan Barcode'}</span>
           </button>
           <button
@@ -64,9 +64,9 @@ export function ShoppingHeader({
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-blue-50 rounded-lg p-4">
+        <div className="bg-[#F5EBE0] rounded-lg p-4">
           <div className="flex items-center">
-            <ShoppingBag className="h-8 w-8 text-blue-600" />
+            <ShoppingBag className="h-8 w-8 text-[#C18B5E]" />
             <div className="ml-3">
               <p className="text-sm font-medium text-black">Master List</p>
               <p className="text-lg font-semibold text-black">{totalMasterItems} items</p>

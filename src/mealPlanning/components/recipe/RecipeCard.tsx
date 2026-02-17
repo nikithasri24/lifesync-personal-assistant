@@ -85,7 +85,7 @@ export const RecipeCard = React.memo<RecipeCardProps>(function RecipeCard({ reci
       role="listitem"
     >
       {/* Image or Gradient Fallback */}
-      <div className="relative h-40 overflow-hidden bg-gradient-to-br from-indigo-500 to-purple-600">
+      <div className="relative h-40 overflow-hidden bg-gradient-to-br from-[#D4A574] to-[#C18B5E]">
         {recipe.image ? (
           <img
             src={recipe.image}
@@ -150,7 +150,7 @@ export const RecipeCard = React.memo<RecipeCardProps>(function RecipeCard({ reci
             {displayTags.map((tag) => (
               <span
                 key={tag}
-                className="px-2 py-0.5 bg-indigo-50 text-indigo-700 text-xs rounded-full"
+                className="px-2 py-0.5 bg-[#F5EBE0] text-[#8B6F47] text-xs rounded-full"
               >
                 {tag}
               </span>
@@ -171,7 +171,7 @@ export const RecipeCard = React.memo<RecipeCardProps>(function RecipeCard({ reci
               target="_blank"
               rel="noreferrer"
               onClick={handleSourceClick}
-              className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-700 hover:underline"
+              className="inline-flex items-center gap-1 text-xs text-[#C18B5E] hover:text-[#8B6F47] hover:underline"
             >
               <ExternalLink className="w-3 h-3" />
               {extractDomain(recipe.sourceUrl)}

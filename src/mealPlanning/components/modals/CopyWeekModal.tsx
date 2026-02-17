@@ -78,7 +78,7 @@ export function CopyWeekModal({
             type="button"
             disabled={mealCount === 0}
             onClick={() => void onCopy()}
-            className="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-md bg-[#C18B5E] px-4 py-2 text-sm font-medium text-white hover:bg-[#B5795A] disabled:opacity-50"
           >
             Copy {mealCount} Meal{mealCount !== 1 ? 's' : ''}
           </button>

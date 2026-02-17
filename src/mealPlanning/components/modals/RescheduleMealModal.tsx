@@ -116,7 +116,7 @@ export function RescheduleMealModal({
                 onClick={() => setSelectedMealType(type.value)}
                 className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                   selectedMealType === type.value
-                    ? 'bg-indigo-600 text-white'
+                    ? 'bg-[#C18B5E] text-white'
                     : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                 }`}
               >
@@ -139,7 +139,7 @@ export function RescheduleMealModal({
             type="button"
             onClick={() => void handleReschedule()}
             disabled={isRescheduling}
-            className="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-md bg-[#C18B5E] px-4 py-2 text-sm font-medium text-white hover:bg-[#B5795A] disabled:opacity-50"
           >
             {isRescheduling ? 'Rescheduling...' : 'Reschedule Meal'}
           </button>

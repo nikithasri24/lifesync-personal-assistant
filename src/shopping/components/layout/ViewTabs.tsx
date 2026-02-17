@@ -22,7 +22,7 @@ export function ViewTabs({ activeView, totalMasterItems, storeListsCount, onView
             onClick={() => onViewChange('master')}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               activeView === 'master'
-                ? 'bg-blue-100 text-blue-700'
+                ? 'bg-[#F5EBE0] text-[#8B6F47]'
                 : 'text-black hover:bg-gray-100'
             }`}
           >
@@ -38,7 +38,7 @@ export function ViewTabs({ activeView, totalMasterItems, storeListsCount, onView
             onClick={() => onViewChange('distribute')}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               activeView === 'distribute'
-                ? 'bg-blue-100 text-blue-700'
+                ? 'bg-[#F5EBE0] text-[#8B6F47]'
                 : 'text-black hover:bg-gray-100'
             }`}
           >
@@ -51,7 +51,7 @@ export function ViewTabs({ activeView, totalMasterItems, storeListsCount, onView
             onClick={() => onViewChange('stores')}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               activeView === 'stores'
-                ? 'bg-blue-100 text-blue-700'
+                ? 'bg-[#F5EBE0] text-[#8B6F47]'
                 : 'text-black hover:bg-gray-100'
             }`}
           >
@@ -67,7 +67,7 @@ export function ViewTabs({ activeView, totalMasterItems, storeListsCount, onView
             onClick={() => onViewChange('pantry')}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               activeView === 'pantry'
-                ? 'bg-blue-100 text-blue-700'
+                ? 'bg-[#F5EBE0] text-[#8B6F47]'
                 : 'text-black hover:bg-gray-100'
             }`}
           >

@@ -302,7 +302,7 @@ const ProductsLibrary: React.FC<ProductsLibraryProps> = ({
       {products.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
           <div className="text-center">
-            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{products.length}</p>
+            <p className="text-2xl font-bold text-[#C18B5E] dark:text-[#E5B88A]">{products.length}</p>
             <p className="text-xs text-gray-600 dark:text-gray-400">Total Products</p>
           </div>
           <div className="text-center">

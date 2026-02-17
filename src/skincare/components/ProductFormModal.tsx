@@ -112,7 +112,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
               type="text"
               value={formData.name}
               onChange={e => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#E5B88A] focus:border-[#C18B5E] bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               placeholder="e.g., CeraVe Hydrating Cleanser"
               required
             />
@@ -127,7 +127,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
               type="text"
               value={formData.brand}
               onChange={e => setFormData({ ...formData, brand: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#E5B88A] focus:border-[#C18B5E] bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               placeholder="e.g., CeraVe"
             />
           </div>
@@ -141,7 +141,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
               <select
                 value={formData.category}
                 onChange={e => setFormData({ ...formData, category: e.target.value as ProductCategory })}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#E5B88A] focus:border-[#C18B5E] bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 required
               >
                 {categories.map(cat => (
@@ -160,7 +160,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
                 type="text"
                 value={formData.productType}
                 onChange={e => setFormData({ ...formData, productType: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#E5B88A] focus:border-[#C18B5E] bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 placeholder="e.g., gel, cream, foam"
               />
             </div>
@@ -182,7 +182,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
                       ? time === 'AM'
                         ? 'bg-amber-100 dark:bg-amber-900/50 border-amber-600 text-amber-700 dark:text-amber-300'
                         : time === 'PM'
-                        ? 'bg-indigo-100 dark:bg-indigo-900/50 border-indigo-600 text-indigo-700 dark:text-indigo-300'
+                        ? 'bg-[#F5EBE0] dark:bg-[#8B6F47]/50 border-[#C18B5E] text-[#8B6F47] dark:text-[#E5B88A]'
                         : 'bg-purple-100 dark:bg-purple-900/50 border-purple-600 text-purple-700 dark:text-purple-300'
                       : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
                   }`}
@@ -208,7 +208,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
                   const numericValue = value ? Number(value) : undefined;
                   setFormData({ ...formData, price: numericValue });
                 }}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#E5B88A] focus:border-[#C18B5E] bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 placeholder="19.99"
               />
             </div>
@@ -221,7 +221,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
                 type="text"
                 value={formData.size ?? ''}
                 onChange={e => setFormData({ ...formData, size: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#E5B88A] focus:border-[#C18B5E] bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 placeholder="e.g., 50ml, 1oz"
               />
             </div>
@@ -266,7 +266,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
               id="currentlyUsing"
               checked={formData.currentlyUsing}
               onChange={e => setFormData({ ...formData, currentlyUsing: e.target.checked })}
-              className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+              className="w-4 h-4 text-[#C18B5E] rounded focus:ring-2 focus:ring-[#E5B88A]"
             />
             <label htmlFor="currentlyUsing" className="text-sm font-medium text-gray-700 dark:text-gray-300">
               Currently using this product
@@ -282,7 +282,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
               value={formData.notes}
               onChange={e => setFormData({ ...formData, notes: e.target.value })}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#E5B88A] focus:border-[#C18B5E] bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               placeholder="Any observations, how it makes your skin feel, etc."
             />
           </div>
@@ -298,7 +298,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
             </button>
             <button
               type="submit"
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-[#C18B5E] text-white rounded-lg hover:bg-[#B5795A] transition-colors"
             >
               <Save className="h-5 w-5" />
               {product ? 'Update' : 'Add'} Product

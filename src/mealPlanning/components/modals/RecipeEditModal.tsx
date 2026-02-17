@@ -109,7 +109,7 @@ export function RecipeEditModal({ recipe, onClose }: RecipeEditModalProps): Reac
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" onClick={onClose}>
       <div
         style={{ height: '350px' }}
-        className="w-full max-w-2xl rounded-xl border-4 border-indigo-500/30 bg-white shadow-[0_20px_60px_rgba(0,0,0,0.5)] ring-4 ring-white flex flex-col overflow-hidden"
+        className="w-full max-w-2xl rounded-xl border-4 border-[#C18B5E]/30 bg-white shadow-[0_20px_60px_rgba(0,0,0,0.5)] ring-4 ring-white flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between p-3 border-b border-slate-200 flex-shrink-0">
@@ -148,7 +148,7 @@ export function RecipeEditModal({ recipe, onClose }: RecipeEditModalProps): Reac
                 <input
                   value={form.name}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((s) => ({ ...s, name: e.target.value }))}
-                  className="rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-indigo-500 focus:outline-none"
+                  className="rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-[#C18B5E] focus:outline-none"
                 />
               </label>
               <label className="flex flex-col gap-1 text-sm">
@@ -156,7 +156,7 @@ export function RecipeEditModal({ recipe, onClose }: RecipeEditModalProps): Reac
                 <select
                   value={form.difficulty}
                   onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm((s) => ({ ...s, difficulty: e.target.value as 'easy' | 'medium' | 'hard' }))}
-                  className="rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-indigo-500 focus:outline-none"
+                  className="rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-[#C18B5E] focus:outline-none"
                 >
                   <option value="easy">easy</option>
                   <option value="medium">medium</option>
@@ -170,7 +170,7 @@ export function RecipeEditModal({ recipe, onClose }: RecipeEditModalProps): Reac
                 rows={2}
                 value={form.description}
                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setForm((s) => ({ ...s, description: e.target.value }))}
-                className="rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-indigo-500 focus:outline-none"
+                className="rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-[#C18B5E] focus:outline-none"
               />
             </label>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -181,7 +181,7 @@ export function RecipeEditModal({ recipe, onClose }: RecipeEditModalProps): Reac
                   min={1}
                   value={form.servings}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((s) => ({ ...s, servings: e.target.value }))}
-                  className="rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-indigo-500 focus:outline-none"
+                  className="rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-[#C18B5E] focus:outline-none"
                 />
               </label>
               <label className="flex flex-col gap-1 text-sm">
@@ -191,7 +191,7 @@ export function RecipeEditModal({ recipe, onClose }: RecipeEditModalProps): Reac
                   min={0}
                   value={form.prepTime}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((s) => ({ ...s, prepTime: e.target.value }))}
-                  className="rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-indigo-500 focus:outline-none"
+                  className="rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-[#C18B5E] focus:outline-none"
                 />
               </label>
               <label className="flex flex-col gap-1 text-sm">
@@ -201,7 +201,7 @@ export function RecipeEditModal({ recipe, onClose }: RecipeEditModalProps): Reac
                   min={0}
                   value={form.cookTime}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((s) => ({ ...s, cookTime: e.target.value }))}
-                  className="rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-indigo-500 focus:outline-none"
+                  className="rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-[#C18B5E] focus:outline-none"
                 />
               </label>
             </div>
@@ -210,7 +210,7 @@ export function RecipeEditModal({ recipe, onClose }: RecipeEditModalProps): Reac
               <input
                 value={form.tags}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((s) => ({ ...s, tags: e.target.value }))}
-                className="rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-indigo-500 focus:outline-none"
+                className="rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-[#C18B5E] focus:outline-none"
                 placeholder="e.g. meal:breakfast, quick, vegetarian"
               />
             </label>
@@ -220,7 +220,7 @@ export function RecipeEditModal({ recipe, onClose }: RecipeEditModalProps): Reac
                 rows={6}
                 value={form.ingredients}
                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setForm((s) => ({ ...s, ingredients: e.target.value }))}
-                className="rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-indigo-500 focus:outline-none"
+                className="rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-[#C18B5E] focus:outline-none"
                 placeholder="2 cups flour&#10;1 tsp salt&#10;3 eggs"
               />
             </label>
@@ -230,7 +230,7 @@ export function RecipeEditModal({ recipe, onClose }: RecipeEditModalProps): Reac
                 rows={6}
                 value={form.instructions}
                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setForm((s) => ({ ...s, instructions: e.target.value }))}
-                className="rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-indigo-500 focus:outline-none"
+                className="rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-[#C18B5E] focus:outline-none"
               />
             </label>
             <div className="mt-2 flex items-center justify-end gap-2 border-t border-slate-200 pt-3">

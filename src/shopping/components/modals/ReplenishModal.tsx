@@ -32,7 +32,7 @@ export function ReplenishModal({
         className="w-28 rounded border border-gray-300 px-2 py-1"
       />
       <button
-        className="px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-500"
+        className="px-3 py-1 rounded bg-[#C18B5E] text-white hover:bg-[#B5795A]"
         onClick={() => void handleReplenish()}
       >
         Go

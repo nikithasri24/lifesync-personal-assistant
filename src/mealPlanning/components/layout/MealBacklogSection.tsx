@@ -103,10 +103,10 @@ export function MealBacklogSection({ postponedMeals, recipes, isMerged = false, 
                     peopleCount: item.peopleCount,
                   }));
                 }}
-                className="flex items-center gap-3 p-3 bg-indigo-50 border border-indigo-200 rounded-md hover:border-indigo-300 hover:shadow-sm transition-all group cursor-move"
+                className="flex items-center gap-3 p-3 bg-[#F5EBE0] border border-[#E5B88A] rounded-md hover:border-[#D4A574] hover:shadow-sm transition-all group cursor-move"
               >
                 {/* Shared Badge */}
-                <div className="flex items-center gap-1 px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-full text-xs font-medium">
+                <div className="flex items-center gap-1 px-2 py-0.5 bg-[#F5EBE0] text-[#8B6F47] rounded-full text-xs font-medium">
                   <Users className="w-3 h-3" />
                   <span>Shared</span>
                 </div>
@@ -122,7 +122,7 @@ export function MealBacklogSection({ postponedMeals, recipes, isMerged = false, 
                       </span>
                     )}
                     {item.reason && (
-                      <span className="text-indigo-600">• {item.reason}</span>
+                      <span className="text-[#C18B5E]">• {item.reason}</span>
                     )}
                     {calories && (
                       <span>• {calories} cal</span>
@@ -186,7 +186,7 @@ export function MealBacklogSection({ postponedMeals, recipes, isMerged = false, 
                     type="button"
                     onClick={() => onReschedule?.(meal)}
                     disabled={!onReschedule}
-                    className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    className="p-1.5 text-slate-400 hover:text-[#C18B5E] hover:bg-indigo-50 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                     title="Reschedule to another day"
                   >
                     <Calendar className="w-4 h-4" />

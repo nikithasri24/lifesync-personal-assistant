@@ -48,7 +48,7 @@ export function WeeklyOverviewSection({
   return (
     <section className="rounded-lg border border-slate-200 p-6 order-1">
       <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900 mb-4">
-        <CalendarDays className="h-5 w-5 text-indigo-600" />
+        <CalendarDays className="h-5 w-5 text-[#C18B5E]" />
         Weekly overview
       </h2>
 

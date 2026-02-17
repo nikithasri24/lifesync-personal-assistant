@@ -147,7 +147,7 @@ export function PantryTable({
                     {editingItemId === item.id ? (
                       <div className="flex items-center gap-2">
                         <button
-                          className="px-2 py-1 text-xs rounded bg-blue-600 text-white hover:bg-blue-500"
+                          className="px-2 py-1 text-xs rounded bg-[#C18B5E] text-white hover:bg-[#B5795A]"
                           onClick={() => onSaveEdit(item.id)}
                         >
                           Save

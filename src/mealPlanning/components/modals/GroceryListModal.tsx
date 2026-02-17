@@ -87,9 +87,9 @@ export function GroceryListModal({
             <div className="text-2xl font-bold text-green-700">{atHomeItems.length}</div>
             <div className="text-xs text-green-600">At Home</div>
           </div>
-          <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-3 text-center">
-            <div className="text-2xl font-bold text-indigo-700">{inCartItems.length}</div>
-            <div className="text-xs text-indigo-600">In Cart</div>
+          <div className="rounded-lg border border-[#E5B88A] bg-[#F5EBE0] p-3 text-center">
+            <div className="text-2xl font-bold text-[#8B6F47]">{inCartItems.length}</div>
+            <div className="text-xs text-[#C18B5E]">In Cart</div>
           </div>
           <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-center">
             <div className="text-2xl font-bold text-gray-600">{purchasedItems.length}</div>
@@ -126,7 +126,7 @@ export function GroceryListModal({
                     <button
                       type="button"
                       onClick={() => updateItemStatus(item.id, 'in_cart')}
-                      className="rounded px-2 py-1 text-xs font-medium bg-indigo-100 text-indigo-700 hover:bg-indigo-200"
+                      className="rounded px-2 py-1 text-xs font-medium bg-[#F5EBE0] text-[#8B6F47] hover:bg-[#F9F3ED]"
                       aria-label={`Add ${item.name} to cart`}
                       title="Add to cart"
                     >
@@ -144,7 +144,7 @@ export function GroceryListModal({
                 items={inCartItems}
                 getStatusColor={getStatusColor}
                 updateItemStatus={updateItemStatus}
-                titleColor="text-indigo-700"
+                titleColor="text-[#8B6F47]"
                 actions={(item) => (
                   <>
                     <button
@@ -212,7 +212,7 @@ export function GroceryListModal({
         <div className="flex items-center justify-between">
           <div className="text-sm text-slate-600">
             <span className="font-medium">{groceryList.length}</span> total items •
-            <span className="font-medium text-indigo-600"> {inCartItems.length}</span> in cart
+            <span className="font-medium text-[#C18B5E]"> {inCartItems.length}</span> in cart
           </div>
           <div className="flex gap-2">
             <button
@@ -247,7 +247,7 @@ export function GroceryListModal({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
+              className="rounded-md bg-[#C18B5E] px-4 py-2 text-sm font-medium text-white hover:bg-[#B5795A]"
               aria-label="Close grocery list modal"
             >
               Done

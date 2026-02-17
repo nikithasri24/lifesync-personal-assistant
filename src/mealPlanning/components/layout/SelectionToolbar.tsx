@@ -52,7 +52,7 @@ function MultiCellDropdown({
       {matches.length === 0 ? (
         <button
           type="button"
-          className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-slate-700 hover:bg-indigo-50 transition-colors first:rounded-t-lg last:rounded-b-lg"
+          className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-slate-700 hover:bg-[#F5EBE0] transition-colors first:rounded-t-lg last:rounded-b-lg"
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => {
             void onAddMeal('', query.trim()).then(() => {
@@ -60,7 +60,7 @@ function MultiCellDropdown({
             });
           }}
         >
-          <span className="flex h-6 w-6 items-center justify-center rounded-md bg-indigo-100 text-xs font-semibold text-indigo-700">
+          <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[#F5EBE0] text-xs font-semibold text-[#8B6F47]">
             +
           </span>
           <div className="flex-1 min-w-0">
@@ -79,7 +79,7 @@ function MultiCellDropdown({
                 key={`${r.id}-${idx}`}
                 type="button"
                 className={`flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors ${
-                  isSelected ? 'bg-indigo-50 text-indigo-900' : 'text-slate-700 hover:bg-slate-50'
+                  isSelected ? 'bg-[#F5EBE0] text-[#8B6F47]' : 'text-slate-700 hover:bg-slate-50'
                 }`}
                 onMouseDown={(e) => e.preventDefault()}
                 onMouseEnter={() => onIndexChange(idx)}
@@ -134,18 +134,18 @@ export function SelectionToolbar({
   onClearSelection,
 }: SelectionToolbarProps): ReactElement {
   return (
-    <section className="rounded-lg border-2 border-indigo-500 bg-indigo-50 p-3 sm:p-4 shadow-lg animate-in slide-in-from-top">
+    <section className="rounded-lg border-2 border-[#C18B5E] bg-[#F5EBE0] p-3 sm:p-4 shadow-lg animate-in slide-in-from-top">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-600 text-white font-semibold text-sm">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#C18B5E] text-white font-semibold text-sm">
               {selectedCount}
             </div>
-            <span className="text-sm font-medium text-indigo-900">
+            <span className="text-sm font-medium text-[#8B6F47]">
               {selectedCount} cell{selectedCount > 1 ? 's' : ''} selected
             </span>
           </div>
-          <span className="text-xs text-indigo-600">
+          <span className="text-xs text-[#C18B5E]">
             <span className="hidden sm:inline">Cmd/Ctrl + click to select more cells</span>
             <span className="sm:hidden">Tap cells to select</span>
           </span>
@@ -165,7 +165,7 @@ export function SelectionToolbar({
               onKeyDown={onKeyDown}
               placeholder="Type meal name..."
               aria-label="Search meals to add to selected cells"
-              className="w-full rounded-md border border-indigo-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full rounded-md border border-[#E5B88A] px-3 py-2 text-sm focus:border-[#C18B5E] focus:outline-none focus:ring-2 focus:ring-[#E5B88A]"
             />
             {showList &&
               query.trim().length > 0 &&
@@ -195,7 +195,7 @@ export function SelectionToolbar({
           <button
             type="button"
             onClick={onClearSelection}
-            className="rounded-md border border-indigo-300 px-4 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-100 transition"
+            className="rounded-md border border-[#E5B88A] px-4 py-2 text-sm font-medium text-[#8B6F47] hover:bg-[#F5EBE0] transition"
           >
             Clear Selection
           </button>

@@ -15,7 +15,7 @@ const RecipeViewModal = lazy(() => import('../modals/RecipeViewModal').then(m =>
 const ModalLoadingFallback = () => (
   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
     <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-xl">
-      <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto" />
+      <div className="animate-spin h-8 w-8 border-4 border-[#C18B5E] border-t-transparent rounded-full mx-auto" />
       <p className="mt-3 text-sm text-gray-600 dark:text-gray-300">Loading...</p>
     </div>
   </div>

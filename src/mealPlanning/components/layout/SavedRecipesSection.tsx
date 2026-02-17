@@ -131,7 +131,7 @@ export function SavedRecipesSection({
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Search recipes by name, tags, cuisine, or difficulty..."
-            className="w-full pl-10 pr-10 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            className="w-full pl-10 pr-10 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E5B88A] focus:border-transparent"
           />
           {searchQuery && (
             <button

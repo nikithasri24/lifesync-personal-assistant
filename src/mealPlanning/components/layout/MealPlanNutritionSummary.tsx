@@ -247,7 +247,7 @@ export function MealPlanNutritionSummary({
             target={dailyTargets.carbs}
             unit="g"
             color="#3b82f6"
-            icon={<Wheat className="w-4 h-4 text-blue-500" />}
+            icon={<Wheat className="w-4 h-4 text-[#C18B5E]" />}
           />
           <MacroProgressBar
             label="Fat"

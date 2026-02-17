@@ -147,7 +147,7 @@ export function RecipeViewModal({ recipe, onClose, onEdit }: RecipeViewModalProp
                 step={0.25}
                 value={servingsView}
                 onChange={(e) => setServingsView(Math.max(0.25, Number(e.target.value) || recipe.servings || 1))}
-                className="w-20 rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-indigo-500 focus:outline-none"
+                className="w-20 rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-[#C18B5E] focus:outline-none"
               />
             </div>
           </div>

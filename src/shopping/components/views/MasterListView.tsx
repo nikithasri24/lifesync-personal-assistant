@@ -6,7 +6,7 @@
 
 import React, { useState } from 'react';
 import type { ShoppingItem, Store } from '../../types';
-import { MasterItemCard } from '../items/MasterItemCard';
+import { ShoppingItemCardV2 } from '../v2/ShoppingItemCardV2';
 import { useThemeColors } from '../../../hooks/useThemeColors';
 
 interface MasterListViewProps {
@@ -118,29 +118,21 @@ export function MasterListView({
 
       {/* List Container - Responsive margins and padding */}
       <div
-        className="mx-6 mb-24 lg:mx-0 lg:mb-8 rounded-2xl overflow-hidden"
+        className="mx-5 mb-24 lg:mx-0 lg:mb-8 rounded-2xl overflow-hidden"
         style={{
           backgroundColor: colors.bg.white,
           boxShadow: '0 2px 8px rgba(139, 111, 71, 0.08)',
         }}
       >
         {filteredItems.length > 0 ? (
-          filteredItems.map((item, index) => (
-            <div
+          filteredItems.map((item) => (
+            <ShoppingItemCardV2
               key={item.id}
-              style={{
-                borderBottom: index === filteredItems.length - 1 ? 'none' : `1px solid ${colors.bg.secondary}`,
-              }}
-            >
-              <MasterItemCard
-                item={item}
-                stores={stores}
-                onToggle={() => onToggleItem(item.id)}
-                onEdit={() => onEditItem(item)}
-                onRequestDelete={() => onRequestDeleteItem(item.id)}
-                onFindStores={() => onFindStores(item)}
-              />
-            </div>
+              item={item}
+              stores={stores}
+              onToggle={() => onToggleItem(item.id)}
+              onEdit={() => onEditItem(item)}
+            />
           ))
         ) : (
           <div className="text-center py-12" style={{ color: colors.text.tertiary }}>

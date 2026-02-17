@@ -65,7 +65,7 @@ export const MealPlanToolbar: React.FC<MealPlanToolbarProps> = ({
         <button
           type="button"
           onClick={onCopyWeek}
-          className="rounded-full border border-indigo-200 bg-indigo-50 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-indigo-700 transition hover:bg-indigo-100"
+          className="rounded-full border border-[#E5B88A] bg-[#F5EBE0] px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-[#8B6F47] transition hover:bg-[#F9F3ED]"
           title="Copy this week's meals to another week"
         >
           <span className="hidden sm:inline">Copy Week</span>
