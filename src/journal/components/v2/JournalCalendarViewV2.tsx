@@ -1,44 +1,37 @@
 /**
  * JournalCalendarViewV2 Component
- * Monthly calendar with entry indicators
- * Click day to filter entries
+ * Monthly calendar with entry indicators matching design spec
+ * Clean, professional calendar with proper styling
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useThemeColors } from '@/hooks/useThemeColors';
-import { motion } from 'framer-motion';
 
 export interface JournalCalendarViewV2Props {
   entries: Array<{ created_at: string }>;
   selectedDate: Date | null;
   onSelectDate: (date: Date | null) => void;
-  currentMonth?: Date;
-  onMonthChange?: (month: Date) => void;
 }
 
 export const JournalCalendarViewV2: React.FC<JournalCalendarViewV2Props> = ({
   entries,
   selectedDate,
   onSelectDate,
-  currentMonth = new Date(),
-  onMonthChange,
 }) => {
   const colors = useThemeColors();
-  const [viewMonth, setViewMonth] = React.useState(currentMonth);
+  const [viewMonth, setViewMonth] = useState(new Date());
 
   const handlePrevMonth = () => {
     const newMonth = new Date(viewMonth);
     newMonth.setMonth(newMonth.getMonth() - 1);
     setViewMonth(newMonth);
-    if (onMonthChange) onMonthChange(newMonth);
   };
 
   const handleNextMonth = () => {
     const newMonth = new Date(viewMonth);
     newMonth.setMonth(newMonth.getMonth() + 1);
     setViewMonth(newMonth);
-    if (onMonthChange) onMonthChange(newMonth);
   };
 
   // Get calendar days for the month
@@ -81,7 +74,7 @@ export const JournalCalendarViewV2: React.FC<JournalCalendarViewV2Props> = ({
       days.push({ date, isCurrentMonth: true, hasEntry, isToday });
     }
 
-    // Add next month days to fill grid
+    // Add next month days to fill grid (always show 6 weeks)
     const remainingDays = 42 - days.length; // 6 rows * 7 days
     for (let day = 1; day <= remainingDays; day++) {
       const date = new Date(year, month + 1, day);
@@ -95,9 +88,9 @@ export const JournalCalendarViewV2: React.FC<JournalCalendarViewV2Props> = ({
 
   return (
     <div
-      className="rounded-2xl p-4 shadow-sm"
+      className="rounded-2xl p-4 mb-6"
       style={{
-        backgroundColor: colors.bg.card,
+        backgroundColor: colors.bg.white,
         boxShadow: '0 2px 12px rgba(92, 74, 58, 0.08)',
       }}
     >
@@ -106,31 +99,29 @@ export const JournalCalendarViewV2: React.FC<JournalCalendarViewV2Props> = ({
         <button
           type="button"
           onClick={handlePrevMonth}
-          className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+          className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors hover:bg-opacity-80"
           style={{
             backgroundColor: 'rgba(212, 165, 116, 0.1)',
-            color: '#C18B5E',
           }}
           aria-label="Previous month"
         >
-          <ChevronLeft className="w-5 h-5" />
+          <ChevronLeft className="w-4 h-4" style={{ color: '#C18B5E' }} />
         </button>
 
-        <h3 className="text-base font-bold" style={{ color: colors.text.primary }}>
+        <h3 className="text-base font-bold" style={{ color: '#5C4A3A' }}>
           {monthLabel}
         </h3>
 
         <button
           type="button"
           onClick={handleNextMonth}
-          className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+          className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors hover:bg-opacity-80"
           style={{
             backgroundColor: 'rgba(212, 165, 116, 0.1)',
-            color: '#C18B5E',
           }}
           aria-label="Next month"
         >
-          <ChevronRight className="w-5 h-5" />
+          <ChevronRight className="w-4 h-4" style={{ color: '#C18B5E' }} />
         </button>
       </div>
 
@@ -140,7 +131,7 @@ export const JournalCalendarViewV2: React.FC<JournalCalendarViewV2Props> = ({
           <div
             key={day}
             className="text-center text-xs font-bold py-2"
-            style={{ color: colors.text.tertiary }}
+            style={{ color: '#9B8B7A' }}
           >
             {day}
           </div>
@@ -154,38 +145,49 @@ export const JournalCalendarViewV2: React.FC<JournalCalendarViewV2Props> = ({
             selectedDate &&
             day.date.getTime() === new Date(selectedDate).setHours(0, 0, 0, 0);
 
+          // Determine background color
+          let backgroundColor = 'transparent';
+          if (day.isToday) {
+            backgroundColor = 'linear-gradient(135deg, rgba(212, 165, 116, 0.2) 0%, rgba(193, 139, 94, 0.2) 100%)';
+          } else if (day.hasEntry && day.isCurrentMonth) {
+            backgroundColor = '#E8DCC8';
+          }
+
+          // Determine text color
+          let textColor = '#5C4A3A';
+          if (day.isToday) {
+            textColor = '#C18B5E';
+          } else if (!day.isCurrentMonth) {
+            textColor = '#D4C5B3';
+          }
+
           return (
-            <motion.button
+            <button
               key={index}
               type="button"
-              onClick={() => onSelectDate(day.date)}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              onClick={() => day.isCurrentMonth && onSelectDate(day.date)}
               className={`
                 aspect-square rounded-lg
                 flex flex-col items-center justify-center
                 text-sm font-semibold
                 transition-all
-                ${!day.isCurrentMonth ? 'opacity-30' : ''}
+                ${day.isCurrentMonth ? 'cursor-pointer hover:opacity-80' : 'cursor-default'}
               `}
               style={{
-                backgroundColor: day.isToday
-                  ? 'rgba(212, 165, 116, 0.2)'
-                  : day.hasEntry
-                  ? colors.bg.tertiary
-                  : 'transparent',
-                color: day.isToday ? '#C18B5E' : colors.text.primary,
+                background: backgroundColor,
+                color: textColor,
                 border: isSelected ? '2px solid #C18B5E' : '2px solid transparent',
               }}
+              disabled={!day.isCurrentMonth}
             >
-              {day.date.getDate()}
-              {day.hasEntry && (
+              <span>{day.date.getDate()}</span>
+              {day.hasEntry && day.isCurrentMonth && (
                 <div
                   className="w-1 h-1 rounded-full mt-0.5"
                   style={{ backgroundColor: '#C18B5E' }}
                 />
               )}
-            </motion.button>
+            </button>
           );
         })}
       </div>

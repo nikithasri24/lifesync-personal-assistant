@@ -404,34 +404,53 @@ export const JournalContainer: React.FC = () => {
             />
 
             {/* Selected Date Entries */}
-            {selectedDate && (
-              <div className="mt-6">
-                <h3 className="text-lg font-bold mb-3" style={{ color: colors.text.primary }}>
-                  {selectedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                </h3>
+            {selectedDate && (() => {
+              const selectedEntries = typedEntries.filter((entry) => {
+                const entryDate = new Date(entry.created_at);
+                entryDate.setHours(0, 0, 0, 0);
+                const selected = new Date(selectedDate);
+                selected.setHours(0, 0, 0, 0);
+                return entryDate.getTime() === selected.getTime();
+              });
 
-                {typedEntries
-                  .filter((entry) => {
-                    const entryDate = new Date(entry.created_at);
-                    entryDate.setHours(0, 0, 0, 0);
-                    const selected = new Date(selectedDate);
-                    selected.setHours(0, 0, 0, 0);
-                    return entryDate.getTime() === selected.getTime();
-                  })
-                  .map((entry) => (
-                    <JournalEntryCardV2
-                      key={entry.id}
-                      id={entry.id}
-                      title={entry.title}
-                      content={entry.content}
-                      tags={entry.tags}
-                      createdAt={entry.created_at}
-                      attachmentCount={entry.attachments?.length || 0}
-                      onClick={() => handleEditEntry(entry)}
-                    />
-                  ))}
-              </div>
-            )}
+              return (
+                <div>
+                  <h3 className="text-lg font-bold mb-4" style={{ color: colors.text.primary }}>
+                    {selectedDate.toLocaleDateString('en-US', {
+                      weekday: 'long',
+                      month: 'long',
+                      day: 'numeric',
+                      year: 'numeric'
+                    })}
+                  </h3>
+
+                  {selectedEntries.length === 0 ? (
+                    <div className="text-center py-12">
+                      <div className="text-5xl mb-3 opacity-50">📅</div>
+                      <p className="text-sm font-semibold mb-1" style={{ color: colors.text.primary }}>
+                        No entries on this date
+                      </p>
+                      <p className="text-xs" style={{ color: colors.text.secondary }}>
+                        Click the + button to create one
+                      </p>
+                    </div>
+                  ) : (
+                    selectedEntries.map((entry) => (
+                      <JournalEntryCardV2
+                        key={entry.id}
+                        id={entry.id}
+                        title={entry.title}
+                        content={entry.content}
+                        tags={entry.tags}
+                        createdAt={entry.created_at}
+                        attachmentCount={entry.attachments?.length || 0}
+                        onClick={() => handleEditEntry(entry)}
+                      />
+                    ))
+                  )}
+                </div>
+              );
+            })()}
           </div>
         )}
 
