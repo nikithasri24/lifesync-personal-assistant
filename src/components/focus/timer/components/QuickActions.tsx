@@ -20,7 +20,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
         onClick={onStart25Min}
         className="p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-600 transition-all group"
       >
-        <Clock className="w-6 h-6 text-indigo-500 mx-auto mb-2 group-hover:scale-110 transition-transform" />
+        <Clock className="w-6 h-6 text-[#C18B5E] mx-auto mb-2 group-hover:scale-110 transition-transform" />
         <div className="text-sm font-medium text-slate-900 dark:text-white">25 min Focus</div>
       </button>
 

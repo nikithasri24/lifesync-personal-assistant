@@ -38,7 +38,7 @@ export function HabitForm({
             value={draft.name}
             onChange={(event) => onDraftChange({ ...draft, name: event.target.value })}
             disabled={isSubmitting}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none disabled:opacity-50"
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[#C18B5E] focus:outline-none disabled:opacity-50"
             placeholder="Morning stretch"
           />
         </label>
@@ -48,7 +48,7 @@ export function HabitForm({
             value={draft.description}
             onChange={(event) => onDraftChange({ ...draft, description: event.target.value })}
             disabled={isSubmitting}
-            className="h-24 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none disabled:opacity-50"
+            className="h-24 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[#C18B5E] focus:outline-none disabled:opacity-50"
             placeholder="Optional details or reminders"
           />
         </label>
@@ -58,7 +58,7 @@ export function HabitForm({
             value={draft.frequency}
             onChange={(event) => onDraftChange({ ...draft, frequency: event.target.value as 'daily' | 'weekly' | 'monthly' })}
             disabled={isSubmitting}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none disabled:opacity-50"
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[#C18B5E] focus:outline-none disabled:opacity-50"
           >
             <option value="daily">Daily</option>
             <option value="weekly">Weekly</option>
@@ -78,7 +78,7 @@ export function HabitForm({
               }
             }}
             disabled={isSubmitting}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none disabled:opacity-50"
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[#C18B5E] focus:outline-none disabled:opacity-50"
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">
@@ -87,7 +87,7 @@ export function HabitForm({
             value={draft.category}
             onChange={(event) => onDraftChange({ ...draft, category: event.target.value })}
             disabled={isSubmitting}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none disabled:opacity-50"
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[#C18B5E] focus:outline-none disabled:opacity-50"
           >
             {CATEGORIES.map((category) => (
               <option key={category} value={category}>
@@ -112,7 +112,7 @@ export function HabitForm({
           type="submit"
           data-testid="habit-add-submit"
           disabled={isSubmitting}
-          className="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-full bg-[#C18B5E] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#B5795A] disabled:opacity-50"
         >
           <Plus className="h-4 w-4" />
           {isSubmitting ? 'Saving...' : 'Save habit'}

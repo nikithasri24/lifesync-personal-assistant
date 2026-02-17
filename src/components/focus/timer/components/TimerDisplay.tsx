@@ -32,7 +32,7 @@ export const TimerDisplay: React.FC<TimerDisplayProps> = ({
           <div className="mb-6">
             <div className="flex items-center justify-center space-x-3 mb-2">
               {timerState.currentSession.type === 'focus' ? (
-                <Brain className="w-6 h-6 text-indigo-500" />
+                <Brain className="w-6 h-6 text-[#C18B5E]" />
               ) : (
                 <Coffee className="w-6 h-6 text-orange-500" />
               )}
@@ -52,7 +52,7 @@ export const TimerDisplay: React.FC<TimerDisplayProps> = ({
         )}
 
         <div className={`text-8xl font-black font-mono mb-6 tracking-wider ${
-          timerState.currentSession?.type === 'focus' ? 'text-indigo-600' : 'text-orange-500'
+          timerState.currentSession?.type === 'focus' ? 'text-[#8B6F47]' : 'text-orange-500'
         }`}>
           {formatTime(timerState.timeRemaining)}
         </div>
@@ -77,7 +77,7 @@ export const TimerDisplay: React.FC<TimerDisplayProps> = ({
                 stroke="currentColor"
                 strokeWidth="8"
                 strokeLinecap="round"
-                className={timerState.currentSession.type === 'focus' ? 'text-indigo-500' : 'text-orange-500'}
+                className={timerState.currentSession.type === 'focus' ? 'text-[#C18B5E]' : 'text-orange-500'}
                 strokeDasharray={`${2 * Math.PI * 50}`}
                 strokeDashoffset={`${2 * Math.PI * 50 * (1 - progress / 100)}`}
                 style={{ transition: 'stroke-dashoffset 1s ease-in-out' }}
@@ -123,7 +123,7 @@ export const TimerDisplay: React.FC<TimerDisplayProps> = ({
               {timerState.template && timerState.sessionIndex < timerState.template.sessions.length - 1 && (
                 <button
                   onClick={onSkipToNext}
-                  className="flex items-center space-x-2 px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-bold transition-all shadow-lg hover:scale-105"
+                  className="flex items-center space-x-2 px-6 py-3 bg-[#C18B5E] hover:bg-[#B5795A] text-white rounded-xl font-bold transition-all shadow-lg hover:scale-105"
                 >
                   <SkipForward size={20} />
                   <span>Skip</span>
@@ -134,7 +134,7 @@ export const TimerDisplay: React.FC<TimerDisplayProps> = ({
             <div className="flex items-center space-x-4">
               <button
                 onClick={onStartFocus}
-                className="flex items-center space-x-2 px-6 py-3 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl font-bold transition-all shadow-lg hover:scale-105"
+                className="flex items-center space-x-2 px-6 py-3 bg-[#C18B5E] hover:bg-[#B5795A] text-white rounded-xl font-bold transition-all shadow-lg hover:scale-105"
               >
                 <Brain size={20} />
                 <span>Quick Focus</span>
