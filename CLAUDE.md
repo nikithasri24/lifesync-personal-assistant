@@ -715,6 +715,228 @@ export function useStoresQuery(filters?: StoreFilters) {
 
 ---
 
+## Hook File Organization
+
+Large hook files with many exports become difficult to maintain and navigate. Follow these guidelines to keep hook files focused and organized.
+
+### When to Split a Hook File
+
+Split a hook file when **ANY** of these conditions are true:
+
+| Criteria | Threshold | Example |
+|----------|-----------|---------|
+| **File Size** | > 400 lines | `useFinanceQuery.ts` (1,165 lines) |
+| **Number of Hooks** | > 10 exported hooks | `useFinanceQuery.ts` (57 hooks) |
+| **Domain Count** | > 3 distinct domains | Finance file handles: Accounts, Transactions, Budgets, Goals, Cards, Loans, Insurance, Retirement (8 domains) |
+| **Section Markers** | > 5 `// ===` sections | Too many logical groupings indicate separation needed |
+
+### How to Split by Domain
+
+**Before: Monolithic File (1,165 lines)**
+
+```typescript
+// src/hooks/useFinanceQuery.ts (BAD - too many responsibilities)
+export function useInstitutions() { /* ... */ }
+export function useAccounts() { /* ... */ }
+export function useTransactions() { /* ... */ }
+export function useInfiniteTransactions() { /* ... */ }
+export function useBudgets() { /* ... */ }
+export function useBudgetTemplates() { /* ... */ }
+export function useCategories() { /* ... */ }
+export function useNetWorth() { /* ... */ }
+export function useGoals() { /* ... */ }
+export function useCardBenefits() { /* ... */ }
+export function useCategoryBonuses() { /* ... */ }
+export function useWelcomeBonuses() { /* ... */ }
+export function useCardOffers() { /* ... */ }
+export function useLoans() { /* ... */ }
+export function useLoanPayments() { /* ... */ }
+export function useInsurancePolicies() { /* ... */ }
+export function useRecurringTransactions() { /* ... */ }
+export function useRetirementAccounts() { /* ... */ }
+// ... 57 total hooks
+```
+
+**After: Domain-Organized Files**
+
+```
+src/finance/hooks/
+├── useFinanceMergedMode.ts         # Merged connection (4 hooks)
+├── useInstitutionsQuery.ts         # Institutions (1 hook)
+├── useAccountsQuery.ts             # Accounts CRUD (3 hooks)
+├── useTransactionsQuery.ts         # Transactions CRUD + infinite (3 hooks)
+├── useBudgetsQuery.ts              # Budgets CRUD (3 hooks)
+├── useBudgetTemplatesQuery.ts      # Budget templates (3 hooks)
+├── useCategoriesQuery.ts           # Categories (1 hook)
+├── useNetWorthQuery.ts             # Net worth tracking (1 hook)
+├── useGoalsQuery.ts                # Financial goals (4 hooks)
+├── useCreditCardsQuery.ts          # Card benefits/bonuses/offers (9 hooks)
+├── useLoansQuery.ts                # Loans + payments (5 hooks)
+├── useInsuranceQuery.ts            # Insurance policies (3 hooks)
+├── useRecurringTxnsQuery.ts        # Recurring transactions (2 hooks)
+├── useRetirementQuery.ts           # Retirement accounts (3 hooks)
+└── index.ts                        # Public exports
+```
+
+Each file now:
+- ✅ < 200 lines
+- ✅ Single domain focus
+- ✅ 1-5 related hooks
+- ✅ Easy to find and maintain
+
+### File Naming Conventions
+
+| Pattern | Use Case | Example |
+|---------|----------|---------|
+| `use<Domain>Query.ts` | Queries for a domain (plural) | `useAccountsQuery.ts` |
+| `use<Resource>Query.ts` | Single resource type | `useNetWorthQuery.ts` |
+| `use<Feature>Modals.ts` | Modal state for feature | `useTaskModals.ts` |
+| `use<Feature>State.ts` | General state management | `useCalendarState.ts` |
+| `use<Utility>.ts` | Reusable utility hook | `useDebounce.ts` |
+
+### Directory Structure by Hook Type
+
+```
+src/
+├── hooks/                          # Shared hooks
+│   ├── state/                      # Generic state hooks
+│   │   ├── useModalState.ts
+│   │   ├── useFormState.ts
+│   │   └── useFilterState.ts
+│   ├── utilities/                  # Utility hooks
+│   │   ├── useDebounce.ts
+│   │   ├── useLocalStorage.ts
+│   │   └── useAsync.ts
+│   └── index.ts                    # Public exports
+│
+├── finance/hooks/                  # Finance-specific hooks
+│   ├── useAccountsQuery.ts
+│   ├── useTransactionsQuery.ts
+│   └── index.ts
+│
+├── shopping/hooks/                 # Shopping-specific hooks
+│   ├── useShoppingItemsQuery.ts
+│   ├── usePantryQuery.ts
+│   ├── useShoppingModals.ts
+│   └── index.ts
+│
+└── todos/hooks/                    # Tasks-specific hooks
+    ├── useTasksQuery.ts
+    ├── useProjectsQuery.ts
+    ├── useTaskModals.ts
+    └── index.ts
+```
+
+### Migration Strategy
+
+When splitting an existing large hook file:
+
+1. **Identify Domains**
+   ```bash
+   # Find section markers to identify logical groups
+   grep "^// ====" src/hooks/useFinanceQuery.ts
+   ```
+
+2. **Create New Files**
+   - One file per domain
+   - Keep related queries and mutations together
+   - Maintain backward compatibility with barrel exports
+
+3. **Update Barrel Export** (`index.ts`)
+   ```typescript
+   // src/finance/hooks/index.ts
+   export * from './useAccountsQuery';
+   export * from './useTransactionsQuery';
+   export * from './useBudgetsQuery';
+   // ... all domain hooks
+   ```
+
+4. **Gradual Migration**
+   - Start with one domain at a time
+   - Update imports incrementally
+   - Test after each domain migration
+
+5. **Maintain Compatibility**
+   ```typescript
+   // Old import (still works via barrel export)
+   import { useAccounts } from '@/hooks/useFinanceQuery';
+
+   // New import (preferred)
+   import { useAccounts } from '@/finance/hooks/useAccountsQuery';
+
+   // Also works (via barrel)
+   import { useAccounts } from '@/finance/hooks';
+   ```
+
+### Real-World Examples
+
+#### ✅ Well-Organized: `useTasksQuery.ts`
+
+**Stats:** 546 lines, 11 hooks (Tasks + Projects)
+
+**Structure:**
+```typescript
+// Single domain focus, reasonable size
+export function useTasks(filters?: TaskFilters) { /* ... */ }
+export function useTask(id: string) { /* ... */ }
+export function useCreateTask() { /* ... */ }
+export function useUpdateTask() { /* ... */ }
+export function useDeleteTask() { /* ... */ }
+export function usePermanentlyDeleteTask() { /* ... */ }
+export function useRestoreTask() { /* ... */ }
+// Related: Projects (same domain)
+export function useProjects(filters?: ProjectFilters) { /* ... */ }
+export function useProject(id: string) { /* ... */ }
+export function useCreateProject() { /* ... */ }
+export function useUpdateProject() { /* ... */ }
+```
+
+**Why It Works:**
+- Single cohesive domain (task management)
+- Projects are closely related to tasks
+- Reasonable size (546 lines)
+- Clear CRUD patterns
+
+#### 🔴 Needs Splitting: `useFinanceQuery.ts`
+
+**Stats:** 1,165 lines, 57 hooks, 21 domains
+
+**Problems:**
+- ❌ Too many unrelated domains (Accounts, Budgets, Cards, Loans, Insurance, Retirement)
+- ❌ File is 2x ideal size
+- ❌ Hard to find specific functionality
+- ❌ Slows down IDE performance
+- ❌ Merge conflicts more likely
+
+**Solution:** Split into 14 domain-focused files (shown above)
+
+### Quick Reference: Split Decision Tree
+
+```
+Is the hook file > 400 lines?
+├─ YES → Split by domain
+└─ NO
+   └─ Does it have > 10 exported hooks?
+      ├─ YES → Split by domain
+      └─ NO
+         └─ Does it handle > 3 domains?
+            ├─ YES → Split by domain
+            └─ NO → Keep as-is ✅
+```
+
+### Benefits of Proper Organization
+
+| Before (Monolithic) | After (Domain-Organized) |
+|---------------------|-------------------------|
+| 1,165 lines in one file | 14 files < 200 lines each |
+| 57 hooks mixed together | 2-5 hooks per file |
+| Hard to find functionality | Clear domain structure |
+| Slow IDE performance | Fast navigation |
+| Frequent merge conflicts | Isolated changes |
+| Unclear responsibility | Single responsibility |
+
+---
+
 ## API Design
 
 ### Supabase API Patterns
