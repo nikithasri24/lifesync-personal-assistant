@@ -54,10 +54,10 @@ export const MessageDetailModal: React.FC<MessageDetailModalProps> = ({
       onClick={handleBackdropClick}
     >
       <div
-        className="w-full lg:max-w-3xl bg-white lg:rounded-3xl rounded-t-3xl overflow-hidden"
+        className="w-full bg-white lg:rounded-3xl rounded-t-3xl overflow-hidden"
         style={{
           maxHeight: '90vh',
-          boxShadow: '0 -8px 32px rgba(0, 0, 0, 0.2)',
+          maxWidth: '600px',
           background: 'linear-gradient(to bottom, #FFFBF7 0%, #FFFFFF 100%)',
         }}
       >

@@ -15,6 +15,8 @@ interface ComposeMessageModalProps {
   onClose: () => void;
 }
 
+const STORAGE_KEY = 'together_compose_message_draft';
+
 export const ComposeMessageModal: React.FC<ComposeMessageModalProps> = ({
   isOpen,
   partnerLink,
@@ -23,12 +25,40 @@ export const ComposeMessageModal: React.FC<ComposeMessageModalProps> = ({
   const { toast } = useToast();
   const { mutate: createMessage, isPending } = useCreatePartnerMessage();
 
-  // Form state
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [revealTrigger, setRevealTrigger] = useState<MessageRevealTrigger>('first_login');
-  const [scheduledDate, setScheduledDate] = useState('');
-  const [scheduledTime, setScheduledTime] = useState('09:00');
+  // Load saved draft from localStorage
+  const loadDraft = () => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (error) {
+      console.error('Failed to load draft:', error);
+    }
+    return null;
+  };
+
+  const savedDraft = loadDraft();
+
+  // Form state - restore from localStorage if available
+  const [title, setTitle] = useState(savedDraft?.title || '');
+  const [content, setContent] = useState(savedDraft?.content || '');
+  const [revealTrigger, setRevealTrigger] = useState<MessageRevealTrigger>(savedDraft?.revealTrigger || 'first_login');
+  const [scheduledDate, setScheduledDate] = useState(savedDraft?.scheduledDate || '');
+  const [scheduledTime, setScheduledTime] = useState(savedDraft?.scheduledTime || '09:00');
+
+  // Auto-save draft to localStorage whenever form changes
+  useEffect(() => {
+    if (title || content) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        title,
+        content,
+        revealTrigger,
+        scheduledDate,
+        scheduledTime,
+      }));
+    }
+  }, [title, content, revealTrigger, scheduledDate, scheduledTime]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -88,6 +118,8 @@ export const ComposeMessageModal: React.FC<ComposeMessageModalProps> = ({
           if (toast) {
             toast('Message created successfully! 💌', 'success');
           }
+          // Clear draft from localStorage
+          localStorage.removeItem(STORAGE_KEY);
           onClose();
           // Reset form
           setTitle('');
@@ -104,6 +136,7 @@ export const ComposeMessageModal: React.FC<ComposeMessageModalProps> = ({
       }
     );
   };
+
 
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
@@ -136,10 +169,10 @@ export const ComposeMessageModal: React.FC<ComposeMessageModalProps> = ({
       onClick={handleBackdropClick}
     >
       <div
-        className="w-full lg:max-w-2xl bg-white lg:rounded-3xl rounded-t-3xl overflow-hidden"
+        className="w-full bg-white lg:rounded-3xl rounded-t-3xl overflow-hidden"
         style={{
           maxHeight: '90vh',
-          boxShadow: '0 -4px 24px rgba(0, 0, 0, 0.15)',
+          maxWidth: '600px',
         }}
       >
         {/* Drag Handle (mobile) */}

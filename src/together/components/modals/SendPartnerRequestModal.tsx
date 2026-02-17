@@ -58,10 +58,10 @@ export const SendPartnerRequestModal: React.FC<SendPartnerRequestModalProps> = (
       onClick={handleBackdropClick}
     >
       <div
-        className="w-full lg:max-w-xl bg-white lg:rounded-3xl rounded-t-3xl overflow-hidden"
+        className="w-full bg-white lg:rounded-3xl rounded-t-3xl overflow-hidden"
         style={{
           maxHeight: '90vh',
-          boxShadow: '0 -4px 24px rgba(0, 0, 0, 0.15)',
+          maxWidth: '600px',
         }}
       >
         {/* Drag Handle (mobile) */}

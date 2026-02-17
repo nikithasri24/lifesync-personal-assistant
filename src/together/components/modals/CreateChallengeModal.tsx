@@ -15,6 +15,8 @@ interface CreateChallengeModalProps {
   onClose: () => void;
 }
 
+const STORAGE_KEY = 'together_create_challenge_draft';
+
 export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
   isOpen,
   partnerLink,
@@ -23,15 +25,44 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
   const { toast } = useToast();
   const { mutate: createChallenge, isPending } = useCreateAchievementReward();
 
-  // Form state
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [targetMetric, setTargetMetric] = useState('');
-  const [targetValue, setTargetValue] = useState('');
-  const [rewardType, setRewardType] = useState<RewardType>('message');
-  const [rewardContent, setRewardContent] = useState('');
-  const [hideReward, setHideReward] = useState(true);
-  const [expiresAt, setExpiresAt] = useState('');
+  // Load saved draft from localStorage
+  const loadDraft = () => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (error) {
+      console.error('Failed to load challenge draft:', error);
+    }
+    return null;
+  };
+
+  const savedDraft = loadDraft();
+
+  // Form state - restore from localStorage if available
+  const [title, setTitle] = useState(savedDraft?.title || '');
+  const [description, setDescription] = useState(savedDraft?.description || '');
+  const [targetMetric, setTargetMetric] = useState(savedDraft?.targetMetric || '');
+  const [targetValue, setTargetValue] = useState(savedDraft?.targetValue || '');
+  const [rewardType, setRewardType] = useState<RewardType>(savedDraft?.rewardType || 'message');
+  const [rewardContent, setRewardContent] = useState(savedDraft?.rewardContent || '');
+  const [hideReward, setHideReward] = useState(savedDraft?.hideReward ?? true);
+  const [expiresAt, setExpiresAt] = useState(savedDraft?.expiresAt || '');
+
+  // Auto-save draft to localStorage whenever form changes
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      title,
+      description,
+      targetMetric,
+      targetValue,
+      rewardType,
+      rewardContent,
+      hideReward,
+      expiresAt,
+    }));
+  }, [title, description, targetMetric, targetValue, rewardType, rewardContent, hideReward, expiresAt]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -85,6 +116,8 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
           if (toast) {
             toast('Challenge created successfully! 🎯', 'success');
           }
+          // Clear draft from localStorage
+          localStorage.removeItem(STORAGE_KEY);
           onClose();
           // Reset form
           setTitle('');
@@ -136,10 +169,10 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
       onClick={handleBackdropClick}
     >
       <div
-        className="w-full lg:max-w-2xl bg-white lg:rounded-3xl rounded-t-3xl overflow-hidden"
+        className="w-full bg-white lg:rounded-3xl rounded-t-3xl overflow-hidden"
         style={{
           maxHeight: '90vh',
-          boxShadow: '0 -4px 24px rgba(0, 0, 0, 0.15)',
+          maxWidth: '600px',
         }}
       >
         {/* Drag Handle (mobile) */}

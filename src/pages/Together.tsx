@@ -44,27 +44,10 @@ const Together: React.FC = () => {
       <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
         {/* Header */}
         <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-3xl font-bold flex items-center gap-3" style={{ color: colors.text.primary }}>
-              <span className="text-4xl">❤️</span>
-              Together
-            </h1>
-            <button
-              className="px-4 py-2 rounded-lg font-semibold text-white transition-colors"
-              style={{
-                background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'linear-gradient(135deg, #C18B5E 0%, #B4794F 100%)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)';
-              }}
-              aria-label="Link partner"
-            >
-              + Link Partner
-            </button>
-          </div>
+          <h1 className="text-3xl font-bold flex items-center gap-3 mb-4" style={{ color: colors.text.primary }}>
+            <span className="text-4xl">❤️</span>
+            Together
+          </h1>
         </div>
 
         {/* Partner Connection Card */}

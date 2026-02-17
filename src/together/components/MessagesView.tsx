@@ -40,6 +40,13 @@ export const MessagesView: React.FC<MessagesViewProps> = ({ partnerLink }) => {
     ? messages.find(m => m.id === viewingMessageId) || null
     : null;
 
+  // Clear viewing message ID if message not found after loading completes
+  useEffect(() => {
+    if (!isLoading && viewingMessageId && !viewingMessage) {
+      setViewingMessageId(null);
+    }
+  }, [isLoading, viewingMessageId, viewingMessage]);
+
   // Save compose state to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_COMPOSE, composeOpen.toString());
@@ -299,8 +306,8 @@ export const MessagesView: React.FC<MessagesViewProps> = ({ partnerLink }) => {
         />
       )}
 
-      {/* Message Detail Modal */}
-      {viewingMessage && (
+      {/* Message Detail Modal - only show if message is loaded */}
+      {viewingMessage && !isLoading && (
         <MessageDetailModal
           isOpen={!!viewingMessage}
           message={viewingMessage}

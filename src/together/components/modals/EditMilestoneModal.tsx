@@ -150,8 +150,8 @@ export const EditMilestoneModal: React.FC<EditMilestoneModalProps> = ({
       onClick={handleBackdropClick}
     >
       <div
-        className="w-full lg:max-w-2xl bg-white lg:rounded-3xl rounded-t-3xl overflow-hidden"
-        style={{ maxHeight: '90vh' }}
+        className="w-full bg-white lg:rounded-3xl rounded-t-3xl overflow-hidden"
+        style={{ maxHeight: '90vh', maxWidth: '600px' }}
       >
         {/* Drag Handle (mobile) */}
         <div className="lg:hidden pt-2">

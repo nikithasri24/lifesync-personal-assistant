@@ -46,7 +46,7 @@ export const MilestoneCard: React.FC<MilestoneCardProps> = ({
   }
 
   const bgColor = isPast ? colors.bg.secondary : colors.bg.white;
-  const countdownColor = isPast ? colors.text.tertiary : '#FF6B9D';
+  const countdownColor = isPast ? colors.text.tertiary : '#D4A574';
 
   return (
     <div

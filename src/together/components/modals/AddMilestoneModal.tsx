@@ -16,6 +16,8 @@ interface AddMilestoneModalProps {
   onClose: () => void;
 }
 
+const STORAGE_KEY = 'together_add_milestone_draft';
+
 export const AddMilestoneModal: React.FC<AddMilestoneModalProps> = ({
   isOpen,
   partnerLink,
@@ -24,21 +26,54 @@ export const AddMilestoneModal: React.FC<AddMilestoneModalProps> = ({
   const { toast } = useToast();
   const { mutate: createMilestone, isPending } = useCreateMilestone();
 
-  // Form state
-  const [milestoneType, setMilestoneType] = useState<MilestoneType>('birthday');
-  const [forWhom, setForWhom] = useState<ForWhom>('partner');
-  const [title, setTitle] = useState('');
-  const [month, setMonth] = useState('1');
-  const [day, setDay] = useState('1');
-  const [year, setYear] = useState('');
-  const [recurring, setRecurring] = useState(true);
-  const [notes, setNotes] = useState('');
+  // Load saved draft from localStorage
+  const loadDraft = () => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (error) {
+      console.error('Failed to load milestone draft:', error);
+    }
+    return null;
+  };
 
-  // Reminders
-  const [reminder30d, setReminder30d] = useState(true);
-  const [reminder7d, setReminder7d] = useState(true);
-  const [reminder1d, setReminder1d] = useState(true);
-  const [reminderDayOf, setReminderDayOf] = useState(true);
+  const savedDraft = loadDraft();
+
+  // Form state - restore from localStorage if available
+  const [milestoneType, setMilestoneType] = useState<MilestoneType>(savedDraft?.milestoneType || 'birthday');
+  const [forWhom, setForWhom] = useState<ForWhom>(savedDraft?.forWhom || 'partner');
+  const [title, setTitle] = useState(savedDraft?.title || '');
+  const [month, setMonth] = useState(savedDraft?.month || '1');
+  const [day, setDay] = useState(savedDraft?.day || '1');
+  const [year, setYear] = useState(savedDraft?.year || '');
+  const [recurring, setRecurring] = useState(savedDraft?.recurring ?? true);
+  const [notes, setNotes] = useState(savedDraft?.notes || '');
+
+  // Reminders - restore from localStorage if available
+  const [reminder30d, setReminder30d] = useState(savedDraft?.reminder30d ?? true);
+  const [reminder7d, setReminder7d] = useState(savedDraft?.reminder7d ?? true);
+  const [reminder1d, setReminder1d] = useState(savedDraft?.reminder1d ?? true);
+  const [reminderDayOf, setReminderDayOf] = useState(savedDraft?.reminderDayOf ?? true);
+
+  // Auto-save draft to localStorage whenever form changes
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      milestoneType,
+      forWhom,
+      title,
+      month,
+      day,
+      year,
+      recurring,
+      notes,
+      reminder30d,
+      reminder7d,
+      reminder1d,
+      reminderDayOf,
+    }));
+  }, [milestoneType, forWhom, title, month, day, year, recurring, notes, reminder30d, reminder7d, reminder1d, reminderDayOf]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -84,6 +119,8 @@ export const AddMilestoneModal: React.FC<AddMilestoneModalProps> = ({
           if (toast) {
             toast('Milestone created successfully!', 'success');
           }
+          // Clear draft from localStorage
+          localStorage.removeItem(STORAGE_KEY);
           onClose();
         },
         onError: (error) => {
@@ -126,8 +163,8 @@ export const AddMilestoneModal: React.FC<AddMilestoneModalProps> = ({
       onClick={handleBackdropClick}
     >
       <div
-        className="w-full lg:max-w-2xl bg-white lg:rounded-3xl rounded-t-3xl overflow-hidden"
-        style={{ maxHeight: '90vh' }}
+        className="w-full bg-white lg:rounded-3xl rounded-t-3xl overflow-hidden"
+        style={{ maxHeight: '90vh', maxWidth: '600px' }}
       >
         {/* Drag Handle (mobile) */}
         <div className="lg:hidden pt-2">
