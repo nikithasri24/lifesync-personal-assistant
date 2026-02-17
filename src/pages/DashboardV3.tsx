@@ -25,7 +25,6 @@ import {
   RecentNotesSectionV2,
   WeeklyOverviewV2,
   UpcomingDeadlinesV2,
-  GamificationWidgetV2,
   MorningBriefingV2,
   SmartSchedulerV2
 } from '../dashboard/components/v2';
@@ -208,10 +207,7 @@ export default function DashboardV3(): ReactElement {
       </button>
 
       {/* Welcome Banner - V2 Design */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <WelcomeBannerV2 />
-        <GamificationWidgetV2 variant="compact" />
-      </div>
+      <WelcomeBannerV2 />
 
       {/* Stats Grid - V2 Design */}
       <StatsGridV2 />

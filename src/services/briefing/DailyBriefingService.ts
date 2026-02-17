@@ -6,7 +6,6 @@
  */
 
 import { cacheAccessor } from '@/lib/cacheAccessor';
-import { getUserGamification } from '@/api/gamificationAPI';
 import { logger } from '@/services/logger';
 import { format, isToday, isBefore, parseISO, differenceInHours } from 'date-fns';
 import { fetchWeather, getWeatherEmoji } from './weatherService';
@@ -76,7 +75,7 @@ export async function generateDailyBriefing(
   const today = format(new Date(), 'yyyy-MM-dd');
 
   // Fetch all data in parallel using cache accessor (benefits from React Query cache)
-  const [allEvents, allTasks, allHabits, habitEntries, gamificationStats, weatherResult] =
+  const [allEvents, allTasks, allHabits, habitEntries, weatherResult] =
     await Promise.all([
       // Calendar events for today
       cacheAccessor.getCalendarEvents(),
@@ -89,9 +88,6 @@ export async function generateDailyBriefing(
 
       // Today's habit entries
       cacheAccessor.getHabitEntriesForDate(today),
-
-      // Gamification stats
-      getUserGamification().catch(() => null),
 
       // Weather (if location available)
       opts.includeWeather && weatherLocation
@@ -194,9 +190,6 @@ export async function generateDailyBriefing(
 
   const streaksAtRisk = habitsToComplete.filter((h) => h.isAtRisk).length;
 
-  // Gamification
-  const gamification = gamificationStats || { total_xp: 0, current_level: 1, current_streak: 0 };
-
   // Generate voice script
   const voiceScript = generateVoiceScript({
     greeting: getGreeting(),
@@ -223,9 +216,6 @@ export async function generateDailyBriefing(
     overdueTasks,
     habitsToComplete,
     streaksAtRisk,
-    currentStreak: gamification.current_streak || 0,
-    xpToday: 0, // Would need to query today's transactions
-    level: gamification.current_level || 1,
     voiceScript,
   };
 }

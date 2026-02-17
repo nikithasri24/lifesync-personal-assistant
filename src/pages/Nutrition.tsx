@@ -3,63 +3,54 @@
  * Food logging with photo upload, AI nutrition analysis, and goal tracking
  */
 
-import React, { useState } from 'react';
-import { Utensils, BarChart3, Settings } from 'lucide-react';
+import React from 'react';
+import { Utensils } from 'lucide-react';
+import { FeatureErrorBoundary } from '../components/FeatureErrorBoundary';
+import { useThemeColors } from '@/hooks/useThemeColors';
+import { SegmentedControl } from '@/components/ui/SegmentedControl';
+import { useNutritionState, type NutritionTabView } from '@/nutrition/hooks/useNutritionState';
 import { NutritionTracker } from '@/components/nutrition/NutritionTracker';
 import { NutritionDashboard } from '@/components/nutrition/NutritionDashboard';
 
-type Tab = 'tracker' | 'dashboard';
-
 const Nutrition: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<Tab>('tracker');
+  const colors = useThemeColors();
+  const { activeTab, setActiveTab } = useNutritionState();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-red-50">
-      <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+    <FeatureErrorBoundary feature="Nutrition">
+      <div
+        style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}
+        data-testid="nutrition-container"
+      >
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              <Utensils className="w-7 h-7 text-orange-500" />
-              Nutrition
-            </h1>
-            <p className="text-gray-500 text-sm mt-1">
-              Track your meals and hit your nutrition goals
-            </p>
+        <div className="sticky top-0 z-10" style={{ backgroundColor: colors.bg.primary }}>
+          <div className="px-6 pt-4 pb-3">
+            <div className="flex items-center gap-2 mb-4">
+              <Utensils size={24} style={{ color: colors.accent.start }} />
+              <h1 className="text-2xl font-bold" style={{ color: colors.text.primary }}>
+                Nutrition
+              </h1>
+            </div>
+
+            {/* Tab Navigation */}
+            <SegmentedControl
+              segments={[
+                { value: 'tracker', label: 'Log Food' },
+                { value: 'dashboard', label: 'Dashboard' },
+              ]}
+              value={activeTab}
+              onChange={(value) => setActiveTab(value as NutritionTabView)}
+            />
           </div>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex gap-2 p-1 bg-gray-100 rounded-xl">
-          <button
-            onClick={() => setActiveTab('tracker')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg font-medium transition-all ${
-              activeTab === 'tracker'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            <Utensils className="w-4 h-4" />
-            Log Food
-          </button>
-          <button
-            onClick={() => setActiveTab('dashboard')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg font-medium transition-all ${
-              activeTab === 'dashboard'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            <BarChart3 className="w-4 h-4" />
-            Dashboard
-          </button>
+        {/* Tab Content */}
+        <div className="px-6 pb-6">
+          {activeTab === 'tracker' && <NutritionTracker />}
+          {activeTab === 'dashboard' && <NutritionDashboard />}
         </div>
-
-        {/* Content */}
-        {activeTab === 'tracker' && <NutritionTracker />}
-        {activeTab === 'dashboard' && <NutritionDashboard />}
       </div>
-    </div>
+    </FeatureErrorBoundary>
   );
 };
 

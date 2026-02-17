@@ -21,7 +21,6 @@ export { NoteCardV2 } from './NoteCardV2';
 export { RecentNotesSectionV2 } from './RecentNotesSectionV2';
 export { WeeklyOverviewV2 } from './WeeklyOverviewV2';
 export { UpcomingDeadlinesV2 } from './UpcomingDeadlinesV2';
-export { GamificationWidgetV2 } from './GamificationWidgetV2';
 export { MorningBriefingV2 } from './MorningBriefingV2';
 export { SmartSchedulerV2 } from './SmartSchedulerV2';
 

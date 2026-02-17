@@ -29,7 +29,7 @@ import Toast from './Toast';
 import ThemeToggle from './ThemeToggle';
 import VoiceLauncher from './VoiceLauncher';
 import PremiumLogo from './PremiumLogo';
-import ModeSwitch, { useAppMode } from './ModeSwitch';
+import ModeSwitch from './ModeSwitch';
 import { NotificationBell } from './notifications';
 import { TabBar } from './navigation/TabBar';
 import { useThemeColors } from '../hooks/useThemeColors';
@@ -88,7 +88,6 @@ export default function Layout({ children }: LayoutProps) {
   const location = useLocation();
   const { sidebarCollapsed, setSidebarCollapsed } = useComposedStore();
   const { toast, dismissToast } = useToast();
-  const { mode } = useAppMode();
   const mainRef = React.useRef<HTMLDivElement>(null);
   const colors = useThemeColors();
 
@@ -130,23 +129,6 @@ export default function Layout({ children }: LayoutProps) {
     mainEl?.addEventListener('keydown', handleKeyDown);
     return () => mainEl?.removeEventListener('keydown', handleKeyDown);
   }, []);
-
-  // In voice mode and on assistant page, show full-screen assistant
-  const isVoiceModeAssistant = mode === 'voice' && activeView === 'assistant';
-
-  // Voice mode: full-screen assistant without navigation
-  if (isVoiceModeAssistant) {
-    return (
-      <div className="h-screen flex flex-col bg-gradient-to-br from-slate-50 via-orange-50 to-slate-50">
-        {/* Floating mode switch */}
-        <div className="absolute top-4 right-4 z-50">
-          <ModeSwitch />
-        </div>
-        {children}
-        <Toast toast={toast} onDismiss={dismissToast} />
-      </div>
-    );
-  }
 
   // Responsive layout: Desktop with sidebar, Mobile with tab bar
   return (

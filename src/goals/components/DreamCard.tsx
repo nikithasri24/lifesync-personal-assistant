@@ -1,7 +1,7 @@
 import React from 'react';
 import { Edit3, Trash2, Sparkles, Undo2 } from 'lucide-react';
 import type { LifeDream } from '../types/lifeGoals';
-import { StatusBadge } from './StatusBadge';
+import { BadgeV2 } from '@/components/v2/BadgeV2';
 import { useThemeColors } from '@/hooks/useThemeColors';
 
 interface DreamCardProps {
@@ -26,6 +26,40 @@ export function DreamCard({
 }: DreamCardProps): React.ReactElement {
   const colors = useThemeColors();
   const isAchieved = dream.status === 'achieved';
+
+  // Status badge variant mapping
+  const getStatusVariant = (): 'success' | 'info' | 'warning' | 'default' => {
+    switch (dream.status) {
+      case 'achieved':
+        return 'success';
+      case 'in-progress':
+        return 'warning';
+      case 'planning':
+        return 'info';
+      case 'dreaming':
+        return 'default';
+      default:
+        return 'default';
+    }
+  };
+  const statusVariant = getStatusVariant();
+
+  // Status badge label
+  const getStatusLabel = (): string => {
+    switch (dream.status) {
+      case 'achieved':
+        return '✓ Achieved';
+      case 'in-progress':
+        return 'In Progress';
+      case 'planning':
+        return 'Planning';
+      case 'dreaming':
+        return 'Dreaming';
+      default:
+        return 'Dreaming';
+    }
+  };
+  const statusLabel = getStatusLabel();
 
   // Get emoji from vision board images or use default based on category
   const getEmoji = (): string => {
@@ -58,7 +92,9 @@ export function DreamCard({
       >
         {getEmoji()}
         <div className="absolute top-3 right-3">
-          <StatusBadge status={dream.status} />
+          <BadgeV2 variant={statusVariant} size="sm">
+            {statusLabel}
+          </BadgeV2>
         </div>
       </div>
 
@@ -107,15 +143,9 @@ export function DreamCard({
 
         {/* Category Tag */}
         <div className="mb-3">
-          <span
-            className="inline-block px-3 py-1 rounded-full text-xs font-semibold"
-            style={{
-              backgroundColor: colors.badge.bg,
-              color: colors.badge.text,
-            }}
-          >
-            {dream.category}
-          </span>
+          <BadgeV2 variant="default" size="sm">
+            {getEmoji()} {dream.category}
+          </BadgeV2>
         </div>
 
         {/* Achievement Date */}

@@ -1,14 +1,14 @@
 /**
  * Journal Container
  *
- * Main orchestrator component for the journal feature.
- * Uses React Query for server state management with automatic caching.
- * Uses useJournalFilters hook for filter state management.
+ * Updated with V2 components to match journal-design-spec.html
+ * Uses React Query for server state management with automatic caching
+ * Supports entries and calendar views with terracotta theme
  */
 
 import React, { useMemo, useState, useEffect, type FormEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { BookOpen, Plus } from 'lucide-react';
+import { Plus, Search, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { logger } from '../services/logger';
 import type { JournalEntry } from '../types';
@@ -18,38 +18,20 @@ import {
   useUpdateJournalEntry,
   useDeleteJournalEntry,
 } from '../hooks/useJournalQuery';
-import { JournalEntryForm, type JournalDraft } from './components/JournalEntryForm';
 import { useJournalFilters } from './hooks/useJournalFilters';
 import { useJournalState, type JournalTabView } from './hooks';
-import { EntriesView, CalendarTabView } from './components/views';
 import { useComposedStore } from '@/stores/useComposedStore';
 import { useThemeColors } from '@/hooks/useThemeColors';
-import { SegmentedControl } from '@/components/ui/SegmentedControl';
+import { SegmentedControlV2, FABV2, BadgeV2, InputV2 } from '@/components/v2';
+import {
+  JournalHeaderV2,
+  JournalEntryCardV2,
+  JournalCalendarViewV2,
+  JournalEntryModalV2,
+} from './components/v2';
 
 // Pagination constant
-const ENTRIES_PER_PAGE = 3;
-
-// localStorage key for auto-saving drafts
-const DRAFT_STORAGE_KEY = 'lifesync-journal-draft';
-
-const createDraft = (): JournalDraft => ({
-  title: '',
-  content: '',
-  tags: '',
-  attachments: [],
-});
-
-// Helper to strip HTML tags and check for actual text content
-const getTextContent = (html: string): string => {
-  // Remove HTML tags and decode entities
-  const doc = new DOMParser().parseFromString(html, 'text/html');
-  return doc.body.textContent?.trim() || '';
-};
-
-// Helper to check if draft has content worth saving
-const hasDraftContent = (draft: JournalDraft): boolean => {
-  return !!(draft.title.trim() || getTextContent(draft.content) || draft.tags.trim() || draft.attachments.length > 0);
-};
+const ENTRIES_PER_PAGE = 10;
 
 export const JournalContainer: React.FC = () => {
   const colors = useThemeColors();
@@ -58,7 +40,6 @@ export const JournalContainer: React.FC = () => {
   const { activeTab, setActiveTab } = useJournalState();
 
   // Pagination and selected date from Zustand
-  // Using useShallow to prevent infinite loops from object reference changes
   const {
     journalSelectedDate,
     journalCurrentPage,
@@ -73,32 +54,30 @@ export const JournalContainer: React.FC = () => {
     }))
   );
 
-  // Form visibility state - defaults to false, shows on FAB click or when editing
-  const [showForm, setShowForm] = useState(false);
+  // Modal state
+  const [showEntryModal, setShowEntryModal] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<JournalEntry | null>(null);
 
-  // Filter state from custom hook (eliminates local state for filters)
+  // Filter state from custom hook
   const {
     searchQuery,
     selectedTags,
     showFilters,
     hasActiveFilters,
     filters,
-    dateRange,
     setSearchQuery,
     toggleTagFilter,
     setShowFilters,
-    setDateRange,
     clearFilters,
     getAvailableTags,
   } = useJournalFilters();
 
-  // React Query hooks - automatic loading and caching
+  // React Query hooks
   const { data: entries = [], isLoading, error } = useJournalEntries(filters);
   const createMutation = useCreateJournalEntry();
   const updateMutation = useUpdateJournalEntry();
   const deleteMutation = useDeleteJournalEntry();
 
-  // Type the entries array explicitly to avoid unsafe call errors
   const typedEntries = entries as JournalEntry[];
 
   // Pagination logic
@@ -108,141 +87,107 @@ export const JournalContainer: React.FC = () => {
     return typedEntries.slice(startIndex, startIndex + ENTRIES_PER_PAGE);
   }, [typedEntries, journalCurrentPage]);
 
-  // Form state - initialize from localStorage if available
-  const [draft, setDraft] = useState<JournalDraft>(() => {
-    try {
-      const saved = localStorage.getItem(DRAFT_STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        // Validate the parsed object has expected shape
-        if (parsed && typeof parsed === 'object' && 'title' in parsed && 'content' in parsed) {
-          return parsed as JournalDraft;
-        }
-      }
-    } catch (err) {
-      logger.error('Journal', err instanceof Error ? err : new Error(String(err)), { context: 'restoreDraft' });
-    }
-    return createDraft();
-  });
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  // Available tags
+  const availableTags = useMemo(() => getAvailableTags(typedEntries), [typedEntries, getAvailableTags]);
 
-  // Auto-save draft to localStorage (only for new entries, not edits)
-  useEffect(() => {
-    if (!editingId && hasDraftContent(draft)) {
-      try {
-        localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
-      } catch (err) {
-        logger.error('Journal', err instanceof Error ? err : new Error(String(err)), { context: 'saveDraft' });
-      }
-    } else if (!editingId && !hasDraftContent(draft)) {
-      // Clear localStorage if draft is empty and not editing
-      localStorage.removeItem(DRAFT_STORAGE_KEY);
-    }
-  }, [draft, editingId]);
+  // Calculate stats
+  const entriesThisMonth = useMemo(() => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    return typedEntries.filter((entry) => {
+      const entryDate = new Date(entry.created_at);
+      return entryDate.getMonth() === currentMonth && entryDate.getFullYear() === currentYear;
+    }).length;
+  }, [typedEntries]);
 
-  // Handle ?edit=<id> query parameter from detail view
+  // Handle ?edit=<id> query parameter
   const [searchParams, setSearchParams] = useSearchParams();
   useEffect(() => {
     const editId = searchParams.get('edit');
-    if (editId && typedEntries.length > 0 && !editingId) {
+    if (editId && typedEntries.length > 0 && !editingEntry) {
       const entryToEdit = typedEntries.find((e) => e.id === editId);
       if (entryToEdit) {
-        setDraft({
-          title: entryToEdit.title,
-          content: entryToEdit.content,
-          tags: entryToEdit.tags.join(', '),
-          attachments: entryToEdit.attachments || [],
-        });
-        setEditingId(entryToEdit.id);
-        // Clear the query param so refreshing doesn't re-trigger edit
+        setEditingEntry(entryToEdit);
+        setShowEntryModal(true);
         setSearchParams({}, { replace: true });
-        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     }
-  }, [searchParams, typedEntries, editingId, setSearchParams]);
-
-  // Available tags from entries (using hook's helper)
-  const availableTags = useMemo(() => getAvailableTags(typedEntries), [typedEntries, getAvailableTags]);
+  }, [searchParams, typedEntries, editingEntry, setSearchParams]);
 
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>): void => {
-    event.preventDefault();
-    // Check for actual text content (not just empty HTML tags like <p></p>)
-    if (!getTextContent(draft.content)) return;
-
-    const tags = draft.tags
-      .split(',')
-      .map((tag) => tag.trim())
-      .filter(Boolean);
-
-    const input = {
-      title: draft.title.trim() || undefined,
-      content: draft.content.trim(),
-      tags,
-      attachments: draft.attachments,
-    };
-
-    if (editingId) {
+  const handleSubmit = (data: {
+    title: string;
+    content: string;
+    tags: string[];
+    attachments?: string[];
+  }) => {
+    if (editingEntry) {
       updateMutation.mutate(
-        { id: editingId, updates: input },
+        {
+          id: editingEntry.id,
+          updates: {
+            title: data.title || undefined,
+            content: data.content,
+            tags: data.tags,
+            attachments: data.attachments || [],
+          },
+        },
         {
           onSuccess: () => {
-            setDraft(createDraft());
-            setEditingId(null);
-            // Note: We don't clear localStorage on edit since we only save new entry drafts
+            setShowEntryModal(false);
+            setEditingEntry(null);
           },
         }
       );
     } else {
-      createMutation.mutate(input, {
-        onSuccess: () => {
-          setDraft(createDraft());
-          // Clear auto-saved draft on successful save
-          localStorage.removeItem(DRAFT_STORAGE_KEY);
+      createMutation.mutate(
+        {
+          title: data.title || undefined,
+          content: data.content,
+          tags: data.tags,
+          attachments: data.attachments || [],
         },
-      });
+        {
+          onSuccess: () => {
+            setShowEntryModal(false);
+          },
+        }
+      );
     }
   };
 
-  const handleEdit = (entry: JournalEntry): void => {
-    setDraft({
-      title: entry.title,
-      content: entry.content,
-      tags: entry.tags.join(', '),
-      attachments: entry.attachments || [],
-    });
-    setEditingId(entry.id);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  const handleEditEntry = (entry: JournalEntry) => {
+    setEditingEntry(entry);
+    setShowEntryModal(true);
   };
 
-  const handleCancelEdit = (): void => {
-    setDraft(createDraft());
-    setEditingId(null);
-    setShowForm(false);
-  };
-
-  const handleDelete = (id: string): void => {
-    deleteMutation.mutate(id, {
-      onSuccess: () => {
-        setDeleteConfirm(null);
-      },
-    });
+  const handleDelete = (id: string) => {
+    if (window.confirm('Are you sure you want to delete this entry?')) {
+      deleteMutation.mutate(id);
+    }
   };
 
   // Error state
   if (error) {
     const errorMessage = error instanceof Error ? error.message : 'An error occurred';
     return (
-      <div className="mx-auto flex max-w-4xl flex-col" data-testid="journal-error">
-        <JournalHeader />
+      <div
+        className="min-h-screen"
+        style={{ backgroundColor: colors.bg.primary }}
+      >
+        <JournalHeaderV2 entriesThisMonth={0} />
         <div className="p-6">
-          <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-            <p className="text-sm text-red-700">
-              Unable to load your journal entries. Please try refreshing the page.
-            </p>
-            <p className="text-xs text-red-600 mt-2">{errorMessage}</p>
+          <div
+            className="rounded-xl p-4 text-center"
+            style={{
+              backgroundColor: 'rgba(239, 68, 68, 0.1)',
+              color: '#DC2626',
+            }}
+          >
+            <p className="font-semibold">Unable to load journal entries</p>
+            <p className="text-sm mt-1 opacity-80">{errorMessage}</p>
           </div>
         </div>
       </div>
@@ -256,105 +201,264 @@ export const JournalContainer: React.FC = () => {
   };
 
   return (
-    <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }} data-testid="journal-container">
-      {/* Header with Logo and Title */}
-      <div className="sticky top-0 z-10" style={{ backgroundColor: colors.bg.primary }}>
-        <div className="px-6 pt-4 pb-3">
-          <div className="flex items-center gap-2 mb-4">
-            <BookOpen size={24} style={{ color: colors.accent.start }} />
-            <h1 className="text-2xl font-bold" style={{ color: colors.text.primary }}>
-              Journal
-            </h1>
-          </div>
+    <div
+      className="min-h-screen pb-24"
+      style={{ backgroundColor: colors.bg.primary }}
+      data-testid="journal-container"
+    >
+      {/* Header */}
+      <JournalHeaderV2 entriesThisMonth={entriesThisMonth} />
 
-          {/* Tab Navigation */}
-          <SegmentedControl
-            segments={[
-              { value: 'entries', label: 'Entries' },
-              { value: 'calendar', label: 'Calendar' },
-            ]}
-            value={activeTab}
-            onChange={(value) => setActiveTab(value as JournalTabView)}
-          />
-        </div>
+      {/* Tab Navigation */}
+      <div
+        className="px-5 py-4 sticky top-0 z-10"
+        style={{ backgroundColor: colors.bg.primary }}
+      >
+        <SegmentedControlV2
+          segments={[
+            { value: 'entries', label: '📄 List' },
+            { value: 'calendar', label: '📅 Calendar' },
+          ]}
+          value={activeTab}
+          onChange={(value) => setActiveTab(value as JournalTabView)}
+          size="md"
+        />
       </div>
 
       {/* Tab Content */}
-      <div className="px-6 pb-6">
+      <div className="px-5">
         {activeTab === 'entries' && (
-          <EntriesView
-            paginatedEntries={paginatedEntries}
-            isLoading={isLoading}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            showFilters={showFilters}
-            setShowFilters={setShowFilters}
-            selectedTags={selectedTags}
-            hasActiveFilters={hasActiveFilters}
-            availableTags={availableTags}
-            toggleTagFilter={toggleTagFilter}
-            clearFilters={clearFilters}
-            dateRange={dateRange}
-            setDateRange={setDateRange}
-            showForm={showForm}
-            draft={draft}
-            onDraftChange={setDraft}
-            onSubmit={handleSubmit}
-            onClear={() => {
-              setDraft(createDraft());
-              localStorage.removeItem(DRAFT_STORAGE_KEY);
-              setShowForm(false);
-            }}
-            onCancelEdit={handleCancelEdit}
-            editingId={editingId}
-            isSubmitting={isSubmitting}
-            hasError={createMutation.isError || updateMutation.isError}
-            deleteConfirm={deleteConfirm}
-            onEdit={handleEdit}
-            onDeleteStart={setDeleteConfirm}
-            onDeleteConfirm={handleDelete}
-            onDeleteCancel={() => setDeleteConfirm(null)}
-            currentPage={journalCurrentPage}
-            totalPages={totalPages}
-            onPageChange={setJournalCurrentPage}
-          />
+          <div>
+            {/* Search Bar */}
+            <div className="mb-4 relative">
+              <Search
+                className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4"
+                style={{ color: colors.text.tertiary }}
+              />
+              <InputV2
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search entries..."
+                className="pl-11"
+              />
+            </div>
+
+            {/* Filter Toggle */}
+            <div className="flex items-center justify-between mb-4">
+              <button
+                type="button"
+                onClick={() => setShowFilters(!showFilters)}
+                className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold transition-colors"
+                style={{
+                  backgroundColor: showFilters ? 'rgba(212, 165, 116, 0.15)' : colors.bg.secondary,
+                  color: showFilters ? '#C18B5E' : colors.text.primary,
+                }}
+              >
+                <Filter className="w-4 h-4" />
+                <span>Filters</span>
+                {hasActiveFilters && (
+                  <span
+                    className="w-2 h-2 rounded-full"
+                    style={{ backgroundColor: '#C18B5E' }}
+                  />
+                )}
+              </button>
+
+              {hasActiveFilters && (
+                <button
+                  type="button"
+                  onClick={clearFilters}
+                  className="text-sm font-semibold"
+                  style={{ color: '#C18B5E' }}
+                >
+                  Clear all
+                </button>
+              )}
+            </div>
+
+            {/* Tag Filters */}
+            {showFilters && availableTags.length > 0 && (
+              <div className="flex gap-2 flex-wrap mb-4 p-4 rounded-xl" style={{ backgroundColor: colors.bg.secondary }}>
+                <div className="w-full text-xs font-semibold mb-2" style={{ color: colors.text.secondary }}>
+                  Filter by tags:
+                </div>
+                {availableTags.map((tag) => {
+                  const isSelected = selectedTags.includes(tag);
+                  return (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => toggleTagFilter(tag)}
+                      className="px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
+                      style={{
+                        backgroundColor: isSelected ? 'rgba(212, 165, 116, 0.3)' : colors.bg.tertiary,
+                        color: isSelected ? '#C18B5E' : colors.text.primary,
+                        border: isSelected ? '2px solid #C18B5E' : '2px solid transparent',
+                      }}
+                    >
+                      {tag}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Entries List */}
+            {isLoading ? (
+              <div className="text-center py-12" style={{ color: colors.text.secondary }}>
+                Loading entries...
+              </div>
+            ) : paginatedEntries.length === 0 ? (
+              <div className="text-center py-20">
+                <div className="text-6xl mb-4 opacity-50">📓</div>
+                <h3 className="text-lg font-bold mb-2" style={{ color: colors.text.primary }}>
+                  {hasActiveFilters ? 'No matching entries' : 'Start journaling'}
+                </h3>
+                <p className="text-sm" style={{ color: colors.text.secondary }}>
+                  {hasActiveFilters
+                    ? 'Try adjusting your filters'
+                    : 'Capture your thoughts, memories, and daily reflections'}
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="mb-4">
+                  <h2 className="text-lg font-bold" style={{ color: colors.text.primary }}>
+                    Recent Entries ({typedEntries.length})
+                  </h2>
+                </div>
+
+                {paginatedEntries.map((entry) => (
+                  <JournalEntryCardV2
+                    key={entry.id}
+                    id={entry.id}
+                    title={entry.title}
+                    content={entry.content}
+                    tags={entry.tags}
+                    createdAt={entry.created_at}
+                    attachmentCount={entry.attachments?.length || 0}
+                    onClick={() => handleEditEntry(entry)}
+                  />
+                ))}
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-center gap-4 mt-6">
+                    <button
+                      type="button"
+                      onClick={() => setJournalCurrentPage(Math.max(0, journalCurrentPage - 1))}
+                      disabled={journalCurrentPage === 0}
+                      className="w-9 h-9 rounded-lg flex items-center justify-center font-bold transition-all disabled:opacity-30"
+                      style={{
+                        backgroundColor: 'rgba(212, 165, 116, 0.1)',
+                        color: '#C18B5E',
+                      }}
+                      aria-label="Previous page"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+
+                    <span className="text-sm font-semibold" style={{ color: colors.text.secondary }}>
+                      Page {journalCurrentPage + 1} of {totalPages}
+                    </span>
+
+                    <button
+                      type="button"
+                      onClick={() => setJournalCurrentPage(Math.min(totalPages - 1, journalCurrentPage + 1))}
+                      disabled={journalCurrentPage >= totalPages - 1}
+                      className="w-9 h-9 rounded-lg flex items-center justify-center font-bold transition-all disabled:opacity-30"
+                      style={{
+                        backgroundColor: 'rgba(212, 165, 116, 0.1)',
+                        color: '#C18B5E',
+                      }}
+                      aria-label="Next page"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         )}
 
         {activeTab === 'calendar' && (
-          <CalendarTabView
-            entries={typedEntries}
-            selectedDate={selectedDate}
-            onSelectDate={handleSelectDate}
-          />
+          <div>
+            <JournalCalendarViewV2
+              entries={typedEntries}
+              selectedDate={selectedDate}
+              onSelectDate={handleSelectDate}
+            />
+
+            {/* Selected Date Entries */}
+            {selectedDate && (
+              <div className="mt-6">
+                <h3 className="text-lg font-bold mb-3" style={{ color: colors.text.primary }}>
+                  {selectedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                </h3>
+
+                {typedEntries
+                  .filter((entry) => {
+                    const entryDate = new Date(entry.created_at);
+                    entryDate.setHours(0, 0, 0, 0);
+                    const selected = new Date(selectedDate);
+                    selected.setHours(0, 0, 0, 0);
+                    return entryDate.getTime() === selected.getTime();
+                  })
+                  .map((entry) => (
+                    <JournalEntryCardV2
+                      key={entry.id}
+                      id={entry.id}
+                      title={entry.title}
+                      content={entry.content}
+                      tags={entry.tags}
+                      createdAt={entry.created_at}
+                      attachmentCount={entry.attachments?.length || 0}
+                      onClick={() => handleEditEntry(entry)}
+                    />
+                  ))}
+              </div>
+            )}
+          </div>
         )}
       </div>
 
-      {/* FAB (Floating Action Button) - only in entries tab and when not editing */}
-      {activeTab === 'entries' && !editingId && (
-        <button
-          type="button"
-          onClick={() => {
-            setShowForm(true);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
-          className="fixed z-50 rounded-full flex items-center justify-center text-white text-3xl font-light shadow-lg hover:scale-105 active:scale-95 transition-transform"
-          style={{
-            bottom: '80px',
-            right: '24px',
-            width: '60px',
-            height: '60px',
-            background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
-            boxShadow: '0 4px 16px rgba(193, 139, 94, 0.4)',
-          }}
-          aria-label="Create new journal entry"
-          data-testid="journal-fab"
-        >
-          <Plus className="w-8 h-8" strokeWidth={2.5} />
-        </button>
-      )}
+      {/* FAB (Floating Action Button) */}
+      <FABV2
+        icon={Plus}
+        onClick={() => {
+          setEditingEntry(null);
+          setShowEntryModal(true);
+        }}
+        position="bottom-right"
+        size="md"
+        label="New entry"
+      />
+
+      {/* Entry Modal */}
+      <JournalEntryModalV2
+        isOpen={showEntryModal}
+        onClose={() => {
+          setShowEntryModal(false);
+          setEditingEntry(null);
+        }}
+        onSubmit={handleSubmit}
+        initialData={
+          editingEntry
+            ? {
+                title: editingEntry.title,
+                content: editingEntry.content,
+                tags: editingEntry.tags,
+                attachments: editingEntry.attachments || [],
+              }
+            : undefined
+        }
+        isEditing={!!editingEntry}
+        isPending={isSubmitting}
+      />
     </div>
   );
 };
 
 export default JournalContainer;
-

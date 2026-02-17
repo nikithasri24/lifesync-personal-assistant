@@ -1,3 +1,10 @@
+/**
+ * Focus Page
+ *
+ * Updated with V2 components to match focus-design-spec.html
+ * Pomodoro timer with presets and session tracking
+ */
+
 import { useEffect, useState, useRef } from 'react';
 import { logger } from '../services/logger';
 import {
@@ -5,13 +12,24 @@ import {
   useCreateFocusSession,
   useUpdateFocusSession,
 } from '../hooks/useFocusQuery';
-import { FocusHeader } from '../focus/components/layout/FocusHeader';
-import { FocusTimerDisplay } from '../focus/components/layout/FocusTimerDisplay';
+import {
+  FocusHeaderV2,
+  CircularTimerV2,
+  PresetGridV2,
+  TimerControlsV2,
+  type TimerPreset,
+} from '../focus/components/v2';
+import { useThemeColors } from '../hooks/useThemeColors';
+
+type TimerState = 'ready' | 'active' | 'paused' | 'complete';
 
 const Focus: React.FC = () => {
+  const colors = useThemeColors();
+
   const [seconds, setSeconds] = useState(25 * 60);
-  const [active, setActive] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
+  const [totalSeconds, setTotalSeconds] = useState(25 * 60);
+  const [timerState, setTimerState] = useState<TimerState>('ready');
+  const [activePreset, setActivePreset] = useState<string | null>('pomodoro');
   const sessionIdRef = useRef<string | null>(null);
   const startTimeRef = useRef<Date | null>(null);
 
@@ -21,15 +39,24 @@ const Focus: React.FC = () => {
 
   // Timer countdown
   useEffect(() => {
-    if (!active) return;
-    const timer = setInterval(() => setSeconds((value) => Math.max(0, value - 1)), 1000);
-    return () => clearInterval(timer);
-  }, [active]);
+    if (timerState === 'active') {
+      const timer = setInterval(() => {
+        setSeconds((value) => {
+          if (value <= 1) {
+            return 0;
+          }
+          return value - 1;
+        });
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [timerState]);
 
-  // Auto-stop when timer reaches zero
+  // Auto-complete when timer reaches zero
   useEffect(() => {
-    if (seconds === 0 && active) {
-      setActive(false);
+    if (seconds === 0 && timerState === 'active') {
+      setTimerState('complete');
+
       // Complete the session
       if (sessionIdRef.current && startTimeRef.current) {
         const actualDurationSeconds = Math.floor((Date.now() - startTimeRef.current.getTime()) / 1000);
@@ -45,13 +72,12 @@ const Focus: React.FC = () => {
         startTimeRef.current = null;
       }
     }
-  }, [seconds, active, updateSession]);
+  }, [seconds, timerState, updateSession]);
 
   const handlePlayPause = async (): Promise<void> => {
-    if (!active) {
+    if (timerState === 'ready' || timerState === 'paused' || timerState === 'complete') {
       // Starting or resuming a session
-      setActive(true);
-      setIsPaused(false);
+      setTimerState('active');
 
       // Only create a new session if we don't have one (first start)
       if (!sessionIdRef.current) {
@@ -59,7 +85,7 @@ const Focus: React.FC = () => {
         try {
           const newSession = await createSession.mutateAsync({
             type: 'pomodoro',
-            duration_minutes: Math.floor(seconds / 60),
+            duration_minutes: Math.floor(totalSeconds / 60),
             started_at: new Date().toISOString(),
             status: 'in-progress',
           });
@@ -68,10 +94,9 @@ const Focus: React.FC = () => {
           logger.error('Focus', error as Error, { context: 'create session failed' });
         }
       }
-    } else {
+    } else if (timerState === 'active') {
       // Pausing the session
-      setActive(false);
-      setIsPaused(true);
+      setTimerState('paused');
 
       if (sessionIdRef.current) {
         try {
@@ -89,9 +114,8 @@ const Focus: React.FC = () => {
   };
 
   const handleReset = async (): Promise<void> => {
-    setActive(false);
-    setIsPaused(false);
-    setSeconds(25 * 60);
+    setTimerState('ready');
+    setSeconds(totalSeconds);
 
     // Cancel the current session if exists
     if (sessionIdRef.current) {
@@ -112,16 +136,72 @@ const Focus: React.FC = () => {
     }
   };
 
+  const handleSelectPreset = (preset: TimerPreset) => {
+    // Only allow changing preset when timer is not active
+    if (timerState === 'active') return;
+
+    const newSeconds = preset.minutes * 60;
+    setSeconds(newSeconds);
+    setTotalSeconds(newSeconds);
+    setActivePreset(preset.id);
+    setTimerState('ready');
+  };
+
+  // Determine subtitle based on state
+  const getSubtitle = () => {
+    switch (timerState) {
+      case 'ready':
+        return 'Choose a duration to begin';
+      case 'active':
+        return 'Stay focused';
+      case 'paused':
+        return 'Paused';
+      case 'complete':
+        return 'Great work!';
+      default:
+        return 'Choose a duration to begin';
+    }
+  };
+
   return (
-    <div className="mx-auto flex max-w-lg flex-col gap-6 p-6 text-center">
-      <FocusHeader />
-      <FocusTimerDisplay
-        seconds={seconds}
-        active={active}
-        isPaused={isPaused}
-        onPlayPause={() => void handlePlayPause()}
-        onReset={() => void handleReset()}
-      />
+    <div
+      className="min-h-screen pb-24"
+      style={{ backgroundColor: colors.bg.primary }}
+    >
+      {/* Header */}
+      <FocusHeaderV2 subtitle={getSubtitle()} />
+
+      {/* Main Content */}
+      <div className="max-w-md mx-auto px-6">
+        {/* Circular Timer */}
+        <CircularTimerV2
+          seconds={seconds}
+          totalSeconds={totalSeconds}
+          state={timerState}
+          size={240}
+        />
+
+        {/* Timer Controls */}
+        <TimerControlsV2
+          isActive={timerState === 'active'}
+          isPaused={timerState === 'paused'}
+          onPlayPause={() => void handlePlayPause()}
+          onReset={() => void handleReset()}
+          disabled={createSession.isPending || updateSession.isPending}
+        />
+
+        {/* Preset Grid */}
+        <PresetGridV2
+          activePresetId={activePreset}
+          onSelectPreset={handleSelectPreset}
+          presets={[
+            { id: 'pomodoro', name: 'Pomodoro', emoji: '🍅', minutes: 25 },
+            { id: 'short-break', name: 'Short Break', emoji: '☕', minutes: 5 },
+            { id: 'deep-work', name: 'Deep Work', emoji: '🧠', minutes: 90 },
+            { id: 'long-break', name: 'Long Break', emoji: '🌟', minutes: 15 },
+          ]}
+        />
+      </div>
     </div>
   );
 };

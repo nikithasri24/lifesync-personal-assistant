@@ -16,8 +16,10 @@
  */
 
 import React, { type ReactElement, useMemo, useState, type FormEvent } from 'react';
+import { Plus } from 'lucide-react';
 import { Toast } from '../components/Toast';
 import { useToast } from '../hooks/useToast';
+import { useThemeColors } from '../hooks/useThemeColors';
 import {
   useHabits,
   useHabitEntries,
@@ -31,15 +33,16 @@ import {
   useMergedHabitsConnectionQuery,
 } from '../hooks/useHabitsQuery';
 import { useCurrentUserId } from '../hooks/useOwnerInfo';
-import { OwnerFilter, type OwnerFilterValue } from '../components/common/OwnerFilter';
+import { type OwnerFilterValue } from '../components/common/OwnerFilter';
 import { logger } from '../services/logger';
 import type { HabitDraft } from '../habits/types';
 import { createDraft, toHabitDraft } from '../habits/services/habitHelpers';
-import { HabitForm } from '../habits/components/HabitForm';
-import { HabitsHeader } from '../habits/components/layout/HabitsHeader';
 import { HabitsLoadingState } from '../habits/components/layout/HabitsLoadingState';
 import { HabitsErrorState } from '../habits/components/layout/HabitsErrorState';
-import { HabitsList } from '../habits/components/layout/HabitsList';
+import { HabitsHeaderV2 } from '../habits/components/v2/HabitsHeaderV2';
+import { HabitCardV2 } from '../habits/components/v2/HabitCardV2';
+import { HabitFormModalV2 } from '../habits/components/v2/HabitFormModalV2';
+import { FABV2 } from '../components/v2/FABV2';
 
 // Helper function to get the start and end of the current week (Monday to Sunday)
 const getWeekBoundaries = (date: Date = new Date()): { start: string; end: string } => {
@@ -82,10 +85,13 @@ const Habits: React.FC = () => {
   const [draft, setDraft] = useState<HabitDraft>(createDraft());
   const [editingHabitId, setEditingHabitId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<HabitDraft | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   const todayKey = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
   const weekBoundaries = getWeekBoundaries();
   const { toast, showToast, dismissToast } = useToast();
+  const colors = useThemeColors();
 
   // Get partner name for display
   const partnerName = mergedConnection?.partnerName ?? 'Partner';
@@ -172,6 +178,7 @@ const Habits: React.FC = () => {
     }, {
       onSuccess: () => {
         setDraft(createDraft());
+        setShowCreateModal(false);
         showToast('Habit created successfully', 'success');
       },
       onError: (error) => {
@@ -252,11 +259,13 @@ const Habits: React.FC = () => {
     if (!habit) return;
     setEditingHabitId(habitId);
     setEditDraft(toHabitDraft(habit));
+    setShowEditModal(true);
   };
 
   const cancelEditing = (): void => {
     setEditingHabitId(null);
     setEditDraft(null);
+    setShowEditModal(false);
   };
 
   const handleEditSubmit = (event: FormEvent<HTMLFormElement>): void => {
@@ -283,6 +292,7 @@ const Habits: React.FC = () => {
         onSuccess: () => {
           setEditingHabitId(null);
           setEditDraft(null);
+          setShowEditModal(false);
           showToast('Habit updated successfully', 'success');
         },
         onError: (error) => {
@@ -339,55 +349,118 @@ const Habits: React.FC = () => {
     );
   }
 
+  // Calculate stats for header
+  const totalHabits = filteredHabits.length;
+  const completedToday = habitsWithStats.filter(h => h.hasReachedTarget).length;
+  const completionPercentage = totalHabits > 0 ? Math.round((completedToday / totalHabits) * 100) : 0;
+  const maxStreak = Math.max(...habitsWithStats.map(h => h.currentStreak), 0);
+
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-6 p-6">
+    <div style={{ background: colors.bg.primary, minHeight: '100vh' }}>
       <Toast toast={toast} onDismiss={dismissToast} />
 
-      <div className="flex items-center justify-between">
-        <HabitsHeader />
+      {/* Header with Stats */}
+      <HabitsHeaderV2
+        totalHabits={totalHabits}
+        completionPercentage={completionPercentage}
+        currentStreak={maxStreak}
+        onAddHabit={() => setShowCreateModal(true)}
+        mergedConnection={mergedConnection}
+        ownerFilter={ownerFilter}
+        onOwnerFilterChange={setOwnerFilter}
+        partnerName={partnerName}
+      />
 
-        {/* Show owner filter only if merged mode is enabled */}
-        {mergedConnection && (
-          <OwnerFilter
-            value={ownerFilter}
-            onChange={setOwnerFilter}
-            partnerName={partnerName}
-          />
+      {/* Habits List */}
+      <div className="pb-24">
+        {habitsWithStats.length === 0 ? (
+          <div className="text-center py-16 px-5">
+            <div
+              className="text-6xl mb-4"
+              style={{ opacity: 0.5 }}
+            >
+              🎯
+            </div>
+            <h3
+              className="text-xl font-semibold mb-2"
+              style={{ color: colors.text.primary }}
+            >
+              No Habits Yet
+            </h3>
+            <p
+              className="text-base mb-6"
+              style={{ color: colors.text.tertiary }}
+            >
+              Start building better routines today
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowCreateModal(true)}
+              className="px-6 py-3 rounded-xl font-semibold text-white transition-all"
+              style={{
+                background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
+              }}
+            >
+              Create Your First Habit
+            </button>
+          </div>
+        ) : (
+          habitsWithStats.map((habitWithStats) => (
+            <HabitCardV2
+              key={habitWithStats.habit.id}
+              habit={habitWithStats.habit}
+              habitEntries={apiEntries.filter(e => e.habit_id === habitWithStats.habit.id)}
+              todayCompletions={habitWithStats.todayCompletions}
+              targetCount={habitWithStats.targetCount}
+              hasReachedTarget={habitWithStats.hasReachedTarget}
+              currentStreak={habitWithStats.currentStreak}
+              bestStreak={habitWithStats.habit.best_streak}
+              isCompleting={createEntryMutation.isPending}
+              onComplete={() => handleCompleteHabit(habitWithStats.habit.id)}
+              onEdit={() => startEditing(habitWithStats.habit.id)}
+              onDelete={() => handleDeleteHabit(habitWithStats.habit.id)}
+              mergedConnection={mergedConnection}
+              currentUserId={currentUserId}
+              partnerName={partnerName}
+            />
+          ))
         )}
       </div>
 
-      <HabitForm
-        draft={draft}
-        isSubmitting={createHabitMutation.isPending}
-        hasError={createHabitMutation.isError}
-        onDraftChange={setDraft}
-        onSubmit={handleSubmit}
-        onClear={() => setDraft(createDraft())}
+      {/* FAB for quick add */}
+      <FABV2
+        icon={Plus}
+        onClick={() => setShowCreateModal(true)}
+        label="Add Habit"
+        position="bottom-right"
       />
 
-      <HabitsList
-        habitsWithStats={habitsWithStats}
-        apiEntries={apiEntries}
-        editingHabitId={editingHabitId}
-        editDraft={editDraft}
-        isCompletingHabit={createEntryMutation.isPending}
-        isUpdating={updateHabitMutation.isPending}
-        hasUpdateError={updateHabitMutation.isError}
-        isResettingToday={deleteEntriesForDateMutation.isPending || deleteEntriesForDateRangeMutation.isPending}
-        isResettingHistory={deleteAllEntriesMutation.isPending}
-        isDeleting={deleteHabitMutation.isPending}
-        onComplete={handleCompleteHabit}
-        onStartEdit={startEditing}
-        onCancelEdit={cancelEditing}
-        onEditDraftChange={setEditDraft}
-        onEditSubmit={handleEditSubmit}
-        onResetToday={handleResetToday}
-        onResetHistory={handleResetHistory}
-        onDelete={handleDeleteHabit}
-        mergedConnection={mergedConnection}
-        currentUserId={currentUserId}
-        partnerName={partnerName}
+      {/* Create Modal */}
+      <HabitFormModalV2
+        isOpen={showCreateModal}
+        onClose={() => {
+          setShowCreateModal(false);
+          setDraft(createDraft());
+        }}
+        draft={draft}
+        onDraftChange={setDraft}
+        onSubmit={handleSubmit}
+        isSubmitting={createHabitMutation.isPending}
+        mode="create"
       />
+
+      {/* Edit Modal */}
+      {editDraft && (
+        <HabitFormModalV2
+          isOpen={showEditModal}
+          onClose={cancelEditing}
+          draft={editDraft}
+          onDraftChange={setEditDraft}
+          onSubmit={handleEditSubmit}
+          isSubmitting={updateHabitMutation.isPending}
+          mode="edit"
+        />
+      )}
     </div>
   );
 };

@@ -9,8 +9,10 @@ import { TrendingUp, Target, Flame, Beef, Wheat, Droplet, Settings } from 'lucid
 import { MacroProgressBar } from './MacroProgressBar';
 import { useDailyLogQuery, useNutritionGoalQuery, useSetNutritionGoalMutation } from '@/hooks/useNutritionQuery';
 import ErrorState from '@/components/ErrorState';
+import { useThemeColors } from '@/hooks/useThemeColors';
 
 export function NutritionDashboard(): React.ReactElement {
+  const colors = useThemeColors();
   const today = format(new Date(), 'yyyy-MM-dd');
   const {
     data: dailyLog = [],
@@ -23,7 +25,7 @@ export function NutritionDashboard(): React.ReactElement {
     refetch: refetchGoal,
   } = useNutritionGoalQuery();
   const setGoalMutation = useSetNutritionGoalMutation();
-  
+
   const [showGoalSettings, setShowGoalSettings] = useState(false);
   const [goalForm, setGoalForm] = useState({
     calories: 2000,
@@ -76,7 +78,12 @@ export function NutritionDashboard(): React.ReactElement {
   return (
     <div className="space-y-6">
       {/* Today's Summary */}
-      <div className="bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl p-6 text-white">
+      <div
+        className="rounded-2xl p-6 text-white"
+        style={{
+          background: `linear-gradient(135deg, ${colors.accent.start} 0%, ${colors.accent.end} 100%)`,
+        }}
+      >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold opacity-90">Today's Nutrition</h3>
           <button
@@ -89,7 +96,9 @@ export function NutritionDashboard(): React.ReactElement {
               });
               setShowGoalSettings(true);
             }}
-            className="p-2 bg-white/20 rounded-lg hover:bg-white/30"
+            className="p-2 rounded-lg transition-all duration-200 active:scale-95"
+            style={{ backgroundColor: 'rgba(255, 255, 255, 0.2)' }}
+            aria-label="Edit nutrition goals"
           >
             <Settings className="w-5 h-5" />
           </button>
@@ -139,9 +148,15 @@ export function NutritionDashboard(): React.ReactElement {
 
       {/* Goal Progress */}
       {goal && (
-        <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
-          <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-            <Target className="w-5 h-5 text-indigo-600" />
+        <div
+          className="rounded-xl p-4 space-y-4"
+          style={{
+            backgroundColor: colors.bg.white,
+            border: `1px solid ${colors.border.light}`,
+          }}
+        >
+          <h3 className="font-semibold flex items-center gap-2" style={{ color: colors.text.primary }}>
+            <Target className="w-5 h-5" style={{ color: colors.accent.start }} />
             Goal Progress
           </h3>
           <MacroProgressBar
@@ -149,39 +164,130 @@ export function NutritionDashboard(): React.ReactElement {
             current={totals.calories}
             target={goal.calories_target}
             unit="cal"
-            color="#f97316"
-            icon={<Flame className="w-4 h-4 text-orange-500" />}
+            color={colors.accent.start}
+            icon={<Flame className="w-4 h-4" style={{ color: colors.accent.start }} />}
           />
-          <MacroProgressBar label="Protein" current={totals.protein} target={goal.protein_target_g} unit="g" color="#ef4444" icon={<Beef className="w-4 h-4 text-red-500" />} />
-          <MacroProgressBar label="Carbs" current={totals.carbs} target={goal.carbs_target_g} unit="g" color="#3b82f6" icon={<Wheat className="w-4 h-4 text-blue-500" />} />
-          <MacroProgressBar label="Fat" current={totals.fat} target={goal.fat_target_g} unit="g" color="#eab308" icon={<Droplet className="w-4 h-4 text-yellow-500" />} />
+          <MacroProgressBar
+            label="Protein"
+            current={totals.protein}
+            target={goal.protein_target_g}
+            unit="g"
+            color={colors.accent.start}
+            icon={<Beef className="w-4 h-4" style={{ color: colors.accent.start }} />}
+          />
+          <MacroProgressBar
+            label="Carbs"
+            current={totals.carbs}
+            target={goal.carbs_target_g}
+            unit="g"
+            color={colors.accent.end}
+            icon={<Wheat className="w-4 h-4" style={{ color: colors.accent.end }} />}
+          />
+          <MacroProgressBar
+            label="Fat"
+            current={totals.fat}
+            target={goal.fat_target_g}
+            unit="g"
+            color={colors.accent.start}
+            icon={<Droplet className="w-4 h-4" style={{ color: colors.accent.start }} />}
+          />
         </div>
       )}
 
       {/* Goal Settings Modal */}
       {showGoalSettings && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md space-y-4">
-            <h3 className="text-lg font-semibold">Set Nutrition Goals</h3>
+          <div
+            className="rounded-xl p-6 w-full max-w-md space-y-4"
+            style={{ backgroundColor: colors.bg.white }}
+          >
+            <h3 className="text-lg font-semibold" style={{ color: colors.text.primary }}>
+              Set Nutrition Goals
+            </h3>
             <div>
-              <label className="text-sm text-gray-600">Daily Calories</label>
-              <input type="number" value={goalForm.calories} onChange={e => setGoalForm(f => ({ ...f, calories: +e.target.value }))} className="w-full mt-1 px-3 py-2 border rounded-lg" />
+              <label className="text-sm" style={{ color: colors.text.secondary }}>
+                Daily Calories
+              </label>
+              <input
+                type="number"
+                value={goalForm.calories}
+                onChange={e => setGoalForm(f => ({ ...f, calories: +e.target.value }))}
+                className="w-full mt-1 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 transition-all duration-200"
+                style={{
+                  border: `1px solid ${colors.border.light}`,
+                  backgroundColor: colors.bg.white,
+                  color: colors.text.primary,
+                }}
+              />
             </div>
             <div>
-              <label className="text-sm text-gray-600">Protein (g)</label>
-              <input type="number" value={goalForm.protein} onChange={e => setGoalForm(f => ({ ...f, protein: +e.target.value }))} className="w-full mt-1 px-3 py-2 border rounded-lg" />
+              <label className="text-sm" style={{ color: colors.text.secondary }}>
+                Protein (g)
+              </label>
+              <input
+                type="number"
+                value={goalForm.protein}
+                onChange={e => setGoalForm(f => ({ ...f, protein: +e.target.value }))}
+                className="w-full mt-1 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 transition-all duration-200"
+                style={{
+                  border: `1px solid ${colors.border.light}`,
+                  backgroundColor: colors.bg.white,
+                  color: colors.text.primary,
+                }}
+              />
             </div>
             <div>
-              <label className="text-sm text-gray-600">Carbs (g)</label>
-              <input type="number" value={goalForm.carbs} onChange={e => setGoalForm(f => ({ ...f, carbs: +e.target.value }))} className="w-full mt-1 px-3 py-2 border rounded-lg" />
+              <label className="text-sm" style={{ color: colors.text.secondary }}>
+                Carbs (g)
+              </label>
+              <input
+                type="number"
+                value={goalForm.carbs}
+                onChange={e => setGoalForm(f => ({ ...f, carbs: +e.target.value }))}
+                className="w-full mt-1 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 transition-all duration-200"
+                style={{
+                  border: `1px solid ${colors.border.light}`,
+                  backgroundColor: colors.bg.white,
+                  color: colors.text.primary,
+                }}
+              />
             </div>
             <div>
-              <label className="text-sm text-gray-600">Fat (g)</label>
-              <input type="number" value={goalForm.fat} onChange={e => setGoalForm(f => ({ ...f, fat: +e.target.value }))} className="w-full mt-1 px-3 py-2 border rounded-lg" />
+              <label className="text-sm" style={{ color: colors.text.secondary }}>
+                Fat (g)
+              </label>
+              <input
+                type="number"
+                value={goalForm.fat}
+                onChange={e => setGoalForm(f => ({ ...f, fat: +e.target.value }))}
+                className="w-full mt-1 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 transition-all duration-200"
+                style={{
+                  border: `1px solid ${colors.border.light}`,
+                  backgroundColor: colors.bg.white,
+                  color: colors.text.primary,
+                }}
+              />
             </div>
             <div className="flex gap-2 pt-2">
-              <button onClick={() => setShowGoalSettings(false)} className="flex-1 py-2 border border-gray-300 rounded-lg">Cancel</button>
-              <button onClick={handleSaveGoal} className="flex-1 py-2 bg-indigo-600 text-white rounded-lg">Save</button>
+              <button
+                onClick={() => setShowGoalSettings(false)}
+                className="flex-1 py-2 rounded-lg transition-all duration-200 active:scale-95"
+                style={{
+                  border: `1px solid ${colors.border.light}`,
+                  color: colors.text.primary,
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveGoal}
+                className="flex-1 py-2 text-white rounded-lg transition-all duration-200 active:scale-95"
+                style={{
+                  background: `linear-gradient(135deg, ${colors.accent.start} 0%, ${colors.accent.end} 100%)`,
+                }}
+              >
+                Save
+              </button>
             </div>
           </div>
         </div>

@@ -20,3 +20,6 @@ export type { ModalV2Props } from './ModalV2';
 
 export { SegmentedControlV2 } from './SegmentedControlV2';
 export type { SegmentedControlV2Props, Segment } from './SegmentedControlV2';
+
+export { ProgressRingV2 } from './ProgressRingV2';
+export type { ProgressRingV2Props } from './ProgressRingV2';

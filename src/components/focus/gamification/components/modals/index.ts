@@ -1,1 +1,0 @@
-export { CreateGoalModal } from './CreateGoalModal';

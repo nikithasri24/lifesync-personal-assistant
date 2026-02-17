@@ -1,6 +1,5 @@
 import React from 'react';
-import { Plus } from 'lucide-react';
-import { ProjectStats } from '../ProjectStats';
+import { useThemeColors } from '@/hooks/useThemeColors';
 
 interface ProjectsHeaderProps {
   stats: {
@@ -13,40 +12,55 @@ interface ProjectsHeaderProps {
 }
 
 /**
- * Header for Projects page with stats
+ * Header for Projects page with terracotta gradient theme and stats
  */
 export function ProjectsHeader({
   stats,
   onCreateClick,
 }: ProjectsHeaderProps): React.ReactElement {
-  // Transform stats to match ProjectStats component expectations
-  const projectStats = {
-    totalProjects: stats.total,
-    activeProjects: stats.active,
-    completedProjects: stats.completed,
-    totalTasks: 0, // Not available from simple stats
-    completedTasks: 0, // Not available from simple stats
-  };
+  const colors = useThemeColors();
 
   return (
-    <div className="mb-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Projects</h1>
-          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-            Organize your work into projects and track progress
-          </p>
-        </div>
-        <button
-          onClick={onCreateClick}
-          className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-indigo-700"
-        >
-          <Plus className="h-4 w-4" />
-          New Project
-        </button>
-      </div>
+    <header
+      className="rounded-2xl p-6 mb-6"
+      style={{
+        background: `linear-gradient(135deg, ${colors.accent.start} 0%, ${colors.accent.end} 100%)`,
+      }}
+    >
+      <h1 className="text-3xl font-bold text-white mb-4">📋 Projects</h1>
 
-      <ProjectStats stats={projectStats} />
-    </div>
+      {/* Stats Grid */}
+      <div className="grid grid-cols-3 gap-3">
+        <div
+          className="rounded-xl p-3 text-center backdrop-blur-sm"
+          style={{
+            backgroundColor: 'rgba(255, 255, 255, 0.2)',
+          }}
+        >
+          <div className="text-2xl font-bold text-white">{stats.total}</div>
+          <div className="text-xs text-white/90">Total</div>
+        </div>
+        <div
+          className="rounded-xl p-3 text-center backdrop-blur-sm"
+          style={{
+            backgroundColor: 'rgba(255, 255, 255, 0.2)',
+          }}
+        >
+          <div className="text-2xl font-bold text-white">{stats.active}</div>
+          <div className="text-xs text-white/90">Active</div>
+        </div>
+        <div
+          className="rounded-xl p-3 text-center backdrop-blur-sm"
+          style={{
+            backgroundColor: 'rgba(255, 255, 255, 0.2)',
+          }}
+        >
+          <div className="text-2xl font-bold text-white">
+            {stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0}%
+          </div>
+          <div className="text-xs text-white/90">Done</div>
+        </div>
+      </div>
+    </header>
   );
 }

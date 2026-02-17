@@ -445,6 +445,15 @@ export const queryKeys = {
       month: (year: number, month: number) => [...queryKeys.personalCare.schedule.all(), year, month] as const,
     },
   },
+
+  // Conversations (AI Assistant)
+  conversations: {
+    all: ['conversations'] as const,
+    lists: () => [...queryKeys.conversations.all, 'list'] as const,
+    list: (filters?: QueryFilters) => [...queryKeys.conversations.lists(), filters] as const,
+    details: () => [...queryKeys.conversations.all, 'detail'] as const,
+    detail: (id: string) => [...queryKeys.conversations.details(), id] as const,
+  },
 } as const;
 
 /**

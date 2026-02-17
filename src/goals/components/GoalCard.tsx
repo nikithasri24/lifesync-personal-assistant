@@ -1,9 +1,9 @@
 import React from 'react';
 import { Edit3, Trash2, CheckCircle2, RotateCcw, ChevronDown, ChevronRight } from 'lucide-react';
 import type { LifeGoal } from '../types/lifeGoals';
-import { PriorityBadge } from './PriorityBadge';
-import { ProgressBar } from './ProgressBar';
+import { BadgeV2 } from '@/components/v2/BadgeV2';
 import { useThemeColors } from '@/hooks/useThemeColors';
+import { gradients } from '@/styles/colors';
 
 interface GoalCardProps {
   goal: LifeGoal;
@@ -34,13 +34,40 @@ export function GoalCard({
   const colors = useThemeColors();
   const isCompleted = goal.status === 'completed';
 
+  // Priority badge variant mapping
+  const getPriorityVariant = (): 'success' | 'info' | 'warning' | 'default' => {
+    switch (goal.priority) {
+      case 'low':
+        return 'success';
+      case 'medium':
+        return 'info';
+      case 'high':
+        return 'warning';
+      case 'critical':
+        return 'warning';
+      default:
+        return 'default';
+    }
+  };
+  const priorityVariant = getPriorityVariant();
+
+  // Category emoji mapping
+  const categoryEmoji = {
+    personal: '📚',
+    health: '💪',
+    career: '💼',
+    financial: '💰',
+    fitness: '🏃',
+  }[goal.category] || '🎯';
+
   return (
     <div
       className="goal-card rounded-2xl p-4 shadow-sm transition-all hover:shadow-md"
       style={{
         backgroundColor: colors.bg.white,
-        borderWidth: '1px',
-        borderColor: colors.border.light,
+        borderWidth: '2px',
+        borderColor: isCompleted ? '#4CAF50' : colors.border.light,
+        opacity: isCompleted ? 0.85 : 1,
       }}
     >
       {/* Header: Title + Priority Badge */}
@@ -53,16 +80,21 @@ export function GoalCard({
             {goal.title}
           </h3>
           <div className="flex items-center gap-2 text-xs" style={{ color: colors.text.tertiary }}>
-            <span>{goal.category}</span>
+            <span>{categoryEmoji} {goal.category}</span>
             {goal.targetDate && (
               <>
                 <span>•</span>
-                <span>Due {new Date(goal.targetDate).toLocaleDateString()}</span>
+                <span>📅 {new Date(goal.targetDate).toLocaleDateString()}</span>
               </>
             )}
           </div>
         </div>
-        <PriorityBadge priority={goal.priority} />
+        <BadgeV2 variant={priorityVariant} size="sm">
+          {isCompleted ? '✓ Done' :
+           goal.priority === 'critical' ? 'Critical' :
+           goal.priority === 'high' ? 'High' :
+           goal.priority === 'medium' ? 'Medium' : 'Low'}
+        </BadgeV2>
       </div>
 
       {/* Description */}
@@ -82,20 +114,20 @@ export function GoalCard({
             {goal.progress}%
           </span>
         </div>
-        <ProgressBar percentage={goal.progress} />
-      </div>
-
-      {/* Category Tag */}
-      <div className="mb-3">
-        <span
-          className="inline-block px-3 py-1 rounded-full text-xs font-semibold"
-          style={{
-            backgroundColor: colors.badge.bg,
-            color: colors.badge.text,
-          }}
+        <div
+          className="h-2 w-full overflow-hidden rounded-full"
+          style={{ backgroundColor: colors.bg.secondary }}
         >
-          {goal.category}
-        </span>
+          <div
+            className="h-full rounded-full transition-all duration-300"
+            style={{
+              width: `${goal.progress}%`,
+              background: isCompleted
+                ? 'linear-gradient(135deg, #4CAF50 0%, #388E3C 100%)'
+                : gradients.primary,
+            }}
+          />
+        </div>
       </div>
 
       {/* Action Buttons */}
@@ -165,12 +197,12 @@ export function GoalCard({
               {isExpanded ? (
                 <>
                   <ChevronDown className="h-3.5 w-3.5" />
-                  Hide details
+                  Hide
                 </>
               ) : (
                 <>
                   <ChevronRight className="h-3.5 w-3.5" />
-                  Show details
+                  Show
                 </>
               )}
             </button>

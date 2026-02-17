@@ -27,12 +27,14 @@ import { supabase } from '../lib/supabase';
 import { LifeGoalsHeader } from '../goals/components/layout/LifeGoalsHeader';
 import { LifeGoalsLoadingState } from '../goals/components/layout/LifeGoalsLoadingState';
 import { StatsCards } from '../goals/components/layout/StatsCards';
-import { SegmentedControl } from '../components/ui/SegmentedControl';
+import { SegmentedControlV2 } from '@/components/v2/SegmentedControlV2';
 import { GoalList } from '../goals/components/layout/GoalList';
 import { DreamList } from '../goals/components/layout/DreamList';
 import { GoalFormModal, type GoalDraft } from '../goals/components/layout/GoalFormModal';
 import { DreamFormModal, type DreamDraft } from '../goals/components/layout/DreamFormModal';
 import { FilterBar, type StatusFilter, type OwnershipFilter } from '../goals/components/layout/FilterBar';
+import { FABV2 } from '@/components/v2/FABV2';
+import { Plus } from 'lucide-react';
 
 const createGoalDraft = (): GoalDraft => ({
   title: '',
@@ -440,7 +442,7 @@ const LifeGoals: React.FC = () => {
   }
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-6 p-6">
+    <div className="mx-auto flex max-w-5xl flex-col gap-6 p-6 pb-32">
       {/* Merged mode indicator */}
       {isMerged && (
         <div
@@ -475,13 +477,14 @@ const LifeGoals: React.FC = () => {
 
       <StatsCards goalStats={goalStats} dreamStats={dreamStats} activeTab={activeTab} />
 
-      <SegmentedControl
+      <SegmentedControlV2
         segments={[
-          { value: 'goals', label: '🎯 Goals' },
-          { value: 'dreams', label: '✨ Dreams' },
+          { value: 'goals', label: 'Goals' },
+          { value: 'dreams', label: 'Dreams' },
         ]}
         value={activeTab}
         onChange={(value) => setActiveTab(value as 'goals' | 'dreams')}
+        aria-label="Toggle between Goals and Dreams"
       />
 
       <section className="space-y-4">
@@ -567,6 +570,21 @@ const LifeGoals: React.FC = () => {
         }}
         isMergedModeAvailable={isMerged}
         isEditMode={!!editingDreamId}
+      />
+
+      {/* FAB */}
+      <FABV2
+        icon={Plus}
+        onClick={() => {
+          if (activeTab === 'goals') {
+            setShowGoalForm(true);
+          } else {
+            setShowDreamForm(true);
+          }
+        }}
+        label={activeTab === 'goals' ? 'New Goal' : 'New Dream'}
+        position="bottom-right"
+        size="md"
       />
 
       {showTemplates && (

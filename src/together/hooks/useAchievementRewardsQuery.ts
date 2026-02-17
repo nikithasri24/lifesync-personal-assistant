@@ -1,6 +1,6 @@
 /**
  * Achievement Rewards React Query Hooks
- * Manage gamified challenges linked to habits/goals with unlockable rewards
+ * Manage challenges and rewards for partners
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -11,7 +11,7 @@ import type {
   AchievementReward,
   CreateAchievementRewardRequest,
   UpdateAchievementRewardRequest,
-  ChallengeFilters,
+  ChallengeStatus,
 } from '../types';
 
 // =====================================================
@@ -21,8 +21,7 @@ import type {
 export const achievementRewardKeys = {
   all: ['achievement-rewards'] as const,
   lists: () => [...achievementRewardKeys.all, 'list'] as const,
-  list: (filters?: ChallengeFilters) => [...achievementRewardKeys.lists(), filters] as const,
-  active: () => [...achievementRewardKeys.all, 'active'] as const,
+  list: (connectionId?: string) => [...achievementRewardKeys.lists(), connectionId] as const,
   detail: (id: string) => [...achievementRewardKeys.all, id] as const,
 };
 
@@ -31,36 +30,26 @@ export const achievementRewardKeys = {
 // =====================================================
 
 /**
- * Get all achievement rewards with optional filters
+ * Get all achievement rewards for a connection
  */
-export function useAchievementRewards(filters?: ChallengeFilters) {
+export function useAchievementRewards(connectionId?: string) {
   return useQuery({
-    queryKey: achievementRewardKeys.list(filters),
+    queryKey: achievementRewardKeys.list(connectionId),
     queryFn: async (): Promise<AchievementReward[]> => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         throw new AuthenticationError('Not authenticated');
       }
 
-      logger.debug('Together', 'Fetching achievement rewards', { filters });
+      logger.debug('Together', 'Fetching achievement rewards', { connectionId });
 
       let query = supabase
         .from('achievement_rewards')
         .select('*')
         .order('created_at', { ascending: false });
 
-      // Apply filters
-      if (filters?.status) {
-        query = query.eq('status', filters.status);
-      }
-      if (filters?.linked_type) {
-        query = query.eq('linked_type', filters.linked_type);
-      }
-      if (filters?.is_recipient) {
-        query = query.eq('recipient_id', user.id);
-      }
-      if (filters?.is_creator) {
-        query = query.eq('creator_id', user.id);
+      if (connectionId) {
+        query = query.eq('connection_id', connectionId);
       }
 
       const { data, error } = await query;
@@ -70,40 +59,9 @@ export function useAchievementRewards(filters?: ChallengeFilters) {
         throw parseToLifeSyncError(error);
       }
 
-      logger.debug('Together', 'Achievement rewards fetched', { count: data?.length || 0 });
       return data || [];
     },
-    staleTime: 2 * 60 * 1000, // 2 minutes
-  });
-}
-
-/**
- * Get active challenges (using view for computed fields)
- */
-export function useActiveChallenges() {
-  return useQuery({
-    queryKey: achievementRewardKeys.active(),
-    queryFn: async (): Promise<AchievementReward[]> => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new AuthenticationError('Not authenticated');
-      }
-
-      logger.debug('Together', 'Fetching active challenges');
-
-      const { data, error } = await supabase
-        .from('active_challenges')
-        .select('*');
-
-      if (error) {
-        logger.error('Together', 'Failed to fetch active challenges', { error });
-        throw parseToLifeSyncError(error);
-      }
-
-      logger.debug('Together', 'Active challenges fetched', { count: data?.length || 0 });
-      return (data || []) as AchievementReward[];
-    },
-    staleTime: 1 * 60 * 1000, // 1 minute (check frequently for progress)
+    enabled: !!connectionId,
   });
 }
 
@@ -113,7 +71,7 @@ export function useActiveChallenges() {
 export function useAchievementReward(id: string) {
   return useQuery({
     queryKey: achievementRewardKeys.detail(id),
-    queryFn: async (): Promise<AchievementReward | null> => {
+    queryFn: async (): Promise<AchievementReward> => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         throw new AuthenticationError('Not authenticated');
@@ -125,17 +83,16 @@ export function useAchievementReward(id: string) {
         .from('achievement_rewards')
         .select('*')
         .eq('id', id)
-        .maybeSingle();
+        .single();
 
       if (error) {
-        logger.error('Together', 'Failed to fetch achievement reward', { error });
+        logger.error('Together', 'Failed to fetch achievement reward', { error, id });
         throw parseToLifeSyncError(error);
       }
 
       return data;
     },
     enabled: !!id,
-    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -144,31 +101,27 @@ export function useAchievementReward(id: string) {
 // =====================================================
 
 /**
- * Create new achievement reward
+ * Create new achievement reward (challenge)
  */
 export function useCreateAchievementReward() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (
-      reward: CreateAchievementRewardRequest
-    ): Promise<AchievementReward> => {
+    mutationFn: async (request: CreateAchievementRewardRequest): Promise<AchievementReward> => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         throw new AuthenticationError('Not authenticated');
       }
 
-      logger.debug('Together', 'Creating achievement reward', {
-        linkedType: reward.linked_type,
-      });
+      logger.debug('Together', 'Creating achievement reward', { request });
 
       const { data, error } = await supabase
         .from('achievement_rewards')
         .insert({
+          ...request,
           creator_id: user.id,
-          ...reward,
+          status: 'active' as ChallengeStatus,
           current_progress: 0,
-          status: 'active',
         })
         .select()
         .single();
@@ -178,55 +131,30 @@ export function useCreateAchievementReward() {
         throw parseToLifeSyncError(error);
       }
 
-      logger.info('Together', 'Achievement reward created', { id: data.id });
       return data;
     },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: achievementRewardKeys.all });
+    onSuccess: (data) => {
+      void queryClient.invalidateQueries({ queryKey: achievementRewardKeys.lists() });
+      logger.info('Together', 'Achievement reward created', { id: data.id });
     },
   });
 }
 
 /**
- * Update achievement reward (including progress)
+ * Update achievement reward
  */
 export function useUpdateAchievementReward() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      id,
-      ...updates
-    }: UpdateAchievementRewardRequest): Promise<AchievementReward> => {
+    mutationFn: async (request: UpdateAchievementRewardRequest): Promise<AchievementReward> => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         throw new AuthenticationError('Not authenticated');
       }
 
+      const { id, ...updates } = request;
       logger.debug('Together', 'Updating achievement reward', { id, updates });
-
-      // If progress meets target, mark as completed
-      const shouldComplete =
-        updates.current_progress !== undefined &&
-        updates.current_progress !== null;
-
-      // Fetch current reward to check target
-      if (shouldComplete) {
-        const { data: current } = await supabase
-          .from('achievement_rewards')
-          .select('target_value')
-          .eq('id', id)
-          .single();
-
-        if (
-          current &&
-          current.target_value &&
-          updates.current_progress! >= current.target_value
-        ) {
-          updates.status = 'completed';
-          updates.completed_at = new Date().toISOString();
-        }
-      }
 
       const { data, error } = await supabase
         .from('achievement_rewards')
@@ -236,35 +164,16 @@ export function useUpdateAchievementReward() {
         .single();
 
       if (error) {
-        logger.error('Together', 'Failed to update achievement reward', { error });
+        logger.error('Together', 'Failed to update achievement reward', { error, id });
         throw parseToLifeSyncError(error);
       }
 
-      logger.info('Together', 'Achievement reward updated', { id });
       return data;
     },
     onSuccess: (data) => {
-      void queryClient.invalidateQueries({ queryKey: achievementRewardKeys.all });
+      void queryClient.invalidateQueries({ queryKey: achievementRewardKeys.lists() });
       void queryClient.invalidateQueries({ queryKey: achievementRewardKeys.detail(data.id) });
-    },
-  });
-}
-
-/**
- * Complete achievement reward (unlock)
- */
-export function useCompleteAchievementReward() {
-  const { mutate: update } = useUpdateAchievementReward();
-
-  return useMutation({
-    mutationFn: async (id: string): Promise<void> => {
-      logger.debug('Together', 'Completing achievement reward', { id });
-
-      update({
-        id,
-        status: 'completed',
-        completed_at: new Date().toISOString(),
-      });
+      logger.info('Together', 'Achievement reward updated', { id: data.id });
     },
   });
 }
@@ -287,18 +196,17 @@ export function useDeleteAchievementReward() {
       const { error } = await supabase
         .from('achievement_rewards')
         .delete()
-        .eq('id', id)
-        .eq('creator_id', user.id); // Only creator can delete
+        .eq('id', id);
 
       if (error) {
-        logger.error('Together', 'Failed to delete achievement reward', { error });
+        logger.error('Together', 'Failed to delete achievement reward', { error, id });
         throw parseToLifeSyncError(error);
       }
-
-      logger.info('Together', 'Achievement reward deleted', { id });
     },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: achievementRewardKeys.all });
+    onSuccess: (_, id) => {
+      void queryClient.invalidateQueries({ queryKey: achievementRewardKeys.lists() });
+      void queryClient.removeQueries({ queryKey: achievementRewardKeys.detail(id) });
+      logger.info('Together', 'Achievement reward deleted', { id });
     },
   });
 }

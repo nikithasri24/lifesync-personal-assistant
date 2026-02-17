@@ -118,7 +118,10 @@
       "Bash(npm uninstall:*)",
       "Bash(supabase --version:*)",
       "Bash(pgrep:*)",
-      "Bash(src/components/v2/index.ts:*)"
+      "Bash(src/components/v2/index.ts:*)",
+      "Bash(/tmp/remove_gamification.sh:*)",
+      "Bash(/tmp/remove_gamification.sh)",
+      "Bash(GAMIFICATION_REMOVAL_SUMMARY.md:*)"
     ],
     "deny": [],
     "ask": []

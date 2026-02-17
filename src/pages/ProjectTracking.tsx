@@ -1,4 +1,5 @@
 import React from 'react';
+import { Plus } from 'lucide-react';
 import { useProjectTracking } from './hooks/useProjectTracking';
 import type { Project } from '@/hooks/useProjectsQuery';
 import { ProjectFormModal, DeleteConfirmModal } from './components/ProjectModals';
@@ -7,6 +8,7 @@ import { ProjectsHeader } from '../projects/components/layout/ProjectsHeader';
 import { ProjectsFiltersBar } from '../projects/components/layout/ProjectsFiltersBar';
 import { EmptyProjectsState } from '../projects/components/layout/EmptyProjectsState';
 import { ProjectCard } from '../projects/components/layout/ProjectCard';
+import { FABV2 } from '@/components/v2/FABV2';
 
 const ProjectTracking: React.FC = () => {
   const hookResult = useProjectTracking();
@@ -47,7 +49,7 @@ const ProjectTracking: React.FC = () => {
   }
 
   return (
-    <div className="mx-auto max-w-7xl p-6">
+    <div className="mx-auto max-w-7xl p-6 pb-32">
       <ProjectsHeader
         stats={stats}
         onCreateClick={() => setShowCreateModal(true)}
@@ -95,13 +97,22 @@ const ProjectTracking: React.FC = () => {
                 onEdit={() => openEditModal(project)}
                 onDelete={() => setDeleteConfirmId(project.id)}
                 showOwnerBadge={!!mergedConnection}
-                currentUserId={currentUserId}
+                currentUserId={currentUserId ?? undefined}
                 partnerName={partnerName}
               />
             );
           })}
         </div>
       )}
+
+      {/* FAB */}
+      <FABV2
+        icon={Plus}
+        onClick={() => setShowCreateModal(true)}
+        label="New Project"
+        position="bottom-right"
+        size="md"
+      />
 
       <ProjectFormModal
         showCreateModal={showCreateModal}

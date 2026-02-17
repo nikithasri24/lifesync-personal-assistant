@@ -19,6 +19,7 @@ import type { NutritionInfo } from '@/services/nutrition/OpenFoodFactsService';
 import type { MealType } from '@/api/nutritionAPI';
 import ErrorState from '@/components/ErrorState';
 import { parseServingGrams } from './servingUtils';
+import { useThemeColors } from '@/hooks/useThemeColors';
 
 type ActivePanel = 'none' | 'photo' | 'search' | 'barcode' | 'detail';
 
@@ -30,6 +31,7 @@ const MEAL_TYPES: { type: MealType; label: string; icon: string }[] = [
 ];
 
 export function NutritionTracker(): React.ReactElement {
+  const colors = useThemeColors();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [activePanel, setActivePanel] = useState<ActivePanel>('none');
   const [selectedMealType, setSelectedMealType] = useState<MealType>('lunch');
@@ -156,19 +158,29 @@ export function NutritionTracker(): React.ReactElement {
     <div className="space-y-6">
       {/* Header with date navigation */}
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-          <Utensils className="w-6 h-6 text-orange-500" />
+        <h2 className="text-xl font-bold flex items-center gap-2" style={{ color: colors.text.primary }}>
+          <Utensils className="w-6 h-6" style={{ color: colors.accent.start }} />
           Nutrition Tracker
         </h2>
         <div className="flex items-center gap-2">
-          <button onClick={() => changeDate(-1)} className="p-2 hover:bg-gray-100 rounded-lg">
-            <ChevronLeft className="w-5 h-5" />
+          <button
+            onClick={() => changeDate(-1)}
+            className="p-2 rounded-lg transition-colors duration-200"
+            style={{ backgroundColor: colors.bg.secondary }}
+            aria-label="Previous day"
+          >
+            <ChevronLeft className="w-5 h-5" style={{ color: colors.text.primary }} />
           </button>
-          <span className="font-medium text-gray-700 min-w-[120px] text-center">
+          <span className="font-medium min-w-[120px] text-center" style={{ color: colors.text.primary }}>
             {format(selectedDate, 'MMM d, yyyy')}
           </span>
-          <button onClick={() => changeDate(1)} className="p-2 hover:bg-gray-100 rounded-lg">
-            <ChevronRight className="w-5 h-5" />
+          <button
+            onClick={() => changeDate(1)}
+            className="p-2 rounded-lg transition-colors duration-200"
+            style={{ backgroundColor: colors.bg.secondary }}
+            aria-label="Next day"
+          >
+            <ChevronRight className="w-5 h-5" style={{ color: colors.text.primary }} />
           </button>
         </div>
       </div>
@@ -185,31 +197,62 @@ export function NutritionTracker(): React.ReactElement {
         <>
       {/* Progress overview */}
       {goal && (
-        <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
-          <MacroProgressBar label="Calories" current={totals.calories} target={goal.calories_target} unit="cal" color="#f97316" />
+        <div
+          className="rounded-xl p-4 space-y-3"
+          style={{
+            backgroundColor: colors.bg.white,
+            border: `1px solid ${colors.border.light}`,
+          }}
+        >
+          <MacroProgressBar label="Calories" current={totals.calories} target={goal.calories_target} unit="cal" color={colors.accent.start} />
           <div className="grid grid-cols-3 gap-4">
-            <MacroProgressBar label="Protein" current={totals.protein} target={goal.protein_target_g} unit="g" color="#ef4444" />
-            <MacroProgressBar label="Carbs" current={totals.carbs} target={goal.carbs_target_g} unit="g" color="#3b82f6" />
-            <MacroProgressBar label="Fat" current={totals.fat} target={goal.fat_target_g} unit="g" color="#eab308" />
+            <MacroProgressBar label="Protein" current={totals.protein} target={goal.protein_target_g} unit="g" color={colors.accent.start} />
+            <MacroProgressBar label="Carbs" current={totals.carbs} target={goal.carbs_target_g} unit="g" color={colors.accent.end} />
+            <MacroProgressBar label="Fat" current={totals.fat} target={goal.fat_target_g} unit="g" color={colors.accent.start} />
           </div>
         </div>
       )}
 
       {/* Action buttons */}
       <div className="grid grid-cols-4 gap-2">
-        <button onClick={() => setActivePanel('photo')} className="flex flex-col items-center justify-center gap-1 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-medium hover:from-indigo-700 hover:to-purple-700">
+        <button
+          onClick={() => setActivePanel('photo')}
+          className="flex flex-col items-center justify-center gap-1 py-3 text-white rounded-xl font-medium transition-all duration-200 active:scale-95"
+          style={{
+            background: `linear-gradient(135deg, ${colors.accent.start} 0%, ${colors.accent.end} 100%)`,
+          }}
+        >
           <Camera className="w-5 h-5" />
           <span className="text-xs">Snap</span>
         </button>
-        <button onClick={() => setActivePanel('search')} className="flex flex-col items-center justify-center gap-1 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-medium hover:from-blue-700 hover:to-cyan-700">
+        <button
+          onClick={() => setActivePanel('search')}
+          className="flex flex-col items-center justify-center gap-1 py-3 text-white rounded-xl font-medium transition-all duration-200 active:scale-95"
+          style={{
+            background: `linear-gradient(135deg, ${colors.accent.start} 0%, ${colors.accent.end} 100%)`,
+          }}
+        >
           <Search className="w-5 h-5" />
           <span className="text-xs">Search</span>
         </button>
-        <button onClick={() => setActivePanel('barcode')} className="flex flex-col items-center justify-center gap-1 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-medium hover:from-green-700 hover:to-emerald-700">
+        <button
+          onClick={() => setActivePanel('barcode')}
+          className="flex flex-col items-center justify-center gap-1 py-3 text-white rounded-xl font-medium transition-all duration-200 active:scale-95"
+          style={{
+            background: `linear-gradient(135deg, ${colors.accent.start} 0%, ${colors.accent.end} 100%)`,
+          }}
+        >
           <ScanBarcode className="w-5 h-5" />
           <span className="text-xs">Barcode</span>
         </button>
-        <button onClick={() => setShowQuickAdd(true)} className="flex flex-col items-center justify-center gap-1 py-3 border-2 border-gray-300 rounded-xl font-medium hover:bg-gray-50">
+        <button
+          onClick={() => setShowQuickAdd(true)}
+          className="flex flex-col items-center justify-center gap-1 py-3 rounded-xl font-medium transition-all duration-200 active:scale-95"
+          style={{
+            border: `2px solid ${colors.border.light}`,
+            color: colors.text.primary,
+          }}
+        >
           <Plus className="w-5 h-5" />
           <span className="text-xs">Quick</span>
         </button>
@@ -250,9 +293,13 @@ export function NutritionTracker(): React.ReactElement {
               <button
                 key={m.type}
                 onClick={() => setSelectedMealType(m.type)}
-                className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
-                  selectedMealType === m.type ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+                className="flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all duration-200 active:scale-95"
+                style={{
+                  background: selectedMealType === m.type
+                    ? `linear-gradient(135deg, ${colors.accent.start} 0%, ${colors.accent.end} 100%)`
+                    : colors.bg.secondary,
+                  color: selectedMealType === m.type ? 'white' : colors.text.primary,
+                }}
               >
                 {m.icon} {m.label}
               </button>
@@ -264,15 +311,25 @@ export function NutritionTracker(): React.ReactElement {
 
       {/* Quick add form */}
       {showQuickAdd && (
-        <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+        <div
+          className="rounded-xl p-4 space-y-3"
+          style={{
+            backgroundColor: colors.bg.white,
+            border: `1px solid ${colors.border.light}`,
+          }}
+        >
           <div className="flex gap-2 mb-2">
             {MEAL_TYPES.map(m => (
               <button
                 key={m.type}
                 onClick={() => setSelectedMealType(m.type)}
-                className={`flex-1 py-1.5 px-2 rounded-lg text-sm font-medium ${
-                  selectedMealType === m.type ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600'
-                }`}
+                className="flex-1 py-1.5 px-2 rounded-lg text-sm font-medium transition-all duration-200 active:scale-95"
+                style={{
+                  background: selectedMealType === m.type
+                    ? `linear-gradient(135deg, ${colors.accent.start} 0%, ${colors.accent.end} 100%)`
+                    : colors.bg.secondary,
+                  color: selectedMealType === m.type ? 'white' : colors.text.secondary,
+                }}
               >
                 {m.icon}
               </button>
@@ -283,20 +340,43 @@ export function NutritionTracker(): React.ReactElement {
             placeholder="What did you eat?"
             value={quickAddName}
             onChange={e => setQuickAddName(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            className="w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 transition-all duration-200"
+            style={{
+              border: `1px solid ${colors.border.light}`,
+              backgroundColor: colors.bg.white,
+              color: colors.text.primary,
+            }}
           />
           <input
             type="number"
             placeholder="Calories"
             value={quickAddCalories}
             onChange={e => setQuickAddCalories(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            className="w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 transition-all duration-200"
+            style={{
+              border: `1px solid ${colors.border.light}`,
+              backgroundColor: colors.bg.white,
+              color: colors.text.primary,
+            }}
           />
           <div className="flex gap-2">
-            <button onClick={() => setShowQuickAdd(false)} className="flex-1 py-2 border border-gray-300 rounded-lg">
+            <button
+              onClick={() => setShowQuickAdd(false)}
+              className="flex-1 py-2 rounded-lg transition-all duration-200 active:scale-95"
+              style={{
+                border: `1px solid ${colors.border.light}`,
+                color: colors.text.primary,
+              }}
+            >
               Cancel
             </button>
-            <button onClick={handleQuickAdd} className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+            <button
+              onClick={handleQuickAdd}
+              className="flex-1 py-2 text-white rounded-lg transition-all duration-200 active:scale-95"
+              style={{
+                background: `linear-gradient(135deg, ${colors.accent.start} 0%, ${colors.accent.end} 100%)`,
+              }}
+            >
               Add
             </button>
           </div>
@@ -305,24 +385,41 @@ export function NutritionTracker(): React.ReactElement {
 
       {/* Meal logs by type */}
       {isLoading ? (
-        <div className="text-center py-8 text-gray-500">Loading...</div>
+        <div className="text-center py-8" style={{ color: colors.text.tertiary }}>
+          Loading...
+        </div>
       ) : (
         <div className="space-y-4">
           {mealGroups.map(group => (
-            <div key={group.type} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-100">
-                <span className="font-medium text-gray-900">{group.icon} {group.label}</span>
-                <span className="text-sm text-gray-500">
+            <div
+              key={group.type}
+              className="rounded-xl overflow-hidden"
+              style={{
+                backgroundColor: colors.bg.white,
+                border: `1px solid ${colors.border.light}`,
+              }}
+            >
+              <div
+                className="flex items-center justify-between px-4 py-3 border-b"
+                style={{
+                  backgroundColor: colors.bg.secondary,
+                  borderColor: colors.border.light,
+                }}
+              >
+                <span className="font-medium" style={{ color: colors.text.primary }}>
+                  {group.icon} {group.label}
+                </span>
+                <span className="text-sm" style={{ color: colors.text.tertiary }}>
                   {group.entries.reduce((sum, e) => sum + e.calories, 0)} cal
                 </span>
               </div>
-              <div className="divide-y divide-gray-100">
+              <div style={{ borderColor: colors.border.light }} className="divide-y">
                 {group.entries.length > 0 ? (
                   group.entries.map(entry => (
                     <FoodLogItem key={entry.id} entry={entry} onDelete={id => deleteLogMutation.mutate({ id, date: dateStr })} />
                   ))
                 ) : (
-                  <div className="px-4 py-6 text-center text-gray-400 text-sm">
+                  <div className="px-4 py-6 text-center text-sm" style={{ color: colors.text.tertiary }}>
                     No {group.label.toLowerCase()} logged
                   </div>
                 )}

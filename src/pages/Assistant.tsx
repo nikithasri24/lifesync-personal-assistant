@@ -1,143 +1,153 @@
-// Conversational AI Assistant Page - Modern Redesigned Interface
-// Beautiful, engaging design with voice and text input
+/**
+ * Assistant Page V2
+ * AI conversational assistant
+ * Uses React Query for data management
+ */
 
 import React, { useState, useRef, useEffect } from 'react';
-import { useConversationalVoice } from '../hooks/useConversationalVoice';
-import { useAuth } from '../hooks/useAuth';
-import { logger } from '../services/logger';
-import { UnsupportedBrowserScreen } from '../assistant/components/UnsupportedBrowserScreen';
-import { AssistantHeader } from '../assistant/components/AssistantHeader';
-import { EmptyConversationState } from '../assistant/components/EmptyConversationState';
-import { MessagesList } from '../assistant/components/MessagesList';
-import { ErrorBanner } from '../assistant/components/ErrorBanner';
-import { ConversationInput } from '../assistant/components/ConversationInput';
+import { useThemeColors } from '@/hooks/useThemeColors';
+import { useConversations, useCreateConversation, useSendMessage } from '@/hooks/useConversationsQuery';
+import { AssistantHeaderV2 } from '@/assistant/components/v2/AssistantHeaderV2';
+import { ChatMessageV2 } from '@/assistant/components/v2/ChatMessageV2';
+import { TypingIndicatorV2 } from '@/assistant/components/v2/TypingIndicatorV2';
+import { EmptyConversationStateV2 } from '@/assistant/components/v2/EmptyConversationStateV2';
+import { ConversationInputV2 } from '@/assistant/components/v2/ConversationInputV2';
+import type { ConversationMessage } from '@/types/infrastructure';
+import { logger } from '@/services/logger';
 
-interface ConversationMessage {
-  role: 'user' | 'assistant';
-  content: string;
-  functionCalls?: Array<{ name: string; [key: string]: unknown }>;
-  timestamp?: Date;
-}
-
-export default function Assistant() {
-  const { user } = useAuth();
-  const {
-    isListening,
-    isSpeaking,
-    isThinking,
-    transcript,
-    error,
-    startListening,
-    stopListening,
-    stopSpeaking,
-    sendTextMessage,
-    getMessages,
-    clearHistory,
-    isSupported
-  } = useConversationalVoice(user?.id ?? 'demo-user');
-
-  const [textInput, setTextInput] = useState('');
-  const [messages, setMessages] = useState<ConversationMessage[]>([]);
+export default function AssistantV2() {
+  const colors = useThemeColors();
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+  const [isThinking, setIsThinking] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // React Query hooks
+  const { data: conversations = [] } = useConversations({ limit: 10 });
+  const createConversation = useCreateConversation();
+  const sendMessage = useSendMessage();
+
+  // Get active conversation
+  const activeConversation = conversations.find((c) => c.id === activeConversationId);
+  const messages = activeConversation?.messages || [];
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isThinking]);
 
-  // Update messages from conversation history
+  // Load most recent conversation on mount
   useEffect(() => {
-    const interval = setInterval(() => {
-      setMessages(getMessages() as ConversationMessage[]);
-    }, 500);
+    if (conversations.length > 0 && !activeConversationId) {
+      setActiveConversationId(conversations[0].id);
+    }
+  }, [conversations, activeConversationId]);
 
-    return () => clearInterval(interval);
-  }, [getMessages]);
+  const handleNewChat = async () => {
+    try {
+      const newConv = await createConversation.mutateAsync({
+        title: 'New Conversation',
+        messages: [],
+      });
+      setActiveConversationId(newConv.id);
+    } catch (error) {
+      logger.error('Assistant', error as Error, { context: 'Failed to create conversation' });
+    }
+  };
 
-  const handleTextSubmit = async (): Promise<void> => {
-    if (!textInput.trim()) return;
-
-    const message = textInput.trim();
-    setTextInput('');
+  const handleSendMessage = async (content: string) => {
+    if (!content.trim()) return;
 
     try {
-      await sendTextMessage(message);
+      // Create conversation if none exists
+      let conversationId = activeConversationId;
+      if (!conversationId) {
+        const newConv = await createConversation.mutateAsync({
+          title: content.slice(0, 50),
+          messages: [],
+        });
+        conversationId = newConv.id;
+        setActiveConversationId(conversationId);
+      }
+
+      // Add user message
+      const userMessage: ConversationMessage = {
+        role: 'user',
+        content,
+        timestamp: new Date().toISOString(),
+      };
+
+      await sendMessage.mutateAsync({
+        conversationId: conversationId!,
+        message: userMessage,
+      });
+
+      // Simulate AI thinking
+      setIsThinking(true);
+
+      // Simulate AI response (replace with actual AI call)
+      setTimeout(async () => {
+        const aiMessage: ConversationMessage = {
+          role: 'assistant',
+          content: 'This is a simulated AI response. Integrate with your AI backend here.',
+          timestamp: new Date().toISOString(),
+        };
+
+        await sendMessage.mutateAsync({
+          conversationId: conversationId!,
+          message: aiMessage,
+        });
+
+        setIsThinking(false);
+      }, 2000);
     } catch (error) {
-      logger.error('Assistant', error as Error, { context: 'send message failed' });
+      logger.error('Assistant', error as Error, { context: 'Failed to send message' });
+      setIsThinking(false);
     }
   };
 
-  const handleVoiceToggle = (): void => {
-    if (isListening) {
-      stopListening();
-    } else {
-      startListening();
-    }
+  const handleSuggestionClick = (text: string) => {
+    void handleSendMessage(text);
   };
-
-  const handleClearHistory = (): void => {
-    // eslint-disable-next-line no-alert
-    if (window.confirm('Clear conversation history?')) {
-      clearHistory();
-      setMessages([]);
-    }
-  };
-
-  const handleSuggestionClick = (text: string): void => {
-    setTextInput(text);
-    setTimeout(() => {
-      void handleTextSubmit();
-    }, 100);
-  };
-
-  if (!isSupported) {
-    return <UnsupportedBrowserScreen />;
-  }
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 relative overflow-hidden">
-      {/* Animated background elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-gradient-to-br from-indigo-200/30 to-purple-200/30 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-gradient-to-br from-pink-200/30 to-orange-200/30 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+    <div
+      className="min-h-screen"
+      style={{ backgroundColor: colors.bg.primary }}
+    >
+      {/* Header */}
+      <AssistantHeaderV2 onNewChat={handleNewChat} />
+
+      {/* Messages Area */}
+      <div className="px-4 py-4 pb-32">
+        <div className="max-w-3xl mx-auto flex flex-col gap-3">
+          {/* Empty State */}
+          {messages.length === 0 && !isThinking && (
+            <EmptyConversationStateV2 onSuggestionClick={handleSuggestionClick} />
+          )}
+
+          {/* Message List */}
+          {messages.map((message, index) => (
+            <ChatMessageV2
+              key={index}
+              message={message}
+              showAvatar
+            />
+          ))}
+
+          {/* Typing Indicator */}
+          {isThinking && <TypingIndicatorV2 />}
+
+          {/* Auto-scroll anchor */}
+          <div ref={messagesEndRef} />
+        </div>
       </div>
 
-      <div className="relative z-10 flex flex-col h-full">
-        <AssistantHeader
-          isListening={isListening}
-          isThinking={isThinking}
-          isSpeaking={isSpeaking}
-          onClearHistory={handleClearHistory}
-        />
-
-        {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto px-4 py-6">
-          <div className="max-w-4xl mx-auto space-y-6">
-            {messages.length === 0 && !isThinking && (
-              <EmptyConversationState onSuggestionClick={handleSuggestionClick} />
-            )}
-
-            <MessagesList
-              messages={messages}
-              isThinking={isThinking}
-              transcript={transcript}
-            />
-
-            <div ref={messagesEndRef} />
-          </div>
-        </div>
-
-        <ErrorBanner error={error} />
-
-        <ConversationInput
-          textInput={textInput}
-          isListening={isListening}
-          isSpeaking={isSpeaking}
-          isThinking={isThinking}
-          onTextChange={setTextInput}
-          onTextSubmit={handleTextSubmit}
-          onVoiceToggle={handleVoiceToggle}
-          onStopSpeaking={stopSpeaking}
+      {/* Fixed Input Area - positioned above tab bar on mobile, accounts for sidebar on desktop */}
+      <div className="fixed bottom-16 lg:bottom-0 left-0 lg:left-80 right-0 z-10">
+        <ConversationInputV2
+          onSendMessage={handleSendMessage}
+          disabled={isThinking || sendMessage.isPending}
+          placeholder="Ask me anything..."
         />
       </div>
     </div>

@@ -59,8 +59,7 @@ export * from './useTravelQuery';
 export * from './useFinanceQuery';
 export * from './useBillsQuery';
 
-// Gamification & Social
-export * from './useGamificationQuery';
+// Social
 export * from './useConnectionsQuery';
 
 // Specialty

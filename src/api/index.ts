@@ -43,5 +43,4 @@ export * from './listAPI';
 export * from './userSettingsAPI';
 export * from './pushSubscriptionsAPI';
 
-// Gamification
-export * from './gamificationAPI';
+// Gamification removed - no longer needed

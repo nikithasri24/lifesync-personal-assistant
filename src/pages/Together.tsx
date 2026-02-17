@@ -30,50 +30,62 @@ const Together: React.FC = () => {
   ];
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-6 p-6">
+    <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <h1
-          className="text-3xl font-bold flex items-center gap-3"
-          style={{ color: colors.text.primary }}
+      <div className="sticky top-0 z-10" style={{ backgroundColor: colors.bg.primary }}>
+        <div
+          className="px-6 pt-4 pb-3"
+          style={{
+            background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
+          }}
         >
-          <Heart className="w-8 h-8" style={{ color: '#FF6B9D' }} />
-          Together
-        </h1>
-      </div>
+          <div className="flex items-center gap-2 mb-2 text-white">
+            <Heart size={28} />
+            <h1 className="text-3xl font-extrabold">Together</h1>
+          </div>
+          <div className="text-sm opacity-90 text-white">
+            Share moments with your partner
+          </div>
+        </div>
 
-      {/* Partner Connection Status */}
-      <PartnerStatusCard
-        partnerLink={partnerLink}
-        isLoading={linkLoading}
-        onLinkPartner={() => {}} // No action needed - uses Shared connections
-      />
+        {/* Partner Connection Status */}
+        <div className="px-6 pt-3">
+          <PartnerStatusCard
+            partnerLink={partnerLink}
+            isLoading={linkLoading}
+            onLinkPartner={() => {}} // No action needed - uses Shared connections
+          />
+        </div>
 
-      {/* Tab Navigation */}
-      <div
-        className="flex gap-1 p-1 rounded-xl"
-        style={{ backgroundColor: colors.bg.secondary }}
-      >
-        {tabs.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`flex-1 px-4 py-3 rounded-lg text-sm font-semibold transition-all ${
-              activeTab === tab.key
-                ? 'bg-white shadow-sm'
-                : 'hover:bg-white/50'
-            }`}
-            style={{
-              color: activeTab === tab.key ? '#D4A574' : colors.text.secondary,
-            }}
+        {/* Tab Navigation */}
+        <div className="px-5 pt-3">
+          <div
+            className="flex gap-1 p-1 rounded-xl"
+            style={{ backgroundColor: colors.bg.secondary }}
           >
-            {tab.label}
-          </button>
-        ))}
+            {tabs.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`flex-1 px-4 py-3 rounded-lg text-sm font-semibold transition-all ${
+                  activeTab === tab.key
+                    ? 'bg-white shadow-sm'
+                    : 'hover:bg-white/50'
+                }`}
+                style={{
+                  color: activeTab === tab.key ? '#D4A574' : colors.text.secondary,
+                }}
+                aria-label={`${tab.label} tab`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Content Views */}
-      <section>
+      <div className="pt-5 px-6 pb-20">
         {activeTab === 'milestones' && (
           <MilestonesView partnerLink={partnerLink} />
         )}
@@ -85,7 +97,7 @@ const Together: React.FC = () => {
         {activeTab === 'challenges' && (
           <ChallengesView partnerLink={partnerLink} />
         )}
-      </section>
+      </div>
     </div>
   );
 };

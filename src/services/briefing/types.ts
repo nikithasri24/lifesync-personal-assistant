@@ -69,12 +69,7 @@ export interface DailyBriefing {
   // Insights
   productivityTip?: string;
   focusSuggestion?: string;
-  
-  // Gamification
-  currentStreak: number;
-  xpToday: number;
-  level: number;
-  
+
   // Voice script
   voiceScript: string;
 }
