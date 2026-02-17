@@ -17,6 +17,7 @@
 
 import React, { useMemo, useCallback, useState } from 'react';
 import { format } from 'date-fns';
+import { Plus } from 'lucide-react';
 import { useApiHealth } from '../hooks/useApiHealth';
 import {
   useTasks,
@@ -28,6 +29,7 @@ import {
 import type { TaskData } from '../services/types';
 import { OwnerFilter, type OwnerFilterValue } from '../components/common/OwnerFilter';
 import { useCurrentUserId, usePartnerName } from '../utils/ownerUtils';
+import { useThemeColors } from '../hooks/useThemeColors';
 
 // Import all custom hooks
 import {
@@ -49,6 +51,11 @@ import {
 import { TodosLoadingState } from '../todos/components/layout/TodosLoadingState';
 import { TodosErrorState } from '../todos/components/layout/TodosErrorState';
 
+// Import V2 components
+import { FABV2 } from '../components/v2/FABV2';
+import { SegmentedControlV2, type Segment } from '../components/v2/SegmentedControlV2';
+import { TasksHeaderV2, TaskListViewV2, QuickAddModalV2 } from '../todos/components/v2';
+
 // Import utilities
 import { transformApiTasks, transformApiProjects } from '../todos/utils';
 
@@ -61,6 +68,11 @@ import {
 } from '../todos/services/taskHelpers';
 
 export default function Todos(): React.ReactElement {
+  // ============================================================================
+  // Theme and UI
+  // ============================================================================
+  const colors = useThemeColors();
+
   // ============================================================================
   // React Query Hooks - Server State Management
   // ============================================================================
@@ -206,125 +218,107 @@ export default function Todos(): React.ReactElement {
   }
 
   // ============================================================================
+  // View Segments Configuration
+  // ============================================================================
+  const viewSegments: Segment<'list' | 'kanban' | 'matrix'>[] = [
+    { value: 'list', label: 'List' },
+    { value: 'kanban', label: 'Kanban' },
+    { value: 'matrix', label: 'Matrix' },
+  ];
+
+  const [activeView, setActiveView] = useState<'list' | 'kanban' | 'matrix'>('list');
+
+  // ============================================================================
+  // Computed Values
+  // ============================================================================
+  const taskCount = viewTasks.length;
+  const completedCount = viewTasks.filter(t => t.status === 'done').length;
+
+  // ============================================================================
   // Main Render
   // ============================================================================
 
   return (
-    <div className="h-screen bg-gray-50 dark:bg-slate-900 flex">
-      {/* Sidebar Navigation */}
-      <Sidebar
-        currentView={filters.currentView}
-        onViewChange={filters.setCurrentView}
-        projects={projects}
-        tasks={tasks}
-        selectedProject={filters.selectedProject}
-        onProjectSelect={filters.setSelectedProject}
-        currentTheme={filters.currentTheme}
-        onThemeChange={filters.setCurrentTheme}
-        showQuickAdd={modals.showQuickAdd}
-        quickAddText={modals.quickAddText}
-        onQuickAddChange={modals.setQuickAddText}
-        onQuickAddSubmit={() => void editing.quickAddTask()}
-        onQuickAddCancel={modals.closeQuickAdd}
-        createTaskMutation={{
-          isPending: createTaskMutation.isPending,
-          isError: createTaskMutation.isError,
-        }}
+    <div
+      className="h-screen flex flex-col"
+      style={{ backgroundColor: colors.bg.primary }}
+    >
+      {/* V2 Header */}
+      <TasksHeaderV2
+        title="Tasks"
+        subtitle={`${taskCount} tasks${completedCount > 0 ? ` • ${completedCount} completed` : ''}`}
+        onSearchClick={modals.toggleFilters}
+        onFilterClick={modals.toggleFilters}
       />
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <Header
-          currentView={filters.currentView}
-          selectedProject={filters.selectedProject}
-          projects={projects}
-          searchQuery={filters.searchQuery}
-          onSearchChange={filters.setSearchQuery}
-          filters={filters.filters}
-          showFilters={modals.showFilters}
-          onToggleFilters={modals.toggleFilters}
-          onFilterChange={filters.setFilters}
-          onClearFilters={filters.resetFilters}
-          pomodoroTimer={pomodoro.pomodoroTimer}
-          onPomodoroToggle={pomodoro.togglePomodoro}
-          onPomodoroReset={pomodoro.resetPomodoro}
-          apiHealth={apiHealth}
-          tasksLoading={tasksLoading}
-          tasks={tasks}
-        />
-
-        {/* Owner Filter - Show only in merged mode */}
-        {mergedConnection && (
-          <div className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 px-6 py-3">
-            <OwnerFilter
-              value={ownerFilter}
-              onChange={setOwnerFilter}
-              partnerName={partnerName}
-            />
-          </div>
-        )}
-
-        {/* Content Area - View-Specific Rendering */}
-        <div className="flex-1 overflow-y-auto bg-white dark:bg-slate-900">
-          <div className="max-w-4xl mx-auto">
-            {filters.currentView === 'kanban' ? (
-              <KanbanView
-                tasks={tasks}
-                projects={projects}
-                selectedProject={filters.selectedProject}
-                onToggleStatus={(taskId: string) => void editing.toggleTaskStatus(taskId)}
-                isUpdating={updateTaskMutation.isPending}
-              />
-            ) : filters.currentView === 'matrix' ? (
-              <MatrixView
-                tasks={tasks}
-                projects={projects}
-                selectedProject={filters.selectedProject}
-                onToggleStatus={(taskId: string) => void editing.toggleTaskStatus(taskId)}
-                isUpdating={updateTaskMutation.isPending}
-              />
-            ) : (
-              <TaskListView
-                tasks={viewTasks}
-                projects={projects}
-                editingTask={modals.editingTask}
-                editTaskText={modals.editTaskText}
-                onEditChange={modals.setEditTaskText}
-                onToggleStatus={(taskId: string) => void editing.toggleTaskStatus(taskId)}
-                onStartEdit={editing.startEditingTask}
-                onSaveEdit={(taskId: string) => void editing.saveTaskEdit(taskId)}
-                onCancelEdit={editing.cancelTaskEdit}
-                expandedTasks={expansion.expandedTasks}
-                onToggleExpansion={expansion.toggleTaskExpansion}
-                allTasks={tasks}
-                activeSubtaskForm={modals.activeSubtaskForm}
-                subtaskDrafts={expansion.subtaskDrafts}
-                onSubtaskDraftChange={expansion.setSubtaskDraft}
-                onAddSubtask={(parentId: string) => void editing.addSubtask(parentId)}
-                onStartSubtaskForm={modals.openSubtaskForm}
-                onCancelSubtaskForm={modals.closeSubtaskForm}
-                pomodoroTimer={pomodoro.pomodoroTimer}
-                onStartPomodoro={pomodoro.startPomodoro}
-                onScheduleTask={handleScheduleTask}
-                createTaskMutation={{
-                  isPending: createTaskMutation.isPending,
-                  isError: createTaskMutation.isError,
-                }}
-                updateTaskMutation={{
-                  isPending: updateTaskMutation.isPending,
-                }}
-                showQuickAdd={modals.showQuickAdd}
-                quickAddText={modals.quickAddText}
-                onQuickAddChange={modals.setQuickAddText}
-                onQuickAddSubmit={() => void editing.quickAddTask()}
-                onQuickAddCancel={modals.closeQuickAdd}
-                currentView={filters.currentView}
-              />
-            )}
-          </div>
+      {/* Owner Filter - Show only in merged mode */}
+      {mergedConnection && (
+        <div className="px-5 py-3" style={{ backgroundColor: colors.bg.white, borderBottom: `1px solid ${colors.border.light}` }}>
+          <OwnerFilter
+            value={ownerFilter}
+            onChange={setOwnerFilter}
+            partnerName={partnerName}
+          />
         </div>
+      )}
+
+      {/* V2 Segmented Control for Views */}
+      <div className="px-5 py-3">
+        <SegmentedControlV2
+          segments={viewSegments}
+          value={activeView}
+          onChange={setActiveView}
+          aria-label="Task view selector"
+        />
       </div>
+
+      {/* Content Area - View-Specific Rendering */}
+      <div
+        className="flex-1 overflow-y-auto"
+        style={{ backgroundColor: colors.bg.primary }}
+      >
+        {activeView === 'kanban' ? (
+          <KanbanView
+            tasks={tasks}
+            projects={projects}
+            selectedProject={filters.selectedProject}
+            onToggleStatus={(taskId: string) => void editing.toggleTaskStatus(taskId)}
+            isUpdating={updateTaskMutation.isPending}
+          />
+        ) : activeView === 'matrix' ? (
+          <MatrixView
+            tasks={tasks}
+            projects={projects}
+            selectedProject={filters.selectedProject}
+            onToggleStatus={(taskId: string) => void editing.toggleTaskStatus(taskId)}
+            isUpdating={updateTaskMutation.isPending}
+          />
+        ) : (
+          <TaskListViewV2
+            tasks={viewTasks}
+            onToggleStatus={(taskId: string) => void editing.toggleTaskStatus(taskId)}
+            isUpdating={updateTaskMutation.isPending}
+          />
+        )}
+      </div>
+
+      {/* V2 FAB for Quick Add */}
+      <FABV2
+        icon={Plus}
+        onClick={modals.openQuickAdd}
+        position="bottom-right"
+      />
+
+      {/* Quick Add Modal */}
+      <QuickAddModalV2
+        isOpen={modals.showQuickAdd}
+        value={modals.quickAddText}
+        onChange={modals.setQuickAddText}
+        onSubmit={() => void editing.quickAddTask()}
+        onClose={modals.closeQuickAdd}
+        isLoading={createTaskMutation.isPending}
+        isError={createTaskMutation.isError}
+      />
     </div>
   );
 }

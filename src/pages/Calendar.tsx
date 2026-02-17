@@ -22,7 +22,9 @@ import { useCurrentUserId, usePartnerName } from '../utils/ownerUtils';
 import type { OwnerFilterValue } from '../components/common/OwnerFilter';
 
 // Components
-import { CalendarHeader } from '../calendar/components/CalendarHeader';
+import { CalendarHeaderV2 } from '../calendar/components/v2/CalendarHeaderV2';
+import { MonthViewV2 } from '../calendar/components/v2/MonthViewV2';
+import { DayViewV2 } from '../calendar/components/v2/DayViewV2';
 import { CalendarSidebar } from '../calendar/components/CalendarSidebar';
 import { TaskEditModal } from '../scheduler/components/TaskEditModal';
 import { EventModal } from '../components/calendar/EventModal';
@@ -31,8 +33,6 @@ import { QuickScheduleModal } from '../components/calendar/QuickScheduleModal';
 import { ScheduleBlockModal } from '../components/scheduleBlocks/ScheduleBlockModal';
 import { CalendarLoadingState } from '../calendar/components/layout/CalendarLoadingState';
 import { WeekDayHeaders } from '../calendar/components/layout/WeekDayHeaders';
-import { MonthView } from '../calendar/components/layout/MonthView';
-import { DayView } from '../calendar/components/layout/DayView';
 
 // Types
 import type { Task } from '../lib/supabase';
@@ -597,7 +597,7 @@ const Calendar: React.FC = () => {
       <div className="flex-1 flex overflow-hidden">
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Header */}
-          <CalendarHeader
+          <CalendarHeaderV2
             currentDate={calendarState.currentDate}
             view={calendarState.view}
             weekDays={calendarState.weekDays}

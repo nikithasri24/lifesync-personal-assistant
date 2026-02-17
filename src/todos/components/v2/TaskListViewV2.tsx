@@ -29,25 +29,25 @@ const statusSections: StatusSection[] = [
     key: 'todo',
     title: 'To Do',
     emoji: '📝',
-    statuses: ['todo', 'backlog'],
+    statuses: ['todo'],
   },
   {
-    key: 'in-progress',
+    key: 'in_progress',
     title: 'In Progress',
     emoji: '⚡',
-    statuses: ['in-progress', 'scheduled'],
+    statuses: ['in_progress', 'scheduled'],
   },
   {
     key: 'waiting',
     title: 'Waiting',
     emoji: '⏸️',
-    statuses: ['waiting', 'blocked'],
+    statuses: ['waiting'],
   },
   {
     key: 'done',
     title: 'Done',
     emoji: '✅',
-    statuses: ['done', 'completed'],
+    statuses: ['done'],
   },
 ];
 
@@ -64,7 +64,7 @@ export const TaskListViewV2: React.FC<TaskListViewV2Props> = ({
   const groupedTasks = statusSections.map((section) => ({
     ...section,
     tasks: tasks.filter((task) =>
-      section.statuses.includes(task.status?.toLowerCase() || 'todo')
+      section.statuses.includes(task.status || 'todo')
     ),
   }));
 

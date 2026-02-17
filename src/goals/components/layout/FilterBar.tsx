@@ -1,5 +1,6 @@
 import React from 'react';
 import { Filter, Users, User, Clock, CheckCircle2 } from 'lucide-react';
+import { useThemeColors } from '@/hooks/useThemeColors';
 
 export type StatusFilter = 'all' | 'active' | 'completed';
 export type OwnershipFilter = 'all' | 'mine' | 'partner' | 'shared';
@@ -28,6 +29,8 @@ export function FilterBar({
   partnerName = 'Partner',
   itemType,
 }: FilterBarProps): React.ReactElement {
+  const colors = useThemeColors();
+
   const statusOptions: { value: StatusFilter; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
     { value: 'all', label: 'All', icon: Filter },
     { value: 'active', label: 'Active', icon: Clock },
@@ -41,11 +44,24 @@ export function FilterBar({
     { value: 'shared', label: 'Shared', icon: Users },
   ];
 
+  const getActiveButtonStyle = (isActive: boolean): React.CSSProperties => {
+    if (isActive) {
+      return {
+        background: `linear-gradient(135deg, ${colors.accent.start} 0%, ${colors.accent.end} 100%)`,
+        color: '#FFFFFF',
+      };
+    }
+    return {
+      backgroundColor: colors.bg.secondary,
+      color: colors.text.tertiary,
+    };
+  };
+
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200 dark:border-slate-700 pb-4">
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pb-4" style={{ borderBottom: `1px solid ${colors.border.light}` }}>
       {/* Status Filter */}
       <div className="flex items-center gap-2">
-        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Status:</span>
+        <span className="text-sm font-medium" style={{ color: colors.text.secondary }}>Status:</span>
         <div className="flex gap-1">
           {statusOptions.map((option) => {
             const Icon = option.icon;
@@ -54,11 +70,8 @@ export function FilterBar({
               <button
                 key={option.value}
                 onClick={() => onStatusFilterChange(option.value)}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                  isActive
-                    ? 'bg-indigo-600 text-white shadow-md ring-2 ring-indigo-200 dark:ring-indigo-800'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600'
-                }`}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all"
+                style={getActiveButtonStyle(isActive)}
                 aria-label={`Filter by ${option.label.toLowerCase()}`}
                 aria-pressed={isActive}
               >
@@ -78,7 +91,7 @@ export function FilterBar({
       {/* Ownership Filter (only in merged mode) */}
       {isMerged && (
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Show:</span>
+          <span className="text-sm font-medium" style={{ color: colors.text.secondary }}>Show:</span>
           <div className="flex gap-1">
             {ownershipOptions.map((option) => {
               const Icon = option.icon;
@@ -87,11 +100,8 @@ export function FilterBar({
                 <button
                   key={option.value}
                   onClick={() => onOwnershipFilterChange(option.value)}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                    isActive
-                      ? 'bg-purple-600 text-white shadow-md ring-2 ring-purple-200 dark:ring-purple-800'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600'
-                  }`}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all"
+                  style={getActiveButtonStyle(isActive)}
                   aria-label={`Show ${option.label.toLowerCase()} ${itemType}`}
                   aria-pressed={isActive}
                 >

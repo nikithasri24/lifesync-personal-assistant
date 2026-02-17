@@ -8,112 +8,59 @@ import { Users, Plus } from 'lucide-react';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { useSharedState } from '@/shared/hooks/useSharedState';
+import {
+  usePartnerConnections,
+  usePartnerInvitations,
+  useSharedActivity,
+  useSharedStats,
+} from '@/shared/hooks/useSharedQueries';
+import {
+  useAcceptInvitationMutation,
+  useRejectInvitationMutation,
+} from '@/hooks/useConnectionsQuery';
 import { StatsGrid } from '@/shared/components/StatsGrid';
 import { PartnerView, InvitesView, ActivityView } from '@/shared/components/views';
-import type { PartnerConnection, Invitation, ActivityItem, SharedStats } from '@/shared/types';
-
-// Mock data for now - will be replaced with React Query hooks
-const MOCK_CONNECTIONS: PartnerConnection[] = [
-  {
-    id: '1',
-    partner_id: 'partner-123',
-    partner_name: 'Sarah Johnson',
-    partner_email: 'sarah@example.com',
-    relationship: 'spouse',
-    permissions: [
-      { module: 'meals', permission: 'merged' },
-      { module: 'shopping', permission: 'merged' },
-      { module: 'finances', permission: 'merged' },
-      { module: 'travel', permission: 'merged' },
-      { module: 'goals', permission: 'merged' },
-      { module: 'habits', permission: 'view' },
-    ],
-    connected_at: new Date().toISOString(),
-    status: 'active',
-  },
-];
-
-const MOCK_INVITATIONS: Invitation[] = [];
-
-const MOCK_ACTIVITIES: ActivityItem[] = [
-  {
-    id: '1',
-    user_id: 'partner-123',
-    user_name: 'Sarah',
-    module: 'meals',
-    action: 'Added Pasta Carbonara to meal plan',
-    item_type: 'recipe',
-    item_id: 'recipe-1',
-    timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-  },
-  {
-    id: '2',
-    user_id: 'current-user',
-    user_name: 'You',
-    module: 'tasks',
-    action: 'Completed task: Buy groceries',
-    item_type: 'task',
-    item_id: 'task-1',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-  },
-  {
-    id: '3',
-    user_id: 'partner-123',
-    user_name: 'Sarah',
-    module: 'shopping',
-    action: 'Added Milk to shopping list',
-    item_type: 'shopping_item',
-    item_id: 'item-1',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(),
-  },
-];
 
 export const Shared: React.FC = () => {
   const colors = useThemeColors();
   const { activeTab, setActiveTab } = useSharedState();
 
-  // Mock current user ID
-  const currentUserId = 'current-user';
+  // Real data from React Query hooks
+  const { data: connections = [], isLoading: connectionsLoading } = usePartnerConnections();
+  const { data: invitations = [], isLoading: invitationsLoading } = usePartnerInvitations();
+  const { data: activities = [], isLoading: activitiesLoading } = useSharedActivity();
+  const stats = useSharedStats();
 
-  // Calculate stats
-  const stats: SharedStats = useMemo(() => {
-    const partnerCount = MOCK_CONNECTIONS.length;
-    const sharedModulesCount = MOCK_CONNECTIONS.reduce(
-      (acc, conn) => acc + conn.permissions.filter((p) => p.permission !== 'off').length,
-      0
-    );
-    const sharedItemsCount = 12; // Mock count
+  // Mutations
+  const acceptMutation = useAcceptInvitationMutation();
+  const rejectMutation = useRejectInvitationMutation();
 
-    return {
-      partner_count: partnerCount,
-      shared_modules_count: sharedModulesCount,
-      shared_items_count: sharedItemsCount,
-    };
-  }, []);
+  // Get current user ID from first connection if available
+  const currentUserId = connections[0]?.partner_id || 'current-user';
 
   // Count pending received invitations for badge
-  const pendingInvitesCount = MOCK_INVITATIONS.filter(
+  const pendingInvitesCount = invitations.filter(
     (inv) => inv.direction === 'received' && inv.status === 'pending'
   ).length;
 
   const handleAcceptInvite = (id: string) => {
-    console.log('Accept invite:', id);
-    // TODO: Implement with mutation
+    acceptMutation.mutate({
+      connectionId: id,
+    });
   };
 
   const handleDeclineInvite = (id: string) => {
-    console.log('Decline invite:', id);
-    // TODO: Implement with mutation
+    rejectMutation.mutate(id);
   };
 
   const handleCancelInvite = (id: string) => {
-    console.log('Cancel invite:', id);
-    // TODO: Implement with mutation
+    // Cancel is same as reject for sent invitations
+    rejectMutation.mutate(id);
   };
 
   const handleInvitePartner = () => {
-    console.log('Invite partner clicked');
     // TODO: Open invite modal
+    console.log('Invite partner clicked');
   };
 
   return (
@@ -161,13 +108,13 @@ export const Shared: React.FC = () => {
       {/* Tab Content */}
       <div className="pt-5">
         {activeTab === 'partner' && (
-          <PartnerView connections={MOCK_CONNECTIONS} isLoading={false} />
+          <PartnerView connections={connections} isLoading={connectionsLoading} />
         )}
 
         {activeTab === 'invites' && (
           <InvitesView
-            invitations={MOCK_INVITATIONS}
-            isLoading={false}
+            invitations={invitations}
+            isLoading={invitationsLoading}
             onAccept={handleAcceptInvite}
             onDecline={handleDeclineInvite}
             onCancel={handleCancelInvite}
@@ -176,15 +123,15 @@ export const Shared: React.FC = () => {
 
         {activeTab === 'activity' && (
           <ActivityView
-            activities={MOCK_ACTIVITIES}
-            isLoading={false}
+            activities={activities}
+            isLoading={activitiesLoading}
             currentUserId={currentUserId}
           />
         )}
       </div>
 
       {/* FAB - Only show on empty states or invites tab */}
-      {(MOCK_CONNECTIONS.length === 0 || activeTab === 'invites') && (
+      {(connections.length === 0 || activeTab === 'invites') && (
         <button
           type="button"
           onClick={handleInvitePartner}

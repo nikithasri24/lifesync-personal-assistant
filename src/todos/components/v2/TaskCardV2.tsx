@@ -59,7 +59,7 @@ export const TaskCardV2: React.FC<TaskCardV2Props> = ({
   const colors = useThemeColors();
   const isCompleted = task.status === 'done';
   const borderColor = priorityBorderColors[task.priority || 'medium'];
-  const dueDateText = formatDueDate(task.due_date);
+  const dueDateText = formatDueDate(task.dueDate);
 
   return (
     <div
