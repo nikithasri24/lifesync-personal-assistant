@@ -23,7 +23,7 @@ export const MessageDetailModal: React.FC<MessageDetailModalProps> = ({
   onClose,
   onEdit,
 }) => {
-  const { toast } = useToast();
+  const { showToast } = useToast();
   const { mutate: deleteMessage, isPending: isDeleting } = useDeletePartnerMessage();
   // Keyboard navigation
   useEffect(() => {
@@ -54,14 +54,14 @@ export const MessageDetailModal: React.FC<MessageDetailModalProps> = ({
 
     deleteMessage(message.id, {
       onSuccess: () => {
-        if (toast) {
-          toast('Message deleted', 'success');
+        if (showToast) {
+          showToast('Message deleted', 'success');
         }
         onClose();
       },
       onError: (error) => {
-        if (toast) {
-          toast(`Failed to delete message: ${error.message}`, 'error');
+        if (showToast) {
+          showToast(`Failed to delete message: ${error.message}`, 'error');
         }
       },
     });

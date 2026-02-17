@@ -21,7 +21,7 @@ export const EditMilestoneModal: React.FC<EditMilestoneModalProps> = ({
   milestone,
   onClose,
 }) => {
-  const { toast } = useToast();
+  const { showToast } = useToast();
   const { mutate: updateMilestone, isPending: isUpdating } = useUpdateMilestone();
   const { mutate: deleteMilestone, isPending: isDeleting } = useDeleteMilestone();
 
@@ -85,14 +85,14 @@ export const EditMilestoneModal: React.FC<EditMilestoneModalProps> = ({
       },
       {
         onSuccess: () => {
-          if (toast) {
-            toast('Milestone updated successfully!', 'success');
+          if (showToast) {
+            showToast('Milestone updated successfully!', 'success');
           }
           onClose();
         },
         onError: (error) => {
-          if (toast) {
-            toast(`Failed to update milestone: ${error.message}`, 'error');
+          if (showToast) {
+            showToast(`Failed to update milestone: ${error.message}`, 'error');
           }
         },
       }
@@ -106,14 +106,14 @@ export const EditMilestoneModal: React.FC<EditMilestoneModalProps> = ({
 
     deleteMilestone(milestone.id, {
       onSuccess: () => {
-        if (toast) {
-          toast('Milestone deleted successfully!', 'success');
+        if (showToast) {
+          showToast('Milestone deleted successfully!', 'success');
         }
         onClose();
       },
       onError: (error) => {
-        if (toast) {
-          toast(`Failed to delete milestone: ${error.message}`, 'error');
+        if (showToast) {
+          showToast(`Failed to delete milestone: ${error.message}`, 'error');
         }
       },
     });

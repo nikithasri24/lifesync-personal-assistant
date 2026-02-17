@@ -6,7 +6,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/services/logger';
-import { parseToLifeSyncError, AuthenticationError } from '@/lib/errors';
+import { parseToLifeSyncError, getUserErrorMessage, AuthenticationError } from '@/lib/errors';
+import { useToast } from '@/hooks/useToast';
 import type {
   AchievementReward,
   CreateAchievementRewardRequest,
@@ -62,6 +63,8 @@ export function useAchievementRewards(connectionId?: string) {
       return data || [];
     },
     enabled: !!connectionId,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
   });
 }
 
@@ -93,6 +96,8 @@ export function useAchievementReward(id: string) {
       return data;
     },
     enabled: !!id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 15 * 60 * 1000, // 15 minutes
   });
 }
 
@@ -105,6 +110,7 @@ export function useAchievementReward(id: string) {
  */
 export function useCreateAchievementReward() {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   return useMutation({
     mutationFn: async (request: CreateAchievementRewardRequest): Promise<AchievementReward> => {
@@ -134,8 +140,15 @@ export function useCreateAchievementReward() {
       return data;
     },
     onSuccess: (data) => {
+      showToast('Challenge created successfully!', 'success');
+      // Invalidate lists only, not detail queries
       void queryClient.invalidateQueries({ queryKey: achievementRewardKeys.lists() });
       logger.info('Together', 'Achievement reward created', { id: data.id });
+    },
+    onError: (error) => {
+      const message = getUserErrorMessage(error);
+      showToast(message, 'error');
+      logger.error('Together', error as Error, { operation: 'createAchievementReward' });
     },
   });
 }
@@ -145,6 +158,7 @@ export function useCreateAchievementReward() {
  */
 export function useUpdateAchievementReward() {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   return useMutation({
     mutationFn: async (request: UpdateAchievementRewardRequest): Promise<AchievementReward> => {
@@ -170,10 +184,84 @@ export function useUpdateAchievementReward() {
 
       return data;
     },
+    onMutate: async (request) => {
+      const { id, ...updates } = request;
+
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: achievementRewardKeys.detail(id) });
+      await queryClient.cancelQueries({ queryKey: achievementRewardKeys.lists() });
+
+      // Snapshot previous values
+      const previousChallenge = queryClient.getQueryData<AchievementReward>(
+        achievementRewardKeys.detail(id)
+      );
+
+      // Optimistically update detail query
+      if (previousChallenge) {
+        const optimisticUpdate = { ...previousChallenge, ...updates };
+
+        // Auto-complete if progress reaches goal
+        if (
+          updates.current_progress !== undefined &&
+          previousChallenge.target_value &&
+          updates.current_progress >= previousChallenge.target_value
+        ) {
+          optimisticUpdate.status = 'completed';
+        }
+
+        queryClient.setQueryData<AchievementReward>(
+          achievementRewardKeys.detail(id),
+          optimisticUpdate
+        );
+      }
+
+      // Optimistically update lists
+      queryClient.setQueriesData<AchievementReward[]>(
+        { queryKey: achievementRewardKeys.lists() },
+        (old) => {
+          if (!old) return old;
+          return old.map((challenge) => {
+            if (challenge.id !== id) return challenge;
+
+            const optimisticUpdate = { ...challenge, ...updates };
+
+            // Auto-complete if progress reaches goal
+            if (
+              updates.current_progress !== undefined &&
+              challenge.target_value &&
+              updates.current_progress >= challenge.target_value
+            ) {
+              optimisticUpdate.status = 'completed';
+            }
+
+            return optimisticUpdate;
+          });
+        }
+      );
+
+      return { previousChallenge };
+    },
     onSuccess: (data) => {
+      showToast('Challenge updated successfully!', 'success');
+      // Update specific item in cache with server data
+      queryClient.setQueryData(achievementRewardKeys.detail(data.id), data);
+      // Invalidate lists only (detail query already updated)
       void queryClient.invalidateQueries({ queryKey: achievementRewardKeys.lists() });
-      void queryClient.invalidateQueries({ queryKey: achievementRewardKeys.detail(data.id) });
       logger.info('Together', 'Achievement reward updated', { id: data.id });
+    },
+    onError: (error, request, context) => {
+      // Rollback on error
+      if (context?.previousChallenge) {
+        queryClient.setQueryData(
+          achievementRewardKeys.detail(request.id),
+          context.previousChallenge
+        );
+      }
+      void queryClient.invalidateQueries({ queryKey: achievementRewardKeys.lists() });
+
+      const message = getUserErrorMessage(error);
+      showToast(message, 'error');
+      logger.error('Together', error as Error, { operation: 'updateAchievementReward' });
     },
   });
 }
@@ -183,6 +271,7 @@ export function useUpdateAchievementReward() {
  */
 export function useDeleteAchievementReward() {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   return useMutation({
     mutationFn: async (id: string): Promise<void> => {
@@ -204,9 +293,17 @@ export function useDeleteAchievementReward() {
       }
     },
     onSuccess: (_, id) => {
+      showToast('Challenge deleted', 'success');
+      // Remove from cache
+      queryClient.removeQueries({ queryKey: achievementRewardKeys.detail(id) });
+      // Invalidate lists only
       void queryClient.invalidateQueries({ queryKey: achievementRewardKeys.lists() });
-      void queryClient.removeQueries({ queryKey: achievementRewardKeys.detail(id) });
       logger.info('Together', 'Achievement reward deleted', { id });
+    },
+    onError: (error) => {
+      const message = getUserErrorMessage(error);
+      showToast(message, 'error');
+      logger.error('Together', error as Error, { operation: 'deleteAchievementReward' });
     },
   });
 }

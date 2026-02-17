@@ -20,7 +20,7 @@ export const ChallengeDetailModal: React.FC<ChallengeDetailModalProps> = ({
   challenge,
   onClose,
 }) => {
-  const { toast } = useToast();
+  const { showToast } = useToast();
   const { mutate: updateChallenge, isPending: isUpdating } = useUpdateAchievementReward();
   const { mutate: deleteChallenge, isPending: isDeleting } = useDeleteAchievementReward();
 
@@ -57,8 +57,8 @@ export const ChallengeDetailModal: React.FC<ChallengeDetailModalProps> = ({
     e.preventDefault();
 
     if (!title.trim() || !targetValue.trim()) {
-      if (toast) {
-        toast('Please fill in all required fields', 'error');
+      if (showToast) {
+        showToast('Please fill in all required fields', 'error');
       }
       return;
     }
@@ -77,14 +77,14 @@ export const ChallengeDetailModal: React.FC<ChallengeDetailModalProps> = ({
       },
       {
         onSuccess: () => {
-          if (toast) {
-            toast('Challenge updated successfully! 🎯', 'success');
+          if (showToast) {
+            showToast('Challenge updated successfully! 🎯', 'success');
           }
           setIsEditing(false);
         },
         onError: (error) => {
-          if (toast) {
-            toast(`Failed to update challenge: ${error.message}`, 'error');
+          if (showToast) {
+            showToast(`Failed to update challenge: ${error.message}`, 'error');
           }
         },
       }
@@ -98,14 +98,14 @@ export const ChallengeDetailModal: React.FC<ChallengeDetailModalProps> = ({
 
     deleteChallenge(challenge.id, {
       onSuccess: () => {
-        if (toast) {
-          toast('Challenge deleted', 'success');
+        if (showToast) {
+          showToast('Challenge deleted', 'success');
         }
         onClose();
       },
       onError: (error) => {
-        if (toast) {
-          toast(`Failed to delete challenge: ${error.message}`, 'error');
+        if (showToast) {
+          showToast(`Failed to delete challenge: ${error.message}`, 'error');
         }
       },
     });

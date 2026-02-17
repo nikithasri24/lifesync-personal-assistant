@@ -19,18 +19,27 @@ import type { ConnectionWithPermissions } from '@/shared/types/connections';
  * Convert ConnectionWithPermissions to PartnerLink format
  */
 function connectionToPartnerLink(connection: ConnectionWithPermissions): PartnerLink {
+  // Calculate days together if relationship_start_date exists
+  let daysTogether: number | null = null;
+  if (connection.relationshipStartDate) {
+    const startDate = new Date(connection.relationshipStartDate);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - startDate.getTime());
+    daysTogether = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  }
+
   return {
     id: connection.id,
     requester_id: connection.requesterId,
     partner_id: connection.otherUser.id, // Use otherUser.id instead of receiverId
     status: 'accepted', // Maps from ConnectionStatus 'active' to PartnerLink 'accepted'
-    relationship_start_date: null, // TODO: Read from profile_connections.relationship_start_date
+    relationship_start_date: connection.relationshipStartDate || null,
     created_at: connection.createdAt,
     updated_at: connection.updatedAt || connection.createdAt,
     requester_email: connection.otherUser?.email,
     partner_email: connection.otherUser?.email,
     partner_name: connection.myLabel || connection.otherUser?.fullName || connection.otherUser?.email,
-    days_together: null,
+    days_together: daysTogether,
   };
 }
 

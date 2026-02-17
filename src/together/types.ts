@@ -347,3 +347,10 @@ export const TARGET_TYPE_LABELS: Record<TargetType, string> = {
   streak: 'Maintain streak',
   milestone: 'Hit milestone',
 };
+
+// =====================================================
+// TYPE GUARDS
+// =====================================================
+
+// Re-export type guards for convenience
+export * from './types/guards';

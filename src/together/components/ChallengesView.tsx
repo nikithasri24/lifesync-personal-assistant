@@ -3,13 +3,14 @@
  * Shows active challenges and completed rewards
  */
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useAchievementRewards } from '../hooks';
 import type { PartnerLink, AchievementReward } from '../types';
 import { ChallengeCard } from './ChallengeCard';
 import { CreateChallengeModal } from './modals/CreateChallengeModal';
 import { ChallengeDetailModal } from './modals/ChallengeDetailModal';
 import { useThemeColors } from '@/hooks/useThemeColors';
+import { useModalState } from '@/hooks/useModalState';
 
 interface ChallengesViewProps {
   partnerLink: PartnerLink | null | undefined;
@@ -18,8 +19,11 @@ interface ChallengesViewProps {
 export const ChallengesView: React.FC<ChallengesViewProps> = ({ partnerLink }) => {
   const colors = useThemeColors();
 
-  const [createOpen, setCreateOpen] = useState(false);
-  const [viewingChallenge, setViewingChallenge] = useState<AchievementReward | null>(null);
+  // Modal state management
+  const modals = useModalState({
+    create: false,
+    viewingChallenge: null as AchievementReward | null,
+  });
 
   const { data: challenges = [], isLoading } = useAchievementRewards(partnerLink?.id);
 
@@ -44,7 +48,7 @@ export const ChallengesView: React.FC<ChallengesViewProps> = ({ partnerLink }) =
 
   // Categorize challenges
   const active = challenges.filter(c => c.status === 'active');
-  const unlocked = challenges.filter(c => c.status === 'unlocked');
+  const completed = challenges.filter(c => c.status === 'completed');
   const expired = challenges.filter(c => c.status === 'expired');
 
   return (
@@ -55,7 +59,7 @@ export const ChallengesView: React.FC<ChallengesViewProps> = ({ partnerLink }) =
           Create Challenge for Partner
         </h2>
         <button
-          onClick={() => setCreateOpen(true)}
+          onClick={() => modals.open('create')}
           className="px-4 py-2 rounded-lg font-semibold transition-colors text-white hover:opacity-90"
           style={{
             background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
@@ -95,7 +99,7 @@ export const ChallengesView: React.FC<ChallengesViewProps> = ({ partnerLink }) =
             Create habit-based challenges with unlockable rewards for your partner
           </p>
           <button
-            onClick={() => setCreateOpen(true)}
+            onClick={() => modals.open('create')}
             className="px-4 py-2 rounded-lg font-semibold transition-colors text-white"
             style={{
               background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
@@ -117,25 +121,25 @@ export const ChallengesView: React.FC<ChallengesViewProps> = ({ partnerLink }) =
                   <ChallengeCard
                     key={challenge.id}
                     challenge={challenge}
-                    onClick={() => setViewingChallenge(challenge)}
+                    onClick={() => modals.set('viewingChallenge', challenge)}
                   />
                 ))}
               </div>
             </div>
           )}
 
-          {/* Unlocked Rewards */}
-          {unlocked.length > 0 && (
+          {/* Completed Challenges */}
+          {completed.length > 0 && (
             <div>
               <h3 className="text-lg font-bold mb-3" style={{ color: colors.text.primary }}>
-                Unlocked Rewards
+                Completed Challenges
               </h3>
               <div className="space-y-3">
-                {unlocked.map((challenge) => (
+                {completed.map((challenge) => (
                   <ChallengeCard
                     key={challenge.id}
                     challenge={challenge}
-                    onClick={() => setViewingChallenge(challenge)}
+                    onClick={() => modals.set('viewingChallenge', challenge)}
                   />
                 ))}
               </div>
@@ -153,7 +157,7 @@ export const ChallengesView: React.FC<ChallengesViewProps> = ({ partnerLink }) =
                   <ChallengeCard
                     key={challenge.id}
                     challenge={challenge}
-                    onClick={() => setViewingChallenge(challenge)}
+                    onClick={() => modals.set('viewingChallenge', challenge)}
                   />
                 ))}
               </div>
@@ -163,20 +167,20 @@ export const ChallengesView: React.FC<ChallengesViewProps> = ({ partnerLink }) =
       )}
 
       {/* Create Modal */}
-      {createOpen && (
+      {modals.state.create && (
         <CreateChallengeModal
-          isOpen={createOpen}
+          isOpen={modals.state.create}
           partnerLink={partnerLink}
-          onClose={() => setCreateOpen(false)}
+          onClose={() => modals.close('create')}
         />
       )}
 
       {/* Challenge Detail/Edit Modal */}
-      {viewingChallenge && (
+      {modals.state.viewingChallenge && (
         <ChallengeDetailModal
-          isOpen={!!viewingChallenge}
-          challenge={viewingChallenge}
-          onClose={() => setViewingChallenge(null)}
+          isOpen={!!modals.state.viewingChallenge}
+          challenge={modals.state.viewingChallenge}
+          onClose={() => modals.set('viewingChallenge', null)}
         />
       )}
     </div>

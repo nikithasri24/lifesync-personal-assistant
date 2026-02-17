@@ -7,3 +7,5 @@ export * from './useMilestonesQuery';
 export * from './usePartnerMessagesQuery';
 export * from './useAchievementRewardsQuery';
 export * from './useMilestoneReminders';
+export * from './useTogetherRealtime';
+export * from './useTogetherMergedMode';

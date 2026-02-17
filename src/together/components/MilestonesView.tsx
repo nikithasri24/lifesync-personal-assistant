@@ -20,8 +20,11 @@ interface MilestonesViewProps {
 export const MilestonesView: React.FC<MilestonesViewProps> = ({ partnerLink }) => {
   const colors = useThemeColors();
 
-  const [addMilestoneOpen, setAddMilestoneOpen] = React.useState(false);
-  const [editingMilestone, setEditingMilestone] = React.useState<string | null>(null);
+  // Modal state management
+  const modals = useModalState({
+    addMilestone: false,
+    editingMilestone: null as string | null,
+  });
 
   // Fetch milestones
   const { data: upcomingMilestones = [], isLoading: upcomingLoading } =
@@ -45,7 +48,7 @@ export const MilestonesView: React.FC<MilestonesViewProps> = ({ partnerLink }) =
             Upcoming
           </h2>
           <button
-            onClick={() => setAddMilestoneOpen(true)}
+            onClick={() => modals.open('addMilestone')}
             className="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1"
             style={{
               color: '#D4A574',
@@ -85,7 +88,7 @@ export const MilestonesView: React.FC<MilestonesViewProps> = ({ partnerLink }) =
               Add birthdays, anniversaries, and special dates
             </p>
             <button
-              onClick={() => setAddMilestoneOpen(true)}
+              onClick={() => modals.open('addMilestone')}
               className="px-4 py-2 rounded-lg font-semibold transition-colors text-white"
               style={{
                 background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
@@ -100,7 +103,7 @@ export const MilestonesView: React.FC<MilestonesViewProps> = ({ partnerLink }) =
               <MilestoneCard
                 key={milestone.id}
                 milestone={milestone}
-                onEdit={() => setEditingMilestone(milestone.id)}
+                onEdit={() => modals.set('editingMilestone', milestone.id)}
               />
             ))}
           </div>
@@ -119,7 +122,7 @@ export const MilestonesView: React.FC<MilestonesViewProps> = ({ partnerLink }) =
                 key={milestone.id}
                 milestone={milestone}
                 isPast
-                onEdit={() => setEditingMilestone(milestone.id)}
+                onEdit={() => modals.set('editingMilestone', milestone.id)}
               />
             ))}
           </div>
@@ -127,20 +130,20 @@ export const MilestonesView: React.FC<MilestonesViewProps> = ({ partnerLink }) =
       )}
 
       {/* Add Milestone Modal */}
-      {addMilestoneOpen && (
+      {modals.state.addMilestone && (
         <AddMilestoneModal
-          isOpen={addMilestoneOpen}
+          isOpen={modals.state.addMilestone}
           partnerLink={partnerLink}
-          onClose={() => setAddMilestoneOpen(false)}
+          onClose={() => modals.close('addMilestone')}
         />
       )}
 
       {/* Edit Milestone Modal */}
-      {editingMilestone && (
+      {modals.state.editingMilestone && (
         <EditMilestoneModal
-          isOpen={!!editingMilestone}
-          milestone={allMilestones.find(m => m.id === editingMilestone)!}
-          onClose={() => setEditingMilestone(null)}
+          isOpen={!!modals.state.editingMilestone}
+          milestone={allMilestones.find(m => m.id === modals.state.editingMilestone)!}
+          onClose={() => modals.set('editingMilestone', null)}
         />
       )}
     </div>

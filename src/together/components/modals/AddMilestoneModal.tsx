@@ -9,6 +9,8 @@ import { useCreateMilestone } from '../../hooks';
 import type { PartnerLink, MilestoneType, ForWhom } from '../../types';
 import { MILESTONE_TYPE_LABELS } from '../../types';
 import { useToast } from '@/hooks/useToast';
+import { logger } from '@/services/logger';
+import { validateMilestone } from '../../utils/validation';
 
 interface AddMilestoneModalProps {
   isOpen: boolean;
@@ -23,7 +25,7 @@ export const AddMilestoneModal: React.FC<AddMilestoneModalProps> = ({
   partnerLink,
   onClose,
 }) => {
-  const { toast } = useToast();
+  const { showToast } = useToast();
   const { mutate: createMilestone, isPending } = useCreateMilestone();
 
   // Load saved draft from localStorage
@@ -34,7 +36,7 @@ export const AddMilestoneModal: React.FC<AddMilestoneModalProps> = ({
         return JSON.parse(saved);
       }
     } catch (error) {
-      console.error('Failed to load milestone draft:', error);
+      logger.error('Together', error as Error, { context: 'Failed to load milestone draft' });
     }
     return null;
   };
@@ -96,16 +98,33 @@ export const AddMilestoneModal: React.FC<AddMilestoneModalProps> = ({
 
     // Build date string
     const dateString = `${year || new Date().getFullYear()}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    const milestoneTitle = title.trim() || MILESTONE_TYPE_LABELS[milestoneType];
+
+    // Validate form data
+    const validation = validateMilestone({
+      title: milestoneTitle,
+      milestone_type: milestoneType,
+      milestone_date: dateString,
+      for_whom: forWhom,
+    });
+
+    if (!validation.valid) {
+      const errorMessage = Object.values(validation.errors)[0] || 'Please check your input';
+      if (showToast) {
+        showToast(errorMessage, 'error');
+      }
+      return;
+    }
 
     createMilestone(
       {
-        title: title || MILESTONE_TYPE_LABELS[milestoneType],
+        title: milestoneTitle,
         milestone_type: milestoneType,
         milestone_date: dateString,
         recurring,
         for_whom: forWhom,
         description: '',
-        notes,
+        notes: notes.trim(),
         photo_urls: [],
         reminder_30d: reminder30d,
         reminder_7d: reminder7d,
@@ -116,16 +135,16 @@ export const AddMilestoneModal: React.FC<AddMilestoneModalProps> = ({
       },
       {
         onSuccess: () => {
-          if (toast) {
-            toast('Milestone created successfully!', 'success');
+          if (showToast) {
+            showToast('Milestone created successfully!', 'success');
           }
           // Clear draft from localStorage
           localStorage.removeItem(STORAGE_KEY);
           onClose();
         },
         onError: (error) => {
-          if (toast) {
-            toast(`Failed to create milestone: ${error.message}`, 'error');
+          if (showToast) {
+            showToast(`Failed to create milestone: ${error.message}`, 'error');
           }
         },
       }

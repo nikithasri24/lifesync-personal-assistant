@@ -7,9 +7,11 @@ import React, { useState, useEffect } from 'react';
 import { Clock, Check, Star } from 'lucide-react';
 import { usePartnerMessages } from '../hooks';
 import type { PartnerLink, PartnerMessage } from '../types';
+import { isPartnerMessage } from '../types/guards';
 import { ComposeMessageModal } from './modals/ComposeMessageModal';
 import { MessageDetailModal } from './modals/MessageDetailModal';
 import { useThemeColors } from '@/hooks/useThemeColors';
+import { useModalState } from '@/hooks/useModalState';
 import { formatDateLong } from '../utils/dateHelpers';
 
 interface MessagesViewProps {
@@ -22,57 +24,56 @@ const STORAGE_KEY_VIEWING = 'together_messages_viewing_id';
 export const MessagesView: React.FC<MessagesViewProps> = ({ partnerLink }) => {
   const colors = useThemeColors();
 
-  // Restore compose modal state from localStorage
-  const [composeOpen, setComposeOpen] = useState(() => {
-    const saved = localStorage.getItem(STORAGE_KEY_COMPOSE);
-    return saved === 'true';
+  // Modal state management
+  const modals = useModalState({
+    compose: (() => {
+      const saved = localStorage.getItem(STORAGE_KEY_COMPOSE);
+      return saved === 'true';
+    })(),
+    viewingMessageId: localStorage.getItem(STORAGE_KEY_VIEWING) as string | null,
+    editingMessage: null as PartnerMessage | null,
   });
-
-  // Restore viewing message ID from localStorage
-  const [viewingMessageId, setViewingMessageId] = useState<string | null>(() => {
-    return localStorage.getItem(STORAGE_KEY_VIEWING);
-  });
-
-  // Track which message is being edited
-  const [editingMessage, setEditingMessage] = useState<PartnerMessage | null>(null);
 
   const { data: messages = [], isLoading } = usePartnerMessages();
 
-  // Find the viewing message from the ID
-  const viewingMessage = viewingMessageId
-    ? messages.find(m => m.id === viewingMessageId) || null
-    : null;
+  // Find the viewing message from the ID with type guard validation
+  const viewingMessage = modals.state.viewingMessageId
+    ? messages.find(m => m.id === modals.state.viewingMessageId)
+    : undefined;
+
+  // Validate viewing message with type guard
+  const validViewingMessage = viewingMessage && isPartnerMessage(viewingMessage) ? viewingMessage : null;
 
   // Clear viewing message ID if message not found after loading completes
   useEffect(() => {
-    if (!isLoading && viewingMessageId && !viewingMessage) {
-      setViewingMessageId(null);
+    if (!isLoading && modals.state.viewingMessageId && !validViewingMessage) {
+      modals.set('viewingMessageId', null);
     }
-  }, [isLoading, viewingMessageId, viewingMessage]);
+  }, [isLoading, modals.state.viewingMessageId, validViewingMessage]);
 
   // Save compose state to localStorage whenever it changes
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY_COMPOSE, composeOpen.toString());
-  }, [composeOpen]);
+    localStorage.setItem(STORAGE_KEY_COMPOSE, modals.state.compose.toString());
+  }, [modals.state.compose]);
 
   // Save viewing message ID to localStorage whenever it changes
   useEffect(() => {
-    if (viewingMessageId) {
-      localStorage.setItem(STORAGE_KEY_VIEWING, viewingMessageId);
+    if (modals.state.viewingMessageId) {
+      localStorage.setItem(STORAGE_KEY_VIEWING, modals.state.viewingMessageId);
     } else {
       localStorage.removeItem(STORAGE_KEY_VIEWING);
     }
-  }, [viewingMessageId]);
+  }, [modals.state.viewingMessageId]);
 
-  const handleOpenCompose = () => setComposeOpen(true);
-  const handleCloseCompose = () => setComposeOpen(false);
+  const handleOpenCompose = () => modals.open('compose');
+  const handleCloseCompose = () => modals.close('compose');
 
   const handleViewMessage = (message: PartnerMessage) => {
-    setViewingMessageId(message.id);
+    modals.set('viewingMessageId', message.id);
   };
 
   const handleCloseViewMessage = () => {
-    setViewingMessageId(null);
+    modals.set('viewingMessageId', null);
   };
 
   const hasPartner = partnerLink?.status === 'accepted';
@@ -301,29 +302,31 @@ export const MessagesView: React.FC<MessagesViewProps> = ({ partnerLink }) => {
       )}
 
       {/* Compose Modal */}
-      {composeOpen && (
+      {modals.state.compose && (
         <ComposeMessageModal
-          isOpen={composeOpen}
+          isOpen={modals.state.compose}
           partnerLink={partnerLink}
           onClose={() => {
             handleCloseCompose();
-            setEditingMessage(null); // Clear editing state
+            modals.set('editingMessage', null); // Clear editing state
           }}
-          editingMessage={editingMessage}
+          editingMessage={modals.state.editingMessage}
         />
       )}
 
-      {/* Message Detail Modal - only show if message is loaded */}
-      {viewingMessage && !isLoading && (
+      {/* Message Detail Modal - only show if message is loaded and valid */}
+      {validViewingMessage && !isLoading && (
         <MessageDetailModal
-          isOpen={!!viewingMessage}
-          message={viewingMessage}
+          isOpen={true}
+          message={validViewingMessage}
           onClose={handleCloseViewMessage}
           onEdit={() => {
             // Set editing message and open compose modal
-            setEditingMessage(viewingMessage);
-            handleCloseViewMessage();
-            setComposeOpen(true);
+            modals.batch({
+              editingMessage: validViewingMessage,
+              viewingMessageId: null,
+              compose: true,
+            });
           }}
         />
       )}

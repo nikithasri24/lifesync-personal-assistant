@@ -23,7 +23,7 @@ export const ChallengeCard: React.FC<ChallengeCardProps> = ({
     ? Math.min((challenge.current_progress / challenge.target_value) * 100, 100)
     : 0;
 
-  const isCompleted = challenge.status === 'unlocked';
+  const isCompleted = challenge.status === 'completed';
   const isExpired = challenge.status === 'expired';
 
   const getRewardIcon = () => {

@@ -5,6 +5,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { usePendingMessageReveals } from '../hooks/usePartnerMessagesQuery';
+import { useAchievementRewards } from '../hooks/useAchievementRewardsQuery';
 import { MessageRevealNotification } from './MessageRevealNotification';
 import type { PartnerMessage } from '../types';
 import { logger } from '@/services/logger';
@@ -14,6 +15,7 @@ export const MessageRevealListener: React.FC = () => {
   const [currentMessage, setCurrentMessage] = useState<PartnerMessage | null>(null);
 
   const { data: pendingMessages = [] } = usePendingMessageReveals();
+  const { data: achievements = [] } = useAchievementRewards();
 
   useEffect(() => {
     if (pendingMessages.length === 0) return;
@@ -38,28 +40,40 @@ export const MessageRevealListener: React.FC = () => {
           });
           break;
 
-        case 'scheduled_date':
+        case 'specific_date':
           // Reveal if scheduled time has passed
-          if (message.scheduled_for) {
-            const scheduledTime = new Date(message.scheduled_for);
+          if (message.reveal_date) {
+            const scheduledTime = new Date(message.reveal_date);
             shouldReveal = now >= scheduledTime;
             if (shouldReveal) {
               logger.info('Together', 'Revealing scheduled message', {
                 messageId: message.id,
-                scheduledFor: message.scheduled_for,
+                revealDate: message.reveal_date,
               });
             }
           }
           break;
 
-        case 'achievement_unlock':
-          // Achievement unlock is handled separately by the challenges system
-          // Don't auto-reveal here
+        case 'achievement':
+          // Check if linked achievement is completed
+          if (message.achievement_id) {
+            const linkedAchievement = achievements.find(
+              (a) => a.id === message.achievement_id
+            );
+
+            if (linkedAchievement && linkedAchievement.status === 'completed') {
+              shouldReveal = true;
+              logger.info('Together', 'Revealing achievement-linked message', {
+                messageId: message.id,
+                achievementId: message.achievement_id,
+                achievementTitle: linkedAchievement.title,
+              });
+            }
+          }
           break;
 
-        case 'immediate':
-          // Should already be revealed, but just in case
-          shouldReveal = true;
+        case 'manual':
+          // Manual reveal - don't auto-reveal
           break;
       }
 
@@ -75,7 +89,7 @@ export const MessageRevealListener: React.FC = () => {
       setRevealQueue(messagesToReveal);
       setCurrentMessage(messagesToReveal[0]);
     }
-  }, [pendingMessages]);
+  }, [pendingMessages, achievements]);
 
   const handleCloseReveal = () => {
     // Move to next message in queue

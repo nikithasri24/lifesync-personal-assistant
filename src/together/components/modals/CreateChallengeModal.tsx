@@ -8,6 +8,8 @@ import { X, Search } from 'lucide-react';
 import { useCreateAchievementReward } from '../../hooks/useAchievementRewardsQuery';
 import type { PartnerLink, RewardType } from '../../types';
 import { useToast } from '@/hooks/useToast';
+import { logger } from '@/services/logger';
+import { validateChallenge } from '../../utils/validation';
 
 interface CreateChallengeModalProps {
   isOpen: boolean;
@@ -22,7 +24,7 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
   partnerLink,
   onClose,
 }) => {
-  const { toast } = useToast();
+  const { showToast } = useToast();
   const { mutate: createChallenge, isPending } = useCreateAchievementReward();
 
   // Load saved draft from localStorage
@@ -33,7 +35,7 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
         return JSON.parse(saved);
       }
     } catch (error) {
-      console.error('Failed to load challenge draft:', error);
+      logger.error('Together', error as Error, { context: 'Failed to load challenge draft' });
     }
     return null;
   };
@@ -84,29 +86,41 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
     e.preventDefault();
 
     if (!partnerLink) {
-      if (toast) {
-        toast('Please connect with a partner first', 'error');
+      if (showToast) {
+        showToast('Please connect with a partner first', 'error');
       }
       return;
     }
 
-    if (!title.trim() || !targetMetric.trim() || !targetValue.trim()) {
-      if (toast) {
-        toast('Please fill in all required fields (Title, Metric, and Goal Value)', 'error');
+    const parsedTargetValue = parseFloat(targetValue);
+    const challengeDescription = description.trim() || `Complete ${targetValue} ${targetMetric}`;
+
+    // Validate form data
+    const validation = validateChallenge({
+      title,
+      target_value: parsedTargetValue,
+      reward_description: rewardContent,
+      expiration_date: expiresAt || undefined,
+    });
+
+    if (!validation.valid) {
+      const errorMessage = Object.values(validation.errors)[0] || 'Please check your input';
+      if (showToast) {
+        showToast(errorMessage, 'error');
       }
       return;
     }
 
     createChallenge(
       {
-        title,
-        description: description || `Complete ${targetValue} ${targetMetric}`,
+        title: title.trim(),
+        description: challengeDescription,
         linked_type: 'habit' as const,
         linked_id: partnerLink.id,
         target_type: 'count' as const,
-        target_value: parseFloat(targetValue),
+        target_value: parsedTargetValue,
         reward_type: rewardType,
-        reward_description: rewardContent,
+        reward_description: rewardContent.trim(),
         reward_message_id: null,
         hide_reward: hideReward,
         expiration_date: expiresAt || null,
@@ -115,8 +129,8 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
       },
       {
         onSuccess: () => {
-          if (toast) {
-            toast('Challenge created successfully! 🎯', 'success');
+          if (showToast) {
+            showToast('Challenge created successfully! 🎯', 'success');
           }
           // Clear draft from localStorage
           localStorage.removeItem(STORAGE_KEY);
@@ -132,8 +146,8 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
           setExpiresAt('');
         },
         onError: (error) => {
-          if (toast) {
-            toast(`Failed to create challenge: ${error.message}`, 'error');
+          if (showToast) {
+            showToast(`Failed to create challenge: ${error.message}`, 'error');
           }
         },
       }

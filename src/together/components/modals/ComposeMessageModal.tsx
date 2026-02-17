@@ -8,6 +8,8 @@ import { X } from 'lucide-react';
 import { useCreatePartnerMessage, useUpdatePartnerMessage } from '../../hooks/usePartnerMessagesQuery';
 import type { PartnerLink, RevealTrigger, PartnerMessage } from '../../types';
 import { useToast } from '@/hooks/useToast';
+import { logger } from '@/services/logger';
+import { validatePartnerMessage, sanitizeMessageBody } from '../../utils/validation';
 
 interface ComposeMessageModalProps {
   isOpen: boolean;
@@ -24,7 +26,7 @@ export const ComposeMessageModal: React.FC<ComposeMessageModalProps> = ({
   onClose,
   editingMessage,
 }) => {
-  const { toast } = useToast();
+  const { showToast } = useToast();
   const { mutate: createMessage, isPending: isCreating } = useCreatePartnerMessage();
   const { mutate: updateMessage, isPending: isUpdating } = useUpdatePartnerMessage();
   const isPending = isCreating || isUpdating;
@@ -37,7 +39,7 @@ export const ComposeMessageModal: React.FC<ComposeMessageModalProps> = ({
         return JSON.parse(saved);
       }
     } catch (error) {
-      console.error('Failed to load draft:', error);
+      logger.error('Together', error as Error, { context: 'Failed to load draft' });
     }
     return null;
   };
@@ -101,23 +103,8 @@ export const ComposeMessageModal: React.FC<ComposeMessageModalProps> = ({
     if (e) e.preventDefault();
 
     if (!partnerLink) {
-      if (toast) {
-        toast('Please connect with a partner first', 'error');
-      }
-      return;
-    }
-
-    if (!title.trim() || !messageBody.trim()) {
-      const missingFields = [];
-      if (!title.trim()) missingFields.push('Title');
-      if (!messageBody.trim()) missingFields.push('Message');
-
-      const errorMsg = `Please enter: ${missingFields.join(' and ')}`;
-
-      if (toast) {
-        toast(errorMsg, 'error');
-      } else {
-        alert(errorMsg);
+      if (showToast) {
+        showToast('Please connect with a partner first', 'error');
       }
       return;
     }
@@ -128,9 +115,28 @@ export const ComposeMessageModal: React.FC<ComposeMessageModalProps> = ({
       revealDate = `${scheduledDate}T${scheduledTime}:00`;
     }
 
-    const messageData = {
+    // Validate form data
+    const validation = validatePartnerMessage({
       title,
       message_body: messageBody,
+      reveal_trigger: revealTrigger,
+      reveal_date: revealDate,
+    });
+
+    if (!validation.valid) {
+      const errorMessage = Object.values(validation.errors)[0] || 'Please check your input';
+      if (showToast) {
+        showToast(errorMessage, 'error');
+      }
+      return;
+    }
+
+    // Sanitize message body to prevent XSS
+    const sanitizedBody = sanitizeMessageBody(messageBody);
+
+    const messageData = {
+      title: title.trim(),
+      message_body: sanitizedBody,
       reveal_trigger: revealTrigger,
       reveal_date: revealDate,
       achievement_id: null,
@@ -138,8 +144,8 @@ export const ComposeMessageModal: React.FC<ComposeMessageModalProps> = ({
     };
 
     const onSuccessCallback = () => {
-      if (toast) {
-        toast(editingMessage ? 'Draft updated! 💾' : 'Draft saved! 💾', 'success');
+      if (showToast) {
+        showToast(editingMessage ? 'Draft updated! 💾' : 'Draft saved! 💾', 'success');
       }
       // Clear draft from localStorage
       localStorage.removeItem(STORAGE_KEY);
@@ -153,8 +159,8 @@ export const ComposeMessageModal: React.FC<ComposeMessageModalProps> = ({
     };
 
     const onErrorCallback = (error: Error) => {
-      if (toast) {
-        toast(`Failed to save draft: ${error.message}`, 'error');
+      if (showToast) {
+        showToast(`Failed to save draft: ${error.message}`, 'error');
       }
     };
 
@@ -190,15 +196,8 @@ export const ComposeMessageModal: React.FC<ComposeMessageModalProps> = ({
     e.preventDefault();
 
     if (!partnerLink) {
-      if (toast) {
-        toast('Please connect with a partner first', 'error');
-      }
-      return;
-    }
-
-    if (!title.trim() || !messageBody.trim()) {
-      if (toast) {
-        toast('Please enter both title and message', 'error');
+      if (showToast) {
+        showToast('Please connect with a partner first', 'error');
       }
       return;
     }
@@ -209,12 +208,31 @@ export const ComposeMessageModal: React.FC<ComposeMessageModalProps> = ({
       revealDate = `${scheduledDate}T${scheduledTime}:00`;
     }
 
+    // Validate form data
+    const validation = validatePartnerMessage({
+      title,
+      message_body: messageBody,
+      reveal_trigger: revealTrigger,
+      reveal_date: revealDate,
+    });
+
+    if (!validation.valid) {
+      const errorMessage = Object.values(validation.errors)[0] || 'Please check your input';
+      if (showToast) {
+        showToast(errorMessage, 'error');
+      }
+      return;
+    }
+
+    // Sanitize message body to prevent XSS
+    const sanitizedBody = sanitizeMessageBody(messageBody);
+
     // Determine status based on trigger
     const status = revealTrigger === 'manual' ? 'revealed' : 'scheduled';
 
     const messageData = {
-      title,
-      message_body: messageBody,
+      title: title.trim(),
+      message_body: sanitizedBody,
       reveal_trigger: revealTrigger,
       reveal_date: revealDate,
       achievement_id: null,
@@ -222,8 +240,8 @@ export const ComposeMessageModal: React.FC<ComposeMessageModalProps> = ({
     };
 
     const onSuccessCallback = () => {
-      if (toast) {
-        toast(editingMessage ? 'Message updated! 💌' : 'Message created successfully! 💌', 'success');
+      if (showToast) {
+        showToast(editingMessage ? 'Message updated! 💌' : 'Message created successfully! 💌', 'success');
       }
       // Clear draft from localStorage
       localStorage.removeItem(STORAGE_KEY);
@@ -237,8 +255,8 @@ export const ComposeMessageModal: React.FC<ComposeMessageModalProps> = ({
     };
 
     const onErrorCallback = (error: Error) => {
-      if (toast) {
-        toast(`Failed to ${editingMessage ? 'update' : 'create'} message: ${error.message}`, 'error');
+      if (showToast) {
+        showToast(`Failed to ${editingMessage ? 'update' : 'create'} message: ${error.message}`, 'error');
       }
     };
 
