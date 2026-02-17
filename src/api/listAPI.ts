@@ -8,9 +8,10 @@ import { apiCall, requireAuth } from './apiWrapper';
 
 export interface ListItem {
   id?: string;
-  list_id: string;
+  note_id: string;
   user_id: string;
-  content: string;
+  title: string;
+  notes?: string | null;
   completed: boolean;
   created_at?: string;
   updated_at?: string;
@@ -20,23 +21,23 @@ export interface ListItem {
  * Add an item to a list
  */
 export async function addListItem(
-  listId: string,
-  content: string
+  noteId: string,
+  title: string
 ): Promise<void> {
   return apiCall(
     async () => {
       const user = await requireAuth();
 
       const { error } = await supabase.from('list_items').insert({
-        list_id: listId,
+        note_id: noteId,
         user_id: user.id,
-        content,
+        title,
         completed: false,
       });
 
       if (error) throw error;
     },
-    { domain: 'ListAPI', operation: 'addListItem', data: { listId, content } }
+    { domain: 'ListAPI', operation: 'addListItem', data: { noteId, title } }
   );
 }
 

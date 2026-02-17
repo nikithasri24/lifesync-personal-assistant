@@ -57,6 +57,7 @@ describe('Meal Planning-Shopping Integration', () => {
 
     const list = await shoppingAPI.createShoppingList({
       name: mockShoppingList.title,
+      status: 'active',
     });
 
     expect(list).toBeDefined();

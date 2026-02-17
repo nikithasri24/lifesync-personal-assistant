@@ -5,6 +5,7 @@
 
 import { supabase } from '../lib/supabase';
 import type { FocusSessionData } from '../services/types';
+import type { Json } from '../types/database.types';
 import { apiCall, requireAuth, handleSupabaseResponse } from './apiWrapper';
 
 // =====================================================
@@ -83,6 +84,7 @@ export async function createFocusSession(
           ...session,
           status: session.status ?? 'in-progress',
           started_at: session.started_at ?? new Date().toISOString(),
+          environment_data: (session.environment_data as unknown as Json) ?? null,
         })
         .select()
         .single();
@@ -105,9 +107,14 @@ export async function updateFocusSession(
     async () => {
       const user = await requireAuth();
 
+      const updateData = {
+        ...updates,
+        environment_data: updates.environment_data ? (updates.environment_data as unknown as Json) : undefined,
+      };
+
       const result = await supabase
         .from('focus_sessions')
-        .update(updates)
+        .update(updateData)
         .eq('id', id)
         .eq('user_id', user.id)
         .select()

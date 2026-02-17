@@ -5,6 +5,7 @@
 
 import { supabase } from '../lib/supabase';
 import type { JournalEntry, Attachment } from '../types';
+import type { Json } from '../types/database.types';
 import { apiCall, requireAuth, handleSupabaseResponse } from './apiWrapper';
 import { NotFoundError } from '../lib/errors';
 
@@ -14,8 +15,8 @@ interface JournalEntryDB {
   user_id: string;
   title: string | null;
   content: string;
-  tags: string[];
-  attachments: Attachment[];
+  tags: string[] | null;
+  attachments: unknown; // Json type from database
   created_at: string;
   updated_at: string;
 }
@@ -52,7 +53,7 @@ function mapDbToJournalEntry(data: JournalEntryDB): JournalEntry {
     title: data.title ?? '',
     content: data.content,
     tags: data.tags ?? [],
-    attachments: data.attachments ?? [],
+    attachments: (Array.isArray(data.attachments) ? data.attachments : []) as Attachment[],
     createdAt: new Date(data.created_at),
   };
 }
@@ -143,7 +144,7 @@ export async function getJournalEntry(id: string): Promise<JournalEntry> {
         throw new NotFoundError('Journal Entry', id);
       }
 
-      return mapDbToJournalEntry(data as JournalEntryDB);
+      return mapDbToJournalEntry(data as unknown as JournalEntryDB);
     },
     { domain: 'JournalAPI', operation: 'getJournalEntry', data: { id } }
   );
@@ -167,13 +168,13 @@ export async function createJournalEntry(input: CreateJournalEntryInput): Promis
           title: input.title ?? null,
           content: input.content,
           tags: input.tags ?? [],
-          attachments: input.attachments ?? [],
+          attachments: (input.attachments ?? []) as unknown as Json,
         })
         .select()
         .single();
 
       const data = handleSupabaseResponse(result, 'Journal Entry');
-      return mapDbToJournalEntry(data as JournalEntryDB);
+      return mapDbToJournalEntry(data as unknown as JournalEntryDB);
     },
     { domain: 'JournalAPI', operation: 'createJournalEntry', data: { title: input.title } }
   );
@@ -194,16 +195,11 @@ export async function updateJournalEntry(
     async () => {
       const user = await requireAuth();
 
-      const updateData: Partial<{
-        title: string | null;
-        content: string;
-        tags: string[];
-        attachments: Attachment[];
-      }> = {};
+      const updateData: Record<string, unknown> = {};
       if (input.title !== undefined) updateData.title = input.title ?? null;
       if (input.content !== undefined) updateData.content = input.content;
       if (input.tags !== undefined) updateData.tags = input.tags;
-      if (input.attachments !== undefined) updateData.attachments = input.attachments;
+      if (input.attachments !== undefined) updateData.attachments = input.attachments as unknown as Json;
 
       const result = await supabase
         .from('journal_entries')
@@ -214,7 +210,7 @@ export async function updateJournalEntry(
         .single();
 
       const data = handleSupabaseResponse(result, 'Journal Entry', id);
-      return mapDbToJournalEntry(data as JournalEntryDB);
+      return mapDbToJournalEntry(data as unknown as JournalEntryDB);
     },
     { domain: 'JournalAPI', operation: 'updateJournalEntry', data: { id } }
   );

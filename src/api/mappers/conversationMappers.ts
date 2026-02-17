@@ -15,7 +15,7 @@ type ConversationInsert = Database['public']['Tables']['conversations']['Insert'
 export function mapRowToConversation(row: ConversationRow): Conversation {
   // Parse messages array
   const messages: ConversationMessage[] = Array.isArray(row.messages)
-    ? (row.messages as ConversationMessage[])
+    ? (row.messages as unknown as ConversationMessage[])
     : [];
 
   // Parse context_snapshot
@@ -47,9 +47,9 @@ export function mapConversationToInsert(
 ): Omit<ConversationInsert, 'user_id'> {
   return {
     session_id: conversation.session_id,
-    messages: (conversation.messages ?? []) as Database['public']['Tables']['conversations']['Insert']['messages'],
+    messages: (conversation.messages ?? []) as unknown as Database['public']['Tables']['conversations']['Insert']['messages'],
     summary: conversation.summary,
-    context_snapshot: conversation.context_snapshot as Database['public']['Tables']['conversations']['Insert']['context_snapshot'],
+    context_snapshot: conversation.context_snapshot as unknown as Database['public']['Tables']['conversations']['Insert']['context_snapshot'],
     started_at: conversation.started_at,
     last_message_at: conversation.last_message_at,
     message_count: conversation.message_count,
@@ -71,7 +71,7 @@ export function mapConversationToUpdate(
   if (updates.message_count !== undefined) dbUpdate.message_count = updates.message_count;
 
   if (updates.messages !== undefined) {
-    dbUpdate.messages = updates.messages as Database['public']['Tables']['conversations']['Update']['messages'];
+    dbUpdate.messages = updates.messages as unknown as Database['public']['Tables']['conversations']['Update']['messages'];
   }
 
   if (updates.context_snapshot !== undefined) {

@@ -212,6 +212,7 @@ describe('Pantry Pagination', () => {
         select: vi.fn().mockReturnThis(),
         order: vi.fn().mockReturnThis(),
         limit: vi.fn().mockResolvedValue({ data: [], error: null }),
+        or: undefined as any,
       };
 
       vi.mocked(supabase.from).mockReturnValue(mockQuery as any);

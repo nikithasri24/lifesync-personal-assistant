@@ -94,7 +94,11 @@ export async function getLifeGoals(filters?: {
 
       const { data, error } = await query;
       if (error) throw error;
-      return (data ?? []) as LifeGoal[];
+      return (data ?? []).map(item => ({
+        ...item,
+        related_goal_ids: [],
+        milestones: [],
+      })) as LifeGoal[];
     },
     { domain: 'LifeGoalsAPI', operation: 'getLifeGoals', data: { filters } }
   );
@@ -119,7 +123,11 @@ export async function getLifeGoal(id: string): Promise<LifeGoal> {
         .single();
 
       const data = handleSupabaseResponse(result, 'Life Goal', id);
-      return data as LifeGoal;
+      return {
+        ...data,
+        related_goal_ids: [],
+        milestones: [],
+      } as LifeGoal;
     },
     { domain: 'LifeGoalsAPI', operation: 'getLifeGoal', data: { id } }
   );
@@ -146,7 +154,11 @@ export async function createLifeGoal(
 
       const data = handleSupabaseResponse(result, 'Life Goal');
       logger.info('LifeGoalsAPI', 'Life goal created', { id: data.id, title: data.title });
-      return data as LifeGoal;
+      return {
+        ...data,
+        related_goal_ids: [],
+        milestones: [],
+      } as LifeGoal;
     },
     { domain: 'LifeGoalsAPI', operation: 'createLifeGoal', data: { title: goal.title } }
   );
@@ -177,7 +189,11 @@ export async function updateLifeGoal(
 
       const data = handleSupabaseResponse(result, 'Life Goal', id);
       logger.info('LifeGoalsAPI', 'Life goal updated', { id });
-      return data as LifeGoal;
+      return {
+        ...data,
+        related_goal_ids: [],
+        milestones: [],
+      } as LifeGoal;
     },
     { domain: 'LifeGoalsAPI', operation: 'updateLifeGoal', data: { id } }
   );

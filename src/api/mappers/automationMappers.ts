@@ -23,7 +23,7 @@ export function mapRowToAutomationRule(row: AutomationRuleRow): AutomationRule {
 
   // Parse actions array
   const actions: AutomationAction[] = Array.isArray(row.actions)
-    ? (row.actions as AutomationAction[])
+    ? (row.actions as unknown as AutomationAction[])
     : [];
 
   return {
@@ -54,8 +54,8 @@ export function mapAutomationRuleToInsert(
     name: rule.name,
     description: rule.description,
     trigger_type,
-    trigger_config: trigger_config as Database['public']['Tables']['automation_rules']['Insert']['trigger_config'],
-    actions: rule.actions as Database['public']['Tables']['automation_rules']['Insert']['actions'],
+    trigger_config: trigger_config as unknown as Database['public']['Tables']['automation_rules']['Insert']['trigger_config'],
+    actions: rule.actions as unknown as Database['public']['Tables']['automation_rules']['Insert']['actions'],
     enabled: rule.enabled,
     last_triggered_at: rule.last_triggered_at,
     trigger_count: rule.trigger_count,
@@ -83,7 +83,7 @@ export function mapAutomationRuleToUpdate(
   }
 
   if (updates.actions !== undefined) {
-    dbUpdate.actions = updates.actions as Database['public']['Tables']['automation_rules']['Update']['actions'];
+    dbUpdate.actions = updates.actions as unknown as Database['public']['Tables']['automation_rules']['Update']['actions'];
   }
 
   return dbUpdate;
