@@ -59,7 +59,7 @@ export function FilterPanel({
           <select
             value={filters.priority}
             onChange={(e) => handlePriorityChange(e.target.value)}
-            className="w-full px-3 py-1 text-sm border border-gray-300 dark:border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:text-white"
+            className="w-full px-3 py-1 text-sm border border-gray-300 dark:border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-[#E5B88A] dark:bg-slate-700 dark:text-white"
           >
             <option value="all">All Priorities</option>
             <option value="urgent">Urgent</option>
@@ -76,7 +76,7 @@ export function FilterPanel({
           <select
             value={filters.status}
             onChange={(e) => handleStatusChange(e.target.value)}
-            className="w-full px-3 py-1 text-sm border border-gray-300 dark:border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:text-white"
+            className="w-full px-3 py-1 text-sm border border-gray-300 dark:border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-[#E5B88A] dark:bg-slate-700 dark:text-white"
           >
             <option value="all">All Status</option>
             <option value="todo">To Do</option>
@@ -91,7 +91,7 @@ export function FilterPanel({
           <select
             value={filters.dueDate}
             onChange={(e) => handleDueDateChange(e.target.value)}
-            className="w-full px-3 py-1 text-sm border border-gray-300 dark:border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:text-white"
+            className="w-full px-3 py-1 text-sm border border-gray-300 dark:border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-[#E5B88A] dark:bg-slate-700 dark:text-white"
           >
             <option value="all">All Dates</option>
             <option value="overdue">Overdue</option>

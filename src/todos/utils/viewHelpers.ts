@@ -90,10 +90,10 @@ export function getViewIcon(view: ViewType): LucideIcon {
  */
 export function getViewIconColor(view: ViewType): string {
   const colors: Record<ViewType, string> = {
-    inbox: 'text-blue-500',
+    inbox: 'text-[#C18B5E]',
     today: 'text-orange-500',
     upcoming: 'text-green-500',
-    kanban: 'text-indigo-500',
+    kanban: 'text-[#C18B5E]',
     matrix: 'text-rose-500'
   };
 

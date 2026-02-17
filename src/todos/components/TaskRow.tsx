@@ -98,7 +98,7 @@ export const TaskRow = React.memo<TaskRowProps>(function TaskRow({
 
   const getPriorityBorderClass = (): string => {
     if (task.status === 'done') {
-      return 'bg-blue-500 border-blue-500 text-white';
+      return 'bg-[#C18B5E] border-[#C18B5E] text-white';
     }
 
     switch (task.priority) {
@@ -107,7 +107,7 @@ export const TaskRow = React.memo<TaskRowProps>(function TaskRow({
       case 'high':
         return 'border-orange-400 hover:border-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20';
       case 'medium':
-        return 'border-blue-400 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20';
+        return 'border-[#D4A574] hover:border-[#C18B5E] hover:bg-[#F5EBE0] dark:hover:bg-[#8B6F47]/20';
       default:
         return 'border-gray-300 hover:border-gray-400 hover:bg-gray-50 dark:border-slate-600 dark:hover:bg-slate-700';
     }
@@ -232,9 +232,9 @@ export const TaskRow = React.memo<TaskRowProps>(function TaskRow({
             {task.tags.map((tag, index) => (
               <span
                 key={index}
-                className="inline-flex items-center px-2 py-1 rounded bg-blue-50 dark:bg-slate-700 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-slate-600 transition-colors"
+                className="inline-flex items-center px-2 py-1 rounded bg-[#F5EBE0] dark:bg-slate-700 text-[#8B6F47] dark:text-[#E5B88A] hover:bg-[#F9F3ED] dark:hover:bg-slate-600 transition-colors"
               >
-                <span className="text-blue-500 mr-1 text-xs">#</span>
+                <span className="text-[#C18B5E] mr-1 text-xs">#</span>
                 <span className="font-medium">{tag}</span>
               </span>
             ))}

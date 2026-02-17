@@ -40,12 +40,12 @@ export function KanbanView({
 
   const getPriorityStyles = (priority: string, status: string): string => {
     if (status === 'done') {
-      return 'bg-blue-500 border-blue-500 text-white';
+      return 'bg-[#C18B5E] border-[#C18B5E] text-white';
     }
     switch (priority) {
       case 'urgent': return 'border-red-400 hover:border-red-500';
       case 'high': return 'border-orange-400 hover:border-orange-500';
-      case 'medium': return 'border-blue-400 hover:border-blue-500';
+      case 'medium': return 'border-[#D4A574] hover:border-[#C18B5E]';
       default: return 'border-gray-300 hover:border-gray-400';
     }
   };
@@ -97,7 +97,7 @@ export function KanbanView({
                                   ? 'bg-red-100 text-red-800'
                                   : task.priority === 'high'
                                   ? 'bg-orange-100 text-orange-800'
-                                  : 'bg-blue-100 text-blue-800'
+                                  : 'bg-[#F5EBE0] text-[#8B6F47]'
                               }`}
                             >
                               {task.priority}

@@ -92,7 +92,7 @@ export function Header({
         };
       case 'inbox':
         return {
-          icon: <Inbox className="w-6 h-6 text-blue-500" />,
+          icon: <Inbox className="w-6 h-6 text-[#C18B5E]" />,
           title: 'All',
           description: 'Manage all your tasks in one place'
         };
@@ -104,7 +104,7 @@ export function Header({
         };
       case 'kanban':
         return {
-          icon: <Grid className="w-6 h-6 text-indigo-500" />,
+          icon: <Grid className="w-6 h-6 text-[#C18B5E]" />,
           title: 'Kanban',
           description: 'Organize tasks in columns by status'
         };
@@ -116,7 +116,7 @@ export function Header({
         };
       default:
         return {
-          icon: <Inbox className="w-6 h-6 text-blue-500" />,
+          icon: <Inbox className="w-6 h-6 text-[#C18B5E]" />,
           title: 'All',
           description: 'Manage all your tasks in one place'
         };
@@ -169,7 +169,7 @@ export function Header({
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
               placeholder="Search tasks..."
-              className="pl-10 pr-4 py-2 w-64 text-sm border border-gray-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-700 dark:text-white"
+              className="pl-10 pr-4 py-2 w-64 text-sm border border-gray-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-[#E5B88A] focus:border-[#C18B5E] dark:bg-slate-700 dark:text-white"
             />
           </div>
 
@@ -178,7 +178,7 @@ export function Header({
             <button
               onClick={onToggleFilters}
               className={`p-2 rounded-md transition-colors ${
-                showFilters ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                showFilters ? 'bg-[#F5EBE0] text-[#C18B5E]' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
               } dark:hover:bg-slate-700`}
             >
               <Filter size={18} />

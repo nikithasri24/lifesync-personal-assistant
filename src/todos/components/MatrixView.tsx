@@ -47,7 +47,7 @@ export function MatrixView({
     notUrgentImportant: {
       title: 'Not Urgent & Important',
       subtitle: 'Schedule',
-      color: 'bg-blue-50 dark:bg-slate-800',
+      color: 'bg-[#F5EBE0] dark:bg-slate-800',
       tasks: filteredTasks.filter(
         t => {
           const dueDate = getDueDate(t);
@@ -88,12 +88,12 @@ export function MatrixView({
 
   const getPriorityStyles = (priority: string, status: string): string => {
     if (status === 'done') {
-      return 'bg-blue-500 border-blue-500 text-white';
+      return 'bg-[#F5EBE0]0 border-[#C18B5E] text-white';
     }
     switch (priority) {
       case 'urgent': return 'border-red-400 hover:border-red-500';
       case 'high': return 'border-orange-400 hover:border-orange-500';
-      case 'medium': return 'border-blue-400 hover:border-blue-500';
+      case 'medium': return 'border-[#D4A574] hover:border-[#C18B5E]';
       default: return 'border-gray-300 hover:border-gray-400';
     }
   };
@@ -118,14 +118,14 @@ export function MatrixView({
         {(Object.entries(matrix) as [keyof EisenhowerMatrix, MatrixQuadrant][]).map(([key, quadrant]) => {
           const getBorderColor = () => {
             if (key === 'urgentImportant') return 'border-red-200 dark:border-red-900/30';
-            if (key === 'notUrgentImportant') return 'border-blue-200 dark:border-blue-900/30';
+            if (key === 'notUrgentImportant') return 'border-[#E5B88A] dark:border-[#8B6F47]/30';
             if (key === 'urgentNotImportant') return 'border-yellow-200 dark:border-yellow-900/30';
             return 'border-gray-300 dark:border-gray-700';
           };
 
           const getHeaderColor = () => {
             if (key === 'urgentImportant') return 'bg-red-500';
-            if (key === 'notUrgentImportant') return 'bg-blue-500';
+            if (key === 'notUrgentImportant') return 'bg-[#F5EBE0]0';
             if (key === 'urgentNotImportant') return 'bg-yellow-500';
             return 'bg-gray-500';
           };
@@ -171,7 +171,7 @@ export function MatrixView({
                         {task.status === 'done' && <CheckCircle2 size={12} className="text-white" />}
                       </button>
                       <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-gray-900 dark:text-white text-sm mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                        <div className="font-semibold text-gray-900 dark:text-white text-sm mb-1 group-hover:text-[#C18B5E] dark:group-hover:text-[#E5B88A] transition-colors">
                           {task.title}
                         </div>
                         {task.description && (
@@ -187,7 +187,7 @@ export function MatrixView({
                                   ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
                                   : task.priority === 'high'
                                   ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400'
-                                  : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+                                  : 'bg-[#F5EBE0] dark:bg-[#8B6F47]/30 text-[#8B6F47] dark:text-[#E5B88A]'
               }`}
                             >
                               {task.priority}

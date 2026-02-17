@@ -57,7 +57,7 @@ export function QuickAddForm({
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
-        className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-700 dark:text-white disabled:opacity-50"
+        className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#E5B88A] focus:border-[#C18B5E] dark:bg-slate-700 dark:text-white disabled:opacity-50"
         disabled={isLoading}
         autoFocus={autoFocus}
       />
@@ -65,7 +65,7 @@ export function QuickAddForm({
         <button
           onClick={onSubmit}
           disabled={isLoading}
-          className="px-4 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-sm transition-colors font-medium disabled:opacity-50"
+          className="px-4 py-1.5 bg-[#C18B5E] hover:bg-[#B5795A] text-white rounded-md text-sm transition-colors font-medium disabled:opacity-50"
         >
           {isLoading ? 'Adding...' : 'Add'}
         </button>

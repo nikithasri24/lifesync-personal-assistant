@@ -187,7 +187,7 @@ export function TaskListView({
         {!showQuickAdd ? (
           <button
             onClick={onQuickAddSubmit}
-            className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 dark:text-blue-400 transition-colors text-sm font-medium"
+            className="flex items-center space-x-2 text-[#C18B5E] hover:text-[#8B6F47] dark:text-[#E5B88A] transition-colors text-sm font-medium"
             aria-label="Add task"
           >
             <Plus size={16} />
@@ -205,14 +205,14 @@ export function TaskListView({
               }}
               placeholder="What needs to be done?"
               disabled={createTaskMutation.isPending}
-              className="w-full px-4 py-3 text-sm border border-gray-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-700 dark:text-white disabled:opacity-50"
+              className="w-full px-4 py-3 text-sm border border-gray-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-[#E5B88A] focus:border-[#C18B5E] dark:bg-slate-700 dark:text-white disabled:opacity-50"
               autoFocus
             />
             <div className="flex items-center space-x-3">
               <button
                 onClick={onQuickAddSubmit}
                 disabled={createTaskMutation.isPending}
-                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors font-medium disabled:opacity-50"
+                className="px-4 py-2 bg-[#C18B5E] hover:bg-[#B5795A] text-white rounded-md transition-colors font-medium disabled:opacity-50"
               >
                 {createTaskMutation.isPending ? 'Adding...' : 'Add task'}
               </button>

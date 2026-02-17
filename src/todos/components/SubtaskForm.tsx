@@ -52,13 +52,13 @@ export function SubtaskForm({
           onKeyDown={handleKeyDown}
           placeholder="Subtask name"
           disabled={isLoading}
-          className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:text-white disabled:opacity-50"
+          className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-[#E5B88A] dark:bg-slate-700 dark:text-white disabled:opacity-50"
           autoFocus
         />
         <button
           onClick={onSubmit}
           disabled={isLoading}
-          className="px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-sm transition-colors disabled:opacity-50"
+          className="px-3 py-2 bg-[#C18B5E] hover:bg-[#B5795A] text-white rounded-md text-sm transition-colors disabled:opacity-50"
         >
           {isLoading ? 'Adding...' : 'Add'}
         </button>

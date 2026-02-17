@@ -31,7 +31,7 @@ export function SubtaskRow({
 }: SubtaskRowProps): React.ReactElement {
   const getPriorityBorderClass = (priority: Task['priority'], status: Task['status']): string => {
     if (status === 'done') {
-      return 'bg-blue-500 border-blue-500 text-white';
+      return 'bg-[#C18B5E] border-[#C18B5E] text-white';
     }
 
     switch (priority) {
@@ -40,7 +40,7 @@ export function SubtaskRow({
       case 'high':
         return 'border-orange-400 hover:border-orange-500';
       case 'medium':
-        return 'border-blue-400 hover:border-blue-500';
+        return 'border-[#D4A574] hover:border-[#C18B5E]';
       default:
         return 'border-gray-300 hover:border-gray-400';
     }

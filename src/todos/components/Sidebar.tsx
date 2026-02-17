@@ -71,7 +71,7 @@ export function Sidebar({
       {/* Sidebar Header */}
       <div className="p-4 border-b border-gray-100 dark:border-slate-700">
         <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+          <div className="w-8 h-8 bg-[#C18B5E] rounded-lg flex items-center justify-center">
             <CheckSquare className="w-5 h-5 text-white" />
           </div>
           <h2 className="font-semibold text-slate-900 dark:text-white text-lg">TickTick</h2>
@@ -96,7 +96,7 @@ export function Sidebar({
               onQuickAddChange('');
               onQuickAddSubmit(); // This should trigger showing the form
             }}
-            className="w-full flex items-center space-x-2 px-3 py-2.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-700 rounded-md transition-colors text-sm font-medium"
+            className="w-full flex items-center space-x-2 px-3 py-2.5 text-[#C18B5E] hover:bg-[#F5EBE0] dark:hover:bg-slate-700 rounded-md transition-colors text-sm font-medium"
             aria-label="Add task"
           >
             <Plus size={16} />
@@ -120,7 +120,7 @@ export function Sidebar({
               }}
               className={`w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm transition-colors ${
                 currentView === 'inbox'
-                  ? 'bg-blue-50 dark:bg-slate-700 text-blue-700 dark:text-blue-400'
+                  ? 'bg-[#F5EBE0] dark:bg-slate-700 text-[#8B6F47] dark:text-[#E5B88A]'
                   : 'text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700'
               }`}
             >
@@ -139,7 +139,7 @@ export function Sidebar({
               }}
               className={`w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm transition-colors ${
                 currentView === 'today'
-                  ? 'bg-blue-50 dark:bg-slate-700 text-blue-700 dark:text-blue-400'
+                  ? 'bg-[#F5EBE0] dark:bg-slate-700 text-[#8B6F47] dark:text-[#E5B88A]'
                   : 'text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700'
               }`}
             >
@@ -158,7 +158,7 @@ export function Sidebar({
               }}
               className={`w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm transition-colors ${
                 currentView === 'upcoming'
-                  ? 'bg-blue-50 dark:bg-slate-700 text-blue-700 dark:text-blue-400'
+                  ? 'bg-[#F5EBE0] dark:bg-slate-700 text-[#8B6F47] dark:text-[#E5B88A]'
                   : 'text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700'
               }`}
             >
@@ -177,7 +177,7 @@ export function Sidebar({
               }}
               className={`w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm transition-colors ${
                 currentView === 'kanban'
-                  ? 'bg-blue-50 dark:bg-slate-700 text-blue-700 dark:text-blue-400'
+                  ? 'bg-[#F5EBE0] dark:bg-slate-700 text-[#8B6F47] dark:text-[#E5B88A]'
                   : 'text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700'
               }`}
             >
@@ -193,7 +193,7 @@ export function Sidebar({
               }}
               className={`w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm transition-colors ${
                 currentView === 'matrix'
-                  ? 'bg-blue-50 dark:bg-slate-700 text-blue-700 dark:text-blue-400'
+                  ? 'bg-[#F5EBE0] dark:bg-slate-700 text-[#8B6F47] dark:text-[#E5B88A]'
                   : 'text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700'
               }`}
             >
@@ -220,7 +220,7 @@ export function Sidebar({
                 }}
                 className={`w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm transition-colors ${
                   selectedProject === project.id
-                    ? 'bg-blue-50 dark:bg-slate-700 text-blue-700 dark:text-blue-400'
+                    ? 'bg-[#F5EBE0] dark:bg-slate-700 text-[#8B6F47] dark:text-[#E5B88A]'
                     : 'text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700'
                 }`}
               >

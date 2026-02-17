@@ -5,11 +5,11 @@ import React from 'react';
 import type { Theme, ThemeName } from './types';
 
 export const THEMES: Record<ThemeName, Theme> = {
-  blue: { primary: 'bg-blue-500', secondary: 'bg-blue-100' },
+  blue: { primary: 'bg-[#C18B5E]', secondary: 'bg-[#F5EBE0]' },
   green: { primary: 'bg-green-500', secondary: 'bg-green-100' },
   purple: { primary: 'bg-purple-500', secondary: 'bg-purple-100' },
   pink: { primary: 'bg-pink-500', secondary: 'bg-pink-100' },
-  indigo: { primary: 'bg-indigo-500', secondary: 'bg-indigo-100' }
+  indigo: { primary: 'bg-[#C18B5E]', secondary: 'bg-[#F5EBE0]' }
 };
 
 export const PRIORITY_FLAGS: Record<string, React.ReactNode> = {

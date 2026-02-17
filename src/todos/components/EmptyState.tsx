@@ -44,7 +44,7 @@ export function EmptyState({
         };
       case 'inbox':
         return {
-          icon: <Inbox className="w-12 h-12 mx-auto text-blue-300" />,
+          icon: <Inbox className="w-12 h-12 mx-auto text-[#E5B88A]" />,
           title: 'All clear!',
           description: 'All your tasks are organized'
         };
@@ -56,7 +56,7 @@ export function EmptyState({
         };
       default:
         return {
-          icon: <Inbox className="w-12 h-12 mx-auto text-blue-300" />,
+          icon: <Inbox className="w-12 h-12 mx-auto text-[#E5B88A]" />,
           title: 'No tasks found',
           description: 'Try adjusting your filters'
         };
