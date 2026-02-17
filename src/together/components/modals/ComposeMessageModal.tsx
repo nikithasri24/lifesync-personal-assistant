@@ -7,7 +7,6 @@ import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { useCreatePartnerMessage } from '../../hooks/usePartnerMessagesQuery';
 import type { PartnerLink, MessageRevealTrigger } from '../../types';
-import { useThemeColors } from '@/hooks/useThemeColors';
 import { useToast } from '@/hooks/useToast';
 
 interface ComposeMessageModalProps {
@@ -21,7 +20,6 @@ export const ComposeMessageModal: React.FC<ComposeMessageModalProps> = ({
   partnerLink,
   onClose,
 }) => {
-  const colors = useThemeColors();
   const { toast } = useToast();
   const { mutate: createMessage, isPending } = useCreatePartnerMessage();
 
@@ -146,21 +144,12 @@ export const ComposeMessageModal: React.FC<ComposeMessageModalProps> = ({
       >
         {/* Drag Handle (mobile) */}
         <div className="lg:hidden pt-2">
-          <div
-            className="w-9 h-1 rounded-full mx-auto"
-            style={{ backgroundColor: colors.border.medium }}
-          />
+          <div className="w-9 h-1 bg-gray-300 rounded-full mx-auto" />
         </div>
 
         {/* Header */}
-        <div
-          className="flex items-center justify-between px-6 py-5 border-b"
-          style={{ borderColor: colors.border.light }}
-        >
-          <h2
-            className="text-2xl font-bold"
-            style={{ color: colors.text.primary }}
-          >
+        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-200">
+          <h2 className="text-2xl font-bold text-gray-900">
             Write Message
           </h2>
           <button
@@ -169,7 +158,7 @@ export const ComposeMessageModal: React.FC<ComposeMessageModalProps> = ({
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             aria-label="Close"
           >
-            <X className="w-5 h-5" style={{ color: colors.text.tertiary }} />
+            <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
 
@@ -181,29 +170,17 @@ export const ComposeMessageModal: React.FC<ComposeMessageModalProps> = ({
         >
           {/* To */}
           <div>
-            <label
-              className="block text-sm font-semibold mb-2"
-              style={{ color: colors.text.primary }}
-            >
+            <label className="block text-sm font-semibold mb-2 text-gray-700">
               To
             </label>
-            <div
-              className="px-4 py-3 rounded-xl"
-              style={{
-                backgroundColor: colors.bg.secondary,
-                color: colors.text.primary,
-              }}
-            >
+            <div className="px-4 py-3 bg-gray-50 rounded-xl text-gray-900">
               {partnerLink?.partner_email || 'Connect with partner first'}
             </div>
           </div>
 
           {/* Title */}
           <div>
-            <label
-              className="block text-sm font-semibold mb-2"
-              style={{ color: colors.text.primary }}
-            >
+            <label className="block text-sm font-semibold mb-2 text-gray-700">
               Title
             </label>
             <input
@@ -211,18 +188,14 @@ export const ComposeMessageModal: React.FC<ComposeMessageModalProps> = ({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Happy Birthday & 10 Years Together"
-              className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none"
-              style={{ borderColor: colors.border.medium }}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
               required
             />
           </div>
 
           {/* Message Content */}
           <div>
-            <label
-              className="block text-sm font-semibold mb-2"
-              style={{ color: colors.text.primary }}
-            >
+            <label className="block text-sm font-semibold mb-2 text-gray-700">
               Message
             </label>
             <textarea
@@ -230,62 +203,50 @@ export const ComposeMessageModal: React.FC<ComposeMessageModalProps> = ({
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="My dearest love,&#10;&#10;It's hard to believe it's been 10 years since we first met...&#10;&#10;With all my love,&#10;[Your name]"
-              className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none resize-none"
-              style={{ borderColor: colors.border.medium }}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none resize-none transition-all"
               required
             />
           </div>
 
           {/* Reveal Settings */}
           <div>
-            <label
-              className="block text-sm font-semibold mb-2"
-              style={{ color: colors.text.primary }}
-            >
+            <label className="block text-sm font-semibold mb-2 text-gray-700">
               When should this message reveal?
             </label>
             <div className="space-y-2">
-              <label
-                className="flex items-start gap-3 p-3 border rounded-xl cursor-pointer hover:bg-gray-50 transition-colors"
-                style={{ borderColor: colors.border.medium }}
-              >
+              <label className="flex items-start gap-3 p-3 border border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
                 <input
                   type="radio"
                   name="reveal-trigger"
                   value="first_login"
                   checked={revealTrigger === 'first_login'}
                   onChange={(e) => setRevealTrigger(e.target.value as MessageRevealTrigger)}
-                  className="w-5 h-5 mt-0.5"
-                  style={{ accentColor: '#D4A574' }}
+                  className="w-5 h-5 mt-0.5 text-terracotta-400 focus:ring-terracotta-300"
                 />
                 <div>
-                  <span className="font-medium" style={{ color: colors.text.primary }}>
+                  <span className="font-medium text-gray-900">
                     First time partner opens the app
                   </span>
-                  <p className="text-sm mt-1" style={{ color: colors.text.secondary }}>
+                  <p className="text-sm mt-1 text-gray-600">
                     Perfect for birthday surprises! 🎂
                   </p>
                 </div>
               </label>
 
-              <label
-                className="flex items-start gap-3 p-3 border rounded-xl cursor-pointer hover:bg-gray-50 transition-colors"
-                style={{ borderColor: colors.border.medium }}
-              >
+              <label className="flex items-start gap-3 p-3 border border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
                 <input
                   type="radio"
                   name="reveal-trigger"
                   value="scheduled_date"
                   checked={revealTrigger === 'scheduled_date'}
                   onChange={(e) => setRevealTrigger(e.target.value as MessageRevealTrigger)}
-                  className="w-5 h-5 mt-0.5"
-                  style={{ accentColor: '#D4A574' }}
+                  className="w-5 h-5 mt-0.5 text-terracotta-400 focus:ring-terracotta-300"
                 />
                 <div className="flex-1">
-                  <span className="font-medium" style={{ color: colors.text.primary }}>
+                  <span className="font-medium text-gray-900">
                     On a specific date/time
                   </span>
-                  <p className="text-sm mt-1" style={{ color: colors.text.secondary }}>
+                  <p className="text-sm mt-1 text-gray-600">
                     Schedule for anniversaries or special moments
                   </p>
                   {revealTrigger === 'scheduled_date' && (
@@ -294,65 +255,52 @@ export const ComposeMessageModal: React.FC<ComposeMessageModalProps> = ({
                         type="date"
                         value={scheduledDate}
                         onChange={(e) => setScheduledDate(e.target.value)}
-                        className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-terracotta-300 outline-none"
-                        style={{ borderColor: colors.border.medium }}
+                        className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-terracotta-300 outline-none transition-all"
                         required
                       />
                       <input
                         type="time"
                         value={scheduledTime}
                         onChange={(e) => setScheduledTime(e.target.value)}
-                        className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-terracotta-300 outline-none"
-                        style={{ borderColor: colors.border.medium }}
+                        className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-terracotta-300 outline-none transition-all"
                       />
                     </div>
                   )}
                 </div>
               </label>
 
-              <label
-                className="flex items-start gap-3 p-3 border rounded-xl cursor-pointer hover:bg-gray-50 transition-colors"
-                style={{ borderColor: colors.border.medium }}
-              >
+              <label className="flex items-start gap-3 p-3 border border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
                 <input
                   type="radio"
                   name="reveal-trigger"
                   value="immediate"
                   checked={revealTrigger === 'immediate'}
                   onChange={(e) => setRevealTrigger(e.target.value as MessageRevealTrigger)}
-                  className="w-5 h-5 mt-0.5"
-                  style={{ accentColor: '#D4A574' }}
+                  className="w-5 h-5 mt-0.5 text-terracotta-400 focus:ring-terracotta-300"
                 />
                 <div>
-                  <span className="font-medium" style={{ color: colors.text.primary }}>
+                  <span className="font-medium text-gray-900">
                     Send now
                   </span>
-                  <p className="text-sm mt-1" style={{ color: colors.text.secondary }}>
+                  <p className="text-sm mt-1 text-gray-600">
                     Message will be visible immediately
                   </p>
                 </div>
               </label>
             </div>
 
-            <p
-              className="text-xs mt-2 px-3"
-              style={{ color: colors.text.tertiary }}
-            >
+            <p className="text-xs mt-2 px-3 text-gray-500">
               💡 {getRevealDescription()}
             </p>
           </div>
         </form>
 
         {/* Footer */}
-        <div
-          className="px-6 py-4 border-t flex gap-3"
-          style={{ borderColor: colors.border.light }}
-        >
+        <div className="px-6 py-4 border-t border-gray-200 flex gap-3">
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold transition-colors"
-            style={{ color: colors.text.primary }}
+            className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold text-gray-700 transition-colors"
           >
             Cancel
           </button>

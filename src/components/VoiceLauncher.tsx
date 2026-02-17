@@ -1,12 +1,10 @@
 import React from 'react'
-import { Headphones, Bug } from 'lucide-react'
+import { Headphones } from 'lucide-react'
 import VoiceAssistant from './VoiceAssistant'
-import { VoiceDebugger } from './VoiceDebugger'
 import { logger } from '@/services/logger'
 
 const VoiceLauncher: React.FC = () => {
   const [open, setOpen] = React.useState(false)
-  const [debugOpen, setDebugOpen] = React.useState(false)
   const [isOpening, setIsOpening] = React.useState(false)
 
   const handleOpen = React.useCallback(() => {
@@ -40,35 +38,16 @@ const VoiceLauncher: React.FC = () => {
 
   return (
     <>
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={handleOpen}
-          disabled={isOpening}
-          className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-        >
-          <Headphones size={16} /> {isOpening ? 'Opening...' : 'Voice'}
-        </button>
-
-        {/* Debug button - only show in development */}
-        {import.meta.env.DEV && (
-          <button
-            type="button"
-            onClick={() => setDebugOpen(true)}
-            className="inline-flex items-center gap-1 rounded-xl px-2 py-2 text-sm bg-orange-600 text-white hover:bg-orange-700"
-            title="Debug Voice"
-          >
-            <Bug size={14} />
-          </button>
-        )}
-      </div>
+      <button
+        type="button"
+        onClick={handleOpen}
+        disabled={isOpening}
+        className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+      >
+        <Headphones size={16} /> {isOpening ? 'Opening...' : 'Voice'}
+      </button>
 
       <VoiceAssistant open={open} onClose={handleClose} />
-      {debugOpen && (
-        <div onClick={() => setDebugOpen(false)}>
-          <VoiceDebugger />
-        </div>
-      )}
     </>
   )
 }

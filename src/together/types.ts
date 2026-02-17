@@ -48,6 +48,7 @@ export interface PartnerLink {
   // Computed fields from view
   requester_email?: string;
   partner_email?: string;
+  partner_name?: string; // Custom label for partner
   days_together?: number;
 }
 

@@ -6,7 +6,6 @@
 import React, { useEffect } from 'react';
 import { X, Heart } from 'lucide-react';
 import type { PartnerMessage } from '../../types';
-import { useThemeColors } from '@/hooks/useThemeColors';
 import { formatDateLong } from '../../utils/dateHelpers';
 
 interface MessageDetailModalProps {
@@ -20,8 +19,6 @@ export const MessageDetailModal: React.FC<MessageDetailModalProps> = ({
   message,
   onClose,
 }) => {
-  const colors = useThemeColors();
-
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -66,10 +63,7 @@ export const MessageDetailModal: React.FC<MessageDetailModalProps> = ({
       >
         {/* Drag Handle (mobile) */}
         <div className="lg:hidden pt-2">
-          <div
-            className="w-9 h-1 rounded-full mx-auto"
-            style={{ backgroundColor: colors.border.medium }}
-          />
+          <div className="w-9 h-1 bg-gray-300 rounded-full mx-auto" />
         </div>
 
         {/* Header */}
@@ -80,7 +74,7 @@ export const MessageDetailModal: React.FC<MessageDetailModalProps> = ({
             className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-lg transition-colors"
             aria-label="Close"
           >
-            <X className="w-5 h-5" style={{ color: colors.text.tertiary }} />
+            <X className="w-5 h-5 text-gray-500" />
           </button>
 
           {isReceived && (
@@ -91,13 +85,10 @@ export const MessageDetailModal: React.FC<MessageDetailModalProps> = ({
             </div>
           )}
 
-          <h2
-            className="text-3xl font-bold mb-2"
-            style={{ color: colors.text.primary }}
-          >
+          <h2 className="text-3xl font-bold mb-2 text-gray-900">
             {message.title}
           </h2>
-          <p className="text-sm" style={{ color: colors.text.secondary }}>
+          <p className="text-sm text-gray-600">
             {sentDate}
           </p>
         </div>
@@ -108,14 +99,13 @@ export const MessageDetailModal: React.FC<MessageDetailModalProps> = ({
           style={{ maxHeight: 'calc(90vh - 220px)' }}
         >
           <div
-            className="prose prose-lg max-w-none"
+            className="prose prose-lg max-w-none text-gray-900"
             style={{
-              color: colors.text.primary,
               lineHeight: '1.8',
               fontSize: '1.1rem',
             }}
           >
-            {message.content.split('\n').map((paragraph, i) => (
+            {message.message_body.split('\n').map((paragraph, i) => (
               <p key={i} className="mb-4">
                 {paragraph}
               </p>
@@ -125,16 +115,13 @@ export const MessageDetailModal: React.FC<MessageDetailModalProps> = ({
           {/* Photo Gallery (if photos exist) */}
           {message.photo_urls && message.photo_urls.length > 0 && (
             <div className="mt-8">
-              <div
-                className="p-6 rounded-2xl border-2 border-dashed"
-                style={{ borderColor: colors.border.medium }}
-              >
+              <div className="p-6 rounded-2xl border-2 border-dashed border-gray-300">
                 <div className="text-center">
                   <span className="text-4xl mb-3 block">📷</span>
-                  <p className="font-semibold mb-2" style={{ color: colors.text.primary }}>
+                  <p className="font-semibold mb-2 text-gray-900">
                     Photo Gallery
                   </p>
-                  <p className="text-sm" style={{ color: colors.text.secondary }}>
+                  <p className="text-sm text-gray-600">
                     {message.photo_urls.length} {message.photo_urls.length === 1 ? 'photo' : 'photos'} attached
                   </p>
                 </div>
@@ -144,17 +131,13 @@ export const MessageDetailModal: React.FC<MessageDetailModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div
-          className="px-6 py-4 border-t flex justify-center"
-          style={{ borderColor: colors.border.light }}
-        >
+        <div className="px-6 py-4 border-t border-gray-200 flex justify-center">
           <button
             type="button"
             onClick={onClose}
-            className="px-8 py-3 rounded-xl font-semibold transition-colors"
+            className="px-8 py-3 rounded-xl font-semibold text-white transition-colors"
             style={{
               background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
-              color: 'white',
             }}
           >
             Close

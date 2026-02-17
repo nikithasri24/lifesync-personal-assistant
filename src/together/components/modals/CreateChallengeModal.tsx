@@ -7,7 +7,6 @@ import React, { useState, useEffect } from 'react';
 import { X, Search } from 'lucide-react';
 import { useCreateAchievementReward } from '../../hooks/useAchievementRewardsQuery';
 import type { PartnerLink, RewardType } from '../../types';
-import { useThemeColors } from '@/hooks/useThemeColors';
 import { useToast } from '@/hooks/useToast';
 
 interface CreateChallengeModalProps {
@@ -21,7 +20,6 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
   partnerLink,
   onClose,
 }) => {
-  const colors = useThemeColors();
   const { toast } = useToast();
   const { mutate: createChallenge, isPending } = useCreateAchievementReward();
 
@@ -146,21 +144,12 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
       >
         {/* Drag Handle (mobile) */}
         <div className="lg:hidden pt-2">
-          <div
-            className="w-9 h-1 rounded-full mx-auto"
-            style={{ backgroundColor: colors.border.medium }}
-          />
+          <div className="w-9 h-1 bg-gray-300 rounded-full mx-auto" />
         </div>
 
         {/* Header */}
-        <div
-          className="flex items-center justify-between px-6 py-5 border-b"
-          style={{ borderColor: colors.border.light }}
-        >
-          <h2
-            className="text-2xl font-bold"
-            style={{ color: colors.text.primary }}
-          >
+        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-200">
+          <h2 className="text-2xl font-bold text-gray-900">
             Create Challenge
           </h2>
           <button
@@ -169,7 +158,7 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             aria-label="Close"
           >
-            <X className="w-5 h-5" style={{ color: colors.text.tertiary }} />
+            <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
 
@@ -181,29 +170,17 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
         >
           {/* For */}
           <div>
-            <label
-              className="block text-sm font-semibold mb-2"
-              style={{ color: colors.text.primary }}
-            >
+            <label className="block text-sm font-semibold mb-2 text-gray-700">
               For
             </label>
-            <div
-              className="px-4 py-3 rounded-xl"
-              style={{
-                backgroundColor: colors.bg.secondary,
-                color: colors.text.primary,
-              }}
-            >
+            <div className="px-4 py-3 bg-gray-50 rounded-xl text-gray-900">
               {partnerLink?.partner_email || 'Connect with partner first'}
             </div>
           </div>
 
           {/* Challenge Title */}
           <div>
-            <label
-              className="block text-sm font-semibold mb-2"
-              style={{ color: colors.text.primary }}
-            >
+            <label className="block text-sm font-semibold mb-2 text-gray-700">
               Challenge Title
             </label>
             <input
@@ -211,18 +188,14 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Master Your First Pull-Up!"
-              className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none"
-              style={{ borderColor: colors.border.medium }}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
               required
             />
           </div>
 
           {/* Description */}
           <div>
-            <label
-              className="block text-sm font-semibold mb-2"
-              style={{ color: colors.text.primary }}
-            >
+            <label className="block text-sm font-semibold mb-2 text-gray-700">
               Description (optional)
             </label>
             <textarea
@@ -230,22 +203,18 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="You've been working so hard on this - I know you can do it!"
-              className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none resize-none"
-              style={{ borderColor: colors.border.medium }}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none resize-none transition-all"
             />
           </div>
 
           {/* Target */}
           <div>
-            <label
-              className="block text-sm font-semibold mb-2"
-              style={{ color: colors.text.primary }}
-            >
+            <label className="block text-sm font-semibold mb-2 text-gray-700">
               Target
             </label>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs mb-1 block" style={{ color: colors.text.secondary }}>
+                <label className="text-xs mb-1 block text-gray-600">
                   Metric
                 </label>
                 <input
@@ -253,13 +222,12 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
                   value={targetMetric}
                   onChange={(e) => setTargetMetric(e.target.value)}
                   placeholder="pull-ups"
-                  className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none"
-                  style={{ borderColor: colors.border.medium }}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
                   required
                 />
               </div>
               <div>
-                <label className="text-xs mb-1 block" style={{ color: colors.text.secondary }}>
+                <label className="text-xs mb-1 block text-gray-600">
                   Goal Value
                 </label>
                 <input
@@ -269,91 +237,71 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
                   value={targetValue}
                   onChange={(e) => setTargetValue(e.target.value)}
                   placeholder="1"
-                  className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none"
-                  style={{ borderColor: colors.border.medium }}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
                   required
                 />
               </div>
             </div>
-            <p className="text-xs mt-1" style={{ color: colors.text.tertiary }}>
+            <p className="text-xs mt-1 text-gray-500">
               Example: "pushups" with goal "30" = Complete 30 pushups
             </p>
           </div>
 
           {/* Reward Type */}
           <div>
-            <label
-              className="block text-sm font-semibold mb-2"
-              style={{ color: colors.text.primary }}
-            >
+            <label className="block text-sm font-semibold mb-2 text-gray-700">
               Reward Type
             </label>
             <div className="grid grid-cols-2 gap-2">
-              <label
-                className="flex items-center gap-2 p-3 border rounded-xl cursor-pointer hover:bg-gray-50 transition-colors"
-                style={{ borderColor: colors.border.medium }}
-              >
+              <label className="flex items-center gap-2 p-3 border border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
                 <input
                   type="radio"
                   name="reward-type"
                   value="message"
                   checked={rewardType === 'message'}
                   onChange={(e) => setRewardType(e.target.value as RewardType)}
-                  className="w-4 h-4"
-                  style={{ accentColor: '#D4A574' }}
+                  className="w-4 h-4 text-terracotta-400 focus:ring-terracotta-300"
                 />
-                <span className="text-sm font-medium" style={{ color: colors.text.primary }}>
+                <span className="text-sm font-medium text-gray-900">
                   💌 Message
                 </span>
               </label>
-              <label
-                className="flex items-center gap-2 p-3 border rounded-xl cursor-pointer hover:bg-gray-50 transition-colors"
-                style={{ borderColor: colors.border.medium }}
-              >
+              <label className="flex items-center gap-2 p-3 border border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
                 <input
                   type="radio"
                   name="reward-type"
                   value="activity"
                   checked={rewardType === 'activity'}
                   onChange={(e) => setRewardType(e.target.value as RewardType)}
-                  className="w-4 h-4"
-                  style={{ accentColor: '#D4A574' }}
+                  className="w-4 h-4 text-terracotta-400 focus:ring-terracotta-300"
                 />
-                <span className="text-sm font-medium" style={{ color: colors.text.primary }}>
+                <span className="text-sm font-medium text-gray-900">
                   🎯 Activity
                 </span>
               </label>
-              <label
-                className="flex items-center gap-2 p-3 border rounded-xl cursor-pointer hover:bg-gray-50 transition-colors"
-                style={{ borderColor: colors.border.medium }}
-              >
+              <label className="flex items-center gap-2 p-3 border border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
                 <input
                   type="radio"
                   name="reward-type"
                   value="gift"
                   checked={rewardType === 'gift'}
                   onChange={(e) => setRewardType(e.target.value as RewardType)}
-                  className="w-4 h-4"
-                  style={{ accentColor: '#D4A574' }}
+                  className="w-4 h-4 text-terracotta-400 focus:ring-terracotta-300"
                 />
-                <span className="text-sm font-medium" style={{ color: colors.text.primary }}>
+                <span className="text-sm font-medium text-gray-900">
                   🎁 Gift
                 </span>
               </label>
-              <label
-                className="flex items-center gap-2 p-3 border rounded-xl cursor-pointer hover:bg-gray-50 transition-colors"
-                style={{ borderColor: colors.border.medium }}
-              >
+              <label className="flex items-center gap-2 p-3 border border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
                 <input
                   type="radio"
                   name="reward-type"
                   value="surprise"
                   checked={rewardType === 'surprise'}
                   onChange={(e) => setRewardType(e.target.value as RewardType)}
-                  className="w-4 h-4"
-                  style={{ accentColor: '#D4A574' }}
+                  className="w-4 h-4 text-terracotta-400 focus:ring-terracotta-300"
                 />
-                <span className="text-sm font-medium" style={{ color: colors.text.primary }}>
+                <span className="text-sm font-medium text-gray-900">
                   ✨ Surprise
                 </span>
               </label>
@@ -362,10 +310,7 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
 
           {/* Reward Content */}
           <div>
-            <label
-              className="block text-sm font-semibold mb-2"
-              style={{ color: colors.text.primary }}
-            >
+            <label className="block text-sm font-semibold mb-2 text-gray-700">
               Reward Description
             </label>
             <textarea
@@ -373,28 +318,23 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
               value={rewardContent}
               onChange={(e) => setRewardContent(e.target.value)}
               placeholder={getRewardPlaceholder()}
-              className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none resize-none"
-              style={{ borderColor: colors.border.medium }}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none resize-none transition-all"
             />
           </div>
 
           {/* Hide Reward */}
-          <label
-            className="flex items-center gap-3 p-3 rounded-xl cursor-pointer"
-            style={{ backgroundColor: colors.bg.secondary }}
-          >
+          <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer">
             <input
               type="checkbox"
               checked={hideReward}
               onChange={(e) => setHideReward(e.target.checked)}
-              className="w-5 h-5 rounded"
-              style={{ accentColor: '#D4A574' }}
+              className="w-5 h-5 text-terracotta-400 rounded"
             />
             <div>
-              <span className="font-medium" style={{ color: colors.text.primary }}>
+              <span className="font-medium text-gray-900">
                 Hide reward until unlocked
               </span>
-              <p className="text-xs mt-0.5" style={{ color: colors.text.secondary }}>
+              <p className="text-xs mt-0.5 text-gray-600">
                 Show as "Mystery Reward 🎁" until challenge is completed
               </p>
             </div>
@@ -402,35 +342,27 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
 
           {/* Expiration */}
           <div>
-            <label
-              className="block text-sm font-semibold mb-2"
-              style={{ color: colors.text.primary }}
-            >
+            <label className="block text-sm font-semibold mb-2 text-gray-700">
               Expiration (optional)
             </label>
             <input
               type="date"
               value={expiresAt}
               onChange={(e) => setExpiresAt(e.target.value)}
-              className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none"
-              style={{ borderColor: colors.border.medium }}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
             />
-            <p className="text-xs mt-1" style={{ color: colors.text.tertiary }}>
+            <p className="text-xs mt-1 text-gray-500">
               Leave blank for no expiration
             </p>
           </div>
         </form>
 
         {/* Footer */}
-        <div
-          className="px-6 py-4 border-t flex gap-3"
-          style={{ borderColor: colors.border.light }}
-        >
+        <div className="px-6 py-4 border-t border-gray-200 flex gap-3">
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold transition-colors"
-            style={{ color: colors.text.primary }}
+            className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold text-gray-700 transition-colors"
           >
             Cancel
           </button>

@@ -5,7 +5,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-import { useThemeColors } from '@/hooks/useThemeColors';
 
 interface SendPartnerRequestModalProps {
   isOpen: boolean;
@@ -18,8 +17,6 @@ export const SendPartnerRequestModal: React.FC<SendPartnerRequestModalProps> = (
   isOpen,
   onClose,
 }) => {
-  const colors = useThemeColors();
-
   const [partnerEmail, setPartnerEmail] = useState('');
   const [anniversaryDate, setAnniversaryDate] = useState('');
 
@@ -69,21 +66,12 @@ export const SendPartnerRequestModal: React.FC<SendPartnerRequestModalProps> = (
       >
         {/* Drag Handle (mobile) */}
         <div className="lg:hidden pt-2">
-          <div
-            className="w-9 h-1 rounded-full mx-auto"
-            style={{ backgroundColor: colors.border.medium }}
-          />
+          <div className="w-9 h-1 bg-gray-300 rounded-full mx-auto" />
         </div>
 
         {/* Header */}
-        <div
-          className="flex items-center justify-between px-6 py-5 border-b"
-          style={{ borderColor: colors.border.light }}
-        >
-          <h2
-            className="text-2xl font-bold"
-            style={{ color: colors.text.primary }}
-          >
+        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-200">
+          <h2 className="text-2xl font-bold text-gray-900">
             Send Partner Request
           </h2>
           <button
@@ -92,17 +80,14 @@ export const SendPartnerRequestModal: React.FC<SendPartnerRequestModalProps> = (
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             aria-label="Close"
           >
-            <X className="w-5 h-5" style={{ color: colors.text.tertiary }} />
+            <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
           <div>
-            <label
-              className="block text-sm font-semibold mb-2"
-              style={{ color: colors.text.primary }}
-            >
+            <label className="block text-sm font-semibold mb-2 text-gray-700">
               Partner's Email
             </label>
             <input
@@ -111,35 +96,27 @@ export const SendPartnerRequestModal: React.FC<SendPartnerRequestModalProps> = (
               onChange={(e) => setPartnerEmail(e.target.value)}
               placeholder="partner@example.com"
               required
-              className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
-              style={{ borderColor: colors.border.medium }}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
             />
           </div>
 
           <div>
-            <label
-              className="block text-sm font-semibold mb-2"
-              style={{ color: colors.text.primary }}
-            >
+            <label className="block text-sm font-semibold mb-2 text-gray-700">
               Anniversary Date (Optional)
             </label>
             <input
               type="date"
               value={anniversaryDate}
               onChange={(e) => setAnniversaryDate(e.target.value)}
-              className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
-              style={{ borderColor: colors.border.medium }}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
             />
-            <p className="text-xs mt-1" style={{ color: colors.text.tertiary }}>
+            <p className="text-xs mt-1 text-gray-500">
               The date you started your relationship together
             </p>
           </div>
 
-          <div
-            className="p-4 rounded-xl"
-            style={{ backgroundColor: colors.bg.secondary }}
-          >
-            <p className="text-sm" style={{ color: colors.text.secondary }}>
+          <div className="p-4 bg-gray-50 rounded-xl">
+            <p className="text-sm text-gray-600">
               💡 Your partner will receive a notification to accept your request.
               Once accepted, you can share milestones, messages, and challenges!
             </p>
@@ -150,8 +127,7 @@ export const SendPartnerRequestModal: React.FC<SendPartnerRequestModalProps> = (
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold transition-colors"
-              style={{ color: colors.text.primary }}
+              className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold text-gray-700 transition-colors"
             >
               Cancel
             </button>

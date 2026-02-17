@@ -3,7 +3,7 @@
  * Shows partner messages inbox and memory box
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Clock, Check, Star } from 'lucide-react';
 import { usePartnerMessages } from '../hooks';
 import type { PartnerLink, PartnerMessage } from '../types';
@@ -16,13 +16,54 @@ interface MessagesViewProps {
   partnerLink: PartnerLink | null | undefined;
 }
 
+const STORAGE_KEY_COMPOSE = 'together_messages_compose_open';
+const STORAGE_KEY_VIEWING = 'together_messages_viewing_id';
+
 export const MessagesView: React.FC<MessagesViewProps> = ({ partnerLink }) => {
   const colors = useThemeColors();
 
-  const [composeOpen, setComposeOpen] = useState(false);
-  const [viewingMessage, setViewingMessage] = useState<PartnerMessage | null>(null);
+  // Restore compose modal state from localStorage
+  const [composeOpen, setComposeOpen] = useState(() => {
+    const saved = localStorage.getItem(STORAGE_KEY_COMPOSE);
+    return saved === 'true';
+  });
+
+  // Restore viewing message ID from localStorage
+  const [viewingMessageId, setViewingMessageId] = useState<string | null>(() => {
+    return localStorage.getItem(STORAGE_KEY_VIEWING);
+  });
 
   const { data: messages = [], isLoading } = usePartnerMessages();
+
+  // Find the viewing message from the ID
+  const viewingMessage = viewingMessageId
+    ? messages.find(m => m.id === viewingMessageId) || null
+    : null;
+
+  // Save compose state to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_COMPOSE, composeOpen.toString());
+  }, [composeOpen]);
+
+  // Save viewing message ID to localStorage whenever it changes
+  useEffect(() => {
+    if (viewingMessageId) {
+      localStorage.setItem(STORAGE_KEY_VIEWING, viewingMessageId);
+    } else {
+      localStorage.removeItem(STORAGE_KEY_VIEWING);
+    }
+  }, [viewingMessageId]);
+
+  const handleOpenCompose = () => setComposeOpen(true);
+  const handleCloseCompose = () => setComposeOpen(false);
+
+  const handleViewMessage = (message: PartnerMessage) => {
+    setViewingMessageId(message.id);
+  };
+
+  const handleCloseViewMessage = () => {
+    setViewingMessageId(null);
+  };
 
   const hasPartner = partnerLink?.status === 'accepted';
 
@@ -43,7 +84,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({ partnerLink }) => {
     );
   }
 
-  // Categorize messages
+  // Categorize messages (only if we have messages loaded)
   const scheduled = messages.filter(m => m.status === 'scheduled');
   const revealed = messages.filter(m => m.status === 'revealed');
   const drafts = messages.filter(m => m.status === 'draft');
@@ -93,7 +134,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({ partnerLink }) => {
           Compose New Message
         </h2>
         <button
-          onClick={() => setComposeOpen(true)}
+          onClick={handleOpenCompose}
           className="px-4 py-2 rounded-lg font-semibold transition-colors text-white hover:opacity-90"
           style={{ background: 'linear-gradient(135deg, #FF6B9D 0%, #D4A574 100%)' }}
         >
@@ -131,7 +172,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({ partnerLink }) => {
             Write a surprise birthday letter or anniversary message
           </p>
           <button
-            onClick={() => setComposeOpen(true)}
+            onClick={handleOpenCompose}
             className="px-4 py-2 rounded-lg font-semibold transition-colors text-white"
             style={{
               background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
@@ -157,7 +198,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({ partnerLink }) => {
                       backgroundColor: colors.bg.white,
                       borderColor: colors.border.light,
                     }}
-                    onClick={() => setViewingMessage(message)}
+                    onClick={() => handleViewMessage(message)}
                   >
                     <div className="flex items-start justify-between mb-2">
                       <h4 className="font-bold text-lg" style={{ color: colors.text.primary }}>
@@ -169,7 +210,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({ partnerLink }) => {
                       {getRevealText(message)}
                     </p>
                     <p className="text-sm line-clamp-2" style={{ color: colors.text.tertiary }}>
-                      {message.content.substring(0, 100)}...
+                      {message.message_body.substring(0, 100)}...
                     </p>
                   </div>
                 ))}
@@ -192,7 +233,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({ partnerLink }) => {
                       backgroundColor: colors.bg.white,
                       borderColor: colors.border.light,
                     }}
-                    onClick={() => setViewingMessage(message)}
+                    onClick={() => handleViewMessage(message)}
                   >
                     <div className="flex items-start justify-between mb-2">
                       <h4 className="font-bold text-lg" style={{ color: colors.text.primary }}>
@@ -233,7 +274,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({ partnerLink }) => {
                       backgroundColor: colors.bg.secondary,
                       borderColor: colors.border.light,
                     }}
-                    onClick={() => setViewingMessage(message)}
+                    onClick={() => handleViewMessage(message)}
                   >
                     <h4 className="font-bold text-lg mb-2" style={{ color: colors.text.primary }}>
                       📝 {message.title}
@@ -254,7 +295,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({ partnerLink }) => {
         <ComposeMessageModal
           isOpen={composeOpen}
           partnerLink={partnerLink}
-          onClose={() => setComposeOpen(false)}
+          onClose={handleCloseCompose}
         />
       )}
 
@@ -263,7 +304,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({ partnerLink }) => {
         <MessageDetailModal
           isOpen={!!viewingMessage}
           message={viewingMessage}
-          onClose={() => setViewingMessage(null)}
+          onClose={handleCloseViewMessage}
         />
       )}
     </div>

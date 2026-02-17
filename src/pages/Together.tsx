@@ -3,8 +3,8 @@
  * Partner-focused feature for sharing special moments and gamified rewards
  */
 
-import React, { useState } from 'react';
-import { Heart } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { usePartnerLink } from '@/together/hooks';
 import { PartnerStatusCard } from '@/together/components/PartnerStatusCard';
 import { MilestonesView } from '@/together/components/MilestonesView';
@@ -15,13 +15,23 @@ import { useThemeColors } from '@/hooks/useThemeColors';
 type TabView = 'milestones' | 'messages' | 'challenges';
 
 const Together: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<TabView>('milestones');
+  const [searchParams, setSearchParams] = useSearchParams();
   const colors = useThemeColors();
+
+  // Initialize active tab from URL or default to 'milestones'
+  const initialTab = (searchParams.get('tab') as TabView) || 'milestones';
+  const [activeTab, setActiveTab] = useState<TabView>(initialTab);
+
+  // Update URL when tab changes
+  useEffect(() => {
+    const currentTab = searchParams.get('tab');
+    if (currentTab !== activeTab) {
+      setSearchParams({ tab: activeTab }, { replace: true });
+    }
+  }, [activeTab, searchParams, setSearchParams]);
 
   // Partner link data (reuses existing Shared connections)
   const { data: partnerLink, isLoading: linkLoading } = usePartnerLink();
-
-  const hasPartner = !!partnerLink;
 
   const tabs: { key: TabView; label: string }[] = [
     { key: 'milestones', label: 'Milestones' },
@@ -31,72 +41,74 @@ const Together: React.FC = () => {
 
   return (
     <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
-      {/* Header */}
-      <div className="sticky top-0 z-10" style={{ backgroundColor: colors.bg.primary }}>
-        <div
-          className="px-6 pt-4 pb-3"
-          style={{
-            background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
-          }}
-        >
-          <div className="flex items-center gap-2 mb-2 text-white">
-            <Heart size={28} />
-            <h1 className="text-3xl font-extrabold">Together</h1>
-          </div>
-          <div className="text-sm opacity-90 text-white">
-            Share moments with your partner
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
+        {/* Header */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-3xl font-bold flex items-center gap-3" style={{ color: colors.text.primary }}>
+              <span className="text-4xl">❤️</span>
+              Together
+            </h1>
+            <button
+              className="px-4 py-2 rounded-lg font-semibold text-white transition-colors"
+              style={{
+                background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'linear-gradient(135deg, #C18B5E 0%, #B4794F 100%)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)';
+              }}
+              aria-label="Link partner"
+            >
+              + Link Partner
+            </button>
           </div>
         </div>
 
-        {/* Partner Connection Status */}
-        <div className="px-6 pt-3">
+        {/* Partner Connection Card */}
+        <div className="mb-6">
           <PartnerStatusCard
             partnerLink={partnerLink}
             isLoading={linkLoading}
-            onLinkPartner={() => {}} // No action needed - uses Shared connections
+            onLinkPartner={() => {}}
           />
         </div>
 
         {/* Tab Navigation */}
-        <div className="px-5 pt-3">
-          <div
-            className="flex gap-1 p-1 rounded-xl"
-            style={{ backgroundColor: colors.bg.secondary }}
-          >
-            {tabs.map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                className={`flex-1 px-4 py-3 rounded-lg text-sm font-semibold transition-all ${
-                  activeTab === tab.key
-                    ? 'bg-white shadow-sm'
-                    : 'hover:bg-white/50'
-                }`}
-                style={{
-                  color: activeTab === tab.key ? '#D4A574' : colors.text.secondary,
-                }}
-                aria-label={`${tab.label} tab`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
+        <div className="mb-6 p-1 rounded-xl flex gap-1" style={{ backgroundColor: colors.bg.secondary }}>
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`flex-1 px-4 py-3 rounded-lg font-semibold transition-all ${
+                activeTab === tab.key ? 'bg-white shadow-sm' : ''
+              }`}
+              style={{
+                color: activeTab === tab.key ? '#C18B5E' : colors.text.secondary,
+              }}
+              aria-label={`${tab.label} tab`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
-      </div>
 
-      {/* Content Views */}
-      <div className="pt-5 px-6 pb-20">
-        {activeTab === 'milestones' && (
-          <MilestonesView partnerLink={partnerLink} />
-        )}
+        {/* Content Views */}
+        <div>
+          {activeTab === 'milestones' && (
+            <MilestonesView partnerLink={partnerLink} />
+          )}
 
-        {activeTab === 'messages' && (
-          <MessagesView partnerLink={partnerLink} />
-        )}
+          {activeTab === 'messages' && (
+            <MessagesView partnerLink={partnerLink} />
+          )}
 
-        {activeTab === 'challenges' && (
-          <ChallengesView partnerLink={partnerLink} />
-        )}
+          {activeTab === 'challenges' && (
+            <ChallengesView partnerLink={partnerLink} />
+          )}
+        </div>
       </div>
     </div>
   );

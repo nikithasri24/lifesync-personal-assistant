@@ -81,7 +81,7 @@ export const MessageRevealNotification: React.FC<MessageRevealNotificationProps>
               {message.title}
             </h2>
             <p className="text-sm" style={{ color: colors.text.secondary }}>
-              {message.sent_at ? formatDateLong(message.sent_at.split('T')[0]) : 'Today'}
+              {message.revealed_at ? formatDateLong(message.revealed_at.split('T')[0]) : 'Today'}
             </p>
           </div>
 
@@ -98,7 +98,7 @@ export const MessageRevealNotification: React.FC<MessageRevealNotificationProps>
                 fontSize: '1.15rem',
               }}
             >
-              {message.content.split('\n').map((paragraph, i) => (
+              {message.message_body.split('\n').map((paragraph, i) => (
                 <p key={i} className="mb-5">
                   {paragraph}
                 </p>

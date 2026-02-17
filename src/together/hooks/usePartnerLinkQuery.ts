@@ -4,7 +4,9 @@
  */
 
 import { useMemo } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useConnectionsQuery } from '@/hooks/useConnectionsQuery';
+import { updateConnection } from '@/shared/api/connectionsAPI';
 import { logger } from '@/services/logger';
 import type { PartnerLink } from '../types';
 import type { ConnectionWithPermissions } from '@/shared/types/connections';
@@ -19,14 +21,15 @@ import type { ConnectionWithPermissions } from '@/shared/types/connections';
 function connectionToPartnerLink(connection: ConnectionWithPermissions): PartnerLink {
   return {
     id: connection.id,
-    requester_id: connection.requester_id,
-    partner_id: connection.receiver_id,
+    requester_id: connection.requesterId,
+    partner_id: connection.receiverId,
     status: 'accepted', // Maps from ConnectionStatus 'active' to PartnerLink 'accepted'
     relationship_start_date: null, // TODO: Read from profile_connections.relationship_start_date
-    created_at: connection.created_at,
-    updated_at: connection.updated_at || connection.created_at,
-    requester_email: connection.requester_email,
-    partner_email: connection.receiver_email,
+    created_at: connection.createdAt,
+    updated_at: connection.updatedAt || connection.createdAt,
+    requester_email: connection.otherUser?.email,
+    partner_email: connection.otherUser?.email,
+    partner_name: connection.myLabel || connection.otherUser?.fullName || connection.otherUser?.email,
     days_together: null,
   };
 }
@@ -63,6 +66,28 @@ export function usePartnerLink() {
     isLoading,
     error,
   };
+}
+
+/**
+ * Update partner name/label
+ */
+export function useUpdatePartnerName() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ connectionId, name }: { connectionId: string; name: string }) => {
+      logger.debug('Together', 'Updating partner name', { connectionId, name });
+      return updateConnection(connectionId, { label: name });
+    },
+    onSuccess: () => {
+      logger.info('Together', 'Partner name updated successfully');
+      // Invalidate connections query to refresh the partner link
+      void queryClient.invalidateQueries({ queryKey: ['connections'] });
+    },
+    onError: (error) => {
+      logger.error('Together', error, { context: 'Failed to update partner name' });
+    },
+  });
 }
 
 /**
