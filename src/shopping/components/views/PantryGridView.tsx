@@ -131,9 +131,24 @@ export function PantryGridView({ items, onItemClick, onAddItem }: PantryGridView
         <h3 className="text-lg font-semibold mb-2" style={{ color: colors.text.primary }}>
           No Pantry Items Yet
         </h3>
-        <p className="text-sm text-center" style={{ color: colors.text.tertiary }}>
-          Start tracking your pantry inventory by adding items below
+        <p className="text-sm text-center mb-6" style={{ color: colors.text.tertiary }}>
+          Start tracking your pantry inventory
         </p>
+        {onAddItem && (
+          <button
+            type="button"
+            onClick={onAddItem}
+            className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-transform duration-200 active:scale-95"
+            style={{
+              background: `linear-gradient(135deg, ${colors.accent.start} 0%, ${colors.accent.end} 100%)`,
+              color: 'white',
+            }}
+            aria-label="Add your first pantry item"
+          >
+            <Plus size={20} />
+            Add to Pantry
+          </button>
+        )}
       </div>
     );
   }
@@ -232,20 +247,22 @@ export function PantryGridView({ items, onItemClick, onAddItem }: PantryGridView
 
       {/* Add Item to Pantry Button */}
       {onAddItem && (
-        <button
-          type="button"
-          onClick={onAddItem}
-          className="w-full flex items-center justify-center gap-2 py-3 mt-4 rounded-xl font-semibold text-base transition-all duration-200 active:scale-[0.98]"
-          style={{
-            backgroundColor: colors.bg.white,
-            border: `2px solid ${colors.accent.start}`,
-            color: colors.accent.start,
-          }}
-          aria-label="Add item to pantry"
-        >
-          <Plus size={20} />
-          Add to Pantry
-        </button>
+        <div className="px-5">
+          <button
+            type="button"
+            onClick={onAddItem}
+            className="w-full flex items-center justify-center gap-2 py-4 rounded-xl font-semibold text-base transition-all duration-200 active:scale-[0.98]"
+            style={{
+              background: `linear-gradient(135deg, ${colors.accent.start} 0%, ${colors.accent.end} 100%)`,
+              color: 'white',
+              boxShadow: '0 4px 12px rgba(212, 165, 116, 0.25)',
+            }}
+            aria-label="Add item to pantry"
+          >
+            <Plus size={20} />
+            Add to Pantry
+          </button>
+        </div>
       )}
     </div>
   );
