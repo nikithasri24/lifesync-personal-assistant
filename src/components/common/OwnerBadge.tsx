@@ -72,7 +72,7 @@ export function OwnerBadge(props: OwnerBadgeProps) {
   };
 
   const colorClasses = isOwn
-    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+    ? 'bg-[#F5EBE0] text-[#8B6F47] dark:bg-[#8B6F47] dark:text-[#E5B88A]'
     : 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
 
   return (
@@ -96,7 +96,7 @@ export function CompactOwnerBadge({
   className = ''
 }: Omit<OwnerBadgePropsOwnerName, 'size' | 'showIcon'>) {
   const colorClasses = isOwnedByCurrentUser
-    ? 'text-blue-600 dark:text-blue-400'
+    ? 'text-[#C18B5E] dark:text-[#E5B88A]'
     : 'text-purple-600 dark:text-purple-400';
 
   return (

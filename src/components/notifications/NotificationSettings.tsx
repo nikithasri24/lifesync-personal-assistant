@@ -44,7 +44,7 @@ function ToggleSwitch({
       onClick={() => onChange(!enabled)}
       disabled={disabled}
       className={`relative w-11 h-6 rounded-full transition-colors ${
-        enabled ? 'bg-blue-600' : 'bg-slate-300'
+        enabled ? 'bg-[#C18B5E]' : 'bg-slate-300'
       } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
     >
       <span className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${
@@ -134,7 +134,7 @@ export function NotificationSettings({ isOpen, onClose }: NotificationSettingsPr
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-slate-200">
           <div className="flex items-center gap-2">
-            <Bell className="w-5 h-5 text-blue-600" />
+            <Bell className="w-5 h-5 text-[#C18B5E]" />
             <h2 className="font-semibold text-slate-800">Notification Settings</h2>
             {isLoadingPrefs && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
           </div>
@@ -143,7 +143,7 @@ export function NotificationSettings({ isOpen, onClose }: NotificationSettingsPr
               <button
                 onClick={handleSave}
                 disabled={updatePrefs.isPending}
-                className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg disabled:opacity-50"
+                className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-white bg-[#C18B5E] hover:bg-[#B5795A] rounded-lg disabled:opacity-50"
               >
                 {updatePrefs.isPending ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -179,7 +179,7 @@ export function NotificationSettings({ isOpen, onClose }: NotificationSettingsPr
               {isSubscribed && (
                 <button
                   onClick={showTestNotification}
-                  className="w-full mt-2 px-3 py-2 text-sm text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100"
+                  className="w-full mt-2 px-3 py-2 text-sm text-[#C18B5E] bg-[#F5EBE0] rounded-lg hover:bg-[#F9F3ED]"
                 >
                   Send Test Notification
                 </button>
@@ -265,7 +265,7 @@ export function NotificationSettings({ isOpen, onClose }: NotificationSettingsPr
         <div className="p-4 border-t border-slate-200">
           <button
             onClick={onClose}
-            className="w-full px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700"
+            className="w-full px-4 py-2 bg-[#C18B5E] text-white font-medium rounded-lg hover:bg-[#B5795A]"
           >
             Done
           </button>

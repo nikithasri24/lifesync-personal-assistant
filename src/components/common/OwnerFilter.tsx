@@ -27,7 +27,7 @@ export function OwnerFilter({
         id="owner-filter"
         value={value}
         onChange={(e) => onChange(e.target.value as OwnerFilterValue)}
-        className="rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#E5B88A]"
       >
         <option value="all">All</option>
         <option value="mine">Mine</option>

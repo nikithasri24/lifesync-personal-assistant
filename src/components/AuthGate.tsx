@@ -105,7 +105,7 @@ export function AuthGate({ children }: AuthGateProps) {
           {mode === 'signin' ? (
             <button
               type="button"
-              className="text-blue-400 hover:text-blue-300 hover:underline font-medium"
+              className="text-[#E5B88A] hover:text-[#D4A574] hover:underline font-medium"
               onClick={() => {
                 clearError()
                 setMode('signup')
@@ -116,7 +116,7 @@ export function AuthGate({ children }: AuthGateProps) {
           ) : (
             <button
               type="button"
-              className="text-blue-400 hover:text-blue-300 hover:underline font-medium"
+              className="text-[#E5B88A] hover:text-[#D4A574] hover:underline font-medium"
               onClick={() => {
                 clearError()
                 setMode('signin')
