@@ -3,7 +3,7 @@ import { Bell, Settings } from 'lucide-react';
 import { logger } from '../services/logger';
 import { useToast } from '../hooks/useToast';
 import { useThemeColors } from '../hooks/useThemeColors';
-import type { ShoppingItem, ShoppingList } from '../shopping/types';
+import type { ShoppingItem, ShoppingList, Store } from '../shopping/types';
 import { distributeItemsToStores as distributeItems, type DistributionStrategy } from '../shopping/services/storeDistribution';
 import type { ParsedReceiptItem } from '../shopping/services/receiptParser';
 import { ShoppingModals } from '../shopping/components/layout/ShoppingModals';
@@ -30,7 +30,6 @@ import { StoreShoppingListModal } from '../shopping/components/modals/StoreShopp
 import { PantryItemDetailsModal } from '../shopping/components/modals/PantryItemDetailsModal';
 import { AddToPantryPrompt } from '../shopping/components/modals/AddToPantryPrompt';
 import ConfirmDialog from '../components/DebtPayoffCalculator/ConfirmDialog';
-import type { Store, ShoppingItem } from '../shopping/types';
 import type { PantryItem } from '../types';
 
 type ViewType = 'list' | 'pantry' | 'stores' | 'history';
