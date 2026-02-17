@@ -4,13 +4,13 @@
  * Updated with V2 components to match journal-design-spec.html
  * Uses React Query for server state management with automatic caching
  * Supports entries and calendar views with terracotta theme
+ * Enhanced with Together tab UI/UX patterns
  */
 
-import React, { useMemo, useState, useEffect, type FormEvent } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Plus, Search, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
-import { logger } from '../services/logger';
 import type { JournalEntry } from '../types';
 import {
   useJournalEntries,
@@ -22,7 +22,9 @@ import { useJournalFilters } from './hooks/useJournalFilters';
 import { useJournalState, type JournalTabView } from './hooks';
 import { useComposedStore } from '@/stores/useComposedStore';
 import { useThemeColors } from '@/hooks/useThemeColors';
-import { SegmentedControlV2, FABV2, BadgeV2, InputV2 } from '@/components/v2';
+import { useModalState } from '@/hooks/useModalState';
+import { useToast } from '@/hooks/useToast';
+import { SegmentedControlV2, FABV2, InputV2 } from '@/components/v2';
 import {
   JournalHeaderV2,
   JournalEntryCardV2,
@@ -35,6 +37,7 @@ const ENTRIES_PER_PAGE = 10;
 
 export const JournalContainer: React.FC = () => {
   const colors = useThemeColors();
+  const { showToast } = useToast();
 
   // Tab navigation
   const { activeTab, setActiveTab } = useJournalState();
@@ -54,9 +57,11 @@ export const JournalContainer: React.FC = () => {
     }))
   );
 
-  // Modal state
-  const [showEntryModal, setShowEntryModal] = useState(false);
-  const [editingEntry, setEditingEntry] = useState<JournalEntry | null>(null);
+  // Modal state using useModalState hook
+  const modals = useModalState({
+    showForm: false,
+    editingEntryId: null as string | null,
+  });
 
   // Filter state from custom hook
   const {
@@ -90,95 +95,88 @@ export const JournalContainer: React.FC = () => {
   // Available tags
   const availableTags = useMemo(() => getAvailableTags(typedEntries), [typedEntries, getAvailableTags]);
 
-  // Calculate stats
-  const entriesThisMonth = useMemo(() => {
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
-    return typedEntries.filter((entry) => {
-      const entryDate = new Date(entry.created_at);
-      return entryDate.getMonth() === currentMonth && entryDate.getFullYear() === currentYear;
-    }).length;
-  }, [typedEntries]);
-
   // Handle ?edit=<id> query parameter
   const [searchParams, setSearchParams] = useSearchParams();
   useEffect(() => {
     const editId = searchParams.get('edit');
-    if (editId && typedEntries.length > 0 && !editingEntry) {
+    if (editId && typedEntries.length > 0 && !modals.state.editingEntryId) {
       const entryToEdit = typedEntries.find((e) => e.id === editId);
       if (entryToEdit) {
-        setEditingEntry(entryToEdit);
-        setShowEntryModal(true);
+        modals.set('editingEntryId', entryToEdit.id);
+        modals.open('showForm');
         setSearchParams({}, { replace: true });
       }
     }
-  }, [searchParams, typedEntries, editingEntry, setSearchParams]);
+  }, [searchParams, typedEntries, modals, setSearchParams]);
 
-  const isSubmitting = createMutation.isPending || updateMutation.isPending;
+  const isSubmitting = createMutation.isPending || updateMutation.isPending || deleteMutation.isPending;
 
   const handleSubmit = (data: {
     title: string;
     content: string;
     tags: string[];
-    attachments?: string[];
   }) => {
-    if (editingEntry) {
+    if (modals.state.editingEntryId) {
+      // UPDATE
       updateMutation.mutate(
         {
-          id: editingEntry.id,
+          id: modals.state.editingEntryId,
           updates: {
             title: data.title || undefined,
             content: data.content,
             tags: data.tags,
-            attachments: data.attachments || [],
           },
         },
         {
           onSuccess: () => {
-            setShowEntryModal(false);
-            setEditingEntry(null);
+            showToast('Entry updated! ✏️', 'success');
+            modals.close('showForm');
+            modals.set('editingEntryId', null);
           },
         }
       );
     } else {
+      // CREATE
       createMutation.mutate(
         {
           title: data.title || undefined,
           content: data.content,
           tags: data.tags,
-          attachments: data.attachments || [],
         },
         {
           onSuccess: () => {
-            setShowEntryModal(false);
+            showToast('Entry created! 📔', 'success');
+            modals.close('showForm');
           },
         }
       );
     }
   };
 
-  const handleEditEntry = (entry: JournalEntry) => {
-    setEditingEntry(entry);
-    setShowEntryModal(true);
+  const handleDelete = () => {
+    if (modals.state.editingEntryId) {
+      deleteMutation.mutate(modals.state.editingEntryId, {
+        onSuccess: () => {
+          showToast('Entry deleted! 🗑️', 'success');
+          modals.close('showForm');
+          modals.set('editingEntryId', null);
+        },
+      });
+    }
   };
 
-  const handleDelete = (id: string) => {
-    if (window.confirm('Are you sure you want to delete this entry?')) {
-      deleteMutation.mutate(id);
-    }
+  const handleEditEntry = (entry: JournalEntry) => {
+    modals.set('editingEntryId', entry.id);
+    modals.open('showForm');
   };
 
   // Error state
   if (error) {
     const errorMessage = error instanceof Error ? error.message : 'An error occurred';
     return (
-      <div
-        className="min-h-screen"
-        style={{ backgroundColor: colors.bg.primary }}
-      >
-        <JournalHeaderV2 entriesThisMonth={0} />
-        <div className="p-6">
+      <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
+          <JournalHeaderV2 />
           <div
             className="rounded-xl p-4 text-center"
             style={{
@@ -200,33 +198,46 @@ export const JournalContainer: React.FC = () => {
     setJournalSelectedDate(date ? date.toISOString() : null);
   };
 
+  // Get editing entry data
+  const editingEntry = modals.state.editingEntryId
+    ? typedEntries.find(e => e.id === modals.state.editingEntryId)
+    : null;
+
   return (
-    <div
-      className="min-h-screen pb-24"
-      style={{ backgroundColor: colors.bg.primary }}
-      data-testid="journal-container"
-    >
-      {/* Header */}
-      <JournalHeaderV2 entriesThisMonth={entriesThisMonth} />
+    <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1.5rem', paddingBottom: '5rem' }}>
+        {/* Header */}
+        <JournalHeaderV2 />
 
-      {/* Tab Navigation */}
-      <div
-        className="px-5 py-4 sticky top-0 z-10"
-        style={{ backgroundColor: colors.bg.primary }}
-      >
-        <SegmentedControlV2
-          segments={[
-            { value: 'entries', label: '📄 List' },
-            { value: 'calendar', label: '📅 Calendar' },
-          ]}
-          value={activeTab}
-          onChange={(value) => setActiveTab(value as JournalTabView)}
-          size="md"
-        />
-      </div>
+        {/* Tab Navigation */}
+        <div className="mb-6 p-1 rounded-xl flex gap-1" style={{ backgroundColor: colors.bg.secondary }}>
+          <button
+            onClick={() => setActiveTab('entries')}
+            className={`flex-1 px-4 py-3 rounded-lg font-semibold transition-all ${
+              activeTab === 'entries' ? 'bg-white shadow-sm' : ''
+            }`}
+            style={{
+              color: activeTab === 'entries' ? '#C18B5E' : colors.text.secondary,
+            }}
+            aria-label="List view"
+          >
+            📄 List
+          </button>
+          <button
+            onClick={() => setActiveTab('calendar')}
+            className={`flex-1 px-4 py-3 rounded-lg font-semibold transition-all ${
+              activeTab === 'calendar' ? 'bg-white shadow-sm' : ''
+            }`}
+            style={{
+              color: activeTab === 'calendar' ? '#C18B5E' : colors.text.secondary,
+            }}
+            aria-label="Calendar view"
+          >
+            📅 Calendar
+          </button>
+        </div>
 
-      {/* Tab Content */}
-      <div className="px-5">
+        {/* Tab Content */}
         {activeTab === 'entries' && (
           <div>
             {/* Search Bar */}
@@ -254,6 +265,7 @@ export const JournalContainer: React.FC = () => {
                   backgroundColor: showFilters ? 'rgba(212, 165, 116, 0.15)' : colors.bg.secondary,
                   color: showFilters ? '#C18B5E' : colors.text.primary,
                 }}
+                aria-label={showFilters ? "Hide filters" : "Show filters"}
               >
                 <Filter className="w-4 h-4" />
                 <span>Filters</span>
@@ -422,41 +434,49 @@ export const JournalContainer: React.FC = () => {
             )}
           </div>
         )}
+
+        {/* FAB (Floating Action Button) */}
+        <button
+          onClick={() => {
+            modals.set('editingEntryId', null);
+            modals.open('showForm');
+          }}
+          className="fixed w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-white text-2xl transition-transform active:scale-95"
+          style={{
+            bottom: '96px',
+            right: '32px',
+            background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
+            boxShadow: '0 4px 16px rgba(193, 139, 94, 0.4)',
+            zIndex: 50,
+          }}
+          aria-label="Create new entry"
+        >
+          +
+        </button>
+
+        {/* Entry Modal */}
+        <JournalEntryModalV2
+          isOpen={modals.state.showForm}
+          onClose={() => {
+            modals.close('showForm');
+            modals.set('editingEntryId', null);
+          }}
+          onSubmit={handleSubmit}
+          onDelete={handleDelete}
+          initialData={
+            editingEntry
+              ? {
+                  title: editingEntry.title,
+                  content: editingEntry.content,
+                  tags: editingEntry.tags,
+                  attachments: editingEntry.attachments || [],
+                }
+              : undefined
+          }
+          isEditing={!!modals.state.editingEntryId}
+          isPending={isSubmitting}
+        />
       </div>
-
-      {/* FAB (Floating Action Button) */}
-      <FABV2
-        icon={Plus}
-        onClick={() => {
-          setEditingEntry(null);
-          setShowEntryModal(true);
-        }}
-        position="bottom-right"
-        size="md"
-        label="New entry"
-      />
-
-      {/* Entry Modal */}
-      <JournalEntryModalV2
-        isOpen={showEntryModal}
-        onClose={() => {
-          setShowEntryModal(false);
-          setEditingEntry(null);
-        }}
-        onSubmit={handleSubmit}
-        initialData={
-          editingEntry
-            ? {
-                title: editingEntry.title,
-                content: editingEntry.content,
-                tags: editingEntry.tags,
-                attachments: editingEntry.attachments || [],
-              }
-            : undefined
-        }
-        isEditing={!!editingEntry}
-        isPending={isSubmitting}
-      />
     </div>
   );
 };
