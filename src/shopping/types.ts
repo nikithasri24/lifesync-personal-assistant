@@ -64,6 +64,7 @@ export interface Store {
   hasDelivery?: boolean;
   hasPickup?: boolean;
   deliveryFee?: number;
+  monthlyBudget?: number; // Monthly spending budget for this store
 }
 
 export interface ShoppingList {

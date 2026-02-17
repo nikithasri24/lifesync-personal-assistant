@@ -7,3 +7,4 @@ export { MasterListView } from './MasterListView';
 export { DistributeView } from './DistributeView';
 export { StoreListsView } from './StoreListsView';
 export { PantryView } from './PantryView';
+export { ShoppingHistoryView } from './ShoppingHistoryView';

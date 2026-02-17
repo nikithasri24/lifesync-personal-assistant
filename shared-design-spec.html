@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shared - LifeSync Design Spec</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #F5F5F5;
+            padding: 20px;
+            color: #333;
+        }
+
+        .phone-container {
+            max-width: 375px;
+            margin: 0 auto 40px;
+            background: white;
+            border-radius: 40px;
+            padding: 15px;
+            box-shadow: 0 10px 40px rgba(92, 74, 58, 0.2);
+        }
+
+        .screen {
+            background: #FAFAFA;
+            border-radius: 30px;
+            overflow: hidden;
+            min-height: 700px;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);
+            padding: 60px 20px 20px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .header .subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            padding: 16px 20px;
+            background: white;
+            margin: 0 20px 16px;
+            border-radius: 16px;
+            box-shadow: 0 2px 12px rgba(92, 74, 58, 0.08);
+        }
+
+        .stat-card {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 28px;
+            font-weight: 800;
+            color: #C18B5E;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: #9B8B7A;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            margin-top: 4px;
+        }
+
+        /* Segmented Control */
+        .segmented-control {
+            display: flex;
+            background: rgba(92, 74, 58, 0.1);
+            border-radius: 12px;
+            padding: 4px;
+            margin: 16px 20px;
+        }
+
+        .segment {
+            flex: 1;
+            padding: 10px 12px;
+            font-size: 13px;
+            font-weight: 600;
+            text-align: center;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #5C4A3A;
+            position: relative;
+        }
+
+        .segment.active {
+            background: white;
+            color: #C18B5E;
+            box-shadow: 0 2px 8px rgba(92, 74, 58, 0.15);
+        }
+
+        .segment-badge {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: #C18B5E;
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 10px;
+            min-width: 18px;
+        }
+
+        /* Connection Cards */
+        .connections-list {
+            padding: 0 20px 100px;
+        }
+
+        .connection-card {
+            background: white;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 12px rgba(92, 74, 58, 0.08);
+        }
+
+        .connection-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .connection-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 24px;
+            background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .connection-info {
+            flex: 1;
+        }
+
+        .connection-name {
+            font-size: 16px;
+            font-weight: 700;
+            color: #5C4A3A;
+            margin-bottom: 2px;
+        }
+
+        .connection-email {
+            font-size: 13px;
+            color: #9B8B7A;
+        }
+
+        .connection-relationship {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .rel-spouse { background: #FEE2E2; color: #DC2626; }
+        .rel-partner { background: #FCE7F3; color: #DB2777; }
+        .rel-friend { background: #DBEAFE; color: #2563EB; }
+        .rel-family { background: #D1FAE5; color: #059669; }
+        .rel-roommate { background: #E9D5FF; color: #9333EA; }
+        .rel-colleague { background: #FED7AA; color: #EA580C; }
+
+        .permissions-summary {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 12px;
+        }
+
+        .permission-badge {
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .perm-merged { background: #D1FAE5; color: #059669; }
+        .perm-collaborate { background: #E9D5FF; color: #9333EA; }
+        .perm-view { background: #DBEAFE; color: #2563EB; }
+
+        /* Invitation Cards */
+        .invitation-card {
+            background: white;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 12px rgba(92, 74, 58, 0.08);
+            border-left: 4px solid #C18B5E;
+        }
+
+        .invitation-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .invitation-direction {
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .dir-received { background: #D1FAE5; color: #059669; }
+        .dir-sent { background: #DBEAFE; color: #2563EB; }
+
+        .invitation-message {
+            font-size: 13px;
+            color: #6B5847;
+            margin-bottom: 12px;
+            font-style: italic;
+            padding: 12px;
+            background: #FAFAFA;
+            border-radius: 8px;
+        }
+
+        .invitation-actions {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .btn {
+            padding: 10px 16px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #E8DCC8;
+            color: #5C4A3A;
+        }
+
+        .btn-danger {
+            background: #FEE2E2;
+            color: #DC2626;
+        }
+
+        /* Add Connection Form */
+        .form-container {
+            padding: 0 20px 100px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #5C4A3A;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #E8DCC8;
+            border-radius: 12px;
+            font-size: 15px;
+            background: white;
+            color: #5C4A3A;
+        }
+
+        .form-input::placeholder {
+            color: #9B8B7A;
+        }
+
+        .form-textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #E8DCC8;
+            border-radius: 12px;
+            font-size: 15px;
+            background: white;
+            color: #5C4A3A;
+        }
+
+        /* Permission Manager */
+        .permissions-section {
+            background: white;
+            border-radius: 16px;
+            padding: 16px;
+            margin-top: 20px;
+            box-shadow: 0 2px 12px rgba(92, 74, 58, 0.08);
+        }
+
+        .permissions-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #5C4A3A;
+            margin-bottom: 16px;
+        }
+
+        .permission-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #E8DCC8;
+        }
+
+        .permission-row:last-child {
+            border-bottom: none;
+        }
+
+        .permission-module {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .permission-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, rgba(212, 165, 116, 0.2) 0%, rgba(193, 139, 94, 0.2) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .permission-details {
+            flex: 1;
+        }
+
+        .permission-module-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #5C4A3A;
+        }
+
+        .permission-module-desc {
+            font-size: 11px;
+            color: #9B8B7A;
+        }
+
+        .permission-toggle {
+            display: flex;
+            gap: 4px;
+            padding: 4px;
+            background: #E8DCC8;
+            border-radius: 8px;
+        }
+
+        .toggle-option {
+            padding: 6px 10px;
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #6B5847;
+        }
+
+        .toggle-option.active {
+            background: white;
+            color: #C18B5E;
+            box-shadow: 0 1px 4px rgba(92, 74, 58, 0.15);
+        }
+
+        /* Dashboard */
+        .dashboard-section {
+            padding: 0 20px 100px;
+        }
+
+        .dashboard-card {
+            background: white;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 12px rgba(92, 74, 58, 0.08);
+        }
+
+        .dashboard-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .dashboard-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 16px;
+            font-weight: 700;
+            color: #5C4A3A;
+        }
+
+        .dashboard-count {
+            font-size: 12px;
+            padding: 4px 8px;
+            background: linear-gradient(135deg, rgba(212, 165, 116, 0.2) 0%, rgba(193, 139, 94, 0.2) 100%);
+            color: #C18B5E;
+            border-radius: 12px;
+            font-weight: 700;
+        }
+
+        .dashboard-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: #FAFAFA;
+            border-radius: 12px;
+            margin-bottom: 8px;
+        }
+
+        .dashboard-item-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 16px;
+        }
+
+        .dashboard-item-content {
+            flex: 1;
+        }
+
+        .dashboard-item-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #5C4A3A;
+            margin-bottom: 2px;
+        }
+
+        .dashboard-item-meta {
+            font-size: 12px;
+            color: #9B8B7A;
+        }
+
+        .dashboard-item-owner {
+            font-size: 11px;
+            padding: 4px 8px;
+            background: #E8DCC8;
+            color: #6B5847;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 40px;
+            margin: 20px;
+            background: white;
+            border-radius: 16px;
+        }
+
+        .empty-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .empty-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #5C4A3A;
+            margin-bottom: 8px;
+        }
+
+        .empty-subtitle {
+            font-size: 14px;
+            color: #9B8B7A;
+            line-height: 1.5;
+        }
+
+        h2 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #5C4A3A;
+            padding: 0 20px;
+            margin: 20px 0 16px;
+        }
+
+        .section-divider {
+            height: 16px;
+            background: #F5F5F5;
+        }
+
+        /* FAB */
+        .fab {
+            position: fixed;
+            bottom: 90px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 30px;
+            background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);
+            box-shadow: 0 4px 16px rgba(193, 139, 94, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+            color: white;
+            font-size: 28px;
+        }
+
+        .fab:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body>
+
+<!-- ==================== DASHBOARD VIEW ==================== -->
+<div class="phone-container">
+    <div class="screen">
+        <div class="header">
+            <h1>👥 Shared</h1>
+            <div class="subtitle">Collaborate with family & friends</div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span class="stat-number">3</span>
+                <span class="stat-label">Connections</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number">2</span>
+                <span class="stat-label">Pending</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number">12</span>
+                <span class="stat-label">Shared</span>
+            </div>
+        </div>
+
+        <!-- Segmented Control -->
+        <div class="segmented-control">
+            <div class="segment active">Dashboard</div>
+            <div class="segment">
+                Connections
+                <span class="segment-badge">3</span>
+            </div>
+            <div class="segment">
+                Invites
+                <span class="segment-badge">2</span>
+            </div>
+            <div class="segment">Add</div>
+        </div>
+
+        <!-- Dashboard Content -->
+        <div class="dashboard-section">
+            <!-- Shared Tasks -->
+            <div class="dashboard-card">
+                <div class="dashboard-header">
+                    <div class="dashboard-title">
+                        <span>✓</span>
+                        <span>Shared Tasks</span>
+                    </div>
+                    <div class="dashboard-count">8</div>
+                </div>
+
+                <div class="dashboard-item">
+                    <div class="dashboard-item-icon">📝</div>
+                    <div class="dashboard-item-content">
+                        <div class="dashboard-item-title">Buy groceries</div>
+                        <div class="dashboard-item-meta">Due today</div>
+                    </div>
+                    <div class="dashboard-item-owner">Sarah</div>
+                </div>
+
+                <div class="dashboard-item">
+                    <div class="dashboard-item-icon">🏠</div>
+                    <div class="dashboard-item-content">
+                        <div class="dashboard-item-title">Pay rent</div>
+                        <div class="dashboard-item-meta">Due Mar 1</div>
+                    </div>
+                    <div class="dashboard-item-owner">You</div>
+                </div>
+
+                <div class="dashboard-item">
+                    <div class="dashboard-item-icon">🚗</div>
+                    <div class="dashboard-item-content">
+                        <div class="dashboard-item-title">Car maintenance</div>
+                        <div class="dashboard-item-meta">Due next week</div>
+                    </div>
+                    <div class="dashboard-item-owner">Sarah</div>
+                </div>
+            </div>
+
+            <!-- Shared Meals -->
+            <div class="dashboard-card">
+                <div class="dashboard-header">
+                    <div class="dashboard-title">
+                        <span>🍽️</span>
+                        <span>Meal Plans</span>
+                    </div>
+                    <div class="dashboard-count">5</div>
+                </div>
+
+                <div class="dashboard-item">
+                    <div class="dashboard-item-icon">🥗</div>
+                    <div class="dashboard-item-content">
+                        <div class="dashboard-item-title">Grilled Chicken Salad</div>
+                        <div class="dashboard-item-meta">Tonight · Dinner</div>
+                    </div>
+                    <div class="dashboard-item-owner">Sarah</div>
+                </div>
+
+                <div class="dashboard-item">
+                    <div class="dashboard-item-icon">🍝</div>
+                    <div class="dashboard-item-content">
+                        <div class="dashboard-item-title">Pasta Carbonara</div>
+                        <div class="dashboard-item-meta">Tomorrow · Dinner</div>
+                    </div>
+                    <div class="dashboard-item-owner">You</div>
+                </div>
+            </div>
+
+            <!-- Shared Shopping -->
+            <div class="dashboard-card">
+                <div class="dashboard-header">
+                    <div class="dashboard-title">
+                        <span>🛒</span>
+                        <span>Shopping Lists</span>
+                    </div>
+                    <div class="dashboard-count">15</div>
+                </div>
+
+                <div class="dashboard-item">
+                    <div class="dashboard-item-icon">🥛</div>
+                    <div class="dashboard-item-content">
+                        <div class="dashboard-item-title">Milk</div>
+                        <div class="dashboard-item-meta">Dairy · Pantry</div>
+                    </div>
+                    <div class="dashboard-item-owner">Sarah</div>
+                </div>
+
+                <div class="dashboard-item">
+                    <div class="dashboard-item-icon">🍞</div>
+                    <div class="dashboard-item-content">
+                        <div class="dashboard-item-title">Bread</div>
+                        <div class="dashboard-item-meta">Bakery · Pantry</div>
+                    </div>
+                    <div class="dashboard-item-owner">You</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== CONNECTIONS VIEW ==================== -->
+<div class="phone-container">
+    <div class="screen">
+        <div class="header">
+            <h1>👥 Shared</h1>
+            <div class="subtitle">Collaborate with family & friends</div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span class="stat-number">3</span>
+                <span class="stat-label">Connections</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number">2</span>
+                <span class="stat-label">Pending</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number">12</span>
+                <span class="stat-label">Shared</span>
+            </div>
+        </div>
+
+        <!-- Segmented Control -->
+        <div class="segmented-control">
+            <div class="segment">Dashboard</div>
+            <div class="segment active">
+                Connections
+                <span class="segment-badge">3</span>
+            </div>
+            <div class="segment">
+                Invites
+                <span class="segment-badge">2</span>
+            </div>
+            <div class="segment">Add</div>
+        </div>
+
+        <h2>Active Connections</h2>
+
+        <!-- Connections List -->
+        <div class="connections-list">
+            <div class="connection-card">
+                <div class="connection-header">
+                    <div class="connection-avatar">S</div>
+                    <div class="connection-info">
+                        <div class="connection-name">Sarah Johnson</div>
+                        <div class="connection-email">sarah@example.com</div>
+                    </div>
+                    <div class="connection-relationship rel-spouse">Spouse</div>
+                </div>
+
+                <div class="permissions-summary">
+                    <div class="permission-badge perm-merged">
+                        <span>🍽️</span>
+                        <span>Meals</span>
+                    </div>
+                    <div class="permission-badge perm-merged">
+                        <span>🛒</span>
+                        <span>Shopping</span>
+                    </div>
+                    <div class="permission-badge perm-merged">
+                        <span>💰</span>
+                        <span>Finances</span>
+                    </div>
+                    <div class="permission-badge perm-collaborate">
+                        <span>✓</span>
+                        <span>Tasks</span>
+                    </div>
+                    <div class="permission-badge perm-view">
+                        <span>🎯</span>
+                        <span>Habits</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="connection-card">
+                <div class="connection-header">
+                    <div class="connection-avatar">M</div>
+                    <div class="connection-info">
+                        <div class="connection-name">Mike Chen</div>
+                        <div class="connection-email">mike@example.com</div>
+                    </div>
+                    <div class="connection-relationship rel-roommate">Roommate</div>
+                </div>
+
+                <div class="permissions-summary">
+                    <div class="permission-badge perm-merged">
+                        <span>🛒</span>
+                        <span>Shopping</span>
+                    </div>
+                    <div class="permission-badge perm-collaborate">
+                        <span>✓</span>
+                        <span>Tasks</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="connection-card">
+                <div class="connection-header">
+                    <div class="connection-avatar">E</div>
+                    <div class="connection-info">
+                        <div class="connection-name">Emma Davis</div>
+                        <div class="connection-email">emma@example.com</div>
+                    </div>
+                    <div class="connection-relationship rel-friend">Friend</div>
+                </div>
+
+                <div class="permissions-summary">
+                    <div class="permission-badge perm-view">
+                        <span>✈️</span>
+                        <span>Travel</span>
+                    </div>
+                    <div class="permission-badge perm-view">
+                        <span>🎯</span>
+                        <span>Goals</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FAB -->
+        <div class="fab">+</div>
+    </div>
+</div>
+
+<!-- ==================== INVITATIONS VIEW ==================== -->
+<div class="phone-container">
+    <div class="screen">
+        <div class="header">
+            <h1>👥 Shared</h1>
+            <div class="subtitle">Collaborate with family & friends</div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span class="stat-number">3</span>
+                <span class="stat-label">Connections</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number">2</span>
+                <span class="stat-label">Pending</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number">12</span>
+                <span class="stat-label">Shared</span>
+            </div>
+        </div>
+
+        <!-- Segmented Control -->
+        <div class="segmented-control">
+            <div class="segment">Dashboard</div>
+            <div class="segment">
+                Connections
+                <span class="segment-badge">3</span>
+            </div>
+            <div class="segment active">
+                Invites
+                <span class="segment-badge">2</span>
+            </div>
+            <div class="segment">Add</div>
+        </div>
+
+        <h2>Received Invitations (1)</h2>
+
+        <!-- Received Invitations -->
+        <div class="connections-list">
+            <div class="invitation-card">
+                <div class="invitation-header">
+                    <div class="connection-avatar">J</div>
+                    <div class="connection-info">
+                        <div class="connection-name">John Smith</div>
+                        <div class="connection-email">john@example.com</div>
+                    </div>
+                    <div class="invitation-direction dir-received">Received</div>
+                </div>
+
+                <div class="connection-relationship rel-colleague" style="display: inline-block; margin-bottom: 12px;">
+                    Colleague
+                </div>
+
+                <div class="invitation-message">
+                    "Hey! Let's collaborate on our work projects and share notes."
+                </div>
+
+                <div class="permissions-summary" style="margin-bottom: 12px;">
+                    <div class="permission-badge perm-collaborate">
+                        <span>✓</span>
+                        <span>Tasks</span>
+                    </div>
+                    <div class="permission-badge perm-collaborate">
+                        <span>📝</span>
+                        <span>Notes</span>
+                    </div>
+                    <div class="permission-badge perm-collaborate">
+                        <span>📁</span>
+                        <span>Projects</span>
+                    </div>
+                </div>
+
+                <div class="invitation-actions">
+                    <button class="btn btn-primary">Accept</button>
+                    <button class="btn btn-secondary">Decline</button>
+                </div>
+            </div>
+        </div>
+
+        <h2>Sent Invitations (1)</h2>
+
+        <!-- Sent Invitations -->
+        <div class="connections-list">
+            <div class="invitation-card">
+                <div class="invitation-header">
+                    <div class="connection-avatar">A</div>
+                    <div class="connection-info">
+                        <div class="connection-name">Alex Martinez</div>
+                        <div class="connection-email">alex@example.com</div>
+                    </div>
+                    <div class="invitation-direction dir-sent">Sent</div>
+                </div>
+
+                <div class="connection-relationship rel-family" style="display: inline-block; margin-bottom: 12px;">
+                    Family
+                </div>
+
+                <div class="invitation-message">
+                    "Let's share our meal plans and grocery lists!"
+                </div>
+
+                <div class="permissions-summary" style="margin-bottom: 12px;">
+                    <div class="permission-badge perm-merged">
+                        <span>🍽️</span>
+                        <span>Meals</span>
+                    </div>
+                    <div class="permission-badge perm-merged">
+                        <span>🛒</span>
+                        <span>Shopping</span>
+                    </div>
+                </div>
+
+                <button class="btn btn-danger" style="width: 100%;">Cancel Invitation</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== ADD CONNECTION VIEW ==================== -->
+<div class="phone-container">
+    <div class="screen">
+        <div class="header">
+            <h1>👥 Shared</h1>
+            <div class="subtitle">Collaborate with family & friends</div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span class="stat-number">3</span>
+                <span class="stat-label">Connections</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number">2</span>
+                <span class="stat-label">Pending</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number">12</span>
+                <span class="stat-label">Shared</span>
+            </div>
+        </div>
+
+        <!-- Segmented Control -->
+        <div class="segmented-control">
+            <div class="segment">Dashboard</div>
+            <div class="segment">
+                Connections
+                <span class="segment-badge">3</span>
+            </div>
+            <div class="segment">
+                Invites
+                <span class="segment-badge">2</span>
+            </div>
+            <div class="segment active">Add</div>
+        </div>
+
+        <h2>Add New Connection</h2>
+
+        <!-- Add Connection Form -->
+        <div class="form-container">
+            <div class="form-group">
+                <label class="form-label">Email Address</label>
+                <input type="email" class="form-input" placeholder="Enter email address...">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Relationship</label>
+                <select class="form-select">
+                    <option>Select relationship...</option>
+                    <option>Spouse</option>
+                    <option>Partner</option>
+                    <option>Friend</option>
+                    <option>Family</option>
+                    <option>Roommate</option>
+                    <option>Colleague</option>
+                    <option>Other</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Nickname (Optional)</label>
+                <input type="text" class="form-input" placeholder="What do you call them?">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Personal Message (Optional)</label>
+                <textarea class="form-input form-textarea" placeholder="Add a personal message to your invitation..."></textarea>
+            </div>
+
+            <!-- Permissions Section -->
+            <div class="permissions-section">
+                <div class="permissions-title">Choose What to Share</div>
+
+                <div class="permission-row">
+                    <div class="permission-module">
+                        <div class="permission-icon">🍽️</div>
+                        <div class="permission-details">
+                            <div class="permission-module-name">Meals</div>
+                            <div class="permission-module-desc">Meal planning & recipes</div>
+                        </div>
+                    </div>
+                    <div class="permission-toggle">
+                        <div class="toggle-option active">Off</div>
+                        <div class="toggle-option">Merged</div>
+                    </div>
+                </div>
+
+                <div class="permission-row">
+                    <div class="permission-module">
+                        <div class="permission-icon">🛒</div>
+                        <div class="permission-details">
+                            <div class="permission-module-name">Shopping</div>
+                            <div class="permission-module-desc">Grocery lists</div>
+                        </div>
+                    </div>
+                    <div class="permission-toggle">
+                        <div class="toggle-option">Off</div>
+                        <div class="toggle-option active">Merged</div>
+                    </div>
+                </div>
+
+                <div class="permission-row">
+                    <div class="permission-module">
+                        <div class="permission-icon">✓</div>
+                        <div class="permission-details">
+                            <div class="permission-module-name">Tasks</div>
+                            <div class="permission-module-desc">Todo lists</div>
+                        </div>
+                    </div>
+                    <div class="permission-toggle">
+                        <div class="toggle-option">Off</div>
+                        <div class="toggle-option">View</div>
+                        <div class="toggle-option active">Edit</div>
+                    </div>
+                </div>
+
+                <div class="permission-row">
+                    <div class="permission-module">
+                        <div class="permission-icon">💰</div>
+                        <div class="permission-details">
+                            <div class="permission-module-name">Finances</div>
+                            <div class="permission-module-desc">Accounts & budgets</div>
+                        </div>
+                    </div>
+                    <div class="permission-toggle">
+                        <div class="toggle-option active">Off</div>
+                        <div class="toggle-option">View</div>
+                        <div class="toggle-option">Edit</div>
+                    </div>
+                </div>
+
+                <div class="permission-row">
+                    <div class="permission-module">
+                        <div class="permission-icon">🎯</div>
+                        <div class="permission-details">
+                            <div class="permission-module-name">Habits</div>
+                            <div class="permission-module-desc">Daily habits</div>
+                        </div>
+                    </div>
+                    <div class="permission-toggle">
+                        <div class="toggle-option active">Off</div>
+                        <div class="toggle-option">View</div>
+                    </div>
+                </div>
+
+                <div class="permission-row">
+                    <div class="permission-module">
+                        <div class="permission-icon">🏆</div>
+                        <div class="permission-details">
+                            <div class="permission-module-name">Goals</div>
+                            <div class="permission-module-desc">Life goals & dreams</div>
+                        </div>
+                    </div>
+                    <div class="permission-toggle">
+                        <div class="toggle-option active">Off</div>
+                        <div class="toggle-option">View</div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn btn-primary" style="width: 100%; margin-top: 20px; padding: 14px;">
+                Send Invitation
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== EMPTY STATE ==================== -->
+<div class="phone-container">
+    <div class="screen">
+        <div class="header">
+            <h1>👥 Shared</h1>
+            <div class="subtitle">Collaborate with family & friends</div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span class="stat-number">0</span>
+                <span class="stat-label">Connections</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number">0</span>
+                <span class="stat-label">Pending</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number">0</span>
+                <span class="stat-label">Shared</span>
+            </div>
+        </div>
+
+        <!-- Segmented Control -->
+        <div class="segmented-control">
+            <div class="segment active">Dashboard</div>
+            <div class="segment">Connections</div>
+            <div class="segment">Invites</div>
+            <div class="segment">Add</div>
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state" style="margin-top: 100px;">
+            <div class="empty-icon">👥</div>
+            <div class="empty-title">No connections yet</div>
+            <div class="empty-subtitle">Invite family and friends to collaborate on meals, shopping, tasks, and more!</div>
+        </div>
+
+        <!-- FAB -->
+        <div class="fab">+</div>
+    </div>
+</div>
+
+</body>
+</html>

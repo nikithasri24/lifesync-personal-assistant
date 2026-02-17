@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Travel - LifeSync Design Spec</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #F5F5F5;
+            padding: 20px;
+            color: #333;
+        }
+
+        .phone-container {
+            max-width: 375px;
+            margin: 0 auto 40px;
+            background: white;
+            border-radius: 40px;
+            padding: 15px;
+            box-shadow: 0 10px 40px rgba(92, 74, 58, 0.2);
+        }
+
+        .screen {
+            background: #FAFAFA;
+            border-radius: 30px;
+            overflow: hidden;
+            min-height: 700px;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);
+            padding: 60px 20px 20px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .header .subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        /* Segmented Control */
+        .segmented-control {
+            display: flex;
+            background: rgba(92, 74, 58, 0.1);
+            border-radius: 12px;
+            padding: 4px;
+            margin: 16px 20px;
+        }
+
+        .segment {
+            flex: 1;
+            padding: 10px 16px;
+            font-size: 13px;
+            font-weight: 600;
+            text-align: center;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #5C4A3A;
+        }
+
+        .segment.active {
+            background: white;
+            color: #C18B5E;
+            box-shadow: 0 2px 8px rgba(92, 74, 58, 0.15);
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            padding: 16px 20px;
+            background: white;
+            margin: 0 20px 16px;
+            border-radius: 16px;
+            box-shadow: 0 2px 12px rgba(92, 74, 58, 0.08);
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: 800;
+            color: #C18B5E;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: #9B8B7A;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            margin-top: 4px;
+        }
+
+        /* Filter Pills */
+        .filter-pills {
+            display: flex;
+            gap: 8px;
+            padding: 0 20px 16px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .filter-pills::-webkit-scrollbar {
+            display: none;
+        }
+
+        .filter-pill {
+            padding: 8px 16px;
+            background: white;
+            border: 2px solid #E8DCC8;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #5C4A3A;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .filter-pill.active {
+            background: linear-gradient(135deg, rgba(212, 165, 116, 0.2) 0%, rgba(193, 139, 94, 0.2) 100%);
+            border-color: #C18B5E;
+            color: #C18B5E;
+        }
+
+        /* Map View */
+        .map-container {
+            background: white;
+            margin: 0 20px 16px;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 2px 12px rgba(92, 74, 58, 0.08);
+        }
+
+        .map-placeholder {
+            height: 280px;
+            background: linear-gradient(135deg, #E8DCC8 0%, #D4C5B3 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .map-icon {
+            font-size: 72px;
+            opacity: 0.3;
+        }
+
+        .map-legend {
+            padding: 12px 16px;
+            background: #FAFAFA;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: #6B5847;
+        }
+
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .legend-dot.visited { background: #C18B5E; }
+        .legend-dot.lived { background: #D4A574; }
+        .legend-dot.transit { background: #9B8B7A; }
+        .legend-dot.wishlist { background: #E8DCC8; border: 2px solid #C18B5E; }
+
+        /* Location Cards */
+        .locations-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            padding: 0 20px 100px;
+        }
+
+        .location-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 2px 12px rgba(92, 74, 58, 0.08);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .location-card:active {
+            transform: scale(0.98);
+        }
+
+        .location-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .location-icon {
+            font-size: 28px;
+        }
+
+        .location-count {
+            font-size: 18px;
+            font-weight: 800;
+            color: #C18B5E;
+        }
+
+        .location-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #5C4A3A;
+            margin-bottom: 4px;
+        }
+
+        .location-progress {
+            background: #E8DCC8;
+            height: 6px;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .location-progress-bar {
+            background: linear-gradient(90deg, #D4A574 0%, #C18B5E 100%);
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.3s;
+        }
+
+        /* Trip Cards */
+        .trips-list {
+            padding: 0 20px 100px;
+        }
+
+        .trip-card {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 12px rgba(92, 74, 58, 0.08);
+        }
+
+        .trip-cover {
+            height: 140px;
+            background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+        }
+
+        .trip-content {
+            padding: 16px;
+        }
+
+        .trip-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 8px;
+        }
+
+        .trip-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #5C4A3A;
+        }
+
+        .trip-status {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .status-planning { background: #E8DCC8; color: #6B5847; }
+        .status-upcoming { background: #D4E8FF; color: #0066CC; }
+        .status-progress { background: #D4F4DD; color: #16A34A; }
+        .status-completed { background: #E8D4FF; color: #9333EA; }
+
+        .trip-dates {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: #6B5847;
+            margin-bottom: 12px;
+        }
+
+        .trip-meta {
+            display: flex;
+            gap: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #E8DCC8;
+        }
+
+        .trip-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+            color: #9B8B7A;
+        }
+
+        /* Passport View */
+        .passport-card {
+            background: white;
+            margin: 0 20px 16px;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 2px 12px rgba(92, 74, 58, 0.08);
+        }
+
+        .passport-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid #E8DCC8;
+        }
+
+        .passport-flag {
+            font-size: 48px;
+        }
+
+        .passport-info h3 {
+            font-size: 16px;
+            font-weight: 700;
+            color: #5C4A3A;
+            margin-bottom: 4px;
+        }
+
+        .passport-rank {
+            font-size: 13px;
+            color: #9B8B7A;
+        }
+
+        .passport-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .passport-stat {
+            text-align: center;
+            padding: 12px;
+            background: linear-gradient(135deg, rgba(212, 165, 116, 0.1) 0%, rgba(193, 139, 94, 0.1) 100%);
+            border-radius: 12px;
+        }
+
+        .passport-stat-number {
+            font-size: 32px;
+            font-weight: 800;
+            color: #C18B5E;
+            display: block;
+        }
+
+        .passport-stat-label {
+            font-size: 11px;
+            color: #6B5847;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        .visa-list {
+            padding: 0 20px 100px;
+        }
+
+        .visa-item {
+            background: white;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 12px rgba(92, 74, 58, 0.08);
+            border-left: 4px solid #C18B5E;
+        }
+
+        .visa-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .visa-country {
+            font-size: 15px;
+            font-weight: 700;
+            color: #5C4A3A;
+        }
+
+        .visa-type {
+            font-size: 11px;
+            padding: 4px 8px;
+            background: #E8DCC8;
+            color: #6B5847;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+
+        .visa-dates {
+            font-size: 13px;
+            color: #6B5847;
+            margin-bottom: 4px;
+        }
+
+        .visa-expiry {
+            font-size: 12px;
+            color: #9B8B7A;
+        }
+
+        .visa-expiry.warning {
+            color: #EA580C;
+            font-weight: 600;
+        }
+
+        /* FAB */
+        .fab {
+            position: fixed;
+            bottom: 90px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 30px;
+            background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);
+            box-shadow: 0 4px 16px rgba(193, 139, 94, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+            color: white;
+            font-size: 28px;
+        }
+
+        .fab:active {
+            transform: scale(0.95);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 40px;
+            margin: 20px;
+            background: white;
+            border-radius: 16px;
+        }
+
+        .empty-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .empty-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #5C4A3A;
+            margin-bottom: 8px;
+        }
+
+        .empty-subtitle {
+            font-size: 14px;
+            color: #9B8B7A;
+            line-height: 1.5;
+        }
+
+        /* Search Bar */
+        .search-bar {
+            margin: 0 20px 16px;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 16px 12px 44px;
+            border: 2px solid #E8DCC8;
+            border-radius: 12px;
+            font-size: 15px;
+            background: white;
+            color: #5C4A3A;
+        }
+
+        .search-input::placeholder {
+            color: #9B8B7A;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 18px;
+            color: #9B8B7A;
+        }
+
+        /* List Items */
+        .location-list {
+            padding: 0 20px 100px;
+        }
+
+        .location-list-item {
+            background: white;
+            padding: 16px;
+            margin-bottom: 8px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 2px 12px rgba(92, 74, 58, 0.08);
+        }
+
+        .location-checkbox {
+            width: 24px;
+            height: 24px;
+            border: 2px solid #C18B5E;
+            border-radius: 6px;
+            flex-shrink: 0;
+        }
+
+        .location-checkbox.checked {
+            background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+        }
+
+        .location-name {
+            flex: 1;
+            font-size: 15px;
+            font-weight: 600;
+            color: #5C4A3A;
+        }
+
+        .location-badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .badge-visited { background: #D4F4DD; color: #16A34A; }
+        .badge-lived { background: #FFE8CC; color: #EA580C; }
+        .badge-wishlist { background: #E8DCC8; color: #6B5847; }
+
+        h2 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #5C4A3A;
+            padding: 0 20px;
+            margin-bottom: 16px;
+        }
+
+        .section-divider {
+            height: 16px;
+            background: #F5F5F5;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ==================== MAP VIEW ==================== -->
+<div class="phone-container">
+    <div class="screen">
+        <div class="header">
+            <h1>🗺️ Travel</h1>
+            <div class="subtitle">Track your adventures worldwide</div>
+        </div>
+
+        <!-- Segmented Control -->
+        <div class="segmented-control">
+            <div class="segment active">Map</div>
+            <div class="segment">Locations</div>
+            <div class="segment">Trips</div>
+            <div class="segment">Passport</div>
+        </div>
+
+        <!-- Travel Stats -->
+        <div class="stats-bar">
+            <div class="stat-item">
+                <span class="stat-number">47</span>
+                <span class="stat-label">Countries</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number">28</span>
+                <span class="stat-label">States</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number">12</span>
+                <span class="stat-label">Parks</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number">8</span>
+                <span class="stat-label">Islands</span>
+            </div>
+        </div>
+
+        <!-- Filter Pills -->
+        <div class="filter-pills">
+            <div class="filter-pill active">All Travels</div>
+            <div class="filter-pill">My Travels</div>
+            <div class="filter-pill">Partner's Travels</div>
+            <div class="filter-pill">Our Travels</div>
+        </div>
+
+        <!-- Interactive Map -->
+        <div class="map-container">
+            <div class="map-placeholder">
+                <div class="map-icon">🌍</div>
+            </div>
+            <div class="map-legend">
+                <div class="legend-item">
+                    <div class="legend-dot visited"></div>
+                    <span>Visited</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot lived"></div>
+                    <span>Lived</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot transit"></div>
+                    <span>Transit</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot wishlist"></div>
+                    <span>Wishlist</span>
+                </div>
+            </div>
+        </div>
+
+        <h2>Track Your Locations</h2>
+
+        <!-- Location Type Cards -->
+        <div class="locations-grid">
+            <div class="location-card">
+                <div class="location-header">
+                    <div class="location-icon">🌐</div>
+                    <div class="location-count">47/195</div>
+                </div>
+                <div class="location-title">Countries</div>
+                <div class="location-progress">
+                    <div class="location-progress-bar" style="width: 24%"></div>
+                </div>
+            </div>
+
+            <div class="location-card">
+                <div class="location-header">
+                    <div class="location-icon">🏛️</div>
+                    <div class="location-count">28/50</div>
+                </div>
+                <div class="location-title">US States</div>
+                <div class="location-progress">
+                    <div class="location-progress-bar" style="width: 56%"></div>
+                </div>
+            </div>
+
+            <div class="location-card">
+                <div class="location-header">
+                    <div class="location-icon">🏞️</div>
+                    <div class="location-count">12/63</div>
+                </div>
+                <div class="location-title">National Parks</div>
+                <div class="location-progress">
+                    <div class="location-progress-bar" style="width: 19%"></div>
+                </div>
+            </div>
+
+            <div class="location-card">
+                <div class="location-header">
+                    <div class="location-icon">🏝️</div>
+                    <div class="location-count">8/42</div>
+                </div>
+                <div class="location-title">Islands</div>
+                <div class="location-progress">
+                    <div class="location-progress-bar" style="width: 19%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FAB -->
+        <div class="fab">+</div>
+    </div>
+</div>
+
+<!-- ==================== LOCATIONS VIEW ==================== -->
+<div class="phone-container">
+    <div class="screen">
+        <div class="header">
+            <h1>🗺️ Travel</h1>
+            <div class="subtitle">Track your adventures worldwide</div>
+        </div>
+
+        <!-- Segmented Control -->
+        <div class="segmented-control">
+            <div class="segment">Map</div>
+            <div class="segment active">Locations</div>
+            <div class="segment">Trips</div>
+            <div class="segment">Passport</div>
+        </div>
+
+        <!-- Filter Pills -->
+        <div class="filter-pills">
+            <div class="filter-pill active">Countries</div>
+            <div class="filter-pill">States</div>
+            <div class="filter-pill">Parks</div>
+            <div class="filter-pill">Islands</div>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="search-bar">
+            <div class="search-icon">🔍</div>
+            <input type="text" class="search-input" placeholder="Search countries...">
+        </div>
+
+        <h2>Countries (47/195)</h2>
+
+        <!-- Location Checklist -->
+        <div class="location-list">
+            <div class="location-list-item">
+                <div class="location-checkbox checked">✓</div>
+                <div class="location-name">🇺🇸 United States</div>
+                <div class="location-badge badge-lived">Lived</div>
+            </div>
+
+            <div class="location-list-item">
+                <div class="location-checkbox checked">✓</div>
+                <div class="location-name">🇫🇷 France</div>
+                <div class="location-badge badge-visited">Visited</div>
+            </div>
+
+            <div class="location-list-item">
+                <div class="location-checkbox checked">✓</div>
+                <div class="location-name">🇮🇹 Italy</div>
+                <div class="location-badge badge-visited">Visited</div>
+            </div>
+
+            <div class="location-list-item">
+                <div class="location-checkbox checked">✓</div>
+                <div class="location-name">🇯🇵 Japan</div>
+                <div class="location-badge badge-visited">Visited</div>
+            </div>
+
+            <div class="location-list-item">
+                <div class="location-checkbox checked">✓</div>
+                <div class="location-name">🇬🇧 United Kingdom</div>
+                <div class="location-badge badge-visited">Visited</div>
+            </div>
+
+            <div class="location-list-item">
+                <div class="location-checkbox"></div>
+                <div class="location-name">🇦🇺 Australia</div>
+                <div class="location-badge badge-wishlist">Wishlist</div>
+            </div>
+
+            <div class="location-list-item">
+                <div class="location-checkbox"></div>
+                <div class="location-name">🇨🇦 Canada</div>
+            </div>
+
+            <div class="location-list-item">
+                <div class="location-checkbox"></div>
+                <div class="location-name">🇩🇪 Germany</div>
+            </div>
+
+            <div class="location-list-item">
+                <div class="location-checkbox"></div>
+                <div class="location-name">🇪🇸 Spain</div>
+            </div>
+
+            <div class="location-list-item">
+                <div class="location-checkbox"></div>
+                <div class="location-name">🇬🇷 Greece</div>
+            </div>
+        </div>
+
+        <!-- FAB -->
+        <div class="fab">+</div>
+    </div>
+</div>
+
+<!-- ==================== TRIPS VIEW ==================== -->
+<div class="phone-container">
+    <div class="screen">
+        <div class="header">
+            <h1>🗺️ Travel</h1>
+            <div class="subtitle">Track your adventures worldwide</div>
+        </div>
+
+        <!-- Segmented Control -->
+        <div class="segmented-control">
+            <div class="segment">Map</div>
+            <div class="segment">Locations</div>
+            <div class="segment active">Trips</div>
+            <div class="segment">Passport</div>
+        </div>
+
+        <!-- Filter Pills -->
+        <div class="filter-pills">
+            <div class="filter-pill active">All</div>
+            <div class="filter-pill">Upcoming</div>
+            <div class="filter-pill">Completed</div>
+            <div class="filter-pill">Planning</div>
+        </div>
+
+        <h2>Your Trips (8)</h2>
+
+        <!-- Trip Cards -->
+        <div class="trips-list">
+            <div class="trip-card">
+                <div class="trip-cover">🗼</div>
+                <div class="trip-content">
+                    <div class="trip-header">
+                        <div class="trip-title">Paris & Rome</div>
+                        <div class="trip-status status-upcoming">Upcoming</div>
+                    </div>
+                    <div class="trip-dates">
+                        📅 Jun 15 - Jun 28, 2026
+                    </div>
+                    <div class="trip-meta">
+                        <div class="trip-meta-item">
+                            ⏱️ 14 days
+                        </div>
+                        <div class="trip-meta-item">
+                            💰 $4,500
+                        </div>
+                        <div class="trip-meta-item">
+                            🏷️ Vacation
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="trip-card">
+                <div class="trip-cover">🗾</div>
+                <div class="trip-content">
+                    <div class="trip-header">
+                        <div class="trip-title">Japan Cherry Blossoms</div>
+                        <div class="trip-status status-completed">Completed</div>
+                    </div>
+                    <div class="trip-dates">
+                        📅 Apr 1 - Apr 14, 2025
+                    </div>
+                    <div class="trip-meta">
+                        <div class="trip-meta-item">
+                            ⏱️ 14 days
+                        </div>
+                        <div class="trip-meta-item">
+                            💰 $5,200
+                        </div>
+                        <div class="trip-meta-item">
+                            🏷️ Vacation
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="trip-card">
+                <div class="trip-cover">🏔️</div>
+                <div class="trip-content">
+                    <div class="trip-header">
+                        <div class="trip-title">Swiss Alps Skiing</div>
+                        <div class="trip-status status-planning">Planning</div>
+                    </div>
+                    <div class="trip-dates">
+                        📅 Dec 20 - Dec 30, 2026
+                    </div>
+                    <div class="trip-meta">
+                        <div class="trip-meta-item">
+                            ⏱️ 11 days
+                        </div>
+                        <div class="trip-meta-item">
+                            💰 $6,800
+                        </div>
+                        <div class="trip-meta-item">
+                            🏷️ Skiing
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="trip-card">
+                <div class="trip-cover">🏝️</div>
+                <div class="trip-content">
+                    <div class="trip-header">
+                        <div class="trip-title">Hawaii Adventure</div>
+                        <div class="trip-status status-progress">In Progress</div>
+                    </div>
+                    <div class="trip-dates">
+                        📅 Feb 10 - Feb 20, 2026
+                    </div>
+                    <div class="trip-meta">
+                        <div class="trip-meta-item">
+                            ⏱️ 11 days
+                        </div>
+                        <div class="trip-meta-item">
+                            💰 $3,200
+                        </div>
+                        <div class="trip-meta-item">
+                            🏷️ Beach
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FAB -->
+        <div class="fab">+</div>
+    </div>
+</div>
+
+<!-- ==================== PASSPORT VIEW ==================== -->
+<div class="phone-container">
+    <div class="screen">
+        <div class="header">
+            <h1>🗺️ Travel</h1>
+            <div class="subtitle">Track your adventures worldwide</div>
+        </div>
+
+        <!-- Segmented Control -->
+        <div class="segmented-control">
+            <div class="segment">Map</div>
+            <div class="segment">Locations</div>
+            <div class="segment">Trips</div>
+            <div class="segment active">Passport</div>
+        </div>
+
+        <!-- Passport Power Card -->
+        <div class="passport-card">
+            <div class="passport-header">
+                <div class="passport-flag">🇺🇸</div>
+                <div class="passport-info">
+                    <h3>United States Passport</h3>
+                    <div class="passport-rank">Rank #8 · Power Score 186</div>
+                </div>
+            </div>
+
+            <div class="passport-stats">
+                <div class="passport-stat">
+                    <span class="passport-stat-number">156</span>
+                    <span class="passport-stat-label">Visa Free</span>
+                </div>
+                <div class="passport-stat">
+                    <span class="passport-stat-number">30</span>
+                    <span class="passport-stat-label">Visa on Arrival</span>
+                </div>
+            </div>
+
+            <div class="passport-stats">
+                <div class="passport-stat">
+                    <span class="passport-stat-number">42</span>
+                    <span class="passport-stat-label">eTA/eVisa</span>
+                </div>
+                <div class="passport-stat">
+                    <span class="passport-stat-number">37</span>
+                    <span class="passport-stat-label">Visa Required</span>
+                </div>
+            </div>
+        </div>
+
+        <h2>Active Visas (3)</h2>
+
+        <!-- Active Visas -->
+        <div class="visa-list">
+            <div class="visa-item">
+                <div class="visa-header">
+                    <div class="visa-country">🇮🇳 India</div>
+                    <div class="visa-type">Tourist</div>
+                </div>
+                <div class="visa-dates">
+                    📅 Valid: Jan 15, 2025 - Jan 15, 2026
+                </div>
+                <div class="visa-expiry">Expires in 11 months</div>
+            </div>
+
+            <div class="visa-item">
+                <div class="visa-header">
+                    <div class="visa-country">🇨🇳 China</div>
+                    <div class="visa-type">Business</div>
+                </div>
+                <div class="visa-dates">
+                    📅 Valid: Nov 1, 2025 - Nov 1, 2026
+                </div>
+                <div class="visa-expiry">Expires in 9 months</div>
+            </div>
+
+            <div class="visa-item">
+                <div class="visa-header">
+                    <div class="visa-country">🇦🇺 Australia</div>
+                    <div class="visa-type">eVisitor</div>
+                </div>
+                <div class="visa-dates">
+                    📅 Valid: Feb 1, 2026 - Apr 1, 2026
+                </div>
+                <div class="visa-expiry warning">⚠️ Expires in 45 days</div>
+            </div>
+        </div>
+
+        <div class="section-divider"></div>
+
+        <h2>Visa Requirements</h2>
+
+        <!-- Search for destination -->
+        <div class="search-bar">
+            <div class="search-icon">🔍</div>
+            <input type="text" class="search-input" placeholder="Search destination country...">
+        </div>
+
+        <!-- Empty state -->
+        <div class="empty-state">
+            <div class="empty-icon">🌍</div>
+            <div class="empty-title">Check Visa Requirements</div>
+            <div class="empty-subtitle">Search for any country to see if you need a visa and what documents are required</div>
+        </div>
+
+        <!-- FAB -->
+        <div class="fab">+</div>
+    </div>
+</div>
+
+<!-- ==================== EMPTY STATES ==================== -->
+<div class="phone-container">
+    <div class="screen">
+        <div class="header">
+            <h1>🗺️ Travel</h1>
+            <div class="subtitle">Track your adventures worldwide</div>
+        </div>
+
+        <!-- Segmented Control -->
+        <div class="segmented-control">
+            <div class="segment">Map</div>
+            <div class="segment">Locations</div>
+            <div class="segment active">Trips</div>
+            <div class="segment">Passport</div>
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state" style="margin-top: 100px;">
+            <div class="empty-icon">✈️</div>
+            <div class="empty-title">No trips yet</div>
+            <div class="empty-subtitle">Start planning your next adventure! Track dates, budget, and create amazing memories.</div>
+        </div>
+
+        <!-- FAB -->
+        <div class="fab">+</div>
+    </div>
+</div>
+
+</body>
+</html>

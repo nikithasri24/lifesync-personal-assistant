@@ -1,7 +1,8 @@
 import React from 'react';
-import { MapPin, Package, DollarSign, Plus } from 'lucide-react';
+import { MapPin, Package, DollarSign, Plus, TrendingUp } from 'lucide-react';
 import { useThemeColors } from '../../../hooks/useThemeColors';
 import type { Store } from '../../types';
+import { startOfMonth } from 'date-fns';
 
 interface StoresRichViewProps {
   stores: Store[];
@@ -50,10 +51,34 @@ function getStoreStats(store: Store, shoppingItems: any[]) {
     .filter(item => !item.purchased && item.assignedStore === store.id)
     .reduce((sum, item) => sum + (item.estimatedPrice || 0), 0);
 
+  // Calculate spending this month (purchased items)
+  const monthStart = startOfMonth(new Date());
+  const monthlySpent = shoppingItems
+    .filter(item =>
+      item.purchased &&
+      item.assignedStore === store.id &&
+      item.purchasedAt &&
+      new Date(item.purchasedAt) >= monthStart
+    )
+    .reduce((sum, item) => sum + (item.price || item.estimatedPrice || 0), 0);
+
+  // Calculate budget status
+  const monthlyBudget = store.monthlyBudget || 0;
+  const budgetRemaining = monthlyBudget - monthlySpent;
+  const budgetPercentUsed = monthlyBudget > 0 ? (monthlySpent / monthlyBudget) * 100 : 0;
+
   // Mock distance (in real app, would use geolocation)
   const distance = store.address ? '2.3 mi' : 'N/A';
 
-  return { itemCount, estimatedTotal, distance };
+  return {
+    itemCount,
+    estimatedTotal,
+    distance,
+    monthlySpent,
+    budgetRemaining,
+    budgetPercentUsed,
+    hasBudget: monthlyBudget > 0,
+  };
 }
 
 export function StoresRichView({
@@ -105,8 +130,16 @@ export function StoresRichView({
       {/* Store Cards */}
       <div className="space-y-3">
         {stores.map((store) => {
-          const { itemCount, estimatedTotal, distance } = getStoreStats(store, shoppingItems);
+          const stats = getStoreStats(store, shoppingItems);
           const emoji = getStoreEmoji(store.name);
+
+          // Determine budget status color
+          let budgetColor = colors.text.secondary;
+          if (stats.hasBudget) {
+            if (stats.budgetPercentUsed >= 100) budgetColor = '#EF4444'; // Red - over budget
+            else if (stats.budgetPercentUsed >= 80) budgetColor = '#F59E0B'; // Orange - approaching
+            else budgetColor = '#10B981'; // Green - good
+          }
 
           return (
             <div
@@ -144,19 +177,59 @@ export function StoresRichView({
               <div className="flex gap-4 mb-3 text-sm" style={{ color: colors.text.secondary }}>
                 <div className="flex items-center gap-1.5">
                   <Package size={16} style={{ color: colors.accent.start }} />
-                  <span className="font-medium">{itemCount} items</span>
+                  <span className="font-medium">{stats.itemCount} items</span>
                 </div>
 
                 <div className="flex items-center gap-1.5">
                   <MapPin size={16} style={{ color: colors.accent.start }} />
-                  <span className="font-medium">{distance}</span>
+                  <span className="font-medium">{stats.distance}</span>
                 </div>
 
                 <div className="flex items-center gap-1.5">
                   <DollarSign size={16} style={{ color: colors.accent.start }} />
-                  <span className="font-medium">${estimatedTotal.toFixed(2)}</span>
+                  <span className="font-medium">${stats.estimatedTotal.toFixed(2)}</span>
                 </div>
               </div>
+
+              {/* Budget Display */}
+              {stats.hasBudget && (
+                <div className="mb-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-1.5">
+                      <TrendingUp size={14} style={{ color: budgetColor }} />
+                      <span className="text-xs font-medium" style={{ color: colors.text.tertiary }}>
+                        Monthly Budget
+                      </span>
+                    </div>
+                    <span className="text-xs font-semibold" style={{ color: budgetColor }}>
+                      ${stats.monthlySpent.toFixed(2)} / ${store.monthlyBudget?.toFixed(2)}
+                    </span>
+                  </div>
+                  {/* Budget Progress Bar */}
+                  <div
+                    className="w-full h-2 rounded-full overflow-hidden"
+                    style={{ backgroundColor: colors.bg.secondary }}
+                  >
+                    <div
+                      className="h-full transition-all duration-300"
+                      style={{
+                        width: `${Math.min(stats.budgetPercentUsed, 100)}%`,
+                        backgroundColor: budgetColor,
+                      }}
+                    />
+                  </div>
+                  {stats.budgetPercentUsed >= 100 && (
+                    <p className="text-xs mt-1" style={{ color: '#EF4444' }}>
+                      ⚠️ Over budget by ${(-stats.budgetRemaining).toFixed(2)}
+                    </p>
+                  )}
+                  {stats.budgetPercentUsed >= 80 && stats.budgetPercentUsed < 100 && (
+                    <p className="text-xs mt-1" style={{ color: '#F59E0B' }}>
+                      ${stats.budgetRemaining.toFixed(2)} remaining
+                    </p>
+                  )}
+                </div>
+              )}
 
               {/* View Button */}
               <button

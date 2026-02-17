@@ -6,7 +6,7 @@ import { useThemeColors } from '../hooks/useThemeColors';
 import type { ShoppingItem, ShoppingList } from '../shopping/types';
 import { distributeItemsToStores as distributeItems, type DistributionStrategy } from '../shopping/services/storeDistribution';
 import { ShoppingModals } from '../shopping/components/layout/ShoppingModals';
-import { MasterListView, DistributeView, StoreListsView, PantryView } from '../shopping/components/views';
+import { MasterListView, DistributeView, StoreListsView, PantryView, ShoppingHistoryView } from '../shopping/components/views';
 import { PantryGridView } from '../shopping/components/views/PantryGridView';
 import { StoresRichView } from '../shopping/components/views/StoresRichView';
 import { SegmentedControl } from '../components/ui/SegmentedControl';
@@ -25,10 +25,13 @@ import {
 import { useStoresQuery, useCreateStore } from '../hooks/useStoresQuery';
 import { AddStoreModal } from '../shopping/components/modals/AddStoreModal';
 import { StoreShoppingListModal } from '../shopping/components/modals/StoreShoppingListModal';
+import { PantryItemDetailsModal } from '../shopping/components/modals/PantryItemDetailsModal';
+import { AddToPantryPrompt } from '../shopping/components/modals/AddToPantryPrompt';
 import ConfirmDialog from '../components/DebtPayoffCalculator/ConfirmDialog';
-import type { Store } from '../shopping/types';
+import type { Store, ShoppingItem } from '../shopping/types';
+import type { PantryItem } from '../types';
 
-type ViewType = 'list' | 'pantry' | 'stores';
+type ViewType = 'list' | 'pantry' | 'stores' | 'history';
 
 export default function ShoppingSmart(): ReactElement {
   const { shoppingItems, pantryItems, activeListId, isLoadingList, isLoadingItems, ensureActiveList } = useShoppingData();
@@ -43,7 +46,8 @@ export default function ShoppingSmart(): ReactElement {
   const [showAddChoiceModal, setShowAddChoiceModal] = useState(false);
   const [showAddStoreModal, setShowAddStoreModal] = useState(false);
   const [selectedStore, setSelectedStore] = useState<Store | null>(null);
-  const [selectedPantryItem, setSelectedPantryItem] = useState<any | null>(null);
+  const [selectedPantryItem, setSelectedPantryItem] = useState<PantryItem | null>(null);
+  const [itemToPantry, setItemToPantry] = useState<ShoppingItem | null>(null);
   const [storeLists, setStoreLists] = useState<ShoppingList[]>([]);
   const [distributionStrategy, setDistributionStrategy] = useState<DistributionStrategy>('mixed');
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
@@ -168,6 +172,20 @@ export default function ShoppingSmart(): ReactElement {
   const totalMasterItems = shoppingItems.filter((item: ShoppingItem) => !item.purchased).length;
   const totalEstimatedCost = shoppingItems.reduce((sum: number, item: ShoppingItem) => sum + (item.estimatedPrice ?? 0), 0);
 
+  // Wrapper for toggle that prompts to add to pantry when marking as purchased
+  const handleToggleItem = async (itemId: string): Promise<void> => {
+    const item = shoppingItems.find(i => i.id === itemId);
+    if (!item) return;
+
+    // If marking as purchased (was not purchased before), show prompt
+    if (!item.purchased) {
+      setItemToPantry(item);
+    }
+
+    // Toggle the item
+    await toggleShoppingItem(itemId);
+  };
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: colors.bg.primary }}>
       {/* Segmented Control and Views - Both Mobile and Desktop */}
@@ -179,6 +197,7 @@ export default function ShoppingSmart(): ReactElement {
               { value: 'list', label: 'List' },
               { value: 'pantry', label: 'Pantry' },
               { value: 'stores', label: 'Stores' },
+              { value: 'history', label: 'History' },
             ]}
             value={activeView}
             onChange={(value) => setActiveView(value as ViewType)}
@@ -190,7 +209,7 @@ export default function ShoppingSmart(): ReactElement {
           <MasterListView
             items={shoppingItems}
             stores={stores}
-            onToggleItem={(itemId) => { void toggleShoppingItem(itemId); }}
+            onToggleItem={(itemId) => { void handleToggleItem(itemId); }}
             onEditItem={startEditItem}
             onRequestDeleteItem={(itemId) => setItemToDelete(itemId)}
             onFindStores={openStoreSuggestions}
@@ -213,6 +232,10 @@ export default function ShoppingSmart(): ReactElement {
             onViewStoreList={(store) => setSelectedStore(store)}
             onAddStore={() => setShowAddStoreModal(true)}
           />
+        )}
+
+        {activeView === 'history' && (
+          <ShoppingHistoryView items={shoppingItems} />
         )}
       </div>
 
@@ -330,7 +353,61 @@ export default function ShoppingSmart(): ReactElement {
         onClose={() => setSelectedStore(null)}
         store={selectedStore}
         shoppingItems={shoppingItems}
-        onToggleItem={(itemId) => { void toggleShoppingItem(itemId); }}
+        onToggleItem={(itemId) => { void handleToggleItem(itemId); }}
+      />
+
+      {/* Add to Pantry Prompt */}
+      <AddToPantryPrompt
+        isOpen={!!itemToPantry}
+        itemName={itemToPantry?.name ?? ''}
+        onAddToPantry={() => {
+          if (!itemToPantry) return;
+
+          // Pre-fill the pantry modal with the item details
+          void createPantryItem({
+            name: itemToPantry.name,
+            quantity: itemToPantry.quantity,
+            unit: itemToPantry.unit ?? 'pcs',
+            category: itemToPantry.category === 'meat' ? 'meat' :
+                     itemToPantry.category === 'dairy' ? 'dairy' :
+                     itemToPantry.category === 'produce' ? 'produce' :
+                     itemToPantry.category === 'bakery' ? 'bakery' :
+                     itemToPantry.category === 'pantry' ? 'pantry' : 'other',
+            notes: `Added from shopping list`,
+            lowStockThreshold: 1,
+            isLowStock: false,
+          });
+
+          showToast(`${itemToPantry.name} added to pantry`, 'success');
+          setItemToPantry(null);
+        }}
+        onDismiss={() => setItemToPantry(null)}
+      />
+
+      {/* Pantry Item Details Modal */}
+      <PantryItemDetailsModal
+        isOpen={!!selectedPantryItem}
+        onClose={() => setSelectedPantryItem(null)}
+        item={selectedPantryItem}
+        onUpdate={async (itemId, updates) => {
+          await updatePantryItem(itemId, updates);
+        }}
+        onDelete={async (itemId) => {
+          await deletePantryItem(itemId);
+        }}
+        onReplenish={(pantryItem) => {
+          // Add pantry item to shopping list
+          void addShoppingItem({
+            name: pantryItem.name,
+            quantity: pantryItem.lowStockThreshold ?? 1,
+            unit: pantryItem.unit ?? 'pcs',
+            category: pantryItem.category === 'meat' ? 'meat' as const : pantryItem.category === 'dairy' ? 'dairy' as const : 'other' as const,
+            priority: 'medium',
+            purchased: false,
+            notes: `Replenish from pantry`,
+          });
+          showToast(`${pantryItem.name} added to shopping list`, 'success');
+        }}
       />
 
       {/* Item deletion confirmation dialog */}

@@ -12,3 +12,5 @@ export { ReplenishModal } from './ReplenishModal';
 export { StoreSuggestionsModal } from './StoreSuggestionsModal';
 export { AddStoreModal } from './AddStoreModal';
 export { StoreShoppingListModal } from './StoreShoppingListModal';
+export { PantryItemDetailsModal } from './PantryItemDetailsModal';
+export { AddToPantryPrompt } from './AddToPantryPrompt';
