@@ -5,11 +5,9 @@
  */
 
 import React from 'react';
-import { motion } from 'framer-motion';
 import { useThemeColors } from '@/hooks/useThemeColors';
-import { BadgeV2 } from '@/components/v2';
 import type { NoteType } from '@/types';
-import { CheckboxV2 } from '@/components/v2';
+import { getRelativeTime } from '@/utils/dateUtils';
 
 export interface NoteCardV2Props {
   id: string;
@@ -48,36 +46,15 @@ export const NoteCardV2: React.FC<NoteCardV2Props> = ({
   // Parse list items if it's a checklist
   const checklistItems = noteType === 'list' && listItems.length > 0 ? listItems : [];
 
-  // Format relative time
-  const formatRelativeTime = (date: string) => {
-    const now = new Date();
-    const entryDate = new Date(date);
-    const diffMs = now.getTime() - entryDate.getTime();
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-
-    if (diffDays === 0) {
-      if (diffHours === 0) return 'Just now';
-      if (diffHours === 1) return '1 hour ago';
-      return `${diffHours} hours ago`;
-    } else if (diffDays === 1) {
-      return 'Yesterday';
-    } else if (diffDays < 7) {
-      return `${diffDays} days ago`;
-    } else {
-      return entryDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    }
-  };
-
   return (
-    <motion.div
+    <div
       onClick={onClick}
-      whileHover={{ scale: 1.01 }}
-      whileTap={{ scale: 0.98 }}
-      transition={{ duration: 0.15 }}
       className={`
         relative
         cursor-pointer
+        transition-transform
+        hover:scale-[1.01]
+        active:scale-[0.98]
         ${viewMode === 'grid' ? 'min-h-[120px]' : ''}
       `}
       style={{
@@ -86,6 +63,7 @@ export const NoteCardV2: React.FC<NoteCardV2Props> = ({
         borderRadius: '12px',
         padding: '16px',
         boxShadow: '0 2px 12px rgba(92, 74, 58, 0.08)',
+        transitionDuration: '150ms',
       }}
     >
       {/* Owner badge (top-right, only in merged mode) */}
@@ -112,7 +90,7 @@ export const NoteCardV2: React.FC<NoteCardV2Props> = ({
         style={{
           fontSize: '15px',
           fontWeight: 700,
-          color: '#5C4A3A',
+          color: colors.text.primary,
           marginBottom: '8px',
           lineHeight: 1.3,
           paddingRight: showOwnerBadge ? '60px' : '0',
@@ -126,7 +104,7 @@ export const NoteCardV2: React.FC<NoteCardV2Props> = ({
         <p
           style={{
             fontSize: '13px',
-            color: '#6B5847',
+            color: colors.text.secondary,
             lineHeight: 1.4,
             marginBottom: '12px',
             display: '-webkit-box',
@@ -151,7 +129,7 @@ export const NoteCardV2: React.FC<NoteCardV2Props> = ({
                 alignItems: 'center',
                 gap: '8px',
                 padding: '8px 0',
-                borderBottom: index < checklistItems.length - 1 ? '1px solid #F5F0EA' : 'none',
+                borderBottom: index < checklistItems.length - 1 ? `1px solid ${colors.bg.secondary}` : 'none',
               }}
             >
               <div
@@ -175,7 +153,7 @@ export const NoteCardV2: React.FC<NoteCardV2Props> = ({
                 style={{
                   flex: 1,
                   fontSize: '13px',
-                  color: item.completed ? '#9B8B7A' : '#5C4A3A',
+                  color: item.completed ? colors.text.tertiary : colors.text.primary,
                   textDecoration: item.completed ? 'line-through' : 'none',
                 }}
               >
@@ -196,11 +174,11 @@ export const NoteCardV2: React.FC<NoteCardV2Props> = ({
                 key={index}
                 style={{
                   padding: '4px 8px',
-                  background: '#E8DCC8',
+                  background: colors.bg.tertiary,
                   borderRadius: '8px',
                   fontSize: '11px',
                   fontWeight: 600,
-                  color: '#6B5847',
+                  color: colors.text.secondary,
                 }}
               >
                 {tag}
@@ -211,12 +189,12 @@ export const NoteCardV2: React.FC<NoteCardV2Props> = ({
 
         {/* Created date (only in list view) */}
         {createdAt && viewMode === 'list' && (
-          <div style={{ fontSize: '11px', color: '#9B8B7A', marginTop: '8px' }}>
-            {formatRelativeTime(createdAt)}
+          <div style={{ fontSize: '11px', color: colors.text.tertiary, marginTop: '8px' }}>
+            {getRelativeTime(createdAt)}
           </div>
         )}
       </div>
-    </motion.div>
+    </div>
   );
 };
 

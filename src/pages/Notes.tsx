@@ -19,10 +19,11 @@ import { useThemeColors } from '../hooks/useThemeColors';
 import { useModalState } from '../hooks/useModalState';
 import { logger } from '@/services/logger';
 import { useToast } from '../hooks/useToast';
+import { FeatureErrorBoundary } from '../components/FeatureErrorBoundary';
 
 type ViewMode = 'grid' | 'list';
 
-const Notes: React.FC = () => {
+const NotesContent: React.FC = () => {
   const colors = useThemeColors();
   const { showToast } = useToast();
 
@@ -365,6 +366,14 @@ const Notes: React.FC = () => {
         />
       </div>
     </div>
+  );
+};
+
+const Notes: React.FC = () => {
+  return (
+    <FeatureErrorBoundary feature="Notes">
+      <NotesContent />
+    </FeatureErrorBoundary>
   );
 };
 
