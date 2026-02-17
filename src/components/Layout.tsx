@@ -291,8 +291,8 @@ export default function Layout({ children }: LayoutProps) {
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Mobile Header - Only on small screens, hide for Together page */}
-        {!isDesktop && activeView !== 'together' && (
+        {/* Mobile Header - Only on small screens, hide for Together and Notes pages */}
+        {!isDesktop && activeView !== 'together' && activeView !== 'notes' && (
           <header
             className="flex-shrink-0"
             style={{
@@ -336,8 +336,8 @@ export default function Layout({ children }: LayoutProps) {
         </header>
         )}
 
-        {/* Desktop Header - Only on large screens, hide for Together page */}
-        {isDesktop && activeView !== 'together' && (
+        {/* Desktop Header - Only on large screens, hide for Together and Notes pages */}
+        {isDesktop && activeView !== 'together' && activeView !== 'notes' && (
           <header
             className="flex backdrop-blur-sm border-b px-8 py-6"
             style={{

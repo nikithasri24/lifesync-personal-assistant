@@ -10,7 +10,8 @@ interface OwnerFilterProps {
 }
 
 /**
- * Filter dropdown for merged mode (All / Mine / Partner)
+ * Filter pills for merged mode (Mine / Partner's / Both)
+ * Matches notes-design-spec.html styling
  */
 export function OwnerFilter({
   value,
@@ -18,21 +19,38 @@ export function OwnerFilter({
   partnerName = 'Partner',
   className = ''
 }: OwnerFilterProps) {
+  const pills: { value: OwnerFilterValue; label: string }[] = [
+    { value: 'mine', label: 'Mine' },
+    { value: 'partner', label: `${partnerName}'s` },
+    { value: 'all', label: 'Both' },
+  ];
+
   return (
-    <div className={`flex items-center gap-2 ${className}`}>
-      <label htmlFor="owner-filter" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-        Show:
-      </label>
-      <select
-        id="owner-filter"
-        value={value}
-        onChange={(e) => onChange(e.target.value as OwnerFilterValue)}
-        className="rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#E5B88A]"
-      >
-        <option value="all">All</option>
-        <option value="mine">Mine</option>
-        <option value="partner">{partnerName}</option>
-      </select>
+    <div className={`flex gap-2 ${className}`}>
+      {pills.map((pill) => {
+        const isActive = value === pill.value;
+        return (
+          <button
+            key={pill.value}
+            onClick={() => onChange(pill.value)}
+            className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
+              isActive
+                ? 'border-2 text-terracotta-600'
+                : 'border-2 border-transparent'
+            }`}
+            style={{
+              background: isActive
+                ? 'linear-gradient(135deg, rgba(212, 165, 116, 0.2) 0%, rgba(193, 139, 94, 0.2) 100%)'
+                : '#E8DCC8',
+              borderColor: isActive ? '#C18B5E' : 'transparent',
+              color: isActive ? '#C18B5E' : '#5C4A3A',
+            }}
+            aria-label={`Filter by ${pill.label}`}
+          >
+            {pill.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
