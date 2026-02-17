@@ -73,7 +73,7 @@ export function GoalMilestones({ goal }: GoalMilestonesProps): React.ReactElemen
         <button
           type="button"
           onClick={() => setShowAddForm(!showAddForm)}
-          className="inline-flex items-center gap-1 rounded-lg bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-600 transition hover:bg-indigo-100"
+          className="inline-flex items-center gap-1 rounded-lg bg-[#F5EBE0] px-3 py-1.5 text-xs font-medium text-[#C18B5E] transition hover:bg-[#F9F3ED]"
         >
           <Plus className="h-4 w-4" />
           Add Milestone
@@ -84,7 +84,7 @@ export function GoalMilestones({ goal }: GoalMilestonesProps): React.ReactElemen
       {totalCount > 0 && (
         <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
           <div
-            className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-300"
+            className="h-full bg-gradient-to-r from-[#D4A574] to-[#C18B5E] transition-all duration-300"
             style={{ width: `${completionPercentage}%` }}
           />
         </div>
@@ -98,27 +98,27 @@ export function GoalMilestones({ goal }: GoalMilestonesProps): React.ReactElemen
             placeholder="Milestone title"
             value={newMilestone.title}
             onChange={(e) => setNewMilestone({ ...newMilestone, title: e.target.value })}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[#C18B5E] focus:outline-none focus:ring-2 focus:ring-[#E5B88A]/20"
           />
           <textarea
             placeholder="Description (optional)"
             value={newMilestone.description}
             onChange={(e) => setNewMilestone({ ...newMilestone, description: e.target.value })}
             rows={2}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[#C18B5E] focus:outline-none focus:ring-2 focus:ring-[#E5B88A]/20"
           />
           <input
             type="date"
             value={newMilestone.targetDate}
             onChange={(e) => setNewMilestone({ ...newMilestone, targetDate: e.target.value })}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[#C18B5E] focus:outline-none focus:ring-2 focus:ring-[#E5B88A]/20"
           />
           <div className="flex gap-2">
             <button
               type="button"
               onClick={handleAddMilestone}
               disabled={addMilestoneMutation.isPending}
-              className="flex-1 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-700 disabled:opacity-50"
+              className="flex-1 rounded-lg bg-[#C18B5E] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#B5795A] disabled:opacity-50"
             >
               {addMilestoneMutation.isPending ? 'Adding...' : 'Add Milestone'}
             </button>
@@ -164,7 +164,7 @@ export function GoalMilestones({ goal }: GoalMilestonesProps): React.ReactElemen
                   {milestone.isCompleted ? (
                     <CheckCircle2 className="h-5 w-5 text-emerald-600" />
                   ) : (
-                    <Circle className="h-5 w-5 text-slate-400 transition group-hover:text-indigo-500" />
+                    <Circle className="h-5 w-5 text-slate-400 transition group-hover:text-[#C18B5E]" />
                   )}
                 </button>
                 <div className="flex-1 min-w-0">

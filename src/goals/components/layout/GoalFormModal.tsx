@@ -86,7 +86,7 @@ export function GoalFormModal({
                 required
                 value={goalDraft.title}
                 onChange={(event) => onDraftChange({ ...goalDraft, title: event.target.value })}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm placeholder-slate-400 focus:border-indigo-500 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400"
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm placeholder-slate-400 focus:border-[#C18B5E] focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400"
                 style={{ color: '#1e293b' }}
                 placeholder="Launch new product"
               />
@@ -96,7 +96,7 @@ export function GoalFormModal({
               <select
                 value={goalDraft.category}
                 onChange={(event) => onDraftChange({ ...goalDraft, category: event.target.value as GoalCategory })}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-[#C18B5E] focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white"
                 style={{ color: '#1e293b' }}
               >
                 {GOAL_CATEGORIES.map((category) => (
@@ -109,7 +109,7 @@ export function GoalFormModal({
               <textarea
                 value={goalDraft.description}
                 onChange={(event) => onDraftChange({ ...goalDraft, description: event.target.value })}
-                className="h-24 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm placeholder-slate-400 focus:border-indigo-500 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400"
+                className="h-24 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm placeholder-slate-400 focus:border-[#C18B5E] focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400"
                 style={{ color: '#1e293b' }}
                 placeholder="Why this goal matters and how you will tackle it"
               />
@@ -119,7 +119,7 @@ export function GoalFormModal({
               <select
                 value={goalDraft.priority}
                 onChange={(event) => onDraftChange({ ...goalDraft, priority: event.target.value as GoalPriority })}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-[#C18B5E] focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white"
                 style={{ color: '#1e293b' }}
               >
                 {GOAL_PRIORITIES.map((priority) => (
@@ -133,7 +133,7 @@ export function GoalFormModal({
                 type="date"
                 value={goalDraft.targetDate}
                 onChange={(event) => onDraftChange({ ...goalDraft, targetDate: event.target.value })}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-[#C18B5E] focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white"
                 style={{ color: '#1e293b' }}
               />
             </label>
@@ -228,7 +228,7 @@ export function GoalFormModal({
           </button>
           <button
             type="submit"
-            className="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500"
+            className="inline-flex items-center gap-2 rounded-full bg-[#C18B5E] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#B5795A]"
           >
             <Target className="h-4 w-4" />
             {isEditMode ? 'Update goal' : 'Save goal'}

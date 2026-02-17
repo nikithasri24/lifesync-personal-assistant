@@ -57,7 +57,7 @@ export function JournalAttachmentList({
               href={attachment.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex-1 text-sm text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 truncate flex items-center gap-1"
+              className="flex-1 text-sm text-slate-700 dark:text-slate-300 hover:text-[#C18B5E] dark:hover:text-[#E5B88A] truncate flex items-center gap-1"
             >
               {attachment.name}
               <ExternalLink className="h-3 w-3 opacity-50" />

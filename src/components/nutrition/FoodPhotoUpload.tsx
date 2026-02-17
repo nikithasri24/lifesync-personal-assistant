@@ -103,7 +103,7 @@ export function FoodPhotoUpload({ onAnalysisComplete, onCancel }: FoodPhotoUploa
     <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-          <Camera className="w-5 h-5 text-indigo-600" />
+          <Camera className="w-5 h-5 text-[#C18B5E]" />
           Snap Your Meal
         </h3>
         <button onClick={onCancel} className="p-1.5 hover:bg-gray-100 rounded-lg">
@@ -134,14 +134,14 @@ export function FoodPhotoUpload({ onAnalysisComplete, onCancel }: FoodPhotoUploa
         <div className="flex gap-3">
           <button
             onClick={startCamera}
-            className="flex-1 flex items-center justify-center gap-2 py-8 border-2 border-dashed border-gray-300 rounded-xl hover:border-indigo-400 hover:bg-indigo-50 transition-colors"
+            className="flex-1 flex items-center justify-center gap-2 py-8 border-2 border-dashed border-gray-300 rounded-xl hover:border-[#D4A574] hover:bg-[#F5EBE0] transition-colors"
           >
             <Camera className="w-6 h-6 text-gray-500" />
             <span className="font-medium text-gray-700">Take Photo</span>
           </button>
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="flex-1 flex items-center justify-center gap-2 py-8 border-2 border-dashed border-gray-300 rounded-xl hover:border-indigo-400 hover:bg-indigo-50 transition-colors"
+            className="flex-1 flex items-center justify-center gap-2 py-8 border-2 border-dashed border-gray-300 rounded-xl hover:border-[#D4A574] hover:bg-[#F5EBE0] transition-colors"
           >
             <Upload className="w-6 h-6 text-gray-500" />
             <span className="font-medium text-gray-700">Upload</span>
@@ -159,7 +159,7 @@ export function FoodPhotoUpload({ onAnalysisComplete, onCancel }: FoodPhotoUploa
               <RotateCcw className="w-4 h-4 inline mr-1" /> Retake
             </button>
             <button onClick={analyzePhoto} disabled={isAnalyzing}
-              className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+              className="flex-1 py-2 bg-[#C18B5E] text-white rounded-lg hover:bg-[#B5795A] disabled:opacity-50"
             >
               {isAnalyzing ? <Loader2 className="w-4 h-4 inline animate-spin mr-1" /> : <Sparkles className="w-4 h-4 inline mr-1" />}
               {isAnalyzing ? 'Analyzing...' : 'Analyze'}
@@ -172,7 +172,7 @@ export function FoodPhotoUpload({ onAnalysisComplete, onCancel }: FoodPhotoUploa
       {analysisResult && (
         <div className="space-y-3">
           <img src={imageDataUrl!} alt="Food" className="w-full max-h-40 object-contain rounded-lg" />
-          <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg p-4 space-y-2">
+          <div className="bg-gradient-to-r from-[#F9F3ED] to-[#F5EBE0] rounded-lg p-4 space-y-2">
             <div className="flex items-center gap-2 text-purple-700 font-medium">
               <Sparkles className="w-4 h-4" />
               AI Analysis ({Math.round(analysisResult.confidence * 100)}% confident)

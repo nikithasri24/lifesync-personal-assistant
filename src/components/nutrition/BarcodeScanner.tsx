@@ -116,7 +116,7 @@ export function BarcodeScanner({ onProductFound, onCancel }: BarcodeScannerProps
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b">
         <h3 className="font-medium text-gray-900 flex items-center gap-2">
-          <Camera className="w-5 h-5 text-indigo-600" />
+          <Camera className="w-5 h-5 text-[#C18B5E]" />
           Scan Barcode
         </h3>
         <button onClick={onCancel} className="p-1 hover:bg-gray-200 rounded-lg">
@@ -143,7 +143,7 @@ export function BarcodeScanner({ onProductFound, onCancel }: BarcodeScannerProps
             {isScanning && (
               <button
                 onClick={captureAndDecode}
-                className="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium"
+                className="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-[#C18B5E] text-white rounded-lg font-medium"
               >
                 Capture
               </button>
@@ -167,13 +167,13 @@ export function BarcodeScanner({ onProductFound, onCancel }: BarcodeScannerProps
               value={manualBarcode}
               onChange={e => setManualBarcode(e.target.value)}
               placeholder="e.g., 5901234123457"
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E5B88A]"
               onKeyDown={e => e.key === 'Enter' && lookupBarcode(manualBarcode)}
             />
             <button
               onClick={() => lookupBarcode(manualBarcode)}
               disabled={isLookingUp || !manualBarcode.trim()}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-2"
+              className="px-4 py-2 bg-[#C18B5E] text-white rounded-lg font-medium hover:bg-[#B5795A] disabled:opacity-50 flex items-center gap-2"
             >
               {isLookingUp ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
               Look Up

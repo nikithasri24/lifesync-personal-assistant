@@ -39,7 +39,7 @@ export function ErrorBanner({ error }: ErrorBannerProps): React.ReactElement | n
               <div className="mt-3 p-3 bg-white/60 rounded-lg border border-red-200">
                 <p className="text-xs font-semibold text-red-900 mb-2">Setup Instructions:</p>
                 <ol className="text-xs text-red-800 space-y-1 list-decimal list-inside">
-                  <li>Get a free API key from <a href="https://console.groq.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline inline-flex items-center gap-1">Groq <ExternalLink className="w-3 h-3" /></a></li>
+                  <li>Get a free API key from <a href="https://console.groq.com" target="_blank" rel="noopener noreferrer" className="text-[#C18B5E] hover:text-[#8B6F47] underline inline-flex items-center gap-1">Groq <ExternalLink className="w-3 h-3" /></a></li>
                   <li>Add <code className="px-1 py-0.5 bg-slate-800 text-white rounded text-[10px]">VITE_GROQ_API_KEY=your-key-here</code> to your <code className="px-1 py-0.5 bg-slate-800 text-white rounded text-[10px]">.env</code> file</li>
                   <li>Restart the development server</li>
                 </ol>

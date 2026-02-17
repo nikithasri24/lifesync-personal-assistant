@@ -1,5 +1,4 @@
 import React from 'react';
-import { Bot, User, Zap, CheckCircle2 } from 'lucide-react';
 
 interface ConversationMessage {
   role: 'user' | 'assistant';
@@ -15,64 +14,61 @@ interface MessagesListProps {
 }
 
 /**
- * List of conversation messages with user and assistant bubbles - Redesigned
+ * List of conversation messages with user and assistant bubbles - Clean terracotta design
  */
 export function MessagesList({
   messages,
   isThinking,
   transcript,
 }: MessagesListProps): React.ReactElement {
+  // Get user initials (would be from auth in real app)
+  const userInitials = 'S';
+
   return (
     <>
+      {/* Timestamp divider */}
+      {messages.length > 0 && (
+        <div className="text-center text-xs text-gray-500 my-3">
+          Today, {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        </div>
+      )}
+
       {messages.map((msg, i) => (
         <div
           key={i}
-          className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fadeIn`}
+          className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'} max-w-[85%] ${msg.role === 'user' ? 'ml-auto' : 'mr-auto'}`}
         >
           {/* Avatar for assistant */}
           {msg.role === 'assistant' && (
-            <div className="flex-shrink-0 mt-1">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg">
-                <Bot className="h-5 w-5 text-white" />
-              </div>
+            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-base">
+              🤖
             </div>
           )}
 
           {/* Message bubble */}
           <div
-            className={`max-w-[85%] sm:max-w-[70%] rounded-2xl px-5 py-3.5 shadow-sm ${
+            className={`rounded-2xl px-4 py-3 ${
               msg.role === 'user'
-                ? 'bg-gradient-to-br from-indigo-600 to-purple-600 text-white'
-                : 'bg-slate-800 border border-slate-600 text-white'
+                ? 'bg-[#D4A574] text-white rounded-br-sm'
+                : 'bg-white text-gray-900 rounded-bl-sm shadow-sm'
             }`}
           >
-            <p className="text-sm sm:text-base leading-relaxed whitespace-pre-wrap text-white" style={{ color: '#ffffff' }}>
+            <p className="text-sm leading-relaxed whitespace-pre-wrap">
               {msg.content}
             </p>
 
-            {/* Function calls */}
+            {/* Function calls badge */}
             {msg.functionCalls && msg.functionCalls.length > 0 && (
-              <div className={`mt-3 pt-3 space-y-2 ${
-                msg.role === 'user'
-                  ? 'border-t border-white/20'
-                  : 'border-t border-slate-600'
-              }`}>
-                <div className="flex items-center gap-1.5 text-xs font-semibold text-white opacity-90">
-                  <Zap className="h-3 w-3" />
-                  <span>Actions performed:</span>
-                </div>
-                {msg.functionCalls.map((fc: { name: string }, j: number) => (
-                  <div key={j} className="flex items-center gap-1.5 text-xs text-white opacity-90">
-                    <CheckCircle2 className="h-3 w-3" />
-                    <span>{fc.name.replace(/_/g, ' ')}</span>
-                  </div>
-                ))}
+              <div className="mt-2">
+                <span className="inline-block bg-[#F5EBE0] text-[#8B6F47] px-2 py-1 rounded-md text-xs font-semibold">
+                  Task Created
+                </span>
               </div>
             )}
 
             {/* Timestamp */}
             {msg.timestamp && (
-              <div className="text-xs opacity-50 mt-2 text-white" style={{ color: '#ffffff' }}>
+              <div className="text-[11px] text-gray-400 mt-1">
                 {msg.timestamp.toLocaleTimeString([], {
                   hour: '2-digit',
                   minute: '2-digit'
@@ -83,10 +79,8 @@ export function MessagesList({
 
           {/* Avatar for user */}
           {msg.role === 'user' && (
-            <div className="flex-shrink-0 mt-1">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-600 to-slate-800 flex items-center justify-center shadow-lg">
-                <User className="h-5 w-5 text-white" />
-              </div>
+            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[#D4A574] flex items-center justify-center text-white text-sm font-semibold">
+              {userInitials}
             </div>
           )}
         </div>
@@ -94,25 +88,23 @@ export function MessagesList({
 
       {/* Thinking indicator */}
       {isThinking && (
-        <div className="flex gap-3 justify-start animate-fadeIn">
-          <div className="flex-shrink-0 mt-1">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg animate-pulse">
-              <Bot className="h-5 w-5 text-white" />
-            </div>
+        <div className="flex gap-2 justify-start max-w-[85%]">
+          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-base">
+            🤖
           </div>
-          <div className="bg-slate-800 border border-slate-600 rounded-2xl px-5 py-4 shadow-sm">
-            <div className="flex gap-1.5">
+          <div className="bg-white rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm">
+            <div className="flex gap-1">
               <div
-                className="w-2.5 h-2.5 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full animate-bounce"
+                className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
                 style={{ animationDelay: '0ms' }}
               />
               <div
-                className="w-2.5 h-2.5 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full animate-bounce"
-                style={{ animationDelay: '150ms' }}
+                className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                style={{ animationDelay: '200ms' }}
               />
               <div
-                className="w-2.5 h-2.5 bg-gradient-to-br from-pink-500 to-indigo-500 rounded-full animate-bounce"
-                style={{ animationDelay: '300ms' }}
+                className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                style={{ animationDelay: '400ms' }}
               />
             </div>
           </div>
@@ -121,21 +113,29 @@ export function MessagesList({
 
       {/* Live transcript */}
       {transcript && (
-        <div className="flex gap-3 justify-end animate-fadeIn">
-          <div className="max-w-[85%] rounded-2xl px-5 py-3 bg-slate-700 border-2 border-indigo-400 border-dashed shadow-sm">
+        <div className="flex gap-2 justify-end max-w-[85%] ml-auto">
+          <div className="bg-gray-100 border-2 border-[#D4A574] border-dashed rounded-2xl rounded-br-sm px-4 py-3">
             <div className="flex items-center gap-2 mb-1">
               <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-              <span className="text-xs font-semibold text-white">Recording...</span>
+              <span className="text-xs font-semibold text-gray-700">Recording...</span>
             </div>
-            <p className="text-sm text-white italic" style={{ color: '#ffffff' }}>{transcript}</p>
+            <p className="text-sm text-gray-700 italic">{transcript}</p>
           </div>
-          <div className="flex-shrink-0 mt-1">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-600 to-slate-800 flex items-center justify-center shadow-lg">
-              <User className="h-5 w-5 text-white" />
-            </div>
+          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[#D4A574] flex items-center justify-center text-white text-sm font-semibold">
+            {userInitials}
           </div>
         </div>
       )}
+
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.3s ease-out;
+        }
+      `}</style>
     </>
   );
 }

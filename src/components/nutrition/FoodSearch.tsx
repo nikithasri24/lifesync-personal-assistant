@@ -122,7 +122,7 @@ export function FoodSearch({ onSelectFood, onClose }: FoodSearchProps): React.Re
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b">
         <h3 className="font-medium text-gray-900 flex items-center gap-2">
-          <Search className="w-5 h-5 text-indigo-600" />
+          <Search className="w-5 h-5 text-[#C18B5E]" />
           Search Food Database
         </h3>
         <button onClick={onClose} className="p-1 hover:bg-gray-200 rounded-lg">
@@ -149,11 +149,11 @@ export function FoodSearch({ onSelectFood, onClose }: FoodSearchProps): React.Re
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder="Search foods (e.g., apple, chicken breast, yogurt)"
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E5B88A]"
             autoFocus
           />
           {(isLoading || isCustomLoading) && (
-            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-indigo-600 animate-spin" />
+            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#C18B5E] animate-spin" />
           )}
         </div>
 

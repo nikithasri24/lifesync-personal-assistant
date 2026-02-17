@@ -60,7 +60,7 @@ export function FoodDetail({ product, mealType: initialMealType, onLog, onBack }
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b">
-        <button onClick={onBack} className="text-indigo-600 font-medium text-sm">← Back</button>
+        <button onClick={onBack} className="text-[#C18B5E] font-medium text-sm">← Back</button>
         <button onClick={onBack} className="p-1 hover:bg-gray-200 rounded-lg">
           <X className="w-5 h-5" />
         </button>
@@ -86,13 +86,13 @@ export function FoodDetail({ product, mealType: initialMealType, onLog, onBack }
           <div className="flex gap-2">
             <button
               onClick={() => setServingType('grams')}
-              className={`flex-1 py-2 rounded-lg font-medium text-sm ${servingType === 'grams' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700'}`}
+              className={`flex-1 py-2 rounded-lg font-medium text-sm ${servingType === 'grams' ? 'bg-[#C18B5E] text-white' : 'bg-gray-100 text-gray-700'}`}
             >
               Grams
             </button>
             <button
               onClick={() => { setServingType('serving'); setQuantity(1); }}
-              className={`flex-1 py-2 rounded-lg font-medium text-sm ${servingType === 'serving' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700'}`}
+              className={`flex-1 py-2 rounded-lg font-medium text-sm ${servingType === 'serving' ? 'bg-[#C18B5E] text-white' : 'bg-gray-100 text-gray-700'}`}
             >
               Servings
             </button>
@@ -139,7 +139,7 @@ export function FoodDetail({ product, mealType: initialMealType, onLog, onBack }
             <button
               key={m.type}
               onClick={() => setSelectedMeal(m.type)}
-              className={`flex-1 py-2 rounded-lg text-sm font-medium ${selectedMeal === m.type ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700'}`}
+              className={`flex-1 py-2 rounded-lg text-sm font-medium ${selectedMeal === m.type ? 'bg-[#C18B5E] text-white' : 'bg-gray-100 text-gray-700'}`}
             >
               {m.icon}
             </button>
