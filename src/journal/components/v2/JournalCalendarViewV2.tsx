@@ -126,12 +126,17 @@ export const JournalCalendarViewV2: React.FC<JournalCalendarViewV2Props> = ({
       </div>
 
       {/* Day Labels */}
-      <div className="grid grid-cols-7 gap-1 mb-2">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', marginBottom: '8px' }}>
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
           <div
             key={day}
-            className="text-center text-xs font-bold py-2"
-            style={{ color: '#9B8B7A' }}
+            style={{
+              textAlign: 'center',
+              fontSize: '11px',
+              fontWeight: 700,
+              padding: '8px 4px',
+              color: '#9B8B7A',
+            }}
           >
             {day}
           </div>
@@ -139,7 +144,7 @@ export const JournalCalendarViewV2: React.FC<JournalCalendarViewV2Props> = ({
       </div>
 
       {/* Calendar Grid */}
-      <div className="grid grid-cols-7 gap-1">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' }}>
         {calendarDays.map((day, index) => {
           const isSelected =
             selectedDate &&
@@ -166,25 +171,44 @@ export const JournalCalendarViewV2: React.FC<JournalCalendarViewV2Props> = ({
               key={index}
               type="button"
               onClick={() => day.isCurrentMonth && onSelectDate(day.date)}
-              className={`
-                aspect-square rounded-lg
-                flex flex-col items-center justify-center
-                text-sm font-semibold
-                transition-all
-                ${day.isCurrentMonth ? 'cursor-pointer hover:opacity-80' : 'cursor-default'}
-              `}
               style={{
+                aspectRatio: '1',
+                borderRadius: '8px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '14px',
+                fontWeight: 600,
+                transition: 'all 0.2s',
+                cursor: day.isCurrentMonth ? 'pointer' : 'default',
                 background: backgroundColor,
                 color: textColor,
                 border: isSelected ? '2px solid #C18B5E' : '2px solid transparent',
+                opacity: day.isCurrentMonth ? (isSelected ? 1 : 0.9) : 0.4,
+              }}
+              onMouseEnter={(e) => {
+                if (day.isCurrentMonth) {
+                  e.currentTarget.style.opacity = '1';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (day.isCurrentMonth && !isSelected) {
+                  e.currentTarget.style.opacity = '0.9';
+                }
               }}
               disabled={!day.isCurrentMonth}
             >
               <span>{day.date.getDate()}</span>
               {day.hasEntry && day.isCurrentMonth && (
                 <div
-                  className="w-1 h-1 rounded-full mt-0.5"
-                  style={{ backgroundColor: '#C18B5E' }}
+                  style={{
+                    width: '4px',
+                    height: '4px',
+                    borderRadius: '2px',
+                    marginTop: '2px',
+                    backgroundColor: '#C18B5E',
+                  }}
                 />
               )}
             </button>
