@@ -1,129 +1,207 @@
 /**
- * Shared Page - Profile Connections & Collaboration
- * Manage connections with other users and control sharing permissions
+ * Shared Page
+ * Partner connections, invitations, and activity feed
  */
 
-import React, { useState } from 'react';
-import { LayoutDashboard, Users, Mail, UserPlus } from 'lucide-react';
-import {
-  useConnectionsQuery,
-  useInvitationsQuery,
-  useAcceptInvitationMutation,
-  useRejectInvitationMutation,
-  useDeleteConnectionMutation,
-} from '@/hooks/useConnectionsQuery';
-import { ConnectionsList } from '../shared/components/ConnectionsList';
-import NewConnectionForm from '../shared/components/NewConnectionForm';
-import { InvitationsPanel } from '../shared/components/InvitationsPanel';
-import { SharedDashboard } from '../shared/components/SharedDashboard';
-import { SharedLoadingState } from '../shared/components/layout/SharedLoadingState';
-import { SharedHeader } from '../shared/components/layout/SharedHeader';
-import { ConnectionsStatsGrid } from '../shared/components/layout/ConnectionsStatsGrid';
+import React, { useMemo } from 'react';
+import { Users, Plus } from 'lucide-react';
+import { useThemeColors } from '@/hooks/useThemeColors';
+import { SegmentedControl } from '@/components/ui/SegmentedControl';
+import { useSharedState } from '@/shared/hooks/useSharedState';
+import { StatsGrid } from '@/shared/components/StatsGrid';
+import { PartnerView, InvitesView, ActivityView } from '@/shared/components/views';
+import type { PartnerConnection, Invitation, ActivityItem, SharedStats } from '@/shared/types';
 
-type TabView = 'dashboard' | 'connections' | 'invitations' | 'add';
+// Mock data for now - will be replaced with React Query hooks
+const MOCK_CONNECTIONS: PartnerConnection[] = [
+  {
+    id: '1',
+    partner_id: 'partner-123',
+    partner_name: 'Sarah Johnson',
+    partner_email: 'sarah@example.com',
+    relationship: 'spouse',
+    permissions: [
+      { module: 'meals', permission: 'merged' },
+      { module: 'shopping', permission: 'merged' },
+      { module: 'finances', permission: 'merged' },
+      { module: 'travel', permission: 'merged' },
+      { module: 'goals', permission: 'merged' },
+      { module: 'habits', permission: 'view' },
+    ],
+    connected_at: new Date().toISOString(),
+    status: 'active',
+  },
+];
 
-const Shared: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<TabView>('dashboard');
+const MOCK_INVITATIONS: Invitation[] = [];
 
-  // React Query hooks
-  const { data: connections = [], isLoading: connectionsLoading } = useConnectionsQuery();
-  const { data: invitations, isLoading: invitationsLoading } = useInvitationsQuery();
-  const { mutate: acceptInvitation } = useAcceptInvitationMutation();
-  const { mutate: rejectInvitation } = useRejectInvitationMutation();
-  const { mutate: deleteConnection } = useDeleteConnectionMutation();
+const MOCK_ACTIVITIES: ActivityItem[] = [
+  {
+    id: '1',
+    user_id: 'partner-123',
+    user_name: 'Sarah',
+    module: 'meals',
+    action: 'Added Pasta Carbonara to meal plan',
+    item_type: 'recipe',
+    item_id: 'recipe-1',
+    timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+  },
+  {
+    id: '2',
+    user_id: 'current-user',
+    user_name: 'You',
+    module: 'tasks',
+    action: 'Completed task: Buy groceries',
+    item_type: 'task',
+    item_id: 'task-1',
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+  },
+  {
+    id: '3',
+    user_id: 'partner-123',
+    user_name: 'Sarah',
+    module: 'shopping',
+    action: 'Added Milk to shopping list',
+    item_type: 'shopping_item',
+    item_id: 'item-1',
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(),
+  },
+];
 
-  const loading = connectionsLoading || invitationsLoading;
-  const sentInvitations = invitations?.sent ?? [];
-  const receivedInvitations = invitations?.received ?? [];
+export const Shared: React.FC = () => {
+  const colors = useThemeColors();
+  const { activeTab, setActiveTab } = useSharedState();
 
-  const handleConnectionCreated = (): void => {
-    setActiveTab('invitations');
-    // React Query auto-refetches invitations
+  // Mock current user ID
+  const currentUserId = 'current-user';
+
+  // Calculate stats
+  const stats: SharedStats = useMemo(() => {
+    const partnerCount = MOCK_CONNECTIONS.length;
+    const sharedModulesCount = MOCK_CONNECTIONS.reduce(
+      (acc, conn) => acc + conn.permissions.filter((p) => p.permission !== 'off').length,
+      0
+    );
+    const sharedItemsCount = 12; // Mock count
+
+    return {
+      partner_count: partnerCount,
+      shared_modules_count: sharedModulesCount,
+      shared_items_count: sharedItemsCount,
+    };
+  }, []);
+
+  // Count pending received invitations for badge
+  const pendingInvitesCount = MOCK_INVITATIONS.filter(
+    (inv) => inv.direction === 'received' && inv.status === 'pending'
+  ).length;
+
+  const handleAcceptInvite = (id: string) => {
+    console.log('Accept invite:', id);
+    // TODO: Implement with mutation
   };
 
-  const handleInvitationAccepted = (connectionId: string): void => {
-    acceptInvitation({ connectionId });
-    setActiveTab('connections');
+  const handleDeclineInvite = (id: string) => {
+    console.log('Decline invite:', id);
+    // TODO: Implement with mutation
   };
 
-  const handleInvitationRejected = (connectionId: string): void => {
-    rejectInvitation(connectionId);
+  const handleCancelInvite = (id: string) => {
+    console.log('Cancel invite:', id);
+    // TODO: Implement with mutation
   };
 
-  const handleConnectionDeleted = (connectionId: string): void => {
-    deleteConnection(connectionId);
+  const handleInvitePartner = () => {
+    console.log('Invite partner clicked');
+    // TODO: Open invite modal
   };
-
-  if (loading) {
-    return <SharedLoadingState />;
-  }
-
-  const tabs: { key: TabView; label: string; icon: React.ReactNode; count?: number }[] = [
-    { key: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
-    { key: 'connections', label: 'Connections', icon: <Users className="w-4 h-4" />, count: connections.length },
-    { key: 'invitations', label: 'Invitations', icon: <Mail className="w-4 h-4" />, count: receivedInvitations.length + sentInvitations.length },
-    { key: 'add', label: 'Add', icon: <UserPlus className="w-4 h-4" /> },
-  ];
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-6 p-6">
-      <SharedHeader onAddConnectionClick={() => setActiveTab('add')} />
+    <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }} data-testid="shared-container">
+      {/* Header */}
+      <div className="sticky top-0 z-10" style={{ backgroundColor: colors.bg.primary }}>
+        <div
+          className="px-6 pt-4 pb-3"
+          style={{
+            background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
+          }}
+        >
+          <div className="flex items-center gap-2 mb-2 text-white">
+            <Users size={28} />
+            <h1 className="text-3xl font-extrabold">Shared</h1>
+          </div>
+          <div className="text-sm opacity-90 text-white">
+            Collaborate with family & friends
+          </div>
+        </div>
 
-      <ConnectionsStatsGrid
-        activeConnectionsCount={connections.length}
-        pendingReceivedCount={receivedInvitations.length}
-        sentInvitationsCount={sentInvitations.length}
-      />
+        {/* Stats Grid */}
+        <div className="mt-0">
+          <StatsGrid stats={stats} />
+        </div>
 
-      {/* Custom Tabs with Dashboard */}
-      <div className="flex gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
-        {tabs.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
-              activeTab === tab.key
-                ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            {tab.icon}
-            <span className="hidden sm:inline">{tab.label}</span>
-            {tab.count !== undefined && tab.count > 0 && (
-              <span className="text-xs px-1.5 py-0.5 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 rounded-full">
-                {tab.count}
-              </span>
-            )}
-          </button>
-        ))}
+        {/* Tab Navigation */}
+        <div className="px-5">
+          <SegmentedControl
+            segments={[
+              { value: 'partner', label: 'Partner' },
+              {
+                value: 'invites',
+                label: 'Invites',
+                badge: pendingInvitesCount > 0 ? pendingInvitesCount : undefined,
+              },
+              { value: 'activity', label: 'Activity' },
+            ]}
+            value={activeTab}
+            onChange={(value) => setActiveTab(value as 'partner' | 'invites' | 'activity')}
+          />
+        </div>
       </div>
 
-      {/* Content */}
-      <section>
-        {activeTab === 'dashboard' && (
-          <SharedDashboard connections={connections} />
+      {/* Tab Content */}
+      <div className="pt-5">
+        {activeTab === 'partner' && (
+          <PartnerView connections={MOCK_CONNECTIONS} isLoading={false} />
         )}
 
-        {activeTab === 'connections' && (
-          <ConnectionsList
-            connections={connections}
-            onConnectionDeleted={handleConnectionDeleted}
+        {activeTab === 'invites' && (
+          <InvitesView
+            invitations={MOCK_INVITATIONS}
+            isLoading={false}
+            onAccept={handleAcceptInvite}
+            onDecline={handleDeclineInvite}
+            onCancel={handleCancelInvite}
           />
         )}
 
-        {activeTab === 'invitations' && (
-          <InvitationsPanel
-            sentInvitations={sentInvitations}
-            receivedInvitations={receivedInvitations}
-            onInvitationAccepted={handleInvitationAccepted}
-            onInvitationRejected={handleInvitationRejected}
+        {activeTab === 'activity' && (
+          <ActivityView
+            activities={MOCK_ACTIVITIES}
+            isLoading={false}
+            currentUserId={currentUserId}
           />
         )}
+      </div>
 
-        {activeTab === 'add' && (
-          <NewConnectionForm onConnectionCreated={handleConnectionCreated} />
-        )}
-      </section>
+      {/* FAB - Only show on empty states or invites tab */}
+      {(MOCK_CONNECTIONS.length === 0 || activeTab === 'invites') && (
+        <button
+          type="button"
+          onClick={handleInvitePartner}
+          className="fixed z-50 rounded-full flex items-center justify-center text-white shadow-lg hover:scale-105 active:scale-95 transition-transform"
+          style={{
+            bottom: '80px',
+            right: '24px',
+            width: '60px',
+            height: '60px',
+            background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
+            boxShadow: '0 4px 16px rgba(193, 139, 94, 0.4)',
+          }}
+          aria-label="Invite partner"
+        >
+          <Plus className="w-8 h-8" strokeWidth={2.5} />
+        </button>
+      )}
     </div>
   );
 };
