@@ -118,6 +118,9 @@ export const AddMilestoneModal: React.FC<AddMilestoneModalProps> = ({
     { value: '12', label: 'December' },
   ];
 
+  const inputClassName = 'w-full px-4 py-3 rounded-xl text-base transition-all duration-200 outline-none';
+  const labelClassName = 'block text-sm font-semibold mb-2';
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-end justify-center lg:items-center"
