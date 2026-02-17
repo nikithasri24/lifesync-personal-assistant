@@ -5,7 +5,7 @@
 
 import { useState } from 'react';
 
-export type JournalTabView = 'entries' | 'calendar' | 'insights' | 'tags';
+export type JournalTabView = 'entries' | 'calendar';
 
 export function useJournalState() {
   const [activeTab, setActiveTab] = useState<JournalTabView>('entries');

@@ -21,7 +21,7 @@ import {
 import { JournalEntryForm, type JournalDraft } from './components/JournalEntryForm';
 import { useJournalFilters } from './hooks/useJournalFilters';
 import { useJournalState, type JournalTabView } from './hooks';
-import { EntriesView, CalendarTabView, InsightsView, TagsView } from './components/views';
+import { EntriesView, CalendarTabView } from './components/views';
 import { useComposedStore } from '@/stores/useComposedStore';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
@@ -272,8 +272,6 @@ export const JournalContainer: React.FC = () => {
             segments={[
               { value: 'entries', label: 'Entries' },
               { value: 'calendar', label: 'Calendar' },
-              { value: 'insights', label: 'Insights' },
-              { value: 'tags', label: 'Tags' },
             ]}
             value={activeTab}
             onChange={(value) => setActiveTab(value as JournalTabView)}
@@ -329,10 +327,6 @@ export const JournalContainer: React.FC = () => {
             onSelectDate={handleSelectDate}
           />
         )}
-
-        {activeTab === 'insights' && <InsightsView />}
-
-        {activeTab === 'tags' && <TagsView />}
       </div>
 
       {/* FAB (Floating Action Button) - only in entries tab and when not editing */}
