@@ -6,6 +6,7 @@ import {
   type ValidatedReceiptMeta,
 } from '@/schemas/shopping';
 import { logger } from '@/services/logger';
+import { ValidationError } from '@/lib/errors';
 
 export interface ParsedReceiptItem {
   id: string;
@@ -128,7 +129,7 @@ export function parseReceiptToItems(text: string): ReceiptParseResult {
       totalParsed,
       errors,
     });
-    throw new Error('No valid items found in receipt. Please check the receipt text and try again.');
+    throw new ValidationError('No valid items found in receipt. Please check the receipt text and try again.');
   }
 
   logger.debug('ReceiptParser', 'Receipt parsed successfully', {

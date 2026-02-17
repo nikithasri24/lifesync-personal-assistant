@@ -17,6 +17,7 @@ import { apiCall, requireAuth, handleSupabaseResponse } from './apiWrapper';
 import { NotFoundError } from '../lib/errors';
 import { validateApiResponse } from '../lib/validation';
 import { getShoppingMergedConnection } from './storesAPI';
+import { logger } from '../services/logger';
 import {
   ShoppingListDataSchema,
   ShoppingListDataArraySchema,
@@ -55,7 +56,7 @@ export async function getShoppingLists(): Promise<ShoppingListData[]> {
       // If merged mode, RLS handles access
       // RLS policy will filter based on merged permissions
       if (mergedConnection) {
-        console.log('[getShoppingLists] Merged mode enabled, fetching for both users');
+        logger.debug('ShoppingAPI', 'Merged mode enabled, fetching for both users');
         // RLS handles the filtering
       } else {
         // Personal mode: only get current user's lists
@@ -66,7 +67,10 @@ export async function getShoppingLists(): Promise<ShoppingListData[]> {
       if (error) throw error;
 
       const lists = (data ?? []).map(mapRowToShoppingList);
-      console.log('[getShoppingLists] Fetched', lists.length, 'lists', mergedConnection ? '(merged mode)' : '(personal mode)');
+      logger.debug('ShoppingAPI', 'Fetched shopping lists', {
+        count: lists.length,
+        mode: mergedConnection ? 'merged' : 'personal'
+      });
 
       return validateApiResponse(
         ShoppingListDataArraySchema,

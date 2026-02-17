@@ -5,6 +5,7 @@
 
 import { useState, useRef, useCallback } from 'react';
 import { logger } from '../../services/logger';
+import { NetworkError, ValidationError } from '../../lib/errors';
 import '../../types/experimental-web-apis.d.ts';
 
 interface ProductInfo {
@@ -46,7 +47,7 @@ export function useBarcodeScanner(
         signal: controller.signal,
       });
       window.clearTimeout(timeoutId);
-      if (!resp.ok) throw new Error('lookup failed');
+      if (!resp.ok) throw new NetworkError('Barcode lookup failed');
       const data = (await resp.json()) as {
         name?: string;
         price?: number;
@@ -131,7 +132,7 @@ export function useBarcodeScanner(
 
       const detectorOpts = formats?.length ? { formats } : undefined;
       if (!window.BarcodeDetector) {
-        throw new Error('BarcodeDetector not supported');
+        throw new ValidationError('BarcodeDetector not supported in this browser');
       }
       const barcodeDetector = new window.BarcodeDetector(detectorOpts) as { detect: (image: ImageBitmapSource) => Promise<Array<{ rawValue: string }>> };
       barcodeDetectorRef.current = barcodeDetector;

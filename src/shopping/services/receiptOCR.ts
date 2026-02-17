@@ -4,6 +4,7 @@
  */
 
 import { createWorker, type Worker, type RecognizeResult } from 'tesseract.js';
+import { ValidationError } from '../../lib/errors';
 import type { OCRProgress } from '../types/receipt';
 
 let worker: Worker | null = null;
@@ -83,7 +84,7 @@ export async function scanReceiptImage(
       progress: 0,
       message: error instanceof Error ? error.message : 'OCR failed',
     });
-    throw new Error(`Receipt OCR failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new ValidationError(`Receipt OCR failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 

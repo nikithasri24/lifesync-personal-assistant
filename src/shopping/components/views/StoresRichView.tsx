@@ -1,12 +1,13 @@
 import React from 'react';
 import { MapPin, Package, DollarSign, Plus, TrendingUp } from 'lucide-react';
 import { useThemeColors } from '../../../hooks/useThemeColors';
-import type { Store } from '../../types';
+import { logger } from '../../../services/logger';
+import type { Store, ShoppingItem } from '../../types';
 import { startOfMonth } from 'date-fns';
 
 interface StoresRichViewProps {
   stores: Store[];
-  shoppingItems: any[];
+  shoppingItems: ShoppingItem[];
   onViewStoreList: (store: Store) => void;
   onAddStore?: () => void;
 }
@@ -105,7 +106,7 @@ export function StoresRichView({
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              console.log('Add Store button (empty state) clicked!');
+              logger.debug('UI', 'Add Store button (empty state) clicked');
               onAddStore();
             }}
             className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-transform duration-200 active:scale-95"
@@ -256,7 +257,7 @@ export function StoresRichView({
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            console.log('Add Store button clicked!');
+            logger.debug('UI', 'Add Store button clicked');
             onAddStore();
           }}
           className="w-full flex items-center justify-center gap-2 py-3 mt-4 rounded-xl font-semibold text-base transition-all duration-200 active:scale-[0.98]"

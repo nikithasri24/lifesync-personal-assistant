@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { logger } from '../../services/logger';
+import { NetworkError } from '../../lib/errors';
 import { parseReceiptToItems, parseReceiptMeta, type ParsedReceiptItem } from '../services/receiptParser';
 import '../../types/experimental-web-apis.d.ts';
 
@@ -219,7 +220,7 @@ export function useReceiptScanner(): UseReceiptScannerReturn {
 
       if (!resp.ok) {
         const j = await resp.json().catch(() => ({})) as { error?: string };
-        throw new Error(j.error ?? `HTTP ${resp.status}`);
+        throw new NetworkError(j.error ?? `HTTP ${resp.status}`);
       }
 
       const j = await resp.json() as { text?: string };
