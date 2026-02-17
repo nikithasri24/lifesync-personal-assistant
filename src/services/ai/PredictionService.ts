@@ -9,7 +9,7 @@ import { cacheAccessor } from '@/lib/cacheAccessor';
 import { getBills } from '@/api/billsAPI';
 import { getImportantDates } from '@/api/importantDatesAPI';
 import { logger } from '@/services/logger';
-import { format, addDays, startOfWeek, endOfWeek, differenceInDays, parseISO } from 'date-fns';
+import { format, addDays, startOfWeek, endOfWeek, differenceInDays, parseISO, isValid } from 'date-fns';
 
 export type PredictionType = 
   | 'busy_period'
@@ -106,7 +106,9 @@ class PredictionService {
 
     events.forEach(e => {
       if (!e.start_time) return;
-      const day = format(parseISO(e.start_time), 'yyyy-MM-dd');
+      const parsedDate = parseISO(e.start_time);
+      if (!isValid(parsedDate)) return;
+      const day = format(parsedDate, 'yyyy-MM-dd');
       dayLoad[day] = (dayLoad[day] || 0) + 1;
     });
 

@@ -21,14 +21,23 @@ let cachedMergedConnection: MergedConnectionResult | null | undefined;
 /**
  * Get merged connection for calendar module.
  * Returns connection info if both users have enabled merged mode, null otherwise.
+ *
+ * TODO: Enable after running migration to add 'calendar' to shareable_module enum
+ * Migration file: 20260217_010000_add_calendar_nutrition_to_shareable_module.sql
  */
 export async function getCalendarMergedConnection(): Promise<MergedConnectionResult | null> {
+  // Temporarily disabled until enum migration is applied
+  // Database enum 'shareable_module' doesn't include 'calendar' yet
+  return null;
+
+  /* Enable this after migration:
   if (cachedMergedConnection !== undefined) {
     return cachedMergedConnection;
   }
 
   cachedMergedConnection = await getMergedConnectionId('calendar');
   return cachedMergedConnection;
+  */
 }
 
 /**

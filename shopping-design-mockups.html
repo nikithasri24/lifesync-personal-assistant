@@ -1,0 +1,1529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopping Page Redesign - Interactive Mockups</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+            background: linear-gradient(135deg, #E8DCC8 0%, #D4C5B0 100%);
+            padding: 40px 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: #5C4A3A;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header p {
+            font-size: 18px;
+            color: #6B5847;
+        }
+
+        .section-title {
+            text-align: center;
+            margin: 60px 0 30px;
+            font-size: 28px;
+            font-weight: 700;
+            color: #5C4A3A;
+        }
+
+        .section-subtitle {
+            text-align: center;
+            margin-bottom: 40px;
+            font-size: 16px;
+            color: #6B5847;
+        }
+
+        .comparison {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+            gap: 40px;
+            max-width: 1600px;
+            margin: 0 auto 60px;
+        }
+
+        .version {
+            background: white;
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 20px 60px rgba(92, 74, 58, 0.15);
+        }
+
+        .label {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 16px;
+            letter-spacing: 0.5px;
+            background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);
+            color: white;
+        }
+
+        .phone {
+            background: #000;
+            border-radius: 40px;
+            padding: 10px;
+            margin: 0 auto;
+            max-width: 360px;
+        }
+
+        .screen {
+            border-radius: 32px;
+            overflow: hidden;
+            height: 640px;
+            position: relative;
+            background: #FAF8F5;
+        }
+
+        .status-bar {
+            padding: 8px 20px 4px;
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            background: rgba(250, 248, 245, 0.95);
+            backdrop-filter: blur(10px);
+            color: #5C4A3A;
+        }
+
+        /* Headers */
+        .page-header {
+            background: white;
+            padding: 36px 20px 20px;
+            box-shadow: 0 1px 3px rgba(139, 111, 71, 0.08);
+        }
+
+        .page-header h1 {
+            font-size: 34px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 6px;
+        }
+
+        .page-header p {
+            font-size: 15px;
+            color: #9B8B7A;
+        }
+
+        .header-icons {
+            position: absolute;
+            top: 44px;
+            right: 20px;
+            display: flex;
+            gap: 12px;
+        }
+
+        .icon-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: rgba(212, 165, 116, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        /* Segmented Control */
+        .segmented-control {
+            background: #F5F0EA;
+            border-radius: 12px;
+            padding: 4px;
+            margin: 16px 20px;
+            display: flex;
+            gap: 4px;
+        }
+
+        .segment {
+            flex: 1;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            text-align: center;
+            color: #6B5847;
+            transition: all 0.2s;
+        }
+
+        .segment.active {
+            background: white;
+            color: #5C4A3A;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 4px;
+            padding: 16px 20px 12px;
+            overflow-x: auto;
+            border-bottom: 1px solid #F5F0EA;
+        }
+
+        .tab {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            white-space: nowrap;
+            color: #6B5847;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);
+            color: white;
+        }
+
+        .tab-count {
+            font-size: 11px;
+            background: rgba(255, 255, 255, 0.3);
+            padding: 2px 6px;
+            border-radius: 8px;
+        }
+
+        /* List Items */
+        .list {
+            background: white;
+            margin: 0 20px 20px;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(139, 111, 71, 0.08);
+            overflow: hidden;
+        }
+
+        .item {
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            border-bottom: 1px solid #F5F0EA;
+        }
+
+        .item:last-child {
+            border-bottom: none;
+        }
+
+        .checkbox {
+            width: 32px;
+            height: 32px;
+            border: 2.5px solid #D4C5B0;
+            border-radius: 50%;
+            margin-right: 12px;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .checkbox.checked {
+            background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);
+            border-color: transparent;
+        }
+
+        .checkbox.checked::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .item-content {
+            flex: 1;
+        }
+
+        .item-name {
+            font-size: 17px;
+            font-weight: 500;
+            color: #5C4A3A;
+            margin-bottom: 4px;
+        }
+
+        .item-details {
+            font-size: 14px;
+            color: #9B8B7A;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .badge {
+            background: linear-gradient(135deg, rgba(212, 165, 116, 0.15) 0%, rgba(193, 139, 94, 0.15) 100%);
+            color: #C18B5E;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        /* Rich Item Cards */
+        .rich-item {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin: 0 20px 12px;
+            box-shadow: 0 2px 8px rgba(139, 111, 71, 0.06);
+        }
+
+        .rich-item-header {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+
+        .rich-item-footer {
+            display: flex;
+            gap: 16px;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #F5F0EA;
+            font-size: 13px;
+            color: #9B8B7A;
+        }
+
+        /* Store Groups */
+        .store-group {
+            margin: 0 20px 16px;
+        }
+
+        .store-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 16px;
+            background: linear-gradient(135deg, rgba(212, 165, 116, 0.1) 0%, rgba(193, 139, 94, 0.1) 100%);
+            border-radius: 12px 12px 0 0;
+            font-size: 15px;
+            font-weight: 600;
+            color: #5C4A3A;
+        }
+
+        .store-items {
+            background: white;
+            border-radius: 0 0 12px 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(139, 111, 71, 0.06);
+        }
+
+        /* FAB */
+        .fab {
+            position: absolute;
+            bottom: 100px;
+            right: 24px;
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 16px rgba(212, 165, 116, 0.35);
+            color: white;
+            font-size: 28px;
+            font-weight: 300;
+        }
+
+        /* Expandable FAB */
+        .fab-group {
+            position: absolute;
+            bottom: 100px;
+            right: 24px;
+            display: flex;
+            flex-direction: column-reverse;
+            gap: 12px;
+        }
+
+        .fab-mini {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: white;
+            box-shadow: 0 2px 8px rgba(92, 74, 58, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 24px 24px 0 0;
+            width: 100%;
+            padding: 24px;
+            max-height: 500px;
+        }
+
+        .modal-handle {
+            width: 36px;
+            height: 4px;
+            background: #D4C5B0;
+            border-radius: 2px;
+            margin: 0 auto 20px;
+        }
+
+        .modal-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #5C4A3A;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .modal-option {
+            background: #FAF8F5;
+            border: 2px solid #E8DCC8;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .modal-option:hover {
+            background: linear-gradient(135deg, rgba(212, 165, 116, 0.1) 0%, rgba(193, 139, 94, 0.1) 100%);
+            border-color: #D4A574;
+        }
+
+        .modal-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .modal-text h3 {
+            font-size: 17px;
+            font-weight: 600;
+            color: #5C4A3A;
+            margin-bottom: 4px;
+        }
+
+        .modal-text p {
+            font-size: 14px;
+            color: #9B8B7A;
+        }
+
+        /* Pantry Grid */
+        .category-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #5C4A3A;
+            padding: 16px 20px 8px;
+        }
+
+        .pantry-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            padding: 0 20px 16px;
+        }
+
+        .pantry-card {
+            background: white;
+            border-radius: 12px;
+            padding: 12px;
+            box-shadow: 0 2px 8px rgba(139, 111, 71, 0.06);
+            text-align: center;
+        }
+
+        .pantry-icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        .pantry-name {
+            font-size: 13px;
+            font-weight: 500;
+            color: #5C4A3A;
+            margin-bottom: 6px;
+        }
+
+        .stock-indicator {
+            display: flex;
+            gap: 3px;
+            justify-content: center;
+        }
+
+        .stock-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #D4C5B0;
+        }
+
+        .stock-dot.filled {
+            background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);
+        }
+
+        /* Store Cards */
+        .store-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin: 0 20px 12px;
+            box-shadow: 0 2px 8px rgba(139, 111, 71, 0.06);
+        }
+
+        .store-card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .store-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(212, 165, 116, 0.15) 0%, rgba(193, 139, 94, 0.15) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .store-name {
+            flex: 1;
+            font-size: 18px;
+            font-weight: 600;
+            color: #5C4A3A;
+        }
+
+        .store-stats {
+            display: flex;
+            gap: 16px;
+            font-size: 14px;
+            color: #6B5847;
+            margin-bottom: 12px;
+        }
+
+        .store-btn {
+            background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            width: 100%;
+        }
+
+        .description {
+            margin-top: 16px;
+            padding: 16px;
+            background: linear-gradient(135deg, rgba(212, 165, 116, 0.1) 0%, rgba(193, 139, 94, 0.1) 100%);
+            border: 2px solid #E8DCC8;
+            border-radius: 12px;
+            text-align: center;
+            font-size: 14px;
+            color: #6B5847;
+        }
+
+        .description strong {
+            display: block;
+            margin-bottom: 4px;
+            color: #5C4A3A;
+        }
+
+        /* Bottom Sheet Menu */
+        .bottom-sheet {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-radius: 24px 24px 0 0;
+            padding: 24px;
+            box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            transition: background 0.2s;
+        }
+
+        .menu-item:hover {
+            background: #FAF8F5;
+        }
+
+        .menu-item-icon {
+            font-size: 24px;
+        }
+
+        .menu-item-text {
+            flex: 1;
+        }
+
+        .menu-item-text h3 {
+            font-size: 17px;
+            font-weight: 600;
+            color: #5C4A3A;
+            margin-bottom: 2px;
+        }
+
+        .menu-item-text p {
+            font-size: 14px;
+            color: #9B8B7A;
+        }
+
+        .menu-item-arrow {
+            color: #D4C5B0;
+            font-size: 18px;
+        }
+
+        .note {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin: 40px auto;
+            max-width: 800px;
+            box-shadow: 0 20px 60px rgba(92, 74, 58, 0.15);
+            text-align: center;
+        }
+
+        .note h2 {
+            font-size: 24px;
+            font-weight: 700;
+            color: #5C4A3A;
+            margin-bottom: 16px;
+        }
+
+        .note p {
+            font-size: 16px;
+            color: #6B5847;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🛒 Shopping Page Redesign</h1>
+        <p>Interactive mockups with terracotta theme - Pick your favorite designs!</p>
+    </div>
+
+    <!-- NAVIGATION OPTIONS -->
+    <h2 class="section-title">1️⃣ Navigation: How to switch between views?</h2>
+    <p class="section-subtitle">Choose how users navigate between Shopping List, Pantry, and Stores</p>
+
+    <div class="comparison">
+        <!-- OPTION A: SEGMENTED CONTROL -->
+        <div class="version">
+            <div class="label">Option A: Segmented Control</div>
+            <div class="phone">
+                <div class="screen">
+                    <div class="status-bar">
+                        <span>2:00</span>
+                        <span>🔋 96%</span>
+                    </div>
+
+                    <div class="page-header">
+                        <h1>Shopping</h1>
+                        <p>Smart grocery management</p>
+                        <div class="header-icons">
+                            <div class="icon-btn">🔔</div>
+                            <div class="icon-btn">⚙️</div>
+                        </div>
+                    </div>
+
+                    <div class="segmented-control">
+                        <div class="segment active">List</div>
+                        <div class="segment">Pantry</div>
+                        <div class="segment">Stores</div>
+                    </div>
+
+                    <div class="list">
+                        <div class="item">
+                            <div class="checkbox"></div>
+                            <div class="item-content">
+                                <div class="item-name">🥛 Milk</div>
+                            </div>
+                            <div class="badge">Costco</div>
+                        </div>
+                        <div class="item">
+                            <div class="checkbox checked"></div>
+                            <div class="item-content">
+                                <div class="item-name">🍌 Bananas</div>
+                            </div>
+                            <div class="badge">TJ's</div>
+                        </div>
+                        <div class="item">
+                            <div class="checkbox"></div>
+                            <div class="item-content">
+                                <div class="item-name">🥑 Avocados</div>
+                            </div>
+                            <div class="badge">TJ's</div>
+                        </div>
+                    </div>
+
+                    <div class="fab">+</div>
+                </div>
+            </div>
+            <div class="description">
+                <strong>Clean iOS native feel</strong><br>
+                Minimalist, 3 segments max, smooth transitions
+            </div>
+        </div>
+
+        <!-- OPTION B: TABS WITH COUNTS -->
+        <div class="version">
+            <div class="label">Option B: Tabs with Counts</div>
+            <div class="phone">
+                <div class="screen">
+                    <div class="status-bar">
+                        <span>2:00</span>
+                        <span>🔋 96%</span>
+                    </div>
+
+                    <div class="page-header">
+                        <h1>Shopping</h1>
+                        <p>Smart grocery management</p>
+                        <div class="header-icons">
+                            <div class="icon-btn">🔔</div>
+                        </div>
+                    </div>
+
+                    <div class="tabs">
+                        <div class="tab active">
+                            📝 List <span class="tab-count">12</span>
+                        </div>
+                        <div class="tab">
+                            📦 Pantry <span class="tab-count">45</span>
+                        </div>
+                        <div class="tab">
+                            🏪 Stores <span class="tab-count">3</span>
+                        </div>
+                    </div>
+
+                    <div class="list">
+                        <div class="item">
+                            <div class="checkbox"></div>
+                            <div class="item-content">
+                                <div class="item-name">🥛 Milk</div>
+                            </div>
+                            <div class="badge">Costco</div>
+                        </div>
+                        <div class="item">
+                            <div class="checkbox checked"></div>
+                            <div class="item-content">
+                                <div class="item-name">🍌 Bananas</div>
+                            </div>
+                            <div class="badge">TJ's</div>
+                        </div>
+                        <div class="item">
+                            <div class="checkbox"></div>
+                            <div class="item-content">
+                                <div class="item-name">🥑 Avocados</div>
+                            </div>
+                            <div class="badge">TJ's</div>
+                        </div>
+                    </div>
+
+                    <div class="fab">+</div>
+                </div>
+            </div>
+            <div class="description">
+                <strong>Tabs with visual icons & counts</strong><br>
+                Shows item counts, more visual feedback
+            </div>
+        </div>
+
+        <!-- OPTION C: BOTTOM SHEET MENU -->
+        <div class="version">
+            <div class="label">Option C: Bottom Sheet Menu</div>
+            <div class="phone">
+                <div class="screen">
+                    <div class="status-bar">
+                        <span>2:00</span>
+                        <span>🔋 96%</span>
+                    </div>
+
+                    <div class="page-header">
+                        <h1>Shopping List</h1>
+                        <p>12 items to buy</p>
+                        <div class="header-icons">
+                            <div class="icon-btn">🔔</div>
+                            <div class="icon-btn">☰</div>
+                        </div>
+                    </div>
+
+                    <div class="list">
+                        <div class="item">
+                            <div class="checkbox"></div>
+                            <div class="item-content">
+                                <div class="item-name">🥛 Milk</div>
+                            </div>
+                            <div class="badge">Costco</div>
+                        </div>
+                        <div class="item">
+                            <div class="checkbox checked"></div>
+                            <div class="item-content">
+                                <div class="item-name">🍌 Bananas</div>
+                            </div>
+                            <div class="badge">TJ's</div>
+                        </div>
+                    </div>
+
+                    <div class="bottom-sheet">
+                        <div class="modal-handle"></div>
+                        <div class="menu-item">
+                            <div class="menu-item-icon">📝</div>
+                            <div class="menu-item-text">
+                                <h3>Shopping List</h3>
+                                <p>12 items</p>
+                            </div>
+                            <div class="menu-item-arrow">→</div>
+                        </div>
+                        <div class="menu-item">
+                            <div class="menu-item-icon">📦</div>
+                            <div class="menu-item-text">
+                                <h3>Pantry</h3>
+                                <p>45 items at home</p>
+                            </div>
+                            <div class="menu-item-arrow">→</div>
+                        </div>
+                        <div class="menu-item">
+                            <div class="menu-item-icon">🏪</div>
+                            <div class="menu-item-text">
+                                <h3>Stores</h3>
+                                <p>3 stores saved</p>
+                            </div>
+                            <div class="menu-item-arrow">→</div>
+                        </div>
+                    </div>
+
+                    <div class="fab">+</div>
+                </div>
+            </div>
+            <div class="description">
+                <strong>Hidden menu, focus on list</strong><br>
+                Tap ☰ to see menu, keeps main view clean
+            </div>
+        </div>
+    </div>
+
+    <!-- ADD ITEM OPTIONS -->
+    <h2 class="section-title">2️⃣ Add Item: How should users add items?</h2>
+    <p class="section-subtitle">Choose how users access manual entry, barcode scan, and voice input</p>
+
+    <div class="comparison">
+        <!-- OPTION A: MODAL WITH CHOICES -->
+        <div class="version">
+            <div class="label">Option A: Modal with Choices</div>
+            <div class="phone">
+                <div class="screen">
+                    <div class="status-bar">
+                        <span>2:00</span>
+                        <span>🔋 96%</span>
+                    </div>
+
+                    <div class="modal-overlay">
+                        <div class="modal">
+                            <div class="modal-handle"></div>
+                            <div class="modal-title">Add Item</div>
+
+                            <div class="modal-option">
+                                <div class="modal-icon">📷</div>
+                                <div class="modal-text">
+                                    <h3>Scan Barcode</h3>
+                                    <p>Quick scan with camera</p>
+                                </div>
+                            </div>
+
+                            <div class="modal-option">
+                                <div class="modal-icon">🎤</div>
+                                <div class="modal-text">
+                                    <h3>Voice Input</h3>
+                                    <p>Say what you need</p>
+                                </div>
+                            </div>
+
+                            <div class="modal-option">
+                                <div class="modal-icon">✏️</div>
+                                <div class="modal-text">
+                                    <h3>Manual Entry</h3>
+                                    <p>Type item details</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="fab">+</div>
+                </div>
+            </div>
+            <div class="description">
+                <strong>Clear choice modal</strong><br>
+                Easy to understand, educational for new users
+            </div>
+        </div>
+
+        <!-- OPTION B: EXPANDABLE FAB -->
+        <div class="version">
+            <div class="label">Option B: Expandable FAB</div>
+            <div class="phone">
+                <div class="screen">
+                    <div class="status-bar">
+                        <span>2:00</span>
+                        <span>🔋 96%</span>
+                    </div>
+
+                    <div class="page-header">
+                        <h1>Shopping</h1>
+                        <p>Smart grocery management</p>
+                    </div>
+
+                    <div class="list">
+                        <div class="item">
+                            <div class="checkbox"></div>
+                            <div class="item-content">
+                                <div class="item-name">🥛 Milk</div>
+                            </div>
+                            <div class="badge">Costco</div>
+                        </div>
+                        <div class="item">
+                            <div class="checkbox checked"></div>
+                            <div class="item-content">
+                                <div class="item-name">🍌 Bananas</div>
+                            </div>
+                            <div class="badge">TJ's</div>
+                        </div>
+                        <div class="item">
+                            <div class="checkbox"></div>
+                            <div class="item-content">
+                                <div class="item-name">🥑 Avocados</div>
+                            </div>
+                            <div class="badge">TJ's</div>
+                        </div>
+                    </div>
+
+                    <div class="fab-group">
+                        <div class="fab-mini">📷</div>
+                        <div class="fab-mini">🎤</div>
+                        <div class="fab">+</div>
+                    </div>
+                </div>
+            </div>
+            <div class="description">
+                <strong>Fast expandable actions</strong><br>
+                iOS pattern, no extra modal, quick access
+            </div>
+        </div>
+
+        <!-- OPTION C: MODAL WITH TABS -->
+        <div class="version">
+            <div class="label">Option C: Modal with Tabs</div>
+            <div class="phone">
+                <div class="screen">
+                    <div class="status-bar">
+                        <span>2:00</span>
+                        <span>🔋 96%</span>
+                    </div>
+
+                    <div class="modal-overlay">
+                        <div class="modal">
+                            <div class="modal-handle"></div>
+                            <div class="modal-title">Add Item</div>
+
+                            <div class="tabs">
+                                <div class="tab active">✏️ Manual</div>
+                                <div class="tab">📷 Scan</div>
+                                <div class="tab">🎤 Voice</div>
+                            </div>
+
+                            <div style="padding: 20px; background: #FAF8F5; border-radius: 12px; margin-top: 16px;">
+                                <div style="font-size: 14px; font-weight: 600; color: #6B5847; margin-bottom: 8px;">Item Name</div>
+                                <div style="background: white; padding: 12px; border-radius: 8px; margin-bottom: 12px; border: 2px solid #E8DCC8;">
+                                    Milk
+                                </div>
+
+                                <div style="font-size: 14px; font-weight: 600; color: #6B5847; margin-bottom: 8px;">Quantity</div>
+                                <div style="background: white; padding: 12px; border-radius: 8px; border: 2px solid #E8DCC8;">
+                                    2 gallons
+                                </div>
+                            </div>
+
+                            <div style="margin-top: 16px; background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%); color: white; padding: 14px; border-radius: 12px; text-align: center; font-weight: 600; font-size: 16px;">
+                                Add to List
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="fab">+</div>
+                </div>
+            </div>
+            <div class="description">
+                <strong>All methods in one modal</strong><br>
+                Switch between input types easily
+            </div>
+        </div>
+    </div>
+
+    <!-- LIST ITEM STYLES -->
+    <h2 class="section-title">3️⃣ List Items: How should items look?</h2>
+    <p class="section-subtitle">Choose the level of detail shown for each shopping item</p>
+
+    <div class="comparison">
+        <!-- OPTION A: MINIMAL (CURRENT) -->
+        <div class="version">
+            <div class="label">Option A: Minimal & Clean</div>
+            <div class="phone">
+                <div class="screen">
+                    <div class="status-bar">
+                        <span>2:00</span>
+                        <span>🔋 96%</span>
+                    </div>
+
+                    <div class="page-header">
+                        <h1>Shopping</h1>
+                        <p>12 items to buy</p>
+                    </div>
+
+                    <div class="list">
+                        <div class="item">
+                            <div class="checkbox"></div>
+                            <div class="item-content">
+                                <div class="item-name">Milk</div>
+                                <div class="item-details">2 gallons</div>
+                            </div>
+                            <div class="badge">Costco</div>
+                        </div>
+                        <div class="item">
+                            <div class="checkbox checked"></div>
+                            <div class="item-content">
+                                <div class="item-name">Bananas</div>
+                                <div class="item-details">1 bunch</div>
+                            </div>
+                            <div class="badge">TJ's</div>
+                        </div>
+                        <div class="item">
+                            <div class="checkbox"></div>
+                            <div class="item-content">
+                                <div class="item-name">Avocados</div>
+                                <div class="item-details">6 pieces</div>
+                            </div>
+                            <div class="badge">TJ's</div>
+                        </div>
+                        <div class="item">
+                            <div class="checkbox"></div>
+                            <div class="item-content">
+                                <div class="item-name">Eggs</div>
+                                <div class="item-details">2 dozen</div>
+                            </div>
+                            <div class="badge">Costco</div>
+                        </div>
+                    </div>
+
+                    <div class="fab">+</div>
+                </div>
+            </div>
+            <div class="description">
+                <strong>Clean & simple</strong><br>
+                Name, quantity, store - nothing extra
+            </div>
+        </div>
+
+        <!-- OPTION B: RICH CARDS -->
+        <div class="version">
+            <div class="label">Option B: Rich Detail Cards</div>
+            <div class="phone">
+                <div class="screen">
+                    <div class="status-bar">
+                        <span>2:00</span>
+                        <span>🔋 96%</span>
+                    </div>
+
+                    <div class="page-header">
+                        <h1>Shopping</h1>
+                        <p>12 items to buy</p>
+                    </div>
+
+                    <div style="padding-top: 16px;">
+                        <div class="rich-item">
+                            <div class="rich-item-header">
+                                <div class="checkbox"></div>
+                                <div style="flex: 1;">
+                                    <div class="item-name">Milk</div>
+                                    <div class="item-details">2 gallons • Dairy</div>
+                                </div>
+                            </div>
+                            <div class="rich-item-footer">
+                                <div>💰 $6.99</div>
+                                <div>🏪 Costco</div>
+                                <div>⭐ High Priority</div>
+                            </div>
+                        </div>
+
+                        <div class="rich-item">
+                            <div class="rich-item-header">
+                                <div class="checkbox checked"></div>
+                                <div style="flex: 1;">
+                                    <div class="item-name">Bananas</div>
+                                    <div class="item-details">1 bunch • Produce</div>
+                                </div>
+                            </div>
+                            <div class="rich-item-footer">
+                                <div>💰 $1.99</div>
+                                <div>🏪 Trader Joe's</div>
+                                <div>⭐ Medium</div>
+                            </div>
+                        </div>
+
+                        <div class="rich-item">
+                            <div class="rich-item-header">
+                                <div class="checkbox"></div>
+                                <div style="flex: 1;">
+                                    <div class="item-name">Avocados</div>
+                                    <div class="item-details">6 pieces • Produce</div>
+                                </div>
+                            </div>
+                            <div class="rich-item-footer">
+                                <div>💰 $4.99</div>
+                                <div>🏪 Trader Joe's</div>
+                                <div>⭐ Low</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="fab">+</div>
+                </div>
+            </div>
+            <div class="description">
+                <strong>Rich information cards</strong><br>
+                Price, category, priority all visible
+            </div>
+        </div>
+
+        <!-- OPTION C: GROUPED BY STORE -->
+        <div class="version">
+            <div class="label">Option C: Grouped by Store</div>
+            <div class="phone">
+                <div class="screen">
+                    <div class="status-bar">
+                        <span>2:00</span>
+                        <span>🔋 96%</span>
+                    </div>
+
+                    <div class="page-header">
+                        <h1>Shopping</h1>
+                        <p>12 items • 3 stores</p>
+                    </div>
+
+                    <div style="padding-top: 16px;">
+                        <div class="store-group">
+                            <div class="store-header">
+                                🏪 Costco <span style="opacity: 0.6; margin-left: 8px;">(4 items)</span>
+                            </div>
+                            <div class="store-items">
+                                <div class="item">
+                                    <div class="checkbox"></div>
+                                    <div class="item-content">
+                                        <div class="item-name">Milk</div>
+                                    </div>
+                                    <div style="font-size: 15px; color: #6B5847; font-weight: 600;">$6.99</div>
+                                </div>
+                                <div class="item">
+                                    <div class="checkbox"></div>
+                                    <div class="item-content">
+                                        <div class="item-name">Eggs</div>
+                                    </div>
+                                    <div style="font-size: 15px; color: #6B5847; font-weight: 600;">$4.99</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="store-group">
+                            <div class="store-header">
+                                🌴 Trader Joe's <span style="opacity: 0.6; margin-left: 8px;">(3 items)</span>
+                            </div>
+                            <div class="store-items">
+                                <div class="item">
+                                    <div class="checkbox checked"></div>
+                                    <div class="item-content">
+                                        <div class="item-name">Bananas</div>
+                                    </div>
+                                    <div style="font-size: 15px; color: #6B5847; font-weight: 600;">$1.99</div>
+                                </div>
+                                <div class="item">
+                                    <div class="checkbox"></div>
+                                    <div class="item-content">
+                                        <div class="item-name">Avocados</div>
+                                    </div>
+                                    <div style="font-size: 15px; color: #6B5847; font-weight: 600;">$4.99</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="fab">+</div>
+                </div>
+            </div>
+            <div class="description">
+                <strong>Organized by store</strong><br>
+                Group items by where you'll buy them
+            </div>
+        </div>
+    </div>
+
+    <!-- PANTRY VIEW OPTIONS -->
+    <h2 class="section-title">4️⃣ Pantry View: How to show pantry items?</h2>
+    <p class="section-subtitle">Choose how to display items you have at home</p>
+
+    <div class="comparison">
+        <!-- OPTION A: SIMPLE LIST -->
+        <div class="version">
+            <div class="label">Option A: Simple List</div>
+            <div class="phone">
+                <div class="screen">
+                    <div class="status-bar">
+                        <span>2:00</span>
+                        <span>🔋 96%</span>
+                    </div>
+
+                    <div class="page-header">
+                        <h1>Pantry</h1>
+                        <p>45 items at home</p>
+                        <div class="header-icons">
+                            <div class="icon-btn">🔍</div>
+                        </div>
+                    </div>
+
+                    <div class="list">
+                        <div class="item">
+                            <div style="font-size: 28px; margin-right: 12px;">🍚</div>
+                            <div class="item-content">
+                                <div class="item-name">Rice</div>
+                                <div class="item-details">Expires: Mar 15, 2026</div>
+                            </div>
+                            <div class="stock-indicator">
+                                <div class="stock-dot filled"></div>
+                                <div class="stock-dot filled"></div>
+                                <div class="stock-dot"></div>
+                                <div class="stock-dot"></div>
+                            </div>
+                        </div>
+                        <div class="item">
+                            <div style="font-size: 28px; margin-right: 12px;">🍝</div>
+                            <div class="item-content">
+                                <div class="item-name">Pasta</div>
+                                <div class="item-details">Expires: Apr 20, 2026</div>
+                            </div>
+                            <div class="stock-indicator">
+                                <div class="stock-dot filled"></div>
+                                <div class="stock-dot filled"></div>
+                                <div class="stock-dot filled"></div>
+                                <div class="stock-dot"></div>
+                            </div>
+                        </div>
+                        <div class="item">
+                            <div style="font-size: 28px; margin-right: 12px;">🥫</div>
+                            <div class="item-content">
+                                <div class="item-name">Tomato Sauce</div>
+                                <div class="item-details">Expires: Jun 1, 2026</div>
+                            </div>
+                            <div class="stock-indicator">
+                                <div class="stock-dot filled"></div>
+                                <div class="stock-dot"></div>
+                                <div class="stock-dot"></div>
+                                <div class="stock-dot"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="fab">+</div>
+                </div>
+            </div>
+            <div class="description">
+                <strong>Simple list view</strong><br>
+                Expiry dates and stock indicators
+            </div>
+        </div>
+
+        <!-- OPTION B: CATEGORIZED GRID -->
+        <div class="version">
+            <div class="label">Option B: Category Grid</div>
+            <div class="phone">
+                <div class="screen">
+                    <div class="status-bar">
+                        <span>2:00</span>
+                        <span>🔋 96%</span>
+                    </div>
+
+                    <div class="page-header">
+                        <h1>Pantry</h1>
+                        <p>45 items organized</p>
+                        <div class="header-icons">
+                            <div class="icon-btn">🔍</div>
+                            <div class="icon-btn">▼</div>
+                        </div>
+                    </div>
+
+                    <div class="category-title">Grains & Pasta</div>
+                    <div class="pantry-grid">
+                        <div class="pantry-card">
+                            <div class="pantry-icon">🍚</div>
+                            <div class="pantry-name">Rice</div>
+                            <div class="stock-indicator">
+                                <div class="stock-dot filled"></div>
+                                <div class="stock-dot filled"></div>
+                                <div class="stock-dot"></div>
+                            </div>
+                        </div>
+                        <div class="pantry-card">
+                            <div class="pantry-icon">🍝</div>
+                            <div class="pantry-name">Pasta</div>
+                            <div class="stock-indicator">
+                                <div class="stock-dot filled"></div>
+                                <div class="stock-dot filled"></div>
+                                <div class="stock-dot filled"></div>
+                            </div>
+                        </div>
+                        <div class="pantry-card">
+                            <div class="pantry-icon">🍞</div>
+                            <div class="pantry-name">Bread</div>
+                            <div class="stock-indicator">
+                                <div class="stock-dot filled"></div>
+                                <div class="stock-dot"></div>
+                                <div class="stock-dot"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="category-title">Dairy & Eggs</div>
+                    <div class="pantry-grid">
+                        <div class="pantry-card">
+                            <div class="pantry-icon">🥛</div>
+                            <div class="pantry-name">Milk</div>
+                            <div class="stock-indicator">
+                                <div class="stock-dot filled"></div>
+                                <div class="stock-dot"></div>
+                                <div class="stock-dot"></div>
+                            </div>
+                        </div>
+                        <div class="pantry-card">
+                            <div class="pantry-icon">🧀</div>
+                            <div class="pantry-name">Cheese</div>
+                            <div class="stock-indicator">
+                                <div class="stock-dot filled"></div>
+                                <div class="stock-dot filled"></div>
+                                <div class="stock-dot"></div>
+                            </div>
+                        </div>
+                        <div class="pantry-card">
+                            <div class="pantry-icon">🥚</div>
+                            <div class="pantry-name">Eggs</div>
+                            <div class="stock-indicator">
+                                <div class="stock-dot filled"></div>
+                                <div class="stock-dot filled"></div>
+                                <div class="stock-dot filled"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="fab">+</div>
+                </div>
+            </div>
+            <div class="description">
+                <strong>Visual grid by category</strong><br>
+                Organized, visual, easy to scan
+            </div>
+        </div>
+    </div>
+
+    <!-- STORE MANAGEMENT OPTIONS -->
+    <h2 class="section-title">5️⃣ Stores: How to manage stores?</h2>
+    <p class="section-subtitle">Choose how to display and manage your shopping stores</p>
+
+    <div class="comparison">
+        <!-- OPTION A: SIMPLE LIST -->
+        <div class="version">
+            <div class="label">Option A: Simple List</div>
+            <div class="phone">
+                <div class="screen">
+                    <div class="status-bar">
+                        <span>2:00</span>
+                        <span>🔋 96%</span>
+                    </div>
+
+                    <div class="page-header">
+                        <h1>My Stores</h1>
+                        <p>3 stores saved</p>
+                        <div class="header-icons">
+                            <div class="icon-btn">+</div>
+                        </div>
+                    </div>
+
+                    <div class="list">
+                        <div class="item">
+                            <div style="font-size: 28px; margin-right: 12px;">🏪</div>
+                            <div class="item-content">
+                                <div class="item-name">Costco</div>
+                                <div class="item-details">📍 2.3 mi away</div>
+                            </div>
+                        </div>
+                        <div class="item">
+                            <div style="font-size: 28px; margin-right: 12px;">🌴</div>
+                            <div class="item-content">
+                                <div class="item-name">Trader Joe's</div>
+                                <div class="item-details">📍 1.5 mi away</div>
+                            </div>
+                        </div>
+                        <div class="item">
+                            <div style="font-size: 28px; margin-right: 12px;">🛒</div>
+                            <div class="item-content">
+                                <div class="item-name">Whole Foods</div>
+                                <div class="item-details">📍 3.1 mi away</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="description">
+                <strong>Clean simple list</strong><br>
+                Name and distance only
+            </div>
+        </div>
+
+        <!-- OPTION B: CARDS WITH STATS -->
+        <div class="version">
+            <div class="label">Option B: Rich Store Cards</div>
+            <div class="phone">
+                <div class="screen">
+                    <div class="status-bar">
+                        <span>2:00</span>
+                        <span>🔋 96%</span>
+                    </div>
+
+                    <div class="page-header">
+                        <h1>My Stores</h1>
+                        <p>3 stores saved</p>
+                        <div class="header-icons">
+                            <div class="icon-btn">+</div>
+                        </div>
+                    </div>
+
+                    <div style="padding-top: 16px;">
+                        <div class="store-card">
+                            <div class="store-card-header">
+                                <div class="store-icon">🏪</div>
+                                <div class="store-name">Costco</div>
+                            </div>
+                            <div class="store-stats">
+                                <div>📦 12 items</div>
+                                <div>📍 2.3 mi</div>
+                                <div>💰 $45.60</div>
+                            </div>
+                            <button class="store-btn">View Shopping List</button>
+                        </div>
+
+                        <div class="store-card">
+                            <div class="store-card-header">
+                                <div class="store-icon">🌴</div>
+                                <div class="store-name">Trader Joe's</div>
+                            </div>
+                            <div class="store-stats">
+                                <div>📦 5 items</div>
+                                <div>📍 1.5 mi</div>
+                                <div>💰 $28.99</div>
+                            </div>
+                            <button class="store-btn">View Shopping List</button>
+                        </div>
+
+                        <div class="store-card">
+                            <div class="store-card-header">
+                                <div class="store-icon">🛒</div>
+                                <div class="store-name">Whole Foods</div>
+                            </div>
+                            <div class="store-stats">
+                                <div>📦 3 items</div>
+                                <div>📍 3.1 mi</div>
+                                <div>💰 $18.45</div>
+                            </div>
+                            <button class="store-btn">View Shopping List</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="description">
+                <strong>Rich cards with data</strong><br>
+                Item count, distance, estimated cost
+            </div>
+        </div>
+    </div>
+
+    <div class="note">
+        <h2>🎨 Design Selection Summary</h2>
+        <p>
+            <strong>Review all the mockups above and tell me your choices:</strong><br><br>
+
+            1️⃣ <strong>Navigation:</strong> A (Segmented), B (Tabs), or C (Bottom Sheet)?<br>
+            2️⃣ <strong>Add Item:</strong> A (Modal Choice), B (Expandable FAB), or C (Modal Tabs)?<br>
+            3️⃣ <strong>List Items:</strong> A (Minimal), B (Rich Cards), or C (Grouped by Store)?<br>
+            4️⃣ <strong>Pantry:</strong> A (Simple List) or B (Category Grid)?<br>
+            5️⃣ <strong>Stores:</strong> A (Simple List) or B (Rich Cards)?<br><br>
+
+            You can mix and match! For example: "1A, 2B, 3A, 4B, 5B"<br><br>
+
+            <strong>Also let me know:</strong><br>
+            • Do you want barcode scanning prominently visible or hidden in a menu?<br>
+            • Should voice input have its own button or be in add modal?<br>
+            • Any other preferences or changes you'd like?
+        </p>
+    </div>
+
+    <div style="text-align: center; margin: 40px 0 60px; color: #6B5847; font-size: 14px;">
+        All designs use the terracotta theme you already love ✨<br>
+        Open this file in your browser to see all mockups side-by-side!
+    </div>
+</body>
+</html>

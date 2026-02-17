@@ -1,6 +1,14 @@
 /**
- * Shopping API
+ * Shopping API with Merged Mode Support
  * CRUD operations for shopping lists and items with Supabase
+ *
+ * Merged Mode: When both users in a connection set the shopping module to "merged",
+ * the API fetches data for both users. RLS policies ensure proper access control.
+ *
+ * Implementation:
+ * - Uses getShoppingMergedConnection() from storesAPI (shared cache)
+ * - Fetch functions include partner's data when merged
+ * - RLS policies on shopping_lists and shopping_items tables handle security
  */
 
 import { supabase } from '../lib/supabase';
@@ -8,6 +16,7 @@ import type { ShoppingItemData, ShoppingListData } from '../services/types';
 import { apiCall, requireAuth, handleSupabaseResponse } from './apiWrapper';
 import { NotFoundError } from '../lib/errors';
 import { validateApiResponse } from '../lib/validation';
+import { getShoppingMergedConnection } from './storesAPI';
 import {
   ShoppingListDataSchema,
   ShoppingListDataArraySchema,
@@ -33,16 +42,32 @@ import {
 export async function getShoppingLists(): Promise<ShoppingListData[]> {
   return apiCall(
     async () => {
-      await requireAuth();
+      const user = await requireAuth();
 
-      // RLS policy handles filtering - returns own lists + partner's lists if merged
-      const { data, error } = await supabase
+      // Check for merged connection
+      const mergedConnection = await getShoppingMergedConnection();
+
+      let query = supabase
         .from('shopping_lists')
         .select('*')
         .order('created_at', { ascending: false });
 
+      // If merged mode, RLS handles access
+      // RLS policy will filter based on merged permissions
+      if (mergedConnection) {
+        console.log('[getShoppingLists] Merged mode enabled, fetching for both users');
+        // RLS handles the filtering
+      } else {
+        // Personal mode: only get current user's lists
+        query = query.eq('user_id', user.id);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
+
       const lists = (data ?? []).map(mapRowToShoppingList);
+      console.log('[getShoppingLists] Fetched', lists.length, 'lists', mergedConnection ? '(merged mode)' : '(personal mode)');
+
       return validateApiResponse(
         ShoppingListDataArraySchema,
         lists,
@@ -63,6 +88,9 @@ export async function createShoppingList(
     async () => {
       const user = await requireAuth();
 
+      // Get connection_id if user has merged permission
+      const mergedConnection = await getShoppingMergedConnection();
+
       const dbList = mapShoppingListToInsert(list);
 
       const result = await supabase
@@ -70,6 +98,7 @@ export async function createShoppingList(
         .insert({
           ...dbList,
           user_id: user.id,
+          connection_id: mergedConnection?.connectionId ?? null,
         })
         .select()
         .single();

@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Habits Page - Complete Design Specification</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+            background: linear-gradient(135deg, #E8DCC8 0%, #D4C5B0 100%);
+            padding: 40px 20px;
+        }
+
+        .spec-header {
+            background: white;
+            border-radius: 24px;
+            padding: 40px;
+            margin-bottom: 40px;
+            box-shadow: 0 20px 60px rgba(92, 74, 58, 0.15);
+            text-align: center;
+        }
+
+        .spec-header h1 {
+            font-size: 48px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 16px;
+        }
+
+        .spec-header p {
+            font-size: 20px;
+            color: #6B5847;
+            line-height: 1.6;
+        }
+
+        .selections {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 24px;
+        }
+
+        .selection-badge {
+            background: linear-gradient(135deg, rgba(212, 165, 116, 0.1) 0%, rgba(193, 139, 94, 0.1) 100%);
+            border: 2px solid #D4A574;
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        .selection-badge strong {
+            display: block;
+            font-size: 14px;
+            color: #C18B5E;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .selection-badge span {
+            font-size: 16px;
+            color: #5C4A3A;
+            font-weight: 600;
+        }
+
+        .section {
+            background: white;
+            border-radius: 24px;
+            padding: 40px;
+            margin-bottom: 40px;
+            box-shadow: 0 20px 60px rgba(92, 74, 58, 0.15);
+        }
+
+        .section-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: #5C4A3A;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .section-subtitle {
+            font-size: 18px;
+            color: #6B5847;
+            margin-bottom: 32px;
+        }
+
+        .phone-demo {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+            gap: 40px;
+            margin-top: 32px;
+        }
+
+        .phone {
+            background: #000;
+            border-radius: 40px;
+            padding: 10px;
+            margin: 0 auto;
+            max-width: 360px;
+        }
+
+        .screen {
+            border-radius: 32px;
+            overflow: hidden;
+            height: 640px;
+            position: relative;
+            background: #FAF8F5;
+            overflow-y: auto;
+        }
+
+        .status-bar {
+            padding: 8px 20px 4px;
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            background: rgba(250, 248, 245, 0.95);
+            backdrop-filter: blur(10px);
+            color: #5C4A3A;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .page-header {
+            background: white;
+            padding: 36px 20px 20px;
+            box-shadow: 0 1px 3px rgba(139, 111, 71, 0.08);
+            position: sticky;
+            top: 29px;
+            z-index: 9;
+        }
+
+        .page-header h1 {
+            font-size: 34px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 6px;
+        }
+
+        .page-header p {
+            font-size: 15px;
+            color: #9B8B7A;
+        }
+
+        .header-icons {
+            position: absolute;
+            top: 44px;
+            right: 20px;
+            display: flex;
+            gap: 12px;
+        }
+
+        .icon-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: rgba(212, 165, 116, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .stats-header {
+            background: linear-gradient(135deg, rgba(212, 165, 116, 0.15) 0%, rgba(193, 139, 94, 0.15) 100%);
+            border-radius: 20px;
+            padding: 20px;
+            margin: 16px 20px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-top: 12px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: #6B5847;
+            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .date-nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 20px;
+            background: white;
+            border-bottom: 1px solid #F5F0EA;
+        }
+
+        .date-label {
+            font-size: 16px;
+            font-weight: 600;
+            color: #5C4A3A;
+        }
+
+        .nav-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: rgba(212, 165, 116, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #C18B5E;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .habit-card {
+            background: white;
+            border-radius: 16px;
+            padding: 16px;
+            margin: 0 20px 12px;
+            box-shadow: 0 2px 8px rgba(139, 111, 71, 0.08);
+            border-left: 4px solid #D4A574;
+        }
+
+        .habit-card.completed {
+            border-left-color: #4CAF50;
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.03) 0%, rgba(56, 142, 60, 0.03) 100%);
+        }
+
+        .habit-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .habit-info {
+            flex: 1;
+        }
+
+        .habit-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #5C4A3A;
+            margin-bottom: 4px;
+        }
+
+        .habit-category {
+            font-size: 12px;
+            color: #9B8B7A;
+        }
+
+        .check-btn {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: white;
+            border: 3px solid #E8DCC8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .check-btn.completed {
+            background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%);
+            border-color: #4CAF50;
+            color: white;
+        }
+
+        .check-btn:active {
+            transform: scale(0.95);
+        }
+
+        .progress-section {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #F5F0EA;
+        }
+
+        .progress-label {
+            font-size: 12px;
+            color: #6B5847;
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .progress-bar-bg {
+            background: #F5F0EA;
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);
+            transition: width 0.3s ease;
+        }
+
+        .progress-bar-fill.complete {
+            background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%);
+        }
+
+        .streak-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: linear-gradient(135deg, rgba(255, 152, 0, 0.15) 0%, rgba(245, 124, 0, 0.15) 100%);
+            color: #F57C00;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 700;
+            margin-top: 8px;
+        }
+
+        .fab {
+            position: absolute;
+            bottom: 100px;
+            right: 24px;
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);
+            box-shadow: 0 8px 24px rgba(193, 139, 94, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .fab:hover {
+            transform: scale(1.1);
+            box-shadow: 0 12px 32px rgba(193, 139, 94, 0.5);
+        }
+
+        .label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #6B5847;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        .weekly-view {
+            padding: 16px 20px;
+        }
+
+        .week-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .day-column {
+            text-align: center;
+        }
+
+        .day-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: #9B8B7A;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+
+        .day-label.today {
+            color: #C18B5E;
+        }
+
+        .day-date {
+            font-size: 16px;
+            font-weight: 600;
+            color: #5C4A3A;
+            margin-bottom: 8px;
+        }
+
+        .day-date.today {
+            background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 8px;
+        }
+
+        .check-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #E8DCC8;
+            margin: 4px auto;
+        }
+
+        .check-dot.checked {
+            background: #4CAF50;
+        }
+
+        .habit-row {
+            background: white;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 6px rgba(139, 111, 71, 0.06);
+        }
+
+        .habit-row-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #5C4A3A;
+            margin-bottom: 8px;
+        }
+
+        .checks-row {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+        }
+
+        .check-cell {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: #F5F0EA;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            cursor: pointer;
+        }
+
+        .check-cell.checked {
+            background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%);
+            color: white;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <!-- SPECIFICATION HEADER -->
+    <div class="spec-header">
+        <h1>🔥 Habits Page Design</h1>
+        <p>Daily habit tracking with streaks, progress monitoring, and weekly views</p>
+
+        <div class="selections">
+            <div class="selection-badge" style="border-color: #C18B5E; background: linear-gradient(135deg, rgba(212, 165, 116, 0.15) 0%, rgba(193, 139, 94, 0.15) 100%);">
+                <strong>Views</strong>
+                <span>Today & Weekly Grid</span>
+            </div>
+            <div class="selection-badge">
+                <strong>Tracking</strong>
+                <span>Daily, Weekly, Monthly</span>
+            </div>
+            <div class="selection-badge">
+                <strong>Streaks</strong>
+                <span>Current & Best Streak</span>
+            </div>
+            <div class="selection-badge">
+                <strong>Progress</strong>
+                <span>Target-based (e.g., 3x/week)</span>
+            </div>
+            <div class="selection-badge">
+                <strong>Check-ins</strong>
+                <span>One-tap completion</span>
+            </div>
+            <div class="selection-badge">
+                <strong>Stats</strong>
+                <span>Total habits, Today's progress, Streak</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- TODAY VIEW -->
+    <div class="section">
+        <h2 class="section-title">📱 Today View - Daily Check-in</h2>
+        <p class="section-subtitle">Quick daily habit completion with progress tracking</p>
+
+        <div class="phone-demo">
+            <div>
+                <div class="label">Today View - Habit List</div>
+                <div class="phone">
+                    <div class="screen">
+                        <div class="status-bar">
+                            <span>2:00</span>
+                            <span>🔋 96%</span>
+                        </div>
+
+                        <div class="page-header">
+                            <h1>Habits</h1>
+                            <p>Build better routines</p>
+                            <div class="header-icons">
+                                <div class="icon-btn">📊</div>
+                                <div class="icon-btn">⚙️</div>
+                            </div>
+                        </div>
+
+                        <!-- Stats Header -->
+                        <div class="stats-header">
+                            <div style="font-size: 14px; font-weight: 600; color: #5C4A3A; text-align: center; margin-bottom: 8px;">Today's Progress</div>
+                            <div class="stats-grid">
+                                <div class="stat-item">
+                                    <div class="stat-number">8</div>
+                                    <div class="stat-label">Total</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-number">5</div>
+                                    <div class="stat-label">Done</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-number">12</div>
+                                    <div class="stat-label">Streak</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Date Navigation -->
+                        <div class="date-nav">
+                            <div class="nav-btn">‹</div>
+                            <div class="date-label">Today, Feb 16</div>
+                            <div class="nav-btn">›</div>
+                        </div>
+
+                        <!-- Habits List -->
+                        <div style="padding: 16px 0 100px;">
+                            <!-- Habit 1 - Completed -->
+                            <div class="habit-card completed">
+                                <div class="habit-header">
+                                    <div class="habit-info">
+                                        <div class="habit-name">Morning Meditation</div>
+                                        <div class="habit-category">🧘 Health • Daily</div>
+                                    </div>
+                                    <div class="check-btn completed">✓</div>
+                                </div>
+                                <div class="streak-badge">
+                                    🔥 12 day streak
+                                </div>
+                            </div>
+
+                            <!-- Habit 2 - Incomplete, With Target -->
+                            <div class="habit-card">
+                                <div class="habit-header">
+                                    <div class="habit-info">
+                                        <div class="habit-name">Exercise</div>
+                                        <div class="habit-category">💪 Fitness • 3x per week</div>
+                                    </div>
+                                    <div class="check-btn">○</div>
+                                </div>
+                                <div class="progress-section">
+                                    <div class="progress-label">
+                                        <span>Weekly Progress</span>
+                                        <span>2 / 3</span>
+                                    </div>
+                                    <div class="progress-bar-bg">
+                                        <div class="progress-bar-fill" style="width: 67%;"></div>
+                                    </div>
+                                </div>
+                                <div class="streak-badge">
+                                    🔥 5 week streak
+                                </div>
+                            </div>
+
+                            <!-- Habit 3 - Completed -->
+                            <div class="habit-card completed">
+                                <div class="habit-header">
+                                    <div class="habit-info">
+                                        <div class="habit-name">Read for 30 Minutes</div>
+                                        <div class="habit-category">📚 Learning • Daily</div>
+                                    </div>
+                                    <div class="check-btn completed">✓</div>
+                                </div>
+                                <div class="streak-badge">
+                                    🔥 8 day streak
+                                </div>
+                            </div>
+
+                            <!-- Habit 4 - Incomplete -->
+                            <div class="habit-card">
+                                <div class="habit-header">
+                                    <div class="habit-info">
+                                        <div class="habit-name">Drink 8 Glasses of Water</div>
+                                        <div class="habit-category">💧 Health • Daily</div>
+                                    </div>
+                                    <div class="check-btn">○</div>
+                                </div>
+                                <div class="progress-section">
+                                    <div class="progress-label">
+                                        <span>Today's Progress</span>
+                                        <span>6 / 8</span>
+                                    </div>
+                                    <div class="progress-bar-bg">
+                                        <div class="progress-bar-fill" style="width: 75%;"></div>
+                                    </div>
+                                </div>
+                                <div class="streak-badge">
+                                    🔥 3 day streak
+                                </div>
+                            </div>
+
+                            <!-- Habit 5 - Completed -->
+                            <div class="habit-card completed">
+                                <div class="habit-header">
+                                    <div class="habit-info">
+                                        <div class="habit-name">Practice Spanish</div>
+                                        <div class="habit-category">🌍 Learning • Daily</div>
+                                    </div>
+                                    <div class="check-btn completed">✓</div>
+                                </div>
+                                <div class="streak-badge">
+                                    🔥 20 day streak
+                                </div>
+                            </div>
+
+                            <!-- Habit 6 - Incomplete -->
+                            <div class="habit-card">
+                                <div class="habit-header">
+                                    <div class="habit-info">
+                                        <div class="habit-name">Journal</div>
+                                        <div class="habit-category">✍️ Personal • Daily</div>
+                                    </div>
+                                    <div class="check-btn">○</div>
+                                </div>
+                                <div class="streak-badge">
+                                    🔥 15 day streak
+                                </div>
+                            </div>
+
+                            <!-- Habit 7 - Completed -->
+                            <div class="habit-card completed">
+                                <div class="habit-header">
+                                    <div class="habit-info">
+                                        <div class="habit-name">No Social Media Before 10am</div>
+                                        <div class="habit-category">📱 Productivity • Daily</div>
+                                    </div>
+                                    <div class="check-btn completed">✓</div>
+                                </div>
+                                <div class="streak-badge">
+                                    🔥 7 day streak
+                                </div>
+                            </div>
+
+                            <!-- Habit 8 - Incomplete, Monthly -->
+                            <div class="habit-card">
+                                <div class="habit-header">
+                                    <div class="habit-info">
+                                        <div class="habit-name">Deep Work Session</div>
+                                        <div class="habit-category">💼 Productivity • 12x per month</div>
+                                    </div>
+                                    <div class="check-btn">○</div>
+                                </div>
+                                <div class="progress-section">
+                                    <div class="progress-label">
+                                        <span>Monthly Progress</span>
+                                        <span>8 / 12</span>
+                                    </div>
+                                    <div class="progress-bar-bg">
+                                        <div class="progress-bar-fill" style="width: 67%;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- FAB -->
+                        <div class="fab">+</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- WEEKLY VIEW -->
+    <div class="section">
+        <h2 class="section-title">📱 Weekly View - Calendar Grid</h2>
+        <p class="section-subtitle">7-day habit tracking grid with visual completion patterns</p>
+
+        <div class="phone-demo">
+            <div>
+                <div class="label">Weekly View - Habit Grid</div>
+                <div class="phone">
+                    <div class="screen">
+                        <div class="status-bar">
+                            <span>2:00</span>
+                            <span>🔋 96%</span>
+                        </div>
+
+                        <div class="page-header">
+                            <h1>Habits</h1>
+                            <p>Weekly overview</p>
+                            <div class="header-icons">
+                                <div class="icon-btn">📅</div>
+                                <div class="icon-btn">⚙️</div>
+                            </div>
+                        </div>
+
+                        <!-- Week Navigation -->
+                        <div class="date-nav">
+                            <div class="nav-btn">‹</div>
+                            <div class="date-label">Feb 10 - Feb 16, 2026</div>
+                            <div class="nav-btn">›</div>
+                        </div>
+
+                        <!-- Week Grid -->
+                        <div class="weekly-view">
+                            <!-- Day Headers -->
+                            <div class="week-grid">
+                                <div class="day-column">
+                                    <div class="day-label">Mon</div>
+                                    <div class="day-date">10</div>
+                                </div>
+                                <div class="day-column">
+                                    <div class="day-label">Tue</div>
+                                    <div class="day-date">11</div>
+                                </div>
+                                <div class="day-column">
+                                    <div class="day-label">Wed</div>
+                                    <div class="day-date">12</div>
+                                </div>
+                                <div class="day-column">
+                                    <div class="day-label">Thu</div>
+                                    <div class="day-date">13</div>
+                                </div>
+                                <div class="day-column">
+                                    <div class="day-label">Fri</div>
+                                    <div class="day-date">14</div>
+                                </div>
+                                <div class="day-column">
+                                    <div class="day-label">Sat</div>
+                                    <div class="day-date">15</div>
+                                </div>
+                                <div class="day-column">
+                                    <div class="day-label today">Sun</div>
+                                    <div class="day-date today">16</div>
+                                </div>
+                            </div>
+
+                            <!-- Habit Rows -->
+                            <div style="padding-bottom: 100px;">
+                                <!-- Habit 1 -->
+                                <div class="habit-row">
+                                    <div class="habit-row-name">🧘 Morning Meditation</div>
+                                    <div class="checks-row">
+                                        <div class="check-cell checked">✓</div>
+                                        <div class="check-cell checked">✓</div>
+                                        <div class="check-cell checked">✓</div>
+                                        <div class="check-cell checked">✓</div>
+                                        <div class="check-cell checked">✓</div>
+                                        <div class="check-cell checked">✓</div>
+                                        <div class="check-cell checked">✓</div>
+                                    </div>
+                                </div>
+
+                                <!-- Habit 2 -->
+                                <div class="habit-row">
+                                    <div class="habit-row-name">💪 Exercise (3x/week)</div>
+                                    <div class="checks-row">
+                                        <div class="check-cell checked">✓</div>
+                                        <div class="check-cell"></div>
+                                        <div class="check-cell"></div>
+                                        <div class="check-cell checked">✓</div>
+                                        <div class="check-cell"></div>
+                                        <div class="check-cell"></div>
+                                        <div class="check-cell"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Habit 3 -->
+                                <div class="habit-row">
+                                    <div class="habit-row-name">📚 Read for 30 Minutes</div>
+                                    <div class="checks-row">
+                                        <div class="check-cell checked">✓</div>
+                                        <div class="check-cell checked">✓</div>
+                                        <div class="check-cell"></div>
+                                        <div class="check-cell checked">✓</div>
+                                        <div class="check-cell checked">✓</div>
+                                        <div class="check-cell checked">✓</div>
+                                        <div class="check-cell checked">✓</div>
+                                    </div>
+                                </div>
+
+                                <!-- Habit 4 -->
+                                <div class="habit-row">
+                                    <div class="habit-row-name">💧 Drink 8 Glasses of Water</div>
+                                    <div class="checks-row">
+                                        <div class="check-cell checked">✓</div>
+                                        <div class="check-cell"></div>
+                                        <div class="check-cell checked">✓</div>
+                                        <div class="check-cell checked">✓</div>
+                                        <div class="check-cell"></div>
+                                        <div class="check-cell checked">✓</div>
+                                        <div class="check-cell"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Habit 5 -->
+                                <div class="habit-row">
+                                    <div class="habit-row-name">🌍 Practice Spanish</div>
+                                    <div class="checks-row">
+                                        <div class="check-cell checked">✓</div>
+                                        <div class="check-cell checked">✓</div>
+                                        <div class="check-cell checked">✓</div>
+                                        <div class="check-cell checked">✓</div>
+                                        <div class="check-cell checked">✓</div>
+                                        <div class="check-cell checked">✓</div>
+                                        <div class="check-cell checked">✓</div>
+                                    </div>
+                                </div>
+
+                                <!-- Habit 6 -->
+                                <div class="habit-row">
+                                    <div class="habit-row-name">✍️ Journal</div>
+                                    <div class="checks-row">
+                                        <div class="check-cell checked">✓</div>
+                                        <div class="check-cell checked">✓</div>
+                                        <div class="check-cell checked">✓</div>
+                                        <div class="check-cell checked">✓</div>
+                                        <div class="check-cell checked">✓</div>
+                                        <div class="check-cell checked">✓</div>
+                                        <div class="check-cell"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Habit 7 -->
+                                <div class="habit-row">
+                                    <div class="habit-row-name">📱 No Social Media Before 10am</div>
+                                    <div class="checks-row">
+                                        <div class="check-cell"></div>
+                                        <div class="check-cell checked">✓</div>
+                                        <div class="check-cell"></div>
+                                        <div class="check-cell checked">✓</div>
+                                        <div class="check-cell checked">✓</div>
+                                        <div class="check-cell checked">✓</div>
+                                        <div class="check-cell checked">✓</div>
+                                    </div>
+                                </div>
+
+                                <!-- Stats Summary -->
+                                <div style="margin-top: 24px; background: white; border-radius: 16px; padding: 20px; box-shadow: 0 2px 8px rgba(139, 111, 71, 0.08);">
+                                    <div style="font-size: 16px; font-weight: 700; color: #5C4A3A; margin-bottom: 16px; text-align: center;">This Week's Stats</div>
+                                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
+                                        <div style="text-align: center;">
+                                            <div style="font-size: 24px; font-weight: 700; background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">85%</div>
+                                            <div style="font-size: 11px; color: #9B8B7A; margin-top: 4px;">Completion</div>
+                                        </div>
+                                        <div style="text-align: center;">
+                                            <div style="font-size: 24px; font-weight: 700; background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">42</div>
+                                            <div style="font-size: 11px; color: #9B8B7A; margin-top: 4px;">Total Checks</div>
+                                        </div>
+                                        <div style="text-align: center;">
+                                            <div style="font-size: 24px; font-weight: 700; background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">3</div>
+                                            <div style="font-size: 11px; color: #9B8B7A; margin-top: 4px;">Perfect Days</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- FAB -->
+                        <div class="fab">+</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DESIGN FEATURES -->
+    <div class="section">
+        <h2 class="section-title">✨ Key Design Features</h2>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; margin-top: 24px;">
+            <div style="background: rgba(212, 165, 116, 0.1); border-radius: 16px; padding: 24px;">
+                <h3 style="font-size: 20px; font-weight: 700; color: #5C4A3A; margin-bottom: 12px;">🔥 Streak Tracking</h3>
+                <ul style="font-size: 14px; color: #6B5847; line-height: 2;">
+                    <li>Visual streak badges with fire emoji</li>
+                    <li>Current streak display on each habit</li>
+                    <li>Best streak tracking for motivation</li>
+                    <li>Week/day/month streak achievements</li>
+                    <li>Orange gradient for streak emphasis</li>
+                </ul>
+            </div>
+
+            <div style="background: rgba(212, 165, 116, 0.1); border-radius: 16px; padding: 24px;">
+                <h3 style="font-size: 20px; font-weight: 700; color: #5C4A3A; margin-bottom: 12px;">✓ One-Tap Check-in</h3>
+                <ul style="font-size: 14px; color: #6B5847; line-height: 2;">
+                    <li>Large circular check buttons (56px)</li>
+                    <li>Instant visual feedback on tap</li>
+                    <li>Green gradient when completed</li>
+                    <li>Habit card border changes to green</li>
+                    <li>Satisfying tap animations</li>
+                </ul>
+            </div>
+
+            <div style="background: rgba(212, 165, 116, 0.1); border-radius: 16px; padding: 24px;">
+                <h3 style="font-size: 20px; font-weight: 700; color: #5C4A3A; margin-bottom: 12px;">📊 Progress Tracking</h3>
+                <ul style="font-size: 14px; color: #6B5847; line-height: 2;">
+                    <li>Target-based habits (e.g., "3x per week")</li>
+                    <li>Visual progress bars with percentages</li>
+                    <li>Current/target value display</li>
+                    <li>Daily, weekly, monthly frequency options</li>
+                    <li>Real-time progress updates</li>
+                </ul>
+            </div>
+
+            <div style="background: rgba(212, 165, 116, 0.1); border-radius: 16px; padding: 24px;">
+                <h3 style="font-size: 20px; font-weight: 700; color: #5C4A3A; margin-bottom: 12px;">📅 Weekly Grid View</h3>
+                <ul style="font-size: 14px; color: #6B5847; line-height: 2;">
+                    <li>7-day calendar grid layout</li>
+                    <li>Quick visual pattern recognition</li>
+                    <li>Tap any day to toggle completion</li>
+                    <li>Perfect week visualization</li>
+                    <li>Week-to-week navigation</li>
+                </ul>
+            </div>
+
+            <div style="background: rgba(212, 165, 116, 0.1); border-radius: 16px; padding: 24px;">
+                <h3 style="font-size: 20px; font-weight: 700; color: #5C4A3A; margin-bottom: 12px;">📈 Daily Stats</h3>
+                <ul style="font-size: 14px; color: #6B5847; line-height: 2;">
+                    <li>Total habits tracked</li>
+                    <li>Habits completed today</li>
+                    <li>Current longest streak</li>
+                    <li>Completion percentage</li>
+                    <li>Motivational visual feedback</li>
+                </ul>
+            </div>
+
+            <div style="background: rgba(212, 165, 116, 0.1); border-radius: 16px; padding: 24px;">
+                <h3 style="font-size: 20px; font-weight: 700; color: #5C4A3A; margin-bottom: 12px;">🏷️ Categories & Icons</h3>
+                <ul style="font-size: 14px; color: #6B5847; line-height: 2;">
+                    <li>Emoji icons for quick identification</li>
+                    <li>Category labels (Health, Learning, Productivity)</li>
+                    <li>Color-coded left border on cards</li>
+                    <li>Frequency display (Daily, 3x/week, 12x/month)</li>
+                    <li>Custom habit naming</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- COMPLETION -->
+    <div class="section" style="background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%); color: white; text-align: center;">
+        <h2 class="section-title" style="color: white; justify-content: center;">🎉 Habits Design Complete</h2>
+        <p style="font-size: 18px; line-height: 1.8; opacity: 0.95;">
+            This design spec covers the complete Habits page with daily check-ins,<br>
+            streak tracking, progress monitoring, and weekly grid visualization.<br><br>
+            <strong>Ready for implementation with consistent terracotta theming!</strong>
+        </p>
+    </div>
+</body>
+</html>

@@ -1,10 +1,12 @@
 /**
  * Add Item Modal Component
  * Modal form for adding new items to the shopping list
+ * Terracotta themed with bottom sheet style
  */
 
 import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
+import { useThemeColors } from '../../../hooks/useThemeColors';
 import type { ShoppingItemForm } from '../../types/forms';
 import type { Store } from '../../types';
 import { CATEGORY_ICONS, STORE_TYPES } from '../../constants';
@@ -31,6 +33,8 @@ export function AddItemModal({
   onFormChange,
   onBarcodeChange,
 }: AddItemModalProps): React.JSX.Element | null {
+  const colors = useThemeColors();
+
   // Keyboard navigation for Escape key
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -47,123 +51,246 @@ export function AddItemModal({
 
   if (!isOpen) return null;
 
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
+  const inputClassName = `w-full px-4 py-3 rounded-xl text-base transition-all duration-200 outline-none`;
+  const labelClassName = `block text-sm font-semibold mb-2`;
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl p-6 w-full max-w-md max-h-[80vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">Add to Master List</h3>
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center lg:items-center"
+      style={{
+        backgroundColor: 'rgba(0, 0, 0, 0.4)',
+        backdropFilter: 'blur(4px)',
+      }}
+      onClick={handleBackdropClick}
+    >
+      <div
+        className="w-full lg:max-w-2xl bg-white lg:rounded-3xl rounded-t-3xl overflow-hidden"
+        style={{
+          maxHeight: '90vh',
+          boxShadow: '0 -4px 24px rgba(0, 0, 0, 0.15)',
+        }}
+      >
+        {/* Drag Handle (mobile only) */}
+        <div className="lg:hidden pt-2">
+          <div
+            className="w-9 h-1 rounded-full mx-auto"
+            style={{ backgroundColor: colors.border.medium }}
+          />
+        </div>
+
+        {/* Header */}
+        <div
+          className="flex items-center justify-between px-6 py-5 border-b"
+          style={{ borderColor: colors.border.light }}
+        >
+          <h2
+            className="text-2xl font-bold"
+            style={{ color: colors.text.primary }}
+          >
+            Add Item Manually
+          </h2>
           <button
+            type="button"
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-md"
+            className="p-2 rounded-lg transition-colors duration-200"
+            style={{
+              backgroundColor: colors.badge.bg,
+              color: colors.text.secondary,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = colors.bg.secondary;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = colors.badge.bg;
+            }}
             aria-label="Close"
           >
             <X size={20} />
           </button>
         </div>
 
-        <form onSubmit={onSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Item Name *
-            </label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => onFormChange({ name: e.target.value })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="e.g., Organic Bananas"
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
+        {/* Form */}
+        <div className="overflow-y-auto" style={{ maxHeight: 'calc(90vh - 140px)' }}>
+          <form onSubmit={onSubmit} className="p-6 space-y-5">
+            {/* Item Name */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Quantity
+              <label className={labelClassName} style={{ color: colors.text.secondary }}>
+                Item Name *
               </label>
               <input
-                type="number"
-                min="1"
-                value={formData.quantity}
-                onChange={(e) => onFormChange({ quantity: parseInt(e.target.value) })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                type="text"
+                value={formData.name}
+                onChange={(e) => onFormChange({ name: e.target.value })}
+                className={inputClassName}
+                style={{
+                  backgroundColor: colors.bg.primary,
+                  border: `2px solid ${colors.border.light}`,
+                  color: colors.text.primary,
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = colors.accent.start;
+                  e.currentTarget.style.backgroundColor = colors.bg.white;
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = colors.border.light;
+                  e.currentTarget.style.backgroundColor = colors.bg.primary;
+                }}
+                placeholder="e.g., Organic Bananas"
+                required
+                autoFocus
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Unit
-              </label>
-              <select
-                value={formData.unit}
-                onChange={(e) => onFormChange({ unit: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="pcs">pieces</option>
-                <option value="lbs">pounds</option>
-                <option value="oz">ounces</option>
-                <option value="bottles">bottles</option>
-                <option value="cartons">cartons</option>
-                <option value="boxes">boxes</option>
-                <option value="bags">bags</option>
-              </select>
-            </div>
-          </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Category
-              </label>
-              <select
-                value={formData.category}
-                onChange={(e) => onFormChange({ category: validateCategory(e.target.value) })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                {Object.entries(CATEGORY_ICONS).map(([category, icon]) => (
-                  <option key={category} value={category}>
-                    {icon} {category.charAt(0).toUpperCase() + category.slice(1)}
-                  </option>
-                ))}
-              </select>
+            {/* Quantity and Unit */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className={labelClassName} style={{ color: colors.text.secondary }}>
+                  Quantity
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={formData.quantity}
+                  onChange={(e) => onFormChange({ quantity: parseInt(e.target.value) || 1 })}
+                  className={inputClassName}
+                  style={{
+                    backgroundColor: colors.bg.primary,
+                    border: `2px solid ${colors.border.light}`,
+                    color: colors.text.primary,
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = colors.accent.start;
+                    e.currentTarget.style.backgroundColor = colors.bg.white;
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = colors.border.light;
+                    e.currentTarget.style.backgroundColor = colors.bg.primary;
+                  }}
+                />
+              </div>
+              <div>
+                <label className={labelClassName} style={{ color: colors.text.secondary }}>
+                  Unit
+                </label>
+                <select
+                  value={formData.unit}
+                  onChange={(e) => onFormChange({ unit: e.target.value })}
+                  className={inputClassName}
+                  style={{
+                    backgroundColor: colors.bg.primary,
+                    border: `2px solid ${colors.border.light}`,
+                    color: colors.text.primary,
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = colors.accent.start;
+                    e.currentTarget.style.backgroundColor = colors.bg.white;
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = colors.border.light;
+                    e.currentTarget.style.backgroundColor = colors.bg.primary;
+                  }}
+                >
+                  <option value="pcs">pieces</option>
+                  <option value="lbs">pounds</option>
+                  <option value="oz">ounces</option>
+                  <option value="bottles">bottles</option>
+                  <option value="cartons">cartons</option>
+                  <option value="boxes">boxes</option>
+                  <option value="bags">bags</option>
+                  <option value="gallons">gallons</option>
+                  <option value="liters">liters</option>
+                </select>
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Priority
-              </label>
-              <select
-                value={formData.priority}
-                onChange={(e) => onFormChange({ priority: validatePriority(e.target.value) })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-              </select>
-            </div>
-          </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Est. Price
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                value={formData.estimatedPrice}
-                onChange={(e) => onFormChange({ estimatedPrice: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="$0.00"
-              />
+            {/* Category and Priority */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className={labelClassName} style={{ color: colors.text.secondary }}>
+                  Category
+                </label>
+                <select
+                  value={formData.category}
+                  onChange={(e) => onFormChange({ category: validateCategory(e.target.value) })}
+                  className={inputClassName}
+                  style={{
+                    backgroundColor: colors.bg.primary,
+                    border: `2px solid ${colors.border.light}`,
+                    color: colors.text.primary,
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = colors.accent.start;
+                    e.currentTarget.style.backgroundColor = colors.bg.white;
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = colors.border.light;
+                    e.currentTarget.style.backgroundColor = colors.bg.primary;
+                  }}
+                >
+                  {Object.entries(CATEGORY_ICONS).map(([category, icon]) => (
+                    <option key={category} value={category}>
+                      {icon} {category.charAt(0).toUpperCase() + category.slice(1)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className={labelClassName} style={{ color: colors.text.secondary }}>
+                  Priority
+                </label>
+                <select
+                  value={formData.priority}
+                  onChange={(e) => onFormChange({ priority: validatePriority(e.target.value) })}
+                  className={inputClassName}
+                  style={{
+                    backgroundColor: colors.bg.primary,
+                    border: `2px solid ${colors.border.light}`,
+                    color: colors.text.primary,
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = colors.accent.start;
+                    e.currentTarget.style.backgroundColor = colors.bg.white;
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = colors.border.light;
+                    e.currentTarget.style.backgroundColor = colors.bg.primary;
+                  }}
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
             </div>
+
+            {/* Store */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Preferred Store (optional)
+              <label className={labelClassName} style={{ color: colors.text.secondary }}>
+                Preferred Store
               </label>
               <select
                 value={formData.preferredStore}
                 onChange={(e) => onFormChange({ preferredStore: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className={inputClassName}
+                style={{
+                  backgroundColor: colors.bg.primary,
+                  border: `2px solid ${colors.border.light}`,
+                  color: colors.text.primary,
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = colors.accent.start;
+                  e.currentTarget.style.backgroundColor = colors.bg.white;
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = colors.border.light;
+                  e.currentTarget.style.backgroundColor = colors.bg.primary;
+                }}
               >
                 <option value="">AI will decide</option>
                 {stores.map(store => {
@@ -176,65 +303,139 @@ export function AddItemModal({
                 })}
               </select>
             </div>
-          </div>
 
-          <div className="grid grid-cols-2 gap-4">
+            {/* Price and Brand */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className={labelClassName} style={{ color: colors.text.secondary }}>
+                  Est. Price
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={formData.estimatedPrice}
+                  onChange={(e) => onFormChange({ estimatedPrice: e.target.value })}
+                  className={inputClassName}
+                  style={{
+                    backgroundColor: colors.bg.primary,
+                    border: `2px solid ${colors.border.light}`,
+                    color: colors.text.primary,
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = colors.accent.start;
+                    e.currentTarget.style.backgroundColor = colors.bg.white;
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = colors.border.light;
+                    e.currentTarget.style.backgroundColor = colors.bg.primary;
+                  }}
+                  placeholder="$0.00"
+                />
+              </div>
+              <div>
+                <label className={labelClassName} style={{ color: colors.text.secondary }}>
+                  Brand (optional)
+                </label>
+                <input
+                  type="text"
+                  value={formData.brand}
+                  onChange={(e) => onFormChange({ brand: e.target.value })}
+                  className={inputClassName}
+                  style={{
+                    backgroundColor: colors.bg.primary,
+                    border: `2px solid ${colors.border.light}`,
+                    color: colors.text.primary,
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = colors.accent.start;
+                    e.currentTarget.style.backgroundColor = colors.bg.white;
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = colors.border.light;
+                    e.currentTarget.style.backgroundColor = colors.bg.primary;
+                  }}
+                  placeholder="e.g., Organic Valley"
+                />
+              </div>
+            </div>
+
+            {/* Barcode */}
+            {barcodeResult && (
+              <div>
+                <label className={labelClassName} style={{ color: colors.text.secondary }}>
+                  Barcode
+                </label>
+                <input
+                  type="text"
+                  value={barcodeResult}
+                  onChange={(e) => onBarcodeChange(e.target.value)}
+                  className={inputClassName}
+                  style={{
+                    backgroundColor: colors.bg.secondary,
+                    border: `2px solid ${colors.border.light}`,
+                    color: colors.text.tertiary,
+                  }}
+                  readOnly
+                />
+              </div>
+            )}
+
+            {/* Notes */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Brand (optional)
+              <label className={labelClassName} style={{ color: colors.text.secondary }}>
+                Notes (optional)
               </label>
-              <input
-                type="text"
-                value={formData.brand}
-                onChange={(e) => onFormChange({ brand: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="e.g., Organic Valley"
+              <textarea
+                value={formData.notes}
+                onChange={(e) => onFormChange({ notes: e.target.value })}
+                className={inputClassName}
+                style={{
+                  backgroundColor: colors.bg.primary,
+                  border: `2px solid ${colors.border.light}`,
+                  color: colors.text.primary,
+                  minHeight: '80px',
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = colors.accent.start;
+                  e.currentTarget.style.backgroundColor = colors.bg.white;
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = colors.border.light;
+                  e.currentTarget.style.backgroundColor = colors.bg.primary;
+                }}
+                placeholder="Any special notes or preferences..."
+                rows={3}
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Barcode (optional)
-              </label>
-              <input
-                type="text"
-                value={barcodeResult ?? ''}
-                onChange={(e) => onBarcodeChange(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Scan or enter manually"
-                readOnly={!!barcodeResult}
-              />
+
+            {/* Buttons */}
+            <div className="flex gap-3 pt-4">
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 py-4 rounded-xl font-semibold text-base transition-all duration-200 active:scale-[0.98]"
+                style={{
+                  backgroundColor: colors.bg.white,
+                  border: `2px solid ${colors.border.medium}`,
+                  color: colors.text.secondary,
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="flex-1 py-4 rounded-xl font-semibold text-base transition-all duration-200 active:scale-[0.98]"
+                style={{
+                  background: `linear-gradient(135deg, ${colors.accent.start} 0%, ${colors.accent.end} 100%)`,
+                  color: 'white',
+                  border: 'none',
+                }}
+              >
+                Add to List
+              </button>
             </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Notes (optional)
-            </label>
-            <textarea
-              value={formData.notes}
-              onChange={(e) => onFormChange({ notes: e.target.value })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Any special notes or preferences..."
-              rows={2}
-            />
-          </div>
-
-          <div className="flex space-x-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 btn-secondary"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="flex-1 btn-primary"
-            >
-              Add Item
-            </button>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
     </div>
   );

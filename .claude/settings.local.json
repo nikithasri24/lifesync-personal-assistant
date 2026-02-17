@@ -105,7 +105,16 @@
       "Bash(/tmp/analyze-apis.sh:*)",
       "Bash(bash /tmp/analyze-apis.sh)",
       "Bash(/tmp/check-response-types.sh:*)",
-      "Bash(bash /tmp/check-response-types.sh)"
+      "Bash(bash /tmp/check-response-types.sh)",
+      "Bash(du:*)",
+      "Bash(npm list:*)",
+      "Bash(npx tsx:*)",
+      "Bash(else echo \".env file not found\")",
+      "Bash(node:*)",
+      "Bash(npx cap sync:*)",
+      "Bash(vitest:*)",
+      "Bash(1)",
+      "Bash(npx cap:*)"
     ],
     "deny": [],
     "ask": []

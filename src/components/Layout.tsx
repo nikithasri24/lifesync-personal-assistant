@@ -18,13 +18,10 @@ import {
   MapPin,
   DollarSign,
   Sparkles,
-  Heart,
-  Plane,
-  Map,
   MessageCircle,
   LayoutGrid,
   Utensils,
-  Shield
+  Plane,
 } from 'lucide-react';
 import { useComposedStore } from '../stores/useComposedStore';
 import { useToast } from '../hooks/useToast';
@@ -34,6 +31,8 @@ import VoiceLauncher from './VoiceLauncher';
 import PremiumLogo from './PremiumLogo';
 import ModeSwitch, { useAppMode } from './ModeSwitch';
 import { NotificationBell } from './notifications';
+import { TabBar } from './navigation/TabBar';
+import { useThemeColors } from '../hooks/useThemeColors';
 import clsx from 'clsx';
 import type { ViewKey } from '../stores/slices/uiSlice';
 
@@ -90,6 +89,20 @@ export default function Layout({ children }: LayoutProps) {
   const { toast, dismissToast } = useToast();
   const { mode } = useAppMode();
   const mainRef = React.useRef<HTMLDivElement>(null);
+  const colors = useThemeColors();
+
+  // Track screen size for responsive layout
+  const [isDesktop, setIsDesktop] = React.useState(false);
+
+  React.useEffect(() => {
+    const checkScreenSize = () => {
+      setIsDesktop(window.innerWidth >= 1024);
+    };
+
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
 
   // Derive activeView from current URL path
   const activeView = getViewFromPath(location.pathname);
@@ -134,9 +147,9 @@ export default function Layout({ children }: LayoutProps) {
     );
   }
 
-  // Visual mode: traditional dashboard layout
+  // Responsive layout: Desktop with sidebar, Mobile with tab bar
   return (
-    <div className="h-screen flex bg-secondary overflow-x-hidden">
+    <div className="h-screen flex" style={{ backgroundColor: colors.bg.primary }}>
       {/* Mobile sidebar overlay */}
       {!sidebarCollapsed && (
         <div
@@ -145,62 +158,74 @@ export default function Layout({ children }: LayoutProps) {
         />
       )}
 
-      {/* Premium Sidebar */}
-      <aside
-        className={clsx(
-          'bg-white dark:bg-[#0f1419] backdrop-blur-xl border-r border-gray-200 dark:border-gray-800 transition-all duration-300 ease-out z-50 shadow-lg',
-          sidebarCollapsed ? 'w-16 lg:w-20' : 'w-72 sm:w-80 lg:w-80',
-          'fixed lg:relative inset-y-0 left-0',
-          !sidebarCollapsed ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-        )}
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          height: '100vh',
-          maxHeight: '100vh',
-          overflow: 'hidden',
-          pointerEvents: 'auto'
-        }}
-      >
-
-        {/* Elegant Header */}
+      {/* Desktop Sidebar with Terracotta Design - Only show on desktop */}
+      {isDesktop && (
+        <aside
+          className={clsx(
+            'backdrop-blur-xl border-r transition-all duration-300 ease-out z-50 shadow-lg',
+            sidebarCollapsed ? 'w-20' : 'w-80',
+            'relative inset-y-0 left-0'
+          )}
+          style={{
+            backgroundColor: colors.bg.white,
+            borderRight: `1px solid ${colors.border.light}`,
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100vh',
+            maxHeight: '100vh',
+            overflow: 'hidden',
+          }}
+        >
+        {/* Sidebar Header */}
         <div
-          className="flex items-center justify-between px-4 sm:px-6 border-b border-gray-200 dark:border-gray-800"
-          style={{ height: '5rem', minHeight: '5rem', flexShrink: 0 }}
+          className="flex items-center justify-between px-6"
+          style={{
+            height: '5rem',
+            minHeight: '5rem',
+            flexShrink: 0,
+            borderBottom: `1px solid ${colors.border.light}`
+          }}
         >
           <PremiumLogo collapsed={sidebarCollapsed} />
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="p-2 sm:p-2.5 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-blue-500 dark:hover:bg-blue-600 hover:text-white transition-all duration-200 text-gray-700 dark:text-gray-300 hover:scale-105 active:scale-95"
+            className="p-2.5 rounded-lg transition-all duration-200 hover:scale-105 active:scale-95"
+            style={{
+              backgroundColor: colors.badge.bg,
+              color: colors.badge.text,
+            }}
             aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
             {sidebarCollapsed ? <Menu size={16} /> : <X size={16} />}
           </button>
         </div>
 
-        {/* Sophisticated Navigation */}
+        {/* Sidebar Navigation */}
         <nav
-          className="px-3 sm:px-4 py-4 sm:py-6"
+          className="px-4 py-6"
           role="navigation"
           aria-label="Main navigation"
           style={{
             flex: '1 1 auto',
-            overflowY: 'scroll',
+            overflowY: 'auto',
             overflowX: 'hidden',
             minHeight: 0
           }}
         >
-          <div className="space-y-6 sm:space-y-8">
+          <div className="space-y-8">
             {Object.entries(navigationSections).map(([sectionKey, section]) => (
               <div key={sectionKey}>
                 {!sidebarCollapsed && (
-                  <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-500 uppercase tracking-wider mb-3 px-3">
+                  <h3
+                    className="text-xs font-semibold uppercase tracking-wider mb-3 px-3"
+                    style={{ color: colors.text.tertiary }}
+                  >
                     {section.label}
                   </h3>
                 )}
 
                 <ul className="space-y-1" style={{ listStyle: 'none' }}>
-                  {section.items.map((item, _index) => {
+                  {section.items.map((item) => {
                     const isActive = location.pathname === item.path ||
                                    (item.path !== '/' && location.pathname.startsWith(item.path));
 
@@ -208,23 +233,33 @@ export default function Layout({ children }: LayoutProps) {
                       <li key={item.name} style={{ listStyle: 'none' }}>
                         <Link
                           to={item.path}
-                          style={{ textDecoration: 'none' }}
                           className={clsx(
                             'w-full flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group relative',
-                            isActive
-                              ? 'bg-blue-500 dark:bg-blue-600 text-white shadow-sm'
-                              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
                           )}
+                          style={{
+                            textDecoration: 'none',
+                            background: isActive
+                              ? `linear-gradient(135deg, ${colors.accent.start} 0%, ${colors.accent.end} 100%)`
+                              : 'transparent',
+                            color: isActive ? '#FFFFFF' : colors.text.primary,
+                          }}
                           aria-current={isActive ? 'page' : undefined}
                           title={sidebarCollapsed ? item.name : undefined}
+                          onMouseEnter={(e) => {
+                            if (!isActive) {
+                              e.currentTarget.style.backgroundColor = colors.bg.secondary;
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!isActive) {
+                              e.currentTarget.style.backgroundColor = 'transparent';
+                            }
+                          }}
                         >
                           <item.icon
                             className={clsx(
                               'flex-shrink-0 transition-all duration-200',
                               sidebarCollapsed ? 'mx-auto' : 'mr-3',
-                              isActive
-                                ? 'text-white'
-                                : 'text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white'
                             )}
                             size={20}
                             aria-hidden="true"
@@ -239,7 +274,8 @@ export default function Layout({ children }: LayoutProps) {
                               {isActive && (
                                 <ChevronRight
                                   size={16}
-                                  className="text-white/80 transition-all duration-300"
+                                  className="transition-all duration-300"
+                                  style={{ color: 'rgba(255, 255, 255, 0.8)' }}
                                 />
                               )}
                             </>
@@ -256,64 +292,104 @@ export default function Layout({ children }: LayoutProps) {
           </div>
         </nav>
 
-        {/* Footer with theme toggle */}
-        <div
-          className="p-4 border-t border-gray-200 dark:border-gray-800"
-          style={{
-            flexShrink: 0,
-            minHeight: 'fit-content'
+          {/* Sidebar Footer */}
+          <div
+            className="p-4"
+            style={{
+              flexShrink: 0,
+              minHeight: 'fit-content',
+              borderTop: `1px solid ${colors.border.light}`
+            }}
+          >
+            <ThemeToggle />
+          </div>
+        </aside>
+      )}
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Mobile Header - Only on small screens */}
+        {!isDesktop && (
+          <header
+            className="flex-shrink-0"
+            style={{
+            backgroundColor: colors.bg.white,
+            paddingTop: '48px',
+            paddingLeft: '24px',
+            paddingRight: '24px',
+            paddingBottom: '24px',
           }}
         >
-          <ThemeToggle />
-        </div>
-      </aside>
-
-      {/* Elegant Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Premium Header */}
-        <header className="bg-[var(--bg-secondary)] backdrop-blur-sm border-b border-[var(--border-primary)] px-8 py-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-6">
-              {/* Mobile menu button */}
-              <button
-                onClick={() => setSidebarCollapsed(false)}
-                className="lg:hidden p-2.5 rounded-xl bg-[var(--color-primary-100)]/30 dark:bg-[var(--color-primary-800)]/30 hover:bg-[var(--color-primary-500)] hover:text-white transition-all duration-300 text-[var(--color-primary-700)] dark:text-white"
-                aria-label="Open sidebar"
+            <div className="flex flex-col">
+              <h2
+                className="font-bold"
+                style={{
+                  fontSize: '34px',
+                  fontWeight: 700,
+                  letterSpacing: '-0.4px',
+                  background: `linear-gradient(135deg, ${colors.accent.start} 0%, ${colors.accent.end} 100%)`,
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                }}
               >
-                <Menu size={20} />
-              </button>
+                {activeView === 'todos' ? 'Tasks' : activeView.charAt(0).toUpperCase() + activeView.slice(1)}
+              </h2>
+              <p className="text-sm" style={{ color: colors.text.tertiary, fontSize: '15px' }}>
+                {activeView === 'dashboard' && 'Your productivity overview'}
+                {activeView === 'calendar' && 'Events and scheduling'}
+                {activeView === 'todos' && 'Manage your tasks'}
+                {activeView === 'shopping' && 'Smart grocery management'}
+                {activeView === 'meals' && 'Weekly meal planning'}
+              </p>
+            </div>
 
+            <div className="flex items-center space-x-3">
+              <NotificationBell />
+              <ModeSwitch />
+            </div>
+          </div>
+        </header>
+        )}
+
+        {/* Desktop Header - Only on large screens */}
+        {isDesktop && (
+          <header
+            className="flex backdrop-blur-sm border-b px-8 py-6"
+            style={{
+            backgroundColor: colors.bg.primary,
+            borderBottom: `1px solid ${colors.border.light}`
+          }}
+        >
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center space-x-6">
               <div className="flex flex-col">
-                <h2 className="text-2xl font-bold text-[var(--text-primary)] font-display leading-tight">
+                <h2
+                  className="text-2xl font-bold font-display leading-tight"
+                  style={{
+                    background: `linear-gradient(135deg, ${colors.accent.start} 0%, ${colors.accent.end} 100%)`,
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    backgroundClip: 'text',
+                  }}
+                >
                   {activeView === 'todos' ? 'Tasks' : activeView.charAt(0).toUpperCase() + activeView.slice(1)}
                 </h2>
-                <p className="text-sm text-[var(--text-secondary)] font-medium">
+                <p className="text-sm font-medium" style={{ color: colors.text.tertiary }}>
                   {activeView === 'dashboard' && 'Your productivity overview'}
                   {activeView === 'calendar' && 'Events and scheduling'}
                   {activeView === 'todos' && 'Manage your tasks'}
-                  {activeView === 'focus' && 'Deep work sessions'}
-                  {activeView === 'habits' && 'Build lasting routines'}
-                  {activeView === 'notes' && 'Capture your thoughts'}
-                  {activeView === 'projects' && 'Project tracking and development overview'}
-                  {activeView === 'journal' && 'Daily reflections'}
-                  {activeView === 'travel' && 'Plan and organize your trips'}
-                  {activeView === 'visa' && 'Calculate visa-free travel destinations'}
-                  {activeView === 'trip-planner' && 'Plan multi-country trips and calculate visa costs'}
-                  {activeView === 'finances' && 'Track income, expenses, and budgets'}
                   {activeView === 'shopping' && 'Smart grocery management'}
                   {activeView === 'meals' && 'Weekly meal planning'}
-                  {activeView === 'nutrition' && 'Track your meals and nutrition'}
-                  {activeView === 'goals' && 'Achieve your dreams'}
-                  {activeView === 'shared' && 'Collaborate and share'}
-                  {activeView === 'privacy-settings' && 'Control your data sharing preferences'}
                 </p>
               </div>
             </div>
 
             <div className="flex items-center space-x-4">
-              <div className="hidden sm:flex items-center space-x-3 px-4 py-2 bg-gradient-to-r from-accent-primary/10 to-accent-secondary/10 rounded-xl border border-accent-primary/20">
-                <div className="w-2 h-2 bg-accent-primary rounded-full animate-pulse"></div>
-                <div className="text-sm font-medium text-accent-primary">
+              <div className="hidden sm:flex items-center space-x-3 px-4 py-2 rounded-xl" style={{ backgroundColor: colors.badge.bg, border: `1px solid ${colors.badge.text}33` }}>
+                <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: colors.accent.start }}></div>
+                <div className="text-sm font-medium" style={{ color: colors.badge.text }}>
                   {new Date().toLocaleDateString('en-US', {
                     weekday: 'short',
                     month: 'short',
@@ -327,11 +403,16 @@ export default function Layout({ children }: LayoutProps) {
             </div>
           </div>
         </header>
+        )}
 
-        {/* Premium Page Content */}
+        {/* Main Content */}
         <main
           ref={mainRef}
-          className="flex-1 overflow-y-auto p-8 bg-gradient-to-br from-secondary via-tertiary/30 to-secondary"
+          className="flex-1 overflow-y-auto lg:p-8"
+          style={{
+            backgroundColor: colors.bg.primary,
+            paddingBottom: '100px', // Space for mobile tab bar
+          }}
           role="main"
           tabIndex={0}
           aria-labelledby="page-title"
@@ -339,11 +420,17 @@ export default function Layout({ children }: LayoutProps) {
           <h1 id="page-title" className="sr-only">
             {activeView === 'todos' ? 'Tasks' : activeView} page
           </h1>
-          <div className="max-w-7xl mx-auto">
+          <div className="lg:max-w-7xl lg:mx-auto">
             {children}
           </div>
         </main>
       </div>
+
+      {/* iOS Bottom Tab Bar - Only on Mobile */}
+      <div className="lg:hidden">
+        <TabBar />
+      </div>
+
       <Toast toast={toast} onDismiss={dismissToast} />
     </div>
   );

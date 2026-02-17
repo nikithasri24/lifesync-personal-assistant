@@ -1,0 +1,252 @@
+import React, { useState } from 'react';
+import { Search, Plus } from 'lucide-react';
+import { useThemeColors } from '../../../hooks/useThemeColors';
+import type { PantryItem } from '../../types';
+
+interface PantryGridViewProps {
+  items: PantryItem[];
+  onItemClick: (item: PantryItem) => void;
+  onAddItem?: () => void;
+}
+
+// Category mapping for pantry items
+const CATEGORY_CONFIG = {
+  grains: { label: 'Grains & Pasta', emoji: '🌾', order: 1 },
+  dairy: { label: 'Dairy & Eggs', emoji: '🥛', order: 2 },
+  produce: { label: 'Produce', emoji: '🥬', order: 3 },
+  protein: { label: 'Protein', emoji: '🍖', order: 4 },
+  canned: { label: 'Canned Goods', emoji: '🥫', order: 5 },
+  snacks: { label: 'Snacks', emoji: '🍪', order: 6 },
+  beverages: { label: 'Beverages', emoji: '☕', order: 7 },
+  condiments: { label: 'Condiments', emoji: '🧂', order: 8 },
+  frozen: { label: 'Frozen Foods', emoji: '🧊', order: 9 },
+  baking: { label: 'Baking', emoji: '🧁', order: 10 },
+  other: { label: 'Other', emoji: '📦', order: 99 },
+};
+
+// Emoji mapping for common items (fallback)
+const ITEM_EMOJI_MAP: Record<string, string> = {
+  rice: '🍚',
+  pasta: '🍝',
+  bread: '🍞',
+  milk: '🥛',
+  cheese: '🧀',
+  eggs: '🥚',
+  butter: '🧈',
+  yogurt: '🥛',
+  apple: '🍎',
+  banana: '🍌',
+  carrot: '🥕',
+  tomato: '🍅',
+  lettuce: '🥬',
+  spinach: '🥬',
+  chicken: '🍗',
+  beef: '🥩',
+  fish: '🐟',
+  beans: '🫘',
+  coffee: '☕',
+  tea: '🍵',
+  juice: '🧃',
+  soda: '🥤',
+  water: '💧',
+  chips: '🥔',
+  cookies: '🍪',
+  crackers: '🍘',
+  cereal: '🥣',
+  sauce: '🥫',
+  ketchup: '🍅',
+  mayo: '🥫',
+  mustard: '🥫',
+  oil: '🫗',
+  salt: '🧂',
+  pepper: '🧂',
+  sugar: '🧂',
+  flour: '🌾',
+};
+
+function getItemEmoji(itemName: string, category?: string): string {
+  const lowerName = itemName.toLowerCase();
+
+  // Try exact match
+  if (ITEM_EMOJI_MAP[lowerName]) {
+    return ITEM_EMOJI_MAP[lowerName];
+  }
+
+  // Try partial match
+  for (const [key, emoji] of Object.entries(ITEM_EMOJI_MAP)) {
+    if (lowerName.includes(key) || key.includes(lowerName)) {
+      return emoji;
+    }
+  }
+
+  // Fallback to category emoji
+  if (category && CATEGORY_CONFIG[category as keyof typeof CATEGORY_CONFIG]) {
+    return CATEGORY_CONFIG[category as keyof typeof CATEGORY_CONFIG].emoji;
+  }
+
+  return '📦';
+}
+
+function getStockLevel(quantity: number): number {
+  // Convert quantity to stock level (0-3)
+  if (quantity === 0) return 0;
+  if (quantity <= 1) return 1;
+  if (quantity <= 3) return 2;
+  return 3;
+}
+
+export function PantryGridView({ items, onItemClick, onAddItem }: PantryGridViewProps) {
+  const colors = useThemeColors();
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Group items by category
+  const itemsByCategory = React.useMemo(() => {
+    const filtered = searchQuery
+      ? items.filter(item =>
+          item.name.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+      : items;
+
+    const grouped = filtered.reduce((acc, item) => {
+      const category = item.category || 'other';
+      if (!acc[category]) {
+        acc[category] = [];
+      }
+      acc[category].push(item);
+      return acc;
+    }, {} as Record<string, PantryItem[]>);
+
+    // Sort categories by order
+    return Object.entries(grouped).sort((a, b) => {
+      const orderA = CATEGORY_CONFIG[a[0] as keyof typeof CATEGORY_CONFIG]?.order ?? 99;
+      const orderB = CATEGORY_CONFIG[b[0] as keyof typeof CATEGORY_CONFIG]?.order ?? 99;
+      return orderA - orderB;
+    });
+  }, [items, searchQuery]);
+
+  if (items.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 px-6">
+        <div className="text-6xl mb-4">📦</div>
+        <h3 className="text-lg font-semibold mb-2" style={{ color: colors.text.primary }}>
+          No Pantry Items Yet
+        </h3>
+        <p className="text-sm text-center" style={{ color: colors.text.tertiary }}>
+          Start tracking your pantry inventory by adding items below
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ paddingBottom: '140px' }}>
+      {/* Search Bar */}
+      <div className="px-5 mb-4">
+        <div
+          className="flex items-center gap-3 px-4 py-3 rounded-xl"
+          style={{
+            backgroundColor: colors.bg.white,
+            border: `2px solid ${colors.border.light}`,
+          }}
+        >
+          <Search size={20} style={{ color: colors.text.tertiary }} />
+          <input
+            type="text"
+            placeholder="Search pantry items..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="flex-1 bg-transparent outline-none text-base"
+            style={{ color: colors.text.primary }}
+          />
+        </div>
+      </div>
+
+      {/* Categories and Items */}
+      {itemsByCategory.map(([categoryKey, categoryItems]) => {
+        const categoryConfig = CATEGORY_CONFIG[categoryKey as keyof typeof CATEGORY_CONFIG] || CATEGORY_CONFIG.other;
+
+        return (
+          <div key={categoryKey} className="mb-6">
+            {/* Category Title */}
+            <div className="px-5 mb-3">
+              <h3 className="text-base font-semibold" style={{ color: colors.text.primary }}>
+                {categoryConfig.emoji} {categoryConfig.label}
+              </h3>
+            </div>
+
+            {/* 3-Column Grid */}
+            <div className="px-5">
+              <div className="grid grid-cols-3 gap-3">
+                {categoryItems.map((item) => {
+                  const stockLevel = getStockLevel(item.quantity || 0);
+                  const emoji = getItemEmoji(item.name, item.category);
+
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => onItemClick(item)}
+                      className="flex flex-col items-center p-3 rounded-xl transition-all duration-200 active:scale-95"
+                      style={{
+                        backgroundColor: colors.bg.white,
+                        boxShadow: '0 2px 8px rgba(139, 111, 71, 0.06)',
+                      }}
+                      aria-label={`View ${item.name} details`}
+                    >
+                      {/* Emoji Icon */}
+                      <div className="text-4xl mb-2">{emoji}</div>
+
+                      {/* Item Name */}
+                      <div
+                        className="text-xs font-medium text-center mb-2 line-clamp-2"
+                        style={{
+                          color: colors.text.primary,
+                          minHeight: '2.5rem',
+                        }}
+                      >
+                        {item.name}
+                      </div>
+
+                      {/* Stock Indicator */}
+                      <div className="flex gap-1">
+                        {[1, 2, 3].map((level) => (
+                          <div
+                            key={level}
+                            className="w-1.5 h-1.5 rounded-full"
+                            style={{
+                              background: level <= stockLevel
+                                ? `linear-gradient(135deg, ${colors.accent.start} 0%, ${colors.accent.end} 100%)`
+                                : colors.border.medium,
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+
+      {/* Add Item to Pantry Button */}
+      {onAddItem && (
+        <button
+          type="button"
+          onClick={onAddItem}
+          className="w-full flex items-center justify-center gap-2 py-3 mt-4 rounded-xl font-semibold text-base transition-all duration-200 active:scale-[0.98]"
+          style={{
+            backgroundColor: colors.bg.white,
+            border: `2px solid ${colors.accent.start}`,
+            color: colors.accent.start,
+          }}
+          aria-label="Add item to pantry"
+        >
+          <Plus size={20} />
+          Add to Pantry
+        </button>
+      )}
+    </div>
+  );
+}

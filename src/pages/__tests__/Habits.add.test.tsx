@@ -26,6 +26,11 @@ vi.mock('../../hooks/useHabitsQuery', () => ({
     isLoading: false,
     error: null,
   }),
+  useMergedHabitsConnectionQuery: () => ({
+    data: null,
+    isLoading: false,
+    error: null,
+  }),
   useCreateHabit: () => ({
     mutate: createHabitMock,
     isPending: false,

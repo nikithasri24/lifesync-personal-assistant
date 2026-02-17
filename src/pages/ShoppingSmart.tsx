@@ -1,12 +1,16 @@
 import React, { type ReactElement, useState, useEffect } from 'react';
+import { Bell, Settings } from 'lucide-react';
 import { logger } from '../services/logger';
 import { useToast } from '../hooks/useToast';
+import { useThemeColors } from '../hooks/useThemeColors';
 import type { ShoppingItem, ShoppingList } from '../shopping/types';
 import { distributeItemsToStores as distributeItems, type DistributionStrategy } from '../shopping/services/storeDistribution';
-import { ShoppingHeader } from '../shopping/components/layout/ShoppingHeader';
-import { ViewTabs } from '../shopping/components/layout/ViewTabs';
 import { ShoppingModals } from '../shopping/components/layout/ShoppingModals';
 import { MasterListView, DistributeView, StoreListsView, PantryView } from '../shopping/components/views';
+import { PantryGridView } from '../shopping/components/views/PantryGridView';
+import { StoresRichView } from '../shopping/components/views/StoresRichView';
+import { SegmentedControl } from '../components/ui/SegmentedControl';
+import { AddItemChoiceModal } from '../shopping/components/modals/AddItemChoiceModal';
 import {
   useVoiceInput,
   useBarcodeScanner,
@@ -18,18 +22,29 @@ import {
   useShoppingFormHandlers,
   usePantryHandlers,
 } from '../shopping/hooks';
-import { useStoresQuery } from '../hooks/useStoresQuery';
+import { useStoresQuery, useCreateStore } from '../hooks/useStoresQuery';
+import { AddStoreModal } from '../shopping/components/modals/AddStoreModal';
+import { StoreShoppingListModal } from '../shopping/components/modals/StoreShoppingListModal';
 import ConfirmDialog from '../components/DebtPayoffCalculator/ConfirmDialog';
+import type { Store } from '../shopping/types';
+
+type ViewType = 'list' | 'pantry' | 'stores';
 
 export default function ShoppingSmart(): ReactElement {
   const { shoppingItems, pantryItems, activeListId, isLoadingList, isLoadingItems, ensureActiveList } = useShoppingData();
   const { addShoppingItem, updateShoppingItem, deleteShoppingItem, toggleShoppingItem, createPantryItem, updatePantryItem, deletePantryItem } = useShoppingMutations({ activeListId, ensureActiveList, shoppingItems });
   const { data: stores = [], isLoading: isLoadingStores } = useStoresQuery();
+  const createStoreMutation = useCreateStore();
   const { showToast } = useToast();
+  const colors = useThemeColors();
 
   // All state hooks must be called before any conditional returns
+  const [activeView, setActiveView] = useState<ViewType>('list');
+  const [showAddChoiceModal, setShowAddChoiceModal] = useState(false);
+  const [showAddStoreModal, setShowAddStoreModal] = useState(false);
+  const [selectedStore, setSelectedStore] = useState<Store | null>(null);
+  const [selectedPantryItem, setSelectedPantryItem] = useState<any | null>(null);
   const [storeLists, setStoreLists] = useState<ShoppingList[]>([]);
-  const [activeView, setActiveView] = useState<'master' | 'stores' | 'distribute' | 'pantry'>('master');
   const [distributionStrategy, setDistributionStrategy] = useState<DistributionStrategy>('mixed');
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [isDistributing, setIsDistributing] = useState(false);
@@ -154,31 +169,24 @@ export default function ShoppingSmart(): ReactElement {
   const totalEstimatedCost = shoppingItems.reduce((sum: number, item: ShoppingItem) => sum + (item.estimatedPrice ?? 0), 0);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-      {/* Header */}
-      <ShoppingHeader
-        totalMasterItems={totalMasterItems}
-        storeListsCount={storeLists.length}
-        totalEstimatedCost={totalEstimatedCost}
-        isScanning={isScanning}
-        isListening={isListening}
-        onScanBarcode={() => { void handleStartBarcodeScanning(); }}
-        onVoiceAdd={handleVoiceInput}
-        onAddItem={() => setShowAddItem(true)}
-      />
+    <div className="min-h-screen" style={{ backgroundColor: colors.bg.primary }}>
+      {/* Segmented Control and Views - Both Mobile and Desktop */}
+      <div style={{ paddingTop: '0px' }}>
+        {/* Segmented Control */}
+        <div style={{ padding: '16px 20px' }}>
+          <SegmentedControl
+            segments={[
+              { value: 'list', label: 'List' },
+              { value: 'pantry', label: 'Pantry' },
+              { value: 'stores', label: 'Stores' },
+            ]}
+            value={activeView}
+            onChange={(value) => setActiveView(value as ViewType)}
+          />
+        </div>
 
-      {/* Navigation Tabs */}
-      <div className="bg-white rounded-xl shadow-sm border">
-        <ViewTabs
-          activeView={activeView}
-          totalMasterItems={totalMasterItems}
-          storeListsCount={storeLists.length}
-          onViewChange={setActiveView}
-        />
-
-        {/* Master List View */}
-        {activeView === 'master' && (
+        {/* Content based on active view */}
+        {activeView === 'list' && (
           <MasterListView
             items={shoppingItems}
             stores={stores}
@@ -190,41 +198,70 @@ export default function ShoppingSmart(): ReactElement {
           />
         )}
 
-        {/* Distribution View */}
-        {activeView === 'distribute' && (
-          <DistributeView
-            items={shoppingItems}
-            stores={stores}
-            distributionStrategy={distributionStrategy}
-            onStrategyChange={setDistributionStrategy}
-            onDistribute={distributeItemsToStores}
-            isDistributing={isDistributing}
+        {activeView === 'pantry' && (
+          <PantryGridView
+            items={pantryItems}
+            onItemClick={(item) => setSelectedPantryItem(item)}
+            onAddItem={() => setShowAddPantry(true)}
           />
         )}
 
-        {/* Store Lists View */}
         {activeView === 'stores' && (
-          <StoreListsView
-            storeLists={storeLists}
+          <StoresRichView
             stores={stores}
+            shoppingItems={shoppingItems}
+            onViewStoreList={(store) => setSelectedStore(store)}
+            onAddStore={() => setShowAddStoreModal(true)}
           />
         )}
       </div>
 
-      {/* Pantry View */}
-      {activeView === 'pantry' && (
-        <PantryView
-          pantryItems={pantryItems}
-          onAddItem={() => setShowAddPantry(true)}
-          onScanReceipt={() => setShowScanReceipt(true)}
-          onAddToShopping={addShoppingItem}
-          onUpdateItem={async (itemId, updates) => {
-            await updatePantryItem.mutateAsync({ itemId, updates });
-          }}
-          onDeleteItem={(itemId) => { void deletePantryItem.mutate(itemId); }}
-          onShowToast={showToast}
-        />
-      )}
+      {/* Floating Action Button - Terracotta Gradient */}
+      <button
+        onClick={() => setShowAddChoiceModal(true)}
+        className="fixed z-40 flex items-center justify-center rounded-full transition-transform duration-200 hover:scale-110 active:scale-95"
+        style={{
+          width: '64px',
+          height: '64px',
+          background: `linear-gradient(135deg, ${colors.accent.start} 0%, ${colors.accent.end} 100%)`,
+          bottom: '116px', // Above tab bar (100px) + spacing
+          right: '24px',
+          boxShadow: '0 4px 16px rgba(212, 165, 116, 0.35)',
+        }}
+        aria-label="Add shopping item"
+      >
+        <svg
+          width="28"
+          height="28"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="white"
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+      </button>
+
+      {/* Add Item Choice Modal */}
+      <AddItemChoiceModal
+        isOpen={showAddChoiceModal}
+        onClose={() => setShowAddChoiceModal(false)}
+        onSelectBarcode={() => {
+          setShowAddChoiceModal(false);
+          void handleStartBarcodeScanning();
+        }}
+        onSelectVoice={() => {
+          setShowAddChoiceModal(false);
+          handleVoiceInput();
+        }}
+        onSelectManual={() => {
+          setShowAddChoiceModal(false);
+          setShowAddItem(true);
+        }}
+      />
 
       <ShoppingModals
         showAddPantry={showAddPantry}
@@ -270,6 +307,32 @@ export default function ShoppingSmart(): ReactElement {
         }}
       />
 
+      {/* Add Store Modal */}
+      <AddStoreModal
+        isOpen={showAddStoreModal}
+        onClose={() => setShowAddStoreModal(false)}
+        onSubmit={(storeData) => {
+          createStoreMutation.mutate(storeData, {
+            onSuccess: () => {
+              showToast('Store added successfully!', 'success');
+              setShowAddStoreModal(false);
+            },
+            onError: (error) => {
+              showToast(`Failed to add store: ${error.message}`, 'error');
+            },
+          });
+        }}
+      />
+
+      {/* Store Shopping List Modal */}
+      <StoreShoppingListModal
+        isOpen={!!selectedStore}
+        onClose={() => setSelectedStore(null)}
+        store={selectedStore}
+        shoppingItems={shoppingItems}
+        onToggleItem={(itemId) => { void toggleShoppingItem(itemId); }}
+      />
+
       {/* Item deletion confirmation dialog */}
       {itemToDelete && (
         <ConfirmDialog
@@ -282,7 +345,6 @@ export default function ShoppingSmart(): ReactElement {
           onCancel={() => setItemToDelete(null)}
         />
       )}
-      </div>
     </div>
   );
 }

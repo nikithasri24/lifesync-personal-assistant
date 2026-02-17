@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Goals Page - Complete Design Specification</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+            background: linear-gradient(135deg, #E8DCC8 0%, #D4C5B0 100%);
+            padding: 40px 20px;
+        }
+
+        .spec-header {
+            background: white;
+            border-radius: 24px;
+            padding: 40px;
+            margin-bottom: 40px;
+            box-shadow: 0 20px 60px rgba(92, 74, 58, 0.15);
+            text-align: center;
+        }
+
+        .spec-header h1 {
+            font-size: 48px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 16px;
+        }
+
+        .spec-header p {
+            font-size: 20px;
+            color: #6B5847;
+            line-height: 1.6;
+        }
+
+        .selections {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 24px;
+        }
+
+        .selection-badge {
+            background: linear-gradient(135deg, rgba(212, 165, 116, 0.1) 0%, rgba(193, 139, 94, 0.1) 100%);
+            border: 2px solid #D4A574;
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        .selection-badge strong {
+            display: block;
+            font-size: 14px;
+            color: #C18B5E;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .selection-badge span {
+            font-size: 16px;
+            color: #5C4A3A;
+            font-weight: 600;
+        }
+
+        .section {
+            background: white;
+            border-radius: 24px;
+            padding: 40px;
+            margin-bottom: 40px;
+            box-shadow: 0 20px 60px rgba(92, 74, 58, 0.15);
+        }
+
+        .section-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: #5C4A3A;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .section-subtitle {
+            font-size: 18px;
+            color: #6B5847;
+            margin-bottom: 32px;
+        }
+
+        .phone-demo {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+            gap: 40px;
+            margin-top: 32px;
+        }
+
+        .phone {
+            background: #000;
+            border-radius: 40px;
+            padding: 10px;
+            margin: 0 auto;
+            max-width: 360px;
+        }
+
+        .screen {
+            border-radius: 32px;
+            overflow: hidden;
+            height: 640px;
+            position: relative;
+            background: #FAF8F5;
+            overflow-y: auto;
+        }
+
+        .status-bar {
+            padding: 8px 20px 4px;
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            background: rgba(250, 248, 245, 0.95);
+            backdrop-filter: blur(10px);
+            color: #5C4A3A;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .page-header {
+            background: white;
+            padding: 36px 20px 20px;
+            box-shadow: 0 1px 3px rgba(139, 111, 71, 0.08);
+            position: sticky;
+            top: 29px;
+            z-index: 9;
+        }
+
+        .page-header h1 {
+            font-size: 34px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 6px;
+        }
+
+        .page-header p {
+            font-size: 15px;
+            color: #9B8B7A;
+        }
+
+        .header-icons {
+            position: absolute;
+            top: 44px;
+            right: 20px;
+            display: flex;
+            gap: 12px;
+        }
+
+        .icon-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: rgba(212, 165, 116, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .segmented-control {
+            background: #F5F0EA;
+            border-radius: 12px;
+            padding: 4px;
+            margin: 16px 20px;
+            display: flex;
+            gap: 4px;
+        }
+
+        .segment {
+            flex: 1;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            text-align: center;
+            color: #9B8B7A;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .segment.active {
+            background: white;
+            color: #5C4A3A;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            padding: 0 20px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 2px 8px rgba(139, 111, 71, 0.08);
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: #9B8B7A;
+            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .goal-card {
+            background: white;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(139, 111, 71, 0.08);
+            border: 2px solid #E8DCC8;
+        }
+
+        .goal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .goal-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #5C4A3A;
+            flex: 1;
+        }
+
+        .priority-badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+            margin-left: 8px;
+        }
+
+        .priority-high {
+            background: linear-gradient(135deg, rgba(244, 67, 54, 0.15) 0%, rgba(211, 47, 47, 0.15) 100%);
+            color: #D32F2F;
+        }
+
+        .priority-medium {
+            background: linear-gradient(135deg, rgba(255, 152, 0, 0.15) 0%, rgba(245, 124, 0, 0.15) 100%);
+            color: #F57C00;
+        }
+
+        .priority-low {
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.15) 0%, rgba(56, 142, 60, 0.15) 100%);
+            color: #388E3C;
+        }
+
+        .progress-bar-container {
+            background: #F5F0EA;
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .progress-bar {
+            background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+
+        .goal-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: #9B8B7A;
+        }
+
+        .category-tag {
+            background: linear-gradient(135deg, rgba(212, 165, 116, 0.15) 0%, rgba(193, 139, 94, 0.15) 100%);
+            color: #C18B5E;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .fab {
+            position: absolute;
+            bottom: 100px;
+            right: 24px;
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);
+            box-shadow: 0 8px 24px rgba(193, 139, 94, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .fab:hover {
+            transform: scale(1.1);
+            box-shadow: 0 12px 32px rgba(193, 139, 94, 0.5);
+        }
+
+        .dream-card {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(139, 111, 71, 0.08);
+            margin-bottom: 12px;
+        }
+
+        .dream-visual {
+            height: 140px;
+            background: linear-gradient(135deg, rgba(212, 165, 116, 0.2) 0%, rgba(193, 139, 94, 0.2) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 56px;
+            position: relative;
+        }
+
+        .dream-content {
+            padding: 16px;
+        }
+
+        .dream-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #5C4A3A;
+            margin-bottom: 8px;
+        }
+
+        .dream-description {
+            font-size: 13px;
+            color: #6B5847;
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+
+        .dream-meta-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .dream-meta-item {
+            font-size: 12px;
+            color: #9B8B7A;
+        }
+
+        .dream-meta-item strong {
+            color: #C18B5E;
+            font-weight: 600;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .status-planning {
+            background: linear-gradient(135deg, rgba(33, 150, 243, 0.15) 0%, rgba(25, 118, 210, 0.15) 100%);
+            color: #1976D2;
+        }
+
+        .status-in-progress {
+            background: linear-gradient(135deg, rgba(255, 152, 0, 0.15) 0%, rgba(245, 124, 0, 0.15) 100%);
+            color: #F57C00;
+        }
+
+        .status-dreaming {
+            background: linear-gradient(135deg, rgba(156, 39, 176, 0.15) 0%, rgba(123, 31, 162, 0.15) 100%);
+            color: #7B1FA2;
+        }
+
+        .status-achieved {
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.15) 0%, rgba(56, 142, 60, 0.15) 100%);
+            color: #388E3C;
+        }
+
+        .label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #6B5847;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        .filter-bar {
+            display: flex;
+            gap: 8px;
+            padding: 0 20px;
+            margin-bottom: 16px;
+            overflow-x: auto;
+        }
+
+        .filter-pill {
+            background: rgba(212, 165, 116, 0.1);
+            color: #C18B5E;
+            border: 2px solid #E8DCC8;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            white-space: nowrap;
+            cursor: pointer;
+        }
+
+        .filter-pill.active {
+            background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);
+            color: white;
+            border-color: #C18B5E;
+        }
+    </style>
+</head>
+<body>
+    <!-- SPECIFICATION HEADER -->
+    <div class="spec-header">
+        <h1>🎯 Goals Page Design</h1>
+        <p>Life goals and dreams tracking with progress monitoring and milestone management</p>
+
+        <div class="selections">
+            <div class="selection-badge" style="border-color: #C18B5E; background: linear-gradient(135deg, rgba(212, 165, 116, 0.15) 0%, rgba(193, 139, 94, 0.15) 100%);">
+                <strong>Navigation</strong>
+                <span>2 Tabs (Goals & Dreams)</span>
+            </div>
+            <div class="selection-badge">
+                <strong>Goals Tab</strong>
+                <span>Progress Tracking</span>
+            </div>
+            <div class="selection-badge">
+                <strong>Dreams Tab</strong>
+                <span>Vision Board Style</span>
+            </div>
+            <div class="selection-badge">
+                <strong>Stats Overview</strong>
+                <span>3 Key Metrics</span>
+            </div>
+            <div class="selection-badge">
+                <strong>Categories</strong>
+                <span>Personal, Health, Career, Financial, Fitness</span>
+            </div>
+            <div class="selection-badge">
+                <strong>Priorities</strong>
+                <span>Low, Medium, High, Critical</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 1: GOALS -->
+    <div class="section">
+        <h2 class="section-title">📱 Tab 1: Goals - Progress Tracking</h2>
+        <p class="section-subtitle">Track actionable goals with progress bars, milestones, and deadlines</p>
+
+        <div class="phone-demo">
+            <div>
+                <div class="label">Goals Tab - List View</div>
+                <div class="phone">
+                    <div class="screen">
+                        <div class="status-bar">
+                            <span>2:00</span>
+                            <span>🔋 96%</span>
+                        </div>
+
+                        <div class="page-header">
+                            <h1>Life Goals</h1>
+                            <p>Track your progress</p>
+                            <div class="header-icons">
+                                <div class="icon-btn">📋</div>
+                                <div class="icon-btn">⚙️</div>
+                            </div>
+                        </div>
+
+                        <div class="segmented-control">
+                            <div class="segment active">Goals</div>
+                            <div class="segment">Dreams</div>
+                        </div>
+
+                        <!-- Stats Cards -->
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-number">8</div>
+                                <div class="stat-label">Total Goals</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">5</div>
+                                <div class="stat-label">In Progress</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">3</div>
+                                <div class="stat-label">Completed</div>
+                            </div>
+                        </div>
+
+                        <!-- Filter Bar -->
+                        <div class="filter-bar">
+                            <div class="filter-pill active">All</div>
+                            <div class="filter-pill">Active</div>
+                            <div class="filter-pill">Completed</div>
+                            <div class="filter-pill">Health</div>
+                            <div class="filter-pill">Career</div>
+                        </div>
+
+                        <!-- Goals List -->
+                        <div style="padding: 0 20px 100px;">
+                            <!-- Goal Card 1 - High Priority -->
+                            <div class="goal-card">
+                                <div class="goal-header">
+                                    <div class="goal-title">Run a Marathon</div>
+                                    <div class="priority-badge priority-high">High</div>
+                                </div>
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar" style="width: 65%;"></div>
+                                </div>
+                                <div class="goal-meta">
+                                    <span>65% complete</span>
+                                    <span>🏃 Fitness</span>
+                                </div>
+                                <div style="margin-top: 8px; font-size: 12px; color: #9B8B7A;">
+                                    📅 Target: Dec 15, 2026
+                                </div>
+                            </div>
+
+                            <!-- Goal Card 2 - Medium Priority -->
+                            <div class="goal-card">
+                                <div class="goal-header">
+                                    <div class="goal-title">Save $50,000 for House Down Payment</div>
+                                    <div class="priority-badge priority-medium">Medium</div>
+                                </div>
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar" style="width: 42%;"></div>
+                                </div>
+                                <div class="goal-meta">
+                                    <span>$21,000 / $50,000</span>
+                                    <span>💰 Financial</span>
+                                </div>
+                                <div style="margin-top: 8px; font-size: 12px; color: #9B8B7A;">
+                                    📅 Target: Jun 30, 2027
+                                </div>
+                            </div>
+
+                            <!-- Goal Card 3 - Completed -->
+                            <div class="goal-card" style="opacity: 0.7; border-color: #4CAF50;">
+                                <div class="goal-header">
+                                    <div class="goal-title">Learn Spanish Basics</div>
+                                    <div class="priority-badge priority-low">✓ Done</div>
+                                </div>
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar" style="width: 100%; background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%);"></div>
+                                </div>
+                                <div class="goal-meta">
+                                    <span>100% complete</span>
+                                    <span>📚 Personal</span>
+                                </div>
+                                <div style="margin-top: 8px; font-size: 12px; color: #388E3C;">
+                                    ✓ Completed on Feb 10, 2026
+                                </div>
+                            </div>
+
+                            <!-- Goal Card 4 - High Priority -->
+                            <div class="goal-card">
+                                <div class="goal-header">
+                                    <div class="goal-title">Get Promoted to Senior Engineer</div>
+                                    <div class="priority-badge priority-high">High</div>
+                                </div>
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar" style="width: 80%;"></div>
+                                </div>
+                                <div class="goal-meta">
+                                    <span>80% complete</span>
+                                    <span>💼 Career</span>
+                                </div>
+                                <div style="margin-top: 8px; font-size: 12px; color: #9B8B7A;">
+                                    📅 Target: Mar 31, 2026
+                                </div>
+                            </div>
+
+                            <!-- Goal Card 5 - Low Priority -->
+                            <div class="goal-card">
+                                <div class="goal-header">
+                                    <div class="goal-title">Read 24 Books This Year</div>
+                                    <div class="priority-badge priority-low">Low</div>
+                                </div>
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar" style="width: 25%;"></div>
+                                </div>
+                                <div class="goal-meta">
+                                    <span>6 / 24 books</span>
+                                    <span>📖 Personal</span>
+                                </div>
+                                <div style="margin-top: 8px; font-size: 12px; color: #9B8B7A;">
+                                    📅 Target: Dec 31, 2026
+                                </div>
+                            </div>
+
+                            <!-- Goal Card 6 - Medium Priority with Milestones -->
+                            <div class="goal-card">
+                                <div class="goal-header">
+                                    <div class="goal-title">Lose 20 Pounds</div>
+                                    <div class="priority-badge priority-medium">Medium</div>
+                                </div>
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar" style="width: 55%;"></div>
+                                </div>
+                                <div class="goal-meta">
+                                    <span>11 / 20 lbs lost</span>
+                                    <span>💪 Health</span>
+                                </div>
+                                <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #F5F0EA;">
+                                    <div style="font-size: 12px; font-weight: 600; color: #5C4A3A; margin-bottom: 8px;">Milestones:</div>
+                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                                        <div style="width: 18px; height: 18px; border-radius: 50%; background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 10px; flex-shrink: 0;">✓</div>
+                                        <div style="font-size: 12px; color: #388E3C; text-decoration: line-through;">Lose first 5 lbs</div>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                                        <div style="width: 18px; height: 18px; border-radius: 50%; background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 10px; flex-shrink: 0;">✓</div>
+                                        <div style="font-size: 12px; color: #388E3C; text-decoration: line-through;">Reach 10 lbs milestone</div>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <div style="width: 18px; height: 18px; border-radius: 50%; background: rgba(212, 165, 116, 0.2); border: 2px solid #D4A574; flex-shrink: 0;"></div>
+                                        <div style="font-size: 12px; color: #6B5847;">Reach final goal weight</div>
+                                    </div>
+                                </div>
+                                <div style="margin-top: 8px; font-size: 12px; color: #9B8B7A;">
+                                    📅 Target: Aug 31, 2026
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- FAB -->
+                        <div class="fab">+</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 2: DREAMS -->
+    <div class="section">
+        <h2 class="section-title">📱 Tab 2: Dreams - Vision Board</h2>
+        <p class="section-subtitle">Long-term aspirations and bucket list items with visual inspiration</p>
+
+        <div class="phone-demo">
+            <div>
+                <div class="label">Dreams Tab - Card View</div>
+                <div class="phone">
+                    <div class="screen">
+                        <div class="status-bar">
+                            <span>2:00</span>
+                            <span>🔋 96%</span>
+                        </div>
+
+                        <div class="page-header">
+                            <h1>Life Dreams</h1>
+                            <p>Your bucket list</p>
+                            <div class="header-icons">
+                                <div class="icon-btn">📋</div>
+                                <div class="icon-btn">⚙️</div>
+                            </div>
+                        </div>
+
+                        <div class="segmented-control">
+                            <div class="segment">Goals</div>
+                            <div class="segment active">Dreams</div>
+                        </div>
+
+                        <!-- Stats Cards -->
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-number">12</div>
+                                <div class="stat-label">Total Dreams</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">4</div>
+                                <div class="stat-label">In Progress</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">2</div>
+                                <div class="stat-label">Achieved</div>
+                            </div>
+                        </div>
+
+                        <!-- Filter Bar -->
+                        <div class="filter-bar">
+                            <div class="filter-pill active">All</div>
+                            <div class="filter-pill">Active</div>
+                            <div class="filter-pill">Achieved</div>
+                            <div class="filter-pill">Travel</div>
+                            <div class="filter-pill">Experiences</div>
+                        </div>
+
+                        <!-- Dreams List -->
+                        <div style="padding: 0 20px 100px;">
+                            <!-- Dream Card 1 -->
+                            <div class="dream-card">
+                                <div class="dream-visual">
+                                    🗼
+                                    <div style="position: absolute; top: 12px; right: 12px;">
+                                        <div class="status-badge status-planning">Planning</div>
+                                    </div>
+                                </div>
+                                <div class="dream-content">
+                                    <div class="dream-title">Visit Paris & See the Eiffel Tower</div>
+                                    <div class="dream-description">Experience the city of lights, visit museums, taste authentic French cuisine</div>
+                                    <div class="dream-meta-grid">
+                                        <div class="dream-meta-item">
+                                            <strong>💰 Cost:</strong> $5,000
+                                        </div>
+                                        <div class="dream-meta-item">
+                                            <strong>⏱️ Timeline:</strong> 2027
+                                        </div>
+                                    </div>
+                                    <div class="category-tag">✈️ Travel</div>
+                                </div>
+                            </div>
+
+                            <!-- Dream Card 2 -->
+                            <div class="dream-card">
+                                <div class="dream-visual">
+                                    🏠
+                                    <div style="position: absolute; top: 12px; right: 12px;">
+                                        <div class="status-badge status-in-progress">In Progress</div>
+                                    </div>
+                                </div>
+                                <div class="dream-content">
+                                    <div class="dream-title">Own a House with a Garden</div>
+                                    <div class="dream-description">Buy a home with outdoor space for gardening and family gatherings</div>
+                                    <div class="dream-meta-grid">
+                                        <div class="dream-meta-item">
+                                            <strong>💰 Cost:</strong> $500,000
+                                        </div>
+                                        <div class="dream-meta-item">
+                                            <strong>⏱️ Timeline:</strong> 5-10 years
+                                        </div>
+                                    </div>
+                                    <div class="category-tag">🏡 Lifestyle</div>
+                                </div>
+                            </div>
+
+                            <!-- Dream Card 3 - Achieved -->
+                            <div class="dream-card" style="opacity: 0.9;">
+                                <div class="dream-visual">
+                                    🎓
+                                    <div style="position: absolute; top: 12px; right: 12px;">
+                                        <div class="status-badge status-achieved">✓ Achieved</div>
+                                    </div>
+                                </div>
+                                <div class="dream-content">
+                                    <div class="dream-title">Complete Master's Degree</div>
+                                    <div class="dream-description">Graduate with honors in Computer Science from Stanford</div>
+                                    <div style="font-size: 12px; color: #388E3C; margin-bottom: 12px;">
+                                        ✓ Achieved on May 15, 2025
+                                    </div>
+                                    <div class="category-tag">🎯 Achievements</div>
+                                </div>
+                            </div>
+
+                            <!-- Dream Card 4 -->
+                            <div class="dream-card">
+                                <div class="dream-visual">
+                                    🏔️
+                                    <div style="position: absolute; top: 12px; right: 12px;">
+                                        <div class="status-badge status-dreaming">Dreaming</div>
+                                    </div>
+                                </div>
+                                <div class="dream-content">
+                                    <div class="dream-title">Climb Mount Kilimanjaro</div>
+                                    <div class="dream-description">Summit Africa's highest peak and experience the adventure of a lifetime</div>
+                                    <div class="dream-meta-grid">
+                                        <div class="dream-meta-item">
+                                            <strong>💰 Cost:</strong> $8,000
+                                        </div>
+                                        <div class="dream-meta-item">
+                                            <strong>⏱️ Timeline:</strong> Someday
+                                        </div>
+                                    </div>
+                                    <div class="category-tag">🎢 Experiences</div>
+                                </div>
+                            </div>
+
+                            <!-- Dream Card 5 -->
+                            <div class="dream-card">
+                                <div class="dream-visual">
+                                    🚗
+                                    <div style="position: absolute; top: 12px; right: 12px;">
+                                        <div class="status-badge status-planning">Planning</div>
+                                    </div>
+                                </div>
+                                <div class="dream-content">
+                                    <div class="dream-title">Buy a Tesla Model Y</div>
+                                    <div class="dream-description">Own an electric vehicle for sustainable transportation</div>
+                                    <div class="dream-meta-grid">
+                                        <div class="dream-meta-item">
+                                            <strong>💰 Cost:</strong> $60,000
+                                        </div>
+                                        <div class="dream-meta-item">
+                                            <strong>⏱️ Timeline:</strong> 2-3 years
+                                        </div>
+                                    </div>
+                                    <div class="category-tag">🛍️ Possessions</div>
+                                </div>
+                            </div>
+
+                            <!-- Dream Card 6 -->
+                            <div class="dream-card">
+                                <div class="dream-visual">
+                                    📚
+                                    <div style="position: absolute; top: 12px; right: 12px;">
+                                        <div class="status-badge status-in-progress">In Progress</div>
+                                    </div>
+                                </div>
+                                <div class="dream-content">
+                                    <div class="dream-title">Write & Publish a Novel</div>
+                                    <div class="dream-description">Complete a fiction novel and get it published traditionally</div>
+                                    <div class="dream-meta-grid">
+                                        <div class="dream-meta-item">
+                                            <strong>💰 Cost:</strong> $2,000
+                                        </div>
+                                        <div class="dream-meta-item">
+                                            <strong>⏱️ Timeline:</strong> 3-5 years
+                                        </div>
+                                    </div>
+                                    <div class="category-tag">🎯 Achievements</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- FAB -->
+                        <div class="fab">+</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DESIGN FEATURES -->
+    <div class="section">
+        <h2 class="section-title">✨ Key Design Features</h2>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; margin-top: 24px;">
+            <div style="background: rgba(212, 165, 116, 0.1); border-radius: 16px; padding: 24px;">
+                <h3 style="font-size: 20px; font-weight: 700; color: #5C4A3A; margin-bottom: 12px;">📊 Progress Tracking</h3>
+                <ul style="font-size: 14px; color: #6B5847; line-height: 2;">
+                    <li>Visual progress bars with percentage</li>
+                    <li>Current/target value tracking (weight, money, books, etc.)</li>
+                    <li>Milestone checklist expansion</li>
+                    <li>Target date and completion date display</li>
+                    <li>Real-time progress updates</li>
+                </ul>
+            </div>
+
+            <div style="background: rgba(212, 165, 116, 0.1); border-radius: 16px; padding: 24px;">
+                <h3 style="font-size: 20px; font-weight: 700; color: #5C4A3A; margin-bottom: 12px;">🎯 Priority System</h3>
+                <ul style="font-size: 14px; color: #6B5847; line-height: 2;">
+                    <li>Color-coded priority badges (High/Medium/Low/Critical)</li>
+                    <li>Visual hierarchy for quick scanning</li>
+                    <li>Completed goals shown with checkmark</li>
+                    <li>Opacity reduction for completed items</li>
+                    <li>Status-based filtering</li>
+                </ul>
+            </div>
+
+            <div style="background: rgba(212, 165, 116, 0.1); border-radius: 16px; padding: 24px;">
+                <h3 style="font-size: 20px; font-weight: 700; color: #5C4A3A; margin-bottom: 12px;">💭 Dreams Visualization</h3>
+                <ul style="font-size: 14px; color: #6B5847; line-height: 2;">
+                    <li>Large emoji visuals for quick identification</li>
+                    <li>Cost and timeline estimation display</li>
+                    <li>Status badges (Dreaming/Planning/In Progress/Achieved)</li>
+                    <li>Category tags for organization</li>
+                    <li>Rich descriptions and context</li>
+                </ul>
+            </div>
+
+            <div style="background: rgba(212, 165, 116, 0.1); border-radius: 16px; padding: 24px;">
+                <h3 style="font-size: 20px; font-weight: 700; color: #5C4A3A; margin-bottom: 12px;">📈 Stats Overview</h3>
+                <ul style="font-size: 14px; color: #6B5847; line-height: 2;">
+                    <li>3-card grid showing totals and progress</li>
+                    <li>Large gradient numbers for impact</li>
+                    <li>Separated stats for Goals vs Dreams</li>
+                    <li>Quick at-a-glance performance metrics</li>
+                    <li>Motivational visual feedback</li>
+                </ul>
+            </div>
+
+            <div style="background: rgba(212, 165, 116, 0.1); border-radius: 16px; padding: 24px;">
+                <h3 style="font-size: 20px; font-weight: 700; color: #5C4A3A; margin-bottom: 12px;">🏷️ Categories & Filters</h3>
+                <ul style="font-size: 14px; color: #6B5847; line-height: 2;">
+                    <li>Horizontal scrolling filter pills</li>
+                    <li>Goals: Personal, Health, Career, Financial, Fitness</li>
+                    <li>Dreams: Travel, Experiences, Possessions, Achievements</li>
+                    <li>Active/Completed status filtering</li>
+                    <li>Quick filter switching</li>
+                </ul>
+            </div>
+
+            <div style="background: rgba(212, 165, 116, 0.1); border-radius: 16px; padding: 24px;">
+                <h3 style="font-size: 20px; font-weight: 700; color: #5C4A3A; margin-bottom: 12px;">🎨 Consistent Theme</h3>
+                <ul style="font-size: 14px; color: #6B5847; line-height: 2;">
+                    <li>Terracotta color palette throughout</li>
+                    <li>Gradient accents on numbers and progress</li>
+                    <li>iOS-native design patterns</li>
+                    <li>Segmented control for tab navigation</li>
+                    <li>Smooth shadows and rounded corners</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- COMPLETION -->
+    <div class="section" style="background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%); color: white; text-align: center;">
+        <h2 class="section-title" style="color: white; justify-content: center;">🎉 Goals Design Complete</h2>
+        <p style="font-size: 18px; line-height: 1.8; opacity: 0.95;">
+            This design spec covers the complete Goals page experience with progress tracking,<br>
+            milestone management, dream visualization, and motivational stats.<br><br>
+            <strong>Ready for implementation with consistent terracotta theming!</strong>
+        </p>
+    </div>
+</body>
+</html>

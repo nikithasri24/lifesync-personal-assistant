@@ -5,7 +5,7 @@
  * Demonstrates the pattern for server state management
  */
 
-import { useQuery, useMutation, useQueryClient, type UseQueryResult, type UseMutationResult } from '@tantml:react-query';
+import { useQuery, useMutation, useQueryClient, type UseQueryResult, type UseMutationResult } from '@tanstack/react-query';
 import { queryKeys, queryOptions } from '@/lib/react-query';
 import {
   getNotes,

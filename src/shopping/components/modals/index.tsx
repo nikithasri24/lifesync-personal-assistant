@@ -10,3 +10,5 @@ export { ReceiptScanningModal } from './ReceiptScanningModal';
 export { AddPantryItemModal } from './AddPantryItemModal';
 export { ReplenishModal } from './ReplenishModal';
 export { StoreSuggestionsModal } from './StoreSuggestionsModal';
+export { AddStoreModal } from './AddStoreModal';
+export { StoreShoppingListModal } from './StoreShoppingListModal';
