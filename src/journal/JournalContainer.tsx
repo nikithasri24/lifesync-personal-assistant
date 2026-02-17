@@ -290,29 +290,40 @@ export const JournalContainer: React.FC = () => {
             </div>
 
             {/* Tag Filters */}
-            {showFilters && availableTags.length > 0 && (
-              <div className="flex gap-2 flex-wrap mb-4 p-4 rounded-xl" style={{ backgroundColor: colors.bg.secondary }}>
-                <div className="w-full text-xs font-semibold mb-2" style={{ color: colors.text.secondary }}>
+            {showFilters && (
+              <div className="mb-4 p-4 rounded-xl" style={{ backgroundColor: colors.bg.secondary }}>
+                <div className="text-xs font-semibold mb-3" style={{ color: colors.text.secondary }}>
                   Filter by tags:
                 </div>
-                {availableTags.map((tag) => {
-                  const isSelected = selectedTags.includes(tag);
-                  return (
-                    <button
-                      key={tag}
-                      type="button"
-                      onClick={() => toggleTagFilter(tag)}
-                      className="px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
-                      style={{
-                        backgroundColor: isSelected ? 'rgba(212, 165, 116, 0.3)' : colors.bg.tertiary,
-                        color: isSelected ? '#C18B5E' : colors.text.primary,
-                        border: isSelected ? '2px solid #C18B5E' : '2px solid transparent',
-                      }}
-                    >
-                      {tag}
-                    </button>
-                  );
-                })}
+                {availableTags.length > 0 ? (
+                  <div className="flex gap-2 flex-wrap">
+                    {availableTags.map((tag) => {
+                      const isSelected = selectedTags.includes(tag);
+                      return (
+                        <button
+                          key={tag}
+                          type="button"
+                          onClick={() => toggleTagFilter(tag)}
+                          className="px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
+                          style={{
+                            backgroundColor: isSelected ? 'rgba(212, 165, 116, 0.3)' : colors.bg.tertiary,
+                            color: isSelected ? '#C18B5E' : colors.text.primary,
+                            border: isSelected ? '2px solid #C18B5E' : '2px solid transparent',
+                          }}
+                        >
+                          {tag}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-6">
+                    <div className="text-3xl mb-2 opacity-50">🏷️</div>
+                    <p className="text-xs" style={{ color: colors.text.tertiary }}>
+                      No tags yet. Add tags to your entries to filter by them.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 
