@@ -74,7 +74,7 @@ export function QuickCapture({ variant = 'floating', onCaptured, className = '' 
         {/* FAB Button */}
         <button
           onClick={() => setIsOpen(true)}
-          className={`fixed bottom-6 right-6 z-50 w-14 h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-110 ${className}`}
+          className={`fixed bottom-6 right-6 z-50 w-14 h-14 bg-[#C18B5E] hover:bg-[#B5795A] text-white rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-110 ${className}`}
           aria-label="Quick capture"
         >
           <Plus className="w-7 h-7" />
@@ -126,7 +126,7 @@ export function QuickCapture({ variant = 'floating', onCaptured, className = '' 
                   <button
                     onClick={handleSubmit}
                     disabled={!content.trim() || createItem.isPending}
-                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg font-medium transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 bg-[#C18B5E] hover:bg-[#B5795A] disabled:opacity-50 text-white rounded-lg font-medium transition-colors"
                   >
                     {createItem.isPending ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
@@ -154,7 +154,7 @@ export function QuickCapture({ variant = 'floating', onCaptured, className = '' 
           onChange={(e) => setContent(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Quick capture... (Enter to save)"
-          className="w-full px-4 py-2 pl-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-white"
+          className="w-full px-4 py-2 pl-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#E5B88A] dark:bg-gray-800 dark:text-white"
           disabled={createItem.isPending}
         />
         <Inbox className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -162,7 +162,7 @@ export function QuickCapture({ variant = 'floating', onCaptured, className = '' 
       <button
         onClick={handleSubmit}
         disabled={!content.trim() || createItem.isPending}
-        className="p-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg"
+        className="p-2 bg-[#C18B5E] hover:bg-[#B5795A] disabled:opacity-50 text-white rounded-lg"
       >
         {createItem.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
       </button>

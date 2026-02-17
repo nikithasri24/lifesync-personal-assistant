@@ -1,5 +1,5 @@
 import React, { type ReactElement, useState, useEffect } from 'react';
-import { Bell, Settings } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { logger } from '../services/logger';
 import { useToast } from '../hooks/useToast';
 import { useThemeColors } from '../hooks/useThemeColors';
@@ -10,7 +10,9 @@ import { ShoppingModals } from '../shopping/components/layout/ShoppingModals';
 import { MasterListView, DistributeView, StoreListsView, PantryView, ShoppingHistoryView } from '../shopping/components/views';
 import { PantryGridView } from '../shopping/components/views/PantryGridView';
 import { StoresRichView } from '../shopping/components/views/StoresRichView';
-import { SegmentedControl } from '../components/ui/SegmentedControl';
+import { SegmentedControlV2 } from '../components/v2/SegmentedControlV2';
+import { FABV2 } from '../components/v2/FABV2';
+import { ShoppingHeaderV2 } from '../shopping/components/v2/ShoppingHeaderV2';
 import { AddItemChoiceModal } from '../shopping/components/modals/AddItemChoiceModal';
 import {
   useVoiceInput,
@@ -98,7 +100,7 @@ export default function ShoppingSmart(): ReactElement {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
         <div className="text-center">
-          <div className="h-12 w-12 animate-spin rounded-full border-4 border-blue-500 border-t-transparent mx-auto mb-4" />
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#C18B5E] border-t-transparent mx-auto mb-4" />
           <p className="text-gray-600">Loading shopping data...</p>
         </div>
       </div>
@@ -194,6 +196,7 @@ export default function ShoppingSmart(): ReactElement {
   };
 
   const totalMasterItems = shoppingItems.filter((item: ShoppingItem) => !item.purchased).length;
+  const completedItems = shoppingItems.filter((item: ShoppingItem) => item.purchased).length;
   const totalEstimatedCost = shoppingItems.reduce((sum: number, item: ShoppingItem) => sum + (item.estimatedPrice ?? 0), 0);
 
   // Wrapper for toggle that prompts to add to pantry when marking as purchased
@@ -212,88 +215,79 @@ export default function ShoppingSmart(): ReactElement {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: colors.bg.primary }}>
-      {/* Segmented Control and Views - Both Mobile and Desktop */}
-      <div style={{ paddingTop: '0px' }}>
-        {/* Segmented Control */}
-        <div style={{ padding: '16px 20px' }}>
-          <SegmentedControl
-            segments={[
-              { value: 'list', label: 'List' },
-              { value: 'pantry', label: 'Pantry' },
-              { value: 'stores', label: 'Stores' },
-              { value: 'history', label: 'History' },
-            ]}
-            value={activeView}
-            onChange={(value) => setActiveView(value as ViewType)}
-          />
-        </div>
+      {/* Header with Stats */}
+      <ShoppingHeaderV2
+        title="Shopping"
+        subtitle={activeView === 'list' ? 'Smart grocery management' : activeView === 'pantry' ? `${pantryItems.length} items at home` : activeView === 'stores' ? `${stores.length} stores saved` : 'Purchase history'}
+        itemsCount={shoppingItems.length}
+        completedCount={completedItems}
+        totalCost={totalEstimatedCost}
+        onVoiceClick={handleVoiceInput}
+        onBarcodeClick={() => { void handleStartBarcodeScanning(); }}
+      />
 
-        {/* Content based on active view */}
-        {activeView === 'list' && (
-          <MasterListView
-            items={shoppingItems}
-            stores={stores}
-            onToggleItem={(itemId) => { void handleToggleItem(itemId); }}
-            onEditItem={startEditItem}
-            onRequestDeleteItem={(itemId) => setItemToDelete(itemId)}
-            onFindStores={openStoreSuggestions}
-            onShowStorePrefs={() => setShowStorePrefs(true)}
-          />
-        )}
-
-        {activeView === 'pantry' && (
-          <PantryGridView
-            items={pantryItems}
-            onItemClick={(item) => setSelectedPantryItem(item)}
-            onAddItem={() => setShowAddPantry(true)}
-          />
-        )}
-
-        {activeView === 'stores' && (
-          <StoresRichView
-            stores={stores}
-            shoppingItems={shoppingItems}
-            onViewStoreList={(store) => setSelectedStore(store)}
-            onAddStore={() => setShowAddStoreModal(true)}
-          />
-        )}
-
-        {activeView === 'history' && (
-          <ShoppingHistoryView
-            items={shoppingItems}
-            onScanReceipt={() => setShowScanReceipt(true)}
-          />
-        )}
+      {/* Segmented Control */}
+      <div style={{ padding: '16px 20px' }}>
+        <SegmentedControlV2
+          segments={[
+            { value: 'list', label: 'List' },
+            { value: 'pantry', label: 'Pantry' },
+            { value: 'stores', label: 'Stores' },
+            { value: 'history', label: 'History' },
+          ]}
+          value={activeView}
+          onChange={(value) => setActiveView(value as ViewType)}
+          aria-label="Shopping view selector"
+        />
       </div>
 
-      {/* Floating Action Button - Terracotta Gradient */}
-      <button
-        onClick={() => setShowAddChoiceModal(true)}
-        className="fixed z-40 flex items-center justify-center rounded-full transition-transform duration-200 hover:scale-110 active:scale-95"
-        style={{
-          width: '64px',
-          height: '64px',
-          background: `linear-gradient(135deg, ${colors.accent.start} 0%, ${colors.accent.end} 100%)`,
-          bottom: '116px', // Above tab bar (100px) + spacing
-          right: '24px',
-          boxShadow: '0 4px 16px rgba(212, 165, 116, 0.35)',
-        }}
-        aria-label="Add shopping item"
-      >
-        <svg
-          width="28"
-          height="28"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="white"
-          strokeWidth="3"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <line x1="12" y1="5" x2="12" y2="19"></line>
-          <line x1="5" y1="12" x2="19" y2="12"></line>
-        </svg>
-      </button>
+      {/* Content based on active view */}
+      {activeView === 'list' && (
+        <MasterListView
+          items={shoppingItems}
+          stores={stores}
+          onToggleItem={(itemId) => { void handleToggleItem(itemId); }}
+          onEditItem={startEditItem}
+          onRequestDeleteItem={(itemId) => setItemToDelete(itemId)}
+          onFindStores={openStoreSuggestions}
+          onShowStorePrefs={() => setShowStorePrefs(true)}
+        />
+      )}
+
+      {activeView === 'pantry' && (
+        <PantryGridView
+          items={pantryItems}
+          onItemClick={(item) => setSelectedPantryItem(item)}
+          onAddItem={() => setShowAddPantry(true)}
+        />
+      )}
+
+      {activeView === 'stores' && (
+        <StoresRichView
+          stores={stores}
+          shoppingItems={shoppingItems}
+          onViewStoreList={(store) => setSelectedStore(store)}
+          onAddStore={() => setShowAddStoreModal(true)}
+        />
+      )}
+
+      {activeView === 'history' && (
+        <ShoppingHistoryView
+          items={shoppingItems}
+          onScanReceipt={() => setShowScanReceipt(true)}
+        />
+      )}
+
+      {/* Floating Action Button - V2 Component */}
+      <div className="fixed z-50" style={{ bottom: '116px', right: '24px' }}>
+        <FABV2
+          icon={Plus}
+          onClick={() => setShowAddChoiceModal(true)}
+          position="bottom-right"
+          size="lg"
+          className="!static"
+        />
+      </div>
 
       {/* Add Item Choice Modal */}
       <AddItemChoiceModal

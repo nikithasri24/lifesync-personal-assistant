@@ -47,7 +47,7 @@ export const EventCard: React.FC<EventCardProps> = ({
       case 'holiday':
         return 'bg-emerald-500 dark:bg-emerald-600 border-emerald-600 text-white';
       default:
-        return 'bg-indigo-500 dark:bg-indigo-600 border-indigo-600 text-white';
+        return 'bg-[#C18B5E] dark:bg-[#C18B5E] border-[#C18B5E] text-white';
     }
   };
 

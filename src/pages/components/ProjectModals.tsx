@@ -49,7 +49,7 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder="Enter project name"
-              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder-slate-500"
+              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder-slate-400 focus:border-[#C18B5E] focus:outline-none focus:ring-1 focus:ring-[#E5B88A] dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder-slate-500"
             />
           </div>
 
@@ -62,7 +62,7 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="Enter project description"
               rows={3}
-              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder-slate-500"
+              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder-slate-400 focus:border-[#C18B5E] focus:outline-none focus:ring-1 focus:ring-[#E5B88A] dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder-slate-500"
             />
           </div>
 
@@ -76,7 +76,7 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
                 value={formData.icon}
                 onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
                 placeholder="📁"
-                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-2xl text-center focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-slate-600 dark:bg-slate-700"
+                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-2xl text-center focus:border-[#C18B5E] focus:outline-none focus:ring-1 focus:ring-[#E5B88A] dark:border-slate-600 dark:bg-slate-700"
               />
             </div>
             <div>
@@ -87,7 +87,7 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
                 type="color"
                 value={formData.color}
                 onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                className="mt-1 h-[42px] w-full rounded-lg border border-slate-300 bg-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-slate-600 dark:bg-slate-700"
+                className="mt-1 h-[42px] w-full rounded-lg border border-slate-300 bg-white focus:border-[#C18B5E] focus:outline-none focus:ring-1 focus:ring-[#E5B88A] dark:border-slate-600 dark:bg-slate-700"
               />
             </div>
           </div>
@@ -99,7 +99,7 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
             <select
               value={formData.status}
               onChange={(e) => setFormData({ ...formData, status: e.target.value as ProjectFormData['status'] })}
-              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 focus:border-[#C18B5E] focus:outline-none focus:ring-1 focus:ring-[#E5B88A] dark:border-slate-600 dark:bg-slate-700 dark:text-white"
             >
               <option value="active">Active</option>
               <option value="on_hold">On Hold</option>
@@ -118,7 +118,7 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
           <button
             onClick={() => void (editingProject ? handleUpdateProject() : handleCreateProject())}
             disabled={!formData.name.trim()}
-            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="rounded-lg bg-[#C18B5E] px-4 py-2 text-sm font-medium text-white hover:bg-[#B5795A] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {editingProject ? 'Update Project' : 'Create Project'}
           </button>

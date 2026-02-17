@@ -39,7 +39,7 @@ export default function DatePickerPopover({ value, onChange, weekStartsOn = 0 }:
 
   return (
     <Popover className="relative">
-      <Popover.Button className="inline-flex items-center gap-2 rounded-full border-2 border-indigo-500 bg-slate-800 px-3 py-2 text-sm font-medium text-white transition hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+      <Popover.Button className="inline-flex items-center gap-2 rounded-full border-2 border-[#C18B5E] bg-slate-800 px-3 py-2 text-sm font-medium text-white transition hover:bg-[#B5795A] focus:outline-none focus:ring-2 focus:ring-[#E5B88A]">
         <Calendar className="h-4 w-4" />
         {format(selected, 'MMM d, yyyy')}
       </Popover.Button>
@@ -52,7 +52,7 @@ export default function DatePickerPopover({ value, onChange, weekStartsOn = 0 }:
           <button
             type="button"
             aria-label="Previous month"
-            className="flex h-8 w-8 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="flex h-8 w-8 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-[#E5B88A]"
             onClick={() => setMonth((m) => subMonths(m, 1))}
           >
             <ChevronLeft className="h-4 w-4" />
@@ -61,7 +61,7 @@ export default function DatePickerPopover({ value, onChange, weekStartsOn = 0 }:
           <button
             type="button"
             aria-label="Next month"
-            className="flex h-8 w-8 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="flex h-8 w-8 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-[#E5B88A]"
             onClick={() => setMonth((m) => addMonths(m, 1))}
           >
             <ChevronRight className="h-4 w-4" />
@@ -88,11 +88,11 @@ export default function DatePickerPopover({ value, onChange, weekStartsOn = 0 }:
               <button
                 key={day.toISOString()}
                 type="button"
-                className={`flex h-9 items-center justify-center rounded-lg text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 ${
+                className={`flex h-9 items-center justify-center rounded-lg text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-[#E5B88A] focus:ring-offset-1 ${
                   isSelected
-                    ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                    ? 'bg-[#C18B5E] text-white hover:bg-[#B5795A]'
                     : isToday
-                      ? 'bg-indigo-100 text-indigo-900 hover:bg-indigo-200'
+                      ? 'bg-[#F5EBE0] text-[#8B6F47] hover:bg-[#F9F3ED]'
                       : inMonth
                         ? 'text-slate-900 hover:bg-slate-100'
                         : 'text-slate-400 hover:bg-slate-50'
@@ -112,7 +112,7 @@ export default function DatePickerPopover({ value, onChange, weekStartsOn = 0 }:
         <div className="mt-3 border-t border-slate-200 pt-3">
           <button
             type="button"
-            className="w-full rounded-md bg-slate-100 px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full rounded-md bg-slate-100 px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-[#E5B88A]"
             onClick={handleToday}
           >
             Jump to today

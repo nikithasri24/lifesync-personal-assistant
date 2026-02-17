@@ -82,7 +82,7 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onDelete, showOwnerBadge = fa
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             {note.noteType === 'list' ? (
-              <ListIcon className="h-4 w-4 text-indigo-500 flex-shrink-0" />
+              <ListIcon className="h-4 w-4 text-[#C18B5E] flex-shrink-0" />
             ) : (
               <FileText className="h-4 w-4 text-slate-500 flex-shrink-0" />
             )}

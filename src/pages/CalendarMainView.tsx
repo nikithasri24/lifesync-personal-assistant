@@ -648,7 +648,7 @@ const Calendar: React.FC = () => {
                         onDragOver={handleDragOver}
                         onDrop={(e) => handleDrop(day.date, e)}
                         className={`flex-1 min-w-[140px] max-w-[140px] border-r border-slate-200 dark:border-slate-700 last:border-r-0 p-1 overflow-hidden cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${
-                          day.isToday ? 'bg-blue-50/30 dark:bg-blue-900/10' : ''
+                          day.isToday ? 'bg-[#F5EBE0]/30 dark:bg-[#8B6F47]/10' : ''
                         }`}
                       >
                         {hasAllDayEvents && (
@@ -668,7 +668,7 @@ const Calendar: React.FC = () => {
                                   className={`text-[10px] px-1.5 py-0.5 rounded text-white font-medium cursor-move hover:opacity-90 truncate ${
                                     task.priority === 'urgent' ? 'bg-red-500' :
                                     task.priority === 'high' ? 'bg-orange-500' :
-                                    task.starred ? 'bg-yellow-500' : 'bg-indigo-500'
+                                    task.starred ? 'bg-yellow-500' : 'bg-[#C18B5E]'
                                   } ${
                                     isMultiDay
                                       ? spanInfo.isFirst
@@ -692,7 +692,7 @@ const Calendar: React.FC = () => {
                                 onDragStart={(e) => { e.stopPropagation(); handleEventDragStart(event, e); }}
                                 onDragEnd={handleEventDragEnd}
                                 onClick={(e) => { e.stopPropagation(); handleEventClick(event); }}
-                                className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500 text-white font-medium cursor-move hover:opacity-90 truncate"
+                                className="text-[10px] px-1.5 py-0.5 rounded bg-[#C18B5E] text-white font-medium cursor-move hover:opacity-90 truncate"
                               >
                                 {event.title}
                               </div>
@@ -805,7 +805,7 @@ const Calendar: React.FC = () => {
                             onDragOver={handleDragOver}
                             onDrop={(e) => handleDrop(day.date, e)}
                             className={`h-16 border-b border-slate-200 dark:border-slate-700 relative group cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${
-                              day.isToday ? 'bg-blue-50/10 dark:bg-blue-900/5' : ''
+                              day.isToday ? 'bg-[#F5EBE0]/10 dark:bg-[#8B6F47]/5' : ''
                             }`}
                           >
                             {/* Schedule blocks */}
@@ -872,13 +872,13 @@ const Calendar: React.FC = () => {
                                       right: '2px',
                                       maxWidth: 'calc(100% - 4px)',
                                     }}
-                                    className="absolute px-1.5 py-0.5 rounded-sm bg-blue-500 dark:bg-blue-600 cursor-pointer hover:bg-blue-600 dark:hover:bg-blue-500 transition-colors z-10 overflow-hidden"
+                                    className="absolute px-1.5 py-0.5 rounded-sm bg-[#C18B5E] dark:bg-[#C18B5E] cursor-pointer hover:bg-[#C18B5E] dark:hover:bg-[#C18B5E] transition-colors z-10 overflow-hidden"
                                   >
                                     <p className="text-[11px] font-medium text-white leading-tight truncate whitespace-nowrap overflow-hidden text-ellipsis">
                                       {task.title}
                                     </p>
                                     {taskHeight >= 32 && (
-                                      <p className="text-[10px] text-blue-100 truncate whitespace-nowrap overflow-hidden">
+                                      <p className="text-[10px] text-white truncate whitespace-nowrap overflow-hidden">
                                         {taskTimeLabel}
                                       </p>
                                     )}

@@ -108,8 +108,8 @@ export const RecurrenceSelector: React.FC<RecurrenceSelectorProps> = ({
               onClick={() => handlePatternChange(pattern)}
               className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${
                 value.pattern === pattern
-                  ? 'bg-blue-100 dark:bg-blue-900/40 border-blue-400 text-blue-700 dark:text-blue-300'
-                  : 'border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:border-blue-300'
+                  ? 'bg-[#F5EBE0] dark:bg-[#8B6F47]/40 border-[#D4A574] text-[#8B6F47] dark:text-[#E5B88A]'
+                  : 'border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:border-[#E5B88A]'
               } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               {PATTERN_LABELS[pattern]}
@@ -154,7 +154,7 @@ export const RecurrenceSelector: React.FC<RecurrenceSelectorProps> = ({
                     onClick={() => toggleDay(day.value)}
                     className={`w-8 h-8 text-xs font-medium rounded-full transition-colors ${
                       value.days.includes(day.value)
-                        ? 'bg-blue-500 text-white'
+                        ? 'bg-[#C18B5E] text-white'
                         : 'bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-300'
                     }`}
                     title={day.label}

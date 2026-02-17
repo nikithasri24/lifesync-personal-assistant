@@ -13,7 +13,7 @@ import { useInboxItems, useDismissInboxItem, useDeleteInboxItem } from '@/hooks/
 import type { InboxItem, InboxItemType } from '@/services/inbox';
 
 const typeConfig: Record<InboxItemType, { icon: React.ReactNode; label: string; color: string }> = {
-  task: { icon: <ListTodo className="w-4 h-4" />, label: 'Task', color: 'text-blue-500' },
+  task: { icon: <ListTodo className="w-4 h-4" />, label: 'Task', color: 'text-[#C18B5E]' },
   note: { icon: <StickyNote className="w-4 h-4" />, label: 'Note', color: 'text-yellow-500' },
   event: { icon: <Calendar className="w-4 h-4" />, label: 'Event', color: 'text-purple-500' },
   habit: { icon: <CheckCircle2 className="w-4 h-4" />, label: 'Habit', color: 'text-green-500' },
@@ -47,10 +47,10 @@ export function InboxTriage({ className = '' }: InboxTriageProps) {
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center gap-2">
-          <Inbox className="w-5 h-5 text-indigo-500" />
+          <Inbox className="w-5 h-5 text-[#C18B5E]" />
           <h2 className="font-bold text-gray-900 dark:text-white">Inbox</h2>
           {filter === 'pending' && items.length > 0 && (
-            <span className="bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 text-xs font-bold px-2 py-0.5 rounded-full">
+            <span className="bg-[#F5EBE0] dark:bg-[#8B6F47] text-[#8B6F47] dark:text-[#E5B88A] text-xs font-bold px-2 py-0.5 rounded-full">
               {items.length}
             </span>
           )}
@@ -159,7 +159,7 @@ function InboxItemRow({
             <Trash2 className="w-4 h-4" />
           </button>
           <button
-            className="p-1.5 text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded transition-colors"
+            className="p-1.5 text-gray-400 hover:text-[#C18B5E] hover:bg-[#F5EBE0] dark:hover:bg-[#8B6F47]/20 rounded transition-colors"
             title="Convert to..."
           >
             <ChevronRight className="w-4 h-4" />
