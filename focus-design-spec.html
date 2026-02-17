@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Focus - LifeSync Design Spec</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: #F5F5F5;
+      padding: 20px;
+      line-height: 1.5;
+    }
+
+    .phone {
+      width: 375px;
+      margin: 0 auto 30px;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      overflow: hidden;
+    }
+
+    .status-bar {
+      height: 44px;
+      background: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px;
+      font-size: 14px;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);
+      padding: 20px;
+      color: white;
+      text-align: center;
+    }
+
+    .header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .header-subtitle {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    .content {
+      padding: 20px;
+      min-height: 500px;
+    }
+
+    /* Timer Display */
+    .timer-container {
+      text-align: center;
+      padding: 20px 0;
+    }
+
+    .timer-circle {
+      width: 240px;
+      height: 240px;
+      margin: 0 auto 30px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 24px rgba(212, 165, 116, 0.3);
+    }
+
+    .timer-circle-inner {
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      background: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .timer-display {
+      font-size: 56px;
+      font-weight: 700;
+      color: #1F2937;
+      letter-spacing: -1px;
+    }
+
+    .timer-label {
+      font-size: 14px;
+      color: #6B7280;
+      margin-top: 4px;
+    }
+
+    .timer-controls {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      margin-bottom: 30px;
+    }
+
+    .control-btn {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      border: none;
+      background: white;
+      color: #D4A574;
+      font-size: 24px;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .control-btn.primary {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #D4A574, #C18B5E);
+      color: white;
+      font-size: 32px;
+      box-shadow: 0 4px 12px rgba(212, 165, 116, 0.4);
+    }
+
+    /* Quick Preset Buttons */
+    .presets-container {
+      margin-top: 30px;
+    }
+
+    .presets-label {
+      font-size: 14px;
+      font-weight: 600;
+      color: #6B7280;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+
+    .presets-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .preset-btn {
+      padding: 16px;
+      background: white;
+      border: 2px solid #E5E7EB;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+
+    .preset-btn:hover,
+    .preset-btn.active {
+      border-color: #D4A574;
+      background: #FEF3E8;
+    }
+
+    .preset-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1F2937;
+      margin-bottom: 4px;
+    }
+
+    .preset-duration {
+      font-size: 13px;
+      color: #6B7280;
+    }
+
+    .section-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #1F2937;
+      margin: 30px 0 15px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <h1 class="section-title">Focus Timer - Ready to Start</h1>
+
+  <div class="phone">
+    <div class="status-bar">
+      <span>9:41</span>
+      <span>📶 🔋</span>
+    </div>
+
+    <div class="header">
+      <h1>⏱️ Focus</h1>
+      <p class="header-subtitle">Choose a duration to begin</p>
+    </div>
+
+    <div class="content">
+      <div class="timer-container">
+        <div class="timer-circle">
+          <div class="timer-circle-inner">
+            <div class="timer-display">25:00</div>
+            <div class="timer-label">Ready</div>
+          </div>
+        </div>
+
+        <div class="timer-controls">
+          <button class="control-btn" aria-label="Reset">⟲</button>
+          <button class="control-btn primary" aria-label="Start">▶</button>
+          <button class="control-btn" aria-label="Settings">⚙</button>
+        </div>
+      </div>
+
+      <div class="presets-container">
+        <div class="presets-label">Quick Start</div>
+        <div class="presets-grid">
+          <button class="preset-btn active">
+            <div class="preset-name">Pomodoro</div>
+            <div class="preset-duration">25 minutes</div>
+          </button>
+          <button class="preset-btn">
+            <div class="preset-name">Short Break</div>
+            <div class="preset-duration">5 minutes</div>
+          </button>
+          <button class="preset-btn">
+            <div class="preset-name">Deep Work</div>
+            <div class="preset-duration">90 minutes</div>
+          </button>
+          <button class="preset-btn">
+            <div class="preset-name">Long Break</div>
+            <div class="preset-duration">15 minutes</div>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h1 class="section-title">Focus Timer - Active Session</h1>
+
+  <div class="phone">
+    <div class="status-bar">
+      <span>9:41</span>
+      <span>📶 🔋</span>
+    </div>
+
+    <div class="header">
+      <h1>⏱️ Focus</h1>
+      <p class="header-subtitle">Stay focused</p>
+    </div>
+
+    <div class="content">
+      <div class="timer-container">
+        <div class="timer-circle">
+          <div class="timer-circle-inner">
+            <div class="timer-display">18:42</div>
+            <div class="timer-label">Pomodoro</div>
+          </div>
+        </div>
+
+        <div class="timer-controls">
+          <button class="control-btn" aria-label="Reset">⟲</button>
+          <button class="control-btn primary" aria-label="Pause">⏸</button>
+          <button class="control-btn" aria-label="Settings">⚙</button>
+        </div>
+      </div>
+
+      <div class="presets-container">
+        <div class="presets-label">Quick Start</div>
+        <div class="presets-grid">
+          <button class="preset-btn active">
+            <div class="preset-name">Pomodoro</div>
+            <div class="preset-duration">25 minutes</div>
+          </button>
+          <button class="preset-btn">
+            <div class="preset-name">Short Break</div>
+            <div class="preset-duration">5 minutes</div>
+          </button>
+          <button class="preset-btn">
+            <div class="preset-name">Deep Work</div>
+            <div class="preset-duration">90 minutes</div>
+          </button>
+          <button class="preset-btn">
+            <div class="preset-name">Long Break</div>
+            <div class="preset-duration">15 minutes</div>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h1 class="section-title">Focus Timer - Paused</h1>
+
+  <div class="phone">
+    <div class="status-bar">
+      <span>9:41</span>
+      <span>📶 🔋</span>
+    </div>
+
+    <div class="header">
+      <h1>⏱️ Focus</h1>
+      <p class="header-subtitle">Paused</p>
+    </div>
+
+    <div class="content">
+      <div class="timer-container">
+        <div class="timer-circle">
+          <div class="timer-circle-inner">
+            <div class="timer-display">18:42</div>
+            <div class="timer-label">Paused</div>
+          </div>
+        </div>
+
+        <div class="timer-controls">
+          <button class="control-btn" aria-label="Reset">⟲</button>
+          <button class="control-btn primary" aria-label="Resume">▶</button>
+          <button class="control-btn" aria-label="Settings">⚙</button>
+        </div>
+      </div>
+
+      <div class="presets-container">
+        <div class="presets-label">Quick Start</div>
+        <div class="presets-grid">
+          <button class="preset-btn active">
+            <div class="preset-name">Pomodoro</div>
+            <div class="preset-duration">25 minutes</div>
+          </button>
+          <button class="preset-btn">
+            <div class="preset-name">Short Break</div>
+            <div class="preset-duration">5 minutes</div>
+          </button>
+          <button class="preset-btn">
+            <div class="preset-name">Deep Work</div>
+            <div class="preset-duration">90 minutes</div>
+          </button>
+          <button class="preset-btn">
+            <div class="preset-name">Long Break</div>
+            <div class="preset-duration">15 minutes</div>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Projects - LifeSync Design Spec</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: #F5F5F5;
+      padding: 20px;
+      line-height: 1.5;
+    }
+
+    .phone {
+      width: 375px;
+      margin: 0 auto 30px;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      overflow: hidden;
+    }
+
+    .status-bar {
+      height: 44px;
+      background: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px;
+      font-size: 14px;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);
+      padding: 20px;
+      color: white;
+    }
+
+    .header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .stat-card {
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(10px);
+      border-radius: 12px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      opacity: 0.9;
+    }
+
+    .filters-bar {
+      background: white;
+      padding: 16px;
+      border-bottom: 1px solid #E5E7EB;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .search-box {
+      position: relative;
+    }
+
+    .search-box input {
+      width: 100%;
+      padding: 10px 10px 10px 36px;
+      border: 1px solid #D1D5DB;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #9CA3AF;
+    }
+
+    .filter-row {
+      display: flex;
+      gap: 8px;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .status-filter {
+      display: flex;
+      gap: 4px;
+      padding: 4px;
+      background: #F3F4F6;
+      border-radius: 8px;
+      flex: 1;
+    }
+
+    .filter-pill {
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      color: #6B7280;
+      flex: 1;
+      text-align: center;
+    }
+
+    .filter-pill.active {
+      background: white;
+      color: #D4A574;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+
+    .view-toggle {
+      display: flex;
+      gap: 4px;
+      padding: 4px;
+      background: #F3F4F6;
+      border-radius: 8px;
+    }
+
+    .view-btn {
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      color: #6B7280;
+    }
+
+    .view-btn.active {
+      background: white;
+      color: #D4A574;
+    }
+
+    .content {
+      padding: 16px;
+      min-height: 400px;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+
+    .projects-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+
+    .project-card {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      border: 1px solid #E5E7EB;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .project-header {
+      display: flex;
+      align-items: start;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .project-icon {
+      font-size: 28px;
+      flex-shrink: 0;
+    }
+
+    .project-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .project-title-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+      flex-wrap: wrap;
+    }
+
+    .project-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1F2937;
+    }
+
+    .status-badge {
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .status-badge.active {
+      background: #D1FAE5;
+      color: #059669;
+    }
+
+    .status-badge.completed {
+      background: #DBEAFE;
+      color: #1D4ED8;
+    }
+
+    .status-badge.on-hold {
+      background: #FEF3C7;
+      color: #D97706;
+    }
+
+    .status-badge.planning {
+      background: #E0E7FF;
+      color: #6366F1;
+    }
+
+    .owner-badge {
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      background: #FEE2E2;
+      color: #DC2626;
+    }
+
+    .owner-badge.mine {
+      background: #DBEAFE;
+      color: #1D4ED8;
+    }
+
+    .project-description {
+      font-size: 13px;
+      color: #6B7280;
+      margin-bottom: 12px;
+      line-height: 1.4;
+    }
+
+    .project-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .icon-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      border: none;
+      background: #F3F4F6;
+      color: #6B7280;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .icon-btn:hover {
+      background: #E5E7EB;
+    }
+
+    .icon-btn.danger:hover {
+      background: #FEE2E2;
+      color: #DC2626;
+    }
+
+    .progress-section {
+      border-top: 1px solid #F3F4F6;
+      padding-top: 12px;
+      margin-top: 12px;
+    }
+
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 13px;
+    }
+
+    .progress-label {
+      color: #6B7280;
+    }
+
+    .progress-value {
+      font-weight: 600;
+      color: #1F2937;
+    }
+
+    .progress-bar {
+      height: 6px;
+      background: #F3F4F6;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #D4A574, #C18B5E);
+      transition: width 0.3s ease;
+    }
+
+    .tasks-toggle {
+      width: 100%;
+      padding: 8px 12px;
+      background: #F9FAFB;
+      border: 1px solid #E5E7EB;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #374151;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .tasks-list {
+      margin-top: 12px;
+      padding: 12px;
+      background: #F9FAFB;
+      border-radius: 8px;
+      border: 1px solid #E5E7EB;
+    }
+
+    .task-item {
+      display: flex;
+      align-items: start;
+      gap: 8px;
+      padding: 8px 0;
+      font-size: 13px;
+    }
+
+    .task-item:not(:last-child) {
+      border-bottom: 1px solid #E5E7EB;
+    }
+
+    .task-checkbox {
+      width: 16px;
+      height: 16px;
+      border: 2px solid #D1D5DB;
+      border-radius: 4px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .task-checkbox.checked {
+      background: #10B981;
+      border-color: #10B981;
+      position: relative;
+    }
+
+    .task-checkbox.checked::after {
+      content: '✓';
+      position: absolute;
+      color: white;
+      font-size: 12px;
+      top: -2px;
+      left: 2px;
+    }
+
+    .task-title {
+      flex: 1;
+      color: #1F2937;
+    }
+
+    .task-title.completed {
+      text-decoration: line-through;
+      color: #9CA3AF;
+    }
+
+    .fab {
+      position: fixed;
+      bottom: 80px;
+      right: 20px;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #D4A574, #C18B5E);
+      color: white;
+      border: none;
+      font-size: 28px;
+      box-shadow: 0 4px 12px rgba(212, 165, 116, 0.4);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+    }
+
+    .modal {
+      background: white;
+      border-radius: 20px 20px 0 0;
+      width: 375px;
+      max-height: 80vh;
+      overflow-y: auto;
+      padding: 24px;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .modal-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #1F2937;
+    }
+
+    .close-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: none;
+      background: #F3F4F6;
+      color: #6B7280;
+      font-size: 20px;
+      cursor: pointer;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 6px;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #D1D5DB;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    .form-textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #D1D5DB;
+      border-radius: 8px;
+      font-size: 14px;
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .form-select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #D1D5DB;
+      border-radius: 8px;
+      font-size: 14px;
+      background: white;
+    }
+
+    .icon-picker {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .icon-option {
+      width: 44px;
+      height: 44px;
+      border: 2px solid #E5E7EB;
+      border-radius: 8px;
+      background: white;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .icon-option.selected {
+      border-color: #D4A574;
+      background: #FEF3E8;
+    }
+
+    .color-picker {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .color-option {
+      width: 44px;
+      height: 44px;
+      border-radius: 8px;
+      cursor: pointer;
+      border: 3px solid transparent;
+    }
+
+    .color-option.selected {
+      border-color: #1F2937;
+    }
+
+    .date-inputs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .tags-input-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 8px;
+      border: 1px solid #D1D5DB;
+      border-radius: 8px;
+      min-height: 42px;
+    }
+
+    .tag {
+      background: #E0E7FF;
+      color: #4F46E5;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .tag-remove {
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .tag-input {
+      border: none;
+      outline: none;
+      flex: 1;
+      min-width: 80px;
+      font-size: 14px;
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #D4A574, #C18B5E);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #9CA3AF;
+    }
+
+    .empty-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+    }
+
+    .empty-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #6B7280;
+      margin-bottom: 8px;
+    }
+
+    .empty-description {
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+
+    .empty-btn {
+      padding: 12px 24px;
+      background: linear-gradient(135deg, #D4A574, #C18B5E);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .section-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #1F2937;
+      margin: 30px 0 15px;
+      text-align: center;
+    }
+
+    .priority-badge {
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .priority-badge.low {
+      background: #F3F4F6;
+      color: #6B7280;
+    }
+
+    .priority-badge.medium {
+      background: #DBEAFE;
+      color: #1D4ED8;
+    }
+
+    .priority-badge.high {
+      background: #FEF3C7;
+      color: #D97706;
+    }
+
+    .priority-badge.urgent {
+      background: #FEE2E2;
+      color: #DC2626;
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      font-size: 13px;
+      border-bottom: 1px solid #F3F4F6;
+    }
+
+    .info-label {
+      color: #6B7280;
+    }
+
+    .info-value {
+      color: #1F2937;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+
+  <h1 class="section-title">Projects - Grid View (Default)</h1>
+
+  <div class="phone">
+    <div class="status-bar">
+      <span>9:41</span>
+      <span>📶 🔋</span>
+    </div>
+
+    <div class="header">
+      <h1>📋 Projects</h1>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value">8</div>
+          <div class="stat-label">Total</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">5</div>
+          <div class="stat-label">Active</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">24</div>
+          <div class="stat-label">Tasks</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="filters-bar">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" placeholder="Search projects...">
+      </div>
+
+      <div class="filter-row">
+        <div class="status-filter">
+          <button class="filter-pill active">All</button>
+          <button class="filter-pill">Active</button>
+          <button class="filter-pill">Done</button>
+        </div>
+
+        <div class="view-toggle">
+          <button class="view-btn active">▦</button>
+          <button class="view-btn">☰</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="projects-grid">
+        <!-- Project Card 1 - Active -->
+        <div class="project-card">
+          <div class="project-header">
+            <div class="project-icon">🏡</div>
+            <div class="project-info">
+              <div class="project-title-row">
+                <div class="project-name">Home Renovation</div>
+                <span class="status-badge active">Active</span>
+                <span class="owner-badge mine">Mine</span>
+              </div>
+              <div class="project-description">Complete kitchen and bathroom remodel with new fixtures</div>
+            </div>
+          </div>
+
+          <div class="progress-section">
+            <div class="progress-header">
+              <span class="progress-label">Progress</span>
+              <span class="progress-value">4 / 8 tasks</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: 50%"></div>
+            </div>
+
+            <button class="tasks-toggle">
+              <span>View Tasks (8)</span>
+              <span>▼</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Project Card 2 - Expanded with Tasks -->
+        <div class="project-card">
+          <div class="project-header">
+            <div class="project-icon">💼</div>
+            <div class="project-info">
+              <div class="project-title-row">
+                <div class="project-name">Product Launch Q1</div>
+                <span class="status-badge active">Active</span>
+                <span class="priority-badge high">High</span>
+              </div>
+              <div class="project-description">Launch new mobile app features for Q1 release</div>
+            </div>
+          </div>
+
+          <div class="progress-section">
+            <div class="progress-header">
+              <span class="progress-label">Progress</span>
+              <span class="progress-value">2 / 5 tasks</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: 40%"></div>
+            </div>
+
+            <button class="tasks-toggle">
+              <span>View Tasks (5)</span>
+              <span>▲</span>
+            </button>
+
+            <div class="tasks-list">
+              <div class="task-item">
+                <div class="task-checkbox checked"></div>
+                <div class="task-title completed">Design app mockups</div>
+              </div>
+              <div class="task-item">
+                <div class="task-checkbox checked"></div>
+                <div class="task-title completed">User research interviews</div>
+              </div>
+              <div class="task-item">
+                <div class="task-checkbox"></div>
+                <div class="task-title">Implement authentication flow</div>
+              </div>
+              <div class="task-item">
+                <div class="task-checkbox"></div>
+                <div class="task-title">Write API documentation</div>
+              </div>
+              <div class="task-item">
+                <div class="task-checkbox"></div>
+                <div class="task-title">QA testing and bug fixes</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Project Card 3 - Completed -->
+        <div class="project-card">
+          <div class="project-header">
+            <div class="project-icon">✈️</div>
+            <div class="project-info">
+              <div class="project-title-row">
+                <div class="project-name">Europe Trip Planning</div>
+                <span class="status-badge completed">Done</span>
+                <span class="owner-badge">Partner</span>
+              </div>
+              <div class="project-description">Plan 2-week vacation to Italy and France</div>
+            </div>
+          </div>
+
+          <div class="progress-section">
+            <div class="progress-header">
+              <span class="progress-label">Progress</span>
+              <span class="progress-value">6 / 6 tasks</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: 100%"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Project Card 4 - On Hold -->
+        <div class="project-card">
+          <div class="project-header">
+            <div class="project-icon">📚</div>
+            <div class="project-info">
+              <div class="project-title-row">
+                <div class="project-name">Learn Spanish</div>
+                <span class="status-badge on-hold">On Hold</span>
+              </div>
+              <div class="project-description">Practice daily for 30 minutes using Duolingo</div>
+            </div>
+          </div>
+
+          <div class="progress-section">
+            <div class="progress-header">
+              <span class="progress-label">Progress</span>
+              <span class="progress-value">2 / 10 tasks</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: 20%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button class="fab">+</button>
+  </div>
+
+  <h1 class="section-title">Projects - List View</h1>
+
+  <div class="phone">
+    <div class="status-bar">
+      <span>9:41</span>
+      <span>📶 🔋</span>
+    </div>
+
+    <div class="header">
+      <h1>📋 Projects</h1>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value">8</div>
+          <div class="stat-label">Total</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">5</div>
+          <div class="stat-label">Active</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">24</div>
+          <div class="stat-label">Tasks</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="filters-bar">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" placeholder="Search projects...">
+      </div>
+
+      <div class="filter-row">
+        <div class="status-filter">
+          <button class="filter-pill">All</button>
+          <button class="filter-pill active">Active</button>
+          <button class="filter-pill">Done</button>
+        </div>
+
+        <div class="view-toggle">
+          <button class="view-btn">▦</button>
+          <button class="view-btn active">☰</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="projects-grid">
+        <!-- Same project cards but in list layout -->
+        <div class="project-card">
+          <div class="project-header">
+            <div class="project-icon">🏡</div>
+            <div class="project-info">
+              <div class="project-title-row">
+                <div class="project-name">Home Renovation</div>
+                <span class="status-badge active">Active</span>
+              </div>
+              <div class="project-description">Complete kitchen and bathroom remodel</div>
+            </div>
+          </div>
+
+          <div class="progress-section">
+            <div class="progress-header">
+              <span class="progress-label">Progress</span>
+              <span class="progress-value">4 / 8 tasks</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: 50%"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="project-card">
+          <div class="project-header">
+            <div class="project-icon">💼</div>
+            <div class="project-info">
+              <div class="project-title-row">
+                <div class="project-name">Product Launch Q1</div>
+                <span class="status-badge active">Active</span>
+                <span class="priority-badge high">High</span>
+              </div>
+              <div class="project-description">Launch new mobile app features</div>
+            </div>
+          </div>
+
+          <div class="progress-section">
+            <div class="progress-header">
+              <span class="progress-label">Progress</span>
+              <span class="progress-value">2 / 5 tasks</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: 40%"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="project-card">
+          <div class="project-header">
+            <div class="project-icon">🎓</div>
+            <div class="project-info">
+              <div class="project-title-row">
+                <div class="project-name">Online Course</div>
+                <span class="status-badge active">Active</span>
+                <span class="priority-badge medium">Medium</span>
+              </div>
+              <div class="project-description">Complete AWS certification course</div>
+            </div>
+          </div>
+
+          <div class="progress-section">
+            <div class="progress-header">
+              <span class="progress-label">Progress</span>
+              <span class="progress-value">7 / 12 tasks</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: 58%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button class="fab">+</button>
+  </div>
+
+  <h1 class="section-title">Create/Edit Project Modal</h1>
+
+  <div class="phone">
+    <div class="status-bar">
+      <span>9:41</span>
+      <span>📶 🔋</span>
+    </div>
+
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title">Create Project</h2>
+        <button class="close-btn">×</button>
+      </div>
+
+      <form>
+        <div class="form-group">
+          <label class="form-label">Project Name *</label>
+          <input type="text" class="form-input" placeholder="Enter project name" value="Home Renovation">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea class="form-textarea" placeholder="Describe your project...">Complete kitchen and bathroom remodel with new fixtures</textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Icon</label>
+          <div class="icon-picker">
+            <button type="button" class="icon-option selected">🏡</button>
+            <button type="button" class="icon-option">💼</button>
+            <button type="button" class="icon-option">✈️</button>
+            <button type="button" class="icon-option">📚</button>
+            <button type="button" class="icon-option">🎓</button>
+            <button type="button" class="icon-option">💪</button>
+            <button type="button" class="icon-option">🎯</button>
+            <button type="button" class="icon-option">🎨</button>
+            <button type="button" class="icon-option">📱</button>
+            <button type="button" class="icon-option">🌱</button>
+            <button type="button" class="icon-option">🎵</button>
+            <button type="button" class="icon-option">🍳</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Color Theme</label>
+          <div class="color-picker">
+            <button type="button" class="color-option selected" style="background: #D4A574;"></button>
+            <button type="button" class="color-option" style="background: #3B82F6;"></button>
+            <button type="button" class="color-option" style="background: #10B981;"></button>
+            <button type="button" class="color-option" style="background: #F59E0B;"></button>
+            <button type="button" class="color-option" style="background: #EF4444;"></button>
+            <button type="button" class="color-option" style="background: #8B5CF6;"></button>
+            <button type="button" class="color-option" style="background: #EC4899;"></button>
+            <button type="button" class="color-option" style="background: #14B8A6;"></button>
+            <button type="button" class="color-option" style="background: #F97316;"></button>
+            <button type="button" class="color-option" style="background: #6366F1;"></button>
+            <button type="button" class="color-option" style="background: #84CC16;"></button>
+            <button type="button" class="color-option" style="background: #64748B;"></button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select class="form-select">
+            <option>Planning</option>
+            <option selected>Active</option>
+            <option>On Hold</option>
+            <option>Completed</option>
+            <option>Archived</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Priority</label>
+          <select class="form-select">
+            <option>Low</option>
+            <option selected>Medium</option>
+            <option>High</option>
+            <option>Urgent</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Timeline</label>
+          <div class="date-inputs">
+            <div>
+              <label class="form-label" style="font-size: 11px; margin-bottom: 4px;">Start Date</label>
+              <input type="date" class="form-input" value="2026-02-01">
+            </div>
+            <div>
+              <label class="form-label" style="font-size: 11px; margin-bottom: 4px;">Target Date</label>
+              <input type="date" class="form-input" value="2026-06-30">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Tags</label>
+          <div class="tags-input-container">
+            <span class="tag">home <span class="tag-remove">×</span></span>
+            <span class="tag">renovation <span class="tag-remove">×</span></span>
+            <input type="text" class="tag-input" placeholder="Add tag...">
+          </div>
+        </div>
+
+        <button type="submit" class="submit-btn">Create Project</button>
+      </form>
+    </div>
+  </div>
+
+  <h1 class="section-title">Empty State (No Projects)</h1>
+
+  <div class="phone">
+    <div class="status-bar">
+      <span>9:41</span>
+      <span>📶 🔋</span>
+    </div>
+
+    <div class="header">
+      <h1>📋 Projects</h1>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value">0</div>
+          <div class="stat-label">Total</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">0</div>
+          <div class="stat-label">Active</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">0</div>
+          <div class="stat-label">Tasks</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="filters-bar">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" placeholder="Search projects...">
+      </div>
+
+      <div class="filter-row">
+        <div class="status-filter">
+          <button class="filter-pill active">All</button>
+          <button class="filter-pill">Active</button>
+          <button class="filter-pill">Done</button>
+        </div>
+
+        <div class="view-toggle">
+          <button class="view-btn active">▦</button>
+          <button class="view-btn">☰</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="empty-state">
+        <div class="empty-icon">📋</div>
+        <h3 class="empty-title">No Projects Yet</h3>
+        <p class="empty-description">Create your first project to organize and track your tasks</p>
+        <button class="empty-btn">+ Create Project</button>
+      </div>
+    </div>
+  </div>
+
+  <h1 class="section-title">Filtered Results (No Matches)</h1>
+
+  <div class="phone">
+    <div class="status-bar">
+      <span>9:41</span>
+      <span>📶 🔋</span>
+    </div>
+
+    <div class="header">
+      <h1>📋 Projects</h1>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value">8</div>
+          <div class="stat-label">Total</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">5</div>
+          <div class="stat-label">Active</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">24</div>
+          <div class="stat-label">Tasks</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="filters-bar">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" placeholder="Search projects..." value="website redesign">
+      </div>
+
+      <div class="filter-row">
+        <div class="status-filter">
+          <button class="filter-pill active">All</button>
+          <button class="filter-pill">Active</button>
+          <button class="filter-pill">Done</button>
+        </div>
+
+        <div class="view-toggle">
+          <button class="view-btn active">▦</button>
+          <button class="view-btn">☰</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="empty-state">
+        <div class="empty-icon">🔍</div>
+        <h3 class="empty-title">No Projects Found</h3>
+        <p class="empty-description">Try adjusting your search or filters</p>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

@@ -19,9 +19,9 @@ import {
   DollarSign,
   Sparkles,
   MessageCircle,
-  LayoutGrid,
   Utensils,
   Plane,
+  Heart,
 } from 'lucide-react';
 import { useComposedStore } from '../stores/useComposedStore';
 import { useToast } from '../hooks/useToast';
@@ -40,7 +40,6 @@ const navigation = [
   { name: 'Dashboard', icon: Home, view: 'dashboard' as const, path: '/', section: 'main' },
   { name: 'AI Assistant', icon: MessageCircle, view: 'assistant' as const, path: '/assistant', section: 'main' },
   { name: 'Calendar', icon: Calendar, view: 'calendar' as const, path: '/calendar', section: 'main' },
-  { name: 'Task Scheduler', icon: LayoutGrid, view: 'scheduler' as const, path: '/scheduler', section: 'main' },
   { name: 'Focus', icon: Timer, view: 'focus' as const, path: '/focus', section: 'main' },
   { name: 'Habits', icon: Target, view: 'habits' as const, path: '/habits', section: 'productivity' },
   { name: 'Tasks', icon: Target, view: 'todos' as const, path: '/todos', section: 'productivity' },
@@ -56,6 +55,7 @@ const navigation = [
   { name: 'Nutrition', icon: Utensils, view: 'nutrition' as const, path: '/nutrition', section: 'wellbeing' },
   { name: 'Goals', icon: Trophy, view: 'goals' as const, path: '/goals', section: 'personal' },
   { name: 'Shared', icon: Users, view: 'shared' as const, path: '/shared', section: 'personal' },
+  { name: 'Together', icon: Heart, view: 'together' as const, path: '/together', section: 'personal' },
 ];
 
 // Helper function to get ViewKey from pathname
@@ -68,6 +68,7 @@ const getViewFromPath = (pathname: string): ViewKey => {
   if (pathname.startsWith('/travel/trip-planner')) return 'trip-planner';
   if (pathname.startsWith('/travel')) return 'travel';
   if (pathname.startsWith('/finances')) return 'finances';
+  if (pathname.startsWith('/together')) return 'together';
 
   return 'dashboard';
 };

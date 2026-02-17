@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - LifeSync Design Spec</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: #F5F5F5;
+      padding: 20px;
+      line-height: 1.5;
+    }
+
+    .phone {
+      width: 375px;
+      margin: 0 auto 30px;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      overflow: hidden;
+    }
+
+    .status-bar {
+      height: 44px;
+      background: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px;
+      font-size: 14px;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);
+      padding: 20px;
+      color: white;
+    }
+
+    .greeting {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .date {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    .content {
+      background: #F9FAFB;
+      min-height: 600px;
+      max-height: 650px;
+      overflow-y: auto;
+      padding: 16px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .stat-card {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      border-left: 4px solid #D4A574;
+    }
+
+    .stat-card.tasks {
+      border-left-color: #3B82F6;
+    }
+
+    .stat-card.habits {
+      border-left-color: #10B981;
+    }
+
+    .stat-card.notes {
+      border-left-color: #8B5CF6;
+    }
+
+    .stat-card.journal {
+      border-left-color: #F59E0B;
+    }
+
+    .stat-value {
+      font-size: 32px;
+      font-weight: 700;
+      color: #1F2937;
+      margin-bottom: 4px;
+    }
+
+    .stat-label {
+      font-size: 13px;
+      color: #6B7280;
+      font-weight: 500;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1F2937;
+    }
+
+    .view-all {
+      font-size: 13px;
+      color: #D4A574;
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .briefing-list {
+      list-style: none;
+    }
+
+    .briefing-list li {
+      padding: 8px 0;
+      padding-left: 20px;
+      position: relative;
+      color: #374151;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .briefing-list li:before {
+      content: "•";
+      position: absolute;
+      left: 0;
+      color: #D4A574;
+      font-size: 18px;
+    }
+
+    .quick-actions {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .action-btn {
+      background: white;
+      border: 2px solid #E5E7EB;
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .action-btn:hover {
+      border-color: #D4A574;
+      background: #FEF3E8;
+    }
+
+    .action-icon {
+      font-size: 24px;
+    }
+
+    .action-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #374151;
+    }
+
+    .task-item, .habit-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid #F3F4F6;
+    }
+
+    .task-item:last-child, .habit-item:last-child {
+      border-bottom: none;
+    }
+
+    .checkbox {
+      width: 20px;
+      height: 20px;
+      border: 2px solid #D1D5DB;
+      border-radius: 6px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .checkbox.checked {
+      background: #10B981;
+      border-color: #10B981;
+      position: relative;
+    }
+
+    .checkbox.checked:after {
+      content: "✓";
+      color: white;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 12px;
+    }
+
+    .task-content {
+      flex: 1;
+    }
+
+    .task-title {
+      font-size: 14px;
+      color: #1F2937;
+      font-weight: 500;
+    }
+
+    .task-project {
+      font-size: 12px;
+      color: #6B7280;
+      margin-top: 2px;
+    }
+
+    .priority-badge {
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .priority-badge.high {
+      background: #FEE2E2;
+      color: #DC2626;
+    }
+
+    .priority-badge.medium {
+      background: #FEF3C7;
+      color: #D97706;
+    }
+
+    .priority-badge.low {
+      background: #DBEAFE;
+      color: #2563EB;
+    }
+
+    .habit-info {
+      flex: 1;
+    }
+
+    .habit-name {
+      font-size: 14px;
+      color: #1F2937;
+      font-weight: 500;
+    }
+
+    .streak-info {
+      font-size: 12px;
+      color: #10B981;
+      margin-top: 2px;
+      font-weight: 600;
+    }
+
+    .complete-btn {
+      padding: 6px 12px;
+      background: #10B981;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .complete-btn.completed {
+      background: #E5E7EB;
+      color: #6B7280;
+    }
+
+    .note-card {
+      padding: 12px;
+      background: #FFFBEB;
+      border-radius: 8px;
+      border-left: 3px solid #F59E0B;
+      margin-bottom: 8px;
+    }
+
+    .note-card:last-child {
+      margin-bottom: 0;
+    }
+
+    .note-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1F2937;
+      margin-bottom: 4px;
+    }
+
+    .note-preview {
+      font-size: 13px;
+      color: #6B7280;
+      line-height: 1.4;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+
+    .note-date {
+      font-size: 11px;
+      color: #9CA3AF;
+      margin-top: 6px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 32px 16px;
+      color: #9CA3AF;
+    }
+
+    .empty-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
+
+    .empty-text {
+      font-size: 14px;
+      color: #6B7280;
+      margin-bottom: 8px;
+    }
+
+    .empty-subtext {
+      font-size: 12px;
+      color: #9CA3AF;
+    }
+
+    .section-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #1F2937;
+      margin: 30px 0 15px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <h1 class="section-title">Dashboard - Main View</h1>
+
+  <div class="phone">
+    <div class="status-bar">
+      <span>9:41</span>
+      <span>📶 🔋</span>
+    </div>
+
+    <div class="header">
+      <div class="greeting">Good morning, Sri!</div>
+      <div class="date">Sunday, February 16, 2026</div>
+    </div>
+
+    <div class="content">
+      <!-- Stats Grid -->
+      <div class="stats-grid">
+        <div class="stat-card tasks">
+          <div class="stat-value">8</div>
+          <div class="stat-label">Tasks Today</div>
+        </div>
+        <div class="stat-card habits">
+          <div class="stat-value">5</div>
+          <div class="stat-label">Habits</div>
+        </div>
+        <div class="stat-card notes">
+          <div class="stat-value">12</div>
+          <div class="stat-label">Notes</div>
+        </div>
+        <div class="stat-card journal">
+          <div class="stat-value">3</div>
+          <div class="stat-label">Journal Entries</div>
+        </div>
+      </div>
+
+      <!-- Morning Briefing -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">☀️ Morning Briefing</div>
+        </div>
+        <ul class="briefing-list">
+          <li>You have 8 tasks scheduled for today</li>
+          <li>3 high-priority tasks need attention</li>
+          <li>Your morning workout habit is ready to complete</li>
+          <li>Team standup meeting at 9:00 AM</li>
+        </ul>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="quick-actions">
+        <button class="action-btn" aria-label="Add new task">
+          <div class="action-icon">✓</div>
+          <div class="action-label">Add Task</div>
+        </button>
+        <button class="action-btn" aria-label="Create new note">
+          <div class="action-icon">📝</div>
+          <div class="action-label">New Note</div>
+        </button>
+        <button class="action-btn" aria-label="Write journal entry">
+          <div class="action-icon">📔</div>
+          <div class="action-label">Journal</div>
+        </button>
+        <button class="action-btn" aria-label="Start focus session">
+          <div class="action-icon">⏱️</div>
+          <div class="action-label">Focus</div>
+        </button>
+      </div>
+
+      <!-- Today's Tasks -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">✓ Today's Tasks</div>
+          <a href="#" class="view-all" aria-label="View all tasks">View All</a>
+        </div>
+        <div class="task-item">
+          <div class="checkbox"></div>
+          <div class="task-content">
+            <div class="task-title">Review pull request #342</div>
+            <div class="task-project">Work Project</div>
+          </div>
+          <div class="priority-badge high">High</div>
+        </div>
+        <div class="task-item">
+          <div class="checkbox checked"></div>
+          <div class="task-content">
+            <div class="task-title">Buy groceries for the week</div>
+            <div class="task-project">Personal</div>
+          </div>
+          <div class="priority-badge medium">Med</div>
+        </div>
+        <div class="task-item">
+          <div class="checkbox"></div>
+          <div class="task-content">
+            <div class="task-title">Prepare presentation slides</div>
+            <div class="task-project">Work Project</div>
+          </div>
+          <div class="priority-badge high">High</div>
+        </div>
+      </div>
+
+      <!-- Today's Habits -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🎯 Today's Habits</div>
+          <a href="#" class="view-all" aria-label="View all habits">View All</a>
+        </div>
+        <div class="habit-item">
+          <div class="checkbox checked"></div>
+          <div class="habit-info">
+            <div class="habit-name">Morning Workout</div>
+            <div class="streak-info">🔥 7 day streak</div>
+          </div>
+          <button class="complete-btn completed" aria-label="Habit completed">Done</button>
+        </div>
+        <div class="habit-item">
+          <div class="checkbox"></div>
+          <div class="habit-info">
+            <div class="habit-name">Read for 30 minutes</div>
+            <div class="streak-info">🔥 14 day streak</div>
+          </div>
+          <button class="complete-btn" aria-label="Complete habit">Complete</button>
+        </div>
+        <div class="habit-item">
+          <div class="checkbox"></div>
+          <div class="habit-info">
+            <div class="habit-name">Meditation</div>
+            <div class="streak-info">🔥 3 day streak</div>
+          </div>
+          <button class="complete-btn" aria-label="Complete habit">Complete</button>
+        </div>
+      </div>
+
+      <!-- Recent Notes -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📝 Recent Notes</div>
+          <a href="#" class="view-all" aria-label="View all notes">View All</a>
+        </div>
+        <div class="note-card">
+          <div class="note-title">Project Ideas</div>
+          <div class="note-preview">New feature ideas for the LifeSync dashboard including widgets for weather, calendar integration...</div>
+          <div class="note-date">2 hours ago</div>
+        </div>
+        <div class="note-card">
+          <div class="note-title">Meeting Notes - Team Sync</div>
+          <div class="note-preview">Discussed Q1 roadmap, decided to prioritize mobile app improvements and user feedback...</div>
+          <div class="note-date">Yesterday</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h1 class="section-title">Dashboard - Empty States</h1>
+
+  <div class="phone">
+    <div class="status-bar">
+      <span>9:41</span>
+      <span>📶 🔋</span>
+    </div>
+
+    <div class="header">
+      <div class="greeting">Good afternoon, Sri!</div>
+      <div class="date">Sunday, February 16, 2026</div>
+    </div>
+
+    <div class="content">
+      <!-- Stats Grid (all zeros) -->
+      <div class="stats-grid">
+        <div class="stat-card tasks">
+          <div class="stat-value">0</div>
+          <div class="stat-label">Tasks Today</div>
+        </div>
+        <div class="stat-card habits">
+          <div class="stat-value">0</div>
+          <div class="stat-label">Habits</div>
+        </div>
+        <div class="stat-card notes">
+          <div class="stat-value">0</div>
+          <div class="stat-label">Notes</div>
+        </div>
+        <div class="stat-card journal">
+          <div class="stat-value">0</div>
+          <div class="stat-label">Journal Entries</div>
+        </div>
+      </div>
+
+      <!-- Quick Actions (always visible) -->
+      <div class="quick-actions">
+        <button class="action-btn" aria-label="Add new task">
+          <div class="action-icon">✓</div>
+          <div class="action-label">Add Task</div>
+        </button>
+        <button class="action-btn" aria-label="Create new note">
+          <div class="action-icon">📝</div>
+          <div class="action-label">New Note</div>
+        </button>
+        <button class="action-btn" aria-label="Write journal entry">
+          <div class="action-icon">📔</div>
+          <div class="action-label">Journal</div>
+        </button>
+        <button class="action-btn" aria-label="Start focus session">
+          <div class="action-icon">⏱️</div>
+          <div class="action-label">Focus</div>
+        </button>
+      </div>
+
+      <!-- Empty Tasks -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">✓ Today's Tasks</div>
+        </div>
+        <div class="empty-state">
+          <div class="empty-icon">✓</div>
+          <div class="empty-text">No tasks for today</div>
+          <div class="empty-subtext">Tap "Add Task" to get started</div>
+        </div>
+      </div>
+
+      <!-- Empty Habits -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🎯 Today's Habits</div>
+        </div>
+        <div class="empty-state">
+          <div class="empty-icon">🎯</div>
+          <div class="empty-text">No habits tracked</div>
+          <div class="empty-subtext">Create your first habit to build consistency</div>
+        </div>
+      </div>
+
+      <!-- Empty Notes -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📝 Recent Notes</div>
+        </div>
+        <div class="empty-state">
+          <div class="empty-icon">📝</div>
+          <div class="empty-text">No notes yet</div>
+          <div class="empty-subtext">Start capturing your thoughts</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

@@ -114,7 +114,11 @@
       "Bash(npx cap sync:*)",
       "Bash(vitest:*)",
       "Bash(1)",
-      "Bash(npx cap:*)"
+      "Bash(npx cap:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(supabase --version:*)",
+      "Bash(pgrep:*)",
+      "Bash(src/components/v2/index.ts:*)"
     ],
     "deny": [],
     "ask": []

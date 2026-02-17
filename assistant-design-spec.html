@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Assistant - LifeSync Design Spec</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: #F5F5F5;
+      padding: 20px;
+      line-height: 1.5;
+    }
+
+    .phone {
+      width: 375px;
+      margin: 0 auto 30px;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 812px;
+    }
+
+    .status-bar {
+      height: 44px;
+      background: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);
+      padding: 16px 20px;
+      color: white;
+      flex-shrink: 0;
+    }
+
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .header h1 {
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .new-chat-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: white;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .chat-container {
+      flex: 1;
+      background: #F9FAFB;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .message {
+      display: flex;
+      gap: 8px;
+      max-width: 85%;
+    }
+
+    .message.user {
+      align-self: flex-end;
+      flex-direction: row-reverse;
+    }
+
+    .message.assistant {
+      align-self: flex-start;
+    }
+
+    .avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    .avatar.user {
+      background: #D4A574;
+      color: white;
+    }
+
+    .avatar.assistant {
+      background: #E5E7EB;
+      color: #6B7280;
+    }
+
+    .message-bubble {
+      border-radius: 16px;
+      padding: 12px 16px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .message.user .message-bubble {
+      background: #D4A574;
+      color: white;
+      border-bottom-right-radius: 4px;
+    }
+
+    .message.assistant .message-bubble {
+      background: white;
+      color: #1F2937;
+      border-bottom-left-radius: 4px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .timestamp {
+      font-size: 11px;
+      color: #9CA3AF;
+      margin-top: 4px;
+      text-align: center;
+    }
+
+    .suggestions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .suggestion-chip {
+      background: white;
+      border: 1px solid #E5E7EB;
+      border-radius: 16px;
+      padding: 8px 12px;
+      font-size: 13px;
+      color: #374151;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .suggestion-chip:hover {
+      border-color: #D4A574;
+      background: #FEF3E8;
+    }
+
+    .input-container {
+      background: white;
+      border-top: 1px solid #E5E7EB;
+      padding: 12px 16px;
+      flex-shrink: 0;
+    }
+
+    .input-wrapper {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+    }
+
+    .input-field {
+      flex: 1;
+      background: #F3F4F6;
+      border: 1px solid #E5E7EB;
+      border-radius: 20px;
+      padding: 10px 16px;
+      font-size: 14px;
+      resize: none;
+      max-height: 100px;
+      overflow-y: auto;
+      font-family: inherit;
+    }
+
+    .input-field:focus {
+      outline: none;
+      border-color: #D4A574;
+      background: white;
+    }
+
+    .input-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .icon-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: none;
+      background: #F3F4F6;
+      color: #6B7280;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .icon-btn:hover {
+      background: #E5E7EB;
+    }
+
+    .icon-btn.send {
+      background: #D4A574;
+      color: white;
+    }
+
+    .icon-btn.send:hover {
+      background: #C18B5E;
+    }
+
+    .icon-btn.send:disabled {
+      background: #E5E7EB;
+      color: #9CA3AF;
+      cursor: not-allowed;
+    }
+
+    .empty-state {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 24px;
+      text-align: center;
+    }
+
+    .empty-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+    }
+
+    .empty-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #1F2937;
+      margin-bottom: 8px;
+    }
+
+    .empty-subtitle {
+      font-size: 14px;
+      color: #6B7280;
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+
+    .starter-prompts {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .starter-prompt {
+      background: white;
+      border: 1px solid #E5E7EB;
+      border-radius: 12px;
+      padding: 12px 16px;
+      text-align: left;
+      font-size: 13px;
+      color: #374151;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .starter-prompt:hover {
+      border-color: #D4A574;
+      background: #FEF3E8;
+    }
+
+    .typing-indicator {
+      display: flex;
+      gap: 4px;
+      padding: 12px 16px;
+      background: white;
+      border-radius: 16px;
+      border-bottom-left-radius: 4px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      width: fit-content;
+    }
+
+    .typing-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #9CA3AF;
+      animation: typing 1.4s infinite;
+    }
+
+    .typing-dot:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .typing-dot:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+
+    @keyframes typing {
+      0%, 60%, 100% {
+        transform: translateY(0);
+        opacity: 0.6;
+      }
+      30% {
+        transform: translateY(-8px);
+        opacity: 1;
+      }
+    }
+
+    .context-badge {
+      display: inline-block;
+      background: #E0E7FF;
+      color: #4F46E5;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-right: 4px;
+    }
+
+    .section-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #1F2937;
+      margin: 30px 0 15px;
+      text-align: center;
+    }
+
+    .action-list {
+      margin-top: 8px;
+      padding-left: 8px;
+    }
+
+    .action-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 0;
+      font-size: 13px;
+      color: #4F46E5;
+    }
+
+    .action-item:before {
+      content: "→";
+      color: #D4A574;
+    }
+  </style>
+</head>
+<body>
+
+  <h1 class="section-title">AI Assistant - Active Chat</h1>
+
+  <div class="phone">
+    <div class="status-bar">
+      <span>9:41</span>
+      <span>📶 🔋</span>
+    </div>
+
+    <div class="header">
+      <div class="header-content">
+        <h1>🤖 AI Assistant</h1>
+        <button class="new-chat-btn" aria-label="Start new chat">+</button>
+      </div>
+    </div>
+
+    <div class="chat-container">
+      <div class="timestamp">Today, 9:30 AM</div>
+
+      <div class="message user">
+        <div class="avatar user">S</div>
+        <div class="message-bubble">
+          What tasks do I have today?
+        </div>
+      </div>
+
+      <div class="message assistant">
+        <div class="avatar assistant">🤖</div>
+        <div class="message-bubble">
+          You have 8 tasks scheduled for today:
+          <div class="action-list">
+            <div class="action-item">3 high-priority tasks</div>
+            <div class="action-item">2 medium-priority tasks</div>
+            <div class="action-item">3 low-priority tasks</div>
+          </div>
+          <br>
+          Your most urgent task is "Review pull request #342" for the Work Project.
+        </div>
+      </div>
+
+      <div class="message user">
+        <div class="avatar user">S</div>
+        <div class="message-bubble">
+          Can you help me plan my meals for the week?
+        </div>
+      </div>
+
+      <div class="message assistant">
+        <div class="avatar assistant">🤖</div>
+        <div class="message-bubble">
+          I'd be happy to help! I can see you have some dietary preferences saved. Would you like me to:
+          <div class="suggestions">
+            <div class="suggestion-chip">Generate meal plan</div>
+            <div class="suggestion-chip">Add to shopping list</div>
+            <div class="suggestion-chip">View saved recipes</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="message user">
+        <div class="avatar user">S</div>
+        <div class="message-bubble">
+          Create a task to finish the project proposal by Friday
+        </div>
+      </div>
+
+      <div class="message assistant">
+        <div class="avatar assistant">🤖</div>
+        <div class="message-bubble">
+          <span class="context-badge">Task Created</span>
+          <br><br>
+          I've created a new task "Finish project proposal" with:
+          <div class="action-list">
+            <div class="action-item">Due date: Friday, Feb 20</div>
+            <div class="action-item">Priority: High</div>
+            <div class="action-item">Project: Work</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="input-container">
+      <div class="input-wrapper">
+        <textarea
+          class="input-field"
+          placeholder="Ask me anything..."
+          rows="1"
+        ></textarea>
+        <div class="input-actions">
+          <button class="icon-btn" aria-label="Voice input">🎤</button>
+          <button class="icon-btn send" aria-label="Send message">→</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h1 class="section-title">AI Assistant - Empty State</h1>
+
+  <div class="phone">
+    <div class="status-bar">
+      <span>9:41</span>
+      <span>📶 🔋</span>
+    </div>
+
+    <div class="header">
+      <div class="header-content">
+        <h1>🤖 AI Assistant</h1>
+        <button class="new-chat-btn" aria-label="Start new chat">+</button>
+      </div>
+    </div>
+
+    <div class="chat-container">
+      <div class="empty-state">
+        <div class="empty-icon">🤖</div>
+        <div class="empty-title">How can I help you?</div>
+        <div class="empty-subtitle">
+          I can help you manage tasks, plan meals, track habits, and answer questions about your data.
+        </div>
+        <div class="starter-prompts">
+          <button class="starter-prompt">What are my tasks for today?</button>
+          <button class="starter-prompt">Help me plan meals for the week</button>
+          <button class="starter-prompt">Show my habit streaks</button>
+          <button class="starter-prompt">What's my budget status?</button>
+          <button class="starter-prompt">Create a quick task</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="input-container">
+      <div class="input-wrapper">
+        <textarea
+          class="input-field"
+          placeholder="Ask me anything..."
+          rows="1"
+        ></textarea>
+        <div class="input-actions">
+          <button class="icon-btn" aria-label="Voice input">🎤</button>
+          <button class="icon-btn send" disabled aria-label="Send message">→</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h1 class="section-title">AI Assistant - Typing State</h1>
+
+  <div class="phone">
+    <div class="status-bar">
+      <span>9:41</span>
+      <span>📶 🔋</span>
+    </div>
+
+    <div class="header">
+      <div class="header-content">
+        <h1>🤖 AI Assistant</h1>
+        <button class="new-chat-btn" aria-label="Start new chat">+</button>
+      </div>
+    </div>
+
+    <div class="chat-container">
+      <div class="timestamp">Today, 9:30 AM</div>
+
+      <div class="message user">
+        <div class="avatar user">S</div>
+        <div class="message-bubble">
+          What's the weather like today?
+        </div>
+      </div>
+
+      <div class="message assistant">
+        <div class="avatar assistant">🤖</div>
+        <div class="typing-indicator">
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="input-container">
+      <div class="input-wrapper">
+        <textarea
+          class="input-field"
+          placeholder="Ask me anything..."
+          rows="1"
+        ></textarea>
+        <div class="input-actions">
+          <button class="icon-btn" aria-label="Voice input">🎤</button>
+          <button class="icon-btn send" disabled aria-label="Send message">→</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

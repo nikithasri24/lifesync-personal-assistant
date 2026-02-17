@@ -1,5 +1,6 @@
 import React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useThemeColors } from '@/hooks/useThemeColors';
 
 interface JournalPaginationProps {
   currentPage: number;
@@ -16,6 +17,8 @@ export function JournalPagination({
   totalPages,
   onPageChange,
 }: JournalPaginationProps): React.ReactElement | null {
+  const colors = useThemeColors();
+
   // Don't render if there's only one page or no pages
   if (totalPages <= 1) {
     return null;
@@ -26,24 +29,27 @@ export function JournalPagination({
 
   return (
     <div
-      className="flex items-center justify-center gap-4"
+      className="flex items-center justify-center gap-4 py-5"
       data-testid="journal-pagination"
     >
       <button
         type="button"
         onClick={() => onPageChange(currentPage - 1)}
         disabled={!canGoPrevious}
-        className="inline-flex items-center gap-1 rounded-lg border px-3 py-2 text-sm font-medium transition border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
-        style={{ color: 'inherit' }}
+        className="w-9 h-9 rounded-lg text-sm font-bold transition hover:opacity-70 disabled:opacity-50 disabled:cursor-not-allowed"
+        style={{
+          backgroundColor: 'rgba(212, 165, 116, 0.1)',
+          color: '#C18B5E',
+        }}
         aria-label="Previous page"
         data-testid="journal-pagination-prev"
       >
-        <ChevronLeft className="h-4 w-4 dark:stroke-white" />
-        <span className="dark:text-white">Previous</span>
+        <ChevronLeft className="h-5 w-5 mx-auto" strokeWidth={2.5} />
       </button>
 
       <span
-        className="text-sm text-slate-600 dark:text-white"
+        className="text-sm font-semibold"
+        style={{ color: colors.text.secondary }}
         data-testid="journal-pagination-info"
       >
         Page {currentPage + 1} of {totalPages}
@@ -53,12 +59,15 @@ export function JournalPagination({
         type="button"
         onClick={() => onPageChange(currentPage + 1)}
         disabled={!canGoNext}
-        className="inline-flex items-center gap-1 rounded-lg border px-3 py-2 text-sm font-medium transition border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-9 h-9 rounded-lg text-sm font-bold transition hover:opacity-70 disabled:opacity-50 disabled:cursor-not-allowed"
+        style={{
+          backgroundColor: 'rgba(212, 165, 116, 0.1)',
+          color: '#C18B5E',
+        }}
         aria-label="Next page"
         data-testid="journal-pagination-next"
       >
-        <span className="text-slate-700" style={{ color: 'var(--tw-text-opacity, 1)' }}>Next</span>
-        <ChevronRight className="h-4 w-4" style={{ stroke: 'currentColor' }} />
+        <ChevronRight className="h-5 w-5 mx-auto" strokeWidth={2.5} />
       </button>
     </div>
   );

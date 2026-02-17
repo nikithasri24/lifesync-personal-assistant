@@ -13,8 +13,10 @@ import { useJournalEntry, useDeleteJournalEntry } from '@/hooks/useJournalQuery'
 import type { JournalEntry } from '@/types';
 import { JournalAttachmentList } from './JournalAttachmentList';
 import { sanitizeHtml } from '../utils/sanitizeHtml';
+import { useThemeColors } from '@/hooks/useThemeColors';
 
 export const JournalDetailView: React.FC = () => {
+  const colors = useThemeColors();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: entry, isLoading, error } = useJournalEntry(id ?? null);
@@ -37,10 +39,10 @@ export const JournalDetailView: React.FC = () => {
     return (
       <div className="mx-auto max-w-3xl p-6" data-testid="journal-detail-loading">
         <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-1/4"></div>
-          <div className="h-12 bg-slate-200 dark:bg-slate-700 rounded w-3/4"></div>
-          <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/2"></div>
-          <div className="h-64 bg-slate-200 dark:bg-slate-700 rounded"></div>
+          <div className="h-8 rounded w-1/4" style={{ backgroundColor: colors.bg.tertiary }}></div>
+          <div className="h-12 rounded w-3/4" style={{ backgroundColor: colors.bg.tertiary }}></div>
+          <div className="h-4 rounded w-1/2" style={{ backgroundColor: colors.bg.tertiary }}></div>
+          <div className="h-64 rounded" style={{ backgroundColor: colors.bg.tertiary }}></div>
         </div>
       </div>
     );
@@ -52,13 +54,14 @@ export const JournalDetailView: React.FC = () => {
       <div className="mx-auto max-w-3xl p-6" data-testid="journal-detail-error">
         <Link
           to="/journal"
-          className="inline-flex items-center gap-2 text-slate-600 dark:text-white hover:text-slate-800 dark:hover:text-slate-200 mb-6 no-underline"
+          className="inline-flex items-center gap-2 hover:opacity-70 mb-6 no-underline"
+          style={{ color: colors.text.secondary }}
         >
           <ArrowLeft className="h-4 w-4" />
           Back to Journal
         </Link>
-        <div className="rounded-lg border border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800 p-4">
-          <p className="text-sm text-red-700 dark:text-red-300">
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+          <p className="text-sm text-red-700">
             {error instanceof Error ? error.message : 'Entry not found'}
           </p>
         </div>
@@ -71,7 +74,8 @@ export const JournalDetailView: React.FC = () => {
       {/* Back link */}
       <Link
         to="/journal"
-        className="inline-flex items-center gap-2 text-slate-600 dark:text-white hover:text-slate-800 dark:hover:text-slate-200 mb-6 no-underline"
+        className="inline-flex items-center gap-2 hover:opacity-70 mb-6 no-underline"
+        style={{ color: colors.text.secondary }}
         data-testid="journal-detail-back"
       >
         <ArrowLeft className="h-4 w-4" />
@@ -79,21 +83,30 @@ export const JournalDetailView: React.FC = () => {
       </Link>
 
       {/* Entry card */}
-      <article className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden">
+      <article
+        className="rounded-2xl overflow-hidden"
+        style={{
+          backgroundColor: colors.bg.white,
+          boxShadow: '0 2px 12px rgba(92, 74, 58, 0.08)',
+        }}
+      >
         {/* Header */}
-        <header className="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+        <header className="px-6 py-5 border-b" style={{ borderColor: colors.border.light }}>
           <h1
-            className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-2"
+            className="text-2xl font-extrabold mb-2"
+            style={{ color: colors.text.primary }}
             data-testid="journal-detail-title"
           >
             {typedEntry.title || 'Untitled Entry'}
           </h1>
 
-          <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
+          <div className="flex flex-wrap items-center gap-4 text-sm" style={{ color: colors.text.tertiary }}>
             <span className="inline-flex items-center gap-1.5">
-              <Calendar className="h-4 w-4" />
-              {format(new Date(typedEntry.createdAt), 'MMMM d, yyyy')} at{' '}
-              {format(new Date(typedEntry.createdAt), 'h:mm a')}
+              📅 {format(new Date(typedEntry.createdAt), 'MMMM d, yyyy')}
+            </span>
+            <span>•</span>
+            <span className="inline-flex items-center gap-1.5">
+              ⏰ {format(new Date(typedEntry.createdAt), 'h:mm a')}
             </span>
           </div>
 
@@ -103,7 +116,11 @@ export const JournalDetailView: React.FC = () => {
               {typedEntry.tags.map((tag) => (
                 <span
                   key={tag}
-                  className="inline-flex items-center gap-1 rounded-full bg-slate-200 dark:bg-slate-700 px-2.5 py-0.5 text-xs font-medium text-slate-700 dark:text-slate-300"
+                  className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium"
+                  style={{
+                    backgroundColor: colors.border.light,
+                    color: colors.text.secondary,
+                  }}
                 >
                   <Tag className="h-3 w-3" />
                   {tag}
@@ -115,24 +132,29 @@ export const JournalDetailView: React.FC = () => {
 
         {/* Content */}
         <div
-          className="px-6 py-6 prose prose-slate dark:prose-invert max-w-none"
+          className="px-6 py-6 prose max-w-none"
+          style={{ color: colors.text.secondary }}
           dangerouslySetInnerHTML={{ __html: sanitizeHtml(typedEntry.content) }}
           data-testid="journal-detail-content"
         />
 
         {/* Attachments */}
         {typedEntry.attachments && typedEntry.attachments.length > 0 && (
-          <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-700">
+          <div className="px-6 py-4 border-t" style={{ borderColor: colors.border.light }}>
             <JournalAttachmentList attachments={typedEntry.attachments} readonly />
           </div>
         )}
 
         {/* Actions */}
-        <footer className="px-6 py-4 border-t border-slate-200 dark:border-slate-700 flex items-center gap-3">
+        <footer className="px-6 py-4 border-t flex items-center gap-3" style={{ borderColor: colors.border.light }}>
           <button
             type="button"
             onClick={() => navigate(`/journal?edit=${typedEntry.id}`)}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg transition"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition hover:opacity-90"
+            style={{
+              background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
+              color: 'white',
+            }}
             data-testid="journal-detail-edit"
           >
             <Pencil className="h-4 w-4" />
@@ -143,7 +165,11 @@ export const JournalDetailView: React.FC = () => {
             <button
               type="button"
               onClick={() => setShowDeleteConfirm(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition hover:opacity-70"
+              style={{
+                backgroundColor: colors.border.light,
+                color: colors.text.primary,
+              }}
               data-testid="journal-detail-delete"
             >
               <Trash2 className="h-4 w-4" />
@@ -151,7 +177,7 @@ export const JournalDetailView: React.FC = () => {
             </button>
           ) : (
             <div className="flex items-center gap-2">
-              <span className="text-sm text-slate-600 dark:text-slate-400">Delete this entry?</span>
+              <span className="text-sm" style={{ color: colors.text.secondary }}>Delete this entry?</span>
               <button
                 type="button"
                 onClick={handleDelete}
@@ -164,7 +190,11 @@ export const JournalDetailView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setShowDeleteConfirm(false)}
-                className="px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition"
+                className="px-3 py-1.5 text-sm font-medium rounded-lg transition hover:opacity-70"
+                style={{
+                  backgroundColor: colors.border.light,
+                  color: colors.text.primary,
+                }}
                 data-testid="journal-detail-delete-cancel"
               >
                 Cancel

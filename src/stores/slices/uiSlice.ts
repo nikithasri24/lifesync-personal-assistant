@@ -32,9 +32,9 @@ export type ViewKey =
   | 'visa'
   | 'projects'
   | 'assistant'
-  | 'scheduler'
   | 'trip-planner'
   | 'shared'
+  | 'together'
   | 'privacy-settings';
 
 export interface UISlice {

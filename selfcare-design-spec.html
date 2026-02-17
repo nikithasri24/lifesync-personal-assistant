@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Self Care - LifeSync Design Spec</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #F5F5F5;
+            padding: 20px;
+            color: #333;
+        }
+
+        .phone-container {
+            max-width: 375px;
+            margin: 0 auto 40px;
+            background: white;
+            border-radius: 40px;
+            padding: 15px;
+            box-shadow: 0 10px 40px rgba(92, 74, 58, 0.2);
+        }
+
+        .screen {
+            background: #FAFAFA;
+            border-radius: 30px;
+            overflow: hidden;
+            min-height: 700px;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);
+            padding: 60px 20px 20px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .header .subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        /* Owner Filter */
+        .owner-filter {
+            display: flex;
+            gap: 8px;
+            padding: 16px 20px;
+            background: white;
+            border-bottom: 1px solid #E8DCC8;
+        }
+
+        .owner-pill {
+            padding: 8px 16px;
+            background: #E8DCC8;
+            border: 2px solid transparent;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #5C4A3A;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .owner-pill.active {
+            background: linear-gradient(135deg, rgba(212, 165, 116, 0.2) 0%, rgba(193, 139, 94, 0.2) 100%);
+            border-color: #C18B5E;
+            color: #C18B5E;
+        }
+
+        /* Segmented Control */
+        .segmented-control {
+            display: flex;
+            background: rgba(92, 74, 58, 0.1);
+            border-radius: 12px;
+            padding: 4px;
+            margin: 16px 20px;
+        }
+
+        .segment {
+            flex: 1;
+            padding: 10px 8px;
+            font-size: 12px;
+            font-weight: 600;
+            text-align: center;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #5C4A3A;
+        }
+
+        .segment.active {
+            background: white;
+            color: #C18B5E;
+            box-shadow: 0 2px 8px rgba(92, 74, 58, 0.15);
+        }
+
+        /* Weekly Routine Table */
+        .routine-table {
+            background: white;
+            margin: 0 20px 16px;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 2px 12px rgba(92, 74, 58, 0.08);
+        }
+
+        .routine-row {
+            display: grid;
+            grid-template-columns: 80px 1fr 1fr;
+            border-bottom: 1px solid #E8DCC8;
+        }
+
+        .routine-row:last-child {
+            border-bottom: none;
+        }
+
+        .routine-day {
+            padding: 16px 12px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #5C4A3A;
+            background: #FAFAFA;
+            border-right: 1px solid #E8DCC8;
+        }
+
+        .routine-cell {
+            padding: 12px;
+            font-size: 12px;
+            color: #6B5847;
+            line-height: 1.5;
+            border-right: 1px solid #E8DCC8;
+        }
+
+        .routine-cell:last-child {
+            border-right: none;
+        }
+
+        .routine-cell.empty {
+            color: #9B8B7A;
+            font-style: italic;
+        }
+
+        .routine-header {
+            padding: 16px 12px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #C18B5E;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: linear-gradient(135deg, rgba(212, 165, 116, 0.1) 0%, rgba(193, 139, 94, 0.1) 100%);
+            border-right: 1px solid #E8DCC8;
+        }
+
+        .routine-header:last-child {
+            border-right: none;
+        }
+
+        /* Schedule Calendar */
+        .calendar {
+            background: white;
+            margin: 0 20px 16px;
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 2px 12px rgba(92, 74, 58, 0.08);
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .month-label {
+            font-size: 16px;
+            font-weight: 700;
+            color: #5C4A3A;
+        }
+
+        .nav-btns {
+            display: flex;
+            gap: 8px;
+        }
+
+        .nav-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: rgba(212, 165, 116, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #C18B5E;
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+        }
+
+        .calendar-day-label {
+            text-align: center;
+            font-size: 11px;
+            font-weight: 700;
+            color: #9B8B7A;
+            padding: 8px 4px;
+        }
+
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #5C4A3A;
+            position: relative;
+        }
+
+        .calendar-day.today {
+            background: linear-gradient(135deg, rgba(212, 165, 116, 0.2) 0%, rgba(193, 139, 94, 0.2) 100%);
+            color: #C18B5E;
+        }
+
+        .calendar-day.has-tasks {
+            background: #E8DCC8;
+        }
+
+        .calendar-day.other-month {
+            color: #D4C5B3;
+        }
+
+        .task-dot {
+            width: 4px;
+            height: 4px;
+            border-radius: 2px;
+            background: #C18B5E;
+            margin-top: 2px;
+        }
+
+        /* Tasks List */
+        .tasks-list {
+            padding: 0 20px 100px;
+        }
+
+        .task-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 12px rgba(92, 74, 58, 0.08);
+            border-left: 4px solid #D4A574;
+        }
+
+        .task-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .task-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 15px;
+            font-weight: 700;
+            color: #5C4A3A;
+        }
+
+        .task-status {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .status-due { background: #FFE8CC; color: #EA580C; }
+        .status-upcoming { background: #D1FAE5; color: #059669; }
+        .status-completed { background: #E9D5FF; color: #9333EA; }
+
+        .task-meta {
+            font-size: 12px;
+            color: #9B8B7A;
+            margin-bottom: 8px;
+        }
+
+        .task-action {
+            width: 100%;
+            padding: 10px;
+            background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);
+            border: none;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            color: white;
+            cursor: pointer;
+        }
+
+        /* Products Grid */
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            padding: 0 20px 100px;
+        }
+
+        .product-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 2px 12px rgba(92, 74, 58, 0.08);
+            position: relative;
+        }
+
+        .product-category {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            padding: 4px 8px;
+            background: #E8DCC8;
+            border-radius: 8px;
+            font-size: 10px;
+            font-weight: 700;
+            color: #6B5847;
+            text-transform: uppercase;
+        }
+
+        .product-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: #5C4A3A;
+            margin-bottom: 4px;
+            padding-right: 60px;
+        }
+
+        .product-brand {
+            font-size: 12px;
+            color: #9B8B7A;
+            margin-bottom: 8px;
+        }
+
+        .product-meta {
+            font-size: 11px;
+            color: #6B5847;
+            margin-bottom: 8px;
+        }
+
+        .product-rating {
+            display: flex;
+            gap: 2px;
+            margin-top: 8px;
+        }
+
+        .star {
+            font-size: 14px;
+        }
+
+        .star.filled { color: #D4A574; }
+        .star.empty { color: #E8DCC8; }
+
+        /* Categories Setup */
+        .categories-list {
+            padding: 0 20px 100px;
+        }
+
+        .category-card {
+            background: white;
+            border-radius: 16px;
+            margin-bottom: 16px;
+            overflow: hidden;
+            box-shadow: 0 2px 12px rgba(92, 74, 58, 0.08);
+        }
+
+        .category-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px;
+            background: linear-gradient(135deg, rgba(212, 165, 116, 0.1) 0%, rgba(193, 139, 94, 0.1) 100%);
+        }
+
+        .category-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .category-icon {
+            font-size: 24px;
+        }
+
+        .category-name {
+            font-size: 16px;
+            font-weight: 700;
+            color: #5C4A3A;
+        }
+
+        .category-count {
+            font-size: 11px;
+            color: #9B8B7A;
+        }
+
+        .add-item-btn {
+            padding: 6px 12px;
+            background: rgba(212, 165, 116, 0.3);
+            border: none;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #C18B5E;
+            cursor: pointer;
+        }
+
+        .category-items {
+            border-top: 1px solid #E8DCC8;
+        }
+
+        .item-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            border-bottom: 1px solid #E8DCC8;
+        }
+
+        .item-row:last-child {
+            border-bottom: none;
+        }
+
+        .item-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .item-icon {
+            font-size: 18px;
+        }
+
+        .item-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #5C4A3A;
+        }
+
+        .item-schedule {
+            font-size: 11px;
+            color: #9B8B7A;
+        }
+
+        .item-status {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .status-active { background: #D1FAE5; color: #059669; }
+        .status-inactive { background: #E8DCC8; color: #6B5847; }
+
+        h2 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #5C4A3A;
+            padding: 20px 20px 12px;
+        }
+
+        /* FAB */
+        .fab {
+            position: fixed;
+            bottom: 90px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 30px;
+            background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);
+            box-shadow: 0 4px 16px rgba(193, 139, 94, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+            color: white;
+            font-size: 28px;
+        }
+
+        .fab:active {
+            transform: scale(0.95);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 40px;
+            margin: 20px;
+        }
+
+        .empty-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .empty-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #5C4A3A;
+            margin-bottom: 8px;
+        }
+
+        .empty-subtitle {
+            font-size: 14px;
+            color: #9B8B7A;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ==================== WEEKLY ROUTINE VIEW ==================== -->
+<div class="phone-container">
+    <div class="screen">
+        <div class="header">
+            <h1>✨ Self Care</h1>
+            <div class="subtitle">Skincare & personal care</div>
+        </div>
+
+        <!-- Owner Filter -->
+        <div class="owner-filter">
+            <div class="owner-pill active">Mine</div>
+            <div class="owner-pill">Sarah's</div>
+            <div class="owner-pill">Both</div>
+        </div>
+
+        <!-- Segmented Control -->
+        <div class="segmented-control">
+            <div class="segment active">Routine</div>
+            <div class="segment">Schedule</div>
+            <div class="segment">Products</div>
+            <div class="segment">Setup</div>
+        </div>
+
+        <h2>Weekly Skincare Routine</h2>
+
+        <!-- Weekly Routine Table -->
+        <div class="routine-table">
+            <div class="routine-row">
+                <div class="routine-day"></div>
+                <div class="routine-header">AM Routine</div>
+                <div class="routine-header">PM Routine</div>
+            </div>
+
+            <div class="routine-row">
+                <div class="routine-day">Mon</div>
+                <div class="routine-cell">
+                    Cleanser → Vitamin C → Moisturizer → SPF 50
+                </div>
+                <div class="routine-cell">
+                    Oil Cleanser → Cleanser → Retinol → Eye Cream → Moisturizer
+                </div>
+            </div>
+
+            <div class="routine-row">
+                <div class="routine-day">Tue</div>
+                <div class="routine-cell">
+                    Cleanser → Niacinamide → Moisturizer → SPF 50
+                </div>
+                <div class="routine-cell">
+                    Oil Cleanser → Cleanser → Hyaluronic Acid → Moisturizer
+                </div>
+            </div>
+
+            <div class="routine-row">
+                <div class="routine-day">Wed</div>
+                <div class="routine-cell">
+                    Cleanser → Vitamin C → Moisturizer → SPF 50
+                </div>
+                <div class="routine-cell">
+                    Oil Cleanser → Cleanser → Retinol → Eye Cream → Moisturizer
+                </div>
+            </div>
+
+            <div class="routine-row">
+                <div class="routine-day">Thu</div>
+                <div class="routine-cell">
+                    Cleanser → Niacinamide → Moisturizer → SPF 50
+                </div>
+                <div class="routine-cell">
+                    Oil Cleanser → Cleanser → Peptide Serum → Moisturizer
+                </div>
+            </div>
+
+            <div class="routine-row">
+                <div class="routine-day">Fri</div>
+                <div class="routine-cell">
+                    Cleanser → Vitamin C → Moisturizer → SPF 50
+                </div>
+                <div class="routine-cell">
+                    Oil Cleanser → Cleanser → Retinol → Eye Cream → Moisturizer
+                </div>
+            </div>
+
+            <div class="routine-row">
+                <div class="routine-day">Sat</div>
+                <div class="routine-cell">
+                    Cleanser → Exfoliant (AHA/BHA) → Moisturizer → SPF 50
+                </div>
+                <div class="routine-cell">
+                    Oil Cleanser → Cleanser → Sheet Mask → Moisturizer
+                </div>
+            </div>
+
+            <div class="routine-row">
+                <div class="routine-day">Sun</div>
+                <div class="routine-cell">
+                    Cleanser → Hydrating Serum → Moisturizer → SPF 50
+                </div>
+                <div class="routine-cell">
+                    Oil Cleanser → Cleanser → Retinol → Eye Cream → Moisturizer
+                </div>
+            </div>
+        </div>
+
+        <!-- FAB -->
+        <div class="fab">+</div>
+    </div>
+</div>
+
+<!-- ==================== SCHEDULE VIEW ==================== -->
+<div class="phone-container">
+    <div class="screen">
+        <div class="header">
+            <h1>✨ Self Care</h1>
+            <div class="subtitle">Skincare & personal care</div>
+        </div>
+
+        <!-- Owner Filter -->
+        <div class="owner-filter">
+            <div class="owner-pill active">Mine</div>
+            <div class="owner-pill">Sarah's</div>
+            <div class="owner-pill">Both</div>
+        </div>
+
+        <!-- Segmented Control -->
+        <div class="segmented-control">
+            <div class="segment">Routine</div>
+            <div class="segment active">Schedule</div>
+            <div class="segment">Products</div>
+            <div class="segment">Setup</div>
+        </div>
+
+        <!-- Calendar -->
+        <div class="calendar">
+            <div class="calendar-header">
+                <div class="nav-btn">‹</div>
+                <div class="month-label">February 2026</div>
+                <div class="nav-btn">›</div>
+            </div>
+
+            <div class="calendar-grid">
+                <div class="calendar-day-label">Sun</div>
+                <div class="calendar-day-label">Mon</div>
+                <div class="calendar-day-label">Tue</div>
+                <div class="calendar-day-label">Wed</div>
+                <div class="calendar-day-label">Thu</div>
+                <div class="calendar-day-label">Fri</div>
+                <div class="calendar-day-label">Sat</div>
+
+                <div class="calendar-day other-month">26</div>
+                <div class="calendar-day other-month">27</div>
+                <div class="calendar-day other-month">28</div>
+                <div class="calendar-day other-month">29</div>
+                <div class="calendar-day other-month">30</div>
+                <div class="calendar-day other-month">31</div>
+                <div class="calendar-day">1</div>
+
+                <div class="calendar-day">2</div>
+                <div class="calendar-day has-tasks">
+                    3
+                    <div class="task-dot"></div>
+                </div>
+                <div class="calendar-day">4</div>
+                <div class="calendar-day">5</div>
+                <div class="calendar-day">6</div>
+                <div class="calendar-day">7</div>
+                <div class="calendar-day">8</div>
+
+                <div class="calendar-day">9</div>
+                <div class="calendar-day">10</div>
+                <div class="calendar-day">11</div>
+                <div class="calendar-day">12</div>
+                <div class="calendar-day">13</div>
+                <div class="calendar-day has-tasks">
+                    14
+                    <div class="task-dot"></div>
+                </div>
+                <div class="calendar-day">15</div>
+
+                <div class="calendar-day today">16</div>
+                <div class="calendar-day has-tasks">
+                    17
+                    <div class="task-dot"></div>
+                </div>
+                <div class="calendar-day">18</div>
+                <div class="calendar-day">19</div>
+                <div class="calendar-day">20</div>
+                <div class="calendar-day">21</div>
+                <div class="calendar-day">22</div>
+
+                <div class="calendar-day">23</div>
+                <div class="calendar-day">24</div>
+                <div class="calendar-day">25</div>
+                <div class="calendar-day">26</div>
+                <div class="calendar-day has-tasks">
+                    27
+                    <div class="task-dot"></div>
+                </div>
+                <div class="calendar-day">28</div>
+                <div class="calendar-day other-month">1</div>
+            </div>
+        </div>
+
+        <h2>Upcoming Tasks</h2>
+
+        <!-- Tasks List -->
+        <div class="tasks-list">
+            <div class="task-card">
+                <div class="task-header">
+                    <div class="task-title">
+                        <span>💆</span>
+                        <span>Bikini Wax</span>
+                    </div>
+                    <div class="task-status status-due">Due</div>
+                </div>
+                <div class="task-meta">Feb 17 · Every 14 days</div>
+                <button class="task-action">Mark Complete</button>
+            </div>
+
+            <div class="task-card">
+                <div class="task-header">
+                    <div class="task-title">
+                        <span>💇</span>
+                        <span>Hair Wash</span>
+                    </div>
+                    <div class="task-status status-upcoming">Tomorrow</div>
+                </div>
+                <div class="task-meta">Feb 17 · Every 3 days</div>
+                <button class="task-action">Mark Complete</button>
+            </div>
+
+            <div class="task-card">
+                <div class="task-header">
+                    <div class="task-title">
+                        <span>🧖</span>
+                        <span>Face Mask</span>
+                    </div>
+                    <div class="task-status status-upcoming">Feb 21</div>
+                </div>
+                <div class="task-meta">Saturday · Weekly</div>
+                <button class="task-action">Mark Complete</button>
+            </div>
+        </div>
+
+        <!-- FAB -->
+        <div class="fab">+</div>
+    </div>
+</div>
+
+<!-- ==================== PRODUCTS VIEW ==================== -->
+<div class="phone-container">
+    <div class="screen">
+        <div class="header">
+            <h1>✨ Self Care</h1>
+            <div class="subtitle">Skincare & personal care</div>
+        </div>
+
+        <!-- Owner Filter -->
+        <div class="owner-filter">
+            <div class="owner-pill active">Mine</div>
+            <div class="owner-pill">Sarah's</div>
+            <div class="owner-pill">Both</div>
+        </div>
+
+        <!-- Segmented Control -->
+        <div class="segmented-control">
+            <div class="segment">Routine</div>
+            <div class="segment">Schedule</div>
+            <div class="segment active">Products</div>
+            <div class="segment">Setup</div>
+        </div>
+
+        <h2>Product Library (12)</h2>
+
+        <!-- Products Grid -->
+        <div class="products-grid">
+            <div class="product-card">
+                <div class="product-category">Cleanser</div>
+                <div class="product-name">CeraVe Hydrating Cleanser</div>
+                <div class="product-brand">CeraVe</div>
+                <div class="product-meta">355ml · $14.99</div>
+                <div class="product-rating">
+                    <span class="star filled">★</span>
+                    <span class="star filled">★</span>
+                    <span class="star filled">★</span>
+                    <span class="star filled">★</span>
+                    <span class="star filled">★</span>
+                </div>
+            </div>
+
+            <div class="product-card">
+                <div class="product-category">Serum</div>
+                <div class="product-name">The Ordinary Niacinamide</div>
+                <div class="product-brand">The Ordinary</div>
+                <div class="product-meta">30ml · $5.90</div>
+                <div class="product-rating">
+                    <span class="star filled">★</span>
+                    <span class="star filled">★</span>
+                    <span class="star filled">★</span>
+                    <span class="star filled">★</span>
+                    <span class="star empty">★</span>
+                </div>
+            </div>
+
+            <div class="product-card">
+                <div class="product-category">Sunscreen</div>
+                <div class="product-name">La Roche-Posay Anthelios</div>
+                <div class="product-brand">La Roche-Posay</div>
+                <div class="product-meta">50ml · SPF 50</div>
+                <div class="product-rating">
+                    <span class="star filled">★</span>
+                    <span class="star filled">★</span>
+                    <span class="star filled">★</span>
+                    <span class="star filled">★</span>
+                    <span class="star filled">★</span>
+                </div>
+            </div>
+
+            <div class="product-card">
+                <div class="product-category">Moisturizer</div>
+                <div class="product-name">Neutrogena Hydro Boost</div>
+                <div class="product-brand">Neutrogena</div>
+                <div class="product-meta">50ml · $18.99</div>
+                <div class="product-rating">
+                    <span class="star filled">★</span>
+                    <span class="star filled">★</span>
+                    <span class="star filled">★</span>
+                    <span class="star filled">★</span>
+                    <span class="star empty">★</span>
+                </div>
+            </div>
+
+            <div class="product-card">
+                <div class="product-category">Treatment</div>
+                <div class="product-name">Differin Gel Retinoid</div>
+                <div class="product-brand">Differin</div>
+                <div class="product-meta">45g · $13.99</div>
+                <div class="product-rating">
+                    <span class="star filled">★</span>
+                    <span class="star filled">★</span>
+                    <span class="star filled">★</span>
+                    <span class="star filled">★</span>
+                    <span class="star filled">★</span>
+                </div>
+            </div>
+
+            <div class="product-card">
+                <div class="product-category">Eye Cream</div>
+                <div class="product-name">RoC Retinol Eye Cream</div>
+                <div class="product-brand">RoC</div>
+                <div class="product-meta">15ml · $24.99</div>
+                <div class="product-rating">
+                    <span class="star filled">★</span>
+                    <span class="star filled">★</span>
+                    <span class="star filled">★</span>
+                    <span class="star filled">★</span>
+                    <span class="star empty">★</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- FAB -->
+        <div class="fab">+</div>
+    </div>
+</div>
+
+<!-- ==================== SETUP VIEW ==================== -->
+<div class="phone-container">
+    <div class="screen">
+        <div class="header">
+            <h1>✨ Self Care</h1>
+            <div class="subtitle">Skincare & personal care</div>
+        </div>
+
+        <!-- Owner Filter -->
+        <div class="owner-filter">
+            <div class="owner-pill active">Mine</div>
+            <div class="owner-pill">Sarah's</div>
+            <div class="owner-pill">Both</div>
+        </div>
+
+        <!-- Segmented Control -->
+        <div class="segmented-control">
+            <div class="segment">Routine</div>
+            <div class="segment">Schedule</div>
+            <div class="segment">Products</div>
+            <div class="segment active">Setup</div>
+        </div>
+
+        <h2>Categories & Items</h2>
+
+        <!-- Categories List -->
+        <div class="categories-list">
+            <!-- Daily Category -->
+            <div class="category-card">
+                <div class="category-header">
+                    <div class="category-info">
+                        <div class="category-icon">☀️</div>
+                        <div>
+                            <div class="category-name">Daily</div>
+                            <div class="category-count">2 active items</div>
+                        </div>
+                    </div>
+                    <button class="add-item-btn">+ Add</button>
+                </div>
+                <div class="category-items">
+                    <div class="item-row">
+                        <div class="item-info">
+                            <div class="item-icon">🧼</div>
+                            <div>
+                                <div class="item-name">Skincare AM</div>
+                                <div class="item-schedule">Daily</div>
+                            </div>
+                        </div>
+                        <div class="item-status status-active">Active</div>
+                    </div>
+                    <div class="item-row">
+                        <div class="item-info">
+                            <div class="item-icon">🌙</div>
+                            <div>
+                                <div class="item-name">Skincare PM</div>
+                                <div class="item-schedule">Daily</div>
+                            </div>
+                        </div>
+                        <div class="item-status status-active">Active</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Weekly Category -->
+            <div class="category-card">
+                <div class="category-header">
+                    <div class="category-info">
+                        <div class="category-icon">📅</div>
+                        <div>
+                            <div class="category-name">Weekly</div>
+                            <div class="category-count">3 active items</div>
+                        </div>
+                    </div>
+                    <button class="add-item-btn">+ Add</button>
+                </div>
+                <div class="category-items">
+                    <div class="item-row">
+                        <div class="item-info">
+                            <div class="item-icon">💇</div>
+                            <div>
+                                <div class="item-name">Hair Wash</div>
+                                <div class="item-schedule">Every 3 days</div>
+                            </div>
+                        </div>
+                        <div class="item-status status-active">Active</div>
+                    </div>
+                    <div class="item-row">
+                        <div class="item-info">
+                            <div class="item-icon">🧖</div>
+                            <div>
+                                <div class="item-name">Face Mask</div>
+                                <div class="item-schedule">Every 7 days</div>
+                            </div>
+                        </div>
+                        <div class="item-status status-active">Active</div>
+                    </div>
+                    <div class="item-row">
+                        <div class="item-info">
+                            <div class="item-icon">💅</div>
+                            <div>
+                                <div class="item-name">Nails</div>
+                                <div class="item-schedule">Every 7 days</div>
+                            </div>
+                        </div>
+                        <div class="item-status status-active">Active</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bi-weekly to Monthly Category -->
+            <div class="category-card">
+                <div class="category-header">
+                    <div class="category-info">
+                        <div class="category-icon">🗓️</div>
+                        <div>
+                            <div class="category-name">Bi-weekly to Monthly</div>
+                            <div class="category-count">4 active items</div>
+                        </div>
+                    </div>
+                    <button class="add-item-btn">+ Add</button>
+                </div>
+                <div class="category-items">
+                    <div class="item-row">
+                        <div class="item-info">
+                            <div class="item-icon">💆</div>
+                            <div>
+                                <div class="item-name">Bikini</div>
+                                <div class="item-schedule">Every 14 days</div>
+                            </div>
+                        </div>
+                        <div class="item-status status-active">Active</div>
+                    </div>
+                    <div class="item-row">
+                        <div class="item-info">
+                            <div class="item-icon">🙋</div>
+                            <div>
+                                <div class="item-name">Underarms</div>
+                                <div class="item-schedule">Every 14 days</div>
+                            </div>
+                        </div>
+                        <div class="item-status status-active">Active</div>
+                    </div>
+                    <div class="item-row">
+                        <div class="item-info">
+                            <div class="item-icon">👁️</div>
+                            <div>
+                                <div class="item-name">Eyebrows</div>
+                                <div class="item-schedule">Every 21 days</div>
+                            </div>
+                        </div>
+                        <div class="item-status status-active">Active</div>
+                    </div>
+                    <div class="item-row">
+                        <div class="item-info">
+                            <div class="item-icon">💇</div>
+                            <div>
+                                <div class="item-name">Haircut</div>
+                                <div class="item-schedule">Every 28 days</div>
+                            </div>
+                        </div>
+                        <div class="item-status status-inactive">Inactive</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FAB -->
+        <div class="fab">+</div>
+    </div>
+</div>
+
+<!-- ==================== EMPTY STATE ==================== -->
+<div class="phone-container">
+    <div class="screen">
+        <div class="header">
+            <h1>✨ Self Care</h1>
+            <div class="subtitle">Skincare & personal care</div>
+        </div>
+
+        <!-- Owner Filter -->
+        <div class="owner-filter">
+            <div class="owner-pill active">Mine</div>
+            <div class="owner-pill">Sarah's</div>
+            <div class="owner-pill">Both</div>
+        </div>
+
+        <!-- Segmented Control -->
+        <div class="segmented-control">
+            <div class="segment active">Routine</div>
+            <div class="segment">Schedule</div>
+            <div class="segment">Products</div>
+            <div class="segment">Setup</div>
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state">
+            <div class="empty-icon">✨</div>
+            <div class="empty-title">Start your routine</div>
+            <div class="empty-subtitle">Set up your weekly skincare routine to track your AM and PM products.</div>
+        </div>
+
+        <!-- FAB -->
+        <div class="fab">+</div>
+    </div>
+</div>
+
+</body>
+</html>

@@ -28,7 +28,6 @@ import { createShoppingSlice, type ShoppingSlice } from './slices/shoppingSlice'
 import { createFinanceSlice, type FinanceSlice } from './slices/financeSlice';
 import { createProjectsSlice, type ProjectsSlice } from './slices/projectsSlice';
 import { createFocusSlice, type FocusSlice } from './slices/focusSlice';
-import { createSchedulerSlice, type SchedulerSlice } from './slices/schedulerSlice';
 import { createLifeGoalsSlice, type LifeGoalsSlice } from './slices/lifeGoalsSlice';
 import { createCalendarSlice, type CalendarSlice } from './slices/calendarSlice';
 import { createSkincareSlice, type SkincareSlice } from './slices/skincareSlice';
@@ -46,7 +45,6 @@ export type ComposedStore = UISlice &
   FinanceSlice &
   ProjectsSlice &
   FocusSlice &
-  SchedulerSlice &
   LifeGoalsSlice &
   CalendarSlice &
   SkincareSlice &
@@ -79,7 +77,6 @@ export const useComposedStore = create<ComposedStore>()(
         ...createFinanceSlice(...a),
         ...createProjectsSlice(...a),
         ...createFocusSlice(...a),
-        ...createSchedulerSlice(...a),
         ...createLifeGoalsSlice(...a),
         ...createCalendarSlice(...a),
         ...createSkincareSlice(...a),

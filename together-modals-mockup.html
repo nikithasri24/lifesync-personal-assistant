@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Together Feature - Modals Mockup</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            terracotta: {
+              50: '#FDF8F6',
+              100: '#F2E8E5',
+              200: '#EAD1C8',
+              300: '#D4A574',
+              400: '#C18B5E',
+              500: '#B4794F',
+              600: '#A66B43',
+              700: '#8B5A39',
+              800: '#72492F',
+              900: '#5C3B26',
+            },
+            love: {
+              DEFAULT: '#FF6B9D',
+              dark: '#E6608C',
+            },
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    @keyframes confetti {
+      0% { transform: translateY(-100%) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+    }
+    .animate-fade-in {
+      animation: fadeIn 0.3s ease-out;
+    }
+    .animate-slide-up {
+      animation: slideUp 0.4s ease-out;
+    }
+    .confetti {
+      position: fixed;
+      width: 10px;
+      height: 10px;
+      animation: confetti 3s linear infinite;
+    }
+    .gradient-terracotta {
+      background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);
+    }
+  </style>
+</head>
+<body class="bg-gray-900 min-h-screen flex items-center justify-center p-4">
+
+  <!-- Modal Selection -->
+  <div class="fixed top-4 left-4 z-50 bg-white rounded-lg shadow-lg p-4">
+    <h3 class="font-bold text-gray-900 mb-3">View Modal:</h3>
+    <div class="space-y-2">
+      <button onclick="showModal('add-milestone')" class="block w-full px-3 py-2 bg-terracotta-300 hover:bg-terracotta-400 text-white rounded text-sm font-medium transition-colors">
+        Add Milestone
+      </button>
+      <button onclick="showModal('milestone-detail')" class="block w-full px-3 py-2 bg-terracotta-300 hover:bg-terracotta-400 text-white rounded text-sm font-medium transition-colors">
+        Milestone Details
+      </button>
+      <button onclick="showModal('compose-message')" class="block w-full px-3 py-2 bg-love hover:bg-love-dark text-white rounded text-sm font-medium transition-colors">
+        Compose Message
+      </button>
+      <button onclick="showModal('message-reveal')" class="block w-full px-3 py-2 bg-love hover:bg-love-dark text-white rounded text-sm font-medium transition-colors">
+        Message Reveal
+      </button>
+      <button onclick="showModal('create-challenge')" class="block w-full px-3 py-2 gradient-terracotta text-white rounded text-sm font-medium transition-colors">
+        Create Challenge
+      </button>
+      <button onclick="showModal('reward-unlock')" class="block w-full px-3 py-2 gradient-terracotta text-white rounded text-sm font-medium transition-colors">
+        Reward Unlock
+      </button>
+    </div>
+  </div>
+
+  <!-- Add Milestone Modal -->
+  <div id="add-milestone" class="hidden fixed inset-0 z-40 flex items-end lg:items-center justify-center animate-fade-in" style="background-color: rgba(0, 0, 0, 0.4); backdrop-filter: blur(4px);">
+    <div class="w-full lg:max-w-2xl bg-white lg:rounded-3xl rounded-t-3xl overflow-hidden animate-slide-up" style="max-height: 90vh;">
+
+      <!-- Drag Handle (mobile) -->
+      <div class="lg:hidden pt-2">
+        <div class="w-9 h-1 rounded-full mx-auto bg-gray-300"></div>
+      </div>
+
+      <!-- Header -->
+      <div class="flex items-center justify-between px-6 py-5 border-b border-gray-200">
+        <h2 class="text-2xl font-bold text-gray-900">Add Milestone</h2>
+        <button onclick="hideModal('add-milestone')" class="p-2 hover:bg-gray-100 rounded-lg transition-colors" aria-label="Close">
+          <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Content -->
+      <div class="overflow-y-auto p-6 space-y-5" style="max-height: calc(90vh - 140px);">
+
+        <!-- Milestone Type -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Milestone Type</label>
+          <select class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all">
+            <option>🎂 Birthday</option>
+            <option>💕 Anniversary</option>
+            <option>💑 First Date</option>
+            <option>🏠 Move-in Anniversary</option>
+            <option>💍 Engagement</option>
+            <option>👰 Wedding Anniversary</option>
+            <option>⭐ Custom</option>
+          </select>
+        </div>
+
+        <!-- For Whom -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">For Whom?</label>
+          <div class="space-y-2">
+            <label class="flex items-center gap-3 p-3 border border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
+              <input type="radio" name="for-whom" value="partner" checked class="w-5 h-5 text-terracotta-400 focus:ring-terracotta-300">
+              <span class="font-medium text-gray-900">John (Partner)</span>
+            </label>
+            <label class="flex items-center gap-3 p-3 border border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
+              <input type="radio" name="for-whom" value="me" class="w-5 h-5 text-terracotta-400 focus:ring-terracotta-300">
+              <span class="font-medium text-gray-900">Me</span>
+            </label>
+            <label class="flex items-center gap-3 p-3 border border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
+              <input type="radio" name="for-whom" value="both" class="w-5 h-5 text-terracotta-400 focus:ring-terracotta-300">
+              <span class="font-medium text-gray-900">Both of us</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Date -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Date</label>
+          <div class="grid grid-cols-2 gap-3">
+            <select class="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none">
+              <option>January</option>
+              <option selected>February</option>
+              <option>March</option>
+            </select>
+            <input type="number" value="18" class="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none" placeholder="Day">
+          </div>
+          <input type="number" value="1991" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none mt-3" placeholder="Year (optional)">
+        </div>
+
+        <!-- Recurring -->
+        <label class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer">
+          <input type="checkbox" checked class="w-5 h-5 text-terracotta-400 rounded focus:ring-terracotta-300">
+          <span class="font-medium text-gray-900">Recurring yearly</span>
+        </label>
+
+        <!-- Title -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Title (optional)</label>
+          <input type="text" value="John's Birthday" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none">
+        </div>
+
+        <!-- Reminders -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Reminders</label>
+          <div class="space-y-2 bg-gray-50 rounded-xl p-4">
+            <label class="flex items-center gap-3">
+              <input type="checkbox" checked class="w-5 h-5 text-terracotta-400 rounded">
+              <span class="text-gray-900">30 days before</span>
+            </label>
+            <label class="flex items-center gap-3">
+              <input type="checkbox" checked class="w-5 h-5 text-terracotta-400 rounded">
+              <span class="text-gray-900">7 days before</span>
+            </label>
+            <label class="flex items-center gap-3">
+              <input type="checkbox" checked class="w-5 h-5 text-terracotta-400 rounded">
+              <span class="text-gray-900">1 day before</span>
+            </label>
+            <label class="flex items-center gap-3">
+              <input type="checkbox" checked class="w-5 h-5 text-terracotta-400 rounded">
+              <span class="text-gray-900">On the day</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Notes -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Notes</label>
+          <textarea rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none resize-none" placeholder="Gift ideas, celebration plans..."></textarea>
+        </div>
+
+        <!-- Photos -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Photos</label>
+          <button class="w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-xl hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-gray-600">
+            <span>📷</span>
+            <span class="font-medium">Add Photos</span>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Footer -->
+      <div class="px-6 py-4 border-t border-gray-200 flex gap-3">
+        <button onclick="hideModal('add-milestone')" class="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold text-gray-700 transition-colors">
+          Cancel
+        </button>
+        <button class="flex-1 px-4 py-3 gradient-terracotta text-white rounded-xl font-semibold hover:opacity-90 transition-opacity">
+          Add Milestone
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Milestone Detail Modal -->
+  <div id="milestone-detail" class="hidden fixed inset-0 z-40 flex items-end lg:items-center justify-center animate-fade-in" style="background-color: rgba(0, 0, 0, 0.4); backdrop-filter: blur(4px);">
+    <div class="w-full lg:max-w-xl bg-white lg:rounded-3xl rounded-t-3xl overflow-hidden animate-slide-up">
+
+      <!-- Header -->
+      <div class="flex justify-end px-6 pt-6">
+        <button onclick="hideModal('milestone-detail')" class="p-2 hover:bg-gray-100 rounded-lg transition-colors" aria-label="Close">
+          <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="px-6 pb-6">
+        <!-- Title -->
+        <div class="text-center mb-6">
+          <div class="text-5xl mb-3">🎂</div>
+          <h2 class="text-2xl font-bold text-gray-900 mb-2">John's Birthday</h2>
+        </div>
+
+        <!-- Countdown -->
+        <div class="p-6 bg-gradient-to-br from-love/10 to-terracotta-100 rounded-2xl text-center mb-6">
+          <div class="text-4xl font-bold text-love mb-2">In 2 days</div>
+          <div class="text-lg text-gray-700 mb-1">February 18, 2026</div>
+          <div class="text-gray-600">Turning 35 years old</div>
+        </div>
+
+        <!-- Reminders -->
+        <div class="mb-6">
+          <h3 class="font-bold text-gray-900 mb-3">Reminders Scheduled</h3>
+          <div class="space-y-2 text-sm">
+            <div class="flex items-center gap-2 text-green-700">
+              <span>✅</span>
+              <span>30 days before (sent)</span>
+            </div>
+            <div class="flex items-center gap-2 text-green-700">
+              <span>✅</span>
+              <span>7 days before (sent)</span>
+            </div>
+            <div class="flex items-center gap-2 text-yellow-700">
+              <span>🔔</span>
+              <span>1 day before (tomorrow)</span>
+            </div>
+            <div class="flex items-center gap-2 text-yellow-700">
+              <span>🔔</span>
+              <span>On the day (Feb 18)</span>
+            </div>
+          </div>
+        </div>
+
+        <hr class="border-gray-200 mb-6" />
+
+        <!-- Notes -->
+        <div class="mb-6">
+          <h3 class="font-bold text-gray-900 mb-2">Notes</h3>
+          <p class="text-gray-700">Gift ideas: New running shoes, cookbook<br>Plan surprise dinner at his favorite restaurant</p>
+        </div>
+
+        <hr class="border-gray-200 mb-6" />
+
+        <!-- Photos -->
+        <div class="mb-6">
+          <h3 class="font-bold text-gray-900 mb-3">Photos</h3>
+          <div class="flex gap-2">
+            <div class="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center text-2xl">
+              📷
+            </div>
+            <div class="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center text-2xl">
+              📷
+            </div>
+            <div class="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center text-2xl">
+              📷
+            </div>
+            <button class="w-20 h-20 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-2xl hover:bg-gray-50 transition-colors">
+              +
+            </button>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex gap-3">
+          <button class="flex-1 px-4 py-3 bg-terracotta-300 hover:bg-terracotta-400 text-white rounded-xl font-semibold transition-colors">
+            Edit
+          </button>
+          <button class="flex-1 px-4 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-semibold transition-colors">
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Compose Message Modal -->
+  <div id="compose-message" class="hidden fixed inset-0 z-40 flex items-end lg:items-center justify-center animate-fade-in" style="background-color: rgba(0, 0, 0, 0.4); backdrop-filter: blur(4px);">
+    <div class="w-full lg:max-w-2xl bg-white lg:rounded-3xl rounded-t-3xl overflow-hidden animate-slide-up" style="max-height: 90vh;">
+
+      <!-- Drag Handle -->
+      <div class="lg:hidden pt-2">
+        <div class="w-9 h-1 rounded-full mx-auto bg-gray-300"></div>
+      </div>
+
+      <!-- Header -->
+      <div class="flex items-center justify-between px-6 py-5 border-b border-gray-200">
+        <h2 class="text-2xl font-bold text-gray-900">Write Message</h2>
+        <button onclick="hideModal('compose-message')" class="p-2 hover:bg-gray-100 rounded-lg transition-colors" aria-label="Close">
+          <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Content -->
+      <div class="overflow-y-auto p-6 space-y-5" style="max-height: calc(90vh - 140px);">
+
+        <!-- To -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">To</label>
+          <div class="px-4 py-3 bg-gray-50 rounded-xl text-gray-900 font-medium">John</div>
+        </div>
+
+        <!-- Title -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Title</label>
+          <input type="text" value="Happy Birthday & 10 Years Together" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-love focus:border-love outline-none">
+        </div>
+
+        <!-- Message -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Message</label>
+          <textarea rows="6" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-love focus:border-love outline-none resize-none" placeholder="Write your message...">My dearest husband,
+
+It's hard to believe it's been 10 years since we first met. That day changed my life forever...
+
+With all my love,
+Sri ❤️</textarea>
+        </div>
+
+        <!-- Attachments -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Attachments</label>
+          <div class="grid grid-cols-3 gap-2">
+            <button class="px-3 py-2 border-2 border-dashed border-gray-300 rounded-xl hover:bg-gray-50 transition-colors text-sm flex flex-col items-center gap-1">
+              <span>📷</span>
+              <span class="text-xs text-gray-600">Photos</span>
+            </button>
+            <button class="px-3 py-2 border-2 border-dashed border-gray-300 rounded-xl hover:bg-gray-50 transition-colors text-sm flex flex-col items-center gap-1">
+              <span>🎥</span>
+              <span class="text-xs text-gray-600">Video</span>
+            </button>
+            <button class="px-3 py-2 border-2 border-dashed border-gray-300 rounded-xl hover:bg-gray-50 transition-colors text-sm flex flex-col items-center gap-1">
+              <span>🎵</span>
+              <span class="text-xs text-gray-600">Music</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Reveal Settings -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Reveal Settings</label>
+          <div class="p-4 bg-gray-50 rounded-xl space-y-3">
+            <p class="text-sm text-gray-700 font-medium">When should this message reveal?</p>
+            <label class="flex items-center gap-3 p-3 bg-white rounded-xl cursor-pointer">
+              <input type="radio" name="reveal" value="first-login" checked class="w-5 h-5 text-love">
+              <span class="text-gray-900">First time John opens the app</span>
+            </label>
+            <label class="flex items-center gap-3 p-3 bg-white rounded-xl cursor-pointer">
+              <input type="radio" name="reveal" value="specific-date" class="w-5 h-5 text-love">
+              <span class="text-gray-900">On a specific date/time</span>
+            </label>
+            <label class="flex items-center gap-3 p-3 bg-white rounded-xl cursor-pointer">
+              <input type="radio" name="reveal" value="achievement" class="w-5 h-5 text-love">
+              <span class="text-gray-900">When achievement is unlocked</span>
+            </label>
+            <label class="flex items-center gap-3 p-3 bg-white rounded-xl cursor-pointer">
+              <input type="radio" name="reveal" value="now" class="w-5 h-5 text-love">
+              <span class="text-gray-900">Send now</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="px-6 py-4 border-t border-gray-200 flex gap-3">
+        <button class="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold text-gray-700 transition-colors">
+          Save Draft
+        </button>
+        <button class="flex-1 px-4 py-3 bg-love hover:bg-love-dark text-white rounded-xl font-semibold transition-colors">
+          Schedule
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Message Reveal Experience -->
+  <div id="message-reveal" class="hidden fixed inset-0 z-50 flex items-center justify-center animate-fade-in" style="background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);">
+
+    <!-- Confetti -->
+    <div class="confetti" style="left: 10%; animation-delay: 0s; background: #FFD700;"></div>
+    <div class="confetti" style="left: 20%; animation-delay: 0.5s; background: #FF6B9D;"></div>
+    <div class="confetti" style="left: 30%; animation-delay: 1s; background: #4CAF50;"></div>
+    <div class="confetti" style="left: 40%; animation-delay: 1.5s; background: #2196F3;"></div>
+    <div class="confetti" style="left: 50%; animation-delay: 0.3s; background: #FF9800;"></div>
+    <div class="confetti" style="left: 60%; animation-delay: 0.8s; background: #9C27B0;"></div>
+    <div class="confetti" style="left: 70%; animation-delay: 1.3s; background: #F44336;"></div>
+    <div class="confetti" style="left: 80%; animation-delay: 0.6s; background: #00BCD4;"></div>
+    <div class="confetti" style="left: 90%; animation-delay: 1.1s; background: #FFEB3B;"></div>
+
+    <div class="w-full max-w-xl p-6">
+      <div class="bg-white rounded-3xl p-8 shadow-2xl text-center animate-slide-up">
+        <div class="text-6xl mb-4">💌</div>
+        <h2 class="text-2xl font-bold text-gray-900 mb-2">You have a message</h2>
+        <p class="text-lg text-gray-600 mb-6">from your love</p>
+        <button onclick="showMessageContent()" class="px-8 py-3 bg-love hover:bg-love-dark text-white rounded-full font-semibold text-lg transition-colors shadow-lg">
+          Open Message
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Challenge Modal -->
+  <div id="create-challenge" class="hidden fixed inset-0 z-40 flex items-end lg:items-center justify-center animate-fade-in" style="background-color: rgba(0, 0, 0, 0.4); backdrop-filter: blur(4px);">
+    <div class="w-full lg:max-w-2xl bg-white lg:rounded-3xl rounded-t-3xl overflow-hidden animate-slide-up" style="max-height: 90vh;">
+
+      <!-- Drag Handle -->
+      <div class="lg:hidden pt-2">
+        <div class="w-9 h-1 rounded-full mx-auto bg-gray-300"></div>
+      </div>
+
+      <!-- Header -->
+      <div class="flex items-center justify-between px-6 py-5 border-b border-gray-200">
+        <h2 class="text-2xl font-bold text-gray-900">Create Challenge</h2>
+        <button onclick="hideModal('create-challenge')" class="p-2 hover:bg-gray-100 rounded-lg transition-colors" aria-label="Close">
+          <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Content -->
+      <div class="overflow-y-auto p-6 space-y-5" style="max-height: calc(90vh - 140px);">
+
+        <!-- For -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">For</label>
+          <div class="px-4 py-3 bg-gray-50 rounded-xl text-gray-900 font-medium">John</div>
+        </div>
+
+        <!-- Challenge Title -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Challenge Title</label>
+          <input type="text" value="Master Your First Pull-Up!" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none">
+        </div>
+
+        <!-- Link to Habit/Goal -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Link to Habit/Goal</label>
+          <input type="text" placeholder="Search habits..." class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none mb-3">
+          <div class="space-y-2">
+            <label class="flex items-center gap-3 p-3 border border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50">
+              <input type="checkbox" class="w-5 h-5 text-terracotta-400 rounded">
+              <span class="text-gray-900">Daily Pushups (Habit)</span>
+            </label>
+            <label class="flex items-center gap-3 p-3 border border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50">
+              <input type="checkbox" checked class="w-5 h-5 text-terracotta-400 rounded">
+              <span class="text-gray-900">Pull-up Training (Habit)</span>
+            </label>
+            <label class="flex items-center gap-3 p-3 border border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50">
+              <input type="checkbox" class="w-5 h-5 text-terracotta-400 rounded">
+              <span class="text-gray-900">Fitness Goal 2026 (Goal)</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Target -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Target</label>
+          <div class="flex gap-3">
+            <input type="number" value="1" class="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none">
+            <div class="px-4 py-3 bg-gray-50 rounded-xl text-gray-900 flex items-center">pull-ups</div>
+          </div>
+        </div>
+
+        <!-- Reward Type -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Reward Type</label>
+          <div class="space-y-2">
+            <label class="flex items-center gap-3 p-3 border border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50">
+              <input type="radio" name="reward-type" value="message" checked class="w-5 h-5 text-terracotta-400">
+              <span class="text-gray-900">💌 Message (personal letter)</span>
+            </label>
+            <label class="flex items-center gap-3 p-3 border border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50">
+              <input type="radio" name="reward-type" value="surprise" class="w-5 h-5 text-terracotta-400">
+              <span class="text-gray-900">🎁 Surprise (description)</span>
+            </label>
+            <label class="flex items-center gap-3 p-3 border border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50">
+              <input type="radio" name="reward-type" value="activity" class="w-5 h-5 text-terracotta-400">
+              <span class="text-gray-900">🎉 Activity (date/outing)</span>
+            </label>
+            <label class="flex items-center gap-3 p-3 border border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50">
+              <input type="radio" name="reward-type" value="gift" class="w-5 h-5 text-terracotta-400">
+              <span class="text-gray-900">🎀 Gift</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Message to Reveal -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Message to Reveal</label>
+          <textarea rows="4" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none resize-none" placeholder="Write your reward message...">"Congratulations on your first pull-up! I'll cook your favorite meal this weekend to celebrate!"</textarea>
+          <button class="mt-2 text-sm text-terracotta-600 hover:underline">Or link existing message 📧</button>
+        </div>
+
+        <!-- Hide Reward -->
+        <label class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer">
+          <input type="checkbox" checked class="w-5 h-5 text-terracotta-400 rounded">
+          <span class="text-gray-900">Hide reward until unlocked (show as "Mystery Reward")</span>
+        </label>
+      </div>
+
+      <!-- Footer -->
+      <div class="px-6 py-4 border-t border-gray-200 flex gap-3">
+        <button onclick="hideModal('create-challenge')" class="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold text-gray-700 transition-colors">
+          Cancel
+        </button>
+        <button class="flex-1 px-4 py-3 gradient-terracotta text-white rounded-xl font-semibold hover:opacity-90 transition-opacity">
+          Create Challenge
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reward Unlock Celebration -->
+  <div id="reward-unlock" class="hidden fixed inset-0 z-50 flex items-center justify-center animate-fade-in" style="background: linear-gradient(135deg, #4CAF50 0%, #8BC34A 100%);">
+
+    <!-- Confetti -->
+    <div class="confetti" style="left: 10%; animation-delay: 0s; background: #FFD700;"></div>
+    <div class="confetti" style="left: 20%; animation-delay: 0.5s; background: #FF6B9D;"></div>
+    <div class="confetti" style="left: 30%; animation-delay: 1s; background: #4CAF50;"></div>
+    <div class="confetti" style="left: 40%; animation-delay: 1.5s; background: #2196F3;"></div>
+    <div class="confetti" style="left: 50%; animation-delay: 0.3s; background: #FF9800;"></div>
+    <div class="confetti" style="left: 60%; animation-delay: 0.8s; background: #9C27B0;"></div>
+    <div class="confetti" style="left: 70%; animation-delay: 1.3s; background: #F44336;"></div>
+    <div class="confetti" style="left: 80%; animation-delay: 0.6s; background: #00BCD4;"></div>
+    <div class="confetti" style="left: 90%; animation-delay: 1.1s; background: #FFEB3B;"></div>
+
+    <div class="w-full max-w-xl p-6">
+      <div class="bg-white rounded-3xl p-8 shadow-2xl text-center animate-slide-up">
+        <div class="text-6xl mb-4">🎉 🎊 🎉</div>
+        <h2 class="text-3xl font-bold text-gray-900 mb-2">Congratulations!</h2>
+        <p class="text-xl text-gray-700 mb-4">You did it! 💪</p>
+        <p class="text-lg text-gray-600 mb-6">You've unlocked a reward from Sri!</p>
+        <button onclick="showRewardContent()" class="px-8 py-3 gradient-terracotta text-white rounded-full font-semibold text-lg transition-all hover:opacity-90 shadow-lg">
+          Reveal Reward
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function showModal(id) {
+      document.querySelectorAll('[id$="-milestone"], [id$="-detail"], [id$="-message"], [id$="-reveal"], [id$="-challenge"], [id$="-unlock"]').forEach(m => m.classList.add('hidden'));
+      document.getElementById(id).classList.remove('hidden');
+    }
+
+    function hideModal(id) {
+      document.getElementById(id).classList.add('hidden');
+    }
+
+    function showMessageContent() {
+      alert('This would show the full message content in an elegant modal with the message text, photos, etc.');
+    }
+
+    function showRewardContent() {
+      alert('This would show the reward details:\n\n"Congratulations on your first pull-up!\n\nI\'m so proud of you! To celebrate, I\'ll cook your favorite meal this weekend - let me know when you want it! 🍝\n\nLove,\nSri ❤️"');
+    }
+
+    // Auto-show first modal
+    showModal('add-milestone');
+  </script>
+</body>
+</html>

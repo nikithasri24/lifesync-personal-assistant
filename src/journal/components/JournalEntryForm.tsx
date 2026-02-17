@@ -5,6 +5,7 @@ import { JournalAttachmentUpload } from './JournalAttachmentUpload';
 import { JournalAttachmentList } from './JournalAttachmentList';
 import { useVoiceToText } from '../hooks/useVoiceToText';
 import type { Attachment } from '../../types';
+import { useThemeColors } from '@/hooks/useThemeColors';
 
 type JournalDraft = {
   title: string;
@@ -37,6 +38,7 @@ export function JournalEntryForm({
   isSubmitting,
   hasError,
 }: JournalEntryFormProps): React.ReactElement {
+  const colors = useThemeColors();
   const {
     isSupported: isVoiceSupported,
     isRecording,
@@ -107,20 +109,34 @@ export function JournalEntryForm({
   }, [handleKeyDown]);
 
   return (
-    <form ref={formRef} onSubmit={onSubmit} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-sm" data-testid="journal-entry-form">
-      <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-white">
-        <NotebookPen className="h-5 w-5 text-slate-600 dark:text-slate-300" />
+    <form
+      ref={formRef}
+      onSubmit={onSubmit}
+      className="rounded-2xl p-6 mb-6"
+      style={{
+        backgroundColor: colors.bg.white,
+        boxShadow: '0 2px 12px rgba(92, 74, 58, 0.08)',
+      }}
+      data-testid="journal-entry-form"
+    >
+      <h2 className="flex items-center gap-2 text-lg font-semibold" style={{ color: colors.text.primary }}>
+        <NotebookPen className="h-5 w-5" style={{ color: colors.text.secondary }} />
         {editingId ? 'Edit entry' : 'New entry'}
       </h2>
       <div className="mt-4 flex flex-col gap-4">
         {/* Title - Full Width */}
         <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium text-slate-700 dark:text-white">Title</span>
+          <span className="font-medium" style={{ color: colors.text.primary }}>Title</span>
           <input
             value={draft.title}
             onChange={(event) => onDraftChange({ ...draft, title: event.target.value })}
             disabled={isSubmitting}
-            className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            className="rounded-xl px-3 py-2 text-sm focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{
+              border: `2px solid ${colors.border.light}`,
+              backgroundColor: colors.bg.primary,
+              color: colors.text.primary,
+            }}
             placeholder="A quick headline for the day"
             data-testid="journal-form-title"
           />
@@ -128,12 +144,17 @@ export function JournalEntryForm({
 
         {/* Tags */}
         <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium text-slate-700 dark:text-white">Tags</span>
+          <span className="font-medium" style={{ color: colors.text.primary }}>Tags</span>
           <input
             value={draft.tags}
             onChange={(event) => onDraftChange({ ...draft, tags: event.target.value })}
             disabled={isSubmitting}
-            className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            className="rounded-xl px-3 py-2 text-sm focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{
+              border: `2px solid ${colors.border.light}`,
+              backgroundColor: colors.bg.primary,
+              color: colors.text.primary,
+            }}
             placeholder="Creativity, focus, gratitude"
             data-testid="journal-form-tags"
           />
@@ -142,17 +163,17 @@ export function JournalEntryForm({
         {/* What happened - Full Width */}
         <div className="flex flex-col gap-1 text-sm" data-testid="journal-form-content-label">
           <div className="flex items-center justify-between">
-            <span className="font-medium text-slate-700 dark:text-white">What happened?</span>
+            <span className="font-medium" style={{ color: colors.text.primary }}>What happened?</span>
             {isVoiceSupported && (
               <button
                 type="button"
                 onClick={isRecording ? stopRecording : startRecording}
                 disabled={isSubmitting}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full transition ${
-                  isRecording
-                    ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/60'
-                    : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full transition disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{
+                  backgroundColor: isRecording ? 'rgba(239, 68, 68, 0.1)' : colors.bg.tertiary,
+                  color: isRecording ? '#dc2626' : colors.text.secondary,
+                }}
                 aria-label={isRecording ? 'Stop voice recording' : 'Start voice recording'}
                 data-testid="journal-form-voice-btn"
               >
@@ -197,7 +218,7 @@ export function JournalEntryForm({
 
         {/* Attachments Section */}
         <div className="space-y-3" data-testid="journal-form-attachments-section">
-          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Attachments</span>
+          <span className="text-sm font-medium" style={{ color: colors.text.primary }}>Attachments</span>
           <JournalAttachmentUpload
             onAttachmentAdd={(attachment) =>
               onDraftChange({ ...draft, attachments: [...draft.attachments, attachment] })
@@ -219,7 +240,10 @@ export function JournalEntryForm({
           <button
             type="submit"
             disabled={isSubmitting}
-            className="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{
+              background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
+            }}
             aria-label={editingId ? 'Update entry' : 'Save entry'}
             data-testid="journal-form-submit"
           >
@@ -230,7 +254,11 @@ export function JournalEntryForm({
             <button
               type="button"
               onClick={onCancelEdit}
-              className="rounded-full border border-slate-200 dark:border-slate-600 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 transition hover:bg-slate-50 dark:hover:bg-slate-700"
+              className="rounded-full px-4 py-2 text-sm font-medium transition hover:opacity-70"
+              style={{
+                backgroundColor: colors.border.light,
+                color: colors.text.primary,
+              }}
               aria-label="Cancel editing"
               data-testid="journal-form-cancel"
             >
@@ -241,7 +269,11 @@ export function JournalEntryForm({
             <button
               type="button"
               onClick={onClear}
-              className="rounded-full border border-slate-200 dark:border-slate-600 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 transition hover:bg-slate-50 dark:hover:bg-slate-700"
+              className="rounded-full px-4 py-2 text-sm font-medium transition hover:opacity-70"
+              style={{
+                backgroundColor: colors.border.light,
+                color: colors.text.primary,
+              }}
               aria-label="Clear entry form"
               data-testid="journal-form-clear"
             >
@@ -250,13 +282,13 @@ export function JournalEntryForm({
           )}
         </div>
         {/* Keyboard shortcut hints */}
-        <div className="text-xs text-slate-500 dark:text-slate-400">
-          <kbd className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 rounded border border-slate-300 dark:border-slate-600 font-mono">⌘/Ctrl+Enter</kbd>
+        <div className="text-xs" style={{ color: colors.text.tertiary }}>
+          <kbd className="px-1.5 py-0.5 rounded border font-mono" style={{ backgroundColor: colors.bg.tertiary, border: `1px solid ${colors.border.light}` }}>⌘/Ctrl+Enter</kbd>
           <span className="ml-1">to save</span>
           {editingId && (
             <>
               <span className="mx-2">•</span>
-              <kbd className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 rounded border border-slate-300 dark:border-slate-600 font-mono">Esc</kbd>
+              <kbd className="px-1.5 py-0.5 rounded border font-mono" style={{ backgroundColor: colors.bg.tertiary, border: `1px solid ${colors.border.light}` }}>Esc</kbd>
               <span className="ml-1">to cancel</span>
             </>
           )}

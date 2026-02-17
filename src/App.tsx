@@ -15,6 +15,8 @@ import { useTaskReminders } from './hooks/useTaskReminders';
 import { useProactiveNotifications } from './hooks/useProactiveNotifications';
 import { useRoutePerformance } from './hooks/useRoutePerformance';
 import { useWebVitals } from './hooks/useWebVitals';
+import { MessageRevealListener } from './together/components';
+import { useMilestoneReminders } from './together/hooks';
 
 // Lazy load all page components for route-based code splitting
 const Dashboard = lazy(() => import('./pages/DashboardV3'));
@@ -31,12 +33,12 @@ const MealPlanning = lazy(() => import('./pages/MealPlanning'));
 const Nutrition = lazy(() => import('./pages/Nutrition'));
 const ProjectTracking = lazy(() => import('./pages/ProjectTracking'));
 const Shared = lazy(() => import('./pages/Shared'));
+const Together = lazy(() => import('./pages/Together'));
 const Travel = lazy(() => import('./pages/Travel'));
 const VisaPage = lazy(() => import('./travel/pages/VisaPage'));
 const Finances = lazy(() => import('./pages/Finances'));
 const SelfCare = lazy(() => import('./pages/SelfCare'));
 const Assistant = lazy(() => import('./pages/Assistant'));
-const TaskScheduler = lazy(() => import('./pages/TaskScheduler'));
 const More = lazy(() => import('./pages/More'));
 
 function App(): React.ReactElement {
@@ -71,6 +73,9 @@ function App(): React.ReactElement {
   // Proactive AI notifications (streak risks, busy periods, goal deadlines)
   useProactiveNotifications({ enabled: true, checkIntervalMs: 60 * 60 * 1000 });
 
+  // Milestone reminders (birthdays, anniversaries)
+  useMilestoneReminders({ enabled: true, checkIntervalMs: 60 * 60 * 1000 });
+
   return (
     <AuthGate>
       <Layout>
@@ -87,7 +92,6 @@ function App(): React.ReactElement {
             <Route path="/" element={<RouteErrorBoundary feature="Dashboard"><Dashboard /></RouteErrorBoundary>} />
             <Route path="/assistant" element={<RouteErrorBoundary feature="Assistant"><Assistant /></RouteErrorBoundary>} />
             <Route path="/calendar" element={<RouteErrorBoundary feature="Calendar"><Calendar /></RouteErrorBoundary>} />
-            <Route path="/scheduler" element={<RouteErrorBoundary feature="Task Scheduler"><TaskScheduler /></RouteErrorBoundary>} />
             <Route path="/focus" element={<RouteErrorBoundary feature="Focus"><Focus /></RouteErrorBoundary>} />
 
             {/* Productivity Routes */}
@@ -113,6 +117,7 @@ function App(): React.ReactElement {
             <Route path="/meals" element={<RouteErrorBoundary feature="Meal Planning"><MealPlanning /></RouteErrorBoundary>} />
             <Route path="/nutrition" element={<RouteErrorBoundary feature="Nutrition"><Nutrition /></RouteErrorBoundary>} />
             <Route path="/shared" element={<RouteErrorBoundary feature="Shared"><Shared /></RouteErrorBoundary>} />
+            <Route path="/together" element={<RouteErrorBoundary feature="Together"><Together /></RouteErrorBoundary>} />
             <Route path="/more" element={<RouteErrorBoundary feature="More"><More /></RouteErrorBoundary>} />
 
             {/* Catch-all: redirect to dashboard */}
@@ -123,6 +128,8 @@ function App(): React.ReactElement {
         <UndoRedoButtons />
         {/* Quick Capture FAB */}
         <QuickCapture variant="floating" />
+        {/* Message Reveal Listener - Shows partner messages when triggered */}
+        <MessageRevealListener />
       </Layout>
     </AuthGate>
   );

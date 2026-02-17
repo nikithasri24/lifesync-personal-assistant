@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notes - LifeSync Design Spec</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #F5F5F5;
+            padding: 20px;
+            color: #333;
+        }
+
+        .phone-container {
+            max-width: 375px;
+            margin: 0 auto 40px;
+            background: white;
+            border-radius: 40px;
+            padding: 15px;
+            box-shadow: 0 10px 40px rgba(92, 74, 58, 0.2);
+        }
+
+        .screen {
+            background: #FAFAFA;
+            border-radius: 30px;
+            overflow: hidden;
+            min-height: 700px;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);
+            padding: 60px 20px 20px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .header .subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        /* Owner Filter Pills */
+        .owner-filter {
+            display: flex;
+            gap: 8px;
+            padding: 16px 20px;
+            background: white;
+            border-bottom: 1px solid #E8DCC8;
+        }
+
+        .owner-pill {
+            padding: 8px 16px;
+            background: #E8DCC8;
+            border: 2px solid transparent;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #5C4A3A;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .owner-pill.active {
+            background: linear-gradient(135deg, rgba(212, 165, 116, 0.2) 0%, rgba(193, 139, 94, 0.2) 100%);
+            border-color: #C18B5E;
+            color: #C18B5E;
+        }
+
+        /* View Toggle */
+        .view-toggle {
+            display: flex;
+            gap: 8px;
+            padding: 16px 20px;
+            background: white;
+            border-bottom: 1px solid #E8DCC8;
+        }
+
+        .view-btn {
+            flex: 1;
+            padding: 10px;
+            background: #E8DCC8;
+            border: none;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #5C4A3A;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .view-btn.active {
+            background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);
+            color: white;
+        }
+
+        /* Create Note Section */
+        .create-section {
+            background: white;
+            margin: 16px 20px;
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 2px 12px rgba(92, 74, 58, 0.08);
+        }
+
+        .note-type-toggle {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .type-btn {
+            flex: 1;
+            padding: 8px;
+            background: #E8DCC8;
+            border: none;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #5C4A3A;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .type-btn.active {
+            background: linear-gradient(135deg, rgba(212, 165, 116, 0.3) 0%, rgba(193, 139, 94, 0.3) 100%);
+            color: #C18B5E;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #E8DCC8;
+            border-radius: 10px;
+            font-size: 14px;
+            margin-bottom: 8px;
+            background: #FAFAFA;
+            color: #5C4A3A;
+        }
+
+        .input-field::placeholder {
+            color: #9B8B7A;
+        }
+
+        .input-field.textarea {
+            min-height: 80px;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .create-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            color: white;
+            cursor: pointer;
+        }
+
+        /* Notes Grid */
+        .notes-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            padding: 0 20px 100px;
+        }
+
+        .note-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 2px 12px rgba(92, 74, 58, 0.08);
+            min-height: 120px;
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .note-card:active {
+            transform: scale(0.98);
+        }
+
+        .note-card.text-note {
+            border-left: 4px solid #D4A574;
+        }
+
+        .note-card.list-note {
+            border-left: 4px solid #C18B5E;
+        }
+
+        .note-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #5C4A3A;
+            margin-bottom: 8px;
+            line-height: 1.3;
+        }
+
+        .note-content {
+            font-size: 13px;
+            color: #6B5847;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .note-footer {
+            margin-top: 12px;
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        .note-tag {
+            padding: 4px 8px;
+            background: #E8DCC8;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #6B5847;
+        }
+
+        .note-owner {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            padding: 4px 8px;
+            background: linear-gradient(135deg, rgba(212, 165, 116, 0.3) 0%, rgba(193, 139, 94, 0.3) 100%);
+            border-radius: 8px;
+            font-size: 10px;
+            font-weight: 700;
+            color: #C18B5E;
+        }
+
+        /* List View */
+        .notes-list {
+            padding: 0 20px 100px;
+        }
+
+        .note-list-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 2px 12px rgba(92, 74, 58, 0.08);
+            margin-bottom: 12px;
+            border-left: 4px solid #D4A574;
+            position: relative;
+        }
+
+        .note-list-card.list-note {
+            border-left-color: #C18B5E;
+        }
+
+        /* Checklist Items */
+        .checklist-items {
+            margin-top: 12px;
+        }
+
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 0;
+            border-bottom: 1px solid #F5F0EA;
+        }
+
+        .checklist-item:last-child {
+            border-bottom: none;
+        }
+
+        .checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #C18B5E;
+            border-radius: 6px;
+            flex-shrink: 0;
+        }
+
+        .checkbox.checked {
+            background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+        }
+
+        .checklist-text {
+            flex: 1;
+            font-size: 13px;
+            color: #5C4A3A;
+        }
+
+        .checklist-text.completed {
+            text-decoration: line-through;
+            color: #9B8B7A;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 80px 40px;
+            margin: 20px;
+        }
+
+        .empty-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .empty-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #5C4A3A;
+            margin-bottom: 8px;
+        }
+
+        .empty-subtitle {
+            font-size: 14px;
+            color: #9B8B7A;
+            line-height: 1.5;
+        }
+
+        h2 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #5C4A3A;
+            padding: 20px 20px 12px;
+        }
+
+        /* FAB */
+        .fab {
+            position: fixed;
+            bottom: 90px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 30px;
+            background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);
+            box-shadow: 0 4px 16px rgba(193, 139, 94, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+            color: white;
+            font-size: 28px;
+        }
+
+        .fab:active {
+            transform: scale(0.95);
+        }
+
+        .note-meta {
+            font-size: 11px;
+            color: #9B8B7A;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ==================== GRID VIEW (MINE) ==================== -->
+<div class="phone-container">
+    <div class="screen">
+        <div class="header">
+            <h1>📝 Notes</h1>
+            <div class="subtitle">Capture thoughts & ideas</div>
+        </div>
+
+        <!-- Owner Filter -->
+        <div class="owner-filter">
+            <div class="owner-pill active">Mine</div>
+            <div class="owner-pill">Sarah's</div>
+            <div class="owner-pill">Both</div>
+        </div>
+
+        <!-- View Toggle -->
+        <div class="view-toggle">
+            <button class="view-btn active">📱 Grid</button>
+            <button class="view-btn">📄 List</button>
+        </div>
+
+        <h2>All Notes (8)</h2>
+
+        <!-- Notes Grid -->
+        <div class="notes-grid">
+            <div class="note-card text-note">
+                <div class="note-title">Project Ideas</div>
+                <div class="note-content">
+                    Build a personal finance tracker with budget alerts and spending insights...
+                </div>
+                <div class="note-footer">
+                    <div class="note-tag">work</div>
+                    <div class="note-tag">ideas</div>
+                </div>
+            </div>
+
+            <div class="note-card list-note">
+                <div class="note-title">Grocery List</div>
+                <div class="checklist-items">
+                    <div class="checklist-item">
+                        <div class="checkbox checked">✓</div>
+                        <div class="checklist-text completed">Milk</div>
+                    </div>
+                    <div class="checklist-item">
+                        <div class="checkbox"></div>
+                        <div class="checklist-text">Bread</div>
+                    </div>
+                    <div class="checklist-item">
+                        <div class="checkbox"></div>
+                        <div class="checklist-text">Eggs</div>
+                    </div>
+                </div>
+                <div class="note-footer">
+                    <div class="note-tag">shopping</div>
+                </div>
+            </div>
+
+            <div class="note-card text-note">
+                <div class="note-title">Meeting Notes</div>
+                <div class="note-content">
+                    Discussed Q1 goals, team reorganization, and new product features...
+                </div>
+                <div class="note-footer">
+                    <div class="note-tag">work</div>
+                    <div class="note-tag">meetings</div>
+                </div>
+            </div>
+
+            <div class="note-card list-note">
+                <div class="note-title">Weekend Tasks</div>
+                <div class="checklist-items">
+                    <div class="checklist-item">
+                        <div class="checkbox"></div>
+                        <div class="checklist-text">Clean garage</div>
+                    </div>
+                    <div class="checklist-item">
+                        <div class="checkbox"></div>
+                        <div class="checklist-text">Fix fence</div>
+                    </div>
+                </div>
+                <div class="note-footer">
+                    <div class="note-tag">home</div>
+                </div>
+            </div>
+
+            <div class="note-card text-note">
+                <div class="note-title">Book Recommendations</div>
+                <div class="note-content">
+                    Atomic Habits, Deep Work, The 4-Hour Workweek...
+                </div>
+                <div class="note-footer">
+                    <div class="note-tag">books</div>
+                    <div class="note-tag">reading</div>
+                </div>
+            </div>
+
+            <div class="note-card text-note">
+                <div class="note-title">Travel Plans</div>
+                <div class="note-content">
+                    Paris in June - book flights early, check visa requirements...
+                </div>
+                <div class="note-footer">
+                    <div class="note-tag">travel</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FAB -->
+        <div class="fab">+</div>
+    </div>
+</div>
+
+<!-- ==================== GRID VIEW (BOTH - WITH OWNER BADGES) ==================== -->
+<div class="phone-container">
+    <div class="screen">
+        <div class="header">
+            <h1>📝 Notes</h1>
+            <div class="subtitle">Capture thoughts & ideas</div>
+        </div>
+
+        <!-- Owner Filter -->
+        <div class="owner-filter">
+            <div class="owner-pill">Mine</div>
+            <div class="owner-pill">Sarah's</div>
+            <div class="owner-pill active">Both</div>
+        </div>
+
+        <!-- View Toggle -->
+        <div class="view-toggle">
+            <button class="view-btn active">📱 Grid</button>
+            <button class="view-btn">📄 List</button>
+        </div>
+
+        <h2>All Notes (12)</h2>
+
+        <!-- Notes Grid with Owner Badges -->
+        <div class="notes-grid">
+            <div class="note-card text-note">
+                <div class="note-owner">You</div>
+                <div class="note-title">Project Ideas</div>
+                <div class="note-content">
+                    Build a personal finance tracker with budget alerts...
+                </div>
+                <div class="note-footer">
+                    <div class="note-tag">work</div>
+                </div>
+            </div>
+
+            <div class="note-card list-note">
+                <div class="note-owner">Sarah</div>
+                <div class="note-title">Grocery List</div>
+                <div class="checklist-items">
+                    <div class="checklist-item">
+                        <div class="checkbox checked">✓</div>
+                        <div class="checklist-text completed">Milk</div>
+                    </div>
+                    <div class="checklist-item">
+                        <div class="checkbox"></div>
+                        <div class="checklist-text">Bread</div>
+                    </div>
+                </div>
+                <div class="note-footer">
+                    <div class="note-tag">shopping</div>
+                </div>
+            </div>
+
+            <div class="note-card text-note">
+                <div class="note-owner">You</div>
+                <div class="note-title">Meeting Notes</div>
+                <div class="note-content">
+                    Discussed Q1 goals and team reorganization...
+                </div>
+                <div class="note-footer">
+                    <div class="note-tag">work</div>
+                </div>
+            </div>
+
+            <div class="note-card text-note">
+                <div class="note-owner">Sarah</div>
+                <div class="note-title">Gift Ideas</div>
+                <div class="note-content">
+                    Mom's birthday - new gardening tools, cookbook...
+                </div>
+                <div class="note-footer">
+                    <div class="note-tag">family</div>
+                </div>
+            </div>
+
+            <div class="note-card list-note">
+                <div class="note-owner">You</div>
+                <div class="note-title">Weekend Tasks</div>
+                <div class="checklist-items">
+                    <div class="checklist-item">
+                        <div class="checkbox"></div>
+                        <div class="checklist-text">Clean garage</div>
+                    </div>
+                    <div class="checklist-item">
+                        <div class="checkbox"></div>
+                        <div class="checklist-text">Fix fence</div>
+                    </div>
+                </div>
+                <div class="note-footer">
+                    <div class="note-tag">home</div>
+                </div>
+            </div>
+
+            <div class="note-card text-note">
+                <div class="note-owner">Sarah</div>
+                <div class="note-title">Recipe Ideas</div>
+                <div class="note-content">
+                    Try making homemade pasta, sourdough bread...
+                </div>
+                <div class="note-footer">
+                    <div class="note-tag">cooking</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FAB -->
+        <div class="fab">+</div>
+    </div>
+</div>
+
+<!-- ==================== LIST VIEW ==================== -->
+<div class="phone-container">
+    <div class="screen">
+        <div class="header">
+            <h1>📝 Notes</h1>
+            <div class="subtitle">Capture thoughts & ideas</div>
+        </div>
+
+        <!-- Owner Filter -->
+        <div class="owner-filter">
+            <div class="owner-pill active">Mine</div>
+            <div class="owner-pill">Sarah's</div>
+            <div class="owner-pill">Both</div>
+        </div>
+
+        <!-- View Toggle -->
+        <div class="view-toggle">
+            <button class="view-btn">📱 Grid</button>
+            <button class="view-btn active">📄 List</button>
+        </div>
+
+        <h2>All Notes (8)</h2>
+
+        <!-- Notes List -->
+        <div class="notes-list">
+            <div class="note-list-card text-note">
+                <div class="note-title">Project Ideas</div>
+                <div class="note-content">
+                    Build a personal finance tracker with budget alerts and spending insights. Could integrate with bank APIs for automatic transaction imports.
+                </div>
+                <div class="note-meta">2 days ago</div>
+                <div class="note-footer">
+                    <div class="note-tag">work</div>
+                    <div class="note-tag">ideas</div>
+                </div>
+            </div>
+
+            <div class="note-list-card list-note">
+                <div class="note-title">Grocery List</div>
+                <div class="checklist-items">
+                    <div class="checklist-item">
+                        <div class="checkbox checked">✓</div>
+                        <div class="checklist-text completed">Milk</div>
+                    </div>
+                    <div class="checklist-item">
+                        <div class="checkbox"></div>
+                        <div class="checklist-text">Bread</div>
+                    </div>
+                    <div class="checklist-item">
+                        <div class="checkbox"></div>
+                        <div class="checklist-text">Eggs</div>
+                    </div>
+                    <div class="checklist-item">
+                        <div class="checkbox"></div>
+                        <div class="checklist-text">Coffee</div>
+                    </div>
+                </div>
+                <div class="note-meta">3 hours ago</div>
+                <div class="note-footer">
+                    <div class="note-tag">shopping</div>
+                </div>
+            </div>
+
+            <div class="note-list-card text-note">
+                <div class="note-title">Meeting Notes</div>
+                <div class="note-content">
+                    Discussed Q1 goals, team reorganization, and new product features. Need to follow up with design team about mockups.
+                </div>
+                <div class="note-meta">Yesterday</div>
+                <div class="note-footer">
+                    <div class="note-tag">work</div>
+                    <div class="note-tag">meetings</div>
+                </div>
+            </div>
+
+            <div class="note-list-card text-note">
+                <div class="note-title">Book Recommendations</div>
+                <div class="note-content">
+                    Atomic Habits by James Clear, Deep Work by Cal Newport, The 4-Hour Workweek by Tim Ferriss
+                </div>
+                <div class="note-meta">Last week</div>
+                <div class="note-footer">
+                    <div class="note-tag">books</div>
+                    <div class="note-tag">reading</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FAB -->
+        <div class="fab">+</div>
+    </div>
+</div>
+
+<!-- ==================== CREATE NOTE ==================== -->
+<div class="phone-container">
+    <div class="screen">
+        <div class="header">
+            <h1>📝 Notes</h1>
+            <div class="subtitle">Capture thoughts & ideas</div>
+        </div>
+
+        <!-- Owner Filter -->
+        <div class="owner-filter">
+            <div class="owner-pill active">Mine</div>
+            <div class="owner-pill">Sarah's</div>
+            <div class="owner-pill">Both</div>
+        </div>
+
+        <!-- View Toggle -->
+        <div class="view-toggle">
+            <button class="view-btn active">📱 Grid</button>
+            <button class="view-btn">📄 List</button>
+        </div>
+
+        <!-- Create Note Form -->
+        <div class="create-section">
+            <div class="note-type-toggle">
+                <button class="type-btn active">📝 Text Note</button>
+                <button class="type-btn">☑️ Checklist</button>
+            </div>
+
+            <input type="text" class="input-field" placeholder="Note title...">
+            <textarea class="input-field textarea" placeholder="Start writing..."></textarea>
+            <input type="text" class="input-field" placeholder="Tags (comma separated)">
+
+            <button class="create-btn">Create Note</button>
+        </div>
+
+        <h2>All Notes (8)</h2>
+
+        <!-- Notes Grid -->
+        <div class="notes-grid">
+            <div class="note-card text-note">
+                <div class="note-title">Project Ideas</div>
+                <div class="note-content">
+                    Build a personal finance tracker...
+                </div>
+            </div>
+
+            <div class="note-card list-note">
+                <div class="note-title">Grocery List</div>
+                <div class="checklist-items">
+                    <div class="checklist-item">
+                        <div class="checkbox checked">✓</div>
+                        <div class="checklist-text completed">Milk</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FAB -->
+        <div class="fab">+</div>
+    </div>
+</div>
+
+<!-- ==================== EMPTY STATE ==================== -->
+<div class="phone-container">
+    <div class="screen">
+        <div class="header">
+            <h1>📝 Notes</h1>
+            <div class="subtitle">Capture thoughts & ideas</div>
+        </div>
+
+        <!-- Owner Filter -->
+        <div class="owner-filter">
+            <div class="owner-pill active">Mine</div>
+            <div class="owner-pill">Sarah's</div>
+            <div class="owner-pill">Both</div>
+        </div>
+
+        <!-- View Toggle -->
+        <div class="view-toggle">
+            <button class="view-btn active">📱 Grid</button>
+            <button class="view-btn">📄 List</button>
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state">
+            <div class="empty-icon">📝</div>
+            <div class="empty-title">No notes yet</div>
+            <div class="empty-subtitle">Create text notes or checklists to capture your thoughts and ideas.</div>
+        </div>
+
+        <!-- FAB -->
+        <div class="fab">+</div>
+    </div>
+</div>
+
+</body>
+</html>

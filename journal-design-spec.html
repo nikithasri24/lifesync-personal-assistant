@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Journal - LifeSync Design Spec</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #F5F5F5;
+            padding: 20px;
+            color: #333;
+        }
+
+        .phone-container {
+            max-width: 375px;
+            margin: 0 auto 40px;
+            background: white;
+            border-radius: 40px;
+            padding: 15px;
+            box-shadow: 0 10px 40px rgba(92, 74, 58, 0.2);
+        }
+
+        .screen {
+            background: #FAFAFA;
+            border-radius: 30px;
+            overflow: hidden;
+            min-height: 700px;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);
+            padding: 60px 20px 20px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .header .subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        /* Owner Filter */
+        .owner-filter {
+            display: flex;
+            gap: 8px;
+            padding: 16px 20px;
+            background: white;
+            border-bottom: 1px solid #E8DCC8;
+        }
+
+        .owner-pill {
+            padding: 8px 16px;
+            background: #E8DCC8;
+            border: 2px solid transparent;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #5C4A3A;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .owner-pill.active {
+            background: linear-gradient(135deg, rgba(212, 165, 116, 0.2) 0%, rgba(193, 139, 94, 0.2) 100%);
+            border-color: #C18B5E;
+            color: #C18B5E;
+        }
+
+        /* View Toggle */
+        .view-toggle {
+            display: flex;
+            gap: 8px;
+            padding: 16px 20px;
+            background: white;
+            border-bottom: 1px solid #E8DCC8;
+        }
+
+        .view-btn {
+            flex: 1;
+            padding: 10px;
+            background: #E8DCC8;
+            border: none;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #5C4A3A;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .view-btn.active {
+            background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);
+            color: white;
+        }
+
+        /* Search Bar */
+        .search-bar {
+            margin: 16px 20px;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 16px 12px 44px;
+            border: 2px solid #E8DCC8;
+            border-radius: 12px;
+            font-size: 15px;
+            background: white;
+            color: #5C4A3A;
+        }
+
+        .search-input::placeholder {
+            color: #9B8B7A;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 18px;
+            color: #9B8B7A;
+        }
+
+        /* Filter Pills */
+        .filter-pills {
+            display: flex;
+            gap: 8px;
+            padding: 0 20px 16px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .filter-pills::-webkit-scrollbar {
+            display: none;
+        }
+
+        .filter-pill {
+            padding: 6px 12px;
+            background: #E8DCC8;
+            border: 2px solid transparent;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #6B5847;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .filter-pill.active {
+            background: linear-gradient(135deg, rgba(212, 165, 116, 0.3) 0%, rgba(193, 139, 94, 0.3) 100%);
+            border-color: #C18B5E;
+            color: #C18B5E;
+        }
+
+        /* Journal Entries List */
+        .entries-list {
+            padding: 0 20px 100px;
+        }
+
+        .entry-card {
+            background: white;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 12px rgba(92, 74, 58, 0.08);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .entry-card:active {
+            transform: scale(0.98);
+        }
+
+        .entry-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 8px;
+        }
+
+        .entry-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #5C4A3A;
+            flex: 1;
+        }
+
+        .entry-date {
+            font-size: 12px;
+            color: #9B8B7A;
+            white-space: nowrap;
+            margin-left: 12px;
+        }
+
+        .entry-content {
+            font-size: 14px;
+            color: #6B5847;
+            line-height: 1.6;
+            margin-bottom: 12px;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .entry-tags {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .entry-tag {
+            padding: 4px 10px;
+            background: #E8DCC8;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #6B5847;
+        }
+
+        .entry-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #E8DCC8;
+            font-size: 12px;
+            color: #9B8B7A;
+        }
+
+        .entry-attachments {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .owner-badge {
+            padding: 4px 8px;
+            background: linear-gradient(135deg, rgba(212, 165, 116, 0.3) 0%, rgba(193, 139, 94, 0.3) 100%);
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #C18B5E;
+        }
+
+        /* Calendar View */
+        .calendar {
+            background: white;
+            margin: 0 20px 16px;
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 2px 12px rgba(92, 74, 58, 0.08);
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .month-label {
+            font-size: 16px;
+            font-weight: 700;
+            color: #5C4A3A;
+        }
+
+        .nav-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: rgba(212, 165, 116, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #C18B5E;
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+        }
+
+        .calendar-day-label {
+            text-align: center;
+            font-size: 11px;
+            font-weight: 700;
+            color: #9B8B7A;
+            padding: 8px 4px;
+        }
+
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #5C4A3A;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .calendar-day.today {
+            background: linear-gradient(135deg, rgba(212, 165, 116, 0.2) 0%, rgba(193, 139, 94, 0.2) 100%);
+            color: #C18B5E;
+        }
+
+        .calendar-day.has-entry {
+            background: #E8DCC8;
+        }
+
+        .calendar-day.other-month {
+            color: #D4C5B3;
+        }
+
+        .entry-dot {
+            width: 4px;
+            height: 4px;
+            border-radius: 2px;
+            background: #C18B5E;
+            margin-top: 2px;
+        }
+
+        /* Create Entry Form */
+        .create-form {
+            background: white;
+            margin: 0 20px 16px;
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 2px 12px rgba(92, 74, 58, 0.08);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #E8DCC8;
+            border-radius: 10px;
+            font-size: 14px;
+            margin-bottom: 12px;
+            background: #FAFAFA;
+            color: #5C4A3A;
+        }
+
+        .form-input::placeholder {
+            color: #9B8B7A;
+        }
+
+        .form-input.title-input {
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .form-textarea {
+            min-height: 120px;
+            resize: vertical;
+            font-family: inherit;
+            line-height: 1.6;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #E8DCC8;
+            color: #5C4A3A;
+        }
+
+        .attach-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 10px 16px;
+            background: rgba(212, 165, 116, 0.1);
+            border: 2px dashed #D4A574;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #C18B5E;
+            cursor: pointer;
+            margin-bottom: 12px;
+        }
+
+        /* Entry Detail View */
+        .detail-view {
+            padding: 0 20px 100px;
+        }
+
+        .detail-header {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 12px rgba(92, 74, 58, 0.08);
+        }
+
+        .detail-title {
+            font-size: 24px;
+            font-weight: 800;
+            color: #5C4A3A;
+            margin-bottom: 12px;
+        }
+
+        .detail-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 13px;
+            color: #9B8B7A;
+        }
+
+        .detail-content {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 12px rgba(92, 74, 58, 0.08);
+        }
+
+        .detail-text {
+            font-size: 15px;
+            color: #5C4A3A;
+            line-height: 1.8;
+            white-space: pre-wrap;
+        }
+
+        .detail-attachments {
+            background: white;
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 2px 12px rgba(92, 74, 58, 0.08);
+        }
+
+        .attachments-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #5C4A3A;
+            margin-bottom: 12px;
+        }
+
+        .attachment-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: #FAFAFA;
+            border-radius: 10px;
+            margin-bottom: 8px;
+        }
+
+        .attachment-icon {
+            font-size: 24px;
+        }
+
+        .attachment-info {
+            flex: 1;
+        }
+
+        .attachment-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: #5C4A3A;
+        }
+
+        .attachment-size {
+            font-size: 11px;
+            color: #9B8B7A;
+        }
+
+        h2 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #5C4A3A;
+            padding: 20px 20px 12px;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 80px 40px;
+            margin: 20px;
+        }
+
+        .empty-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .empty-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #5C4A3A;
+            margin-bottom: 8px;
+        }
+
+        .empty-subtitle {
+            font-size: 14px;
+            color: #9B8B7A;
+            line-height: 1.5;
+        }
+
+        /* FAB */
+        .fab {
+            position: fixed;
+            bottom: 90px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 30px;
+            background: linear-gradient(135deg, #D4A574 0%, #C18B5E 100%);
+            box-shadow: 0 4px 16px rgba(193, 139, 94, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+            color: white;
+            font-size: 28px;
+        }
+
+        .fab:active {
+            transform: scale(0.95);
+        }
+
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 16px;
+            padding: 20px;
+        }
+
+        .page-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: rgba(212, 165, 116, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #C18B5E;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .page-info {
+            font-size: 14px;
+            color: #6B5847;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ==================== LIST VIEW ==================== -->
+<div class="phone-container">
+    <div class="screen">
+        <div class="header">
+            <h1>📓 Journal</h1>
+            <div class="subtitle">Daily reflections & memories</div>
+        </div>
+
+        <!-- Owner Filter -->
+        <div class="owner-filter">
+            <div class="owner-pill active">Mine</div>
+            <div class="owner-pill">Sarah's</div>
+            <div class="owner-pill">Both</div>
+        </div>
+
+        <!-- View Toggle -->
+        <div class="view-toggle">
+            <button class="view-btn active">📄 List</button>
+            <button class="view-btn">📅 Calendar</button>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="search-bar">
+            <div class="search-icon">🔍</div>
+            <input type="text" class="search-input" placeholder="Search entries...">
+        </div>
+
+        <!-- Filter Pills (Tags) -->
+        <div class="filter-pills">
+            <div class="filter-pill active">All</div>
+            <div class="filter-pill">Gratitude</div>
+            <div class="filter-pill">Work</div>
+            <div class="filter-pill">Family</div>
+            <div class="filter-pill">Personal</div>
+            <div class="filter-pill">Travel</div>
+        </div>
+
+        <h2>Recent Entries (24)</h2>
+
+        <!-- Journal Entries List -->
+        <div class="entries-list">
+            <div class="entry-card">
+                <div class="entry-header">
+                    <div class="entry-title">Great day at the beach</div>
+                    <div class="entry-date">Today</div>
+                </div>
+                <div class="entry-content">
+                    Had an amazing time at the beach with Sarah. The weather was perfect, and we watched the sunset together. Feeling grateful for these moments.
+                </div>
+                <div class="entry-tags">
+                    <div class="entry-tag">Gratitude</div>
+                    <div class="entry-tag">Family</div>
+                </div>
+                <div class="entry-meta">
+                    <div class="entry-attachments">📷 2 photos</div>
+                </div>
+            </div>
+
+            <div class="entry-card">
+                <div class="entry-header">
+                    <div class="entry-title">Work reflections</div>
+                    <div class="entry-date">Yesterday</div>
+                </div>
+                <div class="entry-content">
+                    Completed the big project presentation today. The team was really supportive and the client loved our approach. Proud of what we accomplished together.
+                </div>
+                <div class="entry-tags">
+                    <div class="entry-tag">Work</div>
+                    <div class="entry-tag">Personal</div>
+                </div>
+            </div>
+
+            <div class="entry-card">
+                <div class="entry-header">
+                    <div class="entry-title">Weekend plans</div>
+                    <div class="entry-date">Feb 14</div>
+                </div>
+                <div class="entry-content">
+                    Planning a weekend trip to the mountains. Need to pack hiking gear and make camping reservations. Can't wait to disconnect and enjoy nature.
+                </div>
+                <div class="entry-tags">
+                    <div class="entry-tag">Travel</div>
+                </div>
+                <div class="entry-meta">
+                    <div class="entry-attachments">🔗 1 link</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination">
+            <div class="page-btn">‹</div>
+            <div class="page-info">Page 1 of 8</div>
+            <div class="page-btn">›</div>
+        </div>
+
+        <!-- FAB -->
+        <div class="fab">+</div>
+    </div>
+</div>
+
+<!-- ==================== CALENDAR VIEW ==================== -->
+<div class="phone-container">
+    <div class="screen">
+        <div class="header">
+            <h1>📓 Journal</h1>
+            <div class="subtitle">Daily reflections & memories</div>
+        </div>
+
+        <!-- Owner Filter -->
+        <div class="owner-filter">
+            <div class="owner-pill active">Mine</div>
+            <div class="owner-pill">Sarah's</div>
+            <div class="owner-pill">Both</div>
+        </div>
+
+        <!-- View Toggle -->
+        <div class="view-toggle">
+            <button class="view-btn">📄 List</button>
+            <button class="view-btn active">📅 Calendar</button>
+        </div>
+
+        <!-- Calendar -->
+        <div class="calendar">
+            <div class="calendar-header">
+                <div class="nav-btn">‹</div>
+                <div class="month-label">February 2026</div>
+                <div class="nav-btn">›</div>
+            </div>
+
+            <div class="calendar-grid">
+                <div class="calendar-day-label">Sun</div>
+                <div class="calendar-day-label">Mon</div>
+                <div class="calendar-day-label">Tue</div>
+                <div class="calendar-day-label">Wed</div>
+                <div class="calendar-day-label">Thu</div>
+                <div class="calendar-day-label">Fri</div>
+                <div class="calendar-day-label">Sat</div>
+
+                <div class="calendar-day other-month">26</div>
+                <div class="calendar-day other-month">27</div>
+                <div class="calendar-day other-month">28</div>
+                <div class="calendar-day other-month">29</div>
+                <div class="calendar-day other-month">30</div>
+                <div class="calendar-day other-month">31</div>
+                <div class="calendar-day has-entry">
+                    1
+                    <div class="entry-dot"></div>
+                </div>
+
+                <div class="calendar-day">2</div>
+                <div class="calendar-day has-entry">
+                    3
+                    <div class="entry-dot"></div>
+                </div>
+                <div class="calendar-day">4</div>
+                <div class="calendar-day has-entry">
+                    5
+                    <div class="entry-dot"></div>
+                </div>
+                <div class="calendar-day">6</div>
+                <div class="calendar-day">7</div>
+                <div class="calendar-day has-entry">
+                    8
+                    <div class="entry-dot"></div>
+                </div>
+
+                <div class="calendar-day">9</div>
+                <div class="calendar-day">10</div>
+                <div class="calendar-day has-entry">
+                    11
+                    <div class="entry-dot"></div>
+                </div>
+                <div class="calendar-day">12</div>
+                <div class="calendar-day">13</div>
+                <div class="calendar-day has-entry">
+                    14
+                    <div class="entry-dot"></div>
+                </div>
+                <div class="calendar-day has-entry">
+                    15
+                    <div class="entry-dot"></div>
+                </div>
+
+                <div class="calendar-day today">16</div>
+                <div class="calendar-day">17</div>
+                <div class="calendar-day">18</div>
+                <div class="calendar-day">19</div>
+                <div class="calendar-day">20</div>
+                <div class="calendar-day">21</div>
+                <div class="calendar-day">22</div>
+
+                <div class="calendar-day">23</div>
+                <div class="calendar-day">24</div>
+                <div class="calendar-day">25</div>
+                <div class="calendar-day">26</div>
+                <div class="calendar-day">27</div>
+                <div class="calendar-day">28</div>
+                <div class="calendar-day other-month">1</div>
+            </div>
+        </div>
+
+        <h2>Selected: Feb 16</h2>
+
+        <!-- Entry for Selected Date -->
+        <div class="entries-list">
+            <div class="entry-card">
+                <div class="entry-header">
+                    <div class="entry-title">Great day at the beach</div>
+                    <div class="entry-date">4:32 PM</div>
+                </div>
+                <div class="entry-content">
+                    Had an amazing time at the beach with Sarah. The weather was perfect, and we watched the sunset together. Feeling grateful for these moments.
+                </div>
+                <div class="entry-tags">
+                    <div class="entry-tag">Gratitude</div>
+                    <div class="entry-tag">Family</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FAB -->
+        <div class="fab">+</div>
+    </div>
+</div>
+
+<!-- ==================== CREATE ENTRY ==================== -->
+<div class="phone-container">
+    <div class="screen">
+        <div class="header">
+            <h1>📓 Journal</h1>
+            <div class="subtitle">Daily reflections & memories</div>
+        </div>
+
+        <!-- Owner Filter -->
+        <div class="owner-filter">
+            <div class="owner-pill active">Mine</div>
+            <div class="owner-pill">Sarah's</div>
+            <div class="owner-pill">Both</div>
+        </div>
+
+        <h2>New Entry</h2>
+
+        <!-- Create Form -->
+        <div class="create-form">
+            <input type="text" class="form-input title-input" placeholder="Entry title...">
+            <textarea class="form-input form-textarea" placeholder="What's on your mind?"></textarea>
+            <input type="text" class="form-input" placeholder="Tags (comma separated)">
+
+            <button class="attach-btn">📎 Attach Files or Photos</button>
+
+            <div class="form-actions">
+                <button class="btn btn-secondary">Cancel</button>
+                <button class="btn btn-primary">Save Entry</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== ENTRY DETAIL ==================== -->
+<div class="phone-container">
+    <div class="screen">
+        <div class="header">
+            <h1>📓 Journal</h1>
+            <div class="subtitle">Daily reflections & memories</div>
+        </div>
+
+        <!-- Detail View -->
+        <div class="detail-view">
+            <div class="detail-header">
+                <div class="detail-title">Great day at the beach</div>
+                <div class="detail-meta">
+                    <span>📅 Feb 16, 2026</span>
+                    <span>•</span>
+                    <span>⏰ 4:32 PM</span>
+                </div>
+                <div class="entry-tags" style="margin-top: 12px;">
+                    <div class="entry-tag">Gratitude</div>
+                    <div class="entry-tag">Family</div>
+                </div>
+            </div>
+
+            <div class="detail-content">
+                <div class="detail-text">Had an amazing time at the beach with Sarah. The weather was perfect - sunny with a gentle breeze. We walked along the shore for hours, collecting shells and talking about our future plans.
+
+We watched the sunset together, sitting on the sand as the sky turned brilliant shades of orange and pink. These are the moments I want to remember forever.
+
+Feeling incredibly grateful for this beautiful life and the people I share it with.</div>
+            </div>
+
+            <div class="detail-attachments">
+                <div class="attachments-title">Attachments</div>
+
+                <div class="attachment-item">
+                    <div class="attachment-icon">📷</div>
+                    <div class="attachment-info">
+                        <div class="attachment-name">beach_sunset.jpg</div>
+                        <div class="attachment-size">2.4 MB</div>
+                    </div>
+                </div>
+
+                <div class="attachment-item">
+                    <div class="attachment-icon">📷</div>
+                    <div class="attachment-info">
+                        <div class="attachment-name">seashells.jpg</div>
+                        <div class="attachment-size">1.8 MB</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== EMPTY STATE ==================== -->
+<div class="phone-container">
+    <div class="screen">
+        <div class="header">
+            <h1>📓 Journal</h1>
+            <div class="subtitle">Daily reflections & memories</div>
+        </div>
+
+        <!-- Owner Filter -->
+        <div class="owner-filter">
+            <div class="owner-pill active">Mine</div>
+            <div class="owner-pill">Sarah's</div>
+            <div class="owner-pill">Both</div>
+        </div>
+
+        <!-- View Toggle -->
+        <div class="view-toggle">
+            <button class="view-btn active">📄 List</button>
+            <button class="view-btn">📅 Calendar</button>
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state">
+            <div class="empty-icon">📓</div>
+            <div class="empty-title">Start journaling</div>
+            <div class="empty-subtitle">Capture your thoughts, memories, and daily reflections. Add photos and organize with tags.</div>
+        </div>
+
+        <!-- FAB -->
+        <div class="fab">+</div>
+    </div>
+</div>
+
+</body>
+</html>
