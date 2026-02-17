@@ -102,15 +102,6 @@ export const JournalEntryCardV2: React.FC<JournalEntryCardV2Props> = ({
         {getTextContent(content)}
       </p>
 
-      {/* Tags */}
-      {tags.length > 0 && (
-        <div className="flex gap-1.5 flex-wrap mb-3">
-          {tags.map((tag, index) => (
-            <BadgeV2 key={index} text={tag} variant="accent" size="sm" />
-          ))}
-        </div>
-      )}
-
       {/* Footer: Metadata */}
       <div className="flex items-center gap-3 pt-3 border-t" style={{ borderColor: colors.border.light }}>
         {/* Attachment count */}

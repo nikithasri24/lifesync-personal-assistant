@@ -15,14 +15,12 @@ export interface JournalEntryModalV2Props {
   onSubmit: (data: {
     title: string;
     content: string;
-    tags: string[];
     attachments?: Attachment[];
   }) => void;
   onDelete?: () => void;
   initialData?: {
     title: string;
     content: string;
-    tags: string[];
     attachments?: Attachment[];
   };
   isEditing?: boolean;
@@ -55,33 +53,29 @@ export const JournalEntryModalV2: React.FC<JournalEntryModalV2Props> = ({
 
   const [title, setTitle] = useState(initialData?.title || savedDraft?.title || '');
   const [content, setContent] = useState(initialData?.content || savedDraft?.content || '');
-  const [tags, setTags] = useState(initialData?.tags?.join(', ') || savedDraft?.tags || '');
 
   // Update form when initialData changes (editing different entry)
   useEffect(() => {
     if (initialData) {
       setTitle(initialData.title || '');
       setContent(initialData.content || '');
-      setTags(initialData.tags?.join(', ') || '');
     } else if (!isEditing) {
       // Reset to draft or defaults when creating new entry
       const draft = loadDraft();
       setTitle(draft?.title || '');
       setContent(draft?.content || '');
-      setTags(draft?.tags || '');
     }
   }, [initialData, isEditing]);
 
   // Auto-save to localStorage
   useEffect(() => {
-    if (!isEditing && (title || content || tags)) {
+    if (!isEditing && (title || content)) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
         title,
         content,
-        tags,
       }));
     }
-  }, [title, content, tags, isEditing]);
+  }, [title, content, isEditing]);
 
   // ESC key support
   useEffect(() => {
@@ -112,7 +106,6 @@ export const JournalEntryModalV2: React.FC<JournalEntryModalV2Props> = ({
     onSubmit({
       title: title.trim(),
       content: content.trim(),
-      tags: tags ? tags.split(',').map((tag) => tag.trim()).filter(Boolean) : [],
     });
 
     // Clear draft on successful submit
@@ -190,23 +183,8 @@ export const JournalEntryModalV2: React.FC<JournalEntryModalV2Props> = ({
                 onChange={(e) => setContent(e.target.value)}
                 placeholder="What's on your mind?"
                 required
-                rows={8}
+                rows={10}
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none resize-none transition-all"
-              />
-            </div>
-
-            {/* Tags Input */}
-            <div>
-              <label htmlFor="entry-tags" className="block text-sm font-semibold text-gray-700 mb-2">
-                Tags (comma separated)
-              </label>
-              <input
-                id="entry-tags"
-                type="text"
-                value={tags}
-                onChange={(e) => setTags(e.target.value)}
-                placeholder="gratitude, work, personal..."
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none transition-all"
               />
             </div>
 

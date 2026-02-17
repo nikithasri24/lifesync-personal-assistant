@@ -114,7 +114,6 @@ export const JournalContainer: React.FC = () => {
   const handleSubmit = (data: {
     title: string;
     content: string;
-    tags: string[];
   }) => {
     if (modals.state.editingEntryId) {
       // UPDATE
@@ -124,7 +123,6 @@ export const JournalContainer: React.FC = () => {
           updates: {
             title: data.title || undefined,
             content: data.content,
-            tags: data.tags,
           },
         },
         {
@@ -141,7 +139,6 @@ export const JournalContainer: React.FC = () => {
         {
           title: data.title || undefined,
           content: data.content,
-          tags: data.tags,
         },
         {
           onSuccess: () => {
@@ -255,47 +252,6 @@ export const JournalContainer: React.FC = () => {
               />
             </div>
 
-            {/* Tag Filters */}
-            {availableTags.length > 0 && (
-              <div className="mb-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-semibold" style={{ color: colors.text.secondary }}>
-                    Filter by tag:
-                  </span>
-                  {selectedTags.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={clearFilters}
-                      className="text-xs font-semibold"
-                      style={{ color: '#C18B5E' }}
-                    >
-                      Clear
-                    </button>
-                  )}
-                </div>
-                <div className="flex gap-2 flex-wrap">
-                  {availableTags.map((tag) => {
-                    const isSelected = selectedTags.includes(tag);
-                    return (
-                      <button
-                        key={tag}
-                        type="button"
-                        onClick={() => toggleTagFilter(tag)}
-                        className="px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
-                        style={{
-                          backgroundColor: isSelected ? 'rgba(212, 165, 116, 0.3)' : colors.bg.tertiary,
-                          color: isSelected ? '#C18B5E' : colors.text.primary,
-                          border: isSelected ? '2px solid #C18B5E' : '2px solid transparent',
-                        }}
-                      >
-                        {tag}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
             {/* Entries List */}
             {isLoading ? (
               <div className="text-center py-12" style={{ color: colors.text.secondary }}>
@@ -327,7 +283,7 @@ export const JournalContainer: React.FC = () => {
                     id={entry.id}
                     title={entry.title}
                     content={entry.content}
-                    tags={entry.tags}
+                    tags={[]}
                     createdAt={entry.createdAt}
                     attachmentCount={entry.attachments?.length || 0}
                     onClick={() => handleEditEntry(entry)}
@@ -421,7 +377,7 @@ export const JournalContainer: React.FC = () => {
                         id={entry.id}
                         title={entry.title}
                         content={entry.content}
-                        tags={entry.tags}
+                        tags={[]}
                         createdAt={entry.createdAt}
                         attachmentCount={entry.attachments?.length || 0}
                         onClick={() => handleEditEntry(entry)}
@@ -467,7 +423,6 @@ export const JournalContainer: React.FC = () => {
               ? {
                   title: editingEntry.title,
                   content: editingEntry.content,
-                  tags: editingEntry.tags,
                   attachments: editingEntry.attachments || [],
                 }
               : undefined
