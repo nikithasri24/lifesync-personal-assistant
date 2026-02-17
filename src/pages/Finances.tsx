@@ -1,64 +1,68 @@
-import React from 'react';
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { FeatureErrorBoundary } from '../components/FeatureErrorBoundary';
-import { FinancesHeader } from '../finance/components/layout/FinancesHeader';
-import { FinancesTabNav } from '../finance/components/layout/FinancesTabNav';
+/**
+ * Finances Page
+ * Track income, expenses, budgets, and accounts
+ */
 
+import React from 'react';
+import { DollarSign } from 'lucide-react';
+import { FeatureErrorBoundary } from '../components/FeatureErrorBoundary';
+import { useThemeColors } from '@/hooks/useThemeColors';
+import { SegmentedControl } from '@/components/ui/SegmentedControl';
+import { useFinanceState } from '@/finance/hooks/useFinanceState';
+
+// Lazy load the page components
 const DashboardPage = React.lazy(() => import('../finance/pages/DashboardPage'));
 const AccountsPage = React.lazy(() => import('../finance/pages/AccountsPage'));
 const TransactionsPage = React.lazy(() => import('../finance/pages/TransactionsPageGrouped'));
 const BudgetsPage = React.lazy(() => import('../finance/pages/BudgetsPage'));
-const RecurringPage = React.lazy(() => import('../finance/pages/RecurringPage'));
-const NetWorthPage = React.lazy(() => import('../finance/pages/NetWorthPage'));
-const GoalsPage = React.lazy(() => import('../finance/pages/GoalsPage'));
-const LoansPage = React.lazy(() => import('../finance/pages/LoansPage'));
-const RetirementPage = React.lazy(() => import('../finance/pages/RetirementPage'));
-const ProjectionsPage = React.lazy(() => import('../finance/pages/ProjectionsPage'));
-const CalculatorsPage = React.lazy(() => import('../finance/pages/CalculatorsPage'));
-const CreditCardsPage = React.lazy(() => import('../finance/pages/CreditCardsPage'));
-const InsurancePage = React.lazy(() => import('../finance/pages/InsurancePage'));
-const SettingsPage = React.lazy(() => import('../finance/pages/SettingsPage'));
-
-type TabKey = 'dashboard' | 'accounts' | 'transactions' | 'budgets' | 'recurring' | 'networth' | 'goals' | 'loans' | 'retirement' | 'projections' | 'calculators' | 'creditcards' | 'insurance' | 'settings';
-
-// Helper to get active tab from pathname
-const getActiveTab = (pathname: string): TabKey => {
-  const segments = pathname.split('/').filter(Boolean);
-  if (segments.length < 2) return 'dashboard';
-  const tab = segments[1] as TabKey;
-  return tab || 'dashboard';
-};
 
 const Finances: React.FC = () => {
-  const location = useLocation();
-  const activeTab = getActiveTab(location.pathname);
+  const colors = useThemeColors();
+  const { activeTab, setActiveTab } = useFinanceState();
 
   return (
     <FeatureErrorBoundary feature="Finances">
-      <div className="finance-scope space-y-4">
-        <FinancesHeader />
-        <FinancesTabNav activeTab={activeTab} onTabChange={() => {}} />
+      <div
+        style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}
+        data-testid="finances-container"
+      >
+        {/* Header */}
+        <div className="sticky top-0 z-10" style={{ backgroundColor: colors.bg.primary }}>
+          <div className="px-6 pt-4 pb-3">
+            <div className="flex items-center gap-2 mb-4">
+              <DollarSign size={24} style={{ color: colors.accent.start }} />
+              <h1 className="text-2xl font-bold" style={{ color: colors.text.primary }}>
+                Finances
+              </h1>
+            </div>
 
-        <div>
-          <React.Suspense fallback={<div>Loading finance…</div>}>
-            <Routes>
-              <Route index element={<DashboardPage />} />
-              <Route path="dashboard" element={<DashboardPage />} />
-              <Route path="accounts" element={<AccountsPage />} />
-              <Route path="transactions" element={<TransactionsPage />} />
-              <Route path="budgets" element={<BudgetsPage />} />
-              <Route path="recurring" element={<RecurringPage />} />
-              <Route path="networth" element={<NetWorthPage />} />
-              <Route path="goals" element={<GoalsPage />} />
-              <Route path="loans" element={<LoansPage />} />
-              <Route path="retirement" element={<RetirementPage />} />
-              <Route path="projections" element={<ProjectionsPage />} />
-              <Route path="calculators" element={<CalculatorsPage />} />
-              <Route path="creditcards" element={<CreditCardsPage />} />
-              <Route path="insurance" element={<InsurancePage />} />
-              <Route path="settings" element={<SettingsPage />} />
-              <Route path="*" element={<Navigate to="/finances/dashboard" replace />} />
-            </Routes>
+            {/* Tab Navigation */}
+            <SegmentedControl
+              segments={[
+                { value: 'dashboard', label: 'Dashboard' },
+                { value: 'accounts', label: 'Accounts' },
+                { value: 'transactions', label: 'Transactions' },
+                { value: 'budgets', label: 'Budgets' },
+              ]}
+              value={activeTab}
+              onChange={(value) => setActiveTab(value as 'dashboard' | 'accounts' | 'transactions' | 'budgets')}
+            />
+          </div>
+        </div>
+
+        {/* Tab Content */}
+        <div className="pb-6">
+          <React.Suspense
+            fallback={
+              <div className="text-center py-12" style={{ color: colors.text.tertiary }}>
+                Loading...
+              </div>
+            }
+          >
+            {activeTab === 'dashboard' && <DashboardPage />}
+            {activeTab === 'accounts' && <AccountsPage />}
+            {activeTab === 'transactions' && <TransactionsPage />}
+            {activeTab === 'budgets' && <BudgetsPage />}
           </React.Suspense>
         </div>
       </div>
