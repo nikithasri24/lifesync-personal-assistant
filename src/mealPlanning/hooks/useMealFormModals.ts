@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useModalState } from '@/hooks/useModalState';
 import type { Recipe } from '../../types';
 
 export interface RecipeFormModal {
@@ -11,6 +11,25 @@ export interface SimpleEditModal {
   onSave: (updates: Partial<Recipe>) => void;
 }
 
+/**
+ * Custom hook to manage all meal planning form modals
+ *
+ * REFACTORED: Now uses the generic useModalState hook to eliminate boilerplate.
+ * Maintains backward compatibility with the same return interface.
+ *
+ * @example
+ * ```typescript
+ * const modals = useMealFormModals();
+ *
+ * // Recipe form
+ * modals.openRecipeForm('Pizza', handleSave);
+ * modals.closeRecipeForm();
+ *
+ * // Recipe editing
+ * modals.openRecipeEdit(recipeId);
+ * modals.closeRecipeEdit();
+ * ```
+ */
 export function useMealFormModals(): {
   recipeFormModal: RecipeFormModal | null;
   simpleEditModal: SimpleEditModal | null;
@@ -35,59 +54,57 @@ export function useMealFormModals(): {
   showCopyWeek: boolean;
   setShowCopyWeek: React.Dispatch<React.SetStateAction<boolean>>;
 } {
-  // Recipe form modals
-  const [recipeFormModal, setRecipeFormModal] = useState<RecipeFormModal | null>(null);
-  const [simpleEditModal, setSimpleEditModal] = useState<SimpleEditModal | null>(null);
-  const [editingRecipeId, setEditingRecipeId] = useState<string | null>(null);
-  const [viewingRecipeId, setViewingRecipeId] = useState<string | null>(null);
-
-  // Import modals
-  const [showVideoImport, setShowVideoImport] = useState(false);
-  const [showUrlImport, setShowUrlImport] = useState(false);
-  const [showTextImport, setShowTextImport] = useState(false);
-
-  // Grocery & Copy modals
-  const [showGroceryList, setShowGroceryList] = useState(false);
-  const [showCopyWeek, setShowCopyWeek] = useState(false);
+  // Use the generic modal state hook
+  const modals = useModalState({
+    recipeFormModal: null as RecipeFormModal | null,
+    simpleEditModal: null as SimpleEditModal | null,
+    editingRecipeId: null as string | null,
+    viewingRecipeId: null as string | null,
+    showVideoImport: false,
+    showUrlImport: false,
+    showTextImport: false,
+    showGroceryList: false,
+    showCopyWeek: false,
+  });
 
   const openRecipeForm = (initialName: string, onSave: (recipe: Omit<Recipe, 'id' | 'createdAt'>) => void): void => {
-    setRecipeFormModal({ initialName, onSave });
+    modals.set('recipeFormModal', { initialName, onSave });
   };
 
   const closeRecipeForm = (): void => {
-    setRecipeFormModal(null);
+    modals.set('recipeFormModal', null);
   };
 
   const openSimpleEdit = (recipe: Recipe, onSave: (updates: Partial<Recipe>) => void): void => {
-    setSimpleEditModal({ recipe, onSave });
+    modals.set('simpleEditModal', { recipe, onSave });
   };
 
   const closeSimpleEdit = (): void => {
-    setSimpleEditModal(null);
+    modals.set('simpleEditModal', null);
   };
 
   const openRecipeEdit = (recipeId: string): void => {
-    setEditingRecipeId(recipeId);
+    modals.set('editingRecipeId', recipeId);
   };
 
   const closeRecipeEdit = (): void => {
-    setEditingRecipeId(null);
+    modals.set('editingRecipeId', null);
   };
 
   const openRecipeView = (recipeId: string): void => {
-    setViewingRecipeId(recipeId);
+    modals.set('viewingRecipeId', recipeId);
   };
 
   const closeRecipeView = (): void => {
-    setViewingRecipeId(null);
+    modals.set('viewingRecipeId', null);
   };
 
   return {
     // Recipe form modals
-    recipeFormModal,
-    simpleEditModal,
-    editingRecipeId,
-    viewingRecipeId,
+    recipeFormModal: modals.state.recipeFormModal,
+    simpleEditModal: modals.state.simpleEditModal,
+    editingRecipeId: modals.state.editingRecipeId,
+    viewingRecipeId: modals.state.viewingRecipeId,
     openRecipeForm,
     closeRecipeForm,
     openSimpleEdit,
@@ -98,17 +115,32 @@ export function useMealFormModals(): {
     closeRecipeView,
 
     // Import modals
-    showVideoImport,
-    setShowVideoImport,
-    showUrlImport,
-    setShowUrlImport,
-    showTextImport,
-    setShowTextImport,
+    showVideoImport: modals.state.showVideoImport,
+    setShowVideoImport: (value: boolean | ((prev: boolean) => boolean)) => {
+      const newValue = typeof value === 'function' ? value(modals.state.showVideoImport) : value;
+      modals.set('showVideoImport', newValue);
+    },
+    showUrlImport: modals.state.showUrlImport,
+    setShowUrlImport: (value: boolean | ((prev: boolean) => boolean)) => {
+      const newValue = typeof value === 'function' ? value(modals.state.showUrlImport) : value;
+      modals.set('showUrlImport', newValue);
+    },
+    showTextImport: modals.state.showTextImport,
+    setShowTextImport: (value: boolean | ((prev: boolean) => boolean)) => {
+      const newValue = typeof value === 'function' ? value(modals.state.showTextImport) : value;
+      modals.set('showTextImport', newValue);
+    },
 
     // Other modals
-    showGroceryList,
-    setShowGroceryList,
-    showCopyWeek,
-    setShowCopyWeek,
+    showGroceryList: modals.state.showGroceryList,
+    setShowGroceryList: (value: boolean | ((prev: boolean) => boolean)) => {
+      const newValue = typeof value === 'function' ? value(modals.state.showGroceryList) : value;
+      modals.set('showGroceryList', newValue);
+    },
+    showCopyWeek: modals.state.showCopyWeek,
+    setShowCopyWeek: (value: boolean | ((prev: boolean) => boolean)) => {
+      const newValue = typeof value === 'function' ? value(modals.state.showCopyWeek) : value;
+      modals.set('showCopyWeek', newValue);
+    },
   };
 }

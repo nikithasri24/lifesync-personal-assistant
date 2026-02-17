@@ -1,10 +1,27 @@
 import type React from 'react';
-import { useState } from 'react';
+import { useModalState } from '@/hooks/useModalState';
 import type { ShoppingItem } from '../types';
 
 /**
  * Custom hook to manage all shopping-related modal states
- * Consolidates modal visibility and selection state
+ *
+ * REFACTORED: Now uses the generic useModalState hook to eliminate boilerplate.
+ * Maintains backward compatibility with the same return interface.
+ *
+ * @example
+ * ```typescript
+ * const modals = useShoppingModals();
+ *
+ * // Add item
+ * modals.setShowAddItem(true);
+ *
+ * // Edit item
+ * modals.openEditModal(item);
+ * modals.closeEditModal();
+ *
+ * // Store suggestions
+ * modals.openStoreSuggestions(item);
+ * ```
  */
 export function useShoppingModals(): {
   // Item modals
@@ -37,87 +54,95 @@ export function useShoppingModals(): {
   showStorePrefs: boolean;
   setShowStorePrefs: React.Dispatch<React.SetStateAction<boolean>>;
 } {
-  // Item modals
-  const [showAddItem, setShowAddItem] = useState<boolean>(false);
-  const [showEditItem, setShowEditItem] = useState<boolean>(false);
-  const [editingItem, setEditingItem] = useState<ShoppingItem | null>(null);
-
-  // Pantry modals
-  const [showAddPantry, setShowAddPantry] = useState<boolean>(false);
-  const [showScanReceipt, setShowScanReceipt] = useState<boolean>(false);
-
-  // Store suggestions
-  const [showLocationSuggestions, setShowLocationSuggestions] = useState<boolean>(false);
-  const [selectedItemForSuggestions, setSelectedItemForSuggestions] = useState<ShoppingItem | null>(null);
-
-  // Barcode scanner
-  const [showBarcodeScanner, setShowBarcodeScanner] = useState<boolean>(false);
-  const [barcodeResult, setBarcodeResult] = useState<string | null>(null);
-
-  // Other modals
-  const [showStorePrefs, setShowStorePrefs] = useState<boolean>(false);
+  // Use the generic modal state hook
+  const modals = useModalState({
+    showAddItem: false,
+    showEditItem: false,
+    editingItem: null as ShoppingItem | null,
+    showAddPantry: false,
+    showScanReceipt: false,
+    showLocationSuggestions: false,
+    selectedItemForSuggestions: null as ShoppingItem | null,
+    showBarcodeScanner: false,
+    barcodeResult: null as string | null,
+    showStorePrefs: false,
+  });
 
   /**
    * Open edit modal for a specific item
    */
   const openEditModal = (item: ShoppingItem): void => {
-    setEditingItem(item);
-    setShowEditItem(true);
+    modals.batch({ editingItem: item, showEditItem: true });
   };
 
   /**
    * Close edit modal and clear editing item
    */
   const closeEditModal = (): void => {
-    setShowEditItem(false);
-    setEditingItem(null);
+    modals.batch({ showEditItem: false, editingItem: null });
   };
 
   /**
    * Open store suggestions for an item
    */
   const openStoreSuggestions = (item: ShoppingItem): void => {
-    setSelectedItemForSuggestions(item);
-    setShowLocationSuggestions(true);
+    modals.batch({ selectedItemForSuggestions: item, showLocationSuggestions: true });
   };
 
   /**
    * Close store suggestions
    */
   const closeStoreSuggestions = (): void => {
-    setShowLocationSuggestions(false);
-    setSelectedItemForSuggestions(null);
+    modals.batch({ showLocationSuggestions: false, selectedItemForSuggestions: null });
   };
 
   return {
     // Item modals
-    showAddItem,
-    setShowAddItem,
-    showEditItem,
-    editingItem,
+    showAddItem: modals.state.showAddItem,
+    setShowAddItem: (value: boolean | ((prev: boolean) => boolean)) => {
+      const newValue = typeof value === 'function' ? value(modals.state.showAddItem) : value;
+      modals.set('showAddItem', newValue);
+    },
+    showEditItem: modals.state.showEditItem,
+    editingItem: modals.state.editingItem,
     openEditModal,
     closeEditModal,
 
     // Pantry modals
-    showAddPantry,
-    setShowAddPantry,
-    showScanReceipt,
-    setShowScanReceipt,
+    showAddPantry: modals.state.showAddPantry,
+    setShowAddPantry: (value: boolean | ((prev: boolean) => boolean)) => {
+      const newValue = typeof value === 'function' ? value(modals.state.showAddPantry) : value;
+      modals.set('showAddPantry', newValue);
+    },
+    showScanReceipt: modals.state.showScanReceipt,
+    setShowScanReceipt: (value: boolean | ((prev: boolean) => boolean)) => {
+      const newValue = typeof value === 'function' ? value(modals.state.showScanReceipt) : value;
+      modals.set('showScanReceipt', newValue);
+    },
 
     // Store suggestions
-    showLocationSuggestions,
-    selectedItemForSuggestions,
+    showLocationSuggestions: modals.state.showLocationSuggestions,
+    selectedItemForSuggestions: modals.state.selectedItemForSuggestions,
     openStoreSuggestions,
     closeStoreSuggestions,
 
     // Barcode scanner
-    showBarcodeScanner,
-    setShowBarcodeScanner,
-    barcodeResult,
-    setBarcodeResult,
+    showBarcodeScanner: modals.state.showBarcodeScanner,
+    setShowBarcodeScanner: (value: boolean | ((prev: boolean) => boolean)) => {
+      const newValue = typeof value === 'function' ? value(modals.state.showBarcodeScanner) : value;
+      modals.set('showBarcodeScanner', newValue);
+    },
+    barcodeResult: modals.state.barcodeResult,
+    setBarcodeResult: (value: string | null | ((prev: string | null) => string | null)) => {
+      const newValue = typeof value === 'function' ? value(modals.state.barcodeResult) : value;
+      modals.set('barcodeResult', newValue);
+    },
 
     // Other
-    showStorePrefs,
-    setShowStorePrefs,
+    showStorePrefs: modals.state.showStorePrefs,
+    setShowStorePrefs: (value: boolean | ((prev: boolean) => boolean)) => {
+      const newValue = typeof value === 'function' ? value(modals.state.showStorePrefs) : value;
+      modals.set('showStorePrefs', newValue);
+    },
   };
 }
