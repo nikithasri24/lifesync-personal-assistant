@@ -5,6 +5,7 @@ import { useToast } from '../hooks/useToast';
 import { useThemeColors } from '../hooks/useThemeColors';
 import type { ShoppingItem, ShoppingList } from '../shopping/types';
 import { distributeItemsToStores as distributeItems, type DistributionStrategy } from '../shopping/services/storeDistribution';
+import type { ParsedReceiptItem } from '../shopping/services/receiptParser';
 import { ShoppingModals } from '../shopping/components/layout/ShoppingModals';
 import { MasterListView, DistributeView, StoreListsView, PantryView, ShoppingHistoryView } from '../shopping/components/views';
 import { PantryGridView } from '../shopping/components/views/PantryGridView';
@@ -21,6 +22,7 @@ import {
   useShoppingMutations,
   useShoppingFormHandlers,
   usePantryHandlers,
+  useReceiptHandler,
 } from '../shopping/hooks';
 import { useStoresQuery, useCreateStore } from '../hooks/useStoresQuery';
 import { AddStoreModal } from '../shopping/components/modals/AddStoreModal';
@@ -77,6 +79,12 @@ export default function ShoppingSmart(): ReactElement {
   const { userLocation, getUserLocation, findNearbyStoresForItem } = useStoreSuggestions(stores);
   const { handleAddItem, handleUpdateItem } = useShoppingFormHandlers({ stores, addShoppingItem, updateShoppingItem });
   const { handleAddPantryItem, handleAddToPantry, handleLogExpense } = usePantryHandlers({ createPantryItem, showToast });
+  const { handleReceiptScanned } = useReceiptHandler({
+    shoppingItems,
+    updateShoppingItem,
+    showToast,
+    storeId: selectedStore?.id,
+  });
 
   useEffect(() => {
     if (!isLoadingList && !activeListId) {
@@ -169,6 +177,23 @@ export default function ShoppingSmart(): ReactElement {
     setShowAddItem(false);
   };
 
+  // Combined receipt handler: match to shopping list + optionally add to pantry
+  const handleReceiptItems = async (items: ParsedReceiptItem[]): Promise<void> => {
+    try {
+      // First, try to match and update shopping items
+      await handleReceiptScanned(items);
+
+      // Optionally: add remaining items to pantry
+      // For now, we just update shopping items
+      // Future enhancement: allow user to choose which items to add to pantry
+    } catch (error) {
+      logger.error('ShoppingSmart', error as Error, {
+        context: 'handleReceiptItems',
+      });
+      showToast('Failed to process receipt', 'error');
+    }
+  };
+
   const totalMasterItems = shoppingItems.filter((item: ShoppingItem) => !item.purchased).length;
   const totalEstimatedCost = shoppingItems.reduce((sum: number, item: ShoppingItem) => sum + (item.estimatedPrice ?? 0), 0);
 
@@ -235,7 +260,10 @@ export default function ShoppingSmart(): ReactElement {
         )}
 
         {activeView === 'history' && (
-          <ShoppingHistoryView items={shoppingItems} />
+          <ShoppingHistoryView
+            items={shoppingItems}
+            onScanReceipt={() => setShowScanReceipt(true)}
+          />
         )}
       </div>
 
@@ -292,7 +320,7 @@ export default function ShoppingSmart(): ReactElement {
         onAddPantrySave={handleAddPantryItem}
         showScanReceipt={showScanReceipt}
         onScanReceiptClose={() => setShowScanReceipt(false)}
-        onAddToPantry={handleAddToPantry}
+        onAddToPantry={handleReceiptItems}
         onLogExpense={handleLogExpense}
         showBarcodeScanner={showBarcodeScanner}
         isScanning={isScanning}

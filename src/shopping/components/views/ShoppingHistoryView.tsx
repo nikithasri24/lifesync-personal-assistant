@@ -4,13 +4,14 @@
  */
 
 import React, { useMemo, useState } from 'react';
-import { Calendar, TrendingUp, DollarSign, Package } from 'lucide-react';
+import { Calendar, TrendingUp, DollarSign, Package, Receipt } from 'lucide-react';
 import { useThemeColors } from '../../../hooks/useThemeColors';
 import type { ShoppingItem } from '../../types';
 import { format, parseISO, startOfDay, subDays, isAfter } from 'date-fns';
 
 interface ShoppingHistoryViewProps {
   items: ShoppingItem[];
+  onScanReceipt?: () => void;
 }
 
 interface PurchaseGroup {
@@ -20,7 +21,7 @@ interface PurchaseGroup {
   itemCount: number;
 }
 
-export function ShoppingHistoryView({ items }: ShoppingHistoryViewProps) {
+export function ShoppingHistoryView({ items, onScanReceipt }: ShoppingHistoryViewProps) {
   const colors = useThemeColors();
   const [daysFilter, setDaysFilter] = useState(30);
 
@@ -74,9 +75,29 @@ export function ShoppingHistoryView({ items }: ShoppingHistoryViewProps) {
     <div style={{ paddingBottom: '140px' }}>
       {/* Header */}
       <div className="px-5 py-4">
-        <h2 className="text-2xl font-bold mb-2" style={{ color: colors.text.primary }}>
-          Shopping History
-        </h2>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-2xl font-bold" style={{ color: colors.text.primary }}>
+            Shopping History
+          </h2>
+
+          {/* Scan Receipt Button */}
+          {onScanReceipt && (
+            <button
+              type="button"
+              onClick={onScanReceipt}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-200 active:scale-95"
+              style={{
+                background: `linear-gradient(135deg, ${colors.accent.start} 0%, ${colors.accent.end} 100%)`,
+                color: 'white',
+                boxShadow: '0 2px 8px rgba(212, 165, 116, 0.25)',
+              }}
+              aria-label="Scan receipt"
+            >
+              <Receipt size={18} />
+              Scan Receipt
+            </button>
+          )}
+        </div>
 
         {/* Time Period Selector */}
         <div className="flex gap-2 overflow-x-auto">
