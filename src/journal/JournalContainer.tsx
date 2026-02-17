@@ -255,75 +255,44 @@ export const JournalContainer: React.FC = () => {
               />
             </div>
 
-            {/* Filter Toggle */}
-            <div className="flex items-center justify-between mb-4">
-              <button
-                type="button"
-                onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold transition-colors"
-                style={{
-                  backgroundColor: showFilters ? 'rgba(212, 165, 116, 0.15)' : colors.bg.secondary,
-                  color: showFilters ? '#C18B5E' : colors.text.primary,
-                }}
-                aria-label={showFilters ? "Hide filters" : "Show filters"}
-              >
-                <Filter className="w-4 h-4" />
-                <span>Filters</span>
-                {hasActiveFilters && (
-                  <span
-                    className="w-2 h-2 rounded-full"
-                    style={{ backgroundColor: '#C18B5E' }}
-                  />
-                )}
-              </button>
-
-              {hasActiveFilters && (
-                <button
-                  type="button"
-                  onClick={clearFilters}
-                  className="text-sm font-semibold"
-                  style={{ color: '#C18B5E' }}
-                >
-                  Clear all
-                </button>
-              )}
-            </div>
-
             {/* Tag Filters */}
-            {showFilters && (
-              <div className="mb-4 p-4 rounded-xl" style={{ backgroundColor: colors.bg.secondary }}>
-                <div className="text-xs font-semibold mb-3" style={{ color: colors.text.secondary }}>
-                  Filter by tags:
+            {availableTags.length > 0 && (
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-semibold" style={{ color: colors.text.secondary }}>
+                    Filter by tag:
+                  </span>
+                  {selectedTags.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={clearFilters}
+                      className="text-xs font-semibold"
+                      style={{ color: '#C18B5E' }}
+                    >
+                      Clear
+                    </button>
+                  )}
                 </div>
-                {availableTags.length > 0 ? (
-                  <div className="flex gap-2 flex-wrap">
-                    {availableTags.map((tag) => {
-                      const isSelected = selectedTags.includes(tag);
-                      return (
-                        <button
-                          key={tag}
-                          type="button"
-                          onClick={() => toggleTagFilter(tag)}
-                          className="px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
-                          style={{
-                            backgroundColor: isSelected ? 'rgba(212, 165, 116, 0.3)' : colors.bg.tertiary,
-                            color: isSelected ? '#C18B5E' : colors.text.primary,
-                            border: isSelected ? '2px solid #C18B5E' : '2px solid transparent',
-                          }}
-                        >
-                          {tag}
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="text-center py-6">
-                    <div className="text-3xl mb-2 opacity-50">🏷️</div>
-                    <p className="text-xs" style={{ color: colors.text.tertiary }}>
-                      No tags yet. Add tags to your entries to filter by them.
-                    </p>
-                  </div>
-                )}
+                <div className="flex gap-2 flex-wrap">
+                  {availableTags.map((tag) => {
+                    const isSelected = selectedTags.includes(tag);
+                    return (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => toggleTagFilter(tag)}
+                        className="px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
+                        style={{
+                          backgroundColor: isSelected ? 'rgba(212, 165, 116, 0.3)' : colors.bg.tertiary,
+                          color: isSelected ? '#C18B5E' : colors.text.primary,
+                          border: isSelected ? '2px solid #C18B5E' : '2px solid transparent',
+                        }}
+                      >
+                        {tag}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             )}
 
