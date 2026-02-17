@@ -3,7 +3,7 @@
  * Uses fuzzy string matching to link receipt items to shopping list items
  */
 
-import fuzzball from 'fuzzball';
+import * as fuzzball from 'fuzzball';
 import type { ShoppingItem } from '../types';
 import type { ParsedReceiptItem } from './receiptParser';
 import { logger } from '@/services/logger';
