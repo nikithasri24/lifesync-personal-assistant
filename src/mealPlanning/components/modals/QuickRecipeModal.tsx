@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Loader2, Save } from 'lucide-react';
 import { ModalShell } from './ModalShell';
+import { useThemeColors } from '../../../hooks/useThemeColors';
 import type { Recipe } from '../../../types';
 
 interface QuickRecipeModalProps {
@@ -10,6 +11,7 @@ interface QuickRecipeModalProps {
 }
 
 export function QuickRecipeModal({ initialName, onSave, onClose }: QuickRecipeModalProps): React.JSX.Element {
+  const colors = useThemeColors();
   const [name, setName] = useState<string>(initialName);
   const [ingredientsText, setIngredientsText] = useState<string>('');
   const [instructionsText, setInstructionsText] = useState<string>('');
@@ -82,56 +84,129 @@ export function QuickRecipeModal({ initialName, onSave, onClose }: QuickRecipeMo
       <form onSubmit={(e) => void handleSubmit(e)}>
         <div className="space-y-3">
           <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1">Recipe Name</label>
+            <label
+              className="block text-xs font-medium mb-1"
+              style={{ color: colors.text.secondary }}
+            >
+              Recipe Name
+            </label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
-              className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="w-full rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2"
+              style={{
+                backgroundColor: colors.bg.white,
+                borderColor: colors.border.medium,
+                color: colors.text.primary,
+                border: `1px solid ${colors.border.medium}`,
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = colors.accent.start;
+                e.currentTarget.style.outlineColor = colors.accent.start;
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = colors.border.medium;
+              }}
               placeholder="e.g., Bagel with Cream Cheese"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1">
-              Ingredients <span className="text-slate-400 font-normal">(one per line)</span>
+            <label
+              className="block text-xs font-medium mb-1"
+              style={{ color: colors.text.secondary }}
+            >
+              Ingredients{' '}
+              <span style={{ color: colors.text.tertiary, fontWeight: 'normal' }}>
+                (one per line)
+              </span>
             </label>
             <textarea
               value={ingredientsText}
               onChange={(e) => setIngredientsText(e.target.value)}
               rows={4}
-              className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="w-full rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2"
+              style={{
+                backgroundColor: colors.bg.white,
+                borderColor: colors.border.medium,
+                color: colors.text.primary,
+                border: `1px solid ${colors.border.medium}`,
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = colors.accent.start;
+                e.currentTarget.style.outlineColor = colors.accent.start;
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = colors.border.medium;
+              }}
               placeholder="2 bagels&#10;4 oz cream cheese&#10;1 tomato&#10;salt, pepper"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1">
-              Instructions <span className="text-slate-400 font-normal">(optional)</span>
+            <label
+              className="block text-xs font-medium mb-1"
+              style={{ color: colors.text.secondary }}
+            >
+              Instructions{' '}
+              <span style={{ color: colors.text.tertiary, fontWeight: 'normal' }}>
+                (optional)
+              </span>
             </label>
             <textarea
               value={instructionsText}
               onChange={(e) => setInstructionsText(e.target.value)}
               rows={3}
-              className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="w-full rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2"
+              style={{
+                backgroundColor: colors.bg.white,
+                borderColor: colors.border.medium,
+                color: colors.text.primary,
+                border: `1px solid ${colors.border.medium}`,
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = colors.accent.start;
+                e.currentTarget.style.outlineColor = colors.accent.start;
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = colors.border.medium;
+              }}
               placeholder="Toast bagels, spread cream cheese..."
             />
           </div>
 
-          <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200">
+          <div
+            className="flex items-center justify-end gap-2 pt-2 border-t"
+            style={{ borderColor: colors.border.light }}
+          >
             <button
               type="button"
               onClick={onClose}
               disabled={saving}
-              className="rounded-md px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+              className="rounded-md px-3 py-1.5 text-sm font-medium disabled:opacity-50 transition-colors duration-200"
+              style={{
+                color: colors.text.primary,
+                backgroundColor: 'transparent',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = colors.bg.secondary;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }}
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={saving || !name.trim()}
-              className="inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium disabled:opacity-50 transition-all duration-200"
+              style={{
+                background: `linear-gradient(135deg, ${colors.accent.start} 0%, ${colors.accent.end} 100%)`,
+                color: 'white',
+              }}
             >
               {saving ? (
                 <>

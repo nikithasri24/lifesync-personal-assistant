@@ -8,6 +8,7 @@ import DatePickerPopover from '../components/DatePickerPopover';
 import ErrorState from '../components/ErrorState';
 import { useComposedStore } from '../stores/useComposedStore';
 import { useToast } from '../hooks/useToast';
+import { useThemeColors } from '../hooks/useThemeColors';
 import type { PlannedMeal, Recipe } from '../types';
 import type { PlannedMealInput, PlannedMealUpdate, RecipeInput } from '@/hooks/mealPlanning/types';
 import {
@@ -23,6 +24,9 @@ import {
 } from '@/hooks/useMealPlanningQuery';
 import { getShoppingLists, createShoppingList, createShoppingItem } from '@/api/shoppingAPI';
 import type { GroceryItem } from '@/mealPlanning/hooks/useGroceryList';
+import { SegmentedControl } from '../components/ui/SegmentedControl';
+import { useMealsState, type TabView } from '../meals/hooks';
+import { TodayView, WeekView, RecipesView, GroceryView } from '../meals/components/views';
 
 // Import hooks
 import { useMealFormModals } from '../mealPlanning/hooks/useMealFormModals';
@@ -99,6 +103,12 @@ const cleanupOldDrafts = (): void => {
 };
 
 const MealPlanning: React.FC = () => {
+  // Theme colors
+  const colors = useThemeColors();
+
+  // Tab navigation
+  const { activeTab, setActiveTab } = useMealsState();
+
   // React Query hooks
   const {
     data: recipes = [],
@@ -278,6 +288,12 @@ const MealPlanning: React.FC = () => {
 
   const isLoading = mealPlansLoading || weekNav.isEnsuringPlan;
 
+  // Get today's meals for Today view
+  const todaysMeals = useMemo(() => {
+    const today = format(new Date(), 'yyyy-MM-dd');
+    return plannedMeals.filter(meal => format(ensureDate(meal.date), 'yyyy-MM-dd') === today);
+  }, [plannedMeals]);
+
   // Copy week handler
   const handleCopyWeek = async (): Promise<void> => {
     try {
@@ -340,90 +356,99 @@ const MealPlanning: React.FC = () => {
   }, [showToast]);
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-4 sm:gap-6 p-3 sm:p-6">
-      <MealPlanToolbar
-        currentWeekStart={weekNav.currentWeekStart}
-        weekStartsOn={weekStartsOn}
-        onWeekChange={weekNav.goToWeek}
-        onPreviousWeek={weekNav.goToPreviousWeek}
-        onThisWeek={weekNav.goToThisWeek}
-        onNextWeek={weekNav.goToNextWeek}
-        onCopyWeek={() => modalState.setShowCopyWeek(true)}
-        onShowGroceryList={() => modalState.setShowGroceryList(true)}
-      />
+    <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }}>
+      {/* Header with Logo and Title */}
+      <div className="sticky top-0 z-10" style={{ backgroundColor: colors.bg.primary }}>
+        <div className="px-6 pt-4 pb-3">
+          <div className="flex items-center gap-2 mb-4">
+            <ChefHat size={24} style={{ color: colors.accent.start }} />
+            <h1 className="text-2xl font-bold" style={{ color: colors.text.primary }}>
+              Meal Planning
+            </h1>
+          </div>
 
-      {/* Multi-cell selection toolbar */}
-      {multiCellSelection.isSelectionMode && multiCellSelection.selectedCells.size > 0 && (
-        <SelectionToolbar
-          selectedCount={multiCellSelection.selectedCells.size}
-          query={multiCellSelection.multiCellQuery}
-          onQueryChange={multiCellSelection.setMultiCellQuery}
-          matches={multiCellSelection.multiCellMatches}
-          selectedIndex={multiCellSelection.multiCellSelectedIndex}
-          onIndexChange={multiCellSelection.setMultiCellSelectedIndex}
-          onKeyDown={(e) => void multiCellSelection.handleMultiCellKeyDown(e)}
-          inputRef={multiCellSelection.multiCellInputRef}
-          showList={multiCellSelection.showMultiCellList}
-          onShowListChange={multiCellSelection.setShowMultiCellList}
-          onAddMeal={multiCellSelection.addMealToSelectedCells}
-          onDeleteMeals={multiCellSelection.deleteMealsFromSelectedCells}
-          onClearSelection={multiCellSelection.clearSelection}
+          {/* Tab Navigation */}
+          <SegmentedControl
+            segments={[
+              { value: 'today', label: 'Today' },
+              { value: 'week', label: 'Week' },
+              { value: 'recipes', label: 'Recipes' },
+              { value: 'grocery', label: 'Grocery' },
+            ]}
+            value={activeTab}
+            onChange={(value) => setActiveTab(value as TabView)}
+          />
+        </div>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === 'today' && (
+        <TodayView
+          todaysMeals={todaysMeals}
+          recipes={recipes}
+          onAddMeal={(mealType) => {
+            const today = format(new Date(), 'yyyy-MM-dd');
+            modalState.openRecipeForm(today, mealType);
+          }}
+          onLogMeal={(mealId) => {
+            const updates: PlannedMealUpdate = { status: 'logged' };
+            void updatePlannedMealWrapper({ mealId, updates });
+            showToast('Meal logged!', 'success');
+          }}
+          onEditMeal={(meal) => {
+            modalState.openSimpleEdit(meal);
+          }}
         />
       )}
 
-      {/* Weekly overview */}
-      <WeeklyOverviewSection
-        isLoading={isLoading}
-        weekDays={weekNav.weekDays}
-        mealsByDate={mealsByDate}
-        recipes={recipes}
-        activePlan={activePlanWithPartnerId}
-        selectedCells={multiCellSelection.selectedCells}
-        makeCellKey={multiCellSelection.makeCellKey}
-        onCellClick={multiCellSelection.handleCellClick}
-        onShowRecipeForm={modalState.openRecipeForm}
-        onShowSimpleEdit={modalState.openSimpleEdit}
-        createPlannedMeal={createPlannedMealWrapper}
-        updatePlannedMeal={updatePlannedMealWrapper}
-        sharedInputValue={multiCellSelection.sharedInputValue}
-        setSharedInputValue={multiCellSelection.setSharedInputValue}
-        isAnySelectedCellEditing={multiCellSelection.isAnySelectedCellEditing}
-        setIsAnySelectedCellEditing={multiCellSelection.setIsAnySelectedCellEditing}
-        addMealToSelectedCells={multiCellSelection.addMealToSelectedCells}
-      />
-
-      {/* Nutrition summary - lazy loaded */}
-      <Suspense fallback={<SectionLoadingFallback />}>
-        <MealPlanNutritionSummary
+      {activeTab === 'week' && (
+        <WeekView
           weekDays={weekNav.weekDays}
-          plannedMeals={plannedMeals}
+          mealsByDate={mealsByDate}
           recipes={recipes}
+          onPreviousWeek={weekNav.goToPreviousWeek}
+          onNextWeek={weekNav.goToNextWeek}
+          onToday={weekNav.goToThisWeek}
+          onCellClick={(date, mealType) => {
+            modalState.openRecipeForm(date, mealType);
+          }}
         />
-      </Suspense>
+      )}
 
-      {/* Import sections - lazy loaded */}
-      <Suspense fallback={<SectionLoadingFallback />}>
-        <ImportSections
-          recipeImport={recipeImport}
-          createRecipe={createRecipeWrapper}
-        />
-      </Suspense>
-
-      {/* Saved recipes - lazy loaded */}
-      <Suspense fallback={<SectionLoadingFallback />}>
-        <SavedRecipesSection
+      {activeTab === 'recipes' && (
+        <RecipesView
           recipes={recipeFiltering.filteredRecipes}
-          allRecipesCount={recipes.length}
-          showFavoritesOnly={recipeFiltering.showFavoritesOnly}
-          onToggleFavorites={recipeFiltering.toggleFavoritesOnly}
           searchQuery={recipeFiltering.searchQuery}
+          showFavoritesOnly={recipeFiltering.showFavoritesOnly}
           onSearchChange={recipeFiltering.setSearchQuery}
-          onDeleteAll={deleteAllRecipesMutation.mutateAsync}
+          onToggleFavorites={recipeFiltering.toggleFavoritesOnly}
           onViewRecipe={modalState.openRecipeView}
           onEditRecipe={modalState.openRecipeEdit}
           onDeleteRecipe={handleDeleteRecipe}
+          onAddRecipe={() => modalState.openRecipeForm('', '')}
         />
-      </Suspense>
+      )}
+
+      {activeTab === 'grocery' && (
+        <GroceryView
+          groceryList={groceryState.groceryList}
+          neededItems={groceryState.neededItems}
+          atHomeItems={groceryState.atHomeItems}
+          onUpdateItemStatus={groceryState.updateItemStatus}
+          onCopyToClipboard={() => {
+            const text = groceryState.neededItems
+              .map((item) => {
+                const amount =
+                  item.amount && item.unit ? `${item.amount} ${item.unit}` : item.amount ?? '';
+                return `☐ ${amount} ${item.name}`.trim();
+              })
+              .join('\n');
+            void navigator.clipboard.writeText(text);
+            showToast('Shopping list copied to clipboard!', 'success');
+          }}
+          onSendToShoppingList={handleSendToShoppingList}
+        />
+      )}
 
       {/* Modals */}
       <ModalContainer

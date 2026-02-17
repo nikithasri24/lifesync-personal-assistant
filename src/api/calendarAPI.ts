@@ -13,8 +13,7 @@ import { format, parseISO } from 'date-fns';
 import type { CalendarEvent } from '../services/types';
 import { logger } from '../services/logger';
 import { apiCall, requireAuth, handleSupabaseResponse } from './apiWrapper';
-import { scheduleEngine } from '../services/scheduler';
-import { DEFAULT_SCHEDULING_PREFS } from '../services/scheduling/types';
+import { findFreeSlots as findFreeSlotsFromScheduling, DEFAULT_SCHEDULING_PREFS } from '../services/scheduling';
 import {
   fetchCalendarEvents,
   getCalendarMergedConnection,
@@ -166,7 +165,7 @@ export async function findFreeSlots(
   durationMinutes: number
 ): Promise<Array<{ start: string; end: string }>> {
   const day = parseISO(date);
-  const slots = await scheduleEngine.findFreeSlots(day, DEFAULT_SCHEDULING_PREFS, durationMinutes);
+  const slots = findFreeSlotsFromScheduling(day, [], DEFAULT_SCHEDULING_PREFS, durationMinutes);
 
   return slots.map(slot => ({
     start: format(slot.start, 'HH:mm'),

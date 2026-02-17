@@ -1,5 +1,6 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
+import { useThemeColors } from '../../../hooks/useThemeColors';
 
 interface ModalShellProps {
   title: string;
@@ -18,6 +19,8 @@ export function ModalShell({
   headerRight,
   children,
 }: ModalShellProps): React.ReactPortal {
+  const colors = useThemeColors();
+
   return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
@@ -27,23 +30,50 @@ export function ModalShell({
       onClick={onClose}
     >
       <div
-        style={{ height: '350px' }}
-        className={`w-full ${maxWidthClass} rounded-xl border-4 border-indigo-500/30 bg-white shadow-[0_20px_60px_rgba(0,0,0,0.5)] ring-4 ring-white flex flex-col overflow-hidden`}
+        style={{
+          height: '350px',
+          backgroundColor: colors.bg.white,
+          borderColor: `${colors.accent.start}30`,
+          boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+        }}
+        className={`w-full ${maxWidthClass} rounded-xl border-4 flex flex-col overflow-hidden`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 flex-shrink-0">
+        <div
+          className="flex items-center justify-between border-b px-4 py-3 flex-shrink-0"
+          style={{ borderColor: colors.border.light }}
+        >
           <div>
-            <h3 id="modal-title" className="text-base font-semibold text-slate-900">
+            <h3
+              id="modal-title"
+              className="text-base font-semibold"
+              style={{ color: colors.text.primary }}
+            >
               {title}
             </h3>
-            {subtitle && <p className="text-xs text-slate-500">{subtitle}</p>}
+            {subtitle && (
+              <p className="text-xs" style={{ color: colors.text.tertiary }}>
+                {subtitle}
+              </p>
+            )}
           </div>
           <div className="flex items-center gap-3">
             {headerRight}
             <button
               type="button"
               onClick={onClose}
-              className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+              className="rounded-full p-1 transition-colors duration-200"
+              style={{
+                color: colors.text.tertiary,
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = colors.bg.secondary;
+                e.currentTarget.style.color = colors.text.primary;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = colors.text.tertiary;
+              }}
               aria-label="Close"
               title="Close"
             >
