@@ -159,38 +159,61 @@ export const AddMilestoneModal: React.FC<AddMilestoneModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 rounded-lg transition-colors duration-200"
+            style={{
+              backgroundColor: colors.badge.bg,
+              color: colors.text.secondary,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = colors.bg.secondary;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = colors.badge.bg;
+            }}
             aria-label="Close"
           >
-            <X className="w-5 h-5" style={{ color: colors.text.tertiary }} />
+            <X size={20} />
           </button>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="overflow-y-auto p-6 space-y-5" style={{ maxHeight: 'calc(90vh - 140px)' }}>
-          {/* Milestone Type */}
-          <div>
-            <label
-              className="block text-sm font-semibold mb-2"
-              style={{ color: colors.text.primary }}
-            >
-              Milestone Type
-            </label>
-            <select
-              value={milestoneType}
-              onChange={(e) => setMilestoneType(e.target.value as MilestoneType)}
-              className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-terracotta-300 focus:border-terracotta-300 outline-none"
-              style={{ borderColor: colors.border.medium }}
-            >
-              <option value="birthday">🎂 Birthday</option>
-              <option value="anniversary">💕 Anniversary</option>
-              <option value="first_date">💑 First Date</option>
-              <option value="move_in">🏠 Move-in Anniversary</option>
-              <option value="engagement">💍 Engagement</option>
-              <option value="wedding">👰 Wedding Anniversary</option>
-              <option value="custom">⭐ Custom</option>
-            </select>
-          </div>
+        <div className="overflow-y-auto" style={{ maxHeight: 'calc(90vh - 140px)' }}>
+          <form onSubmit={handleSubmit} className="p-6 space-y-5">
+            {/* Milestone Type */}
+            <div>
+              <label
+                className={labelClassName}
+                style={{ color: colors.text.secondary }}
+              >
+                Milestone Type
+              </label>
+              <select
+                value={milestoneType}
+                onChange={(e) => setMilestoneType(e.target.value as MilestoneType)}
+                className={inputClassName}
+                style={{
+                  backgroundColor: colors.bg.primary,
+                  border: `2px solid ${colors.border.light}`,
+                  color: colors.text.primary,
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = colors.accent.start;
+                  e.currentTarget.style.backgroundColor = colors.bg.white;
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = colors.border.light;
+                  e.currentTarget.style.backgroundColor = colors.bg.primary;
+                }}
+              >
+                <option value="birthday">🎂 Birthday</option>
+                <option value="anniversary">💕 Anniversary</option>
+                <option value="first_date">💑 First Date</option>
+                <option value="move_in">🏠 Move-in Anniversary</option>
+                <option value="engagement">💍 Engagement</option>
+                <option value="wedding">👰 Wedding Anniversary</option>
+                <option value="custom">⭐ Custom</option>
+              </select>
+            </div>
 
           {/* For Whom */}
           <div>
