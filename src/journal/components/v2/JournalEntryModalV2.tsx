@@ -7,7 +7,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Paperclip } from 'lucide-react';
 import type { Attachment } from '@/types';
-import { logger } from '@/services/logger';
 
 export interface JournalEntryModalV2Props {
   isOpen: boolean;
@@ -27,8 +26,6 @@ export interface JournalEntryModalV2Props {
   isPending?: boolean;
 }
 
-const STORAGE_KEY = 'journal_entry_draft';
-
 export const JournalEntryModalV2: React.FC<JournalEntryModalV2Props> = ({
   isOpen,
   onClose,
@@ -38,44 +35,24 @@ export const JournalEntryModalV2: React.FC<JournalEntryModalV2Props> = ({
   isEditing = false,
   isPending = false,
 }) => {
-  // Load draft from localStorage
-  const loadDraft = () => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) return JSON.parse(saved);
-    } catch (error) {
-      logger.error('Journal', error as Error, { context: 'Failed to load draft' });
-    }
-    return null;
-  };
 
-  const savedDraft = !initialData ? loadDraft() : null;
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
 
-  const [title, setTitle] = useState(initialData?.title || savedDraft?.title || '');
-  const [content, setContent] = useState(initialData?.content || savedDraft?.content || '');
-
-  // Update form when initialData changes (editing different entry)
+  // Update form when modal opens or initialData changes
   useEffect(() => {
-    if (initialData) {
-      setTitle(initialData.title || '');
-      setContent(initialData.content || '');
-    } else if (!isEditing) {
-      // Reset to draft or defaults when creating new entry
-      const draft = loadDraft();
-      setTitle(draft?.title || '');
-      setContent(draft?.content || '');
+    if (isOpen) {
+      if (initialData) {
+        // Editing mode - load the entry data
+        setTitle(initialData.title || '');
+        setContent(initialData.content || '');
+      } else {
+        // New entry mode - always start empty
+        setTitle('');
+        setContent('');
+      }
     }
-  }, [initialData, isEditing]);
-
-  // Auto-save to localStorage
-  useEffect(() => {
-    if (!isEditing && (title || content)) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        title,
-        content,
-      }));
-    }
-  }, [title, content, isEditing]);
+  }, [isOpen, initialData]);
 
   // ESC key support
   useEffect(() => {
@@ -108,8 +85,9 @@ export const JournalEntryModalV2: React.FC<JournalEntryModalV2Props> = ({
       content: content.trim(),
     });
 
-    // Clear draft on successful submit
-    localStorage.removeItem(STORAGE_KEY);
+    // Reset form
+    setTitle('');
+    setContent('');
   };
 
   if (!isOpen) return null;
