@@ -8,7 +8,7 @@
 
 import React, { useMemo, useState, useEffect, type FormEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { List, CalendarDays } from 'lucide-react';
+import { BookOpen, Plus } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { logger } from '../services/logger';
 import type { JournalEntry } from '../types';
@@ -18,14 +18,13 @@ import {
   useUpdateJournalEntry,
   useDeleteJournalEntry,
 } from '../hooks/useJournalQuery';
-import { JournalSearchBar } from './components/JournalSearchBar';
-import { JournalHeader } from './components/JournalHeader';
 import { JournalEntryForm, type JournalDraft } from './components/JournalEntryForm';
-import { JournalEntriesList } from './components/JournalEntriesList';
-import { JournalCalendarView } from './components/JournalCalendarView';
-import { JournalPagination } from './components/JournalPagination';
 import { useJournalFilters } from './hooks/useJournalFilters';
+import { useJournalState, type JournalTabView } from './hooks';
+import { EntriesView, CalendarTabView, InsightsView, TagsView } from './components/views';
 import { useComposedStore } from '@/stores/useComposedStore';
+import { useThemeColors } from '@/hooks/useThemeColors';
+import { SegmentedControl } from '@/components/ui/SegmentedControl';
 
 // Pagination constant
 const ENTRIES_PER_PAGE = 3;
@@ -53,25 +52,29 @@ const hasDraftContent = (draft: JournalDraft): boolean => {
 };
 
 export const JournalContainer: React.FC = () => {
-  // View mode, pagination, and selected date from Zustand
+  const colors = useThemeColors();
+
+  // Tab navigation
+  const { activeTab, setActiveTab } = useJournalState();
+
+  // Pagination and selected date from Zustand
   // Using useShallow to prevent infinite loops from object reference changes
   const {
-    journalViewMode,
     journalSelectedDate,
     journalCurrentPage,
-    setJournalViewMode,
     setJournalSelectedDate,
     setJournalCurrentPage,
   } = useComposedStore(
     useShallow((state) => ({
-      journalViewMode: state.journalViewMode,
       journalSelectedDate: state.journalSelectedDate,
       journalCurrentPage: state.journalCurrentPage,
-      setJournalViewMode: state.setJournalViewMode,
       setJournalSelectedDate: state.setJournalSelectedDate,
       setJournalCurrentPage: state.setJournalCurrentPage,
     }))
   );
+
+  // Form visibility state - defaults to false, shows on FAB click or when editing
+  const [showForm, setShowForm] = useState(false);
 
   // Filter state from custom hook (eliminates local state for filters)
   const {
@@ -217,6 +220,7 @@ export const JournalContainer: React.FC = () => {
   const handleCancelEdit = (): void => {
     setDraft(createDraft());
     setEditingId(null);
+    setShowForm(false);
   };
 
   const handleDelete = (id: string): void => {
@@ -231,13 +235,15 @@ export const JournalContainer: React.FC = () => {
   if (error) {
     const errorMessage = error instanceof Error ? error.message : 'An error occurred';
     return (
-      <div className="mx-auto flex max-w-4xl flex-col gap-6 p-6" data-testid="journal-error">
+      <div className="mx-auto flex max-w-4xl flex-col" data-testid="journal-error">
         <JournalHeader />
-        <div className="rounded-lg border border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800 p-4">
-          <p className="text-sm text-red-700 dark:text-red-300">
-            Unable to load your journal entries. Please try refreshing the page.
-          </p>
-          <p className="text-xs text-red-600 mt-2">{errorMessage}</p>
+        <div className="p-6">
+          <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+            <p className="text-sm text-red-700">
+              Unable to load your journal entries. Please try refreshing the page.
+            </p>
+            <p className="text-xs text-red-600 mt-2">{errorMessage}</p>
+          </div>
         </div>
       </div>
     );
@@ -250,99 +256,107 @@ export const JournalContainer: React.FC = () => {
   };
 
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-6 p-6" data-testid="journal-container">
-      {/* Header with view mode toggle */}
-      <div className="flex items-center justify-between">
-        <JournalHeader />
-        <div className="flex items-center gap-1 rounded-lg border border-slate-200 dark:border-slate-700 p-1 bg-white dark:bg-slate-800">
-          <button
-            type="button"
-            onClick={() => setJournalViewMode('list')}
-            className={`p-2 rounded-md transition ${
-              journalViewMode === 'list'
-                ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white'
-                : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
-            }`}
-            aria-label="List view"
-            data-testid="journal-view-list"
-          >
-            <List className="h-5 w-5" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setJournalViewMode('calendar')}
-            className={`p-2 rounded-md transition ${
-              journalViewMode === 'calendar'
-                ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white'
-                : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
-            }`}
-            aria-label="Calendar view"
-            data-testid="journal-view-calendar"
-          >
-            <CalendarDays className="h-5 w-5" />
-          </button>
+    <div style={{ backgroundColor: colors.bg.primary, minHeight: '100vh' }} data-testid="journal-container">
+      {/* Header with Logo and Title */}
+      <div className="sticky top-0 z-10" style={{ backgroundColor: colors.bg.primary }}>
+        <div className="px-6 pt-4 pb-3">
+          <div className="flex items-center gap-2 mb-4">
+            <BookOpen size={24} style={{ color: colors.accent.start }} />
+            <h1 className="text-2xl font-bold" style={{ color: colors.text.primary }}>
+              Journal
+            </h1>
+          </div>
+
+          {/* Tab Navigation */}
+          <SegmentedControl
+            segments={[
+              { value: 'entries', label: 'Entries' },
+              { value: 'calendar', label: 'Calendar' },
+              { value: 'insights', label: 'Insights' },
+              { value: 'tags', label: 'Tags' },
+            ]}
+            value={activeTab}
+            onChange={(value) => setActiveTab(value as JournalTabView)}
+          />
         </div>
       </div>
 
-      {/* Search and Filter Bar (only in list view) */}
-      {journalViewMode === 'list' && (
-        <JournalSearchBar
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          showFilters={showFilters}
-          setShowFilters={setShowFilters}
-          selectedTags={selectedTags}
-          hasActiveFilters={hasActiveFilters}
-          availableTags={availableTags}
-          toggleTagFilter={toggleTagFilter}
-          clearFilters={clearFilters}
-          dateRange={dateRange}
-          setDateRange={setDateRange}
-        />
-      )}
-
-      {/* Entry Form (only in list view) */}
-      {journalViewMode === 'list' && (
-        <JournalEntryForm
-          draft={draft}
-          onDraftChange={setDraft}
-          onSubmit={handleSubmit}
-          onClear={() => {
-            setDraft(createDraft());
-            localStorage.removeItem(DRAFT_STORAGE_KEY);
-          }}
-          onCancelEdit={handleCancelEdit}
-          editingId={editingId}
-          isSubmitting={isSubmitting}
-          hasError={createMutation.isError || updateMutation.isError}
-        />
-      )}
-
-      {/* View content based on mode */}
-      {journalViewMode === 'list' ? (
-        <>
-          <JournalEntriesList
-            entries={paginatedEntries}
+      {/* Tab Content */}
+      <div className="px-6 pb-6">
+        {activeTab === 'entries' && (
+          <EntriesView
+            paginatedEntries={paginatedEntries}
             isLoading={isLoading}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            showFilters={showFilters}
+            setShowFilters={setShowFilters}
+            selectedTags={selectedTags}
             hasActiveFilters={hasActiveFilters}
+            availableTags={availableTags}
+            toggleTagFilter={toggleTagFilter}
+            clearFilters={clearFilters}
+            dateRange={dateRange}
+            setDateRange={setDateRange}
+            showForm={showForm}
+            draft={draft}
+            onDraftChange={setDraft}
+            onSubmit={handleSubmit}
+            onClear={() => {
+              setDraft(createDraft());
+              localStorage.removeItem(DRAFT_STORAGE_KEY);
+              setShowForm(false);
+            }}
+            onCancelEdit={handleCancelEdit}
+            editingId={editingId}
+            isSubmitting={isSubmitting}
+            hasError={createMutation.isError || updateMutation.isError}
             deleteConfirm={deleteConfirm}
             onEdit={handleEdit}
             onDeleteStart={setDeleteConfirm}
             onDeleteConfirm={handleDelete}
             onDeleteCancel={() => setDeleteConfirm(null)}
-          />
-          <JournalPagination
             currentPage={journalCurrentPage}
             totalPages={totalPages}
             onPageChange={setJournalCurrentPage}
           />
-        </>
-      ) : (
-        <JournalCalendarView
-          entries={typedEntries}
-          selectedDate={selectedDate}
-          onSelectDate={handleSelectDate}
-        />
+        )}
+
+        {activeTab === 'calendar' && (
+          <CalendarTabView
+            entries={typedEntries}
+            selectedDate={selectedDate}
+            onSelectDate={handleSelectDate}
+          />
+        )}
+
+        {activeTab === 'insights' && <InsightsView />}
+
+        {activeTab === 'tags' && <TagsView />}
+      </div>
+
+      {/* FAB (Floating Action Button) - only in entries tab and when not editing */}
+      {activeTab === 'entries' && !editingId && (
+        <button
+          type="button"
+          onClick={() => {
+            setShowForm(true);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          className="fixed z-50 rounded-full flex items-center justify-center text-white text-3xl font-light shadow-lg hover:scale-105 active:scale-95 transition-transform"
+          style={{
+            bottom: '80px',
+            right: '24px',
+            width: '60px',
+            height: '60px',
+            background: 'linear-gradient(135deg, #D4A574 0%, #C18B5E 100%)',
+            boxShadow: '0 4px 16px rgba(193, 139, 94, 0.4)',
+          }}
+          aria-label="Create new journal entry"
+          data-testid="journal-fab"
+        >
+          <Plus className="w-8 h-8" strokeWidth={2.5} />
+        </button>
       )}
     </div>
   );

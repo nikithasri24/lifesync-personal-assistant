@@ -5,4 +5,6 @@
  */
 
 export { useJournalFilters } from './useJournalFilters';
+export { useJournalState } from './useJournalState';
+export type { JournalTabView } from './useJournalState';
 
