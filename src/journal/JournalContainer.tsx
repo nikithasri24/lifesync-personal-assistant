@@ -348,7 +348,7 @@ export const JournalContainer: React.FC = () => {
                     title={entry.title}
                     content={entry.content}
                     tags={entry.tags}
-                    createdAt={entry.created_at}
+                    createdAt={entry.createdAt}
                     attachmentCount={entry.attachments?.length || 0}
                     onClick={() => handleEditEntry(entry)}
                   />
@@ -406,7 +406,7 @@ export const JournalContainer: React.FC = () => {
             {/* Selected Date Entries */}
             {selectedDate && (() => {
               const selectedEntries = typedEntries.filter((entry) => {
-                const entryDate = new Date(entry.created_at);
+                const entryDate = new Date(entry.createdAt);
                 entryDate.setHours(0, 0, 0, 0);
                 const selected = new Date(selectedDate);
                 selected.setHours(0, 0, 0, 0);
@@ -442,7 +442,7 @@ export const JournalContainer: React.FC = () => {
                         title={entry.title}
                         content={entry.content}
                         tags={entry.tags}
-                        createdAt={entry.created_at}
+                        createdAt={entry.createdAt}
                         attachmentCount={entry.attachments?.length || 0}
                         onClick={() => handleEditEntry(entry)}
                       />

@@ -9,7 +9,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useThemeColors } from '@/hooks/useThemeColors';
 
 export interface JournalCalendarViewV2Props {
-  entries: Array<{ created_at: string }>;
+  entries: Array<{ createdAt: Date | string }>;
   selectedDate: Date | null;
   onSelectDate: (date: Date | null) => void;
 }
@@ -64,7 +64,7 @@ export const JournalCalendarViewV2: React.FC<JournalCalendarViewV2Props> = ({
       date.setHours(0, 0, 0, 0);
 
       const hasEntry = entries.some((entry) => {
-        const entryDate = new Date(entry.created_at);
+        const entryDate = new Date(entry.createdAt);
         entryDate.setHours(0, 0, 0, 0);
         return entryDate.getTime() === date.getTime();
       });
